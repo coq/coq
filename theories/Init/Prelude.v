@@ -46,8 +46,8 @@ Number Notation Number.int Number.int_of_int Number.int_of_int
   : dec_int_scope.
 
 (* Parsing / printing of [nat] numbers *)
-Number Notation nat Nat.of_num_uint Nat.to_num_hex_uint (abstract after 5001) : hex_nat_scope.
-Number Notation nat Nat.of_num_uint Nat.to_num_uint (abstract after 5001) : nat_scope.
+Number Notation nat Nat.of_num_uint Nat.to_num_hex_uint (abstract after 5000) : hex_nat_scope.
+Number Notation nat Nat.of_num_uint Nat.to_num_uint (abstract after 5000) : nat_scope.
 
 (* Printing/Parsing of bytes *)
 Export Byte.ByteSyntaxNotations.

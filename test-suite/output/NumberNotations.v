@@ -83,7 +83,7 @@ Module Test4.
 
   Polymorphic Definition pto_punits := pto_punit_all@{Set}.
   Polymorphic Definition pof_punits := pof_punit@{Set}.
-  Number Notation punit pto_punits pof_punits (abstract after 1) : ppps.
+  Number Notation punit pto_punits pof_punits (abstract after 0) : ppps.
   Delimit Scope ppps with ppps.
   Universe u.
   Constraint Set < u.
@@ -121,7 +121,7 @@ Module Test6.
   End Scopes.
   Module Export Notations.
     Export Scopes.
-    Number Notation wnat of_uint to_uint (abstract after 5000) : wnat_scope.
+    Number Notation wnat of_uint to_uint (abstract after 4999) : wnat_scope.
   End Notations.
   Set Printing Coercions.
   Check let v := 0%wnat in v : wnat.
@@ -200,12 +200,12 @@ Module Test10.
   Declare Scope unit2_scope.
   Delimit Scope unit_scope with unit.
   Delimit Scope unit2_scope with unit2.
-  Number Notation unit of_uint to_uint (abstract after 1) : unit_scope.
+  Number Notation unit of_uint to_uint (abstract after 0) : unit_scope.
   Local Set Warnings Append "+abstract-large-number-no-op".
   (* Check that there is actually a warning here *)
-  Fail Number Notation unit of_uint to_uint (abstract after 1) : unit2_scope.
+  Fail Number Notation unit of_uint to_uint (abstract after 0) : unit2_scope.
   (* Check that there is no warning here *)
-  Number Notation unit of_any_uint to_uint (abstract after 1) : unit2_scope.
+  Number Notation unit of_any_uint to_uint (abstract after 0) : unit2_scope.
 End Test10.
 
 Module Test12.
@@ -588,7 +588,7 @@ Number Notation nSet of_uint to_uint (via I
 (* incompatibility with abstract (but warning is fine) *)
 Fail Number Notation nSet of_uint to_uint (via I
   mapping [Empty_set => Iempty, unit => Iunit, sum => Isum],
-  abstract after 12)
+  abstract after 11)
   : type_scope.
 Number Notation nSet of_uint to_uint (via I
   mapping [Empty_set => Iempty, unit => Iunit, sum => Isum],
