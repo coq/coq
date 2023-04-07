@@ -14,8 +14,12 @@ open Libnames
 open Tac2expr
 open Tac2ffi
 
+type 'a or_glb_tacexpr =
+| GlbVal of 'a
+| GlbTacexpr of glb_tacexpr
+
 type global_data = {
-  gdata_expr : glb_tacexpr;
+  gdata_expr : valexpr or_glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
   gdata_deprecation : Deprecation.t option;
@@ -253,10 +257,6 @@ let shortest_qualid_of_projection kn =
   let tab = !nametab in
   let sp = KNmap.find kn tab.tab_proj_rev in
   KnTab.shortest_qualid Id.Set.empty sp tab.tab_proj
-
-type 'a or_glb_tacexpr =
-| GlbVal of 'a
-| GlbTacexpr of glb_tacexpr
 
 type environment = {
   env_ist : valexpr Id.Map.t;

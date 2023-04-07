@@ -71,3 +71,11 @@ val val_format : format list Tac2dyn.Val.tag
 exception InvalidFormat
 
 val parse_format : string -> format list
+
+val type_kind : 'a glb_typexpr -> 'a glb_typexpr
+(** Unfold global type definitions. Type variables are all rigid.*)
+
+val find_constructor : Int.t -> bool -> (uid * int glb_typexpr list) list -> uid * int glb_typexpr list
+
+val subst_type : 'a Tac2expr.glb_typexpr array ->
+  int Tac2expr.glb_typexpr -> 'a Tac2expr.glb_typexpr

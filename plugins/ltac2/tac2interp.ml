@@ -81,7 +81,7 @@ let get_var ist id =
   try Id.Map.find id ist.env_ist with Not_found ->
     anomaly (str "Unbound variable " ++ Id.print id)
 
-let get_ref ist kn =
+let get_ref kn =
   try
     let data = Tac2env.interp_global kn in
     data.Tac2env.gdata_expr
@@ -137,8 +137,10 @@ let rec interp (ist : environment) = function
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string s)
 | GTacVar id -> return (get_var ist id)
 | GTacRef kn ->
-  let data = get_ref ist kn in
-  return (eval_pure Id.Map.empty (Some kn) data)
+  begin match get_ref kn with
+  | GlbTacexpr data -> return (eval_pure Id.Map.empty (Some kn) data)
+  | GlbVal v -> return v
+  end
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_closure cls in
@@ -253,11 +255,10 @@ and eval_pure bnd kn = function
 | GTacVar id -> Id.Map.get id bnd
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
 | GTacRef kn ->
-  let { Tac2env.gdata_expr = e } =
-    try Tac2env.interp_global kn
-    with Not_found -> assert false
-  in
-  eval_pure bnd (Some kn) e
+  begin match get_ref kn with
+  | GlbTacexpr e -> eval_pure bnd (Some kn) e
+  | GlbVal v -> v
+  end
 | GTacFun (na, e) ->
   let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
   interp_closure cls

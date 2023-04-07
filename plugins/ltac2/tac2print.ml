@@ -453,12 +453,12 @@ let unfold kn args =
     Some (subst_type args def)
   | _ -> None
 
-let rec kind t = match t with
+let rec type_kind t = match t with
 | GTypVar id -> GTypVar id
 | GTypRef (Other kn, tl) ->
   begin match unfold kn tl with
   | None -> t
-  | Some t -> kind t
+  | Some t -> type_kind t
   end
 | GTypArrow _ | GTypRef (Tuple _, _) -> t
 
@@ -472,7 +472,7 @@ let register_val_printer kn pr =
 
 open Tac2ffi
 
-let rec pr_valexpr env sigma v t = match kind t with
+let rec pr_valexpr env sigma v t = match type_kind t with
 | GTypVar _ -> str "<poly>"
 | GTypRef (Other kn, params) ->
   let pr = try Some (KNmap.find kn !printers) with Not_found -> None in
@@ -485,7 +485,7 @@ let rec pr_valexpr env sigma v t = match kind t with
     else match repr with
     | GTydDef None -> str "<abstr>"
     | GTydDef (Some _) ->
-      (* Shouldn't happen thanks to kind *)
+      (* Shouldn't happen thanks to type_kind *)
       assert false
     | GTydAlg alg ->
       if Valexpr.is_int v then

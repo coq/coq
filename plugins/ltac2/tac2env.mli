@@ -19,8 +19,12 @@ open Tac2ffi
 
 (** {5 Toplevel definition of values} *)
 
+type 'a or_glb_tacexpr =
+| GlbVal of 'a
+| GlbTacexpr of glb_tacexpr
+
 type global_data = {
-  gdata_expr : glb_tacexpr;
+  gdata_expr : valexpr or_glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
   gdata_deprecation : Deprecation.t option;
@@ -121,10 +125,6 @@ val define_primitive : ml_tactic_name -> closure -> unit
 val interp_primitive : ml_tactic_name -> closure
 
 (** {5 ML primitive types} *)
-
-type 'a or_glb_tacexpr =
-| GlbVal of 'a
-| GlbTacexpr of glb_tacexpr
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 

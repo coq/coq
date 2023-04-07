@@ -112,6 +112,9 @@ val payload_attribute : ?cat:(string -> string -> string) -> name:string -> stri
    attribute may only be set once for a command. *)
 val bool_attribute : name:string -> bool option attribute
 
+val enable_attribute : key:string -> default:(unit -> bool) -> bool attribute
+(** Attribute [key] produces [true] if present, [default()] otherwise. *)
+
 val qualify_attribute : string -> 'a attribute -> 'a attribute
 (** [qualified_attribute qual att] treats [#[qual(atts)]] like [att]
    treats [atts]. *)

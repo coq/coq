@@ -14,7 +14,7 @@ open Tac2expr
 
 (** {5 Toplevel definitions} *)
 
-val register_ltac : ?deprecation:Deprecation.t -> ?local:bool -> ?mut:bool -> rec_flag ->
+val register_ltac : ?deprecation:Deprecation.t -> ?local:bool -> ?precompute:bool -> ?mut:bool -> rec_flag ->
   (Names.lname * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
@@ -103,3 +103,7 @@ val q_move_location : move_location Pcoq.Entry.t
 val q_pose : pose Pcoq.Entry.t
 val q_assert : assertion Pcoq.Entry.t
 end
+
+type pure_val_checker = { pure_val_checker : 'a. Tac2ffi.valexpr -> 'a glb_typexpr list -> unit }
+
+val register_pure_val_checker : type_constant -> pure_val_checker -> unit

@@ -60,7 +60,7 @@ let () =
 type tacdef = {
   tacdef_local : bool;
   tacdef_mutable : bool;
-  tacdef_expr : glb_tacexpr;
+  tacdef_expr : Tac2ffi.valexpr Tac2env.or_glb_tacexpr;
   tacdef_type : type_scheme;
   tacdef_deprecation : Deprecation.t option;
 }
@@ -88,8 +88,14 @@ let cache_tacdef ((sp, kn), def) =
   } in
   Tac2env.define_global kn data
 
+let subst_def_value subst = function
+  | Tac2env.GlbTacexpr e as orig ->
+    let e' = subst_expr subst e in
+    if e == e' then orig else GlbTacexpr e'
+  | GlbVal _ -> CErrors.user_err Pp.(str "Cannot rename precomputed ltac2 value.")
+
 let subst_tacdef (subst, def) =
-  let expr' = subst_expr subst def.tacdef_expr in
+  let expr' = subst_def_value subst def.tacdef_expr in
   let type' = subst_type_scheme subst def.tacdef_type in
   if expr' == def.tacdef_expr && type' == def.tacdef_type then def
   else { def with tacdef_expr = expr'; tacdef_type = type' }
@@ -328,13 +334,111 @@ let inline_rec_tactic tactics =
 
 let check_lowercase {loc;v=id} =
   if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
-    user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
+    user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase.")
 
-let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
+let not_a_value reason =
+  CErrors.user_err Pp.(str "Precomputed tactic definition must be a pure value" ++ spc() ++ surround reason ++ str ".")
+
+type pure_val_checker = { pure_val_checker : 'a. Tac2ffi.valexpr -> 'a glb_typexpr list -> unit }
+
+let checkers = ref KNmap.empty
+
+let register_pure_val_checker kn check = checkers := KNmap.add kn check !checkers
+
+let () =
+  let register_init n f =
+      let kn = KerName.make Tac2env.coq_prefix (Label.make n) in
+      register_pure_val_checker kn { pure_val_checker = fun v _ -> f v }
+  in
+  let trivial = fun _ -> () in
+  register_init "int" trivial;
+  register_init "char" trivial;
+  register_init "uint63" trivial;
+  register_init "float" trivial;
+  register_init "ident" trivial;
+  register_init "message" trivial;
+  (* Provide informative error message
+     NB: we could allow empty strings/arrays but it doesn't seem useful *)
+  register_init "string" (fun _ -> not_a_value Pp.(str "strings are mutable in Ltac2"));
+  register_init "array" (fun _ -> not_a_value Pp.(str "arrays are mutable"));
+  (* XXX we could allow constrs which don't depend on the evar map, do
+     we want to? (constr restrictions are not because of issues like
+     backtrack/marshall, they are to defend the user from having
+     dangling evars that would get reinterpreted in a random way. TBD
+     exactly what we want to do.)
+     also constant inductive etc? *)
+  (* When fmap PR is in: register maps *)
+  ()
+
+let rec check_dynamic_value v t = match type_kind t with
+  | GTypVar _ -> not_a_value Pp.(str "Value in a polymorphic type cannot be checked to be pure.")
+  | GTypRef (Other kn, params) ->
+    let _, repr = Tac2env.interp_type kn in
+    begin match repr with
+    | GTydDef None ->
+      begin match KNmap.find_opt kn !checkers with
+      | None ->
+        not_a_value Pp.(str "Value in abstract type " ++ pr_typref kn ++ str " cannot be checked to be pure.")
+      | Some checker -> checker.pure_val_checker v params
+      end
+    | GTydDef (Some _) -> assert false  (* type_kind prevents this *)
+    | GTydAlg alg ->
+      if Tac2ffi.Valexpr.is_int v then ()
+      else
+        let n, args = Tac2ffi.to_block v in
+        let id, tpe = find_constructor n false alg.galg_constructors in
+        check_dynamic_value_constrargs params args tpe
+    | GTydRec rcd ->
+      let _, args = Tac2ffi.to_block v in
+      let subst = Array.of_list params in
+      let map (id, mut, tpe) =
+        if mut then
+          not_a_value
+            Pp.(str "Field " ++ Id.print id
+                ++ str " of " ++ pr_typref kn
+                ++ str " is mutable");
+        Tac2print.subst_type subst tpe
+      in
+      let rcd = List.map map rcd in
+      let args = Array.to_list args in
+      List.iter2 check_dynamic_value args rcd
+    | GTydOpn ->
+      begin match Tac2ffi.to_open v with
+      | (_, [||]) -> ()
+      | (knc, args) ->
+        let data = Tac2env.interp_constructor knc in
+        check_dynamic_value_constrargs params args data.cdata_args
+      end
+    end
+  | GTypArrow _ ->
+    not_a_value Pp.(str "Closures are not allowed in precomputed values.")
+  | GTypRef (Tuple 0, []) -> ()
+  | GTypRef (Tuple _, tl) ->
+    let blk = Array.to_list (snd (Tac2ffi.to_block v)) in
+    List.iter2 check_dynamic_value blk tl
+
+and check_dynamic_value_constrargs params args tpe =
+  let subst = Array.of_list params in
+  let tpe = List.map (fun t -> Tac2print.subst_type subst t) tpe in
+  let args = Array.to_list args in
+  List.iter2 check_dynamic_value args tpe
+
+let precompute_ltac e t =
+  let v = Tac2interp.(interp empty_environment e) in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let proof = Proof.start ~name:(Id.of_string "ltac2") ~poly:false sigma [] in
+  let proof, _, v = Proof.run_tactic env v proof in
+  (* Values must be pure because backtrack can't deal with ltac2 mutations.
+     They must also be marshallable (except in sections I suppose) *)
+  let () = check_dynamic_value v (snd t) in
+  v
+
+let register_ltac ?deprecation ?(local = false) ?(precompute=false) ?(mut = false) isrec tactics =
   let map ({loc;v=na}, e) =
     let id = match na with
     | Anonymous ->
-      user_err ?loc (str "Tactic definition must have a name")
+      user_err ?loc (str "Tactic definition must have a name.")
     | Name id -> id
     in
     let () = check_lowercase CAst.(make ?loc id) in
@@ -346,17 +450,24 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   in
   let map ({loc;v=id}, e) =
     let (e, t) = intern ~strict:true [] e in
-    let () =
-      if not (is_value e) then
-        user_err ?loc (str "Tactic definition must be a syntactical value")
-    in
     let kn = Lib.make_kn id in
     let exists =
       try let _ = Tac2env.interp_global kn in true with Not_found -> false
     in
     let () =
       if exists then
-        user_err ?loc (str "Tactic " ++ Names.Id.print id ++ str " already exists")
+        user_err ?loc (str "Tactic " ++ Names.Id.print id ++ str " already exists.")
+    in
+    let e =
+      if precompute then begin
+        let v = precompute_ltac e t in
+        Tac2env.GlbVal v
+      end
+      else begin
+        if not (is_value e) then
+          user_err ?loc (str "Tactic definition must be a syntactical value.");
+        GlbTacexpr e
+      end
     in
     (id, e, t)
   in
@@ -485,7 +596,7 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
   let def = {
     tacdef_local = local;
     tacdef_mutable = false;
-    tacdef_expr = e;
+    tacdef_expr = Tac2env.GlbTacexpr e;
     tacdef_type = t;
     tacdef_deprecation = deprecation;
   } in
@@ -855,9 +966,17 @@ let perform_redefinition redef =
   | None -> redef.redef_body
   | Some id ->
     (* Rebind the old value with a let-binding *)
-    GTacLet (false, [Name id, data.Tac2env.gdata_expr], redef.redef_body)
+    let e = match data.gdata_expr with
+      | GlbTacexpr e -> e
+      | GlbVal _ ->
+        CErrors.user_err
+          Pp.(str "Cannot use old binding of precomputed value." ++ spc() ++
+              str "Instead of \"Ltac2 Set foo as bar := e.\" you can do" ++ spc() ++
+              str "\"#[precompute] Ltac2 bar := foo. Ltac2 Set foo := bar.\"")
+    in
+    GTacLet (false, [Name id, e], redef.redef_body)
   in
-  let data = { data with Tac2env.gdata_expr = body } in
+  let data = { data with Tac2env.gdata_expr = GlbTacexpr body } in
   Tac2env.define_global kn data
 
 let subst_redefinition (subst, redef) =
@@ -951,11 +1070,15 @@ let check_modtype what =
   if Lib.is_modtype ()
   then warn_modtype what
 
+let precompute_att = Attributes.enable_attribute ~key:"precompute" ~default:(fun () -> false)
+
 let register_struct atts str = match str with
 | StrVal (mut, isrec, e) ->
   check_modtype "definitions";
-  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
-  register_ltac ?deprecation ?local ~mut isrec e
+  let (deprecation, local), precompute =
+    Attributes.(parse Notations.(deprecation ++ locality ++ precompute_att)) atts
+  in
+  register_ltac ?deprecation ?local ~precompute ~mut isrec e
 | StrTyp (isrec, t) ->
   check_modtype "types";
   let local = Attributes.(parse locality) atts in
@@ -1019,11 +1142,18 @@ end
 
 (** Printing *)
 
+let pr_def_value e t = match e with
+  | Tac2env.GlbTacexpr e -> pr_glbexpr e
+  | GlbVal v ->
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Tac2print.pr_valexpr env sigma v t
+
 let print_constant ~print_def qid data =
   let e = data.Tac2env.gdata_expr in
   let (_, t) = data.Tac2env.gdata_type in
   let name = int_name () in
-  let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e) else mt() in
+  let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_def_value e t) else mt() in
   hov 0 (
     hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ def
   )
