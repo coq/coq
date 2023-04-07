@@ -95,9 +95,6 @@ let register_dir_logpath, find_dir_logpath =
     (see discussion at PR #14718)
 *)
 
-let warning_cannot_open_dir dir =
-  Warning.give "cannot open %s" dir
-
 let add_directory recur add_file phys_dir log_dir =
   let root = (phys_dir, log_dir) in
   let stack = ref [] in
@@ -123,7 +120,7 @@ let add_directory recur add_file phys_dir log_dir =
         System.process_directory f phys_dir
       end
     else
-      warning_cannot_open_dir phys_dir
+      System.warn_cannot_open_dir phys_dir
   in
   aux phys_dir log_dir;
   List.iter (fun (phys_dir, log_dir, f) -> add_file root phys_dir log_dir f) !subdirfiles;
@@ -157,11 +154,19 @@ let rec cuts recur = function
     ([],if recur then suffixes true l else [true,l]) ::
     List.map (fun (fromtail,suffixes) -> (dir::fromtail,suffixes)) (cuts true tail)
 
+let warning_ml_clash =
+  let category = CWarnings.CoreCategories.filesystem in
+  CWarnings.create ~name:"multiple-matching-files" ~category
+    Pp.(fun (basename, suff, dir, dir') ->
+      str (basename ^ suff) ++ str " already found in " ++
+      str (match dir with None -> "." | Some d -> d) ++
+      str " (discarding " ++
+      str (System.((match dir' with None -> "." | Some d -> d) // basename)) ++
+      str suff ++ str ")"
+    )
 let warning_ml_clash x s suff s' suff' =
   if suff = suff' && not (same_path_opt s s') then
-    Warning.give "%s%s already found in %s (discarding %s%s)\n" x suff
-    (match s with None -> "." | Some d -> d)
-    System.((match s' with None -> "." | Some d -> d) // x) suff
+    warning_ml_clash (x,suff,s,s')
 
 type result =
   | ExactMatches of filename list

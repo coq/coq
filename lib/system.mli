@@ -41,6 +41,8 @@ val process_subdirectories : (unix_path -> string -> unit) -> unix_path -> unit
 
 (** {6 Files and load paths} *)
 
+val warn_cannot_open_dir : ?loc:Loc.t -> string -> unit
+
 (** Load path entries remember the original root
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
