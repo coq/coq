@@ -142,9 +142,7 @@ let pr_import_module (m,f) =
   | ImportNames ns -> surround (prlist_with_sep pr_comma pr_one_import_filter_name ns)
 
 let sep_end = function
-  | VernacBullet _
-  | VernacSubproof _
-  | VernacEndSubproof -> str""
+  | VernacSynPure (VernacBullet _ | VernacSubproof _ | VernacEndSubproof) -> str""
   | _ -> str"."
 
 let sep = fun _ -> spc()
@@ -684,17 +682,9 @@ let pr_extend s cl =
   with Not_found ->
     hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
-let pr_vernac_expr v =
+let pr_synpure_vernac_expr v =
   let return = tag_vernac v in
   match v with
-  | VernacLoad (f,s) ->
-    return (
-      keyword "Load"
-      ++ if f then
-        (spc() ++ keyword "Verbose" ++ spc())
-      else
-        spc() ++ qs s
-    )
 
   (* Proof management *)
   | VernacAbortAll ->
@@ -767,20 +757,6 @@ let pr_vernac_expr v =
     return (
       keyword "Bind Scope" ++ spc () ++ str sc ++
       spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
-    )
-  | VernacNotation (infix,ntn_decl) ->
-    return (
-      hov 2 (hov 0 (keyword (if infix then "Infix" else "Notation") ++ spc() ++
-      pr_notation_declaration ntn_decl))
-    )
-  | VernacReservedNotation (_, (s, l)) ->
-    return (
-      keyword "Reserved Notation" ++ spc() ++ pr_ast qs s ++
-      pr_syntax_modifiers l
-    )
-  | VernacDeclareCustomEntry s ->
-    return (
-      keyword "Declare Custom Entry " ++ str s
     )
   | VernacEnableNotation (on,rule,interp,flags,scope) ->
     let pr_flag = function
@@ -955,35 +931,9 @@ let pr_vernac_expr v =
     )
 
   (* Gallina extensions *)
-  | VernacBeginSection id ->
-    return (hov 2 (keyword "Section" ++ spc () ++ pr_lident id))
-  | VernacEndSegment id ->
-    return (hov 2 (keyword "End" ++ spc() ++ pr_lident id))
   | VernacNameSectionHypSet (id,set) ->
     return (hov 2 (keyword "Collection" ++ spc() ++ pr_lident id ++ spc()++
                    str ":="++spc()++pr_using set))
-  | VernacExtraDependency(from,file,id) ->
-    return (
-      hov 2
-        (keyword "From" ++ spc () ++ pr_module from ++ spc () ++
-         keyword "Extra" ++ spc() ++ keyword "Dependency" ++ spc() ++ qs file ++
-         pr_opt (fun x -> spc() ++ keyword "as" ++ spc () ++ pr_id x) id)
-    )
-  | VernacRequire (from, exp, l) ->
-    let from = match from with
-      | None -> mt ()
-      | Some r -> keyword "From" ++ spc () ++ pr_module r ++ spc ()
-    in
-    return (
-      hov 2
-        (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
-         prlist_with_sep sep pr_import_module l)
-    )
-  | VernacImport (f,l) ->
-    return (
-      pr_export_with_cats f ++ spc() ++
-      prlist_with_sep sep pr_import_module l
-    )
   | VernacCanonical q ->
     return (
       keyword "Canonical Structure" ++ spc() ++ pr_smart_global q
@@ -1055,63 +1005,6 @@ let pr_vernac_expr v =
     return (
       hov 1 (keyword "Existing" ++ spc () ++ keyword "Class" ++ spc () ++ pr_qualid id)
     )
-
-  (* Modules and Module Types *)
-  | VernacDefineModule (export,m,bl,tys,bd) ->
-    let b = pr_module_binders bl pr_lconstr in
-    return (
-      hov 2 (keyword "Module" ++ spc() ++ pr_require_token export ++
-             pr_lident m ++ b ++
-             pr_of_module_type pr_lconstr tys ++
-             (if List.is_empty bd then mt () else str ":= ") ++
-             prlist_with_sep (fun () -> str " <+")
-               (pr_module_ast_inl true pr_lconstr) bd)
-    )
-  | VernacDeclareModule (export,id,bl,m1) ->
-    let b = pr_module_binders bl pr_lconstr in
-    return (
-      hov 2 (keyword "Declare Module" ++ spc() ++ pr_require_token export ++
-             pr_lident id ++ b ++ str " :" ++
-             pr_module_ast_inl true pr_lconstr m1)
-    )
-  | VernacDeclareModuleType (id,bl,tyl,m) ->
-    let b = pr_module_binders bl pr_lconstr in
-    let pr_mt = pr_module_ast_inl true pr_lconstr in
-    return (
-      hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
-             prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
-             (if List.is_empty m then mt () else str ":= ") ++
-             prlist_with_sep (fun () -> str " <+ ") pr_mt m)
-    )
-  | VernacInclude (mexprs) ->
-    let pr_m = pr_module_ast_inl false pr_lconstr in
-    return (
-      hov 2 (keyword "Include" ++ spc() ++
-             prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
-    )
-
-  (* Auxiliary file and library management *)
-  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
-    return (
-      hov 2
-        (keyword "Add" ++
-         (if implicit then spc () ++ keyword "Rec" ++ spc () else spc()) ++
-         keyword "LoadPath" ++ spc() ++ qs physical_path ++
-         spc() ++ keyword "as" ++ spc() ++ DirPath.print logical_path))
-  | VernacRemoveLoadPath s ->
-    return (keyword "Remove LoadPath" ++ qs s)
-  | VernacAddMLPath (s) ->
-    return (
-      keyword "Add"
-      ++ keyword "ML Path"
-      ++ qs s
-    )
-  | VernacDeclareMLModule (l) ->
-    return (
-      hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
-    )
-  | VernacChdir s ->
-    return (keyword "Cd" ++ pr_opt qs s)
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->
@@ -1241,12 +1134,6 @@ let pr_vernac_expr v =
       hov 1 (keyword "Strategy" ++ spc() ++
              hv 0 (prlist_with_sep sep pr_line l))
     )
-  | VernacSetOption (export, na,v) ->
-    let export = if export then keyword "Export" ++ spc () else mt () in
-    let set = if v == OptionUnset then "Unset" else "Set" in
-    return (
-      hov 2 (export ++ keyword set ++ spc() ++ pr_set_option na v)
-    )
   | VernacAddOption (na,l) ->
     return (
       hov 2 (keyword "Add" ++ spc() ++ pr_printoption na (Some l))
@@ -1319,9 +1206,6 @@ let pr_vernac_expr v =
          ++ prlist_with_sep sep (pr_comment pr_constr) l)
     )
 
-  (* For extension *)
-  | VernacExtend (s,c) ->
-    return (pr_extend s c)
   | VernacProof (None, None) ->
     return (keyword "Proof")
   | VernacProof (None, Some e) ->
@@ -1335,8 +1219,6 @@ let pr_vernac_expr v =
       keyword "using" ++ spc() ++ pr_using e ++ spc() ++
       keyword "with" ++ spc() ++ pr_gen te
     )
-  | VernacProofMode s ->
-    return (keyword "Proof Mode" ++ str s)
   | VernacBullet b ->
     (* XXX: Redundant with Proof_bullet.print *)
     return (let open Proof_bullet in begin match b with
@@ -1350,6 +1232,125 @@ let pr_vernac_expr v =
     return (Goal_select.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
   | VernacEndSubproof ->
     return (str "}")
+
+let pr_synterp_vernac_expr v =
+  let return = tag_vernac v in
+  match v with
+  | VernacLoad (f,s) ->
+    return (
+      keyword "Load"
+      ++ if f then
+        (spc() ++ keyword "Verbose" ++ spc())
+      else
+        spc() ++ qs s
+    )
+
+  | VernacBeginSection id ->
+    return (hov 2 (keyword "Section" ++ spc () ++ pr_lident id))
+  | VernacEndSegment id ->
+    return (hov 2 (keyword "End" ++ spc() ++ pr_lident id))
+  | VernacNotation (infix,ntn_decl) ->
+    return (
+      hov 2 (hov 0 (keyword (if infix then "Infix" else "Notation") ++ spc() ++
+      pr_notation_declaration ntn_decl))
+    )
+  | VernacReservedNotation (_, (s, l)) ->
+    return (
+      keyword "Reserved Notation" ++ spc() ++ pr_ast qs s ++
+      pr_syntax_modifiers l
+    )
+  | VernacDeclareCustomEntry s ->
+    return (
+      keyword "Declare Custom Entry " ++ str s
+    )
+  | VernacRequire (from, exp, l) ->
+    let from = match from with
+      | None -> mt ()
+      | Some r -> keyword "From" ++ spc () ++ pr_module r ++ spc ()
+    in
+    return (
+      hov 2
+        (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
+         prlist_with_sep sep pr_import_module l)
+    )
+  | VernacImport (f,l) ->
+    return (
+      pr_export_with_cats f ++ spc() ++
+      prlist_with_sep sep pr_import_module l
+    )
+  (* Modules and Module Types *)
+  | VernacDefineModule (export,m,bl,tys,bd) ->
+    let b = pr_module_binders bl pr_lconstr in
+    return (
+      hov 2 (keyword "Module" ++ spc() ++ pr_require_token export ++
+             pr_lident m ++ b ++
+             pr_of_module_type pr_lconstr tys ++
+             (if List.is_empty bd then mt () else str ":= ") ++
+             prlist_with_sep (fun () -> str " <+")
+               (pr_module_ast_inl true pr_lconstr) bd)
+    )
+  | VernacDeclareModule (export,id,bl,m1) ->
+    let b = pr_module_binders bl pr_lconstr in
+    return (
+      hov 2 (keyword "Declare Module" ++ spc() ++ pr_require_token export ++
+             pr_lident id ++ b ++ str " :" ++
+             pr_module_ast_inl true pr_lconstr m1)
+    )
+  | VernacDeclareModuleType (id,bl,tyl,m) ->
+    let b = pr_module_binders bl pr_lconstr in
+    let pr_mt = pr_module_ast_inl true pr_lconstr in
+    return (
+      hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
+             prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
+             (if List.is_empty m then mt () else str ":= ") ++
+             prlist_with_sep (fun () -> str " <+ ") pr_mt m)
+    )
+  | VernacInclude (mexprs) ->
+    let pr_m = pr_module_ast_inl false pr_lconstr in
+    return (
+      hov 2 (keyword "Include" ++ spc() ++
+             prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
+    )
+
+  (* Auxiliary file and library management *)
+  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
+    return (
+      hov 2
+        (keyword "Add" ++
+         (if implicit then spc () ++ keyword "Rec" ++ spc () else spc()) ++
+         keyword "LoadPath" ++ spc() ++ qs physical_path ++
+         spc() ++ keyword "as" ++ spc() ++ DirPath.print logical_path))
+  | VernacRemoveLoadPath s ->
+    return (keyword "Remove LoadPath" ++ qs s)
+  | VernacAddMLPath (s) ->
+    return (
+      keyword "Add"
+      ++ keyword "ML Path"
+      ++ qs s
+    )
+  | VernacDeclareMLModule (l) ->
+    return (
+      hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
+    )
+  | VernacChdir s ->
+    return (keyword "Cd" ++ pr_opt qs s)
+  | VernacSetOption (export, na,v) ->
+    let export = if export then keyword "Export" ++ spc () else mt () in
+    let set = if v == OptionUnset then "Unset" else "Set" in
+    return (
+      hov 2 (export ++ keyword set ++ spc() ++ pr_set_option na v)
+    )
+  | VernacExtraDependency(from,file,id) ->
+    return (
+      hov 2
+        (keyword "From" ++ spc () ++ pr_module from ++ spc () ++
+         keyword "Extra" ++ spc() ++ keyword "Dependency" ++ spc() ++ qs file ++
+         pr_opt (fun x -> spc() ++ keyword "as" ++ spc () ++ pr_id x) id)
+    )
+  | VernacExtend (s,c) ->
+    return (pr_extend s c)
+  | VernacProofMode s ->
+    return (keyword "Proof Mode" ++ str s)
 
 let pr_control_flag (p : control_flag) =
   let w = match p with
@@ -1367,6 +1368,11 @@ let pr_vernac_attributes =
   function
   | [] -> mt ()
   | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
+
+let pr_vernac_expr v =
+  match v with
+  | VernacSynPure e -> pr_synpure_vernac_expr e
+  | VernacSynterp e -> pr_synterp_vernac_expr e
 
 let pr_vernac ({v = {control; attrs; expr}} as v) =
   tag_vernac v

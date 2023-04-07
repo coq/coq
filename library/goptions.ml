@@ -431,6 +431,12 @@ let warn_unknown_option =
     Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 
+let get_option_value key =
+  try
+    let (_,_,(read,write,append)) = get_option key in
+    Some read
+  with Not_found -> None
+
 (** Sets the option only if [stage] matches the option declaration or if [stage]
   is omitted. If the option is not found, a warning is emitted only if the stage
   is [Interp] or omitted. *)

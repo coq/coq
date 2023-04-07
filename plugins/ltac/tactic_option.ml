@@ -84,10 +84,10 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
   in
   let put ?loc local tac =
     let () = match local with
-      | Default -> if not (Global.sections_are_opened()) then warn_default_locality ?loc ()
+      | Default -> if not (Lib.sections_are_opened()) then warn_default_locality ?loc ()
       | Local -> ()
       | Export | Global | GlobalAndExport ->
-        if Global.sections_are_opened()
+        if Lib.sections_are_opened()
         then CErrors.user_err ?loc
             Pp.(str "This locality is not supported inside sections by this command.")
     in

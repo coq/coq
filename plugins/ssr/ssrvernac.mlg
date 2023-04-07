@@ -178,7 +178,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext;
   gallina_ext: TOP
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
-      { Vernacexpr.VernacSetOption (false, ["Printing"; "Implicit"; "Defensive"], Vernacexpr.OptionUnset) }
+      { Vernacexpr.VernacSynterp (Vernacexpr.VernacSetOption (false, ["Printing"; "Implicit"; "Defensive"], Vernacexpr.OptionUnset)) }
    ] ]
   ;
 END

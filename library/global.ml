@@ -30,12 +30,12 @@ let global_env, global_env_summary_tag =
 let is_joined_environment () =
   Safe_typing.is_joined_environment !global_env
 
-let assert_not_parsing () =
-  if !Flags.we_are_parsing then
+let assert_not_synterp () =
+  if !Flags.in_synterp_phase then
     CErrors.anomaly (
-      Pp.strbrk"The global environment cannot be accessed during parsing.")
+      Pp.strbrk"The global environment cannot be accessed during the syntactic interpretation phase.")
 
-let safe_env () = assert_not_parsing(); !global_env
+let safe_env () = assert_not_synterp(); !global_env
 
 let set_safe_env e = global_env := e
 
@@ -57,12 +57,12 @@ let globalize f =
 
 let globalize0_with_summary fs f =
   let env = f (safe_env ()) in
-  Summary.unfreeze_summaries ~partial:true fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
   GlobalSafeEnv.set_safe_env env
 
 let globalize_with_summary fs f =
   let res,env = f (safe_env ()) in
-  Summary.unfreeze_summaries ~partial:true fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
   GlobalSafeEnv.set_safe_env env;
   res
 

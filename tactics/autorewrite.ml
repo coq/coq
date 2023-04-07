@@ -540,7 +540,7 @@ let find_applied_relation ?loc env sigma c left2right =
                        spc () ++ str"of this term does not end with an applied relation.")
 
 let default_hint_rewrite_locality () =
-  if Global.sections_are_opened () then Hints.Local
+  if Lib.sections_are_opened () then Hints.Local
   else Hints.Export
 
 (* To add rewriting rules to a base *)
@@ -564,14 +564,14 @@ let add_rew_rules ~locality base lrul =
   | Local -> cache_hintrewrite (base,lrul)
   | SuperGlobal ->
     let () =
-      if Global.sections_are_opened () then
+      if Lib.sections_are_opened () then
       CErrors.user_err Pp.(str
         "This command does not support the global attribute in sections.");
     in
     Lib.add_leaf (inGlobalHintRewrite (base,lrul))
   | Export ->
     let () =
-      if Global.sections_are_opened () then
+      if Lib.sections_are_opened () then
         CErrors.user_err Pp.(str
           "This command does not support the export attribute in sections.");
     in

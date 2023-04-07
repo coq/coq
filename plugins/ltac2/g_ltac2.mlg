@@ -1038,7 +1038,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: tac2mode;
   tac2mode: TOP
-    [ [ tac = G_vernac.query_command -> { tac None } ] ];
+    [ [ tac = G_vernac.query_command -> { Vernacexpr.VernacSynPure (tac None) } ] ];
 END
 
 {

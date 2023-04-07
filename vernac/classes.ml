@@ -44,7 +44,7 @@ let warn_deprecated_tc_transparency_without_locality =
    This is supported since Coq 8.15.")
 
 let default_tc_transparency_locality () =
-  if Global.sections_are_opened () then Hints.Local
+  if Lib.sections_are_opened () then Hints.Local
   else
     let () = warn_deprecated_tc_transparency_without_locality () in
     Hints.SuperGlobal
@@ -85,11 +85,11 @@ let add_instance_base inst =
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
-    if Global.sections_are_opened () then Local
+    if Lib.sections_are_opened () then Local
     else SuperGlobal
   | Export ->
     (* Same as above for export *)
-    if Global.sections_are_opened () then Local
+    if Lib.sections_are_opened () then Local
     else Export
   in
   add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
@@ -146,7 +146,7 @@ let instance_input : instance_obj -> obj =
       subst_function = subst_instance }
 
 let default_locality () =
-  if Global.sections_are_opened () then Local
+  if Lib.sections_are_opened () then Local
   else Export
 
 let instance_locality =
@@ -156,10 +156,10 @@ let add_instance cl info global impl =
   let () = match global with
     | Local -> ()
     | SuperGlobal ->
-      if Global.sections_are_opened () && isVarRef impl then
+      if Lib.sections_are_opened () && isVarRef impl then
         CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.")
     | Export ->
-      if Global.sections_are_opened () && isVarRef impl then
+      if Lib.sections_are_opened () && isVarRef impl then
         CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
   in
   let i = {

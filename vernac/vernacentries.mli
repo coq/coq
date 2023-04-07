@@ -19,12 +19,20 @@ val check_may_eval :
 val translate_vernac
   : ?loc:Loc.t
   -> atts:Attributes.vernac_flags
-  -> Vernacexpr.vernac_expr
+  -> Synterp.vernac_entry
   -> Vernacextend.typed_vernac
 
 (** Vernacular require command, used by the command line *)
 val vernac_require
   : Libnames.qualid option
+  -> Vernacexpr.export_with_cats option
+  -> (Libnames.qualid * Vernacexpr.import_filter_expr) list
+  -> unit
+
+(** Interp phase of the require command *)
+val vernac_require_interp
+  : Library.library_t list
+  -> Names.DirPath.t list
   -> Vernacexpr.export_with_cats option
   -> (Libnames.qualid * Vernacexpr.import_filter_expr) list
   -> unit

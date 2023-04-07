@@ -91,7 +91,7 @@ type any_extend_statement = Extend : 'a Entry.t * 'a extend_statement -> any_ext
 
 let extend_vernac_command_grammar s =
   let nt, gl = Hashtbl.find vernac_exts s in
-  let mkact loc l = VernacExtend (s, l) in
+  let mkact loc l = VernacSynterp (VernacExtend (s, l)) in
   let rules = [make_rule mkact gl] in
   if Pcoq.Entry.is_empty nt then
     (* Small hack to tolerate empty entries in VERNAC { ... } EXTEND *)

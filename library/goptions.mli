@@ -192,6 +192,9 @@ type table_value =
   | StringRefValue of string
   | QualidRefValue of Libnames.qualid
 
+(** [get_option_value key] returns [None] if option with name [key] was not found. *)
+val get_option_value : option_name -> (unit -> option_value) option
+
 val set_option_value : ?locality:option_locality -> ?stage:Summary.Stage.t ->
   ('a -> option_value -> option_value) -> option_name -> 'a -> unit
 (** [set_option_value ?locality f name v] sets [name] to the result of

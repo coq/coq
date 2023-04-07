@@ -53,7 +53,7 @@ let in_toplevel = ref false
 
 let raw_print = ref false
 
-let we_are_parsing = ref false
+let in_synterp_phase = ref false
 
 (* Translate *)
 let beautify = ref false

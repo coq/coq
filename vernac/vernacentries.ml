@@ -21,6 +21,8 @@ open Libnames
 open Vernacexpr
 open Locality
 open Attributes
+open Synterp
+open Vernacoptions
 
 module NamedDecl = Context.Named.Declaration
 
@@ -48,54 +50,6 @@ let cl_of_qualid = function
 
 let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
-
-(** Standard attributes for definition-like commands. *)
-module DefAttributes = struct
-  type t = {
-    locality : bool option;
-    polymorphic : bool;
-    program : bool;
-    deprecated : Deprecation.t option;
-    canonical_instance : bool;
-    typing_flags : Declarations.typing_flags option;
-    using : Vernacexpr.section_subset_expr option;
-    nonuniform : bool;
-    reversible : bool;
-  }
-
-  let parse ?(coercion=false) f =
-    let open Attributes in
-    let nonuniform = if coercion then ComCoercion.nonuniform else Notations.return None in
-    let (((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform), reversible =
-      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform ++ reversible) f
-    in
-    if Option.has_some deprecated then
-      Attributes.unsupported_attributes [CAst.make ("deprecated (use a notation and deprecate that instead)",VernacFlagEmpty)];
-    let using = Option.map Proof_using.using_from_string using in
-    let reversible = Option.default true reversible in
-    let nonuniform = Option.default false nonuniform in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible }
-end
-
-let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
-
-let with_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  f ~local
-
-let with_section_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  let section_local = make_section_locality local in
-  f ~section_local
-
-let with_module_locality ~atts f =
-  let module_local = Attributes.(parse module_locality atts) in
-  f ~module_local
-
-let with_def_attributes ?coercion ~atts f =
-  let atts = DefAttributes.parse ?coercion atts in
-  if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
-  f ~atts
 
 (*******************)
 (* "Show" commands *)
@@ -462,37 +416,6 @@ let msg_found_library (fulldir, file) =
   else
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
-let err_unmapped_library ?from qid =
-  let prefix = match from with
-  | None -> mt ()
-  | Some from ->
-    str " with prefix " ++ DirPath.print from
-  in
-  strbrk "Cannot find a physical path bound to logical path "
-    ++ pr_qualid qid ++ prefix ++ str "."
-
-let err_notfound_library ?from qid =
-  let prefix = match from with
-  | None -> mt ()
-  | Some from -> str " with prefix " ++ DirPath.print from
-  in
-  let bonus =
-    if !Flags.load_vos_libraries then mt ()
-    else str " (while searching for a .vos file)"
-  in
-  strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ bonus
-    ++ str "."
-
-exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
-exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
-
-
-let _ = CErrors.register_handler begin function
-  | UnmappedLibrary (from, qid) -> Some (err_unmapped_library ?from qid)
-  | NotFoundLibrary (from, qid) -> Some (err_notfound_library ?from qid)
-  | _ -> None
-end
-
 let print_located_library qid =
   let open Loadpath in
   match locate_qualified_library qid with
@@ -516,9 +439,6 @@ let dump_qualid q = dump_global (make ?loc:q.loc @@ Constrexpr.AN q)
 (**********)
 (* Syntax *)
 
-let vernac_reserved_notation ~module_local ~infix l =
-  Metasyntax.add_reserved_notation ~local:module_local ~infix l
-
 let vernac_declare_scope ~module_local sc =
   Metasyntax.declare_scope module_local sc
 
@@ -533,14 +453,6 @@ let vernac_bind_scope ~atts sc cll =
 
 let vernac_open_close_scope ~section_local (to_open,s) =
   Metasyntax.open_close_scope section_local ~to_open s
-
-let vernac_notation ~atts ~infix ntn_decl =
-  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-  let notation_interpretation = Metasyntax.add_notation_syntax ~local:module_local ~infix deprecation ntn_decl in
-  Metasyntax.add_notation_interpretation ~local:module_local (Global.env()) notation_interpretation
-
-let vernac_custom_entry ~module_local s =
-  Metasyntax.declare_custom_entry module_local s
 
 let interp_enable_notation_rule on ntn interp flags scope =
   let open Notation in
@@ -1141,14 +1053,14 @@ let vernac_combined_scheme lid l ~locmap =
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
-  if poly && not (Global.sections_are_opened ()) then
+  if poly && not (Lib.sections_are_opened ()) then
     user_err
                  (str"Polymorphic universes can only be declared inside sections, " ++
                   str "use Monomorphic Universe instead.");
   DeclareUniv.do_universe ~poly l
 
 let vernac_constraint ~poly l =
-  if poly && not (Global.sections_are_opened ()) then
+  if poly && not (Lib.sections_are_opened ()) then
     user_err
                  (str"Polymorphic universe constraints can only be declared"
                   ++ str " inside sections, use Monomorphic Constraint instead.");
@@ -1268,143 +1180,102 @@ let check_no_filter_when_using_cats l =
           Pp.(str "Cannot combine importing by categories and importing by names."))
     l
 
-let vernac_import (export, cats) refl =
-  if Option.has_some cats then check_no_filter_when_using_cats refl;
-  let cats = interp_import_cats cats in
-  let import_mod (qid,f) =
-    let loc = qid.loc in
-    let m = try
-        let m = Nametab.locate_module qid in
-        let () = Dumpglob.dump_modref ?loc m "mod" in
-        let () = if Modops.is_functor (Global.lookup_module m).Declarations.mod_type
-          then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ pr_qualid qid ++ str".")
-        in
-        m
-      with Not_found ->
-        CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid ++ str ".")
-    in
-    import_module_with_filter ~export cats m f
+let vernac_import (export, cats) mpl =
+  let import_mod (CAst.{v = mp; loc},f) =
+    try
+      let () = Dumpglob.dump_modref ?loc mp "mod" in
+      let () = if Modops.is_functor (Global.lookup_module mp).Declarations.mod_type
+        then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ str (ModPath.to_string mp) ++ str".")
+      in
+      import_module_with_filter ~export cats mp f
+    with Not_found ->
+        CErrors.user_err ?loc Pp.(str "Cannot find module " ++ str (ModPath.to_string mp) ++ str ".")
   in
-  List.iter import_mod refl
+  List.iter import_mod mpl
 
 let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
-  if Global.sections_are_opened () then
+  if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
-  let binders_ast = List.map
-   (fun (export,idl,ty) ->
-     if not (Option.is_empty export) then
-      user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
-     else (idl,ty)) binders_ast in
-  let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
+  let mp = Declaremods.Interp.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
+  Option.iter (fun export -> vernac_import export [CAst.make ?loc mp, ImportAll]) export
 
-let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
+let vernac_define_module export {loc;v=id} binders_ast argsexport mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
-  if Global.sections_are_opened () then
+  if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mexpr_ast_l with
     | [] ->
-       let binders_ast,argsexport =
-        List.fold_right
-         (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
-         ([],[]) in
-       let export = Option.map (on_snd interp_import_cats) export in
-       let mp = Declaremods.start_module export id binders_ast mty_ast_o in
+       let mp = Declaremods.Interp.start_module export id binders_ast mty_ast_o in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Interactive Module " ++ Id.print id ++ str " started");
        List.iter
-         (fun (export,id) ->
-           Option.iter
-             (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
-         ) argsexport
+         (fun (export,mp) -> vernac_import export [CAst.make mp, ImportAll])
+         argsexport
     | _::_ ->
-       let binders_ast = List.map
-        (fun (export,idl,ty) ->
-          if not (Option.is_empty export) then
-           user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
-          else (idl,ty)) binders_ast in
        let mp =
-         Declaremods.declare_module
+         Declaremods.Interp.declare_module
            id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll])
+       Option.iter (fun export -> vernac_import export [CAst.make ?loc mp, ImportAll])
          export
 
 let vernac_end_module export {loc;v=id} =
-  let mp = Declaremods.end_module () in
+  let mp = Declaremods.Interp.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
   Option.iter (fun (export,filter) ->
-      Declaremods.import_module filter ~export mp)
+      Declaremods.Interp.import_module filter ~export mp)
     export
 
-let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
-  if Global.sections_are_opened () then
+let vernac_declare_module_type {loc;v=id} binders_ast argsexport mty_sign mty_ast_l =
+  if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
 
   match mty_ast_l with
     | [] ->
-       let binders_ast,argsexport =
-         List.fold_right
-         (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
-             ([],[]) in
-
-       let mp = Declaremods.start_modtype id binders_ast mty_sign in
+       let mp = Declaremods.Interp.start_modtype id binders_ast mty_sign in
        Dumpglob.dump_moddef ?loc mp "modtype";
        Flags.if_verbose Feedback.msg_info
          (str "Interactive Module Type " ++ Id.print id ++ str " started");
        List.iter
-         (fun (export,id) ->
-           Option.iter
-             (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
-         ) argsexport
+         (fun (export,mp) -> vernac_import export [CAst.make ?loc mp, ImportAll])
+         argsexport
 
     | _ :: _ ->
-        let binders_ast = List.map
-          (fun (export,idl,ty) ->
-            if not (Option.is_empty export) then
-              user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
-            else (idl,ty)) binders_ast in
-        let mp = Declaremods.declare_modtype id binders_ast mty_sign mty_ast_l in
+        let mp = Declaremods.Interp.declare_modtype id binders_ast mty_sign mty_ast_l in
         Dumpglob.dump_moddef ?loc mp "modtype";
         Flags.if_verbose Feedback.msg_info
           (str "Module Type " ++ Id.print id ++ str " is defined")
 
+
 let vernac_end_modtype {loc;v=id} =
-  let mp = Declaremods.end_modtype () in
+  let mp = Declaremods.Interp.end_modtype () in
   Dumpglob.dump_modref ?loc mp "modtype";
   Flags.if_verbose Feedback.msg_info (str "Module Type " ++ Id.print id ++ str " is defined")
 
-let vernac_include l = Declaremods.declare_include l
+let vernac_include l = Declaremods.Interp.declare_include l
 
 (**********************)
 (* Gallina extensions *)
 
 (* Sections *)
 
-let vernac_begin_section ~poly ({v=id} as lid) =
-  Dumpglob.dump_definition lid true "sec";
-  Lib.Synterp.open_section id;
+let vernac_begin_section ~poly {v=id} =
   Lib.Interp.open_section id;
   (* If there was no polymorphism attribute this just sets the option
      to its current value ie noop. *)
   set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
 
 let vernac_end_section {CAst.loc; v} =
-  Dumpglob.dump_reference ?loc
-    (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
-  Lib.Synterp.close_section ();
   Lib.Interp.close_section ()
 
 let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
@@ -1424,7 +1295,7 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   let ss = Lib.Interp.find_opening_node id in
   let what_for = msg_of_subsection ss lid.v in
   if Option.has_some proof then
-    CErrors.user_err (Pp.str "Command not supported (Open proofs remain).");
+    CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
   Declare.Obls.check_solved_obligations ~pm ~what_for;
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
@@ -1450,15 +1321,6 @@ let vernac_begin_segment ~interactive f =
         (), ())
   }
 
-(* External dependencies *)
-
-let vernac_extra_dep ?loc from file id =
-  if Global.sections_are_opened () then
-    user_err ?loc Pp.(str "Extra Dependencies cannot be declared inside sections.");
-  let hd, tl = Libnames.repr_qualid from in
-  let from = Libnames.add_dirpath_suffix hd tl in
-  ComExtraDeps.declare_extra_dep ?loc ~from ~file id
-
 (* Libraries *)
 
 let warn_require_in_section =
@@ -1466,14 +1328,8 @@ let warn_require_in_section =
     (fun () -> strbrk "Use of “Require” inside a section is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
-let vernac_require from export qidl =
-  if Global.sections_are_opened () then warn_require_in_section ();
-  let root = match from with
-  | None -> None
-  | Some from ->
-    let (hd, tl) = Libnames.repr_qualid from in
-    Some (Libnames.add_dirpath_suffix hd tl)
-  in
+let vernac_require_interp needed modrefl export qidl =
+  if Lib.sections_are_opened () then warn_require_in_section ();
   let () = match export with
     | None -> List.iter (function
         | _, ImportAll -> ()
@@ -1482,18 +1338,8 @@ let vernac_require from export qidl =
         qidl
     | Some (_,cats) -> if Option.has_some cats then check_no_filter_when_using_cats qidl
   in
-  let locate (qid,_) =
-    let open Loadpath in
-    match locate_qualified_library ?root qid with
-    | Ok (dir, _) -> dir
-    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
-  in
-  let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
     List.iter2 (fun ({CAst.loc},_) dp -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
-  let lib_resolver = Loadpath.try_locate_absolute_library in
-  let needed = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
   Library.require_library_from_dirpath needed;
   Option.iter (fun (export,cats) ->
       let cats = interp_import_cats cats in
@@ -1501,6 +1347,10 @@ let vernac_require from export qidl =
           import_module_with_filter ~export cats (MPfile m) f)
         modrefl qidl)
     export
+
+let vernac_require from export qidl =
+  let needed, modrefl = Synterp.synterp_require from export qidl in
+  vernac_require_interp needed modrefl export qidl
 
 (* Coercions and canonical structures *)
 
@@ -1589,49 +1439,6 @@ let vernac_set_end_tac ~pstate tac =
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
   Declare.Proof.set_endline_tactic tac pstate
-
-(*****************************)
-(* Auxiliary file management *)
-
-let expand filename =
-  Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
-
-let warn_add_loadpath = CWarnings.create ~name:"add-loadpath-deprecated" ~category:"deprecated"
-    (fun () -> strbrk "Commands \"Add LoadPath\" and \"Add Rec LoadPath\" are deprecated." ++ spc () ++
-               strbrk "Use command-line \"-Q\" or \"-R\" or put them in your _CoqProject file instead." ++ spc () ++
-               strbrk "If \"Add [Rec] LoadPath\" is an important feature for you, please open an issue at" ++ spc () ++
-               strbrk "https://github.com/coq/coq/issues" ++ spc () ++ strbrk "and explain your workflow.")
-
-let vernac_add_loadpath ~implicit pdir coq_path =
-  let open Loadpath in
-  warn_add_loadpath ();
-  let pdir = expand pdir in
-  add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true }
-
-let vernac_remove_loadpath path =
-  Loadpath.remove_load_path (expand path)
-  (* Coq syntax for ML or system commands *)
-
-let vernac_add_ml_path path =
-  Mltop.add_ml_dir (expand path)
-
-let vernac_declare_ml_module ~local l =
-  let local = Option.default false local in
-  let l = List.map expand l in
-  Mltop.declare_ml_modules local l
-
-let vernac_chdir = function
-  | None -> Feedback.msg_notice (str (Sys.getcwd()))
-  | Some path ->
-      begin
-        try Sys.chdir (expand path)
-        with Sys_error err ->
-          (* Cd is typically used to control the output directory of
-          extraction. A failed Cd could lead to overwriting .ml files
-          so we make it an error. *)
-          user_err Pp.(str ("Cd failed: " ^ err))
-      end;
-      Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
 (************)
 (* Commands *)
@@ -1967,34 +1774,6 @@ let vernac_set_opacity ~local (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let vernac_set_option0 ~locality key opt =
-  match opt with
-  | OptionUnset -> unset_option_value_gen ~locality key
-  | OptionSetString s -> set_string_option_value_gen ~locality key s
-  | OptionSetInt n -> set_int_option_value_gen ~locality key (Some n)
-  | OptionSetTrue -> set_bool_option_value_gen ~locality key true
-
-let vernac_set_append_option ~locality key s =
-  set_string_option_append_value_gen ~locality key s
-
-let vernac_set_option ~locality table v = match v with
-| OptionSetString s ->
-  (* We make a special case for warnings and debug flags because appending is
-  their natural semantics *)
-  if CString.List.equal table ["Warnings"] || CString.List.equal table ["Debug"] then
-    vernac_set_append_option ~locality table s
-  else
-    let (last, prefix) = List.sep_last table in
-    if String.equal last "Append" && not (List.is_empty prefix) then
-      vernac_set_append_option ~locality prefix s
-    else
-      vernac_set_option0 ~locality table v
-| _ -> vernac_set_option0 ~locality table v
-
-let vernac_add_option = iter_table { aux = fun table -> table.add }
-
-let vernac_remove_option = iter_table { aux = fun table -> table.remove }
-
 let vernac_mem_option = iter_table { aux = fun table -> table.mem }
 
 let vernac_print_option key =
@@ -2004,10 +1783,6 @@ let vernac_print_option key =
   with Not_found ->
   try print_option_value key
   with Not_found -> error_undeclared_key key
-
-let warn_legacy_export_set =
-  CWarnings.create ~name:"legacy-export-set" ~category:"deprecated"
-    Pp.(fun () -> strbrk "Syntax \"Export Set\" is deprecated, use the attribute syntax \"#[export] Set\" instead.")
 
 let get_current_context_of_args ~pstate =
   match pstate with
@@ -2235,7 +2010,7 @@ let vernac_register qid r =
   | RegisterCoqlib n ->
     let ns, id = Libnames.repr_qualid n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
-      if Global.sections_are_opened () then
+      if Lib.sections_are_opened () then
         user_err Pp.(str "Registering a kernel type is not allowed in sections.");
       let CPrimitives.PIE pind = match Id.to_string id with
         | "ind_bool" -> CPrimitives.(PIE PIT_bool)
@@ -2350,9 +2125,67 @@ let vernac_check_guard ~pstate =
       (str ("Condition violated: ") ++ s ++ str ".")
   in message
 
-(* We interpret vernacular commands to a DSL that specifies their
-   allowed actions on proof states *)
-let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
+let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v with
+  | EVernacNotation { local; decl } ->
+    vtdefault(fun () -> Metasyntax.add_notation_interpretation ~local (Global.env()) decl)
+
+  | EVernacDefineModule (export,lid,bl,argsexport,mtys,mexprl) ->
+    let i () =
+      unsupported_attributes atts;
+      vernac_define_module export lid bl argsexport mtys mexprl in
+    (* XXX: We should investigate if eventually this should be made
+       VtNoProof in all cases. *)
+    vernac_begin_segment ~interactive:(List.is_empty mexprl) i
+
+  | EVernacDeclareModuleType (lid,bl,argsexport,mtys,exprl) ->
+    vernac_begin_segment ~interactive:(List.is_empty exprl) (fun () ->
+        unsupported_attributes atts;
+        vernac_declare_module_type lid bl argsexport mtys exprl)
+
+  (* Modules *)
+  | EVernacDeclareModule (export,lid,bl,mty) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_declare_module export lid bl mty)
+
+  | EVernacInclude in_asts ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_include in_asts)
+
+  (* Gallina extensions *)
+  | EVernacBeginSection lid ->
+    vernac_begin_segment ~interactive:true (fun () ->
+        vernac_begin_section ~poly:(only_polymorphism atts) lid)
+
+  | EVernacEndSegment lid ->
+    unsupported_attributes atts;
+    vernac_end_segment lid
+
+  | EVernacRequire (needed, modrefl, export, qidl) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_require_interp needed modrefl export qidl)
+  | EVernacImport (export,mpl) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_import export mpl)
+
+  | EVernacSetOption { export; key; value } ->
+    vtdefault(fun () ->
+    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
+    vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Interp key value)
+
+  | EVernacNoop ->
+    vtdefault(fun () -> ())
+
+  | EVernacLoad _ ->
+    anomaly (str "type_vernac")
+
+  (* Extensions *)
+  | EVernacExtend f -> f
+
+let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _
@@ -2361,12 +2194,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacResetInitial
   | VernacBack _ ->
     anomaly (str "type_vernac")
-  | VernacLoad _ ->
-    anomaly (str "Load is not supported recursively")
 
   (* Syntax *)
-  | VernacReservedNotation (infix, sl) ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_reserved_notation ~infix sl)
   | VernacDeclareScope sc ->
     vtdefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
   | VernacDelimiters (sc,lr) ->
@@ -2375,10 +2204,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> vernac_bind_scope ~atts sc rl)
   | VernacOpenCloseScope (b, s) ->
     vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
-  | VernacNotation (infix,ntn_decl) ->
-    vtdefault(fun () -> vernac_notation ~atts ~infix ntn_decl)
-  | VernacDeclareCustomEntry s ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_custom_entry s)
   | VernacEnableNotation (on,rule,interp,flags,scope) ->
     vtdefault(fun () -> with_module_locality ~atts vernac_enable_notation on rule interp flags scope)
 
@@ -2402,36 +2227,27 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
         unsupported_attributes atts;
         vernac_exact_proof ~lemma c)
 
-  | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
-    let i () =
-      unsupported_attributes atts;
-      vernac_define_module export lid bl mtys mexprl in
-    (* XXX: We should investigate if eventually this should be made
-       VtNoProof in all cases. *)
-    vernac_begin_segment ~interactive:(List.is_empty mexprl) i
-
-  | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
-    vernac_begin_segment ~interactive:(List.is_empty mtyo) (fun () ->
-        unsupported_attributes atts;
-        vernac_declare_module_type lid bl mtys mtyo)
   | VernacAssumption ((discharge,kind),nl,l) ->
     vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
+
   | VernacInductive (finite, l) ->
     vtdefault(fun () -> vernac_inductive ~atts finite l)
+
   | VernacFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
-    if opens then
+    (if opens then
       vtopenproof (fun () ->
         with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
     else
       vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l)
+        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l))
+
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
-    if opens then
+    (if opens then
       vtopenproof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
     else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l)
+      vtmodifyprogram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l))
 
   | VernacScheme l ->
     vtdefault(fun () ->
@@ -2447,46 +2263,24 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
         vernac_combined_scheme id l ~locmap:(Ind_tables.Locmap.default loc))
   | VernacUniverse l ->
     vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
+
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
 
-  (* Modules *)
-  | VernacDeclareModule (export,lid,bl,mtyo) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_declare_module export lid bl mtyo)
-  | VernacInclude in_asts ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_include in_asts)
   (* Gallina extensions *)
-  | VernacBeginSection lid ->
-    vernac_begin_segment ~interactive:true (fun () ->
-        vernac_begin_section ~poly:(only_polymorphism atts) lid)
-  | VernacEndSegment lid ->
-    unsupported_attributes atts;
-    vernac_end_segment lid
+
   | VernacNameSectionHypSet (lid, set) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_name_sec_hyp lid set)
-  | VernacExtraDependency(from,file,id) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_extra_dep ?loc from file id)
-  | VernacRequire (from, export, qidl) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_require from export qidl)
-  | VernacImport (export,qidl) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_import export qidl)
+
   | VernacCanonical qid ->
     vtdefault(fun () ->
         vernac_canonical ~local:(only_locality atts) qid)
+
   | VernacCoercion (r,st) ->
     vtdefault(fun () -> vernac_coercion ~atts r st)
+
   | VernacIdentityCoercion ({v=id},s,t) ->
     vtdefault(fun () -> vernac_identity_coercion ~atts id s t)
 
@@ -2513,118 +2307,115 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
     vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
+
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
+
   | VernacExistingClass id ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_existing_class id)
 
-  (* Auxiliary file and library management *)
-  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_add_loadpath ~implicit physical_path logical_path)
-  | VernacRemoveLoadPath s ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_remove_loadpath s)
-  | VernacAddMLPath (s) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_add_ml_path s)
-  | VernacDeclareMLModule l ->
-    vtdefault(fun () -> with_locality ~atts vernac_declare_ml_module l)
-  | VernacChdir s ->
-    vtdefault(fun () -> unsupported_attributes atts; vernac_chdir s)
-
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->
     vtdefault(fun () ->
         with_module_locality ~atts vernac_create_hintdb dbname b)
+
   | VernacRemoveHints (dbnames,ids) ->
     vtdefault(fun () ->
         vernac_remove_hints ~atts dbnames ids)
+
   | VernacHints (dbnames,hints) ->
     vtdefault(fun () ->
         vernac_hints ~atts dbnames hints)
+
   | VernacSyntacticDefinition (id,c,b) ->
      vtdefault(fun () -> vernac_abbreviation ~atts id c b)
+
   | VernacArguments (qid, args, more_implicits, flags) ->
     vtdefault(fun () ->
         with_section_locality ~atts
           (ComArguments.vernac_arguments qid args more_implicits flags))
+
   | VernacReserve bl ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_reserve bl)
+
   | VernacGeneralizable gen ->
     vtdefault(fun () -> with_locality ~atts vernac_generalizable gen)
+
   | VernacSetOpacity qidl ->
     vtdefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
+
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)
-  | VernacSetOption (export,key,v) ->
-    let atts = if export then begin
-        warn_legacy_export_set ?loc ();
-        CAst.make ?loc ("export", VernacFlagEmpty) :: atts
-      end
-      else atts
-    in
-    vtdefault(fun () ->
-        vernac_set_option ~locality:(parse option_locality atts) key v)
+
   | VernacRemoveOption (key,v) ->
     vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_remove_option key v)
+      unsupported_attributes atts;
+      vernac_remove_option key v)
+
   | VernacAddOption (key,v) ->
     vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_add_option key v)
+      unsupported_attributes atts;
+      vernac_add_option key v)
+
   | VernacMemOption (key,v) ->
     vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_mem_option key v)
+    unsupported_attributes atts;
+    vernac_mem_option key v)
+
   | VernacPrintOption key ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_print_option key)
+
   | VernacCheckMayEval (r,g,c) ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
+
   | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)
+
   | VernacGlobalCheck c ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_global_check c)
+
   | VernacPrint p ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_print ~pstate p)
+
   | VernacSearch (s,g,r) ->
     vtreadproofopt(
         unsupported_attributes atts;
         vernac_search ~atts s g r)
+
   | VernacLocate l ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_locate ~pstate l)
+
   | VernacRegister (qid, r) ->
     vtnoproof(fun () ->
         unsupported_attributes atts;
         vernac_register qid r)
+
   | VernacPrimitive ((id, udecl), prim, typopt) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         ComPrimitive.do_primitive id udecl prim typopt)
+
   | VernacComments l ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         Flags.if_verbose Feedback.msg_info (str "Comments ok\n"))
+
   (* Proof management *)
   | VernacFocus n ->
     vtmodifyproof(unsupported_attributes atts;vernac_focus n)
@@ -2663,8 +2454,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
     let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
     Option.cata (vernac_set_used_variables ~pstate) pstate using)
-  | VernacProofMode mn ->
-    vtdefault(fun () -> unsupported_attributes atts)
 
   | VernacEndProof pe ->
     unsupported_attributes atts;
@@ -2674,6 +2463,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     unsupported_attributes atts;
     vtcloseproof vernac_abort
 
-  (* Extensions *)
-  | VernacExtend (opn,args) ->
-    Vernacextend.type_vernac ?loc ~atts opn args ()
+let translate_vernac ?loc ~atts v =
+  match v with
+  | VernacSynterp e -> translate_vernac_synterp ?loc ~atts e
+  | VernacSynPure e -> translate_pure_vernac ?loc ~atts e

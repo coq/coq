@@ -55,7 +55,7 @@ let ensure_exists_with_prefix ~src ~tgt:f_out ~src_ext ~tgt_ext =
   long_f_dot_src, long_f_dot_tgt
 
 let ensure_no_pending_proofs ~filename s =
-  match s.Vernacstate.lemmas with
+  match s.Vernacstate.interp.lemmas with
   | Some lemmas ->
       let pfs = Vernacstate.LemmaStack.get_all_proof_names lemmas in
       fatal_error (str "There are pending proofs in file " ++ str filename ++ str": "
@@ -64,6 +64,6 @@ let ensure_no_pending_proofs ~filename s =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".");
   | None ->
-    let pm = s.Vernacstate.program in
+    let pm = s.Vernacstate.interp.program in
     let what_for = Pp.str ("file " ^ filename) in
     NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm

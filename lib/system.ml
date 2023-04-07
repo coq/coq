@@ -289,6 +289,7 @@ let output_int64 ch n =
 (* Time stamps. *)
 
 type time = {real: float; user: float; system: float; }
+type duration = time
 
 let get_time () =
   let t = Unix.times ()  in
@@ -300,33 +301,56 @@ let get_time () =
 (* Keep only 3 significant digits *)
 let round f = (floor (f *. 1e3)) *. 1e-3
 
+let duration_between ~start ~stop = {
+  real = stop.real -. start.real;
+  user = stop.user -. start.user;
+  system = stop.system -. start.system;
+}
+
+let duration_add t1 t2 = {
+  real = t1.real +. t2.real;
+  user = t1.user +. t2.user;
+  system = t1.system +. t2.system;
+}
+
 let diff1 proj ~start ~stop = round (proj stop -. proj start)
 
 let time_difference t1 t2 = diff1 (fun t -> t.real) ~start:t1 ~stop:t2
 
-let fmt_time_difference start stop =
-  real (diff1 (fun t -> t.real) ~start ~stop) ++ str " secs " ++
+let duration_real { real; _ } = real
+
+let fmt_duration { real = treal; user; system } =
+  real (round treal) ++ str " secs " ++
   str "(" ++
-  real (diff1 (fun t -> t.user) ~start ~stop) ++ str "u" ++
+  real (round user) ++ str "u" ++
   str "," ++
-  real (diff1 (fun t -> t.system) ~start ~stop) ++ str "s" ++
+  real (round system) ++ str "s" ++
   str ")"
 
-let with_time f x =
-  let tstart = get_time() in
-  let msg = "Finished transaction in " in
+let fmt_time_difference start stop =
+  fmt_duration (duration_between ~start ~stop)
+
+type 'a transaction_result = (('a * duration), (Exninfo.iexn * duration)) Result.t
+
+let measure_duration f x =
+  let start = get_time() in
   try
     let y = f x in
-    let tend = get_time() in
-    let msg2 = " (successful)" in
-    Feedback.msg_notice (str msg ++ fmt_time_difference tstart tend ++ str msg2);
-    y
+    let stop = get_time() in
+    Ok (y, duration_between ~start ~stop)
   with e ->
-    let tend = get_time() in
-    let msg = "Finished failing transaction in " in
-    let msg2 = " (failure)" in
-    Feedback.msg_notice (str msg ++ fmt_time_difference tstart tend ++ str msg2);
-    raise e
+    let stop = get_time() in
+    let exn = Exninfo.capture e in
+    Error (exn, duration_between ~start ~stop)
+
+let fmt_transaction_result x =
+  let msg, msg2, duration = match x with
+  | Ok(_, duration) ->
+    "Finished transaction in ", " (successful)", duration
+  | Error(_,duration) ->
+    "Finished failing transaction in ", " (failure)", duration
+  in
+  str msg ++ fmt_duration duration ++ str msg2
 
 (* We use argv.[0] as we don't want to resolve symlinks *)
 let get_toplevel_path ?(byte=Sys.(backend_type = Bytecode)) top =

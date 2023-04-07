@@ -8,24 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** The main interpretation function of vernacular expressions *)
-val interp
-  : ?verbosely:bool
-  -> st:Vernacstate.t
-  -> Vernacexpr.vernac_control
-  -> Vernacstate.t
+open Goptions
 
-val interp_entry
-  : ?verbosely:bool
-  -> st:Vernacstate.t
-  -> Synterp.vernac_control_entry
-  -> Vernacstate.Interp.t
-
-(** Execute a Qed but with a proof_object which may contain a delayed
-   proof and won't be forced *)
-val interp_qed_delayed_proof
-  :  proof:Declare.Proof.proof_object
-  -> st:Vernacstate.t
-  -> control:Vernacexpr.control_flag list
-  -> Vernacexpr.proof_end CAst.t
-  -> Vernacstate.Interp.t
+val vernac_set_append_option :
+  locality:option_locality -> stage:Summary.Stage.t ->option_name -> string -> unit
+val vernac_set_option :
+  locality:option_locality ->
+  stage:Summary.Stage.t ->
+  option_name -> Vernacexpr.option_setting -> unit
+val vernac_add_option :
+  option_name -> table_value list -> unit
+val vernac_remove_option :
+  option_name -> table_value list -> unit
