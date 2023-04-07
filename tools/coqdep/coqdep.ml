@@ -14,6 +14,8 @@ open Coqdeplib
 let coqdep () =
   let open Common in
 
+  ignore (Feedback.(add_feeder (console_feedback_listener Format.err_formatter)));
+
   (* Initialize coqdep, add files to dependency computation *)
   if Array.length Sys.argv < 2 then Args.usage ();
   let args =
@@ -45,7 +47,7 @@ let coqdep () =
     if Sys.file_exists user_contrib
     then Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
     List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [])
-      (Envars.xdg_dirs ~warn:(fun x -> Warning.give "%s" x));
+      (Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (Pp.str x)));
     List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s []) Envars.coqpath;
   end;
   if args.Args.sort then

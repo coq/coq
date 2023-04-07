@@ -95,8 +95,9 @@ let register_dir_logpath, find_dir_logpath =
     (see discussion at PR #14718)
 *)
 
-let warning_cannot_open_dir dir =
-  Warning.give "cannot open %s" dir
+let warning_cannot_open_dir =
+  CWarnings.create ~name:"cannot-open-dir" ~category:"filesystem"
+    (fun dir -> Pp.(str "Cannot open directory " ++ str dir))
 
 let add_directory recur add_file phys_dir log_dir =
   let root = (phys_dir, log_dir) in
@@ -157,11 +158,18 @@ let rec cuts recur = function
     ([],if recur then suffixes true l else [true,l]) ::
     List.map (fun (fromtail,suffixes) -> (dir::fromtail,suffixes)) (cuts true tail)
 
+let warning_ml_clash' =
+  CWarnings.create ~name:"ambiguous-file-name" ~category:"filesystem"
+    (fun (basename, suff, dir, dir') -> Pp.(
+      str (basename ^ suff) ++ str " already found in " ++
+      str (match dir with None -> "." | Some d -> d) ++
+      str " (discarding " ++
+      str (System.((match dir' with None -> "." | Some d -> d) // basename)) ++
+      str suff ++ str ")"
+    ))
 let warning_ml_clash x s suff s' suff' =
   if suff = suff' && not (same_path_opt s s') then
-    Warning.give "%s%s already found in %s (discarding %s%s)\n" x suff
-    (match s with None -> "." | Some d -> d)
-    System.((match s' with None -> "." | Some d -> d) // x) suff
+    warning_ml_clash' (x,suff,s,s')
 
 type result =
   | ExactMatches of filename list
