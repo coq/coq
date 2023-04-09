@@ -7,6 +7,7 @@ Beware that the default locality for '::' is #[export], as opposed to
 field if you need to keep the current behavior. For example: "Class foo := {
 #[global] field :: bar }."
 [future-coercion-class-field,deprecated-since-8.17,deprecated,default]
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [rc] : Rc >-> A (reversible)
 [ric] : Ric >-> A (reversible)
 ric : Ric -> A
