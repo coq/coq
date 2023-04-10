@@ -11,12 +11,13 @@
 open Util
 open Names
 open Tac2dyn
-open Tac2expr
 open Proofview.Notations
 
 type ('a, _) arity0 =
 | OneAty : ('a, 'a -> 'a Proofview.tactic) arity0
 | AddAty : ('a, 'b) arity0 -> ('a, 'a -> 'b) arity0
+
+type tag = int
 
 type valexpr =
 | ValInt of int

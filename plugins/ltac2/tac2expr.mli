@@ -207,16 +207,6 @@ type strexpr =
 | StrMut of qualid * Names.lident option * raw_tacexpr
   (** Redefinition of mutable globals *)
 
-(** {5 Dynamic semantics} *)
-
-(** Values are represented in a way similar to OCaml, i.e. they contrast
-    immediate integers (integers, constructors without arguments) and structured
-    blocks (tuples, arrays, constructors with arguments), as well as a few other
-    base cases, namely closures, strings, named constructors, and dynamic type
-    coming from the Coq implementation. *)
-
-type tag = int
-
 type frame =
 | FrLtac of ltac_constant
 | FrAnon of glb_tacexpr

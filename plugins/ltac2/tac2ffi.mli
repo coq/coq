@@ -11,9 +11,18 @@
 open Names
 open EConstr
 open Tac2dyn
-open Tac2expr
 
 (** {5 Toplevel values} *)
+
+(** {5 Dynamic semantics} *)
+
+(** Values are represented in a way similar to OCaml, i.e. they contrast
+    immediate integers (integers, constructors without arguments) and structured
+    blocks (tuples, arrays, constructors with arguments), as well as a few other
+    base cases, namely closures, strings, named constructors, and dynamic type
+    coming from the Coq implementation. *)
+
+type tag = int
 
 type closure
 
