@@ -22,7 +22,6 @@ open Vernacexpr
 open Locality
 open Attributes
 open Synterp
-open Vernacoptions
 
 module NamedDecl = Context.Named.Declaration
 
@@ -1774,16 +1773,6 @@ let vernac_set_opacity ~local (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let vernac_mem_option = iter_table { aux = fun table -> table.mem }
-
-let vernac_print_option key =
-  try (get_ref_table key).print ()
-  with Not_found ->
-  try (get_string_table key).print ()
-  with Not_found ->
-  try print_option_value key
-  with Not_found -> error_undeclared_key key
-
 let get_current_context_of_args ~pstate =
   match pstate with
   | None -> fun _ ->
@@ -2174,7 +2163,7 @@ let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v wit
   | EVernacSetOption { export; key; value } ->
     vtdefault(fun () ->
     let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
-    vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Interp key value)
+    Vernacoptions.vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Interp key value)
 
   | EVernacNoop ->
     vtdefault(fun () -> ())
@@ -2354,22 +2343,22 @@ let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacRemoveOption (key,v) ->
     vtdefault(fun () ->
       unsupported_attributes atts;
-      vernac_remove_option key v)
+      Vernacoptions.vernac_remove_option key v)
 
   | VernacAddOption (key,v) ->
     vtdefault(fun () ->
       unsupported_attributes atts;
-      vernac_add_option key v)
+      Vernacoptions.vernac_add_option key v)
 
   | VernacMemOption (key,v) ->
     vtdefault(fun () ->
     unsupported_attributes atts;
-    vernac_mem_option key v)
+    Vernacoptions.vernac_mem_option key v)
 
   | VernacPrintOption key ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_print_option key)
+        Vernacoptions.vernac_print_option key)
 
   | VernacCheckMayEval (r,g,c) ->
     vtreadproofopt(fun ~pstate ->
