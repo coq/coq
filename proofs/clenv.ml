@@ -950,15 +950,13 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let pred = meta_instance env (create_meta_instance_subst sigma) (mk_freelisted (mkMeta mvP)) in
 
   (* Build the case node proper *)
-  let case = build_case_analysis env sigma (ind, u) params pred dep s in
+  let case = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
   let fold (sigma, subst, metas) t =
     let mv = new_meta () in
     let sigma = meta_declare mv t sigma in
     (sigma, mkMeta mv :: subst, mv :: metas)
   in
   let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) case.case0_branches in
-  let indexsubst = subst_of_rel_context_instance case.case0_arity depargs in
-  let subst = indexsubst @ subst in
   let templval = Vars.substl subst case.case0_body in
   let metaset = Metaset.of_list (mvP :: args) in
 
