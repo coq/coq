@@ -143,15 +143,20 @@ let build_branch_type env sigma dep p cs =
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
 
-let check_valid_elimination env (ind, u as pind) kind =
+let check_valid_elimination env (ind, u as pind) ~dep kind =
   let specif = Inductive.lookup_mind_specif env ind in
-  let () = if not (is_primitive_record specif) then check_privacy_block specif in
+  let () =
+    if dep && not (Inductiveops.has_dependent_elim specif) then
+      raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
+  in
+  let () = check_privacy_block specif in
   if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
     raise
       (RecursionSchemeError
           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
 
-let mis_make_case_tac dep env sigma (ind, u as pind) params pred indices indarg (mib, mip) kind =
+let build_case_analysis env sigma (ind, u as pind) params pred indices indarg dep kind =
+  let (mib, mip) = lookup_mind_specif env ind in
   (* Assumes that the arguments do not contain free rels *)
   let params = EConstr.Unsafe.to_constr_array params in
   let pred = EConstr.Unsafe.to_constr pred in
@@ -220,20 +225,13 @@ let mis_make_case_tac dep env sigma (ind, u as pind) params pred indices indarg 
     case0_body = EConstr.of_constr body;
   }
 
-let build_case_analysis env sigma pity params pred indices arg dep kind =
-  let specif = lookup_mind_specif env (fst pity) in
-  if dep && not (Inductiveops.has_dependent_elim specif) then
-    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
-  mis_make_case_tac dep env sigma pity params pred indices arg specif kind
-
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
+  let () = check_valid_elimination env pind ~dep kind in
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
-
-  let () = check_valid_elimination env pind kind in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
@@ -683,8 +681,6 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
 
 let build_case_analysis_scheme env sigma pity dep kind =
   let specif = lookup_mind_specif env (fst pity) in
-  if dep && not (Inductiveops.has_dependent_elim specif) then
-    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_com dep env sigma pity specif kind
 
 let is_in_prop mip =

@@ -42,7 +42,7 @@ type case_analysis0 = private {
   case0_body : EConstr.t;
 }
 
-val check_valid_elimination : env -> pinductive -> Sorts.family -> unit
+val check_valid_elimination : env -> pinductive -> dep:bool -> Sorts.family -> unit
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 

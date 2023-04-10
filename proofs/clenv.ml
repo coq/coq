@@ -931,7 +931,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = check_valid_elimination env (ind, u) s in
+  let () = check_valid_elimination env (ind, u) ~dep s in
 
   (* Extract the return clause using unification with the conclusion *)
   let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
