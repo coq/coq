@@ -194,10 +194,10 @@ let coq_loc_from_gtk_offset cached buffer sentence =
   (* Coq lines start at 1, GTK lines at 0 *)
   let line = start#line + 1 in
   (* [line_index] already returns byte offsets *)
-  let bol = start#line_index in
+  let bol_pos = bp - start#line_index in
   (*  *)
   let new_cached = bp, start#offset in
-  bp, line, bol, new_cached
+  bp, line, bol_pos, new_cached
 
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
