@@ -17,7 +17,6 @@ open Context
 open Vars
 open Environ
 open Inductive
-open Reduction
 open Vmvalues
 open Vm
 open Context.Rel.Declaration
@@ -33,8 +32,8 @@ let e_whd_all = Reductionops.clos_whd_flags CClosure.all
 
 let crazy_type =  mkSet
 
-let decompose_prod env t =
-  let (name,dom,codom) = destProd (whd_all env t) in
+let decompose_prod env sigma t =
+  let (name,dom,codom) = destProd (EConstr.Unsafe.to_constr (e_whd_all env sigma (EConstr.of_constr t))) in
   let name = map_annot (function
   | Anonymous -> Name (Id.of_string "x")
   | Name _ as na -> na) name
@@ -274,7 +273,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
   | Zfix (f,vargs) :: stk ->
       assert (from = 0) ;
       let fa, typ = nf_fix_app env sigma f vargs in
-      let _,_,codom = decompose_prod env typ in
+      let _,_,codom = decompose_prod env sigma typ in
       nf_stk env sigma (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       assert (from = 0) ;
@@ -345,7 +344,7 @@ and nf_args env sigma vargs ?from:(f=0) t =
   let args =
     Array.init len
       (fun i ->
-        let _,dom,codom = decompose_prod env !t in
+        let _,dom,codom = decompose_prod env sigma !t in
         let c = nf_val env sigma (arg vargs (f+i)) dom in
         t := subst1 c codom; c) in
   !t,args
@@ -356,7 +355,7 @@ and nf_bargs env sigma b ofs t =
   let args =
     Array.init len
       (fun i ->
-        let _,dom,codom = decompose_prod env !t in
+        let _,dom,codom = decompose_prod env sigma !t in
         let c = nf_val env sigma (bfield b (i+ofs)) dom in
         t := subst1 c codom; c) in
   args
@@ -365,7 +364,7 @@ and nf_fun env sigma f typ =
   let k = nb_rel env in
   let vb = reduce_fun k f in
   let name,dom,codom =
-    try decompose_prod env typ
+    try decompose_prod env sigma typ
     with DestKO ->
       CErrors.anomaly
         Pp.(strbrk "Returned a functional value in type " ++
