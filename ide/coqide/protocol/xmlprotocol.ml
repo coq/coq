@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20220205"
+let protocol_version = "20230413"
 
 (** See xml-protocol.md for a description of the protocol. *)
 (** UPDATE xml-protocol.md WHEN YOU UPDATE THE PROTOCOL *)
