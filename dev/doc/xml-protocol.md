@@ -926,13 +926,19 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   </feedback_content>
 </feedback>
 ```
+* <a name="location">Location</a>, a Coq location:
+```xml
+   <loc start="${start_offset}" stop="${stop_offset}
+        line_nb="${start_line}" bol_pos="${begin_of_start_line_offset}"
+        line_nb_last="${end_line}" bol_pos_last="${begin_of_end_line_offset}"
+```
 
-* <a name="feedback-custom">Custom</a>. A feedback message that Coq plugins can use to return structured results, including results from Ltac profiling. Optionally, `startPos` and `stopPos` define a range of offsets in the document that the message refers to; otherwise, they will be 0. `customTag` is intended as a unique string that identifies what kind of payload is contained in `customXML`.
+* <a name="feedback-custom">Custom</a>. A feedback message that Coq plugins can use to return structured results, including results from Ltac profiling. `customTag` is intended as a unique string that identifies what kind of payload is contained in `customXML`. An optional location may be attached if present in the message.
 ```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
   <feedback_content val="custom">
-    <loc start="${startPos}" stop="${stopPos}"/>
+    <option val="none|some">${loc}</option>
     <string>${customTag}</string>
     ${customXML}
   </feedback_content>
