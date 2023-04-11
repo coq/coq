@@ -60,8 +60,8 @@ module SentenceId : sig
   val start_iter : GText.buffer -> sentence -> GText.iter
   val start_stop_iters : GText.buffer -> sentence -> GText.iter * GText.iter
 
-  (** [ofsset_compensation] Drift of a sentence over its original
-      location, in offset. May be needed to compensage Coq locations. *)
+  (** [offset_compensation] Drift of a sentence over its original
+      location, in offset. Needed to repair outdated Coq locations *)
   val offset_compensation : GText.buffer -> sentence -> int
 
   val phrase : GText.buffer -> sentence -> string
