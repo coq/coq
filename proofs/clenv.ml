@@ -841,22 +841,22 @@ let case_refine env sigma ~dep cl r = match Constr.kind (EConstr.Unsafe.to_const
   std_refine env sigma cl r
 
 type refiner_kind =
-| Std
-| Case of bool
+| Std of clausenv
+| Case of bool * clbinding Metamap.t * EConstr.t
 
-let refiner_gen is_case clenv =
+let refiner_gen is_case =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
-  let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
   let (sigma, sgl, c) = match is_case with
-  | Case dep ->
-    let r = clenv_value clenv in
+  | Case (dep, metas, r) ->
+    let sigma = Evd.meta_merge metas sigma in
     case_refine env sigma ~dep cl r
-  | Std ->
+  | Std clenv ->
+    let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
     let r = clenv_value clenv in
     std_refine env sigma cl r
   in
@@ -874,7 +874,7 @@ let refiner_gen is_case clenv =
   Proofview.Unsafe.tclSETGOALS sgl
   end
 
-let refiner clenv = refiner_gen Std clenv
+let refiner clenv = refiner_gen (Std clenv)
 
 end
 
@@ -882,7 +882,7 @@ open Unification
 
 let dft = default_unify_flags
 
-let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
@@ -901,11 +901,8 @@ let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) 
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (Internal.refiner_gen is_case clenv)
+      (Internal.refiner_gen (Std clenv))
   end
-
-let res_pf ?with_evars ?with_classes ?flags clenv =
-  res_pf_gen Std ?with_evars ?with_classes ?flags clenv
 
 let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
   let open Indrec in
@@ -971,7 +968,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   } in
 
   let clenv = clenv_pose_dependent_evars ~with_evars clenv in
-  let evd' =
+  let sigma =
     if with_classes then
       let evd' =
         Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
@@ -982,10 +979,11 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
       Typeclasses.make_unresolvables (fun x -> true) evd'
     else clenv.evd
   in
-  let clenv = update_clenv_evd clenv evd' in
+  let metas = Evd.meta_list sigma in
+  let r = meta_instance env (create_meta_instance_subst sigma) { rebus = templval; freemetas = metaset } in
   Proofview.tclTHEN
-    (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-    (Internal.refiner_gen (Case dep) clenv)
+    (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
+    (Internal.refiner_gen (Case (dep, metas, r)))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
