@@ -127,12 +127,13 @@ let intern_constr_reference strict ist qid =
 (* Internalize an isolated reference in position of tactic *)
 
 let warn_deprecated_tactic =
-  Deprecation.create_warning ~object_name:"Tactic" ~warning_name:"deprecated-tactic"
+  Deprecation.create_warning ~object_name:"Tactic"
+    ~warning_name_if_no_since:"deprecated-tactic"
     pr_qualid
 
 let warn_deprecated_alias =
   Deprecation.create_warning ~object_name:"Tactic Notation"
-    ~warning_name:"deprecated-tactic-notation"
+    ~warning_name_if_no_since:"deprecated-tactic-notation"
     Pptactic.pr_alias_key
 
 let intern_isolated_global_tactic_reference qid =

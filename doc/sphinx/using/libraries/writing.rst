@@ -19,7 +19,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    At least one of :n:`since` or :n:`note` must be present.  If both
    are present, either one may appear first and they must be separated
-   by a comma.
+   by a comma. If :n:`since` is present, it will be used in the warning name.
 
    This attribute is supported by the following commands: :cmd:`Ltac`,
    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`, :cmd:`Ltac2`,
@@ -27,12 +27,12 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    It can trigger the following warnings:
 
-   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
-             Tactic Notation @qualid is deprecated since @string__since. @string__note.
-             Notation @string is deprecated since @string__since. @string__note.
-             Ltac2 definition @qualid is deprecated since @string__since. @string__note.
-             Ltac2 alias @qualid is deprecated since @string__since. @string__note.
-             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note.
+   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note
+             Tactic Notation @qualid is deprecated since @string__since. @string__note
+             Notation @string is deprecated since @string__since. @string__note
+             Ltac2 definition @qualid is deprecated since @string__since. @string__note
+             Ltac2 alias @qualid is deprecated since @string__since. @string__note
+             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note
 
       :n:`@qualid` or :n:`@string` is the notation,
       :n:`@string__since` is the version number, :n:`@string__note` is

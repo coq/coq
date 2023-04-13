@@ -1479,7 +1479,7 @@ let interp_prim_token_cases_pattern_expr ?loc looked_for p =
   interp_prim_token_gen ?loc (check_allowed_ref_in_pat looked_for) p
 
 let warn_deprecated_notation =
-  Deprecation.create_warning ~object_name:"Notation" ~warning_name:"deprecated-notation"
+  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-notation"
     pr_notation
 
 let interp_notation ?loc ntn local_scopes =

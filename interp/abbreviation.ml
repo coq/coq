@@ -117,7 +117,7 @@ let declare_abbreviation ~local ?(also_in_cases_pattern=true) deprecation id ~on
 let pr_abbreviation kn = pr_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn)
 
 let warn_deprecated_abbreviation =
-  Deprecation.create_warning ~object_name:"Notation" ~warning_name:"deprecated-syntactic-definition"
+  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition"
     pr_abbreviation
 
 (* Remark: do not check for activation (if not activated, it is already not supposed to be located) *)
