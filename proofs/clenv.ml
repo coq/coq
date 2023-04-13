@@ -874,13 +874,11 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
       (Internal.refiner_gen (Std clenv))
   end
 
-let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
+let build_case_analysis env sigma (ind, u) params pred indices indarg branches dep knd =
   let open Inductiveops in
   let open Context.Rel.Declaration in
-  let (mib, mip) = Inductive.lookup_mind_specif env ind in
   (* Assumes that the arguments do not contain free rels *)
   let indf = make_ind_family ((ind, EConstr.Unsafe.to_instance u), Array.map_to_list EConstr.Unsafe.to_constr params) in
-  let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family knd in
 
@@ -909,20 +907,8 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
     pnas, deparsign
   in
 
-  let get_branch i =
-    let cs = constrs.(i) in
-    let base = mkApp (pred, EConstr.of_constr_array cs.cs_concl_realargs) in
-    if dep then
-      let argctx = Namegen.name_context env sigma (EConstr.of_rel_context cs.cs_args) in
-      it_mkProd_or_LetIn (applist (base, [EConstr.of_constr @@ build_dependent_constructor cs])) argctx
-    else
-      it_mkProd_or_LetIn base (EConstr.of_rel_context cs.cs_args)
-  in
-  let branches = Array.init (Array.length mip.mind_consnames) get_branch in
-
-  let body = match projs with
+  match projs with
   | None ->
-    let ncons = Array.length mip.mind_consnames in
     let ci = make_case_info env ind relevance RegularStyle in
     let pbody =
       mkApp
@@ -933,21 +919,18 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
       if Typeops.should_invert_case env ci then CaseInvert { indices = indices }
       else NoInvert
     in
-    let mk_branch i =
-      (* we need that to get the generated names for the branch *)
-      let (ctx, _) = decompose_prod_n_decls sigma mip.mind_consnrealdecls.(i) branches.(i) in
+    let mk_branch i (mv, ctx, _) =
+      (* get the generated names for the branch *)
       let brnas = Array.of_list (List.rev_map get_annot ctx) in
-      let n = mkRel (List.length ctx + ncons - i) in
       let args = Context.Rel.instance mkRel 0 ctx in
-      (brnas, mkApp (n, args))
+      (brnas, mkApp (mkMeta mv, args))
     in
-    let br = Array.init ncons mk_branch in
+    let br = Array.mapi mk_branch branches in
     mkCase (ci, u, params, (pnas, pbody), iv, indarg, br)
   | Some ps ->
+    let (mv, _, _) = branches.(0) in
     let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
-    mkApp (mkRel 1, args)
-  in
-  (branches, body)
+    mkApp (mkMeta mv, args)
 
 let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
@@ -974,13 +957,14 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
 
   let () = Indrec.check_valid_elimination env (ind, u0) ~dep s in
 
+  let indf =
+    let params = EConstr.Unsafe.to_constr_array params in
+    Inductiveops.make_ind_family ((ind, u0), Array.to_list params)
+  in
+
   (* Extract the return clause using unification with the conclusion *)
   let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
-  let typP =
-    let params = EConstr.Unsafe.to_constr_array params in
-    let indf = Inductiveops.make_ind_family ((ind, u0), Array.to_list params) in
-    Inductiveops.make_arity env sigma dep indf sort
-  in
+  let typP = Inductiveops.make_arity env sigma dep indf sort in
   let mvP = new_meta () in
   let sigma = meta_declare mvP typP sigma in
   let depargs = Array.append indices [|indarg|] in
@@ -990,43 +974,64 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
   let pred = meta_instance env (create_meta_instance_subst sigma) (mk_freelisted (mkMeta mvP)) in
 
-  (* Build the case node proper *)
-  let (branches, body) = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
-  let fold (sigma, subst, metas) t =
-    let mv = new_meta () in
-    let sigma = meta_declare mv t sigma in
-    (sigma, mkMeta mv :: subst, mv :: metas)
+  (* Create the branch types *)
+  let branches =
+    let open Inductiveops in
+    let constrs = get_constructors env indf in
+    let get_branch cs =
+      let base = mkApp (pred, EConstr.of_constr_array cs.cs_concl_realargs) in
+      let argctx = EConstr.of_rel_context cs.cs_args in
+      if dep then
+        let argctx = Namegen.name_context env sigma argctx in
+        (argctx, applist (base, [EConstr.of_constr @@ build_dependent_constructor cs]))
+      else
+        (argctx, base)
+    in
+    Array.map get_branch constrs
   in
-  let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) branches in
-  let templval = Vars.substl subst body in
-  let metaset = Metaset.of_list (mvP :: args) in
+
+  (* Little hack for dependency analysis purposes. For backwards compatibility
+     we need to turn dependent metas into evars, but the notion of dependency
+     is tied to a legacy criterion, i.e. a meta is dependent if it appears
+     either in the type of a branch or in the normal form of the conclusion. *)
+  let fold sigma (ctx, t) =
+    let mv = new_meta () in
+    let sigma = meta_declare mv (it_mkProd_or_LetIn t ctx) sigma in
+    (sigma, (mv, ctx, t))
+  in
+  let (sigma, branches) = Array.fold_left_map fold sigma branches in
+  let metaset = Metaset.singleton mvP (* dummy, should just be nonempty *) in
+  let sigma =
+    (* pose dependent does not depend on the body of the clenv *)
+    let clenv = {
+      templval = mkProp; metaset;
+      templtyp = mk_freelisted templtyp;
+      evd = sigma; env = env; metas = [];
+      cache = create_meta_instance_subst sigma;
+    } in
+    let clenv = clenv_pose_dependent_evars ~with_evars clenv in
+    clenv.evd
+  in
+
+  (* Build the case node proper *)
+  let body = build_case_analysis env sigma (ind, u) params pred indices indarg branches dep s in
 
   (* Call the legacy refiner on the result *)
-  let clenv = {
-    templval; metaset;
-    templtyp = mk_freelisted templtyp;
-    evd = sigma;
-    env = env;
-    metas = [];
-    cache = create_meta_instance_subst sigma;
-  } in
-
-  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
   let sigma =
     if with_classes then
       let evd' =
         Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) env clenv.evd
+          ~fail:(not with_evars) env sigma
       in
       (* After an apply, all the subgoals including those dependent shelved ones are in
         the hands of the user and resolution won't be called implicitely on them. *)
       Typeclasses.make_unresolvables (fun x -> true) evd'
-    else clenv.evd
+    else sigma
   in
   let metas = Evd.meta_list sigma in
   let nf_metas c = meta_instance env (create_meta_instance_subst sigma) { rebus = c; freemetas = metaset } in
-  let branches = Array.map nf_metas branches in
-  let r = nf_metas templval in
+  let branches = Array.map (fun (_, ctx, t) -> nf_metas (it_mkProd_or_LetIn t ctx)) branches in
+  let r = nf_metas body in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
     (Internal.refiner_gen (Case (dep, metas, r, branches)))
