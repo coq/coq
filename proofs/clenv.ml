@@ -874,18 +874,12 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
       (Internal.refiner_gen (Std clenv))
   end
 
-let build_case_analysis env sigma (ind, u as pind) params pred indices indarg dep knd =
+let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
   let open Inductiveops in
   let open Context.Rel.Declaration in
-  let open Constr in
-  let open Term in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   (* Assumes that the arguments do not contain free rels *)
-  let params = EConstr.Unsafe.to_constr_array params in
-  let pred = EConstr.Unsafe.to_constr pred in
-  let indices = EConstr.Unsafe.to_constr_array indices in
-  let indarg = EConstr.Unsafe.to_constr indarg in
-  let indf = make_ind_family (pind, Array.to_list params) in
+  let indf = make_ind_family ((ind, EConstr.Unsafe.to_instance u), Array.map_to_list EConstr.Unsafe.to_constr params) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family knd in
@@ -917,22 +911,21 @@ let build_case_analysis env sigma (ind, u as pind) params pred indices indarg de
 
   let get_branch i =
     let cs = constrs.(i) in
-    let base = appvect (pred, cs.cs_concl_realargs) in
+    let base = mkApp (pred, EConstr.of_constr_array cs.cs_concl_realargs) in
     if dep then
       let argctx = Namegen.name_context env sigma (EConstr.of_rel_context cs.cs_args) in
-      let argctx = EConstr.Unsafe.to_rel_context argctx in
-      Term.it_mkProd_or_LetIn (applist (base, [build_dependent_constructor cs])) argctx
+      it_mkProd_or_LetIn (applist (base, [EConstr.of_constr @@ build_dependent_constructor cs])) argctx
     else
-      Term.it_mkProd_or_LetIn base cs.cs_args
+      it_mkProd_or_LetIn base (EConstr.of_rel_context cs.cs_args)
   in
   let branches = Array.init (Array.length mip.mind_consnames) get_branch in
 
   let body = match projs with
   | None ->
     let ncons = Array.length mip.mind_consnames in
-    let ci = make_case_info env (fst pind) relevance RegularStyle in
+    let ci = make_case_info env ind relevance RegularStyle in
     let pbody =
-      appvect
+      mkApp
         (pred,
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
@@ -942,7 +935,7 @@ let build_case_analysis env sigma (ind, u as pind) params pred indices indarg de
     in
     let mk_branch i =
       (* we need that to get the generated names for the branch *)
-      let (ctx, _) = decompose_prod_n_decls mip.mind_consnrealdecls.(i) branches.(i) in
+      let (ctx, _) = decompose_prod_n_decls sigma mip.mind_consnrealdecls.(i) branches.(i) in
       let brnas = Array.of_list (List.rev_map get_annot ctx) in
       let n = mkRel (List.length ctx + ncons - i) in
       let args = Context.Rel.instance mkRel 0 ctx in
@@ -954,7 +947,7 @@ let build_case_analysis env sigma (ind, u as pind) params pred indices indarg de
     let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
     mkApp (mkRel 1, args)
   in
-  (EConstr.of_constr_array branches, EConstr.of_constr body)
+  (branches, body)
 
 let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
@@ -974,18 +967,18 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
   let ind, u = destInd sigma hd in
-  let u = EInstance.kind sigma u in
+  let u0 = EInstance.kind sigma u in
   let s = Retyping.get_sort_family_of env sigma concl in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = Indrec.check_valid_elimination env (ind, u) ~dep s in
+  let () = Indrec.check_valid_elimination env (ind, u0) ~dep s in
 
   (* Extract the return clause using unification with the conclusion *)
   let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
   let typP =
     let params = EConstr.Unsafe.to_constr_array params in
-    let indf = Inductiveops.make_ind_family ((ind, u), Array.to_list params) in
+    let indf = Inductiveops.make_ind_family ((ind, u0), Array.to_list params) in
     Inductiveops.make_arity env sigma dep indf sort
   in
   let mvP = new_meta () in
