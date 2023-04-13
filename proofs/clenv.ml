@@ -880,7 +880,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg branches d
   (* Assumes that the arguments do not contain free rels *)
   let indf = make_ind_family ((ind, EConstr.Unsafe.to_instance u), Array.map_to_list EConstr.Unsafe.to_constr params) in
   let projs = get_projections env ind in
-  let relevance = Sorts.relevance_of_sort_family knd in
+  let relevance = Sorts.relevance_of_sort knd in
 
   let pnas, deparsign =
     let arsign, sort = get_arity env indf in
@@ -951,11 +951,11 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let sigma, _ = Typing.checked_appvect env sigma hd args in
   let ind, u = destInd sigma hd in
   let u0 = EInstance.kind sigma u in
-  let s = Retyping.get_sort_family_of env sigma concl in
+  let s = ESorts.kind sigma @@ Retyping.get_sort_of env sigma concl in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = Indrec.check_valid_elimination env (ind, u0) ~dep s in
+  let () = Indrec.check_valid_elimination env (ind, u0) ~dep (Sorts.family s) in
 
   let indf =
     let params = EConstr.Unsafe.to_constr_array params in
@@ -963,8 +963,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   in
 
   (* Extract the return clause using unification with the conclusion *)
-  let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
-  let typP = Inductiveops.make_arity env sigma dep indf sort in
+  let typP = Inductiveops.make_arity env sigma dep indf (ESorts.make s) in
   let mvP = new_meta () in
   let sigma = meta_declare mvP typP sigma in
   let depargs = Array.append indices [|indarg|] in
