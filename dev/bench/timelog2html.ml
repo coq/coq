@@ -94,6 +94,13 @@ let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 
 
 let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
 
+(* Set to true when benching with Coq versions that don't output the header / end timing *)
+let bench_with_old_version = false
+
+let is_start_end_header l =
+  Str.(string_match (regexp "Comments~\"Document Start\"") l 0)
+  || Str.(string_match (regexp "Comments~\"Document End\"") l 0)
+
 let rec file_loop filech ~last_end ~lines acc : measure one_command array =
   match input_line filech with
   | exception End_of_file ->
@@ -108,6 +115,9 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
     in
     CArray.rev_of_list acc
   | l ->
+    if bench_with_old_version && is_start_end_header l then
+      file_loop filech ~last_end ~lines acc
+    else
     if not (Str.string_match time_regex l 0) then
       file_loop filech ~last_end ~lines acc
     else

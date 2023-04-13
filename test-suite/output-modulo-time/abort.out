@@ -1,5 +1,5 @@
-Chars 0 - 0 [Comments "Document~Start".] 0. secs (0.u,0.s)
+Chars 0 - 0 [Comments~"Document~Start".] 0. secs (0.u,0.s)
 Chars 40 - 50 [Goal~_~True.] 0. secs (0.u,0.s)
 Chars 51 - 57 [Abort.] 0. secs (0.u,0.s)
-Chars 71 - 72 [Comments "Document~End".] 0. secs (0.u,0.s)
+Chars 71 - 72 [Comments~"Document~End".] 0. secs (0.u,0.s)
 ] 0. secs (0.u,0.s)
