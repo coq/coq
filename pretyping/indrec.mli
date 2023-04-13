@@ -37,20 +37,11 @@ type case_analysis = private {
   case_type : EConstr.t;
 }
 
-type case_analysis0 = private {
-  case0_branches : EConstr.types array;
-  case0_body : EConstr.t;
-}
-
 val check_valid_elimination : env -> pinductive -> dep:bool -> Sorts.family -> unit
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
 val default_case_analysis_dependence : env -> inductive -> bool
-
-val build_case_analysis : env -> Evd.evar_map -> pinductive ->
-  EConstr.t array -> EConstr.types -> EConstr.t array -> EConstr.t ->
-  dep_flag -> Sorts.family -> case_analysis0
 
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
   dep_flag -> Sorts.family -> evar_map * case_analysis

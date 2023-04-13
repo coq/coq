@@ -114,11 +114,6 @@ type case_analysis = {
   case_type : EConstr.t;
 }
 
-type case_analysis0 = {
-  case0_branches : EConstr.t array;
-  case0_body : EConstr.t;
-}
-
 let eval_case_analysis case =
   let open EConstr in
   let body = it_mkLambda_or_LetIn case.case_body case.case_arity in
@@ -154,76 +149,6 @@ let check_valid_elimination env (ind, u as pind) ~dep kind =
     raise
       (RecursionSchemeError
           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
-
-let build_case_analysis env sigma (ind, u as pind) params pred indices indarg dep kind =
-  let (mib, mip) = lookup_mind_specif env ind in
-  (* Assumes that the arguments do not contain free rels *)
-  let params = EConstr.Unsafe.to_constr_array params in
-  let pred = EConstr.Unsafe.to_constr pred in
-  let indices = EConstr.Unsafe.to_constr_array indices in
-  let indarg = EConstr.Unsafe.to_constr indarg in
-  let indf = make_ind_family (pind, Array.to_list params) in
-  let constrs = get_constructors env indf in
-  let projs = get_projections env ind in
-  let relevance = Sorts.relevance_of_sort_family kind in
-
-  let pnas, deparsign =
-    let arsign, sort = get_arity env indf in
-    let r = Sorts.relevance_of_sort_family sort in
-    let depind = build_dependent_inductive env indf in
-    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
-    let pctx =
-      let deparsign = set_names (RelEnv.make env) deparsign in
-      if dep then deparsign
-      else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
-    in
-    let pnas = Array.of_list (List.rev_map get_annot pctx) in
-    pnas, deparsign
-  in
-
-  let get_branch i =
-    let cs = constrs.(i) in
-    let base = appvect (pred, cs.cs_concl_realargs) in
-    if dep then
-      let argctx = Namegen.name_context env sigma (EConstr.of_rel_context cs.cs_args) in
-      let argctx = EConstr.Unsafe.to_rel_context argctx in
-      Term.it_mkProd_or_LetIn (applist (base, [build_dependent_constructor cs])) argctx
-    else
-      Term.it_mkProd_or_LetIn base cs.cs_args
-  in
-  let branches = Array.init (Array.length mip.mind_consnames) get_branch in
-
-  let body = match projs with
-  | None ->
-    let ncons = Array.length mip.mind_consnames in
-    let ci = make_case_info env (fst pind) relevance RegularStyle in
-    let pbody =
-      appvect
-        (pred,
-          if dep then Context.Rel.instance mkRel 0 deparsign
-          else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
-    let iv =
-      if Typeops.should_invert_case env ci then CaseInvert { indices = indices }
-      else NoInvert
-    in
-    let mk_branch i =
-      (* we need that to get the generated names for the branch *)
-      let (ctx, _) = decompose_prod_n_decls mip.mind_consnrealdecls.(i) branches.(i) in
-      let brnas = Array.of_list (List.rev_map get_annot ctx) in
-      let n = mkRel (List.length ctx + ncons - i) in
-      let args = Context.Rel.instance mkRel 0 ctx in
-      (brnas, mkApp (n, args))
-    in
-    let br = Array.init ncons mk_branch in
-    mkCase (ci, u, params, (pnas, pbody), iv, indarg, br)
-  | Some ps ->
-    let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
-    mkApp (mkRel 1, args)
-  in
-  {
-    case0_branches = EConstr.of_constr_array branches;
-    case0_body = EConstr.of_constr body;
-  }
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
   let () = check_valid_elimination env pind ~dep kind in

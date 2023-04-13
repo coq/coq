@@ -874,8 +874,89 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
       (Internal.refiner_gen (Std clenv))
   end
 
+let build_case_analysis env sigma (ind, u as pind) params pred indices indarg dep knd =
+  let open Inductiveops in
+  let open Context.Rel.Declaration in
+  let open Constr in
+  let open Term in
+  let (mib, mip) = Inductive.lookup_mind_specif env ind in
+  (* Assumes that the arguments do not contain free rels *)
+  let params = EConstr.Unsafe.to_constr_array params in
+  let pred = EConstr.Unsafe.to_constr pred in
+  let indices = EConstr.Unsafe.to_constr_array indices in
+  let indarg = EConstr.Unsafe.to_constr indarg in
+  let indf = make_ind_family (pind, Array.to_list params) in
+  let constrs = get_constructors env indf in
+  let projs = get_projections env ind in
+  let relevance = Sorts.relevance_of_sort_family knd in
+
+  let pnas, deparsign =
+    let arsign, sort = get_arity env indf in
+    let r = Sorts.relevance_of_sort_family sort in
+    let depind = build_dependent_inductive env indf in
+    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
+    let set_names env l =
+      let ident_hd env ids t na =
+        let na = Namegen.named_hd env (Evd.from_env env) (EConstr.of_constr t) na in
+        Namegen.next_name_away na ids
+      in
+      let fold d (ids, l) =
+        let id = ident_hd env ids (get_type d) (get_name d) in
+        (Id.Set.add id ids, set_name (Name id) d :: l)
+      in
+      snd (List.fold_right fold l (Id.Set.empty,[]))
+    in
+    let pctx =
+      let deparsign = set_names env deparsign in
+      if dep then deparsign
+      else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
+    in
+    let pnas = Array.of_list (List.rev_map get_annot pctx) in
+    pnas, deparsign
+  in
+
+  let get_branch i =
+    let cs = constrs.(i) in
+    let base = appvect (pred, cs.cs_concl_realargs) in
+    if dep then
+      let argctx = Namegen.name_context env sigma (EConstr.of_rel_context cs.cs_args) in
+      let argctx = EConstr.Unsafe.to_rel_context argctx in
+      Term.it_mkProd_or_LetIn (applist (base, [build_dependent_constructor cs])) argctx
+    else
+      Term.it_mkProd_or_LetIn base cs.cs_args
+  in
+  let branches = Array.init (Array.length mip.mind_consnames) get_branch in
+
+  let body = match projs with
+  | None ->
+    let ncons = Array.length mip.mind_consnames in
+    let ci = make_case_info env (fst pind) relevance RegularStyle in
+    let pbody =
+      appvect
+        (pred,
+          if dep then Context.Rel.instance mkRel 0 deparsign
+          else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
+    let iv =
+      if Typeops.should_invert_case env ci then CaseInvert { indices = indices }
+      else NoInvert
+    in
+    let mk_branch i =
+      (* we need that to get the generated names for the branch *)
+      let (ctx, _) = decompose_prod_n_decls mip.mind_consnrealdecls.(i) branches.(i) in
+      let brnas = Array.of_list (List.rev_map get_annot ctx) in
+      let n = mkRel (List.length ctx + ncons - i) in
+      let args = Context.Rel.instance mkRel 0 ctx in
+      (brnas, mkApp (n, args))
+    in
+    let br = Array.init ncons mk_branch in
+    mkCase (ci, u, params, (pnas, pbody), iv, indarg, br)
+  | Some ps ->
+    let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
+    mkApp (mkRel 1, args)
+  in
+  (EConstr.of_constr_array branches, EConstr.of_constr body)
+
 let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
-  let open Indrec in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -898,7 +979,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = check_valid_elimination env (ind, u) ~dep s in
+  let () = Indrec.check_valid_elimination env (ind, u) ~dep s in
 
   (* Extract the return clause using unification with the conclusion *)
   let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
@@ -917,14 +998,14 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let pred = meta_instance env (create_meta_instance_subst sigma) (mk_freelisted (mkMeta mvP)) in
 
   (* Build the case node proper *)
-  let case = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
+  let (branches, body) = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
   let fold (sigma, subst, metas) t =
     let mv = new_meta () in
     let sigma = meta_declare mv t sigma in
     (sigma, mkMeta mv :: subst, mv :: metas)
   in
-  let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) case.case0_branches in
-  let templval = Vars.substl subst case.case0_body in
+  let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) branches in
+  let templval = Vars.substl subst body in
   let metaset = Metaset.of_list (mvP :: args) in
 
   (* Call the legacy refiner on the result *)
@@ -951,7 +1032,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   in
   let metas = Evd.meta_list sigma in
   let nf_metas c = meta_instance env (create_meta_instance_subst sigma) { rebus = c; freemetas = metaset } in
-  let branches = Array.map nf_metas case.case0_branches in
+  let branches = Array.map nf_metas branches in
   let r = nf_metas templval in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
