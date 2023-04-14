@@ -15,7 +15,7 @@
 (* Adapted in May 2006 by Jean-Marc Notin from initial contents by
    Laurent Théry (Huffmann contribution, October 2003) *)
 
-Require Import List Setoid Compare_dec Morphisms FinFun PeanoNat.
+Require Import List Setoid Compare_dec Morphisms FinFun PeanoNat Factorial.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -954,6 +954,57 @@ Proof.
 Qed.
 
 End Permutation_transp.
+
+Section permutations.
+
+  Variable A:Type.
+
+  (** Enumerate all permutations of a list *)
+
+  Fixpoint permutations (l: list A) :=
+    match l with
+    | nil => [ nil ]
+    | x::l' => flat_map (additions x) (permutations l')
+    end.
+
+  Lemma permutations_refl l:
+    In l (permutations l).
+  Proof.
+    induction l as [|a l IHl]; [now left|].
+    cbn. apply in_flat_map. exists l.
+    split; [assumption | now left].
+  Qed.
+
+  Theorem permutations_spec:
+    forall l l', Permutation l l' <-> In l' (permutations l).
+  Proof.
+    intros l l'. split; intro H.
+    - revert H. revert l'. induction l as [|a l IHl]; intros l' H.
+      + apply Permutation_nil in H as ->. now left.
+      + cbn. apply in_flat_map.
+        symmetry in H.
+        destruct (Permutation_vs_elt_inv nil _ _ H) as [l1 [l2 ->]].
+        exists (l1 ++ l2); split.
+        * apply IHl. apply Permutation_cons_app_inv with (a:=a).
+          symmetry. assumption.
+        * apply additions_spec, Add_app.
+    - revert H. revert l'. induction l as [|a l IHl]; intros l' H.
+      + apply in_singleton in H as <-. constructor.
+      + cbn in H. apply in_flat_map in H as [l'' [Hl'' H%additions_spec]].
+        specialize (IHl _ Hl''). rewrite IHl. apply Permutation_Add. assumption.
+  Qed.
+
+  Theorem permutations_fact l:
+    length (permutations l) = fact (length l).
+  Proof.
+    induction l as [|a l IHl]; [reflexivity|].
+    cbn. rewrite flat_map_constant_length with (c := S (length l)).
+    - rewrite IHl, Nat.mul_succ_r, Nat.add_comm, Nat.mul_comm. reflexivity.
+    - intros x Hx%permutations_spec. rewrite additions_length.
+      f_equal. apply Permutation_length. symmetry. assumption.
+  Qed.
+
+End permutations.
 
 (* begin hide *)
 Notation Permutation_app_swap := Permutation_app_comm (only parsing).

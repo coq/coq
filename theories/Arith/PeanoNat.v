@@ -1037,6 +1037,16 @@ Proof proj1 (proj2 (Even_Odd_double n)).
 Definition double_Odd n : n = S (double (div2 n)) -> Odd n.
 Proof proj2 (proj2 (Even_Odd_double n)).
 
+Lemma div2_add_Even_l n m:
+  Even n -> div2 (n + m) = div2 n + div2 m.
+Proof.
+  intros [q ->]. destruct (Even_or_Odd m) as [[p ->]|[p ->]].
+  - rewrite <- mul_add_distr_l, !div2_double. reflexivity.
+  - rewrite add_1_r, add_succ_r, div2_succ_double.
+    rewrite <- mul_add_distr_l, div2_succ_double, div2_double.
+    reflexivity.
+Qed.
+
 (** Inductive definition of even and odd *)
 Inductive Even_alt : nat -> Prop :=
 | Even_alt_O : Even_alt 0

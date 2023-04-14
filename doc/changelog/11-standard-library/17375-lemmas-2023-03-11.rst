@@ -1,0 +1,5 @@
+- **Added:** lemma :g:`div2_add_Even_l` to `PeanoNat.v`,
+  lemmas :g:`in_singleton`, :g:`firstn_app_le`, :g:`firstn_add` to `List.v`,
+  added :g:`insert_nth`, :g:`additions` and :g:`permutations` and their correctness theorems
+  (`#17375 <https://github.com/coq/coq/pull/17375>`_,
+  by Stefan Haan with help from Andres Erbsen).

@@ -321,6 +321,12 @@ Section Facts.
   destruct Hin as [Hin|[Hin|Hin]]; [right|left|right]; try apply in_or_app; intuition.
   Qed.
 
+  Lemma in_singleton (x y : A):
+    In x [y] -> y = x.
+  Proof.
+    intros []; [assumption | contradiction].
+  Qed.
+
   (** Inversion *)
   Lemma in_inv : forall (a b:A) (l:list A), In b (a :: l) -> a = b \/ In b l.
   Proof. easy. Qed.
@@ -2103,6 +2109,14 @@ Section Cutting.
       * rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
   Qed.
 
+  Corollary firstn_app_le n:
+    forall l1 l2,
+    n <= length l1 -> firstn n (l1 ++ l2) = firstn n l1.
+  Proof.
+    intros l1 l2 H%Nat.sub_0_le. rewrite firstn_app.
+    rewrite H, firstn_O, app_nil_r. reflexivity.
+  Qed.
+
   Lemma firstn_app_2 n:
     forall l1 l2,
     firstn ((length l1) + n) (l1 ++ l2) = l1 ++ firstn n l2.
@@ -2250,6 +2264,23 @@ Section Cutting.
     - now intros <- %Nat.succ_lt_mono %IHn.
   Qed.
 
+  Lemma firstn_add (l: list A) (n m : nat):
+    firstn (n + m) l = firstn n l ++ (firstn m (skipn n l)).
+  Proof.
+    destruct (Nat.le_decidable n (length l)) as [H|H].
+    - rewrite <- (firstn_skipn n l), firstn_app at 1.
+      rewrite firstn_length, min_l by assumption.
+      rewrite Nat.add_comm at 2. rewrite Nat.add_sub.
+      rewrite firstn_firstn, min_r by apply Nat.le_add_r.
+      reflexivity.
+    - apply Nat.nle_gt, Nat.lt_le_incl in H.
+      rewrite skipn_all2, !firstn_all2; try assumption.
+      + rewrite app_nil_r. reflexivity.
+      + apply Nat.le_0_l.
+      + rewrite <- Nat.add_0_r at 1.
+        apply Nat.add_le_mono; [assumption | apply Nat.le_0_l].
+  Qed.
+
 End Cutting.
 
 Section CuttingMap.
@@ -2268,6 +2299,31 @@ Section CuttingMap.
     intro n; induction n; intros []; simpl; trivial.
   Qed.
 End CuttingMap.
+
+
+(********************************************)
+(** * Inserting an element at some position *)
+(********************************************)
+
+Section Inserting.
+  Variable A : Type.
+
+  Definition insert_nth n x (l: list A) :=
+    firstn n l ++ x :: skipn n l.
+
+  Lemma insert_nth_length n x l:
+    length (insert_nth n x l) = S (length l).
+  Proof.
+    unfold insert_nth.
+    rewrite app_length. cbn [length]. rewrite Nat.add_succ_r. f_equal.
+    rewrite <- app_length. rewrite firstn_skipn. reflexivity.
+  Qed.
+
+  Lemma insert_nth_cons n x a l:
+    insert_nth (S n) x (a :: l) = a :: insert_nth n x l.
+  Proof. cbn. f_equal. Qed.
+
+End Inserting.
 
 (**************************************************************)
 (** ** Combining pairs of lists of possibly-different lengths *)
@@ -2333,6 +2389,15 @@ Section Add.
     | Add_head l : Add a l (a::l)
     | Add_cons x l l' : Add a l l' -> Add a (x::l) (x::l').
 
+  Lemma Add_nil a l: Add a [] l <-> l = [a].
+  Proof.
+    split; intro H.
+    - remember [] as l' eqn:Hl'. destruct H.
+      + reflexivity.
+      + discriminate Hl'.
+    - rewrite H. constructor.
+  Qed.
+
   Lemma Add_app a l1 l2 : Add a (l1++l2) (l1++a::l2).
   Proof.
    induction l1; simpl; now constructor.
@@ -2371,6 +2436,23 @@ Section Add.
    assert (Hy' : In y (a::u)).
    { rewrite <- (Add_in AD). apply H; simpl; auto. }
    destruct Hy'; [ subst; now elim Ha | trivial ].
+  Qed.
+
+  Lemma Add_insert_nth x l:
+    forall l', Add x l l' <-> exists n, n <= length l /\ l' = insert_nth n x l.
+  Proof.
+    intro l'. split; intro H.
+    - induction H as [|a l l' H IHAdd].
+      + exists 0. split; [apply Nat.le_0_l | reflexivity].
+      + destruct IHAdd as [n [Hn ->]]. exists (S n).
+        split; [apply le_n_S; assumption | apply insert_nth_cons].
+    - destruct H as [n [Hn H]].
+      revert Hn H. revert l l'. induction n as [|n IHn]; intros l l' Hn H.
+      + rewrite H. constructor.
+      + destruct l.
+        * exfalso. apply (Nat.nle_succ_0 _ Hn).
+        * rewrite H, insert_nth_cons. constructor.
+          apply IHn; [apply le_S_n; assumption | reflexivity].
   Qed.
 
 End Add.
@@ -2682,6 +2764,14 @@ Section NatSeq.
     now rewrite IHlen.
   Qed.
 
+  Lemma seq_add_l n start len:
+     seq (n + start) len = map (Nat.add n) (seq start len).
+  Proof.
+    induction n as [|n IHn].
+    - now rewrite map_id.
+    - cbn. now rewrite <- map_map, <- IHn, seq_shift.
+  Qed.
+
   Lemma in_seq len start n :
     In n (seq start len) <-> start <= n < start+len.
   Proof.
@@ -2696,6 +2786,17 @@ Section NatSeq.
       + intros (H,H'). inversion H.
         * now left.
         * right. subst. now split; [apply -> Nat.succ_le_mono|].
+  Qed.
+
+  Lemma map_ext_seq {X} (f g: nat -> X) n start start':
+    (forall j, j < n -> f (j + start) = g (j + start')) ->
+    map f (seq start n) = map g (seq start' n).
+  Proof.
+    revert start start'. induction n as [|n IHn]; [reflexivity|].
+    intros start start' H. cbn; f_equal.
+    + apply (H 0), Nat.lt_0_succ.
+    + apply IHn. intros j Hj%Nat.succ_lt_mono%H.
+      rewrite !Nat.add_succ_r. exact Hj.
   Qed.
 
   Lemma seq_NoDup len start : NoDup (seq start len).
@@ -2722,6 +2823,50 @@ Section NatSeq.
   Qed.
 
 End NatSeq.
+
+Section additions.
+
+  Variable A:Type.
+
+  (** * Insert an element at all positions in a list *)
+
+  Definition additions (x: A) l :=
+  map (fun n => insert_nth n x l) (seq 0 (S (length l))).
+
+  Lemma in_additions x l l':
+    In l' (additions x l) <-> exists n, n <= length l /\ l' = insert_nth n x l.
+  Proof.
+    split; intro H.
+    - apply in_map_iff in H as [n [H0 H1]]. exists n.
+      apply in_seq in H1 as [_ H1]. split.
+      + apply le_S_n. exact H1.
+      + symmetry. exact H0.
+    - apply in_map_iff. destruct H as [n [H1 H0]].
+      exists n. split.
+      + symmetry. exact H0.
+      + apply in_seq. split.
+        * apply Nat.le_0_l.
+        * apply le_n_S. exact H1.
+  Qed.
+
+  Theorem additions_spec x:
+    forall (l l': list A), Add x l l' <-> In l' (additions x l).
+  Proof. intros l l'. rewrite Add_insert_nth, in_additions. reflexivity. Qed.
+
+  Lemma additions_cons x a l:
+    additions x (a :: l) = (x::a::l)::map (cons a) (additions x l).
+  Proof.
+    cbn. f_equal. f_equal. rewrite map_map.
+    apply map_ext_seq. intros j _.
+    replace (j + 2) with (S (j + 1)) by trivial.
+    rewrite insert_nth_cons. reflexivity.
+  Qed.
+
+  Lemma additions_length x l:
+    length (additions x l) = S (length l).
+  Proof. unfold additions. now rewrite map_length, seq_length. Qed.
+
+End additions.
 
 Section Exists_Forall.
 
