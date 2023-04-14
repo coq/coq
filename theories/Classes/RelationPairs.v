@@ -165,3 +165,14 @@ Hint Unfold RelProd RelCompFun : core.
 #[global]
 Hint Extern 2 (RelProd _ _ _ _) => split : core.
 
+#[export] Instance proper_pair1: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> Basics.flip Basics.impl) RA
+    -> Proper (RB1 ==> RB2 ==> Basics.flip Basics.impl) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> Basics.flip Basics.impl) (RA * RB)%signature.
+Proof. cbv; intuition eauto. Qed.
+
+#[export] Instance proper_pair2: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> Basics.impl) RA
+    -> Proper (RB1 ==> RB2 ==> Basics.impl) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> Basics.impl) (RA * RB)%signature.
+Proof. cbv; intuition eauto. Qed.
