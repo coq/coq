@@ -682,7 +682,7 @@ let check_invariants ~(required_canonical:Point.t -> bool) model =
     | Canonical can ->
       assert (Index.equal idx can.canon);
       assert (Index.mem (Index.repr idx model.table) model.table);
-      assert (match can.value with Some v -> v >= 0 | None -> true);
+      assert (match can.value with Some v -> v >= 0 | None -> false);
       let cls = can.clauses_bwd in
       ClausesOf.iter
         (fun (k, prems) ->
@@ -773,9 +773,11 @@ let debug_check_invariants m =
 
 (* PMaps are purely functional hashmaps *)
 
+exception Undeclared of Point.t
+
 let model_value m l =
   try (repr m l).value
-  with Not_found -> Some 0
+  with Not_found -> raise (Undeclared (Index.repr l m.table))
 
 exception VacuouslyTrue
 
@@ -1183,9 +1185,9 @@ let _to_clause_info m (k, prems : pclause_info) : clause_info =
     debug Pp.(fun () -> str "Clause " ++ pr_clause m triv ++ str" is trivial? " ++ bool (is_empty_clause triv)))
     cls () *)
 
-(* Precondition: canu.value == canv.value, so no new model needs to be computed *)
+(* Precondition: canu.value = canv.value, so no new model needs to be computed *)
 let enforce_eq_can model canu canv : canonical_node * t =
-  assert (canu.value == canv.value);
+  assert (canu.value = canv.value);
   assert (canu != canv);
   (* v := u or u := v, depending on Point.keep_canonical (e.g. for Set) *)
   debug_check_invariants model;
@@ -1269,7 +1271,7 @@ let find_to_merge model status canv canu =
       let merge =
         ClausesBackward.fold (fun concl _cls merge ->
           let conclcan = repr model concl in
-          if conclcan != can && conclcan.value == can.value then (* We stay in the same equivalence class *)
+          if conclcan != can && conclcan.value = can.value then (* We stay in the same equivalence class *)
             let merge' = forward conclcan in
             merge' || merge
           else merge) cls merge
@@ -1695,9 +1697,6 @@ let enforce_lt u v m =
   let m, canu = repr_compress_node m u in
   let m, canv = repr_compress_node m v in
   infer_extension canu 1 canv m
-
-
-exception Undeclared of Point.t
 
 let get_proper_value m can =
   match can.value with
