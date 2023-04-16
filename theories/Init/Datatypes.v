@@ -277,20 +277,6 @@ Definition curry {A B C:Type} (f:A * B -> C)
 Definition uncurry {A B C:Type} (f:A -> B -> C)
   (p:A * B) : C := match p with (x, y) => f x y end.
 
-(* These were deprecated in 8.13 but putting the "deprecated"
-   attribute on a Definition. Since, such a deprecation likely got
-   unnoticed from users, it was decided in 8.15 to put the attribute
-   on a Notation instead (thus printing deprecation warning when used)
-   and should probably be removed in 8.17 as if it had been
-   deprecated(since = "8.15", *)
-Definition prod_uncurry_subdef (A B C:Type) : (A * B -> C) -> A -> B -> C := curry.
-#[deprecated(since = "8.13", note = "Use curry instead.")]
-Notation prod_uncurry := prod_uncurry_subdef.
-
-Definition prod_curry_subdef (A B C:Type) : (A -> B -> C) -> A * B -> C := uncurry.
-#[deprecated(since = "8.13", note = "Use uncurry instead.")]
-Notation prod_curry := prod_curry_subdef.
-
 Import EqNotations.
 
 Lemma rew_pair A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2) :
@@ -505,9 +491,5 @@ Notation prodT_rec := prod_rec (only parsing).
 Notation prodT_ind := prod_ind (only parsing).
 Notation fstT := fst (only parsing).
 Notation sndT := snd (only parsing).
-#[deprecated(since = "8.13", note = "Use curry instead.")]
-Notation prodT_uncurry := prod_uncurry_subdef (only parsing).
-#[deprecated(since = "8.13", note = "Use uncurry instead.")]
-Notation prodT_curry := prod_curry_subdef (only parsing).
 
 (* end hide *)

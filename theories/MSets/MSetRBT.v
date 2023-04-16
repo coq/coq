@@ -1002,7 +1002,7 @@ Proof.
     rewrite app_length, <- elements_cardinal. simpl.
     rewrite Nat.add_succ_r, <- Nat.succ_le_mono.
     apply Nat.add_le_mono_l. }
- rewrite elements_node, app_ass. now subst.
+ rewrite elements_node, <- app_assoc. now subst.
 Qed.
 
 Lemma treeify_aux_spec n (p:bool) :
@@ -1062,9 +1062,6 @@ Qed.
 
 (** ** Filter *)
 
-#[deprecated(since="8.11",note="Lemma filter_app has been moved to module List.")]
-Notation filter_app := List.filter_app.
-
 Lemma filter_aux_elements s f acc :
  filter_aux f s acc = List.filter f (elements s) ++ acc.
 Proof.
@@ -1072,7 +1069,7 @@ Proof.
  induction s as [|c l IHl x r IHr]; trivial.
  intros acc.
  rewrite elements_node, List.filter_app. simpl.
- destruct (f x); now rewrite IHl, IHr, app_ass.
+ destruct (f x); now rewrite IHl, IHr, <- app_assoc.
 Qed.
 
 Lemma filter_elements s f :

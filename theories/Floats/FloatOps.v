@@ -28,12 +28,6 @@ Module Z.
     ldshiftexp f (of_Z (e' + shift)).
 End Z.
 
-#[deprecated(since = "8.15.0", note = "Use Z.frexp instead.")]
-Notation frexp := Z.frexp (only parsing).
-
-#[deprecated(since = "8.15.0", note = "Use Z.ldexp instead.")]
-Notation ldexp := Z.ldexp (only parsing).
-
 Definition ulp f := Z.ldexp one (fexp prec emax (snd (Z.frexp f))).
 
 (** [Prim2SF] is an injective function that will be useful to express

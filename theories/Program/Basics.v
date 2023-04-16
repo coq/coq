@@ -55,8 +55,3 @@ Definition flip {A B C} (f : A -> B -> C) x y := f y x.
 (** Application as a combinator. *)
 
 Definition apply {A B} (f : A -> B) (x : A) := f x.
-
-(** Curryfication of [prod] is defined in [Logic.Datatypes]. *)
-
-Arguments prod_curry_subdef   {A B C} f p.
-Arguments prod_uncurry_subdef {A B C} f x y.
