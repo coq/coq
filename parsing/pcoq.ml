@@ -165,7 +165,6 @@ let rec remove_grammars n =
          camlp5_state := t;
          remove_grammars (n-1)
        | ByEXTEND (name, undo,redo)::t ->
-         Feedback.msg_info Pp.(str "backtracking and redoing byextend on " ++ str name);
            undo();
            camlp5_state := t;
            remove_grammars n;
