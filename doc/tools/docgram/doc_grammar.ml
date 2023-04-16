@@ -303,6 +303,8 @@ module DocGram = struct
 end
 open DocGram
 
+let remove_Sedit2 p =
+  List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
 
 let rec output_prodn = function
   | Sterm s ->
@@ -356,7 +358,7 @@ and prod_to_prodn_r prod =
   | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
   | [] -> []
 
-and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
+and prod_to_prodn prod = String.concat " " (prod_to_prodn_r (remove_Sedit2 prod))
 
 let get_tag file prod =
   List.fold_left (fun rv sym ->
@@ -925,6 +927,7 @@ let global_repl g pat repl =
 (*** splice: replace a reference to a nonterminal with its definition ***)
 
 (* todo: create a better splice routine *)
+(* todo: remove extraneous "(* ltac2 plugin *)" in Ltac2 Notation cmd *)
 let apply_splice g edit_map =
   List.iter (fun b ->
       let (nt0, prods0) = b in
@@ -1750,14 +1753,9 @@ let process_rst g file args seen tac_prods cmd_prods =
     end
   in
 
-  let cmd_exclude_files = [
-    "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
-  ]
-  in
-
   let save_n_get_more direc pfx first_rhs seen_map prods =
     let replace rhs prods =
-      if StringSet.is_empty prods || (List.mem file cmd_exclude_files) then
+      if StringSet.is_empty prods then
         rhs (* no change *)
       else
         let mtch, multi, best = find_longest_match prods rhs in
@@ -1788,17 +1786,19 @@ let process_rst g file args seen tac_prods cmd_prods =
 
     map := NTMap.add (remove_subscrs first_rhs) (file, !linenum) !map;
     while
-      let nextline = getline() in
-      ignore (Str.string_match contin_regex nextline 0);
-      let indent = Str.matched_group 1 nextline in
-      let rhs = Str.matched_group 2 nextline in
-      let replaceable = rhs <> "" && rhs.[0] <> ':' in
-      let upd_rhs = if replaceable then (replace rhs prods) else rhs in
-      fprintf new_rst "%s%s\n" indent upd_rhs;
-      if replaceable then begin
-        map := NTMap.add rhs (file, !linenum) !map
-      end;
-      rhs <> ""
+      try
+        let nextline = getline() in
+        ignore (Str.string_match contin_regex nextline 0);
+        let indent = Str.matched_group 1 nextline in
+        let rhs = Str.matched_group 2 nextline in
+        let replaceable = rhs <> "" && rhs.[0] <> ':' in
+        let upd_rhs = if replaceable then (replace rhs prods) else rhs in
+        fprintf new_rst "%s%s\n" indent upd_rhs;
+        if replaceable then begin
+          map := NTMap.add (remove_subscrs rhs) (file, !linenum) !map
+        end;
+        rhs <> ""
+      with End_of_file -> false
     do
       ()
     done;
@@ -1930,15 +1930,8 @@ let process_grammar args =
       let out = open_out (dir "updated_rsts") in
       close_out out;
 
-(*
-      if args.check_tacs then
-        report_omitted_prods tac_list !seen.tacs "Tactic" "\n                 ";
-      if args.check_cmds then
-        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
-*)
-
       (* generate report on cmds or tacs *)
-      let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
+      let cmdReport outfile cmdStr itemName cmd_nts cmds cmdvs =
         let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
         let rstCmdvs = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmdvs)) in
         let gramCmds = List.fold_left (fun set nt ->
@@ -1950,8 +1943,8 @@ let process_grammar args =
             let rsts = StringSet.mem c rstCmds in
             let gram = StringSet.mem c gramCmds in
             let pfx = match rsts, gram with
-            | true, false -> "+"
-            | false, true -> "-"
+            | true, false -> error "%s not in grammar: %s\n" itemName c; "+"
+            | false, true -> error "%s not in doc: %s\n" itemName c; "-"
             | false, false -> "?"
             | _, _ -> " "
             in
@@ -1966,11 +1959,11 @@ let process_grammar args =
       let cmd_nts = ["command"] in
       (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
       if args.check_cmds then
-        cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
+        cmdReport "prodnCommands" "cmds" "Command" cmd_nts !seen.cmds !seen.cmdvs;
 
       let tac_nts = ["simple_tactic"] in
       if args.check_tacs then
-        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs;
+        cmdReport "prodnTactics" "tacs" "Tactic" tac_nts !seen.tacs !seen.tacvs;
 
       (* generate prodnGrammar for reference *)
       if not args.verify then begin
