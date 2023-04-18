@@ -58,4 +58,4 @@ val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 
 (** Reduction expressions *)
 
-val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
+val intern_red_expr : glob_sign -> Genredexpr.raw_red_expr -> Genredexpr.glob_red_expr
