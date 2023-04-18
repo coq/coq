@@ -733,7 +733,6 @@ This section describes some special purpose tactics to work with
 
 .. tacn:: inversion {| @ident | @natural } {? as @or_and_intropattern } {? in {+ @ident } }
           inversion {| @ident | @natural } using @one_term {? in {+ @ident } }
-   :name: inversion; _
 
    .. comment: the other inversion* tactics don't support the using clause,
       but they should be able to, if desired.  It wouldn't make sense for

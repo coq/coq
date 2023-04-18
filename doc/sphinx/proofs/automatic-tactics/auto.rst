@@ -379,7 +379,6 @@ Creating Hints
 
    .. cmd:: Hint Resolve {+ {| @qualid | @one_term } } {? @hint_info } {? : {+ @ident } }
             Hint Resolve {| -> | <- } {+ @qualid } {? @natural } {? : {+ @ident } }
-      :name: Hint Resolve; _
 
       .. insertprodn hint_info one_pattern
 

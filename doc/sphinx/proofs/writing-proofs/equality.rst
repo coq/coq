@@ -240,7 +240,6 @@ Rewriting with Leibniz and setoid equality
 
 .. tacn:: replace @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
           replace {? {| -> | <- } } @one_term__from {? @occurrences }
-   :name: replace; _
 
    The first form replaces all free occurrences of :n:`@one_term__from`
    in the current goal with :n:`@one_term__to` and generates an equality

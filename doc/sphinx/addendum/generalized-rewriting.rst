@@ -576,7 +576,6 @@ pass additional arguments such as ``using relation``.
           setoid_rewrite {? {| -> | <- } } @one_term_with_bindings {? at @rewrite_occs } {? in @ident }
           setoid_rewrite {? {| -> | <- } } @one_term_with_bindings in @ident at @rewrite_occs
           setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }
-   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_etransitivity; setoid_rewrite; _; setoid_replace
 
    .. todo: move rewrite_occs to rewrite chapter when that chapter is revised
 
@@ -638,7 +637,6 @@ Deprecated syntax and backward incompatibilities
 
 .. cmd:: Add Morphism @one_term : @ident
          Add Morphism @one_term with signature @term as @ident
-   :name: Add Morphism; _
 
    This command is restricted to the declaration of morphisms
    without parameters. It is not fully backward compatible since the
@@ -776,7 +774,6 @@ Usage
 ~~~~~
 
 .. tacn:: rewrite_strat @rewstrategy {? in @ident }
-   :name: rewrite_strat
 
    Rewrite using :n:`@rewstrategy` in the conclusion or in the hypothesis :n:`@ident`.
 

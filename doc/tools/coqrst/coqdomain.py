@@ -274,14 +274,11 @@ class CoqObject(ObjectDescription):
             self._sig_names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(names) != len(sigs):
-                if len(sigs) != 1: #Multiple names for one signature
-                    ERR = ("Expected {} semicolon-separated names, got {}.  " +
-                           "Please provide one name per signature line.")
-                    raise self.error(ERR.format(len(names), len(sigs)))
-                self._sig_names = { sigs[0]: names }
-            else:
-                self._sig_names = { sig: [name] for (sig, name) in zip(sigs, names) }
+            if len(names) < len(sigs):
+                ERR = ("Got {} semicolon-separated names and {} signatures.  " +
+                       "Please provide at least one name per signature line.")
+                raise self.error(ERR.format(len(names), len(sigs)))
+            self._sig_names = { sigs[0]: names }
 
     def run(self):
         self._prepare_names()
