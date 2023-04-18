@@ -113,8 +113,8 @@ let mk_open_instance env sigma id idc c =
   let rec aux n avoid env sigma decls =
     if Int.equal n 0 then sigma, decls else
       let nid = fresh_id_in_env avoid var_id env in
-      let (sigma, (c, _)) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
-      let decl = LocalAssum (Context.make_annot (Name nid) Sorts.Relevant, c) in
+      let (sigma, (c, s)) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+      let decl = LocalAssum (Context.make_annot (Name nid) (ESorts.relevance_of_sort sigma s), c) in
       aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) sigma (decl::decls)
   in
   let sigma, decls = aux m Id.Set.empty env sigma [] in
