@@ -285,8 +285,9 @@ let drop_weak_constraints =
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false
 
-let sort_inconsistency cst l r =
-  raise (UGraph.UniverseInconsistency (cst, l, r, None))
+let sort_inconsistency ?explain cst l r =
+  let explain = Option.map (fun p -> UGraph.Other p) explain in
+  raise (UGraph.UniverseInconsistency (cst, l, r, explain))
 
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
@@ -490,7 +491,9 @@ let process_universe_constraints uctx cstrs =
       begin match classify r with
       | UAlgebraic _ | UMax _ ->
         if UGraph.check_leq_sort univs l r then local
-        else user_err Pp.(str "Algebraic universe on the right")
+        else
+          sort_inconsistency Le l r
+            ~explain:(Pp.str "(cannot handle algebraic on the right)")
       | USmall r' ->
         (* Invariant: there are no universes u <= Set in the graph. Except for
            template levels, Set <= u anyways. Otherwise, for template
