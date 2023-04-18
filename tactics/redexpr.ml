@@ -49,8 +49,6 @@ let cbv_native env sigma c =
     (warn_native_compute_disabled ();
      cbv_vm env sigma c)
 
-let whd_cbn = Cbn.whd_cbn
-
 let { Goptions.get = simplIsCbn } =
   Goptions.declare_bool_option_and_ref
     ~key:["SimplIsCbn"]
@@ -209,18 +207,14 @@ let out_with_occurrences (occs,c) =
 
 let e_red f env evm c = evm, f env evm c
 
-let head_style = false (* Turn to true to have a semantics where simpl
-   only reduce at the head when an evaluable reference is given, e.g.
-   2+n would just reduce to S(1+n) instead of S(S(n)) *)
-
-let contextualize f g = function
+let contextualize f = function
   | Some (occs,c) ->
       let l = out_occurrences occs in
-      let b,c,h = match c with
-        | Inl r -> true,PRef (global_of_evaluable_reference r),f
-        | Inr c -> false,c,f in
-      e_red (contextually b (l,c) (fun _ -> h))
-  | None -> e_red g
+      let b,c = match c with
+        | Inl r -> true,PRef (global_of_evaluable_reference r)
+        | Inr c -> false,c in
+      e_red (contextually b (l,c) (fun _ -> f))
+  | None -> e_red f
 
 let warn_simpl_unfolding_modifiers =
   CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:CWarnings.CoreCategories.tactics
@@ -250,9 +244,8 @@ let reduction_of_red_expr_val = function
       else (e_red red_product,DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl (f,o) ->
-     let whd_am = if simplIsCbn () then whd_cbn f else whd_simpl in
      let am = if simplIsCbn () then Cbn.norm_cbn f else simpl in
-     (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
+     (contextualize am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags f),DEFAULTcast)
   | Cbn f ->
      (e_red (Cbn.norm_cbn f), DEFAULTcast)
@@ -265,8 +258,8 @@ let reduction_of_red_expr_val = function
       with Not_found ->
            user_err
              (str "Unknown user-defined reduction \"" ++ str s ++ str "\"."))
-  | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
-  | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)
+  | CbvVm o -> (contextualize cbv_vm o, VMcast)
+  | CbvNative o -> (contextualize cbv_native o, NATIVEcast)
 
 let reduction_of_red_expr env r =
   reduction_of_red_expr_val (eval_red_expr env r)
