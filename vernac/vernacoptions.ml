@@ -36,6 +36,18 @@ let vernac_set_option ~locality ~stage table v = match v with
       vernac_set_option0 ~locality ~stage table v
 | _ -> vernac_set_option0 ~locality ~stage table v
 
+let iter_table f k v = Goptions.iter_table (Global.env()) f k v
+
 let vernac_add_option = iter_table { aux = fun table -> table.add }
 
 let vernac_remove_option = iter_table { aux = fun table -> table.remove }
+
+let vernac_mem_option = iter_table { aux = fun table -> table.mem }
+
+let vernac_print_option key =
+  try (get_ref_table key).print ()
+  with Not_found ->
+  try (get_string_table key).print ()
+  with Not_found ->
+  try print_option_value key
+  with Not_found -> error_undeclared_key key

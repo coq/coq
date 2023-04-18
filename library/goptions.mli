@@ -213,6 +213,6 @@ val get_tables : unit -> option_state OptionMap.t
 val print_tables : unit -> Pp.t
 
 type iter_table_aux = { aux : 'a. 'a table_of_A -> Environ.env -> 'a -> unit }
-val iter_table : iter_table_aux -> option_name -> table_value list -> unit
+val iter_table : Environ.env -> iter_table_aux -> option_name -> table_value list -> unit
 
 val error_undeclared_key : option_name -> 'a
