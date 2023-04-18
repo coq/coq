@@ -1367,7 +1367,7 @@ let open_section senv =
 let close_section senv =
   let open Section in
   let sections0 = get_section senv.sections in
-  let env0 = senv.env in
+  let revstruct0 = senv.revstruct in
   (* First phase: revert the declarations added in the section *)
   let sections, entries, cstrs, revert = Section.close_section sections0 in
   (* Don't revert the delayed constraints (future_cst). If some delayed constraints
@@ -1383,21 +1383,22 @@ let close_section senv =
   in
   (* Third phase: replay the discharged section contents *)
   let senv = push_context_set ~strict:true cstrs senv in
-  let fold entry senv =
-    match entry with
-  | SecDefinition kn ->
-    let cb = Environ.lookup_constant kn env0 in
-    let info = Section.segment_of_constant kn sections0 in
-    let cb = Discharge.cook_constant senv.env info cb in
-    (* Delayed constants are already in the global environment *)
-    add_constant_aux senv (kn, cb)
-  | SecInductive ind ->
-    let mib = Environ.lookup_mind ind env0 in
-    let info = Section.segment_of_inductive ind sections0 in
-    let mib = Discharge.cook_inductive info mib in
-    add_checked_mind ind mib senv
+  let fold (l,f) entry senv =
+    match f, entry with
+    | SFBconst cb, SecDefinition kn ->
+      assert (Label.equal l (Constant.label kn));
+      let info = Section.segment_of_constant kn sections0 in
+      let cb = Discharge.cook_constant senv.env info cb in
+      (* Delayed constants are already in the global environment *)
+      add_constant_aux senv (kn, cb)
+    | SFBmind mib, SecInductive ind ->
+      assert (Label.equal l (MutInd.label ind));
+      let info = Section.segment_of_inductive ind sections0 in
+      let mib = Discharge.cook_inductive info mib in
+      add_checked_mind ind mib senv
+    | _ -> assert false
   in
-  List.fold_right fold entries senv
+  List.fold_right2 fold (List.firstn (List.length entries) revstruct0) entries senv
 
 let flatten_env senv =
   let label = function MPdot (_,l) -> l | _ -> assert false in
