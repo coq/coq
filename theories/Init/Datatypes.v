@@ -185,7 +185,7 @@ Inductive option (A:Type) : Type :=
   | Some : A -> option A
   | None : option A.
 
-Arguments Some {A} a.
+Arguments Some {A} _.
 Arguments None {A}.
 
 Register option as core.option.type.
@@ -293,7 +293,7 @@ Inductive list (A : Type) : Type :=
  | cons : A -> list A -> list A.
 
 Arguments nil {A}.
-Arguments cons {A} a l.
+Arguments cons {A} _ _.
 
 Declare Scope list_scope.
 Delimit Scope list_scope with list.
