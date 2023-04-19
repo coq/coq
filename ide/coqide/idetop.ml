@@ -392,8 +392,6 @@ let export_option_state s = {
   Interface.opt_value = export_option_value s.Goptions.opt_value;
 }
 
-exception NotSupported of string
-
 let proof_diff (diff_opt, sid) =
   let diff_opt = Proof_diffs.string_to_diffs diff_opt in
   let doc = get_doc () in

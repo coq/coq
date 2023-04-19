@@ -3,7 +3,7 @@
  (synopsis "The Coq Kernel")
  (public_name coq-core.kernel)
  (wrapped false)
- (modules_without_implementation values)
+ (modules_without_implementation values declarations entries)
  (modules (:standard \ genOpcodeFiles uint63_31 uint63_63 float64_31 float64_63))
  (libraries boot lib coqrun dynlink))
 
@@ -14,6 +14,10 @@
 (rule
  (targets vmopcodes.ml)
  (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copml))))
+
+(rule
+ (targets vmopcodes.mli)
+ (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copmli))))
 
 (rule
  (targets uint63.ml)
@@ -31,7 +35,7 @@
 ; In dev profile, we check the kernel against a more strict set of
 ; warnings.
 (env
- (dev (flags :standard -w @a-4-40-44-50-70)))
+ (dev (flags :standard -w @a-4-40-44-50)))
 
 (deprecated_library_name
  (old_public_name coq.kernel)

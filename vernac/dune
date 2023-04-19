@@ -3,6 +3,7 @@
  (synopsis "Coq's Vernacular Language")
  (public_name coq-core.vernac)
  (wrapped false)
+ (modules_without_implementation vernacexpr)
  ; until ocaml/dune#4892 fixed
  ; (private_modules comProgramFixpoint egramcoq)
  (libraries tactics parsing findlib.dynload))

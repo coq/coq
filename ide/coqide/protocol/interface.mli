@@ -318,4 +318,3 @@ type handler = {
   interp      : interp_sty      -> interp_rty;
   subgoals    : subgoals_sty -> subgoals_rty;
 }
-

@@ -8,3 +8,7 @@
 ;    ../../theories/Init/Prelude.vo)
 ;  (action
 ;    (bash "make COQCORELIB=$(pwd)/../../ COQLIB=$(pwd)/../../")))
+
+
+(env
+ (dev (flags :standard -w -70)))

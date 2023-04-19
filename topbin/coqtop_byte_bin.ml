@@ -9,19 +9,12 @@
 (************************************************************************)
 
 (* We register this handler for lower-level toplevel loading code *)
-let _ = CErrors.register_handler (function
+let () = CErrors.register_handler (function
     | Symtable.Error e ->
       Some (Pp.str (Format.asprintf "%a" Symtable.report_error e))
     | _ ->
       None
   )
-
-(* XXX: Remove this for Toploop.get_directive once we bump the OCaml
-   version, unfortunately 4.09 still doesn't have it, and 4.13
-   deprecated directive_table *)
-let _get_directive name =
-  let dt = Toploop.directive_table [@ocaml.warning "-3"] in
-  Hashtbl.find_opt dt name
 
 let load_module fmt name =
   if not ((Topdirs.load_file [@ocaml.warning "-3"]) fmt name) then

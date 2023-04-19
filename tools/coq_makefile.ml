@@ -15,22 +15,6 @@ open Printf
 
 let (>) f g = fun x -> g (f x)
 
-let output_channel = ref stdout
-let makefile_name = ref "Makefile"
-let make_name = ref ""
-
-let print x = output_string !output_channel x
-let printf x = Printf.fprintf !output_channel x
-
-let rec print_list sep = function
-  | [ x ] -> print x
-  | x :: l -> print x; print sep; print_list sep l
-  | [] -> ()
-
-let rec print_prefix_list sep = function
-  | x :: l -> print sep; print x; print_prefix_list sep l
-  | [] -> ()
-
 let usage_coq_makefile () =
   output_string stderr "Usage summary:\
 \n\
@@ -66,10 +50,6 @@ let usage_coq_makefile () =
 \n[-h]: print this usage summary\
 \n[--help]: equivalent to [-h]\n";
   exit 1
-
-let is_genrule r = (* generic rule (like bar%foo: ...) *)
-    let genrule = Str.regexp("%") in
-      Str.string_match genrule r 0
 
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
@@ -426,14 +406,7 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
   | [s] -> Printf.printf "%s" (quote s)
   | _ -> assert false
 
-let share_prefix s1 s2 =
-  let s1 = String.split_on_char '.' s1 in
-  let s2 = String.split_on_char '.' s2 in
-  match s1, s2 with
-  | x :: _ , y :: _ -> x = y
-  | _ -> false
-
-let _ =
+let () =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   let prog, args =
     let args = Array.to_list Sys.argv in

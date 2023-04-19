@@ -799,7 +799,7 @@ let () =
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_open_constr (fun ist c -> (ist,intern_constr ist c));
-  Genintern.register_intern0 wit_red_expr (lift intern_red_expr);
+  Genintern.register_intern0 Redexpr.wit_red_expr (lift intern_red_expr);
   Genintern.register_intern0 wit_bindings (lift intern_bindings);
   Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
   Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);

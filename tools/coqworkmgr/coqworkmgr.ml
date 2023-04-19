@@ -93,8 +93,6 @@ let accept s =
   | Hello p -> { sock=cs; cout; tokens=0; priority=p }
   | _ -> (try Unix.close cs with _ -> ()); raise End_of_file
 
-let parse s = ()
-
 let parties = ref []
 
 let max_tokens = ref 2

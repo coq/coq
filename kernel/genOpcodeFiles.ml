@@ -159,10 +159,10 @@ let opcodes =
   |]
 
 let pp_c_comment fmt =
-  Format.fprintf fmt "/* %s */"
+  Format.fprintf fmt "/* %s */\n"
 
 let pp_ocaml_comment fmt =
-  Format.fprintf fmt "(* %s *)"
+  Format.fprintf fmt "(* %s *)\n"
 
 let pp_header isOcaml fmt =
   Format.fprintf fmt "%a"
@@ -197,6 +197,12 @@ let pp_vmopcodes_ml fmt =
       Format.fprintf fmt "let op%s = %d@.@." s n
     ) (Array.map fst opcodes)
 
+let pp_vmopcodes_mli fmt =
+  pp_header true fmt;
+  Array.iteri (fun _ s ->
+      Format.fprintf fmt "val op%s : int@.@." s
+    ) (Array.map fst opcodes)
+
 let usage () =
   Format.eprintf "usage: %s [enum|jump|arity|copml]@." Sys.argv.(0);
   exit 1
@@ -207,6 +213,7 @@ let main () =
   | "jump" -> pp_coq_jumptbl_h Format.std_formatter
   | "arity" -> pp_coq_arity_h Format.std_formatter
   | "copml" -> pp_vmopcodes_ml Format.std_formatter
+  | "copmli" -> pp_vmopcodes_mli Format.std_formatter
   | _ -> usage ()
   | exception Invalid_argument _ -> usage ()
 

@@ -2,6 +2,7 @@
  (name parsing)
  (public_name coq-core.parsing)
  (wrapped false)
+ (modules_without_implementation notation_gram)
  (libraries coq-core.gramlib interp))
 
 (coq.pp (modules g_prim g_constr))

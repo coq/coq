@@ -367,3 +367,10 @@ let inReduction : bool * string * red_expr -> obj =
 
 let declare_red_expr locality s expr =
     Lib.add_leaf (inReduction (locality,s,expr))
+
+let make0 ?dyn name =
+  let wit = Genarg.make0 name in
+  let () = Geninterp.register_val0 wit dyn in
+  wit
+
+let wit_red_expr = make0 "redexpr"
