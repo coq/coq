@@ -34,6 +34,9 @@ val register_notation_interpretation : notation_interpretation_data -> unit
 
 val perform_eval : pstate:Declare.Proof.t option -> raw_tacexpr -> unit
 
+val perform_compile : ?recursive:bool -> qualid list -> unit
+(** Default [recursive:true] *)
+
 (** {5 Notations} *)
 
 type scope_rule =

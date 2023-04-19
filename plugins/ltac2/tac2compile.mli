@@ -8,23 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Arg =
-struct
-  module DYN = Dyn.Make()
-  module Map = DYN.Map
-  type ('a, 'b) tag = ('a * 'b) DYN.tag
-  let eq = DYN.eq
-  let repr = DYN.repr
-  let create = DYN.create
-  type glb = Glb : (_,'a) tag * 'a  -> glb
-end
+val compile : recursive:bool -> Tac2expr.ltac_constant list -> unit
 
-module type Param = sig type ('raw, 'glb) t end
+(** for communication with dynlinked code *)
 
-module ArgMap (M : Param) =
-struct
-  type _ pack = Pack : ('raw, 'glb) M.t -> ('raw * 'glb) pack
-  include Arg.Map(struct type 'a t = 'a pack end)
-end
+val spilled_kns : Names.KerName.t array ref
 
-module Val = Dyn.Make()
+val spilled_exts : Tac2dyn.Arg.glb array ref

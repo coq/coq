@@ -697,6 +697,7 @@ command: [
 | "Print" "Ltac2" reference      (* ltac2 plugin *)
 | "Locate" "Ltac2" reference      (* ltac2 plugin *)
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
+| "Ltac2" "Compile" LIST0 reference      (* ltac2 plugin *)
 ]
 
 reference_or_constr: [

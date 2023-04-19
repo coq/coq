@@ -132,6 +132,8 @@ let opt_fun ?loc args ty e =
   | [] -> e
   | _ :: _ -> CAst.make ?loc (CTacFun (args, e))
 
+let recursive_att = Attributes.bool_attribute ~name:"recursive"
+
 }
 
 GRAMMAR EXTEND Gram
@@ -1056,4 +1058,9 @@ END
 
 VERNAC COMMAND EXTEND Ltac2PrintSigs CLASSIFIED AS QUERY
 | [ "Print" "Ltac2" "Signatures" ] -> { Tac2entries.print_signatures () }
+END
+
+VERNAC COMMAND EXTEND Ltac2Compile CLASSIFIED AS SIDEFF
+| #[ recursive = recursive_att ] [ "Ltac2" "Compile" reference_list(n) ] ->
+  { Tac2entries.perform_compile ?recursive n }
 END

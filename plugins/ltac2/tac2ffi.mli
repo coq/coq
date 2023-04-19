@@ -47,6 +47,7 @@ val arity_suc : 'a arity -> (valexpr -> 'a) arity
 
 val mk_closure : 'v arity -> 'v -> closure
 val mk_closure_val : 'v arity -> 'v -> valexpr
+(** Composition of [mk_closure] and [ValCls] *)
 
 val annotate_closure : Tac2expr.frame -> closure -> closure
 (** The closure must not be already annotated *)
@@ -228,6 +229,9 @@ val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 val apply : closure -> valexpr list -> valexpr Proofview.tactic
 (** Given a closure, apply it to some arguments. Handling of argument mismatches
     is done automatically, i.e. in case of over or under-application. *)
+
+val apply_val : valexpr -> valexpr list -> valexpr Proofview.tactic
+(** Composition of [to_closure] and [apply] *)
 
 val abstract : int -> (valexpr list -> valexpr Proofview.tactic) -> closure
 (** Turn a fixed-arity function into a closure. The inner function is guaranteed

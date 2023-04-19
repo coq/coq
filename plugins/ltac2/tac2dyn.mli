@@ -16,6 +16,7 @@ sig
   val create : string -> ('a, 'b) tag
   val eq : ('a1, 'b1) tag -> ('a2, 'b2) tag -> ('a1 * 'b1, 'a2 * 'b2) CSig.eq option
   val repr : ('a, 'b) tag -> string
+  type glb = Glb : (_,'a) tag * 'a  -> glb
 end
 (** Arguments that are part of an AST. *)
 

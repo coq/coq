@@ -251,6 +251,10 @@ let ml_load p =
   | WithoutTop ->
     PluginSpec.load p
 
+let load_module x = match !load with
+  | WithTop t -> t.load_module x
+  | WithoutTop -> ()
+
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
   match !load with

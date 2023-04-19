@@ -30,12 +30,12 @@ let load_plugin fmt ps =
 
 let drop_setup () =
   let ppf = Format.std_formatter in
-  Mltop.(set_top
-           { load_plugin = load_plugin ppf
-           ; load_module = load_module ppf
-           ; add_dir  = Topdirs.dir_directory
-           ; ml_loop  = (fun () -> Toploop.loop ppf)
-           })
+  Mltop.set_top
+    { load_plugin = load_plugin ppf
+    ; load_module = load_module ppf
+    ; add_dir  = Topdirs.dir_directory
+    ; ml_loop  = (fun () -> Toploop.loop ppf)
+    }
 
 (* Main coqtop initialization *)
 let _ =

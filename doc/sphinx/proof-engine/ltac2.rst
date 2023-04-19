@@ -356,8 +356,8 @@ Reduction
 ~~~~~~~~~
 
 We use the usual ML call-by-value reduction, with an otherwise unspecified
-evaluation order. This is a design choice making it compatible with OCaml,
-if ever we implement native compilation. The expected equations are as follows::
+evaluation order. This is a design choice making it compatible with OCaml.
+The expected equations are as follows::
 
   (fun x => t) V ≡ t{x := V} (βv)
 
@@ -1700,8 +1700,56 @@ Ltac2 features a toplevel loop that can be used to evaluate expressions.
    together with its type. This command is pure in the sense that it does not
    modify the state of the proof, and in particular all side-effects are discarded.
 
+Compilation
+-----------
+
+Ltac2 definitions can be compiled to OCaml.  The compiled definitions
+will then run natively instead of using the interpreter.
+
+This functionality is experimental, it may change in non backwards compatible ways.
+
+.. cmd:: Ltac2 Compile {* @qualid }
+
+   Compiles the named Ltac2 definitions and any other Ltac2 definitions they depend on
+   for use in the current Coq process.  The compiled code is used to execute the definitions
+   until the state reset (end of file, end of module, end of section).
+
+   Ltac2 code in an :ref:`antiquotation <term-antiquotations>` will
+   not be compiled. Nor will it be detected by dependency analysis,
+   so Ltac2 definitions in antiquotations in tactics passed to
+   `Ltac2 Compile` will not be automatically compiled.  In this case,
+   the compile command should explicitly list such definitions.
+
+   Compiled code currently does not respect :flag:`Ltac Profiling` and
+   :flag:`Ltac2 Backtrace`.
+
+   Compilation of string and open constructor patterns in or-patterns
+   (e.g. `("foo" | "bar")` or `(Not_found | Assertion_failure)`) is
+   exponentially inefficient. For instance
+   `(("a" | "b" | "c"), ("a" | "b" | "c" | "d"))` produces `3 * 4` OCaml branches.
+
+   .. attr:: recursive{? = {| yes | no } }
+
+      By default :cmd:`Ltac2 Compile` also compiles the dependencies of
+      its arguments. This attribute may be used to make this behaviour
+      explicit or to disable it.
+
+   .. warn:: Skipped compilation of mutable definitions {+ qualid }
+
+      Mutable definitions cannot be compiled. If :cmd:`Ltac2 Compile` in
+      recursive mode is used on a definition which depends on a mutable
+      definition, this warning will be emitted.
+
+   .. exn:: Not allowed to compile mutable @qualid
+
+      This error is emitted when :cmd:`Ltac2 Compile` is given a mutable
+      definition as an argument.
+
+
 Debug
 -----
+
+:flag:`Ltac Profiling` and the related commands and tactics also produce Ltac2 profiles.
 
 .. flag:: Ltac2 Backtrace
 
