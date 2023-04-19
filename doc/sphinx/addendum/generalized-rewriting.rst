@@ -835,6 +835,8 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    | terms {* @one_term }
    | eval @red_expr
    | fold @one_term
+   | using @ident
+   | fix @ident := @rewstrategy end
    | ( @rewstrategy )
    | old_hints @ident
 
@@ -907,6 +909,13 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 :n:`fold @term`
    unify
 
+:n:`using @ident`
+   run a strategy bound by `fix` to the :n:`@ident`
+
+:n:`fix @ident := @rewstrategy end`
+   fixpoint operator. Note that the bound :n:`ident` must be used through `using`,
+   i.e. `fix x := x end` is the same as `x` interpreted as a :n:`@one_term`.
+
 :n:`( @rewstrategy )`
    to be documented
 
@@ -914,16 +923,15 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    to be documented
 
 
-Conceptually, a few of these are defined in terms of the others using a
-primitive fixpoint operator `fix`, which the tactic doesn't currently support:
+Conceptually, a few of these are defined in terms of the others:
 
 - :n:`try @rewstrategy := choice @rewstrategy id`
-- :n:`any @rewstrategy := fix @ident. try (@rewstrategy ; @ident)`
+- :n:`any @rewstrategy := fix @ident := try (@rewstrategy ; using @ident)`
 - :n:`repeat @rewstrategy := @rewstrategy; any @rewstrategy`
-- :n:`bottomup @rewstrategy := fix @ident. (choice (progress (subterms @ident)) @rewstrategy) ; try @ident`
-- :n:`topdown @rewstrategy := fix @ident. (choice @rewstrategy (progress (subterms @ident))) ; try @ident`
-- :n:`innermost @rewstrategy := fix @ident. (choice (subterm @ident) @rewstrategy)`
-- :n:`outermost @rewstrategy := fix @ident. (choice @rewstrategy (subterm @ident))`
+- :n:`bottomup @rewstrategy := fix @ident := (choice (progress (subterms (using @ident))) @rewstrategy) ; try (using @ident)`
+- :n:`topdown @rewstrategy := fix @ident := (choice @rewstrategy (progress (subterms (using @ident)))) ; try (using @ident)`
+- :n:`innermost @rewstrategy := fix @ident := (choice (subterm (using @ident)) @rewstrategy)`
+- :n:`outermost @rewstrategy := fix @ident := (choice @rewstrategy (subterm (using @ident)))`
 
 The basic control strategy semantics are straightforward: strategies
 are applied to subterms of the term to rewrite, starting from the root

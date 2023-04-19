@@ -2296,6 +2296,8 @@ rewstrategy: [
 | "terms" LIST0 constr
 | "eval" red_expr
 | "fold" constr
+| "using" identref
+| "fix" identref ":=" rewstrategy "end"
 ]
 
 int_or_var: [

@@ -357,6 +357,9 @@ type atomic_tactic_expr =
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
 type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen
 
+type raw_strategy = (constr_expr, raw_red_expr, lident) Rewrite.strategy_ast
+type glob_strategy = (Genintern.glob_constr_and_expr, glob_red_expr, Id.t) Rewrite.strategy_ast
+
 (** Traces *)
 
 type ltac_call_kind =
