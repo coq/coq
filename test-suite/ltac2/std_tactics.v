@@ -36,3 +36,11 @@ Proof.
   assert (a = a) by Std.reflexivity ();
   assumption.
 Qed.
+
+(* Test that notations in by clause still work: *)
+Goal forall (a: nat), a = a.
+Proof.
+  intros.
+  assert (a = a) by exact eq_refl;
+  assumption.
+Qed.

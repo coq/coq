@@ -891,7 +891,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = ltac2_expr LEVEL "1" -> { Some tac }
+    [ [ "by"; tac = ltac2_expr LEVEL "5" -> { Some tac }
       | -> { None }
     ] ]
   ;
