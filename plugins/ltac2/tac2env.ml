@@ -114,7 +114,9 @@ module MLMap = Map.Make(ML)
 
 let primitive_map = ref MLMap.empty
 
-let define_primitive name f = primitive_map := MLMap.add name f !primitive_map
+let define_primitive name f =
+  let f = annotate_closure (FrPrim name) f in
+  primitive_map := MLMap.add name f !primitive_map
 let interp_primitive name = MLMap.find name !primitive_map
 
 (** Name management *)

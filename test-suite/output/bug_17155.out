@@ -6,7 +6,6 @@ The command has indeed failed with message:
 Backtrace:
 Call M.g
 Call bug_17155.M.f (* local *)
-Call Control.throw
 Prim <coq-core.plugins.ltac2:throw>
 Uncaught Ltac2 exception: Invalid_argument (None)
 Ltac2 M.g : unit -> 'a

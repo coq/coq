@@ -477,11 +477,7 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
       user_err ?loc (str "Unregistered primitive " ++
         quote (str ml.mltac_plugin) ++ spc () ++ quote (str ml.mltac_tactic))
   in
-  let init i = Id.of_string (Printf.sprintf "x%i" i) in
-  let names = List.init arrows init in
-  let bnd = List.map (fun id -> Name id) names in
-  let arg = List.map (fun id -> GTacVar id) names in
-  let e = GTacFun (bnd, GTacPrm (ml, arg)) in
+  let e = GTacPrm ml in
   let def = {
     tacdef_local = local;
     tacdef_mutable = false;

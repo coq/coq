@@ -404,13 +404,9 @@ let pr_glbexpr_gen lvl c =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
-  | GTacPrm (prm, args) ->
-    let args = match args with
-    | [] -> mt ()
-    | _ -> spc () ++ pr_sequence (pr_glbexpr E0) args
-    in
+  | GTacPrm prm ->
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
-      qstring prm.mltac_tactic ++ args)
+      qstring prm.mltac_tactic)
   and pr_applied_constructor lvl tpe n cl =
     let factorized =
       if KerName.equal tpe t_list then
