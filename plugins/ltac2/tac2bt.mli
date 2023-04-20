@@ -17,3 +17,5 @@ val get_backtrace : backtrace Proofview.tactic
 val with_frame : frame -> 'a Proofview.tactic -> 'a Proofview.tactic
 
 val print_ltac2_backtrace : bool ref
+
+val pr_frame_hook : (frame -> Pp.t) Hook.t

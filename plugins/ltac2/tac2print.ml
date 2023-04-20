@@ -646,3 +646,12 @@ let parse_format (s : string) : format list =
     | _ -> raise InvalidFormat
   in
   parse 0 []
+
+
+let pr_profile_frame = let open Pp in function
+  | FrAnon e -> str "<fun " ++ pr_glbexpr e ++ str ">"
+  | FrLtac kn -> pr_tacref kn
+  | FrPrim ml -> str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
+  | FrExtn (tag,_) -> str "<extn:" ++ str (Tac2dyn.Arg.repr tag) ++ str ">"
+
+let () = Hook.set Tac2bt.pr_frame_hook pr_profile_frame

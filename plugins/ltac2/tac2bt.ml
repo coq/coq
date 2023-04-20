@@ -28,11 +28,7 @@ let set_backtrace bt =
   let sigma = Evd.set_extra_data store sigma in
   Proofview.Unsafe.tclEVARS sigma
 
-let pr_frame = let open Pp in function
-  | FrAnon e -> str "<fun " ++ Tac2print.pr_glbexpr e ++ str ">"
-  | FrLtac kn -> Tac2print.pr_tacref kn
-  | FrPrim ml -> str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
-  | FrExtn (tag,_) -> str "<extn:" ++ str (Tac2dyn.Arg.repr tag) ++ str ">"
+let pr_frame, pr_frame_hook = Hook.make ()
 
 let with_frame frame tac =
   let tac =
@@ -44,5 +40,5 @@ let with_frame frame tac =
       Proofview.tclUNIT ans
     else tac
   in
-  let pr_frame f = Some (pr_frame f) in
+  let pr_frame f = Some (Hook.get pr_frame f) in
   Ltac_plugin.Profile_ltac.do_profile_gen pr_frame frame ~count_call:true tac
