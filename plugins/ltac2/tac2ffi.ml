@@ -435,9 +435,15 @@ let rec abstract n f =
     NClosure (AddAty arity, fun accu v -> fe (v :: accu))
 
 let abstract n f =
-  let () = assert (n > 0) in
-  let NClosure (arity, f) = abstract n f in
-  MLTactic (arity, f [])
+  match n with
+  | 1 -> MLTactic (OneAty, fun a -> f [a])
+  | 2 -> MLTactic (AddAty OneAty, fun a b -> f [a;b])
+  | 3 -> MLTactic (AddAty (AddAty OneAty), fun a b c -> f [a;b;c])
+  | 4 -> MLTactic (AddAty (AddAty (AddAty OneAty)), fun a b c d -> f [a;b;c;d])
+  | _ ->
+    let () = assert (n > 0) in
+    let NClosure (arity, f) = abstract n f in
+    MLTactic (arity, f [])
 
 let app_fun1 cls r0 r1 x =
   apply cls [r0.r_of x] >>= fun v -> Proofview.tclUNIT (r1.r_to v)
