@@ -970,12 +970,12 @@ let register_struct atts str = match str with
 
 (** Toplevel exception *)
 
-let _ = Goptions.declare_bool_option {
+let () = Goptions.declare_bool_option {
   Goptions.optstage = Summary.Stage.Interp;
   Goptions.optdepr = false;
   Goptions.optkey = ["Ltac2"; "Backtrace"];
-  Goptions.optread = (fun () -> !Tac2interp.print_ltac2_backtrace);
-  Goptions.optwrite = (fun b -> Tac2interp.print_ltac2_backtrace := b);
+  Goptions.optread = (fun () -> !Tac2bt.print_ltac2_backtrace);
+  Goptions.optwrite = (fun b -> Tac2bt.print_ltac2_backtrace := b);
 }
 
 let backtrace : backtrace Exninfo.t = Exninfo.make ()
@@ -1004,7 +1004,7 @@ let () = register_handler begin function
 end
 
 let () = CErrors.register_additional_error_info begin fun info ->
-  if !Tac2interp.print_ltac2_backtrace then
+  if !Tac2bt.print_ltac2_backtrace then
     let bt = Exninfo.get info backtrace in
     let bt = match bt with
     | Some bt -> List.rev bt

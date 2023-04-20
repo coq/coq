@@ -8,27 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Tac2expr
-open Tac2ffi
 
-type environment = Tac2env.environment
+(** {5 Backtrace} *)
 
-val empty_environment : environment
+val get_backtrace : backtrace Proofview.tactic
 
-val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
+val with_frame : frame -> 'a Proofview.tactic -> 'a Proofview.tactic
 
-val interp_value : environment -> glb_tacexpr -> valexpr
-(** Same as [interp] but assumes that the argument is a syntactic value. *)
-
-(* val interp_app : closure -> ml_tactic *)
-
-(** {5 Cross-boundary encodings} *)
-
-val get_env : Ltac_pretype.unbound_ltac_var_map -> environment
-val set_env : environment -> Ltac_pretype.unbound_ltac_var_map -> Ltac_pretype.unbound_ltac_var_map
-
-(** {5 Exceptions} *)
-
-exception LtacError of KerName.t * valexpr array
-(** Ltac2-defined exceptions seen from OCaml side *)
+val print_ltac2_backtrace : bool ref
