@@ -372,7 +372,7 @@ You can help a lot by:
 
 Once you have some experience with the Coq issue tracker, you can
 request to join the **@coq/contributors** team (any member of the
-**@coq/core** team can do so using [this link][add-contributor]).
+**@coq/core** team can give you access using [this link][add-contributor]).
 Being in this team will grant you the following access:
 
 - **Updating labels:** every open issue and pull request should
@@ -490,14 +490,15 @@ test-suite. See the test-suite [README][test-suite-README] for how to
 do so.
 
 Small fixes do not need any documentation, or changelog update.  New,
-or updated, user-facing features, and major bug fixes do.  See above
+or updated, user-facing features, and major bug fixes do.  See the
+[corresponding section](#improving-the-official-documentation) for
 on how to contribute to the documentation, and the README in
 [`doc/changelog`][user-changelog] for how to add a changelog entry.
 
 #### Proposing large changes: Coq Enhancement Proposals ####
 
-You are always welcome to open a PR for a change of any size.
-However, you should be aware that the larger the change, the higher
+Please refrain to open very large PRs without discussing them first.
+Indeed, you should be aware that the larger the change, the higher
 the chances it will take very long to review, and possibly never get
 merged.
 
@@ -593,8 +594,8 @@ We have a linter that checks a few different things:
   allow the use of `git bisect` in the future.  It should be possible
   to build every commit, and in principle even the test-suite should
   pass on every commit (but this isn't tested in CI because it would
-  take too long).  A good way to test this is to use `git rebase
-  master --exec "make check"`.
+  take too long).  A good way to test this locally is to use
+  `git rebase master --exec "make check"`.
 - **No tabs or end-of-line spaces on updated lines**.  We are trying
   to get rid of all tabs and all end-of-line spaces from the code base
   (except in some very special files that need them).  This checks not
@@ -619,8 +620,9 @@ We have a linter that checks a few different things:
 
   Note that in the case where you added new commands or tactics, you
   will have to manually insert them in the documentation, the tool
-  won't do that for you, only check that what you documented is
-  consistent with the parser.
+  won't do that for you, although it should detect in most cases if you
+  have forgotten to add documentation for your new command or tactic,
+  or if the documentation is not consistent with the parser.
 
 You may run the linter yourself with `dev/lint-repository.sh`.
 
@@ -681,18 +683,23 @@ Here are a few labels that reviewers may add to your PR to track its
 status.  In general, this will come in addition to comments from the
 reviewers, with specific requests.
 
-- [needs: rebase][needs-rebase] indicates the PR should be rebased on
-  top of the latest version of the base branch (usually `master`).  We
-  generally ask you to rebase only when there are merge conflicts or
-  if the PR has been opened for a long time and we want a fresh CI
-  run.
 - [needs: fixing][needs-fixing] indicates the PR needs a fix, as
   discussed in the comments.
 - [needs: documentation][needs-documentation] indicates the PR
   introduces changes that should be documented before it can be merged.
+  This label may be used to reflect that the corresponding checkbox is
+  not yet checked in the PR template (so that we don't forget when
+  we intend to merge the PR).
 - [needs: changelog entry][needs-changelog] indicates the PR introduces
   changes that should be documented in the [user
-  changelog][user-changelog].
+  changelog][user-changelog]. Similarly to the previous label, this
+  may be used to reflect that the corresponding checkbox is not yet
+  checked in the PR template.
+- [needs: test-suite update][needs-test-suite] indicates that tests
+  should be added to the test-suite / modified to ensure that the
+  changes are properly tested. Similarly to the previous two labels,
+  this may be used to reflect that the corresponding checkbox is not
+  yet checked in the PR template.
 - [needs: benchmarking][needs-benchmarking] and [needs: testing][needs-testing]
   indicate the PR needs testing beyond what the test suite can handle.
   For example, performance benchmarking is currently performed with a different
@@ -749,14 +756,11 @@ Contributing to the standard library is also made easier by not having
 to learn about Coq's internals, and its implementation language.
 
 Due to the compatibility constraints created by the many projects that
-depend on it, proposing breaking changes, such as changing a
-definition, may frequently be rejected, or at the very least might
-take a long time before getting approved and merged. This does not
-mean that you cannot try.  On the other hand, contributing new lemmas
-on existing definitions and cleaning up existing proofs are likely to
-be accepted.  Contributing new operations on existing types are also
-likely to be accepted in many cases.  In case of doubt, ask in an
-issue before spending too much time preparing your PR.
+depend on it, proposing breaking changes, will usually require to go
+through a specific process, with a deprecation phase.  Additions, such
+as contributing new lemmas on existing definitions, and clean-ups of
+existing proofs are easier contributions to start with. In case of
+doubt, ask in an issue before spending too much time preparing your PR.
 
 If you create a new file, it needs to be listed in
 `doc/stdlib/index-list.html`.
@@ -778,8 +782,8 @@ Reviewers should ensure that the code that is changed or introduced is
 in good shape and will not be a burden to maintain, is unlikely to
 break anything, or the compatibility-breakage has been identified and
 validated, includes documentation, changelog entries, and test files
-when necessary.  Reviewers can use labels, or change requests to
-further emphasize what remains to be changed before they can approve
+when necessary.  Reviewers can use `needs:` labels, or change requests
+to further emphasize what remains to be changed before they can approve
 the PR.  Once reviewers are satisfied (regarding the part they
 reviewed), they should formally approve the PR, possibly stating what
 they reviewed.
@@ -791,7 +795,9 @@ and which are just suggestions.  They should strive to reduce the
 number of rounds of feedback that are needed by posting most of their
 comments at the same time.  If they are opposed to the change, they
 should clearly say so from the beginning to avoid the contributor
-spending time in vain.
+spending time in vain. They should avoid making nitpick comments when
+in fact, they have larger concerns that should be addressed first
+(these larger concerns should then be made very clear).
 
 Furthermore, when reviewing a first contribution (GitHub highlights
 first-time contributors), be extra careful to be welcoming, whatever
@@ -1101,11 +1107,11 @@ the wiki][Benchmarking].
 
 When CI has a few failures which look spurious, restarting the
 corresponding jobs is a good way to ensure this was indeed the case.
-You can restart jobs on Azure from the "Checks" tab on GitHub.  To
-restart a job on GitLab CI, you should sign into GitLab (this can be
-done using a GitHub account); if you are part of the [Coq organization
-on GitLab](https://gitlab.com/coq), you should see a "Retry" button;
-otherwise, send a request to join the organization.
+Most failed jobs can be restarted directly from the "Checks" tab on
+GitHub. In case you need to restart a job on GitLab CI using the GitLab
+interface, then you should sign into GitLab (this can be
+done using a GitHub account) and join the
+[Coq GitLab organization][GitLab-organization].
 
 #### Code owners, issue and pull request templates ####
 
@@ -1207,9 +1213,9 @@ your mailbox][notification-email] to handle incoming notifications
 efficiently, or you read your notifications within a web browser.  You
 can configure how you receive notifications in [your GitHub
 settings][GitHub-notification-settings], you can use the GitHub
-interface to mark as read, save for later or mute threads.  You can
-also manage your GitHub web notifications using a tool such as
-[Octobox][].
+interface to mark as read, save for later or mute threads. Nowadays,
+you have also the option to watch only part of the activity (only
+issues, only PRs, only releases, etc.).
 
 ##### Draft pull requests #####
 
@@ -1243,13 +1249,17 @@ requests that were previously removed.
 We use GitLab mostly for its CI service.  The [Coq organization on
 GitLab][GitLab-coq] hosts a number of CI/CD-only mirrors.  If you are
 a regular contributor, you can request access to it from [the
-organization page][GitLab-coq]: this will grant you permission to
-restart failing CI jobs.
+organization page][GitLab-coq], although in most cases, you won't need
+this.
 
 GitLab too has [extensive documentation][GitLab-doc], in particular on
 configuring CI.
 
 #### Merge script dependencies ####
+
+Nowadays, most assignees should use the `@coqbot: merge now` command
+instead of the merge script. However, the merge script is still
+available, and is still needed to merge PRs into release branches.
 
 The merge script passes option `-S` to `git merge` to ensure merge
 commits are signed.  Consequently, it depends on the GnuPG command
@@ -1348,7 +1358,7 @@ can be found [on the wiki][wiki-CUDW].
 [Discourse-development-category]: https://coq.discourse.group/c/coq-development
 [doc_gram]: doc/tools/docgram/README.md
 [doc-README]: doc/README.md
-[documentation-github-project]: https://github.com/coq/coq/projects/3
+[documentation-github-project]: https://github.com/orgs/coq/projects/6
 [dune-doc]: https://dune.readthedocs.io/en/latest/
 [FAQ]: https://github.com/coq/coq/wiki/The-Coq-FAQ
 [git]: https://git-scm.com/
@@ -1366,6 +1376,7 @@ can be found [on the wiki][wiki-CUDW].
 [GitLab-coq]: https://gitlab.com/coq
 [GitLab-doc]: https://docs.gitlab.com/
 [IRC]: irc://irc.libera.chat:6697/#coq
+[GitLab-organization]: https://gitlab.com/coq
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
 [master-doc]: https://coq.github.io/doc/master/refman/
@@ -1376,12 +1387,12 @@ can be found [on the wiki][wiki-CUDW].
 [needs-fixing]: https://github.com/coq/coq/labels/needs%3A%20fixing
 [needs-rebase]: https://github.com/coq/coq/labels/needs%3A%20rebase
 [needs-testing]: https://github.com/coq/coq/labels/needs%3A%20testing
+[needs-test-suite]: https://github.com/coq/coq/labels/needs%3A%20test-suite%20update
 [Nix]: https://github.com/coq/coq/wiki/Nix
 [notification-email]: https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive
 [OCaml-planet]: http://ocaml.org/community/planet/
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 [ocamlverse-community]: https://ocamlverse.github.io/content/community.html
-[Octobox]: http://octobox.io/
 [old-style-guide]: dev/doc/style.txt
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
