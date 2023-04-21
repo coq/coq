@@ -412,10 +412,10 @@ Being in this team will grant you the following access:
   community moderators.  You should hide them instead.  An audit log
   is available to track deleted items if needed (but does not allow
   recovering them).
-- **Pushing a branch or a tag to the main repository:** please push
-  changes to your own fork rather than the main repository. (Branches
-  pushed to the main repository will be removed promptly and without
-  notice.)
+
+However, and contrary to most other repositories, it will not give you
+the ability to push new branches or tags to the repository. This is
+disabled because we prefer to use forks to work on feature branches.
 
 Yet to be fully specified: use of priority, difficulty, `help wanted`,
 and `good first issue` labels, milestones, assignments, and GitHub
