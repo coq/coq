@@ -322,7 +322,9 @@ very large input file then you can add it as an attachment.
 If you want to minimize your bug (or help minimize someone else's) for
 more extra credit, then you can use the [Coq bug
 minimizer][JasonGross-coq-tools] (specifically, the bug minimizer is
-the `find-bug.py` script in that repo).
+the `find-bug.py` script in that repo). Nowadays, the easiest way to
+use the Coq bug minimizer is to call it through `@coqbot`, as documented
+[here][coqbot-minimize].
 
 ### Beta testing ###
 
@@ -638,6 +640,13 @@ fix it.  Obviously, you should leave enough time for this to happen
 (you cannot expect a project maintainer to allocate time for this as
 soon as you request it) and you should be ready to listen to more
 feedback and reconsider the impact of your change.
+
+If you need help figuring out why your PR is breaking a tested project,
+you may consider requesting automatic minimization of the failure with
+the bot. In principle, the bot should automatically propose this option
+to you if it is available (it needs to detect a failure in a Coq file
+and it needs to confirm that the failure was not already present in the
+base branch to propose to run the minimization process).
 
 #### Understanding reviewers' feedback ####
 
@@ -1282,6 +1291,7 @@ can be found [on the wiki][wiki-CUDW].
 [CODEOWNERS]: .github/CODEOWNERS
 [Codewars]: https://www.codewars.com/?language=coq
 [company-coq-issues]: https://github.com/cpitclaudel/company-coq/issues
+[coqbot-minimize]: https://github.com/coq/coq/wiki/Coqbot-minimize-feature
 [Coq-Club]: https://sympa.inria.fr/sympa/arc/coq-club
 [coq-community-maintainer-wanted]: https://github.com/coq-community/manifesto/issues?q=is%3Aissue+is%3Aopen+label%3Amaintainer-wanted
 [coq-community-manifesto]: https://github.com/coq-community/manifesto
