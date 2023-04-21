@@ -177,15 +177,15 @@ contribution is to package Coq for your preferred package manager (see
 
 Sharing reusable assets in the form of new libraries, plugins, and
 tools is great so that others can start building new things on top.
-Having an extensive and healthy package ecosystem will be key to the
+Having an extensive and healthy package ecosystem is key to the
 success of Coq.
 
 #### Distribution of Coq packages ####
 
 You can distribute your library or plugin through the [Coq package
-index][Coq-package-index].  Tools can be advertised on the [tools
-page][tools-website] of the Coq website, or the [tools
-page][tools-wiki] of the wiki.
+index][Coq-package-index]. Important packages and tools can be advertised on the [Awesome Coq][Awesome-Coq] list. Some packages are
+distributed along Coq, within the [Coq Platform][Coq-Platform]. Check
+the Platform's charter if you consider adding your package to it.
 
 #### Support for plugin and library authors ####
 
@@ -326,10 +326,11 @@ the `find-bug.py` script in that repo).
 
 ### Beta testing ###
 
-Coq gets a new major release about every six months.  Before a new
-major version is released, there is a beta-testing period, which
-usually lasts one month (see the [release plan][release-plan]).  You
-can help make the upcoming release better, by testing the beta
+Coq gets a new major release about every six months, which is then
+distributed through the [Coq Platform][Coq-Platform].
+New major versions of Coq are first made available for beta-testing,
+before being declared stable and the new default version of the Coq
+Platform. You can help make by testing the beta
 version, and trying to port your projects to it.  You should report
 any bug you notice, but also any change of behavior that is not
 documented in the changelog.  Then Coq developers will be able to
@@ -922,7 +923,7 @@ of a limitation of GitHub).
 
 Coq's major release cycles generally span about six months, with about
 4-5 months of development, and 1-2 months of stabilization /
-beta-releases.  The release manager (RM) role is a rolling position
+release candidates.  The release manager (RM) role is a rolling position
 among core developers.  The [release plan][release-plan] is published
 on the wiki.
 
@@ -938,7 +939,7 @@ backporting process.  PR authors and assignee can signal a desire to
 have a PR backported by selecting an appropriate milestone.  Most of
 the time, the choice of milestone is between two options: the next
 major version that has yet to branch from `master`, or the next
-version (beta, final, or patch-level release) of the active release
+version (rc, final, or patch-level release) of the active release
 branch.  In the end, it is the RM who decides whether to follow or not
 the recommendation of the PR assignee, and who backports PRs to the
 release branch.
@@ -974,15 +975,17 @@ thank them for this.  If your preferred package manager does not
 include Coq, it is a very worthy contribution to make it available
 there.  But be careful not to let a package get outdated, as this
 could lead some users to install an outdated version of Coq without
-even being aware of it.
+even being aware of it. Beyond packaging Coq, you might want to
+consider packaging the rest of Coq packages available to users through
+the [Coq Platform][Coq-Platform]. In this case, it would be helpful if
+you try to favor the same versions as in the Coq Platform.
 
 This [Repology page][repology-coq] lists the versions of Coq which are
 packaged in many repositories, although it is missing information on
 some repositories, like opam.
 
-The Windows and macOS installers are auto-generated in our CI, and
-this infrastructure has dedicated maintainers within the development
-team.
+The Windows and macOS installers are created as part of the preparation
+of the Coq Platform.
 
 ## Additional resources ##
 
@@ -1269,6 +1272,7 @@ can be found [on the wiki][wiki-CUDW].
 
 [add-contributor]: https://github.com/orgs/coq/teams/contributors/members?add=true
 [api-doc]: https://coq.github.io/doc/master/api/
+[Awesome-Coq]: https://github.com/coq-community/awesome-coq
 [Benchmarking]: https://github.com/coq/coq/wiki/Benchmarking
 [CEP]: https://github.com/coq/ceps
 [check-owners]: dev/tools/check-owners-pr.sh
@@ -1287,6 +1291,7 @@ can be found [on the wiki][wiki-CUDW].
 [Coq-documentation]: https://coq.inria.fr/documentation
 [Coq-issue-tracker]: https://github.com/coq/coq/issues
 [Coq-package-index]: https://coq.inria.fr/packages
+[Coq-Platform]: https://github.com/coq/platform
 [coq-pushers]: https://github.com/orgs/coq/teams/pushers/teams
 [coq-repository]: https://github.com/coq/coq
 [Coq-website-repository]: https://github.com/coq/www
