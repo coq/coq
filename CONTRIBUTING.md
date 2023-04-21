@@ -844,6 +844,14 @@ reviewer for each component that is significantly affected), that
 change requests have been implemented, that CI is passing, and
 eventually will be the one who merges the PR.
 
+The PR assignee may use their own judgement to decide to merge a PR that
+has not received reviews from all maintainers of affected components,
+depending on how large or controversial the changes to these components
+are. It is also admissible to have an assignee who is not a maintainer
+of any of the affected components, in case relevant maintainers are not
+available, and as long as the assignee is a member of the
+**@coq/pushers** team and is able to understand the changes in the PR.
+
 *If you have already frequently contributed to a component, we would
 be happy to have you join one of the maintainer teams.* See the
 [section below](#joining--leaving-maintainer-teams) on joining /
