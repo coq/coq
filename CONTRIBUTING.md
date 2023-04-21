@@ -946,7 +946,8 @@ announce it to other maintainers when you do join or leave a team.
 
 The core developers are the active developers with a lengthy and
 significant contribution track record.  They are the ones with admin
-powers over the Coq organization, and the ones who take part in votes
+powers over the Coq organization, and the ones who take part in
+[votes][voting-process]
 in case of conflicts to take a decision (rare).  One of them is
 designated as a development coordinator, and has to approve the
 changes in the core team membership (until we get a more formal
@@ -954,7 +955,8 @@ joining and leaving process).
 
 The core developers are the members of the **@coq/core** team ([member
 list][coq-core] only visible to the Coq organization members because
-of a limitation of GitHub).
+of a limitation of GitHub). They are also listed on the
+[Coq Team page][coq-team].
 
 ## Release management ##
 
@@ -1334,6 +1336,7 @@ can be found [on the wiki][wiki-CUDW].
 [Coq-Platform]: https://github.com/coq/platform
 [coq-pushers]: https://github.com/orgs/coq/teams/pushers/teams
 [coq-repository]: https://github.com/coq/coq
+[coq-team]: https://coq.inria.fr/coq-team.html
 [Coq-website-repository]: https://github.com/coq/www
 [debugging-doc]: dev/doc/debugging.md
 [dev-ci-nix]: dev/ci/nix/README.md
@@ -1402,6 +1405,7 @@ can be found [on the wiki][wiki-CUDW].
 [unreleased-changelog]: https://coq.github.io/doc/master/refman/changes.html#unreleased-changes
 [user-changelog]: doc/changelog
 [user-overlays]: dev/ci/user-overlays
+[voting-process]: https://github.com/coq/coq/wiki/Core-Team-Voting-Process
 [wiki]: https://github.com/coq/coq/wiki
 [wiki-calls]: https://github.com/coq/coq/wiki/Coq-Calls
 [wiki-CUDW]: https://github.com/coq/coq/wiki/CoqImplementorsWorkshop
