@@ -900,8 +900,10 @@ organization, because of a limitation of GitHub).
   voice their opinion, or to finish reviewing the PR.
 
 - Only PRs targetting the `master` branch can be merged by a
-  maintainer.  For PRs targetting a release branch, the assignee
-  should always be the release manager.
+  maintainer.  For PRs targetting an actively maintained release
+  branch, the assignee should always be the release manager. For older
+  release branches, any **@coq/core** member can merge any PR (but such
+  PRs should be limited to fixing build issues).
 
 - Before merging, the assignee must also select a milestone for the PR
   (see also Section [Release management](#release-management)).
