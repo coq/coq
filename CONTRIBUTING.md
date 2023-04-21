@@ -106,19 +106,26 @@ One very important way of contributing is by asking and answering
 questions, in order to create a body of easily-browsable,
 problem-oriented, additional documentation.
 
-There are two main platforms for this purpose:
+There are many platforms for this purpose:
 
-- [Stack Overflow][Stack-Overflow] (or more generally the [Stack
-  Exchange][Stack-Exchange] platforms, as some Coq questions may be
-  asked on other sites, such as TCS Stack Exchange);
-- Our [Discourse forum][Discourse].
-
-In particular, our Discourse forum has several non-English categories
-that have yet to find their public, so do not hesitate to advertise
-them to people you know who might not be at ease with English.
+- Our [Zulip chat][Zulip], which contains a main "#Coq users" stream,
+  but also many other streams dedicated to specific Coq packages, such
+  as Equations, MathComp, etc.
+- Our [Discourse forum][Discourse], which contains a main "Using Coq"
+  category, but also categories dedicated to asking questions in other
+  languages than English. They have yet to find their public, so do not
+  hesitate to advertise them to people you know who might not be at
+  ease with English.
+- The [Proof Assistants Stack Exchange][Proof-Assistants-SE], a Q&A
+  site for users of proof assistants, including Coq.
+- Other [Stack Exchange][Stack-Exchange] sites, and particularly
+  [Stack Overflow][Stack-Overflow], receive questions about Coq.
+  Questions asked anywhere on Stack Exchange with the `coq` tag are
+  automatically relayed to Zulip in a [dedicated topic][Stack-Exchange-to-Zulip].
 
 Other active places to answer questions include the [Coq-Club][]
-mailing list, and the Coq IRC channel (`irc://irc.freenode.net/#coq`).
+mailing list, the [Coq IRC channel][IRC], the
+[/r/Coq subreddit][Reddit], etc.
 
 ### Writing tutorials and blog posts ###
 
@@ -1310,6 +1317,7 @@ can be found [on the wiki][wiki-CUDW].
 [GitHub-wiki-extensions]: https://help.github.com/en/articles/editing-wiki-content
 [GitLab-coq]: https://gitlab.com/coq
 [GitLab-doc]: https://docs.gitlab.com/
+[IRC]: irc://irc.libera.chat:6697/#coq
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
 [master-doc]: https://coq.github.io/doc/master/refman/
@@ -1330,6 +1338,7 @@ can be found [on the wiki][wiki-CUDW].
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
 [plugin-tutorial]: doc/plugin_tutorial
+[Proof-Assistants-SE]: https://proofassistants.stackexchange.com/
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
 [Reddit]: https://www.reddit.com/r/Coq/
 [refman]: https://coq.inria.fr/distrib/current/refman/
@@ -1339,6 +1348,7 @@ can be found [on the wiki][wiki-CUDW].
 [repology-coq]: https://repology.org/project/coq/versions
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
+[Stack-Exchange-to-Zulip]: https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/New.20Stack.20Exchange.20question
 [Stack-Overflow]: https://stackoverflow.com/questions/tagged/coq
 [stdlib-doc]: https://coq.inria.fr/stdlib/
 [test-suite-README]: test-suite/README.md
