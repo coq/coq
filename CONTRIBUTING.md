@@ -543,8 +543,21 @@ commit merging your branch with the base branch, so if there is a
 conflict and this merge cannot be performed automatically, the bot
 will put a `needs: rebase` label, and the tests won't run.
 
-Otherwise, a large suite of tests will be run on GitLab, plus some
+Otherwise, a suite of tests will be run on GitLab, plus some
 additional tests on GitHub Actions for Windows and macOS compatibility.
+
+The complete suite of tests is no longer run by default to save
+resources. But it is still required before merging a PR, so this is why
+the bot will put a `needs: full CI` label if it has only run the
+lightweight tests. If you are a member of **@coq/contributors**, you can
+request a full run of the CI by putting the `request: full CI` label
+before pushing to your PR branch, or by commenting
+`@coqbot: run full CI` after having pushed. (In case you need to re-run
+the tests, e.g., because the results are outdated, you can also request
+the bot to do so by commenting `@coqbot: run full CI` or
+`@coqbot: run light CI`. If you comment `@coqbot: run CI`, the bot will
+decide whether to run the full or the lightweight tests based on the
+presence of the `request: full CI` label.)
 
 If a test fails on GitLab, you will see in the GitHub PR interface,
 both the failure of the whole pipeline, and of the specific failed
@@ -554,6 +567,11 @@ your control.  In particular, if you get a failure in one of the
 tested plugins but you didn't change the Coq API, it is probably a
 transient issue and you shouldn't have to worry about it.  In case of
 doubt, ask the reviewers.
+
+To re-run a specific failed job, you can use the Re-run jobs button
+in the GitHub interface (if you are a member of **@coq/contributors**).
+This won't create a new merge commits with the base branch, so if you
+need this, you can use the `@coqbot: run ... CI` commands instead.
 
 ##### Test-suite failures #####
 
@@ -1041,6 +1059,8 @@ that no accidental compatibility breakages are introduced.  Our CI is
 quite extensive since it includes testing many external projects, some
 of them taking more than an hour to compile.  However, you can get
 partial results much more quickly (when our CI is not overloaded).
+Nowadays, the full CI is not run by default as already explained in
+[Understanding automatic feedback](#understanding-automatic-feedback).
 
 The main documentation resources on our CI are:
 
