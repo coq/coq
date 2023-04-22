@@ -101,8 +101,11 @@ type mix_var =
 
 type mix_type_scheme = int * mix_var glb_typexpr
 
+(* for with_used_vars *)
+type used = { mutable used : bool }
+
 type t = {
-  env_var : mix_type_scheme Id.Map.t;
+  env_var : (mix_type_scheme * used) Id.Map.t;
   (** Type schemes of bound variables *)
   env_cst : UF.elt glb_typexpr UF.t;
   (** Unification state *)
@@ -135,9 +138,27 @@ let find_rec_var id env = Id.Map.find_opt id env.env_rec
 
 let mem_var id env = Id.Map.mem id env.env_var
 
-let find_var id env = Id.Map.find id env.env_var
+let find_var id env =
+  let t, used = Id.Map.find id env.env_var in
+  used.used <- true;
+  t
 
 let bound_vars env = Id.Map.domain env.env_var
+
+(* Changing the APIs enough to get which variables are used in random genargs seems very hard
+   so instead we use mutation to detect them *)
+let with_used_vars env f =
+  let varmap = Id.Map.map (fun (t,used) -> t, used, {used=false}) env.env_var in
+  let env' = { env with env_var = Id.Map.map (fun (t,_,used) -> (t,used)) varmap } in
+  let v = f env' in
+  let freshly_used =
+    varmap |>
+    Id.Map.filter (fun _ (_,orig,fresh) ->
+        (* effect! *)
+        orig.used <- orig.used || fresh.used;
+        fresh.used)
+  in
+  Id.Map.domain freshly_used, v
 
 let get_variable0 mem var = match var with
 | RelId qid ->
@@ -196,10 +217,15 @@ let get_alias {CAst.loc;v=id} env =
 
 let push_name id t env = match id with
 | Anonymous -> env
-| Name id -> { env with env_var = Id.Map.add id t env.env_var }
+| Name id -> { env with env_var = Id.Map.add id (t, {used=false}) env.env_var }
 
 let push_ids ids env =
-  { env with env_var = Id.Map.union (fun _ x _ -> Some x) ids env.env_var }
+  let merge_fun _ fresh orig = match fresh, orig with
+    | None, None -> assert false
+    | Some x, _ -> Some (x, {used=false})
+    | None, Some x -> Some x
+  in
+  { env with env_var = Id.Map.merge merge_fun ids env.env_var }
 
 let rec subst_type subst (t : 'a glb_typexpr) = match t with
 | GTypVar id -> subst id
@@ -346,7 +372,7 @@ let fv_env env =
   | id, None -> UF.Map.add id () accu
   | _, Some t -> fv_type f t accu
   in
-  let fold_var id (_, t) accu =
+  let fold_var id ((_, t), _) accu =
     let fmix id accu = match id with
     | LVar _ -> accu
     | GVar id -> f id accu

@@ -1935,7 +1935,8 @@ let () =
   let subs avoid globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
+      (* XXX can we be less redundant with the avoid? *)
+      let c = GTacExt (avoid, Tac2quote.wit_preterm, (avoid, c)) in
       let rem = Id.Set.remove id rem in
       rem, (Name id, c) :: accu
     in

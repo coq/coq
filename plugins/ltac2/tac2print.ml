@@ -274,6 +274,12 @@ let rec partial_pat_of_glb_pat pat =
 
 let pr_glb_pat pat = pr_partial_pat (partial_pat_of_glb_pat pat)
 
+let { Goptions.get = print_ext_ids } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing";"Ltac2";"Extension";"Used";"Variables"]
+    ~value:false
+    ()
+
 let pr_glbexpr_gen lvl c =
   let rec pr_glbexpr lvl = function
   | GTacAtm atm -> pr_atom atm
@@ -399,11 +405,22 @@ let pr_glbexpr_gen lvl c =
     in
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
-  | GTacExt (tag, arg) ->
+  | GTacExt (ids, tag, arg) ->
     let tpe = interp_ml_object tag in
     let env = Global.env() in
     let sigma = Evd.from_env env in
-    hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
+    let ids =
+      if not (print_ext_ids()) || Id.Set.is_empty ids
+      then mt()
+      else
+        hov 1
+          (str "(*" ++ spc() ++
+           prlist_with_sep spc Id.print (Id.Set.elements ids) ++
+           spc() ++ str "*)") ++
+        spc()
+    in
+    hov 0 (ids ++
+           tpe.ml_print env sigma arg) (* FIXME *)
   | GTacPrm prm ->
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
       qstring prm.mltac_tactic)
