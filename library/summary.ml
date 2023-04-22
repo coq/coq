@@ -182,40 +182,25 @@ let ref_tag ?(stage=Stage.Interp) ~name x =
       init_function = (fun () -> r := x) } in
   r, tag
 
-let ref ?stage ~name x = fst @@ ref_tag ?stage ~name x
+let ref ?(stage=Stage.Interp) ?(local=false) ~name x =
+  if not local then fst @@ ref_tag ~stage ~name x
+  else
+    let r = ref x in
+    let () = declare_summary name
+        { stage;
+          freeze_function = (fun ~marshallable -> if marshallable then Some !r else None);
+          unfreeze_function = (function Some v -> r := v | None -> r := x);
+          init_function = (fun () -> r := x); }
+    in
+    r
 
 module Local = struct
 
-type 'a local_ref = 'a CEphemeron.key ref * 'a CEphemeron.key Dyn.tag
+type 'a local_ref = 'a ref
 
-let set (r, tag) v = r := CEphemeron.create v
-
-let get (key, name) =
-  try CEphemeron.get !key
-  with CEphemeron.InvalidKey ->
-    let { init_function } =
-      try DynMap.find name !sum_map_synterp
-        with Not_found ->
-          DynMap.find name !sum_map_interp
-    in
-    init_function ();
-    CEphemeron.get !key
-
-let ref (type a) ?(stage=Stage.Interp) ~name (init : a) : a local_ref =
-  let () = check_name (mangle name) in
-  let tag : a CEphemeron.key Dyn.tag = Dyn.create (mangle name) in
-  let r = Util.pervasives_ref (CEphemeron.create init) in
-  let sum_map = match stage with Synterp -> sum_map_synterp | Interp -> sum_map_interp in
-  let () = sum_map := DynMap.add tag
-    { stage;
-      freeze_function = (fun ~marshallable -> !r);
-      unfreeze_function = (fun v -> r := v);
-      init_function = (fun () -> r := CEphemeron.create init) } !sum_map
-  in
-  (r, tag)
-
-let (!) = get
-let (:=) = set
+let ref ?stage ~name x = ref ?stage ~name ~local:true x
+let (!) = (!)
+let (:=) = (:=)
 
 end
 
