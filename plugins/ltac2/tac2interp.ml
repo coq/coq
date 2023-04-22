@@ -194,7 +194,7 @@ let rec interp (ist : environment) = function
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
-| GTacExt (tag, e) ->
+| GTacExt (_ids, tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 

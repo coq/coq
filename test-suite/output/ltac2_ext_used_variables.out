@@ -1,0 +1,10 @@
+Ltac2 foo : constr -> constr -> constr -> constr
+      foo :=
+        fun x y z =>
+        let a := (* x y *) constr:($x + ltac:(exact $y)) in
+        (* a z *)
+        constr:($a +
+                ltac2:(let y := z in
+                       let c := fun _ => (* y *) open_constr:($y) in
+                       exact0 false c))
+- : constr = constr:(0 + 1 + 2)
