@@ -173,16 +173,16 @@ let nop () = ()
 
 (** All-in-one reference declaration + registration *)
 
-let ref_tag ?(stage=Stage.Interp) ?(freeze=fun ~marshallable r -> r) ~name x =
+let ref_tag ?(stage=Stage.Interp) ~name x =
   let r = ref x in
   let tag = declare_summary_tag name
     { stage;
-      freeze_function = (fun ~marshallable -> freeze ~marshallable !r);
+      freeze_function = (fun ~marshallable:_ -> !r);
       unfreeze_function = ((:=) r);
       init_function = (fun () -> r := x) } in
   r, tag
 
-let ref ?stage ?freeze ~name x = fst @@ ref_tag ?stage ?freeze ~name x
+let ref ?stage ~name x = fst @@ ref_tag ?stage ~name x
 
 module Local = struct
 
