@@ -196,16 +196,16 @@ module MakeRefTable =
 
 type iter_table_aux = { aux : 'a. 'a table_of_A -> Environ.env -> 'a -> unit }
 
-let iter_table f key lv =
+let iter_table env f key lv =
   let aux = function
     | StringRefValue s ->
        begin
-         try f.aux (get_string_table key) (Global.env()) s
+         try f.aux (get_string_table key) env s
          with Not_found -> error_no_table_of_this_type ~kind:"string" key
        end
     | QualidRefValue locqid ->
        begin
-         try f.aux (get_ref_table key) (Global.env()) locqid
+         try f.aux (get_ref_table key) env locqid
          with Not_found -> error_no_table_of_this_type ~kind:"qualid" key
        end
   in

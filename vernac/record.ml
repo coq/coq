@@ -643,9 +643,10 @@ let warn_future_coercion_class_constructor =
 (* deprecated in 8.17, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/16230 ) *)
 let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
+  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun definitional ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
-    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently. Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\"")
+    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
+    ++ strbrk (if definitional then "" else " Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\""))
 
 let check_proj_flags kind rf =
   let open Vernacexpr in
@@ -683,7 +684,10 @@ let check_proj_flags kind rf =
   let pf_canonical = rf.rf_canonical in
   Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_locality; pf_canonical }
 
-let pre_process_structure udecl kind ~poly (records : Ast.t list) =
+(* remove the definitional argument at the end of the deprecation phase
+   (started in 8.17)
+   (c.f., https://github.com/coq/coq/pull/16230 ) *)
+let pre_process_structure ?(definitional=false) udecl kind ~poly (records : Ast.t list) =
   let indlocs = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
@@ -712,7 +716,7 @@ let pre_process_structure udecl kind ~poly (records : Ast.t list) =
     if kind_class kind <> NotClass then begin
       if is_coercion then warn_future_coercion_class_constructor ();
       if List.exists (function (_, Vernacexpr.{ rf_instance = BackInstanceWarning; _ }) -> true | _ -> false) cfs then
-        warn_future_coercion_class_field ()
+        warn_future_coercion_class_field definitional
     end;
     { Data.id = name.CAst.v; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }
   in
@@ -990,7 +994,8 @@ let declare_existing_class g =
 let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     finite (records : Ast.t list) : GlobRef.t list =
   let impargs, params, univs, variances, projections_kind, data, indlocs =
-    pre_process_structure udecl kind ~poly records
+    let definitional = kind_class kind = DefClass in
+    pre_process_structure ~definitional udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
     | DefClass -> declare_class_constant ~univs impargs params data

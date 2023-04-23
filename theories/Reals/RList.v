@@ -13,13 +13,6 @@ Require Import Rbase.
 Require Import Rfunctions.
 Local Open Scope R_scope.
 
-
-#[deprecated(since="8.12",note="use (list R) instead")]
-Notation Rlist := (list R).
-
-#[deprecated(since="8.12",note="use List.length instead")]
-Notation Rlength := List.length.
-
 Fixpoint MaxRlist (l:list R) : R :=
   match l with
     | nil => 0
@@ -743,9 +736,3 @@ Proof.
     + replace (r :: r0) with (app (r :: nil) r0);
         [ symmetry ; apply app_assoc | reflexivity ].
 Qed.
-
-#[deprecated(since="8.12",note="use List.cons instead")]
-Notation cons := List.cons.
-
-#[deprecated(since="8.12",note="use List.nil instead")]
-Notation nil := List.nil.

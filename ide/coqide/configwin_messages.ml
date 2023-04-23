@@ -25,15 +25,6 @@
 
 (** Module containing the messages of Configwin.*)
 
-let software = "Configwin";;
-let version = "1.2";;
-
-let html_config = "Configwin bindings configurator for html parameters"
-
-let home = Option.default "" (Glib.get_home_dir ())
-
-let mCapture = "Capture";;
-let mType_key = "Type key" ;;
 let mAdd = "Add";;
 let mRemove = "Remove";;
 let mUp = "Up";;
@@ -42,9 +33,3 @@ let mOk = "Ok";;
 let mCancel = "Cancel";;
 let mApply = "Apply";;
 let mValue = "Value"
-let mKey = "Key"
-
-let shortcuts = "Shortcuts"
-let html_end = "End with"
-let html_begin = "Begin with"
-

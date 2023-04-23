@@ -26,12 +26,6 @@ open Pcoq.Constr
 (* TODO: avoid this redefinition without an extra dep to Notation_ops *)
 let ldots_var = Id.of_string ".."
 
-let mk_cast = function
-    (c,(_,None)) -> c
-  | (c,(_,Some ty)) ->
-    let loc = Loc.merge_opt (constr_loc c) (constr_loc ty)
-    in CAst.make ?loc @@ CCast(c, Some DEFAULTcast, ty)
-
 let binder_of_name expl { CAst.loc = loc; v = na } =
   CLocalAssum ([CAst.make ?loc na], Default expl,
     CAst.make ?loc @@ CHole (Some (Evar_kinds.BinderType na), IntroAnonymous))
@@ -42,8 +36,6 @@ let binders_of_names l =
 let pat_of_name CAst.{loc;v} = match v with
 | Anonymous -> CAst.make ?loc @@ CPatAtom None
 | Name id -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident id))
-
-let err () = raise Gramlib.Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
@@ -66,8 +58,6 @@ let ensure_fixannot =
   to_entry "check_fixannot" begin
     lk_kw "{" >> lk_kws ["wf"; "struct"; "measure"]
   end
-
-let lk_name = Pcoq.Lookahead.(lk_ident <+> lk_kw "_")
 
 let test_name_colon =
   let open Pcoq.Lookahead in

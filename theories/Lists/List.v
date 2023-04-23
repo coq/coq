@@ -142,8 +142,8 @@ Section Facts.
   Qed.
 
   (* begin hide *)
-  (* Deprecated *)
-  Theorem app_nil_end (l:list A) : l = l ++ [].
+  (* Deprecated since 8.3 but attribute added in 8.18 *)
+  Theorem app_nil_end_deprecated (l:list A) : l = l ++ [].
   Proof. symmetry; apply app_nil_r. Qed.
   (* end hide *)
 
@@ -154,8 +154,8 @@ Section Facts.
   Qed.
 
   (* begin hide *)
-  (* Deprecated *)
-  Theorem app_assoc_reverse (l m n:list A) : (l ++ m) ++ n = l ++ m ++ n.
+  (* Deprecated since 8.3 but attribute added in 8.18 *)
+  Theorem app_assoc_reverse_deprecated (l m n:list A) : (l ++ m) ++ n = l ++ m ++ n.
   Proof. symmetry; apply app_assoc. Qed.
   (* end hide *)
 
@@ -340,7 +340,7 @@ Section Facts.
 End Facts.
 
 #[global]
-Hint Resolve app_assoc app_assoc_reverse: datatypes.
+Hint Resolve app_assoc app_assoc_reverse_deprecated: datatypes.
 #[global]
 Hint Resolve app_comm_cons app_cons_not_nil: datatypes.
 #[global]
@@ -2157,8 +2157,6 @@ Section Cutting.
   Lemma skipn_all : forall l, skipn (length l) l = nil.
   Proof. now intro l; induction l. Qed.
 
-#[deprecated(since="8.12",note="Use skipn_all instead.")] Notation skipn_none := skipn_all.
-
   Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
   Proof.
     intros l L%Nat.sub_0_le; rewrite <-(firstn_all l) at 1.
@@ -3543,8 +3541,10 @@ Notation tail := tl (only parsing).
 Notation head := hd_error (only parsing).
 Notation head_nil := hd_error_nil (only parsing).
 Notation head_cons := hd_error_cons (only parsing).
+#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
 Notation ass_app := app_assoc (only parsing).
-Notation app_ass := app_assoc_reverse (only parsing).
+#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+Notation app_ass := app_assoc_reverse_deprecated (only parsing).
 Notation In_split := in_split (only parsing).
 Notation In_rev := in_rev (only parsing).
 Notation In_dec := in_dec (only parsing).
@@ -3553,8 +3553,13 @@ Notation rev_acc := rev_append (only parsing).
 Notation rev_acc_rev := rev_append_rev (only parsing).
 Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
+#[deprecated(since = "8.18", note = "Use app_nil_r instead.")]
+Notation app_nil_end := app_nil_end_deprecated (only parsing).
+#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
+
 #[global]
-Hint Resolve app_nil_end : datatypes.
+Hint Resolve app_nil_end_deprecated : datatypes.
 (* end hide *)
 
 

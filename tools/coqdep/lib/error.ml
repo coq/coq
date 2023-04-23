@@ -16,7 +16,7 @@ exception CannotOpenProjectFile of string
 
 exception InvalidFindlibPluginName of string * string
 
-let _ = CErrors.register_handler @@ function
+let () = CErrors.register_handler @@ function
   | CannotParseFile (s,(i,j)) ->
     Some Pp.(str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
       ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error")

@@ -49,12 +49,8 @@ let reference_to_id qid =
 
 let tactic_mode = Entry.make "tactic_command"
 
-let new_entry name =
-  let e = Entry.make name in
-  e
-
-let toplevel_selector = new_entry "toplevel_selector"
-let tacdef_body = new_entry "tacdef_body"
+let toplevel_selector = Entry.make "toplevel_selector"
+let tacdef_body = Entry.make "tacdef_body"
 
 (* Registers [tactic_mode] as a parser for proof editing *)
 let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode

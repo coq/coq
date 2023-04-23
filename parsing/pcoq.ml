@@ -90,6 +90,8 @@ struct
   | Tok.IDENT _ -> Some (n + 1)
   | _ -> None
 
+  let lk_name = lk_ident <+> lk_kw "_"
+
   let lk_ident_except idents n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.IDENT ident when not (List.mem_f String.equal ident idents) -> Some (n + 1)
   | _ -> None
@@ -213,7 +215,6 @@ let rec remove_grammars n =
          camlp5_state := t;
          remove_grammars (n-1)
        | ByEXTEND (name, undo,redo)::t ->
-         Feedback.msg_info Pp.(str "backtracking and redoing byextend on " ++ str name);
            undo();
            camlp5_state := t;
            remove_grammars n;

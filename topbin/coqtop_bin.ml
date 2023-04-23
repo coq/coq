@@ -11,6 +11,6 @@
 let drop_setup () = Mltop.remove ()
 
 (* Main coqtop initialization *)
-let _ =
+let () =
   drop_setup ();
   Coqtop.(start_coq coqtop_toplevel)

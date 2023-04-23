@@ -4,6 +4,9 @@
  (name ocaml_pwd)
  (modules ocaml_pwd))
 
+(env
+ (dev (flags :standard -w -70)))
+
 (rule
  (targets libpath.inc)
  (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/ ))))

@@ -35,6 +35,7 @@ module Lookahead : sig
   val lk_kws : string list -> t
   val lk_nat : t
   val lk_ident : t
+  val lk_name : t
   val lk_ident_except : string list -> t
   val lk_ident_list : t
 end

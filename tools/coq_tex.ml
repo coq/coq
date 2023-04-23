@@ -24,7 +24,6 @@ let verbose = ref false
 let slanted = ref false
 let hrule = ref false
 let small = ref false
-let boot = ref false
 
 let any_prompt = Str.regexp "[A-Z0-9a-z_\\$']* < "
 

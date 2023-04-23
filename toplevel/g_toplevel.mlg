@@ -22,14 +22,7 @@ type vernac_toplevel =
   | VernacShowGoal of { gid : int; sid: int }
   | VernacShowProofDiffs of Proof_diffs.diffOpt
 
-module Toplevel_ : sig
-  val vernac_toplevel : vernac_toplevel option Entry.t
-end = struct
-  let gec_vernac s = Entry.make ("toplevel:" ^ s)
-  let vernac_toplevel = gec_vernac "vernac_toplevel"
-end
-
-open Toplevel_
+let vernac_toplevel = Entry.make "toplevel:vernac_toplevel"
 
 let err () = raise Gramlib.Stream.Failure
 

@@ -578,7 +578,7 @@ Curly braces
 
    Note that when a focused goal is proved a message is displayed
    together with a suggestion about the right bullet or ``}`` to unfocus it
-   or focus the next one.
+   or focus the next goal.
 
    :n:`@natural:`
      Focuses on the :token:`natural`\-th goal to prove.
@@ -652,17 +652,12 @@ same bullet ``b``. See the example below.
 
 Different bullets can be used to nest levels. The scope of each bullet
 is limited to the enclosing ``{`` and ``}``, so bullets can be reused as further
-nesting levels provided they are delimited by curly braces. Bullets are made from
-``-``, ``+`` or ``*`` characters (with no spaces and no period afterward):
+nesting levels provided they are delimited by curly braces.  A :production:`bullet`
+is made from ``-``, ``+`` or ``*`` characters (with no spaces and no period afterward):
 
-.. tacn:: @bullet
+.. tacn:: {| {+ - } | {+ + } | {+ * } }
    :undocumented:
-   :name: bullet
-
-   .. insertprodn bullet bullet
-
-   .. prodn::
-      bullet ::= {| {+ - } | {+ + } | {+ * } }
+   :name: bullet (- + *)
 
 When a focused goal is proved, Coq displays a message suggesting use of
 ``}`` or the correct matching bullet to unfocus the goal or focus the next subgoal.

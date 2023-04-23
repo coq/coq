@@ -1345,7 +1345,7 @@ let () =
     (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0
-    wit_red_expr
+    Redexpr.wit_red_expr
     (lift_env (fun env sigma -> pr_red_expr env sigma (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_qualid, pr_constr_pattern_expr)))
     (lift_env (fun env sigma -> pr_red_expr env sigma
                   ((fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma),

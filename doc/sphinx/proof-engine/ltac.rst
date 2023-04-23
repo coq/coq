@@ -707,10 +707,22 @@ First tactic to succeed
 In some cases backtracking may be too expensive.
 
 .. tacn:: first [ {*| @ltac_expr } ]
+          first @ident
+   :name: first; _
 
-   For each focused goal, independently apply the first :token:`ltac_expr` that succeeds.
-   The :n:`@ltac_expr`\s must evaluate to tactic values.
-   Failures in tactics after the :tacn:`first` won't cause backtracking.
+   In the first form: for each focused goal, independently apply the first tactic
+   (:token:`ltac_expr`) that succeeds.
+
+   In the second form: :n:`@ident` represents a list
+   of tactics passed to :n:`first` in a :cmd:`Tactic Notation` command (see example
+   :ref:`here <taclist_in_first>`).
+
+   :tacn:`first` is an :token:`l1_tactic`.
+
+   .. exn:: No applicable tactic.
+      :undocumented:
+
+   Failures in tactics won't cause backtracking.
    (To allow backtracking, use the :tacn:`+<+ (backtracking branching)>`
    construct above instead.)
 
@@ -736,56 +748,35 @@ In some cases backtracking may be too expensive.
 
        assert_fails (first [ (idtac "1A" + idtac "1B" + fail) | idtac "2" ]; fail).
 
-   :tacn:`first` is an :token:`l1_tactic`.
+.. _taclist_in_first:
 
-   .. exn:: No applicable tactic.
-      :undocumented:
+   .. example:: Referring to a list of tactics in :cmd:`Tactic Notation`
 
-   .. todo the following is not accepted as a regular tactic but it does seem to do something
-      see https://github.com/coq/coq/pull/12103#discussion_r422249862.
-      Probably the same thing as for the :tacn:`solve` below.
-      The code is in Coretactics.initial_tacticals
+      This works similarly for the :tacn:`solve` tactic.
 
-   .. tacn:: first [ {*| @ltac_expr } ]
+    .. coqtop:: reset all
 
-      This is an |Ltac| alias that gives a primitive access to the first
-      tactical as an |Ltac| definition without going through a parsing rule. It
-      expects to be given a list of tactics through a :cmd:`Tactic Notation` command,
-      permitting notations with the following form to be written:
-
-      .. example::
-
-         .. coqtop:: in
-
-            Tactic Notation "foo" tactic_list(tacs) := first tacs.
+       Tactic Notation "myfirst" "[" tactic_list_sep(tacl,"|") "]" := first tacl.
+       Goal True.
+       myfirst [ auto | apply I ].
 
 Solving
 ~~~~~~~
 
-Selects and applies the first tactic that solves each goal (i.e. leaves no subgoal)
-in a series of alternative tactics:
-
 .. tacn:: solve [ {*| @ltac_expr__i } ]
+          solve @ident
+   :name: solve; _
 
-   For each current subgoal: evaluates and applies each :n:`@ltac_expr` in order
-   until one is found that solves the subgoal.
+   In the first form: for each focused goal, independently apply the first tactic
+   (:n:`@ltac_expr`) that solves the goal.
 
-   If any of the subgoals are not solved, then the overall :tacn:`solve` fails.
+   In the second form: :n:`@ident` represents a list
+   of tactics passed to :n:`solve` in a :cmd:`Tactic Notation` command (see example
+   :ref:`here <taclist_in_first>`).
 
-   .. note:: In :tacn:`solve` and :tacn:`first`, :n:`@ltac_expr`\s that don't
-      evaluate to tactic values are ignored.  So :tacn:`solve` `[ () | 1 |` :tacn:`constructor` `]`
-      is equivalent to :tacn:`solve` `[` :tacn:`constructor` `]`.
-      This may make it harder to debug scripts that inadvertently include non-tactic values.
-
-   .. todo check the behavior of other constructs
-      see https://github.com/coq/coq/pull/12103#discussion_r436320430
+   If any of the goals are not solved, then the overall :tacn:`solve` fails.
 
    :tacn:`solve` is an :token:`l1_tactic`.
-
-   .. tacn:: solve [ {*| @ltac_expr } ]
-
-      This is an |Ltac| alias that gives a primitive access to the :tacn:`solve`
-      tactic. See the :tacn:`first` tactic for more information.
 
 First tactic to make progress: ||
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

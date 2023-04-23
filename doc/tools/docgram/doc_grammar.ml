@@ -89,24 +89,6 @@ type gram = {
 
 let sprintf = Printf.sprintf
 
-let map_and_concat f ?(delim="") l =
-  String.concat delim (List.map f l)
-
-let rec db_output_prodn = function
-  | Sterm s -> sprintf "(Sterm %s) " s
-  | Snterm s -> sprintf "(Snterm %s) " s
-  | Slist1 sym -> sprintf "(Slist1 %s) " (db_output_prodn sym)
-  | Slist1sep (sym, sep) -> sprintf "(Slist1sep %s %s) " (db_output_prodn sep) (db_output_prodn sym)
-  | Slist0 sym -> sprintf "(Slist0 %s) " (db_output_prodn sym)
-  | Slist0sep (sym, sep) -> sprintf "(Slist0sep %s %s)  " (db_output_prodn sep) (db_output_prodn sym)
-  | Sopt sym -> sprintf "(Sopt %s) " (db_output_prodn sym)
-  | Sparen prod -> sprintf "(Sparen %s) " (db_out_list prod)
-  | Sprod prods -> sprintf "(Sprod %s) " (db_out_prods prods)
-  | Sedit s -> sprintf "(Sedit %s) " s
-  | Sedit2 (s, s2) -> sprintf "(Sedit2 %s %s) " s s2
-and db_out_list prod = sprintf "(%s)" (map_and_concat db_output_prodn prod)
-and db_out_prods prods = sprintf "( %s )" (map_and_concat ~delim:" | " db_out_list prods)
-
 (* identify special chars that don't get a trailing space in output *)
 let omit_space s = List.mem s ["?"; "."; "#"]
 
@@ -303,6 +285,8 @@ module DocGram = struct
 end
 open DocGram
 
+let remove_Sedit2 p =
+  List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
 
 let rec output_prodn = function
   | Sterm s ->
@@ -356,7 +340,7 @@ and prod_to_prodn_r prod =
   | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
   | [] -> []
 
-and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
+and prod_to_prodn prod = String.concat " " (prod_to_prodn_r (remove_Sedit2 prod))
 
 let get_tag file prod =
   List.fold_left (fun rv sym ->
@@ -375,8 +359,6 @@ let pr_prods nt prods = (* duplicative *)
       Printf.printf "%s%s\n" pfx str)
     prods;
   Printf.printf "]\n\n"
-
-type fmt = [`MLG | `PRODLIST | `PRODN ]
 
 (* print a subset of the grammar with nts in the specified order *)
 let print_in_order out g fmt nt_order hide =
@@ -925,6 +907,7 @@ let global_repl g pat repl =
 (*** splice: replace a reference to a nonterminal with its definition ***)
 
 (* todo: create a better splice routine *)
+(* todo: remove extraneous "(* ltac2 plugin *)" in Ltac2 Notation cmd *)
 let apply_splice g edit_map =
   List.iter (fun b ->
       let (nt0, prods0) = b in
@@ -990,41 +973,6 @@ let map_name s =
   | _ -> s
   in
   good_name s
-
-let rec gen_nt_name sym =
-  let name_from_prod prod =
-    let rec aux name sterm_name prod =
-      if name <> "" then name else
-        match prod with
-        | [] -> sterm_name
-        | Sterm s :: tl
-        | Snterm s :: tl ->
-          if good_name s <> "" then
-            aux (map_name s) sterm_name tl
-          else
-            aux name (map_name s) tl;
-        | sym :: tl->
-          aux (gen_nt_name sym) sterm_name tl
-    in
-    aux "" "" prod
-  in
-
-  let name = match sym with
-    | Sterm s -> map_name s
-    | Snterm s -> s
-    | Slist1 sym
-    | Slist1sep (sym, _)
-    | Slist0 sym
-    | Slist0sep (sym, _)
-    | Sopt sym ->
-      gen_nt_name sym
-    | Sparen slist ->
-      name_from_prod slist
-    | Sprod slistlist ->
-      name_from_prod (List.hd slistlist)
-    | _ -> ""
-  in
-  good_name name
 
 (* create a new nt for LIST* or OPT with the specified name *)
 let maybe_add_nt g insert_after name sym queue =
@@ -1100,17 +1048,6 @@ let maybe_add_nt g insert_after name sym queue =
     | _ -> ()
   end;
   new_nt
-
-let apply_merge g edit_map =
-  List.iter (fun b ->
-      let (from_nt, to_nt) = b in
-      let from_prods = NTMap.find from_nt !g.map in
-      List.iter (fun prod ->
-          try
-            ignore( get_first prod (NTMap.find to_nt !g.map));
-          with Not_found -> g_add_prod_after g None to_nt prod)
-        from_prods)
-    (NTMap.bindings edit_map)
 
 let apply_rename_delete g edit_map =
   List.iter (fun b -> let (nt, _) = b in
@@ -1355,11 +1292,6 @@ let nt_closure g start stops =
   in
   List.rev (nt_closure_r [] [start])
 
-let header = "--------------------------------------------"
-let nt_subset_in_orig_order g nts =
-  let subset = StringSet.of_list nts in
-  List.filter (fun nt -> StringSet.mem nt subset) !g.order
-
 let index_of str list =
   let rec index_of_r str list index =
     match list with
@@ -1370,60 +1302,8 @@ let index_of str list =
   in
   index_of_r str list 0
 
-exception IsNone
-
 (* todo: raise exception for bad n? *)
 let rec nthcdr n list = if n <= 0 then list else nthcdr (n-1) (List.tl list)
-
-let pfx n list =
-  let rec pfx_r n res = function
-    | item :: tl -> if n < 0 then res else pfx_r (n-1) (item :: res) tl
-    | [] -> res
-  in
-  List.rev (pfx_r n [] list)
-
-(* todo: adjust Makefile to include Option.ml/mli *)
-let get_opt = function
-  | Some y -> y
-  | _ -> raise IsNone
-
-let get_range g start end_ =
-  let starti, endi = get_opt (index_of start !g.order), get_opt (index_of end_ !g.order) in
-  pfx (endi - starti) (nthcdr starti !g.order)
-
-let get_rangeset g start end_ = StringSet.of_list (get_range g start end_)
-
-let check_range_consistency g start end_ =
-  let defined_list = get_range g start end_ in
-  let defined = StringSet.of_list defined_list in
-  let referenced = List.fold_left (fun set nt ->
-      let prods = NTMap.find nt !g.map in
-      let refs = List.concat (List.map nts_in_prod prods) in
-      StringSet.union set (StringSet.of_list refs))
-    StringSet.empty defined_list
-  in
-  let undef = StringSet.diff referenced defined in
-  let unused = StringSet.diff defined referenced in
-  if StringSet.cardinal unused > 0 || (StringSet.cardinal undef > 0) then begin
-    Printf.printf "\nFor range '%s' to '%s':\n  External reference:" start end_;
-    StringSet.iter (fun nt -> Printf.printf " %s" nt) undef;
-    Printf.printf "\n";
-    if StringSet.cardinal unused > 0 then begin
-      Printf.printf "  Unreferenced:";
-      StringSet.iter (fun nt -> Printf.printf " %s" nt) unused;
-      Printf.printf "\n"
-    end
-  end
-
-(* print info on symbols with a single production of a single nonterminal *)
-let check_singletons g =
-  NTMap.iter (fun nt prods ->
-      if List.length prods = 1 && !show_warn then
-        if List.length (remove_Sedit2 (List.hd prods)) = 1 then
-          warn "Singleton non-terminal, maybe SPLICE?: %s\n" nt
-        else
-          (*warn "Single production, maybe SPLICE?: %s\n" nt*) ())
-    !g.map
 
 let report_bad_nts g file =
   let all_nts_ref, all_nts_def = get_refdef_nts g in
@@ -1439,51 +1319,6 @@ let report_bad_nts g file =
   let unreachable = List.filter (fun nt -> not (StringSet.mem nt reachable)) !g.order in
   if !show_warn then
     List.iter (fun nt -> warn "%s: Unreachable symbol '%s'\n" file nt) unreachable
-
-
-let report_info g symdef_map =
-  let num_prods = List.fold_left (fun sum nt -> let prods = NTMap.find nt !g.map in sum + (List.length prods))
-    0 !g.order
-  in
-
-  Printf.eprintf "\nstart symbols: %s\n" (String.concat " " start_symbols);
-  Printf.eprintf "%d nonterminals defined, %d productions\n" (NTMap.cardinal !g.map) num_prods;
-  Printf.eprintf "%d terminals\n" (List.length tokens);
-
-  Printf.eprintf "\nSymbols with multiple definition points in *.mlg:\n";
-  let bindings = List.sort (fun a b -> let (ak, _) = a and (bk, _) = b in
-                            String.compare ak bk) (StringMap.bindings symdef_map) in
-  List.iter (fun b ->
-      let (k, v) = b in
-      if List.length v > 1 then begin
-        Printf.eprintf "  %s:  " k;
-        List.iter (fun f -> Printf.eprintf "%s " f) v;
-        Printf.eprintf "\n"
-      end)
-    bindings;
-  Printf.eprintf "\n"
-
-
-
-[@@@ocaml.warning "-32"]
-let rec dump prod =
-  match prod with
-  | hd :: tl -> let s = (match hd with
-    | Sterm s -> sprintf "Sterm %s" s
-    | Snterm s -> sprintf "Snterm \"%s\"" s
-    | Slist1 sym -> "Slist1"
-    | Slist0 sym -> "Slist0"
-    | Sopt sym -> "Sopt"
-    | Slist1sep _ -> "Slist1sep"
-    | Slist0sep _ -> "Slist0sep"
-    | Sparen sym_list -> "Sparen"
-    | Sprod sym_list_list -> "Sprod"
-    | Sedit _ -> "Sedit"
-    | Sedit2 _ -> "Sedit2") in
-    Printf.printf "%s " s;
-    dump tl
-  | [] -> Printf.printf "\n"
-[@@@ocaml.warning "+32"]
 
 let reorder_grammar eg reordered_rules file =
   let og = g_empty () in
@@ -1750,14 +1585,9 @@ let process_rst g file args seen tac_prods cmd_prods =
     end
   in
 
-  let cmd_exclude_files = [
-    "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
-  ]
-  in
-
   let save_n_get_more direc pfx first_rhs seen_map prods =
     let replace rhs prods =
-      if StringSet.is_empty prods || (List.mem file cmd_exclude_files) then
+      if StringSet.is_empty prods then
         rhs (* no change *)
       else
         let mtch, multi, best = find_longest_match prods rhs in
@@ -1788,17 +1618,19 @@ let process_rst g file args seen tac_prods cmd_prods =
 
     map := NTMap.add (remove_subscrs first_rhs) (file, !linenum) !map;
     while
-      let nextline = getline() in
-      ignore (Str.string_match contin_regex nextline 0);
-      let indent = Str.matched_group 1 nextline in
-      let rhs = Str.matched_group 2 nextline in
-      let replaceable = rhs <> "" && rhs.[0] <> ':' in
-      let upd_rhs = if replaceable then (replace rhs prods) else rhs in
-      fprintf new_rst "%s%s\n" indent upd_rhs;
-      if replaceable then begin
-        map := NTMap.add rhs (file, !linenum) !map
-      end;
-      rhs <> ""
+      try
+        let nextline = getline() in
+        ignore (Str.string_match contin_regex nextline 0);
+        let indent = Str.matched_group 1 nextline in
+        let rhs = Str.matched_group 2 nextline in
+        let replaceable = rhs <> "" && rhs.[0] <> ':' in
+        let upd_rhs = if replaceable then (replace rhs prods) else rhs in
+        fprintf new_rst "%s%s\n" indent upd_rhs;
+        if replaceable then begin
+          map := NTMap.add (remove_subscrs rhs) (file, !linenum) !map
+        end;
+        rhs <> ""
+      with End_of_file -> false
     do
       ()
     done;
@@ -1930,15 +1762,8 @@ let process_grammar args =
       let out = open_out (dir "updated_rsts") in
       close_out out;
 
-(*
-      if args.check_tacs then
-        report_omitted_prods tac_list !seen.tacs "Tactic" "\n                 ";
-      if args.check_cmds then
-        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
-*)
-
       (* generate report on cmds or tacs *)
-      let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
+      let cmdReport outfile cmdStr itemName cmd_nts cmds cmdvs =
         let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
         let rstCmdvs = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmdvs)) in
         let gramCmds = List.fold_left (fun set nt ->
@@ -1950,8 +1775,8 @@ let process_grammar args =
             let rsts = StringSet.mem c rstCmds in
             let gram = StringSet.mem c gramCmds in
             let pfx = match rsts, gram with
-            | true, false -> "+"
-            | false, true -> "-"
+            | true, false -> error "%s not in grammar: %s\n" itemName c; "+"
+            | false, true -> error "%s not in doc: %s\n" itemName c; "-"
             | false, false -> "?"
             | _, _ -> " "
             in
@@ -1966,11 +1791,11 @@ let process_grammar args =
       let cmd_nts = ["command"] in
       (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
       if args.check_cmds then
-        cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
+        cmdReport "prodnCommands" "cmds" "Command" cmd_nts !seen.cmds !seen.cmdvs;
 
       let tac_nts = ["simple_tactic"] in
       if args.check_tacs then
-        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs;
+        cmdReport "prodnTactics" "tacs" "Tactic" tac_nts !seen.tacs !seen.tacvs;
 
       (* generate prodnGrammar for reference *)
       if not args.verify then begin

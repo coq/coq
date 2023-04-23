@@ -114,8 +114,8 @@ Identifiers
 Numbers
   Numbers are sequences of digits with an optional fractional part
   and exponent, optionally preceded by a minus sign. Hexadecimal numbers
-  start with ``0x`` or ``0X``. :n:`@bigint` are integers;
-  numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
+  start with ``0x`` or ``0X``. :n:`@integer`\s are signed
+  numbers without fraction or exponent parts. :n:`@natural`\s are non-negative
   integers.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
@@ -124,9 +124,9 @@ Numbers
   .. prodn::
      number ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
      | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
-     integer ::= {? - } @natural
-     natural ::= @bignat
+     integer ::= @bigint
      bigint ::= {? - } @bignat
+     natural ::= @bignat
      bignat ::= {| @decnat | @hexnat }
      decnat ::= @digit {* {| @digit | _ } }
      digit ::= 0 .. 9

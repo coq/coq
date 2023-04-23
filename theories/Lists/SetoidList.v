@@ -929,7 +929,7 @@ Lemma eqlistA_rev_app : forall l1 l1',
 Proof.
 induction 1; auto.
 simpl; intros.
-do 2 rewrite app_ass; simpl; auto.
+do 2 rewrite <- app_assoc; simpl; auto.
 Qed.
 
 Global Instance rev_eqlistA_compat : Proper (eqlistA==>eqlistA) (@rev A).
