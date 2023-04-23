@@ -176,3 +176,14 @@ Proof. cbv; intuition eauto. Qed.
     -> Proper (RB1 ==> RB2 ==> Basics.impl) RB
     -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> Basics.impl) (RA * RB)%signature.
 Proof. cbv; intuition eauto. Qed.
+
+#[export] Instance Proper_RelProd_iff: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> iff) RA
+    -> Proper (RB1 ==> RB2 ==> iff) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> iff) (RA * RB)%signature.
+Proof.
+  cbv; intuition eauto; destruct y, y0;
+  destruct H with a a1 a0 a2;
+  destruct H0 with b b1 b0 b2;
+  eauto.
+Qed.
