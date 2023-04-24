@@ -618,9 +618,8 @@ let default_case_analysis_dependence env ind =
   not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif))
 
 let build_case_analysis_scheme_default env sigma pity kind =
-  let _, mip as specif = lookup_mind_specif env (fst pity) in
-  let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif)) in
-  mis_make_case_com dep env sigma pity specif kind
+  let dep = default_case_analysis_dependence env (fst pity) in
+  build_case_analysis_scheme env sigma pity dep kind
 
 (**********************************************************************)
 (* [modify_sort_scheme s rec] replaces the sort of the scheme
