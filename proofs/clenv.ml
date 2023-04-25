@@ -927,7 +927,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg branches d
     let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
     mkApp (mkMeta mv, args)
 
-let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
+let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -1000,18 +1000,14 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   (* Build the case node proper *)
   let body = build_case_analysis env sigma (ind, u) params pred indices indarg branches dep s in
 
-  (* Call the legacy refiner on the result *)
+  (* After an apply, all the subgoals including those dependent shelved ones are in
+    the hands of the user and resolution won't be called implicitely on them. *)
   let sigma =
-    if with_classes then
-      let evd' =
-        Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) env sigma
-      in
-      (* After an apply, all the subgoals including those dependent shelved ones are in
-        the hands of the user and resolution won't be called implicitely on them. *)
-      Typeclasses.make_unresolvables (fun x -> true) evd'
-    else sigma
+    Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+      ~fail:(not with_evars) env sigma
   in
+  let sigma = Typeclasses.make_unresolvables (fun x -> true) sigma in
+  (* Call the legacy refiner on the result *)
   let metas = Evd.meta_list sigma in
   let nf_metas c = meta_instance env sigma { rebus = c; freemetas = metaset } in
   let branches = Array.map (fun (_, ctx, t) -> nf_metas (it_mkProd_or_LetIn t ctx)) branches in

@@ -1660,7 +1660,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
     Proofview.Unsafe.tclEVARS sigma;
-    Clenv.case_pf ~with_evars ~with_classes:true ~submetas ~dep (c, clenv_type indclause);
+    Clenv.case_pf ~with_evars ~submetas ~dep (c, clenv_type indclause);
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
   ]
   end
