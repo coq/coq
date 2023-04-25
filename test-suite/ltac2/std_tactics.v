@@ -27,3 +27,20 @@ Proof.
   | [ |- ?a ?b = ?rhs ] => unify ($a $b) $rhs
   end.
 Abort.
+
+(* Test that by clause of assert doesn't eat all semicolons:
+   https://github.com/coq/coq/issues/17491 *)
+Goal forall (a: nat), a = a.
+Proof.
+  intros.
+  assert (a = a) by Std.reflexivity ();
+  assumption.
+Qed.
+
+(* Test that notations in by clause still work: *)
+Goal forall (a: nat), a = a.
+Proof.
+  intros.
+  assert (a = a) by exact eq_refl;
+  assumption.
+Qed.

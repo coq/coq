@@ -1710,7 +1710,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | ( @ident_or_anti : @term ) {? @ltac2_by_tactic }
    | @term {? @ltac2_as_ipat } {? @ltac2_by_tactic }
    ltac2_as_ipat ::= as @ltac2_simple_intropattern
-   ltac2_by_tactic ::= by @ltac2_expr
+   ltac2_by_tactic ::= by @ltac2_expr5
 
 Evaluation
 ----------

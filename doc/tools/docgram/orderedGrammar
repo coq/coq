@@ -1957,7 +1957,7 @@ ltac2_as_ipat: [
 ]
 
 ltac2_by_tactic: [
-| "by" ltac2_expr      (* ltac2 plugin *)
+| "by" ltac2_expr5      (* ltac2 plugin *)
 ]
 
 ltac2_entry: [

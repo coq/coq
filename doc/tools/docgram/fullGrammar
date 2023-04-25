@@ -3286,7 +3286,7 @@ G_LTAC2_as_ipat: [
 ]
 
 G_LTAC2_by_tactic: [
-| "by" ltac2_expr6      (* ltac2 plugin *)
+| "by" ltac2_expr5      (* ltac2 plugin *)
 |      (* ltac2 plugin *)
 ]
 
