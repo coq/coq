@@ -138,20 +138,25 @@ let build_branch_type env sigma dep p cs =
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
 
-let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
+let check_valid_elimination env (ind, u as pind) ~dep kind =
+  let specif = Inductive.lookup_mind_specif env ind in
+  let () =
+    if dep && not (Inductiveops.has_dependent_elim specif) then
+      raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
+  in
+  let () = check_privacy_block specif in
+  if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
+    raise
+      (RecursionSchemeError
+          (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+
+let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
+  let () = check_valid_elimination env pind ~dep kind in
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
-
-  let () = if Option.is_empty projs then check_privacy_block specif in
-  let () =
-    if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
-      raise
-        (RecursionSchemeError
-           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
-  in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
@@ -601,8 +606,6 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
 
 let build_case_analysis_scheme env sigma pity dep kind =
   let specif = lookup_mind_specif env (fst pity) in
-  if dep && not (Inductiveops.has_dependent_elim specif) then
-    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_com dep env sigma pity specif kind
 
 let is_in_prop mip =
@@ -610,10 +613,13 @@ let is_in_prop mip =
   | InProp -> true
   | _ -> false
 
+let default_case_analysis_dependence env ind =
+  let _, mip as specif = lookup_mind_specif env ind in
+  not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif))
+
 let build_case_analysis_scheme_default env sigma pity kind =
-  let _, mip as specif = lookup_mind_specif env (fst pity) in
-  let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif)) in
-  mis_make_case_com dep env sigma pity specif kind
+  let dep = default_case_analysis_dependence env (fst pity) in
+  build_case_analysis_scheme env sigma pity dep kind
 
 (**********************************************************************)
 (* [modify_sort_scheme s rec] replaces the sort of the scheme

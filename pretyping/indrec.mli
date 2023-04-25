@@ -37,10 +37,14 @@ type case_analysis = private {
   case_type : EConstr.t;
 }
 
+val check_valid_elimination : env -> pinductive -> dep:bool -> Sorts.family -> unit
+
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
+val default_case_analysis_dependence : env -> inductive -> bool
+
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
-      dep_flag -> Sorts.family -> evar_map * case_analysis
+  dep_flag -> Sorts.family -> evar_map * case_analysis
 
 (** Build a dependent case elimination predicate unless type is in Prop
    or is a recursive record with primitive projections. *)

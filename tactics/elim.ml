@@ -18,33 +18,28 @@ open Tacmach
 open Tacticals
 open Clenv
 open Tactics
-open Proofview.Notations
 
 type elim_kind = Case of bool | Elim
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
-let general_elim_using mk_elim (ind, u, args) id =
+let general_elim_using mk_elim (ind, u, args) id = match mk_elim with
+| Case dep ->
+  Clenv.case_pf ~dep (mkVar id, mkApp (mkIndU (ind, u), args))
+| Elim ->
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
     let flags = Unification.elim_flags () in
-    match mk_elim with
-    | Case dep ->
-      let u_ = EInstance.kind sigma u in
-      let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u_) dep sort in
-      Proofview.Unsafe.tclEVARS sigma <*>
-      Clenv.case_pf c (mkVar id, mkApp (mkIndU (ind, u), args))
-    | Elim ->
-      let gr = Indrec.lookup_eliminator env ind sort in
-      let sigma, elim = Evd.fresh_global env sigma gr in
-      let elimt = Retyping.get_type_of env sigma elim in
-      (* applying elimination_scheme just a little modified *)
-      let elimclause = mk_clenv_from env sigma (elim, elimt) in
-      let indmv = List.last (clenv_arguments elimclause) in
-      let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-      Clenv.res_pf ~flags elimclause
+    let gr = Indrec.lookup_eliminator env ind sort in
+    let sigma, elim = Evd.fresh_global env sigma gr in
+    let elimt = Retyping.get_type_of env sigma elim in
+    (* applying elimination_scheme just a little modified *)
+    let elimclause = mk_clenv_from env sigma (elim, elimt) in
+    let indmv = List.last (clenv_arguments elimclause) in
+    let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
+    Clenv.res_pf ~flags elimclause
   end
 
 (* computing the case/elim combinators *)

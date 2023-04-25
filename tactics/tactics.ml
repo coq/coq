@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
+
 open Pp
 open CErrors
 open Util
@@ -1646,14 +1648,11 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let ct = Retyping.get_type_of env sigma c in
-  let mind, t = reduce_to_quantified_ind env sigma ct in
-  let sort = Tacticals.elimination_sort_of_goal gl in
-  let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
-  let (sigma, case) =
-    if dependent sigma c concl then
-      build_case_analysis_scheme env sigma mind true sort
-    else
-      build_case_analysis_scheme_default env sigma mind sort in
+  let (mind, _), t = reduce_to_quantified_ind env sigma ct in
+  let dep =
+    if dependent sigma c concl then true
+    else default_case_analysis_dependence env mind
+  in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let metas = Evd.meta_list (clenv_evd indclause) in
@@ -1661,7 +1660,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
     Proofview.Unsafe.tclEVARS sigma;
-    Clenv.case_pf ~with_evars ~with_classes:true ~submetas case (c, clenv_type indclause);
+    Clenv.case_pf ~with_evars ~with_classes:true ~submetas ~dep (c, clenv_type indclause);
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
   ]
   end
@@ -4395,23 +4394,30 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let compute_case_signature env evd mind case names_info =
-  let open Context.Rel.Declaration in
+let compute_case_signature env mind dep names_info =
   let indref = GlobRef.IndRef mind in
-  let branches = case.case_branches in
-  let rec check_branch c = match EConstr.kind evd c with
+  let rec check_branch c = match Constr.kind c with
   | Prod (_,t,c) ->
-    let hd, _ = decompose_app evd t in
+    let hd, _ = Constr.decompose_app t in
     (* no recursive call in case analysis *)
-    let arg = if EConstr.isRefX env evd indref hd then RecArg else OtherArg in
-    (arg, true, not (Vars.noccurn evd 1 c)) :: check_branch c
+    let arg = if Constr.isRefX indref hd then RecArg else OtherArg in
+    (arg, true, not (CVars.noccurn 1 c)) :: check_branch c
   | LetIn (_,_,_,c) ->
-    (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch c
+    (OtherArg, false, not (CVars.noccurn 1 c)) :: check_branch c
   | _ -> []
   in
-  let find_branches lbrch = match lbrch with
-  | LocalAssum (_, t) ->
-    let lchck_brch = check_branch t in
+  let (mib, mip) = Inductive.lookup_mind_specif env mind in
+  let find_branches k =
+    let (ctx, typ) = mip.mind_nf_lc.(k) in
+    let argctx = List.firstn mip.mind_consnrealdecls.(k) ctx in
+    let _, args = Constr.decompose_appvect typ in
+    let _, indices = Array.chop mib.mind_nparams args in
+    let base =
+      if dep then Array.append indices (Context.Rel.instance Constr.mkRel 0 argctx)
+      else indices
+    in
+    let base = Constr.mkApp (Constr.mkProp, base) in (* only used for noccurn *)
+    let lchck_brch = check_branch (Term.it_mkProd_or_LetIn base argctx) in
     let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
     let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in
     let map (b, is_assum, dep) = {
@@ -4422,9 +4428,8 @@ let compute_case_signature env evd mind case names_info =
     } in
     let namesign = List.map map lchck_brch in
     (avoid, namesign)
-  | LocalDef _ -> assert false
   in
-  Array.of_list (List.rev_map find_branches branches)
+  Array.init (Array.length mip.mind_consnames) find_branches
 
 let error_cannot_recognize ind =
   user_err
@@ -4541,11 +4546,11 @@ let induction_tac with_evars params indvars (elim, elimt) =
   Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
   end
 
-let destruct_tac with_evars indvar case =
+let destruct_tac with_evars indvar dep =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let ty = Typing.type_of_variable env indvar in
-  Clenv.case_pf ~with_evars case (mkVar indvar, ty)
+  Clenv.case_pf ~with_evars ~dep (mkVar indvar, ty)
   end
 
 (* Apply induction "in place" taking into account dependent
@@ -4573,13 +4578,9 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     | CaseOver (id, (mind, u)) ->
       let dep_in_concl = occur_var env sigma id concl in
       let dep = dep_in_hyps || dep_in_concl in
-      let u = EInstance.kind sigma u in
-      let (sigma, case) =
-        if dep then build_case_analysis_scheme env sigma (mind, u) true s
-        else build_case_analysis_scheme_default env sigma (mind, u) s
-      in
-      let indsign = compute_case_signature env sigma mind case id in
-      let tac = destruct_tac with_evars id case in
+      let dep = dep || default_case_analysis_dependence env mind in
+      let indsign = compute_case_signature env mind dep id in
+      let tac = destruct_tac with_evars id dep in
       sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->
       let sigma, ind = find_ind_eliminator env sigma mind s in
@@ -5049,12 +5050,9 @@ let case_type t =
   let sigma = Proofview.Goal.sigma gl in
   let env = Tacmach.pf_env gl in
   let ((ind, u), t) = reduce_to_atomic_ind env sigma t in
-  let u = EInstance.kind sigma u in
-  let s = Tacticals.elimination_sort_of_goal gl in
-  let (evd, elim) = build_case_analysis_scheme_default env sigma (ind, u) s in
+  let dep = default_case_analysis_dependence env ind in
   tclTHENLIST [
-    Proofview.Unsafe.tclEVARS evd;
-    Clenv.case_pf ~with_evars:false elim (mkVar id, t);
+    Clenv.case_pf ~with_evars:false ~dep (mkVar id, t);
     clear [id];
   ]
   end
