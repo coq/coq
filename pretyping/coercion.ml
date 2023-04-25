@@ -687,7 +687,7 @@ let rec inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ?(flags=default_fl
         Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidonly flags env sigma cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidonly env sigma ?(flags=default_flags_of env) cj t =
   let (sigma, val', otrace) =
     try
       let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
@@ -719,7 +719,15 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidon
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions false flags env sigma
-let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions true flags env sigma
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidonly env sigma ?flags cj t =
+  try inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidonly env sigma ?flags cj t
+  with e when Option.has_some loc ->
+    let _, info as iexn = Exninfo.capture e in
+    match Loc.get_loc info with
+    | Some _ -> Exninfo.iraise iexn
+    | None -> Exninfo.iraise (e, Loc.add_loc info (Option.get loc))
+
+let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions false ?flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions true ?flags env sigma
