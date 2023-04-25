@@ -80,7 +80,7 @@ Notation          Precedence    Associativity
 ``_ || _``        50            left
 ``_ - _``         50            left
 ``_ * _``         40            left
-``_      _``      40            left
+``_ && _``        40            left
 ``_ / _``         40            left
 ``- _``           35            right
 ``/ _``           35            right
