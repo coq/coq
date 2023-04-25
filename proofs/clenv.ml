@@ -43,11 +43,10 @@ type clausenv = {
   templval : constr;
   metaset : Metaset.t;
   templtyp : constr freelisted;
-  cache : Reductionops.meta_instance_subst;
 }
 
 let mk_clausenv env evd metas templval metaset templtyp = {
-  env; evd; metas; templval; metaset; templtyp; cache = create_meta_instance_subst evd;
+  env; evd; metas; templval; metaset; templtyp;
 }
 
 let update_clenv_evd clenv evd =
@@ -97,9 +96,9 @@ let clenv_meta_type clenv mv =
   let ty =
     try Evd.meta_ftype clenv.evd mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance clenv.env clenv.cache ty
-let clenv_value clenv = meta_instance clenv.env clenv.cache { rebus = clenv.templval; freemetas = clenv.metaset }
-let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
+  meta_instance clenv.env clenv.evd ty
+let clenv_value clenv = meta_instance clenv.env clenv.evd { rebus = clenv.templval; freemetas = clenv.metaset }
+let clenv_type clenv = meta_instance clenv.env clenv.evd clenv.templtyp
 
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (clenv_evd cl) (clenv_type cl) in
@@ -117,8 +116,7 @@ let clenv_push_prod cl =
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          metas = cl.metas @ [mv, None];
-          cache = create_meta_instance_subst e' })
+          metas = cl.metas @ [mv, None]; })
     | _ -> None
   in clrec typ
 
@@ -163,8 +161,7 @@ let mk_clenv_from_env env sigma n (c,cty) =
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
-    metas = List.map (fun mv -> mv, None) args;
-    cache = create_meta_instance_subst evd }
+    metas = List.map (fun mv -> mv, None) args; }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
 let mk_clenv_from_n env sigma n c = mk_clenv_from_env env sigma (Some n) c
@@ -256,7 +253,7 @@ let clenv_assign mv rhs clenv =
 *)
 
 let clenv_metas_in_type_of_meta clenv mv =
-  (mk_freelisted (meta_instance clenv.env clenv.cache (meta_ftype clenv.evd mv))).freemetas
+  (mk_freelisted (meta_instance clenv.env clenv.evd (meta_ftype clenv.evd mv))).freemetas
 
 let dependent_in_type_of_metas clenv mvs =
   List.fold_right
@@ -968,7 +965,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let flags = elim_flags () in
   let sigma = w_unify_meta_types ~flags env sigma in
   let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
-  let pred = meta_instance env (create_meta_instance_subst sigma) (mk_freelisted (mkMeta mvP)) in
+  let pred = meta_instance env sigma (mk_freelisted (mkMeta mvP)) in
 
   (* Create the branch types *)
   let branches =
@@ -1003,7 +1000,6 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
       templval = mkProp; metaset;
       templtyp = mk_freelisted templtyp;
       evd = sigma; env = env; metas = [];
-      cache = create_meta_instance_subst sigma;
     } in
     let clenv = clenv_pose_dependent_evars ~with_evars clenv in
     clenv.evd
@@ -1025,7 +1021,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
     else sigma
   in
   let metas = Evd.meta_list sigma in
-  let nf_metas c = meta_instance env (create_meta_instance_subst sigma) { rebus = c; freemetas = metaset } in
+  let nf_metas c = meta_instance env sigma { rebus = c; freemetas = metaset } in
   let branches = Array.map (fun (_, ctx, t) -> nf_metas (it_mkProd_or_LetIn t ctx)) branches in
   let r = nf_metas body in
   Proofview.tclTHEN

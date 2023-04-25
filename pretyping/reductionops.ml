@@ -1468,19 +1468,11 @@ let is_arity env sigma c =
 (*************************************)
 (* Metas *)
 
-type meta_instance_subst = {
-  sigma : Evd.evar_map;
-}
-
-let create_meta_instance_subst sigma = {
-  sigma;
-}
-
-let meta_instance env subst b =
+let meta_instance env sigma b =
   let fm = b.freemetas in
   if Metaset.is_empty fm then b.rebus
   else
-    instance env subst.sigma b.rebus
+    instance env sigma b.rebus
 
 module Infer = struct
 
