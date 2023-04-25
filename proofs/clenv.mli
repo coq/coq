@@ -36,9 +36,6 @@ val clenv_value     : clausenv -> constr
 (** type of clenv (instantiated) *)
 val clenv_type      : clausenv -> types
 
-(** type of a meta in clenv context *)
-val clenv_meta_type : clausenv -> metavariable -> types
-
 val mk_clenv_from : env -> evar_map -> EConstr.constr * EConstr.types -> clausenv
 val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -> clausenv
 
@@ -49,9 +46,9 @@ val clenv_instantiate : ?flags:unify_flags -> ?submetas:(metavariable * clbindin
 
 (** {6 Unification with clenvs } *)
 
-(** Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)
-val clenv_unify :
-  ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
+(** Unifies the type of a meta with a term. *)
+val clenv_unify_meta_type :
+  ?flags:unify_flags -> conv_pb -> constr -> metavariable -> clausenv -> clausenv
 
 (** {6 Bindings } *)
 

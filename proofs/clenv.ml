@@ -362,6 +362,9 @@ let meta_reducible_instance env evd b =
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
   update_clenv_evd clenv (w_unify ~flags clenv.env clenv.evd cv_pb t1 t2)
 
+let clenv_unify_meta_type ?flags pb t mv clenv =
+  clenv_unify ?flags pb t (clenv_meta_type clenv mv) clenv
+
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 

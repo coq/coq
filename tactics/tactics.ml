@@ -5039,8 +5039,7 @@ let elim_type t =
   let mv = List.last (clenv_arguments clause) in
   let clause' =
     (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-      (clenv_meta_type clause mv) clause in
+    clenv_unify_meta_type ~flags:(elim_flags ()) Reduction.CUMUL t mv clause in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
   end
 
