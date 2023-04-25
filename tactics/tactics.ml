@@ -88,7 +88,7 @@ exception ConvertNotAType
 exception NotConvertible
 exception NotUnfoldable
 exception NoQuantifiedHypothesis of quantified_hypothesis * bool
-exception CannotFindInstance of constr * clausenv
+exception CannotFindInstance of Id.t
 exception NothingToRewrite of Id.t
 exception IllFormedEliminationType
 exception SchemeDontApply
@@ -167,11 +167,6 @@ let msg_quantified_hypothesis = function
       pr_nth n ++
       str " non dependent hypothesis"
 
-let msg_uninstantiated_metas t clenv =
-  let na = meta_name (clenv_evd clenv) (List.hd (Metaset.elements (metavars_of t))) in
-  let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.") in
-  str "Cannot find an instance for " ++ Id.print id ++ str"."
-
 let explain_unexpected_extra_pattern bound pat =
   let nb = Option.get bound in
   let s1,s2,s3 = match pat with
@@ -218,8 +213,8 @@ let tactic_interp_error_handler = function
       str "No " ++ msg_quantified_hypothesis id ++
       strbrk " in current goal" ++
       (if red then strbrk " even after head-reduction" else mt ()) ++ str"."
-  | CannotFindInstance (t,clenv) ->
-      msg_uninstantiated_metas t clenv
+  | CannotFindInstance id ->
+      str "Cannot find an instance for " ++ Id.print id ++ str"."
   | NothingToRewrite id ->
       str "Nothing to rewrite in " ++ Id.print id ++ str"."
   | IllFormedEliminationType ->
@@ -1490,11 +1485,12 @@ let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
   Metamap.iter (fun mv b -> match b with
-  | Clval (_,(c,_),_) ->
+  | Clval (na, (c, _), _) ->
     (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined (clenv_evd clenv) evk
                      && not (Evd.mem sigma evk) ->
-      error (CannotFindInstance(mkMeta mv,clenv))
+      let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.") in
+      error (CannotFindInstance id)
     | _ -> ())
   | _ -> ())
   (meta_list (clenv_evd clenv))
