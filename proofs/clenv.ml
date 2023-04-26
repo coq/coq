@@ -853,7 +853,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
-    let sigma = pose_dependent_evars ~with_evars clenv.env clenv.evd (metas_in_concl clenv) in
+    let sigma = pose_dependent_evars ~with_evars clenv.env clenv.evd Metaset.empty in
     let sigma =
       if with_classes then
         let sigma =
@@ -997,7 +997,7 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   in
   let (sigma, branches) = Array.fold_left_map fold sigma branches in
   let metaset = Metaset.singleton mvP (* dummy, should just be nonempty *) in
-  let sigma = pose_dependent_evars ~with_evars env sigma (metavars_of (meta_instance env sigma (mk_freelisted templtyp))) in
+  let sigma = pose_dependent_evars ~with_evars env sigma Metaset.empty in
 
   (* Build the case node proper *)
   let body = build_case_analysis env sigma (ind, u) params pred indices indarg branches dep s in
