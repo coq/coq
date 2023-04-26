@@ -32,7 +32,7 @@ Module Format.
 
 (** Only for internal use. *)
 
-Ltac2 @ external stop : unit -> ('a, 'b, 'c, 'a) format := "coq-core.plugins.ltac2" "format_stop".
+Ltac2 @ external stop : ('a, 'b, 'c, 'a) format := "coq-core.plugins.ltac2" "format_stop".
 
 Ltac2 @ external string : ('a, 'b, 'c, 'd) format ->
   (string -> 'a, 'b, 'c, 'd) format := "coq-core.plugins.ltac2" "format_string".

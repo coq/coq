@@ -45,14 +45,14 @@ Goal True.
   Fail check_eq_int ((init 3 (fun i => (Int.add i 10)))) [10;11;13].
 
   (* test empty with int *)
-  check_eq_int (empty ()) [].
-  check_eq_int (append (empty ()) (init 3 (fun i => (Int.add i 10)))) [10;11;12].
-  check_eq_int (append (init 3 (fun i => (Int.add i 10))) (empty ())) [10;11;12].
+  check_eq_int empty [].
+  check_eq_int (append empty (init 3 (fun i => (Int.add i 10)))) [10;11;12].
+  check_eq_int (append (init 3 (fun i => (Int.add i 10))) empty) [10;11;12].
 
   (* test empty with bool *)
-  check_eq_bool (empty ()) [].
-  check_eq_bool (append (empty ()) (init 3 (fun i => (Int.ge i 2)))) [false;false;true].
-  check_eq_bool (append (init 3 (fun i => (Int.ge i 2))) (empty ())) [false;false;true].
+  check_eq_bool empty [].
+  check_eq_bool (append empty (init 3 (fun i => (Int.ge i 2)))) [false;false;true].
+  check_eq_bool (append (init 3 (fun i => (Int.ge i 2))) empty) [false;false;true].
 
   (* test init with int *)
   check_eq_int (init 0 (fun i => (Int.add i 10))) [].

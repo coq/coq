@@ -273,7 +273,7 @@ let () =
 
 let () = define "message_concat" (pp @-> pp @-> ret pp) Pp.app
 
-let () = define "format_stop" (unit @-> ret format) (fun _ -> [])
+let () = define "format_stop" (ret format) []
 
 let () =
   define "format_string" (format @-> ret format) @@ fun s ->
@@ -346,7 +346,7 @@ let () =
 
 (** Array *)
 
-let () = define "array_empty" (unit @-> ret valexpr) (fun _ -> v_blk 0 [||])
+let () = define "array_empty" (ret valexpr) (v_blk 0 [||])
 
 let () =
   define "array_make" (int @-> valexpr @-> tac valexpr) @@ fun n x ->
@@ -816,8 +816,8 @@ let () =
 
 let () =
   define "pattern_empty_context"
-    (unit @-> ret (repr_ext val_matching_context))
-    (fun _ -> Constr_matching.empty_context)
+    (ret (repr_ext val_matching_context))
+    Constr_matching.empty_context
 
 let () =
   define "pattern_matches" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->

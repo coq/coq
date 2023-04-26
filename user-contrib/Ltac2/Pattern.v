@@ -20,7 +20,7 @@ Ltac2 Type match_kind := [
 | MatchContext
 ].
 
-Ltac2 @ external empty_context : unit -> context :=
+Ltac2 @ external empty_context : context :=
   "coq-core.plugins.ltac2" "pattern_empty_context".
 (** A trivial context only made of the hole. *)
 
@@ -88,7 +88,7 @@ Ltac2 lazy_match0 t (pats:'a constr_matching) :=
     let p := match knd with
     | MatchPattern =>
       (fun _ =>
-        let context := empty_context () in
+        let context := empty_context in
         let bind := matches_vect pat t in
         fun _ => f context bind)
     | MatchContext =>
@@ -109,7 +109,7 @@ Ltac2 multi_match0 t (pats:'a constr_matching) :=
     let p := match knd with
     | MatchPattern =>
       (fun _ =>
-        let context := empty_context () in
+        let context := empty_context in
         let bind := matches_vect pat t in
         f context bind)
     | MatchContext =>
