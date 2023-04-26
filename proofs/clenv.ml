@@ -790,7 +790,7 @@ let std_refine env sigma cl r =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let case_refine env sigma ~dep ~branches cl r = match Constr.kind (EConstr.Unsafe.to_constr r) with
+let case_refine env sigma ~branches cl r = match Constr.kind (EConstr.Unsafe.to_constr r) with
 | Case (ci, u, pms, p, iv, c, lf) ->
   let c = make_proof env sigma (EConstr.of_constr c) in
   let () = if Array.exists (fun c -> occur_meta sigma (EConstr.of_constr c)) pms then error_unsupported_deep_meta () in
@@ -806,8 +806,8 @@ let case_refine env sigma ~dep ~branches cl r = match Constr.kind (EConstr.Unsaf
   std_refine env sigma cl r
 
 type refiner_kind =
-| Std of clausenv
-| Case of bool * clbinding Metamap.t * EConstr.t * EConstr.t array
+| Std of clbinding Metamap.t * EConstr.t
+| Case of clbinding Metamap.t * EConstr.t * EConstr.t array
 
 let refiner_gen is_case =
   let open Proofview.Notations in
@@ -817,12 +817,11 @@ let refiner_gen is_case =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   let (sigma, sgl, c) = match is_case with
-  | Case (dep, metas, r, branches) ->
+  | Case (metas, r, branches) ->
     let sigma = Evd.meta_merge metas sigma in
-    case_refine env sigma ~dep ~branches cl r
-  | Std clenv ->
-    let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
-    let r = clenv_value clenv in
+    case_refine env sigma ~branches cl r
+  | Std (metas, r) ->
+    let sigma = Evd.meta_merge metas sigma in
     std_refine env sigma cl r
   in
   let sigma = Evd.clear_metas sigma in
@@ -839,7 +838,10 @@ let refiner_gen is_case =
   Proofview.Unsafe.tclSETGOALS sgl
   end
 
-let refiner clenv = refiner_gen (Std clenv)
+let refiner clenv =
+  let r = clenv_value clenv in
+  let metas = Evd.meta_list clenv.evd in
+  refiner_gen (Std (metas, r))
 
 end
 
@@ -864,9 +866,11 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
       else sigma
     in
     let clenv = update_clenv_evd clenv sigma in
+    let metas = Evd.meta_list clenv.evd in
+    let r = clenv_value clenv in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
-      (Internal.refiner_gen (Std clenv))
+      (Internal.refiner_gen (Std (metas, r)))
   end
 
 let build_case_analysis env sigma (ind, u) params pred indices indarg branches dep knd =
@@ -1014,7 +1018,7 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   let r = nf_metas body in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
-    (Internal.refiner_gen (Case (dep, metas, r, branches)))
+    (Internal.refiner_gen (Case (metas, r, branches)))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
