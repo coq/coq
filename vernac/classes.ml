@@ -266,8 +266,7 @@ let intern_info {hint_priority;hint_pattern} =
   {hint_priority;hint_pattern}
 
 (** TODO: add subinstances *)
-let existing_instance glob g info =
-  let c = Nametab.global g in
+let existing_instance ?loc glob c info =
   let info = Option.default Hints.empty_hint_info info in
   let info = intern_info info in
   let env = Global.env() in
@@ -276,8 +275,7 @@ let existing_instance glob g info =
   let ctx, r = Term.decompose_prod_decls instance in
     match class_of_constr (Environ.push_rel_context ctx env) sigma (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance tc info glob c
-      | None -> user_err ?loc:g.CAst.loc
-                  (Pp.str "Constant does not build instances of a declared type class.")
+      | None -> user_err ?loc (Pp.str "Constant does not build instances of a declared type class.")
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 

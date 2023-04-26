@@ -463,13 +463,7 @@ let smart_global r =
   Dumpglob.add_glob ?loc:r.loc gr;
   gr
 
-let dump_global r =
-  try
-    let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob ?loc:r.loc gr
-  with e when CErrors.noncritical e -> ()
-
-let dump_qualid q = dump_global (make ?loc:q.loc @@ Constrexpr.AN q)
+let qualid_global id = smart_global (make ?loc:id.loc @@ Constrexpr.AN id)
 
 (**********)
 (* Syntax *)
@@ -1075,19 +1069,19 @@ let vernac_cofixpoint ~atts ~pm discharge l =
 let vernac_scheme l =
   if Dumpglob.dump () then
     List.iter (fun (lid, sch) ->
-      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
-      dump_global sch.sch_qualid) l;
+      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid) l;
   Indschemes.do_scheme (Global.env ()) l
 
 let vernac_scheme_equality ?locmap sch id =
-  if Dumpglob.dump () then
-    dump_global id;
   Indschemes.do_scheme_equality ?locmap sch id
 
 let vernac_combined_scheme lid l ~locmap =
-  if Dumpglob.dump () then
-    (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_qualid (qualid_of_ident ?loc id)) l);
+  (* XXX why does this take idents and not qualids *)
+  let l = List.map (fun id -> match qualid_global (qualid_of_ident ?loc:id.loc id.v) with
+      | ConstRef c -> c
+      | _ -> CErrors.user_err ?loc:id.loc Pp.(Pputils.pr_lident  id ++ str " is not a constant."))
+      l
+  in
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
@@ -1459,12 +1453,11 @@ let vernac_declare_instance ~atts id bl inst pri =
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in
   List.iter (fun (id, info) ->
-      dump_qualid id;
-      Classes.existing_instance locality id (Some info)) insts
+      let g = qualid_global id in
+      Classes.existing_instance ?loc:id.loc locality g (Some info)) insts
 
 let vernac_existing_class id =
-  dump_qualid id;
-  Record.declare_existing_class (Nametab.global id)
+  Record.declare_existing_class (qualid_global id)
 
 (***********)
 (* Solving *)
@@ -1950,9 +1943,7 @@ let vernac_print ~pstate =
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) ->
-    dump_global qid;
-    Prettyp.print_name env sigma qid udecl
+  | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes ()
   | PrintTypeclasses -> Prettyp.print_typeclasses ()
@@ -1984,9 +1975,7 @@ let vernac_print ~pstate =
     Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
-  | PrintImplicit qid ->
-    dump_global qid;
-    Prettyp.print_impargs qid
+  | PrintImplicit qid -> Prettyp.print_impargs (smart_global qid)
   | PrintAssumptions (o,t,r) ->
     (* Prints all the axioms and section variables used by a term *)
       let env = Global.env () in

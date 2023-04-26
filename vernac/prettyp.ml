@@ -132,7 +132,6 @@ let need_expansion impl ref =
       List.exists is_status_implicit lastimpl
 
 let print_impargs ref =
-  let ref = Smartlocate.smart_global ref in
   let impl = implicits_of_global ref in
   let has_impl = not (List.is_empty impl) in
   (* Need to reduce since implicits are computed with products flattened *)
@@ -966,9 +965,6 @@ let print_about_any ?loc env sigma k udecl =
   print_bidi_hints ref @
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Abbreviation kn ->
-    let () = match Abbreviation.search_abbreviation kn with
-    | [],Notation_term.NRef (ref,_) -> Dumpglob.add_glob ?loc ref
-    | _ -> () in
       v 0 (
       print_abbreviation env kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))

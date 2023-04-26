@@ -57,7 +57,7 @@ val do_scheme_equality : ?locmap:Ind_tables.Locmap.t -> Vernacexpr.equality_sche
 
 val build_combined_scheme : env -> Constant.t list -> Evd.evar_map * constr * types
 
-val do_combined_scheme : lident -> lident list -> unit
+val do_combined_scheme : lident -> Constant.t list -> unit
 
 (** Hook called at each inductive type definition *)
 
