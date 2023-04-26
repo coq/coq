@@ -30,6 +30,11 @@ Canonical Structure S_nat := {| ssort := nat; sstuff := 0; |}.
 Set Printing All.
 Check test1 _ (0 : nat).
 
+Goal True.
+  unify S_nat (nat : S).
+  constr_eq constr:(S_nat) constr:(nat : S).
+Abort.
+
 (* old hack *)
 Definition test' {s : S} (t : Type) (f : ssort s -> t) := sstuff s.
 Notation test t := (test' t (fun x => x)).
