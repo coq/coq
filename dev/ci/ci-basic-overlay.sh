@@ -202,7 +202,7 @@ project coq_lsp "https://github.com/ejgallego/coq-lsp" "main"
 ########################################################################
 # Equations
 ########################################################################
-project equations "https://github.com/mattam82/Coq-Equations" "master"
+project equations "https://github.com/mattam82/Coq-Equations" "main"
 
 ########################################################################
 # Elpi + Hierarchy Builder
