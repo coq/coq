@@ -275,11 +275,7 @@ val whd_betaiota_deltazeta_for_iota_state :
 val is_head_evar : env -> evar_map -> constr -> bool
 
 (** {6 Meta-related reduction functions } *)
-type meta_instance_subst
-
-val create_meta_instance_subst : Evd.evar_map -> meta_instance_subst
-
-val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
+val meta_instance : env -> evar_map -> constr freelisted -> constr
 
 (* inferred_universes just gathers the constraints. *)
 val inferred_universes : (UGraph.t * Univ.Constraints.t) Reduction.universe_compare

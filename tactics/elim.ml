@@ -16,7 +16,6 @@ open Inductiveops
 open Hipattern
 open Tacmach
 open Tacticals
-open Clenv
 open Tactics
 
 type elim_kind = Case of bool | Elim
@@ -36,9 +35,9 @@ let general_elim_using mk_elim (ind, u, args) id = match mk_elim with
     let sigma, elim = Evd.fresh_global env sigma gr in
     let elimt = Retyping.get_type_of env sigma elim in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from env sigma (elim, elimt) in
-    let indmv = List.last (clenv_arguments elimclause) in
-    let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
+    let elimclause = Clenv.mk_clenv_from env sigma (elim, elimt) in
+    let indmv = List.last (Clenv.clenv_arguments elimclause) in
+    let elimclause = Clenv.clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
     Clenv.res_pf ~flags elimclause
   end
 

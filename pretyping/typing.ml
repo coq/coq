@@ -33,7 +33,7 @@ let meta_type env evd mv =
   let ty =
     try Evd.meta_ftype evd mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance env (create_meta_instance_subst evd) ty
+  meta_instance env evd ty
 
 let make_param_univs env sigma indu spec jl =
   Array.to_list @@ Array.mapi (fun i j ~expected ->

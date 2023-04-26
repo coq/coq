@@ -16,7 +16,6 @@ open Constr
 open Termops
 open EConstr
 open Tactics
-open Clenv
 open Typeclasses
 open Evd
 open Locus
@@ -173,7 +172,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let sigma, c = Hints.fresh_hint env sigma h in
-  let clenv = mk_clenv_from_n env sigma diff (c, ty) in
+  let clenv = Clenv.mk_clenv_from_n env sigma diff (c, ty) in
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
   end
 
@@ -1316,7 +1315,7 @@ let autoapply c i =
   let cty = Tacmach.pf_get_type_of gl c in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let ce = mk_clenv_from env sigma (c,cty) in
+  let ce = Clenv.mk_clenv_from env sigma (c,cty) in
   Clenv.res_pf ~with_evars:true ~with_classes:false ~flags ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
