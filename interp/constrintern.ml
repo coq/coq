@@ -1281,7 +1281,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       raise Not_found
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), Some ref, args
   | Abbrev sp ->
-      let (ids,c) = Abbreviation.search_abbreviation ?loc sp in
+      let (ids,c) = Abbreviation.search_abbreviation sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments ?loc;
       let args1,args2 = List.chop nids args in
@@ -1314,11 +1314,13 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       c, None, args2
 
 let intern_qualid_for_pattern test_global intern_not qid pats =
-  match intern_extended_global_of_qualid qid with
-  | TrueGlobal g ->
+  match Nametab.locate_extended_nowarn qid with
+  | TrueGlobal g, depr ->
     test_global g;
+    depr |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (TrueGlobal g));
+    dump_extended_global qid.loc (TrueGlobal g);
     (g, false, Some [], pats)
-  | Abbrev kn ->
+  | Abbrev kn, depr ->
     let filter (vars,a) =
       match a with
       | NRef (g,_) ->
@@ -1341,7 +1343,10 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
         Some (g, Some args, pats2)
       | _ -> None in
     match Abbreviation.search_filtered_abbreviation filter kn with
-    | Some (g, pats1, pats2) -> (g, true, pats1, pats2)
+    | Some (g, pats1, pats2) ->
+      depr |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (Abbrev kn));
+      dump_extended_global qid.loc (Abbrev kn);
+      (g, true, pats1, pats2)
     | None -> raise Not_found
 
 let warn_nonprimitive_projection =

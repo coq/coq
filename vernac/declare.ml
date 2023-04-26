@@ -84,14 +84,15 @@ module Info = struct
     ; scope : Locality.definition_scope
     ; hook : Hook.t option
     ; typing_flags : Declarations.typing_flags option
+    ; deprecation : Deprecation.t option
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
-      ?hook ?typing_flags () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags }
+      ?hook ?typing_flags ?deprecation () =
+    { poly; inline; kind; udecl; scope; hook; typing_flags; deprecation }
 
 end
 
@@ -165,13 +166,14 @@ let is_local_constant c = Cset_env.mem c !local_csts
 type constant_obj = {
   cst_kind : Decls.logical_kind;
   cst_locl : Locality.import_status;
+  cst_depr : Deprecation.t option;
 }
 
 let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
     raise (DeclareUniv.AlreadyDeclared (None, Libnames.basename sp));
   let con = Global.constant_of_delta_kn kn in
-  Nametab.push (Nametab.Until i) sp (GlobRef.ConstRef con);
+  Nametab.push ?deprecated:obj.cst_depr (Nametab.Until i) sp (GlobRef.ConstRef con);
   Dumpglob.add_constant_kind con obj.cst_kind;
   begin match obj.cst_locl with
     | Locality.ImportNeedQualified -> local_csts := Cset_env.add con !local_csts
@@ -196,7 +198,7 @@ let check_exists id =
 
 let cache_constant ((sp,kn), obj) =
   let kn = Global.constant_of_delta_kn kn in
-  Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef kn);
+  Nametab.push ?deprecated:obj.cst_depr (Nametab.Until 1) sp (GlobRef.ConstRef kn);
   Dumpglob.add_constant_kind kn obj.cst_kind
 
 let discharge_constant obj = Some obj
@@ -219,9 +221,9 @@ let update_tables c =
   Impargs.declare_constant_implicits c;
   Notation.declare_ref_arguments_scope (GlobRef.ConstRef c)
 
-let register_constant kn kind local =
+let register_constant kn kind ?deprecation local =
   let id = Label.to_id (Constant.label kn) in
-  let o = inConstant (id, { cst_kind = kind; cst_locl = local; }) in
+  let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_depr = deprecation }) in
   let () = Lib.add_leaf o in
   update_tables kn
 
@@ -427,7 +429,7 @@ let declare_constant_core ~name ~typing_flags cd =
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn, delayed
 
-let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
+let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?deprecation cd =
   let () = check_exists name in
   let kn, delayed = declare_constant_core ~typing_flags ~name cd in
   (* Register the libobjects attached to the constants *)
@@ -441,7 +443,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
       Opaques.declare_defined_opaque ?feedback_id i body
     | Def _ | Undef _ | Primitive _ -> assert false
   in
-  let () = register_constant kn kind local in
+  let () = register_constant kn kind local ?deprecation in
   kn
 
 let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
@@ -653,7 +655,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ?hook ~obls ~impargs ~uctx entry =
+let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ~deprecation ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
@@ -665,7 +667,7 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
-    let kn = declare_constant ~name ~local ~kind ~typing_flags (DefinitionEntry entry) in
+    let kn = declare_constant ~name ~local ~kind ~typing_flags ?deprecation (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
     gr
@@ -692,7 +694,7 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
     vars, fixdecls, None
 
 let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
-  let { Info.poly; udecl; scope; kind; typing_flags; _ } = info in
+  let { Info.poly; udecl; scope; kind; typing_flags; deprecation; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -709,7 +711,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs; using } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
-         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags entry)
+         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags ~deprecation entry)
       cinfo fixdecls
   in
   let isfix = Option.has_some possible_indexes in
@@ -774,8 +776,8 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
   let { CInfo.name; impargs; typ; using; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
-  let { Info.scope; kind; hook; typing_flags; _ } = info in
-  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~obls ?hook ~uctx entry, uctx
+  let { Info.scope; kind; hook; typing_flags; deprecation; _ } = info in
+  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~deprecation ~obls ?hook ~uctx entry, uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body sigma |> fst
@@ -1998,7 +2000,7 @@ end = struct
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in
-    let { Info.hook; scope; kind; typing_flags; _ } = info in
+    let { Info.hook; scope; kind; typing_flags; deprecation; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
     *)
@@ -2017,7 +2019,7 @@ end = struct
         Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ~uctx pe
+    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ~deprecation ~uctx pe
 
   let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
@@ -2637,5 +2639,5 @@ module OblState = Obls_.State
 let declare_constant ?local ~name ~kind ?typing_flags =
   declare_constant ?local ~name ~kind ~typing_flags
 
-let declare_entry ~name ?scope ~kind =
-  declare_entry ~name ?scope ~kind ~typing_flags:None
+let declare_entry ~name ?scope ~kind ?deprecation =
+  declare_entry ~name ?scope ~kind ~typing_flags:None ~deprecation

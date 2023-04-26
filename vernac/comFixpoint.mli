@@ -19,6 +19,7 @@ val do_fixpoint_interactive
   : scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
+  -> ?deprecation:Deprecation.t
   -> fixpoint_expr list
   -> Declare.Proof.t
 
@@ -26,16 +27,22 @@ val do_fixpoint
    : ?scope:Locality.definition_scope
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
+  -> ?deprecation:Deprecation.t
   -> ?using:Vernacexpr.section_subset_expr
   -> fixpoint_expr list
   -> unit
 
-val do_cofixpoint_interactive :
-  scope:Locality.definition_scope -> poly:bool -> cofixpoint_expr list -> Declare.Proof.t
+val do_cofixpoint_interactive
+  : scope:Locality.definition_scope
+  -> poly:bool
+  -> ?deprecation:Deprecation.t
+  -> cofixpoint_expr list
+  -> Declare.Proof.t
 
 val do_cofixpoint
   : scope:Locality.definition_scope
   -> poly:bool
+  -> ?deprecation:Deprecation.t
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
   -> unit

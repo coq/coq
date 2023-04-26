@@ -9,8 +9,8 @@ available in the Coq repository in `doc/plugin_tutorial
 Deprecating library objects or tactics
 --------------------------------------
 
-You may use the following :term:`attribute` to deprecate a notation or
-tactic.  When renaming a definition or theorem, you can introduce a
+You may use the following :term:`attribute` to deprecate a notation,
+tactic, definition, axiom or theorem.  When renaming a definition or theorem, you can introduce a
 deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 (see :ref:`the example below <compatibility-alias>`).
 
