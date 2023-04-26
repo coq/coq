@@ -148,7 +148,13 @@ let load_vernac_core ~echo ~check ~interactive ~state ?source file =
     Exninfo.iraise (e, info)
 
 let process_expr ~state loc_ast =
-  interp_vernac ~interactive:true ~check:true ~state loc_ast
+  let tstart = System.get_time () in
+  try_finally (fun () -> interp_vernac ~interactive:true ~check:true ~state loc_ast)
+    ()
+    (fun () ->
+       let tend = System.get_time () in
+       emit_time state loc_ast tstart tend)
+    ()
 
 (******************************************************************************)
 (* Beautify-specific code                                                     *)
