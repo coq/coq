@@ -25,27 +25,13 @@ open Libobject
 open Libnames
 open Globnames
 open Printer
-open Printmod
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-type object_pr = {
-  print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
-  print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
-  print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
-  print_abbreviation        : env -> abbreviation -> Pp.t;
-  print_module              : ModPath.t -> Pp.t;
-  print_modtype             : ModPath.t -> Pp.t;
-  print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
-  print_context             : 'summary. env -> Evd.evar_map -> bool -> int option -> 'summary Lib.library_segment -> Pp.t;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
-}
-
-let gallina_print_module mp = print_module ~with_body:true mp
-let gallina_print_modtype = print_modtype
+let print_module mp = Printmod.print_module ~with_body:true mp
+let print_modtype = Printmod.print_modtype
 
 (**************)
 (** Utilities *)
@@ -585,7 +571,7 @@ let print_located_qualid ref = print_located_qualid "object" LocAny ref
 (**** Printing declarations and judgments *)
 (****  Gallina layer                  *****)
 
-let gallina_print_typed_value_in_env env sigma (trm,typ) =
+let print_typed_value_in_env env sigma (trm,typ) =
   (pr_leconstr_env ~inctx:true env sigma trm ++ fnl () ++
      str "     : " ++ pr_letype_env env sigma typ)
 
@@ -606,7 +592,7 @@ let print_named_def env sigma name body typ =
 let print_named_assum env sigma name typ =
   str "*** [" ++ str name ++ str " : " ++ pr_ltype_env env sigma typ ++ str "]"
 
-let gallina_print_named_decl env sigma =
+let print_named_decl_gen env sigma =
   let open Context.Named.Declaration in
   function
   | LocalAssum (id, typ) ->
@@ -620,19 +606,19 @@ let assumptions_for_print lna =
 (*********************)
 (* *)
 
-let gallina_print_inductive sp udecl =
+let print_inductive sp udecl =
   let env = Global.env() in
   let mib = Environ.lookup_mind sp env in
   let mipv = mib.mind_packets in
-  pr_mutual_inductive_body env sp mib udecl ++
+  Printmod.pr_mutual_inductive_body env sp mib udecl ++
   with_line_skip
     (print_primitive_record mib.mind_finite mipv mib.mind_record @
      print_inductive_args sp mipv)
 
 let print_named_decl env sigma id =
-  gallina_print_named_decl env sigma (Global.lookup_named id) ++ fnl ()
+  print_named_decl_gen env sigma (Global.lookup_named id) ++ fnl ()
 
-let gallina_print_section_variable env sigma id =
+let print_section_variable env sigma id =
   print_named_decl env sigma id ++
   with_line_skip (print_name_infos (GlobRef.VarRef id))
 
@@ -678,11 +664,11 @@ let print_constant with_values sp udecl =
       (if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
       Printer.pr_universes sigma univs ?priv)
 
-let gallina_print_constant_with_infos sp udecl =
+let print_constant_with_infos sp udecl =
   print_constant true sp udecl ++
   with_line_skip (print_name_infos (GlobRef.ConstRef sp))
 
-let gallina_print_abbreviation env kn =
+let print_abbreviation env kn =
   let qid = Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn
   and (vars,a) = Abbreviation.search_abbreviation kn in
   let c = Notation_ops.glob_constr_of_notation_constr a in
@@ -706,7 +692,7 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    no reason that an object in the stack corresponds to a user-facing
    declaration. It may have been so at the time this was written, but this
    needs to be done in a more principled way. *)
-let gallina_print_library_leaf env sigma with_values mp lobj =
+let print_library_leaf env sigma with_values mp lobj =
   match lobj with
   | AtomicObject o ->
     let handler =
@@ -721,13 +707,13 @@ let gallina_print_library_leaf env sigma with_values mp lobj =
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
         let kn = MutInd.make2 mp (Label.of_id id) in
-        Some (gallina_print_inductive kn None)
+        Some (print_inductive kn None)
       end @@
       DynHandle.empty
     in
     handle handler o
   | ModuleObject (id,_) ->
-    Some (print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
+    Some (Printmod.print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
   | ModuleTypeObject (id,_) ->
     Some (print_modtype (MPdot (mp, Label.of_id id)))
   | IncludeObject _ | KeepObject _ | ExportObject _ -> None
@@ -741,7 +727,7 @@ let print_leaves env sigma with_values mp =
     | [] -> n, mt()
     | o :: rest ->
       if is_done n then n, mt()
-      else begin match gallina_print_library_leaf env sigma with_values mp o with
+      else begin match print_library_leaf env sigma with_values mp o with
         | Some pp ->
           let n, prest = prec (decr n) rest in
           n, prest ++ pp
@@ -750,7 +736,7 @@ let print_leaves env sigma with_values mp =
   in
   prec
 
-let gallina_print_context env sigma with_values =
+let print_context env sigma with_values =
   let rec prec n = function
     | [] -> mt()
     | (node, leaves) :: rest ->
@@ -772,36 +758,6 @@ let print_library_node = function
     str " >>>>>>> Module " ++ pr_prefix_name prefix
   | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
     str " >>>>>>> Library " ++ DirPath.print obj_dir
-
-(******************************************)
-(**** Printing abstraction layer          *)
-
-let default_object_pr = {
-  print_inductive           = gallina_print_inductive;
-  print_constant_with_infos = gallina_print_constant_with_infos;
-  print_section_variable    = gallina_print_section_variable;
-  print_abbreviation        = gallina_print_abbreviation;
-  print_module              = gallina_print_module;
-  print_modtype             = gallina_print_modtype;
-  print_named_decl          = gallina_print_named_decl;
-  print_library_leaf        = gallina_print_library_leaf;
-  print_context             = gallina_print_context;
-  print_typed_value_in_env  = gallina_print_typed_value_in_env;
-}
-
-let object_pr = ref default_object_pr
-let set_object_pr = (:=) object_pr
-
-let print_inductive x = !object_pr.print_inductive x
-let print_constant_with_infos c = !object_pr.print_constant_with_infos c
-let print_section_variable c = !object_pr.print_section_variable c
-let print_abbreviation x = !object_pr.print_abbreviation x
-let print_module x  = !object_pr.print_module  x
-let print_modtype x = !object_pr.print_modtype x
-let print_named_decl x = !object_pr.print_named_decl x
-let print_library_leaf x = !object_pr.print_library_leaf x
-let print_context x = !object_pr.print_context x
-let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
 
 (******************************************)
 (**** Printing declarations and judgments *)
@@ -831,7 +787,7 @@ let handleF h (Libobject.Dyn.Dyn (tag, o)) = match DynHandleF.find tag h with
 | f -> f o
 | exception Not_found -> mt ()
 
-(* TODO: see the comment for {!gallina_print_leaf_entry} *)
+(* TODO: see the comment for {!print_leaf_entry} *)
 let print_full_pure_atomic env sigma mp lobj =
   let handler =
     DynHandleF.add Declare.Internal.Constant.tag begin fun (id,_) ->
@@ -862,7 +818,7 @@ let print_full_pure_atomic env sigma mp lobj =
       let kn = KerName.make mp (Label.of_id id) in
       let mind = Global.mind_of_delta_kn kn in
       let mib = Global.lookup_mind mind in
-      pr_mutual_inductive_body (Global.env()) mind mib None ++
+      Printmod.pr_mutual_inductive_body (Global.env()) mind mib None ++
       str "." ++ fnl () ++ fnl ()
     end @@
     DynHandleF.empty
@@ -940,7 +896,7 @@ let print_any_name env sigma na udecl =
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    str |> Global.lookup_named |> print_named_decl env sigma
+    str |> Global.lookup_named |> print_named_decl_gen env sigma
 
   with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
@@ -1105,7 +1061,7 @@ let print_typeclasses () =
     prlist_with_sep fnl (pr_typeclass env) (typeclasses ())
 
 let pr_instance env i =
-  (*   gallina_print_constant_with_infos i.is_impl *)
+  (*   print_constant_with_infos i.is_impl *)
   (* lighter *)
   print_ref false (instance_impl i) None ++
   begin match hint_priority i with
