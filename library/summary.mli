@@ -55,24 +55,28 @@ val declare_summary_tag : string -> 'a summary_declaration -> 'a Dyn.tag
     It behaves just as OCaml's standard [ref] function, except
     that a [declare_summary] is done, with [name] as string.
     The [init_function] restores the reference to its initial value.
-    The [freeze_function] can be overridden
     The [stage] argument defaults to [Interp] and should be changed to [Synterp]
     for references which are read from and written to during the syntactic
-    interpretation. *)
+    interpretation.
 
-val ref : ?stage:Stage.t -> ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref
-val ref_tag : ?stage:Stage.t -> ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref * 'a Dyn.tag
+    When [local:true] the value is local to the process, i.e. not sent to proof workers.
+    Consequently it doesn't need to be of a marshallable type.
+    It is useful to implement a local cache for example.
 
-(* As [ref] but the value is local to a process, i.e. not sent to, say, proof
- * workers.  It is useful to implement a local cache for example. *)
+    [ref_tag] is never local.
+*)
+
+val ref : ?stage:Stage.t -> ?local:bool -> name:string -> 'a -> 'a ref
+val ref_tag : ?stage:Stage.t -> name:string -> 'a -> 'a ref * 'a Dyn.tag
+
 module Local : sig
 
-  type 'a local_ref
+  type 'a local_ref = 'a ref
   val ref : ?stage:Stage.t -> name:string -> 'a -> 'a local_ref
   val (:=) : 'a local_ref -> 'a -> unit
   val (!) : 'a local_ref -> 'a
 
-end
+end [@@ocaml.deprecated "Use [Summary.ref ~local:true]"]
 
 (** Special summary for ML modules.  This summary entry is special
     because its unfreeze may load ML code and hence add summary

@@ -64,12 +64,10 @@ let empty_treenode name = {
 
 let root = "root"
 
-module Local = Summary.Local
 
-let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
+let stack = Summary.ref ~name:"LtacProf-stack" ~local:true [empty_treenode root]
 
-let reset_profile_tmp () =
-  Local.(stack := [empty_treenode root])
+let reset_profile_tmp () = stack := [empty_treenode root]
 
 (* ************** XML Serialization  ********************* *)
 
@@ -284,7 +282,7 @@ let rec find_in_stack what acc = function
 
 let exit_tactic ~count_call start_time name =
   let diff = time () -. start_time in
-  match Local.(!stack) with
+  match !stack with
   | [] | [_] ->
     (* oops, our stack is invalid *)
     encounter_invalid_stack_no_self ();
@@ -309,7 +307,7 @@ let exit_tactic ~count_call start_time name =
          let parent = { parent with
            local = parent.local -. diff;
            children = M.add node.name node parent.children } in
-         Local.(stack := parent :: rest);
+         stack := parent :: rest;
          parent
       | Some(to_update, self, rest) ->
          (* we coalesce the rec-call and update the lower stack *)
@@ -318,8 +316,8 @@ let exit_tactic ~count_call start_time name =
            List.fold_left (fun s x ->
              (try M.find x.name (List.hd s).children
               with Not_found -> x) :: s) (self :: rest) to_update in
-         Local.(stack := updated_stack);
-         List.hd Local.(!stack)
+         stack := updated_stack;
+         List.hd !stack
     in
     (* Calls are over, we reset the stack and send back data *)
     if rest == [] && get_profiling () then begin
@@ -356,11 +354,11 @@ let do_profile_gen pp_call call_trace ?(count_call=true) tac =
   | true ->
     tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-             match pp_call call_trace, Local.(!stack) with
+             match pp_call call_trace, !stack with
              | Some c, parent :: rest ->
                let name = string_of_call c in
                let node = get_child name parent in
-               Local.(stack := node :: parent :: rest);
+               stack := node :: parent :: rest;
                Some (name, time ())
              | Some _, [] -> assert false
              | _ -> None
@@ -380,7 +378,7 @@ let do_profile trace ?count_call tac =
 
 (* ************** Accumulation of data from workers ************************* *)
 
-let get_local_profiling_results () = List.hd Local.(!stack)
+let get_local_profiling_results () = List.hd !stack
 
 (* We maintain our own cache of document data, given that the
    semantics of the STM implies that synchronized state for opaque
@@ -440,7 +438,7 @@ let print_results_filter ~cutoff ~filter =
   data := SM.filter (fun (doc,id) _ -> Stateid.is_valid ~doc id) !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
-  let results = merge_roots results Local.(CList.last !stack) in
+  let results = merge_roots results (CList.last !stack) in
   Feedback.msg_notice (to_string ~cutoff ~filter results)
 ;;
 
