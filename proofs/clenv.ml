@@ -276,9 +276,8 @@ let undefined_metas evd =
   let m = Metamap.fold fold (Evd.meta_list evd) [] in
   List.sort Int.compare m
 
-let clenv_dependent_gen hyps_only ?(iter=true) env sigma concl =
+let clenv_dependent_gen hyps_only ?(iter=true) env sigma deps_in_concl =
   let all_undefined = undefined_metas sigma in
-  let deps_in_concl = (mk_freelisted concl).freemetas in
   let deps_in_hyps = dependent_in_type_of_metas env sigma all_undefined in
   let deps_in_concl =
     if hyps_only && iter then dependent_closure env sigma deps_in_concl
@@ -291,7 +290,9 @@ let clenv_dependent_gen hyps_only ?(iter=true) env sigma concl =
         Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
     all_undefined
 
-let clenv_missing ce = clenv_dependent_gen true ce.env ce.evd (clenv_type ce)
+let metas_in_concl clenv = metavars_of (clenv_type clenv)
+
+let clenv_missing ce = clenv_dependent_gen true ce.env ce.evd (metas_in_concl ce)
 
 (******************************************************************)
 
@@ -620,13 +621,14 @@ let clenv_constrain_dep_args hyps_only bl clenv =
   if List.is_empty bl then
     clenv
   else
-    let occlist = clenv_dependent_gen hyps_only clenv.env clenv.evd (clenv_type clenv) in
+    let concl_metas = metas_in_concl clenv in
+    let occlist = clenv_dependent_gen hyps_only clenv.env clenv.evd concl_metas in
     if Int.equal (List.length occlist) (List.length bl) then
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else
       if hyps_only then
         (* Tolerance for compatibility <= 8.3 *)
-        let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv.env clenv.evd (clenv_type clenv) in
+        let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv.env clenv.evd concl_metas in
         if Int.equal (List.length occlist') (List.length bl) then
           List.fold_left2 clenv_assign_binding clenv occlist' bl
         else
@@ -642,7 +644,7 @@ let pose_dependent_evars ?(with_evars=false) env sigma concl =
   clenv_pose_metas_as_evars env sigma dep_mvs
 
 let clenv_pose_dependent_evars ?with_evars clenv =
-  let sigma = pose_dependent_evars ?with_evars clenv.env clenv.evd (clenv_type clenv) in
+  let sigma = pose_dependent_evars ?with_evars clenv.env clenv.evd (metas_in_concl clenv) in
   update_clenv_evd clenv sigma
 
 module Internal =
@@ -851,7 +853,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
-    let sigma = pose_dependent_evars ~with_evars clenv.env clenv.evd (clenv_type clenv) in
+    let sigma = pose_dependent_evars ~with_evars clenv.env clenv.evd (metas_in_concl clenv) in
     let sigma =
       if with_classes then
         let sigma =
@@ -995,7 +997,7 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   in
   let (sigma, branches) = Array.fold_left_map fold sigma branches in
   let metaset = Metaset.singleton mvP (* dummy, should just be nonempty *) in
-  let sigma = pose_dependent_evars ~with_evars env sigma (meta_instance env sigma (mk_freelisted templtyp)) in
+  let sigma = pose_dependent_evars ~with_evars env sigma (metavars_of (meta_instance env sigma (mk_freelisted templtyp))) in
 
   (* Build the case node proper *)
   let body = build_case_analysis env sigma (ind, u) params pred indices indarg branches dep s in
