@@ -214,12 +214,13 @@ One can define new types with the following commands.
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
 
-.. cmd:: Ltac2 @ external @ident : @ltac2_type := @string @string
+.. cmd:: Ltac2 @ external @ident : @ltac2_type := @string__plugin @string__function
    :name: Ltac2 external
 
-   Declares abstract terms.  Frequently, these declare OCaml functions
-   defined in Coq and give their type information.  They can also declare
-   data structures from OCaml.  This command has no use for the end user.
+   Declares functions defined in OCaml. :n:`@string__plugin` is the
+   plugin name defining the function.  :n:`@string_function` is the internal name
+   of the function.  As a special case, ``"ltac2"`` represents the plugin name
+   ``"coq-core.plugins.ltac2"``.
 
    This command supports the :attr:`deprecated` attribute.
 
