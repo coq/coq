@@ -37,6 +37,10 @@ sig
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
   val of_list : (key * 'a) list -> 'a t
+  val symmetric_diff :
+    eq:('a -> 'a -> bool) ->
+    (key -> [ `Left of 'a | `Right of 'a | `Unequal of 'a * 'a ] -> 'b -> 'b) ->
+    'a t -> 'a t -> 'b -> 'b
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t
@@ -62,6 +66,10 @@ sig
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val height : 'a map -> int
   val filter_range : (M.t -> int) -> 'a map -> 'a map
+  val symmetric_diff :
+    eq:('a -> 'a -> bool) ->
+    (M.t -> [ `Left of 'a | `Right of 'a | `Unequal of 'a * 'a ] -> 'b -> 'b) ->
+    'a map -> 'a map -> 'b -> 'b
   val of_list : (M.t * 'a) list -> 'a map
   module Smart :
   sig
@@ -192,6 +200,52 @@ struct
   let of_list l =
     let fold accu (x, v) = F.add x v accu in
     List.fold_left fold F.empty l
+
+  type 'a sequenced =
+    | End
+    | More of M.t * 'a * 'a F.t * 'a sequenced
+
+  let rec seq_cons m rest =
+    match map_prj m with
+    | MEmpty -> rest
+    | MNode {l; v; d; r; _ } -> seq_cons l (More (v, d, r, rest))
+
+  let rec fold_seq f acc = function
+    | End -> acc
+    | More (k, v, m, r) -> f k v @@ fold_seq f (F.fold f m acc) r
+
+  let move_to_acc (m, acc) = match map_prj m with
+    | MEmpty -> assert false
+    | MNode {l; v; d; r; _ } -> l, More (v, d, r, acc)
+
+  let rec symmetric_cons ((lm, la) as l) ((rm, ra) as r) =
+    if lm == rm then la, ra
+    else
+      let lh = height lm in
+      let rh = height rm in
+      if lh == rh then
+        symmetric_cons (move_to_acc l) (move_to_acc r)
+      else if lh < rh then
+        symmetric_cons l (move_to_acc r)
+      else
+        symmetric_cons (move_to_acc l) r
+
+  let symmetric_diff ~eq f lm rm acc =
+    let rec aux s acc =
+      match s with
+      | End, rs -> fold_seq (fun k v -> f k (`Right v)) acc rs
+      | ls, End -> fold_seq (fun k v -> f k (`Left v)) acc ls
+      | (More (kl, vl, tl, rl) as ls), (More (kr, vr, tr, rr) as rs) ->
+        let cmp = M.compare kl kr in
+        if cmp == 0 then
+          let rem = aux (symmetric_cons (tl, rl) (tr, rr)) acc in
+          if eq vl vr then rem
+          else f kl (`Unequal (vl, vr)) rem
+        else if cmp < 0 then
+          f kl (`Left vl) @@ aux (seq_cons tl rl, rs) acc
+        else
+          f kr (`Right vr) @@ aux (ls, seq_cons tr rr) acc
+    in aux (symmetric_cons (lm, End) (rm, End)) acc
 
   module Smart =
   struct
