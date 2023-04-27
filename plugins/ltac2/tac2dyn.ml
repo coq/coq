@@ -10,7 +10,7 @@
 
 module Arg =
 struct
-  module DYN = Dyn.Make(struct end)
+  module DYN = Dyn.Make()
   module Map = DYN.Map
   type ('a, 'b) tag = ('a * 'b) DYN.tag
   let eq = DYN.eq
@@ -26,4 +26,4 @@ struct
   include Arg.Map(struct type 'a t = 'a pack end)
 end
 
-module Val = Dyn.Make(struct end)
+module Val = Dyn.Make()
