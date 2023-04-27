@@ -29,6 +29,7 @@ val do_definition
   :  ?hook:Declare.Hook.t
   -> name:Id.t
   -> ?scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
@@ -46,6 +47,7 @@ val do_definition_program
   -> pm:Declare.OblState.t
   -> name:Id.t
   -> scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.logical_kind

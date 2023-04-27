@@ -62,16 +62,23 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 
    As for :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`,
    if :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
-   This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
-   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+   This can be used to define a term incrementally,
+   in particular by relying on the :tacn:`refine` tactic.
+   See :ref:`proof-editing-mode`.
+   The proof should be terminated with :cmd:`Defined`. Using :cmd:`Qed` in
+   Let is deprecated. To get the same effect (hiding the body of the
+   proof), add the :attr:`clearbody` attribute to the Let.
+
+.. attr:: clearbody
+
+   When used with :cmd:`Let` in a section,
+   clears the body of the definition in the proof context of following proofs.
+   The kernel will still use the body when checking.
 
 .. warn:: @ident is declared opaque but this is not fully respected inside the section and not at all outside the section.
 
-   Terminating the proof for a :cmd:`Let` with :cmd:`Qed` with `Let` is not recommended.
-   The variable will appear to have no body inside proofs but the kernel will still use
-   the body when checking, and it will be treated the same as a
-   :cmd:`Defined` `Let` when the section is closed.
+   Terminating the proof for a :cmd:`Let` with :cmd:`Qed` is deprecated.
+   It has the same behavior as :attr:`clearbody` with :cmd:`Defined`.
 
 .. cmd:: Context {+ @binder }
 

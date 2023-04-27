@@ -14,6 +14,7 @@ open Vernacexpr
 val do_fixpoint :
      pm:Declare.OblState.t
   -> scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?deprecation:Deprecation.t

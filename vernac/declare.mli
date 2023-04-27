@@ -107,6 +107,7 @@ module Info : sig
     -> ?udecl : UState.universe_decl
     -> ?scope : Locality.definition_scope
     (** locality  *)
+    -> ?clearbody:bool
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
     -> ?typing_flags:Declarations.typing_flags
