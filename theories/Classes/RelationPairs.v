@@ -165,3 +165,27 @@ Hint Unfold RelProd RelCompFun : core.
 #[global]
 Hint Extern 2 (RelProd _ _ _ _) => split : core.
 
+#[export] Instance Proper_RelProd_flip_impl: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> Basics.flip Basics.impl) RA
+    -> Proper (RB1 ==> RB2 ==> Basics.flip Basics.impl) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> Basics.flip Basics.impl) (RA * RB)%signature.
+Proof. cbv; intuition eauto. Qed.
+
+#[export] Instance Proper_RelProd_impl: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> Basics.impl) RA
+    -> Proper (RB1 ==> RB2 ==> Basics.impl) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> Basics.impl) (RA * RB)%signature.
+Proof. cbv; intuition eauto. Qed.
+
+#[export] Instance Proper_RelProd_iff: forall A B RA1 RA2 RB1 RB2 (RA : relation A) (RB : relation B),
+    Proper (RA1 ==> RA2 ==> iff) RA
+    -> Proper (RB1 ==> RB2 ==> iff) RB
+    -> Proper (RA1 * RB1 ==> RA2 * RB2 ==> iff) (RA * RB)%signature.
+Proof.
+  intros A B RA1 RA2 RB1 RB2 RA RB H H0. cbv in *.
+  intros x y H1 x0 y0 H2. intuition eauto;
+  destruct x as [a b], y as [a0 b0], x0 as [a1 b1], y0 as [a2 b2];
+  destruct H with a a0 a1 a2;
+  destruct H0 with b b0 b1 b2;
+  eauto.
+Qed.
