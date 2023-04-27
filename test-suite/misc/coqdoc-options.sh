@@ -13,4 +13,4 @@ make clean
 
 make html
 
-diff -u --strip-trailing-cr html/Coqdoc.test.html ../15933.html.out
+diff -u --strip-trailing-cr html/Coqdoc.test.html 15933.html.out
