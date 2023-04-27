@@ -218,9 +218,8 @@ One can define new types with the following commands.
    :name: Ltac2 external
 
    Declares functions defined in OCaml. :n:`@string__plugin` is the
-   plugin name defining the function.  :n:`@string_function` is the internal name
-   of the function.  As a special case, ``"ltac2"`` represents the plugin name
-   ``"coq-core.plugins.ltac2"``.
+   plugin name defining the function.  :n:`@string__function` is the internal name
+   of the function.
 
    This command supports the :attr:`deprecated` attribute.
 

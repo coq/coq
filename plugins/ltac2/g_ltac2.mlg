@@ -132,10 +132,6 @@ let opt_fun ?loc args ty e =
   | [] -> e
   | _ :: _ -> CAst.make ?loc (CTacFun (args, e))
 
-let plugin_name = function
-  | "ltac2" -> "coq-core.plugins.ltac2"
-  | s -> s
-
 }
 
 GRAMMAR EXTEND Gram
@@ -444,7 +440,7 @@ GRAMMAR EXTEND Gram
   tac2def_ext:
     [ [ "@"; IDENT "external"; id = locident; ":"; t = ltac2_type LEVEL "5"; ":=";
         plugin = Prim.string; name = Prim.string ->
-      { let ml = { mltac_plugin = plugin_name plugin; mltac_tactic = name } in
+      { let ml = { mltac_plugin = plugin; mltac_tactic = name } in
         StrPrm (id, t, ml) }
     ] ]
   ;
