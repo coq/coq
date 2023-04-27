@@ -1779,7 +1779,7 @@ simple_tactic: [
 | "inversion" quantified_hypothesis "using" constr in_hyp_list
 | "red" clause_dft_concl
 | "hnf" clause_dft_concl
-| "simpl" delta_flag OPT ref_or_pattern_occ clause_dft_concl
+| "simpl" OPT "head" delta_flag OPT ref_or_pattern_occ clause_dft_concl
 | "cbv" strategy_flag clause_dft_concl
 | "cbn" strategy_flag clause_dft_concl
 | "lazy" strategy_flag clause_dft_concl
@@ -2432,6 +2432,7 @@ red_flag: [
 | "cofix"
 | "zeta"
 | "delta" delta_flag
+| "head"
 ]
 
 delta_flag: [
@@ -2442,13 +2443,13 @@ delta_flag: [
 
 strategy_flag: [
 | LIST1 red_flag
-| delta_flag
+| OPT "head" delta_flag
 ]
 
 red_expr: [
 | "red"
 | "hnf"
-| "simpl" delta_flag OPT ref_or_pattern_occ
+| "simpl" OPT "head" delta_flag OPT ref_or_pattern_occ
 | "cbv" strategy_flag
 | "cbn" strategy_flag
 | "lazy" strategy_flag

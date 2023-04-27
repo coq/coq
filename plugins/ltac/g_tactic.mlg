@@ -30,7 +30,9 @@ open Locus
 open Pcoq
 
 
-let all_with delta = Redops.make_red_flag [FBeta;FMatch;FFix;FCofix;FZeta;delta]
+let all_with ~head delta =
+  let all = [FBeta;FMatch;FFix;FCofix;FZeta;delta] in
+  Redops.make_red_flag (if head then FHead :: all else all)
 
 let err () = raise Gramlib.Stream.Failure
 
@@ -348,6 +350,7 @@ GRAMMAR EXTEND Gram
       | IDENT "cofix" -> { [FCofix] }
       | IDENT "zeta" -> { [FZeta] }
       | IDENT "delta"; d = delta_flag -> { [d] }
+      | IDENT "head" -> { [FHead] }
     ] ]
   ;
   delta_flag:
@@ -358,17 +361,18 @@ GRAMMAR EXTEND Gram
   ;
   strategy_flag:
     [ [ s = LIST1 red_flag -> { Redops.make_red_flag (List.flatten s) }
-      | d = delta_flag -> { all_with d }
+      | h = OPT [ IDENT "head" -> { () } ]; d = delta_flag -> { all_with ~head:(Option.has_some h) d }
     ] ]
   ;
   red_expr:
     [ [ IDENT "red" -> { Red false }
       | IDENT "hnf" -> { Hnf }
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
+      | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ];
+        d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with ~head:(Option.has_some h) d,po) }
       | IDENT "cbv"; s = strategy_flag -> { Cbv s }
       | IDENT "cbn"; s = strategy_flag -> { Cbn s }
       | IDENT "lazy"; s = strategy_flag -> { Lazy s }
-      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
+      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with ~head:false delta) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
@@ -677,8 +681,9 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ TacAtom (TacReduce (Red false, cl)) }
       | IDENT "hnf"; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Hnf, cl)) }
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          { CAst.make ~loc @@ TacAtom (TacReduce (Simpl (all_with d, po), cl)) }
+      | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ]; d = delta_flag;
+        po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+          { CAst.make ~loc @@ TacAtom (TacReduce (Simpl (all_with ~head:(Option.has_some h) d, po), cl)) }
       | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv s, cl)) }
       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
@@ -686,7 +691,7 @@ GRAMMAR EXTEND Gram
       | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Lazy s, cl)) }
       | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
-          { CAst.make ~loc @@ TacAtom (TacReduce (Cbv (all_with delta), cl)) }
+          { CAst.make ~loc @@ TacAtom (TacReduce (Cbv (all_with ~head:false delta), cl)) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (CbvVm po, cl)) }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->

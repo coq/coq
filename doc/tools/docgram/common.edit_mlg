@@ -673,8 +673,8 @@ ltac2_branches: [
 ]
 
 strategy_flag: [
-| REPLACE OPT delta_flag
-| WITH delta_flag
+| REPLACE OPT "head" OPT delta_flag
+| WITH OPT "head" delta_flag
 (*| REPLACE LIST1 red_flags
 | WITH LIST1 red_flag*)
 | (* empty *)
@@ -980,8 +980,8 @@ simple_tactic: [
 | WITH "autounfold" hintbases OPT simple_occurrences
 | REPLACE "red" clause_dft_concl
 | WITH "red" simple_occurrences
-| REPLACE "simpl" OPT delta_flag OPT ref_or_pattern_occ clause_dft_concl
-| WITH "simpl" OPT delta_flag OPT ref_or_pattern_occ simple_occurrences
+| REPLACE "simpl" OPT "head" OPT delta_flag OPT ref_or_pattern_occ clause_dft_concl
+| WITH "simpl" OPT "head" OPT delta_flag OPT ref_or_pattern_occ simple_occurrences
 | REPLACE "hnf" clause_dft_concl
 | WITH "hnf" simple_occurrences
 | REPLACE "cbv" strategy_flag clause_dft_concl

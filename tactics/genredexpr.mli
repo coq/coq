@@ -20,10 +20,15 @@ type 'a red_atom =
   | FZeta
   | FConst of 'a list
   | FDeltaBut of 'a list
+  | FHead
 
 (** This list of atoms is immediately converted to a [glob_red_flag] *)
 
+type strength = Norm | Head
+(* someday we may add NotUnderBinders *)
+
 type 'a glob_red_flag = {
+  rStrength : strength;
   rBeta : bool;
   rMatch : bool;
   rFix : bool;

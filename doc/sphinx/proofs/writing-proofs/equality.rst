@@ -492,9 +492,10 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    .. prodn::
       reductions ::= {+ @reduction }
-      | @delta_reductions
+      | {? head } @delta_reductions
       reduction ::= beta
       | delta {? @delta_reductions }
+      | head
       | match
       | fix
       | cofix
@@ -505,6 +506,11 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    Normalize the goal as specified by :n:`@reductions`.  If no reductions are
    specified by name, all reductions are applied.  If any reductions are specified by name,
    then only the named reductions are applied.  The reductions include:
+
+   `head`
+     Do only head reduction, without going under binders.  Only
+     supported by :tacn:`simpl`, :tacn:`cbn` and :tacn:`lazy`.
+     If this is the only specified reduction, all other reductions are applied.
 
    `beta`
      :term:`beta-reduction` of functional application
@@ -577,7 +583,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    information about the constants it encounters and the unfolding decisions it
    makes.
 
-.. tacn:: simpl {? @delta_reductions } {? {| @reference_occs | @pattern_occs } } @simple_occurrences
+.. tacn:: simpl {? head } {? @delta_reductions } {? {| @reference_occs | @pattern_occs } } @simple_occurrences
 
    .. insertprodn reference_occs pattern_occs
 
@@ -891,7 +897,7 @@ Evaluation of a term can be performed with:
       | native_compute {? {| @reference_occs | @pattern_occs } }
       | red
       | hnf
-      | simpl {? @delta_reductions } {? {| @reference_occs | @pattern_occs } }
+      | simpl {? head } {? @delta_reductions } {? {| @reference_occs | @pattern_occs } }
       | cbn {? @reductions }
       | unfold {+, @reference_occs }
       | fold {+ @one_term }

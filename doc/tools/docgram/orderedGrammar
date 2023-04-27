@@ -485,7 +485,7 @@ red_expr: [
 | "native_compute" OPT [ reference_occs | pattern_occs ]
 | "red"
 | "hnf"
-| "simpl" OPT delta_reductions OPT [ reference_occs | pattern_occs ]
+| "simpl" OPT "head" OPT delta_reductions OPT [ reference_occs | pattern_occs ]
 | "cbn" OPT reductions
 | "unfold" LIST1 reference_occs SEP ","
 | "fold" LIST1 one_term
@@ -495,12 +495,13 @@ red_expr: [
 
 reductions: [
 | LIST1 reduction
-| delta_reductions
+| OPT "head" delta_reductions
 ]
 
 reduction: [
 | "beta"
 | "delta" OPT delta_reductions
+| "head"
 | "match"
 | "fix"
 | "cofix"
@@ -1527,7 +1528,7 @@ simple_tactic: [
 | "inversion" [ ident | natural ] "using" one_term OPT ( "in" LIST1 ident )
 | "red" simple_occurrences
 | "hnf" simple_occurrences
-| "simpl" OPT delta_reductions OPT [ reference_occs | pattern_occs ] simple_occurrences
+| "simpl" OPT "head" OPT delta_reductions OPT [ reference_occs | pattern_occs ] simple_occurrences
 | "cbv" OPT reductions simple_occurrences
 | "cbn" OPT reductions simple_occurrences
 | "lazy" OPT reductions simple_occurrences

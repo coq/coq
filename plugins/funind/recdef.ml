@@ -161,7 +161,8 @@ let simpl_iter clause =
        ; rCofix = true
        ; rZeta = true
        ; rDelta = false
-       ; rConst = [EvalConstRef (const_of_ref (delayed_force iter_ref))] })
+       ; rConst = [EvalConstRef (const_of_ref (delayed_force iter_ref))]
+       ; rStrength = Norm })
     clause
 
 (* Others ugly things ... *)
