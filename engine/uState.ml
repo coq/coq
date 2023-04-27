@@ -26,15 +26,24 @@ type uinfo = {
 
 type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
 
+let sort_inconsistency ?explain cst l r =
+  let explain = Option.map (fun p -> UGraph.Other p) explain in
+  raise (UGraph.UniverseInconsistency (cst, l, r, explain))
+
+let pr_quality = function
+  | QVar v -> Sorts.QVar.pr v
+  | QProp -> Pp.str "Prop"
+  | QSProp -> Pp.str "SProp"
+  | QType -> Pp.str "Type"
+
 module QState : sig
   type t
   type elt = Sorts.QVar.t
   val empty : t
-  val union : t -> t -> t
+  val union : fail:(t -> quality -> quality -> t) -> t -> t -> t
   val add : elt -> t -> t
   val repr : elt -> t -> quality
-  val set : elt -> quality -> t -> t option
-  val set_above_prop : elt -> t -> t
+  val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> quality -> quality -> t -> t
   val is_above_prop : elt -> t -> bool
   val collapse : t -> t
   val pr : t -> Pp.t
@@ -56,17 +65,10 @@ type elt = Sorts.QVar.t
 
 let empty = { qmap = QMap.empty; above = QSet.empty }
 
-let union s1 s2 =
-  let qmap = QMap.fold QMap.add s1.qmap s2.qmap in
-  let filter q = match QMap.find q qmap with
-  | None -> true
-  | Some _ -> false
-  | exception Not_found -> false
-  in
-  let above = QSet.filter filter @@ QSet.union s1.above s2.above in
-  { qmap; above }
-
-let add q m = { qmap = QMap.add q None m.qmap; above = m.above }
+let quality_eq a b = match a, b with
+  | QProp, QProp | QSProp, QSProp | QType, QType -> true
+  | QVar q1, QVar q2 -> Sorts.QVar.equal q1 q2
+  | (QVar _ | QProp | QSProp | QType), _ -> false
 
 let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
@@ -100,6 +102,48 @@ let set_above_prop q m =
   let q = match q with QVar q -> q | QProp | QSProp | QType -> assert false in
   { qmap = m.qmap; above = QSet.add q m.above }
 
+let unify_quality ~fail c q1 q2 local = match q1, q2 with
+| QType, QType | QProp, QProp | QSProp, QSProp -> local
+| QProp, QVar q when c == Conversion.CUMUL ->
+  set_above_prop q local
+| QVar q, (QType | QProp | QSProp | QVar _ as qv)
+| (QType | QProp | QSProp as qv), QVar q ->
+  begin match set q qv local with
+  | Some local -> local
+  | None -> fail ()
+  end
+| (QType, (QProp | QSProp)) -> fail ()
+| (QProp, QType) ->
+  begin match c with
+  | CONV -> fail ()
+  | CUMUL -> local
+  end
+| (QSProp, (QType | QProp)) -> fail ()
+| (QProp, QSProp) -> fail ()
+
+let union ~fail s1 s2 =
+  let extra = ref [] in
+  let qmap = QMap.union (fun qk q1 q2 ->
+      match q1, q2 with
+      | Some q, None | None, Some q -> Some (Some q)
+      | None, None -> Some None
+      | Some q1, Some q2 ->
+        let () = if not (quality_eq q1 q2) then extra := (q1,q2) :: !extra in
+        Some (Some q1))
+      s1.qmap s2.qmap
+  in
+  let extra = !extra in
+  let filter q = match QMap.find q qmap with
+  | None -> true
+  | Some _ -> false
+  | exception Not_found -> false
+  in
+  let above = QSet.filter filter @@ QSet.union s1.above s2.above in
+  let s = { qmap; above } in
+  List.fold_left (fun s (q1,q2) -> unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s) s extra
+
+let add q m = { qmap = QMap.add q None m.qmap; above = m.above }
+
 let collapse m =
   let map q v = match v with
   | None -> Some QType
@@ -114,12 +158,7 @@ let pr { qmap; above } =
     if QSet.mem u above then str " >= Prop"
     else mt ()
   | Some q ->
-    let q = match q with
-    | QVar v -> Sorts.QVar.pr v
-    | QProp -> str "Prop"
-    | QSProp -> str "SProp"
-    | QType -> str "Type"
-    in
+    let q = pr_quality q in
     str " := " ++ q
   in
   h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody u v) (QMap.bindings qmap))
@@ -193,6 +232,12 @@ let union uctx uctx' =
     let declarenew g =
       Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:uctx.universes_lbound ~strict:false g) newus g
     in
+    let fail_union s q1 q2 =
+      if UGraph.type_in_type uctx.universes then s
+      else CErrors.user_err
+          Pp.(str "Could not merge universe contexts: could not unify" ++ spc() ++
+             pr_quality q1 ++ strbrk " and " ++ pr_quality q2 ++ str ".")
+    in
       { names = (names, names_rev);
         local = local;
         seff_univs = seff;
@@ -200,7 +245,7 @@ let union uctx uctx' =
           Level.Map.subst_union uctx.univ_variables uctx'.univ_variables;
         univ_algebraic =
           Level.Set.union uctx.univ_algebraic uctx'.univ_algebraic;
-        sort_variables = QState.union uctx.sort_variables uctx'.sort_variables;
+        sort_variables = QState.union ~fail:fail_union uctx.sort_variables uctx'.sort_variables;
         initial_universes = declarenew uctx.initial_universes;
         universes =
           (if local == uctx.local then uctx.universes
@@ -288,10 +333,6 @@ let drop_weak_constraints =
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false
 
-let sort_inconsistency ?explain cst l r =
-  let explain = Option.map (fun p -> UGraph.Other p) explain in
-  raise (UGraph.UniverseInconsistency (cst, l, r, explain))
-
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
   raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
@@ -375,33 +416,14 @@ let get_constraint = function
 | Conversion.CONV -> Eq
 | Conversion.CUMUL -> Le
 
-let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sort s2 with
-| QType, QType | QProp, QProp | QSProp, QSProp -> local
-| QProp, QVar q when c == Conversion.CUMUL ->
-  { local with local_sorts = QState.set_above_prop q local.local_sorts }
-| QVar q, (QType | QProp | QSProp | QVar _ as qv)
-| (QType | QProp | QSProp as qv), QVar q ->
-  begin match QState.set q qv local.local_sorts with
-  | Some local_sorts -> { local with local_sorts }
-  | None ->
-    if UGraph.type_in_type univs then local
+let unify_quality univs c s1 s2 l =
+  let fail () = if UGraph.type_in_type univs then l.local_sorts
     else sort_inconsistency (get_constraint c) s1 s2
-  end
-| (QType, (QProp | QSProp)) ->
-  if UGraph.type_in_type univs then local
-  else sort_inconsistency (get_constraint c) s1 s2
-| (QProp, QType) ->
-  if UGraph.type_in_type univs then local
-  else begin match c with
-  | Conversion.CONV -> sort_inconsistency Eq s1 s2
-  | Conversion.CUMUL -> local
-  end
-| (QSProp, (QType | QProp)) ->
-  if UGraph.type_in_type univs then local
-  else sort_inconsistency (get_constraint c) s1 s2
-| (QProp, QSProp) ->
-  if UGraph.type_in_type univs then local
-  else sort_inconsistency (get_constraint c) s1 s2
+  in
+  { l with
+    local_sorts  = QState.unify_quality ~fail
+        c (quality_of_sort s1) (quality_of_sort s2) l.local_sorts;
+  }
 
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
