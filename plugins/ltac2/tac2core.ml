@@ -1357,7 +1357,15 @@ let gtypref kn = GTypRef (Other kn, [])
 
 let intern_constr self ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-  (GlbVal c, gtypref t_constr)
+  let v = match DAst.get c with
+    | GGenarg (GenArg (Glbwit tag, v)) ->
+      begin match genarg_type_eq tag wit_ltac2_quotation with
+      | Some Refl -> GlbTacexpr (GTacVar v)
+      | None -> GlbVal c
+      end
+    | _ -> GlbVal c
+  in
+  (v, gtypref t_constr)
 
 let interp_constr flags ist c =
   let open Pretyping in
