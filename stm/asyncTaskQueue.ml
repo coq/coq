@@ -101,8 +101,11 @@ module Make(T : Task) () = struct
   type process = Worker.process
   type extra = (T.task * cancel_switch) TQueue.t
 
+  let uid = ref 0
+
   let spawn id priority =
-    let name = Printf.sprintf "%s:%d" T.name id in
+    let name = Printf.sprintf "%s:%d:%d" T.name id !uid in
+    incr uid;
     let proc, ic, oc =
       (* Filter arguments for slaves. *)
       let rec set_slave_opt = function
