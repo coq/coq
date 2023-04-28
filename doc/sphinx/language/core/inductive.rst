@@ -73,10 +73,10 @@ Inductive types
 
       The conclusion of the type of the constructors must be the inductive type
       :n:`@ident` being defined (or :n:`@ident` applied to arguments in
-      the case of annotated inductive types — cf. next section).
+      the case of indexed inductive types — cf. next section).
 
 The following subsections show examples of simple inductive types,
-simple annotated inductive types, simple parametric inductive types,
+simple indexed inductive types, simple parametric inductive types,
 mutually inductive types and private (matching) inductive types.
 
 .. _simple-inductive-types:
@@ -117,8 +117,8 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
    primitive induction principles (allowing dependent types) respectively
    over sorts ``Type``, ``Set`` and ``SProp``.
 
-In the case where inductive types don't have annotations (the next section
-gives an example of annotations), a constructor can be defined
+In the case where inductive types don't have indices (the next section
+gives an example of indices), a constructor can be defined
 by giving the type of its arguments alone.
 
 .. example::
@@ -131,16 +131,16 @@ by giving the type of its arguments alone.
 
       Inductive nat : Set := O | S (_:nat).
 
-Simple annotated inductive types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Simple indexed inductive types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In annotated inductive types, the universe where the inductive type
+In indexed inductive types, the universe where the inductive type
 is defined is no longer a simple :n:`@sort`, but what is called an arity,
 which is a type whose conclusion is a :n:`@sort`.
 
 .. example::
 
-   As an example of annotated inductive types, let us define the
+   As an example of indexed inductive types, let us define the
    :g:`even` predicate:
 
    .. coqtop:: all
@@ -173,10 +173,10 @@ Parameterized inductive types
 In the previous example, each constructor introduces a different
 instance of the predicate :g:`even`. In some cases, all the constructors
 introduce the same generic instance of the inductive definition, in
-which case, instead of an annotation, we use a context of parameters
+which case, instead of an index, we use a context of parameters
 which are :n:`@binder`\s shared by all the constructors of the definition.
 
-Parameters differ from inductive type annotations in that the
+Parameters differ from inductive type indices in that the
 conclusion of each type of constructor invokes the inductive type with
 the same parameter values of its specification.
 
@@ -247,7 +247,7 @@ the same parameter values of its specification.
      because the conclusion of the type of constructors should be :g:`listw A`
      in both cases.
 
-   + A parameterized inductive definition can be defined using annotations
+   + A parameterized inductive definition can be defined using indices
      instead of parameters but it will sometimes give a different (bigger)
      sort for the inductive definition and will produce a less convenient
      rule for case elimination.
@@ -1084,7 +1084,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 .. flag:: Auto Template Polymorphism
 
    This :term:`flag`, enabled by default, makes every inductive type declared
-   at level :math:`\Type` (without annotations or hiding it behind a
+   at level :math:`\Type` (without explicit universe instance or hiding it behind a
    definition) template polymorphic if possible.
 
    This can be prevented using the :attr:`universes(template=no) <universes(template)>`
