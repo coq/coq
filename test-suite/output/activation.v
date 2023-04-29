@@ -26,4 +26,14 @@ Check Prop.
 Enable Notation a (all). (* Note: reactivation is not necessarily in the same order as it was earlier *)
 Check a.
 Check Prop.
+
+Module Shadowed. Notation x := true. End Shadowed.
+Import Shadowed.
+Notation x := 0.
+Check x.
+Disable Notation Abbrev.x.
+Check x.
+Enable Notation x.
+Check x.
+
 End Abbrev.

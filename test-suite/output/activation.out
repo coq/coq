@@ -58,3 +58,13 @@ a
      : Type
 a
      : Type
+0
+     : nat
+The following notations have been disabled:
+Notation activation.Abbrev.x := 0
+x
+     : bool
+The following notations have been enabled:
+Notation activation.Abbrev.x := 0
+0
+     : nat
