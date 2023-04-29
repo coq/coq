@@ -51,6 +51,9 @@ val arity_suc : 'a arity -> (valexpr -> 'a) arity
 
 val mk_closure : 'v arity -> 'v -> closure
 
+val annotate_closure : Tac2expr.frame -> closure -> closure
+(** The closure must not be already annotated *)
+
 module Valexpr :
 sig
   type t = valexpr

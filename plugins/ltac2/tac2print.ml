@@ -404,13 +404,9 @@ let pr_glbexpr_gen lvl c =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
-  | GTacPrm (prm, args) ->
-    let args = match args with
-    | [] -> mt ()
-    | _ -> spc () ++ pr_sequence (pr_glbexpr E0) args
-    in
+  | GTacPrm prm ->
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
-      qstring prm.mltac_tactic ++ args)
+      qstring prm.mltac_tactic)
   and pr_applied_constructor lvl tpe n cl =
     let factorized =
       if KerName.equal tpe t_list then
@@ -646,3 +642,12 @@ let parse_format (s : string) : format list =
     | _ -> raise InvalidFormat
   in
   parse 0 []
+
+
+let pr_profile_frame = let open Pp in function
+  | FrAnon e -> str "<fun " ++ pr_glbexpr e ++ str ">"
+  | FrLtac kn -> pr_tacref kn
+  | FrPrim ml -> str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
+  | FrExtn (tag,_) -> str "<extn:" ++ str (Tac2dyn.Arg.repr tag) ++ str ">"
+
+let () = Hook.set Tac2bt.pr_frame_hook pr_profile_frame

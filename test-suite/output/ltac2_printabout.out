@@ -1,5 +1,5 @@
 type : constr -> constr
 Ltac2 type : constr -> constr
-      type := fun x0 => @external "coq-core.plugins.ltac2" "constr_type" x0
+      type := @external "coq-core.plugins.ltac2" "constr_type"
 Ltac2 ltac2_printabout.type
 Ltac2 type : constr -> constr

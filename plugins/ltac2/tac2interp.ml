@@ -15,44 +15,9 @@ open Names
 open Proofview.Notations
 open Tac2expr
 open Tac2ffi
+open Tac2bt
 
 exception LtacError = Tac2ffi.LtacError
-
-let backtrace : backtrace Evd.Store.field = Evd.Store.field ()
-
-let print_ltac2_backtrace = ref false
-
-let get_backtrace =
-  Proofview.tclEVARMAP >>= fun sigma ->
-  match Evd.Store.get (Evd.get_extra_data sigma) backtrace with
-  | None -> Proofview.tclUNIT []
-  | Some bt -> Proofview.tclUNIT bt
-
-let set_backtrace bt =
-  Proofview.tclEVARMAP >>= fun sigma ->
-  let store = Evd.get_extra_data sigma in
-  let store = Evd.Store.set store backtrace bt in
-  let sigma = Evd.set_extra_data store sigma in
-  Proofview.Unsafe.tclEVARS sigma
-
-let pr_frame = function
-  | FrAnon e -> str "<fun " ++ Tac2print.pr_glbexpr e ++ str ">"
-  | FrLtac kn -> Tac2print.pr_tacref kn
-  | FrPrim ml -> str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
-  | FrExtn (tag,_) -> str "<extn:" ++ str (Tac2dyn.Arg.repr tag) ++ str ">"
-
-let with_frame frame tac =
-  let tac =
-    if !print_ltac2_backtrace then
-      get_backtrace >>= fun bt ->
-      set_backtrace (frame :: bt) >>= fun () ->
-      tac >>= fun ans ->
-      set_backtrace bt >>= fun () ->
-      Proofview.tclUNIT ans
-    else tac
-  in
-  let pr_frame f = Some (pr_frame f) in
-  Ltac_plugin.Profile_ltac.do_profile_gen pr_frame frame ~count_call:true tac
 
 type environment = Tac2env.environment = {
   env_ist : valexpr Id.Map.t;
@@ -191,9 +156,8 @@ let rec interp (ist : environment) = function
 | GTacOpn (kn, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   return (Tac2ffi.of_open (kn, Array.of_list el))
-| GTacPrm (ml, el) ->
-  Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
-  with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
+| GTacPrm ml ->
+  return (of_closure (Tac2env.interp_primitive ml))
 | GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
@@ -277,9 +241,11 @@ and eval_pure bnd kn = function
   let bnd = List.fold_left fold bnd vals in
   eval_pure bnd kn body
 
+| GTacPrm ml -> of_closure (Tac2env.interp_primitive ml)
+
 | GTacAtm (AtmStr _) | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _
-| GTacPrm _ | GTacExt _ | GTacWth _
+| GTacExt _ | GTacWth _
 | GTacFullMatch _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 

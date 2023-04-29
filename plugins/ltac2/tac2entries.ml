@@ -477,11 +477,7 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
       user_err ?loc (str "Unregistered primitive " ++
         quote (str ml.mltac_plugin) ++ spc () ++ quote (str ml.mltac_tactic))
   in
-  let init i = Id.of_string (Printf.sprintf "x%i" i) in
-  let names = List.init arrows init in
-  let bnd = List.map (fun id -> Name id) names in
-  let arg = List.map (fun id -> GTacVar id) names in
-  let e = GTacFun (bnd, GTacPrm (ml, arg)) in
+  let e = GTacPrm ml in
   let def = {
     tacdef_local = local;
     tacdef_mutable = false;
@@ -970,12 +966,12 @@ let register_struct atts str = match str with
 
 (** Toplevel exception *)
 
-let _ = Goptions.declare_bool_option {
+let () = Goptions.declare_bool_option {
   Goptions.optstage = Summary.Stage.Interp;
   Goptions.optdepr = false;
   Goptions.optkey = ["Ltac2"; "Backtrace"];
-  Goptions.optread = (fun () -> !Tac2interp.print_ltac2_backtrace);
-  Goptions.optwrite = (fun b -> Tac2interp.print_ltac2_backtrace := b);
+  Goptions.optread = (fun () -> !Tac2bt.print_ltac2_backtrace);
+  Goptions.optwrite = (fun b -> Tac2bt.print_ltac2_backtrace := b);
 }
 
 let backtrace : backtrace Exninfo.t = Exninfo.make ()
@@ -1004,7 +1000,7 @@ let () = register_handler begin function
 end
 
 let () = CErrors.register_additional_error_info begin fun info ->
-  if !Tac2interp.print_ltac2_backtrace then
+  if !Tac2bt.print_ltac2_backtrace then
     let bt = Exninfo.get info backtrace in
     let bt = match bt with
     | Some bt -> List.rev bt

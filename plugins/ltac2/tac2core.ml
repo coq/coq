@@ -171,8 +171,8 @@ let has_fatal_flag info = match Exninfo.get info fatal_flag with
   | Some () -> true
 
 let set_bt info =
-  if !Tac2interp.print_ltac2_backtrace then
-    Tac2interp.get_backtrace >>= fun bt ->
+  if !Tac2bt.print_ltac2_backtrace then
+    Tac2bt.get_backtrace >>= fun bt ->
     Proofview.tclUNIT (Exninfo.add info Tac2entries.backtrace bt)
   else Proofview.tclUNIT info
 
