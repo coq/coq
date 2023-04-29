@@ -148,7 +148,7 @@ module Info = struct
     CList.map_append (collapse_tree n) f
 end
 
-module StateStore = Store.Make(struct end)
+module StateStore = Store.Make()
 
 (* let (set_state, get_state) = StateDyn.Easy.make_dyn "goal_state" *)
 
