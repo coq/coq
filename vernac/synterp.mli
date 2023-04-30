@@ -15,34 +15,12 @@ vernacexpr into a [vernac_control_entry]. *)
 open Names
 open Libnames
 
-module DefAttributes :
-  sig
-    type t = {
-      locality : bool option;
-      polymorphic : bool;
-      program : bool;
-      deprecated : Deprecation.t option;
-      canonical_instance : bool;
-      typing_flags : Declarations.typing_flags option;
-      using : Vernacexpr.section_subset_expr option;
-      nonuniform : bool;
-      reversible : bool;
-    }
-    val parse : ?coercion:bool -> Attributes.vernac_flags -> t
-  end
-
 val module_locality : bool Attributes.Notations.t
 
 val with_locality : atts:Attributes.vernac_flags -> (local:bool option -> 'a) -> 'a
 
-val with_section_locality :
-  atts:Attributes.vernac_flags -> (section_local:bool -> 'a) -> 'a
-
 val with_module_locality :
   atts:Attributes.vernac_flags -> (module_local:bool -> 'a) -> 'a
-
-val with_def_attributes :
-  ?coercion:bool -> atts:Attributes.vernac_flags -> (atts:DefAttributes.t -> 'a) -> 'a
 
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 

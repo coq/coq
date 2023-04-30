@@ -50,6 +50,44 @@ let cl_of_qualid = function
 let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
 
+(** Standard attributes for definition-like commands. *)
+module DefAttributes = struct
+  type t = {
+    locality : bool option;
+    polymorphic : bool;
+    program : bool;
+    deprecated : Deprecation.t option;
+    canonical_instance : bool;
+    typing_flags : Declarations.typing_flags option;
+    using : Vernacexpr.section_subset_expr option;
+    nonuniform : bool;
+    reversible : bool;
+  }
+
+  let parse ?(coercion=false) f =
+    let open Attributes in
+    let nonuniform = if coercion then ComCoercion.nonuniform else Notations.return None in
+    let (((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform), reversible =
+      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform ++ reversible) f
+    in
+    if Option.has_some deprecated then
+      Attributes.unsupported_attributes [CAst.make ("deprecated (use a notation and deprecate that instead)",VernacFlagEmpty)];
+    let using = Option.map Proof_using.using_from_string using in
+    let reversible = Option.default true reversible in
+    let nonuniform = Option.default false nonuniform in
+    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible }
+end
+
+let with_def_attributes ?coercion ~atts f =
+  let atts = DefAttributes.parse ?coercion atts in
+  if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
+  f ~atts
+
+let with_section_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  let section_local = make_section_locality local in
+  f ~section_local
+
 (*******************)
 (* "Show" commands *)
 
