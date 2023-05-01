@@ -32,7 +32,11 @@ type t = {
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type explanation = G.explanation Lazy.t
+type path_explanation = G.explanation Lazy.t
+
+type explanation =
+  | Path of path_explanation
+  | Other of Pp.t
 
 type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
@@ -97,7 +101,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
     let (u, c, v) = cst in
     let e = lazy (G.get_explanation cst g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    raise (UniverseInconsistency (c, mk u, mk v, Some e))
+    raise (UniverseInconsistency (c, mk u, mk v, Some (Path e)))
   else g
 | Some g -> g
 
@@ -147,7 +151,7 @@ let enforce_leq_alg u v g =
   | Inr ((u, c, v), g) ->
     let e = lazy (G.get_explanation (u, c, v) g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    let e = UniverseInconsistency (c, mk u, mk v, Some e) in
+    let e = UniverseInconsistency (c, mk u, mk v, Some (Path e)) in
     raise e
 
 module Bound =
@@ -285,7 +289,8 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
   in
   let reason = match p with
     | None -> mt()
-    | Some p ->
+    | Some (Other p) -> spc() ++ p
+    | Some (Path p) ->
       let pstart, p = Lazy.force p in
       if p = [] then mt ()
       else
