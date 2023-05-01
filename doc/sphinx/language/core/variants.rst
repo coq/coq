@@ -156,14 +156,14 @@ the identifier :g:`b` being used to represent the dependency.
       | false => or_intror (eq bool false true) (eq bool false false) (eq_refl bool false)
       end.
 
-The second subcase is only relevant for annotated inductive types such
+The second subcase is only relevant for indexed inductive types such
 as the equality predicate (see Section :ref:`coq-equality`),
 the order predicate on natural numbers or the type of lists of a given
 length (see Section :ref:`matching-dependent`). In this configuration, the
 type of each branch can depend on the type dependencies specific to the
 branch and the whole pattern matching expression has a type determined
 by the specific dependencies in the type of the term being matched. This
-dependency of the return type in the annotations of the inductive type
+dependency of the return type in the indices of the inductive type
 is expressed with a clause in the form
 :n:`in @qualid {+ _ } {+ @pattern }`, where
 
@@ -172,7 +172,7 @@ is expressed with a clause in the form
 -  the holes :n:`_` match the parameters of the inductive type: the
    return type is not dependent on them.
 
--  each :n:`@pattern` matches the annotations of the
+-  each :n:`@pattern` matches the indices of the
    inductive type: the return type is dependent on them
 
 -  in the basic case which we describe below, each :n:`@pattern`
@@ -197,7 +197,7 @@ return type.
 
 Finally, the third subcase is a combination of the first and second
 subcase. In particular, it only applies to pattern matching on terms in
-a type with annotations. For this third subcase, both the clauses ``as`` and
+a type with indices. For this third subcase, both the clauses ``as`` and
 ``in`` are available.
 
 There are specific notations for case analysis on types with one or two
