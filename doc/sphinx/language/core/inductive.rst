@@ -1084,7 +1084,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 .. flag:: Auto Template Polymorphism
 
    This :term:`flag`, enabled by default, makes every inductive type declared
-   at level :math:`\Type` (without explicit universe instance or hiding it behind a
+   at level :math:`\Type` (without an explicit universe instance or hiding it behind a
    definition) template polymorphic if possible.
 
    This can be prevented using the :attr:`universes(template=no) <universes(template)>`
