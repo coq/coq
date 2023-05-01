@@ -445,6 +445,18 @@ end
    possibly limited visibility, i.e. Theorem, Lemma, Definition, Axiom,
    Parameter but also Remark and Fact) *)
 
+let pr_globref =
+  function
+  | Names.GlobRef.ConstRef c ->
+    Constant.to_string c
+  | _ -> "oops"
+
+let pr_extref = function
+  | Globnames.TrueGlobal g ->
+    pr_globref g
+  | Globnames.Abbrev a ->
+    Names.KerName.debug_to_string a
+
 let push_xref visibility sp xref =
   match visibility with
     | Until _ ->
@@ -454,10 +466,21 @@ let push_xref visibility sp xref =
         begin
           if ExtRefTab.exists sp !the_ccitab then
             let open GlobRef in
+            let old_xref = xref in
             match ExtRefTab.find sp !the_ccitab with
               | TrueGlobal( ConstRef _) | TrueGlobal( IndRef _) |
                     TrueGlobal( ConstructRef _) as xref ->
-                  the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+                  (if Globnames.ExtRefOrdered.equal old_xref xref then
+                     (* let xr = pr_extref xref in *)
+                     (* let spr = Libnames.pr_path sp |> Pp.string_of_ppcmds in *)
+                     (* let () = Format.eprintf "nametab dup xref: %s / %s@\n%!" xr spr in *)
+                     the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab
+                   else
+                     let oxr = pr_extref old_xref in
+                     let xr = pr_extref xref in
+                     let () = Format.eprintf "nametab problem: xref_old: %s | xref: %s@\n%!" oxr xr in
+                     assert false
+                  );
               | _ ->
                   the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
           else
