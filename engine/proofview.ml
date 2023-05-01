@@ -418,9 +418,19 @@ let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
     with Not_found ->
       (* otherwise, save current focus and work purely on the shelve *)
       Comb.set [with_empty_state ev] >>
-        t >>= fun result ->
-      Comb.set initial.comb  >>
-        return result
+      t >>= fun result ->
+      Comb.get >>= fun gls' ->
+      Comb.set initial.comb >>
+      let gls' = CList.filter_map (fun ev' ->
+          let ev' = drop_state ev' in
+          (* if ev' is still undefined, leave it on its original shelf *)
+          if (Evar.equal ev ev') then None else Some ev')
+          gls'
+      in
+      Pv.modify (fun pv ->
+          { pv with
+            solution = Evd.shelve pv.solution (undefined_evars pv.solution gls') }) >>
+      return result
   with Not_found -> nosuchgoal
 
 (** {7 Dispatching on goals} *)
