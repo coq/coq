@@ -18,7 +18,7 @@ open Context
 open Vars
 open Declarations
 open Environ
-open Reduction
+open Conversion
 open Inductive
 open Type_errors
 
@@ -44,7 +44,7 @@ let check_constraints cst env =
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
-  match kind(whd_all env t) with
+  match kind(Reduction.whd_all env t) with
   | Sort s -> s
   | _ -> error_not_type env (make_judge c t)
 
@@ -496,7 +496,7 @@ let should_invert_case env ci =
 let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
   (* Check that the type of the scrutinee is <= the expected argument type *)
-  let () = Array.iter2 (fun p1 p2 -> Reduction.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
+  let () = Array.iter2 (fun p1 p2 -> Conversion.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
   let cst = match mib.mind_variance with
@@ -513,7 +513,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct l
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
   (* Various well-formedness conditions *)
   let () = if Inductive.is_private specif then error_case_on_private_ind env ind in
-  let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
+  let sp = match destSort (Reduction.whd_all (push_rel_context pctx env) pt) with
   | sp -> sp
   | exception DestKO ->
     error_elim_arity env (ind, u') c None

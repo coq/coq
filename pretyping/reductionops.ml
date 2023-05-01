@@ -1053,7 +1053,7 @@ type conversion_test = Constraints.t -> Constraints.t
 module CheckUnivs =
 struct
 
-open Reduction
+open Conversion
 
 let check_eq univs u u' =
   if not (Evd.check_eq univs u u') then raise NotConvertible
@@ -1096,44 +1096,44 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
   let t1 = EConstr.Unsafe.to_constr t1 in
   let t2 = EConstr.Unsafe.to_constr t2 in
   let b = match pb with
-  | Reduction.CUMUL -> leq_constr_univs univs t1 t2
-  | Reduction.CONV -> eq_constr_univs univs t1 t2
+  | Conversion.CUMUL -> leq_constr_univs univs t1 t2
+  | Conversion.CONV -> eq_constr_univs univs t1 t2
   in
   if b then true
   else
     let evars = Evd.evar_handler sigma in
     try
       let env = Environ.set_universes (Evd.universes sigma) env in
-      let _ = Reduction.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
+      let _ = Conversion.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
       true
-    with Reduction.NotConvertible -> false
+    with Conversion.NotConvertible -> false
 
 let is_conv ?(reds=TransparentState.full) env sigma x y =
-  is_fconv ~reds Reduction.CONV env sigma x y
+  is_fconv ~reds Conversion.CONV env sigma x y
 let is_conv_leq ?(reds=TransparentState.full) env sigma x y =
-  is_fconv ~reds Reduction.CUMUL env sigma x y
-let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
+  is_fconv ~reds Conversion.CUMUL env sigma x y
+let check_conv ?(pb=Conversion.CUMUL) ?(ts=TransparentState.full) env sigma x y =
   is_fconv ~reds:ts pb env sigma x y
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
-  | Reduction.CONV -> Evd.set_eq_sort env sigma (ESorts.make s0) (ESorts.make s1)
-  | Reduction.CUMUL -> Evd.set_leq_sort env sigma (ESorts.make s0) (ESorts.make s1)
+  | Conversion.CONV -> Evd.set_eq_sort env sigma (ESorts.make s0) (ESorts.make s1)
+  | Conversion.CUMUL -> Evd.set_leq_sort env sigma (ESorts.make s0) (ESorts.make s1)
 
 let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer
      | UGraph.UniverseInconsistency _ ->
-        raise Reduction.NotConvertible
+        raise Conversion.NotConvertible
 
 let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
   match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
   | Inl sigma -> sigma
   | Inr _ ->
-    raise Reduction.NotConvertible
+    raise Conversion.NotConvertible
 
 let sigma_univ_state =
-  let open Reduction in
+  let open Conversion in
   { compare_sorts = sigma_compare_sorts;
     compare_instances = sigma_compare_instances;
     compare_cumul_instances = sigma_check_inductive_instances; }
@@ -1141,8 +1141,8 @@ let sigma_univ_state =
 let univproblem_compare_sorts env pb s0 s1 uset =
   let open UnivProblem in
   match pb with
-  | Reduction.CONV -> UnivProblem.Set.add (UEq (s0, s1)) uset
-  | Reduction.CUMUL -> UnivProblem.Set.add (ULe (s0, s1)) uset
+  | Conversion.CONV -> UnivProblem.Set.add (UEq (s0, s1)) uset
+  | Conversion.CUMUL -> UnivProblem.Set.add (ULe (s0, s1)) uset
 
 let univproblem_compare_instances ~flex i0 i1 uset =
   UnivProblem.enforce_eq_instances_univs flex i0 i1 uset
@@ -1153,25 +1153,25 @@ let univproblem_check_inductive_instances cv_pb variances u u' uset =
   let mk u = Sorts.sort_of_univ @@ Univ.Universe.make u in
   let fold cstr v u u' = match v with
   | Irrelevant -> Set.add (UWeak (u,u')) cstr
-  | Covariant when cv_pb == Reduction.CUMUL -> Set.add (ULe (mk u, mk u')) cstr
+  | Covariant when cv_pb == Conversion.CUMUL -> Set.add (ULe (mk u, mk u')) cstr
   | Covariant | Invariant -> Set.add (UEq (mk u, mk u')) cstr
   in
   Array.fold_left3 fold uset
     variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
 
 let univproblem_univ_state =
-  let open Reduction in
+  let open Conversion in
   { compare_sorts = univproblem_compare_sorts;
     compare_instances = univproblem_compare_instances;
     compare_cumul_instances = univproblem_check_inductive_instances; }
 
-let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
+let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
   try
       let ans = match pb with
-      | Reduction.CUMUL ->
+      | Conversion.CUMUL ->
           EConstr.leq_constr_universes env sigma x y
-      | Reduction.CONV ->
+      | Conversion.CONV ->
           EConstr.eq_constr_universes env sigma x y
       in
       let ans = match ans with
@@ -1191,19 +1191,19 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
             env (sigma, sigma_univ_state) x y in
         Some sigma'
   with
-  | Reduction.NotConvertible -> None
+  | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Reduction.generic_conv pb ~l2r (Evd.evar_handler sigma))
+      Conversion.generic_conv pb ~l2r (Evd.evar_handler sigma))
 
-let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
+let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
   try
       let ans = match pb with
-      | Reduction.CUMUL ->
+      | Conversion.CUMUL ->
           EConstr.leq_constr_universes env sigma x y
-      | Reduction.CONV ->
+      | Conversion.CONV ->
           EConstr.eq_constr_universes env sigma x y
       in
       match ans with
@@ -1213,17 +1213,17 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
         let cstr =
-          Reduction.generic_conv pb ~l2r:false (Evd.evar_handler sigma) ts
+          Conversion.generic_conv pb ~l2r:false (Evd.evar_handler sigma) ts
             env (UnivProblem.Set.empty, univproblem_univ_state) x y in
         Some cstr
   with
-  | Reduction.NotConvertible -> None
+  | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
 
 let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
 
-let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
+let vm_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
   infer_conv_gen (fun pb ~l2r sigma ts ->
       Vconv.vm_conv_gen pb (evars_of_evar_map sigma))
     ~catch_incon:true ~pb env sigma t1 t2
@@ -1231,7 +1231,7 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
 
-let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
+let native_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
   infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
     ~catch_incon:true ~pb env sigma t1 t2
 
@@ -1476,7 +1476,7 @@ let meta_instance env sigma b =
 
 module Infer = struct
 
-open Reduction
+open Conversion
 
 let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq_sort univs u u' then cuniv

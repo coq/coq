@@ -17,7 +17,7 @@ open Environ
 open EConstr
 open Context
 open Vars
-open Reduction
+open Conversion
 open Reductionops
 open Structures
 open Evarutil
@@ -397,7 +397,7 @@ let compare_heads pbty env evd ~nargs term term' =
       begin match mind.mind_variance with
         | None -> check_strict evd u u'
         | Some variances ->
-          let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
+          let needed = Conversion.inductive_cumulativity_arguments (mind,i) in
           if not (is_applied nargs needed)
           then check_strict evd u u'
           else
@@ -414,7 +414,7 @@ let compare_heads pbty env evd ~nargs term term' =
       begin match mind.mind_variance with
         | None -> check_strict evd u u'
         | Some variances ->
-          let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
+          let needed = Conversion.constructor_cumulativity_arguments (mind,ind,ctor) in
           if not (is_applied nargs needed)
           then check_strict evd u u'
           else
@@ -554,7 +554,7 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     v
   in
   let evar_handler = { (Evd.evar_handler sigma) with evar_expand } in
-  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r evar_handler in
+  let conv pb ~l2r sigma = Conversion.generic_conv pb ~l2r evar_handler in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->

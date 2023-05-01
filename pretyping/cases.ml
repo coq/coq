@@ -1749,7 +1749,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
           let flags = (default_flags_of TransparentState.full) in
           match solve_simple_eqn evar_unify flags !!env sigma (None,ev,substl inst ev') with
           | Success evd -> evdref := evd
-          | UnifFailure _ -> evdref := add_conv_pb (Reduction.CONV,!!env,substl inst ev',t) sigma
+          | UnifFailure _ -> evdref := add_conv_pb (Conversion.CONV,!!env,substl inst ev',t) sigma
         end;
         ev'
     | _ ->

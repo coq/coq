@@ -296,7 +296,7 @@ let align_prod_letin sigma c a =
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
            with Invalid_argument _ -> 0, c_id in
-        if filtering env Evd.empty ctx Reduction.CUMUL whole_c wc then id :: acc
+        if filtering env Evd.empty ctx Conversion.CUMUL whole_c wc then id :: acc
         else acc
       ) (TDnet.lookup dn decomp dpat) []
 

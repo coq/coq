@@ -20,7 +20,7 @@ open EConstr
 open Vars
 open Namegen
 open Evd
-open Reduction
+open Conversion
 open Reductionops
 open Structures
 open Evarutil
@@ -570,7 +570,7 @@ let force_eqs c =
 
 let constr_cmp pb env sigma flags ?nargs t u =
   let cstrs =
-    if pb == Reduction.CONV then EConstr.eq_constr_universes env sigma ?nargs t u
+    if pb == Conversion.CONV then EConstr.eq_constr_universes env sigma ?nargs t u
     else EConstr.leq_constr_universes env sigma ?nargs t u
   in
   match cstrs with
@@ -1684,7 +1684,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
           else
             applist (t,l1), l2
         else t, [] in
-      let sigma = w_typed_unify env sigma Reduction.CONV flags (c, cgnd) (t', Unknown) in
+      let sigma = w_typed_unify env sigma Conversion.CONV flags (c, cgnd) (t', Unknown) in
       let ty = Retyping.get_type_of env sigma t in
       if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t, l2)

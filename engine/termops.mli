@@ -151,10 +151,10 @@ val subst_term : Evd.evar_map -> constr -> constr -> constr
 val replace_term : Evd.evar_map -> constr -> constr -> constr -> constr
 
 (** Alternative term equalities *)
-val base_sort_cmp : Reduction.conv_pb -> Sorts.t -> Sorts.t -> bool
-val compare_constr_univ : Environ.env -> Evd.evar_map -> (Reduction.conv_pb -> constr -> constr -> bool) ->
-  Reduction.conv_pb -> constr -> constr -> bool
-val constr_cmp : Environ.env -> Evd.evar_map -> Reduction.conv_pb -> constr -> constr -> bool
+val base_sort_cmp : Conversion.conv_pb -> Sorts.t -> Sorts.t -> bool
+val compare_constr_univ : Environ.env -> Evd.evar_map -> (Conversion.conv_pb -> constr -> constr -> bool) ->
+  Conversion.conv_pb -> constr -> constr -> bool
+val constr_cmp : Environ.env -> Evd.evar_map -> Conversion.conv_pb -> constr -> constr -> bool
 val eq_constr : Environ.env -> Evd.evar_map -> constr -> constr -> bool (* FIXME rename: erases universes*)
 
 val eta_reduce_head : Evd.evar_map -> constr -> constr

@@ -62,8 +62,8 @@ let get_type_from_constraints env sigma t =
   if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
-        if is_fconv Reduction.CONV env sigma t t1 then Some t2
-        else if is_fconv Reduction.CONV env sigma t t2 then Some t1
+        if is_fconv Conversion.CONV env sigma t t1 then Some t2
+        else if is_fconv Conversion.CONV env sigma t t2 then Some t1
         else None)
         (snd (Evd.extract_all_conv_pbs sigma))
     with

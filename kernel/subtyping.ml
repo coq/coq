@@ -20,7 +20,7 @@ open Util
 open Constr
 open Declarations
 open Declareops
-open Reduction
+open Conversion
 open Inductive
 open Modops
 open Context
@@ -86,11 +86,11 @@ let check_conv_error error why state poly pb env a1 a2 =
   try
     if poly then
       try
-        let () = Reduction.default_conv pb env a1 a2 in
+        let () = Conversion.default_conv pb env a1 a2 in
         fst state
       with NotConvertible -> error (IncompatiblePolymorphism (env, a1, a2))
     else
-      Reduction.generic_conv pb ~l2r:false default_evar_handler TransparentState.full env state a1 a2
+      Conversion.generic_conv pb ~l2r:false default_evar_handler TransparentState.full env state a1 a2
   with NotConvertible -> error why
      | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
 

@@ -366,12 +366,12 @@ let quality_of_sort = function
 | Sorts.QSort (q, _) -> QVar q
 
 let get_constraint = function
-| Reduction.CONV -> Eq
-| Reduction.CUMUL -> Le
+| Conversion.CONV -> Eq
+| Conversion.CUMUL -> Le
 
 let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sort s2 with
 | QType, QType | QProp, QProp | QSProp, QSProp -> local
-| QProp, QVar q when c == Reduction.CUMUL ->
+| QProp, QVar q when c == Conversion.CUMUL ->
   { local with local_sorts = QState.set_above_prop q local.local_sorts }
 | QVar q, (QType | QProp | QSProp | QVar _ as qv)
 | (QType | QProp | QSProp as qv), QVar q ->
@@ -387,8 +387,8 @@ let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sor
 | (QProp, QType) ->
   if UGraph.type_in_type univs then local
   else begin match c with
-  | Reduction.CONV -> sort_inconsistency Eq s1 s2
-  | Reduction.CUMUL -> local
+  | Conversion.CONV -> sort_inconsistency Eq s1 s2
+  | Conversion.CUMUL -> local
   end
 | (QSProp, (QType | QProp)) ->
   if UGraph.type_in_type univs then local
@@ -485,7 +485,7 @@ let process_universe_constraints uctx cstrs =
     if UnivProblem.is_trivial cst then local
     else match cst with
     | ULe (l, r) ->
-      let local = unify_quality univs Reduction.CUMUL l r local in
+      let local = unify_quality univs CUMUL l r local in
       let l = normalize_sort local.local_sorts l in
       let r = normalize_sort local.local_sorts r in
       begin match classify r with
@@ -556,7 +556,7 @@ let process_universe_constraints uctx cstrs =
       then { local with local_weak = UPairSet.add (l, r) local.local_weak }
       else local
     | UEq (l, r) ->
-      let local = unify_quality univs Reduction.CONV l r local in
+      let local = unify_quality univs CONV l r local in
       let l = normalize_sort local.local_sorts l in
       let r = normalize_sort local.local_sorts r in
       equalize_universes l r local

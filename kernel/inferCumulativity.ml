@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Reduction
+open Conversion
 open Declarations
 open Constr
 open Univ

@@ -342,8 +342,8 @@ let pr_evar_constraints sigma pbs =
     print_env_short env sigma ++ spc () ++ str "|-" ++ spc () ++
       Internal.print_kconstr env sigma t1 ++ spc () ++
       str (match pbty with
-            | Reduction.CONV -> "=="
-            | Reduction.CUMUL -> "<=") ++
+            | Conversion.CONV -> "=="
+            | Conversion.CUMUL -> "<=") ++
       (* Why do we not print using sigma?? *)
       spc () ++ Internal.print_kconstr env (Evd.from_env env) t2
   in
@@ -1125,7 +1125,7 @@ let base_sort_cmp pb s0 s1 =
   | QSort (q1, _), QSort (q2, _) -> Sorts.QVar.equal q1 q2
   | QSort _, _ | _, QSort _ -> false
   | SProp, _ | _, SProp -> false
-  | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Reduction.CUMUL
+  | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Conversion.CUMUL
   | Set, Prop | Type _, Prop | Type _, Set -> false
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
@@ -1161,17 +1161,17 @@ let compare_constr_univ env sigma f cv_pb t1 t2 =
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
-        f Reduction.CONV t1 t2 && f cv_pb c1 c2
+        f Conversion.CONV t1 t2 && f cv_pb c1 c2
     | Const (c, u), Const (c', u') -> QConstant.equal env c c'
     | Ind (i, _), Ind (i', _) -> QInd.equal env i i'
     | Construct (i, _), Construct (i', _) -> QConstruct.equal env i i'
-    | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
+    | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Conversion.CONV t1 t2) t1 t2
 
 let constr_cmp env sigma cv_pb t1 t2 =
   let rec compare cv_pb t1 t2 = compare_constr_univ env sigma compare cv_pb t1 t2 in
   compare cv_pb t1 t2
 
-let eq_constr env sigma t1 t2 = constr_cmp env sigma Reduction.CONV t1 t2
+let eq_constr env sigma t1 t2 = constr_cmp env sigma Conversion.CONV t1 t2
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)

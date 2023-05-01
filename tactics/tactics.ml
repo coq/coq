@@ -381,8 +381,8 @@ let convert_gen pb x y =
       Tacticals.tclFAIL ~info (str "Not convertible")
 end
 
-let convert x y = convert_gen Reduction.CONV x y
-let convert_leq x y = convert_gen Reduction.CUMUL x y
+let convert x y = convert_gen Conversion.CONV x y
+let convert_leq x y = convert_gen Conversion.CUMUL x y
 
 (* This tactic enables users to remove hypotheses from the signature.
  * Some care is taken to prevent them from removing variables that are
@@ -903,7 +903,7 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     let t2 = Retyping.get_type_of env sigma origc in
     let sigma, t2 = Evarsolve.refresh_universes
                       ~onlyalg:true (Some false) env sigma t2 in
-    match infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 with
+    match infer_conv ~pb:Conversion.CUMUL env sigma t1 t2 with
     | None ->
       if
         isSort sigma (whd_all env sigma t1) &&
@@ -939,7 +939,7 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
       e_contextually false occl
         (fun subst ->
           if check then
-            change_and_check Reduction.CONV mayneedglobalcheck true (t subst)
+            change_and_check Conversion.CONV mayneedglobalcheck true (t subst)
           else
             fun env sigma _c -> t subst env sigma) env sigma c in
   let sigma = if !mayneedglobalcheck then
@@ -954,11 +954,11 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
 let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
   e_change_in_concl ~cast:false ~check:false
-    ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
+    ((change_on_subterm ~check Conversion.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp ~check occl t id  =
   (* Same as above *)
-  e_change_in_hyp ~check:false ~reorder:check (fun x -> change_on_subterm ~check Reduction.CONV x t occl) id
+  e_change_in_hyp ~check:false ~reorder:check (fun x -> change_on_subterm ~check Conversion.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -977,7 +977,7 @@ let change ~check chg c cls =
     <*>
     let f (id, occs, where) =
       let occl = bind_change_occurrences occs chg in
-      let redfun deep env sigma t = change_on_subterm ~check Reduction.CONV deep c occl env sigma t in
+      let redfun deep env sigma t = change_on_subterm ~check Conversion.CONV deep c occl env sigma t in
       let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
       (id, redfun)
     in
@@ -4020,7 +4020,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
-    let leq = constr_cmp ctxenv sigma Reduction.CUMUL liftargty ty in
+    let leq = constr_cmp ctxenv sigma Conversion.CUMUL liftargty ty in
       match EConstr.kind sigma arg with
       | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
           (sigma, subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
@@ -5035,7 +5035,7 @@ let elim_type t =
   let mv = List.last (clenv_arguments clause) in
   let clause' =
     (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify_meta_type ~flags:(elim_flags ()) Reduction.CUMUL t mv clause in
+    clenv_unify_meta_type ~flags:(elim_flags ()) Conversion.CUMUL t mv clause in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
   end
 
@@ -5303,7 +5303,7 @@ let unify ?(state=TransparentState.full) x y =
       merge_unify_flags = core_flags;
       subterm_unify_flags = { core_flags with modulo_delta = TransparentState.empty } }
     in
-    let sigma = w_unify (Tacmach.pf_env gl) sigma Reduction.CONV ~flags x y in
+    let sigma = w_unify (Tacmach.pf_env gl) sigma Conversion.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
     let e, info = Exninfo.capture e in

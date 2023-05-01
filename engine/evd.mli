@@ -547,7 +547,7 @@ type clbinding =
   | Clval of Name.t * (econstr freelisted * instance_status) * econstr freelisted
 
 (** Unification constraints *)
-type conv_pb = Reduction.conv_pb
+type conv_pb = Conversion.conv_pb
 type evar_constraint = conv_pb * env * econstr * econstr
 
 (** The following two functions are for internal use only,
