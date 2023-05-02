@@ -644,6 +644,8 @@ let clenv_pose_dependent_evars ?with_evars clenv =
   let sigma = pose_dependent_evars ?with_evars clenv.env clenv.evd (clenv_type clenv) in
   update_clenv_evd clenv sigma
 
+type case_node = (case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.case_invert * EConstr.t)
+
 module Internal =
 struct
 
@@ -759,26 +761,20 @@ and mk_arggoals env sigma goalacc funty allargs =
   in
   List.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
-let treat_case env sigma ci lbrty lf acc' =
-  let fold (lacc, sigma, bacc) ty (brctx, br) =
-    let head, args = match kind br with
-    | App (f, cl) -> f, cl
-    | _ -> (br, [||])
-    in
-    let () = assert (isMeta head) in
-    let () = assert (CArray.for_all isRel args) in
-    let (r, s, head'') =
-      (* TODO: tweak this to prevent dummy β-cuts *)
-      let ty = nf_betaiota env sigma ty in
-      let hyps = Environ.named_context_val env in
-      let (gl,ev,sigma) = mk_goal sigma hyps ty in
-      let ev = EConstr.Unsafe.to_constr ev in
-      gl::lacc, sigma, ev
-    in
-    let br' = mkApp (head'', args) in
-    (r,s, (brctx, br') :: bacc)
+let treat_case env sigma ci lbrty accu =
+  let open EConstr in
+  let fold (sigma, accu) (ctx, ty) =
+    let open Context.Rel.Declaration in
+    let brctx = Array.of_list (List.rev_map get_annot ctx) in
+    let args = Context.Rel.instance mkRel 0 ctx in
+    (* TODO: tweak this to prevent dummy β-cuts *)
+    let ty = nf_betaiota env sigma (it_mkProd_or_LetIn ty ctx) in
+    let hyps = Environ.named_context_val env in
+    let (gl, ev, sigma) = mk_goal sigma hyps ty in
+    let br' = mkApp (ev, args) in
+    (sigma, gl :: accu), (brctx, br')
   in
-  Array.fold_left2 fold (acc', sigma, []) lbrty lf
+  Array.fold_left_map fold (sigma, accu) lbrty
 
 let std_refine env sigma cl r =
   let r = make_proof env sigma r in
@@ -789,24 +785,17 @@ let std_refine env sigma cl r =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let case_refine env sigma ~dep ~branches cl r = match Constr.kind (EConstr.Unsafe.to_constr r) with
-| Case (ci, u, pms, p, iv, c, lf) ->
-  let c = make_proof env sigma (EConstr.of_constr c) in
-  let () = if Array.exists (fun c -> occur_meta sigma (EConstr.of_constr c)) pms then error_unsupported_deep_meta () in
+let case_refine env sigma ~branches (ci, u, pms, p, iv, c) =
+  let c = make_proof env sigma c in
+  let () = if Array.exists (fun c -> occur_meta sigma c) pms then error_unsupported_deep_meta () in
   let (acc',ct,sigma,c') = mk_refgoals env sigma [] None c in
-  let (acc'',sigma,rbranches) = treat_case env sigma ci branches lf acc' in
-  let lf' = Array.rev_of_list rbranches in
-  let ans = mkCase (ci, u, pms, p, iv, EConstr.Unsafe.to_constr c', lf') in
-  (sigma, acc'', EConstr.of_constr ans)
-| _ ->
-  (* This can happen in two cases:
-     - Either when emulating elimination for primitive records
-     - Or when the case node reduced because its scrutinee was a constructor *)
-  std_refine env sigma cl r
+  let ((sigma, acc''), lf) = treat_case env sigma ci branches acc' in
+  let ans = EConstr.mkCase (ci, u, pms, p, iv, c', lf) in
+  (sigma, acc'', ans)
 
 type refiner_kind =
-| Std of clausenv
-| Case of bool * clbinding Metamap.t * EConstr.t * EConstr.t array
+| Std of clbinding Metamap.t * EConstr.t
+| Case of clbinding Metamap.t * case_node * (EConstr.rel_context * EConstr.t) array
 
 let refiner_gen is_case =
   let open Proofview.Notations in
@@ -816,12 +805,11 @@ let refiner_gen is_case =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   let (sigma, sgl, c) = match is_case with
-  | Case (dep, metas, r, branches) ->
+  | Case (metas, r, branches) ->
     let sigma = Evd.meta_merge metas sigma in
-    case_refine env sigma ~dep ~branches cl r
-  | Std clenv ->
-    let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
-    let r = clenv_value clenv in
+    case_refine env sigma ~branches r
+  | Std (metas, r) ->
+    let sigma = Evd.meta_merge metas sigma in
     std_refine env sigma cl r
   in
   let sigma = Evd.clear_metas sigma in
@@ -838,7 +826,10 @@ let refiner_gen is_case =
   Proofview.Unsafe.tclSETGOALS sgl
   end
 
-let refiner clenv = refiner_gen (Std clenv)
+let refiner clenv =
+  let r = clenv_value clenv in
+  let metas = Evd.meta_list clenv.evd in
+  refiner_gen (Std (metas, r))
 
 end
 
@@ -863,12 +854,18 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
       else sigma
     in
     let clenv = update_clenv_evd clenv sigma in
+    let metas = Evd.meta_list clenv.evd in
+    let r = clenv_value clenv in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
-      (Internal.refiner_gen (Std clenv))
+      (Internal.refiner_gen (Std (metas, r)))
   end
 
-let build_case_analysis env sigma (ind, u) params pred indices indarg branches dep knd =
+type case_analysis =
+| RealCase of case_node
+| PrimitiveEta of EConstr.t array
+
+let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
   let open Inductiveops in
   let open Context.Rel.Declaration in
   (* Assumes that the arguments do not contain free rels *)
@@ -913,18 +910,10 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg branches d
       if Typeops.should_invert_case env ci then CaseInvert { indices = indices }
       else NoInvert
     in
-    let mk_branch i (mv, ctx, _) =
-      (* get the generated names for the branch *)
-      let brnas = Array.of_list (List.rev_map get_annot ctx) in
-      let args = Context.Rel.instance mkRel 0 ctx in
-      (brnas, mkApp (mkMeta mv, args))
-    in
-    let br = Array.mapi mk_branch branches in
-    mkCase (ci, u, params, (pnas, pbody), iv, indarg, br)
+    RealCase (ci, u, params, (pnas, pbody), iv, indarg)
   | Some ps ->
-    let (mv, _, _) = branches.(0) in
     let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
-    mkApp (mkMeta mv, args)
+    PrimitiveEta args
 
 let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
@@ -997,7 +986,7 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   let sigma = pose_dependent_evars ~with_evars env sigma (meta_instance env sigma (mk_freelisted templtyp)) in
 
   (* Build the case node proper *)
-  let body = build_case_analysis env sigma (ind, u) params pred indices indarg branches dep s in
+  let body = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
 
   (* After an apply, all the subgoals including those dependent shelved ones are in
     the hands of the user and resolution won't be called implicitely on them. *)
@@ -1008,12 +997,23 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
   let sigma = Typeclasses.make_unresolvables (fun x -> true) sigma in
   (* Call the legacy refiner on the result *)
   let metas = Evd.meta_list sigma in
+  (* Note that the environment rel context does matter for meta_instance *)
   let nf_metas c = meta_instance env sigma { rebus = c; freemetas = metaset } in
-  let branches = Array.map (fun (_, ctx, t) -> nf_metas (it_mkProd_or_LetIn t ctx)) branches in
-  let r = nf_metas body in
+  let arg = match body with
+  | RealCase (ci, u, pms, p, iv, c) ->
+    let c = nf_metas c in
+    let pms = Array.map nf_metas pms in
+    let p = on_snd nf_metas p in
+    let map (_, ctx, t) = (Context.Rel.map nf_metas ctx, nf_metas t) in
+    let branches = Array.map map branches in
+    Internal.Case (metas, (ci, u, pms, p, iv, c), branches)
+  | PrimitiveEta args ->
+    let (mv, _, _) = branches.(0) in
+    Internal.Std (metas, mkApp (mkMeta mv, Array.map nf_metas args))
+  in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))
-    (Internal.refiner_gen (Case (dep, metas, r, branches)))
+    (Internal.refiner_gen arg)
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
