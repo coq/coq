@@ -235,7 +235,7 @@ let pf_apply ?(catch_exceptions=false) f =
 (** Primitives *)
 
 let define_primitive name arity f =
-  Tac2env.define_primitive (pname name) (mk_closure arity f)
+  Tac2env.define_primitive (pname name) (mk_closure_val arity f)
 
 let define0 name f = define_primitive name arity_one (fun _ -> f)
 

@@ -465,13 +465,6 @@ let register_typedef ?(local = false) isrec types =
 
 let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
   let t = intern_open_type t in
-  let rec count_arrow = function
-  | GTypArrow (_, t) -> 1 + count_arrow t
-  | _ -> 0
-  in
-  let arrows = count_arrow (snd t) in
-  let () = if Int.equal arrows 0 then
-    user_err ?loc (str "External tactic must have at least one argument") in
   let () =
     try let _ = Tac2env.interp_primitive ml in () with Not_found ->
       user_err ?loc (str "Unregistered primitive " ++

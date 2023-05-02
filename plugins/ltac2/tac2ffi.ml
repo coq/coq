@@ -46,6 +46,8 @@ type 'a arity = (valexpr, 'a) arity0
 
 let mk_closure arity f = MLTactic (arity, None, f)
 
+let mk_closure_val arity f = ValCls (mk_closure arity f)
+
 module Valexpr =
 struct
 
