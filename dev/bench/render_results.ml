@@ -274,7 +274,7 @@ coq_opam_packages
     let descr = ["NEW"; "OLD"; "PDIFF"] in
     let top = [ [ "package_name" ]; descr; descr; descr; descr ] in
 
-    printf "%s%!" (Table.print headers top measurements ())
+    printf "%s%!" (Table.raw_print headers top measurements ())
 ;
 
 (* ejgallego: disable this as it is very verbose and brings up little info in the log. *)

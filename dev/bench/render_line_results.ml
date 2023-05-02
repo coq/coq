@@ -82,10 +82,8 @@ let render_table ?(reverse=false) title num table =
   let align_top = [[Middle; Middle; Middle; Middle; Middle; MidLeft]] in
   let align_rows = [[Right; Right; Right; Right; Right; Left]] in
   (if reverse then CList.rev table else table)
-  |> Array.of_list
-  |> fun x -> Array.sub x 0 num
-  |> Array.to_list
-  |> fun x -> Table.print headers top x ~align_top ~align_rows ()
+  |> CList.firstn num
+  |> fun x -> Table.raw_print headers top x ~align_top ~align_rows ()
 
 let main () =
   let () = Printexc.record_backtrace true in
