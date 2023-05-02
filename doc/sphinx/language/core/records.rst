@@ -185,6 +185,7 @@ Defining record types
       :cmd:`CoInductive` command instead.
 
    .. exn:: @ident already exists
+      :name: ‘ident’ already exists (Record)
 
       The fieldname :n:`@ident` is already defined as a global.
 

@@ -198,7 +198,7 @@ has type :n:`@type`.
        Axiom R_S_inv : forall x y, R x y <-> S y x.
 
 .. exn:: @ident already exists.
-   :name: ‘ident’ already exists. (Axiom)
+   :name: ‘ident’ already exists (Axiom)
    :undocumented:
 
 .. warn:: @ident is declared as a local axiom

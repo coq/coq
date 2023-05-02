@@ -115,7 +115,7 @@ Section :ref:`typing-rules`.
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
    .. exn:: @ident already exists.
-      :name: ‘ident’ already exists. (Definition)
+      :name: ‘ident’ already exists (Definition)
       :undocumented:
 
    .. exn:: The term @term has type @type while it is expected to have type @type'.
@@ -177,7 +177,7 @@ The basic assertion command is:
       :undocumented:
 
    .. exn:: @ident already exists.
-      :name: ‘ident’ already exists. (Theorem)
+      :name: ‘ident’ already exists (Theorem)
 
       The name you provided is already defined. You have then to choose
       another name.

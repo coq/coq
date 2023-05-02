@@ -159,7 +159,7 @@ class CoqObject(ObjectDescription):
         explicit names everywhere.
 
         """
-        m = re.match(r"[a-zA-Z0-9_ ]+", signature)
+        m = re.match(r"[a-zA-Z0-9_ \(\)]+", signature)
         if m:
             return m.group(0).strip()
 
@@ -274,11 +274,12 @@ class CoqObject(ObjectDescription):
             self._sig_names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(names) < len(sigs):
+            if len(names) < len(sigs) and len(sigs) != 1:
                 ERR = ("Got {} semicolon-separated names and {} signatures.  " +
                        "Please provide at least one name per signature line.")
                 raise self.error(ERR.format(len(names), len(sigs)))
-            self._sig_names = { sigs[0]: names }
+            self._sig_names = { sig: [name] for (sig, name) in zip(sigs, names[:len(sigs)]) }
+            self._sig_names.update({ sigs[0]: [names[0]].append(names[len(sigs):])})
 
     def run(self):
         self._prepare_names()
