@@ -14,9 +14,6 @@ type sized_string = { str : string; size : int }
 (** String with a display size. [size] is usually but not always
     [String.length str] (or rather unicode length but currently no unicode support). *)
 
-val raw_str : string -> sized_string
-(** string which displays as itself *)
-
 type header = sized_string
 type row = sized_string list list
 
@@ -35,6 +32,11 @@ val print : header list
 
 type raw_header = string
 type raw_row = string list list
+
+val raw_str : string -> sized_string
+(** string which displays as itself *)
+
+val raw_row : raw_row -> row
 
 val raw_print : raw_header list
   -> raw_row
