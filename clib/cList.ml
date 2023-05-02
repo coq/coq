@@ -609,14 +609,15 @@ let split_when p =
   in
   split_when_loop []
 
-let firstn n l =
+let firstn n ol =
   let rec aux acc n l =
     match n, l with
-    | 0, _ -> List.rev acc
+    | 0, [] -> ol
+    | 0, _ :: _ -> List.rev acc
     | n, h :: t -> aux (h :: acc) (pred n) t
     | _ -> failwith "firstn"
   in
-  aux [] n l
+  aux [] n ol
 
 let sep_first = function
   | [] -> failwith "sep_first"
