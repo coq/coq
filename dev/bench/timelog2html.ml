@@ -236,6 +236,15 @@ let () = out "</ol>\n"
 
 let () = out "<pre>"
 
+let last_seen_line = ref 0
+
+let line_id fmt l =
+  if l > !last_seen_line then begin
+    last_seen_line := l;
+    Printf.fprintf fmt "id=\"L%d\" " l
+  end
+
+
 let () = all_data |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
@@ -260,7 +269,8 @@ Line: %d
     in
     let sublines = String.split_on_char '\n' text in
     let () = sublines |> List.iteri (fun i line ->
-        out "<code data-line=\"%d\">%s</code>\n" (d.loc.line+i) (htmlescape line))
+        let lnum = d.loc.line + i in
+        out "<code %adata-line=\"%d\">%s</code>\n" line_id lnum lnum (htmlescape line))
     in
 
     let () = out "</div>" in

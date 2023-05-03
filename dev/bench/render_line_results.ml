@@ -79,11 +79,11 @@ let get_html_data () =
                ns project id }
   | None, _, _ | _, None, _ | _, _, None -> None
 
-let html_str ?html s = match html with
+let html_str ?html lnum s = match html with
   | None -> Table.raw_str s
   | Some html ->
     let size = String.length s in
-    let s = Printf.sprintf "<a href=\"%s%s\">%s</a>" html.link_prefix s s in
+    let s = Printf.sprintf "<a href=\"%s%s#L%d\">%s</a>" html.link_prefix s lnum s in
     { Table.str = s; size }
 
 let list_timing_data ?html (time1, time2, diff, pdiff, line_num, file) =
@@ -94,7 +94,7 @@ let list_timing_data ?html (time1, time2, diff, pdiff, line_num, file) =
   let str_line_num = string_of_int line_num in
   List.append
     (List.map Table.raw_str [ str_time1; str_time2; str_diff; str_pdiff; str_line_num])
-    [ html_str ?html file ]
+    [ html_str ?html line_num file ]
 
 let render_table ?(reverse=false) title num table =
   let open Table.Align in
