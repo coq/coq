@@ -33,10 +33,8 @@ Qed.
 
 Goal forall (f : forall n : nat, 0 = n), True.
 Proof.
-intros [].
-+ match goal with [ |- nat ] => exact 0 end.
-+ match goal with [ |- True ] => exact I end.
-Qed.
+Fail intros [].
+Abort.
 
 Goal forall (f : forall n : nat, 0 = n), True.
 Proof.

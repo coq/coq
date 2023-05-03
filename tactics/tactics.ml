@@ -1651,12 +1651,12 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
+  let indclause = Clenv.clenv_pose_dependent_evars ~with_evars:true indclause in
   let metas = Evd.meta_list (clenv_evd indclause) in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
-    Proofview.Unsafe.tclEVARS sigma;
-    Clenv.case_pf ~with_evars ~submetas ~dep (c, clenv_type indclause);
+    Tacticals.tclWITHHOLES with_evars (Clenv.case_pf ~with_evars ~submetas ~dep (c, clenv_type indclause)) sigma;
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
   ]
   end
