@@ -1652,11 +1652,22 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let id = try Some (destVar sigma c) with DestKO -> None in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let indclause = Clenv.clenv_pose_dependent_evars ~with_evars:true indclause in
-  let metas = Evd.meta_list (clenv_evd indclause) in
-  let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
+  let argtype = clenv_type indclause in (* Guaranteed to be meta-free *)
+  let tac =
+    Proofview.tclEVARMAP >>= fun sigma ->
+    let sigma = Evd.push_future_goals sigma in
+    let (sigma, ev) = Evarutil.new_evar env sigma argtype in
+    let _, sigma = Evd.pop_future_goals sigma in
+    let evk, _ = destEvar sigma ev in
+    let indclause = Clenv.update_clenv_evd indclause (meta_merge (meta_list @@ Clenv.clenv_evd indclause) sigma) in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.with_empty_state evk] <*>
+    Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
+    Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~with_evars ~dep (ev, argtype)]
+  in
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
-    Tacticals.tclWITHHOLES with_evars (Clenv.case_pf ~with_evars ~submetas ~dep (c, clenv_type indclause)) sigma;
+    Tacticals.tclWITHHOLES with_evars tac sigma;
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
   ]
   end
