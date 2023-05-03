@@ -2449,8 +2449,9 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern ?loc ll branchsigns in
+  let case = if with_evars then simplest_ecase else simplest_case in
   Tacticals.tclTHENLASTn
-    (Tacticals.tclTHEN (simplest_ecase c) (clear [id]))
+    (Tacticals.tclTHEN (case c) (clear [id]))
     (Array.map2 (fun n l -> tac thin (Some n) l)
        nv_with_let ll)
   end
