@@ -1019,10 +1019,11 @@ module Unsafe = struct
   let tclEVARS evd =
     Pv.modify (fun ps -> { ps with solution = evd })
 
-  let tclNEWGOALS gls =
+  let tclNEWGOALS ?(before = false) gls =
     Pv.modify begin fun step ->
       let gls = undefined step.solution gls in
-      { step with comb = step.comb @ gls }
+      let comb = if before then gls @ step.comb else step.comb @ gls in
+      { step with comb }
     end
 
   let tclNEWSHELVED gls =
