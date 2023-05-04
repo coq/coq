@@ -69,16 +69,14 @@ sig
   val of_list : (key * 'a) list -> 'a t
   (** Turns an association list into a map *)
 
-  val symmetric_diff :
-    eq:('a -> 'a -> bool) ->
-    (key -> [ `Left of 'a | `Right of 'a | `Unequal of 'a * 'a ] -> 'b -> 'b) ->
+  val symmetric_diff_fold :
+    (key -> 'a option -> 'a option -> 'b -> 'b) ->
     'a t -> 'a t -> 'b -> 'b
-  (** [symmetric_diff ~eq f ml mr acc] will efficiently fold over the difference
+  (** [symmetric_diff f ml mr acc] will efficiently fold over the difference
       between [ml] and [mr], assumed that they share most of their internal
-      structure. For any key [k] in [ml] with value [v] that is not in [mr],
-      the fold contains [`Left v]. [`Right v] will be folded for the opposite
-      condition. When [k] exists in [ml] with value [vl] and exists in [mr] with
-      value [vr], such that [not (eq vl vr)], the fold contains [`Unequal (vl, vr)]. *)
+      structure. A call to [f k vl vr] means that if [vl] is [Some], then [k] exists
+      in [ml]. Similarly, if [vr] is [Some], then [k] exists in [mr]. If both [vl]
+      and [vr] are [Some], then [vl != vr]. *)
 
   module Smart :
   sig

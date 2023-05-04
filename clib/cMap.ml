@@ -37,9 +37,8 @@ sig
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
   val of_list : (key * 'a) list -> 'a t
-  val symmetric_diff :
-    eq:('a -> 'a -> bool) ->
-    (key -> [ `Left of 'a | `Right of 'a | `Unequal of 'a * 'a ] -> 'b -> 'b) ->
+  val symmetric_diff_fold :
+    (key -> 'a option -> 'a option -> 'b -> 'b) ->
     'a t -> 'a t -> 'b -> 'b
   module Smart :
   sig
@@ -66,9 +65,8 @@ sig
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val height : 'a map -> int
   val filter_range : (M.t -> int) -> 'a map -> 'a map
-  val symmetric_diff :
-    eq:('a -> 'a -> bool) ->
-    (M.t -> [ `Left of 'a | `Right of 'a | `Unequal of 'a * 'a ] -> 'b -> 'b) ->
+  val symmetric_diff_fold :
+    (M.t -> 'a option -> 'a option -> 'b -> 'b) ->
     'a map -> 'a map -> 'b -> 'b
   val of_list : (M.t * 'a) list -> 'a map
   module Smart :
@@ -230,21 +228,21 @@ struct
       else
         symmetric_cons (move_to_acc l) r
 
-  let symmetric_diff ~eq f lm rm acc =
+  let symmetric_diff_fold f lm rm acc =
     let rec aux s acc =
       match s with
-      | End, rs -> fold_seq (fun k v -> f k (`Right v)) acc rs
-      | ls, End -> fold_seq (fun k v -> f k (`Left v)) acc ls
+      | End, rs -> fold_seq (fun k v -> f k None (Some v)) acc rs
+      | ls, End -> fold_seq (fun k v -> f k (Some v) None) acc ls
       | (More (kl, vl, tl, rl) as ls), (More (kr, vr, tr, rr) as rs) ->
         let cmp = M.compare kl kr in
         if cmp == 0 then
           let rem = aux (symmetric_cons (tl, rl) (tr, rr)) acc in
-          if eq vl vr then rem
-          else f kl (`Unequal (vl, vr)) rem
+          if vl == vr then rem
+          else f kl (Some vl) (Some vr) rem
         else if cmp < 0 then
-          f kl (`Left vl) @@ aux (seq_cons tl rl, rs) acc
+          f kl (Some vl) None @@ aux (seq_cons tl rl, rs) acc
         else
-          f kr (`Right vr) @@ aux (ls, seq_cons tr rr) acc
+          f kr None (Some vr) @@ aux (ls, seq_cons tr rr) acc
     in aux (symmetric_cons (lm, End) (rm, End)) acc
 
   module Smart =

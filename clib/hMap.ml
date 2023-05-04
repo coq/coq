@@ -444,12 +444,13 @@ struct
     let fold_right _ _ _ = assert false
   end
 
-  let symmetric_diff ~eq f lm rm acc =
-    Int.Map.symmetric_diff ~eq:(Map.equal eq)
-      (fun _ s acc -> match s with
-         | `Left v -> Map.fold (fun k v acc -> f k (`Left v) acc) v acc
-         | `Right v -> Map.fold (fun k v acc -> f k (`Right v) acc) v acc
-         | `Unequal (lm, rm) -> Map.symmetric_diff ~eq f lm rm acc)
+  let symmetric_diff_fold f lm rm acc =
+    Int.Map.symmetric_diff_fold
+      (fun _ l r -> match l, r with
+         | Some m, None -> Map.fold (fun k v acc -> f k (Some v) None acc) m
+         | None, Some m -> Map.fold (fun k v acc -> f k None (Some v) acc) m
+         | Some lm, Some rm -> Map.symmetric_diff_fold f lm rm
+         | None, None -> assert false)
       lm rm acc
 
 end
