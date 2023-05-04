@@ -62,12 +62,11 @@ let main () =
 
   let boot = if tname = ["Coq"]
     then Coq_rules.Boot_type.Stdlib
-    else Coq_rules.Boot_type.Regular (Some (Path.(adjust ~lvl:root_lvl (make "theories"))))
+    else Coq_rules.Boot_type.Regular (Some (Path.make "theories"))
   in
 
   (* Rule generation *)
-  Unix.chdir base_dir;
-  let dir_info = Dir_info.scan ~prefix:[] "." in
+  let dir_info = Dir_info.scan ~prefix:[] base_dir in
   let package = base_dir in
   let cctx = Coq_rules.Context.make ~root_lvl ~tname ~user_flags ~rule ~boot ~dir_info ~async ~package ~split in
   let vo_rules = Coq_rules.vo_rules ~dir_info ~cctx in

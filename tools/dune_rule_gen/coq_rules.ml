@@ -21,17 +21,17 @@ let _debug = false
 
 module FlagUtil = struct
 
-  let read_plugin_dir ~root_lvl =
-    let plugins_dir = Path.(make "plugins" |> adjust ~lvl:root_lvl) in
+  let read_plugin_dir () =
+    let plugins_dir = Path.make "plugins" in
     Sys.readdir (Path.to_string plugins_dir) |> Array.to_list
 
   (* XXX: This should go away once we fully use findlib in coqdep;
      for that, we must depend on the META file and pass -m to coqdep.
      Left for a future PR.
    *)
-  let local_plugin_flags ~root_lvl =
-    let plugins_dir = Path.(make "plugins" |> adjust ~lvl:root_lvl) in
-    read_plugin_dir ~root_lvl
+  let local_plugin_flags () =
+    let plugins_dir = Path.make "plugins" in
+    read_plugin_dir ()
     |> List.map (Path.relative plugins_dir)
     |> Util.list_concat_map (fun p -> [Arg.A "-I"; Arg.Path p])
 
@@ -42,35 +42,35 @@ module FlagUtil = struct
   (* This can also go when the -I flags are gone, by passing the meta
      file for coq-core *)
   (* Use non-local libs for split build *)
-  let findlib_plugin_flags ~root_lvl =
+  let findlib_plugin_flags () =
     let () = Findlib.init () in
-    read_plugin_dir ~root_lvl
+    read_plugin_dir ()
     |> findlib_plugin_fixup
     |> List.map (fun p -> Findlib.package_directory ("coq-core.plugins."^p))
     |> Util.list_concat_map (fun p -> [Arg.A "-I"; Arg.Path (Path.make p)])
 
-  let findlib_plugin_flags ~root_lvl =
-    try findlib_plugin_flags ~root_lvl
+  let findlib_plugin_flags () =
+    try findlib_plugin_flags ()
     with
       Fl_package_base.No_such_package (p,_) ->
       raise (Invalid_argument ("failed to locate Coq plugins in split build mode: " ^ p))
 
-  let plugin_flags ~split =
-    if split then findlib_plugin_flags else local_plugin_flags
+  let plugin_flags ~split () =
+    if split then findlib_plugin_flags () else local_plugin_flags ()
 
   (* Native flag *)
-  let findlib_native_dir ~root_lvl =
+  let findlib_native_dir () =
     try
-      Findlib.package_directory ("coq-core.kernel") |> Path.make |> Path.adjust ~lvl:root_lvl
+      Findlib.package_directory ("coq-core.kernel") |> Path.make
     with
       Fl_package_base.No_such_package (p,_) ->
       raise (Invalid_argument ("failed to locate Coq kernel package in split build mode: " ^ p))
 
-  let local_native_dir ~root_lvl =
-    Path.make "kernel/.kernel.objs/byte" |> Path.adjust ~lvl:root_lvl
+  let local_native_dir =
+    Path.make "kernel/.kernel.objs/byte"
 
-  let kernel_cmi_dir ~split =
-    if split then findlib_native_dir else local_native_dir
+  let kernel_cmi_dir ~split () =
+    if split then findlib_native_dir () else local_native_dir
 
 end
 
@@ -139,10 +139,11 @@ module Context = struct
     ; dep_info : Dep_info.t
     ; async_deps : string list  (* whether coqc needs the workers *)
     ; package : string          (* installation path under lib/coq *)
+    ; root_lvl : int
     }
 
-  let native_common ~root_lvl ~split =
-    let path_coq_kernel_cmi = FlagUtil.kernel_cmi_dir ~root_lvl ~split in
+  let native_common ~split () =
+    let path_coq_kernel_cmi = FlagUtil.kernel_cmi_dir ~split () in
     [ Arg.A "-nI"; Path path_coq_kernel_cmi
     ; A "-native-output-dir"; A "."
     ]
@@ -168,15 +169,15 @@ module Context = struct
 
       (* both coqdep and coqc need the -I flags, coqc otherwise
          doesn't use the legacy plugin resolution method *)
-      let plugin_flags = FlagUtil.plugin_flags ~root_lvl ~split in
+      let plugin_flags = FlagUtil.plugin_flags ~split () in
 
       let loadpath =
         Arg.[ A "-boot"; A "-R"
-            ; Path (Path.make "."); A (String.concat "." tname)
+            ; Path (Path.make package); A (String.concat "." tname)
             ]
         @ plugin_flags
       in
-      let native_common = native_common ~root_lvl ~split in
+      let native_common = native_common ~split () in
       let native_coqc = native_coqc ~native_common ~native:(Coq_module.Rule_type.native_coqc rule) in
       let common = Arg.[ A "-w"; A "+default"; A "-q" ] in
 
@@ -187,7 +188,7 @@ module Context = struct
     let dep_info = build_dep_info ~coqdep_args dir_info in
 
     let async_deps = if async then build_async_deps else [] in
-    { tname; flags; rule; boot; dep_info; async_deps;  package }
+    { tname; flags; rule; boot; dep_info; async_deps;  package; root_lvl }
 
 end
 
@@ -203,7 +204,7 @@ let boot_module_setup ~cctx coq_module =
   | Stdlib ->
     (match Coq_module.prefix coq_module with
      | ["Init"] -> [ Arg.A "-noinit" ], []
-     | _ -> [ ], [ Path.make prelude_path ]
+     | _ -> [ ], [ Path.relative (Path.make "theories") prelude_path ]
     )
   | Regular (Some stdlib) ->
     [ Arg.A "-R"; Arg.Path stdlib; Arg.A "Coq" ],
@@ -233,7 +234,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let coqc_flags = cctx.flags.loadpath @ cctx.flags.user @ cctx.flags.common @ cctx.flags.native_coqc in
   let vfile_deps, flags = boot_deps @ vfile_deps, boot_flags @ coqc_flags in
   (* Adjust paths *)
-  let lvl = Coq_module.prefix coq_module |> List.length in
+  let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
   let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
   let deps = List.map (Path.adjust ~lvl) vfile_deps |> List.map Path.to_string in
   (* Depend on the workers if async *)
@@ -245,14 +246,13 @@ let module_rule ~(cctx : Context.t) coq_module =
     let file = if starts_with ~prefix:"./" file then String.sub file 2 (String.length file - 2)
       else file
     in
-    "-fake-source "^cctx.package ^ "/" ^ file in
+    "-fake-source " ^ file in
   let action = Format.asprintf "(run coqc %s %s %%{dep:%s})" flags fake_source vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
   let alias = if rule = Coq_module.Rule_type.Quick then Some "vio" else None in
   { Dune_file.Rule.targets; deps; action; alias }
 
 let vio2vo_rule ~(cctx : Context.t) coq_module =
-  let _ = cctx in
   let vfile = Coq_module.source coq_module in
   let viofile = Path.replace_ext ~ext:".vio" vfile in
 
@@ -274,7 +274,7 @@ let vio2vo_rule ~(cctx : Context.t) coq_module =
   *)
   let viofile_deps = [viofile] in
   (* Adjust paths *)
-  let lvl = Coq_module.prefix coq_module |> List.length in
+  let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
   let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
   let deps = List.map (Path.adjust ~lvl) viofile_deps |> List.map Path.to_string in
   (* vio2vo doesn't follow normal convention... so we can't use Coq_module.obj_files *)
@@ -315,7 +315,7 @@ let coqnative_module_rule ~(cctx: Context.t) coq_module =
   let flags = boot_flags @ cctx.flags.loadpath @ cctx.flags.native_common in
   let vofile_deps = boot_deps @ vofile_deps in
   (* Adjust paths *)
-  let lvl = Coq_module.prefix coq_module |> List.length in
+  let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
   let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
   let deps = List.map (Path.adjust ~lvl) vofile_deps |> List.map Path.to_string in
   (* Build rule *)
