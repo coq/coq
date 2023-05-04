@@ -171,11 +171,21 @@ module Context = struct
          doesn't use the legacy plugin resolution method *)
       let plugin_flags = FlagUtil.plugin_flags ~split () in
 
+      let boot_paths = match boot with
+        | Boot_type.NoInit -> []
+        | Stdlib ->
+          assert (package = "theories");
+          assert (tname = ["Coq"]);
+          Arg.[ A "-R"; Path (Path.make "theories"); A "Coq";
+                A "-Q"; Path (Path.relative (Path.make "user-contrib") "Ltac2"); A "Ltac2" ]
+        | Regular None -> []
+        | Regular (Some stdlib) ->
+          Arg.[ A "-R"; Path stdlib; A "Coq";
+                A "-Q"; Path (Path.make package); A (String.concat "." tname)]
+      in
       let loadpath =
-        Arg.[ A "-boot"; A "-R"
-            ; Path (Path.make package); A (String.concat "." tname)
-            ]
-        @ plugin_flags
+        Arg.(A "-boot") ::
+        boot_paths @ plugin_flags
       in
       let native_common = native_common ~split () in
       let native_coqc = native_coqc ~native_common ~native:(Coq_module.Rule_type.native_coqc rule) in
@@ -206,9 +216,7 @@ let boot_module_setup ~cctx coq_module =
      | ["Init"] -> [ Arg.A "-noinit" ], []
      | _ -> [ ], [ Path.relative (Path.make "theories") prelude_path ]
     )
-  | Regular (Some stdlib) ->
-    [ Arg.A "-R"; Arg.Path stdlib; Arg.A "Coq" ],
-    [ Path.relative stdlib prelude_path]
+  | Regular (Some stdlib) -> [], [ Path.relative stdlib prelude_path]
   | Regular None -> [], []
 
 (* in stdlib for ocaml >= 4.13 *)
