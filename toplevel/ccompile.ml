@@ -20,9 +20,9 @@ let create_empty_file filename =
   let f = open_out filename in
   close_out f
 
-let source copts ldir file = Loc.InFile {
+let source ldir file = Loc.InFile {
     dirpath=Some (Names.DirPath.to_string ldir);
-    file = Option.default file copts.fake_source;
+    file = file;
   }
 
 (* Compile a vernac file *)
@@ -66,7 +66,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
-      let source = source copts ldir long_f_dot_in in
+      let source = source ldir long_f_dot_in in
       let state = Vernac.load_vernac ~echo ~check ~state ~source long_f_dot_in in
       let fullstate = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs ~filename:long_f_dot_in fullstate;
@@ -96,7 +96,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = { doc; sid; proof = None; time = Option.map Vernac.make_time_output opts.config.time } in
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
-      let source = source copts ldir long_f_dot_in in
+      let source = source ldir long_f_dot_in in
       let state = Vernac.load_vernac ~echo ~check:false ~source ~state long_f_dot_in in
       let state = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs state ~filename:long_f_dot_in;

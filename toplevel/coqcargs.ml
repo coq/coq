@@ -15,7 +15,6 @@ type t =
 
   ; compile_file: (string * bool) option  (* bool is verbosity  *)
   ; compilation_output_name : string option
-  ; fake_source : string option
 
   ; vio_checking : bool
   ; vio_tasks    : (int list * string) list
@@ -34,7 +33,6 @@ let default =
 
   ; compile_file = None
   ; compilation_output_name = None
-  ; fake_source = None
 
   ; vio_checking = false
   ; vio_tasks    = []
@@ -171,8 +169,6 @@ let parse arglist : t =
         (* Output filename *)
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
-        | "-fake-source" ->
-          { oval with fake_source = Some (next ()) }
         | "-quick" ->
           warn_deprecated_quick();
           set_compilation_mode oval BuildVio
