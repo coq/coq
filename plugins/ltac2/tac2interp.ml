@@ -72,7 +72,7 @@ let match_ctor_against ctor v =
     if Int.equal i i' then vs
     else raise NoMatch
   | { cindx = Closed _ }, ValOpn _ -> assert false
-  | _, (ValStr _ | ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
+  | _, (ValStr _ | ValCls _ | ValExt _) -> assert false
 
 let check_atom_against atm v =
   match atm, v with

@@ -39,10 +39,6 @@ type valexpr =
   (** Open constructors *)
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
-| ValUint63 of Uint63.t
-  (** Primitive integers *)
-| ValFloat of Float64.t
-  (** Primitive floats *)
 
 type 'a arity
 
@@ -213,7 +209,10 @@ val val_case : Constr.case_info Val.tag
 val val_binder : (Name.t Context.binder_annot * types) Val.tag
 val val_univ : Univ.Level.t Val.tag
 val val_free : Id.Set.t Val.tag
+val val_uint63 : Uint63.t Val.tag
+val val_float : Float64.t Val.tag
 val val_ltac1 : Geninterp.Val.t Val.tag
+
 val val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag
 
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag
