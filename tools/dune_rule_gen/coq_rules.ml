@@ -219,17 +219,6 @@ let boot_module_setup ~cctx coq_module =
   | Regular (Some stdlib) -> [], [ Path.relative stdlib prelude_path]
   | Regular None -> [], []
 
-(* in stdlib for ocaml >= 4.13 *)
-let starts_with ~prefix s =
-  let open String in
-  let len_s = length s
-  and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in len_s >= len_pre && aux 0
-
 (* rule generation for a module *)
 let module_rule ~(cctx : Context.t) coq_module =
   let tname, rule = cctx.tname, cctx.rule in
@@ -243,19 +232,14 @@ let module_rule ~(cctx : Context.t) coq_module =
   let vfile_deps, flags = boot_deps @ vfile_deps, boot_flags @ coqc_flags in
   (* Adjust paths *)
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
-  let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
+  let flags = (* flags are relative to the root path *) Arg.List.to_string flags in
   let deps = List.map (Path.adjust ~lvl) vfile_deps |> List.map Path.to_string in
   (* Depend on the workers if async *)
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
   let vfile_base = Path.basename vfile in
-  let fake_source =
-    let file = Path.to_string vfile in
-    let file = if starts_with ~prefix:"./" file then String.sub file 2 (String.length file - 2)
-      else file
-    in
-    "-fake-source " ^ file in
-  let action = Format.asprintf "(run coqc %s %s %%{dep:%s})" flags fake_source vfile_base in
+  let updir = Path.(to_string (adjust ~lvl (make "."))) in
+  let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
   let alias = if rule = Coq_module.Rule_type.Quick then Some "vio" else None in
   { Dune_file.Rule.targets; deps; action; alias }
@@ -280,19 +264,18 @@ let vio2vo_rule ~(cctx : Context.t) coq_module =
 
      I guess an alias looks fine for CI for the moment.
   *)
-  let viofile_deps = [viofile] in
   (* Adjust paths *)
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
-  let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
-  let deps = List.map (Path.adjust ~lvl) viofile_deps |> List.map Path.to_string in
+  let flags = (* flags are relative to the root path *) Arg.List.to_string flags in
   (* vio2vo doesn't follow normal convention... so we can't use Coq_module.obj_files *)
   let vofile_base = Path.replace_ext ~ext:".vo" vfile |> Path.basename in
   let vosfile_base = Path.replace_ext ~ext:".vos" vfile |> Path.basename in
   let targets = [vofile_base; vosfile_base] in
   let viofile_base = Path.basename viofile in
-  let action = Format.asprintf "(run coqc %s %s)" flags viofile_base in
+  let updir = Path.(to_string (adjust ~lvl (make "."))) in
+  let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags viofile_base in
   let alias = None in
-  { Dune_file.Rule.targets; deps; action; alias }
+  { Dune_file.Rule.targets; deps=[]; action; alias }
 
 (* Helper for Dir_info to Subdir *)
 let gen_rules ~dir_info ~cctx ~f =
@@ -324,10 +307,11 @@ let coqnative_module_rule ~(cctx: Context.t) coq_module =
   let vofile_deps = boot_deps @ vofile_deps in
   (* Adjust paths *)
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
-  let flags = List.map (Arg.adjust ~lvl) flags |> Arg.List.to_string in
+  let flags = (* flags are relative to the root path *) Arg.List.to_string flags in
   let deps = List.map (Path.adjust ~lvl) vofile_deps |> List.map Path.to_string in
   (* Build rule *)
-  let action = Format.asprintf "(run coqnative %s %s)" flags vofile_base in
+  let updir = Path.(to_string (adjust ~lvl (make "."))) in
+  let action = Format.asprintf "(chdir %s (run coqnative %s %s))" updir flags vofile_base in
   let targets = Coq_module.native_obj_files ~tname coq_module in
   let deps = vofile_base :: deps in
   let alias = None in
