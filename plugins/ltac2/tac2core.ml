@@ -1958,7 +1958,7 @@ let () =
 
 let () =
   let e = Tac2entries.Pltac.tac2expr_in_env in
-  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2) v) in
+  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2in1) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation ~plugin:ltac2_plugin "ltac2" inject (e, None)
 
 (* Ltac1 runtime representation of Ltac2 closures. *)
@@ -2044,7 +2044,7 @@ let () =
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)
   in
-  Geninterp.register_interp0 wit_ltac2 interp
+  Geninterp.register_interp0 wit_ltac2in1 interp
 
 let () =
   let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
@@ -2056,7 +2056,7 @@ let () =
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
   in
   let pr_top x = Util.Empty.abort x in
-  Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
+  Genprint.register_print0 wit_ltac2in1 pr_raw pr_glb pr_top
 
 let () =
   let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in

@@ -1848,7 +1848,7 @@ let () =
     let () = check_elt_unit loc env t in
     (ist, (ids, tac))
   in
-  Genintern.register_intern0 wit_ltac2 intern
+  Genintern.register_intern0 wit_ltac2in1 intern
 
 let () =
   let open Genintern in
@@ -1875,7 +1875,7 @@ let () =
   in
   Genintern.register_intern0 wit_ltac2_constr intern
 
-let () = Genintern.register_subst0 wit_ltac2 (fun s (ids, e) -> ids, subst_expr s e)
+let () = Genintern.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_expr s e)
 let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
 let () =
