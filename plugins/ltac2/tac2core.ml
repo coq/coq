@@ -186,7 +186,7 @@ let fail ?(info = Exninfo.null) e =
   Proofview.tclZERO ~info e
 
 let return x = Proofview.tclUNIT x
-let pname s = { mltac_plugin = "coq-core.plugins.ltac2"; mltac_tactic = s }
+let pname ?(plugin=ltac2_plugin) s = { mltac_plugin = plugin; mltac_tactic = s }
 
 let wrap f =
   return () >>= fun () -> return (f ())
@@ -234,10 +234,12 @@ let pf_apply ?(catch_exceptions=false) f =
 
 (** Primitives *)
 
-let define_primitive name arity f =
-  Tac2env.define_primitive (pname name) (mk_closure_val arity f)
+let define_primitive ?plugin name arity f =
+  Tac2env.define_primitive (pname ?plugin name) (mk_closure_val arity f)
 
-let define0 name f = define_primitive name arity_one (fun _ -> f)
+let defineval ?plugin name v = Tac2env.define_primitive (pname ?plugin name) v
+
+let define0 ?plugin name f = define_primitive ?plugin name arity_one (fun _ -> f)
 
 let define1 name r0 f = define_primitive name arity_one begin fun x ->
   f (Value.repr_to r0 x)
@@ -1345,6 +1347,279 @@ let () = define1 "ltac1_to_list" ltac1 begin fun v ->
   return (Value.of_option (Value.of_list of_ltac1) (Tacinterp.Value.to_list v))
 end
 
+module MapTagDyn = Dyn.Make()
+
+type ('a,'set,'map) map_tag = ('a * 'set * 'map) MapTagDyn.tag
+
+type any_map_tag = Any : _ map_tag -> any_map_tag
+type tagged_set = TaggedSet : (_,'set,_) map_tag * 'set -> tagged_set
+type tagged_map = TaggedMap : (_,_,'map) map_tag * 'map -> tagged_map
+
+let map_tag_ext : any_map_tag Tac2dyn.Val.tag = Tac2dyn.Val.create "fmap_tag"
+let map_tag_repr = Value.repr_ext map_tag_ext
+
+let set_ext : tagged_set Tac2dyn.Val.tag = Tac2dyn.Val.create "fset"
+let set_repr = Value.repr_ext set_ext
+let tag_set tag s = Value.repr_of set_repr (TaggedSet (tag,s))
+
+let map_ext : tagged_map Tac2dyn.Val.tag = Tac2dyn.Val.create "fmap"
+let map_repr = Value.repr_ext map_ext
+let tag_map tag m = Value.repr_of map_repr (TaggedMap (tag,m))
+
+module type MapType = sig
+  (* to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
+  module S : CSig.SetS
+  module M : CMap.ExtS with type key = S.elt and module Set := S
+  type valmap
+  val valmap_eq : (valmap, valexpr M.t) Util.eq
+  val repr : S.elt Value.repr
+end
+
+module MapTypeV = struct
+  type _ t = Map : (module MapType with type S.elt = 't and type S.t = 'set and type valmap = 'map)
+    -> ('t * 'set * 'map) t
+end
+
+module MapMap = MapTagDyn.Map(MapTypeV)
+
+let maps = ref MapMap.empty
+
+let register_map ?(plugin=ltac2_plugin) ~tag_name x =
+  let tag = MapTagDyn.create (plugin^":"^tag_name) in
+  let () = maps := MapMap.add tag (Map x) !maps in
+  let () = defineval ~plugin tag_name (repr_of map_tag_repr (Any tag)) in
+  tag
+
+let get_map (type t s m) (tag:(t,s,m) map_tag)
+  : (module MapType with type S.elt = t and type S.t = s and type valmap = m) =
+  let Map v = MapMap.find tag !maps in
+  v
+
+let map_tag_eq (type a b c a' b' c') (t1:(a,b,c) map_tag) (t2:(a',b',c') map_tag)
+  : (a*b*c,a'*b'*c') Util.eq option
+  = MapTagDyn.eq t1 t2
+
+let assert_map_tag_eq t1 t2 = match map_tag_eq t1 t2 with
+  | Some v -> v
+  | None -> assert false
+
+let ident_map_tag : _ map_tag = register_map ~tag_name:"fmap_ident_tag" (module struct
+    module S = Id.Set
+    module M = Id.Map
+    let repr = Value.ident
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let int_map_tag : _ map_tag = register_map ~tag_name:"fmap_int_tag" (module struct
+    module S = Int.Set
+    module M = Int.Map
+    let repr = Value.int
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let string_map_tag : _ map_tag = register_map ~tag_name:"fmap_string_tag" (module struct
+    module S = String.Set
+    module M = String.Map
+    let repr = Value.string
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let inductive_map_tag : _ map_tag = register_map ~tag_name:"fmap_inductive_tag" (module struct
+    module S = Indset_env
+    module M = Indmap_env
+    let repr = Value.(repr_ext val_inductive)
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let constructor_map_tag : _ map_tag = register_map ~tag_name:"fmap_constructor_tag" (module struct
+    module S = Constrset_env
+    module M = Constrmap_env
+    let repr = Value.(repr_ext val_constructor)
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let constant_map_tag : _ map_tag = register_map ~tag_name:"fmap_constant_tag" (module struct
+    module S = Cset_env
+    module M = Cmap_env
+    let repr = Value.(repr_ext val_constant)
+    type valmap = valexpr M.t
+    let valmap_eq = Refl
+  end)
+
+let () = define1 "fset_empty" map_tag_repr begin fun (Any tag) ->
+    let module V = (val get_map tag) in
+    let open V in
+    return (tag_set tag S.empty)
+  end
+
+let () = define1 "fset_is_empty" set_repr begin fun (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    return (Value.of_bool (S.is_empty s))
+  end
+
+let () = define2 "fset_mem" valexpr set_repr begin fun x (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let x = repr_to repr x in
+    return (Value.of_bool (S.mem x s))
+  end
+
+let () = define2 "fset_add" valexpr set_repr begin fun x (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let x = repr_to repr x in
+    return (tag_set tag (S.add x s))
+  end
+
+let () = define2 "fset_remove" valexpr set_repr begin fun x (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let x = repr_to repr x in
+    return (tag_set tag (S.remove x s))
+  end
+
+let () = define2 "fset_union" set_repr set_repr
+    begin fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
+      let Refl = assert_map_tag_eq tag tag' in
+      let module V = (val get_map tag) in
+      let open V in
+      return (tag_set tag (S.union s1 s2))
+    end
+
+let () = define2 "fset_inter" set_repr set_repr
+    begin fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
+      let Refl = assert_map_tag_eq tag tag' in
+      let module V = (val get_map tag) in
+      let open V in
+      return (tag_set tag (S.inter s1 s2))
+    end
+
+let () = define2 "fset_diff" set_repr set_repr
+    begin fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
+      let Refl = assert_map_tag_eq tag tag' in
+      let module V = (val get_map tag) in
+      let open V in
+      return (tag_set tag (S.diff s1 s2))
+    end
+
+let () = define2 "fset_equal" set_repr set_repr
+    begin fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
+      let Refl = assert_map_tag_eq tag tag' in
+      let module V = (val get_map tag) in
+      let open V in
+      return (Value.of_bool (S.equal s1 s2))
+    end
+
+let () = define2 "fset_subset" set_repr set_repr
+    begin fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
+      let Refl = assert_map_tag_eq tag tag' in
+      let module V = (val get_map tag) in
+      let open V in
+      return (Value.of_bool (S.subset s1 s2))
+    end
+
+let () = define1 "fset_cardinal" set_repr begin fun (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    return (Value.of_int (S.cardinal s))
+  end
+
+let () = define1 "fset_elements" set_repr begin fun (TaggedSet (tag,s)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    return (Value.of_list (repr_of repr) (S.elements s))
+  end
+
+let () = define1 "fmap_empty" map_tag_repr begin fun (Any (tag)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    return (tag_map tag M.empty)
+  end
+
+let () = define1 "fmap_is_empty" map_repr begin fun (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    return (Value.of_bool (M.is_empty m))
+  end
+
+let () = define2 "fmap_mem" valexpr map_repr begin fun x (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let x = repr_to repr x in
+    return (Value.of_bool (M.mem x m))
+  end
+
+let () = define3 "fmap_add" valexpr valexpr map_repr begin fun x v (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let x = repr_to repr x in
+    return (tag_map tag (M.add x v m))
+  end
+
+let () = define2 "fmap_remove" valexpr map_repr begin fun x (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let x = repr_to repr x in
+    return (tag_map tag (M.remove x m))
+  end
+
+let () = define2 "fmap_find_opt" valexpr map_repr begin fun x (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let x = repr_to repr x in
+    return (Value.of_option (fun v -> v) (M.find_opt x m))
+  end
+
+let () = define2 "fmap_mapi" closure map_repr begin fun f (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let module Monadic = M.Monad(Proofview.Monad) in
+    Monadic.mapi (fun k v -> apply f [repr_of repr k;v]) m >>= fun m ->
+    return (tag_map tag m)
+  end
+
+let () = define3 "fmap_fold" closure map_repr valexpr begin fun f (TaggedMap (tag,m)) acc ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    let module Monadic = M.Monad(Proofview.Monad) in
+    Monadic.fold (fun k v acc -> apply f [repr_of repr k;v;acc]) m acc
+  end
+
+let () = define1 "fmap_cardinal" map_repr begin fun (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    return (Value.of_int (M.cardinal m))
+  end
+
+let () = define1 "fmap_bindings" map_repr begin fun (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    return (Value.(of_list (of_pair (repr_of repr) identity) (M.bindings m)))
+  end
+
+let () = define1 "fmap_domain" map_repr begin fun (TaggedMap (tag,m)) ->
+    let module V = (val get_map tag) in
+    let open V in
+    let Refl = valmap_eq in
+    return (tag_set tag (M.domain m))
+  end
+
 (** ML types *)
 
 (** Embed all Ltac2 data into Values *)
@@ -1709,7 +1984,7 @@ let () =
   in
   let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
   define1 "ltac1_lambda" valexpr begin fun f ->
-    let body = Tacexpr.TacGeneric (Some "coq-core.plugins.ltac2", in_gen (glbwit wit_ltac2_val) ()) in
+    let body = Tacexpr.TacGeneric (Some ltac2_plugin, in_gen (glbwit wit_ltac2_val) ()) in
     let clos = CAst.make (Tacexpr.TacFun ([Name arg_id], CAst.make (Tacexpr.TacArg body))) in
     let f = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) f in
     let lfun = Id.Map.singleton tac_id f in
@@ -1720,7 +1995,7 @@ let () =
 let ltac2_eval =
   let open Ltac_plugin in
   let ml_name = {
-    Tacexpr.mltac_plugin = "coq-core.plugins.ltac2";
+    Tacexpr.mltac_plugin = ltac2_plugin;
     mltac_tactic = "ltac2_eval";
   } in
   let eval_fun args ist = match args with

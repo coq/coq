@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open Tac2expr
 
 (** {5 Hardwired data} *)
@@ -30,3 +31,37 @@ val c_false : ltac_constructor
 end
 
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
+
+module type MapType = sig
+  (** to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
+  module S : CSig.SetS
+  module M : CMap.ExtS with type key = S.elt and module Set := S
+  type valmap
+  val valmap_eq : (valmap, Tac2ffi.valexpr M.t) Util.eq
+  val repr : S.elt Tac2ffi.repr
+end
+
+type ('a,'set,'map) map_tag
+type any_map_tag = Any : _ map_tag -> any_map_tag
+type tagged_set = TaggedSet : (_,'set,_) map_tag * 'set -> tagged_set
+type tagged_map = TaggedMap : (_,_,'map) map_tag * 'map -> tagged_map
+
+val map_tag_repr : any_map_tag Tac2ffi.repr
+val set_repr : tagged_set Tac2ffi.repr
+val map_repr : tagged_map Tac2ffi.repr
+
+val register_map : ?plugin:string -> tag_name:string
+  -> (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
+  -> ('a,'set,'map) map_tag
+(** Register a type on which we can use finite sets and maps.
+    [tag_name] is the name used for the external to make the
+    [Ltac2.FSet.Tags.tag] available. *)
+
+(** Default registered maps *)
+
+val ident_map_tag : (Id.t, Id.Set.t, Tac2ffi.valexpr Id.Map.t) map_tag
+val int_map_tag : (int, Int.Set.t, Tac2ffi.valexpr Int.Map.t) map_tag
+val string_map_tag : (string, CString.Set.t, Tac2ffi.valexpr CString.Map.t) map_tag
+val inductive_map_tag : (inductive, Indset_env.t, Tac2ffi.valexpr Indmap_env.t) map_tag
+val constructor_map_tag : (constructor, Constrset_env.t, Tac2ffi.valexpr Constrmap_env.t) map_tag
+val constant_map_tag : (Constant.t, Cset_env.t, Tac2ffi.valexpr Cmap_env.t) map_tag
