@@ -73,6 +73,7 @@ val printmapgen : 'a Int.Map.t -> Pp.t
 val ppintmapgen : 'a Int.Map.t -> unit
 
 val ppmpmapgen : 'a Names.MPmap.t -> unit
+val ppdpmapgen : 'a Names.DPmap.t -> unit
 val ppconmapenvgen : 'a Names.Cmap_env.t -> unit
 val ppmindmapenvgen : 'a Names.Mindmap_env.t -> unit
 

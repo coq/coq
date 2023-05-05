@@ -133,6 +133,11 @@ let ppmpmapgen l =
         (fun mp -> str (ModPath.debug_to_string mp))
         (MPset.elements (MPmap.domain l)))
 
+let ppdpmapgen l =
+  pp (prmapgen
+        (fun mp -> str (DirPath.to_string mp))
+        (DPset.elements (DPmap.domain l)))
+
 let ppconmapenvgen l =
   pp (prmapgen
         (fun mp -> str (Constant.debug_to_string mp))
