@@ -1,6 +1,10 @@
-type header = string
+type sized_string = { str : string; size : int }
 
-type row = string list list
+let size s = s.size
+
+type header = sized_string
+
+type row = sized_string list list
 
 module Align = struct
   type t =
@@ -33,7 +37,8 @@ let vert_split (ls : 'a list list) =
   CList.split ls
 
 let justify align n s =
-  let len = String.length s in
+  let len = s.size in
+  let s = s.str in
   let () = assert (len <= n) in
   let pad = n - len in
   match align with
@@ -51,7 +56,8 @@ let justify align n s =
 
 let justify_row align_row layout data =
   let data = map3 justify align_row layout data in
-  String.concat (String.make val_padding ' ') data
+  { str = String.concat (String.make val_padding ' ') data;
+    size = List.fold_left (+) (val_padding * (List.length data - 1)) layout; }
 
 let angle hkind vkind = match hkind, vkind with
 | `Lft, `Top -> "┌"
@@ -122,7 +128,7 @@ let print (headers : header list) (top : row) (rows : row list)
       let ans = layout (n - 1) rows in
       let data = ref None in
       let iter args =
-        let size = CList.map String.length args in
+        let size = CList.map size args in
         match !data with
         | None -> data := Some size
         | Some s ->
@@ -138,7 +144,7 @@ let print (headers : header list) (top : row) (rows : row list)
     | [] -> 0
     | n :: shape -> CList.fold_left (fun accu n -> accu + n + val_padding) n shape
     in
-    max (String.length hd) data_size
+    max (size hd) data_size
   in
   let col_size = CList.map2 map headers layout in
   (* Justify the data *)
@@ -158,3 +164,20 @@ let print (headers : header list) (top : row) (rows : row list)
     []
   in
   String.concat "\n" lines
+
+type raw_header = string
+type raw_row = string list list
+
+let raw_str s = { str = s; size = String.length s }
+
+let raw_row r : row = List.map (List.map raw_str) r
+
+let raw_print (headers : raw_header list) (top : raw_row) (rows : raw_row list)
+  ?align_headers
+  ?align_top
+  ?align_rows
+  () =
+  let headers = List.map raw_str headers in
+  let top = raw_row top in
+  let rows = List.map raw_row rows in
+  print headers top rows ?align_headers ?align_top ?align_rows ()

@@ -579,6 +579,11 @@ cd "$working_dir/html"
 $render_line_results
 # Move line timing files to timings folder (they will become artifacts)
 mv fast_table slow_table timings_table $timings
+
+# html tables don't get generated if the bench is run locally ie without CI variables
+for f in fast_table.html slow_table.html timings_table.html; do
+    if [ -f "$f" ]; then mv "$f" $timings; fi
+done
 fi
 
 echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
