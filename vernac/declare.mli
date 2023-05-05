@@ -386,6 +386,7 @@ val declare_entry
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
+  -> typing_flags:Declarations.typing_flags option
   -> typ:Constr.types
   -> impl:Glob_term.binding_kind
   -> univs:UState.named_universes_entry

@@ -75,10 +75,15 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    clears the body of the definition in the proof context of following proofs.
    The kernel will still use the body when checking.
 
-.. warn:: @ident is declared opaque but this is not fully respected inside the section and not at all outside the section.
+.. note::
 
-   Terminating the proof for a :cmd:`Let` with :cmd:`Qed` is deprecated.
-   It has the same behavior as :attr:`clearbody` with :cmd:`Defined`.
+   Terminating the proof for a :cmd:`Let` with :cmd:`Qed` produces an opaque side definition.
+   `Let foo : T. tactics. Qed.` is equivalent to
+
+   .. coqdoc::
+
+      Lemma foo_subproof : T. tactics. Qed.
+      #[clearbody] Let foo := foo_subproof.
 
 .. cmd:: Context {+ @binder }
 

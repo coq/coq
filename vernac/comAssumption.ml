@@ -22,7 +22,7 @@ module RelDecl = Context.Rel.Declaration
 
 let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   let kind = Decls.IsAssumption kind in
-  let () = Declare.declare_variable ~name ~kind ~typ ~impl ~univs in
+  let () = Declare.declare_variable ~name ~kind ~typing_flags:None ~typ ~impl ~univs in
   let () = Declare.assumption_message name in
   let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r imps in

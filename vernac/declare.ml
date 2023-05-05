@@ -486,15 +486,7 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:Deprecation.Version.v8_18
-  Pp.(fun name ->
-    Id.print name ++
-    strbrk " is declared opaque (Qed) but this is not fully respected" ++
-    strbrk " inside the section and not at all outside the section." ++ fnl() ++
-    strbrk "Use attribute #[clearbody] to get the current behaviour of clearing" ++
-    strbrk " the body at the start of proofs in a forward compatible way.")
-
-let declare_variable_core ~name ~kind d =
+let declare_variable_core ~name ~kind ~typing_flags d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
@@ -521,14 +513,34 @@ let declare_variable_core ~name ~kind d =
       (* We must declare the universe constraints before type-checking the
          term. *)
       let () = DeclareUctx.declare_universe_context ~poly univs in
-      (* NB: de.proof_entry_secctx is ignored *)
-      let se = {
+      let opaque = de.proof_entry_opaque in
+      let se = if opaque then
+          let cname = Id.of_string (Id.to_string name ^ "_subproof") in
+          let cname = Namegen.next_global_ident_away cname Id.Set.empty in
+          let de = {
+            proof_entry_body = Future.from_val ((body, Univ.ContextSet.empty), Evd.empty_side_effects);
+            proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
+            proof_entry_feedback = de.proof_entry_feedback;
+            proof_entry_type = de.proof_entry_type;
+            proof_entry_universes = UState.univ_entry ~poly UState.empty;
+            proof_entry_opaque = true;
+            proof_entry_inline_code = de.proof_entry_inline_code;
+          }
+          in
+          let kn = declare_constant ~name:cname
+              ~local:ImportNeedQualified ~kind:(IsProof Lemma) ~typing_flags
+              (DefinitionEntry de)
+          in
+          {
+            Entries.secdef_body = Constr.mkConstU (kn, Univ.Instance.empty);
+            secdef_type = None;
+          }
+        else {
         Entries.secdef_body = body;
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in
-      let opaque = de.proof_entry_opaque in
-      let () = if opaque then warn_opaque_let name in
+      (* opaque implies clearbody, so we don't see useless "foo := foo_subproof" in the context *)
       Glob_term.Explicit, opaque || clearbody, de.proof_entry_universes
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
@@ -537,8 +549,8 @@ let declare_variable_core ~name ~kind d =
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope (GlobRef.VarRef name)
 
-let declare_variable ~name ~kind ~typ ~impl ~univs =
-  declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl; univs })
+let declare_variable ~name ~kind ~typing_flags ~typ ~impl ~univs =
+  declare_variable_core ~name ~kind ~typing_flags (SectionLocalAssum { typ; impl; univs })
 
 (* Declaration messages *)
 
@@ -666,7 +678,7 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
   in
   let dref = match scope with
   | Locality.Discharge ->
-    let () = declare_variable_core ~name ~kind (SectionLocalDef {clearbody; entry}) in
+    let () = declare_variable_core ~typing_flags ~name ~kind (SectionLocalDef {clearbody; entry}) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
