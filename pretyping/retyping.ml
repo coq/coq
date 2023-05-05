@@ -36,6 +36,7 @@ type retype_error =
   | NotAType
   | BadRel
   | BadVariable of Id.t
+  | BadEvar of Evar.t
   | BadMeta of int
   | BadRecursiveType
   | NonFunctionalConstruction
@@ -47,6 +48,7 @@ let print_retype_error = function
   | BadRel -> str "unbound local variable"
   | BadVariable id -> str "variable " ++ Id.print id ++ str " unbound"
   | BadMeta n -> str "unknown meta " ++ int n
+  | BadEvar e -> str "unknown evar " ++ Evar.print e
   | BadRecursiveType -> str "Bad recursive type"
   | NonFunctionalConstruction -> str "Non-functional construction"
 
@@ -143,7 +145,10 @@ let retype ?(polyprop=true) sigma =
       lift n ty
     | Var id -> type_of_var env id
     | Const c -> type_of_constant env sigma c
-    | Evar ev -> existential_type sigma ev
+    | Evar ev -> begin match Evd.existential_type_opt sigma ev with
+        | Some t -> t
+        | None -> retype_error (BadEvar (fst ev))
+      end
     | Ind ind -> Inductiveops.e_type_of_inductive env sigma ind
     | Construct c -> Inductiveops.e_type_of_constructor env sigma c
     | Case (ci,u,pms,p,iv,c,lf) ->
