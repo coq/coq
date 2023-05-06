@@ -44,11 +44,11 @@ type retype_error =
 let print_retype_error = function
   | NotASort -> str "Not a sort"
   | NotAnArity -> str "Not an arity"
-  | NotAType -> str "Not a type (1)"
-  | BadRel -> str "unbound local variable"
-  | BadVariable id -> str "variable " ++ Id.print id ++ str " unbound"
-  | BadMeta n -> str "unknown meta " ++ int n
-  | BadEvar e -> str "unknown evar " ++ Evar.print e
+  | NotAType -> str "Not a type"
+  | BadRel -> str "Unbound local variable"
+  | BadVariable id -> str "Variable " ++ Id.print id ++ str " unbound"
+  | BadEvar e -> str "Unknown evar " ++ Evar.print e
+  | BadMeta n -> str "Unknown meta " ++ int n
   | BadRecursiveType -> str "Bad recursive type"
   | NonFunctionalConstruction -> str "Non-functional construction"
 
@@ -278,6 +278,28 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
   let f,_,_ = retype ~polyprop sigma in
     if lax then f env c else anomaly_on_error (f env) c
+
+let rec check_named env sigma c =
+  match EConstr.kind sigma c with
+  | Var id ->
+    (try ignore (lookup_named id env)
+     with Not_found -> retype_error (BadVariable id))
+  | Evar _ ->
+    (* This is cheating, but some devs exploit that a
+       dependency in the evar args may disappear *)
+    ()
+  | _ -> EConstr.iter sigma (check_named env sigma) c
+
+let reinterpret_get_type_of ~src env sigma c =
+  try
+    check_named env sigma c;
+    get_type_of ~lax:true env sigma c
+  with RetypeError e ->
+    user_err
+      (str "Cannot reinterpret " ++ Id.print src ++ str " bound to " ++
+       quote (Termops.Internal.print_constr_env env sigma c) ++
+       str " in the current environment" ++ spc() ++
+       surround (print_retype_error e))
 
 (* Makes an unsafe judgment from a constr *)
 let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
