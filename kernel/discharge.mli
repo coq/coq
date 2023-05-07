@@ -12,19 +12,6 @@ open Declarations
 open Cooking
 open Constr
 
-type inline = bool
-
-type 'opaque result = {
-  cook_body : (constr, 'opaque) constant_def;
-  cook_type : types;
-  cook_universes : universes;
-  cook_relevance : Sorts.relevance;
-  cook_inline : inline;
-  cook_context : Names.Id.Set.t option;
-  cook_univ_hyps : Univ.Instance.t;
-  cook_flags : typing_flags;
-}
-
 val cook_opaque_proofterm : cooking_info list ->
   Opaqueproof.opaque_proofterm -> Opaqueproof.opaque_proofterm
 

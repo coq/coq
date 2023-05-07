@@ -38,11 +38,3 @@ val translate_opaque :
     unit pconstant_body * typing_context
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
-
-(** Internal functions, mentioned here for debug purpose only *)
-
-val infer_constant : sec_univs:Univ.Level.t array option -> env ->
-  constant_entry -> typing_context Discharge.result
-
-val build_constant_declaration :
-  env -> 'a Discharge.result -> 'a pconstant_body

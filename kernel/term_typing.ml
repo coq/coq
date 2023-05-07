@@ -25,6 +25,19 @@ open Univ
 
 module NamedDecl = Context.Named.Declaration
 
+type inline = bool
+
+type 'opaque result = {
+  cook_body : (constr, 'opaque) constant_def;
+  cook_type : types;
+  cook_universes : universes;
+  cook_relevance : Sorts.relevance;
+  cook_inline : inline;
+  cook_context : Names.Id.Set.t option;
+  cook_univ_hyps : Univ.Instance.t;
+  cook_flags : typing_flags;
+}
+
 (* Insertion of constants and parameters in environment. *)
 
 type 'a effect_handler =
@@ -119,7 +132,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     | OT_const c -> Def (CPrimitives.body_of_prim_const c)
   in
   {
-    Discharge.cook_body = body;
+    cook_body = body;
     cook_type = typ;
     cook_universes = univs;
     cook_inline = false;
@@ -140,7 +153,7 @@ let infer_parameter ~sec_univs env entry =
   let r = Typeops.assumption_of_judgment env j in
   let t = Vars.subst_univs_level_constr usubst j.uj_val in
   {
-    Discharge.cook_body = Undef entry.parameter_entry_inline_code;
+    cook_body = Undef entry.parameter_entry_inline_code;
     cook_type = t;
     cook_universes = univs;
     cook_relevance = r;
@@ -163,7 +176,7 @@ let infer_definition ~sec_univs env entry =
   in
   let def = Def (Vars.subst_univs_level_constr usubst j.uj_val) in
   {
-    Discharge.cook_body = def;
+    cook_body = def;
     cook_type = typ;
     cook_universes = univs;
     cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
@@ -186,7 +199,7 @@ let infer_opaque ~sec_univs env entry =
   let def = OpaqueDef () in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
   {
-    Discharge.cook_body = def;
+    cook_body = def;
     cook_type = typ;
     cook_universes = univs;
     cook_relevance = Sorts.relevance_of_sort typj.utj_type;
@@ -217,7 +230,6 @@ let check_section_variables env declared_set typ body =
         str "Proof using " ++ inferred_vars)
 
 let build_constant_declaration env result =
-  let open Discharge in
   let typ = result.cook_type in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
@@ -306,7 +318,6 @@ let translate_local_assum env t =
     j.uj_val, t
 
 let translate_local_def env _id centry =
-  let open Discharge in
   let centry = {
     const_entry_body = centry.secdef_body;
     const_entry_secctx = centry.secdef_secctx;
