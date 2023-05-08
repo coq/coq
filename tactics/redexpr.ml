@@ -38,7 +38,7 @@ let cbv_vm env sigma c =
   end
 
 let warn_native_compute_disabled =
-  CWarnings.create ~name:"native-compute-disabled" ~category:CWarnings.CoreCategories.native_compiler
+  CWarnings.create_in Nativeconv.w_native_disabled
   (fun () ->
    strbrk "native_compute disabled at configure time; falling back to vm_compute.")
 

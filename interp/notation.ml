@@ -2475,12 +2475,12 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
           data) ntns
 
 let warn_abbreviation_not_bound_to_entry =
-  CWarnings.create ~name:"conflicting-abbreviation-entry" ~category:CWarnings.CoreCategories.query
+  CWarnings.create ~name:"conflicting-abbreviation-entry" ~category:CWarnings.CoreCategories.syntax
                    (fun () ->
                     strbrk "Activation of abbreviations does not expect mentioning a grammar entry.")
 
 let warn_abbreviation_not_bound_to_scope =
-  CWarnings.create ~name:"conflicting-abbreviation-scope" ~category:CWarnings.CoreCategories.query
+  CWarnings.create ~name:"conflicting-abbreviation-scope" ~category:CWarnings.CoreCategories.syntax
                    (fun () ->
                     strbrk "Activation of abbreviations does not expect mentioning a scope.")
 

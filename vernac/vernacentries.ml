@@ -1118,7 +1118,7 @@ let vernac_constraint ~poly l =
 (**********************)
 (* Modules            *)
 
-let warn_not_importable = CWarnings.create ~name:"not-importable" ~category:CWarnings.CoreCategories.modules
+let warn_not_importable = CWarnings.create ~name:"not-importable"
     Pp.(fun c -> str "Cannot import local constant "
                  ++ Printer.pr_constant (Global.env()) c
                  ++ str ", it will be ignored.")

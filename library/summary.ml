@@ -83,14 +83,10 @@ let freeze_summaries ~marshallable sum_map =
   HMap.map map sum_map
 
 let warn_summary_out_of_scope =
-  let name = "summary-out-of-scope" in
-  let category = CWarnings.CoreCategories.dev in
-  let default = CWarnings.Disabled in
-  CWarnings.create ~name ~category ~default (fun name ->
-    Pp.str (Printf.sprintf
-      "A Coq plugin was loaded inside a local scope (such as a Section). It is recommended to load plugins at the start of the file. Summary entry: %s"
-      name)
-    )
+  CWarnings.create ~name:"summary-out-of-scope" ~default:Disabled Pp.(fun name ->
+      str "A Coq plugin was loaded inside a local scope (such as a Section)." ++ spc() ++
+      str "It is recommended to load plugins at the start of the file." ++ spc() ++
+      str "Summary entry: " ++ str name)
 
 let unfreeze_summaries ?(partial=false) sum_map summaries =
   (* We must be independent on the order of the map! *)

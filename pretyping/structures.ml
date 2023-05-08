@@ -195,7 +195,7 @@ let keep_true_projections projs =
   List.map_filter filter projs
 
 let warn_projection_no_head_constant =
-  CWarnings.create ~name:"projection-no-head-constant" ~category:CWarnings.CoreCategories.typechecker
+  CWarnings.create ~name:"projection-no-head-constant" ~category:CWarnings.CoreCategories.records
          (fun (sign,env,t,ref,proji_sp) ->
           let env = Environ.push_rel_context sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty ref in
@@ -244,7 +244,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
     ) [] lpj projs
 
 let warn_redundant_canonical_projection =
-  CWarnings.create ~name:"redundant-canonical-projection" ~category:CWarnings.CoreCategories.typechecker
+  CWarnings.create ~name:"redundant-canonical-projection" ~category:CWarnings.CoreCategories.records
          (fun (hd_val,prj,new_can_s,old_can_s) ->
           strbrk "Ignoring canonical projection to " ++ hd_val
           ++ strbrk " by " ++ prj ++ strbrk " in "

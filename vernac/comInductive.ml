@@ -29,7 +29,7 @@ module RelDecl = Context.Rel.Declaration
 (* 3b| Mutual inductive definitions *)
 
 let warn_auto_template =
-  CWarnings.create ~name:"auto-template" ~category:CWarnings.CoreCategories.vernacular ~default:CWarnings.Disabled
+  CWarnings.create ~name:"auto-template" ~default:CWarnings.Disabled
     (fun id ->
        Pp.(strbrk "Automatically declaring " ++ Id.print id ++
            strbrk " as template polymorphic. Use attributes or " ++
@@ -448,7 +448,7 @@ let split_universe_context subset (univs, csts) =
   (subset, subcst), (rem, remcst)
 
 let warn_no_template_universe =
-  CWarnings.create ~name:"no-template-universe" ~category:CWarnings.CoreCategories.universes
+  CWarnings.create ~name:"no-template-universe"
     (fun () -> Pp.str "This inductive type has no template universes.")
 
 let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =

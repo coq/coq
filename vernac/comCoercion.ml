@@ -296,7 +296,7 @@ lorque source est None alors target est None aussi.
 *)
 
 let warn_uniform_inheritance =
-  CWarnings.create ~name:"uniform-inheritance" ~category:CWarnings.CoreCategories.typechecker
+  CWarnings.create ~name:"uniform-inheritance" ~category:CWarnings.CoreCategories.coercions
          (fun g ->
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition.")

@@ -561,7 +561,7 @@ let set_pattern_catch_all_var ?loc eqn = function
     eqn
 
 let warn_named_multi_catch_all =
-  CWarnings.create ~name:"unused-pattern-matching-variable" ~category:CWarnings.CoreCategories.pattern_matching
+  CWarnings.create ~name:"unused-pattern-matching-variable"
          (fun id ->
           strbrk "Unused variable " ++ Id.print id
           ++ strbrk " might be a misspelled constructor. Use _ or _"

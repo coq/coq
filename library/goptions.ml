@@ -427,7 +427,7 @@ let declare_interpreted_string_option_and_ref ~stage ~depr ~key ~(value:'a) from
 
 let warn_unknown_option =
   CWarnings.create
-    ~name:"unknown-option" ~category:CWarnings.CoreCategories.option
+    ~name:"unknown-option"
     Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 

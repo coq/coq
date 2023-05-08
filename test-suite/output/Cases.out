@@ -193,8 +193,7 @@ end
 Arguments stray N
 File "./output/Cases.v", line 253, characters 4-5:
 Warning: Unused variable B might be a misspelled constructor. Use _ or _B to
-silence this warning.
-[unused-pattern-matching-variable,pattern-matching,default]
+silence this warning. [unused-pattern-matching-variable,default]
 File "./output/Cases.v", line 266, characters 33-40:
 The command has indeed failed with message:
 Application of arguments to a recursive notation not supported in patterns.
@@ -254,13 +253,10 @@ end
      : J' bool (true, true) -> nat * nat
 File "./output/Cases.v", line 313, characters 3-4:
 Warning: Unused variable x might be a misspelled constructor. Use _ or _x to
-silence this warning.
-[unused-pattern-matching-variable,pattern-matching,default]
+silence this warning. [unused-pattern-matching-variable,default]
 File "./output/Cases.v", line 314, characters 6-7:
 Warning: Unused variable y might be a misspelled constructor. Use _ or _y to
-silence this warning.
-[unused-pattern-matching-variable,pattern-matching,default]
+silence this warning. [unused-pattern-matching-variable,default]
 File "./output/Cases.v", line 314, characters 3-4:
 Warning: Unused variable x might be a misspelled constructor. Use _ or _x to
-silence this warning.
-[unused-pattern-matching-variable,pattern-matching,default]
+silence this warning. [unused-pattern-matching-variable,default]

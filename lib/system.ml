@@ -207,8 +207,8 @@ let is_in_path lpath filename =
   with Not_found -> false
 
 let warn_path_not_found =
-  CWarnings.create ~name:"path-not-found" ~category:CWarnings.CoreCategories.filesystem
-  (fun () -> str "system variable PATH not found")
+  CWarnings.create ~name:"PATH-not-found"
+  (fun () -> str "Environment variable PATH not set")
 
 let is_in_system_path filename =
   try

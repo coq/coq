@@ -92,38 +92,23 @@ module CoreCategories : sig
   val automation : category
   val bytecode_compiler : category
   val coercions : category
-  val debug : category
   val deprecated : category
-  val dev : category
   val extraction : category
   val filesystem : category
   val fixpoints : category
   val fragile : category
   val funind : category
   val implicits : category
-  val loadpath : category
   val ltac : category
   val ltac2 : category
-  val modules : category
   val native_compiler : category
-  val non_interactive : category
-  val notation : category
   val numbers : category
-  val option : category
   val parsing : category
-  val pattern_matching : category
   val pedantic : category
-  val query : category
   val records : category
-  val require : category
-  val schemes : category
-  val scope : category
   val ssr : category
   val syntax : category
   val tactics : category
-  val typechecker : category
-  val typeclasses : category
-  val universes : category
   val vernacular : category
 
 end
