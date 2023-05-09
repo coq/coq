@@ -1957,13 +1957,21 @@ let () =
 (** Ltac2 in Ltac1 *)
 
 let () =
-  let e = Tac2entries.Pltac.tac2expr_in_env in
-  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2in1) v) in
-  Ltac_plugin.Tacentries.create_ltac_quotation ~plugin:ltac2_plugin "ltac2" inject (e, None)
+  let create name wit =
+    let e = Tac2entries.Pltac.tac2expr_in_env in
+    let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some name, in_gen (rawwit wit) v) in
+    Ltac_plugin.Tacentries.create_ltac_quotation ~plugin:ltac2_plugin name inject (e, None)
+  in
+  let () = create "ltac2" wit_ltac2in1 in
+  let () = create "ltac2val" wit_ltac2in1_val in
+  ()
 
 (* Ltac1 runtime representation of Ltac2 closures. *)
 let typ_ltac2 : valexpr Geninterp.Val.typ =
   Geninterp.Val.create "ltac2:ltac2_eval"
+
+let () = Genprint.register_val_print0 typ_ltac2 (fun v ->
+    TopPrinterBasic (fun () -> Pp.str "<ltac2 closure>"))
 
 let cast_typ (type a) (tag : a Geninterp.Val.typ) (v : Geninterp.Val.t) : a =
   let Geninterp.Val.Dyn (tag', v) = v in
@@ -2027,8 +2035,9 @@ let () =
     let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
         (CAst.make (Tacexpr.TacId [])) in
     let ist = { env_ist = Id.Map.empty } in
-    Tac2interp.interp ist tac >>= fun _ ->
-    Ftactic.return idtac
+    Tac2interp.interp ist tac >>= fun v ->
+    let v = idtac in
+    Ftactic.return v
   | _ :: _ ->
     (* Return a closure [@f := {blob} |- fun ids => ltac2_eval(f, ids) ] *)
     (* This name cannot clash with Ltac2 variables which are all lowercase *)
@@ -2045,6 +2054,15 @@ let () =
     Ftactic.return (Value.of_closure ist clos)
   in
   Geninterp.register_interp0 wit_ltac2in1 interp
+
+let () =
+  let interp ist tac =
+    let ist = { env_ist = Id.Map.empty } in
+    Tac2interp.interp ist tac >>= fun v ->
+    let v = repr_to ltac1 v in
+    Ftactic.return v
+  in
+  Geninterp.register_interp0 wit_ltac2in1_val interp
 
 let () =
   let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in

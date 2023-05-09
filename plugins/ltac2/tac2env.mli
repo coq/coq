@@ -158,15 +158,19 @@ val ltac1_prefix : ModPath.t
 val wit_ltac2in1 : (Id.t CAst.t list * raw_tacexpr, Id.t list * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Ltac1 code *)
 
-val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
-(** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is
-    no relevant data because arguments are passed by conventional names. *)
+val wit_ltac2in1_val : (Id.t CAst.t list * raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
+(** Ltac2 quotations in Ltac1 returning Ltac1 values.
+    When ids are bound interning turns them into Ltac1.lambda. *)
 
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)
 
 val wit_ltac2_quotation : (Id.t Loc.located, Id.t, Util.Empty.t) genarg_type
 (** Ltac2 quotations for variables "$x" in Gallina terms *)
+
+val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
+(** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is
+    no relevant data because arguments are passed by conventional names. *)
 
 (** {5 Helper functions} *)
 

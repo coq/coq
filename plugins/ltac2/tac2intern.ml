@@ -23,12 +23,13 @@ open Tac2typing_env
 (** Hardwired types and constants *)
 
 let coq_type n = KerName.make Tac2env.coq_prefix (Label.make n)
-let ltac1_type n = KerName.make Tac2env.ltac1_prefix (Label.make n)
+let ltac1_kn n = KerName.make Tac2env.ltac1_prefix (Label.make n)
 
 let t_int = coq_type "int"
 let t_string = coq_type "string"
 let t_constr = coq_type "constr"
-let t_ltac1 = ltac1_type "t"
+let t_ltac1 = ltac1_kn "t"
+let ltac1_lamdba = ltac1_kn "lambda"
 let t_preterm = coq_type "preterm"
 let t_bool = coq_type "bool"
 
@@ -1852,6 +1853,30 @@ let () =
 
 let () =
   let open Genintern in
+  let add_lambda id tac =
+    let pat = CAst.make ?loc:id.CAst.loc (CPatVar (Name id.v)) in
+    let loc = tac.CAst.loc in
+    let mk v = CAst.make ?loc v in
+    let lam = mk @@ CTacFun ([pat], tac) in
+    mk @@ CTacApp (mk @@ CTacRef (AbsKn (TacConstant ltac1_lamdba)), [lam])
+  in
+  let intern ist (bnd,tac) =
+    let env = match Genintern.Store.get ist.extra ltac2_env with
+    | None ->
+      (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
+      empty_env ~strict:ist.strict_check ()
+    | Some env -> env
+    in
+    let loc = tac.loc in
+    let tac = List.fold_right add_lambda bnd tac in
+    let (tac, t) = intern_rec env tac in
+    let () = unify ?loc env t (GTypRef (Other t_ltac1, [])) in
+    (ist, tac)
+  in
+  Genintern.register_intern0 wit_ltac2in1_val intern
+
+let () =
+  let open Genintern in
   let intern ist tac =
     let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
@@ -1876,6 +1901,7 @@ let () =
   Genintern.register_intern0 wit_ltac2_constr intern
 
 let () = Genintern.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_expr s e)
+let () = Genintern.register_subst0 wit_ltac2in1_val subst_expr
 let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
 let () =

@@ -309,10 +309,13 @@ let ltac1_prefix =
 (** Generic arguments *)
 
 let wit_ltac2in1 = Genarg.make0 "ltac2in1"
-let wit_ltac2_val = Genarg.make0 "ltac2:value"
+let wit_ltac2in1_val = Genarg.make0 "ltac2in1val"
 let wit_ltac2_constr = Genarg.make0 "ltac2:in-constr"
 let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
+let wit_ltac2_val = Genarg.make0 "ltac2:value"
+
 let () = Geninterp.register_val0 wit_ltac2in1 None
+let () = Geninterp.register_val0 wit_ltac2in1_val None
 let () = Geninterp.register_val0 wit_ltac2_constr None
 let () = Geninterp.register_val0 wit_ltac2_quotation None
 

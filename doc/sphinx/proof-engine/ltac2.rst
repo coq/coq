@@ -1710,6 +1710,8 @@ Debug
 Compatibility layer with Ltac1
 ------------------------------
 
+.. _ltac2in1:
+
 Ltac1 from Ltac2
 ~~~~~~~~~~~~~~~~
 
@@ -1796,9 +1798,36 @@ below will fail immediately and won't print anything.
    Fail mytac ltac2:(fail).
    (* Prints and fails *)
    Fail mytac ltac:(idtac; ltac2:(fail)).
+   Abort.
 
 In any case, the value returned by the fully applied quotation is an
 unspecified dummy Ltac1 closure and should not be further used.
+
+Use the `ltac2val` quotation to return values to Ltac1 from Ltac2.
+
+.. prodn::
+   ltac_expr += ltac2val : ( @ltac2_expr )
+   | ltac2val : ( {+ @ident } |- @ltac2_expr )
+
+It has the same typing rules as `ltac2:()` except the expression must have type `Ltac2.Ltac1.t`.
+
+.. coqtop:: all
+
+   Import Constr.Unsafe.
+
+   Ltac add1 x :=
+     let f := ltac2val:(Ltac1.lambda (fun y =>
+       let y := Option.get (Ltac1.to_constr y) in
+       let y := make (App constr:(S) [|y|]) in
+       Ltac1.of_constr y))
+     in
+     f x.
+
+   Goal True.
+     let z := constr:(0) in
+     let v := add1 z in
+     idtac v.
+   Abort.
 
 Switching between Ltac languages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
