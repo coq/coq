@@ -35,9 +35,9 @@ let rec ty_rule_of_gram = function
 | [] -> AnyTyRule TyStop
 | GramTerminal s :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
-  let tok = Pcoq.Symbol.token (Pcoq.terminal s) in
-  let r = TyNext (rem, tok, None) in
-  AnyTyRule r
+  (match NumTok.Unsigned.parse_string s with
+  | Some n -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Tok.PNUMBER (Some n)), None))
+  | None -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Pcoq.terminal s), None)))
 | GramNonTerminal (_, (t, tok)) :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
   let inj = Some (fun obj -> Genarg.in_gen t obj) in
