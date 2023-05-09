@@ -31,13 +31,18 @@ type ('self, 'tr, _, 'r) ty_rule =
 type ('self, 'r) any_ty_rule =
 | AnyTyRule : ('self, _, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
 
+let keyword_needed = function
+  | GramTerminal _ :: _ -> false
+  | GramNonTerminal _ :: _ | [] -> true
+
 let rec ty_rule_of_gram = function
 | [] -> AnyTyRule TyStop
 | GramTerminal s :: rem ->
+  let parse_as_numeral = if keyword_needed rem then None else NumTok.Unsigned.parse_string s in
   let AnyTyRule rem = ty_rule_of_gram rem in
-  (match NumTok.Unsigned.parse_string s with
-  | Some n -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Tok.PNUMBER (Some n)), None))
-  | None -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Pcoq.terminal s), None)))
+  (match parse_as_numeral with
+  | None -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Pcoq.terminal s), None))
+  | Some n -> AnyTyRule (TyNext (rem, Pcoq.Symbol.token (Tok.PNUMBER (Some n)), None)))
 | GramNonTerminal (_, (t, tok)) :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
   let inj = Some (fun obj -> Genarg.in_gen t obj) in
