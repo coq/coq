@@ -443,12 +443,6 @@ let discriminate_tac cstru p =
 
 (* wrap everything *)
 
-let build_term_to_complete uf pac =
-  let cinfo = get_constructor_info uf pac.cnode in
-  let real_args = List.rev_map (fun i -> constr_of_term (aterm uf i)) pac.args in
-  let (kn, u) = cinfo.ci_constr in
-  (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
-
 let cc_tactic depth additional_terms b =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.project gl in
@@ -468,10 +462,9 @@ let cc_tactic depth additional_terms b =
         let p=build_proof (Tacmach.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
         let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
         discriminate_tac cstr p
-      | Incomplete ->
+      | Incomplete terms_to_complete ->
         let open Glob_term in
         let env = Proofview.Goal.env gl in
-        let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
         let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous) in
         let pr_missing (c, missing) =
           let c = Detyping.detype Detyping.Now Id.Set.empty env sigma c in
