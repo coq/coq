@@ -334,6 +334,8 @@ let rec proof_tac p : unit Proofview.tactic =
         let prf = app_global_with_holes _trans_eq [|typ;t1;t2;t3;|] 2 in
           Tacticals.tclTHENS prf [(proof_tac p1);(proof_tac p2)]
     | Congr (p1,p2)->
+        (* p1 : ⊢ f = g : forall x : A, B *)
+        (* p2 : ⊢ t = u : A *)
         let tf1=constr_of_term p1.p_lhs
         and tx1=constr_of_term p2.p_lhs
         and tf2=constr_of_term p1.p_rhs
@@ -344,7 +346,9 @@ let rec proof_tac p : unit Proofview.tactic =
         let id = Tacmach.pf_get_new_id (Id.of_string "f") gl in
         let appx1 = mkLambda(make_annot (Name id) Sorts.Relevant,typf,mkApp(mkRel 1,[|tx1|])) in
         let lemma1 = app_global_with_holes _f_equal [|typf;typfx;appx1;tf1;tf2|] 1 in
+        (* lemma1 : ⊢ f t = g t : B{t} *)
         let lemma2 = app_global_with_holes _f_equal [|typx;typfx;tf2;tx1;tx2|] 1 in
+        (* lemma2 : ⊢ g t = g u : B{t}, this only type-checks when B{t} ≡ B{u} *)
         let prf =
           app_global_with_holes _trans_eq
                 [|typfx;
@@ -360,6 +364,7 @@ let rec proof_tac p : unit Proofview.tactic =
                     (Pp.str
                        "I don't know how to handle dependent equality")]]
   | Inject (prf,cstr,nargs,argind) ->
+    (* prf : ⊢ ci v = ci w : Ind(args) *)
          let ti=constr_of_term prf.p_lhs in
          let tj=constr_of_term prf.p_rhs in
          let default=constr_of_term p.p_lhs in
@@ -373,6 +378,7 @@ let rec proof_tac p : unit Proofview.tactic =
            in
            let injt=
              app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
+           (* injt : ⊢ proj t = proj u : outtype *)
            Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
              (Tacticals.tclTHEN injt (proof_tac prf))
          end
