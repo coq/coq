@@ -919,12 +919,15 @@ let evar_handler sigma =
   let evar_repack ev = mkLEvar sigma ev in
   { evar_expand; evar_relevant; evar_repack; qvar_relevant }
 
-let existential_type d (n, args) =
-  let info =
-    try find_undefined d n
-    with Not_found ->
-      anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
-  instantiate_evar_array d info (evar_concl info) args
+let existential_type_opt d (n, args) =
+  match find_undefined d n with
+  | exception Not_found -> None
+  | info ->
+    Some (instantiate_evar_array d info (evar_concl info) args)
+
+let existential_type d n = match existential_type_opt d n with
+  | Some t -> t
+  | None -> anomaly (str "Evar " ++ str (string_of_existential (fst n)) ++ str " was not declared.")
 
 let existential_type0 = existential_type
 

@@ -35,5 +35,7 @@ Require Ltac2.Proj.
 Require Ltac2.Std.
 Require Ltac2.String.
 Require Ltac2.Uint63.
+Require Ltac2.FSet.
+Require Ltac2.FMap.
 
 Require Export Ltac2.Notations.

@@ -83,6 +83,7 @@ sig
     val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
     val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
     val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val mapi : (key -> 'a -> 'b M.t) -> 'a t -> 'b t M.t
   end
   (** Fold operators parameterized by any monad. *)
 

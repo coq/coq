@@ -53,6 +53,8 @@ val sorts_of_context : env -> evar_map -> rel_context -> ESorts.t list
 
 val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
 
+val reinterpret_get_type_of : src:Names.Id.t -> env -> evar_map -> constr -> types
+
 val print_retype_error : retype_error -> Pp.t
 
 val relevance_of_term : env -> evar_map -> constr -> Sorts.relevance

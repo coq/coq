@@ -10,6 +10,8 @@
 
 Require Import Ltac2.Init.
 
+Ltac2 Type t := string.
+
 Ltac2 @external make : int -> char -> string := "coq-core.plugins.ltac2" "string_make".
 Ltac2 @external length : string -> int := "coq-core.plugins.ltac2" "string_length".
 Ltac2 @external get : string -> int -> char := "coq-core.plugins.ltac2" "string_get".

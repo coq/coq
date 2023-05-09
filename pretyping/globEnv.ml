@@ -133,13 +133,6 @@ let hide_variable env expansion id =
   else
     env
 
-let protected_get_type_of env sigma c =
-  try Retyping.get_type_of ~lax:true env sigma c
-  with Retyping.RetypeError _ ->
-    user_err
-      (str "Cannot reinterpret " ++ quote (Termops.Internal.print_constr_env env sigma c) ++
-       str " in the current environment.")
-
 let invert_ltac_bound_name env id0 id =
   try mkRel (pi1 (lookup_rel_id id (rel_context env.static_env)))
   with Not_found ->
@@ -153,7 +146,7 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
     let (ids,c) = Id.Map.find id env.lvar.ltac_constrs in
     let subst = List.map (invert_ltac_bound_name env id) ids in
     let c = substl subst c in
-    sigma, { uj_val = c; uj_type = protected_get_type_of env.renamed_env sigma c }
+    sigma, { uj_val = c; uj_type = Retyping.reinterpret_get_type_of ~src:id env.renamed_env sigma c }
   with Not_found ->
   try
     let {closure;term} = Id.Map.find id env.lvar.ltac_uconstrs in

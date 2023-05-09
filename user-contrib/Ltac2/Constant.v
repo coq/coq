@@ -10,6 +10,8 @@
 
 Require Import Ltac2.Init.
 
+Ltac2 Type t := constant.
+
 Ltac2 @ external equal : constant -> constant -> bool := "coq-core.plugins.ltac2" "constant_equal".
 (** Constants obtained through module aliases or Include are not
     considered equal by this function. *)

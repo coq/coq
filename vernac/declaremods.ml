@@ -761,7 +761,7 @@ let intern_arg (idl,(typ,ann)) =
 let intern_args params =
   List.map intern_arg params
 
-let start_module_core id args res fs =
+let start_module_core id args res =
   (* Loads the parsing objects in arguments *)
   let args = intern_args args in
   let mbids = List.flatten @@ List.map (fun (mbidl,_) -> mbidl) args in
@@ -775,8 +775,9 @@ let start_module_core id args res fs =
   let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
   mp, res_entry_o, mbids, sign, args
 
-let start_module export id args res fs =
-  let mp, res_entry_o, mbids, sign, args = start_module_core id args res fs in
+let start_module export id args res =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_module export id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix.obj_mp));
@@ -835,7 +836,8 @@ let get_functor_sobjs is_mod inl (mbids,mexpr) =
   let (mbids0, aobjs) = SynterpVisitor.get_module_sobjs is_mod () inl mexpr in
   (mbids @ mbids0, aobjs)
 
-let declare_module id args res mexpr_o fs =
+let declare_module id args res mexpr_o =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
@@ -973,7 +975,7 @@ let intern_args params =
   let args, ctx = List.fold_left intern_arg ([], Univ.ContextSet.empty) params in
   List.rev args, ctx
 
-let start_module_core id args res fs =
+let start_module_core id args res =
   let mp = Global.start_module id in
   let params, ctx = intern_args args in
   let () = Global.push_context_set ~strict:true ctx in
@@ -994,10 +996,11 @@ let start_module_core id args res fs =
   let () = Global.push_context_set ~strict:true ctx' in
   mp, res_entry_o, subtyps, params, Univ.ContextSet.union ctx ctx'
 
-let start_module export id args res fs =
-  let mp, res_entry_o, subtyps, _, _ = start_module_core id args res fs in
+let start_module export id args res =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let mp, res_entry_o, subtyps, _, _ = start_module_core id args res in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
-  let _ = Lib.Interp.start_module export id mp fs in
+  let _ : Nametab.object_prefix = Lib.Interp.start_module export id mp fs in
   mp
 
 let end_module_core id m_info objects fs =
@@ -1058,10 +1061,11 @@ let get_functor_sobjs is_mod env inl (params,mexpr) =
   (List.map pi1 params @ mbids, aobjs)
 
 (* TODO cleanup push universes directly to global env *)
-let declare_module id args res mexpr_o fs =
+let declare_module id args res mexpr_o =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp, mty_entry_o, subs, params, ctx = start_module_core id args res fs in
+  let mp, mty_entry_o, subs, params, ctx = start_module_core id args res in
   let env = Global.env () in
   let mexpr_entry_o, inl_expr, ctx' = match mexpr_o with
     | None -> None, default_inline (), Univ.ContextSet.empty
@@ -1115,15 +1119,16 @@ module RawModTypeOps = struct
 
 module Synterp = struct
 
-let start_modtype_core id cur_mp args mtys fs =
+let start_modtype_core id cur_mp args mtys =
   let mp = ModPath.MPdot(cur_mp, Label.of_id id) in
   let args = RawModOps.Synterp.intern_args args in
   let mbids = List.flatten @@ List.map (fun (mbidl,_) -> mbidl) args in
   let sub_mty_l = RawModOps.Synterp.build_subtypes mtys in
   mp, mbids, args, sub_mty_l
 
-let start_modtype id args mtys fs =
-  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys fs in
+let start_modtype id args mtys =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_modtype id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix.obj_mp));
@@ -1142,11 +1147,12 @@ let end_modtype () =
   SynterpVisitor.add_leaves objects;
   (openmod_syntax_info ()).cur_mp
 
-let declare_modtype id args mtys (mty,ann) fs =
+let declare_modtype id args mtys (mty,ann) =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys fs in
+  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
   let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
   let entry = mbids, mte in
   let sobjs = RawModOps.Synterp.get_functor_sobjs false inl entry in
@@ -1166,7 +1172,7 @@ module Interp = struct
 let openmodtype_info =
   Summary.ref ([] : module_type_body list) ~name:"MODTYPE-INFO"
 
-let start_modtype_core id args mtys fs =
+let start_modtype_core id args mtys =
   let mp = Global.start_modtype id in
   let params, params_ctx = RawModOps.Interp.intern_args args in
   let () = Global.push_context_set ~strict:true params_ctx in
@@ -1175,8 +1181,9 @@ let start_modtype_core id args mtys fs =
   let () = Global.push_context_set ~strict:true sub_mty_ctx in
   mp, params, sub_mty_l, Univ.ContextSet.union params_ctx sub_mty_ctx
 
-let start_modtype id args mtys fs =
-  let mp, _, sub_mty_l, _ = start_modtype_core id args mtys fs in
+let start_modtype id args mtys =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let mp, _, sub_mty_l, _ = start_modtype_core id args mtys in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.Interp.start_modtype id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype mp));
@@ -1201,10 +1208,11 @@ let end_modtype () =
   assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
   mp
 
-let declare_modtype id args mtys (mte,base,kind,inl) fs =
+let declare_modtype id args mtys (mte,base,kind,inl) =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp, params, sub_mty_l, ctx = start_modtype_core id args mtys fs in
+  let mp, params, sub_mty_l, ctx = start_modtype_core id args mtys in
   let env = Global.env () in
   let mte, mte_ctx = Modintern.interp_module_ast env kind base mte in
   let () = Global.push_context_set ~strict:true mte_ctx in
@@ -1372,26 +1380,6 @@ end
 
 end
 
-(** {6 Module operations handling summary freeze/unfreeze} *)
-
-let protect_summaries_synterp f =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
-  try f fs
-  with reraise ->
-    (* Something wrong: undo the whole process *)
-    let reraise = Exninfo.capture reraise in
-    let () = Summary.Synterp.unfreeze_summaries ~partial:true fs in
-    Exninfo.iraise reraise
-
-let protect_summaries_interp f =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
-  try f fs
-  with reraise ->
-    (* Something wrong: undo the whole process *)
-    let reraise = Exninfo.capture reraise in
-    let () = Summary.Interp.unfreeze_summaries ~partial:true fs in
-    Exninfo.iraise reraise
-
 (** {6 Libraries} *)
 
 type library_name = DirPath.t
@@ -1404,15 +1392,16 @@ type library_objects = Libobject.t list * Libobject.t list
 module Synterp = struct
 
 let start_module export id args res =
-  protect_summaries_synterp (RawModOps.Synterp.start_module export id args res)
+  RawModOps.Synterp.start_module export id args res
 
 let end_module = RawModOps.Synterp.end_module
 
 (** Declare a module in terms of a list of module bodies, by including them.
 Typically used for `Module M := N <+ P`.
 *)
-let declare_module_includes id args res mexpr_l fs =
-  let mp, res_entry_o, mbids, sign, args = RawModOps.Synterp.start_module_core id args res fs in
+let declare_module_includes id args res mexpr_l =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let mp, res_entry_o, mbids, sign, args = RawModOps.Synterp.start_module_core id args res in
   let mod_info = { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids } in
   let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
@@ -1429,8 +1418,9 @@ let declare_module_includes id args res mexpr_l fs =
 (** Declare a module type in terms of a list of module bodies, by including them.
 Typically used for `Module Type M := N <+ P`.
 *)
-let declare_modtype_includes id args res mexpr_l fs =
-  let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id (openmod_syntax_info ()).cur_mp args res fs in
+let declare_modtype_includes id args res mexpr_l =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id (openmod_syntax_info ()).cur_mp args res in
   let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
@@ -1444,35 +1434,30 @@ let declare_modtype_includes id args res mexpr_l fs =
   mp, args, bodies, subtyps
 
 let declare_module id args mtys me_l =
-  let declare_me fs = match me_l with
-    | [] ->
-      let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys None fs in
-      assert (Option.is_empty body);
-      mp, args, [], sign
-    | [me] ->
-      let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys (Some me) fs in
-      mp, args, [Option.get body], sign
-    | me_l -> declare_module_includes id args mtys me_l fs
-  in
-  protect_summaries_synterp declare_me
+  match me_l with
+  | [] ->
+    let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys None in
+    assert (Option.is_empty body);
+    mp, args, [], sign
+  | [me] ->
+    let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys (Some me) in
+    mp, args, [Option.get body], sign
+  | me_l -> declare_module_includes id args mtys me_l
 
 let start_modtype id args mtys =
-  protect_summaries_synterp (RawModTypeOps.Synterp.start_modtype id args mtys)
+  RawModTypeOps.Synterp.start_modtype id args mtys
 
 let end_modtype = RawModTypeOps.Synterp.end_modtype
 
 let declare_modtype id args mtys mty_l =
-  let declare_mt fs = match mty_l with
+  match mty_l with
     | [] -> assert false
     | [mty] ->
-      let mp, args, body, sign = RawModTypeOps.Synterp.declare_modtype id args mtys mty fs in
+      let mp, args, body, sign = RawModTypeOps.Synterp.declare_modtype id args mtys mty in
       mp, args, [body], sign
-    | mty_l -> declare_modtype_includes id args mtys mty_l fs
-  in
-  protect_summaries_synterp declare_mt
+    | mty_l -> declare_modtype_includes id args mtys mty_l
 
-let declare_include me_asts =
-  protect_summaries_synterp (fun _ -> RawIncludeOps.Synterp.declare_include me_asts)
+let declare_include = RawIncludeOps.Synterp.declare_include
 
 let register_library dir (objs:library_objects) =
   let mp = MPfile dir in
@@ -1495,16 +1480,16 @@ end
 
 module Interp = struct
 
-let start_module export id args sign =
-  protect_summaries_interp (RawModOps.Interp.start_module export id args sign)
+let start_module = RawModOps.Interp.start_module
 
 let end_module = RawModOps.Interp.end_module
 
 (** Declare a module in terms of a list of module bodies, by including them.
 Typically used for `Module M := N <+ P`.
 *)
-let declare_module_includes id args res mexpr_l fs =
-  let mp, res_entry_o, subtyps, _, _ = RawModOps.Interp.start_module_core id args res fs in
+let declare_module_includes id args res mexpr_l =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let mp, res_entry_o, subtyps, _, _ = RawModOps.Interp.start_module_core id args res in
   let mod_info = { cur_typ = res_entry_o; cur_typs = subtyps } in
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = Lib.Interp.{
@@ -1519,8 +1504,9 @@ let declare_module_includes id args res mexpr_l fs =
 (** Declare a module type in terms of a list of module bodies, by including them.
 Typically used for `Module Type M := N <+ P`.
 *)
-let declare_modtype_includes id args res mexpr_l fs =
-  let mp, _, subtyps, _ = RawModTypeOps.Interp.start_modtype_core id args res fs in
+let declare_modtype_includes id args res mexpr_l =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let mp, _, subtyps, _ = RawModTypeOps.Interp.start_modtype_core id args res in
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = Lib.Interp.{
     substobjs = incl_objs;
@@ -1532,30 +1518,25 @@ let declare_modtype_includes id args res mexpr_l fs =
   mp
 
 let declare_module id args mtys me_l =
-  let declare_me fs = match me_l with
-    | [] -> RawModOps.Interp.declare_module id args mtys None fs
-    | [me] -> RawModOps.Interp.declare_module id args mtys (Some me) fs
-    | me_l -> declare_module_includes id args mtys me_l fs
-  in
-  protect_summaries_interp declare_me
+  match me_l with
+  | [] -> RawModOps.Interp.declare_module id args mtys None
+  | [me] -> RawModOps.Interp.declare_module id args mtys (Some me)
+  | me_l -> declare_module_includes id args mtys me_l
 
-let start_modtype id args mtys =
-  protect_summaries_interp (RawModTypeOps.Interp.start_modtype id args mtys)
+let start_modtype = RawModTypeOps.Interp.start_modtype
 
 let end_modtype = RawModTypeOps.Interp.end_modtype
 
 let declare_modtype id args mtys mty_l =
-  let declare_mt fs = match mty_l with
-    | [] -> assert false
-    | [mty] -> RawModTypeOps.Interp.declare_modtype id args mtys mty fs
-    | mty_l -> declare_modtype_includes id args mtys mty_l fs
-  in
-  protect_summaries_interp declare_mt
+  match mty_l with
+  | [] -> assert false
+  | [mty] -> RawModTypeOps.Interp.declare_modtype id args mtys mty
+  | mty_l -> declare_modtype_includes id args mtys mty_l
 
 let declare_include me_asts =
   if Lib.sections_are_opened () then
     user_err Pp.(str "Include is not allowed inside sections.");
-  protect_summaries_interp (fun _ -> RawIncludeOps.Interp.declare_include me_asts)
+  RawIncludeOps.Interp.declare_include me_asts
 
 (** For the native compiler, we cache the library values *)
 let register_library dir cenv (objs:library_objects) digest univ =

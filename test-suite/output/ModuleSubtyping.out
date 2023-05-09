@@ -1,16 +1,20 @@
-File "./output/ModuleSubtyping.v", line 5, characters 0-39:
+File "./output/ModuleSubtyping.v", line 8, characters 2-41:
 The command has indeed failed with message:
 Signature components for field x do not match:
 the body of definitions differs.
-File "./output/ModuleSubtyping.v", line 11, characters 0-28:
+File "./output/ModuleSubtyping.v", line 14, characters 2-30:
 The command has indeed failed with message:
 Signature components for field B.C.x do not match:
 the body of definitions differs.
-File "./output/ModuleSubtyping.v", line 17, characters 0-29:
+File "./output/ModuleSubtyping.v", line 20, characters 2-31:
 The command has indeed failed with message:
 Signature components for field B.C.x in the 1st functor argument do not match:
 the body of definitions differs.
-File "./output/ModuleSubtyping.v", line 27, characters 0-32:
+File "./output/ModuleSubtyping.v", line 30, characters 2-34:
 The command has indeed failed with message:
 Signature components for field B.C.x in the 1st functor argument
 of F do not match: the body of definitions differs.
+File "./output/ModuleSubtyping.v", line 46, characters 2-38:
+The command has indeed failed with message:
+Signature components for field v do not match: expected type 
+"A1.t -> A1.t" but found type "A1.t -> Prop".
