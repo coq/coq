@@ -1,0 +1,9 @@
+File "./output/bug_17579.v", line 2, characters 0-26:
+The command has indeed failed with message:
+Timeout must be > 0.
+File "./output/bug_17579.v", line 5, characters 8-9:
+Error:
+Syntax error: [natural] expected after 'Timeout' (in [vernac_control]).
+
+
+coqc exited with code 1

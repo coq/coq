@@ -91,9 +91,8 @@ let interp_control_entry ~loc (f : control_entry) ~st
   | ControlSucceed { st = synterp_st } ->
     with_succeed ~st (fun () -> Vernacstate.Synterp.unfreeze synterp_st; fn ~st);
     st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
-  | ControlTimeout { synterp_duration; limit } ->
-    let timeout = float_of_int limit -. System.duration_real synterp_duration in
-    vernac_timeout ~timeout (fun () -> fn ~st) ()
+  | ControlTimeout { remaining } ->
+    vernac_timeout ~timeout:remaining (fun () -> fn ~st) ()
   | ControlTime { synterp_duration } ->
     let result = System.measure_duration (fun () -> fn ~st) () in
     let result = Result.map (fun (v,d) -> v, System.duration_add d synterp_duration) result in

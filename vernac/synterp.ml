@@ -53,7 +53,7 @@ type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.m
 type control_entry =
   | ControlTime of { synterp_duration: System.duration }
   | ControlRedirect of string
-  | ControlTimeout of { synterp_duration : System.duration; limit: int }
+  | ControlTimeout of { remaining : float }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
 
@@ -338,26 +338,32 @@ let synterp_begin_section ({v=id} as lid) =
 
 let default_timeout = ref None
 
+let check_timeout n =
+  if n <= 0 then CErrors.user_err Pp.(str "Timeout must be > 0.")
+
 let () = let open Goptions in
   declare_int_option
     { optstage = Summary.Stage.Synterp;
       optdepr  = false;
       optkey   = ["Default";"Timeout"];
       optread  = (fun () -> !default_timeout);
-      optwrite = ((:=) default_timeout) }
+      optwrite = (fun n -> Option.iter check_timeout n; default_timeout := n) }
 
 (* Timeout *)
 let with_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
   match !default_timeout, timeout with
   | _, Some n
   | Some n, None ->
-    let start = System.get_time () in
-    begin match Control.timeout (float_of_int n) f x with
+    check_timeout n;
+    let n = float_of_int n in
+    let start = Unix.gettimeofday () in
+    begin match Control.timeout n f x with
     | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
     | Some (ctrl,v) ->
-      let stop = System.get_time () in
-      let synterp_duration = System.duration_between ~start ~stop in
-      ControlTimeout { synterp_duration; limit = n } :: ctrl, v
+      let stop = Unix.gettimeofday () in
+      let remaining = n -. (start -. stop) in
+      if remaining <= 0. then Exninfo.iraise (Exninfo.capture CErrors.Timeout)
+      else ControlTimeout { remaining } :: ctrl, v
     end
   | None, None ->
     f x
