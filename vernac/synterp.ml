@@ -335,37 +335,22 @@ let synterp_begin_section ({v=id} as lid) =
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
-let default_timeout = ref None
-
 let check_timeout n =
   if n <= 0 then CErrors.user_err Pp.(str "Timeout must be > 0.")
 
-let () = let open Goptions in
-  declare_int_option
-    { optstage = Summary.Stage.Synterp;
-      optdepr  = None;
-      optkey   = ["Default";"Timeout"];
-      optread  = (fun () -> !default_timeout);
-      optwrite = (fun n -> Option.iter check_timeout n; default_timeout := n) }
-
 (* Timeout *)
-let with_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
-  match !default_timeout, timeout with
-  | _, Some n
-  | Some n, None ->
-    check_timeout n;
-    let n = float_of_int n in
-    let start = Unix.gettimeofday () in
-    begin match Control.timeout n f x with
-    | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
-    | Some (ctrl,v) ->
-      let stop = Unix.gettimeofday () in
-      let remaining = n -. (start -. stop) in
-      if remaining <= 0. then Exninfo.iraise (Exninfo.capture CErrors.Timeout)
-      else ControlTimeout { remaining } :: ctrl, v
-    end
-  | None, None ->
-    f x
+let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
+  check_timeout n;
+  let n = float_of_int n in
+  let start = Unix.gettimeofday () in
+  begin match Control.timeout n f x with
+  | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
+  | Some (ctrl,v) ->
+    let stop = Unix.gettimeofday () in
+    let remaining = n -. (start -. stop) in
+    if remaining <= 0. then Exninfo.iraise (Exninfo.capture CErrors.Timeout)
+    else ControlTimeout { remaining } :: ctrl, v
+  end
 
 let test_mode = ref false
 
@@ -547,8 +532,28 @@ and synterp_control CAst.{ loc; v = cmd } =
   let control, expr = synterp_control_flag ~loc cmd.control fn cmd.expr in
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
 
+let default_timeout = ref None
+
+let () = let open Goptions in
+  declare_int_option
+    { optstage = Summary.Stage.Synterp;
+      optdepr  = None;
+      optkey   = ["Default";"Timeout"];
+      optread  = (fun () -> !default_timeout);
+      optwrite = (fun n -> Option.iter check_timeout n; default_timeout := n) }
+
+let has_timeout ctrl = ctrl |> List.exists (function
+    | Vernacexpr.ControlTimeout _ -> true
+    | _ -> false)
+
 let synterp_control CAst.{ loc; v = cmd } =
-  let control = Option.cata (fun n -> Vernacexpr.ControlTimeout n :: cmd.control) cmd.control !default_timeout in
+  let control = cmd.control in
+  let control = match !default_timeout with
+    | None -> control
+    | Some n ->
+      if has_timeout control then control
+      else Vernacexpr.ControlTimeout n :: control
+  in
   synterp_control @@ CAst.make ?loc { cmd with control }
 
 let synterp_control cmd =
