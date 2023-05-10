@@ -19,19 +19,6 @@ open Cooking
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-type inline = bool
-
-type 'opaque result = {
-  cook_body : (constr, 'opaque) constant_def;
-  cook_type : types;
-  cook_universes : universes;
-  cook_relevance : Sorts.relevance;
-  cook_inline : inline;
-  cook_context : Id.Set.t option;
-  cook_univ_hyps : Instance.t;
-  cook_flags : typing_flags;
-}
-
 let lift_univs info univ_hyps = function
   | Monomorphic ->
     assert (Univ.Instance.is_empty univ_hyps);
