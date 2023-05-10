@@ -66,7 +66,7 @@ let emit_time state com tstart tend =
     | ToFeedback -> Feedback.msg_notice pp
     | ToChannel ch -> Pp.pp_with ch (pp ++ fnl())
 
-let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
+let interp_vernac ~check ~state ({CAst.loc;_} as com) =
   let open State in
     try
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
@@ -81,23 +81,12 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       { state with doc; sid = nsid; proof = new_proof; }
     with reraise ->
       let (reraise, info) = Exninfo.capture reraise in
-      (* XXX: In non-interactive mode edit_at seems to do very weird
-         things, so we better avoid it while we investigate *)
-      let reraise, info = if interactive then begin
-          (* Exceptions don't carry enough state to print themselves (typically missing the nametab)
-             so we need to print before resetting to an older state. See eg #16745 *)
-          let reraise = UserError (CErrors.iprint (reraise, info)) in
-          ignore(Stm.edit_at ~doc:state.doc state.sid);
-          let info = Option.cata (Loc.add_loc Exninfo.null) Exninfo.null (Loc.get_loc info) in
-          reraise, info
-        end
-        else reraise, info
+      let info =
+        (* Set the loc to the whole command if no loc *)
+        match Loc.get_loc info, loc with
+        | None, Some loc -> Loc.add_loc info loc
+        | Some _, _ | _, None  -> info
       in
-      let info = begin
-        match Loc.get_loc info with
-        | None   -> Option.cata (Loc.add_loc info) info loc
-        | Some _ -> info
-      end in
       Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
@@ -130,7 +119,7 @@ let load_vernac_core ~echo ~check ~state ?source file =
 
       let state =
         try_finally
-          (fun () -> Flags.silently (interp_vernac ~check ~interactive:false ~state) ast)
+          (fun () -> Flags.silently (interp_vernac ~check ~state) ast)
           ()
           (fun () ->
              let tend = System.get_time () in
@@ -149,8 +138,22 @@ let load_vernac_core ~echo ~check ~state ?source file =
     Exninfo.iraise (e, info)
 
 let process_expr ~state loc_ast =
+  try interp_vernac ~check:true ~state loc_ast
+  with reraise ->
+    let reraise, info = Exninfo.capture reraise in
+
+    (* Exceptions don't carry enough state to print themselves (typically missing the nametab)
+       so we need to print before resetting to an older state. See eg #16745 *)
+    let reraise = UserError (CErrors.iprint (reraise, info)) in
+    (* Keep just the loc in the info as it's printed separately *)
+    let info = Option.cata (Loc.add_loc Exninfo.null) Exninfo.null (Loc.get_loc info) in
+
+    ignore(Stm.edit_at ~doc:state.doc state.sid);
+    Exninfo.iraise (reraise, info)
+
+let process_expr ~state loc_ast =
   let tstart = System.get_time () in
-  try_finally (fun () -> interp_vernac ~interactive:true ~check:true ~state loc_ast)
+  try_finally (fun () -> process_expr ~state loc_ast)
     ()
     (fun () ->
        let tend = System.get_time () in
