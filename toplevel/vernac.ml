@@ -101,7 +101,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac_core ~echo ~check ~interactive ~state ?source file =
+let load_vernac_core ~echo ~check ~state ?source file =
   (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
@@ -130,7 +130,7 @@ let load_vernac_core ~echo ~check ~interactive ~state ?source file =
 
       let state =
         try_finally
-          (fun () -> Flags.silently (interp_vernac ~check ~interactive ~state) ast)
+          (fun () -> Flags.silently (interp_vernac ~check ~interactive:false ~state) ast)
           ()
           (fun () ->
              let tend = System.get_time () in
@@ -203,8 +203,8 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 
 (* Main driver for file loading. For now, we only do one beautify
    pass. *)
-let load_vernac ~echo ~check ~interactive ~state ?source filename =
-  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state ?source filename in
+let load_vernac ~echo ~check ~state ?source filename =
+  let ostate, ids, comments = load_vernac_core ~echo ~check ~state ?source filename in
   (* Pass for beautify *)
   if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)
