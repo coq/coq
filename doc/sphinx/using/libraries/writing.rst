@@ -38,6 +38,21 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
       :n:`@string__since` is the version number, :n:`@string__note` is
       the note (usually explains the replacement).
 
+.. note::
+
+   Coq and its standard library follow this deprecation policy:
+
+   * it should always be possible for a project written in Coq to be
+     compatible with two successive major versions,
+   * features must be deprecated in one major version before removal,
+   * Coq developers should provide an estimate of the required effort
+     to fix a project with respect to a given change,
+   * breaking changes should be clearly documented in the public
+     release notes, along with recommendations on how to fix a project
+     if it breaks.
+
+   See :cite:`Zimmermann19`, Section 3.6.3, for more details.
+
 .. example:: Deprecating a tactic.
 
    .. coqtop:: all abort warn
