@@ -1,0 +1,28 @@
+
+Coq < foo is defined
+
+Coq < bar is defined
+
+Coq < Coq < Coq < Coq < Coq < Coq < Coq < baz is defined
+
+Coq < 
+Coq < 1 goal
+  
+  ============================
+  True
+
+Unnamed_thm < Unnamed_thm_subproof
+Unnamed_thm_subproof
+Toplevel input, characters 2-8:
+>   baz I.
+>   ^^^^^^
+Error:
+In nested Ltac calls to "baz", "f" (bound to fun f x y => idtac v; f x), 
+"f" (bound to
+fun _ => let v' := v in
+         constr:((fun _ => ltac:((idtac v'; fail 1))))) and
+"(fun _ => ltac:((idtac v'; fail 1)))" (with x:=I, v':=Unnamed_thm_subproof,
+v:=Unnamed_thm_subproof, H:=H), last term evaluation failed.
+Tactic failure (level 1).
+
+Unnamed_thm < 
