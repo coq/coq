@@ -32,10 +32,6 @@ type valexpr =
   (** Open constructors *)
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
-| ValUint63 of Uint63.t
-  (** Primitive integers *)
-| ValFloat of Float64.t
-  (** Primitive floats *)
 
 and closure = MLTactic : (valexpr, 'v) arity0 * Tac2expr.frame option * 'v -> closure
 
@@ -55,21 +51,21 @@ type t = valexpr
 
 let is_int = function
 | ValInt _ -> true
-| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ -> false
+| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ -> false
 
 let tag v = match v with
 | ValBlk (n, _) -> n
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let field v n = match v with
 | ValBlk (_, v) -> v.(n)
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let set_field v n w = match v with
 | ValBlk (_, v) -> v.(n) <- w
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let make_block tag v = ValBlk (tag, v)
@@ -115,6 +111,8 @@ let val_binder = Val.create "binder"
 let val_univ = Val.create "universe"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
+let val_uint63 = Val.create "uint63"
+let val_float = Val.create "float"
 let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = Val.create "ind_data"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
@@ -219,7 +217,7 @@ let of_closure cls = ValCls cls
 
 let to_closure = function
 | ValCls cls -> cls
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ | ValUint63 _ | ValFloat _ -> assert false
+| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ -> assert false
 
 let closure = {
   r_of = of_closure;
@@ -359,10 +357,8 @@ let open_ = {
   r_id = false;
 }
 
-let of_uint63 n = ValUint63 n
-let to_uint63 = function
-| ValUint63 n -> n
-| _ -> assert false
+let of_uint63 n = of_ext val_uint63 n
+let to_uint63 x = to_ext val_uint63 x
 
 let uint63 = {
   r_of = of_uint63;
@@ -370,10 +366,8 @@ let uint63 = {
   r_id = false;
 }
 
-let of_float f = ValFloat f
-let to_float = function
-| ValFloat f -> f
-| _ -> assert false
+let of_float f = of_ext val_float f
+let to_float x = to_ext val_float x
 
 let float = {
   r_of = of_float;
