@@ -327,7 +327,7 @@ let sch_isdep = function
 | SchemeMinimality | SchemeCase        -> false
 
 (* Generate suffix for scheme given a target sort *)
-let scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort =
+let scheme_suffix_gen {sch_type; sch_sort} sort =
   (* We check if we are working with recursion vs case schemes *)
   let sch_isrec = match sch_type with
     | SchemeInduction   | SchemeMinimality  -> true
@@ -352,6 +352,11 @@ let scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort =
     | _ , _           -> "" in
   ind_suffix ^ aux_suffix ^ dep_suffix
 
+let smart_ind qid =
+  let ind = Smartlocate.smart_global_inductive qid in
+  if Dumpglob.dump() then Dumpglob.add_glob ?loc:qid.loc (IndRef ind);
+  ind
+
 (* Resolve the names of a list of schemes using an enviornment and extract some
 important data such as the inductive type involved, whether it is a dependent
 eliminator and its sort. *)
@@ -359,13 +364,13 @@ let rec name_and_process_schemes env l =
  match l with
   | [] -> []
   | (Some id, {sch_type; sch_qualid; sch_sort}) :: q
-  -> ((id, sch_isdep sch_type, Smartlocate.smart_global_inductive sch_qualid, sch_sort)
+  -> ((id, sch_isdep sch_type, smart_ind sch_qualid, sch_sort)
     :: name_and_process_schemes env q)
 (* If no name has been provided, we build one from the types of the ind requested *)
-  | (None, {sch_type; sch_qualid; sch_sort}) :: q
-   -> let ind = Smartlocate.smart_global_inductive sch_qualid in
+  | (None, ({sch_type; sch_qualid; sch_sort} as sch)) :: q
+   -> let ind = smart_ind sch_qualid in
       let sort_of_ind = Inductive.inductive_sort_family (snd (Inductive.lookup_mind_specif env ind)) in
-      let suffix = scheme_suffix_gen {sch_type; sch_qualid; sch_sort} sort_of_ind in
+      let suffix = scheme_suffix_gen sch sort_of_ind in
       let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
       let newref = CAst.make newid in
       (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
@@ -409,7 +414,7 @@ let do_scheme env l =
   do_mutual_induction_scheme env lnamedepindsort
 
 let do_scheme_equality ?locmap sch id =
-  let mind,_ = Smartlocate.smart_global_inductive id in
+  let mind,_ = smart_ind id in
   let dec = match sch with SchemeBooleanEquality -> false | SchemeEquality -> true in
   declare_beq_scheme ?locmap mind;
   if dec then declare_eq_decidability ?locmap mind
@@ -490,17 +495,8 @@ let build_combined_scheme env schemes =
   let sigma = Typing.check env sigma (EConstr.of_constr body) (EConstr.of_constr typ) in
   (sigma, body, typ)
 
-let do_combined_scheme name schemes =
+let do_combined_scheme name csts =
   let open CAst in
-  let csts =
-    List.map (fun {CAst.loc;v} ->
-        let qualid = Libnames.qualid_of_ident v in
-        try Nametab.locate_constant qualid
-        with
-          Not_found -> CErrors.user_err ?loc
-            Pp.(Libnames.pr_qualid qualid ++ str " is not declared."))
-      schemes
-  in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
   (* It is possible for the constants to have different universe
      polymorphism from each other, however that is only when the user

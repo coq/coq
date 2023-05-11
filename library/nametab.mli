@@ -104,15 +104,21 @@ type visibility = Until of int | Exactly of int
 
 val map_visibility : (int -> int) -> visibility -> visibility
 
-val push : visibility -> full_path -> GlobRef.t -> unit
+val push : ?deprecated:Deprecation.t -> visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_abbreviation : visibility -> full_path -> Globnames.abbreviation -> unit
+val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 module UnivIdMap : CMap.ExtS with type key = Univ.UGlobal.t
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
+
+(** Deprecation info *)
+
+val is_deprecated_xref : Globnames.extended_global_reference -> Deprecation.t option
+
+val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
 
 (** {6 The following functions perform globalization of qualified names } *)
 
@@ -128,6 +134,8 @@ val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.UGlobal.t
+
+val locate_extended_nowarn : qualid -> Globnames.extended_global_reference * Deprecation.t option
 
 (** Remove the binding to an abbreviation *)
 
@@ -170,7 +178,6 @@ val exists_universe : full_path -> bool
 
 (** {6 These functions locate qualids into full user names } *)
 
-val full_name_cci : qualid -> full_path
 val full_name_modtype : qualid -> full_path
 val full_name_module : qualid -> DirPath.t
 

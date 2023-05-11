@@ -1,20 +1,30 @@
-File "./output/deprecation_definition.v", line 1, characters 0-59:
-The command has indeed failed with message:
-This command does not support this attribute: deprecated (use a notation and deprecate that instead).
-[unsupported-attributes,parsing]
-File "./output/deprecation_definition.v", line 4, characters 0-62:
-The command has indeed failed with message:
-This command does not support this attribute: deprecated (use a notation and deprecate that instead).
-[unsupported-attributes,parsing]
-File "./output/deprecation_definition.v", line 7, characters 0-61:
-The command has indeed failed with message:
-This command does not support this attribute: deprecated (use a notation and deprecate that instead).
-[unsupported-attributes,parsing]
-File "./output/deprecation_definition.v", line 10, characters 0-68:
-The command has indeed failed with message:
-This command does not support this attribute: deprecated (use a notation and deprecate that instead).
-[unsupported-attributes,parsing]
-File "./output/deprecation_definition.v", line 13, characters 0-106:
-The command has indeed failed with message:
-This command does not support this attribute: deprecated (use a notation and deprecate that instead).
-[unsupported-attributes,parsing]
+File "./output/deprecation_definition.v", line 27, characters 6-11:
+Warning: Reference depr1 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr1
+     : True
+File "./output/deprecation_definition.v", line 28, characters 6-11:
+Warning: Reference depr2 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr2
+     : True
+File "./output/deprecation_definition.v", line 29, characters 6-11:
+Warning: Reference depr3 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr3
+     : True
+File "./output/deprecation_definition.v", line 30, characters 6-11:
+Warning: Reference depr4 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr4
+     : Prop
+File "./output/deprecation_definition.v", line 31, characters 6-11:
+Warning: Reference depr5 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr5
+     : Prop
+File "./output/deprecation_definition.v", line 32, characters 6-11:
+Warning: Reference depr6 is deprecated. deprecable
+[deprecated-reference,deprecated]
+depr6
+     : nat -> nat

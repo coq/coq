@@ -115,7 +115,7 @@ let definition_using env evd ~body ~types ~using =
   let terms = Option.List.cons types [body] in
   Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using
 
-let do_definition ?hook ~name ?scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
+let do_definition ?hook ~name ?scope ~poly ?typing_flags ~kind ?using ?deprecation udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
@@ -127,12 +127,12 @@ let do_definition ?hook ~name ?scope ~poly ?typing_flags ~kind ?using udecl bl r
   let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
-  let info = Declare.Info.make ?scope ~kind ?hook ~udecl ~poly ?typing_flags () in
+  let info = Declare.Info.make ?scope ~kind ?hook ~udecl ~poly ?typing_flags ?deprecation () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
-let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
+let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using ?deprecation udecl bl red_option c ctypopt =
   let () = if not poly then udecl |> Option.iter (fun udecl ->
       if not udecl.UState.univdecl_extensible_instance
       || not udecl.UState.univdecl_extensible_constraints
@@ -152,6 +152,6 @@ let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?usin
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
-    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook ?typing_flags () in
+    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook ?typing_flags ?deprecation () in
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
   in pm

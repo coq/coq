@@ -70,8 +70,6 @@ module DefAttributes = struct
     let (((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform), reversible =
       parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform ++ reversible) f
     in
-    if Option.has_some deprecated then
-      Attributes.unsupported_attributes [CAst.make ("deprecated (use a notation and deprecate that instead)",VernacFlagEmpty)];
     let using = Option.map Proof_using.using_from_string using in
     let reversible = Option.default true reversible in
     let nonuniform = Option.default false nonuniform in
@@ -465,13 +463,7 @@ let smart_global r =
   Dumpglob.add_glob ?loc:r.loc gr;
   gr
 
-let dump_global r =
-  try
-    let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob ?loc:r.loc gr
-  with e when CErrors.noncritical e -> ()
-
-let dump_qualid q = dump_global (make ?loc:q.loc @@ Constrexpr.AN q)
+let qualid_global id = smart_global (make ?loc:id.loc @@ Constrexpr.AN id)
 
 (**********)
 (* Syntax *)
@@ -616,7 +608,7 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ~deprecation ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -625,7 +617,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook 
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl ?typing_flags () in
+  let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl ?typing_flags ?deprecation () in
   begin
     match mut_analysis with
     | RecLemmas.NonMutual thm ->
@@ -678,8 +670,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
+  let deprecation = atts.deprecated in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?using:atts.using ?hook [(name, pl), (bl, t)]
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -697,11 +690,11 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
-      ~poly:atts.polymorphic ?typing_flags ~scope ~kind pl bl red_option c typ_opt ?hook
+      ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using pl bl red_option c typ_opt ?hook in
+        ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -714,7 +707,7 @@ let vernac_start_proof ~atts kind l =
     ~typing_flags:atts.typing_flags
     ~program_mode:atts.program
     ~poly:atts.polymorphic
-    ~scope ~kind:(Decls.IsProof kind) ?using:atts.using l
+    ~scope ~kind:(Decls.IsProof kind) ~deprecation:atts.deprecated ?using:atts.using l
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -744,7 +737,7 @@ let vernac_assumption ~atts discharge kind l nl =
             | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   if Option.has_some atts.using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
+  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?deprecation:atts.deprecated nl l
 
 let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref
@@ -1035,7 +1028,7 @@ let vernac_fixpoint_interactive ~atts discharge l =
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
   let typing_flags = atts.typing_flags in
-  ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic ?typing_flags l
+  ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic ?typing_flags ?deprecation:atts.deprecated l
   |> vernac_set_used_variables_opt ?using:atts.using
 
 let vernac_fixpoint ~atts ~pm discharge l =
@@ -1044,9 +1037,11 @@ let vernac_fixpoint ~atts ~pm discharge l =
   let typing_flags = atts.typing_flags in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic ?typing_flags ?using:atts.using l
+    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic
+      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l
   else
-    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic ?typing_flags ?using:atts.using l in
+    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic
+      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l in
     pm
 
 let vernac_cofixpoint_common ~atts discharge l =
@@ -1074,19 +1069,19 @@ let vernac_cofixpoint ~atts ~pm discharge l =
 let vernac_scheme l =
   if Dumpglob.dump () then
     List.iter (fun (lid, sch) ->
-      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
-      dump_global sch.sch_qualid) l;
+      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid) l;
   Indschemes.do_scheme (Global.env ()) l
 
 let vernac_scheme_equality ?locmap sch id =
-  if Dumpglob.dump () then
-    dump_global id;
   Indschemes.do_scheme_equality ?locmap sch id
 
 let vernac_combined_scheme lid l ~locmap =
-  if Dumpglob.dump () then
-    (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_qualid (qualid_of_ident ?loc id)) l);
+  (* XXX why does this take idents and not qualids *)
+  let l = List.map (fun id -> match qualid_global (qualid_of_ident ?loc:id.loc id.v) with
+      | ConstRef c -> c
+      | _ -> CErrors.user_err ?loc:id.loc Pp.(Pputils.pr_lident  id ++ str " is not a constant."))
+      l
+  in
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
@@ -1458,12 +1453,11 @@ let vernac_declare_instance ~atts id bl inst pri =
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in
   List.iter (fun (id, info) ->
-      dump_qualid id;
-      Classes.existing_instance locality id (Some info)) insts
+      let g = qualid_global id in
+      Classes.existing_instance ?loc:id.loc locality g (Some info)) insts
 
 let vernac_existing_class id =
-  dump_qualid id;
-  Record.declare_existing_class (Nametab.global id)
+  Record.declare_existing_class (qualid_global id)
 
 (***********)
 (* Solving *)
@@ -1949,9 +1943,7 @@ let vernac_print ~pstate =
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) ->
-    dump_global qid;
-    Prettyp.print_name env sigma qid udecl
+  | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes ()
   | PrintTypeclasses -> Prettyp.print_typeclasses ()
@@ -1983,9 +1975,7 @@ let vernac_print ~pstate =
     Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
-  | PrintImplicit qid ->
-    dump_global qid;
-    Prettyp.print_impargs qid
+  | PrintImplicit qid -> Prettyp.print_impargs (smart_global qid)
   | PrintAssumptions (o,t,r) ->
     (* Prints all the axioms and section variables used by a term *)
       let env = Global.env () in

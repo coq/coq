@@ -110,6 +110,7 @@ module Info : sig
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
     -> ?typing_flags:Declarations.typing_flags
+    -> ?deprecation : Deprecation.t
     -> unit
     -> t
 
@@ -370,6 +371,7 @@ val declare_entry
   :  name:Id.t
   -> ?scope:Locality.definition_scope
   -> kind:Decls.logical_kind
+  -> ?deprecation:Deprecation.t
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
@@ -415,6 +417,7 @@ val declare_constant
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
+  -> ?deprecation: Deprecation.t
   -> constant_entry
   -> Constant.t
 

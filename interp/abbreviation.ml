@@ -44,7 +44,7 @@ let toggle_abbreviation ~on ~use kn =
       | OnlyParsing | ParsingAndPrinting ->
          if on then
            begin
-             Nametab.push_abbreviation (Nametab.Until 1) sp kn;
+             Nametab.push_abbreviation ?deprecated:data.abbrev_deprecation (Nametab.Until 1) sp kn;
              Nametab.push_abbreviation (Nametab.Exactly 1) sp kn
            end
          else
@@ -61,7 +61,7 @@ let load_abbreviation i ((sp,kn),(_local,abbrev)) =
     user_err
       (Id.print (basename sp) ++ str " already exists.");
   add_abbreviation kn sp abbrev;
-  Nametab.push_abbreviation (Nametab.Until i) sp kn
+  Nametab.push_abbreviation ?deprecated:abbrev.abbrev_deprecation (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef (ref,_) ->
@@ -114,21 +114,12 @@ let declare_abbreviation ~local ?(also_in_cases_pattern=true) deprecation id ~on
   in
   add_leaf (inAbbreviation id (local,abbrev))
 
-let pr_abbreviation kn = pr_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn)
-
-let warn_deprecated_abbreviation =
-  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition"
-    pr_abbreviation
-
 (* Remark: do not check for activation (if not activated, it is already not supposed to be located) *)
-let search_abbreviation ?loc kn =
+let search_abbreviation kn =
   let _,abbrev = KNmap.find kn !abbrev_table in
-  Option.iter (fun d -> warn_deprecated_abbreviation ?loc (kn,d)) abbrev.abbrev_deprecation;
   abbrev.abbrev_pattern
 
-let search_filtered_abbreviation ?loc filter kn =
+let search_filtered_abbreviation filter kn =
   let _,abbrev = KNmap.find kn !abbrev_table in
   let res = filter abbrev.abbrev_pattern in
-  if Option.has_some res then
-    Option.iter (fun d -> warn_deprecated_abbreviation ?loc (kn,d)) abbrev.abbrev_deprecation;
   res

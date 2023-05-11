@@ -395,6 +395,7 @@ type globrevtab = full_path Globnames.ExtRefMap.t
 let the_globrevtab =
   Summary.ref ~name:"globrevtab" (Globnames.ExtRefMap.empty : globrevtab)
 
+let the_globdeprtab = Summary.ref ~name:"globdeprtag" Globnames.ExtRefMap.empty
 
 type mprevtab = DirPath.t MPmap.t
 
@@ -445,23 +446,30 @@ end
    possibly limited visibility, i.e. Theorem, Lemma, Definition, Axiom,
    Parameter but also Remark and Fact) *)
 
-let push_xref visibility sp xref =
+let push_xref ?deprecated visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-        the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab
-    | Exactly _ -> the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab
+        the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab;
+        deprecated |> Option.iter (fun depr ->
+            the_globdeprtab := Globnames.ExtRefMap.add xref depr !the_globdeprtab)
+    | Exactly _ ->
+      begin
+        assert (Option.is_empty deprecated);
+        the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab
+      end
 
 let remove_xref sp xref =
   the_ccitab := ExtRefTab.remove sp !the_ccitab;
-  the_globrevtab := Globnames.ExtRefMap.remove xref !the_globrevtab
+  the_globrevtab := Globnames.ExtRefMap.remove xref !the_globrevtab;
+  the_globdeprtab := Globnames.ExtRefMap.remove xref !the_globdeprtab
 
-let push_cci visibility sp ref =
-  push_xref visibility sp (TrueGlobal ref)
+let push_cci ?deprecated visibility sp ref =
+  push_xref ?deprecated visibility sp (TrueGlobal ref)
 
 (* This is for Syntactic Definitions *)
-let push_abbreviation visibility sp kn =
-  push_xref visibility sp (Abbrev kn)
+let push_abbreviation ?deprecated visibility sp kn =
+  push_xref ?deprecated visibility sp (Abbrev kn)
 
 let remove_abbreviation sp kn =
   remove_xref sp (Abbrev kn)
@@ -494,95 +502,6 @@ let push_dir vis dir dir_ref =
 let push_universe vis sp univ =
   the_univtab := UnivTab.push vis sp univ !the_univtab;
   the_univrevtab := UnivIdMap.add univ sp !the_univrevtab
-
-(* Locate functions *******************************************************)
-
-
-(* This should be used when abbreviations are allowed *)
-let locate_extended qid = ExtRefTab.locate qid !the_ccitab
-
-(* This should be used when no abbreviations are expected *)
-let locate qid = match locate_extended qid with
-  | TrueGlobal ref -> ref
-  | Abbrev _ -> raise Not_found
-let full_name_cci qid = ExtRefTab.user_name qid !the_ccitab
-
-let locate_abbreviation qid = match locate_extended qid with
-  | TrueGlobal _ -> raise Not_found
-  | Abbrev kn -> kn
-
-let locate_modtype qid = MPTab.locate qid Modules.(!nametab.modtypetab)
-let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
-
-let locate_universe qid = UnivTab.locate qid !the_univtab
-
-let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
-
-let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)
-
-let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
-
-let locate_section qid =
-  match locate_dir qid with
-    | GlobDirRef.DirOpenSection dir -> dir
-    | _ -> raise Not_found
-
-let locate_all qid =
-  List.fold_right (fun a l ->
-    match a with
-    | Globnames.TrueGlobal a -> a::l
-    | _ -> l)
-    (ExtRefTab.find_prefixes qid !the_ccitab) []
-
-let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
-
-let locate_extended_all_dir qid = DirTab.find_prefixes qid Modules.(!nametab.dirtab)
-
-let locate_extended_all_modtype qid = MPTab.find_prefixes qid Modules.(!nametab.modtypetab)
-
-let locate_extended_all_module qid = MPDTab.find_prefixes qid Modules.(!nametab.modtab)
-
-(* Completion *)
-let completion_canditates qualid =
-  ExtRefTab.match_prefixes qualid !the_ccitab
-
-(* Derived functions *)
-
-let locate_constant qid =
-  let open GlobRef in
-  match locate_extended qid with
-    | TrueGlobal (ConstRef kn) -> kn
-    | _ -> raise Not_found
-
-let global_of_path sp =
-  match ExtRefTab.find sp !the_ccitab with
-    | TrueGlobal ref -> ref
-    | _ -> raise Not_found
-
-let extended_global_of_path sp = ExtRefTab.find sp !the_ccitab
-
-let global qid =
-  try match locate_extended qid with
-    | TrueGlobal ref -> ref
-    | Abbrev _ ->
-        CErrors.user_err ?loc:qid.CAst.loc
-          Pp.(str "Unexpected reference to a notation: " ++
-           pr_qualid qid ++ str ".")
-  with Not_found as exn ->
-    let _, info = Exninfo.capture exn in
-    error_global_not_found ~info qid
-
-(* Exists functions ********************************************************)
-
-let exists_cci sp = ExtRefTab.exists sp !the_ccitab
-
-let exists_dir dir = DirTab.exists dir Modules.(!nametab.dirtab)
-
-let exists_module dir = MPDTab.exists dir Modules.(!nametab.modtab)
-
-let exists_modtype sp = MPTab.exists sp Modules.(!nametab.modtypetab)
-
-let exists_universe kn = UnivTab.exists kn !the_univtab
 
 (* Reverse locate functions ***********************************************)
 
@@ -643,6 +562,114 @@ let pr_global_env env ref =
     if CDebug.(get_flag misc) then Feedback.msg_debug (Pp.str "pr_global_env not found");
     Exninfo.iraise (exn, info)
 
+(* Locate functions *******************************************************)
+
+let pr_depr_xref xref =
+  let sp = Globnames.ExtRefMap.get xref !the_globrevtab in
+  pr_qualid (ExtRefTab.shortest_qualid Id.Set.empty sp !the_ccitab)
+
+let pr_depr_ref ref = pr_depr_xref (TrueGlobal ref)
+
+let warn_deprecated_ref =
+  Deprecation.create_warning ~object_name:"Reference" ~warning_name_if_no_since:"deprecated-reference"
+    pr_depr_ref
+
+let pr_depr_abbrev a = pr_depr_xref (Abbrev a)
+
+let warn_deprecated_abbreviation =
+  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition"
+    pr_depr_abbrev
+
+let warn_deprecated_xref ?loc depr = function
+  | Globnames.TrueGlobal ref -> warn_deprecated_ref ?loc (ref, depr)
+  | Abbrev a -> warn_deprecated_abbreviation ?loc (a, depr)
+
+let is_deprecated_xref xref = Globnames.ExtRefMap.find_opt xref !the_globdeprtab
+
+let locate_extended_nowarn qid =
+  let xref = ExtRefTab.locate qid !the_ccitab in
+  let depr = is_deprecated_xref xref in
+  xref, depr
+
+(* This should be used when abbreviations are allowed *)
+let locate_extended qid =
+  let xref, depr = locate_extended_nowarn qid in
+  let () = depr |> Option.iter (fun depr ->
+      warn_deprecated_xref ?loc:qid.loc depr xref)
+  in
+  xref
+
+(* This should be used when no abbreviations are expected *)
+let locate qid = match locate_extended qid with
+  | TrueGlobal ref -> ref
+  | Abbrev _ -> raise Not_found
+
+let locate_abbreviation qid = match locate_extended qid with
+  | TrueGlobal _ -> raise Not_found
+  | Abbrev kn -> kn
+
+let locate_modtype qid = MPTab.locate qid Modules.(!nametab.modtypetab)
+let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
+
+let locate_universe qid = UnivTab.locate qid !the_univtab
+
+let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
+
+let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)
+
+let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
+
+let locate_section qid =
+  match locate_dir qid with
+    | GlobDirRef.DirOpenSection dir -> dir
+    | _ -> raise Not_found
+
+(* Users of locate_all don't seem to need deprecation info *)
+let locate_all qid =
+  List.fold_right (fun a l ->
+    match a with
+    | Globnames.TrueGlobal a -> a::l
+    | _ -> l)
+    (ExtRefTab.find_prefixes qid !the_ccitab) []
+
+let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
+
+let locate_extended_all_dir qid = DirTab.find_prefixes qid Modules.(!nametab.dirtab)
+
+let locate_extended_all_modtype qid = MPTab.find_prefixes qid Modules.(!nametab.modtypetab)
+
+let locate_extended_all_module qid = MPDTab.find_prefixes qid Modules.(!nametab.modtab)
+
+(* Completion *)
+let completion_canditates qualid =
+  ExtRefTab.match_prefixes qualid !the_ccitab
+
+(* Derived functions *)
+
+let locate_constant qid =
+  let open GlobRef in
+  match locate_extended qid with
+    | TrueGlobal (ConstRef kn) -> kn
+    | _ -> raise Not_found
+
+let global_of_path sp =
+  match ExtRefTab.find sp !the_ccitab with
+    | TrueGlobal ref -> ref
+    | _ -> raise Not_found
+
+let extended_global_of_path sp = ExtRefTab.find sp !the_ccitab
+
+let global qid =
+  try match locate_extended qid with
+    | TrueGlobal ref -> ref
+    | Abbrev _ ->
+        CErrors.user_err ?loc:qid.CAst.loc
+          Pp.(str "Unexpected reference to a notation: " ++
+           pr_qualid qid ++ str ".")
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    error_global_not_found ~info qid
+
 let global_inductive qid =
   let open GlobRef in
   match global qid with
@@ -650,3 +677,15 @@ let global_inductive qid =
   | ref ->
       CErrors.user_err ?loc:qid.CAst.loc
         Pp.(pr_qualid qid ++ spc () ++ str "is not an inductive type.")
+
+(* Exists functions ********************************************************)
+
+let exists_cci sp = ExtRefTab.exists sp !the_ccitab
+
+let exists_dir dir = DirTab.exists dir Modules.(!nametab.dirtab)
+
+let exists_module dir = MPDTab.exists dir Modules.(!nametab.modtab)
+
+let exists_modtype sp = MPTab.exists sp Modules.(!nametab.modtypetab)
+
+let exists_universe kn = UnivTab.exists kn !the_univtab

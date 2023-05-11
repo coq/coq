@@ -18,9 +18,9 @@ open Globnames
 val declare_abbreviation : local:bool -> ?also_in_cases_pattern:bool -> Deprecation.t option -> Id.t ->
   onlyparsing:bool -> interpretation -> unit
 
-val search_abbreviation : ?loc:Loc.t -> abbreviation -> interpretation
+val search_abbreviation : abbreviation -> interpretation
 
-val search_filtered_abbreviation : ?loc:Loc.t ->
+val search_filtered_abbreviation :
   (interpretation -> 'a option) -> abbreviation -> 'a option
 
 val import_abbreviation : int -> Libnames.full_path -> KerName.t -> unit

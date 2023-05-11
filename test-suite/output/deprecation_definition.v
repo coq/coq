@@ -1,14 +1,32 @@
-Fail #[deprecated(note="not deprecable")]
-Lemma foo : True.
+Require Import Coq.Program.Tactics.
 
-Fail #[deprecated(note="not deprecable")]
-Theorem foo' : True.
+#[deprecated(note="deprecable")]
+Lemma depr1 : True.
+Proof.
+exact I.
+Qed.
 
-Fail #[deprecated(note="not deprecable")]
-Axiom foo'' : True.
+#[deprecated(note="deprecable")]
+Theorem depr2 : True.
+Proof.
+exact I.
+Qed.
 
-Fail #[deprecated(note="not deprecable")]
-Definition foo''' := True.
+#[deprecated(note="deprecable")]
+Axiom depr3 : True.
 
-Fail #[deprecated(note="not deprecable")]
-Fixpoint foo'''' n := match n with S n => foo''' n | 0 => 1 end.
+#[deprecated(note="deprecable")]
+Definition depr4 := True.
+
+#[deprecated(note="deprecable")]
+Program Definition depr5 := True.
+
+#[deprecated(note="deprecable")]
+Fixpoint depr6 n := match n with S n => depr6 n | 0 => 1 end.
+
+Check depr1.
+Check depr2.
+Check depr3.
+Check depr4.
+Check depr5.
+Check depr6.
