@@ -180,7 +180,7 @@ declares the argument `A` of `id` as a maximally
 inserted implicit argument. `A` may be omitted
 in applications of `id` but may be specified if needed:
 
-.. coqtop:: all
+.. coqtop:: all abort
 
    Definition compose {A B C} (g : B -> C) (f : A -> B) := fun x => g (f x).
 
