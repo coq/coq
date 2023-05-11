@@ -1445,8 +1445,12 @@ and tactic_of_value ist vle =
     let tac = out_gen (topwit wit_tactic) vle in
     tactic_of_value ist tac
   else
+    let name =
+      let Dyn (t, _) = vle in
+      Val.repr t
+    in
     let info = Exninfo.reify () in
-    Tacticals.tclZEROMSG ~info (str "Expression does not evaluate to a tactic.")
+    Tacticals.tclZEROMSG ~info (str "Expression does not evaluate to a tactic (got a " ++ str name ++ str ").")
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
