@@ -854,8 +854,6 @@ in a less hard-wired way.
       dependencies in the variables :n:`@ident__i` and returns a functional term
       of the form :n:`fun @ident__1 … @ident__n => @term`.
 
-   .. _match_term_context:
-
    :n:`context {? @ident } [ @cpattern ]`
       Matches any term with a subterm matching :token:`cpattern`. If there is a match
       and :n:`@ident` is present, it is assigned the "matched
