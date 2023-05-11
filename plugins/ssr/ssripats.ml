@@ -776,7 +776,7 @@ let tacVIEW_THEN_GRAB ?(simple_types=true)
     Goal.enter_one ~__LOC__ begin fun g ->
       let sigma, env = Goal.sigma g, Goal.env g in
       Ssrcommon.tacMKPROD t ~name
-        (Termops.subst_term sigma t (* NOTE: we grab t here *)
+        (Termops.subst_term env sigma t (* NOTE: we grab t here *)
           (Termops.prod_applist sigma new_concl [c])) >>=
       conclusion is_letin t clear
     end)

@@ -255,7 +255,7 @@ let classify_op mkconvert inj op top =
   let env = Global.env () in
   let evd = Evd.from_env env in
   if is_convertible env evd inj op then OpInj
-  else if EConstr.eq_constr evd op top then OpSame
+  else if EConstr.eq_constr env evd op top then OpSame
   else
     let op, top = mkconvert op top in
     if is_convertible env evd op top then OpConv else OpOther
@@ -1540,16 +1540,16 @@ let spec_of_hyps =
 
 let iter_specs = spec_of_hyps
 
-let find_hyp evd t l =
+let find_hyp env evd t l =
   try
     Some
       (EConstr.mkVar
-         (fst (List.find (fun (h, t') -> EConstr.eq_constr evd t t') l)))
+         (fst (List.find (fun (h, t') -> EConstr.eq_constr env evd t t') l)))
   with Not_found -> None
 
-let find_proof evd t l =
-  if EConstr.eq_constr evd t (Lazy.force op_True) then Some (Lazy.force op_I)
-  else find_hyp evd t l
+let find_proof env evd t l =
+  if EConstr.eq_constr env evd t (Lazy.force op_True) then Some (Lazy.force op_I)
+  else find_hyp env evd t l
 
 (** [sat_constr env evd sub taclist hyps c d]= (sub',taclist',hyps') where
     -  sub' is a fresh subscript obtained from sub
@@ -1571,7 +1571,7 @@ let sat_constr env evd (sub,taclist, hyps) c d =
        in
        let n = Nameops.add_subscript (Names.Id.of_string "__sat") sub in
        let trm =
-         match (find_proof evd h1 hyps, find_proof evd h2 hyps) with
+         match (find_proof env evd h1 hyps, find_proof env evd h2 hyps) with
          | Some h1, Some h2 ->
             (EConstr.mkApp (d.ESatT.satOK, [|args.(0); args.(1); h1; h2|]))
          | Some h1, _ ->
@@ -1580,7 +1580,7 @@ let sat_constr env evd (sub,taclist, hyps) c d =
        in
        let rtrm = Tacred.cbv_beta env evd trm in
        let typ  = Retyping.get_type_of env evd rtrm in
-       match find_hyp evd typ hyps with
+       match find_hyp env evd typ hyps with
        | None -> (Nameops.Subscript.succ sub, (Tactics.pose_proof (Names.Name n) rtrm :: taclist) , (n,typ)::hyps)
        | Some _ -> (sub, taclist, hyps)
      else (sub,taclist,hyps)

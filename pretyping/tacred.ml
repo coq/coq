@@ -95,12 +95,12 @@ type evaluable_reference =
   | EvalRel of int
   | EvalEvar of EConstr.existential
 
-let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
+let evaluable_reference_eq env sigma r1 r2 = match r1, r2 with
 | EvalConst c1, EvalConst c2 -> Constant.CanOrd.equal c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
-  EConstr.eq_constr sigma (mkEvar (e1, ctx1)) (mkEvar (e2, ctx2))
+  EConstr.eq_constr env sigma (mkEvar (e1, ctx1)) (mkEvar (e2, ctx2))
 | _ -> false
 
 let mkEvalRef ref u =
@@ -273,7 +273,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
                     let _, l' = whd_betalet_stack env sigma ccl in
                     let labs' = List.map snd labs' in
                     (* ppedrot: there used to be generic equality on terms here *)
-                    let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
+                    let eq_constr c1 c2 = EConstr.eq_constr env sigma c1 c2 in
                     if List.equal eq_constr labs' labs &&
                        List.equal eq_constr l l' then Some (minfxargs,ref)
                     else None
@@ -729,7 +729,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
         let rec descend (ref,u) args =
           let c = reference_value env sigma ref u in
-          if evaluable_reference_eq sigma ref refgoal then
+          if evaluable_reference_eq env sigma ref refgoal then
             (c,args)
           else
             let c', lrest = whd_betalet_stack env sigma (applist(c,args)) in
@@ -1234,13 +1234,13 @@ let fold_one_com com env sigma c =
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
-  let a = subst_term sigma (clos_norm_flags unfold_side_red env sigma rcom) c in
-  if not (EConstr.eq_constr sigma a c) then
+  let a = subst_term env sigma (clos_norm_flags unfold_side_red env sigma rcom) c in
+  if not (EConstr.eq_constr env sigma a c) then
     Vars.subst1 com a
   else
     (* Then reason on the non beta-iota-zeta form for compatibility -
        even if it is probably a useless configuration *)
-    let a = subst_term sigma rcom c in
+    let a = subst_term env sigma rcom c in
     Vars.subst1 com a
 
 let fold_commands cl env sigma c =

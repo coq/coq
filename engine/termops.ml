@@ -969,11 +969,11 @@ let dependent_in_decl sigma a decl =
     | LocalAssum (_,t) -> dependent sigma a t
     | LocalDef (_, body, t) -> dependent sigma a body || dependent sigma a t
 
-let count_occurrences sigma m t =
+let count_occurrences env sigma m t =
   let open EConstr in
   let n = ref 0 in
   let rec countrec m t =
-    if EConstr.eq_constr sigma m t then
+    if EConstr.eq_constr env sigma m t then
       incr n
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
@@ -1026,7 +1026,7 @@ let prefix_application sigma eq_fun k l1 t =
     | _ -> None
   else None
 
-let eq_upto_lift cache c sigma k t =
+let eq_upto_lift cache c env sigma k t =
   let c =
     try Int.Map.find k !cache
     with Not_found ->
@@ -1034,7 +1034,7 @@ let eq_upto_lift cache c sigma k t =
       let () = cache := Int.Map.add k c !cache in
       c
   in
-  EConstr.eq_constr sigma c t
+  EConstr.eq_constr env sigma c t
 
 (* Recognizing occurrences of a given subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of
@@ -1050,13 +1050,13 @@ let replace_term_gen sigma eq_fun ar by_c in_t =
   in
   substrec 0 in_t
 
-let replace_term sigma c byc t =
+let replace_term env sigma c byc t =
   let cache = ref Int.Map.empty in
   let ar = Array.length (snd (decompose_app_vect sigma c)) in
-  let eq sigma k t = eq_upto_lift cache c sigma k t in
+  let eq sigma k t = eq_upto_lift cache c env sigma k t in
   replace_term_gen sigma eq ar byc t
 
-let subst_term sigma c t = replace_term sigma c (EConstr.mkRel 1) t
+let subst_term env sigma c t = replace_term env sigma c (EConstr.mkRel 1) t
 
 let add_vname vars = function
     Name id -> Id.Set.add id vars
@@ -1165,7 +1165,7 @@ let compare_constr_univ env sigma f cv_pb t1 t2 =
     | Const (c, u), Const (c', u') -> QConstant.equal env c c'
     | Ind (i, _), Ind (i', _) -> QInd.equal env i i'
     | Construct (i, _), Construct (i', _) -> QConstruct.equal env i i'
-    | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Conversion.CONV t1 t2) t1 t2
+    | _ -> EConstr.compare_constr env sigma (fun t1 t2 -> f Conversion.CONV t1 t2) t1 t2
 
 let constr_cmp env sigma cv_pb t1 t2 =
   let rec compare cv_pb t1 t2 = compare_constr_univ env sigma compare cv_pb t1 t2 in
@@ -1271,7 +1271,7 @@ let map_named_decl f = function
 | NamedDecl.LocalAssum (id, t) -> NamedDecl.LocalAssum (id, f t)
 | NamedDecl.LocalDef (id, b, t) -> NamedDecl.LocalDef (id, f b, f t)
 
-let compact_named_context sigma sign =
+let compact_named_context env sigma sign =
   let compact l decl =
     match decl, l with
     | NamedDecl.LocalAssum (i,t), [] ->
@@ -1279,11 +1279,11 @@ let compact_named_context sigma sign =
     | NamedDecl.LocalDef (i,c,t), [] ->
        [CompactedDecl.LocalDef ([i],c,t)]
     | NamedDecl.LocalAssum (i1,t1), CompactedDecl.LocalAssum (li,t2) :: q ->
-       if EConstr.eq_constr sigma t1 t2
+       if EConstr.eq_constr env sigma t1 t2
        then CompactedDecl.LocalAssum (i1::li, t2) :: q
        else CompactedDecl.LocalAssum ([i1],t1) :: CompactedDecl.LocalAssum (li,t2) :: q
     | NamedDecl.LocalDef (i1,c1,t1), CompactedDecl.LocalDef (li,c2,t2) :: q ->
-       if EConstr.eq_constr sigma c1 c2 && EConstr.eq_constr sigma t1 t2
+       if EConstr.eq_constr env sigma c1 c2 && EConstr.eq_constr env sigma t1 t2
        then CompactedDecl.LocalDef (i1::li, c2, t2) :: q
        else CompactedDecl.LocalDef ([i1],c1,t1) :: CompactedDecl.LocalDef (li,c2,t2) :: q
     | NamedDecl.LocalAssum (i,t), q ->

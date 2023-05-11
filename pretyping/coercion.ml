@@ -309,7 +309,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
               coerce_application sigma typ typ' c c' l l')
          else
            subco sigma
-       | x, y when EConstr.eq_constr sigma c c' ->
+       | x, y when EConstr.eq_constr env sigma c c' ->
          if Int.equal (Array.length l) (Array.length l') then
            let sigma, lam_type = Typing.type_of env sigma c in
            let sigma, lam_type' = Typing.type_of env sigma c' in

@@ -1104,7 +1104,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | Prod (n, dom, codom) ->
           let lam = mkLambda (n, dom, codom) in
           let (evars', app), unfold =
-            if eq_constr (fst evars) ty mkProp then
+            if eq_constr env (fst evars) ty mkProp then
               (app_poly_sort prop env evars coq_all [| dom; lam |]), TypeGlobal.unfold_all
             else
               let forall = if prop then PropGlobal.coq_forall else TypeGlobal.coq_forall in

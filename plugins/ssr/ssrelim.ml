@@ -45,7 +45,7 @@ let analyze_eliminator elimty env sigma =
   | _ ->
     let env' = push_rel_context ctx env in
     let t' = Reductionops.whd_all env' sigma t in
-    if not (eq_constr sigma t t') then loop ctx t' else
+    if not (eq_constr env sigma t t') then loop ctx t' else
       errorstrm Pp.(str"The eliminator has the wrong shape."++spc()++
       str"A (applied) bound variable was expected as the conclusion of "++
       str"the eliminator's"++Pp.cut()++str"type:"++spc()++pr_econstr_env env' sigma elimty) in

@@ -332,9 +332,9 @@ let explain_unification_error env sigma p1 p2 = function
      | ConversionFailed (env,t1,t2) ->
         let t1 = Reductionops.nf_betaiota env sigma t1 in
         let t2 = Reductionops.nf_betaiota env sigma t2 in
-        if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
+        if EConstr.eq_constr env sigma t1 p1 && EConstr.eq_constr env sigma t2 p2 then [] else
         let env = make_all_name_different env sigma in
-        if not (EConstr.eq_constr sigma t1 p1) || not (EConstr.eq_constr sigma t2 p2) then
+        if not (EConstr.eq_constr env sigma t1 p1) || not (EConstr.eq_constr env sigma t2 p2) then
           let t1, t2 = pr_explicit env sigma t1 t2 in
           [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
         else []

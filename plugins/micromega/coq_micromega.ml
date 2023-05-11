@@ -406,7 +406,7 @@ let dump_q q =
 let parse_q sigma term =
   match EConstr.kind sigma term with
   | App (c, args) ->
-    if EConstr.eq_constr sigma c (Lazy.force coq_Qmake) then
+    if EConstr.eq_constr_nounivs sigma c (Lazy.force coq_Qmake) then
       {Mc.qnum = parse_z sigma args.(0); Mc.qden = parse_positive sigma args.(1)}
     else raise ParseError
   | _ -> raise ParseError
@@ -464,8 +464,8 @@ let undump_var = parse_positive
 
 let dump_var = dump_positive
 
-let undump_expr undump_constant sigma e =
-  let is c c' = EConstr.eq_constr sigma c (Lazy.force c') in
+let undump_expr undump_constant env sigma e =
+  let is c c' = EConstr.eq_constr env sigma c (Lazy.force c') in
   let rec xundump e =
     match EConstr.kind sigma e with
     | App (c, [|_; n|]) when is c coq_PEX -> Mc.PEX (undump_var sigma n)
@@ -566,13 +566,13 @@ let dump_op = function
   | Mc.OpGt -> Lazy.force coq_OpGt
   | Mc.OpLt -> Lazy.force coq_OpLt
 
-let undump_cstr undump_constant sigma c =
-  let is c c' = EConstr.eq_constr sigma c (Lazy.force c') in
+let undump_cstr undump_constant env sigma c =
+  let is c c' = EConstr.eq_constr env sigma c (Lazy.force c') in
   match EConstr.kind sigma c with
   | App (c, [|_; e1; o; e2|]) when is c coq_Build ->
-    {Mc.flhs = undump_expr undump_constant sigma e1;
+    {Mc.flhs = undump_expr undump_constant env sigma e1;
      Mc.fop = undump_op sigma o;
-     Mc.frhs = undump_expr undump_constant sigma e2}
+     Mc.frhs = undump_expr undump_constant env sigma e2}
   | _ -> raise ParseError
 
 let dump_cstr typ dump_constant {Mc.flhs = e1; Mc.fop = o; Mc.frhs = e2} =
@@ -583,9 +583,9 @@ let dump_cstr typ dump_constant {Mc.flhs = e1; Mc.fop = o; Mc.frhs = e2} =
        ; dump_op o
        ; dump_expr typ dump_constant e2 |] )
 
-let assoc_const sigma x l =
+let assoc_const env sigma x l =
   try
-    snd (List.find (fun (x', y) -> EConstr.eq_constr sigma x (Lazy.force x')) l)
+    snd (List.find (fun (x', y) -> EConstr.eq_constr env sigma x (Lazy.force x')) l)
   with Not_found -> raise ParseError
 
 let zop_table_prop =
@@ -619,14 +619,14 @@ let parse_operator table_prop table_bool has_equality typ (env, sigma) k
     (op, args) =
   match args with
   | [|a1; a2|] ->
-    ( assoc_const sigma op
+    ( assoc_const env sigma op
         (match k with Mc.IsProp -> table_prop | Mc.IsBool -> table_bool)
     , a1
     , a2 )
   | [|ty; a1; a2|] ->
     if
       has_equality
-      && EConstr.eq_constr sigma op (Lazy.force coq_eq)
+      && EConstr.eq_constr env sigma op (Lazy.force coq_eq)
       && is_convertible env sigma ty (Lazy.force typ)
     then (Mc.OpEq, args.(1), args.(2))
     else raise ParseError
@@ -642,9 +642,9 @@ type 'a op =
   | Power
   | Ukn of string
 
-let assoc_ops sigma x l =
+let assoc_ops env sigma x l =
   try
-    snd (List.find (fun (x', y) -> EConstr.eq_constr sigma x (Lazy.force x')) l)
+    snd (List.find (fun (x', y) -> EConstr.eq_constr env sigma x (Lazy.force x')) l)
   with Not_found -> Ukn "Oups"
 
 (**
@@ -745,7 +745,7 @@ let parse_expr (genv, sigma) parse_constant parse_exp ops_spec env term =
       | App (t, args) -> (
         match EConstr.kind sigma t with
         | Const c -> (
-          match assoc_ops sigma t ops_spec with
+          match assoc_ops genv sigma t ops_spec with
           | Binop f -> combine env f (args.(0), args.(1))
           | Opp ->
             let expr, env = parse_expr env args.(0) in
@@ -840,30 +840,30 @@ let rconstant (genv, sigma) term =
   let rec rconstant term =
     match EConstr.kind sigma term with
     | Const x ->
-      if EConstr.eq_constr sigma term (Lazy.force coq_R0) then Mc.C0
-      else if EConstr.eq_constr sigma term (Lazy.force coq_R1) then Mc.C1
+      if EConstr.eq_constr genv sigma term (Lazy.force coq_R0) then Mc.C0
+      else if EConstr.eq_constr genv sigma term (Lazy.force coq_R1) then Mc.C1
       else raise ParseError
     | App (op, args) -> (
       try
         (* the evaluation order is important in the following *)
-        let f = assoc_const sigma op rconst_assoc in
+        let f = assoc_const genv sigma op rconst_assoc in
         let a = rconstant args.(0) in
         let b = rconstant args.(1) in
         f a b
       with ParseError -> (
         match op with
-        | op when EConstr.eq_constr sigma op (Lazy.force coq_Rinv) ->
+        | op when EConstr.eq_constr genv sigma op (Lazy.force coq_Rinv) ->
           let arg = rconstant args.(0) in
           if Mc.qeq_bool (Mc.q_of_Rcst arg) {Mc.qnum = Mc.Z0; Mc.qden = Mc.XH}
           then raise ParseError (* This is a division by zero -- no semantics *)
           else Mc.CInv arg
-        | op when EConstr.eq_constr sigma op (Lazy.force coq_Rpower) ->
+        | op when EConstr.eq_constr genv sigma op (Lazy.force coq_Rpower) ->
           Mc.CPow
             ( rconstant args.(0)
             , Mc.Inr (parse_more_constant nconstant (genv, sigma) args.(1)) )
-        | op when EConstr.eq_constr sigma op (Lazy.force coq_IQR) ->
+        | op when EConstr.eq_constr genv sigma op (Lazy.force coq_IQR) ->
           Mc.CQ (qconstant (genv, sigma) args.(0))
-        | op when EConstr.eq_constr sigma op (Lazy.force coq_IZR) ->
+        | op when EConstr.eq_constr genv sigma op (Lazy.force coq_IZR) ->
           Mc.CZ (parse_more_constant zconstant (genv, sigma) args.(0))
         | _ -> raise ParseError ) )
     | _ -> raise ParseError
@@ -969,8 +969,8 @@ let bool_op =
     ; op_tt = Lazy.force coq_true
     ; op_ff = Lazy.force coq_false }
 
-let is_implb sigma l o =
-  match o with None -> false | Some c -> EConstr.eq_constr sigma l c
+let is_implb env sigma l o =
+  match o with None -> false | Some c -> EConstr.eq_constr env sigma l c
 
 let parse_formula (genv, sigma) parse_atom env tg term =
   let parse_atom b env tg t =
@@ -987,29 +987,29 @@ let parse_formula (genv, sigma) parse_atom env tg term =
     match EConstr.kind sigma term with
     | App (l, rst) -> (
       match rst with
-      | [|a; b|] when is_implb sigma l op.op_impl ->
+      | [|a; b|] when is_implb genv sigma l op.op_impl ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
         (mkformula_binary k (mkIMPL k) term f g, env, tg)
-      | [|a; b|] when EConstr.eq_constr sigma l op.op_and ->
+      | [|a; b|] when EConstr.eq_constr genv sigma l op.op_and ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
         (mkformula_binary k (mkAND k) term f g, env, tg)
-      | [|a; b|] when EConstr.eq_constr sigma l op.op_or ->
+      | [|a; b|] when EConstr.eq_constr genv sigma l op.op_or ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
         (mkformula_binary k (mkOR k) term f g, env, tg)
-      | [|a; b|] when EConstr.eq_constr sigma l op.op_iff ->
+      | [|a; b|] when EConstr.eq_constr genv sigma l op.op_iff ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
         (mkformula_binary k (mkIff k) term f g, env, tg)
       | [|ty; a; b|]
-        when EConstr.eq_constr sigma l eq && is_convertible genv sigma ty bool
+        when EConstr.eq_constr genv sigma l eq && is_convertible genv sigma ty bool
         ->
         let f, env, tg = xparse_formula bool_op Mc.IsBool env tg a in
         let g, env, tg = xparse_formula bool_op Mc.IsBool env tg b in
         (mkformula_binary Mc.IsProp mkEQ term f g, env, tg)
-      | [|a|] when EConstr.eq_constr sigma l op.op_not ->
+      | [|a|] when EConstr.eq_constr genv sigma l op.op_not ->
         let f, env, tg = xparse_formula op k env tg a in
         (Mc.NOT (k, f), env, tg)
       | _ -> parse_atom k env tg term )
@@ -1020,24 +1020,24 @@ let parse_formula (genv, sigma) parse_atom env tg term =
       let g, env, tg = xparse_formula op k env tg b in
       (mkformula_binary Mc.IsProp (mkIMPL Mc.IsProp) term f g, env, tg)
     | _ ->
-      if EConstr.eq_constr sigma term op.op_tt then (Mc.TT k, env, tg)
-      else if EConstr.eq_constr sigma term op.op_ff then Mc.(FF k, env, tg)
+      if EConstr.eq_constr genv sigma term op.op_tt then (Mc.TT k, env, tg)
+      else if EConstr.eq_constr genv sigma term op.op_ff then Mc.(FF k, env, tg)
       else (Mc.X (k, term), env, tg)
   in
   xparse_formula prop_op Mc.IsProp env tg (*Reductionops.whd_zeta*) term
 
 (*  let dump_bool b = Lazy.force (if b then coq_true else coq_false)*)
 
-let undump_kind sigma k =
-  if EConstr.eq_constr sigma k (Lazy.force coq_IsProp) then Mc.IsProp
+let undump_kind env sigma k =
+  if EConstr.eq_constr env sigma k (Lazy.force coq_IsProp) then Mc.IsProp
   else Mc.IsBool
 
 let dump_kind k =
   Lazy.force (match k with Mc.IsProp -> coq_IsProp | Mc.IsBool -> coq_IsBool)
 
-let undump_formula undump_atom tg sigma f =
-  let is c c' = EConstr.eq_constr sigma c (Lazy.force c') in
-  let kind k = undump_kind sigma k in
+let undump_formula undump_atom tg env sigma f =
+  let is c c' = EConstr.eq_constr env sigma c (Lazy.force c') in
+  let kind k = undump_kind env sigma k in
   let rec xundump f =
     match EConstr.kind sigma f with
     | App (c, [|_; _; _; _; k|]) when is c coq_TT -> Mc.TT (kind k)
@@ -1055,7 +1055,7 @@ let undump_formula undump_atom tg sigma f =
     | App (c, [|_; _; _; _; f1; f2|]) when is c coq_EQ ->
       Mc.EQ (xundump f1, xundump f2)
     | App (c, [|_; _; _; _; k; x; _|]) when is c coq_Atom ->
-      Mc.A (kind k, undump_atom sigma x, tg)
+      Mc.A (kind k, undump_atom env sigma x, tg)
     | App (c, [|_; _; _; _; k; x|]) when is c coq_X ->
       Mc.X (kind k, x)
     | _ -> raise ParseError
@@ -1960,12 +1960,13 @@ Tacticals.tclTHEN
 
 let micromega_wit_gen pre_process cnf spec prover wit_id ff =
   Proofview.Goal.enter (fun gl ->
+      let env = Proofview.Goal.env gl in
       let sigma = Tacmach.project gl in
       try
         let spec = Lazy.force spec in
         let undump_cstr = undump_cstr spec.undump_coeff in
         let tg = Tag.from 0, Lazy.force coq_tt in
-        let ff = undump_formula undump_cstr tg sigma ff in
+        let ff = undump_formula undump_cstr tg env sigma ff in
         match
           micromega_tauto ~abstract:false pre_process cnf spec prover [] ff
         with

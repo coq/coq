@@ -83,8 +83,8 @@ let check_target clt = function
 
 (* condition d'heritage uniforme *)
 
-let uniform_cond sigma ctx lt =
-  List.for_all2eq (EConstr.eq_constr sigma)
+let uniform_cond env sigma ctx lt =
+  List.for_all2eq (EConstr.eq_constr env sigma)
     lt (Context.Rel.instance_list EConstr.mkRel 0 ctx)
 
 let class_of_global = function
@@ -316,7 +316,7 @@ let add_new_coercion_core coef stre poly ~nonuniform ~reversible source target i
       raise (CoercionError (NoSource source))
   in
   check_source (Some cls);
-  if not (nonuniform || uniform_cond Evd.empty (* FIXME - for when possibly called with unresolved evars in the future *)
+  if not (nonuniform || uniform_cond env (Evd.from_env env) (* FIXME - for when possibly called with unresolved evars in the future *)
                           ctx lvs) then
     warn_uniform_inheritance coef;
   let clt =

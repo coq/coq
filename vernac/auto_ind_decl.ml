@@ -957,7 +957,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
         Proofview.Goal.enter begin fun gl ->
         let sigma = Tacmach.project gl in
         let env = Tacmach.pf_env gl in
-        if EConstr.eq_constr sigma t1 t2 then aux q1 q2
+        if EConstr.eq_constr env sigma t1 t2 then aux q1 q2
         else (
           let tt1 = Tacmach.pf_get_type_of gl t1 in
           let (ind',u as indu),v = try destruct_ind env sigma tt1

@@ -86,15 +86,16 @@ let functional_inversion kn hid fconst f_correct =
       let old_ids =
         List.fold_right Id.Set.add (pf_ids_of_hyps gl) Id.Set.empty
       in
+      let env = pf_env gl in
       let sigma = project gl in
       let type_of_h = pf_get_hyp_typ hid gl in
       match EConstr.kind sigma type_of_h with
-      | App (eq, args) when EConstr.eq_constr sigma eq (make_eq ()) ->
+      | App (eq, args) when EConstr.eq_constr env sigma eq (make_eq ()) ->
         let pre_tac, f_args, res =
           match (EConstr.kind sigma args.(1), EConstr.kind sigma args.(2)) with
-          | App (f, f_args), _ when EConstr.eq_constr sigma f fconst ->
+          | App (f, f_args), _ when EConstr.eq_constr env sigma f fconst ->
             ((fun hid -> intros_symmetry (Locusops.onHyp hid)), f_args, args.(2))
-          | _, App (f, f_args) when EConstr.eq_constr sigma f fconst ->
+          | _, App (f, f_args) when EConstr.eq_constr env sigma f fconst ->
             ((fun hid -> tclIDTAC), f_args, args.(1))
           | _ -> ((fun hid -> tclFAILn 1 Pp.(mt ())), [||], args.(2))
         in
@@ -137,10 +138,11 @@ let invfun qhyp f =
   | Some f -> invfun qhyp f
   | None ->
     let tac_action hid gl =
+      let env = pf_env gl in
       let sigma = project gl in
       let hyp_typ = pf_get_hyp_typ hid gl in
       match EConstr.kind sigma hyp_typ with
-      | App (eq, args) when EConstr.eq_constr sigma eq (make_eq ()) -> (
+      | App (eq, args) when EConstr.eq_constr env sigma eq (make_eq ()) -> (
         let f1, _ = decompose_app sigma args.(1) in
         try
           if not (isConst sigma f1) then raise NoFunction;

@@ -98,7 +98,7 @@ let endclausestac id_map clseq gl_id cl0 =
   let dc, c = EConstr.decompose_prod_decls (project gl) (pf_concl gl) in
   let hide_goal = hidden_clseq clseq in
   let c_hidden =
-    hide_goal && EConstr.eq_constr (project gl) c (EConstr.mkVar gl_id) in
+    hide_goal && EConstr.eq_constr (pf_env gl) (project gl) c (EConstr.mkVar gl_id) in
   let rec fits forced = function
   | (id, _) :: ids, decl :: dc' when RelDecl.get_name decl = Name id ->
     fits true (ids, dc')

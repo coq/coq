@@ -617,14 +617,14 @@ let judge_of_apply_against env sigma changedf funj argjv =
 
 (* Assuming "env |- good : some type", infer "env |- c : other type" *)
 let rec recheck_against env sigma good c =
-  if EConstr.eq_constr sigma good c then sigma, Same, make_judge c (Retyping.get_type_of env sigma c)
+  if EConstr.eq_constr env sigma good c then sigma, Same, make_judge c (Retyping.get_type_of env sigma c)
   else
     let assume_unchanged_type sigma =
       let gt = Retyping.get_type_of env sigma good in
       sigma, Changed {bodyonly=Lazy.from_val true}, make_judge c gt
     in
     let maybe_changed (sigma, j) =
-      let bodyonly = lazy (EConstr.eq_constr sigma (Retyping.get_type_of env sigma good) j.uj_type) in
+      let bodyonly = lazy (EConstr.eq_constr env sigma (Retyping.get_type_of env sigma good) j.uj_type) in
       let change = Changed {bodyonly} in
       sigma, change, j
     in

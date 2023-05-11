@@ -532,8 +532,9 @@ end
 
 (** constr -> constr *)
 let () = define2 "constr_equal" constr constr begin fun c1 c2 ->
+  Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let b = EConstr.eq_constr sigma c1 c2 in
+  let b = EConstr.eq_constr env sigma c1 c2 in
   Proofview.tclUNIT (Value.of_bool b)
 end
 

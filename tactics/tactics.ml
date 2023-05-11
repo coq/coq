@@ -1605,7 +1605,7 @@ let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
       raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
   in
   let new_hyp_typ  = clenv_type elimclause in
-  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
+  if EConstr.eq_constr env sigma hyp_typ new_hyp_typ then
     error (NothingToRewrite id);
   clenv_refine_in with_evars id true env sigma elimclause
   end
@@ -2130,11 +2130,12 @@ let assumption =
       Tacticals.tclZEROMSG ~info (str "No such assumption.")
   | decl::rest ->
     let t = NamedDecl.get_type decl in
+    let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.project gl in
     let ans =
       if only_eq then
-        if EConstr.eq_constr sigma t concl then Some sigma
+        if EConstr.eq_constr env sigma t concl then Some sigma
         else None
       else
         let env = Proofview.Goal.env gl in
@@ -4121,10 +4122,10 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
                       Tacticals.tclTRY (generalize_dep ~with_let:true (mkVar id))) vars])
   end
 
-let compare_upto_variables sigma x y =
+let compare_upto_variables env sigma x y =
   let rec compare x y =
     if (isVar sigma x || isRel sigma x) && (isVar sigma y || isRel sigma y) then true
-    else compare_constr sigma compare x y
+    else compare_constr env sigma compare x y
   in
   compare x y
 
@@ -4135,7 +4136,7 @@ let specialize_eqs id =
   let ty = Tacmach.pf_get_hyp_typ id gl in
   let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
-    compare_upto_variables !evars c1 c2 &&
+    compare_upto_variables env !evars c1 c2 &&
     (match Evarconv.unify_delay env !evars c1 c2 with
      | sigma -> evars := sigma; true
      | exception Evarconv.UnableToUnify _ -> false)
@@ -4328,7 +4329,7 @@ let compute_elim_sig sigma elimt =
           with DestKO ->
             error CannotFindInductiveArgument
 
-let compute_scheme_signature evd scheme names_info ind_type_guess =
+let compute_scheme_signature env evd scheme names_info ind_type_guess =
   let open Context.Rel.Declaration in
   let f,l = decompose_app evd scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
@@ -4336,16 +4337,16 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
     match scheme.indarg with
       | Some (LocalDef _) -> error NotAnInductionSchemeLetIn
       | None -> (* Non standard scheme *)
-          let cond hd = EConstr.eq_constr evd hd ind_type_guess && not scheme.farg_in_concl
+          let cond hd = EConstr.eq_constr env evd hd ind_type_guess && not scheme.farg_in_concl
           in (cond, fun _ _ -> ())
       | Some (LocalAssum (_,ind)) -> (* Standard scheme from an inductive type *)
           let indhd,indargs = decompose_app evd ind in
-          let cond hd = EConstr.eq_constr evd hd indhd in
+          let cond hd = EConstr.eq_constr env evd hd indhd in
           let check_concl is_pred p =
             (* Check again conclusion *)
             let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f == IndArg in
             let ind_is_ok =
-              List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
+              List.equal (fun c1 c2 -> EConstr.eq_constr env evd c1 c2)
                 (List.lastn scheme.nargs indargs)
                 (Context.Rel.instance_list mkRel 0 scheme.args) in
             if not (ccl_arg_ok && ind_is_ok) then
@@ -4489,7 +4490,7 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   let tmptyp0 = Typing.type_of_variable env hyp0 in
   let indtyp = reduce_to_atomic_ref env sigma ref tmptyp0 in
   let hd, args = decompose_app sigma indtyp in
-  let indsign = compute_scheme_signature sigma scheme hyp0 hd in
+  let indsign = compute_scheme_signature env sigma scheme hyp0 hd in
   let (params, indices) = List.chop scheme.nparams args in
   sigma, (hd, params, indices), ElimUsing (hyp0, (e, elimt, indsign))
 
@@ -4583,7 +4584,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       (* FIXME: we should store this instead of recomputing it *)
       let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
       let scheme = compute_elim_sig sigma elimt in
-      let indsign = compute_scheme_signature sigma scheme id (mkIndU (mind, u)) in
+      let indsign = compute_scheme_signature env sigma scheme id (mkIndU (mind, u)) in
       let tac = induction_tac with_evars [] [id] (ElimConstant ind, elimt) in
       sigma, isrec, tac, indsign
     | ElimUsing (hyp0, (elim, elimt, indsign)) ->
@@ -4667,7 +4668,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     different. *)
   let (sigma, (elimc, elimt), ind_type_guess) = given_elim env sigma hyp0 elim in
   let scheme = compute_elim_sig sigma elimt in
-  let indsign = compute_scheme_signature sigma scheme hyp0 ind_type_guess in
+  let indsign = compute_scheme_signature env sigma scheme hyp0 ind_type_guess in
   let nargs_indarg_farg =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
   if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
@@ -4919,10 +4920,11 @@ let induction_gen_l isrec with_evars elim names lc =
 
             | _ ->
                 Proofview.Goal.enter begin fun gl ->
+                let env = Proofview.Goal.env gl in
                 let sigma, t = pf_apply Typing.type_of gl c in
-                let x = id_of_name_using_hdchar (Proofview.Goal.env gl) sigma t Anonymous in
+                let x = id_of_name_using_hdchar env sigma t Anonymous in
                 let id = new_fresh_id Id.Set.empty x gl in
-                let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
+                let newl' = List.map (fun r -> replace_term env sigma c (mkVar id) r) l' in
                 let () = newlc:=id::!newlc in
                 Tacticals.tclTHENLIST [
                   tclEVARS sigma;

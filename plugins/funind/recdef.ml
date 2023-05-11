@@ -402,6 +402,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
                 [ clear to_intros
                 ; h_intros to_intros
                 ; Proofview.Goal.enter (fun g' ->
+                      let env = Proofview.Goal.env g' in
                       let sigma = Proofview.Goal.sigma g' in
                       let ty_teq = Tacmach.pf_get_hyp_typ heq g' in
                       let teq_lhs, teq_rhs =
@@ -411,7 +412,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
                         (args.(1), args.(2))
                       in
                       let new_b' =
-                        Termops.replace_term sigma teq_lhs teq_rhs new_b
+                        Termops.replace_term env sigma teq_lhs teq_rhs new_b
                       in
                       let new_infos =
                         { infos with
@@ -473,7 +474,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
           {expr_info with info = a; is_main_branch = false; is_final = false}
       | App _ -> (
         let f, args = decompose_app sigma expr_info.info in
-        if EConstr.eq_constr sigma f expr_info.f_constr then
+        if EConstr.eq_constr env sigma f expr_info.f_constr then
           jinfo.app_reC (f, args) expr_info continuation_tac expr_info
         else
           match EConstr.kind sigma f with
@@ -529,6 +530,7 @@ and travel jinfo continuation_tac expr_info =
 
 let rec prove_lt hyple =
   Proofview.Goal.enter (fun g ->
+      let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       try
         let varx, varz =
@@ -540,7 +542,7 @@ let rec prove_lt hyple =
           List.find
             (fun id ->
               match decompose_app sigma (Tacmach.pf_get_hyp_typ id g) with
-              | _, t :: _ -> EConstr.eq_constr sigma t varx
+              | _, t :: _ -> EConstr.eq_constr env sigma t varx
               | _ -> false)
             hyple
         in
@@ -809,7 +811,7 @@ let terminate_app_rec (f, args) expr_info continuation_tac _ =
       try
         let v =
           List.assoc_f
-            (List.equal (EConstr.eq_constr sigma))
+            (List.equal (EConstr.eq_constr env sigma))
             args expr_info.args_assoc
         in
         let new_infos = {expr_info with info = v} in
@@ -1102,11 +1104,12 @@ let equation_app f_and_args expr_info continuation_tac infos =
 
 let equation_app_rec (f, args) expr_info continuation_tac info =
   Proofview.Goal.enter (fun g ->
+      let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       try
         let v =
           List.assoc_f
-            (List.equal (EConstr.eq_constr sigma))
+            (List.equal (EConstr.eq_constr env sigma))
             args expr_info.args_assoc
         in
         let new_infos = {expr_info with info = v} in
@@ -1356,7 +1359,7 @@ let build_and_l sigma l =
     | Prod (_, _, t') -> is_well_founded t'
     | App (_, _) ->
       let f, _ = decompose_app sigma t in
-      EConstr.eq_constr sigma f (well_founded ())
+      EConstr.eq_constr (Global.env()) sigma f (well_founded ())
     | _ -> false
   in
   let compare t1 t2 =
@@ -1469,7 +1472,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
       Proofview.Goal.enter (fun gl ->
           let sigma = project gl in
           match EConstr.kind sigma (pf_concl gl) with
-          | App (f, _) when EConstr.eq_constr sigma f (well_founded ()) ->
+          | App (f, _) when EConstr.eq_constr env sigma f (well_founded ()) ->
             Auto.h_auto None [] (Some [])
           | _ ->
             incr h_num;

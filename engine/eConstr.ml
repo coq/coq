@@ -43,9 +43,6 @@ end
 
 module EInstance = struct
   include Evd.MiniEConstr.EInstance
-
-  let equal sigma i1 i2 =
-    Univ.Instance.equal (kind sigma i1) (kind sigma i2)
 end
 
 include (Evd.MiniEConstr : module type of Evd.MiniEConstr
@@ -539,32 +536,6 @@ let eq_existential sigma eq (evk1, args1) (evk2, args2) =
     List.equal eq args1 args2
   else false
 
-let eq_constr sigma c1 c2 =
-  let kind c = kind sigma c in
-  let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
-  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
-  let rec eq_constr nargs c1 c2 =
-    compare_gen kind eq_inst eq_sorts (eq_existential eq_constr) eq_constr nargs c1 c2
-  in
-  eq_constr 0 c1 c2
-
-let eq_constr_nounivs sigma c1 c2 =
-  let kind c = kind sigma c in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
-  let rec eq_constr nargs c1 c2 =
-    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) (eq_existential eq_constr) eq_constr nargs c1 c2
-  in
-  eq_constr 0 c1 c2
-
-let compare_constr sigma cmp c1 c2 =
-  let kind c = kind sigma c in
-  let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
-  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
-  let cmp nargs c1 c2 = cmp c1 c2 in
-  compare_gen kind eq_inst eq_sorts (eq_existential cmp) cmp 0 c1 c2
-
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open UnivProblem in
   if not nargs_ok then enforce_eq_instances_univs false u u' cstrs
@@ -603,8 +574,8 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
         cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
 
-let eq_universes env sigma cstrs cv_pb refargs l l' =
-  if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
+let unify_instances env sigma cstrs cv_pb refargs l l' =
+  if EInstance.is_empty l then (assert (EInstance.is_empty l'); cstrs)
   else
     let l = EInstance.kind sigma l
     and l' = EInstance.kind sigma l' in
@@ -612,19 +583,55 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open UnivProblem in
     match refargs with
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
-      cstrs := compare_cumulative_instances cv_pb true [|Univ.Variance.Irrelevant|] l l' !cstrs;
-      true
+      compare_cumulative_instances cv_pb true [|Univ.Variance.Irrelevant|] l l' cstrs
     | None | Some (ConstRef _, _) ->
-      cstrs := enforce_eq_instances_univs true l l' !cstrs; true
+      enforce_eq_instances_univs true l l' cstrs
     | Some (VarRef _, _) -> assert false (* variables don't have instances *)
     | Some (IndRef ind, nargs) ->
       let mind = Environ.lookup_mind (fst ind) env in
-      cstrs := cmp_inductives cv_pb (mind,snd ind) nargs l l' !cstrs;
-      true
+      cmp_inductives cv_pb (mind,snd ind) nargs l l' cstrs
     | Some (ConstructRef ((mi,ind),ctor), nargs) ->
       let mind = Environ.lookup_mind mi env in
-      cstrs := cmp_constructors (mind,ind,ctor) nargs l l' !cstrs;
-      true
+      cmp_constructors (mind,ind,ctor) nargs l l' cstrs
+
+let eq_instances env sigma refargs l l' =
+  let cstrs = unify_instances env sigma UnivProblem.Set.empty CONV refargs l l' in
+  let trivial_pb = function
+    (* not quite the same as UnivProblem.is_trivial: here UWeak is always trivial *)
+    | UnivProblem.ULe (u, v) | UEq (u, v) -> Sorts.equal u v
+    | ULub (u, v) -> Univ.Level.equal u v
+    | UWeak _ -> true
+  in
+  UnivProblem.Set.for_all trivial_pb cstrs
+
+let eq_constr env sigma c1 c2 =
+  let kind c = kind sigma c in
+  let eq_inst refargs i1 i2 = eq_instances env sigma refargs i1 i2 in
+  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
+  let rec eq_constr nargs c1 c2 =
+    compare_gen kind eq_inst eq_sorts (eq_existential eq_constr) eq_constr nargs c1 c2
+  in
+  eq_constr 0 c1 c2
+
+let eq_constr_nounivs sigma c1 c2 =
+  let kind c = kind sigma c in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
+  let rec eq_constr nargs c1 c2 =
+    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) (eq_existential eq_constr) eq_constr nargs c1 c2
+  in
+  eq_constr 0 c1 c2
+
+let compare_constr env sigma cmp c1 c2 =
+  let kind c = kind sigma c in
+  let eq_inst refargs i1 i2 = eq_instances env sigma refargs i1 i2 in
+  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
+  let cmp nargs c1 c2 = cmp c1 c2 in
+  compare_gen kind eq_inst eq_sorts (eq_existential cmp) cmp 0 c1 c2
+
+let unify_instances env sigma cstrs cv_pb refargs l l' =
+  cstrs := unify_instances env sigma !cstrs cv_pb refargs l l'; true
 
 let test_constr_universes env sigma leq ?(nargs=0) m n =
   let open UnivProblem in
@@ -633,8 +640,8 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
   else
     let cstrs = ref Set.empty in
     let cv_pb = if leq then Conversion.CUMUL else Conversion.CONV in
-    let eq_universes refargs l l' = eq_universes env sigma cstrs Conversion.CONV refargs l l'
-    and leq_universes refargs l l' = eq_universes env sigma cstrs cv_pb refargs l l' in
+    let eq_universes refargs l l' = unify_instances env sigma cstrs Conversion.CONV refargs l l'
+    and leq_universes refargs l l' = unify_instances env sigma cstrs cv_pb refargs l l' in
     let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
       let s2 = ESorts.kind sigma s2 in
@@ -690,7 +697,7 @@ let eq_constr_universes_proj env sigma m n =
   if m == n then Some Set.empty
   else
     let cstrs = ref Set.empty in
-    let eq_universes ref l l' = eq_universes env sigma cstrs Conversion.CONV ref l l' in
+    let eq_universes ref l l' = unify_instances env sigma cstrs Conversion.CONV ref l l' in
     let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
       let s2 = ESorts.kind sigma s2 in

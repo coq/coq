@@ -671,7 +671,7 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
                 | Prod (_, t'', t''') -> (
                   match (EConstr.kind sigma t'', EConstr.kind sigma t''') with
                   | App (eq, args), App (graph', _)
-                    when EConstr.eq_constr sigma eq eq_ind
+                    when EConstr.eq_constr (Global.env()) sigma eq eq_ind
                          && Array.exists
                               (EConstr.eq_constr_nounivs sigma graph')
                               graphs_constr ->
@@ -892,14 +892,14 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
   let open Tacticals in
   Proofview.Goal.enter (fun g ->
       let eq_ind = make_eq () in
+      let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       match EConstr.kind sigma (Proofview.Goal.concl g) with
       | Prod (_, t, t') -> (
         match EConstr.kind sigma t with
-        | App (eq, args) when EConstr.eq_constr sigma eq eq_ind ->
+        | App (eq, args) when EConstr.eq_constr env sigma eq eq_ind ->
           if
-            Reductionops.is_conv (Proofview.Goal.env g) (Proofview.Goal.sigma g)
-              args.(1) args.(2)
+            Reductionops.is_conv env sigma args.(1) args.(2)
           then
             let id = pf_get_new_id (Id.of_string "y") g in
             tclTHENLIST [Simple.intro id; thin [id]; intros_with_rewrite ()]
@@ -962,7 +962,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
               ; tclTRY (Equality.rewriteLR (mkVar id))
               ; intros_with_rewrite () ]
         | Ind _
-          when EConstr.eq_constr sigma t
+          when EConstr.eq_constr env sigma t
                  (EConstr.of_constr
                     ( UnivGen.constr_of_monomorphic_global (Global.env ())
                     @@ Coqlib.lib_ref "core.False.type" )) ->
@@ -1027,7 +1027,7 @@ let rec reflexivity_with_destruct_cases () =
                     EConstr.kind (Proofview.Goal.sigma g) (pf_get_hyp_typ id g)
                   with
                   | App (eq, [|_; t1; t2|])
-                    when EConstr.eq_constr (Proofview.Goal.sigma g) eq eq_ind ->
+                    when EConstr.eq_constr (Proofview.Goal.env g) (Proofview.Goal.sigma g) eq eq_ind ->
                     tclFIRST [
                       Equality.discrHyp id;
                       tclTHENLIST

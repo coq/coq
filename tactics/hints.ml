@@ -1404,7 +1404,7 @@ let prepare_hint env init (sigma,c) =
     | Evar (evk,args as ev) ->
       (* We skip the test whether args is the identity or not *)
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
-      let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
+      let t = List.fold_right (fun (e,id) c -> replace_term env sigma e id c) !subst t in
       if not (closed0 sigma c) then
         user_err Pp.(str "Hints with holes dependent on a bound variable not supported.");
       if occur_existential sigma t then
@@ -1418,7 +1418,7 @@ let prepare_hint env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda sigma (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
+      mkNamedLambda sigma (make_annot id Sorts.Relevant) t (iter (replace_term env sigma evar (mkVar id) c)) in
   let c' = iter c in
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     (c', diff)

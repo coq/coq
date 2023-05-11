@@ -458,8 +458,8 @@ type unification_pb = conv_pb * env * EConstr.constr * EConstr.constr
 
 let eq_unification_pb evd (pbty,env,t1,t2) (pbty',env',t1',t2') =
   pbty == pbty' && env == env' &&
-    EConstr.eq_constr evd t1 t1' &&
-    EConstr.eq_constr evd t2 t2'
+    EConstr.eq_constr env evd t1 t1' &&
+    EConstr.eq_constr env evd t2 t2'
 
 let add_unification_pb ?(tail=false) pb evd =
   let conv_pbs = Evd.conv_pbs evd in

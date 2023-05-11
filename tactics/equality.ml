@@ -1621,7 +1621,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list,_ = List.split decomp2 in
   (* We build the expected goal *)
-  let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term sigma e body) in
+  let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term env sigma e body) in
   let abst_B = List.fold_right fold e1_list body in
   let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
   (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)

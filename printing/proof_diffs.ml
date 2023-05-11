@@ -316,7 +316,7 @@ let goal_info goal =
   try
     let { ty=ty; env=env; sigma } = goal in
     (* compaction is usually desired [eg for better display] *)
-    let hyps = Termops.compact_named_context sigma (EConstr.named_context env) in
+    let hyps = Termops.compact_named_context env sigma (EConstr.named_context env) in
     let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )

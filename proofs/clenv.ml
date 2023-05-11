@@ -199,7 +199,7 @@ let clenv_assign env sigma mv rhs =
   try
     begin match meta_opt_fvalue sigma mv with
     | Some (body, _) ->
-      if not (EConstr.eq_constr sigma body.rebus rhs) then
+      if not (EConstr.eq_constr env sigma body.rebus rhs) then
         error_incompatible_inst sigma mv
       else
         sigma
@@ -308,11 +308,11 @@ let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
   let clenv = if isMeta clenv.evd hd then clenv_unify_meta_types ~flags clenv else clenv in
   clenv_unify CUMUL ~flags (clenv_type clenv) concl clenv
 
-let adjust_meta_source evd mv = function
+let adjust_meta_source env evd mv = function
   | loc,Evar_kinds.VarInstance id ->
     let rec match_name c l =
       match EConstr.kind evd c, l with
-      | Lambda ({binder_name=Name id},_,c), a::l when EConstr.eq_constr evd a (mkMeta mv) -> Some id
+      | Lambda ({binder_name=Name id},_,c), a::l when EConstr.eq_constr env evd a (mkMeta mv) -> Some id
       | Lambda (_,_,c), a::l -> match_name c l
       | _ -> None in
     (* This is very ad hoc code so that an evar inherits the name of the binder
@@ -368,7 +368,7 @@ let clenv_pose_metas_as_evars env sigma dep_mvs =
       if occur_meta sigma ty then fold sigma (mvs@[mv])
       else
         let src = evar_source_of_meta mv sigma in
-        let src = adjust_meta_source sigma mv src in
+        let src = adjust_meta_source env sigma mv src in
         let (sigma, evar) = new_evar env sigma ~src ty in
         let sigma = clenv_assign env sigma mv evar in
         fold sigma mvs in
@@ -542,7 +542,7 @@ let clenv_match_args bl clenv =
         let k = meta_of_binder clenv loc mvs b in
         match meta_opt_fvalue clenv.evd k with
         | Some (body, _) ->
-          if EConstr.eq_constr clenv.evd body.rebus c then clenv
+          if EConstr.eq_constr clenv.env clenv.evd body.rebus c then clenv
           else error_already_defined b
         | None ->
           clenv_assign_binding clenv k c)

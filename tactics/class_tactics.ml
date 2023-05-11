@@ -425,7 +425,7 @@ let make_resolve_hyp env sigma st only_classes decl db =
       | _ ->
           let env' = push_rel_context ctx env in
           let ty' = Reductionops.whd_all env' sigma ar in
-               if not (EConstr.eq_constr sigma ty' ar) then iscl env' ty'
+               if not (EConstr.eq_constr env' sigma ty' ar) then iscl env' ty'
                else false
   in
   let is_class = iscl env cty in
@@ -443,7 +443,7 @@ let make_hints env sigma (modes,st) only_classes sign =
         not only_classes ||
         try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
             (* Section variable, reindex only if the type changed *)
-            not (EConstr.eq_constr sigma (EConstr.of_constr t) (NamedDecl.get_type hyp))
+            not (EConstr.eq_constr env sigma (EConstr.of_constr t) (NamedDecl.get_type hyp))
         with Not_found -> true
       in
       if consider then
@@ -473,7 +473,7 @@ module Search = struct
     let sign = EConstr.named_context env in
     let (dir, onlyc, sign', cached_modes, cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
-    let eq c1 c2 = EConstr.eq_constr sigma c1 c2 in
+    let eq c1 c2 = EConstr.eq_constr env sigma c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
            Context.Named.equal eq sign sign' &&
@@ -729,7 +729,7 @@ module Search = struct
             pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
             pr_ev sigma' (Proofview.Goal.goal gl'))
         in
-        let eq c1 c2 = EConstr.eq_constr sigma' c1 c2 in
+        let eq c1 c2 = EConstr.eq_constr (Goal.env gl') sigma' c1 c2 in
         let hints' =
           if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then

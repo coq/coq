@@ -126,10 +126,10 @@ let check_fix env sg cb i =
           | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ | Primitive _ -> raise Impossible
 
-let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
+let prec_declaration_equal env sg (na1, ca1, ta1) (na2, ca2, ta2) =
   Array.equal (Context.eq_annot Name.equal) na1 na2 &&
-  Array.equal (EConstr.eq_constr sg) ca1 ca2 &&
-  Array.equal (EConstr.eq_constr sg) ta1 ta2
+  Array.equal (EConstr.eq_constr env sg) ca1 ca2 &&
+  Array.equal (EConstr.eq_constr env sg) ta1 ta2
 
 let factor_fix env sg l cb msb =
   let _,recd as check = check_fix env sg cb 0 in
@@ -145,7 +145,7 @@ let factor_fix env sg l cb msb =
            | (l,SFBconst cb') ->
               let check' = check_fix env sg cb' (j+1) in
               if not ((fst check : bool) == (fst check') &&
-                        prec_declaration_equal sg (snd check) (snd check'))
+                        prec_declaration_equal env sg (snd check) (snd check'))
                then raise Impossible;
                labels.(j+1) <- l;
            | _ -> raise Impossible) msb';

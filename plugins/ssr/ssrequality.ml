@@ -295,14 +295,14 @@ let unfoldintac occ rdx t (kt,_) =
       if const then
         let rec aux c =
           match EConstr.kind sigma0 c with
-          | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
-          | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
+          | Const _ when EConstr.eq_constr env sigma0 c t -> body env t t
+          | App (f,a) when EConstr.eq_constr env sigma0 f t -> EConstr.mkApp (body env f f,a)
           | Proj _ when same_proj env sigma0 c t -> body env t c
           | _ ->
             let c = Reductionops.whd_betaiotazeta env sigma0 c in
             match EConstr.kind sigma0 c with
-            | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
-            | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
+            | Const _ when EConstr.eq_constr env sigma0 c t -> body env t t
+            | App (f,a) when EConstr.eq_constr env sigma0 f t -> EConstr.mkApp (body env f f,a)
             | Proj _ when same_proj env sigma0 c t -> body env t c
             | Const f -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
@@ -351,7 +351,7 @@ let foldtac occ rdx ft =
 
 let converse_dir = function L2R -> R2L | R2L -> L2R
 
-let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar ise rhs))
+let rw_progress env rhs lhs ise = not (EConstr.eq_constr env ise lhs (Evarutil.nf_evar ise rhs))
 
 (* Coq has a more general form of "equation" (any type with a single *)
 (* constructor with no arguments with_rect_r elimination lemmas).    *)
@@ -644,7 +644,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       | (d, r, lhs, rhs) :: rs ->
         try
           let ise = unify_HO env (Evd.create_evar_defs r_sigma) lhs rdx in
-          if not (rw_progress rhs rdx ise) then raise NoMatch else
+          if not (rw_progress env rhs rdx ise) then raise NoMatch else
           d, (ise, Evd.evar_universe_context ise, Reductionops.nf_evar ise r)
         with _ -> rwtac rs in
      rwtac rules in
@@ -657,7 +657,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let rpat pats (d, r, lhs, rhs) =
         let r = Reductionops.nf_evar r_sigma r in
         let lhs = Reductionops.nf_evar r_sigma lhs in
-        mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 r d lhs pats
+        mk_tpattern ~ok:(rw_progress env rhs) ~rigid env0 r d lhs pats
       in
       let rpats = List.fold_left rpat (empty_tpatterns r_sigma) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
@@ -688,7 +688,7 @@ let ssrinstancesofrule ist dir arg =
     let rpat pats (d, r, lhs, rhs) =
       let r = Reductionops.nf_evar r_sigma r in
       let lhs = Reductionops.nf_evar r_sigma lhs in
-      mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 r d lhs pats
+      mk_tpattern ~ok:(rw_progress env0 rhs) ~rigid env0 r d lhs pats
     in
     let rpats = List.fold_left rpat (empty_tpatterns r_sigma) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in

@@ -687,7 +687,7 @@ let is_unification_pattern (env,nb) evd f l t =
    return \y. ?1{x\y} (non constant function if ?1 depends on x) (BB) *)
 let solve_pattern_eqn env sigma l c =
   let c' = List.fold_right (fun a c ->
-    let c' = subst_term sigma (lift 1 (of_alias a)) (lift 1 c) in
+    let c' = subst_term env sigma (lift 1 (of_alias a)) (lift 1 c) in
     match a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | RelAlias n ->

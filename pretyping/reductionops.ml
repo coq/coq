@@ -1345,7 +1345,7 @@ let hnf_decompose_prod_decls env sigma =
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let t' = whd_all env sigma t in
-        if EConstr.eq_constr sigma t t' then l,t
+        if EConstr.eq_constr env sigma t t' then l,t
         else prodec_rec env l t'
   in
   prodec_rec env Context.Rel.empty
@@ -1390,7 +1390,7 @@ let dest_prod_assum env sigma =
         prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | _               ->
       let rty' = whd_all env sigma rty in
-      if EConstr.eq_constr sigma rty' rty then l, rty
+      if EConstr.eq_constr env sigma rty' rty then l, rty
       else prodec_rec env l rty'
   in
   prodec_rec env Context.Rel.empty

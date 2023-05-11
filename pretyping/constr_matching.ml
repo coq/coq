@@ -94,11 +94,11 @@ let warn_meta_collision =
             strbrk " and a metavariable of same name.")
 
 
-let constrain sigma n (ids, m) ((names,seen as names_seen), terms as subst) =
+let constrain env sigma n (ids, m) ((names,seen as names_seen), terms as subst) =
   let open EConstr in
   try
     let (ids', m') = Id.Map.find n terms in
-    if List.equal Id.equal ids ids' && eq_constr sigma m m' then subst
+    if List.equal Id.equal ids ids' && eq_constr env sigma m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_meta_collision n in
@@ -252,7 +252,7 @@ let rec match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env
   | _ ->
      sorec ctx' env' (sorec ctx env subst t1 t2) b1 b2
 
-let merge_binding sigma allow_bound_rels ctx n cT subst =
+let merge_binding env sigma allow_bound_rels ctx n cT subst =
   let c = match ctx with
   | [] -> (* Optimization *)
     ([], cT)
@@ -271,7 +271,7 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
         ([], Vars.lift (- depth) cT)
       else raise PatternMatchingFailure
   in
-  constrain sigma n c subst
+  constrain env sigma n c subst
 
 let matches_core env sigma allow_bound_rels
     (binding_vars,pat) c =
@@ -298,11 +298,11 @@ let matches_core env sigma allow_bound_rels
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
         let frels = free_rels sigma cT in
         if Int.Set.subset frels relset then
-          constrain sigma n ([], build_lambda sigma relargs ctx cT) subst
+          constrain env sigma n ([], build_lambda sigma relargs ctx cT) subst
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n cT subst
+      | PMeta (Some n), m -> merge_binding env sigma allow_bound_rels ctx n cT subst
 
       | PMeta None, m -> subst
 
@@ -331,7 +331,7 @@ let matches_core env sigma allow_bound_rels
             let subst =
               match meta with
               | None -> subst
-              | Some n -> merge_binding sigma allow_bound_rels ctx n c subst in
+              | Some n -> merge_binding env sigma allow_bound_rels ctx n c subst in
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
             match EConstr.kind sigma c2 with

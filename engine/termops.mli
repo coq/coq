@@ -118,7 +118,7 @@ val free_rels_and_unqualified_refs : Evd.evar_map -> constr -> Int.Set.t * Id.Se
 val dependent : Evd.evar_map -> constr -> constr -> bool
 val dependent_no_evar : Evd.evar_map -> constr -> constr -> bool
 val dependent_in_decl : Evd.evar_map -> constr -> named_declaration -> bool
-val count_occurrences : Evd.evar_map -> constr -> constr -> int
+val count_occurrences : env -> Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
 
@@ -144,11 +144,11 @@ val replace_term_gen :
   Evd.evar_map -> (Evd.evar_map -> int -> constr -> bool) ->
     int -> constr -> constr -> constr
 
-(** [subst_term d c] replaces [d] by [Rel 1] in [c] *)
-val subst_term : Evd.evar_map -> constr -> constr -> constr
+(** [subst_term _ _ d c] replaces [d] by [Rel 1] in [c] *)
+val subst_term : env -> Evd.evar_map -> constr -> constr -> constr
 
-(** [replace_term d e c] replaces [d] by [e] in [c] *)
-val replace_term : Evd.evar_map -> constr -> constr -> constr -> constr
+(** [replace_term _ _ d e c] replaces [d] by [e] in [c] *)
+val replace_term : env -> Evd.evar_map -> constr -> constr -> constr -> constr
 
 (** Alternative term equalities *)
 val base_sort_cmp : Conversion.conv_pb -> Sorts.t -> Sorts.t -> bool
@@ -242,7 +242,7 @@ val fold_named_context_both_sides :
   ('a -> Constr.named_declaration -> Constr.named_declaration list -> 'a) ->
     Constr.named_context -> init:'a -> 'a
 val mem_named_context_val : Id.t -> named_context_val -> bool
-val compact_named_context : Evd.evar_map -> EConstr.named_context -> EConstr.compacted_context
+val compact_named_context : env -> Evd.evar_map -> EConstr.named_context -> EConstr.compacted_context
 
 val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
 val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt

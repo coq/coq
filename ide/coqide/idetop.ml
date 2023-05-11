@@ -202,7 +202,7 @@ let process_goal short sigma g =
     if short then [] else
       let (_env, hyps) =
         Context.Compacted.fold process_hyp
-        (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env,[])
+        (Termops.compact_named_context env sigma (EConstr.named_context env)) ~init:(min_env,[])
       in
       hyps
   in

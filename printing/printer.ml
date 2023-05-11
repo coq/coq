@@ -380,7 +380,7 @@ let pr_context_unlimited env sigma =
       (fun d pps ->
          let pidt =  pr_ecompacted_decl env sigma d in
          (pps ++ fnl () ++ pidt))
-      (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(mt ())
+      (Termops.compact_named_context env sigma (EConstr.named_context env)) ~init:(mt ())
   in
   let db_env =
     fold_rel_context
@@ -431,7 +431,7 @@ and bld_sign_env_id env sigma ctxt pps is_start =
    spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
   let ctxt = EConstr.named_context env in
-  let ctxt = Termops.compact_named_context sigma ctxt in
+  let ctxt = Termops.compact_named_context env sigma ctxt in
   let lgth = List.length ctxt in
   let n_capped =
     match n with

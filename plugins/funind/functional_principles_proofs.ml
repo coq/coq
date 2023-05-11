@@ -531,7 +531,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                                mkLambda
                                  ( make_annot Anonymous Sorts.Relevant
                                  , termtyp
-                                 , Termops.replace_term sigma term (mkRel 1)
+                                 , Termops.replace_term env sigma term (mkRel 1)
                                      dyn_infos.info )
                              in
                              let new_body =

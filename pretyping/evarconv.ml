@@ -1266,7 +1266,7 @@ let first_order_unification flags env evd (ev1,l1) (term2,l2) =
         solve_simple_eqn ~choose:true ~imitate_defs:false
           evar_unify flags env i (None,ev1,t2))]
 
-let choose_less_dependent_instance evd term (evk, args) =
+let choose_less_dependent_instance env evd term (evk, args) =
   let evi = Evd.find_undefined evd evk in
   let rec get_subst accu decls args = match decls, SList.view args with
   | [], Some _ | _ :: _, None -> assert false
@@ -1274,7 +1274,7 @@ let choose_less_dependent_instance evd term (evk, args) =
   | decl :: decls, Some (arg, args) ->
     let accu = get_subst accu decls args in
     let arg = match arg with None -> mkVar (NamedDecl.get_id decl) | Some a -> a in
-    if EConstr.eq_constr evd arg term then NamedDecl.get_id decl :: accu
+    if EConstr.eq_constr env evd arg term then NamedDecl.get_id decl :: accu
     else accu
   in
   let subst = get_subst [] (evar_filtered_context evi) args in
@@ -1663,9 +1663,9 @@ let is_beyond_capabilities = function
   | CannotSolveConstraint (pb,ProblemBeyondCapabilities) -> true
   | _ -> false
 
-let is_constant_instance sigma (evk, args) alias =
+let is_constant_instance env sigma (evk, args) alias =
   let args = Evd.expand_existential sigma (evk, args) in
-  List.for_all (fun a -> EConstr.eq_constr sigma a alias || isEvar sigma a)
+  List.for_all (fun a -> EConstr.eq_constr env sigma a alias || isEvar sigma a)
     (remove_instance_local_defs sigma evk args)
 
 let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
@@ -1681,20 +1681,20 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   match EConstr.kind evd term1, EConstr.kind evd term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
       && is_evar_allowed flags evk1
-      && is_constant_instance evd (evk1, args1) term2 ->
+      && is_constant_instance env evd (evk1, args1) term2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      (match choose_less_dependent_instance evd term2 (evk1, args1) with
+      (match choose_less_dependent_instance env evd term2 (evk1, args1) with
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
     && is_evar_allowed flags evk2
-    && is_constant_instance evd (evk2, args2) term1 ->
+    && is_constant_instance env evd (evk2, args2) term1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      (match choose_less_dependent_instance evd term1 (evk2, args2) with
+      (match choose_less_dependent_instance env evd term1 (evk2, args2) with
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in

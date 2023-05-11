@@ -482,7 +482,7 @@ let expand_key ts env sigma = function
   | Some (IsProj (p, c)) ->
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
                                (c, unfold_projection env p []))
-    in if EConstr.eq_constr sigma (EConstr.mkProj (p, c)) red then None else Some red
+    in if EConstr.eq_constr env sigma (EConstr.mkProj (p, c)) red then None else Some red
   | None -> None
 
 let isApp_or_Proj sigma c =
@@ -1027,11 +1027,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and reduce curenvnb pb opt (sigma, metas, evars as substn) cM cN =
     if flags.modulo_betaiota && not (subterm_restriction opt flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
-        if not (EConstr.eq_constr sigma cM cM') then
+        if not (EConstr.eq_constr env sigma cM cM') then
           unirec_rec curenvnb pb opt substn cM' cN
         else
           let cN' = do_reduce flags.modulo_delta curenvnb sigma cN in
-            if not (EConstr.eq_constr sigma cN cN') then
+            if not (EConstr.eq_constr env sigma cN cN') then
               unirec_rec curenvnb pb opt substn cM cN'
             else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1746,7 +1746,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo env sigma occ test mkvarid d in
-        if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl
+        if Context.Named.Declaration.equal (EConstr.eq_constr env sigma) d newdecl
            && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
@@ -2002,7 +2002,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   let return a b =
     let (evd,c as a) = a () in
-      if List.exists (fun (evd',c') -> EConstr.eq_constr evd' c c') b then b else a :: b
+      if List.exists (fun (evd',c') -> EConstr.eq_constr env evd' c c') b then b else a :: b
   in
   let fail str _ = user_err (Pp.str str) in
   let bind f g a =
@@ -2110,7 +2110,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
         in
           if not allow_K &&
             (* ensure we found a different instance *)
-            List.exists (fun op -> EConstr.eq_constr evd' op cl) l
+            List.exists (fun op -> EConstr.eq_constr env evd' op cl) l
           then error_non_linear_unification env evd hdmeta cl
           else (evd',cl::l))
     oplist

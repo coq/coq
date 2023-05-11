@@ -1557,7 +1557,7 @@ let compile ~program_mode sigma pb =
            mat = List.map (push_alias_eqn ~hypnaming sigma alias) pb.mat } in
       let used, sigma, j = compile sigma pb in
       used, sigma, { uj_val =
-          if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
+          if isRel sigma c || isVar sigma c || count_occurrences !!(pb.env) sigma (mkRel 1) j.uj_val <= 1 then
             subst1 c j.uj_val
           else
             mkLetIn (make_annot na r,c,t,j.uj_val);
@@ -2139,7 +2139,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
         (* see log message for details *)
         let pred3 = lift (List.length (List.flatten arsign)) t in
         (match p2 with
-         | Some (sigma2,pred2,arsign) when not (EConstr.eq_constr sigma pred2 pred3) ->
+         | Some (sigma2,pred2,arsign) when not (EConstr.eq_constr !!env sigma pred2 pred3) ->
              [sigma1, pred1, arsign; sigma2, pred2, arsign; sigma, pred3, arsign]
          | _ ->
              [sigma1, pred1, arsign; sigma, pred3, arsign])
@@ -2510,7 +2510,7 @@ let abstract_tomatch env sigma tomatchs tycon =
              Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names, tycon
            | _ ->
                let tycon = Option.map
-                 (fun t -> subst_term sigma (lift 1 c) (lift 1 t)) tycon in
+                 (fun t -> subst_term env sigma (lift 1 c) (lift 1 t)) tycon in
                let name = next_ident_away (Id.of_string "filtered_var") names in
                let r = Sorts.Relevant in (* TODO relevance *)
                  (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
@@ -2640,7 +2640,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   (* constructors found in patterns *)
   let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true typing_function env sigma matx tomatchl in
   let tycon = valcon_of_tycon tycon in
-  let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
+  let tomatchs, tomatchs_lets, tycon' = abstract_tomatch !!env sigma tomatchs tycon in
   let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
   let len = List.length eqns in
   let sigma, sign, allnames, signlen, eqs, neqs, args =
