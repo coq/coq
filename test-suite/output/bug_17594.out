@@ -1,0 +1,48 @@
+1
+3
+2
+3
+File "./output/bug_17594.v", line 8, characters 2-102:
+The command has indeed failed with message:
+The term "0" has type "nat" while it is expected to have type "True".
+1
+3
+2
+3
+File "./output/bug_17594.v", line 17, characters 26-27:
+The command has indeed failed with message:
+The term "0" has type "nat" while it is expected to have type "True".
+1
+3
+2
+3
+File "./output/bug_17594.v", line 19, characters 2-115:
+The command has indeed failed with message:
+The term "0" has type "nat" while it is expected to have type "True".
+1
+3
+2
+3
+File "./output/bug_17594.v", line 28, characters 26-27:
+The command has indeed failed with message:
+The term "0" has type "nat" while it is expected to have type "True".
+1
+3
+File "./output/bug_17594.v", line 31, characters 2-106:
+The command has indeed failed with message:
+Uncaught Ltac2 exception: Match_failure
+1
+3
+File "./output/bug_17594.v", line 37, characters 2-113:
+The command has indeed failed with message:
+No matching clauses for match.
+1
+3
+File "./output/bug_17594.v", line 42, characters 2-119:
+The command has indeed failed with message:
+No matching clauses for match.
+1
+3
+File "./output/bug_17594.v", line 48, characters 2-119:
+The command has indeed failed with message:
+No matching clauses for match.
