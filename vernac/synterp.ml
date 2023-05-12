@@ -382,9 +382,9 @@ let real_error_loc ~cmdloc ~eloc =
   else cmdloc
 
 let with_fail ~loc f =
-  let st = Vernacstate.Synterp.freeze ~marshallable:false in
+  let st = Vernacstate.Synterp.freeze () in
   let res = with_fail f in
-  let transient_st = Vernacstate.Synterp.freeze ~marshallable:false in
+  let transient_st = Vernacstate.Synterp.freeze () in
   Vernacstate.Synterp.unfreeze st;
   match res with
   | Error (ctrl, v) ->
@@ -396,9 +396,9 @@ let with_fail ~loc f =
     [], VernacSynterp EVernacNoop
 
 let with_succeed f =
-  let st = Vernacstate.Synterp.freeze ~marshallable:false in
+  let st = Vernacstate.Synterp.freeze () in
   let (ctrl, v) = f () in
-  let transient_st = Vernacstate.Synterp.freeze ~marshallable:false in
+  let transient_st = Vernacstate.Synterp.freeze () in
   Vernacstate.Synterp.unfreeze st;
   ControlSucceed { st = transient_st } :: ctrl, v
 
@@ -531,7 +531,7 @@ and synterp_load verbosely fname =
     | None -> entries
     | Some cmd ->
       let entry = v_mod synterp_control cmd in
-      let st = Vernacstate.Synterp.freeze ~marshallable:false in
+      let st = Vernacstate.Synterp.freeze () in
       (load_loop [@ocaml.tailcall]) ((entry,st)::entries)
   in
   let entries = List.rev @@ load_loop [] in

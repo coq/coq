@@ -858,7 +858,7 @@ end = struct (* {{{ *)
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
-  let freeze () = { id = !cur_id; vernac_state = Vernacstate.freeze_full_state ~marshallable:false }
+  let freeze () = { id = !cur_id; vernac_state = Vernacstate.freeze_full_state () }
   let unfreeze st =
     Vernacstate.unfreeze_full_state st.vernac_state;
     cur_id := st.id
@@ -869,8 +869,8 @@ end = struct (* {{{ *)
     | Full of Vernacstate.t
     | ProofOnly of Stateid.t * Vernacstate.Stm.pstate
 
-  let cache_state ~marshallable id =
-    VCS.set_state id (FullState (Vernacstate.freeze_full_state ~marshallable))
+  let cache_state id =
+    VCS.set_state id (FullState (Vernacstate.freeze_full_state ()))
 
   let freeze_invalid id iexn =
     let ps = VCS.get_parsing_state id in
@@ -879,7 +879,7 @@ end = struct (* {{{ *)
   let is_cached ?(cache=false) id only_valid =
     if Stateid.equal id !cur_id then
       try match VCS.get_info id with
-        | ({ state = EmptyState } | { state = ParsingState _ }) when cache -> cache_state ~marshallable:false id; true
+        | ({ state = EmptyState } | { state = ParsingState _ }) when cache -> cache_state id; true
         | _ -> true
       with VCS.Expired -> false
     else
@@ -963,7 +963,7 @@ end = struct (* {{{ *)
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache then "Y)" else "N)");
       f ();
-      if cache then cache_state ~marshallable:false id;
+      if cache then cache_state id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
       if feedback_processed then
@@ -989,7 +989,7 @@ end = struct (* {{{ *)
   let init_state = ref None
 
   let register_root_state () =
-    init_state := Some (Vernacstate.freeze_full_state ~marshallable:false)
+    init_state := Some (Vernacstate.freeze_full_state ())
 
   let restore_root_state () =
     cur_id := Stateid.dummy;
@@ -1493,7 +1493,7 @@ end = struct (* {{{ *)
           let pobject =
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
-          let st = Vernacstate.freeze_full_state ~marshallable:false in
+          let st = Vernacstate.freeze_full_state () in
           let opaque = Opaque in
           try
             let _pstate =
@@ -1664,7 +1664,7 @@ end = struct (* {{{ *)
        * => takes nothing from the itermediate states.
        *)
       (* STATE We use the state resulting from reaching start. *)
-      let st = Vernacstate.freeze_full_state ~marshallable:false in
+      let st = Vernacstate.freeze_full_state () in
       ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.Proof.get_po_name proof in
@@ -1842,7 +1842,7 @@ end = struct (* {{{ *)
     VCS.print ();
     Reach.known_state ~doc:dummy_doc (* XXX should be r_doc *) ~cache:false r_where;
     (* STATE *)
-    let st = Vernacstate.freeze_full_state ~marshallable:false in
+    let st = Vernacstate.freeze_full_state () in
     try
       (* STATE SPEC:
        * - start: r_where
@@ -2089,7 +2089,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 * - end  : maybe after recovery command.
                *)
                (* STATE: We use an updated state with proof *)
-               let st = Vernacstate.freeze_full_state ~marshallable:false in
+               let st = Vernacstate.freeze_full_state () in
                Option.iter (fun expr -> ignore(stm_vernac_interp id st {
                   verbose = true; expr; indentation = 0;
                   strlen = 0 } ))
@@ -2145,7 +2145,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
     State.purify (fun id ->
         stm_prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
         reach ~safe_id id;
-        let st = Vernacstate.freeze_full_state ~marshallable:false in
+        let st = Vernacstate.freeze_full_state () in
         Vernacstate.Stm.non_pstate st)
       id
 
@@ -2168,7 +2168,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
       | SCmd { cast = x; ceff = eff; ctac = true; cblock } -> (fun () ->
             resilient_tactic id cblock (fun () ->
               reach view.next;
-              let st = Vernacstate.freeze_full_state ~marshallable:false in
+              let st = Vernacstate.freeze_full_state () in
               ignore(stm_vernac_interp id st x)
             )
           ), eff || cache, true
@@ -2177,12 +2177,12 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
            | APon | APonLazy ->
              resilient_command reach view.next
            | APoff -> reach view.next);
-          let st = Vernacstate.freeze_full_state ~marshallable:false in
+          let st = Vernacstate.freeze_full_state () in
           ignore(stm_vernac_interp id st x)
         ), eff || cache, true
       | SFork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
-            let st = Vernacstate.freeze_full_state ~marshallable:false in
+            let st = Vernacstate.freeze_full_state () in
             ignore(stm_vernac_interp id st x);
             wall_clock_last_fork := Unix.gettimeofday ()
           ), true, true
@@ -2191,7 +2191,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
             reach view.next;
 
             (try
-               let st = Vernacstate.freeze_full_state ~marshallable:false in
+               let st = Vernacstate.freeze_full_state () in
                ignore(stm_vernac_interp id st x);
             with e when CErrors.noncritical e ->
               let (e, info) = Exninfo.capture e in
@@ -2247,7 +2247,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       PG_compat.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
-                    let st = Vernacstate.freeze_full_state ~marshallable:false in
+                    let st = Vernacstate.freeze_full_state () in
                     let control, pe = extract_pe x in
                     ignore(stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe);
                     feedback ~id:id Incomplete
@@ -2257,7 +2257,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               ), not redefine_qed, true
           | Sync (name, Immediate) -> (fun () ->
                 reach eop;
-                let st = Vernacstate.freeze_full_state ~marshallable:false in
+                let st = Vernacstate.freeze_full_state () in
                 ignore(stm_vernac_interp id st x);
                 PG_compat.discard_all ()
               ), true, true
@@ -2285,7 +2285,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 if keep <> VtKeep VtKeepAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
-                let st = Vernacstate.freeze_full_state ~marshallable:false in
+                let st = Vernacstate.freeze_full_state () in
                 let _st = match proof with
                   | None -> stm_vernac_interp id st x
                   | Some proof ->
@@ -2309,7 +2309,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | SSideff (ReplayCommand x,_) -> (fun () ->
             reach view.next;
-            let st = Vernacstate.freeze_full_state ~marshallable:false in
+            let st = Vernacstate.freeze_full_state () in
             ignore(stm_vernac_interp id st x)
           ), cache, true
       | SSideff (CherryPickEnv, origin) -> (fun () ->

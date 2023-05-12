@@ -49,7 +49,7 @@ module Synterp : sig
     }
 
   val init : unit -> t
-  val freeze : marshallable:bool -> t
+  val freeze : unit -> t
   val unfreeze : t -> unit
 
 end
@@ -81,11 +81,9 @@ type t =
   (** program mode table. One per open module/section including the toplevel module. *)
   ; opaques : Opaques.Summary.t
   (** qed-terminated proofs *)
-  ; shallow : bool
-  (** is the state trimmed down (libstack) *)
   }
 
-val freeze_interp_state : marshallable:bool -> t
+val freeze_interp_state : unit -> t
 val unfreeze_interp_state : t -> unit
 
 (* WARNING: Do not use, it will go away in future releases *)
@@ -98,7 +96,7 @@ type t =
   ; interp: Interp.t
   }
 
-val freeze_full_state : marshallable:bool -> t
+val freeze_full_state : unit -> t
 val unfreeze_full_state : t -> unit
 
 (** STM-specific state handling *)

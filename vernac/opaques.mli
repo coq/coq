@@ -28,7 +28,7 @@ module Summary :
 sig
   type t
   val init : unit -> unit
-  val freeze : marshallable:bool -> t
+  val freeze : unit -> t
   val unfreeze : t -> unit
   val join : ?except:Future.UUIDSet.t -> unit -> unit
 end

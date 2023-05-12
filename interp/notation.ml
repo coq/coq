@@ -2548,7 +2548,7 @@ let toggle_notations ~on ~all prglob ntn_pattern =
 (**********************************************************************)
 (* Synchronisation with reset *)
 
-let freeze ~marshallable =
+let freeze () =
  (!scope_map, !scope_stack, !arguments_scope,
   !delimiters_map, !scope_class_map,
   !prim_token_interp_infos, !prim_token_uninterp_infos,
@@ -2582,7 +2582,7 @@ let _ =
       Summary.init_function = init }
 
 let with_notation_protection f x =
-  let fs = freeze ~marshallable:false in
+  let fs = freeze () in
   try let a = with_notation_uninterpretation_protection f x in unfreeze fs; a
   with reraise ->
     let reraise = Exninfo.capture reraise in

@@ -776,7 +776,7 @@ let start_module_core id args res =
   mp, res_entry_o, mbids, sign, args
 
 let start_module export id args res =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_module export id mp fs in
@@ -837,7 +837,7 @@ let get_functor_sobjs is_mod inl (mbids,mexpr) =
   (mbids @ mbids0, aobjs)
 
 let declare_module id args res mexpr_o =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
@@ -997,7 +997,7 @@ let start_module_core id args res =
   mp, res_entry_o, subtyps, params, Univ.ContextSet.union ctx ctx'
 
 let start_module export id args res =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   let mp, res_entry_o, subtyps, _, _ = start_module_core id args res in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let _ : Nametab.object_prefix = Lib.Interp.start_module export id mp fs in
@@ -1062,7 +1062,7 @@ let get_functor_sobjs is_mod env inl (params,mexpr) =
 
 (* TODO cleanup push universes directly to global env *)
 let declare_module id args res mexpr_o =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp, mty_entry_o, subs, params, ctx = start_module_core id args res in
@@ -1127,7 +1127,7 @@ let start_modtype_core id cur_mp args mtys =
   mp, mbids, args, sub_mty_l
 
 let start_modtype id args mtys =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_modtype id mp fs in
@@ -1148,7 +1148,7 @@ let end_modtype () =
   (openmod_syntax_info ()).cur_mp
 
 let declare_modtype id args mtys (mty,ann) =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
@@ -1182,7 +1182,7 @@ let start_modtype_core id args mtys =
   mp, params, sub_mty_l, Univ.ContextSet.union params_ctx sub_mty_ctx
 
 let start_modtype id args mtys =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   let mp, _, sub_mty_l, _ = start_modtype_core id args mtys in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.Interp.start_modtype id mp fs in
@@ -1209,7 +1209,7 @@ let end_modtype () =
   mp
 
 let declare_modtype id args mtys (mte,base,kind,inl) =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp, params, sub_mty_l, ctx = start_modtype_core id args mtys in
@@ -1400,7 +1400,7 @@ let end_module = RawModOps.Synterp.end_module
 Typically used for `Module M := N <+ P`.
 *)
 let declare_module_includes id args res mexpr_l =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   let mp, res_entry_o, mbids, sign, args = RawModOps.Synterp.start_module_core id args res in
   let mod_info = { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids } in
   let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
@@ -1419,7 +1419,7 @@ let declare_module_includes id args res mexpr_l =
 Typically used for `Module Type M := N <+ P`.
 *)
 let declare_modtype_includes id args res mexpr_l =
-  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Synterp.freeze_summaries () in
   let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id (openmod_syntax_info ()).cur_mp args res in
   let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
@@ -1488,7 +1488,7 @@ let end_module = RawModOps.Interp.end_module
 Typically used for `Module M := N <+ P`.
 *)
 let declare_module_includes id args res mexpr_l =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   let mp, res_entry_o, subtyps, _, _ = RawModOps.Interp.start_module_core id args res in
   let mod_info = { cur_typ = res_entry_o; cur_typs = subtyps } in
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
@@ -1505,7 +1505,7 @@ let declare_module_includes id args res mexpr_l =
 Typically used for `Module Type M := N <+ P`.
 *)
 let declare_modtype_includes id args res mexpr_l =
-  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  let fs = Summary.Interp.freeze_summaries () in
   let mp, _, subtyps, _ = RawModTypeOps.Interp.start_modtype_core id args res in
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = Lib.Interp.{

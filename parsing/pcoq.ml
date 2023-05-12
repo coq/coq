@@ -485,7 +485,7 @@ type frozen_t =
   (grammar_entry * GramState.t) list *
   CLexer.keyword_state
 
-let freeze ~marshallable : frozen_t =
+let freeze () : frozen_t =
   (!grammar_stack, !keyword_state)
 
 let eq_grams (g1, _) (g2, _) = match g1, g2 with
@@ -536,7 +536,7 @@ let parser_summary_tag =
       Summary.init_function = Summary.nop }
 
 let with_grammar_rule_protection f x =
-  let fs = freeze ~marshallable:false in
+  let fs = freeze () in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = Exninfo.capture reraise in

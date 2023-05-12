@@ -12,9 +12,9 @@ module Parser = struct
 
   type t = Pcoq.frozen_t
 
-  let init () = Pcoq.freeze ~marshallable:false
+  let init () = Pcoq.freeze ()
 
-  let cur_state () = Pcoq.freeze ~marshallable:false
+  let cur_state () = Pcoq.freeze ()
 
   let parse ps entry pa =
     Pcoq.unfreeze ps;
@@ -28,15 +28,15 @@ module System = struct
 
     type t = Lib.Synterp.frozen * Summary.Synterp.frozen
 
-    let freeze ~marshallable =
-      (Lib.Synterp.freeze (), Summary.Synterp.freeze_summaries ~marshallable)
+    let freeze () =
+      (Lib.Synterp.freeze (), Summary.Synterp.freeze_summaries ())
 
     let unfreeze (fl,fs) =
       Lib.Synterp.unfreeze fl;
       Summary.Synterp.unfreeze_summaries fs
 
     module Stm = struct
-      let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, summary
+      let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, Summary.Synterp.make_marshallable summary
       let lib = fst
       let summary = snd
     end
@@ -45,7 +45,7 @@ module System = struct
 
   module Interp : sig
     type t
-    val freeze : marshallable:bool -> t
+    val freeze : unit -> t
     val unfreeze : t -> unit
     module Stm : sig
       val make_shallow : t -> t
@@ -58,8 +58,8 @@ module System = struct
 
     type t = Lib.Interp.frozen * Summary.Interp.frozen
 
-    let freeze ~marshallable =
-      (Lib.Interp.freeze (), Summary.Interp.freeze_summaries ~marshallable)
+    let freeze () =
+      (Lib.Interp.freeze (), Summary.Interp.freeze_summaries ())
 
     let unfreeze (fl,fs) =
       Lib.Interp.unfreeze fl;
@@ -67,7 +67,7 @@ module System = struct
 
     (* STM-specific state manipulations *)
     module Stm = struct
-      let make_shallow (lib, summary) = Lib.Interp.drop_objects lib, summary
+      let make_shallow (lib, summary) = Lib.Interp.drop_objects lib, Summary.Interp.make_marshallable summary
       let lib = fst
       let summary = snd
       let replace_summary (lib,_) summary = (lib,summary)
@@ -75,8 +75,8 @@ module System = struct
   end
 
   let protect f x =
-    let synterp_st = Synterp.freeze ~marshallable:false in
-    let interp_st = Interp.freeze ~marshallable:false in
+    let synterp_st = Synterp.freeze () in
+    let interp_st = Interp.freeze () in
     try
       let a = f x in
       Synterp.unfreeze synterp_st;
@@ -99,12 +99,15 @@ module Synterp = struct
     ; system : System.Synterp.t
     }
 
-  let freeze ~marshallable =
+  let freeze () =
     { parsing = Parser.cur_state ();
-      system = System.Synterp.freeze ~marshallable:false;
+      system = System.Synterp.freeze ();
     }
 
-  let init () = freeze ~marshallable:false
+  let make_shallow s =
+    { s with system = System.Synterp.Stm.make_shallow s.system }
+
+  let init () = freeze ()
 
   let unfreeze st =
     System.Synterp.unfreeze st.system;
@@ -149,7 +152,6 @@ type t = {
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
-  shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
 let invalidate_cache () =
@@ -167,13 +169,15 @@ let do_if_not_cached rf f v =
   | Some _ ->
     ()
 
-let freeze_interp_state ~marshallable =
-  { system = update_cache s_cache (System.Interp.freeze ~marshallable);
+let freeze_interp_state () =
+  { system = update_cache s_cache (System.Interp.freeze ());
     lemmas = !s_lemmas;
     program = !s_program;
-    opaques = Opaques.Summary.freeze ~marshallable;
-    shallow = false;
+    opaques = Opaques.Summary.freeze ();
   }
+
+let make_shallow s =
+  { s with system = System.Interp.Stm.make_shallow s.system }
 
 let unfreeze_interp_state { system; lemmas; program; opaques } =
   do_if_not_cached s_cache System.Interp.unfreeze system;
@@ -188,9 +192,9 @@ type t =
   ; interp: Interp.t
   }
 
-let freeze_full_state ~marshallable =
-  { synterp = Synterp.freeze ~marshallable;
-    interp = Interp.freeze_interp_state ~marshallable;
+let freeze_full_state () =
+  { synterp = Synterp.freeze ();
+    interp = Interp.freeze_interp_state ();
   }
 
 let unfreeze_full_state st =
@@ -326,12 +330,8 @@ module Stm = struct
     e1 == e2
 
   let make_shallow st =
-    { interp =
-        { st.interp with
-        system = System.Interp.Stm.make_shallow st.interp.system
-        ; shallow = true
-        }
-    ; synterp = { st.synterp with system = System.Synterp.Stm.make_shallow st.synterp.system }
+    { interp = Interp.make_shallow st.interp
+    ; synterp = Synterp.make_shallow st.synterp
     }
 
 end

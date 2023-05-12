@@ -185,7 +185,8 @@ let get_results res =
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
   (fun ~pstate ~info t_ast ~abstract ~with_end_tac ->
-    let t_state = Vernacstate.freeze_full_state ~marshallable:true in
+    let t_state = Vernacstate.freeze_full_state () in
+    let t_state = Vernacstate.Stm.make_shallow t_state in
     TaskQueue.with_n_workers nworkers CoqworkmgrApi.High (fun queue ->
     Declare.Proof.map pstate ~f:(fun p ->
     let open TacTask in

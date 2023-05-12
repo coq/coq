@@ -395,7 +395,7 @@ let unfreeze_ml_modules x =
 let () =
   Summary.declare_ml_modules_summary
     { stage = Summary.Stage.Synterp
-    ; Summary.freeze_function = (fun ~marshallable ->
+    ; Summary.freeze_function = (fun () ->
           get_loaded_modules () |> List.map PluginSpec.repr)
     ; Summary.unfreeze_function = unfreeze_ml_modules
     ; Summary.init_function = reset_loaded_modules }

@@ -26,9 +26,7 @@ end
     the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
   stage : Stage.t;
-  freeze_function : marshallable:bool -> 'a;
-  (** freeze_function [true] is for marshalling to disk.
-   *  e.g. lazy must be forced *)
+  freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
@@ -43,13 +41,13 @@ type 'a summary_declaration = {
     the responsibility of plugins to initialize themselves properly.
 *)
 
-val declare_summary : string -> 'a summary_declaration -> unit
+val declare_summary : string -> ?make_marshallable:('a -> 'a) -> 'a summary_declaration -> unit
 
 (** We provide safe projection from the summary to the types stored in
    it.*)
 module Dyn : Dyn.S
 
-val declare_summary_tag : string -> 'a summary_declaration -> 'a Dyn.tag
+val declare_summary_tag : string -> ?make_marshallable:('a -> 'a) -> 'a summary_declaration -> 'a Dyn.tag
 
 (** All-in-one reference declaration + summary registration.
     It behaves just as OCaml's standard [ref] function, except
@@ -100,7 +98,8 @@ module type FrozenStage = sig
   type frozen
 
   val empty_frozen : frozen
-  val freeze_summaries : marshallable:bool -> frozen
+  val freeze_summaries : unit -> frozen
+  val make_marshallable : frozen -> frozen
   val unfreeze_summaries : ?partial:bool -> frozen -> unit
   val init_summaries : unit -> unit
 
