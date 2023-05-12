@@ -449,10 +449,11 @@ module Unsafe : sig
   (** Set the global environment of the tactic *)
   val tclSETENV : Environ.env -> unit tactic
 
-  (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
-      being proved, appending them to the list of focused goals. If a
-      goal is already solved, it is not added. *)
-  val tclNEWGOALS : Proofview_monad.goal_with_state list -> unit tactic
+  (** [tclNEWGOALS ~before gls] adds the goals [gls] to the ones currently
+      being proved. If [before] is true, it prepends them to the list of focused
+      goals, otherwise it appends them (default). If a goal is already
+      solved, it is not added. *)
+  val tclNEWGOALS : ?before:bool -> Proofview_monad.goal_with_state list -> unit tactic
 
   (** [tclNEWSHELVED gls] adds the goals [gls] to the shelf. If a
       goal is already solved, it is not added. *)

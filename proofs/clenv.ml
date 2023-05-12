@@ -723,17 +723,9 @@ let std_refine env sigma cl r =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let case_refine env sigma ~branches (ci, u, pms, p, iv, c) =
-  let c = make_proof env sigma c in
-  let () = if Array.exists (fun c -> occur_meta sigma c) pms then error_unsupported_deep_meta () in
-  let (acc',ct,sigma,c') = mk_refgoals env sigma [] None c in
-  let ((sigma, acc''), lf) = treat_case env sigma ci branches acc' in
-  let ans = EConstr.mkCase (ci, u, pms, p, iv, c', lf) in
-  (sigma, acc'', ans)
-
 type refiner_kind =
 | Std of clbinding Metamap.t * EConstr.t
-| Case of clbinding Metamap.t * case_node * (EConstr.rel_context * EConstr.t) array
+| Case of case_node * (EConstr.rel_context * EConstr.t) array
 
 let refiner_gen is_case =
   let open Proofview.Notations in
@@ -743,9 +735,10 @@ let refiner_gen is_case =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   let (sigma, sgl, c) = match is_case with
-  | Case (metas, r, branches) ->
-    let sigma = Evd.meta_merge metas sigma in
-    case_refine env sigma ~branches r
+  | Case ((ci, u, pms, p, iv, c), branches) ->
+    let ((sigma, accu), lf) = treat_case env sigma ci branches [] in
+    let ans = EConstr.mkCase (ci, u, pms, p, iv, c, lf) in
+    (sigma, accu, ans)
   | Std (metas, r) ->
     let sigma = Evd.meta_merge metas sigma in
     std_refine env sigma cl r
@@ -853,19 +846,12 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
     let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
     PrimitiveEta args
 
-let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
+let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
   let sigma = clear_metas sigma in
-  let sigma, indarg = match submetas with
-  | None -> sigma, indarg
-  | Some metas ->
-    let sigma = meta_merge (Metamap.of_list metas) sigma in
-    let indarg = applist (indarg, List.map (fun (m, _) -> mkMeta m) metas) in
-    sigma, indarg
-  in
   (* Extract inductive data from the argument. *)
   let hd, args = decompose_app_vect sigma typ in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
@@ -910,19 +896,6 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
     Array.map get_branch constrs
   in
 
-  (* Little hack for dependency analysis purposes. For backwards compatibility
-     we need to turn dependent metas into evars, but the notion of dependency
-     is tied to a legacy criterion, i.e. a meta is dependent if it appears
-     either in the type of a branch or in the normal form of the conclusion. *)
-  let fold sigma (ctx, t) =
-    let mv = new_meta () in
-    let sigma = meta_declare mv (it_mkProd_or_LetIn t ctx) sigma in
-    (sigma, (mv, ctx, t))
-  in
-  let (sigma, branches) = Array.fold_left_map fold sigma branches in
-  let metaset = Metaset.singleton mvP (* dummy, should just be nonempty *) in
-  let sigma = pose_dependent_evars ~with_evars env sigma (meta_instance env sigma (mk_freelisted templtyp)) in
-
   (* Build the case node proper *)
   let body = build_case_analysis env sigma (ind, u) params pred indices indarg dep s in
 
@@ -933,21 +906,21 @@ let case_pf ?(with_evars=false) ?submetas ~dep (indarg, typ) =
       ~fail:(not with_evars) env sigma
   in
   let sigma = Typeclasses.make_unresolvables (fun x -> true) sigma in
+  (* Note that the environment rel context does not matter for betaiota *)
+  let rec nf_betaiota c = EConstr.map sigma nf_betaiota (whd_betaiota env sigma c) in
   (* Call the legacy refiner on the result *)
-  let metas = Evd.meta_list sigma in
-  (* Note that the environment rel context does matter for meta_instance *)
-  let nf_metas c = meta_instance env sigma { rebus = c; freemetas = metaset } in
   let arg = match body with
   | RealCase (ci, u, pms, p, iv, c) ->
-    let c = nf_metas c in
-    let pms = Array.map nf_metas pms in
-    let p = on_snd nf_metas p in
-    let map (_, ctx, t) = (Context.Rel.map nf_metas ctx, nf_metas t) in
-    let branches = Array.map map branches in
-    Internal.Case (metas, (ci, u, pms, p, iv, c), branches)
+    let c = nf_betaiota c in
+    let pms = Array.map nf_betaiota pms in
+    let p = on_snd nf_betaiota p in
+    Internal.Case ((ci, u, pms, p, iv, c), branches)
   | PrimitiveEta args ->
-    let (mv, _, _) = branches.(0) in
-    Internal.Std (metas, mkApp (mkMeta mv, Array.map nf_metas args))
+    let mv = new_meta () in
+    let (ctx, t) = branches.(0) in
+    let sigma = meta_declare mv (it_mkProd_or_LetIn t ctx) sigma in
+    let metas = Evd.meta_list sigma in
+    Internal.Std (metas, mkApp (mkMeta mv, Array.map nf_betaiota args))
   in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas sigma))

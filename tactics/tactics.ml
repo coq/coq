@@ -1651,12 +1651,23 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
-  let metas = Evd.meta_list (clenv_evd indclause) in
-  let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
+  let indclause = Clenv.clenv_pose_dependent_evars ~with_evars:true indclause in
+  let argtype = clenv_type indclause in (* Guaranteed to be meta-free *)
+  let tac =
+    Proofview.tclEVARMAP >>= fun sigma ->
+    let sigma = Evd.push_future_goals sigma in
+    let (sigma, ev) = Evarutil.new_evar env sigma argtype in
+    let _, sigma = Evd.pop_future_goals sigma in
+    let evk, _ = destEvar sigma ev in
+    let indclause = Clenv.update_clenv_evd indclause (meta_merge (meta_list @@ Clenv.clenv_evd indclause) sigma) in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.with_empty_state evk] <*>
+    Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
+    Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~with_evars ~dep (ev, argtype)]
+  in
   let sigma = Evd.clear_metas (clenv_evd indclause) in
   Tacticals.tclTHENLIST [
-    Proofview.Unsafe.tclEVARS sigma;
-    Clenv.case_pf ~with_evars ~submetas ~dep (c, clenv_type indclause);
+    Tacticals.tclWITHHOLES with_evars tac sigma;
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
   ]
   end
@@ -2449,8 +2460,9 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern ?loc ll branchsigns in
+  let case = if with_evars then simplest_ecase else simplest_case in
   Tacticals.tclTHENLASTn
-    (Tacticals.tclTHEN (simplest_ecase c) (clear [id]))
+    (Tacticals.tclTHEN (case c) (clear [id]))
     (Array.map2 (fun n l -> tac thin (Some n) l)
        nv_with_let ll)
   end
