@@ -330,6 +330,12 @@ let check_lowercase {loc;v=id} =
   if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
     user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
 
+let check_value ?loc e =
+  if not (is_value e) then
+    user_err ?loc
+      (str "Tactic definition must be a syntactical value." ++ spc() ++
+       str "Consider using a thunk.")
+
 let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   let map ({loc;v=na}, e) =
     let id = match na with
@@ -344,12 +350,9 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   let tactics =
     if isrec then inline_rec_tactic tactics else tactics
   in
-  let map ({loc;v=id}, e) =
+  let map ({loc;v=id}, ({loc=eloc} as e)) =
     let (e, t) = intern ~strict:true [] e in
-    let () =
-      if not (is_value e) then
-        user_err ?loc (str "Tactic definition must be a syntactical value")
-    in
+    let () = check_value ?loc:eloc e in
     let kn = Lib.make_kn id in
     let exists =
       try let _ = Tac2env.interp_global kn in true with Not_found -> false
@@ -866,7 +869,7 @@ let inTac2Redefinition : redefinition -> obj =
      classify_function = classify_redefinition;
     }
 
-let register_redefinition qid old e =
+let register_redefinition qid old ({loc=eloc} as e) =
   let kn =
     try Tac2env.locate_ltac qid
     with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
@@ -886,10 +889,7 @@ let register_redefinition qid old e =
   | Some { CAst.v = id } -> [id, data.Tac2env.gdata_type]
   in
   let (e, t) = intern ~strict:true ctx e in
-  let () =
-    if not (is_value e) then
-      user_err ?loc:qid.CAst.loc (str "Tactic definition must be a syntactical value")
-  in
+  let () = check_value ?loc:eloc e in
   let () =
     if not (Tac2intern.check_subtype t data.Tac2env.gdata_type) then
       let name = int_name () in
