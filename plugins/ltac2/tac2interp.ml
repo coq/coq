@@ -20,15 +20,15 @@ open Tac2bt
 exception LtacError = Tac2ffi.LtacError
 
 type environment = Tac2env.environment = {
-  env_ist : valexpr Id.Map.t;
+  env_ist : valexpr Range.t;
 }
 
 let empty_environment = {
-  env_ist = Id.Map.empty;
+  env_ist = Range.empty;
 }
 
 type closure = {
-  mutable clos_env : valexpr Id.Map.t;
+  mutable clos_env : valexpr Range.t;
   (** Mutable so that we can implement recursive functions imperatively *)
   clos_var : Name.t list;
   (** Bound variables *)
@@ -40,11 +40,11 @@ type closure = {
 
 let push_name ist id v = match id with
 | Anonymous -> ist
-| Name id -> { env_ist = Id.Map.add id v ist.env_ist }
+| Name id -> { env_ist = Range.cons v ist.env_ist }
 
-let get_var ist id =
-  try Id.Map.find id ist.env_ist with Not_found ->
-    anomaly (str "Unbound variable " ++ Id.print id)
+let get_var ist i =
+  try Range.get ist.env_ist i with Invalid_argument _ ->
+    anomaly (str "Unbound variable " ++ Pp.int i)
 
 let get_ref ist kn =
   try
@@ -82,9 +82,10 @@ let check_atom_against atm v =
 
 let rec match_pattern_against ist pat v =
   match pat with
-  | GPatVar x -> push_name ist x v
+  | GPatVar Anonymous -> ist
+  | GPatVar (Name x) -> Id.Map.add x v ist
   | GPatAtm atm -> check_atom_against atm v; ist
-  | GPatAs (p,x) -> match_pattern_against (push_name ist (Name x) v) p v
+  | GPatAs (p,x) -> match_pattern_against (Id.Map.add x v ist) p v
   | GPatRef (ctor,pats) ->
     let vs = match_ctor_against ctor v in
     List.fold_left_i (fun i ist pat -> match_pattern_against ist pat vs.(i)) 0 ist pats
@@ -103,7 +104,7 @@ let rec interp (ist : environment) = function
 | GTacVar id -> return (get_var ist id)
 | GTacRef kn ->
   let data = get_ref ist kn in
-  return (eval_pure Id.Map.empty (Some kn) data)
+  return (eval_pure Range.empty (Some kn) data)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_closure cls in
@@ -128,10 +129,7 @@ let rec interp (ist : environment) = function
   | _ -> anomaly (str "Ill-formed recursive function")
   in
   let fixs = List.map map el in
-  let fold accu (na, _, cls) = match na with
-  | Anonymous -> accu
-  | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
-  in
+  let fold accu (na, _, cls) = push_name accu na cls in
   let ist = List.fold_left fold ist fixs in
   (* Hack to make a cycle imperatively in the environment *)
   let iter (_, e, _) = e.clos_env <- ist.env_ist in
@@ -200,10 +198,13 @@ and interp_with ist e cse def =
 
 and interp_full_match ist e = function
   | [] -> CErrors.anomaly Pp.(str "ltac2 match not exhaustive")
-  | (pat,br) :: rest ->
-    begin match match_pattern_against ist pat e with
+  | (ids, pat, br) :: rest ->
+    begin match match_pattern_against Id.Map.empty pat e with
     | exception NoMatch -> interp_full_match ist e rest
-    | ist -> interp ist br
+    | matched ->
+      (* let ist = List.fold_left _ _ _ in *)
+      (* interp ist br*)
+      assert false
     end
 
 and interp_proj ist e p =
@@ -214,7 +215,7 @@ and interp_set ist e p r =
   return (Valexpr.make_int 0)
 
 and eval_pure bnd kn = function
-| GTacVar id -> Id.Map.get id bnd
+| GTacVar id -> Range.get bnd id
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
 | GTacRef kn ->
   let { Tac2env.gdata_expr = e } =
@@ -236,7 +237,7 @@ and eval_pure bnd kn = function
     accu
   | Name id ->
     let v = eval_pure bnd None e in
-    Id.Map.add id v accu
+    Range.cons v accu
   in
   let bnd = List.fold_left fold bnd vals in
   eval_pure bnd kn body

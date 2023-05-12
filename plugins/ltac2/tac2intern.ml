@@ -23,13 +23,13 @@ open Tac2typing_env
 (** Hardwired types and constants *)
 
 let coq_type n = KerName.make Tac2env.coq_prefix (Label.make n)
-let ltac1_type n = KerName.make Tac2env.ltac1_prefix (Label.make n)
+(* let ltac1_type n = KerName.make Tac2env.ltac1_prefix (Label.make n) *)
 
 let t_int = coq_type "int"
 let t_string = coq_type "string"
-let t_constr = coq_type "constr"
-let t_ltac1 = ltac1_type "t"
-let t_preterm = coq_type "preterm"
+(* let t_constr = coq_type "constr" *)
+(* let t_ltac1 = ltac1_type "t" *)
+(* let t_preterm = coq_type "preterm" *)
 let t_bool = coq_type "bool"
 
 let ltac2_env : Tac2typing_env.t Genintern.Store.field =
@@ -1153,7 +1153,7 @@ let rec intern_rec env {loc;v=e} = match e with
     cse, rt
   with HardCase ->
     let e, _ = e in
-    let brs = List.map (fun (p,br) -> glb_of_wip_pat p, br) brs in
+    let brs = List.map (fun (p,br) -> (), glb_of_wip_pat p, br) brs in
     GTacFullMatch (e,brs), rt
   end
 | CTacRec (def, fs) ->
@@ -1383,11 +1383,59 @@ and intern_case env loc e pl =
 
 type context = (Id.t * type_scheme) list
 
+let push_bvar env = function
+  | Anonymous -> env
+  | Name x -> x :: env
+
+let rec intern_bvars env : glb_tacexpr_ids -> glb_tacexpr = function
+  | GTacAtm _ | GTacRef _ | GTacPrm _ as e -> e
+  | GTacExt (t,x) -> GTacExt (t,x)
+  | GTacVar x -> GTacVar (List.index0 Id.equal x env)
+  | GTacFun (nas, e) ->
+    let env = List.fold_left push_bvar env nas in
+    GTacFun (nas, intern_bvars env e)
+  | GTacApp (h,args) -> GTacApp (intern_bvars env h, List.map (intern_bvars env) args)
+  | GTacLet (isrec, bnd, e) ->
+    let renv = List.fold_left (fun env (na,_) -> push_bvar env na) env bnd in
+    let bndenv = if isrec then renv else env in
+    let bnd = List.map (fun (na,e) -> na, intern_bvars bndenv e) bnd in
+    let e = intern_bvars renv e in
+    GTacLet (isrec, bnd, e)
+  | GTacCst (info, i, args) -> GTacCst (info, i, List.map (intern_bvars env) args)
+  | GTacCse (e, info, brs0, brs1) ->
+    let e = intern_bvars env e in
+    let brs0 = Array.map (intern_bvars env) brs0 in
+    let brs1 = Array.map (fun (nas,e) ->
+        let env = Array.fold_left push_bvar env nas in
+        nas, intern_bvars env e)
+        brs1
+    in
+    GTacCse (e, info, brs0, brs1)
+  | GTacPrj (kn,e,i) -> GTacPrj (kn,intern_bvars env e, i)
+  | GTacSet (kn, e, i, e') -> GTacSet (kn, intern_bvars env e, i, intern_bvars env e')
+  | GTacOpn (kn,l) -> GTacOpn (kn, List.map (intern_bvars env) l)
+  | GTacWth m ->
+    let intern_br (na,nas,e) =
+      let env = push_bvar env na in
+      let env = Array.fold_left push_bvar env nas in
+      na, nas, intern_bvars env e
+    in
+    let intern_dflt (na,e) = na, intern_bvars (push_bvar env na) e in
+    let m = {
+      opn_match = intern_bvars env m.opn_match;
+      opn_branch = KNmap.map intern_br m.opn_branch;
+      opn_default = intern_dflt m.opn_default;
+    }
+    in
+    GTacWth m
+  | GTacFullMatch _ -> assert false
+
 let intern ~strict ctx e =
   let env = empty_env ~strict () in
-  let fold accu (id, t) = push_name (Name id) (polymorphic t) accu in
-  let env = List.fold_left fold env ctx in
+  let fold (env,benv) (id, t) = push_name (Name id) (polymorphic t) env, push_bvar benv (Name id) in
+  let env, benv = List.fold_left fold (env,[]) ctx in
   let (e, t) = intern_rec env e in
+  let e = intern_bvars benv e in
   let count = ref 0 in
   let vars = ref TVar.Map.empty in
   let t = normalize env (count, vars) t in
@@ -1642,11 +1690,11 @@ let rec subst_expr subst e = match e with
   else GTacWth { opn_match = e'; opn_default = (na, def'); opn_branch = br' }
 | GTacFullMatch (e,brs) as e0 ->
   let e' = subst_expr subst e in
-  let brs' = List.Smart.map (fun (pat,br as pbr) ->
+  let brs' = List.Smart.map (fun (vars,pat,br as pbr) ->
       let pat' = subst_glb_pat subst pat in
       let br' = subst_expr subst br in
       if pat' == pat && br' == br then pbr
-      else (pat',br'))
+      else (vars,pat',br'))
       brs
   in
   if e' == e && brs' == brs then e0
@@ -1829,79 +1877,79 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
 
 (** Registering *)
 
-let () =
-  let open Genintern in
-  let intern ist (ids, tac) =
-    let ids = List.map (fun { CAst.v = id } -> id) ids in
-    let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None ->
-      (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
-      empty_env ~strict:ist.strict_check ()
-    | Some env -> env
-    in
-    let fold env id =
-      push_name (Name id) (monomorphic (GTypRef (Other t_ltac1, []))) env
-    in
-    let env = List.fold_left fold env ids in
-    let loc = tac.loc in
-    let (tac, t) = intern_rec env tac in
-    let () = check_elt_unit loc env t in
-    (ist, (ids, tac))
-  in
-  Genintern.register_intern0 wit_ltac2 intern
+(* let () = *)
+(*   let open Genintern in *)
+(*   let intern ist (ids, tac) = *)
+(*     let ids = List.map (fun { CAst.v = id } -> id) ids in *)
+(*     let env = match Genintern.Store.get ist.extra ltac2_env with *)
+(*     | None -> *)
+(*       (\* Only happens when Ltac2 is called from a toplevel ltac1 quotation *\) *)
+(*       empty_env ~strict:ist.strict_check () *)
+(*     | Some env -> env *)
+(*     in *)
+(*     let fold env id = *)
+(*       push_name (Name id) (monomorphic (GTypRef (Other t_ltac1, []))) env *)
+(*     in *)
+(*     let env = List.fold_left fold env ids in *)
+(*     let loc = tac.loc in *)
+(*     let (tac, t) = intern_rec env tac in *)
+(*     let () = check_elt_unit loc env t in *)
+(*     (ist, (ids, tac)) *)
+(*   in *)
+(*   Genintern.register_intern0 wit_ltac2 intern *)
 
-let () =
-  let open Genintern in
-  let intern ist tac =
-    let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None ->
-      (* Only happens when Ltac2 is called from a constr quotation *)
-      empty_env ~strict:ist.strict_check ()
-    | Some env -> env
-    in
-    (* Special handling of notation variables *)
-    let fold id _ (ids, env) =
-      let () = assert (not @@ mem_var id env) in
-      let t = monomorphic (GTypRef (Other t_preterm, [])) in
-      let env = push_name (Name id) t env in
-      (Id.Set.add id ids, env)
-    in
-    let ntn_vars = ist.intern_sign.notation_variable_status in
-    let ids, env = Id.Map.fold fold ntn_vars (Id.Set.empty, env) in
-    let loc = tac.loc in
-    let (tac, t) = intern_rec env tac in
-    let () = check_elt_unit loc env t in
-    (ist, (ids, tac))
-  in
-  Genintern.register_intern0 wit_ltac2_constr intern
+(* let () = *)
+(*   let open Genintern in *)
+(*   let intern ist tac = *)
+(*     let env = match Genintern.Store.get ist.extra ltac2_env with *)
+(*     | None -> *)
+(*       (\* Only happens when Ltac2 is called from a constr quotation *\) *)
+(*       empty_env ~strict:ist.strict_check () *)
+(*     | Some env -> env *)
+(*     in *)
+(*     (\* Special handling of notation variables *\) *)
+(*     let fold id _ (ids, env) = *)
+(*       let () = assert (not @@ mem_var id env) in *)
+(*       let t = monomorphic (GTypRef (Other t_preterm, [])) in *)
+(*       let env = push_name (Name id) t env in *)
+(*       (Id.Set.add id ids, env) *)
+(*     in *)
+(*     let ntn_vars = ist.intern_sign.notation_variable_status in *)
+(*     let ids, env = Id.Map.fold fold ntn_vars (Id.Set.empty, env) in *)
+(*     let loc = tac.loc in *)
+(*     let (tac, t) = intern_rec env tac in *)
+(*     let () = check_elt_unit loc env t in *)
+(*     (ist, (ids, tac)) *)
+(*   in *)
+(*   Genintern.register_intern0 wit_ltac2_constr intern *)
 
 let () = Genintern.register_subst0 wit_ltac2 (fun s (ids, e) -> ids, subst_expr s e)
 let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
-let () =
-  let open Genintern in
-  let intern ist (loc, id) =
-    let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None ->
-      (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
-      empty_env ~strict:ist.strict_check ()
-    | Some env -> env
-    in
-    (* Special handling of notation variables *)
-    let () =
-      if Id.Map.mem id ist.intern_sign.notation_variable_status then
-        (* Always fail *)
-        unify ?loc env (GTypRef (Other t_preterm, [])) (GTypRef (Other t_constr, []))
-    in
-    let t =
-      try find_var id env
-      with Not_found ->
-        CErrors.user_err ?loc (str "Unbound value " ++ Id.print id)
-    in
-    let t = fresh_mix_type_scheme env t in
-    let () = unify ?loc env t (GTypRef (Other t_constr, [])) in
-    (ist, id)
-  in
-  Genintern.register_intern0 wit_ltac2_quotation intern
+(* let () = *)
+(*   let open Genintern in *)
+(*   let intern ist (loc, id) = *)
+(*     let env = match Genintern.Store.get ist.extra ltac2_env with *)
+(*     | None -> *)
+(*       (\* Only happens when Ltac2 is called from a constr or ltac1 quotation *\) *)
+(*       empty_env ~strict:ist.strict_check () *)
+(*     | Some env -> env *)
+(*     in *)
+(*     (\* Special handling of notation variables *\) *)
+(*     let () = *)
+(*       if Id.Map.mem id ist.intern_sign.notation_variable_status then *)
+(*         (\* Always fail *\) *)
+(*         unify ?loc env (GTypRef (Other t_preterm, [])) (GTypRef (Other t_constr, [])) *)
+(*     in *)
+(*     let t = *)
+(*       try find_var id env *)
+(*       with Not_found -> *)
+(*         CErrors.user_err ?loc (str "Unbound value " ++ Id.print id) *)
+(*     in *)
+(*     let t = fresh_mix_type_scheme env t in *)
+(*     let () = unify ?loc env t (GTypRef (Other t_constr, [])) in *)
+(*     (ist, id) *)
+(*   in *)
+(*   Genintern.register_intern0 wit_ltac2_quotation intern *)
 
 let () = Genintern.register_subst0 wit_ltac2_quotation (fun _ id -> id)

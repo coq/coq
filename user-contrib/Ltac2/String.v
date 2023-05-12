@@ -21,4 +21,4 @@ Ltac2 @external app : string -> string := "coq-core.plugins.ltac2" "string_app".
 Ltac2 @external equal : string -> string -> bool := "coq-core.plugins.ltac2" "string_equal".
 Ltac2 @external compare : string -> string -> int := "coq-core.plugins.ltac2" "string_compare".
 
-Ltac2 is_empty s := match s with "" => true | _ => false end.
+(* Ltac2 is_empty s := match s with "" => true | _ => false end. *)

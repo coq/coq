@@ -122,19 +122,18 @@ val interp_primitive : ml_tactic_name -> valexpr
 
 (** {5 ML primitive types} *)
 
-type 'a or_glb_tacexpr =
+type 'a or_glb_tacexpr_ids =
 | GlbVal of 'a
-| GlbTacexpr of glb_tacexpr
+| GlbTacexpr of glb_tacexpr_ids
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 
 type environment = {
-  env_ist : valexpr Id.Map.t;
+  env_ist : valexpr Range.t;
 }
 
 type ('a, 'b) ml_object = {
-  ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;
-  ml_subst : Mod_subst.substitution -> 'b -> 'b;
+  ml_intern : 'r. (raw_tacexpr, glb_tacexpr_ids, 'r) intern_fun -> ('a, 'b or_glb_tacexpr_ids, 'r) intern_fun;  ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
 }
@@ -165,7 +164,7 @@ val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)
 
-val wit_ltac2_quotation : (Id.t Loc.located, Id.t, Util.Empty.t) genarg_type
+val wit_ltac2_quotation : (Id.t Loc.located, int * Id.t, Util.Empty.t) genarg_type
 (** Ltac2 quotations for variables "$x" in Gallina terms *)
 
 (** {5 Helper functions} *)

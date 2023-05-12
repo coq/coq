@@ -277,7 +277,7 @@ let pr_glb_pat pat = pr_partial_pat (partial_pat_of_glb_pat pat)
 let pr_glbexpr_gen lvl c =
   let rec pr_glbexpr lvl = function
   | GTacAtm atm -> pr_atom atm
-  | GTacVar id -> Id.print id
+  | GTacVar id -> str "VAR" ++ Pp.int id
   | GTacRef gr -> pr_tacref gr
   | GTacFun (nas, c) ->
     let nas = pr_sequence pr_name nas in
@@ -365,7 +365,7 @@ let pr_glbexpr_gen lvl c =
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ br ++ str "end")
   | GTacFullMatch (e, brs) ->
     let e = pr_glbexpr E5 e in
-    let pr_one_branch (pat,br) =
+    let pr_one_branch (_,pat,br) =
       hov 4 (str "|" ++ spc() ++ hov 0 (pr_glb_pat pat ++ spc() ++ str "=>") ++ spc() ++
              hov 2 (pr_glbexpr E5 br))
     in

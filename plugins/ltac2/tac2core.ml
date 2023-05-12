@@ -1635,7 +1635,7 @@ let intern_constr self ist c =
   let v = match DAst.get c with
     | GGenarg (GenArg (Glbwit tag, v)) ->
       begin match genarg_type_eq tag wit_ltac2_quotation with
-      | Some Refl -> GlbTacexpr (GTacVar v)
+      | Some Refl -> GlbTacexpr (GTacVar (snd v))
       | None -> GlbVal c
       end
     | _ -> GlbVal c
@@ -1719,7 +1719,7 @@ let () =
   in
   let interp env (ids,c) =
     let open Ltac_pretype in
-    let get_preterm id = match Id.Map.find_opt id env.env_ist with
+    let get_preterm id = match (* Id.Map.find_opt id env.env_ist *) assert false with
       | Some (ValExt (tag, v)) ->
         begin match Tac2dyn.Val.eq tag val_preterm with
           | Some Refl -> (v:closed_glob_constr)
@@ -1798,7 +1798,7 @@ let () =
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
-      let ist = { env_ist = Id.Map.empty } in
+      let ist = { env_ist = Range.empty } in
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
@@ -1850,7 +1850,7 @@ let () =
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
-      let ist = { env_ist = Id.Map.empty } in
+      let ist = { env_ist = Range.empty } in
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
@@ -1898,10 +1898,10 @@ let () =
   GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
 let () =
-  let interp ?loc ~poly env sigma tycon id =
+  let interp ?loc ~poly env sigma tycon (i,_) =
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let env = GlobEnv.renamed_env env in
-    let c = Id.Map.find id ist.env_ist in
+    let c = Range.get ist.env_ist i in
     let c = Value.to_constr c in
     let t = Retyping.get_type_of env sigma c in
     let j = { Environ.uj_val = c; uj_type = t } in
@@ -1920,7 +1920,7 @@ let () =
 
 let () =
   let pr_raw id = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
-  let pr_glb id = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
+  let pr_glb (_,id) = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
   let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
 
@@ -2019,7 +2019,7 @@ let () =
     (* Evaluate the Ltac2 quotation eagerly *)
     let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
         (CAst.make (Tacexpr.TacId [])) in
-    let ist = { env_ist = Id.Map.empty } in
+    let ist = { env_ist = Range.empty } in
     Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
   | _ :: _ ->
@@ -2032,7 +2032,7 @@ let () =
     let clos = CAst.make (Tacexpr.TacFun
         (nas, CAst.make (Tacexpr.TacML (ltac2_eval, mk_arg self_id :: args)))) in
     let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
-    let self = Tac2interp.interp_value { env_ist = Id.Map.empty } self in
+    let self = Tac2interp.interp_value { env_ist = Range.empty } self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)

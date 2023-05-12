@@ -163,22 +163,26 @@ type 'a open_match = {
   opn_default : Name.t * 'a;
 }
 
-type glb_tacexpr =
+(* Anonymous binders don't bind (so "fun x _ => x" refers to "x" with "Var 0") *)
+type ('var,'patvars) glb_tacexpr_g =
 | GTacAtm of atom
-| GTacVar of Id.t
+| GTacVar of 'var
 | GTacRef of ltac_constant
-| GTacFun of Name.t list * glb_tacexpr
-| GTacApp of glb_tacexpr * glb_tacexpr list
-| GTacLet of rec_flag * (Name.t * glb_tacexpr) list * glb_tacexpr
-| GTacCst of case_info * int * glb_tacexpr list
-| GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
-| GTacPrj of type_constant * glb_tacexpr * int
-| GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
-| GTacOpn of ltac_constructor * glb_tacexpr list
-| GTacWth of glb_tacexpr open_match
-| GTacFullMatch of glb_tacexpr * (glb_pat * glb_tacexpr) list
-| GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
+| GTacFun of Name.t list * ('var,'patvars) glb_tacexpr_g
+| GTacApp of('var,'patvars) glb_tacexpr_g *('var,'patvars) glb_tacexpr_g list
+| GTacLet of rec_flag * (Name.t *('var,'patvars) glb_tacexpr_g) list *('var,'patvars) glb_tacexpr_g
+| GTacCst of case_info * int *('var,'patvars) glb_tacexpr_g list
+| GTacCse of('var,'patvars) glb_tacexpr_g * case_info *('var,'patvars) glb_tacexpr_g array * (Name.t array *('var,'patvars) glb_tacexpr_g) array
+| GTacPrj of type_constant *('var,'patvars) glb_tacexpr_g * int
+| GTacSet of type_constant *('var,'patvars) glb_tacexpr_g * int *('var,'patvars) glb_tacexpr_g
+| GTacOpn of ltac_constructor *('var,'patvars) glb_tacexpr_g list
+| GTacWth of('var,'patvars) glb_tacexpr_g open_match
+| GTacFullMatch of('var,'patvars) glb_tacexpr_g * ('patvars * glb_pat *('var,'patvars) glb_tacexpr_g) list
+| GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a ->('var,'patvars) glb_tacexpr_g
 | GTacPrm of ml_tactic_name
+
+type glb_tacexpr_ids = (Id.t, unit) glb_tacexpr_g
+type glb_tacexpr = (int,Id.t list) glb_tacexpr_g
 
 (** {5 Parsing & Printing} *)
 
