@@ -17,6 +17,7 @@ REPL interface.
 
 import os
 import re
+import tempfile
 
 import pexpect
 
@@ -37,6 +38,9 @@ class CoqTop:
 
     Sentence parsing is very basic for now (a "." in a quoted string will
     confuse it).
+
+    When environment variable COQ_DEBUG_REFMAN is set, all the input
+    we send to coqtop is copied to a temporary file "/tmp/coqdomainXXXX.v".
     """
 
     COQTOP_PROMPT = re.compile("\r\n[^< \r\n]+ < ")
@@ -54,6 +58,7 @@ class CoqTop:
             raise ValueError("coqtop binary not found: '{}'".format(self.coqtop_bin))
         self.args = (args or []) + ["-q"] + ["-color", "on"] * color
         self.coqtop = None
+        self.debugfile = None
 
     def __enter__(self):
         if self.coqtop:
@@ -61,10 +66,15 @@ class CoqTop:
         self.coqtop = pexpect.spawn(self.coqtop_bin, args=self.args, echo=False, encoding="utf-8")
         # Disable delays (http://pexpect.readthedocs.io/en/stable/commonissues.html?highlight=delaybeforesend)
         self.coqtop.delaybeforesend = 0
+        if os.getenv ("COQ_DEBUG_REFMAN"):
+            self.debugfile = tempfile.NamedTemporaryFile(mode="w+", prefix="coqdomain", suffix=".v", delete=False, dir="/tmp/")
         self.next_prompt()
         return self
 
     def __exit__(self, type, value, traceback):
+        if self.debugfile:
+            self.debugfile.close()
+            self.debugfile = None
         self.coqtop.kill(9)
 
     def next_prompt(self):
@@ -81,6 +91,8 @@ class CoqTop:
         # Suppress newlines, but not spaces: they are significant in notations
         sentence = re.sub(r"[\r\n]+", " ", sentence).strip()
         try:
+            if self.debugfile:
+                self.debugfile.write(sentence+"\n")
             self.coqtop.sendline(sentence)
             output = self.next_prompt()
         except Exception as err:
