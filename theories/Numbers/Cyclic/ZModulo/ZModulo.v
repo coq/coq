@@ -11,6 +11,7 @@
 (** * Type [Z] viewed modulo [2^d] implements CyclicAxioms. *)
 
 (** This library has been deprecated since Coq version 8.17. *)
+Local Set Warnings "-deprecated".
 
 (** Even if the construction provided here is not reused for building
   the efficient arbitrary precision numbers, it provides a simple
@@ -33,23 +34,32 @@ Section ZModulo.
  Variable digits : positive.
  Hypothesis digits_ne_1 : digits <> 1%positive.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition wB := base digits.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition t := Z.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition zdigits := Zpos digits.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition to_Z x := x mod wB.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Notation "[| x |]" := (to_Z x)  (at level 0, x at level 99).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Notation "[+| c |]" :=
    (interp_carry 1 wB to_Z c)  (at level 0, c at level 99).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Notation "[-| c |]" :=
    (interp_carry (-1) wB to_Z c)  (at level 0, c at level 99).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB to_Z x)  (at level 0, x at level 99).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_more_than_1_digit: 1 < Zpos digits.
  Proof.
   generalize digits_ne_1; destruct digits; red; auto.
@@ -57,6 +67,7 @@ Section ZModulo.
  Qed.
  Let digits_gt_1 := spec_more_than_1_digit.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma wB_pos : wB > 0.
  Proof.
   apply Z.lt_gt.
@@ -65,11 +76,13 @@ Section ZModulo.
  #[local]
  Hint Resolve wB_pos : core.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_to_Z_1 : forall x, 0 <= [|x|].
  Proof.
   unfold to_Z; intros; destruct (Z_mod_lt x wB wB_pos); auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_to_Z_2 : forall x, [|x|] < wB.
  Proof.
   unfold to_Z; intros; destruct (Z_mod_lt x wB wB_pos); auto.
@@ -77,14 +90,17 @@ Section ZModulo.
  #[local]
  Hint Resolve spec_to_Z_1 spec_to_Z_2 : core.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_to_Z : forall x, 0 <= [|x|] < wB.
  Proof.
   auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition of_pos x :=
    let (q,r) := Z.pos_div_eucl x wB in (N_of_Z q, r).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_of_pos : forall p,
    Zpos p = (Z.of_N (fst (of_pos p)))*wB + [|(snd (of_pos p))|].
  Proof.
@@ -102,6 +118,7 @@ Section ZModulo.
   rewrite Z.mul_comm; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_zdigits : [|zdigits|] = Zpos digits.
  Proof.
   unfold to_Z, zdigits.
@@ -111,16 +128,21 @@ Section ZModulo.
   apply Zpower2_lt_lin; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition zero := 0.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition one := 1.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition minus_one := wB - 1.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_0 : [|zero|] = 0.
  Proof.
   unfold to_Z, zero.
   apply Zmod_small; generalize wB_pos. lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_1 : [|one|] = 1.
  Proof.
   unfold to_Z, one.
@@ -130,6 +152,7 @@ Section ZModulo.
   apply Zpower2_lt_lin; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_Bm1 : [|minus_one|] = wB - 1.
  Proof.
   unfold to_Z, minus_one.
@@ -140,25 +163,33 @@ Section ZModulo.
   apply Zpower2_le_lin; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition compare x y := Z.compare [|x|] [|y|].
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_compare : forall x y,
    compare x y = Z.compare [|x|] [|y|].
  Proof. reflexivity. Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition eq0 x :=
    match [|x|] with Z0 => true | _ => false end.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_eq0 : forall x, eq0 x = true -> [|x|] = 0.
  Proof.
   unfold eq0; intros; now destruct [|x|].
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition opp_c x :=
    if eq0 x then C0 0 else C1 (- x).
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition opp x := - x.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition opp_carry x := - x - 1.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_opp_c : forall x, [-|opp_c x|] = -[|x|].
  Proof.
  intros; unfold opp_c, to_Z; auto.
@@ -170,6 +201,7 @@ Section ZModulo.
    rewrite Z_mod_nz_opp_full; lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_opp : forall x, [|opp x|] = (-[|x|]) mod wB.
  Proof.
  intros; unfold opp, to_Z; auto.
@@ -177,6 +209,7 @@ Section ZModulo.
  rewrite Zminus_mod_idemp_r; simpl; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_opp_carry : forall x, [|opp_carry x|] = wB - [|x|] - 1.
  Proof.
  intros; unfold opp_carry, to_Z; auto.
@@ -190,22 +223,29 @@ Section ZModulo.
  generalize (Z_mod_lt x wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition succ_c x :=
   let y := Z.succ x in
   if eq0 y then C1 0 else C0 y.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition add_c x y :=
   let z := [|x|] + [|y|] in
   if Z_lt_le_dec z wB then C0 z else C1 (z-wB).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition add_carry_c x y :=
   let z := [|x|]+[|y|]+1 in
   if Z_lt_le_dec z wB then C0 z else C1 (z-wB).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition succ := Z.succ.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition add := Z.add.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition add_carry x y := x + y + 1.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma Zmod_equal :
   forall x y z, z>0 -> (x-y) mod z = 0 -> x mod z = y mod z.
  Proof.
@@ -216,6 +256,7 @@ Section ZModulo.
  now apply Z_mod_plus.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_succ_c : forall x, [+|succ_c x|] = [|x|] + 1.
  Proof.
  intros; unfold succ_c, to_Z, Z.succ.
@@ -244,6 +285,7 @@ Section ZModulo.
    generalize (Z_mod_lt x wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_add_c : forall x y, [+|add_c x y|] = [|x|] + [|y|].
  Proof.
  intros; unfold add_c, to_Z, interp_carry.
@@ -255,6 +297,7 @@ Section ZModulo.
      generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_add_carry_c : forall x y, [+|add_carry_c x y|] = [|x|] + [|y|] + 1.
  Proof.
  intros; unfold add_carry_c, to_Z, interp_carry.
@@ -266,17 +309,20 @@ Section ZModulo.
      generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_succ : forall x, [|succ x|] = ([|x|] + 1) mod wB.
  Proof.
  intros; unfold succ, to_Z, Z.succ.
  symmetry; apply Zplus_mod_idemp_l.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_add : forall x y, [|add x y|] = ([|x|] + [|y|]) mod wB.
  Proof.
  intros; unfold add, to_Z; apply Zplus_mod.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_add_carry :
 	 forall x y, [|add_carry x y|] = ([|x|] + [|y|] + 1) mod wB.
  Proof.
@@ -286,21 +332,28 @@ Section ZModulo.
  rewrite Zplus_mod_idemp_l; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition pred_c x :=
   if eq0 x then C1 (wB-1) else C0 (x-1).
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sub_c x y :=
   let z := [|x|]-[|y|] in
   if Z_lt_le_dec z 0 then C1 (wB+z) else C0 z.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sub_carry_c x y :=
   let z := [|x|]-[|y|]-1 in
   if Z_lt_le_dec z 0 then C1 (wB+z) else C0 z.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition pred := Z.pred.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sub := Z.sub.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sub_carry x y := x - y - 1.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_pred_c : forall x, [-|pred_c x|] = [|x|] - 1.
  Proof.
  intros; unfold pred_c, to_Z, interp_carry.
@@ -317,6 +370,7 @@ Section ZModulo.
      generalize (Z_mod_lt x wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sub_c : forall x y, [-|sub_c x y|] = [|x|] - [|y|].
  Proof.
  intros; unfold sub_c, to_Z, interp_carry.
@@ -331,6 +385,7 @@ Section ZModulo.
    generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sub_carry_c : forall x y, [-|sub_carry_c x y|] = [|x|] - [|y|] - 1.
  Proof.
  intros; unfold sub_carry_c, to_Z, interp_carry.
@@ -345,17 +400,20 @@ Section ZModulo.
    generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_pred : forall x, [|pred x|] = ([|x|] - 1) mod wB.
  Proof.
  intros; unfold pred, to_Z, Z.pred.
  rewrite <- Zplus_mod_idemp_l; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sub : forall x y, [|sub x y|] = ([|x|] - [|y|]) mod wB.
  Proof.
  intros; unfold sub, to_Z; apply Zminus_mod.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sub_carry :
   forall x y, [|sub_carry x y|] = ([|x|] - [|y|] - 1) mod wB.
  Proof.
@@ -366,14 +424,18 @@ Section ZModulo.
  auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition mul_c x y :=
   let (h,l) := Z.div_eucl ([|x|]*[|y|]) wB in
   if eq0 h then if eq0 l then W0 else WW h l else WW h l.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition mul := Z.mul.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition square_c x := mul_c x x.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_mul_c : forall x y, [|| mul_c x y ||] = [|x|] * [|y|].
  Proof.
  intros; unfold mul_c, zn2z_to_Z.
@@ -400,18 +462,22 @@ Section ZModulo.
        -- rewrite H3, H4; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_mul : forall x y, [|mul x y|] = ([|x|] * [|y|]) mod wB.
  Proof.
  intros; unfold mul, to_Z; apply Zmult_mod.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_square_c : forall x, [|| square_c x||] = [|x|] * [|x|].
  Proof.
  intros x; exact (spec_mul_c x x).
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition div x y := Z.div_eucl [|x|] [|y|].
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_div : forall a b, 0 < [|b|] ->
       let (q,r) := div a b in
       [|a|] = [|q|] * [|b|] + [|r|] /\
@@ -441,8 +507,10 @@ Section ZModulo.
  rewrite H5, H6; rewrite Z.mul_comm; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition div_gt := div.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_div_gt : forall a b, [|a|] > [|b|] -> 0 < [|b|] ->
       let (q,r) := div_gt a b in
       [|a|] = [|q|] * [|b|] + [|r|] /\
@@ -452,9 +520,12 @@ Section ZModulo.
  apply spec_div; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition modulo x y := [|x|] mod [|y|].
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition modulo_gt x y := [|x|] mod [|y|].
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_modulo :  forall a b, 0 < [|b|] ->
       [|modulo a b|] = [|a|] mod [|b|].
  Proof.
@@ -465,15 +536,19 @@ Section ZModulo.
  fold [|b|]; lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_modulo_gt : forall a b, [|a|] > [|b|] -> 0 < [|b|] ->
       [|modulo_gt a b|] = [|a|] mod [|b|].
  Proof.
  intros; apply spec_modulo; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition gcd x y := Z.gcd [|x|] [|y|].
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition gcd_gt x y := Z.gcd [|x|] [|y|].
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma Zgcd_bound : forall a b, 0<=a -> 0<=b -> Z.gcd a b <= Z.max a b.
  Proof.
  intros.
@@ -496,6 +571,7 @@ Section ZModulo.
      * generalize (Zmax_spec a b); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd a b|].
  Proof.
  intros; unfold gcd.
@@ -511,15 +587,18 @@ Section ZModulo.
      * generalize (Zmax_spec [|a|] [|b|]); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_gcd_gt : forall a b, [|a|] > [|b|] ->
       Zis_gcd [|a|] [|b|] [|gcd_gt a b|].
  Proof.
   intros. apply spec_gcd; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition div21 a1 a2 b :=
   Z.div_eucl ([|a1|]*wB+[|a2|]) [|b|].
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_div21 : forall a1 a2 b,
       wB/2 <= [|b|] ->
       [|a1|] < [|b|] ->
@@ -555,8 +634,10 @@ Section ZModulo.
  lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition add_mul_div p x y :=
    ([|x|] * (2 ^ [|p|]) + [|y|] / (2 ^ ((Zpos digits) - [|p|]))).
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_add_mul_div : forall x y p,
        [|p|] <= Zpos digits ->
        [| add_mul_div p x y |] =
@@ -566,7 +647,9 @@ Section ZModulo.
  intros; unfold add_mul_div; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition pos_mod p w := [|w|] mod (2 ^ [|p|]).
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_pos_mod : forall w p,
        [|pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
  Proof.
@@ -579,9 +662,11 @@ Section ZModulo.
    apply Zmod_le; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition is_even x :=
    if Z.eq_dec ([|x|] mod 2) 0 then true else false.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_is_even : forall x,
       if is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
  Proof.
@@ -589,7 +674,9 @@ Section ZModulo.
  generalize (Z_mod_lt [|x|] 2); lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sqrt x := Z.sqrt [|x|].
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sqrt : forall x,
        [|sqrt x|] ^ 2 <= [|x|] < ([|sqrt x|] + 1) ^ 2.
  Proof.
@@ -605,6 +692,7 @@ Section ZModulo.
      apply Z.sqrt_le_lin; auto.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition sqrt2 x y :=
   let z := [|x|]*wB+[|y|] in
   match z with
@@ -615,6 +703,7 @@ Section ZModulo.
    | Zneg _ => (0, C0 0)
   end.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_sqrt2 : forall x y,
        wB/ 4 <= [|x|] ->
        let (s,r) := sqrt2 x y in
@@ -657,6 +746,7 @@ Section ZModulo.
    lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma two_p_power2 : forall x, x>=0 -> two_p x = 2 ^ x.
  Proof.
  intros.
@@ -665,6 +755,7 @@ Section ZModulo.
  apply two_power_pos_correct.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition head0 x :=
    match [| x |] with
    | Z0 => zdigits
@@ -672,9 +763,11 @@ Section ZModulo.
    | (Zpos _) as p => zdigits - Z.log2 p - 1
    end.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_head00:  forall x, [|x|] = 0 -> [|head0 x|] = Zpos digits.
  Proof. unfold head0; intros x ->; apply spec_zdigits. Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB.
  Proof.
@@ -716,11 +809,13 @@ Section ZModulo.
      unfold wB, base, zdigits; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Fixpoint Ptail p := match p with
   | xO p => (Ptail p)+1
   | _ => 0
  end.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma Ptail_pos : forall p, 0 <= Ptail p.
  Proof.
  induction p; simpl; auto with zarith.
@@ -728,6 +823,7 @@ Section ZModulo.
  #[local]
  Hint Resolve Ptail_pos : core.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma Ptail_bounded : forall p d, Zpos p < 2^(Zpos d) -> Ptail p < Zpos d.
  Proof.
  induction p; try (compute; auto; fail).
@@ -754,6 +850,7 @@ Section ZModulo.
  rewrite <- H1; lia.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition tail0 x :=
   match [|x|] with
    | Z0 => zdigits
@@ -761,6 +858,7 @@ Section ZModulo.
    | Zneg _ => 0
   end.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_tail00:  forall x, [|x|] = 0 -> [|tail0 x|] = Zpos digits.
  Proof.
   unfold tail0; intros.
@@ -768,6 +866,7 @@ Section ZModulo.
   apply spec_zdigits.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_tail0  : forall x, 0 < [|x|] ->
          exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|tail0 x|]).
  Proof.
@@ -797,10 +896,14 @@ Section ZModulo.
  - exists 0; simpl; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition lor := Z.lor.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition land := Z.land.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition lxor := Z.lxor.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_lor x y : [|lor x y|] = Z.lor [|x|] [|y|].
  Proof.
  unfold lor, to_Z.
@@ -811,6 +914,7 @@ Section ZModulo.
  - rewrite !Z.mod_pow2_bits_low, Z.lor_spec; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_land x y : [|land x y|] = Z.land [|x|] [|y|].
  Proof.
  unfold land, to_Z.
@@ -821,6 +925,7 @@ Section ZModulo.
  - rewrite !Z.mod_pow2_bits_low, Z.land_spec; auto with zarith.
  Qed.
 
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Lemma spec_lxor x y : [|lxor x y|] = Z.lxor [|x|] [|y|].
  Proof.
  unfold lxor, to_Z.
@@ -833,7 +938,8 @@ Section ZModulo.
 
  (** Let's now group everything in two records *)
 
- Instance zmod_ops : ZnZ.Ops Z := ZnZ.MkOps
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
+ Definition zmod_ops : ZnZ.Ops Z := ZnZ.MkOps
     (digits : positive)
     (zdigits: t)
     (to_Z   : t -> Z)
@@ -888,8 +994,10 @@ Section ZModulo.
     (lor         : t -> t -> t)
     (land         : t -> t -> t)
     (lxor         : t -> t -> t).
+ Existing Instance zmod_ops.
 
- Instance zmod_specs : ZnZ.Specs zmod_ops := ZnZ.MkSpecs
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
+ Definition zmod_specs : ZnZ.Specs zmod_ops := ZnZ.MkSpecs
     spec_to_Z
     spec_of_pos
     spec_zdigits
@@ -948,20 +1056,28 @@ Section ZModulo.
     spec_lor
     spec_land
     spec_lxor.
+ Existing Instance zmod_specs.
 
 End ZModulo.
 
 (** A modular version of the previous construction. *)
 
 Module Type PositiveNotOne.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Parameter p : positive.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Axiom not_one : p <> 1%positive.
 End PositiveNotOne.
 
 Module ZModuloCyclicType (P:PositiveNotOne) <: CyclicType.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
  Definition t := Z.
 #[global]
- Instance ops : ZnZ.Ops t := zmod_ops P.p.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
+ Definition ops : ZnZ.Ops t := zmod_ops P.p.
+ Existing Instance ops.
 #[global]
- Instance specs : ZnZ.Specs ops := zmod_specs P.not_one.
+ #[deprecated(note="Cyclic.ZModulo will be moved to the test suite", since="8.17")]
+ Definition specs : ZnZ.Specs ops := zmod_specs P.not_one.
+ Existing Instance specs.
 End ZModuloCyclicType.
