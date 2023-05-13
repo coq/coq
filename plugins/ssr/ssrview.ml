@@ -336,7 +336,7 @@ Goal.enter_one ~__LOC__ begin fun g ->
 end
 
 let pose_proof subject_name p =
-  Tactics.generalize [p] <*>
+  Generalize.generalize [p] <*>
   begin match subject_name with
   | id :: _ -> Ssrcommon.tclRENAME_HD_PROD (Name.Name id)
   | _ -> tclUNIT() end

@@ -288,7 +288,7 @@ let lemInvIn id c ids =
       else
         (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids))
     in
-    ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
+    ((tclTHEN (tclTHEN (Generalize.bring_hyps hyps) (lemInv id c))
         (intros_replace_ids)))
   end
 

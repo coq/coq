@@ -1825,7 +1825,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
-      [revert (List.map snd dephyps);
+      [Generalize.revert (List.map snd dephyps);
        general_rewrite ~where:None ~l2r:dir AtLeastOneOccurrence ~freeze:true ~dep:dep_proof_ok ~with_evars:false (mkVar hyp, NoBindings);
        (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else

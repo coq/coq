@@ -743,7 +743,7 @@ let mkDestructEq not_on_hyp env sigma expr =
     pf_typel new_hyps (fun _ ->
         observe_tclTHENLIST
           (fun _ _ -> str "mkDestructEq")
-          [ generalize new_hyps
+          [ Generalize.generalize new_hyps
           ; Proofview.Goal.enter (fun g2 ->
                 let changefun patvars env sigma =
                   pattern_occs
@@ -1249,7 +1249,7 @@ let termination_proof_header is_mes input_type ids args_id relation rec_arg_num
                    (fun _ _ -> str "generalize")
                    (onNLastHypsId (nargs + 1)
                       (tclMAP (fun id ->
-                           tclTHEN (Tactics.generalize [mkVar id]) (clear [id]))))
+                           tclTHEN (Generalize.generalize [mkVar id]) (clear [id]))))
                ; observe_tac (fun _ _ -> str "fix") (fix hrec (nargs + 1))
                ; h_intros args_id
                ; Simple.intro wf_rec_arg
@@ -1451,7 +1451,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
           let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gl) in
           observe_tclTHENLIST
             (fun _ _ -> mt ())
-            [ generalize [lemma]
+            [ Generalize.generalize [lemma]
             ; Simple.intro hid
             ; Proofview.Goal.enter (fun gl ->
                   let ids = pf_ids_of_hyps gl in

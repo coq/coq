@@ -498,7 +498,7 @@ let () = define_prim1 "tac_rename" (list (pair ident ident)) begin fun ids ->
 end
 
 let () = define_prim1 "tac_revert" (list ident) begin fun ids ->
-  Tactics.revert ids
+  Generalize.revert ids
 end
 
 let () = define_prim0 "tac_admit" Proofview.give_up

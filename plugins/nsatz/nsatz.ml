@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Constr
-open Tactics
 
 open Utile
 
@@ -535,7 +534,7 @@ let return_term t =
   let a =
     mkApp (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.eq.refl",[|tllp ();t|]) in
   let a = EConstr.of_constr a in
-  generalize [a]
+  Generalize.generalize [a]
 
 let nsatz_compute t =
   let lpol =

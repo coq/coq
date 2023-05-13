@@ -1777,7 +1777,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Tacticals.tclWITHHOLES false
         (name_atomic ~env
           (TacGeneralize cl)
-          (Tactics.generalize_gen cl)) sigma
+          (Generalize.generalize_gen cl)) sigma
       end
   | TacLetTac (ev,na,c,clp,b,eqpat) ->
       Proofview.Goal.enter begin fun gl ->

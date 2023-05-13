@@ -877,7 +877,7 @@ let generalize_dependent_of x hyp =
             when (not (Id.equal id hyp))
                  && Termops.occur_var (Proofview.Goal.env g)
                       (Proofview.Goal.sigma g) x t ->
-            tclTHEN (Tactics.generalize [EConstr.mkVar id]) (thin [id])
+            tclTHEN (Generalize.generalize [EConstr.mkVar id]) (thin [id])
           | _ -> Proofview.tclUNIT ())
         (Proofview.Goal.hyps g))
 
@@ -1140,7 +1140,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
                     (Genredexpr.Cbv
                        {Redops.all_flags with Genredexpr.rDelta = false})
                     Locusops.onConcl
-                ; generalize (List.map mkVar ids)
+                ; Generalize.generalize (List.map mkVar ids)
                 ; thin ids ]
             else
               unfold_in_concl
@@ -1181,7 +1181,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
           tclTHENLIST
             [ tclMAP Simple.intro (args_names @ [res; hres])
             ; observe_tac "h_generalize"
-                (generalize
+                (Generalize.generalize
                    [ mkApp
                        ( applist (graph_principle, params)
                        , Array.map (fun c -> applist (c, params)) lemmas ) ])
