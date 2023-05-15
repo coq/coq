@@ -204,17 +204,12 @@ let vernac_tab =
   (Hashtbl.create 211 :
     (Vernacexpr.extend_name, bool * (plugin_args -> vernac_command)) Hashtbl.t)
 
-let vinterp_add depr s f =
-  try
-    Hashtbl.add vernac_tab s (depr, f)
-  with Failure _ ->
-    user_err
-      (str"Cannot add the vernac command " ++ str (fst s) ++ str" twice.")
+let vinterp_add depr s f = Hashtbl.replace vernac_tab s (depr, f)
 
 let vinterp_map s =
   try
     Hashtbl.find vernac_tab s
-  with Failure _ | Not_found ->
+  with Not_found ->
     user_err
       (str"Cannot find vernac command " ++ str (fst s) ++ str".")
 
@@ -317,6 +312,17 @@ let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item
   let symb = untype_user_symbol tu in
   Egramml.GramNonTerminal (Loc.tag (t, symb)) :: untype_grammar ty
 
+let declare_dynamic_extend ~command ?entry ~depr cl ty f =
+  let cl = untype_classifier ty cl in
+  let f = untype_command ty f in
+  let r = untype_grammar ty in
+  let ext = command, 0 in
+  vinterp_add depr ext f;
+  Egramml.declare_vernac_command_grammar ~allow_override:true ext entry r;
+  (* Egramml.extend_vernac_command_grammar ~undoable:true ext; *)
+  declare_vernac_classifier command [|cl|];
+  ext
+
 let vernac_extend ?plugin ~command ?classifier ?entry ext =
   let get_classifier (TyML (_, ty, _, cl)) = match cl with
   | Some cl -> untype_classifier ty cl
@@ -353,14 +359,7 @@ let vernac_extend ?plugin ~command ?classifier ?entry ext =
     let f = untype_command ty f in
     let r = untype_grammar ty in
     let () = vinterp_add depr (command, i) f in
-    let () =
-      (* allow_override is a hack for Elpi Command, since it takes
-         effect at Import time it gets called multiple times.
-         Eventually we will need a better API to support this and also
-         to support backtracking over it. *)
-      Egramml.declare_vernac_command_grammar ~allow_override:(Option.is_empty plugin)
-        (command, i) entry r
-    in
+    let () = Egramml.declare_vernac_command_grammar ~allow_override:false (command, i) entry r in
     let () = match plugin with
       | None -> Egramml.extend_vernac_command_grammar ~undoable:false (command, i)
       | Some plugin ->

@@ -156,13 +156,35 @@ type (_, _) ty_sig =
 
 type ty_ml = TyML : bool (* deprecated *) * ('r, 's) ty_sig * 'r * 's option -> ty_ml
 
-(** Wrapper to dynamically extend vernacular commands. *)
+(** Wrapper to dynamically extend vernacular commands.
+
+    This is used by coqpp VERNAC EXTEND.
+
+    Commands added by plugins at Declare ML Module / Require time should provide [plugin].
+
+    Commands added without providing [plugin] cannot be removed from
+    the grammar or modified. Not passing [plugin] is possible for
+    non-plugin coq-core commands and deprecated for all other callers.
+*)
 val vernac_extend :
   ?plugin:string ->
   command:string ->
   ?classifier:(string -> vernac_classification) ->
   ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
   ty_ml list -> unit
+
+(** For plugins which need more flexibility. The polymorphic arguments are as used in [TyML].
+    It is up to the caller to call [Egramml.extend_vernac_command_grammar] on the return value
+    to make the command grammar active.
+*)
+val declare_dynamic_extend
+  : command:string
+  -> ?entry:Vernacexpr.synterp_vernac_expr Vernacexpr.vernac_expr_gen Pcoq.Entry.t
+  -> depr:bool
+  -> 's (* classifier *)
+  -> ('r, 's) ty_sig (* grammar *)
+  -> 'r (* command interpretation *)
+  -> Vernacexpr.extend_name
 
 (** {5 VERNAC ARGUMENT EXTEND} *)
 
