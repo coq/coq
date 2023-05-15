@@ -317,22 +317,15 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_local_def env _id centry =
-  let centry = {
-    const_entry_body = centry.secdef_body;
-    const_entry_secctx = centry.secdef_secctx;
-    const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_entry;
-    const_entry_inline_code = false;
-  } in
-  let decl = infer_constant ~sec_univs:None env (DefinitionEntry centry) in
-  let typ = decl.cook_type in
-  let () = match decl.cook_universes with
-  | Monomorphic -> ()
-  | Polymorphic _ -> assert false
+let translate_local_def env _id { secdef_body; secdef_type; } =
+  let j = Typeops.infer env secdef_body in
+  let typ = match secdef_type with
+    | None -> j.uj_type
+    | Some typ ->
+      let tj = Typeops.infer_type env typ in
+      let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+      tj.utj_val
   in
-  let c = match decl.cook_body with
-  | Def c -> c
-  | Undef _ | Primitive _ | OpaqueDef _ -> assert false
-  in
-  c, decl.cook_relevance, typ
+  let c = j.uj_val in
+  let r = Relevanceops.relevance_of_term env c in
+  c, r, typ

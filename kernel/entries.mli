@@ -77,7 +77,6 @@ type definition_entry = {
 
 type section_def_entry = {
   secdef_body : constr;
-  secdef_secctx : Id.Set.t option;
   secdef_type : types option;
 }
 
