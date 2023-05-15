@@ -102,7 +102,9 @@ let perform_instance i =
   let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
   Typeclasses.load_instance i
 
-let cache_instance inst = perform_instance inst
+let cache_instance inst =
+  perform_instance inst;
+  add_instance_base inst
 
 let load_instance _ inst = match inst.inst_global with
 | Local -> assert false
@@ -126,10 +128,6 @@ let discharge_instance inst =
     assert (not (isVarRef inst.inst_impl));
     Some inst
 
-let rebuild_instance inst =
-  add_instance_base inst;
-  inst
-
 let classify_instance inst = match inst.inst_global with
 | Local -> Dispose
 | SuperGlobal | Export -> Substitute
@@ -142,7 +140,6 @@ let instance_input : instance_obj -> obj =
       open_function = simple_open ~cat:Hints.hint_cat open_instance;
       classify_function = classify_instance;
       discharge_function = discharge_instance;
-      rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 
 let default_locality () =
@@ -168,8 +165,7 @@ let add_instance cl info global impl =
     inst_global = global ;
     inst_impl = impl;
   } in
-  Lib.add_leaf (instance_input i);
-  add_instance_base i
+  Lib.add_leaf (instance_input i)
 
 let warning_not_a_class =
   let name = "not-a-class" in
