@@ -122,6 +122,16 @@ Ltac2 @ external type : binder -> constr := "coq-core.plugins.ltac2" "constr_bin
 
 End Binder.
 
+Module Cast.
+
+  Ltac2 @ external default : cast := "coq-core.plugins.ltac2" "constr_cast_default".
+  Ltac2 @ external vm : cast := "coq-core.plugins.ltac2" "constr_cast_vm".
+  Ltac2 @ external native : cast := "coq-core.plugins.ltac2" "constr_cast_native".
+
+  Ltac2 @ external equal : cast -> cast -> bool := "coq-core.plugins.ltac2" "constr_cast_equal".
+
+End Cast.
+
 Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "coq-core.plugins.ltac2" "constr_in_context".
 (** On a focused goal [Γ ⊢ A], [in_context id c tac] evaluates [tac] in a
     focused goal [Γ, id : c ⊢ ?X] and returns [fun (id : c) => t] where [t] is
