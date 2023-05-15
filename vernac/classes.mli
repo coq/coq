@@ -71,6 +71,18 @@ val declare_new_instance
 
 val add_class : typeclass -> unit
 
+type event =
+  | NewClass of typeclass
+  | NewInstance of {
+      class_name : GlobRef.t;
+      instance : GlobRef.t;
+      info : Typeclasses.hint_info;
+      locality : Hints.hint_locality;
+    }
+
+(* Observers are called whenever a class or an instance are declared *)
+val add_observer : (event -> unit) -> unit
+
 (** Setting opacity *)
 
 val set_typeclass_transparency

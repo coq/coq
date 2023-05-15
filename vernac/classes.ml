@@ -149,6 +149,24 @@ let default_locality () =
 let instance_locality =
   Attributes.hint_locality ~default:default_locality
 
+type event =
+  | NewClass of typeclass
+  | NewInstance of {
+      class_name : GlobRef.t;
+      instance : GlobRef.t;
+      info : Typeclasses.hint_info;
+      locality : Hints.hint_locality;
+    }
+
+let observers = ref []
+
+let add_observer o =
+  observers := o :: !observers
+
+
+let observe event =
+  List.iter (fun f -> f event) !observers
+
 let add_instance cl info global impl =
   let () = match global with
     | Local -> ()
@@ -165,7 +183,8 @@ let add_instance cl info global impl =
     inst_global = global ;
     inst_impl = impl;
   } in
-  Lib.add_leaf (instance_input i)
+  Lib.add_leaf (instance_input i);
+  observe (NewInstance { class_name = cl.cl_impl; instance = impl; info; locality = global })
 
 let warning_not_a_class =
   let name = "not-a-class" in
@@ -253,7 +272,8 @@ let class_input : typeclass -> obj =
       subst_function = subst_class }
 
 let add_class cl =
-  Lib.add_leaf (class_input cl)
+  Lib.add_leaf (class_input cl);
+  observe (NewClass cl)
 
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
