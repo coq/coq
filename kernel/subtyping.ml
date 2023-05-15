@@ -88,10 +88,10 @@ let check_conv_error error why state poly pb env a1 a2 =
       try
         let () = Conversion.default_conv pb env a1 a2 in
         fst state
-      with NotConvertible -> error (IncompatiblePolymorphism (env, a1, a2))
+      with NotConvertible _ -> error (IncompatiblePolymorphism (env, a1, a2))
     else
       Conversion.generic_conv pb ~l2r:false default_evar_handler TransparentState.full env state a1 a2
-  with NotConvertible -> error why
+  with NotConvertible _ -> error why
      | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
 let check_universes error env u1 u2 =

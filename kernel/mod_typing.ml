@@ -108,12 +108,12 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
               let typ = cb.const_type in
               begin
                 try Conversion.conv_leq env' j.uj_type typ
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+                with Conversion.NotConvertible _ -> error_incorrect_with_constraint lab
               end
             | Def c' ->
               begin
                 try Conversion.conv env' c c'
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+                with Conversion.NotConvertible _ -> error_incorrect_with_constraint lab
               end
             | Primitive _ ->
               error_incorrect_with_constraint lab
@@ -152,7 +152,7 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
+  | Conversion.NotConvertible _ -> error_incorrect_with_constraint lab
 
 let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
@@ -225,7 +225,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
+  | Conversion.NotConvertible _ -> error_incorrect_with_constraint lab
 
 let check_with ustate env mp (sign,reso,cst) = function
   | WithDef(idl, (c, ctx)) ->

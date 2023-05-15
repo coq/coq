@@ -59,10 +59,12 @@ type ('constr, 'types) ptype_error =
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
-  | ActualType of ('constr, 'types) punsafe_judgment * 'types
+  | ActualType of ('constr, 'types) punsafe_judgment * 'types * Conversion.univ_error option
   | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of
-      (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+      (int * 'constr * 'constr * Conversion.univ_error option)
+      * ('constr, 'types) punsafe_judgment
+      * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
@@ -127,8 +129,8 @@ let error_ill_formed_branch env c i actty expty =
 let error_generalization env nvar c =
   raise (TypeError (env, Generalization (nvar,c)))
 
-let error_actual_type env j expty =
-  raise (TypeError (env, ActualType (j,expty)))
+let error_actual_type env j expty e =
+  raise (TypeError (env, ActualType (j,expty,e)))
 
 let error_incorrect_primitive env p t =
   raise (TypeError (env, IncorrectPrimitive (p, t)))
@@ -203,10 +205,10 @@ let map_ptype_error f = function
 | NumberBranches (j, n) -> NumberBranches (on_judgment f j, n)
 | IllFormedBranch (c, pc, t1, t2) -> IllFormedBranch (f c, pc, f t1, f t2)
 | Generalization ((na, t), j) -> Generalization ((na, f t), on_judgment f j)
-| ActualType (j, t) -> ActualType (on_judgment f j, f t)
+| ActualType (j, t, e) -> ActualType (on_judgment f j, f t, e)
 | IncorrectPrimitive (p, t) -> IncorrectPrimitive ({p with uj_type=f p.uj_type}, f t)
-| CantApplyBadType ((n, c1, c2), j, vj) ->
-  CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
+| CantApplyBadType ((n, c1, c2, e), j, vj) ->
+  CantApplyBadType ((n, f c1, f c2, e), on_judgment f j, Array.map (on_judgment f) vj)
 | CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
 | IllFormedRecBody (ge, na, n, env, jv) ->
   IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)

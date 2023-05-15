@@ -46,6 +46,7 @@ let make_param_univs env sigma indu spec jl =
           (i+1, mkType (Univ.Universe.make expected), j.uj_type)
           (make_judge (mkIndU indu) indty)
           jl
+          None
       | Sorts.Prop -> TemplateProp
       | Sorts.Set -> TemplateUniv Univ.Universe.type0
       | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
@@ -101,7 +102,7 @@ let judge_of_apply env sigma funj argjv =
     | sigma ->
       apply_rec sigma (n+1) subs c2 restjl
     | exception Evarconv.UnableToUnify _ ->
-      error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
+      error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv None
   in
   apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
@@ -604,14 +605,14 @@ let judge_of_apply_against env sigma changedf funj argjv =
         | sigma ->
           apply_rec sigma (Changed {bodyonly=lazy false}) (n+1) subs c2 restjl
         | exception Evarconv.UnableToUnify _ ->
-          error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+          error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv) None
     end
     else
       match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
       | sigma ->
         apply_rec sigma changedf (n+1) subs c2 restjl
       | exception Evarconv.UnableToUnify _ ->
-        error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+        error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv) None
   in
   apply_rec sigma changedf 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 

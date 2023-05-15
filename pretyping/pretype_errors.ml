@@ -84,19 +84,19 @@ let error_actual_type ?loc ?info env sigma {uj_val=c;uj_type=actty} expty reason
   raise_pretype_error ?loc ?info
     (env, sigma, ActualTypeNotCoercible (j, expty, reason))
 
-let error_actual_type_core ?loc env sigma {uj_val=c;uj_type=actty} expty =
+let error_actual_type_core ?loc env sigma {uj_val=c;uj_type=actty} expty e =
   let j = {uj_val=c;uj_type=actty} in
   raise_type_error ?loc
-    (env, sigma, ActualType (j, expty))
+    (env, sigma, ActualType (j, expty, e))
 
 let error_cant_apply_not_functional ?loc env sigma rator randl =
   raise_type_error ?loc
     (env, sigma, CantApplyNonFunctional (rator, randl))
 
-let error_cant_apply_bad_type ?loc env sigma (n,c,t) rator randl =
+let error_cant_apply_bad_type ?loc env sigma (n,c,t) rator randl e =
   raise_type_error ?loc
     (env, sigma,
-       CantApplyBadType ((n,c,t), rator, randl))
+       CantApplyBadType ((n,c,t,e), rator, randl))
 
 let error_ill_formed_branch ?loc env sigma c i actty expty =
   raise_type_error

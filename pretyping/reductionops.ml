@@ -1056,10 +1056,17 @@ struct
 open Conversion
 
 let check_eq univs u u' =
-  if not (Evd.check_eq univs u u') then raise NotConvertible
+  if not (Evd.check_eq univs u u') then
+    let u = EConstr.Unsafe.to_sorts u
+    and u' = EConstr.Unsafe.to_sorts u' in
+    raise (NotConvertible (Some (MissingConstraint { left=u; right=u'; kind=CONV })))
 
 let check_leq univs u u' =
-  if not (Evd.check_leq univs u u') then raise NotConvertible
+  if not (Evd.check_leq univs u u') then
+    let u = EConstr.Unsafe.to_sorts u
+    and u' = EConstr.Unsafe.to_sorts u' in
+    raise (NotConvertible (Some (MissingConstraint { left=u; right=u'; kind=CUMUL })))
+
 
 let check_sort_cmp_universes pb s0 s1 univs =
   let s0 = ESorts.make s0 in
@@ -1074,15 +1081,26 @@ let checked_sort_cmp_universes _env pb s0 s1 univs =
 let check_convert_instances ~flex:_ u u' univs =
   let u = Instance.to_array u in
   let u' = Instance.to_array u' in
-  let fold accu l1 l2 = Constraints.add (l1, Eq, l2) accu in
-  let cst = Array.fold_left2 fold Constraints.empty u u' in
-  if Evd.check_constraints univs cst then univs else raise NotConvertible
+  let () = if u == u' then ()
+    else begin
+      assert (Array.length u = Array.length u');
+      let mk u = ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u)) in
+      Array.iter2 (fun u u' -> check_eq univs (mk u) (mk u')) u u'
+    end
+  in
+  univs
 
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
   let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if (Evd.check_constraints univs csts) then univs
-  else raise NotConvertible
+  let mk u = ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u)) in
+  let () = Constraints.iter (fun (u,c,u') -> match c with
+      | Le -> check_leq univs (mk u) (mk u')
+      | Lt -> check_leq univs (ESorts.super univs (mk u)) (mk u')
+      | Eq -> check_eq univs (mk u) (mk u'))
+      csts
+  in
+  univs
 
 let checked_universes =
   { compare_sorts = checked_sort_cmp_universes;
@@ -1106,7 +1124,7 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
       let env = Environ.set_universes (Evd.universes sigma) env in
       let _ = Conversion.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
       true
-    with Conversion.NotConvertible -> false
+    with Conversion.NotConvertible _ -> false
 
 let is_conv ?(reds=TransparentState.full) env sigma x y =
   is_fconv ~reds Conversion.CONV env sigma x y
@@ -1124,13 +1142,15 @@ let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer
      | UGraph.UniverseInconsistency _ ->
-        raise Conversion.NotConvertible
+    (* TODO explanation? *)
+    raise (Conversion.NotConvertible None)
 
 let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
   match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
   | Inl sigma -> sigma
   | Inr _ ->
-    raise Conversion.NotConvertible
+    (* TODO explanation? *)
+    raise (Conversion.NotConvertible None)
 
 let sigma_univ_state =
   let open Conversion in
@@ -1191,7 +1211,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
             env (sigma, sigma_univ_state) x y in
         Some sigma'
   with
-  | Conversion.NotConvertible -> None
+  | Conversion.NotConvertible _ -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
@@ -1217,7 +1237,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
             env (UnivProblem.Set.empty, univproblem_univ_state) x y in
         Some cstr
   with
-  | Conversion.NotConvertible -> None
+  | Conversion.NotConvertible _ -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
 
 let evars_of_evar_map sigma =
@@ -1498,7 +1518,7 @@ let infer_cmp_universes _env pb s0 s1 univs =
 let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
   if flex then
     if UGraph.check_eq_instances univs u u' then cuniv
-    else raise NotConvertible
+    else raise (NotConvertible None) (* TODO explanation? *)
   else
     let cstrs' = Univ.enforce_eq_instances u u' Constraints.empty in
     (univs, Constraints.union cstrs cstrs')

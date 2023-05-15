@@ -36,21 +36,21 @@ let rec conv_val env pb lvl v1 v2 cu =
        let v = mk_rel_accu lvl in
        conv_val env pb (lvl + 1) (apply c1 v) (apply c2 v) cu
     | Vconst i1, Vconst i2 ->
-        if Int.equal i1 i2 then cu else raise NotConvertible
+        if Int.equal i1 i2 then cu else raise (NotConvertible None)
     | Vint64 i1, Vint64 i2 ->
-      if Int64.equal i1 i2 then cu else raise NotConvertible
+      if Int64.equal i1 i2 then cu else raise (NotConvertible None)
     | Vfloat64 f1, Vfloat64 f2 ->
         if Float64.(equal (of_float f1) (of_float f2)) then cu
-        else raise NotConvertible
+        else raise (NotConvertible None)
     | Varray t1, Varray t2 ->
       let len = Parray.length_int t1 in
-      if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
+      if not (Int.equal len (Parray.length_int t2)) then raise (NotConvertible None);
       Parray.fold_left2 (fun cu v1 v2 -> conv_val env CONV lvl v1 v2 cu) cu t1 t2
     | Vblock b1, Vblock b2 ->
         let n1 = block_size b1 in
         let n2 = block_size b2 in
         if not (Int.equal (block_tag b1) (block_tag b2)) || not (Int.equal n1 n2) then
-          raise NotConvertible;
+          raise (NotConvertible None);
         let rec aux lvl max b1 b2 i cu =
           if Int.equal i max then
             conv_val env CONV lvl (block_field b1 i) (block_field b2 i) cu
@@ -60,12 +60,12 @@ let rec conv_val env pb lvl v1 v2 cu =
         in
         aux lvl (n1-1) b1 b2 0 cu
     | (Vfix e | Vcofix e), _ | _, (Vfix e | Vcofix e) -> Empty.abort e
-    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
+    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise (NotConvertible None)
 
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in
   let n2 = accu_nargs k2 in
-  if not (Int.equal n1 n2) then raise NotConvertible;
+  if not (Int.equal n1 n2) then raise (NotConvertible None);
   if Int.equal n1 0 then
     conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
@@ -79,21 +79,21 @@ and conv_atom env pb lvl a1 a2 cu =
     | Aevar (ev1, args1), Aevar (ev2, args2) ->
       if Evar.equal ev1 ev2 then
         Array.fold_right2 (conv_val env CONV lvl) args1 args2 cu
-      else raise NotConvertible
+      else raise (NotConvertible None)
     | Arel i1, Arel i2 ->
-        if Int.equal i1 i2 then cu else raise NotConvertible
+        if Int.equal i1 i2 then cu else raise (NotConvertible None)
     | Aind (ind1,u1), Aind (ind2,u2) ->
        if Ind.CanOrd.equal ind1 ind2 then convert_instances ~flex:false u1 u2 cu
-       else raise NotConvertible
+       else raise (NotConvertible None)
     | Aconstant (c1,u1), Aconstant (c2,u2) ->
        if Constant.CanOrd.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
-       else raise NotConvertible
+       else raise (NotConvertible None)
     | Asort s1, Asort s2 ->
         sort_cmp_universes env pb s1 s2 cu
     | Avar id1, Avar id2 ->
-        if Id.equal id1 id2 then cu else raise NotConvertible
+        if Id.equal id1 id2 then cu else raise (NotConvertible None)
     | Acase(a1,ac1,p1,bs1), Acase(a2,ac2,p2,bs2) ->
-        if not (Ind.CanOrd.equal a1.asw_ind a2.asw_ind) then raise NotConvertible;
+        if not (Ind.CanOrd.equal a1.asw_ind a2.asw_ind) then raise (NotConvertible None);
         let cu = conv_accu env CONV lvl ac1 ac2 cu in
         let tbl = a1.asw_reloc in
         let len = Array.length tbl in
@@ -112,21 +112,21 @@ and conv_atom env pb lvl a1 a2 cu =
             aux 0 cu
           end
     | Afix(t1,f1,rp1,s1), Afix(t2,f2,rp2,s2) ->
-        if not (Int.equal s1 s2) || not (Array.equal Int.equal rp1 rp2) then raise NotConvertible;
+        if not (Int.equal s1 s2) || not (Array.equal Int.equal rp1 rp2) then raise (NotConvertible None);
         if f1 == f2 then cu
         else conv_fix env lvl t1 f1 t2 f2 cu
     | Acofix (t1, f1, s1, _), Acofix (t2, f2, s2, _) ->
-        if not (Int.equal s1 s2) then raise NotConvertible;
+        if not (Int.equal s1 s2) then raise (NotConvertible None);
         if f1 == f2 then cu
         else
-          if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
+          if not (Int.equal (Array.length f1) (Array.length f2)) then raise (NotConvertible None)
           else conv_fix env lvl t1 f1 t2 f2 cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
-       if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
+       if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise (NotConvertible None)
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
     | Acase _, _ | Afix _, _ | Acofix _, _
-    | Aproj _, _ | Aevar _, _ -> raise NotConvertible
+    | Aproj _, _ | Aevar _, _ -> raise (NotConvertible None)
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
 and conv_fix env lvl t1 f1 t2 f2 cu =

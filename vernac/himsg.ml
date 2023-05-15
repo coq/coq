@@ -310,74 +310,85 @@ let explain_generalization env sigma (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let explain_unification_error env sigma p1 p2 = function
-  | None -> mt()
-  | Some e ->
-     let rec aux p1 p2 = function
-     | OccurCheck (evk,rhs) ->
-        [str "cannot define " ++ quote (pr_existential_key env sigma evk) ++
-        strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
-        strbrk " that would depend on itself"]
-     | NotClean ((evk,args),env,c) ->
-        let args = Evd.expand_existential sigma (evk, args) in
-        let env = make_all_name_different env sigma in
-        [str "cannot instantiate " ++ quote (pr_existential_key env sigma evk)
-        ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
-        strbrk " is not in its scope" ++
-        (if List.is_empty args then mt() else
-         strbrk ": available arguments are " ++
-         pr_sequence (pr_leconstr_env env sigma) (List.rev args))]
-     | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
-        (* Error speaks from itself *) []
-     | ConversionFailed (env,t1,t2) ->
-        let t1 = Reductionops.nf_betaiota env sigma t1 in
-        let t2 = Reductionops.nf_betaiota env sigma t2 in
-        if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
+let explain_unification_error env sigma p1 p2 e =
+  let rec aux p1 p2 = function
+    | OccurCheck (evk,rhs) ->
+      [str "cannot define " ++ quote (pr_existential_key env sigma evk) ++
+       strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
+       strbrk " that would depend on itself"]
+    | NotClean ((evk,args),env,c) ->
+      let args = Evd.expand_existential sigma (evk, args) in
+      let env = make_all_name_different env sigma in
+      [str "cannot instantiate " ++ quote (pr_existential_key env sigma evk)
+       ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
+       strbrk " is not in its scope" ++
+       (if List.is_empty args then mt() else
+          strbrk ": available arguments are " ++
+          pr_sequence (pr_leconstr_env env sigma) (List.rev args))]
+    | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
+      (* Error speaks from itself *) []
+    | ConversionFailed (env,t1,t2) ->
+      let t1 = Reductionops.nf_betaiota env sigma t1 in
+      let t2 = Reductionops.nf_betaiota env sigma t2 in
+      if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
         let env = make_all_name_different env sigma in
         if not (EConstr.eq_constr sigma t1 p1) || not (EConstr.eq_constr sigma t2 p2) then
           let t1, t2 = pr_explicit env sigma t1 t2 in
           [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
         else []
-     | IncompatibleInstances (env,ev,t1,t2) ->
-        let env = make_all_name_different env sigma in
-        let ev = pr_leconstr_env env sigma (EConstr.mkEvar ev) in
-        let t1 = Reductionops.nf_betaiota env sigma t1 in
-        let t2 = Reductionops.nf_betaiota env sigma t2 in
-        let t1, t2 = pr_explicit env sigma t1 t2 in
-        [ev ++ strbrk " has otherwise to unify with " ++ t1 ++ str " which is incompatible with " ++ t2]
-     | MetaOccurInBody evk ->
-        [str "instance for " ++ quote (pr_existential_key env sigma evk) ++
-        strbrk " refers to a metavariable - please report your example" ++
-        strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
-     | InstanceNotSameType (evk,env,t,u) ->
-        let t, u = pr_explicit env sigma t u in
-        [str "unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key env sigma evk) ++
-        strbrk ": cannot ensure that " ++
-        t ++ strbrk " is a subtype of " ++ u]
-     | InstanceNotFunctionalType (evk,env,f,u) ->
-        let env = make_all_name_different env sigma in
-        let f = pr_leconstr_env env sigma f in
-        let u = pr_leconstr_env env sigma u in
-        [str "unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key env sigma evk) ++
-        strbrk ": " ++ f ++
-        strbrk " is expected to have a functional type but it has type " ++ u]
-     | UnifUnivInconsistency p ->
-       [str "universe inconsistency: " ++
-        UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
-     | CannotSolveConstraint ((pb,env,t,u),e) ->
-        let env = make_all_name_different env sigma in
-        (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
-        str " == " ++ pr_leconstr_env env sigma u)
-        :: aux t u e
-     | ProblemBeyondCapabilities ->
-        []
-     in
-     match aux p1 p2 e with
-     | [] -> mt ()
-     | l -> spc () ++ str "(" ++
-            prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
+    | IncompatibleInstances (env,ev,t1,t2) ->
+      let env = make_all_name_different env sigma in
+      let ev = pr_leconstr_env env sigma (EConstr.mkEvar ev) in
+      let t1 = Reductionops.nf_betaiota env sigma t1 in
+      let t2 = Reductionops.nf_betaiota env sigma t2 in
+      let t1, t2 = pr_explicit env sigma t1 t2 in
+      [ev ++ strbrk " has otherwise to unify with " ++ t1 ++ str " which is incompatible with " ++ t2]
+    | MetaOccurInBody evk ->
+      [str "instance for " ++ quote (pr_existential_key env sigma evk) ++
+       strbrk " refers to a metavariable - please report your example" ++
+       strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
+    | InstanceNotSameType (evk,env,t,u) ->
+      let t, u = pr_explicit env sigma t u in
+      [str "unable to find a well-typed instantiation for " ++
+       quote (pr_existential_key env sigma evk) ++
+       strbrk ": cannot ensure that " ++
+       t ++ strbrk " is a subtype of " ++ u]
+    | InstanceNotFunctionalType (evk,env,f,u) ->
+      let env = make_all_name_different env sigma in
+      let f = pr_leconstr_env env sigma f in
+      let u = pr_leconstr_env env sigma u in
+      [str "unable to find a well-typed instantiation for " ++
+       quote (pr_existential_key env sigma evk) ++
+       strbrk ": " ++ f ++
+       strbrk " is expected to have a functional type but it has type " ++ u]
+    | UnifUnivInconsistency p ->
+      [str "universe inconsistency: " ++
+       UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
+    | CannotSolveConstraint ((pb,env,t,u),e) ->
+      let env = make_all_name_different env sigma in
+      (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
+       str " == " ++ pr_leconstr_env env sigma u)
+      :: aux t u e
+    | ProblemBeyondCapabilities ->
+      []
+  in
+  match aux p1 p2 e with
+  | [] -> mt ()
+  | l -> spc () ++ str "(" ++
+         prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
+
+let explain_kernel_univ_error sigma = function
+  | Conversion.MissingConstraint {left; kind; right } ->
+    let prs s = Flags.with_option Detyping.print_universes (Printer.pr_sort sigma) s in
+    let prkind = match kind with
+      | CONV -> str "="
+      | CUMUL -> str "<="
+    in
+    str "missing universe constraint:" ++ spc() ++
+    hov 1 (prs left ++ spc() ++ prkind ++ spc() ++ prs right)
+  | Inconsistency e ->
+    str "universe inconsistency: " ++
+    UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) e
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env sigma in
@@ -387,7 +398,11 @@ let explain_actual_type env sigma j t reason =
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_leconstr_env env sigma (Environ.j_val j) in
   let (pt, pct) = pr_explicit env sigma t (Environ.j_type j) in
-  let ppreason = explain_unification_error env sigma j.uj_type t reason in
+  let ppreason = match reason with
+    | None -> mt()
+    | Some (Inr e) -> explain_unification_error env sigma j.uj_type t e
+    | Some (Inl e) -> spc() ++ surround (explain_kernel_univ_error sigma e)
+  in
   pe ++
   hov 0 (
   str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -409,7 +424,7 @@ let explain_incorrect_primitive env sigma j exp =
   str "has type" ++ brk(1,1) ++ pct ++ spc () ++
   str "while it is expected to have type" ++ brk(1,1) ++ pt ++ str ".")
 
-let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
+let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) reason rator randl =
   let randl = jv_nf_betaiotaevar env sigma randl in
   let actualtyp = Reductionops.nf_betaiota env sigma actualtyp in
   let env = make_all_name_different env sigma in
@@ -426,6 +441,10 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
                   let pc,pct = pr_ljudge_env env sigma c in
                   hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
+  let ppreason = match reason with
+    | None -> mt()
+    | Some e -> spc() ++ surround (explain_kernel_univ_error sigma e)
+  in
   str "Illegal application: " ++ (* pe ++ *) fnl () ++
   str "The term" ++ brk(1,1) ++ pr ++ spc () ++
   str "of type" ++ brk(1,1) ++ prt ++ spc () ++
@@ -433,7 +452,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   str " " ++ v 0 appl ++ fnl () ++ term_string2 ++ str " has type" ++
   brk(1,1) ++ actualtyp ++ spc () ++
   str "which should be coercible to" ++ brk(1,1) ++
-  exptyp ++ str "."
+  exptyp ++ ppreason ++ str "."
 
 let explain_cant_apply_not_functional env sigma rator randl =
   let env = make_all_name_different env sigma in
@@ -458,7 +477,7 @@ let explain_unexpected_type env sigma actual_type expected_type e =
   let pract, prexp = pr_explicit env sigma actual_type expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
   str "where" ++ spc () ++ prexp ++ str " was expected" ++
-  explain_unification_error env sigma actual_type expected_type (Some e) ++ str"."
+  explain_unification_error env sigma actual_type expected_type e ++ str"."
 
 let explain_not_product env sigma c =
   let pr = pr_econstr_env env sigma c in
@@ -710,7 +729,7 @@ let explain_wrong_case_info env (ind,u) ci =
 let explain_cannot_unify env sigma m n e =
   let env = make_all_name_different env sigma in
   let pm, pn = pr_explicit env sigma m n in
-  let ppreason = explain_unification_error env sigma m n e in
+  let ppreason = Option.cata (explain_unification_error env sigma m n) (mt()) e in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   pe ++ str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
   str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
@@ -838,12 +857,12 @@ let explain_type_error env sigma err =
       explain_ill_formed_branch env sigma c i actty expty
   | Generalization (nvar, c) ->
       explain_generalization env sigma nvar c
-  | ActualType (j, pt) ->
-    explain_actual_type env sigma j pt None
+  | ActualType (j, pt, e) ->
+    explain_actual_type env sigma j pt (Option.map (fun e -> Inl e) e)
   | IncorrectPrimitive (j, t) ->
     explain_incorrect_primitive env sigma j t
-  | CantApplyBadType (t, rator, randl) ->
-      explain_cant_apply_bad_type env sigma t rator randl
+  | CantApplyBadType ((i,l,r,e), rator, randl) ->
+      explain_cant_apply_bad_type env sigma (i,l,r) e rator randl
   | CantApplyNonFunctional (rator, randl) ->
       explain_cant_apply_not_functional env sigma rator randl
   | IllFormedRecBody (err, lna, i, fixenv, vdefj) ->
@@ -878,7 +897,7 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
     let ppreason = match e with
     | None -> mt()
     | Some (c1,c2,e) ->
-      explain_unification_error env sigma c1 c2 (Some e)
+      explain_unification_error env sigma c1 c2 e
     in
     str "Found incompatible occurrences of the pattern" ++ str ":" ++
     spc () ++ str "Matched term " ++ pr_leconstr_env env sigma t2 ++
@@ -945,7 +964,7 @@ let rec explain_pretype_error env sigma err =
     let {uj_val = c; uj_type = actty} = j in
     let (env, c, actty, expty), e = contract3' env sigma c actty t e in
     let j = {uj_val = c; uj_type = actty} in
-    explain_actual_type env sigma j expty (Some e)
+    explain_actual_type env sigma j expty (Some (Inr e))
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id

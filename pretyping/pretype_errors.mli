@@ -81,7 +81,7 @@ val error_actual_type :
       unification_error -> 'b
 
 val error_actual_type_core :
-  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> Conversion.univ_error option -> 'b
 
 val error_cant_apply_not_functional :
   ?loc:Loc.t -> env -> Evd.evar_map ->
@@ -89,7 +89,7 @@ val error_cant_apply_not_functional :
 
 val error_cant_apply_bad_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
-      unsafe_judgment -> unsafe_judgment array -> 'b
+      unsafe_judgment -> unsafe_judgment array ->  Conversion.univ_error option -> 'b
 
 val error_case_not_inductive :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

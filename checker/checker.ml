@@ -266,7 +266,7 @@ let explain_exn = function
       | Generalization _ -> str"Generalization"
       | ActualType _ -> str"ActualType"
       | IncorrectPrimitive _ -> str"IncorrectPrimitive"
-      | CantApplyBadType ((n,a,b),{uj_val = hd; uj_type = hdty},args) ->
+      | CantApplyBadType ((n,a,b,_),{uj_val = hd; uj_type = hdty},args) ->
         let pp_arg i judge =
           hv 1 (str"arg " ++ int (i+1) ++ str"= " ++
                 Constr.debug_print judge.uj_val ++

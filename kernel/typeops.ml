@@ -25,7 +25,7 @@ open Type_errors
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-exception NotConvertibleVect of int
+exception NotConvertibleVect of int * Conversion.univ_error option
 
 let conv_leq env x y = default_conv CUMUL env x y
 
@@ -33,7 +33,7 @@ let conv_leq_vecti env v1 v2 =
   Array.fold_left2_i
     (fun i _ t1 t2 ->
       try conv_leq env t1 t2
-      with NotConvertible -> raise (NotConvertibleVect i))
+      with NotConvertible e -> raise (NotConvertibleVect (i,e)))
     ()
     v1
     v2
@@ -181,9 +181,9 @@ let check_hyps_inclusion env ?evars c sign =
         | LocalAssum _, LocalDef _ ->
             (* This is wrong, because we don't know if the body is
                needed or not for typechecking: *) ()
-        | LocalDef _, LocalAssum _ -> raise NotConvertible
+        | LocalDef _, LocalAssum _ -> raise (NotConvertible None)
         | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
-      with Not_found | NotConvertible | Option.Heterogeneous ->
+      with Not_found | NotConvertible _ | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
     ~init:()
@@ -250,9 +250,9 @@ let type_of_apply env func funt argsv argstv =
         let c1 = term_of_fconstr c1 in
         begin match conv_leq env argt c1 with
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
-        | exception NotConvertible ->
+        | exception NotConvertible e ->
           error_cant_apply_bad_type env
-            (i+1,c1,argt)
+            (i+1,c1,argt,e)
             (make_judge func funt)
             (make_judgev argsv argstv)
         end
@@ -276,8 +276,8 @@ let type_of_parameters env ctx u argsv argstv =
     let t = esubst u subst t in
     begin match conv_leq env argt t with
     | () -> apply_rec (i + 1) (Esubst.subs_cons (Vars.make_substituend arg) subst) ctx
-    | exception NotConvertible ->
-      error_actual_type env (make_judge arg argt) t
+    | exception NotConvertible e ->
+      error_actual_type env (make_judge arg argt) t e
     end
   | LocalDef (_, b, _) :: ctx ->
     let b = esubst u subst b in
@@ -376,8 +376,8 @@ let check_cast env c ct k expected_type =
     | NATIVEcast ->
       let sigma = Genlambda.empty_evars in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
-  with NotConvertible ->
-    error_actual_type env (make_judge c ct) expected_type
+  with NotConvertible e ->
+    error_actual_type env (make_judge c ct) expected_type e
 
 let judge_of_int env i =
   make_judge (Constr.mkInt i) (type_of_int env)
@@ -410,7 +410,7 @@ let make_param_univs env indu spec args argtys =
       match (snd (Reduction.dest_arity env argt)) with
       | SProp | exception Reduction.NotArity ->
         Type_errors.error_cant_apply_bad_type env
-          (i+1, mkType (Universe.make expected), argt)
+          (i+1, mkType (Universe.make expected), argt, None)
           (make_judge (mkIndU indu) (Inductive.type_of_inductive (spec, snd indu)))
           (make_judgev args argtys)
       | Prop -> TemplateProp
@@ -472,7 +472,7 @@ let check_branch_types env (_mib, mip) ci u pms c _ct lft (pctx, p) =
     let subst = instantiate (List.rev pctx) (indices @ [cstr]) (Esubst.subs_shft (nargs, Esubst.subs_id 0)) in
     let expbrt = Vars.esubst Vars.lift_substituend subst p in
     try conv_leq brenv brt expbrt
-    with NotConvertible -> raise (NotConvertibleBranch (i, brctx, brt, expbrt))
+    with NotConvertible _ -> raise (NotConvertibleBranch (i, brctx, brt, expbrt))
   in
   try Array.iteri iter lft
   with NotConvertibleBranch (i, brctx, brt, expbrt) ->
@@ -574,7 +574,7 @@ let check_fixpoint env lna lar vdef vdeft =
   assert (Int.equal (Array.length lar) lt);
   try
     conv_leq_vecti env vdeft (Array.map (fun ty -> lift lt ty) lar)
-  with NotConvertibleVect i ->
+  with NotConvertibleVect (i,_) ->
     error_ill_typed_rec_body env i lna (make_judgev vdef vdeft) lar
 
 (* Global references *)

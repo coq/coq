@@ -61,10 +61,12 @@ type ('constr, 'types) ptype_error =
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
-  | ActualType of ('constr, 'types) punsafe_judgment * 'types
+  | ActualType of ('constr, 'types) punsafe_judgment * 'types * Conversion.univ_error option
   | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of
-      (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+      (int * 'constr * 'constr * Conversion.univ_error option)
+      * ('constr, 'types) punsafe_judgment
+      * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
@@ -125,7 +127,7 @@ val error_ill_formed_branch : env -> constr -> pconstructor -> constr -> constr 
 
 val error_generalization : env -> Name.t * types -> unsafe_judgment -> 'a
 
-val error_actual_type : env -> unsafe_judgment -> types -> 'a
+val error_actual_type : env -> unsafe_judgment -> types -> Conversion.univ_error option -> 'a
 
 val error_incorrect_primitive : env -> (CPrimitives.op_or_type,types) punsafe_judgment -> types -> 'a
 
@@ -133,7 +135,7 @@ val error_cant_apply_not_functional :
   env -> unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_cant_apply_bad_type :
-  env -> int * constr * constr ->
+  env -> int * constr * constr * Conversion.univ_error option ->
       unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_ill_formed_rec_body :

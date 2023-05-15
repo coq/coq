@@ -33,7 +33,7 @@ let conv_vect fconv vect1 vect2 cu =
       rcu := fconv vect1.(i) vect2.(i) !rcu
     done;
     !rcu
-  else raise NotConvertible
+  else raise (NotConvertible None)
 
 let rec conv_val env pb k v1 v2 cu =
   if v1 == v2 then cu
@@ -48,14 +48,14 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vfun f1, Vfun f2 -> conv_fun env CONV k f1 f2 cu
   | Vfix (f1,None), Vfix (f2,None) -> conv_fix env k f1 f2 cu
   | Vfix (f1,Some args1), Vfix(f2,Some args2) ->
-      if nargs args1 <> nargs args2 then raise NotConvertible
+      if nargs args1 <> nargs args2 then raise (NotConvertible None)
       else conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu)
   | Vcofix (cf1,_,None), Vcofix (cf2,_,None) -> conv_cofix env k cf1 cf2 cu
   | Vcofix (cf1,_,Some args1), Vcofix (cf2,_,Some args2) ->
-      if nargs args1 <> nargs args2 then raise NotConvertible
+      if nargs args1 <> nargs args2 then raise (NotConvertible None)
       else conv_arguments env k args1 args2 (conv_cofix env k cf1 cf2 cu)
   | Vconst i1, Vconst i2 ->
-      if Int.equal i1 i2 then cu else raise NotConvertible
+      if Int.equal i1 i2 then cu else raise (NotConvertible None)
   | Vblock b1, Vblock b2 ->
       let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
@@ -65,16 +65,16 @@ and conv_whd env pb k whd1 whd2 cu =
           rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
         done;
         !rcu
-      else raise NotConvertible
+      else raise (NotConvertible None)
   | Vint64 i1, Vint64 i2 ->
-    if Int64.equal i1 i2 then cu else raise NotConvertible
+    if Int64.equal i1 i2 then cu else raise (NotConvertible None)
   | Vfloat64 f1, Vfloat64 f2 ->
     if Float64.(equal (of_float f1) (of_float f2)) then cu
-    else raise NotConvertible
+    else raise (NotConvertible None)
   | Varray t1, Varray t2 ->
     if t1 == t2 then cu else
     let n = Parray.length_int t1 in
-    if not (Int.equal n (Parray.length_int t2)) then raise NotConvertible;
+    if not (Int.equal n (Parray.length_int t2)) then raise (NotConvertible None);
     Parray.fold_left2 (fun cu v1 v2 -> conv_val env CONV k v1 v2 cu) cu t1 t2
   | Vaccu (a1, stk1), Vaccu (a2, stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
@@ -83,7 +83,7 @@ and conv_whd env pb k whd1 whd2 cu =
       conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
   | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconst _, _ | Vint64 _, _
-  | Vfloat64 _, _ | Varray _, _ | Vblock _, _ | Vaccu _, _ -> raise NotConvertible
+  | Vfloat64 _, _ | Varray _, _ | Vblock _, _ | Vaccu _, _ -> raise (NotConvertible None)
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
@@ -107,14 +107,14 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           conv_arguments env ~from:ulen k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
-    else raise NotConvertible
+    else raise (NotConvertible None)
   | Aid ik1, Aid ik2 ->
     if Vmvalues.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
         conv_stack env k stk1 stk2 cu
-      else raise NotConvertible
+      else raise (NotConvertible None)
   | Asort s1, Asort s2 ->
     sort_cmp_universes env pb s1 s2 cu
-  | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
+  | Asort _ , _ | Aind _, _ | Aid _, _ -> raise (NotConvertible None)
 
 and conv_stack env k stk1 stk2 cu =
   match stk1, stk2 with
@@ -134,12 +134,12 @@ and conv_stack env k stk1 stk2 cu =
             conv_val env CONV (k + fst b1.(i)) (snd b1.(i)) (snd b2.(i)) !rcu
         done;
         conv_stack env k stk1 stk2 !rcu
-      else raise NotConvertible
+      else raise (NotConvertible None)
   | Zproj p1 :: stk1, Zproj p2 :: stk2 ->
     if Int.equal p1 p2 then conv_stack env k stk1 stk2 cu
-    else raise NotConvertible
+    else raise (NotConvertible None)
   | [], _ | Zapp _ :: _, _ | Zfix _ :: _, _ | Zswitch _ :: _, _
-  | Zproj _ :: _, _ -> raise NotConvertible
+  | Zproj _ :: _, _ -> raise (NotConvertible None)
 
 and conv_fun env pb k f1 f2 cu =
   if f1 == f2 then cu
@@ -155,7 +155,7 @@ and conv_fix env k f1 f2 cu =
       let bf2, tf2 = reduce_fix k f2 in
       let cu = conv_vect (conv_val env CONV k) tf1 tf2 cu in
       conv_vect (conv_fun env CONV (k + Array.length tf1)) bf1 bf2 cu
-    else raise NotConvertible
+    else raise (NotConvertible None)
 
 and conv_cofix env k cf1 cf2 cu =
   if cf1 == cf2 then cu
@@ -165,7 +165,7 @@ and conv_cofix env k cf1 cf2 cu =
       let bcf2, tcf2 = reduce_cofix k cf2 in
       let cu = conv_vect (conv_val env CONV k) tcf1 tcf2 cu in
       conv_vect (conv_val env CONV (k + Array.length tcf1)) bcf1 bcf2 cu
-    else raise NotConvertible
+    else raise (NotConvertible None)
 
 and conv_arguments env ?from:(from=0) k args1 args2 cu =
   if args1 == args2 then cu
@@ -177,7 +177,7 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
         rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu
-    else raise NotConvertible
+    else raise (NotConvertible None)
 
 let warn_bytecode_compiler_failed =
   let open Pp in

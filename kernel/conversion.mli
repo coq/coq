@@ -14,15 +14,19 @@ open Environ
 (***********************************************************************
   s conversion functions *)
 
-exception NotConvertible
+type conv_pb = CONV | CUMUL
+
+type univ_error =
+  | MissingConstraint of { left : Sorts.t; kind : conv_pb; right : Sorts.t }
+  | Inconsistency of UGraph.univ_inconsistency
+
+exception NotConvertible of univ_error option
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:constr evar_handler ->
   'a -> 'a -> unit
-
-type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = {
   (* Might raise NotConvertible *)
