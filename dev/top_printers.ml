@@ -27,6 +27,7 @@ let () = Flags.in_debugger := true
 let () = Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true
 let () = Detyping.print_universes := true
 let () = Goptions.set_bool_option_value ["Printing";"Matching"] false
+let () = Goptions.set_bool_option_value ["Printing";"Sort";"Qualities"] true
 
 let with_env_evm f x =
   let env = Global.env() in
