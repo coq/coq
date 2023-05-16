@@ -212,6 +212,3 @@ val db_print_pp : Format.formatter -> t -> unit
 
 (** Print the Pp in tree form for debugging, return as a string *)
 val db_string_of_pp : t -> string
-
-(** Combine nested Ppcmd_glues *)
-val flatten : t -> t

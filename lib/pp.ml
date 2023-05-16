@@ -354,15 +354,3 @@ let db_print_pp fmt pp =
 
 let db_string_of_pp pp =
   Format.asprintf "%a" db_print_pp pp
-
-let rec flatten pp =
-  match pp with
-  | Ppcmd_glue l -> Ppcmd_glue (List.concat (List.map
-      (fun x -> let x = flatten x in
-                  match x with
-                  | Ppcmd_glue l2 -> l2
-                  | p -> [p])
-      l))
-  | Ppcmd_box (block, pp) -> Ppcmd_box (block, flatten pp)
-  | Ppcmd_tag (tag, pp) -> Ppcmd_tag (tag, flatten pp)
-  | p -> p

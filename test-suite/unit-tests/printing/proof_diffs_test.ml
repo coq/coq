@@ -81,6 +81,22 @@ let _ = add_test "tokenize_string/diff_mode in lexer" t
 
 open Pp
 
+let rec flatten pp : Pp.t =
+  match repr pp with
+  | Ppcmd_glue l ->
+    unrepr @@
+    Ppcmd_glue
+      (List.concat
+         (List.map
+            (fun x -> let x = flatten x in
+              match repr x with
+              | Ppcmd_glue l2 -> l2
+              | _ -> [x])
+            l))
+  | Ppcmd_box (block, pp) -> unrepr @@ Ppcmd_box (block, flatten pp)
+  | Ppcmd_tag (tag, pp) -> unrepr @@ Ppcmd_tag (tag, flatten pp)
+  | _ -> pp
+
 let write_diffs_option s =
   Goptions.set_string_option_value Proof_diffs.opt_name s
 
