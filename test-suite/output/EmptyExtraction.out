@@ -1,14 +1,11 @@
-
 type empty_set = |
 
 Extracted code successfully compiled
-
 type empty_set = |
 
 type 'x not = 'x -> empty_set
 
 Extracted code successfully compiled
-
 type empty_set = |
 
 type 'x not = 'x -> empty_set
@@ -19,11 +16,9 @@ let foo p q =
   p (fun r -> r q)
 
 Extracted code successfully compiled
-
 type empty = |
 
 Extracted code successfully compiled
-
 type empty = |
 
 (** val empty_rect : empty -> 'a1 **)
@@ -32,7 +27,6 @@ let empty_rect _ =
   assert false (* absurd case *)
 
 Extracted code successfully compiled
-
 type empty = |
 
 (** val bar : empty -> 'a1 **)

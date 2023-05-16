@@ -14,7 +14,6 @@ File "./output/FloatExtraction.v", line 25, characters 37-46:
 Warning: The constant -1.7e-308 is not a binary64 floating-point value. A
 closest value -0x0.c396c98f8d899p-1022 will be used and unambiguously printed
 -1.7000000000000002e-308. [inexact-float,parsing]
-
 (** val infinity : Float64.t **)
 
 let infinity =
@@ -49,7 +48,6 @@ let two =
 
 let list_floats =
   nan :: (infinity :: (neg_infinity :: (zero :: (one :: (two :: ((Float64.of_float (0x1p-1)) :: ((Float64.of_float (0x1.47ae147ae147bp-7)) :: ((Float64.of_float (-0x1p-1)) :: ((Float64.of_float (-0x1.47ae147ae147bp-7)) :: ((Float64.of_float (0x1.e42d130773b76p+1023)) :: ((Float64.of_float (-0x0.c396c98f8d899p-1022)) :: [])))))))))))
-
 
 (** val sqrt : Float64.t -> Float64.t **)
 

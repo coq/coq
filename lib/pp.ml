@@ -97,8 +97,6 @@ let rec app d1 d2 = match d1, d2 with
   (* | Ppcmd_glue l1,    Ppcmd_glue l2    -> Ppcmd_glue   (l1 @ l2) *)
   (* | Ppcmd_string s1,  Ppcmd_string s2  -> Ppcmd_string (s1 ^ s2) *)
 
-let seq s = Ppcmd_glue s
-
 let (++) = app
 
 (* formatting commands *)
@@ -117,6 +115,11 @@ let int   n  = str (string_of_int n)
 let real  r  = str (string_of_float r)
 let bool  b  = str (string_of_bool b)
 
+let seq = function
+  | [] -> mt()
+  | [x] -> x
+  | s -> Ppcmd_glue s
+
 (* XXX: To Remove *)
 let strbrk s =
   let rec aux p n =
@@ -126,7 +129,7 @@ let strbrk s =
         else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
-  in Ppcmd_glue (aux 0 0)
+  in seq (aux 0 0)
 
 let ismt = function | Ppcmd_empty -> true | _ -> false
 
@@ -239,7 +242,7 @@ let pr_nth n =
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let prlist pr l = Ppcmd_glue (List.map pr l)
+let prlist pr l = seq (List.map pr l)
 
 (* unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead.
