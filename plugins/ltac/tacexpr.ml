@@ -365,7 +365,7 @@ type ltac_call_kind =
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr
   | LtacVarCall of KerName.t option * Id.t * glob_tactic_expr
-  | LtacConstrInterp of Glob_term.glob_constr * Ltac_pretype.ltac_var_map
+  | LtacConstrInterp of Environ.env * Evd.evar_map * Glob_term.glob_constr * Ltac_pretype.ltac_var_map
 
 type ltac_stack = ltac_call_kind Loc.located list
 type ltac_trace = ltac_stack * Geninterp.Val.t Id.Map.t list
