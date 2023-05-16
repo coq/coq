@@ -150,7 +150,7 @@ type argument_ext = {
 type node =
 | Code of code
 | Comment of string
-| DeclarePlugin of string
+| DeclarePlugin of string option
 | GramExt of grammar_ext
 | VernacExt of vernac_ext
 | VernacArgumentExt of vernac_argument_ext
