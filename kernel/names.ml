@@ -1112,6 +1112,12 @@ module GlobRef = struct
   module Map_env = HMap.Make(UserOrd)
   module Set_env = Map_env.Set
 
+  let print = function
+    | VarRef x -> Id.print x
+    | ConstRef x -> Constant.print x
+    | IndRef (m,i) -> surround (MutInd.print m ++ strbrk ", " ++ int i )
+    | ConstructRef ((m,i),j) -> surround (MutInd.print m ++ strbrk ", " ++ int i ++ strbrk ", " ++ int j)
+
 end
 
 (** Located identifiers and objects with syntax. *)
