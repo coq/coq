@@ -456,10 +456,12 @@ let unify_product env sigma typ =
     let sigma, _ = Evardefine.define_evar_as_product env sigma ev in
     Inl sigma
   | _ ->
-    let sigma, (domain_hole, _) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
-    let env' = push_rel Context.(Rel.Declaration.LocalAssum (anonR, domain_hole)) env in
+    let sigma, (domain_hole, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
+    let r = ESorts.relevance_of_sort sigma s in
+    let na = make_annot Anonymous r in
+    let env' = push_rel Context.(Rel.Declaration.LocalAssum (na, domain_hole)) env in
     let sigma, (codomain_hole, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
-    let prod = mkProd (Context.anonR, domain_hole, codomain_hole) in
+    let prod = mkProd (na, domain_hole, codomain_hole) in
     (* NB: unification needs the un-reduced type to do heuristics like canonical structures *)
     try Inl (Evarconv.unify env sigma Conversion.CUMUL typ prod)
     with PretypeError _ -> Inr t (* return the reduced type to avoid double reducing *)
