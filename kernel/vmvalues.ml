@@ -140,7 +140,8 @@ let pp_sort s =
   | Prop -> Pp.str "Prop"
   | Set -> Pp.str "Set"
   | Type u -> Pp.(str "Type@{" ++ Univ.Universe.raw_pr u ++ str "}")
-  | QSort (q, u) -> Pp.(str "QSort@{" ++ (int @@ Sorts.QVar.repr q) ++ str ", " ++ Univ.Universe.raw_pr u ++ str "}")
+  | QSort (q, u) ->
+    Pp.(str "QSort@{" ++ (Sorts.QVar.pr q) ++ strbrk ", " ++ Univ.Universe.raw_pr u ++ str "}")
 
 let pp_struct_const = function
   | Const_sort s -> pp_sort s

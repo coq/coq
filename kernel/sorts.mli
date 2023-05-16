@@ -18,10 +18,10 @@ module QVar :
 sig
   type t
   val make : int -> t
-  val repr : t -> int
   val equal : t -> t -> bool
   val compare : t -> t -> int
   val pr : t -> Pp.t
+  val to_string : t -> string
 end
 
 type t = private
