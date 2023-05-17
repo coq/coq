@@ -72,7 +72,7 @@ type html_data = { link_prefix : string }
 let get_html_data () =
   match Sys.getenv_opt "CI_PROJECT_NAMESPACE",
         Sys.getenv_opt "CI_PROJECT_NAME",
-        Sys.getenv_opt "CI_BUILD_ID" with
+        Sys.getenv_opt "CI_JOB_ID" with
   | Some ns, Some project, Some id ->
     Some { link_prefix =
              Printf.sprintf "https://%s.gitlab.io/-/%s/-/jobs/%s/artifacts/_bench/html/"
