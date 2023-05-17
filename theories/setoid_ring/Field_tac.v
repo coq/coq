@@ -283,8 +283,8 @@ Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   set (g:= G);
   revert H;
   field_lookup (PackField Field_simplify) [] rl t;
-  intro H;
-  unfold g;clear g.
+  [ intro H; unfold g | .. ];
+  clear g.
 
 Tactic Notation "field_simplify"
     "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=
@@ -294,8 +294,8 @@ Tactic Notation "field_simplify"
   set (g:= G);
   revert H;
   field_lookup (PackField Field_simplify) [lH] rl t;
-  intro H;
-  unfold g;clear g.
+  [ intro H; unfold g | .. ];
+  clear g.
 
 (*
 Ltac Field_simplify_in hyp:=
