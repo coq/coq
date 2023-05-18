@@ -312,7 +312,7 @@ let status force =
      and display the other parts (opened sections and modules) *)
   set_doc (fst @@ Stm.finish ~doc:(get_doc ()));
   if force then
-    set_doc (fst @@ Stm.join ~doc:(get_doc ()));
+    set_doc (Stm.join ~doc:(get_doc ()));
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
