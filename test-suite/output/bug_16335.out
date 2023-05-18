@@ -1,0 +1,3 @@
+Error: There are pending proofs in file ./output/bug_16335.v: foo.
+
+coqc exited with code 1

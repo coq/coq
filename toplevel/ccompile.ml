@@ -68,9 +68,10 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
       let source = source copts ldir long_f_dot_in in
       let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~source long_f_dot_in in
-      let state = Stm.join ~doc:state.doc in
+      let fullstate = Stm.finish ~doc:state.doc in
+      ensure_no_pending_proofs ~filename:long_f_dot_in fullstate;
+      let () = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
-      ensure_no_pending_proofs ~filename:long_f_dot_in state;
       (* In .vo production, dump a complete .vo file. *)
       if mode = BuildVo
         then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out;

@@ -2429,7 +2429,7 @@ let finish ~doc =
   let () = observe ~doc (VCS.get_branch_pos head) in
   let tip = VCS.cur_tip () in
   if not (State.is_cached ~cache:true tip) then
-    CErrors.anomaly Pp.(str "Stm.join: tip not cached");
+    CErrors.anomaly Pp.(str "Stm.finish: tip not cached");
   VCS.print ();
   State.get_cached tip
 
@@ -2473,8 +2473,7 @@ let join ~doc =
   let tip = VCS.cur_tip () in
   if not (State.is_cached ~cache:true tip) then
     CErrors.anomaly Pp.(str "Stm.join: tip not cached");
-  VCS.print ();
-  State.get_cached tip
+  VCS.print ()
 
 type tasks = Opaqueproof.opaque_handle option Slaves.tasks
 let check_task name tasks i =
