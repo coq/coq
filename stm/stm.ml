@@ -1189,17 +1189,16 @@ end = struct (* {{{ *)
       match np with
       | None -> None
       | Some cp ->
-        let did = ref id in
-        let rv = ref np in
-        let done_ = ref false in
-        while not !done_ do
-          did := fold_until back_tactic 1 !did;
-          rv := get_proof ~doc !did;
-          done_ := match !rv with
-            | Some rv -> not (Evar.Set.equal (Proof.all_goals rv) (Proof.all_goals cp))
-            | None -> true
-        done;
-        !rv
+        let rec search did =
+          let did = fold_until back_tactic 1 did in
+          match get_proof ~doc did with
+          | None -> None
+          | Some rv ->
+            if Evar.Set.equal (Proof.all_goals rv) (Proof.all_goals cp)
+            then search did
+            else Some rv
+        in
+        search id
     with Not_found | PG_compat.NoCurrentProof -> None
 
 end (* }}} *)
