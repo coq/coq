@@ -1071,7 +1071,8 @@ end = struct (* {{{ *)
           if Vcs_.Branch.equal b current_branch then None
           else Some(b, VCS.get_branch b)) (VCS.branches ()) in
       let backup = if fst info.vcs_backup <> None then fst info.vcs_backup
-        else Some (VCS.backup ()) in
+        else if VCS.is_interactive () then Some (VCS.backup ())
+        else None in
       let branches = if snd info.vcs_backup <> None then snd info.vcs_backup
         else Some { mine; others } in
       info.vcs_backup <- backup, branches)
