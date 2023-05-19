@@ -368,7 +368,7 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   let push_section_name obj_dir =
     Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir))
 
-  let close_section fs = Summary.Synterp.unfreeze_summaries ~partial:true fs
+  let close_section fs = Summary.Synterp.unfreeze_summaries fs
 
   let add_entry node =
     synterp_state := { !synterp_state with lib_stk = (node,[]) :: !synterp_state.lib_stk }
