@@ -136,7 +136,7 @@ val wait : doc:doc -> unit
 val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
-val join : doc:doc -> Vernacstate.t
+val join : doc:doc -> unit
 
 (* Saves on the disk a .vio corresponding to the current status:
    - if the worker pool is empty, all tasks are saved

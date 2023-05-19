@@ -305,8 +305,7 @@ let status force =
      (usually Top in an interactive session, cf "coqtop -top"),
      and display the other parts (opened sections and modules) *)
   ignore (Stm.finish ~doc:(get_doc ()) : Vernacstate.t);
-  if force then
-    ignore (Stm.join ~doc:(get_doc ()) : Vernacstate.t);
+  if force then Stm.join ~doc:(get_doc ());
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
