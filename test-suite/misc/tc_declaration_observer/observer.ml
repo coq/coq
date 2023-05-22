@@ -3,6 +3,7 @@ let o = open_out "main.out"
 
 let observe x =
   let open Classes in
+  let open Event in
   let open Typeclasses in
   let open Hints in
   let p = Pp.string_of_ppcmds in
