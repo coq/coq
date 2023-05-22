@@ -44,7 +44,7 @@ val xml_debug : bool ref
 val in_debugger : bool ref
 val in_toplevel : bool ref
 
-(* development flag to detect race conditions, it should go away. *)
+(* Used to check stages are used correctly. *)
 val in_synterp_phase : bool ref
 
 (* Set Printing All flag. For some reason it is a global flag *)
