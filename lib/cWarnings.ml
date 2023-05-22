@@ -45,18 +45,30 @@ let graph : category String.Map.t ref = ref String.Map.empty
 let revgraph : category list String.Map.t ref = ref String.Map.empty
 (** Map from categories to the warnings and categories they contain, including transitively. *)
 
+type 'a elt =
+  | There of 'a
+  | NotThere
+  | OtherType
+
 let get_category name =
-  let v = String.Map.find name !graph in
-  if is_category v then Some v
-  else None
+  match String.Map.find_opt name !graph with
+  | None -> NotThere
+  | Some v ->
+    if is_category v then There v
+    else OtherType
 
 let get_warning name =
-  let v = String.Map.find name !graph in
-  v.warning
+  match String.Map.find_opt name !graph with
+  | None -> NotThere
+  | Some v -> match v.warning with
+    | None -> OtherType
+    | Some v -> There v
 
 let warning_status w = w.current
 
-let get_status ~name = name |> get_warning |> Option.get |> warning_status
+let get_status ~name = match get_warning name with
+  | There w -> warning_status w
+  | NotThere | OtherType -> assert false
 
 type _ tag = ..
 

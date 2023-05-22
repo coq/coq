@@ -61,13 +61,16 @@ val create : name:string -> ?category:category -> ?default:status ->
 val get_flags : unit -> string
 val set_flags : string -> unit
 
-val get_category : string -> category option
-(** Get preexisting category by name. Raise [Not_found] if it doesn't exist.
-    Returns [None] if it's a non-hybrid warning. *)
+type 'a elt =
+  | There of 'a
+  | NotThere
+  | OtherType
 
-val get_warning : string -> warning option
-(** Get preexisting warning by name. Raise [Not_found] if it doesn't exist.
-    Returns [None] if it's a category. *)
+val get_category : string -> category elt
+(** Get preexisting category by name. *)
+
+val get_warning : string -> warning elt
+(** Get preexisting warning by name. *)
 
 val warning_status : warning -> status
 (** Current status of the warning. *)
