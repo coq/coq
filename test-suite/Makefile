@@ -138,12 +138,12 @@ FAIL = >&2 echo 'FAILED    $@'
 COMPLEXITY := $(if $(bogomips),complexity)
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
-VSUBSYSTEMS := prerequisite success failure bugs output output-coqtop \
+VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc ide bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
@@ -224,6 +224,7 @@ summary:
 	  $(call summary_dir, "Success tests", success); \
 	  $(call summary_dir, "Failure tests", failure); \
 	  $(call summary_dir, "Bugs tests", bugs); \
+	  $(call summary_dir, "Bugs tests (no coqchk)", bugs-nocoqchk); \
 	  $(call summary_dir, "Output tests", output); \
 	  $(call summary_dir, "Output tests with coqtop", output-coqtop); \
 	  $(call summary_dir, "Output (modulo time changes) tests", output-modulo-time); \
@@ -259,26 +260,6 @@ summary.log:
 
 report: summary.log
 	$(HIDE)bash report.sh
-
-#######################################################################
-# Regression (and progression) tests
-#######################################################################
-
-# Closed bugs that should succeed
-$(addsuffix .log,$(wildcard bugs/*.v)): %.v.log: %.v
-	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (bug seems to be opened, please check)"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
 
 #######################################################################
 # Unit tests
@@ -343,8 +324,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-ssr: $(wildcard ssr/*.v:%.v=%.v.log)
-$(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
@@ -369,7 +349,22 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primit
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
-stm: $(wildcard stm/*.v:%.v=%.v.log)
+# coqchk shouldn't be run on the result for various reasons (not yet fixed bug, using -vos, etc)
+$(addsuffix .log,$(wildcard bugs-nocoqchk/*.v)): %.v.log: %.v
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (bug seems to be opened, please check)"; \
+	    $(FAIL); \
+	  fi; \
+	} > "$@"
+
 $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
