@@ -379,6 +379,7 @@ let tclPROGRESS t =
 (* Check that holes in arguments have been resolved *)
 
 let check_evars env sigma extsigma origsigma =
+  (* origsigma ⊆ extsigma ⊆ sigma *)
   let reachable = lazy (Evarutil.reachable_from_evars sigma
                           (Evar.Map.domain (Evd.undefined_map origsigma))) in
   let rec is_undefined_up_to_restriction sigma evk =
@@ -393,6 +394,8 @@ let check_evars env sigma extsigma origsigma =
           evar remaining after typing from the initial term given to
           apply/elim and co tactics, is it correct? *)
         None in
+  if Evd.undefined_map extsigma == Evd.undefined_map origsigma then ()
+  else
   let rest =
     Evd.fold_undefined (fun evk evi acc ->
       match is_undefined_up_to_restriction sigma evk with
