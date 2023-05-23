@@ -47,7 +47,6 @@ module type S = sig
     val make : ?loc:Loc.t -> (unit,char) Stream.t -> t
     val comments : t -> ((int * int) * string) list
     val loc : t -> Loc.t
-    val consume : t -> int -> unit with_kwstate
   end
 
   module Entry : sig

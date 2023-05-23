@@ -25,11 +25,6 @@ let estate = ref EState.empty
 
 let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
 
-module Parsable = struct
-  include Parsable
-  let consume x len = consume x len !keyword_state
-end
-
 module Entry = struct
   include Entry
   let make na =

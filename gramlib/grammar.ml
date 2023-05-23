@@ -45,10 +45,6 @@ module type S = sig
     val loc : t -> Loc.t
     (** [loc pa] Return parsing position for [pa] *)
 
-    val consume : t -> int -> unit with_kwstate
-    (** [consume pa n] Discard [n] tokens from [pa], updating the
-       parsing position *)
-
   end
 
   module Entry : sig
@@ -1691,7 +1687,6 @@ module Parsable = struct
   let comments p = L.State.get_comments !(p.lexer_state)
 
   let loc t = LStream.current_loc t.pa_tok_strm
-  let consume { pa_tok_strm } len kwstate = LStream.njunk kwstate len pa_tok_strm
 end
 
 module Entry = struct
