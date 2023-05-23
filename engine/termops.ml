@@ -90,7 +90,7 @@ module Internal = struct
 
   let protect f x =
     try f x
-    with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+    with e when CErrors.noncritical e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
 
   let print_kconstr env sigma a =
     protect (fun c -> print_constr_env env sigma c) a

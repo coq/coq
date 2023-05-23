@@ -131,11 +131,11 @@ module Strict = struct
            *under this* bullet b, see if a new b can be pushed. *)
           begin
             try ignore (push b prf); Suggest b
-            with _ ->
+            with e when CErrors.noncritical e ->
               (* b could not be pushed, so we must look for a outer bullet *)
               loop prf
           end
-        | exception _ ->
+        | exception e when CErrors.noncritical e ->
           (* No pop was possible, but there are still
              subgoals somewhere: there must be a "}" to use. *)
           NeedClosingBrace

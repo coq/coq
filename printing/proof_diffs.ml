@@ -106,7 +106,7 @@ let tokenize_string s =
     let toks = stream_tok [] lex in
     CLexer.Lexer.State.set st;
     toks
-  with exn ->
+  with exn when CErrors.noncritical exn ->
     CLexer.Lexer.State.set st;
     raise (Diff_Failure "Input string is not lexable")
 
@@ -320,7 +320,7 @@ let goal_info goal =
     let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
-  with _ -> ([], !map, Pp.mt ())
+  with e when CErrors.noncritical e -> ([], !map, Pp.mt ())
 
 let diff_goal_info ~short o_info n_info =
   let (o_idents_in_lines, o_hyp_map, o_concl_pp) = o_info in

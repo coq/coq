@@ -266,7 +266,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       let (i,u), ind_args =
         (* Are we sure that ty is not an evar? *)
         try Inductiveops.find_mrectype env sigma ty
-        with _ -> raise Not_found
+        with e when CErrors.noncritical e -> raise Not_found
       in ind_args, c, sk1
     | None ->
       match Stack.strip_n_app solution.nparams sk1 with

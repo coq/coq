@@ -857,7 +857,7 @@ and detype_r d flags avoid env sigma t =
           try
             let _, mip = Global.lookup_inductive (Projection.inductive p) in
             mip.mind_consnrealargs.(0), Projection.arg p
-          with _ when !Flags.in_debugger ->
+          with e when CErrors.noncritical e && !Flags.in_debugger ->
             (* kinda weird printing but the name should be enough to
                indicate which projection it is *)
             1, 0
