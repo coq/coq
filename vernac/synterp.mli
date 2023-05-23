@@ -27,7 +27,7 @@ type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.m
 type control_entry =
   | ControlTime of { synterp_duration: System.duration }
   | ControlRedirect of string
-  | ControlTimeout of { synterp_duration : System.duration; limit: int }
+  | ControlTimeout of { remaining : float }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
 
