@@ -99,10 +99,10 @@ Ltac2 lazy_match0 t pats :=
   Control.once (fun () => interp pats) ().
 
 Ltac2 multi_match0 t pats :=
-  let rec interp m := match m with
-  | [] => Control.zero Match_failure
+  let rec interp e m := match m with
+  | [] => Control.zero e
   | p :: m =>
-    let next _ := interp m in
+    let next e := interp e m in
     let (knd, pat, f) := p in
     let p := match knd with
     | MatchPattern =>
@@ -117,7 +117,7 @@ Ltac2 multi_match0 t pats :=
     end in
     Control.plus p next
   end in
-  interp pats.
+  interp Match_failure pats.
 
 Ltac2 one_match0 t m := Control.once (fun _ => multi_match0 t m).
 
@@ -137,10 +137,10 @@ Ltac2 lazy_goal_match0 rev pats :=
   Control.once (fun () => interp pats) ().
 
 Ltac2 multi_goal_match0 rev pats :=
-  let rec interp m := match m with
-  | [] => Control.zero Match_failure
+  let rec interp e m := match m with
+  | [] => Control.zero e
   | p :: m =>
-    let next _ := interp m in
+    let next e := interp e m in
     let (pat, f) := p in
     let (phyps, pconcl) := pat in
     let cur _ :=
@@ -149,6 +149,6 @@ Ltac2 multi_goal_match0 rev pats :=
     in
     Control.plus cur next
   end in
-  interp pats.
+  interp Match_failure pats.
 
 Ltac2 one_goal_match0 rev pats := Control.once (fun _ => multi_goal_match0 rev pats).
