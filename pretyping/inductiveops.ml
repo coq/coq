@@ -577,7 +577,7 @@ let extract_mrectype sigma t =
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
-  let (t, l) = Termops.decompose_app_vect sigma (whd_all env sigma c) in
+  let (t, l) = EConstr.decompose_app_vect sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found

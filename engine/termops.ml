@@ -556,11 +556,6 @@ let last_arg sigma c = match EConstr.kind sigma c with
   | _ -> anomaly (Pp.str "last_arg.")
 
 (* Get the last arg of an application *)
-let decompose_app_vect sigma c =
-  match EConstr.kind sigma c with
-  | App (f,cl) -> (f, cl)
-  | _ -> (c,[||])
-
 let adjust_app_list_size f1 l1 f2 l2 =
   let open EConstr in
   let len1 = List.length l1 and len2 = List.length l2 in
@@ -1052,7 +1047,7 @@ let replace_term_gen sigma eq_fun ar by_c in_t =
 
 let replace_term sigma c byc t =
   let cache = ref Int.Map.empty in
-  let ar = Array.length (snd (decompose_app_vect sigma c)) in
+  let ar = Array.length (snd (EConstr.decompose_app_vect sigma c)) in
   let eq sigma k t = eq_upto_lift cache c sigma k t in
   replace_term_gen sigma eq ar byc t
 

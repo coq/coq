@@ -756,7 +756,7 @@ let keep_head_inductive sigma c =
      As a matter of fact, if it reduces to an applied template inductive
      type but is not syntactically equal to it, it will fail to project. *)
   let _, hd = EConstr.decompose_prod sigma c in
-  let hd, _ = Termops.decompose_app_vect sigma hd in
+  let hd, _ = EConstr.decompose_app_vect sigma hd in
   match EConstr.kind sigma hd with
   | Ind (ind, _) -> KeepEqualitiesTable.active ind
   | _ -> false

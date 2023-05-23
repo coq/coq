@@ -51,7 +51,7 @@ let global_of_constr_nofail sigma c =
 let mk_atom c = CClosure.mk_atom (EConstr.Unsafe.to_constr c)
 
 let rec mk_clos_but sigma f_map n t =
-  let (f, args) = Termops.decompose_app_vect sigma t in
+  let (f, args) = EConstr.decompose_app_vect sigma t in
   match f_map (global_of_constr_nofail sigma f) with
   | Some tag ->
       let map i t = tag_arg sigma f_map n (tag i) t in

@@ -156,7 +156,7 @@ let splay_open_constr env (sigma, c) =
 
 let isAppInd env sigma c =
   let c = Reductionops.clos_whd_flags CClosure.all env sigma c in
-  let c, _ = decompose_app_vect sigma c in
+  let c, _ = EConstr.decompose_app_vect sigma c in
   EConstr.isInd sigma c
 
 (** Generic argument-based globbing/typing utilities *)

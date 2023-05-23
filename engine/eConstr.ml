@@ -238,6 +238,11 @@ let destRef sigma c = let open GlobRef in match kind sigma c with
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
+let decompose_app_vect sigma c =
+  match kind sigma c with
+  | App (f,cl) -> (f, cl)
+  | _ -> (c,[||])
+
 let decompose_app sigma c =
   match kind sigma c with
     | App (f,cl) -> (f, Array.to_list cl)

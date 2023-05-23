@@ -137,7 +137,7 @@ let is_class_constr sigma c =
   with DestKO | Not_found -> false
 
 let rec is_class_type evd c =
-  let c, _ = Termops.decompose_app_vect evd c in
+  let c, _ = EConstr.decompose_app_vect evd c in
     match EConstr.kind evd c with
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
@@ -148,7 +148,7 @@ let is_class_evar evd evi =
   is_class_type evd (Evd.evar_concl evi)
 
 let rec is_maybe_class_type evd c =
-  let c, _ = Termops.decompose_app_vect evd c in
+  let c, _ = EConstr.decompose_app_vect evd c in
     match EConstr.kind evd c with
     | Prod (_, _, t) -> is_maybe_class_type evd t
     | Cast (t, _, _) -> is_maybe_class_type evd t
