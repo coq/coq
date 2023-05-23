@@ -22,10 +22,12 @@ let mk_code s = { code = s; loc = dummy_loc }
 
 let print_code fmt c =
   let loc = c.loc.loc_start in
-  (* Print the line location as a source annotation *)
-  let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
-  let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
-  fprintf fmt "@[@<0>%s@]@\n" code_insert
+  if loc.pos_fname = "" then fprintf fmt "%s" c.code
+  else
+    (* Print the line location as a source annotation *)
+    let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
+    let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
+    fprintf fmt "@[@<0>%s@]@\n" code_insert
 
 module StringSet = Set.Make(String)
 
