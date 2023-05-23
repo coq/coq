@@ -1047,7 +1047,7 @@ let replace_term_gen sigma eq_fun ar by_c in_t =
 
 let replace_term sigma c byc t =
   let cache = ref Int.Map.empty in
-  let ar = Array.length (snd (EConstr.decompose_app_vect sigma c)) in
+  let ar = Array.length (snd (EConstr.decompose_app sigma c)) in
   let eq sigma k t = eq_upto_lift cache c sigma k t in
   replace_term_gen sigma eq ar byc t
 

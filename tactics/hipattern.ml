@@ -44,7 +44,7 @@ let meta2 = mkmeta 2
 let match_with_non_recursive_type env sigma t =
   match EConstr.kind sigma t with
     | App _ ->
-        let (hdapp,args) = decompose_app sigma t in
+        let (hdapp,args) = decompose_app_list sigma t in
         (match EConstr.kind sigma hdapp with
            | Ind (ind,u) ->
                if (Environ.lookup_mind (fst ind) env).mind_finite == CoFinite then
@@ -92,7 +92,7 @@ let rec whd_beta_prod env sigma c = match EConstr.kind sigma c with
   | _ -> c
 
 let match_with_one_constructor env sigma style onlybinary allow_rec t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,args) = decompose_app_list sigma t in
   let res = match EConstr.kind sigma hdapp with
   | Ind ind ->
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
@@ -170,7 +170,7 @@ let test_strict_disjunction (mib, mip) =
   Array.for_all_i check 0 mip.mind_nf_lc
 
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) env sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,args) = decompose_app_list sigma t in
   let res = match EConstr.kind sigma hdapp with
   | Ind (ind,u)  ->
       let car = constructors_nrealargs env ind in
@@ -330,7 +330,7 @@ let is_inductive_equality env ind =
   Int.equal nconstr 1 && Int.equal (constructor_nrealargs env (ind,1)) 0
 
 let match_with_equality_type env sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,args) = decompose_app_list sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind,_) when is_inductive_equality env ind -> Some (hdapp,args)
   | _ -> None
@@ -374,7 +374,7 @@ let match_with_forall_term env sigma c =
 let is_forall_term env sigma c = Option.has_some (match_with_forall_term env sigma c)
 
 let match_with_nodep_ind env sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,args) = decompose_app_list sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind, _)  ->
      let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -394,7 +394,7 @@ let match_with_nodep_ind env sigma t =
 let is_nodep_ind env sigma t = Option.has_some (match_with_nodep_ind env sigma t)
 
 let match_with_sigma_type env sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,args) = decompose_app_list sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind, _) ->
      let (mib,mip) = Inductive.lookup_mind_specif env ind in

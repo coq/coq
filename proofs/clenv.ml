@@ -304,7 +304,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
-  let (hd, _) = decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus) in
+  let (hd, _) = decompose_app clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus) in
   let clenv = if isMeta clenv.evd hd then clenv_unify_meta_types ~flags clenv else clenv in
   clenv_unify CUMUL ~flags (clenv_type clenv) concl clenv
 
@@ -319,7 +319,7 @@ let adjust_meta_source evd mv = function
        in situations like "ex_intro (fun x => P) ?ev p" *)
     let f = function (mv',(Cltyp (_,t) | Clval (_,_,t))) ->
       if Metaset.mem mv t.freemetas then
-        let f,l = decompose_app evd t.rebus in
+        let f,l = decompose_app_list evd t.rebus in
         match EConstr.kind evd f with
         | Meta mv'' ->
           (match meta_opt_fvalue evd mv'' with
@@ -510,7 +510,7 @@ let error_already_defined b =
           Pp.(str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type env sigma c t u =
-  if isMeta sigma (fst (decompose_app_vect sigma (whd_nored env sigma u))) then
+  if isMeta sigma (fst (decompose_app sigma (whd_nored env sigma u))) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, sigma, c
   else
@@ -853,7 +853,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let concl = Proofview.Goal.concl gl in
   let sigma = clear_metas sigma in
   (* Extract inductive data from the argument. *)
-  let hd, args = decompose_app_vect sigma typ in
+  let hd, args = decompose_app sigma typ in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
   let ind, u = destInd sigma hd in

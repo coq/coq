@@ -59,7 +59,7 @@ let invert_tag cst tag reloc_tbl =
 
 let app_type env sigma c =
   let t = e_whd_all env sigma c in
-  decompose_appvect (EConstr.Unsafe.to_constr t)
+  decompose_app (EConstr.Unsafe.to_constr t)
 
 let find_rectype_a env sigma c =
   let (t, l) = app_type env sigma c in

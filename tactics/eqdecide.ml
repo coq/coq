@@ -247,7 +247,7 @@ let solveEqBranch rectype =
         match_eqdec env sigma concl >>= fun (dty, lhs, rhs,_) ->
           let (mib,mip) = Inductive.lookup_mind_specif env rectype in
           let nparams   = mib.mind_nparams in
-          let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
+          let getargs l = List.skipn nparams (snd (decompose_app_list sigma l)) in
           let rargs   = getargs rhs
           and largs   = getargs lhs in
 

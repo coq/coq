@@ -28,7 +28,7 @@ let project_hint ~poly pri l2r r =
   let sign, ccl = decompose_prod_decls sigma t in
   let a, b =
     match snd (decompose_app sigma ccl) with
-    | [a; b] -> (a, b)
+    | [|a; b|] -> (a, b)
     | _ -> assert false
   in
   let p = if l2r then lib_ref "core.iff.proj1" else lib_ref "core.iff.proj2" in

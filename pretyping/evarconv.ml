@@ -230,7 +230,7 @@ let occur_rigidly flags env evd (evk,_) t =
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let open ValuePattern in
   let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
-  let t2, sk2' = decompose_app_vect sigma (shrink_eta sigma t2) in
+  let t2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
   let (sigma, solution), sk2_effective =
     let t2 =
@@ -278,9 +278,9 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> ((Option.get @@ Stack.list_of_app_stack l') @ [el],s') in
-  let h, _ = decompose_app_vect sigma solution.body in
+  let h, _ = decompose_app sigma solution.body in
   let t2 = Stack.zip sigma (t2,sk2) in
-  let h2, _ = decompose_app_vect sigma t2 in
+  let h2, _ = decompose_app sigma t2 in
     sigma,(h, h2),solution.constant,solution.abstractions_ty,(solution.params,params1),
     (solution.cvalue_arguments,us2),(extra_args1,extra_args2),c1,
     (solution.cvalue_abstraction, t2)
@@ -1210,7 +1210,7 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
        test;
        (fun i -> evar_conv_x flags env i CONV h2
-         (fst (decompose_app_vect i (substl ks h))))]
+         (fst (decompose_app i (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =

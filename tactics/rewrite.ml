@@ -1963,7 +1963,7 @@ let setoid_symmetry_in id =
   let sigma = Proofview.Goal.sigma gl in
   let ctype = Retyping.get_type_of env sigma (mkVar id) in
   let binders,concl = decompose_prod_decls sigma ctype in
-  let (equiv, args) = decompose_app sigma concl in
+  let (equiv, args) = decompose_app_list sigma concl in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res

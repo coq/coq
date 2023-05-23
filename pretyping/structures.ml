@@ -219,7 +219,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
   in
   let sign,t = Reduction.hnf_decompose_lambda env c in
   let o_TABS = List.rev_map Context.Rel.Declaration.get_type sign in
-  let args = snd (decompose_app t) in
+  let args = snd (decompose_app_list t) in
   let { Structure.nparams = p; projections = lpj } =
     Structure.find ind in
   let o_TPARAMS, projs = List.chop p args in

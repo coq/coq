@@ -43,7 +43,7 @@ let functional_induction with_clean c princl pat =
   let open Proofview.Notations in
   Proofview.Goal.enter_one (fun gl ->
       let sigma = project gl in
-      let f, args = decompose_app sigma c in
+      let f, args = decompose_app_list sigma c in
       match princl with
       | None -> (
         (* No principle is given let's find the good one *)

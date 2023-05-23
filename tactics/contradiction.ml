@@ -76,7 +76,7 @@ let contradiction_context =
              Tacticals.tclORELSE
                (match is_unit_or_eq with
                | Some _ ->
-                   let hd,args = decompose_app sigma t in
+                   let hd,args = decompose_app_list sigma t in
                    let (ind,_ as indu) = destInd sigma hd in
                    let nparams = Inductiveops.inductive_nparams env ind in
                    let params = Util.List.firstn nparams args in

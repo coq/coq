@@ -341,7 +341,7 @@ let get_constructor ((ind,u),mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
   let typi = instantiate_constructor_params ((ind,j),u) (mib,mip) params in
   let (args,ccl) = decompose_prod_decls typi in
-  let (_,allargs) = decompose_app ccl in
+  let (_,allargs) = decompose_app_list ccl in
   let vargs = List.skipn (List.length params) allargs in
   { cs_cstr = (ith_constructor_of_inductive ind j,u);
     cs_params = params;
@@ -571,13 +571,13 @@ let compute_projections env (kn, i as ind) =
 
 let extract_mrectype sigma t =
   let open EConstr in
-  let (t, l) = decompose_app sigma t in
+  let (t, l) = decompose_app_list sigma t in
   match EConstr.kind sigma t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
-  let (t, l) = EConstr.decompose_app_vect sigma (whd_all env sigma c) in
+  let (t, l) = EConstr.decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
@@ -587,7 +587,7 @@ let find_mrectype env sigma c =
 
 let find_rectype env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  let (t, l) = decompose_app_list sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind (ind,u) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -600,7 +600,7 @@ let find_rectype env sigma c =
 
 let find_inductive env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  let (t, l) = decompose_app_list sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
@@ -610,7 +610,7 @@ let find_inductive env sigma c =
 
 let find_coinductive env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (whd_all env sigma c) in
+  let (t, l) = decompose_app_list sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->

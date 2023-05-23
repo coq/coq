@@ -366,10 +366,10 @@ val destLetIn : constr -> Name.t Context.binder_annot * constr * types * constr
 val destApp : constr -> constr * constr array
 
 (** Decompose any term as an applicative term; the list of args can be empty *)
-val decompose_app : constr -> constr * constr list
+val decompose_app_list : constr -> constr * constr list
 
 (** Same as [decompose_app], but returns an array. *)
-val decompose_appvect : constr -> constr * constr array
+val decompose_app : constr -> constr * constr array
 
 (** Destructs a constant *)
 val destConst : constr -> Constant.t Univ.puniverses

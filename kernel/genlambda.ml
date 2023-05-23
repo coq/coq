@@ -574,7 +574,7 @@ let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
 | Prod (na, dom, t) ->
   if Int.equal i 0 then
     let dom = Reduction.whd_all env dom in
-    let (dom, _) = decompose_appvect dom in
+    let (dom, _) = decompose_app dom in
     match kind dom with
     | Ind (ind, _) -> ind
     | _ -> assert false

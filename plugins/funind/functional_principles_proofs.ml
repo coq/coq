@@ -69,7 +69,7 @@ let is_trivial_eq sigma t =
   res
 
 let rec incompatible_constructor_terms sigma t1 t2 =
-  let c1, arg1 = decompose_app sigma t1 and c2, arg2 = decompose_app sigma t2 in
+  let c1, arg1 = decompose_app_list sigma t1 and c2, arg2 = decompose_app_list sigma t2 in
   (not (eq_constr sigma t1 t2))
   && isConstruct sigma c1 && isConstruct sigma c2
   && ( (not (eq_constr sigma c1 c2))
@@ -127,7 +127,7 @@ let prove_trivial_eq h_id context (constructor, type_of_term, term) =
           Tactics.exact_check to_refine) ]
 
 let find_rectype env sigma c =
-  let t, l = decompose_app sigma (Reductionops.whd_betaiotazeta env sigma c) in
+  let t, l = decompose_app_list sigma (Reductionops.whd_betaiotazeta env sigma c) in
   match EConstr.kind sigma t with
   | Ind ind -> (t, l)
   | Construct _ -> (t, l)
@@ -665,7 +665,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
          |Int _ | Float _ ->
           do_finalize dyn_infos
         | App (_, _) -> (
-          let f, args = decompose_app sigma dyn_infos.info in
+          let f, args = decompose_app_list sigma dyn_infos.info in
           match EConstr.kind sigma f with
           | Int _ -> user_err Pp.(str "integer cannot be applied")
           | Float _ -> user_err Pp.(str "float cannot be applied")
@@ -1172,7 +1172,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
             let sigma = Proofview.Goal.sigma gl in
             let ccl = Proofview.Goal.concl gl in
             let ctxt, pte_app = decompose_prod_decls sigma ccl in
-            let pte, pte_args = decompose_app sigma pte_app in
+            let pte, pte_args = decompose_app_list sigma pte_app in
             try
               let pte =
                 try destVar sigma pte
@@ -1259,7 +1259,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
                       let fname =
                         destConst sigma
                           (fst
-                             (decompose_app sigma (List.hd (List.rev pte_args))))
+                             (decompose_app_list sigma (List.hd (List.rev pte_args))))
                       in
                       tclTHENLIST
                         [ unfold_in_concl

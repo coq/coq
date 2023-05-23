@@ -414,7 +414,7 @@ let solve_arity_problem env sigma fxminargs c =
   let set_fix i = set := Evar.Set.add i !set in
   let rec check strict c =
     let c' = whd_betaiotazeta env sigma c in
-    let (h,rcargs) = decompose_app_vect sigma c' in
+    let (h,rcargs) = decompose_app sigma c' in
     match EConstr.kind sigma h with
         Evar(i,_) when Evar.Map.mem i fxminargs && not (Evar.Set.mem i !set) ->
           let minargs, _, _ = Evar.Map.find i fxminargs in
@@ -1088,9 +1088,9 @@ let simpl env sigma c =
 
 let matches_head env sigma c t =
   let t, l = decompose_app sigma t in
-  match EConstr.kind sigma t, l with
+  match EConstr.kind sigma t, Array.is_empty l with
     | Proj (p, _), _ -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
-    | _, _::_ -> Constr_matching.matches env sigma c t
+    | _, false -> Constr_matching.matches env sigma c t
     | _ -> raise Constr_matching.PatternMatchingFailure
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
@@ -1106,7 +1106,7 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
     let app = (mkApp (hdf, Array.sub al 0 (Array.length al - 1))) in
     let app' = f acc app in
     let a' = f acc a in
-    let hdf', _ = decompose_app_vect sigma app' in
+    let hdf', _ = decompose_app sigma app' in
     if hdf' == hdf then
       (* Still the same projection, we ignore the change in parameters *)
       mkProj (p, a')
@@ -1297,7 +1297,7 @@ let check_privacy env ind =
 let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
     let t = hnf_constr0 env sigma t in
-    match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
+    match EConstr.kind sigma (fst (decompose_app sigma t)) with
       | Ind (ind, _ as indu) ->
         let t = nf_betaiota env sigma t in
         check_privacy env ind; (Some indu, it_mkProd_or_LetIn t l)
@@ -1312,7 +1312,7 @@ let reduce_to_ind_gen allow_product env sigma t =
           (* Last chance: we allow to bypass the Opaque flag (as it
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
-          match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
+          match EConstr.kind sigma (fst (decompose_app sigma t')) with
             | Ind (ind, _ as indu) -> check_privacy env ind; (Some indu, it_mkProd_or_LetIn t' l)
             | _ -> None, it_mkProd_or_LetIn t l
 
@@ -1331,7 +1331,7 @@ let reduce_to_atomic_ind env sigma c =
 let eval_to_quantified_ind env sigma t =
   let rec elimrec env t =
     let t = hnf_constr0 env sigma t in
-    match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
+    match EConstr.kind sigma (fst (decompose_app sigma t)) with
       | Ind (ind, _ as indu) ->
         let () = check_privacy env ind in
         indu
@@ -1341,7 +1341,7 @@ let eval_to_quantified_ind env sigma t =
           (* Last chance: we allow to bypass the Opaque flag (as it
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
-          match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
+          match EConstr.kind sigma (fst (decompose_app sigma t')) with
             | Ind (ind, _ as indu) -> check_privacy env ind; indu
             | _ -> user_err Pp.(str"Not an inductive product.")
   in
@@ -1349,7 +1349,7 @@ let eval_to_quantified_ind env sigma t =
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
-  ind, snd (decompose_app sigma t)
+  ind, snd (decompose_app_list sigma t)
 
 (* Reduce the weak-head redex [beta,iota/fix/cofix[all],cast,zeta,simpl/delta]
    or raise [NotStepReducible] if not a weak-head redex *)
@@ -1404,7 +1404,7 @@ let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
        | _ -> error_cannot_recognize ref)
   | _ -> (* lazily reduces to match the head of [t] with the expected [ref] *)
     let rec elimrec env t l =
-      let c, _ = decompose_app_vect sigma t in
+      let c, _ = decompose_app sigma t in
       match EConstr.kind sigma c with
       | Prod (n,ty,t') ->
         if allow_product then

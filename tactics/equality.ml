@@ -133,7 +133,7 @@ let side_tac tac sidetac =
   | Some sidetac -> tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
 
 let instantiate_lemma_all env flags eqclause l2r concl =
-  let (_, args) = decompose_app_vect (Clenv.clenv_evd eqclause) (Clenv.clenv_type eqclause) in
+  let (_, args) = decompose_app (Clenv.clenv_evd eqclause) (Clenv.clenv_type eqclause) in
   let arglen = Array.length args in
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
@@ -756,7 +756,7 @@ let keep_head_inductive sigma c =
      As a matter of fact, if it reduces to an applied template inductive
      type but is not syntactically equal to it, it will fail to project. *)
   let _, hd = EConstr.decompose_prod sigma c in
-  let hd, _ = EConstr.decompose_app_vect sigma hd in
+  let hd, _ = EConstr.decompose_app sigma hd in
   match EConstr.kind sigma hd with
   | Ind (ind, _) -> KeepEqualitiesTable.active ind
   | _ -> false
@@ -1367,8 +1367,8 @@ let inject_if_homogenous_dependent_pair ty =
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
     if not (isRefX env sigma sigTconstr eqTypeDest) then raise_notrace Exit;
-    let hd1,ar1 = decompose_app_vect sigma t1 and
-        hd2,ar2 = decompose_app_vect sigma t2 in
+    let hd1,ar1 = decompose_app sigma t1 and
+        hd2,ar2 = decompose_app sigma t2 in
     if not (isRefX env sigma existTconstr hd1) then raise_notrace Exit;
     if not (isRefX env sigma existTconstr hd2) then raise_notrace Exit;
     let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise_notrace Exit in
@@ -1409,8 +1409,8 @@ let inject_if_homogenous_dependent_pair ty =
 let simplify_args env sigma t =
   (* Quick hack to reduce in arguments of eq only *)
   match decompose_app sigma t with
-    | eq, [t;c1;c2] -> applist (eq,[t;simpl env sigma c1;simpl env sigma c2])
-    | eq, [t1;c1;t2;c2] -> applist (eq,[t1;simpl env sigma c1;t2;simpl env sigma c2])
+    | eq, [|t;c1;c2|] -> applist (eq,[t;simpl env sigma c1;simpl env sigma c2])
+    | eq, [|t1;c1;t2;c2|] -> applist (eq,[t1;simpl env sigma c1;t2;simpl env sigma c2])
     | _ -> t
 
 let inject_at_positions env sigma l2r eq posns tac =

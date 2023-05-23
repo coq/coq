@@ -61,7 +61,7 @@ let anomaly_on_error f x =
  with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e ++ str ".")
 
 let get_type_from_constraints env sigma t =
-  if isEvar sigma (fst (decompose_app_vect sigma t)) then
+  if isEvar sigma (fst (decompose_app sigma t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
         if is_fconv Conversion.CONV env sigma t t1 then Some t2
