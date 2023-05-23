@@ -1829,7 +1829,10 @@ let check_may_eval env sigma redexp rc =
   let uctx = Evd.universe_context_set sigma in
   let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
   let { Environ.uj_val=c; uj_type=ty; } =
-    if Evarutil.has_undefined_evars sigma c then
+    if Evarutil.has_undefined_evars sigma c
+    || List.exists (Context.Named.Declaration.exists (Evarutil.has_undefined_evars sigma))
+         (EConstr.named_context env)
+    then
       Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
       let c = EConstr.to_constr sigma c in
