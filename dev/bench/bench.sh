@@ -458,6 +458,7 @@ skipped_packages=
 
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
+export PROFILING=1
 
 for coq_opam_package in $sorted_coq_opam_packages; do
 
