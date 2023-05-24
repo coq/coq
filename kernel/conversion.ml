@@ -864,15 +864,16 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
-  let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
-  let infos = create_conv_infos ~univs:graph ~evars reds env in
-  let infos = {
-    cnv_inf = infos;
-    lft_tab = create_tab ();
-    rgt_tab = create_tab ();
-  } in
-  ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
-
+  NewProfile.profile "Conversion" (fun () ->
+      let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
+      let infos = create_conv_infos ~univs:graph ~evars reds env in
+      let infos = {
+        cnv_inf = infos;
+        lft_tab = create_tab ();
+        rgt_tab = create_tab ();
+      } in
+      ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
+    ()
 
 let check_eq univs u u' =
   if not (UGraph.check_eq_sort univs u u') then raise NotConvertible

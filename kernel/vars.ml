@@ -409,3 +409,8 @@ let universes_of_constr c =
       Constr.fold aux s c
     | _ -> Constr.fold aux s c
   in aux Level.Set.empty c
+
+let universes_of_constr c =
+  NewProfile.profile "universes_of_constr" (fun () ->
+      universes_of_constr c)
+    ()

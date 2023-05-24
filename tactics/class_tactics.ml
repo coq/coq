@@ -1065,11 +1065,13 @@ module Search = struct
       ~depth ~dep:(unique || dep) hints in
     run_on_evars env evd p eauto_tac
 
-  let typeclasses_eauto env evd ?depth unique ~best_effort st hints p =
-    evars_eauto env evd depth true ~best_effort unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
+  let typeclasses_eauto env evd ?depth unique ~best_effort st hints p =
+    NewProfile.profile "typeclass search" (fun () ->
+        evars_eauto env evd depth true ~best_effort unique false st hints p)
+      ()
 
   let typeclasses_resolve env evd depth unique ~best_effort p =
     let db = searchtable_map typeclasses_db in

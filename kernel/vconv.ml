@@ -223,4 +223,9 @@ let vm_conv cv_pb env t1 t2 =
   in
   if not b then
     let state = (univs, checked_universes) in
-    let _ = vm_conv_gen cv_pb Genlambda.empty_evars env state t1 t2 in ()
+    let _ : UGraph.t =
+      NewProfile.profile "vm_conv" (fun () ->
+          vm_conv_gen cv_pb Genlambda.empty_evars env state t1 t2)
+        ()
+    in
+    ()

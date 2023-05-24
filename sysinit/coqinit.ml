@@ -146,6 +146,7 @@ let init_load_paths opts =
 let init_runtime opts =
   let open Coqargs in
   Vernacextend.static_linking_done ();
+  NewProfile.init (Option.map (fun file -> { NewProfile.file }) opts.config.profile);
   Lib.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
