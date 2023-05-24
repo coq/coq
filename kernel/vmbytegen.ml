@@ -135,7 +135,7 @@ type comp_env = {
     pos_rec : instruction array; (* instruction to access mutually-defined functions *)
     offset : int;
     in_env : vm_env ref;         (* The free variables of the expression   *)
-    mutable max_stack_size : int;
+    max_stack_size : int ref;
     (* Maximal stack size reached during the current function body. Used to
        reallocate the stack if we lack space. *)
   }
@@ -172,16 +172,16 @@ let empty_comp_env ()=
     pos_rec = [||];
     offset = 0;
     in_env = ref empty_fv;
-    max_stack_size = 0;
+    max_stack_size = ref 0;
   }
 
 let set_max_stack_size (cenv : comp_env) stack_size =
-  if stack_size > cenv.max_stack_size then
-    cenv.max_stack_size <- stack_size
+  if stack_size > cenv.max_stack_size.contents then
+    cenv.max_stack_size := stack_size
 
 let ensure_stack_capacity (cenv : comp_env) code =
   let used_safe =
-    cenv.max_stack_size + Config.stack_safety_margin
+    cenv.max_stack_size.contents + Config.stack_safety_margin
   in
   if used_safe > Config.stack_threshold then
     Kensurestackcapacity used_safe :: code
@@ -200,7 +200,7 @@ let comp_env_fun ?(univs=0) arity =
     pos_rec = [||];
     offset = 0;
     in_env = ref empty_fv;
-    max_stack_size = 0;
+    max_stack_size = ref 0;
   }
 
 
@@ -212,7 +212,7 @@ let comp_env_fix_type  rfv =
     pos_rec = [||];
     offset = 0;
     in_env = rfv;
-    max_stack_size = 0;
+    max_stack_size = ref 0;
   }
 
 let comp_env_fix ndef arity rfv =
@@ -223,7 +223,7 @@ let comp_env_fix ndef arity rfv =
      pos_rec = Array.init ndef (fun i -> Koffsetclosure i);
      offset = 0;
      in_env = rfv;
-     max_stack_size = 0;
+     max_stack_size = ref 0;
    }
 
 let comp_env_cofix_type ndef rfv =
@@ -234,7 +234,7 @@ let comp_env_cofix_type ndef rfv =
     pos_rec = [||];
     offset = ndef;
     in_env = rfv;
-    max_stack_size = 0;
+    max_stack_size = ref 0;
   }
 
 let comp_env_cofix ndef arity rfv =
@@ -245,7 +245,7 @@ let comp_env_cofix ndef arity rfv =
      pos_rec = Array.init ndef (fun i -> Kenvacc (ndef - 1 - i));
      offset = ndef;
      in_env = rfv;
-     max_stack_size = 0;
+     max_stack_size = ref 0;
    }
 
 (* [push_param ] add function parameters on the stack *)
@@ -676,7 +676,7 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_eblocks = Array.make neblock Label.no in
       let branch1, cont = make_branch cont in
       (* Compilation of the return type *)
-      let ret_env = { cenv with max_stack_size = 0 } in
+      let ret_env = { cenv with max_stack_size = ref 0 } in
       let fcode = compile_lam env ret_env t sz [Kpop sz; Kstop] in
       let fcode = ensure_stack_capacity ret_env fcode in
       let lbl_typ,fcode = label_code fcode in
@@ -738,7 +738,7 @@ let rec compile_lam env cenv lam sz cont =
 
       let annot =
         {rtbl = rtbl; tailcall = is_tailcall;
-         Vmvalues.max_stack_size = cenv.max_stack_size - sz}
+         Vmvalues.max_stack_size = cenv.max_stack_size.contents - sz}
       in
 
      (* Compiling branch for accumulators *)
