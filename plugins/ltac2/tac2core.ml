@@ -777,6 +777,10 @@ let () = define1 "constr_case" (repr_ext val_inductive) begin fun ind ->
     throw err_notfound
 end
 
+let () = defineval "constr_cast_default" (of_cast DEFAULTcast)
+let () = defineval "constr_cast_vm" (of_cast VMcast)
+let () = defineval "constr_cast_native" (of_cast NATIVEcast)
+
 let () = define2 "constr_constructor" (repr_ext val_inductive) int begin fun (ind, i) k ->
   Proofview.tclENV >>= fun env ->
   try
@@ -887,6 +891,7 @@ let () = define_equality "evar_equal" evar Evar.equal
 let () = define_equality "float_equal" float Float64.equal
 let () = define_equality "uint63_equal" uint63 Uint63.equal
 let () = define_equality "meta_equal" int Int.equal
+let () = define_equality "constr_cast_equal" cast Glob_ops.cast_kind_eq
 
 let () = define_equality "constant_equal" constant Constant.UserOrd.equal
 let () = define_equality "constr_case_equal" (repr_ext val_case) begin fun x y ->
@@ -894,6 +899,8 @@ let () = define_equality "constr_case_equal" (repr_ext val_case) begin fun x y -
 end
 let () = define_equality "constructor_equal" (repr_ext val_constructor) Construct.UserOrd.equal
 let () = define_equality "projection_equal" (repr_ext val_projection) Projection.UserOrd.equal
+
+
 
 (** Patterns *)
 

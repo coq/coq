@@ -242,6 +242,10 @@ let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
 let constr = repr_ext val_constr
 
+let of_cast c = of_ext val_cast c
+let to_cast c = to_ext val_cast c
+let cast = repr_ext val_cast
+
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
 let ident = repr_ext val_ident

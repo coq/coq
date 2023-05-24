@@ -110,6 +110,10 @@ val of_constr : EConstr.t -> valexpr
 val to_constr : valexpr -> EConstr.t
 val constr : EConstr.t repr
 
+val of_cast : Constr.cast_kind -> valexpr
+val to_cast : valexpr -> Constr.cast_kind
+val cast : Constr.cast_kind repr
+
 val of_exn : Exninfo.iexn -> valexpr
 val to_exn : valexpr -> Exninfo.iexn
 val exn : Exninfo.iexn repr

@@ -37,28 +37,6 @@ Current limitations include:
 
   - Printing functions are limited and awkward to use.  Only a few data types are
     printable.
-  - A convenient way to build terms with casts through the low-level API. Because the
-    cast type is opaque, building terms with casts currently requires an awkward construction like the
-    following, which also incurs extra overhead to repeat typechecking for each
-    call to `get_vm_cast`:
-
-    .. coqdoc::
-
-       Constr.Unsafe.make (Constr.Unsafe.Cast 'I (get_vm_cast ()) 'True)
-
-    with:
-
-    .. coqtop:: none
-
-       From Ltac2 Require Import Ltac2.
-
-    .. coqtop:: in
-
-       Ltac2 get_vm_cast () :=
-         match Constr.Unsafe.kind '(I <: True) with
-         | Constr.Unsafe.Cast _ cst _ => cst
-         | _ => Control.throw Not_found
-         end.
 
 - Error messages may be cryptic.
 
