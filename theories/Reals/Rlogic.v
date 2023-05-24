@@ -93,7 +93,8 @@ destruct (completeness E) as [l [ub lub]].
     }
     assert (Hl': (/ (INR (S N) + 1) < l)%R). {
       rewrite <- (Rinv_inv l).
-      apply Rinv_0_lt_contravar. now apply Rinv_0_lt_compat.
+      apply Rinv_0_lt_contravar.
+      { now apply Rinv_0_lt_compat. }
       rewrite S_INR.
       rewrite HN.
       ring_simplify.
@@ -120,7 +121,9 @@ destruct (completeness E) as [l [ub lub]].
          apply Rlt_not_le with (2 := Hnp _ Hp).
          rewrite <- (Rinv_inv l).
          apply Rinv_0_lt_contravar.
-         ++ apply Rplus_le_lt_0_compat. apply pos_INR. apply Rlt_0_1.
+         ++ apply Rplus_le_lt_0_compat.
+            ** apply pos_INR.
+            ** apply Rlt_0_1.
          ++ apply Rlt_le_trans with (INR N + 1)%R.
             ** apply Rplus_lt_compat_r.
                now apply lt_INR.
