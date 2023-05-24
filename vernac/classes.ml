@@ -69,17 +69,17 @@ let add_instance_hint inst path ~locality info =
 (* short names without opening all Hints *)
 type locality = Hints.hint_locality = Local | Export | SuperGlobal
 
-type instance_obj = {
-  inst_class : GlobRef.t;
-  inst_info: hint_info;
+type instance = {
+  class_name : GlobRef.t;
+  instance : GlobRef.t;
+  info : Typeclasses.hint_info;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
-  inst_global: Hints.hint_locality;
-  inst_impl: GlobRef.t;
+  locality : Hints.hint_locality;
 }
 
 let add_instance_base inst =
-  let locality = match inst.inst_global with
+  let locality = match inst.locality with
   | Local -> Local
   | SuperGlobal ->
     (* i.e. in a section, declare the hint as local since discharge is managed
@@ -92,47 +92,47 @@ let add_instance_base inst =
     if Lib.sections_are_opened () then Local
     else Export
   in
-  add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
-    inst.inst_info
+  add_instance_hint (Hints.hint_globref inst.instance) [inst.instance] ~locality
+    inst.info
 
 (*
  * instances persistent object
  *)
 let perform_instance i =
-  let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
+  let i = { is_class = i.class_name; is_info = i.info; is_impl = i.instance } in
   Typeclasses.load_instance i
 
 let cache_instance inst =
   perform_instance inst;
   add_instance_base inst
 
-let load_instance _ inst = match inst.inst_global with
+let load_instance _ inst = match inst.locality with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> ()
 
-let open_instance i inst = match inst.inst_global with
+let open_instance i inst = match inst.locality with
 | Local -> assert false
 | SuperGlobal -> perform_instance inst
 | Export -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
   { inst with
-      inst_class = fst (subst_global subst inst.inst_class);
-      inst_impl = fst (subst_global subst inst.inst_impl) }
+      class_name = fst (subst_global subst inst.class_name);
+      instance = fst (subst_global subst inst.instance) }
 
 let discharge_instance inst =
-  match inst.inst_global with
+  match inst.locality with
   | Local -> None
   | SuperGlobal | Export ->
-    assert (not (isVarRef inst.inst_impl));
+    assert (not (isVarRef inst.instance));
     Some inst
 
-let classify_instance inst = match inst.inst_global with
+let classify_instance inst = match inst.locality with
 | Local -> Dispose
 | SuperGlobal | Export -> Substitute
 
-let instance_input : instance_obj -> obj =
+let instance_input : instance -> obj =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
@@ -149,6 +149,21 @@ let default_locality () =
 let instance_locality =
   Attributes.hint_locality ~default:default_locality
 
+module Event = struct
+  type t =
+    | NewClass of typeclass
+    | NewInstance of instance
+end
+
+let observers = ref []
+
+let add_observer o =
+  observers := o :: !observers
+
+
+let observe event =
+  List.iter (fun f -> f event) !observers
+
 let add_instance cl info global impl =
   let () = match global with
     | Local -> ()
@@ -160,12 +175,13 @@ let add_instance cl info global impl =
         CErrors.user_err (Pp.str "The export attribute cannot be applied to an instance referring to a section variable.")
   in
   let i = {
-    inst_class = cl.cl_impl;
-    inst_info = info ;
-    inst_global = global ;
-    inst_impl = impl;
+    class_name = cl.cl_impl;
+    info = info ;
+    locality = global ;
+    instance = impl;
   } in
-  Lib.add_leaf (instance_input i)
+  Lib.add_leaf (instance_input i);
+  observe (Event.NewInstance { class_name = cl.cl_impl; instance = impl; info; locality = global })
 
 let warning_not_a_class =
   let name = "not-a-class" in
@@ -253,7 +269,8 @@ let class_input : typeclass -> obj =
       subst_function = subst_class }
 
 let add_class cl =
-  Lib.add_leaf (class_input cl)
+  Lib.add_leaf (class_input cl);
+  observe (Event.NewClass cl)
 
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
