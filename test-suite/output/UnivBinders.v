@@ -75,7 +75,7 @@ Module SecLet.
     (* Fail Let foo@{} := Type@{uu}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
     Unset Strict Universe Declaration.
     Let tt : Type@{uu} := Type@{v}. (* names disappear in the ether *)
-    Let ff : Type@{uu}. Proof. exact Type@{v}. Qed. (* names disappear into space *)
+    #[clearbody] Let ff : Type@{uu}. Proof. exact Type@{v}. Defined. (* names disappear into space *)
     Definition bobmorane := tt -> ff.
   End foo.
   Print bobmorane.

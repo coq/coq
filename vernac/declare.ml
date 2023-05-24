@@ -82,6 +82,7 @@ module Info = struct
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
     ; scope : Locality.definition_scope
+    ; clearbody : bool (* always false for non Discharge scope *)
     ; hook : Hook.t option
     ; typing_flags : Declarations.typing_flags option
     ; deprecation : Deprecation.t option
@@ -91,8 +92,8 @@ module Info = struct
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
-      ?hook ?typing_flags ?deprecation () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags; deprecation }
+      ?(clearbody=false) ?hook ?typing_flags ?deprecation () =
+    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; deprecation }
 
 end
 
@@ -472,7 +473,7 @@ let inline_private_constants ~uctx env ce =
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
-  | SectionLocalDef of proof_entry
+  | SectionLocalDef of { clearbody : bool; entry : proof_entry }
   | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
                            univs:UState.named_universes_entry }
 
@@ -485,11 +486,13 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:"fragile"
+let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:"deprecated"
   Pp.(fun name ->
     Id.print name ++
-    strbrk " is declared opaque but this is not fully respected" ++
-    strbrk " inside the section and not at all outside the section.")
+    strbrk " is declared opaque (Qed) but this is not fully respected" ++
+    strbrk " inside the section and not at all outside the section." ++ fnl() ++
+    strbrk "Use attribute #[clearbody] to get the current behaviour of clearing" ++
+    strbrk " the body at the start of proofs in a forward compatible way.")
 
 let declare_variable_core ~name ~kind d =
   (* Variables are distinguished by only short names *)
@@ -505,7 +508,7 @@ let declare_variable_core ~name ~kind d =
       let () = DeclareUctx.declare_universe_context ~poly uctx in
       let () = Global.push_named_assum (name,typ) in
       impl, true, univs
-    | SectionLocalDef (de) ->
+    | SectionLocalDef { clearbody; entry = de } ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
       let ((body, body_uctx), eff) = Future.force de.proof_entry_body in
@@ -526,7 +529,7 @@ let declare_variable_core ~name ~kind d =
       let () = Global.push_named_def (name, se) in
       let opaque = de.proof_entry_opaque in
       let () = if opaque then warn_opaque_let name in
-      Glob_term.Explicit, opaque, de.proof_entry_universes
+      Glob_term.Explicit, opaque || clearbody, de.proof_entry_universes
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
@@ -655,7 +658,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ~deprecation ?hook ~obls ~impargs ~uctx entry =
+let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) ~kind ~typing_flags ~deprecation ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
@@ -663,10 +666,11 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags
   in
   let dref = match scope with
   | Locality.Discharge ->
-    let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
+    let () = declare_variable_core ~name ~kind (SectionLocalDef {clearbody; entry}) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
+    assert (not clearbody);
     let kn = declare_constant ~name ~local ~kind ~typing_flags ?deprecation (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
@@ -694,7 +698,7 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
     vars, fixdecls, None
 
 let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
-  let { Info.poly; udecl; scope; kind; typing_flags; deprecation; _ } = info in
+  let { Info.poly; udecl; scope; clearbody; kind; typing_flags; deprecation; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -711,7 +715,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs; using } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
-         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags ~deprecation entry)
+         declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~deprecation entry)
       cinfo fixdecls
   in
   let isfix = Option.has_some possible_indexes in
@@ -776,8 +780,8 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
   let { CInfo.name; impargs; typ; using; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
-  let { Info.scope; kind; hook; typing_flags; deprecation; _ } = info in
-  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~deprecation ~obls ?hook ~uctx entry, uctx
+  let { Info.scope; clearbody; kind; hook; typing_flags; deprecation; _ } = info in
+  declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~deprecation ~obls ?hook ~uctx entry, uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body sigma |> fst
@@ -2000,7 +2004,7 @@ end = struct
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in
-    let { Info.hook; scope; kind; typing_flags; deprecation; _ } = info in
+    let { Info.hook; scope; clearbody; kind; typing_flags; deprecation; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
     *)
@@ -2019,7 +2023,7 @@ end = struct
         Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ~deprecation ~uctx pe
+    declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~deprecation ~uctx pe
 
   let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
@@ -2640,4 +2644,4 @@ let declare_constant ?local ~name ~kind ?typing_flags =
   declare_constant ?local ~name ~kind ~typing_flags
 
 let declare_entry ~name ?scope ~kind ?deprecation =
-  declare_entry ~name ?scope ~kind ~typing_flags:None ~deprecation
+  declare_entry ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~deprecation

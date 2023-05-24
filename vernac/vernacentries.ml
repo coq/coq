@@ -62,22 +62,36 @@ module DefAttributes = struct
     using : Vernacexpr.section_subset_expr option;
     nonuniform : bool;
     reversible : bool;
+    clearbody: bool option;
   }
 
-  let parse ?(coercion=false) f =
-    let open Attributes in
-    let nonuniform = if coercion then ComCoercion.nonuniform else Notations.return None in
-    let (((((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using), nonuniform), reversible =
-      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using ++ nonuniform ++ reversible) f
+  open Attributes
+  open Attributes.Notations
+
+  let clearbody = bool_attribute ~name:"clearbody"
+
+  let parse ?(coercion=false) ?(discharge=NoDischarge) f =
+    let nonuniform = if coercion then ComCoercion.nonuniform else return None in
+    let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
+    let ((((((((locality, deprecated), polymorphic), program),
+         canonical_instance), typing_flags), using), nonuniform),
+         reversible), clearbody =
+      parse (locality ++ deprecation ++ polymorphic ++ program ++
+             canonical_instance ++ typing_flags ++ using ++ nonuniform ++
+             reversible ++ clearbody)
+        f
     in
     let using = Option.map Proof_using.using_from_string using in
     let reversible = Option.default true reversible in
     let nonuniform = Option.default false nonuniform in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible }
+    let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
+      then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
+    in
+    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible; clearbody }
 end
 
-let with_def_attributes ?coercion ~atts f =
-  let atts = DefAttributes.parse ?coercion atts in
+let with_def_attributes ?coercion ?discharge ~atts f =
+  let atts = DefAttributes.parse ?coercion ?discharge atts in
   if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
   f ~atts
 
@@ -608,7 +622,7 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ~deprecation ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~deprecation ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -617,7 +631,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ~deprecation 
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
   begin
     match mut_analysis with
     | RecLemmas.NonMutual thm ->
@@ -672,7 +686,8 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let typing_flags = atts.typing_flags in
   let deprecation = atts.deprecated in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
+    ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -690,11 +705,13 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
-      ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
+      ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
+      ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
+        ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using
+        ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -1028,7 +1045,7 @@ let vernac_fixpoint_interactive ~atts discharge l =
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
   let typing_flags = atts.typing_flags in
-  ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic ?typing_flags ?deprecation:atts.deprecated l
+  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ?deprecation:atts.deprecated l
   |> vernac_set_used_variables_opt ?using:atts.using
 
 let vernac_fixpoint ~atts ~pm discharge l =
@@ -1037,10 +1054,10 @@ let vernac_fixpoint ~atts ~pm discharge l =
   let typing_flags = atts.typing_flags in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic
+    ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
       ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l
   else
-    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic
+    let () = ComFixpoint.do_fixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
       ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l in
     pm
 
@@ -2226,16 +2243,16 @@ let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
 
   (* Gallina *)
 
-  | VernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ)) ->
-    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
+  | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
+    let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~atts
-       vernac_definition ~pm discharge lid bl red_option c typ)
-  | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
-    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
+      with_def_attributes ~coercion ~discharge ~atts
+       vernac_definition ~pm dkind lid bl red_option c typ)
+  | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
+    let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~coercion ~atts
-       vernac_definition_interactive discharge lid bl typ)
+      with_def_attributes ~coercion ~discharge ~atts
+       vernac_definition_interactive dkind lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
     vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof k l)
@@ -2254,17 +2271,17 @@ let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     (if opens then
       vtopenproof (fun () ->
-        with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
+        with_def_attributes ~discharge ~atts vernac_fixpoint_interactive discharge l)
     else
       vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l))
+        with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm) discharge l))
 
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     (if opens then
-      vtopenproof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
+      vtopenproof(fun () -> with_def_attributes ~discharge ~atts vernac_cofixpoint_interactive discharge l)
     else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l))
+      vtmodifyprogram(fun ~pm -> with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm) discharge l))
 
   | VernacScheme l ->
     vtdefault(fun () ->

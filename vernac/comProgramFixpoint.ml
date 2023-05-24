@@ -281,7 +281,7 @@ let out_def = function
 let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
-let do_program_recursive ~pm ~scope ~poly ?typing_flags ?deprecation ?using fixkind fixl =
+let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
     let env = Global.env () in
@@ -336,10 +336,10 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?deprecation ?using fixk
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 
-let do_fixpoint ~pm ~scope ~poly ?typing_flags ?deprecation ?using l =
+let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
@@ -366,7 +366,7 @@ let do_fixpoint ~pm ~scope ~poly ?typing_flags ?deprecation ?using l =
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
       let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind l
+      do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?using fixkind l
     | _, _ ->
       CErrors.user_err
         (str "Well-founded fixpoints not allowed in mutually recursive blocks.")

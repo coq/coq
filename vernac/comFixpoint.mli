@@ -17,6 +17,7 @@ open Vernacexpr
 
 val do_fixpoint_interactive
   : scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?deprecation:Deprecation.t
@@ -25,6 +26,7 @@ val do_fixpoint_interactive
 
 val do_fixpoint
    : ?scope:Locality.definition_scope
+   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?deprecation:Deprecation.t

@@ -69,9 +69,6 @@ mono
 File "./output/UnivBinders.v", line 70, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
-File "./output/UnivBinders.v", line 78, characters 47-51:
-Warning: ff is declared opaque but this is not fully respected inside the
-section and not at all outside the section. [opaque-let,fragile]
 bobmorane =
 let tt := Type@{UnivBinders.32} in
 let ff := Type@{UnivBinders.34} in tt -> ff
