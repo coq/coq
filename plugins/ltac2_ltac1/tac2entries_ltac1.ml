@@ -13,6 +13,7 @@ open Util
 open CAst
 open CErrors
 open Names
+open Libnames
 open Libobject
 
 open Ltac2_plugin
@@ -28,6 +29,10 @@ let check_lowercase {loc;v=id} =
 type 'a token =
 | TacTerm of string
 | TacNonTerm of Name.t * 'a
+
+type 'a token_or_var =
+| TokTok of 'a token
+| TokVar of Id.t
 
 type scope_rule =
 | ScopeRule : (raw_tacexpr, _, 'a) Pcoq.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
@@ -72,6 +77,10 @@ let parse_token = function
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
 
+let parse_token_or_var = function
+| SexprRec (_, {v=Some na}, []) -> TokVar na
+| sexpr -> TokTok (parse_token sexpr)
+
 let rec print_scope = function
 | SexprStr s -> str s.CAst.v
 | SexprInt i -> int i.CAst.v
@@ -89,23 +98,30 @@ end
 type ('self, 'r) nrule =
 | NRule :
   ('self, Gramlib.Grammar.norec, 'act, Loc.t -> 'r) Pcoq.Rule.t *
-  ((Loc.t -> (Name.t * raw_tacexpr) list -> 'r) -> 'act) -> ('self, 'r) nrule
+  ((Loc.t -> (Name.t * raw_tacexpr * Id.t option) list -> 'r) -> 'act) -> ('self, 'r) nrule
 
-let rec get_norec_rule : type self r. scope_rule token list -> (self, r) nrule = function
+let rec get_norec_rule : type self r. scope_rule token_or_var list -> (self, r) nrule = function
 | [] -> NRule (Pcoq.Rule.stop, fun k loc -> k loc [])
-| TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
+| TokTok (TacNonTerm (na, ScopeRule (scope, inj))) :: tok ->
   let NRule (rule, act) = get_norec_rule tok in
   let scope = match Pcoq.generalize_symbol scope with
   | None -> user_err Pp.(str "Ltac1 notations cannot mention recursive scopes like \"self\"")
   | Some scope -> scope
   in
   let rule = Pcoq.Rule.next_norec rule scope in
-  let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
+  let act k e = act (fun loc acc -> k loc ((na, inj e, None) :: acc)) in
   NRule (rule, act)
-| TacTerm t :: tok ->
+| TokTok (TacTerm t) :: tok ->
   let NRule (rule, act) = get_norec_rule tok in
   let rule = Pcoq.(Rule.next_norec rule (Symbol.token (Pcoq.terminal t))) in
   let act k _ = act k in
+  NRule (rule, act)
+| TokVar id :: tok ->
+  let NRule (rule, act) = get_norec_rule tok in
+  let scope = Pcoq.Symbol.nterm Pcoq.Prim.ident in
+  let rule = Pcoq.Rule.next_norec rule scope in
+  let inj loc = CAst.make ~loc (CTacRef (RelId (qualid_of_ident ~loc id))) in
+  let act k e = act (fun loc acc -> k loc ((Name id, inj loc, Some e) :: acc)) in
   NRule (rule, act)
 
 let deprecated_ltac2_notation =
@@ -146,6 +162,7 @@ let rec string_of_scope = function
 let string_of_token = function
 | SexprStr {v=s} -> Printf.sprintf "str(%s)" s
 | SexprRec (_, {v=na}, [tok]) -> string_of_scope tok
+| SexprRec (_, {v=id}, _) -> Option.cata Id.to_string "_" id
 | _ -> assert false
 
 let make_fresh_key tokens =
@@ -169,21 +186,43 @@ type tac1ext = {
 }
 
 let perform_ltac1_notation syn st =
-  let tok = List.rev_map ParseToken.parse_token syn.tac1ext_tok in
+  let tok = List.rev_map ParseToken.parse_token_or_var syn.tac1ext_tok in
   let NRule (rule, act) = get_norec_rule tok in
   let mk loc args =
     let () = match syn.tac1ext_depr with
     | None -> ()
     | Some depr -> deprecated_ltac2_notation ~loc (syn.tac1ext_tok, depr)
     in
-    let map (na, e) =
+    let map (na, e, istac1) =
       ((CAst.make ?loc:e.loc @@ na), e)
     in
     let bnd = List.map map args in
+    let map (na, e, tac1) = match tac1 with
+    | None -> None
+    | Some src ->
+      let loc = e.CAst.loc in
+      match na with
+      | Anonymous -> assert false
+      | Name tgt -> Some (loc, src, tgt)
+    in
+    let ltac1bnd = List.map_filter map args in
     let ast = CAst.make ~loc @@ CTacSyn (bnd, syn.tac1ext_kn) in
-    let ast = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2in1) ([], ast) in
+    let local = List.map (fun (loc, _, tgt) -> CAst.make ?loc tgt) ltac1bnd in
+    let ast = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2in1) (local, ast) in
     let open Ltac_plugin.Tacexpr in
-    CAst.make ~loc @@ (TacArg (TacGeneric (Some "ltac2", ast)))
+    let ast = TacGeneric (Some "ltac2", ast) in
+    if List.is_empty ltac1bnd then
+      CAst.make ~loc @@ (TacArg ast)
+    else
+      (* Ltac1 acrobatics *)
+      let fid = Id.of_string "F" in
+      let avoid = Id.Set.of_list (List.map (fun (_, src, _) -> src) ltac1bnd) in
+      let fid = Namegen.next_ident_away fid avoid in
+      let map (loc, src, _) = Reference (Libnames.qualid_of_ident ?loc src) in
+      let vars = List.map map ltac1bnd in
+      let call = TacCall (CAst.make ~loc @@ (qualid_of_ident ~loc fid, vars)) in
+      let call = CAst.make ~loc @@ (TacArg call) in
+      CAst.make ~loc @@ (TacLetIn (false, [CAst.make ~loc (Name fid), ast], call))
   in
   let rule = Pcoq.Production.make rule (act mk) in
   let entry, pos =
@@ -232,13 +271,19 @@ let register_ltac1_notation atts tkn lev body =
     user_err (str "Abbreviations are not allowed for Ltac1")
   | _ ->
     (* Check that the tokens make sense *)
-    let entries = List.map ParseToken.parse_token tkn in
-    let fold accu tok = match tok with
+    let fold_tok accu tok = match tok with
     | TacTerm _ -> accu
     | TacNonTerm (Name id, _) -> Id.Set.add id accu
     | TacNonTerm (Anonymous, _) -> accu
     in
-    let ids = List.fold_left fold Id.Set.empty entries in
+    let ids =
+      let entries = List.map ParseToken.parse_token_or_var tkn in
+      let fold accu t = match t with
+      | TokTok tok -> fold_tok accu tok
+      | TokVar id -> Id.Set.add id accu
+      in
+      List.fold_left fold Id.Set.empty entries
+    in
     let key = make_fresh_key tkn in
     let () =
       let lev = match lev with
