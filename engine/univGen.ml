@@ -46,7 +46,7 @@ let new_sort_id =
 
 let new_sort_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
-  Sorts.QVar.make s (new_sort_id ())
+  Sorts.QVar.make_unif s (new_sort_id ())
 
 let fresh_instance auctx =
   let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in

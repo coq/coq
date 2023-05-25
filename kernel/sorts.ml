@@ -18,7 +18,7 @@ module QVar = struct
   type t =
     | Unif of string * int
 
-  let make s i = Unif (s, i)
+  let make_unif s i = Unif (s, i)
 
   let repr (Unif (s,i)) = s, i
 
