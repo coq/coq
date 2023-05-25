@@ -27,26 +27,20 @@ type uinfo = {
   uloc : Loc.t option;
 }
 
-type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
+open Sorts.Quality
 
 let sort_inconsistency ?explain cst l r =
   let explain = Option.map (fun p -> UGraph.Other p) explain in
   raise (UGraph.UniverseInconsistency (cst, l, r, explain))
 
-let pr_quality = function
-  | QVar v -> Sorts.QVar.pr v
-  | QProp -> Pp.str "Prop"
-  | QSProp -> Pp.str "SProp"
-  | QType -> Pp.str "Type"
-
 module QState : sig
   type t
   type elt = Sorts.QVar.t
   val empty : t
-  val union : fail:(t -> quality -> quality -> t) -> t -> t -> t
+  val union : fail:(t -> Sorts.Quality.t -> Sorts.Quality.t -> t) -> t -> t -> t
   val add : elt -> t -> t
-  val repr : elt -> t -> quality
-  val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> quality -> quality -> t -> t
+  val repr : elt -> t -> Sorts.Quality.t
+  val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Sorts.Quality.t -> Sorts.Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val collapse : t -> t
   val pr : t -> Pp.t
@@ -57,7 +51,7 @@ module QSet = Set.Make(Sorts.QVar)
 module QMap = Map.Make(Sorts.QVar)
 
 type t = {
-  qmap : quality option QMap.t;
+  qmap : Sorts.Quality.t option QMap.t;
   (* TODO: use a persistent union-find structure *)
   above : QSet.t;
   (** Set of quality variables known to be either in Prop or Type.
@@ -163,16 +157,17 @@ let collapse m =
   { qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
 let pr { qmap; above } =
+  (* TODO names *)
   let open Pp in
   let prbody u = function
   | None ->
     if QSet.mem u above then str " >= Prop"
     else mt ()
   | Some q ->
-    let q = pr_quality q in
+    let q = Sorts.Quality.raw_pr q in
     str " := " ++ q
   in
-  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody u v) (QMap.bindings qmap))
+  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.raw_pr u ++ prbody u v) (QMap.bindings qmap))
 
 end
 
@@ -243,7 +238,7 @@ let union uctx uctx' =
       if UGraph.type_in_type uctx.universes then s
       else CErrors.user_err
           Pp.(str "Could not merge universe contexts: could not unify" ++ spc() ++
-             pr_quality q1 ++ strbrk " and " ++ pr_quality q2 ++ str ".")
+             Sorts.Quality.raw_pr q1 ++ strbrk " and " ++ Sorts.Quality.raw_pr q2 ++ str ".")
     in
       { names = (names, names_rev);
         local = local;

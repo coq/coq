@@ -37,7 +37,8 @@ module Instance :
 sig
   type t
   (** A universe instance represents a vector of argument universes
-      to a polymorphic definition (constant, inductive or constructor). *)
+      and sort qualities to a polymorphic definition
+      (constant, inductive or constructor). *)
 
   val empty : t
   val is_empty : t -> bool

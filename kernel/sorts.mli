@@ -17,12 +17,28 @@ val all_families : family list
 module QVar :
 sig
   type t
+
+  val var_index : t -> int option
+
+  val make_var : int -> t
   val make_unif : string -> int -> t
-  val repr : t -> string * int
+
   val equal : t -> t -> bool
   val compare : t -> t -> int
+
+  val raw_pr : t -> Pp.t
   val to_string : t -> string
-  val pr : t -> Pp.t
+  (** Debug printing *)
+end
+
+module Quality : sig
+  type t =
+    | QVar of QVar.t
+    | QProp | QSProp | QType
+
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
+
+  val raw_pr : t -> Pp.t
 end
 
 type t = private

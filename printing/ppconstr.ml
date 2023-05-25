@@ -195,7 +195,7 @@ let tag_var = tag Tag.variable
 
   let pr_quality_univ (q, l) = match q with
   | None -> pr_univ l
-  | Some q -> str "(* " ++ Sorts.QVar.pr q ++ str " *)" ++ spc () ++ pr_univ l
+  | Some q -> (* TODO names *) Sorts.QVar.raw_pr q ++ spc() ++ str "|" ++ spc () ++ pr_univ l
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 

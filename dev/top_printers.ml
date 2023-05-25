@@ -257,7 +257,7 @@ let pproof p = pp(Proof.pr_proof p)
 
 let ppuni u = pp(Universe.raw_pr u)
 let ppuni_level u = pp (Level.raw_pr u)
-let ppqvar q = pp (QVar.pr q)
+let ppqvar q = pp (QVar.raw_pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
 let prlev l = UnivNames.pr_with_global_universes l
@@ -536,7 +536,7 @@ let print_pure_constr csr =
     | Type u -> open_hbox();
         print_string "Type("; pp (Universe.raw_pr u); print_string ")"; close_box()
     | QSort (q, u) -> open_hbox();
-        print_string "QSort("; pp (QVar.pr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
+        print_string "QSort("; pp (QVar.raw_pr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)

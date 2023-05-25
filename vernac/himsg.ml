@@ -789,7 +789,7 @@ let pr_relevance sigma r =
   match r with
   | Sorts.Relevant -> str "relevant"
   | Sorts.Irrelevant -> str "irrelevant"
-  | Sorts.RelevanceVar q -> str "a variable " ++ Sorts.QVar.pr q
+  | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Sorts.QVar.raw_pr q
 
 let pr_binder env sigma = function
 | LocalAssum (na, t) ->

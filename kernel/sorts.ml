@@ -14,30 +14,59 @@ type family = InSProp | InProp | InSet | InType | InQSort
 
 let all_families = [InSProp; InProp; InSet; InType; InQSort]
 
-module QVar = struct
+module QVar =
+struct
   type t =
+    | Var of int
     | Unif of string * int
 
-  let make_unif s i = Unif (s, i)
+  let make_var n = Var n
 
-  let repr (Unif (s,i)) = s, i
+  let make_unif s n = Unif (s,n)
 
-  let equal (Unif (s1,i1)) (Unif (s2,i2)) =
-    Int.equal i1 i2 && CString.equal s1 s2
+  let var_index = function
+    | Var q -> Some q
+    | Unif _ -> None
 
-  let compare (Unif (s1,i1)) (Unif (s2,i2)) =
-    let c = Int.compare i1 i2 in
-    if c <> 0 then c
-    else CString.compare s1 s2
+  let hash = function
+    | Var q -> Hashset.Combine.combinesmall 1 q
+    | Unif (s,q) -> Hashset.Combine.(combinesmall 2 (combine (CString.hash s) q))
 
-  let to_string (Unif (s,i)) =
-    let i = "α"^string_of_int i in
-    if CString.is_empty s then i
-    else s^ "." ^ i
+  let compare a b = match a, b with
+    | Var a, Var b -> Int.compare a b
+    | Unif (s1,i1), Unif (s2,i2) ->
+      let c = Int.compare i1 i2 in
+      if c <> 0 then c
+      else CString.compare s1 s2
+    | Var _, Unif _ -> -1
+    | Unif _, Var _ -> 1
 
-  let hash (Unif (s,i)) = Hashset.Combine.combine (CString.hash s) i
+  let equal a b = match a, b with
+    | Var a, Var b ->  Int.equal a b
+    | Unif (s1,i1), Unif (s2,i2) ->
+      Int.equal i1 i2 && CString.equal s1 s2
+    | Var _, Unif _ | Unif _, Var _ -> false
 
-  let pr x = Pp.str (to_string x)
+  let to_string = function
+    | Var q -> Printf.sprintf "β%d" q
+    | Unif (s,q) ->
+      let s = if CString.is_empty s then "" else s^"." in
+      Printf.sprintf "%sα%d" s q
+
+  let raw_pr q = Pp.str (to_string q)
+end
+
+module Quality = struct
+  type t = QVar of QVar.t | QProp | QSProp | QType
+
+  let pr prv = function
+    | QVar v -> prv v
+    | QProp -> Pp.str "Prop"
+    | QSProp -> Pp.str "SProp"
+    | QType -> Pp.str "Type"
+
+  let raw_pr q = pr QVar.raw_pr q
+
 end
 
 type t =
@@ -195,7 +224,7 @@ let debug_print = function
   | Prop -> Pp.(str "Prop")
   | Set -> Pp.(str "Set")
   | Type u -> Pp.(str "Type(" ++ Univ.Universe.raw_pr u ++ str ")")
-  | QSort (q, u) -> Pp.(str "QSort(" ++ QVar.pr q ++ str ","
+  | QSort (q, u) -> Pp.(str "QSort(" ++ QVar.raw_pr q ++ str ","
                         ++ spc() ++ Univ.Universe.raw_pr u ++ str ")")
 
 let pr_sort_family = function

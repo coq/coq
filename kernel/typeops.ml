@@ -92,13 +92,13 @@ let warn_bad_relevance_binder ?loc env rlv bnd =
   error_bad_binder_relevance env rlv bnd
 
 let anomaly_sort_variable q =
-  anomaly Pp.(str "The kernel received a sort variable " ++ Sorts.QVar.pr q)
+  anomaly Pp.(str "The kernel received a unification sort variable " ++ Sorts.QVar.raw_pr q)
 
 let check_assumption env x t ty =
   let r = x.binder_relevance in
   let () = match r with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar q -> anomaly_sort_variable q
+  | Sorts.RelevanceVar q -> (* TODO check *) anomaly_sort_variable q
   in
   let r' = infer_assumption env t ty in
   let x =
