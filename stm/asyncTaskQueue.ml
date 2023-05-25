@@ -120,7 +120,7 @@ module Make(T : Task) () = struct
         | ( "-async-proofs" | "-vio2vo" | "-o"
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
           | "-require-import" | "-require-export" | "-ri" | "-re"
-          | "-load-vernac-object" | "-fake-source"
+          | "-load-vernac-object"
           | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
