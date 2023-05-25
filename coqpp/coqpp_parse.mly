@@ -57,7 +57,7 @@ let parse_user_entry s sep =
   in
   parse s sep table
 
-let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.dummy_pos} }
+let no_code = { code = ""; loc = None }
 
 %}
 
