@@ -35,7 +35,7 @@ let create_full ~name () =
         anomaly Pp.(str "The debug name \"" ++ str name ++ str "\" is already used.")
   in
   let pp x =
-    Feedback.msg_debug Pp.(str "[" ++ str name ++ str "] " ++ x)
+    Feedback.msg_debug Pp.(hv 2 (str "[" ++ str name ++ str "]" ++ spc() ++ x))
   in
   let flag = ref !all_flag in
   debug := CString.Map.add name flag !debug;
