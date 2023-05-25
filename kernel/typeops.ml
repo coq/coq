@@ -57,26 +57,37 @@ let infer_assumption env t ty =
   with TypeError _ ->
     error_assumption env (make_judge t ty)
 
-type bad_relevance =
-| BadRelevanceBinder of Sorts.relevance * rel_declaration
-| BadRelevanceCase of Sorts.relevance * Constr.t
+type ('constr,'types) bad_relevance =
+| BadRelevanceBinder of Sorts.relevance * ('constr,'types) Context.Rel.Declaration.pt
+| BadRelevanceCase of Sorts.relevance * 'constr
 
 let warn_bad_relevance_name = "bad-relevance"
-let warn_bad_relevance =
-  CWarnings.create ~name:warn_bad_relevance_name ~default:CWarnings.AsError
-    Pp.(function
-        | BadRelevanceCase _ ->  str "Bad relevance in case annotation."
-        | BadRelevanceBinder (_, na) -> str "Bad relevance for binder " ++ Name.print (RelDecl.get_name na) ++ str ".")
 
-let warn_bad_relevance_case ?loc env rlv case = match CWarnings.get_status ~name:warn_bad_relevance_name with
+let bad_relevance_warning =
+  CWarnings.create_warning ~name:warn_bad_relevance_name ~default:CWarnings.AsError ()
+
+let bad_relevance_msg = CWarnings.create_msg bad_relevance_warning ()
+
+let default_print_bad_relevance = function
+  | BadRelevanceCase _ -> Pp.str "Bad relevance in case annotation."
+  | BadRelevanceBinder (_, na) ->
+    Pp.(str "Bad relevance for binder " ++ Name.print (RelDecl.get_name na) ++ str ".")
+
+(* used eg in the checker *)
+let () = CWarnings.register_printer bad_relevance_msg
+    (fun (_env,b) -> default_print_bad_relevance b)
+
+let warn_bad_relevance_case ?loc env rlv case =
+  match CWarnings.warning_status bad_relevance_warning with
 | CWarnings.Disabled | CWarnings.Enabled ->
-  warn_bad_relevance ?loc (BadRelevanceCase (rlv, mkCase case))
+  CWarnings.warn bad_relevance_msg ?loc (env, BadRelevanceCase (rlv, mkCase case))
 | CWarnings.AsError ->
   error_bad_case_relevance env rlv case
 
-let warn_bad_relevance_binder ?loc env rlv bnd = match CWarnings.get_status ~name:warn_bad_relevance_name with
+let warn_bad_relevance_binder ?loc env rlv bnd =
+  match CWarnings.warning_status bad_relevance_warning with
 | CWarnings.Disabled | CWarnings.Enabled ->
-  warn_bad_relevance ?loc (BadRelevanceBinder (rlv, bnd))
+  CWarnings.warn bad_relevance_msg ?loc (env, BadRelevanceBinder (rlv, bnd))
 | CWarnings.AsError ->
   error_bad_binder_relevance env rlv bnd
 
