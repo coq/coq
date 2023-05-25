@@ -100,6 +100,7 @@ let tokenize_string s =
       stream_tok ((Tok.extract_string true e) :: acc) str
   in
   let st = CLexer.Lexer.State.get () in
+  Fun.protect ~finally:(fun () -> CLexer.Lexer.State.set st) @@ fun () ->
   try
     let istr = Gramlib.Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
@@ -107,7 +108,6 @@ let tokenize_string s =
     CLexer.Lexer.State.set st;
     toks
   with exn when CErrors.noncritical exn ->
-    CLexer.Lexer.State.set st;
     raise (Diff_Failure "Input string is not lexable")
 
 type hyp_info = {
