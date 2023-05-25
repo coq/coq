@@ -359,8 +359,8 @@ let relevance_of_term env sigma c =
 
 let relevance_of_type env sigma t =
   let s = get_sort_of env sigma t in
-  Sorts.relevance_of_sort (ESorts.kind sigma s)
+  ESorts.relevance_of_sort sigma s
 
-let relevance_of_sort s = Sorts.relevance_of_sort (EConstr.Unsafe.to_sorts s)
+let relevance_of_sort = ESorts.relevance_of_sort
 
-let relevance_of_sort_family f =  Sorts.relevance_of_sort_family f
+let relevance_of_sort_family sigma f = Evarutil.nf_relevance sigma (Sorts.relevance_of_sort_family f)

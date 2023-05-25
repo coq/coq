@@ -69,6 +69,8 @@ sig
 
     val get_relevance : ('c, 't) pt -> Sorts.relevance
 
+    val set_annot : Name.t binder_annot -> ('c, 't) pt -> ('c, 't) pt
+
     (** Set the name that is bound by a given declaration. *)
     val set_name : Name.t -> ('c, 't) pt -> ('c, 't) pt
 

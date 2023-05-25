@@ -709,6 +709,9 @@ module GlobRef : sig
   module Map : Map.ExtS
     with type key = t and module Set := Set
 
+  val print : t -> Pp.t
+  (** Print internal representation (not to be used for user-facing messages). *)
+
 end
 
 (** Located identifiers and objects with syntax. *)

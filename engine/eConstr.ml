@@ -35,7 +35,9 @@ module ESorts = struct
   let super sigma s =
     make (Sorts.super (kind sigma s))
 
-  let relevance_of_sort sigma s = Sorts.relevance_of_sort (kind sigma s)
+  let relevance_of_sort sigma s =
+    let r = Sorts.relevance_of_sort (unsafe_to_sorts s) in
+    UState.nf_relevance (Evd.evar_universe_context sigma) r
 
   let family sigma s = Sorts.family (kind sigma s)
 
