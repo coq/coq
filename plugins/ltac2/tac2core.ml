@@ -119,12 +119,12 @@ let to_binder b =
   Tac2ffi.to_ext Tac2ffi.val_binder b
 
 let of_instance u =
-  let u = Univ.Instance.to_array (EConstr.Unsafe.to_instance u) in
+  let u = UVars.Instance.to_array (EConstr.Unsafe.to_instance u) in
   Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) u
 
 let to_instance u =
   let u = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) u in
-  EConstr.EInstance.make (Univ.Instance.of_array u)
+  EConstr.EInstance.make (UVars.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =
   let binders = Array.map2 (fun na t -> (na, t)) nas ts in

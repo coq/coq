@@ -12,12 +12,13 @@ open CErrors
 open Util
 open Names
 open Univ
+open UVars
 
 module UnivFlex = UnivFlex
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of Univ.UContext.t
+| Polymorphic_entry of UVars.UContext.t
 
 module UNameMap = Names.Id.Map
 
@@ -272,7 +273,7 @@ let compute_instance_binders rbinders inst =
 
 let context uctx =
   let (_, rbinders) = uctx.names in
-  ContextSet.to_context (compute_instance_binders rbinders) uctx.local
+  UContext.of_context_set (compute_instance_binders rbinders) uctx.local
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders
 
@@ -703,7 +704,7 @@ let universe_context_inst ~prefix ~extensible levels names =
   if not extensible && not (Level.Set.is_empty left)
   then error_unbound_universes left names
   else
-    let left = ContextSet.sort_levels (Array.of_list (Level.Set.elements left)) in
+    let left = UContext.sort_levels (Array.of_list (Level.Set.elements left)) in
     let inst = Array.append (Array.of_list prefix) left in
     let inst = Instance.of_array inst in
     inst
@@ -723,7 +724,7 @@ let check_implication uctx cstrs cstrs' =
   if Constraints.is_empty cstrs' then ()
   else CErrors.user_err
       Pp.(str "Universe constraints are not implied by the ones declared: " ++
-          pr_constraints (pr_uctx_level uctx) cstrs')
+          Constraints.pr (pr_uctx_level uctx) cstrs')
 
 let check_mono_univ_decl uctx decl =
   let levels, csts = uctx.local in

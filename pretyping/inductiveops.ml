@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Names
-open Univ
 open Term
 open Constr
 open Vars
@@ -498,7 +497,7 @@ let make_arity env sigma dep indf s =
 let compute_projections env (kn, i as ind) =
   let open Term in
   let mib = Environ.lookup_mind kn env in
-  let u = make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
@@ -633,7 +632,7 @@ let arity_of_case_predicate env (ind,params) dep k =
 
 let univ_level_mem l s = match s with
 | Prop | Set | SProp -> false
-| Type u -> univ_level_mem l u
+| Type u -> Univ.univ_level_mem l u
 | QSort (_, u) -> assert false (* template cannot contain sort variables *)
 
 (* Compute the inductive argument types: replace the sorts

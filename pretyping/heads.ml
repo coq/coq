@@ -32,7 +32,7 @@ type head_approximation =
 | NotImmediatelyComputableHead
 
 let rec compute_head_const env sigma cst =
-  let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
+  let body = Environ.constant_opt_value_in env (cst,UVars.Instance.empty) in
   match body with
   | None -> RigidHead (RigidParameter cst)
   | Some c -> kind_of_head env sigma (EConstr.of_constr c)

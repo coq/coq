@@ -318,9 +318,9 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   variance:
-    [ [ "+" -> { Univ.Variance.Covariant }
-      | "=" -> { Univ.Variance.Invariant }
-      | "*" -> { Univ.Variance.Irrelevant }
+    [ [ "+" -> { UVars.Variance.Covariant }
+      | "=" -> { UVars.Variance.Invariant }
+      | "*" -> { UVars.Variance.Irrelevant }
     ] ]
   ;
   variance_identref:

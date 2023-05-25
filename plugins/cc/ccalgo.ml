@@ -209,9 +209,9 @@ struct
 
   let rec drop_univ c =
     match kind c with
-    | Const (c,_u) -> mkConstU (c,Univ.Instance.empty)
-    | Ind (c,_u) -> mkIndU (c,Univ.Instance.empty)
-    | Construct (c,_u) -> mkConstructU (c,Univ.Instance.empty)
+    | Const (c,_u) -> mkConstU (c,UVars.Instance.empty)
+    | Ind (c,_u) -> mkIndU (c,UVars.Instance.empty)
+    | Construct (c,_u) -> mkConstructU (c,UVars.Instance.empty)
     | Sort (Type _u) -> mkSort (type1)
     | _ -> Constr.map drop_univ c
 

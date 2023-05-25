@@ -92,7 +92,7 @@ type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 let enforce_eq_instances_univs strict x y c =
   let mkU u = Sorts.sort_of_univ @@ Universe.make u in
   let mk u v = if strict then ULub (u, v) else UEq (mkU u, mkU v) in
-  let ax = Instance.to_array x and ay = Instance.to_array y in
+  let ax = UVars.Instance.to_array x and ay = UVars.Instance.to_array y in
     if Array.length ax != Array.length ay then
       CErrors.anomaly Pp.(str "Invalid argument: enforce_eq_instances_univs called with" ++
                           str " instances of different lengths.");

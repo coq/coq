@@ -93,7 +93,7 @@ let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env
           let mib = Global.lookup_mind mind in
           let iter_packet i mip =
             let ind = (mind, i) in
-            let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+            let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
             let i = (ind, u) in
             let typ = Inductiveops.type_of_inductive env i in
             let () = fn (GlobRef.IndRef ind) None env sigma typ in

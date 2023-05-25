@@ -278,24 +278,24 @@ open Constr
 let subst_univs_level_constr subst c =
   if Univ.is_empty_level_subst subst then c
   else
-    let f = Univ.subst_univs_level_instance subst in
+    let f = UVars.subst_univs_level_instance subst in
     let changed = ref false in
     let rec aux t =
       match kind t with
       | Const (c, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
             else (changed := true; mkConstU (c, u'))
       | Ind (i, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
             else (changed := true; mkIndU (i, u'))
       | Construct (c, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
@@ -306,14 +306,14 @@ let subst_univs_level_constr subst c =
              (changed := true; mkSort (Sorts.sort_of_univ u'))
 
       | Case (ci, u, pms, p, CaseInvert {indices}, c, br) ->
-        if Univ.Instance.is_empty u then Constr.map aux t
+        if UVars.Instance.is_empty u then Constr.map aux t
         else
           let u' = f u in
           if u' == u then Constr.map aux t
           else (changed:=true; Constr.map aux (mkCase (ci,u',pms,p,CaseInvert {indices},c,br)))
 
       | Case (ci, u, pms, p, NoInvert, c, br) ->
-        if Univ.Instance.is_empty u then Constr.map aux t
+        if UVars.Instance.is_empty u then Constr.map aux t
         else
           let u' = f u in
           if u' == u then Constr.map aux t
@@ -337,31 +337,31 @@ let subst_univs_level_context s =
   Context.Rel.map (subst_univs_level_constr s)
 
 let subst_instance_constr subst c =
-  if Univ.Instance.is_empty subst then c
+  if UVars.Instance.is_empty subst then c
   else
-    let f u = Univ.subst_instance_instance subst u in
+    let f u = UVars.subst_instance_instance subst u in
     let rec aux t =
       match kind t with
       | Const (c, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
           let u' = f u in
            if u' == u then t
            else (mkConstU (c, u'))
       | Ind (i, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
          let u' = f u in
            if u' == u then t
            else (mkIndU (i, u'))
       | Construct (c, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
           let u' = f u in
            if u' == u then t
            else (mkConstructU (c, u'))
       | Sort (Sorts.Type u) ->
-         let u' = Univ.subst_instance_universe subst u in
+         let u' = UVars.subst_instance_universe subst u in
           if u' == u then t else
             (mkSort (Sorts.sort_of_univ u'))
 
@@ -383,16 +383,17 @@ let subst_instance_constr subst c =
     aux c
 
 let univ_instantiate_constr u c =
-  let open Univ in
+  let open UVars in
   assert (Int.equal (Instance.length u) (AbstractContext.size c.univ_abstracted_binder));
   subst_instance_constr u c.univ_abstracted_value
 
 let subst_instance_context s ctx =
-  if Univ.Instance.is_empty s then ctx
+  if UVars.Instance.is_empty s then ctx
   else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
 
 let universes_of_constr c =
   let open Univ in
+  let open UVars in
   let rec aux s c =
     match kind c with
     | Const (_c, u) ->

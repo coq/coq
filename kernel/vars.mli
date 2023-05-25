@@ -187,6 +187,7 @@ val smash_rel_context : rel_context -> rel_context
 (** {3 Substitution of universes} *)
 
 open Univ
+open UVars
 
 (** Level substitutions for polymorphism. *)
 

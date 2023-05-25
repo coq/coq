@@ -495,7 +495,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
     | SectionLocalAssum {typ;impl;univs} ->
       let poly, uctx = match fst univs with
         | UState.Monomorphic_entry uctx -> false, uctx
-        | UState.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
+        | UState.Polymorphic_entry uctx -> true, UVars.UContext.to_context_set uctx
       in
       let () = DeclareUctx.declare_universe_context ~poly uctx in
       let () = Global.push_named_assum (name,typ) in
@@ -507,7 +507,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
       let () = export_side_effects eff in
       let poly, type_uctx = match fst de.proof_entry_universes with
         | UState.Monomorphic_entry uctx -> false, uctx
-        | UState.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
+        | UState.Polymorphic_entry uctx -> true, UVars.UContext.to_context_set uctx
       in
       let univs = Univ.ContextSet.union body_uctx type_uctx in
       (* We must declare the universe constraints before type-checking the
@@ -532,7 +532,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
               (DefinitionEntry de)
           in
           {
-            Entries.secdef_body = Constr.mkConstU (kn, Univ.Instance.empty);
+            Entries.secdef_body = Constr.mkConstU (kn, UVars.Instance.empty);
             secdef_type = None;
           }
         else {
@@ -1027,7 +1027,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let body =
       match fst univs with
       | UState.Polymorphic_entry uctx ->
-        Some (DefinedObl (constant, Univ.UContext.instance uctx))
+        Some (DefinedObl (constant, UVars.UContext.instance uctx))
       | UState.Monomorphic_entry _ ->
         Some
           (TermObl
@@ -1445,11 +1445,11 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let uctx' = UState.Internal.reboot (Global.env ()) uctx' in
-      (Univ.Instance.empty, uctx')
+      (UVars.Instance.empty, uctx')
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
       let uctx = UState.context uctx' in
-      (Univ.UContext.instance uctx, uctx')
+      (UVars.UContext.instance uctx, uctx')
   in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
@@ -1955,7 +1955,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
        should be enforced statically. *)
     let (_, body_uctx), _ = const.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (Univ.UContext.instance ctx)
+    EConstr.EInstance.make (UVars.UContext.instance ctx)
   in
   let args = List.map EConstr.of_constr args in
   let lem = EConstr.mkConstU (cst, inst) in

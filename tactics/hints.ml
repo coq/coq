@@ -1145,7 +1145,7 @@ let subst_autohint (subst, obj) =
     match t with
     | None -> gr'
     | Some t ->
-      (try head_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
+      (try head_bound Evd.empty (EConstr.of_constr t.UVars.univ_abstracted_value)
        with Bound -> gr')
   in
   let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in

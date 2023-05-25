@@ -189,7 +189,7 @@ and nf_whd env sigma whd typ =
   | Vaccu (Aind ((mi, i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
-       Univ.AbstractContext.size (Declareops.inductive_polymorphic_context mib)
+       UVars.AbstractContext.size (Declareops.inductive_polymorphic_context mib)
      in
      let mk u =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
@@ -200,12 +200,12 @@ and nf_whd env sigma whd typ =
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
-    if Int.equal nb_univs 0 then Univ.Instance.empty
+    if Int.equal nb_univs 0 then UVars.Instance.empty
     else match stk with
     | Zapp args :: _ ->
       let inst = arg args 0 in
       let inst = uni_instance inst in
-      let () = assert (Int.equal (Univ.Instance.length inst) nb_univs) in
+      let () = assert (Int.equal (UVars.Instance.length inst) nb_univs) in
       inst
     | _ -> assert false
   in
@@ -245,7 +245,7 @@ and constr_type_of_idkey env sigma (idkey : Vmvalues.id_key) stk =
   | ConstKey cst ->
      let cbody = Environ.lookup_constant cst env in
      let nb_univs =
-       Univ.AbstractContext.size (Declareops.constant_polymorphic_context cbody)
+       UVars.AbstractContext.size (Declareops.constant_polymorphic_context cbody)
      in
      let mk u =
        let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)

@@ -485,7 +485,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env paramsctxt inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
-  let u = Univ.make_abstract_instance (universes_context univs) in
+  let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
   let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
@@ -547,8 +547,8 @@ let build_inductive env ~sec_univs names prv univs template variance
         Some (Array.sub variance 0 nsec)
   in
   let univ_hyps = match sec_univs with
-    | None -> Univ.Instance.empty
-    | Some univs -> Univ.Instance.of_array univs
+    | None -> UVars.Instance.empty
+    | Some univs -> UVars.Instance.of_array univs
   in
   let mib =
       (* Build the mutual inductive *)

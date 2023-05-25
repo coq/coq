@@ -359,7 +359,7 @@ let judge_of_float env v =
   Environ.on_judgment EConstr.of_constr (judge_of_float env v)
 
 let judge_of_array env sigma u tj defj tyj =
-  let ulev = match Univ.Instance.to_array u with
+  let ulev = match UVars.Instance.to_array u with
     | [|u|] -> u
     | _ -> assert false
   in

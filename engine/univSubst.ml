@@ -12,6 +12,7 @@ open Sorts
 open Util
 open Constr
 open Univ
+open UVars
 
 type 'a universe_map = 'a Level.Map.t
 type universe_subst = Universe.t universe_map

@@ -11,6 +11,7 @@
 open Util
 open Names
 open Univ
+open UVars
 open Term
 open Constr
 open Declarations
@@ -363,8 +364,8 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   | Monomorphic_ind_entry | Template_ind_entry _ ->
     Univ.empty_level_subst, Monomorphic
   | Polymorphic_ind_entry uctx ->
-    let (inst, auctx) = Univ.abstract_universes uctx in
-    let inst = Univ.make_instance_subst inst in
+    let (inst, auctx) = UVars.abstract_universes uctx in
+    let inst = UVars.make_instance_subst inst in
     (inst, Polymorphic auctx)
   in
   let params = Vars.subst_univs_level_context usubst params in

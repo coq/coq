@@ -50,6 +50,6 @@ let do_primitive id udecl prim typopt =
     let uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in
     let typ = EConstr.to_constr evd typ in
-    let univ_entry = Evd.check_univ_decl ~poly:(not (Univ.AbstractContext.is_empty auctx)) evd udecl in
+    let univ_entry = Evd.check_univ_decl ~poly:(not (UVars.AbstractContext.is_empty auctx)) evd udecl in
     let entry = Declare.primitive_entry ~types:(typ, univ_entry) prim in
     declare id entry

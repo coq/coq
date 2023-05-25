@@ -26,9 +26,9 @@ type finvert
 
 type evar_repack
 
-type usubs = fconstr subs Univ.puniverses
+type usubs = fconstr subs UVars.puniverses
 
-type table_key = Constant.t Univ.puniverses tableKey
+type table_key = Constant.t UVars.puniverses tableKey
 
 type fterm =
   | FRel of int
@@ -40,15 +40,15 @@ type fterm =
   | FProj of Projection.t * fconstr
   | FFix of fixpoint * usubs
   | FCoFix of cofixpoint * usubs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
+  | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
   | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
-  | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
+  | FArray of UVars.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * usubs
   | FIrrelevant
@@ -61,7 +61,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * usubs
+  | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -81,7 +81,7 @@ val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
 val stack_args_size : stack -> int
 
 val inductive_subst : Declarations.mutual_inductive_body
-  -> Univ.Instance.t
+  -> UVars.Instance.t
   -> fconstr array
   -> usubs
 
@@ -90,7 +90,7 @@ val usubs_liftn : int -> usubs -> usubs
 val usubs_cons : fconstr -> usubs -> usubs
 
 (** identity if the first instance is empty *)
-val usubst_instance : 'a Univ.puniverses -> Univ.Instance.t -> Univ.Instance.t
+val usubst_instance : 'a UVars.puniverses -> UVars.Instance.t -> UVars.Instance.t
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -199,6 +199,6 @@ val zip : fconstr -> stack -> fconstr
 
 val term_of_process : fconstr -> stack -> constr
 
-val to_constr : lift Univ.puniverses -> fconstr -> constr
+val to_constr : lift UVars.puniverses -> fconstr -> constr
 
 (** End of cbn debug section i*)

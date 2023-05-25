@@ -443,7 +443,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
 
 let check_trivial_variances variances =
   Array.iter (function
-      | None | Some Univ.Variance.Invariant -> ()
+      | None | Some UVars.Variance.Invariant -> ()
       | Some _ ->
         CErrors.user_err
           Pp.(strbrk "Universe variance was specified but this inductive will not be cumulative."))
@@ -456,7 +456,7 @@ let variance_of_entry ~cumulative ~variances uctx =
     if not cumulative then begin check_trivial_variances variances; None end
     else
       let lvs = Array.length variances in
-      let lus = Univ.UContext.size uctx in
+      let lus = UVars.UContext.size uctx in
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 

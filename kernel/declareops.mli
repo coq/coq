@@ -10,7 +10,7 @@
 
 open Declarations
 open Mod_subst
-open Univ
+open UVars
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)

@@ -299,13 +299,13 @@ let type_of_parameters env ctx u argsv argstv =
 (* Type of primitive constructs *)
 let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match prim with
   | CPrimitives.PT_int63 ->
-    assert (Univ.Instance.is_empty u);
+    assert (UVars.Instance.is_empty u);
     Constr.mkSet
   | CPrimitives.PT_float64 ->
-    assert (Univ.Instance.is_empty u);
+    assert (UVars.Instance.is_empty u);
     Constr.mkSet
   | CPrimitives.PT_array ->
-    begin match Univ.Instance.to_array u with
+    begin match UVars.Instance.to_array u with
     | [|u|] ->
       let ty = Constr.mkType (Univ.Universe.make u) in
       Constr.mkProd(Context.anonR, ty , ty)
@@ -323,7 +323,7 @@ let type_of_float env =
   | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
-  assert (Univ.Instance.length u = 1);
+  assert (UVars.Instance.length u = 1);
   match env.retroknowledge.Retroknowledge.retro_array with
   | Some c -> mkConstU (c,u)
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
@@ -513,8 +513,8 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
   let cst = match mib.mind_variance with
-  | None -> Univ.enforce_eq_instances u u' Univ.Constraints.empty
-  | Some variance -> Univ.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
+  | None -> UVars.enforce_eq_instances u u' Univ.Constraints.empty
+  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
   in
   let () = check_constraints cst env in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
@@ -595,7 +595,7 @@ let check_fixpoint env lna lar vdef vdeft =
 let type_of_global_in_context env r =
   let open Names.GlobRef in
   match r with
-  | VarRef id -> Environ.named_type id env, Univ.AbstractContext.empty
+  | VarRef id -> Environ.named_type id env, UVars.AbstractContext.empty
   | ConstRef c ->
     let cb = Environ.lookup_constant c env in
     let univs = Declareops.constant_polymorphic_context cb in
@@ -603,14 +603,14 @@ let type_of_global_in_context env r =
   | IndRef ind ->
     let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
-    let inst = Univ.make_abstract_instance univs in
+    let inst = UVars.make_abstract_instance univs in
     Inductive.type_of_inductive (specif, inst), univs
   | ConstructRef cstr ->
     let (mib,_ as specif) =
       Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
     in
     let univs = Declareops.inductive_polymorphic_context mib in
-    let inst = Univ.make_abstract_instance univs in
+    let inst = UVars.make_abstract_instance univs in
     Inductive.type_of_constructor (cstr,inst) specif, univs
 
 (************************************************************************)
@@ -754,7 +754,7 @@ let rec execute env cstr =
           let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
           let self =
             let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-            let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+            let inst = UVars.Instance.of_array (Array.init (UVars.Instance.length u) Level.var) in
             mkApp (mkIndU (ci.ci_ind, inst), args)
           in
           let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
@@ -814,7 +814,7 @@ let rec execute env cstr =
     | Float _ -> cstr, type_of_float env
     | Array(u,t,def,ty) ->
       (* ty : Type@{u} and all of t,def : ty *)
-      let ulev = match Univ.Instance.to_array u with
+      let ulev = match UVars.Instance.to_array u with
         | [|u|] -> u
         | _ -> assert false
       in
@@ -1017,7 +1017,7 @@ let type_of_prim env u t =
                        tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
-  assert (AbstractContext.size (univs t) = Instance.length u);
+  assert (UVars.AbstractContext.size (univs t) = UVars.Instance.length u);
   Vars.subst_instance_constr u
     (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 

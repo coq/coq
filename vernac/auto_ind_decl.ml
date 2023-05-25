@@ -285,7 +285,7 @@ let pred_context env ci params u nas =
   let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   let self =
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-    let inst = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+    let inst = UVars.(Instance.of_array (Array.init (Instance.length u) Univ.Level.var)) in
     mkApp (mkIndU (ci.ci_ind, inst), args)
   in
   let realdecls = RelDecl.LocalAssum (Context.anonR, self) :: realdecls in

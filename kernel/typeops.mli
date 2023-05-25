@@ -11,6 +11,7 @@
 open Names
 open Constr
 open Univ
+open UVars
 open Environ
 
 (** {6 Typing functions (not yet tagged as safe) }
@@ -92,7 +93,7 @@ val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
 (** {6 Type of global references. } *)
 
-val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AbstractContext.t
+val type_of_global_in_context : env -> GlobRef.t -> types * UVars.AbstractContext.t
 (** Returns the type of the global reference, by creating a fresh
     instance of polymorphic references and computing their
     instantiated universe context. The type should not be used
@@ -114,12 +115,12 @@ val judge_of_int : env -> Uint63.t -> unsafe_judgment
 val type_of_float : env -> types
 val judge_of_float : env -> Float64.t -> unsafe_judgment
 
-val type_of_array : env -> Univ.Instance.t -> types
-val judge_of_array : env -> Univ.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
+val type_of_array : env -> UVars.Instance.t -> types
+val judge_of_array : env -> UVars.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
 
-val type_of_prim_type : env -> Univ.Instance.t -> 'a CPrimitives.prim_type -> types
-val type_of_prim : env -> Univ.Instance.t -> CPrimitives.t -> types
-val type_of_prim_or_type : env -> Univ.Instance.t -> CPrimitives.op_or_type -> types
+val type_of_prim_type : env -> UVars.Instance.t -> 'a CPrimitives.prim_type -> types
+val type_of_prim : env -> UVars.Instance.t -> CPrimitives.t -> types
+val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> types
 
 val warn_bad_relevance_name : string
 (** Allow the checker to make this warning into an error. *)

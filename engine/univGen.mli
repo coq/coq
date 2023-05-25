@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Univ
+open UVars
 
 type univ_length_mismatch = {
   actual : int ;
@@ -48,7 +49,7 @@ val fresh_constructor_instance : env -> constructor ->
 val fresh_array_instance : env ->
   Instance.t in_universe_context_set
 
-val fresh_global_instance : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobRef.t ->
+val fresh_global_instance : ?loc:Loc.t -> ?names:UVars.Instance.t -> env -> GlobRef.t ->
   constr in_universe_context_set
 
 (** Get fresh variables for the universe context.

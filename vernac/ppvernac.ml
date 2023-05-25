@@ -69,7 +69,7 @@ let pr_univ_name_list = function
     str "@{" ++ prlist_with_sep spc pr_lname l ++ str"}"
 
 let pr_variance_lident (lid,v) =
-  let v = Option.cata Univ.Variance.pr (mt()) v in
+  let v = Option.cata UVars.Variance.pr (mt()) v in
   v ++ pr_lident lid
 
 let pr_univdecl_instance l extensible =

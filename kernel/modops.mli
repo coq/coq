@@ -38,7 +38,7 @@ val implem_smart_map :
   (module_implementation -> module_implementation)
 
 val annotate_module_expression : module_expression -> module_signature ->
-  (module_type_body, (constr * Univ.AbstractContext.t option) module_alg_expr) functorize
+  (module_type_body, (constr * UVars.AbstractContext.t option) module_alg_expr) functorize
 
 val annotate_struct_body : structure_body -> module_signature -> module_signature
 
@@ -112,7 +112,7 @@ type signature_mismatch_error =
   | NotEqualInductiveAliases
   | IncompatibleUniverses of UGraph.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
-  | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
+  | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
   | IncompatibleVariance
 
 type subtyping_trace_elt =

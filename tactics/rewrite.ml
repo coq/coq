@@ -980,7 +980,7 @@ let fold_match ?(force=false) env sigma c =
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
   | App (f', args) when QConstant.equal env (fst (destConst sigma f')) sk ->
-      let v = Environ.constant_value_in env (sk,Univ.Instance.empty)(*FIXME*) in
+      let v = Environ.constant_value_in env (sk,UVars.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
         Reductionops.whd_beta env sigma (mkApp (v, args))
   | _ -> app

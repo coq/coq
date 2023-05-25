@@ -24,7 +24,7 @@ val destConstRef : GlobRef.t -> Constant.t
 val destIndRef : GlobRef.t -> inductive
 val destConstructRef : GlobRef.t -> constructor
 
-val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
+val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr UVars.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
 (** {6 Extended global references } *)

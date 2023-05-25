@@ -373,7 +373,7 @@ let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal 
 
 let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
-    let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
+    let cstrs = UVars.enforce_eq_instances u u' Univ.Constraints.empty in
     try Success (Evd.add_constraints evd cstrs)
     with UGraph.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
   in
@@ -382,7 +382,7 @@ let compare_heads pbty env evd ~nargs term term' =
     if is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      compare_cumulative_instances pbty evd [|Univ.Variance.Irrelevant|] u u'
+      compare_cumulative_instances pbty evd [|UVars.Variance.Irrelevant|] u u'
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       check_strict evd u u'

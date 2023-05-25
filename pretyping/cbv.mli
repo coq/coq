@@ -34,14 +34,14 @@ type cbv_value =
   | LAM of int * (Name.t Context.binder_annot * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor Univ.puniverses * cbv_value array
+  | CONSTR of constructor UVars.puniverses * cbv_value array
   | PRIMITIVE of CPrimitives.t * pconstant * cbv_value array
-  | ARRAY of Univ.Instance.t * cbv_value Parray.t * cbv_value
+  | ARRAY of UVars.Instance.t * cbv_value Parray.t * cbv_value
 
 and cbv_stack =
   | TOP
   | APP of cbv_value list * cbv_stack
-  | CASE of Univ.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
+  | CASE of UVars.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
   | PROJ of Projection.t * cbv_stack
 
 val shift_value : int -> cbv_value -> cbv_value

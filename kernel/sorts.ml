@@ -207,5 +207,5 @@ let pr_sort_family = function
 
 let subst_instance_sort u = function
   | SProp | Prop | Set as s -> s
-  | Type v -> sort_of_univ (subst_instance_universe u v)
-  | QSort (q, v) -> QSort (q, subst_instance_universe u v)
+  | Type v -> sort_of_univ (UVars.subst_instance_universe u v)
+  | QSort (q, v) -> QSort (q, UVars.subst_instance_universe u v)

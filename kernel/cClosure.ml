@@ -71,7 +71,7 @@ type red_state = Ntrl | Cstr | Red
 let neutr = function Ntrl -> Ntrl | Red | Cstr -> Red
 let is_red = function Red -> true | Ntrl | Cstr -> false
 
-type table_key = Constant.t Univ.puniverses tableKey
+type table_key = Constant.t UVars.puniverses tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
@@ -90,21 +90,21 @@ and fterm =
   | FProj of Projection.t * fconstr
   | FFix of fixpoint * usubs
   | FCoFix of cofixpoint * usubs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
+  | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
   | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
-  | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
+  | FArray of UVars.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * usubs
   | FIrrelevant
   | FLOCKED
 
-and usubs = fconstr subs Univ.puniverses
+and usubs = fconstr subs UVars.puniverses
 
 and finvert = fconstr array
 
@@ -154,7 +154,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * usubs
+  | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -258,20 +258,20 @@ let destFLambda clos_fun t =
 (* We use empty as a special identity value, if we don't check
    subst_instance_instance will raise array out of bounds. *)
 let usubst_instance (_,u) u' =
-  if Univ.Instance.is_empty u then u'
-  else Univ.subst_instance_instance u u'
+  if UVars.Instance.is_empty u then u'
+  else UVars.subst_instance_instance u u'
 
 let usubst_punivs (_,u) (v,u' as orig) =
-  if Univ.Instance.is_empty u then orig
-  else v, Univ.subst_instance_instance u u'
+  if UVars.Instance.is_empty u then orig
+  else v, UVars.subst_instance_instance u u'
 
 let usubst_sort (_,u) s = match s with
   | Sorts.Type su ->
-    if Univ.Instance.is_empty u then s
-    else Sorts.(sort_of_univ (Univ.subst_instance_universe u su))
+    if UVars.Instance.is_empty u then s
+    else Sorts.(sort_of_univ (UVars.subst_instance_universe u su))
   | Sorts.QSort (q, v) ->
-    if Univ.Instance.is_empty u then s
-    else Sorts.qsort q (Univ.subst_instance_universe u v)
+    if UVars.Instance.is_empty u then s
+    else Sorts.qsort q (UVars.subst_instance_universe u v)
   | Sorts.(SProp | Prop | Set) -> s
 
 (* Optimization: do not enclose variables in a closure.
@@ -294,7 +294,7 @@ let mk_clos (e:usubs) t =
 
 let injectu c u = mk_clos (subs_id 0, u) c
 
-let inject c = injectu c Univ.Instance.empty
+let inject c = injectu c UVars.Instance.empty
 
 let mk_irrelevant = { mark = Cstr; term = FIrrelevant }
 
@@ -316,7 +316,7 @@ module Table : sig
 end = struct
   module Table = Hashtbl.Make(struct
     type t = table_key
-    let equal = eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+    let equal = eq_table_key (eq_pair eq_constant_key UVars.Instance.equal)
     let hash = hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
   end)
 
@@ -534,7 +534,7 @@ and comp_subs (el,u) (s,u') =
    fconstr. When we find a closure whose substitution is the identity,
    then we directly return the constr to avoid possibly huge
    reallocation. *)
-let term_of_fconstr c = to_constr (el_id, Univ.Instance.empty) c
+let term_of_fconstr c = to_constr (el_id, UVars.Instance.empty) c
 
 (* fstrong applies unfreeze_fun recursively on the (freeze) term and
  * yields a term.  Assumes that the unfreeze_fun never returns a
@@ -889,11 +889,11 @@ module FNativeEntries =
     type elem = fconstr
     type args = fconstr array
     type evd = unit
-    type uinstance = Univ.Instance.t
+    type uinstance = UVars.Instance.t
 
     let mk_construct c =
       (* All constructors used in primitive functions are relevant *)
-      { mark = Cstr; term = FConstruct (Univ.in_punivs c) }
+      { mark = Cstr; term = FConstruct (UVars.in_punivs c) }
 
     let get = Array.get
 
@@ -922,7 +922,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_int63 with
       | Some c ->
         defined_int := true;
-        fint := { mark = Ntrl; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        fint := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
       | None -> defined_int := false
 
     let defined_float = ref false
@@ -932,7 +932,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = Ntrl; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        ffloat := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
       | None -> defined_float := false
 
     let defined_bool = ref false
@@ -983,7 +983,7 @@ module FNativeEntries =
         fLt := mk_construct cLt;
         fGt := mk_construct cGt;
         let (icmp, _) = cEq in
-        fcmp := { mark = Ntrl; term = FInd (Univ.in_punivs icmp) }
+        fcmp := { mark = Ntrl; term = FInd (UVars.in_punivs icmp) }
       | None -> defined_cmp := false
 
     let defined_f_cmp = ref false

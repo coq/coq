@@ -19,7 +19,7 @@ type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of Univ.UContext.t
+| Polymorphic_entry of UVars.UContext.t
 
 exception UniversesDiffer
 
@@ -84,7 +84,7 @@ val is_algebraic : Level.t -> t -> bool
 val constraints : t -> Univ.Constraints.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
-val context : t -> Univ.UContext.t
+val context : t -> UVars.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders

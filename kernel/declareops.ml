@@ -56,15 +56,15 @@ let hcons_template_universe ar =
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
-  | Monomorphic -> Univ.AbstractContext.empty
+  | Monomorphic -> UVars.AbstractContext.empty
   | Polymorphic ctx -> ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
     Univ.empty_level_subst, Monomorphic
   | Entries.Polymorphic_entry uctx ->
-    let (inst, auctx) = Univ.abstract_universes uctx in
-    let inst = Univ.make_instance_subst inst in
+    let (inst, auctx) = UVars.abstract_universes uctx in
+    let inst = UVars.make_instance_subst inst in
     (inst, Polymorphic auctx)
 
 (** {6 Constants } *)
@@ -106,7 +106,7 @@ let subst_const_def subst def = match def with
 
 let subst_const_body subst cb =
   (* we're outside sections *)
-  assert (List.is_empty cb.const_hyps && Univ.Instance.is_empty cb.const_univ_hyps);
+  assert (List.is_empty cb.const_hyps && UVars.Instance.is_empty cb.const_univ_hyps);
   if is_empty_subst subst then cb
   else
     let body' = subst_const_def subst cb.const_body in
@@ -115,7 +115,7 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
-        const_univ_hyps = Univ.Instance.empty;
+        const_univ_hyps = UVars.Instance.empty;
         const_body = body';
         const_type = type';
         const_body_code =
@@ -147,7 +147,7 @@ let hcons_universes cbu =
   match cbu with
   | Monomorphic -> Monomorphic
   | Polymorphic ctx ->
-    Polymorphic (Univ.hcons_abstract_universe_context ctx)
+    Polymorphic (UVars.hcons_abstract_universe_context ctx)
 
 let hcons_const_body cb =
   { cb with
@@ -268,12 +268,12 @@ let subst_mind_record subst r = match r with
 
 let subst_mind_body subst mib =
   (* we're outside sections *)
-  assert (List.is_empty mib.mind_hyps && Univ.Instance.is_empty mib.mind_univ_hyps);
+  assert (List.is_empty mib.mind_hyps && UVars.Instance.is_empty mib.mind_univ_hyps);
   { mind_record = subst_mind_record subst mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = [];
-    mind_univ_hyps = Univ.Instance.empty;
+    mind_univ_hyps = UVars.Instance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =

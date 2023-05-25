@@ -1103,7 +1103,7 @@ let ml_of_instance instance u =
        MLprimitive (MLarrayget, [|univ; MLint i|])
     | None -> let i = push_symbol (SymbLevel l) in get_level_code i
   in
-  let u = Univ.Instance.to_array u in
+  let u = UVars.Instance.to_array u in
   if Array.is_empty u then [||]
   else let u = Array.map ml_of_level u in
       (* FIXME: use a proper cast function *)
@@ -2040,7 +2040,7 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id, [||]))::auxdefs
 
 let compile_constant env sigma con cb =
-    let no_univs = 0 = Univ.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
+    let no_univs = 0 = UVars.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let code = lambda_of_constr env sigma t in
@@ -2101,7 +2101,7 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-        if Int.equal (Univ.AbstractContext.size u) 0 then
+        if Int.equal (UVars.AbstractContext.size u) 0 then
           [|get_ind_code j; MLarray [||]|]
         else [|get_ind_code j|]
       in

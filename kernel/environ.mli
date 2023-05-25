@@ -11,6 +11,7 @@
 open Names
 open Constr
 open Univ
+open UVars
 open Declarations
 
 (** Unsafe environments. We define here a datatype for environments.
@@ -212,16 +213,16 @@ val type_in_type_constant : Constant.t -> env -> bool
 type const_evaluation_result =
   | NoBody
   | Opaque
-  | IsPrimitive of Univ.Instance.t * CPrimitives.t
+  | IsPrimitive of Instance.t * CPrimitives.t
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
 
 val constant_value_and_type : env -> Constant.t puniverses ->
-  constr option * types * Univ.Constraints.t
+  constr option * types * Constraints.t
 (** The universe context associated to the constant, empty if not
     polymorphic *)
-val constant_context : env -> Constant.t -> Univ.AbstractContext.t
+val constant_context : env -> Constant.t -> AbstractContext.t
 
 (* These functions should be called under the invariant that [env]
    already contains the constraints corresponding to the constant
@@ -262,7 +263,7 @@ val mem_mind : MutInd.t -> env -> bool
 
 (** The universe context associated to the inductive, empty if not
     polymorphic *)
-val mind_context : env -> MutInd.t -> Univ.AbstractContext.t
+val mind_context : env -> MutInd.t -> AbstractContext.t
 
 (** New-style polymorphism *)
 val polymorphic_ind  : inductive -> env -> bool
@@ -271,7 +272,7 @@ val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_ind : inductive -> env -> bool
-val template_polymorphic_variables : inductive -> env -> Univ.Level.t list
+val template_polymorphic_variables : inductive -> env -> Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
 
 (** {6 Name quotients} *)
@@ -312,23 +313,23 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 
 (** {5 Universe constraints } *)
 
-val add_constraints : Univ.Constraints.t -> env -> env
+val add_constraints : Constraints.t -> env -> env
 (** Add universe constraints to the environment.
     @raise UniverseInconsistency. *)
 
-val check_constraints : Univ.Constraints.t -> env -> bool
+val check_constraints : Constraints.t -> env -> bool
 (** Check constraints are satifiable in the environment. *)
 
-val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
+val push_context : ?strict:bool -> UContext.t -> env -> env
 (** [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
     @raise UGraph.AlreadyDeclared if one of the universes is already declared. *)
 
-val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
+val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
 (** [push_context_set ?(strict=false) ctx env] pushes the universe
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
 
-val push_subgraph : Univ.ContextSet.t -> env -> env
+val push_subgraph : ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in
    [univs] to [env] as [push_context_set ~strict:false univs env], and
    also checks that they do not imply new transitive constraints
@@ -400,7 +401,7 @@ val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declarat
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
-val get_template_polymorphic_variables : env -> GlobRef.t -> Univ.Level.t list
+val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
 
 (** Native compiler *)

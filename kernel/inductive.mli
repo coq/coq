@@ -11,6 +11,7 @@
 open Names
 open Constr
 open Univ
+open UVars
 open Declarations
 open Environ
 

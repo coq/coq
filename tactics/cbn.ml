@@ -213,9 +213,9 @@ struct
     let open Pp in
       match c with
       | Cst_const (c, u) ->
-        if Univ.Instance.is_empty u then Constant.debug_print c
+        if UVars.Instance.is_empty u then Constant.debug_print c
         else str"(" ++ Constant.debug_print c ++ str ", " ++
-          Univ.Instance.pr Univ.Level.raw_pr u ++ str")"
+          UVars.Instance.pr Univ.Level.raw_pr u ++ str")"
       | Cst_proj p ->
         str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
@@ -241,7 +241,7 @@ struct
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
-        Constant.CanOrd.equal c1 c2 && Univ.Instance.equal u1 u2
+        Constant.CanOrd.equal c1 c2 && UVars.Instance.equal u1 u2
       | Cst_proj p1, Cst_proj p2 -> Projection.Repr.CanOrd.equal (Projection.repr p1) (Projection.repr p2)
       | _, _ -> false
     in
@@ -464,7 +464,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
                 Univ.Level.Map.add l r acc)
                 csts Univ.Level.Map.empty
             in
-            let inst = subst_univs_level_instance subst u in
+            let inst = UVars.subst_univs_level_instance subst u in
             mkConstU (cst, EInstance.make inst)
           | None -> bd
         end

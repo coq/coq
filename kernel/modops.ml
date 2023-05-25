@@ -48,7 +48,7 @@ type signature_mismatch_error =
   | NotEqualInductiveAliases
   | IncompatibleUniverses of UGraph.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
-  | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
+  | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
   | IncompatibleVariance
 
 type subtyping_trace_elt =
@@ -328,7 +328,7 @@ let strengthen_const mp_from l cb resolver =
   | _ ->
     let kn = KerName.make mp_from l in
     let con = constant_of_delta_kn resolver kn in
-    let u = Univ.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
+    let u = UVars.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
         const_body = Def (mkConstU (con,u));
         const_body_code = Some (Vmbytegen.compile_alias con) }
@@ -583,7 +583,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
         | Undef _ | OpaqueDef _ | Primitive _ -> l
         | Def constr ->
           let ctx = Declareops.constant_polymorphic_context constant in
-          let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
+          let constr = {UVars.univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
           add_inline_delta_resolver kn (lev, Some constr) l
   in
   make_inline delta constants

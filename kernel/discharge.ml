@@ -13,7 +13,7 @@ open Names
 open Constr
 open Term
 open Declarations
-open Univ
+open UVars
 open Cooking
 
 module NamedDecl = Context.Named.Declaration
@@ -21,12 +21,12 @@ module RelDecl = Context.Rel.Declaration
 
 let lift_univs info univ_hyps = function
   | Monomorphic ->
-    assert (Univ.Instance.is_empty univ_hyps);
+    assert (UVars.Instance.is_empty univ_hyps);
     info, univ_hyps, Monomorphic
   | Polymorphic auctx ->
     let info, n, auctx = lift_poly_univs info auctx in
     let univ_hyps =
-      let open Univ.Instance in
+      let open UVars.Instance in
       let us = to_array univ_hyps in
       let us = Array.sub us 0 (Array.length us - n) in
       of_array us

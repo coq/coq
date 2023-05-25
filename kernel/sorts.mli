@@ -60,7 +60,7 @@ val levels : t -> Univ.Level.Set.t
 
 val super : t -> t
 
-val subst_instance_sort : Univ.Instance.t -> t -> t
+val subst_instance_sort : UVars.Instance.t -> t -> t
 
 (** On binders: is this variable proof relevant *)
 type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t

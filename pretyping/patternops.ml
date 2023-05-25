@@ -265,7 +265,7 @@ let rec subst_pattern env sigma subst pat =
     if ref' == ref then pat else (match t with
         | None -> PRef ref'
         | Some t ->
-          pattern_of_constr env sigma (EConstr.of_constr t.Univ.univ_abstracted_value))
+          pattern_of_constr env sigma (EConstr.of_constr t.UVars.univ_abstracted_value))
   | PVar _
   | PEvar _
   | PRel _

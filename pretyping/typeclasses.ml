@@ -48,7 +48,7 @@ type class_method = {
 (* This module defines type-classes *)
 type typeclass = {
   (* Universe quantification *)
-  cl_univs : Univ.AbstractContext.t;
+  cl_univs : UVars.AbstractContext.t;
 
   (* The class implementation *)
   cl_impl : GlobRef.t;
@@ -90,7 +90,7 @@ let classes : typeclasses ref = Summary.ref GlobRef.Map.empty ~name:"classes"
 let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
 
 let typeclass_univ_instance (cl, u) =
-  assert (Univ.AbstractContext.size cl.cl_univs == Univ.Instance.length u);
+  assert (UVars.AbstractContext.size cl.cl_univs == UVars.Instance.length u);
   let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
     { cl with cl_context = subst_ctx cl.cl_context;
       cl_props = subst_ctx cl.cl_props}

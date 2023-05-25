@@ -41,7 +41,7 @@ let check_constant_declaration env opac kn cb opacify =
          ones in const_universes should not be needed *)
       false, env
     | Polymorphic auctx ->
-      let ctx = Univ.AbstractContext.repr auctx in
+      let ctx = UVars.AbstractContext.repr auctx in
       (* [env] contains De Bruijn universe variables *)
       let env = push_context ~strict:false ctx env in
       true, env

@@ -796,7 +796,7 @@ let rec subst_notation_constr subst bound raw =
       if ref' == ref then raw else (match t with
           | None -> NRef (ref',u)
           | Some t ->
-            fst (notation_constr_of_constr bound t.Univ.univ_abstracted_value))
+            fst (notation_constr_of_constr bound t.UVars.univ_abstracted_value))
 
   | NVar _ -> raw
 

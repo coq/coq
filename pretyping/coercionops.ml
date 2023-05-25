@@ -200,7 +200,7 @@ let subst_cl_typ env subst ct = match ct with
       if c' == c then ct else (match t with
           | None -> CL_CONST c'
           | Some t ->
-            pi1 (find_class_type env Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)))
+            pi1 (find_class_type env Evd.empty (EConstr.of_constr t.UVars.univ_abstracted_value)))
   | CL_IND i ->
       let i' = subst_ind subst i in
         if i' == i then ct else CL_IND i'

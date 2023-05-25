@@ -16,6 +16,7 @@ open Pp
 open Names
 open Libnames
 open Univ
+open UVars
 open Environ
 open Printer
 open Constr
@@ -268,7 +269,7 @@ let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
 let ppuniverse_opt_subst l = pp (UnivFlex.pr Level.raw_pr l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst Level.raw_pr l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
-let ppconstraints c = pp (pr_constraints Level.raw_pr c)
+let ppconstraints c = pp (Constraints.pr Level.raw_pr c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in

@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Univ
+open UVars
 
 (* Type errors. *)
 

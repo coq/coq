@@ -170,22 +170,22 @@ let napply (f:t) (args: t array) =
   Array.fold_left (fun f a -> apply f a) f args
 
 let mk_constant_accu kn u =
-  mk_accu (Aconstant (kn,Univ.Instance.of_array u))
+  mk_accu (Aconstant (kn,UVars.Instance.of_array u))
 
 let mk_ind_accu ind u =
-  mk_accu (Aind (ind,Univ.Instance.of_array u))
+  mk_accu (Aind (ind,UVars.Instance.of_array u))
 
 let mk_sort_accu s u =
   let open Sorts in
   match s with
   | SProp | Prop | Set -> mk_accu (Asort s)
   | Type s ->
-     let u = Univ.Instance.of_array u in
-     let s = Sorts.sort_of_univ (Univ.subst_instance_universe u s) in
+     let u = UVars.Instance.of_array u in
+     let s = Sorts.sort_of_univ (UVars.subst_instance_universe u s) in
      mk_accu (Asort s)
   | QSort (q, s) ->
-     let u = Univ.Instance.of_array u in
-     let s = Sorts.qsort q (Univ.subst_instance_universe u s) in
+     let u = UVars.Instance.of_array u in
+     let s = Sorts.qsort q (UVars.subst_instance_universe u s) in
      mk_accu (Asort s)
 
 let mk_var_accu id =

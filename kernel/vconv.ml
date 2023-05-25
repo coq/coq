@@ -11,7 +11,7 @@ open Vmsymtable
 let table_key_instance env = function
 | ConstKey cst ->
   let ctx = Environ.constant_context env cst in
-  Univ.AbstractContext.size ctx
+  UVars.AbstractContext.size ctx
 | RelKey _ | VarKey _ | EvarKey _ -> 0
 
 let compare_zipper z1 z2 =
@@ -96,7 +96,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind ((mi,_i) as ind1) , Aind ind2 ->
     if Names.Ind.CanOrd.equal ind1 ind2 && compare_stack stk1 stk2 then
-      let ulen = Univ.AbstractContext.size (Environ.mind_context env mi) in
+      let ulen = UVars.AbstractContext.size (Environ.mind_context env mi) in
       if ulen = 0 then
         conv_stack env k stk1 stk2 cu
       else

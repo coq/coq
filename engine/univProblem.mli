@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Univ
+open UVars
 
 (** {6 Constraints for type inference}
 

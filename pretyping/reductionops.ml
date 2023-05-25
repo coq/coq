@@ -984,7 +984,7 @@ let clos_norm_flags flgs env sigma t =
     EConstr.of_constr (CClosure.norm_term
       (Evarutil.create_clos_infos env sigma flgs)
       (CClosure.create_tab ())
-      (Esubst.subs_id 0, Univ.Instance.empty) (EConstr.Unsafe.to_constr t))
+      (Esubst.subs_id 0, UVars.Instance.empty) (EConstr.Unsafe.to_constr t))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
@@ -1038,8 +1038,8 @@ let checked_sort_cmp_universes _env pb s0 s1 univs =
   check_sort_cmp_universes pb s0 s1 univs; univs
 
 let check_convert_instances ~flex:_ u u' univs =
-  let u = Instance.to_array u in
-  let u' = Instance.to_array u' in
+  let u = UVars.Instance.to_array u in
+  let u' = UVars.Instance.to_array u' in
   let fold accu l1 l2 = Constraints.add (l1, Eq, l2) accu in
   let cst = Array.fold_left2 fold Constraints.empty u u' in
   if Evd.check_constraints univs cst then univs else raise NotConvertible
@@ -1115,7 +1115,7 @@ let univproblem_compare_instances ~flex i0 i1 uset =
 
 let univproblem_check_inductive_instances cv_pb variances u u' uset =
   let open UnivProblem in
-  let open Univ.Variance in
+  let open UVars.Variance in
   let mk u = Sorts.sort_of_univ @@ Univ.Universe.make u in
   let fold cstr v u u' = match v with
   | Irrelevant -> Set.add (UWeak (u,u')) cstr
@@ -1123,7 +1123,7 @@ let univproblem_check_inductive_instances cv_pb variances u u' uset =
   | Covariant | Invariant -> Set.add (UEq (mk u, mk u')) cstr
   in
   Array.fold_left3 fold uset
-    variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+    variances (UVars.Instance.to_array u) (UVars.Instance.to_array u')
 
 let univproblem_univ_state =
   let open Conversion in
@@ -1531,7 +1531,7 @@ let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
     if UGraph.check_eq_instances univs u u' then cuniv
     else raise NotConvertible
   else
-    let cstrs' = Univ.enforce_eq_instances u u' Constraints.empty in
+    let cstrs' = UVars.enforce_eq_instances u u' Constraints.empty in
     (univs, Constraints.union cstrs cstrs')
 
 let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =

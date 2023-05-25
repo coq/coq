@@ -47,7 +47,7 @@ module EInstance = struct
   include Evd.MiniEConstr.EInstance
 
   let equal sigma i1 i2 =
-    Univ.Instance.equal (kind sigma i1) (kind sigma i2)
+    UVars.Instance.equal (kind sigma i1) (kind sigma i2)
 end
 
 include (Evd.MiniEConstr : module type of Evd.MiniEConstr
@@ -579,7 +579,7 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
     let make u = Sorts.sort_of_univ @@ Univ.Universe.make u in
     CArray.fold_left3
       (fun cstrs v u u' ->
-         let open Univ.Variance in
+         let open UVars.Variance in
          match v with
          | Irrelevant -> Set.add (UWeak (u,u')) cstrs
          | Covariant ->
@@ -588,7 +588,7 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
             | Conversion.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
          | Invariant ->
            Set.add (UEq (make u, make u')) cstrs)
-      cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+      cstrs variances (UVars.Instance.to_array u) (UVars.Instance.to_array u')
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
@@ -608,7 +608,7 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
-        cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
+        cstrs (UVars.Instance.to_array u1) (UVars.Instance.to_array u2)
 
 let eq_universes env sigma cstrs cv_pb refargs l l' =
   if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
@@ -619,7 +619,7 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open UnivProblem in
     match refargs with
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
-      cstrs := compare_cumulative_instances cv_pb true [|Univ.Variance.Irrelevant|] l l' !cstrs;
+      cstrs := compare_cumulative_instances cv_pb true [|UVars.Variance.Irrelevant|] l l' !cstrs;
       true
     | None | Some (ConstRef _, _) ->
       cstrs := enforce_eq_instances_univs true l l' !cstrs; true
@@ -716,6 +716,7 @@ let eq_constr_universes_proj env sigma m n =
 
 let universes_of_constr sigma c =
   let open Univ in
+  let open UVars in
   let rec aux s c =
     match kind sigma c with
     | Const (c, u) ->

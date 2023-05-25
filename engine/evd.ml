@@ -1639,13 +1639,13 @@ module MiniEConstr = struct
 
   module EInstance =
   struct
-    type t = Univ.Instance.t
+    type t = UVars.Instance.t
     let make i = i
     let kind sigma i =
-      if Univ.Instance.is_empty i then i
+      if UVars.Instance.is_empty i then i
       else normalize_universe_instance sigma i
-    let empty = Univ.Instance.empty
-    let is_empty = Univ.Instance.is_empty
+    let empty = UVars.Instance.empty
+    let is_empty = UVars.Instance.is_empty
     let unsafe_to_instance t = t
   end
 

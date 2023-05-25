@@ -12,6 +12,7 @@ open Declarations
 open Environ
 open Names
 open Univ
+open UVars
 open Util
 
 [@@@ocaml.warning "+9+27"]
@@ -181,7 +182,7 @@ let check_inductive env mind mb =
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);
   check "mind_hyps" (List.is_empty mind_hyps);
-  check "mind_univ_hyps" (Univ.Instance.is_empty mind_univ_hyps);
+  check "mind_univ_hyps" (UVars.Instance.is_empty mind_univ_hyps);
   check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
@@ -191,7 +192,7 @@ let check_inductive env mind mb =
   check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
   check "mind_template" (check_template mb.mind_template mind_template);
-  check "mind_variance" (Option.equal (Array.equal Univ.Variance.equal)
+  check "mind_variance" (Option.equal (Array.equal UVars.Variance.equal)
                            mb.mind_variance mind_variance);
   check "mind_sec_variance" (Option.is_empty mind_sec_variance);
   ignore mind_private; (* passed through Indtypes *)

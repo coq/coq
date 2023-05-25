@@ -377,9 +377,9 @@ let check_constraints c env =
 let add_universes ~lbound ~strict ctx g =
   let g = Array.fold_left
             (fun g v -> UGraph.add_universe ~lbound ~strict v g)
-            g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+            g (UVars.Instance.to_array (UVars.UContext.instance ctx))
   in
-    UGraph.merge_constraints (Univ.UContext.constraints ctx) g
+    UGraph.merge_constraints (UVars.UContext.constraints ctx) g
 
 let push_context ?(strict=false) ctx env =
   map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
@@ -481,20 +481,20 @@ let add_constant kn cb env =
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let csts = Univ.AbstractContext.instantiate u uctx in
+  let csts = UVars.AbstractContext.instantiate u uctx in
   (subst_instance_constr u cb.const_type, csts)
 
 type const_evaluation_result =
   | NoBody
   | Opaque
-  | IsPrimitive of Univ.Instance.t * CPrimitives.t
+  | IsPrimitive of UVars.Instance.t * CPrimitives.t
 
 exception NotEvaluableConst of const_evaluation_result
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let cst = Univ.AbstractContext.instantiate u uctx in
+  let cst = UVars.AbstractContext.instantiate u uctx in
   let b' = match cb.const_body with
     | Def l_body -> Some (subst_instance_constr u l_body)
     | OpaqueDef _ -> None
@@ -568,7 +568,7 @@ let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)
 
 let polymorphic_pconstant (cst,u) env =
-  if Univ.Instance.is_empty u then false
+  if UVars.Instance.is_empty u then false
   else polymorphic_constant cst env
 
 let type_in_type_constant cst env =
@@ -598,7 +598,7 @@ let polymorphic_ind (mind,_i) env =
   Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
-  if Univ.Instance.is_empty u then false
+  if UVars.Instance.is_empty u then false
   else polymorphic_ind ind env
 
 let type_in_type_ind (mind,_i) env =
@@ -616,7 +616,7 @@ let template_polymorphic_variables (mind, _) env =
   | None -> []
 
 let template_polymorphic_pind (ind,u) env =
-  if not (Univ.Instance.is_empty u) then false
+  if not (UVars.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
 
 let add_mind_key kn (mind, _ as mind_key) env =
@@ -656,7 +656,7 @@ let constant_context env c =
 let universes_of_global env r =
   let open GlobRef in
     match r with
-    | VarRef _ -> Univ.AbstractContext.empty
+    | VarRef _ -> UVars.AbstractContext.empty
     | ConstRef c -> constant_context env c
     | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
       let mib = lookup_mind mind env in

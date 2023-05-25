@@ -43,12 +43,12 @@ val empty_cooking_info : cooking_info
   (** Nothing to abstract *)
 
 val make_cooking_info : recursive:MutInd.t option -> expand_info ->
-  named_context -> Univ.UContext.t -> cooking_info * abstr_inst_info
+  named_context -> UVars.UContext.t -> cooking_info * abstr_inst_info
 (** Abstract a context assumed to be de-Bruijn free for terms and universes *)
 
 val names_info : cooking_info -> Id.Set.t
 
-val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
+val universe_context_of_cooking_info : cooking_info -> UVars.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array
 
@@ -68,7 +68,7 @@ val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.C
 
 (** The [int] is how many universes got discharged, ie size of
     returned context - size of input context. *)
-val lift_poly_univs : cooking_info -> Univ.AbstractContext.t -> cooking_info * int * Univ.AbstractContext.t
+val lift_poly_univs : cooking_info -> UVars.AbstractContext.t -> cooking_info * int * UVars.AbstractContext.t
 
 val lift_private_mono_univs : cooking_info -> 'a -> 'a
 

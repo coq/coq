@@ -181,7 +181,7 @@ let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
   let open Univ in
-  let orig = Univ.AbstractContext.names orig in
+  let orig = UVars.AbstractContext.names orig in
   let orig = Array.to_list orig in
   let udecl = match names with
   | None -> orig
@@ -221,8 +221,8 @@ let pr_universe_ctx_set sigma c =
     mt()
 
 let pr_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c))
+  if !Detyping.print_universes && not (UVars.UContext.is_empty c) then
+    fnl()++pr_in_comment (v 0 (UVars.pr_universe_context (Termops.pr_evd_level sigma) ?variance c))
   else
     mt()
 
@@ -230,9 +230,9 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
-  if !Detyping.print_universes && (not (Univ.AbstractContext.is_empty c) || has_priv) then
+  if !Detyping.print_universes && (not (UVars.AbstractContext.is_empty c) || has_priv) then
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (Univ.pr_abstract_universe_context prlev ?variance c) in
+    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prlev ?variance c) in
     let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
@@ -257,7 +257,7 @@ let pr_universe_instance_constraints evd inst csts =
            (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
            (Constraints.elements csts)
   in
-  str"@{" ++ Instance.pr prlev inst ++ pcsts ++ str"}"
+  str"@{" ++ UVars.Instance.pr prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
   pr_universe_instance_constraints evd inst Univ.Constraints.empty

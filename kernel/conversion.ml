@@ -72,7 +72,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zlcase of case_info * lift * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list
@@ -148,9 +148,9 @@ type conv_pb =
 type 'a universe_compare = {
   (* Might raise NotConvertible *)
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
-  compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-  compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
-    Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+  compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> 'a;
+  compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
+    UVars.Instance.t -> UVars.Instance.t -> 'a -> 'a;
 }
 
 type 'a universe_state = 'a * 'a universe_compare
@@ -175,9 +175,9 @@ let convert_instances_cumul pb var u u' (s, check) =
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
-    Univ.enforce_eq_variance_instances variance u u' Univ.Constraints.empty
+    UVars.enforce_eq_variance_instances variance u u' Univ.Constraints.empty
   | CUMUL ->
-    Univ.enforce_leq_variance_instances variance u u' Univ.Constraints.empty
+    UVars.enforce_leq_variance_instances variance u u' Univ.Constraints.empty
 
 let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_nparams +
@@ -190,7 +190,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
     let num_param_arity = inductive_cumulativity_arguments (mind,ind) in
     if not (Int.equal num_param_arity nargs) then
       (* shortcut, not sure if worth doing, could use perf data *)
-      if Univ.Instance.equal u1 u2 then s else raise MustExpand
+      if UVars.Instance.equal u1 u2 then s else raise MustExpand
     else
       cmp_cumul cv_pb variances u1 u2 s
 
@@ -208,11 +208,11 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
   | Some _ ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
     if not (Int.equal num_cnstr_args nargs) then
-      if Univ.Instance.equal u1 u2 then s else raise MustExpand
+      if UVars.Instance.equal u1 u2 then s else raise MustExpand
     else
       (** By invariant, both constructors have a common supertype,
           so they are convertible _at that type_. *)
-      let variance = Array.make (Univ.Instance.length u1) Univ.Variance.Irrelevant in
+      let variance = Array.make (UVars.Instance.length u1) UVars.Variance.Irrelevant in
       cmp_cumul CONV variance u1 u2 s
 
 let convert_constructors ctor nargs u1 u2 (s, check) =
@@ -223,7 +223,7 @@ let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
-    if Univ.Instance.equal u u' then cuniv
+    if UVars.Instance.equal u u' then cuniv
     else if Int.equal nargs 1 && is_array_type (info_env infos) cst then cuniv
     else
       let flex = evaluable_constant cst (info_env infos)
@@ -295,8 +295,8 @@ let irr_flex env = function
   | RelKey x -> Context.Rel.Declaration.get_relevance (Environ.lookup_rel x env) == Sorts.Irrelevant
 
 let eq_universes (_,e1) (_,e2) u1 u2 =
-  let subst e u = if Univ.Instance.is_empty e then u else Univ.subst_instance_instance e u in
-  Univ.Instance.equal (subst e1 u1) (subst e2 u2)
+  let subst e u = if UVars.Instance.is_empty e then u else UVars.subst_instance_instance e u in
+  UVars.Instance.equal (subst e1 u1) (subst e2 u2)
 
 let rec compare_under e1 c1 e2 c2 =
   match Constr.kind c1, Constr.kind c2 with
@@ -315,7 +315,7 @@ let rec compare_under e1 c1 e2 c2 =
   | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 ->
     let subst_instance_sort u s =
-      if Univ.Instance.is_empty u then s else Sorts.subst_instance_sort u s
+      if UVars.Instance.is_empty u then s else Sorts.subst_instance_sort u s
     in
     let s1 = subst_instance_sort (snd e1) s1
     and s2 = subst_instance_sort (snd e2) s2 in
@@ -438,7 +438,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | Some t1, Some t2 ->
           (* else the oracle tells which constant is to be expanded *)
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
-          if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
+          if Conv_oracle.oracle_order UVars.out_punivs oracle l2r fl1 fl2 then
             eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
           else
             eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
@@ -592,7 +592,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd (ind1,u1 as pind1), FInd (ind2,u2 as pind2)) ->
       if Ind.CanOrd.equal ind1 ind2 then
-        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+        if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
@@ -609,7 +609,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
       if Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2 then
-        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+        if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
@@ -708,7 +708,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
-      let cuniv = convert_instances_cumul CONV [|Univ.Variance.Irrelevant|] u1 u2 cuniv in
+      let cuniv = convert_instances_cumul CONV [|UVars.Variance.Irrelevant|] u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -766,7 +766,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
                 let mip = mind.Declarations.mind_packets.(snd ci1.ci_ind) in
                 let cu =
-                  if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+                  if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
                     convert_instances ~flex:false u1 u2 cu
                   else
                     let u1 = CClosure.usubst_instance e1 u1 in

@@ -10,6 +10,7 @@
 
 open Names
 open Univ
+open UVars
 open Cooking
 
 (** Kernel implementation of sections. *)

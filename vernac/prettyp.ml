@@ -56,7 +56,7 @@ let print_basename sp = pr_global (GlobRef.ConstRef sp)
 let print_ref reduce ref udecl =
   let env = Global.env () in
   let typ, univs = Typeops.type_of_global_in_context env ref in
-  let inst = Univ.make_abstract_instance univs in
+  let inst = UVars.make_abstract_instance univs in
   let bl = Printer.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
   let sigma = Evd.from_ctx (UState.of_names bl) in
   let typ =
@@ -634,7 +634,7 @@ let print_typed_body env evd (val_0,typ) =
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
-    let inst = Univ.make_abstract_instance univs in
+    let inst = UVars.make_abstract_instance univs in
     pr_universe_instance sigma inst
   else mt()
 

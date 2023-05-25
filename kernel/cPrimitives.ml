@@ -12,6 +12,7 @@
 (* number of primitives is changed. *)
 
 open Univ
+open UVars
 
 type t =
   | Int63head0

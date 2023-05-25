@@ -72,10 +72,10 @@ module EInstance :
 sig
   type t
   (** Type of universe instances up-to universe unification. Similar to
-      [ESorts.t] for [Univ.Instance.t]. *)
+      [ESorts.t] for [UVars.Instance.t]. *)
 
-  val make : Univ.Instance.t -> t
-  val kind : Evd.evar_map -> t -> Univ.Instance.t
+  val make : UVars.Instance.t -> t
+  val kind : Evd.evar_map -> t -> UVars.Instance.t
   val empty : t
   val is_empty : t -> bool
 end
@@ -91,7 +91,7 @@ val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_ter
 (** Same as {!Constr.kind} except that it expands evars and normalizes
     universes on the fly. *)
 
-val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
+val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t, Sorts.t, UVars.Instance.t) Constr.kind_of_term
 
 val to_constr : ?abort_on_undefined_evars:bool -> Evd.evar_map -> t -> Constr.t
 (** Returns the evar-normal form of the argument. Note that this
@@ -369,8 +369,8 @@ val closedn : Evd.evar_map -> int -> t -> bool
 val closed0 : Evd.evar_map -> t -> bool
 
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
-val subst_instance_context : Univ.Instance.t -> rel_context -> rel_context
-val subst_instance_constr : Univ.Instance.t -> t -> t
+val subst_instance_context : UVars.Instance.t -> rel_context -> rel_context
+val subst_instance_constr : UVars.Instance.t -> t -> t
 
 val subst_of_rel_context_instance : rel_context -> instance -> substl
 val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl
@@ -419,7 +419,7 @@ val identity_subst_val : named_context_val -> t SList.t
 
 (* XXX Missing Sigma proxy *)
 val fresh_global :
-  ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+  ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:UVars.Instance.t -> Environ.env ->
   Evd.evar_map -> GlobRef.t -> Evd.evar_map * t
 
 val is_global : Environ.env -> Evd.evar_map -> GlobRef.t -> t -> bool
@@ -478,7 +478,7 @@ sig
   val to_sorts : ESorts.t -> Sorts.t
   (** Physical identity. Does not care for normalization. *)
 
-  val to_instance : EInstance.t -> Univ.Instance.t
+  val to_instance : EInstance.t -> UVars.Instance.t
   (** Physical identity. Does not care for normalization. *)
 
   val to_case_invert : case_invert -> Constr.case_invert

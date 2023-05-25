@@ -119,15 +119,15 @@ val pr_sort                : evar_map -> Sorts.t -> Pp.t
 
 (** Universe constraints *)
 
-val pr_universe_instance   : evar_map -> Univ.Instance.t -> Pp.t
-val pr_universe_instance_constraints : evar_map -> Univ.Instance.t -> Univ.Constraints.t -> Pp.t
-val pr_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->
-  Univ.UContext.t -> Pp.t
-val pr_abstract_universe_ctx : evar_map -> ?variance:Univ.Variance.t array ->
-  ?priv:Univ.ContextSet.t -> Univ.AbstractContext.t -> Pp.t
+val pr_universe_instance   : evar_map -> UVars.Instance.t -> Pp.t
+val pr_universe_instance_constraints : evar_map -> UVars.Instance.t -> Univ.Constraints.t -> Pp.t
+val pr_universe_ctx        : evar_map -> ?variance:UVars.Variance.t array ->
+  UVars.UContext.t -> Pp.t
+val pr_abstract_universe_ctx : evar_map -> ?variance:UVars.Variance.t array ->
+  ?priv:Univ.ContextSet.t -> UVars.AbstractContext.t -> Pp.t
 val pr_universe_ctx_set    : evar_map -> Univ.ContextSet.t -> Pp.t
 val pr_universes  : evar_map ->
-  ?variance:Univ.Variance.t array -> ?priv:Univ.ContextSet.t ->
+  ?variance:UVars.Variance.t array -> ?priv:Univ.ContextSet.t ->
   Declarations.universes -> Pp.t
 
 (** [universe_binders_with_opt_names ref l]
@@ -139,7 +139,7 @@ val pr_universes  : evar_map ->
     Otherwise return the bound universe names registered for [ref].
 
     Inefficient on large contexts due to name generation. *)
-val universe_binders_with_opt_names : Univ.AbstractContext.t ->
+val universe_binders_with_opt_names : UVars.AbstractContext.t ->
   UnivNames.univ_name_list option -> UnivNames.universe_binders * Id.t Univ.Level.Map.t
 
 (** Printing global references using names as short as possible *)

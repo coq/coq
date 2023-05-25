@@ -12,6 +12,7 @@ open Sorts
 open Names
 open Constr
 open Univ
+open UVars
 
 type univ_length_mismatch = {
   actual : int ;

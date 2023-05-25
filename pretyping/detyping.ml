@@ -48,6 +48,7 @@ struct
 open CVars
 open Declarations
 open Univ
+open UVars
 open Constr
 
 let instantiate_context u subst nas ctx =
@@ -788,8 +789,8 @@ let detype_instance sigma l =
   if not !print_universes then None
   else
     let l = EInstance.kind sigma l in
-    if Univ.Instance.is_empty l then None
-    else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
+    if UVars.Instance.is_empty l then None
+    else Some (List.map (detype_level sigma) (Array.to_list (UVars.Instance.to_array l)))
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =
   match d with
@@ -1132,7 +1133,7 @@ let rec subst_glob_constr env subst = DAst.map (function
         | None -> GRef (ref', u)
         | Some t ->
           let evd = Evd.from_env env in
-          let t = t.Univ.univ_abstracted_value in (* XXX This seems dangerous *)
+          let t = t.UVars.univ_abstracted_value in (* XXX This seems dangerous *)
           DAst.get (detype Now Id.Set.empty env evd (EConstr.of_constr t)))
 
   | GSort _

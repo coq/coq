@@ -11,6 +11,7 @@
 open Util
 open Names
 open Univ
+open UVars
 open Cooking
 
 module NamedDecl = Context.Named.Declaration

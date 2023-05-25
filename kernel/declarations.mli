@@ -55,7 +55,7 @@ type ('a, 'opaque) constant_def =
 
 type universes =
   | Monomorphic
-  | Polymorphic of Univ.AbstractContext.t
+  | Polymorphic of UVars.AbstractContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -105,7 +105,7 @@ type typing_flags = {
  * the OpaqueDef *)
 type 'opaque pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
-    const_univ_hyps : Univ.Instance.t;
+    const_univ_hyps : UVars.Instance.t;
     const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
     const_relevance : Sorts.relevance;
@@ -251,7 +251,7 @@ type mutual_inductive_body = {
 
     mind_hyps : Constr.named_context;  (** Section hypotheses on which the block depends *)
 
-    mind_univ_hyps : Univ.Instance.t; (** Section polymorphic universes. *)
+    mind_univ_hyps : UVars.Instance.t; (** Section polymorphic universes. *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
@@ -263,9 +263,9 @@ type mutual_inductive_body = {
 
     mind_template : template_universes option;
 
-    mind_variance : Univ.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
+    mind_variance : UVars.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
 
-    mind_sec_variance : Univ.Variance.t array option;
+    mind_sec_variance : UVars.Variance.t array option;
     (** Variance info for section polymorphic universes. [None]
        outside sections. The final variance once all sections are
        discharged is [mind_sec_variance ++ mind_variance]. *)
@@ -306,7 +306,7 @@ type 'uconstr functor_alg_expr =
 
 (** A module expression is an algebraic expression, possibly functorized. *)
 
-type module_expression = (constr * Univ.AbstractContext.t option) functor_alg_expr
+type module_expression = (constr * UVars.AbstractContext.t option) functor_alg_expr
 
 (** A component of a module structure *)
 

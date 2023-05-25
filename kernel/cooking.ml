@@ -19,7 +19,7 @@ open Util
 open Names
 open Term
 open Constr
-open Univ
+open UVars
 open Context
 
 module NamedDecl = Context.Named.Declaration
@@ -38,7 +38,7 @@ module NamedDecl = Context.Named.Declaration
 type abstr_info = {
   abstr_ctx : Constr.named_context;
   (** Context over which to generalize (e.g. x:T,z:V(x)) *)
-  abstr_auctx : Univ.AbstractContext.t;
+  abstr_auctx : UVars.AbstractContext.t;
   (** Universe context over which to generalize *)
   abstr_ausubst : Instance.t;
   (** Universe substitution represented as an instance *)
@@ -57,7 +57,7 @@ type abstr_info = {
 type abstr_inst_info = {
   abstr_rev_inst : Id.t list;
   (** The variables to reapply (excluding "let"s of the context), in reverse order *)
-  abstr_uinst : Univ.Instance.t;
+  abstr_uinst : UVars.Instance.t;
   (** Abstracted universe variables to reapply *)
 }
 
@@ -117,7 +117,7 @@ struct
 end
 
 module RefTable = Hashtbl.Make(RefHash)
-type internal_abstr_inst_info = Univ.Instance.t * int list * int
+type internal_abstr_inst_info = UVars.Instance.t * int list * int
 
 type cooking_cache = {
   cache : internal_abstr_inst_info RefTable.t;
@@ -358,7 +358,7 @@ let discharge_abstract_universe_context abstr auctx =
     let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
     let ainst = Instance.append subst suff in
     let substf = make_instance_subst ainst in
-    let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
+    let auctx = UVars.subst_univs_level_abstract_universe_context substf auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
     { abstr with abstr_ausubst = ainst }, n, auctx'
 

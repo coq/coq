@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Names
 open Univ
+open UVars
 open Constr
 open Vars
 open Declarations
@@ -59,7 +60,7 @@ let inductive_nonrec_rec_paramdecls (mib,u) =
   Context.Rel.chop_nhyps nnonrecparamdecls paramdecls
 
 let instantiate_inductive_constraints mib u =
-  Univ.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
+  UVars.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
 
 (************************************************************************)
 

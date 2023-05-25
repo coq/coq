@@ -12,6 +12,7 @@ open Conversion
 open Declarations
 open Constr
 open Univ
+open UVars
 open Variance
 open Util
 

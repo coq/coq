@@ -29,7 +29,7 @@ type univ_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_ex
 
 type universe_decl_expr = (lident list, univ_constraint_expr list) UState.gen_universe_decl
 type cumul_univ_decl_expr =
-  ((lident * Univ.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
+  ((lident * UVars.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option

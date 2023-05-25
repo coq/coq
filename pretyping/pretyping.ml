@@ -441,7 +441,7 @@ let instance ?loc evd l =
          (evd, l :: univs)) (evd, [])
       l
   in
-  evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
+  evd, Some (UVars.Instance.of_array (Array.of_list (List.rev l')))
 
 let pretype_global ?loc rigid env evd gr us =
   let evd, instance =
@@ -1351,7 +1351,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     let sigma, jdef = eval_pretyper self ~flags (mk_tycon jty.utj_val) env sigma def in
     let pretype_elem = eval_pretyper self ~flags (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in
-    let u = Univ.Instance.of_array [| u |] in
+    let u = UVars.Instance.of_array [| u |] in
     let ta = EConstr.of_constr @@ Typeops.type_of_array !!env u in
     let j = {
       uj_val = EConstr.mkArray(EInstance.make u, Array.map (fun j -> j.uj_val) jt, jdef.uj_val, jty.utj_val);

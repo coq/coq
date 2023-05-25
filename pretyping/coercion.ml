@@ -394,7 +394,7 @@ let rec reapply_coercions sigma trace c = match trace with
 let instance_of_global_constr sigma c =
   match kind sigma c with
   | Const (_,u) | Ind (_,u) | Construct (_,u) -> EInstance.kind sigma u
-  | _ -> Univ.Instance.empty
+  | _ -> UVars.Instance.empty
 
 (* Apply coercion path from p to h of type hty; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p h hty =

@@ -771,7 +771,7 @@ let explain_non_linear_unification env sigma m t =
 
 let explain_unsatisfied_constraints env sigma cst =
   strbrk "Unsatisfied constraints: " ++
-    Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++
+    Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universe env sigma l =
@@ -834,8 +834,8 @@ let explain_bad_invert env =
 
 let explain_bad_variance env sigma ~lev ~expected ~actual =
   str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
-  str": expected " ++ Univ.Variance.pr expected ++
-  str " but cannot be less restrictive than " ++ Univ.Variance.pr actual ++ str "."
+  str": expected " ++ UVars.Variance.pr expected ++
+  str " but cannot be less restrictive than " ++ UVars.Variance.pr actual ++ str "."
 
 let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
   let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in
@@ -1096,7 +1096,7 @@ let explain_not_match_error = function
       str "compared to " ++ spc () ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
   | IncompatibleConstraints { got; expect } ->
-      let open Univ in
+    let open UVars in
     let pr_auctx auctx =
       let sigma = Evd.from_ctx
           (UState.of_names

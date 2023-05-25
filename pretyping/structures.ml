@@ -131,7 +131,7 @@ end
 type obj_typ = {
   o_ORIGIN : GlobRef.t;
   o_DEF : constr;
-  o_CTX : Univ.AbstractContext.t;
+  o_CTX : UVars.AbstractContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
@@ -211,7 +211,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let o_DEF, c =
     match gref with
     | GlobRef.ConstRef con ->
-        let u = Univ.make_abstract_instance o_CTX in
+        let u = UVars.make_abstract_instance o_CTX in
         mkConstU (con, u), Environ.constant_value_in env (con,u)
     | GlobRef.VarRef id ->
         mkVar id, Option.get (Environ.named_body id env)
@@ -278,7 +278,7 @@ let make env sigma ref =
   let vc =
     match ref with
     | GlobRef.ConstRef sp ->
-        let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
+        let u = UVars.make_abstract_instance (Environ.constant_context env sp) in
         begin match Environ.constant_opt_value_in env (sp, u) with
         | Some vc -> vc
         | None -> error_not_structure ref (str "Could not find its value in the global environment") end

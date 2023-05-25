@@ -27,7 +27,7 @@
 
 open Util
 open Names
-open Univ
+open UVars
 open Context
 
 type existential_key = Evar.t
@@ -76,7 +76,7 @@ type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
 type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
-type 'a puniverses = 'a Univ.puniverses
+type 'a puniverses = 'a UVars.puniverses
 type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
@@ -203,7 +203,7 @@ let mkLambda (x,t1,t2) = of_kind @@ Lambda (x,t1,t2)
 let mkLetIn (x,c1,t,c2) = of_kind @@ LetIn (x,c1,t,c2)
 
 let map_puniverses f (x,u) = (f x, u)
-let in_punivs a = (a, Univ.Instance.empty)
+let in_punivs a = (a, UVars.Instance.empty)
 
 (* Constructs a constant *)
 let mkConst c = of_kind @@ Const (in_punivs c)
@@ -452,7 +452,7 @@ let destCoFix c = match kind c with
   | _ -> raise DestKO
 
 let destRef c = let open GlobRef in match kind c with
-  | Var x -> VarRef x, Univ.Instance.empty
+  | Var x -> VarRef x, UVars.Instance.empty
   | Const (c,u) -> ConstRef c, u
   | Ind (ind,u) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
@@ -960,7 +960,7 @@ let compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_evars eq t1 t2 =
 let compare_head_gen eq_universes eq_sorts eq_evars eq t1 t2 =
   compare_head_gen_leq eq_universes eq_sorts eq_evars eq eq t1 t2
 
-let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
+let compare_head = compare_head_gen (fun _ -> UVars.Instance.equal) Sorts.equal
 
 (*******************************)
 (*  alpha conversion functions *)
@@ -1491,8 +1491,8 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
          str"}")
 
 let pr_puniverses p u =
-  if Univ.Instance.is_empty u then p
-  else Pp.(p ++ str"(*" ++ Univ.Instance.pr Univ.Level.raw_pr u ++ str"*)")
+  if UVars.Instance.is_empty u then p
+  else Pp.(p ++ str"(*" ++ UVars.Instance.pr Univ.Level.raw_pr u ++ str"*)")
 
 let rec debug_print c =
   let open Pp in
@@ -1553,7 +1553,7 @@ let rec debug_print c =
   | Float i -> str"Float("++str (Float64.to_string i) ++ str")"
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
-      ++ str")@{" ++ Univ.Instance.pr Univ.Level.raw_pr u ++ str"}"
+      ++ str")@{" ++ UVars.Instance.pr Univ.Level.raw_pr u ++ str"}"
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()

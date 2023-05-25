@@ -765,13 +765,13 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   let cstrs = Univ.Constraints.empty in
   let soft = Set.empty in
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
-      let open Univ.Variance in
+      let open UVars.Variance in
       match v with
       | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Conversion.CUMUL ->
         Univ.Constraints.add (u,Univ.Le,u') cstrs, soft
       | Covariant | Invariant -> Univ.Constraints.add (u,Univ.Eq,u') cstrs, soft)
-      (cstrs,soft) variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+      (cstrs,soft) variances (UVars.Instance.to_array u) (UVars.Instance.to_array u')
   in
   match Evd.add_constraints sigma cstrs with
   | sigma ->
@@ -782,7 +782,7 @@ let compare_constructor_instances evd u u' =
   let open UnivProblem in
   let soft =
     Array.fold_left2 (fun cs u u' -> Set.add (UWeak (u,u')) cs)
-      Set.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+      Set.empty (UVars.Instance.to_array u) (UVars.Instance.to_array u')
   in
   Evd.add_universe_constraints evd soft
 

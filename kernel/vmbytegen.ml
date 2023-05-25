@@ -153,7 +153,7 @@ module Config = struct
   let stack_safety_margin = 15
 end
 
-type argument = ArgLambda of lambda | ArgInstance of Univ.Instance.t
+type argument = ArgLambda of lambda | ArgInstance of UVars.Instance.t
 
 let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty; fv_unv = None }
 let push_fv d e = {
@@ -546,7 +546,7 @@ let rec compile_lam env cenv lam sz cont =
   | Lconst (kn,u) -> compile_constant env cenv kn u [||] sz cont
 
   | Lind (ind,u) ->
-    if Univ.Instance.is_empty u then
+    if UVars.Instance.is_empty u then
       compile_structured_constant cenv (Const_ind ind) sz cont
     else comp_app compile_structured_constant (compile_instance env) cenv
         (Const_ind ind) [|u|] sz cont
@@ -799,7 +799,7 @@ let rec compile_lam env cenv lam sz cont =
 
 and compile_get_global env cenv (kn,u) sz cont =
   let () = set_max_stack_size cenv sz in
-  if Univ.Instance.is_empty u then
+  if UVars.Instance.is_empty u then
     Kgetglobal kn :: cont
   else
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
@@ -807,7 +807,7 @@ and compile_get_global env cenv (kn,u) sz cont =
 
 and compile_instance env cenv u0 sz cont =
   let () = set_max_stack_size cenv sz in
-  let u = Univ.Instance.to_array u0 in
+  let u = UVars.Instance.to_array u0 in
   let len = Array.length u in
   let is_id i l = match Univ.Level.var_index l with
   | None -> false
@@ -829,7 +829,7 @@ and compile_instance env cenv u0 sz cont =
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
-  if Univ.Instance.is_empty u then
+  if UVars.Instance.is_empty u then
     (* normal compilation *)
     comp_app (fun _ _ sz cont ->
         compile_get_global env cenv (kn,u) sz cont)
@@ -848,7 +848,7 @@ and compile_constant env cenv kn u args sz cont =
       compile_arg cenv () all sz cont
 
 let is_univ_copy max u =
-  let u = Univ.Instance.to_array u in
+  let u = UVars.Instance.to_array u in
   if Array.length u = max then
     Array.fold_left_i (fun i acc u ->
         if acc then
@@ -930,7 +930,7 @@ let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
   | Primitive _ -> None
   | Def body ->
-      let instance_size = Univ.AbstractContext.size (Declareops.universes_context univs) in
+      let instance_size = UVars.AbstractContext.size (Declareops.universes_context univs) in
       let alias =
         match kind body with
         | Const (kn',u) when is_univ_copy instance_size u ->

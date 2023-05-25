@@ -474,8 +474,8 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match fst univs with
-    | Polymorphic_entry uctx -> Univ.UContext.instance uctx
-    | Monomorphic_entry -> Univ.Instance.empty
+    | Polymorphic_entry uctx -> UVars.UContext.instance uctx
+    | Monomorphic_entry -> UVars.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
@@ -862,9 +862,9 @@ let declare_class_constant ~univs paramimpls params data =
   in
   let inst, univs = match univs with
     | UState.Monomorphic_entry _, ubinders ->
-      Univ.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
+      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
     | UState.Polymorphic_entry uctx, _ ->
-      Univ.UContext.instance uctx, univs
+      UVars.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in
@@ -935,14 +935,14 @@ let declare_class ~univs params inds def data =
   let univs, params, fields =
     match fst univs with
     | UState.Polymorphic_entry uctx ->
-      let usubst, auctx = Univ.abstract_universes uctx in
-      let usubst = Univ.make_instance_subst usubst in
+      let usubst, auctx = UVars.abstract_universes uctx in
+      let usubst = UVars.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let params = Context.Rel.map map params in
       auctx, params, fields
     | UState.Monomorphic_entry _ ->
-      Univ.AbstractContext.empty, params, fields
+      UVars.AbstractContext.empty, params, fields
   in
   let map (impl, projs) =
     let k =
@@ -964,7 +964,7 @@ let add_constant_class cst =
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_decls ty in
   let args = Context.Rel.instance Constr.mkRel 0 ctx in
-  let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
+  let t = mkApp (mkConstU (cst, UVars.make_abstract_instance univs), args) in
   let tc =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
@@ -985,7 +985,7 @@ let add_inductive_class ind =
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let univs = Declareops.inductive_polymorphic_context mind in
-    let inst = Univ.make_abstract_instance univs in
+    let inst = UVars.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive ((mind, oneind), inst) in
     let r = oneind.mind_relevance in
       { cl_univs = univs;

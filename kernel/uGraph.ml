@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Univ
+open UVars
 
 module G = AcyclicGraph.Make(struct
     type t = Level.t

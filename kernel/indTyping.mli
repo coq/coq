@@ -30,7 +30,7 @@ val typecheck_inductive : env -> sec_univs:Univ.Level.t array option
   -> env
   * universes
   * template_universes option
-  * Univ.Variance.t array option
+  * UVars.Variance.t array option
   * Names.Id.t array option option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
