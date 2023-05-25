@@ -2825,6 +2825,7 @@ let query ~doc ~at ~route s =
   s
 
 let edit_at ~doc id =
+  assert (VCS.is_interactive());
   !Hooks.document_edit id;
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
   let vcs = VCS.backup () in
