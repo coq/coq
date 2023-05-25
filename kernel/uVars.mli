@@ -177,6 +177,7 @@ val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
+val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 
 val make_instance_subst : Instance.t -> universe_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)

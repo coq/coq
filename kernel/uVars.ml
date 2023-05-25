@@ -204,6 +204,11 @@ let subst_instance_universe s univ =
   if u == u' then univ
   else Universe.unrepr u'
 
+let subst_instance_sort u = let open Sorts in function
+  | SProp | Prop | Set as s -> s
+  | Type v -> sort_of_univ (subst_instance_universe u v)
+  | QSort (q, v) -> qsort q (subst_instance_universe u v)
+
 let subst_instance_constraint s (u,d,v as c) =
   let u' = subst_instance_level s u in
   let v' = subst_instance_level s v in

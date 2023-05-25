@@ -315,7 +315,7 @@ let rec compare_under e1 c1 e2 c2 =
   | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 ->
     let subst_instance_sort u s =
-      if UVars.Instance.is_empty u then s else Sorts.subst_instance_sort u s
+      if UVars.Instance.is_empty u then s else UVars.subst_instance_sort u s
     in
     let s1 = subst_instance_sort (snd e1) s1
     and s2 = subst_instance_sort (snd e2) s2 in
