@@ -16,7 +16,7 @@ module MiniJson : sig
     | Array of t list
 end
 
-val profile : string -> ?args:(unit -> MiniJson.t) -> (unit -> 'a) -> unit -> 'a
+val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> unit -> 'a
 
 val is_profiling : unit -> bool
 

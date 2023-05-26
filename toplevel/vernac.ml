@@ -124,7 +124,7 @@ let load_vernac_core ~echo ~check ~state ?source file =
           (fun () ->
              NewProfile.profile "command"
                ~args:(fun () ->
-                   Record [("cmd", String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)))])
+                   [("cmd", String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)))])
                (fun () ->
              Flags.silently (interp_vernac ~check ~state) ast) ())
           ()

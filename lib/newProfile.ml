@@ -62,25 +62,60 @@ module MiniJson = struct
     let l = ("name", String name) :: ("ph", String ph) :: ("ts", Int ts) :: base in
     let l = match args with
       | None -> l
-      | Some args -> ("args", args) :: l
+      | Some args -> ("args", Record args) :: l
     in
     Record l
 end
 
-let prtime () =
-  let t = Unix.gettimeofday() in
+let gettime = Unix.gettimeofday
+
+let gettimeopt = function
+  | Some t -> t
+  | None -> gettime()
+
+let prtime t =
   Printf.sprintf "%.0f" (t *. 1E6)
 
-let global_start = prtime()
+let global_start = gettime()
 let global_start_stat = Gc.quick_stat()
 
-let duration_gen ?time name ph ?args last () =
-  let time = match time with None -> prtime() | Some t -> t in
-  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:time ?args ()) last
+let duration ~time name ph ?args ?(last=",") () =
+  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
 
-let duration ?time name ph ?args () = duration_gen ?time name ph ?args "," ()
-let enter ?time name ?args () = duration ?time name "B" ?args  ()
-let leave ?time name ?args () = duration ?time name "E" ?args ()
+let sums = ref []
+
+let enter ?time name ?args ?last () =
+  let time = gettimeopt time in
+  sums := (time, CString.Map.empty) :: !sums;
+  duration ~time name "B" ?args ?last ()
+
+let leave ?time name ?(args=[]) ?last () =
+  let time = gettimeopt time in
+  let sum = match !sums with
+    | [] -> assert false
+    | [_,sum] -> sum
+    | (start, sum) :: (start', next) :: rest ->
+      let dur = time -. start in
+      let next = CString.Map.update name (function
+          | None -> Some (dur, 1)
+          | Some (dur', cnt) -> Some (dur +. dur', cnt+1))
+          next
+      in
+      let next = CString.Map.union (fun name' (l,cnt) (r,cnt') ->
+          if String.equal name name' then Some (r,cnt+cnt')
+          else Some (l +. r, cnt+cnt'))
+          sum next
+      in
+      sums := (start', next) :: rest;
+      sum
+  in
+  let sum = List.map (fun (name, (t, cnt)) ->
+      name, MiniJson.String
+        (Printf.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
+      (CString.Map.bindings sum)
+  in
+  let args = ("subtimes", MiniJson.Record sum) :: args in
+  duration ~time name "E" ~args ?last ()
 
 let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
   (* XXX we could use memprof to get sampling stats instead?
@@ -89,7 +124,7 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
   let major = mend.major_words -. mstart.major_words in
   let minor = mend.minor_words -. mstart.minor_words in
   let pp tdiff = MiniJson.String (Printf.sprintf "%.3G w" tdiff) in
-  MiniJson.Record [("major",pp major); ("minor", pp minor)]
+  [("major",pp major); ("minor", pp minor)]
 
 let profile name ?args f () =
   if not (is_profiling ()) then f ()
@@ -127,7 +162,8 @@ let init opts =
 let finish () = match !accu with
   | No -> ()
   | File ch ->
-    duration_gen "process" "E" ""
+    leave "process"
+      ~last:""
       ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat()))
       ();
     Printf.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
