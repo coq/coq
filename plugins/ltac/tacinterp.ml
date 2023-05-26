@@ -1421,23 +1421,19 @@ and tactic_of_value ist vle =
      let numgiven = List.length givenargs in
      let info = Exninfo.reify () in
      Tacticals.tclZEROMSG ~info
-       (Pp.str tactic_nm ++ Pp.str " was not fully applied:" ++ spc() ++
-          (match numargs with
-            0 -> assert false
-          | 1 ->
-             Pp.str "There is a missing argument for variable " ++
-               (Name.print (List.hd vars))
-          | _ -> Pp.str "There are missing arguments for variables " ++
-             pr_enum Name.print vars) ++ Pp.pr_comma () ++
-          match numgiven with
-            0 ->
-              Pp.str "no arguments at all were provided."
-          | 1 ->
-             Pp.str "an argument was provided for variable " ++
-               Pp.str (List.hd givenargs) ++ Pp.str "."
-          | _ ->
-             Pp.str "arguments were provided for variables " ++
-               pr_enum Pp.str givenargs ++ Pp.str ".")
+       Pp.(str tactic_nm ++ str " was not fully applied:" ++ spc() ++
+           str "There is a missing argument for variable" ++ spc() ++ Name.print (List.hd vars) ++
+           (if numargs > 1 then
+              spc() ++ str "and " ++ int (numargs - 1) ++
+              str " more"
+            else mt()) ++ pr_comma() ++
+           (match numgiven with
+            | 0 ->
+              str "no arguments at all were provided."
+            | 1 ->
+              str "1 argument was provided."
+            | _ ->
+              int numgiven ++ str " arguments were provided."))
   | VRec _ ->
     let info = Exninfo.reify () in
     Tacticals.tclZEROMSG ~info (str "A fully applied tactic is expected.")

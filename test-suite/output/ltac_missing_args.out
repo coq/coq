@@ -11,8 +11,8 @@ no arguments at all were provided.
 File "./output/ltac_missing_args.v", line 13, characters 2-16:
 The command has indeed failed with message:
 The user-defined tactic "bar" was not fully applied:
-There are missing arguments for variables y and _,
-an argument was provided for variable x.
+There is a missing argument for variable y and 1 more,
+1 argument was provided.
 File "./output/ltac_missing_args.v", line 14, characters 2-11:
 The command has indeed failed with message:
 The user-defined tactic "baz" was not fully applied:
@@ -46,5 +46,4 @@ no arguments at all were provided.
 File "./output/ltac_missing_args.v", line 20, characters 2-40:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
-There is a missing argument for variable x,
-an argument was provided for variable tac.
+There is a missing argument for variable x, 1 argument was provided.
