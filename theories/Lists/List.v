@@ -3121,6 +3121,9 @@ Section Forall2.
   #[local]
   Hint Constructors Forall2 : core.
 
+  (* NB: when deprecation phase ends, instead of removing prove "Reflexive R -> Reflexive Forall2"
+     and close #6131 *)
+  #[deprecated(since = "8.18", note = "Use Forall2_nil instead.")]
   Theorem Forall2_refl : Forall2 [] [].
   Proof. intros; apply Forall2_nil. Qed.
 
