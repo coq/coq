@@ -720,7 +720,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     and cN = Evarutil.whd_head_evar sigma curn in
     let () =
       debug_tactic_unification (fun () ->
-          Termops.Internal.print_constr_env curenv sigma cM ++ str" ~= " ++
+          Termops.Internal.print_constr_env curenv sigma cM ++ strbrk" ~= " ++
           Termops.Internal.print_constr_env curenv sigma cN)
     in
       match (EConstr.kind sigma cM, EConstr.kind sigma cN) with
@@ -1175,8 +1175,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   in
 
   debug_tactic_unification (fun () ->
-      str "Starting unification: " ++
-      Termops.Internal.print_constr_env env sigma (fst m) ++ str" ~= " ++
+      str "Starting unification:" ++ spc() ++
+      Termops.Internal.print_constr_env env sigma (fst m) ++ strbrk" ~= " ++
       Termops.Internal.print_constr_env env sigma (fst n));
 
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
