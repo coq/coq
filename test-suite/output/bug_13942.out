@@ -124,10 +124,11 @@ i : Choose false -> Union (M A)
 
 ?hu : "Union (M ?A)"
 
-File "./output/bug_13942.v", line 145, characters 2-24:
+File "./output/bug_13942.v", line 145, characters 16-18:
 The command has indeed failed with message:
-Unable to satisfy the following constraints:
-In environment:
+
+Could not find an instance for "Union (M B)" in
+environment:
 K : Type
 M : Type -> Type
 H : FMap K M
@@ -138,14 +139,13 @@ itrue : Choose true -> Union (M B)
 ib : Insert K B (M B)
 i : Choose false -> Union (M A)
 
-?hu : "Union (M B)"
-
 fi fu : B
      : B
-File "./output/bug_13942.v", line 305, characters 2-126:
+File "./output/bug_13942.v", line 307, characters 20-31:
 The command has indeed failed with message:
-Unable to satisfy the following constraints:
-In environment:
+
+Could not find an instance for "Insert K K (M A)" in
+environment:
 K : Type
 M : Type → Type
 H : FMap M
@@ -164,6 +164,4 @@ A : Type
 m1, m2 : M A
 i : K
 x : A
-
-?Insert : "Insert K K (M A)"
 
