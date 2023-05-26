@@ -347,7 +347,6 @@ sig
   val is_empty : t -> bool
 
   val singleton : Level.t -> t
-  val of_instance : Instance.t -> t
   val of_set : Level.Set.t -> t
 
   val equal : t -> t -> bool
@@ -360,7 +359,6 @@ sig
   val diff : t -> t -> t
   val add_universe : Level.t -> t -> t
   val add_constraints : Constraints.t -> t -> t
-  val add_instance : Instance.t -> t -> t
 
   val sort_levels : Level.t array -> Level.t array
   (** Arbitrary choice of linear order of the variables *)

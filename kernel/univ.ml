@@ -884,7 +884,6 @@ struct
 
   let of_set s = (s, Constraints.empty)
   let singleton l = of_set (Level.Set.singleton l)
-  let of_instance i = of_set (Instance.levels i)
 
   let union (univs, cst as x) (univs', cst' as y) =
     if x == y then x
@@ -903,12 +902,6 @@ struct
 
   let add_constraints cst' (univs, cst) =
     univs, Constraints.union cst cst'
-
-  let add_instance inst (univs, cst) =
-    let v = Instance.to_array inst in
-    let fold accu u = Level.Set.add u accu in
-    let univs = Array.fold_left fold univs v in
-    (univs, cst)
 
   let sort_levels a =
     Array.sort Level.compare a; a
