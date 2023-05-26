@@ -108,7 +108,7 @@ Lemma pow_RN_plus :
 Proof.
   intros x n m H.
   apply (Rmult_eq_reg_r (x ^ m)); cycle 1.
-    now apply pow_nonzero.
+  { now apply pow_nonzero. }
   rewrite Rmult_assoc, Rmult_inv_l, Rmult_1_r by (now apply pow_nonzero).
   now rewrite pow_add.
 Qed.

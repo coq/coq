@@ -949,7 +949,7 @@ destruct (Req_dec r1 0) as [-> | H1].
 - destruct (Req_dec r2 0) as [-> | H2].
   + now rewrite Rinv_0, 2!Rmult_0_r, Rinv_0.
   + symmetry; apply Rmult_inv_r_uniq.
-      now apply Rmult_integral_contrapositive_currified.
+    { now apply Rmult_integral_contrapositive_currified. }
     rewrite (Rmult_comm r1), Rmult_assoc, <-(Rmult_assoc r1).
     now rewrite Rinv_r, Rmult_1_l, Rinv_r.
 Qed.
@@ -959,7 +959,7 @@ Proof.
   destruct (Req_dec r 0) as [-> | H].
   - now rewrite Ropp_0, Rinv_0, Ropp_0.
   - symmetry; apply Rmult_inv_r_uniq.
-      now apply Ropp_neq_0_compat.
+    { now apply Ropp_neq_0_compat. }
     now rewrite Rmult_opp_opp, Rinv_r.
 Qed.
 
@@ -1609,7 +1609,7 @@ Proof.
   destruct (Rlt_or_le 0 (/ r)) as [Hlt | Hle]; try easy.
   exfalso; apply (Rle_not_lt 0 1); try apply Rlt_0_1.
   rewrite <-(Rinv_l r), <-(Rmult_0_r (/ r)); cycle 1.
-    now apply not_eq_sym, Rlt_not_eq.
+  { now apply not_eq_sym, Rlt_not_eq. }
   now apply Rlt_le in Hr; apply Rmult_le_compat_neg_l.
 Qed.
 #[global]
@@ -2256,7 +2256,7 @@ Lemma IPR_xO : forall p : positive, IPR (p~0) = 2 * IPR p.
 Proof.
   intros p.
   apply (Rmult_eq_reg_l 2); cycle 1.
-    apply not_eq_sym, Rlt_not_eq, Rlt_0_2.
+  { apply not_eq_sym, Rlt_not_eq, Rlt_0_2. }
   now rewrite 2IPR_IPR_2, IPR_2_xO.
 Qed.
 
@@ -2264,7 +2264,7 @@ Lemma IPR_xI : forall p : positive, IPR (p~1) = 2 * IPR p + 1.
 Proof.
   intros p.
   apply (Rmult_eq_reg_l 2); cycle 1.
-    apply not_eq_sym, Rlt_not_eq, Rlt_0_2.
+  { apply not_eq_sym, Rlt_not_eq, Rlt_0_2. }
   now rewrite 2IPR_IPR_2, IPR_2_xI, Rmult_plus_distr_l, Rmult_1_r.
 Qed.
 
@@ -2630,7 +2630,7 @@ Qed.
 Lemma INR_unbounded : forall A, exists n, INR n > A.
 Proof.
   intros A; destruct (Rle_or_lt 0 A) as [A_ge0 | A_lt0]; cycle 1.
-    now exists 0%nat; simpl.
+  { now exists 0%nat; simpl. }
   destruct (archimed A) as [ar1 _].
   exists (Z.to_nat (up A)).
   rewrite INR_IZR_INZ, Z2Nat.id; try assumption.
@@ -2644,7 +2644,7 @@ Proof.
   intros eps A Heps; destruct (INR_unbounded (A / eps)) as [N HN].
   exists N.
   apply (Rmult_gt_reg_r (/ eps)).
-    now apply Rinv_0_lt_compat.
+  { now apply Rinv_0_lt_compat. }
   now rewrite Rmult_assoc, Rinv_r by (now apply Rgt_not_eq); rewrite Rmult_1_r.
 Qed.
 
