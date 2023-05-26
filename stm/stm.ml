@@ -1373,6 +1373,7 @@ end = struct (* {{{ *)
     e_error_at    : Stateid.t;
     e_safe_id     : Stateid.t;
     e_msg         : Pp.t;
+    e_loc         : Loc.t option;
     e_safe_states : Stateid.t list }
 
   type response =
@@ -1432,9 +1433,13 @@ end = struct (* {{{ *)
         if t_drop then `Stay(t_states,[States t_states])
         else `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
-            RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
+            RespError { e_error_at; e_safe_id = valid; e_loc; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
-        let info = Stateid.add ~valid Exninfo.null e_error_at in
+        let info = match e_loc with
+          | Some loc -> Loc.add_loc Exninfo.null loc
+          | None -> Exninfo.null
+        in
+        let info = Stateid.add ~valid info e_error_at in
         let e = (AsyncTaskQueue.RemoteException e_msg, info) in
         t_assign (`Exn e);
         `Stay(t_states,[States e_safe_states])
@@ -1522,7 +1527,7 @@ end = struct (* {{{ *)
         let e_msg = iprint (e, info) in
         stm_pperr_endline Pp.(fun () -> str "failed with the following exception: " ++ fnl () ++ e_msg);
         let e_safe_states = List.filter State.is_cached_and_valid my_states in
-        RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
+        RespError { e_error_at; e_safe_id; e_msg; e_loc = Loc.get_loc info; e_safe_states }
 
   let perform_states query =
     if query = [] then [] else
