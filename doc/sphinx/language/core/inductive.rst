@@ -611,7 +611,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
       \ind{0}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
-                \evenO &:& \even~0\\
+                \evenO &:& \even~O\\
                 \evenS &:& ∀ n,~\odd~n → \even~(\nS~n)\\
                 \oddS &:& ∀ n,~\even~n → \odd~(\nS~n)
                           \end{array}\right]}
@@ -621,7 +621,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
    .. coqtop:: in
 
       Inductive even : nat -> Prop :=
-      | even_O : even 0
+      | even_O : even O
       | even_S : forall n, odd n -> even (S n)
       with odd : nat -> Prop :=
       | odd_S : forall n, even n -> odd (S n).
