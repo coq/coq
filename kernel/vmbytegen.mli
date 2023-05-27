@@ -18,7 +18,7 @@ open Environ
 val compile :
   fail_on_error:bool -> ?universes:int ->
   env -> Genlambda.evars -> constr ->
-  (to_patch * fv) option
+  (bytecodes * fv) option
 (** init, fun, fv *)
 
 val compile_constant_body : fail_on_error:bool ->

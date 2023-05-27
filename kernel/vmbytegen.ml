@@ -898,7 +898,7 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     let res = init_code @ !fun_code in
-    Some (to_memory res, Array.of_list fv)
+    Some (res, Array.of_list fv)
   with TooLargeInductive msg as exn ->
     let _, info = Exninfo.capture exn in
     let fn = if fail_on_error then

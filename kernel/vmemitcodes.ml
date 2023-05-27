@@ -481,27 +481,42 @@ let subst_strcst s sc =
 
 let subst_annot _ (a : annot_switch) = a
 
-let subst_reloc s ri =
-  match ri with
-  | Reloc_annot a -> Reloc_annot (subst_annot s a)
-  | Reloc_const sc -> Reloc_const (subst_strcst s sc)
-  | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
-  | Reloc_caml_prim _ -> ri
-
-let subst_patches subst p =
-  let infos = CArray.Smart.map (fun r -> subst_reloc subst r) p.reloc_infos in
-  { reloc_infos = infos; reloc_positions = p.reloc_positions }
-
-let subst_to_patch s (code, pl) =
-  (code, subst_patches s pl)
-
 type body_code =
-  | BCdefined of to_patch * fv
+  | BCdefined of bytecodes * fv
   | BCalias of Names.Constant.t
   | BCconstant
 
+let rec subst_bytecodes s code =
+  CList.Smart.map (fun instr -> subst_instruction s instr) code
+
+and subst_instruction s instr = match instr with
+| Klabel _ | Kacc _ | Kenvacc _ | Koffsetclosure _ | Kpush | Kpop _
+| Kpush_retaddr _ | Kshort_apply _ | Kapply _ | Kappterm _ | Kreturn _ | Kjump
+| Krestart | Kgrab _ | Kgrabrec _ | Kclosure _ | Kclosurerec _ | Kclosurecofix _
+| Kmakeblock _ | Kswitch _ | Kpushfields _ | Kfield _ | Ksetfield _ | Kstop
+| Kensurestackcapacity _ | Kbranch _ | Kcamlprim _ -> instr
+| Kgetglobal c ->
+  let c' = Mod_subst.subst_constant s c in
+  if c' == c then instr else Kgetglobal c'
+| Kconst str ->
+  let str' = subst_strcst s str in
+  if str' == str then instr else Kconst str'
+| Kmakeswitchblock (l1, l2, sw, n) ->
+  let sw' = subst_annot s sw in
+  if sw' == sw then instr else Kmakeswitchblock (l1, l2, sw', n)
+| Kproj p ->
+  (* FIXME: use a position rather than a name *)
+  let p' = Mod_subst.subst_proj_repr s p in
+  if p' == p then instr else Kproj p'
+| Kprim (p, (c, u)) ->
+  let c' = Mod_subst.subst_constant s c in
+  if c' == c then instr else Kprim (p, (c', u))
+| Ksequence l ->
+  let l' = subst_bytecodes s l in
+  if l' == l then instr else Ksequence l'
+
 let subst_body_code s = function
-| BCdefined (tp, fv) -> BCdefined (subst_to_patch s tp, fv)
+| BCdefined (tp, fv) -> BCdefined (subst_bytecodes s tp, fv)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 

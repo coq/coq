@@ -22,7 +22,7 @@ type to_patch
 val patch : to_patch -> (reloc_info -> int) -> Vmvalues.tcode
 
 type body_code =
-  | BCdefined of to_patch * fv
+  | BCdefined of bytecodes * fv
   | BCalias of Constant.t
   | BCconstant
 
