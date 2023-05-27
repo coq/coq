@@ -232,8 +232,10 @@ let pri_order t1 t2 = pri_order_int t1 t2 <= 0
 
 let get_default_pattern (h : hint hint_ast) = match h with
 | Give_exact h -> h.hint_type
-| Res_pf _ | ERes_pf _ | Res_pf_THEN_trivial_fail _ | Unfold_nth _ | Extern _ ->
-  (* Only exact hints may contain DefaultPattern *)
+| Res_pf h | ERes_pf h ->
+  Clenv.clenv_type h.hint_clnv
+| Res_pf_THEN_trivial_fail _ | Unfold_nth _ | Extern _ ->
+  (* These hints cannot contain DefaultPattern *)
   assert false
 
 (* Nov 98 -- Papageno *)
@@ -840,7 +842,7 @@ let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
     let pri = match info.hint_priority with None -> hyps + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
     | Some p -> ConstrPattern (snd p)
-    | None -> ConstrPattern (Patternops.pattern_of_constr env (Clenv.clenv_evd ce) c')
+    | None -> DefaultPattern
     in
     let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = hyps; } in
     if Int.equal nmiss 0 then
