@@ -232,9 +232,9 @@ let pri_order t1 t2 = pri_order_int t1 t2 <= 0
 
 let get_default_pattern (h : hint hint_ast) = match h with
 | Give_exact h -> h.hint_type
-| Res_pf h | ERes_pf h ->
+| Res_pf h | ERes_pf h | Res_pf_THEN_trivial_fail h ->
   Clenv.clenv_type h.hint_clnv
-| Res_pf_THEN_trivial_fail _ | Unfold_nth _ | Extern _ ->
+| Unfold_nth _ | Extern _ ->
   (* These hints cannot contain DefaultPattern *)
   assert false
 
@@ -949,11 +949,10 @@ let make_trivial env sigma ?(name=PathAny) r =
   let sigma = merge_context_set_opt sigma ctx in
   let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
   let hd = head_constr sigma t in
-  let ce = Clenv.mk_clenv_from env sigma (c,t) in
   let h = { rhint_term = c; rhint_type = t; rhint_uctx = ctx; rhint_arty = 0 } in
   (Some hd,
    { pri=1;
-     pat = Some (ConstrPattern (Patternops.pattern_of_constr env (Clenv.clenv_evd ce) (Clenv.clenv_type ce)));
+     pat = Some DefaultPattern;
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
