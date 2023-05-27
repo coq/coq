@@ -68,7 +68,7 @@ check_variable () {
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
+: "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
 : "${coq_native:=}"
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
@@ -425,6 +425,9 @@ zulip_edit "Benching continues..."
 sorted_coq_opam_packages=$("${program_path}/sort-by-deps.sh" ${coq_opam_packages})
 echo "sorted_coq_opam_packages = ${sorted_coq_opam_packages}"
 
+failed_packages=
+skipped_packages=
+
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
 
@@ -433,10 +436,18 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     export COQ_OPAM_PACKAGE=$coq_opam_package
     if [ ! -z "$BENCH_DEBUG" ]; then
         opam list
-        opam show $coq_opam_package || continue 2
+        opam show $coq_opam_package || {
+            failed_packages="$failed_packages
+$coq_opam_package (unknown package)"
+            continue
+            }
     else
         # cause to skip with error if unknown package
-        opam show $coq_opam_package >/dev/null || continue 2
+        opam show $coq_opam_package >/dev/null || {
+            failed_packages="$failed_packages
+$coq_opam_package (unknown package)"
+            continue
+            }
     fi
     echo "coq_opam_package = $coq_opam_package"
 
@@ -460,13 +471,27 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         # before), remove it.
         opam uninstall -q $coq_opam_package >/dev/null 2>&1
 
+        for dep in $(opam install --show-actions "$coq_opam_package" | grep -o '∗\s*install\s*[^ ]*' | sed 's/∗\s*install\s*//g'); do
+            # show-actions will print transitive deps
+            # so we don't need to look at the skipped_packages
+            if echo "$failed_packages" | grep -q "$dep"; then
+                skipped_packages="$skipped_packages
+$coq_opam_package (dependency $dep failed)"
+                continue 3
+            fi
+        done
+
         # OPAM 2.0 likes to ignore the -j when it feels like :S so we
         # workaround that here.
         opam var --global jobs=$number_of_processors >/dev/null
 
         opam install $coq_opam_package -v -b -j$number_of_processors --deps-only -y \
              3>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stdout.log 1>&3 \
-             4>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stderr.log 2>&4 || continue 2
+             4>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stderr.log 2>&4 || {
+            failed_packages="$failed_packages
+$coq_opam_package (dependency install failed in $RUNNER)"
+            continue 2
+            }
 
         opam var --global jobs=1 >/dev/null
 
@@ -495,6 +520,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
             else
                 # "opam install" failed.
                 echo $_RES > $log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.exit_status
+                failed_packages="$failed_packages
+$coq_opam_package"
                 continue 3
             fi
         done
@@ -521,6 +548,12 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
+        msg="Benching continues..."
+        if [ -n "$failed_packages" ]; then
+            msg="$msg
+Failed: $failed_packages
+$skipped_packages"
+        fi
         zulip_edit "Benching continues..."
     fi
 
@@ -610,7 +643,15 @@ git log -n 1 "$old_coq_commit"
 echo INFO: New Coq version
 git log -n 1 "$new_coq_commit"
 
-not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
+if [ -n "$failed_packages" ]; then
+    not_installable_coq_opam_packages=$failed_packages
+    if [ -n "$skipped_packages" ]; then
+        not_installable_coq_opam_packages="$not_installable_coq_opam_packages
+$skipped_packages"
+    fi
+else # in case the failed package detection is bugged
+    not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
+fi
 
 coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
 
