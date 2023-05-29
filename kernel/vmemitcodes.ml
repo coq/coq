@@ -404,7 +404,7 @@ let emit_instr env = function
   | Ksetfield n ->
       out env opSETFIELD; out_int env n
   | Ksequence _ -> invalid_arg "Vmemitcodes.emit_instr"
-  | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p)
+  | Kproj p -> out env opPROJ; out_int env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
   | Kprim (op, (q,_u)) ->

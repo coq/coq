@@ -65,7 +65,7 @@ type instruction =
   | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes
-  | Kproj of Projection.Repr.t
+  | Kproj of int
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
   | Kprim of CPrimitives.t * pconstant
@@ -156,7 +156,7 @@ let rec pp_instr i =
 
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
-  | Kproj p -> str "proj " ++ Projection.Repr.print p
+  | Kproj p -> str "proj " ++ int p
 
   | Kensurestackcapacity size -> str "growstack " ++ int size
 
