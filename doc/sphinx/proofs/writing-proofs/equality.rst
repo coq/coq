@@ -21,7 +21,7 @@ There are multiple notions of :gdef:`equality` in Coq:
   relation.  A :gdef:`setoid` is a set that is equipped with an equivalence relation
   (see https://en.wikipedia.org/wiki/Setoid).  These are needed to form a :gdef:`quotient set`
   or :gdef:`quotient`
-  (see https://en.wikipedia.org/wiki/Equivalence_Class).  In Coq, users generally work
+  (see https://en.wikipedia.org/wiki/Equivalence_class).  In Coq, users generally work
   with setoids rather than constructing quotients, for which there is no specific support.
 
 - :gdef:`Definitional equality <definitional equality>` is equality based on the
