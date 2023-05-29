@@ -19,8 +19,6 @@ open Vmopcodes
 open Mod_subst
 open CPrimitives
 
-type emitcodes = String.t
-
 external tcode_of_code : Bytes.t -> Vmvalues.tcode = "coq_tcode_of_code"
 
 (* Relocation information *)
@@ -147,15 +145,13 @@ type label_definition =
 type env = {
   mutable out_buffer : Bytes.t;
   mutable out_position : int;
-  mutable reloc_pos : int list;
-  mutable reloc_id : int;
   mutable label_table : label_definition array;
   (* i-th table element = Label_defined n means that label i was already
      encountered and lives at offset n
      i-th table element = Label_undefined l means that the label was not
      encountered yet, first integer is the location of the value to be patched
      in the string, seconed one is its origin *)
-  reloc_info : int RelocTable.t;
+  reloc_info : (reloc_info -> int);
 }
 
 let out_word env b1 b2 b3 b4 =
@@ -232,15 +228,7 @@ let out_label env l = out_label_with_orig env env.out_position l
 
 (* Relocation information *)
 
-let enter env info =
-  let pos = env.out_position in
-  let () = env.reloc_pos <- pos :: env.reloc_pos in
-  try RelocTable.find env.reloc_info info
-  with Not_found ->
-    let id = env.reloc_id in
-    let () = env.reloc_id <- id + 1 in
-    let () = RelocTable.add env.reloc_info info id in
-    id
+let enter env info = env.reloc_info info
 
 let slot_for env r = out_int env (enter env r)
 
@@ -468,10 +456,6 @@ let rec emit env insns remaining = match insns with
   | instr :: c ->
       emit_instr env instr; emit env c remaining
 
-(* Initialization *)
-
-type to_patch = emitcodes * patches
-
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
@@ -520,28 +504,20 @@ let subst_body_code s = function
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 
-let to_memory code =
+let to_memory code slots =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
-    reloc_id = 0;
-    reloc_pos = [];
     label_table = Array.make 16 (Label_undefined []);
-    reloc_info = RelocTable.create 91;
+    reloc_info = slots;
   } in
-  emit env code [];
-  (** Later uses of this string are all purely functional *)
-  let code = Bytes.sub_string env.out_buffer 0 env.out_position in
-  let code = CString.hcons code in
-  let fold reloc id accu = (id, reloc) :: accu in
-  let reloc = RelocTable.fold fold env.reloc_info [] in
-  let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
-  let reloc_infos = CArray.map_of_list snd reloc in
-  let reloc_positions = Positions.of_list (List.rev env.reloc_pos) in
-  let reloc = { reloc_infos; reloc_positions } in
-  Array.iter (fun lbl ->
-    (match lbl with
-      Label_defined _ -> assert true
-    | Label_undefined patchlist ->
-        assert (patchlist = []))) env.label_table;
-  (code, reloc)
+  let () = emit env code [] in
+  let () =
+    let check = function
+    | Label_defined _ -> ()
+    | Label_undefined patchlist -> assert (CList.is_empty patchlist)
+    in
+    Array.iter check env.label_table;
+  in
+  let code = Bytes.sub env.out_buffer 0 env.out_position in
+  tcode_of_code code

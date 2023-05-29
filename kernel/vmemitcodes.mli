@@ -17,16 +17,11 @@ type reloc_info =
   | Reloc_getglobal of Constant.t
   | Reloc_caml_prim of caml_prim
 
-type to_patch
-
-val patch : to_patch -> (reloc_info -> int) -> Vmvalues.tcode
-
 type body_code =
   | BCdefined of bytecodes * fv
   | BCalias of Constant.t
   | BCconstant
 
-
 val subst_body_code : Mod_subst.substitution -> body_code -> body_code
 
-val to_memory : bytecodes -> to_patch
+val to_memory : Vmbytecodes.bytecodes -> (reloc_info -> int) -> Vmvalues.tcode

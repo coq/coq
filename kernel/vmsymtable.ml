@@ -309,8 +309,7 @@ and eval_to_patch env sigma (code, fv) envcache table =
     | Reloc_getglobal kn -> slot_for_getglobal env sigma kn envcache table
     | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let code = to_memory code in
-  let tc = patch code slots in
+  let tc = to_memory code slots in
   let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
