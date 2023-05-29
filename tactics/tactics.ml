@@ -1643,6 +1643,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
+  let state = Proofview.Goal.state gl in
   let ct = Retyping.get_type_of env sigma c in
   let (mind, _), t = reduce_to_quantified_ind env sigma ct in
   let dep =
@@ -1661,7 +1662,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
     let evk, _ = destEvar sigma ev in
     let indclause = Clenv.update_clenv_evd indclause (meta_merge (meta_list @@ Clenv.clenv_evd indclause) sigma) in
     Proofview.Unsafe.tclEVARS sigma <*>
-    Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.with_empty_state evk] <*>
+    Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.goal_with_state evk state] <*>
     Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
     Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~with_evars ~dep (ev, argtype)]
   in
