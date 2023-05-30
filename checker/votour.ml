@@ -18,17 +18,24 @@ type command =
 | CmdParent
 | CmdChild of int
 | CmdSort
+| CmdHelp
+| CmdExit
+
+let help () =
+  Printf.printf "Help\n<n>\tenter the <n>-th child\nu\tgo up 1 level\ns\tsort\nx\texit\n\n%!"
+
+let quit () =
+  Printf.printf "\nGoodbye!\n%!";
+  exit 0
 
 let rec read_num max =
-  let quit () =
-    Printf.printf "\nGoodbye!\n%!";
-    exit 0 in
   Printf.printf "# %!";
   let l = try read_line () with End_of_file -> quit () in
   match l with
   | "u" -> CmdParent
   | "s" -> CmdSort
-  | "x" -> quit ()
+  | "x" -> CmdExit
+  | "h" -> CmdHelp
   | _ ->
     match int_of_string l with
     | v ->
@@ -38,7 +45,7 @@ let rec read_num max =
         read_num max
       else CmdChild v
     | exception Failure _ ->
-      Printf.printf "Unrecognized input! <n> enters the <n>-th child, u goes up 1 level, x exits\n%!";
+      Printf.printf "Unrecognized input! Input h for help\n%!";
       read_num max
 
 type 'a repr =
@@ -335,6 +342,10 @@ and read_command v o pos children =
       let () = Array.sort sort sorted in
       let () = print_state v o pos sorted in
       read_command v o pos children
+    | CmdHelp ->
+      let () = help () in
+      read_command v o pos children
+    | CmdExit -> quit ()
   with
   | EmptyStack -> ()
   | Forbidden -> let info = pop () in visit info.typ info.obj info.pos
@@ -435,8 +446,7 @@ let visit_vo f =
   Printf.printf "\nWelcome to votour !\n";
   Printf.printf "Enjoy your guided tour of a Coq .vo or .vi file\n";
   Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
-  Printf.printf
-    "At prompt, <n> enters the <n>-th child, u goes up 1 level, s sorts, x exits\n\n%!";
+  Printf.printf "Input h for help\n\n%!";
   let known_segments = [
     "summary", Values.v_libsum;
     "library", Values.v_lib;
@@ -470,6 +480,10 @@ let visit_vo f =
        let typ = try List.assoc seg.name known_segments with Not_found -> Any in
        Visit.visit typ o []
     | CmdParent | CmdSort -> ()
+    | CmdHelp ->
+      help ()
+    | CmdExit ->
+      quit ()
   done
 
 let () =
