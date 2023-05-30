@@ -129,7 +129,7 @@ let rec is_class_arg c =
   | Cast (c,_,_)
   | LetIn (_,_,_,c) -> is_class_arg c
   | _ ->
-    let c, _ = decompose_appvect c in
+    let c, _ = decompose_app c in
     match destRef c with
     | exception DestKO -> false
     | r, _ -> is_class r

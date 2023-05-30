@@ -188,9 +188,6 @@ val nb_prod_modulo_zeta : Evd.evar_map -> constr -> int
 (** Get the last arg of a constr intended to be an application *)
 val last_arg : Evd.evar_map -> constr -> constr
 
-(** Force the decomposition of a term as an applicative one *)
-val decompose_app_vect : Evd.evar_map -> constr -> constr * constr array
-
 val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
   (constr * constr list * constr * constr list)
 val adjust_app_array_size : constr -> constr array -> constr -> constr array ->

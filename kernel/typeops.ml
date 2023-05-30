@@ -724,7 +724,7 @@ let rec execute env cstr =
             let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
             let () = conv_leq env ct ct' in
-            let _, args' = decompose_appvect ct' in
+            let _, args' = decompose_app ct' in
             if args == args' then iv
             else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in

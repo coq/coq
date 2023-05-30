@@ -1385,7 +1385,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
           observe (Printer.pr_lconstr_env env sigma scheme_type);
           let type_concl = Term.strip_prod_decls scheme_type in
           let applied_f =
-            List.hd (List.rev (snd (Constr.decompose_app type_concl)))
+            List.hd (List.rev (snd (Constr.decompose_app_list type_concl)))
           in
           let f = fst (Constr.decompose_app applied_f) in
           try
@@ -1394,7 +1394,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
               (fun j t ->
                 let t = Term.strip_prod_decls t in
                 let applied_g =
-                  List.hd (List.rev (snd (Constr.decompose_app t)))
+                  List.hd (List.rev (snd (Constr.decompose_app_list t)))
                 in
                 let g = fst (Constr.decompose_app applied_g) in
                 if Constr.equal f g then raise (Found_type j);

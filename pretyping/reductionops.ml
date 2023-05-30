@@ -911,7 +911,7 @@ let raw_whd_state_gen flags env =
   f
 
 let stack_red_of_state_red f =
-  let f env sigma x = EConstr.decompose_app sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
+  let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
 
 let red_of_state_red f env sigma x =
@@ -976,7 +976,7 @@ let shrink_eta sigma c =
   let rec whrec x = match EConstr.kind sigma x with
     | Cast (c, _, _) -> whrec c
     | Lambda (_, _, c) ->
-      let (f, cl) = decompose_app_vect sigma (whrec c) in
+      let (f, cl) = decompose_app sigma (whrec c) in
       let napp = Array.length cl in
       if napp > 0 then
         let x' = whrec (Array.last cl) in
@@ -1424,7 +1424,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
     | (FConstruct _ | FCoFix _) ->
       (* Non-neutral normal, can trigger reduction below *)
       let c = EConstr.of_constr (term_of_process c stk) in
-      Some (decompose_app_vect sigma c)
+      Some (decompose_app sigma c)
     | _ -> None
   in
   let rec whrec s =

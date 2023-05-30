@@ -729,7 +729,7 @@ let make_constructor_subst sigma sign args =
   | [], None -> accu
   | LocalAssum ({ binder_name = id }, _) :: decls, Some (Some a, args) ->
     let accu = fold decls args accu in
-    let a', args = decompose_app_vect sigma a in
+    let a', args = decompose_app sigma a in
     begin match EConstr.kind sigma a' with
     | Construct (cstr, _) ->
       let l = try Constrmap.find cstr accu with Not_found -> [] in
@@ -1320,7 +1320,7 @@ exception CannotProject of evar_map * EConstr.existential
 *)
 
 let rec is_constrainable_in top env evd k (evk,(fv_rels,fv_ids) as g) t =
-  let f,args = decompose_app_vect evd t in
+  let f,args = decompose_app evd t in
   match EConstr.kind evd f with
   | Construct ((ind,_),u) ->
     let n = Inductiveops.inductive_nparams env ind in
@@ -1745,7 +1745,7 @@ let rec invert_definition unify flags choose imitate_defs
     | _ ->
         progress := true;
         match
-          let c,args = decompose_app_vect !evdref t in
+          let c,args = decompose_app !evdref t in
           match EConstr.kind !evdref c with
           | Construct (cstr,u) when noccur_between !evdref 1 k t ->
             (* This is common case when inferring the return clause of match *)

@@ -462,12 +462,12 @@ let destRef c = let open GlobRef in match kind c with
 (* Flattening and unflattening of embedded applications and casts *)
 (******************************************************************)
 
-let decompose_app c =
+let decompose_app_list c =
   match kind c with
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
-let decompose_appvect c =
+let decompose_app c =
   match kind c with
     | App (f,cl) -> (f, cl)
     | _ -> (c,[||])

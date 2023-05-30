@@ -2994,7 +2994,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let decls,cl = decompose_prod_n_decls sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ =
-    let arity = Array.length (snd (Termops.decompose_app_vect sigma c)) in
+    let arity = Array.length (snd (EConstr.decompose_app sigma c)) in
     let cache = ref Int.Map.empty in
     let eq sigma k t =
       let c =
@@ -4102,10 +4102,10 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
   let (f, args, def, id, oldid) =
     let oldid = Tacmach.pf_get_new_id id gl in
       match Tacmach.pf_get_hyp id gl with
-      | LocalAssum (_,t) -> let f, args = decompose_app sigma t in
+      | LocalAssum (_,t) -> let f, args = decompose_app_list sigma t in
                 (f, args, false, id, oldid)
       | LocalDef (_,t,_) ->
-          let f, args = decompose_app sigma t in
+          let f, args = decompose_app_list sigma t in
           (f, args, true, id, oldid)
   in
   if List.is_empty args then Proofview.tclUNIT ()
@@ -4256,7 +4256,7 @@ let decompose_paramspred_branch_args sigma elimt =
 
 
 let exchange_hd_app sigma subst_hd t =
-  let hd,args= decompose_app sigma t in mkApp (subst_hd,Array.of_list args)
+  let hd,args= decompose_app sigma t in mkApp (subst_hd, args)
 
 (* Builds an elim_scheme from its type and calling form (const+binding). We
    first separate branches.  We obtain branches, hyps before (params + preds),
@@ -4320,7 +4320,7 @@ let compute_elim_sig sigma elimt =
                 | Construct _ -> true
                 | _ -> false in
             let hi_args_enough = (* hi a le bon nbre d'arguments *)
-              Int.equal (List.length hi_args) (List.length params + !res.nargs -1) in
+              Int.equal (Array.length hi_args) (List.length params + !res.nargs -1) in
             (* FIXME: Ces deux tests ne sont pas suffisants. *)
             if not (hi_is_ind && hi_args_enough) then raise_notrace Exit (* No indarg *)
             else (* Last arg is the indarg *)
@@ -4352,7 +4352,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
           let cond hd = EConstr.eq_constr evd hd ind_type_guess && not scheme.farg_in_concl
           in (cond, fun _ _ -> ())
       | Some (LocalAssum (_,ind)) -> (* Standard scheme from an inductive type *)
-          let indhd,indargs = decompose_app evd ind in
+          let indhd,indargs = decompose_app_list evd ind in
           let cond hd = EConstr.eq_constr evd hd indhd in
           let check_concl is_pred p =
             (* Check again conclusion *)
@@ -4419,7 +4419,7 @@ let compute_case_signature env mind dep names_info =
   let find_branches k =
     let (ctx, typ) = mip.mind_nf_lc.(k) in
     let argctx = List.firstn mip.mind_consnrealdecls.(k) ctx in
-    let _, args = Constr.decompose_appvect typ in
+    let _, args = Constr.decompose_app typ in
     let _, indices = Array.chop mib.mind_nparams args in
     let base =
       if dep then Array.append indices (Context.Rel.instance Constr.mkRel 0 argctx)
@@ -4466,7 +4466,7 @@ let guess_elim_shape env sigma isrec s hyp0 =
       let mib = Environ.lookup_mind (fst mind) env in
       mib.mind_nparams
   in
-  let hd, args = decompose_app sigma typ in
+  let hd, args = decompose_app_list sigma typ in
   let (params, indices) = List.chop nparams args in
   is_elim, (mind, u), (hd, params, indices)
 
@@ -4501,7 +4501,7 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   in
   let tmptyp0 = Typing.type_of_variable env hyp0 in
   let indtyp = reduce_to_atomic_ref env sigma ref tmptyp0 in
-  let hd, args = decompose_app sigma indtyp in
+  let hd, args = decompose_app_list sigma indtyp in
   let indsign = compute_scheme_signature sigma scheme hyp0 hd in
   let (params, indices) = List.chop scheme.nparams args in
   sigma, (hd, params, indices), ElimUsing (hyp0, (e, elimt, indsign))

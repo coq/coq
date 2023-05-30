@@ -242,6 +242,11 @@ let destRef sigma c = let open GlobRef in match kind sigma c with
 
 let decompose_app sigma c =
   match kind sigma c with
+  | App (f,cl) -> (f, cl)
+  | _ -> (c,[||])
+
+let decompose_app_list sigma c =
+  match kind sigma c with
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 

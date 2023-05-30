@@ -156,7 +156,7 @@ let splay_open_constr env (sigma, c) =
 
 let isAppInd env sigma c =
   let c = Reductionops.clos_whd_flags CClosure.all env sigma c in
-  let c, _ = decompose_app_vect sigma c in
+  let c, _ = EConstr.decompose_app sigma c in
   EConstr.isInd sigma c
 
 (** Generic argument-based globbing/typing utilities *)
@@ -521,7 +521,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let a = Array.of_list @@ Evd.expand_existential sigma (ev, a) in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
   | _ -> EConstr.map_with_binders sigma ((+) 1) (get evlist) i c in
-  let rec app extra_args i c = match decompose_app sigma c with
+  let rec app extra_args i c = match decompose_app_list sigma c with
   | hd, args when isRel sigma hd && destRel sigma hd = i ->
       let j = destRel sigma hd in
       mkApp (mkRel j, Array.of_list (List.map (Vars.lift (i-1)) extra_args @ args))

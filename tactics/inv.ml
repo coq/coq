@@ -496,7 +496,7 @@ let raw_inversion inv_kind id status names =
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
-    let (_, args) = decompose_app_vect sigma t in
+    let (_, args) = decompose_app sigma t in
     let solve_tac =
       (* We have to change again because assert_before performs βι-reduction *)
       change_concl cut_concl <*>

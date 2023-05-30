@@ -63,7 +63,7 @@ let head_constr sigma c =
 let decompose_app_bound sigma t =
   let t = strip_outer_cast sigma t in
   let _,ccl = decompose_prod_decls sigma t in
-  let hd,args = decompose_app_vect sigma ccl in
+  let hd,args = decompose_app sigma ccl in
   let open GlobRef in
   match EConstr.kind sigma hd with
     | Const (c,u) -> ConstRef c, args

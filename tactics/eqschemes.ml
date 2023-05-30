@@ -141,7 +141,7 @@ let get_sym_eq_data env (ind,u) =
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let constrsign,ccl = mip.mind_nf_lc.(0) in
-  let _,constrargs = decompose_app ccl in
+  let _,constrargs = decompose_app_list ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments"; (* This can be relaxed... *)
   let params,constrargs = List.chop mib.mind_nparams constrargs in
@@ -176,7 +176,7 @@ let get_non_sym_eq_data env (ind,u) =
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported";
   let constrsign,ccl = mip.mind_nf_lc.(0) in
-  let _,constrargs = decompose_app ccl in
+  let _,constrargs = decompose_app_list ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let _,constrargs = List.chop mib.mind_nparams constrargs in
@@ -800,7 +800,7 @@ let build_congr env (eq,refl,ctx) ind =
     RelDecl.get_type decl, RelDecl.get_relevance decl
   in
   let constrsign,ccl = mip.mind_nf_lc.(0) in
-  let _,constrargs = decompose_app ccl in
+  let _,constrargs = decompose_app_list ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let b = List.nth constrargs (i + mib.mind_nparams - 1) in

@@ -202,7 +202,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
   let rec check_strict_positivity (env, n, ntypes, ra_env as ienv) nmr c =
-    let x,largs = decompose_app (whd_all env c) in
+    let x,largs = decompose_app_list (whd_all env c) in
       match kind x with
         | Prod (na,b,d) ->
             let () = assert (List.is_empty largs) in
@@ -322,7 +322,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       inductive type. *)
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,_ra_env as ienv) nmr lrec c =
-      let x,largs = decompose_app (whd_all env c) in
+      let x,largs = decompose_app_list (whd_all env c) in
         match kind x with
 
           | Prod (na,b,d) ->

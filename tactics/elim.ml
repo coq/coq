@@ -96,7 +96,7 @@ let rec general_decompose_aux recognizer id =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let ((ind, u), t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
-  let _, args = decompose_app_vect (Proofview.Goal.sigma gl) t in
+  let _, args = decompose_app (Proofview.Goal.sigma gl) t in
   let rec_flag, mkelim =
     match (Environ.lookup_mind (fst ind) env).mind_record with
     | NotRecord -> true, Elim

@@ -472,7 +472,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
         travel jinfo continuation_tac_a
           {expr_info with info = a; is_main_branch = false; is_final = false}
       | App _ -> (
-        let f, args = decompose_app sigma expr_info.info in
+        let f, args = decompose_app_list sigma expr_info.info in
         if EConstr.eq_constr sigma f expr_info.f_constr then
           jinfo.app_reC (f, args) expr_info continuation_tac expr_info
         else
@@ -532,14 +532,14 @@ let rec prove_lt hyple =
       let sigma = Proofview.Goal.sigma g in
       try
         let varx, varz =
-          match decompose_app sigma (Proofview.Goal.concl g) with
+          match decompose_app_list sigma (Proofview.Goal.concl g) with
           | _, x :: z :: _ when isVar sigma x && isVar sigma z -> (x, z)
           | _ -> assert false
         in
         let h =
           List.find
             (fun id ->
-              match decompose_app sigma (Tacmach.pf_get_hyp_typ id g) with
+              match decompose_app_list sigma (Tacmach.pf_get_hyp_typ id g) with
               | _, t :: _ -> EConstr.eq_constr sigma t varx
               | _ -> false)
             hyple
@@ -547,7 +547,7 @@ let rec prove_lt hyple =
         let y =
           List.hd
             (List.tl
-               (snd (decompose_app sigma (Tacmach.pf_get_hyp_typ h g))))
+               (snd (decompose_app_list sigma (Tacmach.pf_get_hyp_typ h g))))
         in
         observe_tclTHENLIST
           (fun _ _ -> str "prove_lt1")
@@ -906,7 +906,7 @@ let rec prove_le () =
       let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       let x, z =
-        let _, args = decompose_app sigma (Proofview.Goal.concl g) in
+        let _, args = decompose_app_list sigma (Proofview.Goal.concl g) in
         (List.hd args, List.hd (List.tl args))
       in
       tclFIRST
@@ -928,7 +928,7 @@ let rec prove_le () =
                   (Tacmach.pf_hyps_types g)
               in
               let y =
-                let _, args = decompose_app sigma t in
+                let _, args = decompose_app_list sigma t in
                 List.hd (List.tl args)
               in
               observe_tclTHENLIST

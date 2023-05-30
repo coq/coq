@@ -646,7 +646,7 @@ let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst
     else UnivProblem.Set.empty
 
 let rec is_neutral env sigma ts t =
-  let (f, l) = decompose_app_vect sigma t in
+  let (f, l) = decompose_app sigma t in
     match EConstr.kind sigma f with
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
@@ -928,7 +928,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
   and check_type_eta_constructor_app (env,nb as curenvnb) opt ((sigma,metasubst,evarsubst) as substn : subst0) other term =
     let  (((_, i as ind), j), u) =
-      EConstr.destConstruct sigma (fst (decompose_app_vect sigma other))
+      EConstr.destConstruct sigma (fst (decompose_app sigma other))
     in
     (* ensure that we only eta expand if we are at the same inductive
        (we accept that univs params and indices may be different) *)
@@ -939,7 +939,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       with RetypeError _ -> fail ()
     in
     let tterm' = Reductionops.whd_all env sigma tterm in
-     match EConstr.kind sigma (fst (decompose_app_vect sigma tterm')) with
+     match EConstr.kind sigma (fst (decompose_app sigma tterm')) with
       | Ind (ind',_) when QInd.equal env ind ind' -> substn
       | _ ->
         let tother = try Retyping.get_type_of ~lax:true env sigma other
@@ -1667,7 +1667,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
         modulo_conv_on_closed_terms = Some TransparentState.full;
         restrict_conv_on_strict_subterms = true } }
     else default_matching_flags (Option.default Evd.empty pending) in
-  let n = Array.length (snd (decompose_app_vect sigma c)) in
+  let n = Array.length (snd (decompose_app sigma c)) in
   let cgnd = if occur_meta_or_undefined_evar sigma c then NotGround else Ground in
   let matching_fun _ t =
     (* make_pattern_test is only ever called with an empty rel context *)
@@ -1677,7 +1677,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
         if from_prefix_of_ind then
           (* We check for fully applied subterms of the form "u u1 .. un" *)
           (* of inductive type knowing only a prefix "u u1 .. ui" *)
-          let t,l = decompose_app sigma t in
+          let t,l = decompose_app_list sigma t in
           let l1,l2 =
             try List.chop n l with Failure _ -> raise (NotUnifiable None) in
           if not (List.for_all (fun c -> Vars.closed0 sigma c) l2) then raise (NotUnifiable None)
@@ -1969,8 +1969,8 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
        if is_closed && not (isEvar evd cl) && keyed_unify env evd kop cl then
        (try
          if is_keyed_unification () then
-           let f1, l1 = decompose_app_vect evd op in
-           let f2, l2 = decompose_app_vect evd cl in
+           let f1, l1 = decompose_app evd op in
+           let f2, l2 = decompose_app evd cl in
            w_typed_unify_array env evd flags f1 l1 f2 l2,cl
          else w_typed_unify env evd CONV flags (op, opgnd) (cl, Unknown),cl
        with ex when Pretype_errors.unsatisfiable_exception ex ->
@@ -2176,8 +2176,8 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
-  let hd1,l1 = decompose_app_vect evd (whd_nored env evd ty1) in
-  let hd2,l2 = decompose_app_vect evd (whd_nored env evd ty2) in
+  let hd1,l1 = decompose_app evd (whd_nored env evd ty1) in
+  let hd2,l2 = decompose_app evd (whd_nored env evd ty2) in
   let is_empty1 = Array.is_empty l1 in
   let is_empty2 = Array.is_empty l2 in
     match EConstr.kind evd hd1, not is_empty1, EConstr.kind evd hd2, not is_empty2 with
