@@ -13,25 +13,25 @@ Ltac f id1 id2 := fix id1 2 with (id2 (n:_) (H:odd n) {struct H} : n >= 1)
      = cofix inf : Inf := {| projS := inf |}
      : Inf
 File "./output/Fixpoint.v", line 57, characters 0-51:
-Warning: Not a truly recursive fixpoint. [non-recursive,fixpoints]
+Warning: Not a truly recursive fixpoint. [non-recursive,fixpoints,default]
 File "./output/Fixpoint.v", line 60, characters 0-103:
 Warning: Not a fully mutually defined fixpoint
 (k1 depends on k2 but not conversely).
 Well-foundedness check may fail unexpectedly.
- [non-full-mutual,fixpoints]
+ [non-full-mutual,fixpoints,default]
 File "./output/Fixpoint.v", line 62, characters 0-106:
 Warning: Not a fully mutually defined fixpoint
 (l2 and l1 are not mutually dependent).
 Well-foundedness check may fail unexpectedly.
- [non-full-mutual,fixpoints]
+ [non-full-mutual,fixpoints,default]
 File "./output/Fixpoint.v", line 64, characters 0-103:
 Warning: Not a fully mutually defined fixpoint
 (m2 and m1 are not mutually dependent).
 Well-foundedness check may fail unexpectedly.
- [non-full-mutual,fixpoints]
+ [non-full-mutual,fixpoints,default]
 File "./output/Fixpoint.v", line 72, characters 0-25:
-Warning: Not a truly recursive cofixpoint. [non-recursive,fixpoints]
+Warning: Not a truly recursive cofixpoint. [non-recursive,fixpoints,default]
 File "./output/Fixpoint.v", line 75, characters 0-48:
 Warning: Not a fully mutually defined cofixpoint
 (a2 and a1 are not mutually dependent).
- [non-full-mutual,fixpoints]
+ [non-full-mutual,fixpoints,default]

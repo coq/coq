@@ -1,12 +1,12 @@
 File "./output/ltac2_deprecated.v", line 13, characters 11-14:
 Warning: Ltac2 definition foo is deprecated. test_definition
-[deprecated-ltac2-definition,deprecated]
+[deprecated-ltac2-definition,deprecated,default]
 - : unit = ()
 File "./output/ltac2_deprecated.v", line 14, characters 11-14:
 Warning: Ltac2 alias bar is deprecated. test_notation
-[deprecated-ltac2-alias,deprecated]
+[deprecated-ltac2-alias,deprecated,default]
 - : unit = ()
 File "./output/ltac2_deprecated.v", line 15, characters 11-14:
 Warning: Ltac2 definition qux is deprecated. test_external
-[deprecated-ltac2-definition,deprecated]
+[deprecated-ltac2-definition,deprecated,default]
 - : 'a array -> int = <fun>

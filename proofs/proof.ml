@@ -333,11 +333,11 @@ let _ = CErrors.register_handler begin function
   end
 
 let warn_remaining_shelved_goals =
-  CWarnings.create ~name:"remaining-shelved-goals" ~category:"tactics"
+  CWarnings.create ~name:"remaining-shelved-goals" ~category:CWarnings.CoreCategories.tactics
     (fun () -> Pp.str"The proof has remaining shelved goals")
 
 let warn_remaining_unresolved_evars =
-  CWarnings.create ~name:"remaining-unresolved-evars" ~category:"tactics"
+  CWarnings.create ~name:"remaining-unresolved-evars" ~category:CWarnings.CoreCategories.tactics
     (fun () -> Pp.str"The proof has unresolved variables")
 
 let return ?pid (p : t) =

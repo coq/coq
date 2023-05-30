@@ -63,16 +63,16 @@
   a = 0
 File "./output/Naming.v", line 101, characters 47-48:
 Warning: Ignoring implicit binder declaration in unexpected position.
-[unexpected-implicit-declaration,syntax]
+[unexpected-implicit-declaration,syntax,default]
 File "./output/Naming.v", line 105, characters 36-37:
 Warning: Ignoring implicit binder declaration in unexpected position.
-[unexpected-implicit-declaration,syntax]
+[unexpected-implicit-declaration,syntax,default]
 File "./output/Naming.v", line 106, characters 34-35:
 Warning: Ignoring implicit binder declaration in unexpected position.
-[unexpected-implicit-declaration,syntax]
+[unexpected-implicit-declaration,syntax,default]
 File "./output/Naming.v", line 112, characters 22-23:
 Warning: Ignoring implicit binder declaration in unexpected position.
-[unexpected-implicit-declaration,syntax]
+[unexpected-implicit-declaration,syntax,default]
 File "./output/Naming.v", line 112, characters 30-31:
 Warning: Ignoring implicit binder declaration in unexpected position.
-[unexpected-implicit-declaration,syntax]
+[unexpected-implicit-declaration,syntax,default]

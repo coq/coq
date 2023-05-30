@@ -34,7 +34,7 @@ let v := 0%ppps in v : punit
      : punit
 File "./output/NumberNotations.v", line 91, characters 2-46:
 Warning: To avoid stack overflow, large numbers in punit are interpreted as
-applications of pto_punits. [abstract-large-number,numbers]
+applications of pto_punits. [abstract-large-number,numbers,default]
 File "./output/NumberNotations.v", line 91, characters 32-33:
 The command has indeed failed with message:
 In environment
@@ -86,11 +86,12 @@ The term "v" has type "nat" while it is expected to have type "wuint".
 File "./output/NumberNotations.v", line 203, characters 2-71:
 Warning: The 'abstract after' directive has no effect when the parsing
 function (of_uint) targets an option type.
-[abstract-large-number-no-op,numbers]
+[abstract-large-number-no-op,numbers,default]
 File "./output/NumberNotations.v", line 206, characters 2-77:
 The command has indeed failed with message:
 The 'abstract after' directive has no effect when the parsing function
-(of_uint) targets an option type. [abstract-large-number-no-op,numbers]
+(of_uint) targets an option type.
+[abstract-large-number-no-op,numbers,default]
 let v := of_uint (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) in v : unit
      : unit
 let v := 0%test13 in v : unit
@@ -291,16 +292,16 @@ File "./output/NumberNotations.v", line 580, characters 56-61:
 Warning: Type of I'sum seems incompatible with the type of sum.
 Expected type is: (I' -> I' -> I') instead of (I -> I' -> I').
 This might yield ill typed terms when using the notation.
-[via-type-mismatch,numbers]
+[via-type-mismatch,numbers,default]
 File "./output/NumberNotations.v", line 585, characters 32-33:
 Warning: I was already mapped to Set, mapping it also to
 nat might yield ill typed terms when using the notation.
-[via-type-remapping,numbers]
+[via-type-remapping,numbers,default]
 File "./output/NumberNotations.v", line 585, characters 37-42:
 Warning: Type of Iunit seems incompatible with the type of O.
 Expected type is: I instead of I.
 This might yield ill typed terms when using the notation.
-[via-type-mismatch,numbers]
+[via-type-mismatch,numbers,default]
 File "./output/NumberNotations.v", line 589, characters 0-146:
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
@@ -308,12 +309,12 @@ File "./output/NumberNotations.v", line 665, characters 21-23:
 Warning: Type of I1 seems incompatible with the type of Fin.F1.
 Expected type is: (nat -> I) instead of I.
 This might yield ill typed terms when using the notation.
-[via-type-mismatch,numbers]
+[via-type-mismatch,numbers,default]
 File "./output/NumberNotations.v", line 665, characters 35-37:
 Warning: Type of IS seems incompatible with the type of Fin.FS.
 Expected type is: (nat -> I -> I) instead of (I -> I).
 This might yield ill typed terms when using the notation.
-[via-type-mismatch,numbers]
+[via-type-mismatch,numbers,default]
 File "./output/NumberNotations.v", line 668, characters 11-12:
 The command has indeed failed with message:
 The term "0" has type "forall n : nat, Fin.t (S n)"

@@ -30,6 +30,6 @@ Coq < Coq < Toplevel input, characters 30-37:
 > #[universes(polymorphic=yes, bla=bla)] Definition a := 3.
 >                              ^^^^^^^
 Error: This command does not support this attribute: universes.
-[unsupported-attributes,parsing]
+[unsupported-attributes,parsing,default]
 
 Coq < 

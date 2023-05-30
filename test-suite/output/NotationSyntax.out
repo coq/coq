@@ -9,10 +9,10 @@ The command has indeed failed with message:
 "only printing" is given more than once.
 File "./output/NotationSyntax.v", line 5, characters 33-43:
 Warning: The format modifier is irrelevant for only-parsing rules.
-[irrelevant-format-only-parsing,parsing]
+[irrelevant-format-only-parsing,parsing,default]
 File "./output/NotationSyntax.v", line 8, characters 20-30:
 Warning: Notations for numbers are primitive; skipping this modifier.
-[primitive-token-modifier,parsing]
+[primitive-token-modifier,parsing,default]
 1%nat
      : nat
 File "./output/NotationSyntax.v", line 10, characters 23-26:

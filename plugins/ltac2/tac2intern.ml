@@ -132,7 +132,7 @@ let is_rec_rhs = function
 | GTacCse _ | GTacOpn _ | GTacWth _ | GTacFullMatch _-> false
 
 let warn_not_unit =
-  CWarnings.create ~name:"not-unit" ~category:"ltac2"
+  CWarnings.create ~name:"not-unit" ~category:CWarnings.CoreCategories.ltac2
     (fun (env, t) ->
       strbrk "This expression should have type unit but has type " ++
       pr_glbtype env t ++ str ".")
@@ -863,7 +863,7 @@ let rec utility env ((tP, tQ, tR) as t) ((preP, preQ, preR) as prefix) (p, q, r)
       combine_utilities utilities
 
 let warn_redundant_pattern =
-  CWarnings.create ~name:"redundant-pattern" ~category:"ltac2"
+  CWarnings.create ~name:"redundant-pattern" ~category:CWarnings.CoreCategories.ltac2
     (fun partial -> str ("This " ^ (if partial then "pattern" else "clause") ^ " is redundant."))
 
 let check_redundant_clauses env t pats =

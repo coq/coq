@@ -1,4 +1,4 @@
 File "./output/Warnings.v", line 4, characters 0-22:
 Warning: Projection value has no head constant: let H := tt in True in
 canonical instance a of b, ignoring it.
-[projection-no-head-constant,typechecker]
+[projection-no-head-constant,records,default]

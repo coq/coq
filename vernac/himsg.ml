@@ -808,6 +808,23 @@ let explain_bad_case_relevance env sigma rlv case =
     strbrk " but was expected to be " ++ pr_relevance sigma rlv ++
     spc () ++ str "(maybe a bugged tactic)."
 
+let explain_bad_relevance env sigma = function
+  | Typeops.BadRelevanceCase (r,c) -> explain_bad_case_relevance env sigma r c
+  | BadRelevanceBinder (r,d) -> explain_bad_binder_relevance env sigma r d
+
+let ecast_bad_relevance = let open Typeops in function
+  | BadRelevanceCase (r,c) -> BadRelevanceCase (r, EConstr.of_constr c)
+  | BadRelevanceBinder (r,d) -> BadRelevanceBinder (r, RelDecl.map_constr_het EConstr.of_constr d)
+
+let () =
+  CWarnings.register_printer Typeops.bad_relevance_msg
+    (fun (env, b) ->
+       let sigma = Evd.from_env env in
+       explain_bad_relevance env sigma (ecast_bad_relevance b))
+
+let () = CWarnings.register_printer Typing.bad_relevance_msg
+    (fun (env, sigma, b) -> explain_bad_relevance env sigma b)
+
 let explain_bad_invert env =
   strbrk "Bad case inversion (maybe a bugged tactic)."
 

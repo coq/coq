@@ -288,7 +288,7 @@ let adjust_infix_notation df notation_symbols c =
   df, notation_symbols, c
 
 let warn_unexpected_primitive_token_modifier =
-  CWarnings.create ~name:"primitive-token-modifier" ~category:"parsing"
+  CWarnings.create ~name:"primitive-token-modifier" ~category:CWarnings.CoreCategories.parsing
          (fun () -> str "Notations for numbers are primitive; skipping this modifier.")
 
 let check_no_syntax_modifiers_for_numeral = function
@@ -515,7 +515,7 @@ let make_hunks etyps symbols from_level =
 let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
 let warn_format_break =
-  CWarnings.create ~name:"notation-both-format-and-spaces" ~category:"parsing"
+  CWarnings.create ~name:"notation-both-format-and-spaces" ~category:CWarnings.CoreCategories.parsing
          (fun () ->
           strbrk "Discarding format implicitly indicated by multiple spaces in notation because an explicit format modifier is given.")
 
@@ -814,7 +814,7 @@ let error_parsing_incompatible_level ntn ntn' oldprec oldtyps prec typs =
     pr_level ntn prec typs ++ str ".")
 
 let warn_incompatible_format =
-  CWarnings.create ~name:"notation-incompatible-format" ~category:"parsing"
+  CWarnings.create ~name:"notation-incompatible-format" ~category:CWarnings.CoreCategories.parsing
     (fun (specific,ntn) ->
        let head,scope = match specific with
        | None -> str "Notation", mt ()
@@ -1038,11 +1038,11 @@ type notation_main_data = {
 }
 
 let warn_only_parsing_reserved_notation =
-  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:"parsing"
+  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:CWarnings.CoreCategories.parsing
     (fun () -> strbrk "The only parsing modifier has no effect in Reserved Notation.")
 
 let warn_only_parsing_discarded_format =
-  CWarnings.create ~name:"discarded-format-only-parsing" ~category:"parsing"
+  CWarnings.create ~name:"discarded-format-only-parsing" ~category:CWarnings.CoreCategories.parsing
     (fun () -> strbrk "The format modifier has no effect for only-parsing notations.")
 
 let error_onlyparsing_onlyprinting ?loc =
@@ -1069,7 +1069,7 @@ let set_custom_entry ?loc main_data entry' =
   | _ -> user_err ?loc (str "\"in custom\" is given more than once.")
 
 let warn_irrelevant_format =
-  CWarnings.create ~name:"irrelevant-format-only-parsing" ~category:"parsing"
+  CWarnings.create ~name:"irrelevant-format-only-parsing" ~category:CWarnings.CoreCategories.parsing
     (fun () -> str "The format modifier is irrelevant for only-parsing rules.")
 
 let set_format ?loc main_data format =
@@ -1227,12 +1227,12 @@ let check_rule_productivity l =
     user_err Pp.(str "A recursive notation must start with at least one symbol.")
 
 let warn_notation_bound_to_variable =
-  CWarnings.create ~name:"notation-bound-to-variable" ~category:"parsing"
+  CWarnings.create ~name:"notation-bound-to-variable" ~category:CWarnings.CoreCategories.parsing
          (fun () ->
           strbrk "This notation will not be used for printing as it is bound to a single variable.")
 
 let warn_non_reversible_notation =
-  CWarnings.create ~name:"non-reversible-notation" ~category:"parsing"
+  CWarnings.create ~name:"non-reversible-notation" ~category:CWarnings.CoreCategories.parsing
          (function
           | APrioriReversible -> assert false
           | HasLtac ->
@@ -1685,7 +1685,7 @@ let make_specific_printing_rules etyps symbols level pp_rule format =
 (* Miscellaneous                                                      *)
 
 let warn_unused_interpretation =
-  CWarnings.create ~name:"unused-notation" ~category:"parsing"
+  CWarnings.create ~name:"unused-notation" ~category:CWarnings.CoreCategories.parsing
          (fun b ->
           strbrk "interpretation is used neither for printing nor for parsing, " ++
           (if b then strbrk "the declaration could be replaced by \"Reserved Notation\"."
@@ -1972,7 +1972,7 @@ let declare_notation_toggle local ~on ~all s =
 (* Declaration of custom entry                                        *)
 
 let warn_custom_entry =
-  CWarnings.create ~name:"custom-entry-overridden" ~category:"parsing"
+  CWarnings.create ~name:"custom-entry-overridden" ~category:CWarnings.CoreCategories.parsing
          (fun s ->
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 

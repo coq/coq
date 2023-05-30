@@ -31,7 +31,7 @@ type number_option =
   | Via of number_string_via
 
 let warn_abstract_large_num_no_op =
-  CWarnings.create ~name:"abstract-large-number-no-op" ~category:"numbers"
+  CWarnings.create ~name:"abstract-large-number-no-op" ~category:CWarnings.CoreCategories.numbers
     (fun f ->
       strbrk "The 'abstract after' directive has no effect when " ++
       strbrk "the parsing function (" ++
@@ -158,7 +158,7 @@ let error_missing c =
     (str "Missing mapping for constructor " ++ Printer.pr_global c ++ str ".")
 
 let warn_via_remapping =
-  CWarnings.create ~name:"via-type-remapping" ~category:"numbers"
+  CWarnings.create ~name:"via-type-remapping" ~category:CWarnings.CoreCategories.numbers
     (fun (env, sigma, ty, ty', ty'') ->
       let constr = Printer.pr_constr_env env sigma in
       constr ty ++ str " was already mapped to" ++ spc () ++ constr ty'
@@ -166,7 +166,7 @@ let warn_via_remapping =
       ++ str " might yield ill typed terms when using the notation.")
 
 let warn_via_type_mismatch =
-  CWarnings.create ~name:"via-type-mismatch" ~category:"numbers"
+  CWarnings.create ~name:"via-type-mismatch" ~category:CWarnings.CoreCategories.numbers
     (fun (env, sigma, g, g', exp, actual) ->
       let constr = Printer.pr_constr_env env sigma in
       str "Type of" ++ spc() ++ Printer.pr_global g

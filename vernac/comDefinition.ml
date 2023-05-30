@@ -22,7 +22,7 @@ let red_constant_body red_opt env sigma body = match red_opt with
     red env sigma body
 
 let warn_implicits_in_term =
-  CWarnings.create ~name:"implicits-in-term" ~category:"implicits"
+  CWarnings.create ~name:"implicits-in-term" ~category:CWarnings.CoreCategories.implicits
          (fun () ->
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
             strbrk "Discarding incompatible declaration in term.")

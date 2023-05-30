@@ -1,19 +1,19 @@
 File "./output/FloatExtraction.v", line 25, characters 8-12:
 Warning: The constant 0.01 is not a binary64 floating-point value. A closest
 value 0x1.47ae147ae147bp-7 will be used and unambiguously printed 0.01.
-[inexact-float,parsing]
+[inexact-float,parsing,default]
 File "./output/FloatExtraction.v", line 25, characters 20-25:
 Warning: The constant -0.01 is not a binary64 floating-point value. A closest
 value -0x1.47ae147ae147bp-7 will be used and unambiguously printed -0.01.
-[inexact-float,parsing]
+[inexact-float,parsing,default]
 File "./output/FloatExtraction.v", line 25, characters 27-35:
 Warning: The constant 1.7e+308 is not a binary64 floating-point value. A
 closest value 0x1.e42d130773b76p+1023 will be used and unambiguously printed
-1.6999999999999999e+308. [inexact-float,parsing]
+1.6999999999999999e+308. [inexact-float,parsing,default]
 File "./output/FloatExtraction.v", line 25, characters 37-46:
 Warning: The constant -1.7e-308 is not a binary64 floating-point value. A
 closest value -0x0.c396c98f8d899p-1022 will be used and unambiguously printed
--1.7000000000000002e-308. [inexact-float,parsing]
+-1.7000000000000002e-308. [inexact-float,parsing,default]
 
 (** val infinity : Float64.t **)
 

@@ -304,7 +304,7 @@ let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 let err ?loc s = user_err ?loc s
 
 let warn_extraction_axiom_to_realize =
-  CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"
+  CWarnings.create ~name:"extraction-axiom-to-realize" ~category:CWarnings.CoreCategories.extraction
          (fun axioms ->
           let s = if Int.equal (List.length axioms) 1 then "axiom" else "axioms" in
           strbrk ("The following "^s^" must be realized in the extracted code:")
@@ -312,7 +312,7 @@ let warn_extraction_axiom_to_realize =
                    ++ str "." ++ fnl ())
 
 let warn_extraction_logical_axiom =
-  CWarnings.create ~name:"extraction-logical-axiom" ~category:"extraction"
+  CWarnings.create ~name:"extraction-logical-axiom" ~category:CWarnings.CoreCategories.extraction
          (fun axioms ->
           let s =
             if Int.equal (List.length axioms) 1 then "axiom was" else "axioms were"
@@ -332,13 +332,13 @@ let warning_axioms () =
     warn_extraction_logical_axiom log_axioms
 
 let warn_extraction_opaque_accessed =
-  CWarnings.create ~name:"extraction-opaque-accessed" ~category:"extraction"
+  CWarnings.create ~name:"extraction-opaque-accessed" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction is currently set to bypass opacity, " ++
                   strbrk "the following opaque constant bodies have been accessed :" ++
                   lst ++ str "." ++ fnl ())
 
 let warn_extraction_opaque_as_axiom =
-  CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:"extraction"
+  CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction now honors the opacity constraints by default, " ++
          strbrk "the following opaque constants have been extracted as axioms :" ++
          lst ++ str "." ++ fnl () ++
@@ -353,7 +353,7 @@ let warning_opaques accessed =
     else warn_extraction_opaque_as_axiom lst
 
 let warning_ambiguous_name =
-  CWarnings.create ~name:"extraction-ambiguous-name" ~category:"extraction"
+  CWarnings.create ~name:"extraction-ambiguous-name" ~category:CWarnings.CoreCategories.extraction
     (fun (q,mp,r) -> strbrk "The name " ++ pr_qualid q ++ strbrk " is ambiguous, " ++
                        strbrk "do you mean module " ++
                        pr_long_mp mp ++
@@ -368,7 +368,7 @@ let error_axiom_scheme ?loc r i =
        str " type variable(s).")
 
 let warn_extraction_inside_module =
-  CWarnings.create ~name:"extraction-inside-module" ~category:"extraction"
+  CWarnings.create ~name:"extraction-inside-module" ~category:CWarnings.CoreCategories.extraction
       (fun () -> strbrk "Extraction inside an opened module is experimental." ++ spc () ++
        strbrk "In case of problem, close it first.")
 
@@ -386,7 +386,7 @@ let check_inside_section () =
          str "Close it and try again.")
 
 let warn_extraction_reserved_identifier =
-  CWarnings.create ~name:"extraction-reserved-identifier" ~category:"extraction"
+  CWarnings.create ~name:"extraction-reserved-identifier" ~category:CWarnings.CoreCategories.extraction
     (fun s -> strbrk ("The identifier "^s^
                 " contains __ which is reserved for the extraction"))
 
@@ -470,7 +470,7 @@ let error_remaining_implicit k =
        fnl() ++ str "the extraction of unsafe code and review it manually.")
 
 let warn_extraction_remaining_implicit =
-  CWarnings.create ~name:"extraction-remaining-implicit" ~category:"extraction"
+  CWarnings.create ~name:"extraction-remaining-implicit" ~category:CWarnings.CoreCategories.extraction
     (fun s -> strbrk ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
      strbrk "Extraction SafeImplicits is unset, extracting nonetheless,"
      ++ strbrk "but this code is potentially unsafe, please review it manually.")

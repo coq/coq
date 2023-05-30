@@ -31,7 +31,7 @@ let set_typeclass_transparency ~locality c b =
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
 let warn_deprecated_tc_transparency_without_locality =
-  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:CWarnings.CoreCategories.deprecated
     Pp.(fun () -> strbrk
   "The default value for Typeclasses Opaque and Typeclasses \
    Transparent locality is currently \"local\" in a section and \
@@ -184,9 +184,7 @@ let add_instance cl info global impl =
   observe (Event.NewInstance { class_name = cl.cl_impl; instance = impl; info; locality = global })
 
 let warning_not_a_class =
-  let name = "not-a-class" in
-  let category = "typeclasses" in
-  CWarnings.create ~name ~category (fun (n, ty) ->
+  CWarnings.create ~name:"not-a-class" (fun (n, ty) ->
       let env = Global.env () in
       let evd = Evd.from_env env in
       Pp.(str "Ignored instance declaration for “"

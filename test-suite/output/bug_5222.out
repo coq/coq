@@ -4,7 +4,7 @@
   True = (nil : T1 nat)
 File "./output/bug_5222.v", line 16, characters 2-40:
 Warning: C2 does not respect the uniform inheritance condition.
-[uniform-inheritance,typechecker]
+[uniform-inheritance,coercions,default]
 1 goal
   
   ============================

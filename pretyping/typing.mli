@@ -70,3 +70,5 @@ val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * con
 
 (** hack *)
 val recheck_against : Environ.env -> evar_map -> constr -> constr -> evar_map * types
+
+val bad_relevance_msg : (Environ.env * evar_map * (constr, types) Typeops.bad_relevance) CWarnings.msg

@@ -180,7 +180,7 @@ END
 {
 
 let warn_plural_command =
-  CWarnings.create ~name:"plural-command" ~category:"pedantic" ~default:CWarnings.Disabled
+  CWarnings.create ~name:"plural-command" ~category:CWarnings.CoreCategories.pedantic ~default:CWarnings.Disabled
          (fun kwd -> strbrk (Printf.sprintf "Command \"%s\" expects more than one assumption." kwd))
 
 let test_plural_form loc kwd = function
@@ -556,11 +556,11 @@ let starredidentreflist_to_expr l =
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
 let warn_deprecated_include_type =
-  CWarnings.create ~name:"deprecated-include-type" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-include-type" ~category:CWarnings.CoreCategories.deprecated
          (fun () -> strbrk "Include Type is deprecated; use Include instead")
 
 let warn_deprecated_as_ident_kind =
-  CWarnings.create ~name:"deprecated-as-ident-kind" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-as-ident-kind" ~category:CWarnings.CoreCategories.deprecated
          (fun () -> strbrk "grammar kind \"as ident\" no longer accepts \"_\"; use \"as name\" instead to accept \"_\", too, or silence the warning if you actually intended to accept only identifiers.")
 
 }

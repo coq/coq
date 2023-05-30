@@ -5,7 +5,7 @@ File "./output/Arguments_renaming.v", line 3, characters 0-19:
 Warning: This command is just asserting the names of arguments of eq. If this
 is what you want, add ': assert' to silence the warning. If you want to clear
 implicit arguments, add ': clear implicits'. If you want to clear notation
-scopes, add ': clear scopes' [arguments-assert,vernacular]
+scopes, add ': clear scopes' [arguments-assert,vernacular,default]
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl

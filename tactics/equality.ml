@@ -1695,7 +1695,7 @@ let cutSubstClause l2r eqn cls =
     | Some id -> cutSubstInHyp l2r eqn id
 
 let warn_deprecated_cutrewrite =
-  CWarnings.create ~name:"deprecated-cutrewrite" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-cutrewrite" ~category:CWarnings.CoreCategories.deprecated
     (fun () -> strbrk"\"cutrewrite\" is deprecated. Use \"replace\" instead.")
 
 let cutRewriteClause l2r eqn cls =
@@ -1866,7 +1866,7 @@ let default_subst_tactic_flags =
   { only_leibniz = false; rewrite_dependent_proof = true }
 
 let warn_deprecated_simple_subst =
-  CWarnings.create ~name:"deprecated-simple-subst" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-simple-subst" ~category:CWarnings.CoreCategories.deprecated
     (fun () -> strbrk"\"simple subst\" is deprecated")
 
 let subst_all ?(flags=default_subst_tactic_flags) () =

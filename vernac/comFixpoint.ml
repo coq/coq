@@ -78,12 +78,12 @@ let non_full_mutual_message x xge y yge isfix rest =
   str "(" ++ e ++ str ")." ++ fnl () ++ w
 
 let warn_non_full_mutual =
-  CWarnings.create ~name:"non-full-mutual" ~category:"fixpoints"
+  CWarnings.create ~name:"non-full-mutual" ~category:CWarnings.CoreCategories.fixpoints
          (fun (x,xge,y,yge,isfix,rest) ->
           non_full_mutual_message x xge y yge isfix rest)
 
 let warn_non_recursive =
-  CWarnings.create ~name:"non-recursive" ~category:"fixpoints"
+  CWarnings.create ~name:"non-recursive" ~category:CWarnings.CoreCategories.fixpoints
          (fun (x,isfix) ->
           let k = if isfix then "fixpoint" else "cofixpoint" in
           strbrk "Not a truly recursive " ++ str k ++ str ".")

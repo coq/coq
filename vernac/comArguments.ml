@@ -49,7 +49,7 @@ let inBidiHints =
 
 
 let warn_arguments_assert =
-  CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
+  CWarnings.create ~name:"arguments-assert" ~category:CWarnings.CoreCategories.vernacular
     Pp.(fun sr ->
         strbrk "This command is just asserting the names of arguments of " ++
         Printer.pr_global sr ++ strbrk". If this is what you want, add " ++

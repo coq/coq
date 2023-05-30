@@ -5,7 +5,9 @@ DECLARE PLUGIN "coq-plugin-tutorial.tuto0"
 open Pp
 open Ltac_plugin
 
-let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
+let cat = CWarnings.create_category ~name:"plugin-tuto-cat" ()
+
+let tuto_warn = CWarnings.create ~name:"name" ~category:cat
                             (fun _ -> strbrk Tuto0_main.message)
 
 }

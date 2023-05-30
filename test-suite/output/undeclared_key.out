@@ -6,7 +6,7 @@ The command has indeed failed with message:
 There is no qualid-valued table with this name: "Search Blacklist".
 File "./output/undeclared_key.v", line 3, characters 0-22:
 Warning: There is no flag or option with this name: "Search Blacklists".
-[unknown-option,option]
+[unknown-option,default]
 File "./output/undeclared_key.v", line 4, characters 0-40:
 The command has indeed failed with message:
 There is no string-valued table with this name: "Search Blacklists".

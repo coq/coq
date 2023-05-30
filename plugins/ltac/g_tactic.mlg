@@ -193,13 +193,13 @@ let merge_occurrences loc cl = function
 
 let deprecated_conversion_at_with =
   CWarnings.create
-    ~name:"conversion_at_with" ~category:"deprecated"
+    ~name:"conversion_at_with" ~category:CWarnings.CoreCategories.deprecated
     (fun () -> Pp.str "The syntax [at ... with ...] is deprecated. Use [with ... at ...] instead.")
 
 (* 8.17 *)
 let deprecated_clear_modifier =
   CWarnings.create
-    ~name:"deprecated-clear-modifier" ~category:"deprecated"
+    ~name:"deprecated-clear-modifier" ~category:CWarnings.CoreCategories.deprecated
     (fun () -> Pp.strbrk "The undocumented clear modifier \">\" is deprecated. Open an issue at https://github.com/coq/coq/issues/new if you actually depend on this feature in your work.")
 
 (* Auxiliary grammar rules *)

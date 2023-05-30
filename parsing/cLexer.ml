@@ -279,7 +279,7 @@ let get_buff len = Bytes.sub_string !buff 0 len
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
 let warn_unrecognized_unicode =
-  CWarnings.create ~name:"unrecognized-unicode" ~category:"parsing"
+  CWarnings.create ~name:"unrecognized-unicode" ~category:CWarnings.CoreCategories.parsing
          (fun (u,id) ->
           strbrk (Printf.sprintf "Not considering unicode character \"%s\" of unknown \
                                   lexical status as part of identifier \"%s\"." u id))
@@ -295,7 +295,7 @@ let rec ident_tail loc len s =
   | _ -> len
 
 let warn_comment_terminator_in_string =
-  CWarnings.create ~name:"comment-terminator-in-string" ~category:"parsing"
+  CWarnings.create ~name:"comment-terminator-in-string" ~category:CWarnings.CoreCategories.parsing
          (fun () ->
           (strbrk
              "Not interpreting \"*)\" as the end of current \

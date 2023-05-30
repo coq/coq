@@ -296,7 +296,7 @@ lorque source est None alors target est None aussi.
 *)
 
 let warn_uniform_inheritance =
-  CWarnings.create ~name:"uniform-inheritance" ~category:"typechecker"
+  CWarnings.create ~name:"uniform-inheritance" ~category:CWarnings.CoreCategories.coercions
          (fun g ->
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition.")
@@ -391,7 +391,7 @@ let add_subclass_hook ~poly ~reversible =
   Declare.Hook.make (add_subclass_hook ~poly ~reversible)
 
 let warn_reverse_no_change =
-  CWarnings.create ~name:"reversible-no-change" ~category:"coercions"
+  CWarnings.create ~name:"reversible-no-change" ~category:CWarnings.CoreCategories.coercions
     (fun () -> str "The reversible attribute is unchanged.")
 
 let change_reverse ref ~reversible =

@@ -3,7 +3,7 @@ The command has indeed failed with message:
 Argument X was previously inferred to be in scope function_scope but is here
 used in the empty scope stack. Scope function_scope will be used at parsing
 time unless you override it by annotating the argument with an explicit scope
-of choice. [inconsistent-scopes,syntax]
+of choice. [inconsistent-scopes,syntax,default]
 File "./output/notation_principal_scope.v", line 6, characters 23-36:
 The command has indeed failed with message:
 Abbreviations don't support only printing
@@ -22,4 +22,4 @@ The expression "I" of type "True" cannot be applied to the term
  "I" : "True"
 File "./output/notation_principal_scope.v", line 21, characters 0-50:
 Warning: This notation will not be used for printing as it is bound to a
-single variable. [notation-bound-to-variable,parsing]
+single variable. [notation-bound-to-variable,parsing,default]

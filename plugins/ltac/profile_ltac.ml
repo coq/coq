@@ -28,7 +28,7 @@ let get_profiling () = !is_profiling
 let encountered_invalid_stack_no_self = ref false
 
 let warn_invalid_stack_no_self =
-  CWarnings.create ~name:"profile-invalid-stack-no-self" ~category:"ltac"
+  CWarnings.create ~name:"profile-invalid-stack-no-self" ~category:CWarnings.CoreCategories.ltac
     (fun () -> strbrk
         "Ltac Profiler encountered an invalid stack (no self \
          node). This can happen if you reset the profile during \

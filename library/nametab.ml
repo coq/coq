@@ -101,6 +101,9 @@ module type NAMETREE = sig
   val match_prefixes : qualid -> t -> elt list
 end
 
+let masking_absolute = CWarnings.create_warning
+    ~from:[CWarnings.CoreCategories.deprecated] ~name:"masking-absolute-name" ()
+
 module Make (U : UserName) (E : EqualityType) : NAMETREE
   with type user_name = U.t and type elt = E.t =
 struct
@@ -112,7 +115,7 @@ struct
      The argument X of the functor F is masked by the inner module X.
    *)
   let warn_masking_absolute =
-    CWarnings.create ~name:"masking-absolute-name" ~category:"deprecated"
+    CWarnings.create_in masking_absolute
       (fun n -> Pp.str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
 
   type user_name = U.t

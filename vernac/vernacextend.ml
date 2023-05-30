@@ -220,7 +220,7 @@ let vinterp_map s =
 
 let warn_deprecated_command =
   let open CWarnings in
-  create ~name:"deprecated-command" ~category:"deprecated"
+  create ~name:"deprecated-command" ~category:CWarnings.CoreCategories.deprecated
          (fun pr -> str "Deprecated vernacular command: " ++ pr)
 
 (* Interpretation of a vernac command *)

@@ -142,9 +142,13 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
     else aux (i+1) (conv_val env CONV flvl fi1 fi2 cu) in
   aux 0 cu
 
+let w_native_disabled = CWarnings.create_warning
+    ~from:[CWarnings.CoreCategories.native_compiler] ~name:"native-compiler-disabled"
+    ()
+
 let warn_no_native_compiler =
   let open Pp in
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+  CWarnings.create_in w_native_disabled
          (fun () -> strbrk "Native compiler is disabled," ++
                       strbrk " falling back to VM conversion test.")
 

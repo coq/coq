@@ -399,7 +399,7 @@ let in_require_syntax : require_obj_syntax -> obj =
    if [export = Some true] *)
 
 let warn_require_in_module =
-  CWarnings.create ~name:"require-in-module" ~category:"fragile"
+  CWarnings.create ~name:"require-in-module" ~category:CWarnings.CoreCategories.fragile
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 

@@ -1424,7 +1424,7 @@ let prepare_hint env init (sigma,c) =
     (c', diff)
 
 let warn_non_local_section_hint =
-  CWarnings.create ~name:"non-local-section-hint" ~category:"automation"
+  CWarnings.create ~name:"non-local-section-hint" ~category:CWarnings.CoreCategories.automation
     (fun () -> strbrk "This hint is not local but depends on a section variable. It will disappear when the section is closed.")
 
 let is_notlocal = function
@@ -1676,7 +1676,7 @@ let log_hint h =
     Proofview.Unsafe.tclEVARS (set_extra_data store sigma)
 
 let warn_non_imported_hint =
-  CWarnings.create ~name:"non-imported-hint" ~category:"automation"
+  CWarnings.create ~name:"non-imported-hint" ~category:CWarnings.CoreCategories.automation
          (fun (hint,mp) ->
           strbrk "Hint used but not imported: " ++ hint ++ print_mp mp)
 
