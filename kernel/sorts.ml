@@ -14,14 +14,30 @@ type family = InSProp | InProp | InSet | InType | InQSort
 
 let all_families = [InSProp; InProp; InSet; InType; InQSort]
 
-module QVar =
-struct
-  type t = int
-  let make n = n
-  let repr n = n
-  let compare = Int.compare
-  let equal = Int.equal
-  let pr q = Pp.(str "α" ++ int q)
+module QVar = struct
+  type t =
+    | Unif of string * int
+
+  let make s i = Unif (s, i)
+
+  let repr (Unif (s,i)) = s, i
+
+  let equal (Unif (s1,i1)) (Unif (s2,i2)) =
+    Int.equal i1 i2 && CString.equal s1 s2
+
+  let compare (Unif (s1,i1)) (Unif (s2,i2)) =
+    let c = Int.compare i1 i2 in
+    if c <> 0 then c
+    else CString.compare s1 s2
+
+  let to_string (Unif (s,i)) =
+    let i = "α"^string_of_int i in
+    if CString.is_empty s then i
+    else s^ "." ^ i
+
+  let hash (Unif (s,i)) = Hashset.Combine.combine (CString.hash s) i
+
+  let pr x = Pp.str (to_string x)
 end
 
 type t =
@@ -123,7 +139,7 @@ let hash = function
     combinesmall 2 h
   | QSort (q, u) ->
     let h = Univ.Universe.hash u in
-    let h' = QVar.repr q in
+    let h' = QVar.hash q in
     combinesmall 3 (combine h h')
 
 module Hsorts =
@@ -167,7 +183,7 @@ let relevance_of_sort_family = function
 let relevance_hash = function
   | Relevant -> 0
   | Irrelevant -> 1
-  | RelevanceVar q -> Hashset.Combine.combinesmall 2 (Int.hash (QVar.repr q))
+  | RelevanceVar q -> Hashset.Combine.combinesmall 2 (QVar.hash q)
 
 let relevance_of_sort = function
   | SProp -> Irrelevant
@@ -179,7 +195,7 @@ let debug_print = function
   | Prop -> Pp.(str "Prop")
   | Set -> Pp.(str "Set")
   | Type u -> Pp.(str "Type(" ++ Univ.Universe.raw_pr u ++ str ")")
-  | QSort (q, u) -> Pp.(str "QSort(" ++ int (QVar.repr q) ++ str ","
+  | QSort (q, u) -> Pp.(str "QSort(" ++ QVar.pr q ++ str ","
                         ++ spc() ++ Univ.Universe.raw_pr u ++ str ")")
 
 let pr_sort_family = function
