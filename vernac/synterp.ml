@@ -343,7 +343,7 @@ let check_timeout n =
 let () = let open Goptions in
   declare_int_option
     { optstage = Summary.Stage.Synterp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Default";"Timeout"];
       optread  = (fun () -> !default_timeout);
       optwrite = (fun n -> Option.iter check_timeout n; default_timeout := n) }

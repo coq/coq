@@ -35,7 +35,7 @@ let () =
     { optstage = Summary.Stage.Interp;
       optkey   = ["SsrOldRewriteGoalsOrder"];
       optread  = (fun _ -> !ssroldreworder);
-      optdepr  = false;
+      optdepr  = None;
       optwrite = (fun b -> ssroldreworder := b) })
 
 (** The "simpl" tactic *)

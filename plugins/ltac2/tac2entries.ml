@@ -961,7 +961,7 @@ let register_struct atts str = match str with
 
 let () = Goptions.declare_bool_option {
   Goptions.optstage = Summary.Stage.Interp;
-  Goptions.optdepr = false;
+  Goptions.optdepr = None;
   Goptions.optkey = ["Ltac2"; "Backtrace"];
   Goptions.optread = (fun () -> !Tac2bt.print_ltac2_backtrace);
   Goptions.optwrite = (fun b -> Tac2bt.print_ltac2_backtrace := b);

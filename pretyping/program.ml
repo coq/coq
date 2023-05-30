@@ -77,7 +77,7 @@ open Goptions
 let () =
   declare_bool_option
   { optstage = Summary.Stage.Interp;
-    optdepr  = false;
+    optdepr  = None;
     optkey   = ["Transparent";"Obligations"];
     optread  = get_proofs_transparency;
     optwrite = set_proofs_transparency; }
@@ -85,7 +85,7 @@ let () =
 let () =
   declare_bool_option
   { optstage = Summary.Stage.Interp;
-    optdepr  = false;
+    optdepr  = None;
     optkey   = ["Program";"Cases"];
     optread  = (fun () -> !program_cases);
     optwrite = (:=) program_cases }
@@ -93,7 +93,7 @@ let () =
 let () =
   declare_bool_option
   { optstage = Summary.Stage.Interp;
-    optdepr  = false;
+    optdepr  = None;
     optkey   = ["Program";"Generalized";"Coercion"];
     optread  = (fun () -> !program_generalized_coercion);
     optwrite = (:=) program_generalized_coercion }

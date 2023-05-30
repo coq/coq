@@ -52,7 +52,7 @@ let _ =
   Goptions.declare_bool_option
     { Goptions.optstage = Summary.Stage.Interp;
       Goptions.optkey   = ["Debug";"SsrMatching"];
-      Goptions.optdepr  = false;
+      Goptions.optdepr  = None;
       Goptions.optread  = (fun _ -> !pp_ref == ssr_pp);
       Goptions.optwrite = debug }
 let pp s = !pp_ref s

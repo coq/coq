@@ -211,7 +211,7 @@ let () =
   let open Goptions in
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !print_evar_arguments);
       optwrite = (:=) print_evar_arguments }

@@ -89,7 +89,7 @@ let () =
     { optstage = Summary.Stage.Interp;
       optkey   = ["SsrHave";"NoTCResolution"];
       optread  = (fun _ -> !ssrhaveNOtcresolution);
-      optdepr  = false;
+      optdepr  = None;
       optwrite = (fun b -> ssrhaveNOtcresolution := b);
     })
 

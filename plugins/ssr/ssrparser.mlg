@@ -1648,7 +1648,7 @@ let () =
   Goptions.(declare_bool_option
     { optstage = Summary.Stage.Synterp;
       optkey   = ["SsrIdents"];
-      optdepr  = false;
+      optdepr  = None;
       optread  = (fun _ -> !ssr_reserved_ids);
       optwrite = (fun b -> ssr_reserved_ids := b)
     })

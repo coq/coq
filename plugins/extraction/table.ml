@@ -573,14 +573,14 @@ let optims () = !opt_flag_ref
 
 let () = declare_bool_option
           {optstage = Summary.Stage.Interp;
-           optdepr = false;
+           optdepr = None;
            optkey = ["Extraction"; "Optimize"];
            optread = (fun () -> not (Int.equal !int_flag_ref 0));
            optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
           { optstage = Summary.Stage.Interp;
-            optdepr = false;
+            optdepr = None;
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function

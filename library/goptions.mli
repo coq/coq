@@ -114,7 +114,7 @@ end
 
 type 'a option_sig = {
   optstage   : Summary.Stage.t;
-  optdepr    : bool;
+  optdepr    : Deprecation.t option;
   (** whether the option is DEPRECATED *)
   optkey     : option_name;
   (** the low-level name of this option *)
@@ -144,7 +144,7 @@ val declare_stringopt_option: ?preprocess:(string option -> string option) ->
     at toplevel from the calls to read the option value. *)
 type 'a getter = { get : unit -> 'a }
 
-type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:bool -> key:option_name -> value:'a -> unit -> 'a getter
+type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:Deprecation.t -> key:option_name -> value:'a -> unit -> 'a getter
 
 val declare_int_option_and_ref : int opt_decl
 val declare_intopt_option_and_ref : int option opt_decl
@@ -208,7 +208,7 @@ val set_option_value : ?locality:option_locality -> ?stage:Summary.Stage.t ->
 
 (** Summary of an option status *)
 type option_state = {
-  opt_depr  : bool;
+  opt_depr  : Deprecation.t option;
   opt_value : option_value;
 }
 

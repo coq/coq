@@ -178,7 +178,7 @@ let suggest_proof_using = ref false
 let () =
   Goptions.(declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Suggest";"Proof";"Using"];
       optread  = (fun () -> !suggest_proof_using);
       optwrite = ((:=) suggest_proof_using) })
@@ -216,7 +216,7 @@ let proof_using_opt_name = ["Default";"Proof";"Using"]
 let () =
   Goptions.(declare_stringopt_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = proof_using_opt_name;
       optread  = (fun () -> Option.map using_to_string !value);
       optwrite = (fun b -> value := Option.map using_from_string b);

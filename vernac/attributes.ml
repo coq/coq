@@ -209,7 +209,7 @@ let program_mode = ref false
 let () = let open Goptions in
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = program_mode_option_name;
       optread  = (fun () -> !program_mode);
       optwrite = (fun b -> program_mode:=b) }
@@ -261,7 +261,7 @@ let is_universe_polymorphism =
   let () = let open Goptions in
     declare_bool_option
       { optstage = Summary.Stage.Interp;
-        optdepr  = false;
+        optdepr  = None;
         optkey   = universe_polymorphism_option_name;
         optread  = (fun () -> !b);
         optwrite = ((:=) b) }

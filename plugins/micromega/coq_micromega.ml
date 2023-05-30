@@ -37,10 +37,12 @@ let debug = false
 
 let max_depth = max_int
 
+let since_8_14 = Deprecation.make ~since:"8.14" ()
+
 (* Search limit for provers over Q R *)
 let { Goptions.get = lra_proof_depth } =
   declare_int_option_and_ref
-    ~depr:true
+    ~depr:since_8_14
     ~key:["Lra"; "Depth"]
     ~value:max_depth
     ()
@@ -48,14 +50,14 @@ let { Goptions.get = lra_proof_depth } =
 (* Search limit for provers over Z *)
 let { Goptions.get = lia_enum } =
   declare_bool_option_and_ref
-    ~depr:true
+    ~depr:since_8_14
     ~key:["Lia"; "Enum"]
     ~value:true
     ()
 
 let { Goptions.get = lia_proof_depth } =
   declare_int_option_and_ref
-    ~depr:true
+    ~depr:since_8_14
     ~key:["Lia"; "Depth"]
     ~value:max_depth
     ()

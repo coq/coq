@@ -387,7 +387,7 @@ let import_option_value = function
 
 let export_option_state s = {
   Interface.opt_sync  = true;
-  Interface.opt_depr  = s.Goptions.opt_depr;
+  Interface.opt_depr  = Option.has_some s.Goptions.opt_depr;
   Interface.opt_value = export_option_value s.Goptions.opt_value;
 }
 

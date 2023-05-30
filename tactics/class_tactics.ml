@@ -84,7 +84,7 @@ end = struct
     let open Goptions in
     declare_bool_option
       { optstage = Summary.Stage.Interp;
-        optdepr  = false;
+        optdepr  = None;
         optkey   = ["Typeclasses";"Debug"];
         optread  = get_typeclasses_debug;
         optwrite = set_typeclasses_debug; }
@@ -93,7 +93,7 @@ end = struct
     let open Goptions in
     declare_int_option
       { optstage = Summary.Stage.Interp;
-        optdepr  = false;
+        optdepr  = None;
         optkey   = ["Typeclasses";"Debug";"Verbosity"];
         optread  = get_typeclasses_verbose;
         optwrite = set_typeclasses_verbose; }
