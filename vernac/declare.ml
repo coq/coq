@@ -486,7 +486,7 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:CWarnings.CoreCategories.deprecated
+let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:Deprecation.Version.v8_18
   Pp.(fun name ->
     Id.print name ++
     strbrk " is declared opaque (Qed) but this is not fully respected" ++

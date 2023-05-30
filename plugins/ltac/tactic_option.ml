@@ -34,7 +34,7 @@ let tac_option_locality =
   | None, Some (), Some () -> return GlobalAndExport
 
 let warn_default_locality =
-  CWarnings.create ~name:"deprecated-tacopt-without-locality" ~category:CWarnings.CoreCategories.deprecated Pp.(fun () ->
+  CWarnings.create ~name:"deprecated-tacopt-without-locality" ~category:Deprecation.Version.v8_17 Pp.(fun () ->
       strbrk
         "The default and global localities for this command outside \
          sections are currently equivalent to the combination of the \

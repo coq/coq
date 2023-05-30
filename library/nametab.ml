@@ -102,7 +102,7 @@ module type NAMETREE = sig
 end
 
 let masking_absolute = CWarnings.create_warning
-    ~from:[CWarnings.CoreCategories.deprecated] ~name:"masking-absolute-name" ()
+    ~from:[Deprecation.Version.v8_8] ~name:"masking-absolute-name" ()
 
 module Make (U : UserName) (E : EqualityType) : NAMETREE
   with type user_name = U.t and type elt = E.t =

@@ -256,7 +256,7 @@ let with_flags flags _ ist =
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
   eval_tactic_ist ist (CAst.make @@ TacArg (TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 
-let warn_auto_with_star = CWarnings.create ~name:"intuition-auto-with-star" ~category:CWarnings.CoreCategories.deprecated
+let warn_auto_with_star = CWarnings.create ~name:"intuition-auto-with-star" ~category:Deprecation.Version.v8_17
     Pp.(fun () ->
         str "\"auto with *\" was used through the default \"intuition_solver\" tactic."
         ++ spc() ++ str "This will be replaced by just \"auto\" in the future.")

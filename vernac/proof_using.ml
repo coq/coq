@@ -44,16 +44,16 @@ let set_of_type env sigma ty =
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
-let warn_all_collection_precedence = CWarnings.create ~name:"all-collection-precedence" ~category:CWarnings.CoreCategories.deprecated
+let warn_all_collection_precedence = CWarnings.create ~name:"all-collection-precedence" ~category:Deprecation.Version.v8_15
     Pp.(fun () -> str "Variable " ++ Id.print all_collection_id ++ str " is shadowed by Collection named " ++ Id.print all_collection_id ++ str " containing all variables.")
 
-let warn_collection_precedence = CWarnings.create ~name:"collection-precedence" ~category:CWarnings.CoreCategories.deprecated
+let warn_collection_precedence = CWarnings.create ~name:"collection-precedence" ~category:Deprecation.Version.v8_15
     Pp.(fun id -> Id.print id ++ str " is both name of a Collection and Variable, Collection " ++ Id.print id ++ str " takes precedence over Variable.")
 
-let warn_redefine_collection = CWarnings.create ~name:"collection-redefinition" ~category:CWarnings.CoreCategories.deprecated
+let warn_redefine_collection = CWarnings.create ~name:"collection-redefinition" ~category:Deprecation.Version.v8_15
     Pp.(fun id -> str "New Collection definition of " ++ Id.print id ++ str " shadows the previous one.")
 
-let warn_variable_shadowing = CWarnings.create ~name:"variable-shadowing" ~category:CWarnings.CoreCategories.deprecated
+let warn_variable_shadowing = CWarnings.create ~name:"variable-shadowing" ~category:Deprecation.Version.v8_15
     Pp.(fun id -> Id.print id ++ str " was already a defined Variable, the name " ++ Id.print id ++ str " will refer to Collection when executing \"Proof using\" command.")
 
 let err_redefine_all_collection () =

@@ -14,3 +14,16 @@ val make : ?since:string -> ?note:string -> unit -> t
 
 val create_warning : object_name:string -> warning_name_if_no_since:string ->
   ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
+
+module Version : sig
+  val v8_3 : CWarnings.category
+  val v8_5 : CWarnings.category
+  val v8_8 : CWarnings.category
+  val v8_10 : CWarnings.category
+  val v8_11 : CWarnings.category
+  val v8_14 : CWarnings.category
+  val v8_15 : CWarnings.category
+  val v8_16 : CWarnings.category
+  val v8_17 : CWarnings.category
+  val v8_18 : CWarnings.category
+end

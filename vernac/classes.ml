@@ -31,7 +31,7 @@ let set_typeclass_transparency ~locality c b =
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
 let warn_deprecated_tc_transparency_without_locality =
-  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:Deprecation.Version.v8_15
     Pp.(fun () -> strbrk
   "The default value for Typeclasses Opaque and Typeclasses \
    Transparent locality is currently \"local\" in a section and \

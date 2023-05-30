@@ -122,7 +122,7 @@ let init_scope_map () =
 (* Operations on scopes *)
 
 let warn_undeclared_scope =
-  CWarnings.create ~name:"undeclared-scope" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"undeclared-scope" ~category:Deprecation.Version.v8_10
                    (fun (scope) ->
                     strbrk "Declaring a scope implicitly is deprecated; use in advance an explicit "
                     ++ str "\"Declare Scope " ++ str scope ++ str ".\".")

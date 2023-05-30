@@ -45,7 +45,7 @@ let with_module_locality ~atts f =
   f ~module_local
 
 let warn_legacy_export_set =
-  CWarnings.create ~name:"legacy-export-set" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"legacy-export-set" ~category:Deprecation.Version.v8_18
     Pp.(fun () -> strbrk "Syntax \"Export Set\" is deprecated, use the attribute syntax \"#[export] Set\" instead.")
 
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
@@ -283,7 +283,7 @@ let synterp_require from export qidl =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
-let warn_add_loadpath = CWarnings.create ~name:"add-loadpath-deprecated" ~category:CWarnings.CoreCategories.deprecated
+let warn_add_loadpath = CWarnings.create ~name:"add-loadpath-deprecated" ~category:Deprecation.Version.v8_16
     (fun () -> strbrk "Commands \"Add LoadPath\" and \"Add Rec LoadPath\" are deprecated." ++ spc () ++
                strbrk "Use command-line \"-Q\" or \"-R\" or put them in your _CoqProject file instead." ++ spc () ++
                strbrk "If \"Add [Rec] LoadPath\" is an important feature for you, please open an issue at" ++ spc () ++

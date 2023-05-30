@@ -1495,7 +1495,7 @@ let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id TransparentState.full b
 
 let warn_implicit_core_hint_db =
-  CWarnings.create ~name:"implicit-core-hint-db" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"implicit-core-hint-db" ~category:Deprecation.Version.v8_10
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 
