@@ -1095,12 +1095,15 @@ let filter_stack_domain env nr p stack =
       let elt = match kind ty with
       | Ind ind ->
         let spec = stack_element_specif elt in
-        (match Lazy.force spec with
-        | Not_subterm | Dead_code | Internally_bound_subterm _ -> SArg spec
+        let sarg =
+        lazy (match Lazy.force spec with
+        | Not_subterm | Dead_code | Internally_bound_subterm _ as spec -> spec
         | Subterm(l,s,path) ->
             let recargs = get_recargs_approx env path ind args in
             let path = inter_wf_paths path recargs in
-            SArg (lazy (Subterm(l,s,path))))
+            Subterm(l,s,path))
+        in
+        SArg sarg
       | _ -> SArg (set_iota_specif nr (lazy Not_subterm))
       in
       elt :: filter_stack (push_rel d env) c0 stack'
