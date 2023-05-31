@@ -14,24 +14,38 @@ open Values
 
 let max_string_length = 1024
 
+type command =
+| CmdParent
+| CmdChild of int
+| CmdSort
+| CmdHelp
+| CmdExit
+
+let help () =
+  Printf.printf "Help\n<n>\tenter the <n>-th child\nu\tgo up 1 level\ns\tsort\nx\texit\n\n%!"
+
+let quit () =
+  Printf.printf "\nGoodbye!\n%!";
+  exit 0
+
 let rec read_num max =
-  let quit () =
-    Printf.printf "\nGoodbye!\n%!";
-    exit 0 in
   Printf.printf "# %!";
   let l = try read_line () with End_of_file -> quit () in
-  if l = "u" then None
-  else if l = "x" then quit ()
-  else
+  match l with
+  | "u" -> CmdParent
+  | "s" -> CmdSort
+  | "x" -> CmdExit
+  | "h" -> CmdHelp
+  | _ ->
     match int_of_string l with
     | v ->
       if v < 0 || v >= max then
         let () =
           Printf.printf "Out-of-range input! (only %d children)\n%!" max in
         read_num max
-      else Some v
+      else CmdChild v
     | exception Failure _ ->
-      Printf.printf "Unrecognized input! <n> enters the <n>-th child, u goes up 1 level, x exits\n%!";
+      Printf.printf "Unrecognized input! Input h for help\n%!";
       read_num max
 
 type 'a repr =
@@ -290,27 +304,48 @@ let pop () = match !stk with
   | i::s -> stk := s; i
   | _ -> raise EmptyStack
 
-let rec visit v o pos =
+let print_state v o pos children =
   Printf.printf "\nDepth %d Pos %s Context %s\n"
     (List.length !stk)
     (String.concat "." (List.rev_map string_of_int pos))
     (String.concat "/" (List.rev_map (fun i -> i.nam) !stk));
   Printf.printf "-------------\n";
-  let children = get_children v o pos in
   let nchild = Array.length children in
   Printf.printf "Here: %s, %d child%s\n"
     (node_info (v,o,pos)) nchild (if nchild = 0 then "" else "ren:");
-  Array.iteri
-    (fun i vop -> Printf.printf "  %d: %s\n" i (node_info vop))
+  Array.iter
+    (fun (i, vop) -> Printf.printf "  %d: %s\n" i (node_info vop))
     children;
-  Printf.printf "-------------\n";
+  Printf.printf "-------------\n"
+
+let rec visit v o pos =
+  let children = get_children v o pos in
+  let children = Array.mapi (fun i vop -> (i, vop)) children in
+  let () = print_state v o pos children in
+  read_command v o pos children
+
+and read_command v o pos children =
   try
     match read_num (Array.length children) with
-    | None -> let info = pop () in visit info.typ info.obj info.pos
-    | Some child ->
-       let v',o',pos' = children.(child) in
+    | CmdParent -> let info = pop () in visit info.typ info.obj info.pos
+    | CmdChild child ->
+       let _, (v',o',pos') = children.(child) in
        push (get_name v) v o pos;
        visit v' o' pos'
+    | CmdSort ->
+      let children = get_children v o pos in
+      let children = Array.mapi (fun i vop -> (i, vop)) children in
+      let sort (_, (_, o, _)) (_, (_, o', _)) =
+        Int.compare (Repr.size o) (Repr.size o')
+      in
+      let sorted = Array.copy children in
+      let () = Array.sort sort sorted in
+      let () = print_state v o pos sorted in
+      read_command v o pos children
+    | CmdHelp ->
+      let () = help () in
+      read_command v o pos children
+    | CmdExit -> quit ()
   with
   | EmptyStack -> ()
   | Forbidden -> let info = pop () in visit info.typ info.obj info.pos
@@ -411,8 +446,7 @@ let visit_vo f =
   Printf.printf "\nWelcome to votour !\n";
   Printf.printf "Enjoy your guided tour of a Coq .vo or .vi file\n";
   Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
-  Printf.printf
-    "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
+  Printf.printf "Input h for help\n\n%!";
   let known_segments = [
     "summary", Values.v_libsum;
     "library", Values.v_lib;
@@ -437,7 +471,7 @@ let visit_vo f =
       Printf.printf "  %d: %s, starting at byte %Ld (size %iw)\n" i name pos size)
       segments;
     match read_num (Array.length segments) with
-    | Some seg ->
+    | CmdChild seg ->
        let seg = segments.(seg) in
        let open ObjFile in
        LargeFile.seek_in ch seg.pos;
@@ -445,7 +479,11 @@ let visit_vo f =
        let () = Visit.init () in
        let typ = try List.assoc seg.name known_segments with Not_found -> Any in
        Visit.visit typ o []
-    | None -> ()
+    | CmdParent | CmdSort -> ()
+    | CmdHelp ->
+      help ()
+    | CmdExit ->
+      quit ()
   done
 
 let () =
