@@ -11,6 +11,7 @@
 (* This module manages customization parameters at the vernacular level     *)
 
 open Util
+open Summary.Stage
 
 type option_name = string list
 type option_value =
@@ -328,34 +329,36 @@ let declare_stringopt_option =
     (function StringOptValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
     (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 
+type 'a getter = { get : unit -> 'a }
 
-type 'a opt_decl = stage:Summary.Stage.t -> depr:bool -> key:option_name -> 'a
+type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:bool -> key:option_name -> value:'a -> unit -> 'a getter
 
-let declare_int_option_and_ref ~stage ~depr ~key ~(value:int) =
+let declare_int_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~(value:int) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
-      optread; optwrite
+      optread;
+      optwrite;
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_intopt_option_and_ref ~stage ~depr ~key =
-  let r_opt = ref None in
+let declare_intopt_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~value () =
+  let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_nat_option_and_ref ~stage ~depr ~key ~(value:int) =
+let declare_nat_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~(value:int) () =
   assert (value >= 0);
   let r_opt = ref value in
   let optwrite v =
@@ -365,61 +368,61 @@ let declare_nat_option_and_ref ~stage ~depr ~key ~(value:int) =
     r_opt := v
   in
   let optread () = Some !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_bool_option_and_ref ~stage ~depr ~key ~(value:bool) =
+let declare_bool_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~(value:bool) () =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_bool_option {
+  let () = declare_bool_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_string_option_and_ref ~stage ~depr ~key ~(value:string) =
+let declare_string_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~(value:string) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_stringopt_option_and_ref ~stage ~depr ~key =
-  let r_opt = ref None in
+let declare_stringopt_option_and_ref ?(stage=Interp) ?(depr=false) ~key ~value () =
+  let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_interpreted_string_option_and_ref ~stage ~depr ~key ~(value:'a) from_string to_string =
+let declare_interpreted_string_option_and_ref from_string to_string ?(stage=Interp) ?(depr=false) ~key ~(value:'a) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value @@ Option.map from_string v in
   let optread () = Some (to_string !r_opt) in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
 (* 3- User accessible commands *)
 

@@ -215,24 +215,20 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
    to test dependence of scripts on auto-generated names.
    We also supply a version which only adds a prefix. *)
 
-let get_mangle_names =
+let { Goptions.get = get_mangle_names } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Mangle";"Names"]
     ~value:false
+    ()
 
-let get_mangle_names_light =
+let { Goptions.get = get_mangle_names_light } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Mangle";"Names";"Light"]
     ~value:false
+    ()
 
-let mangle_names_prefix =
+let { Goptions.get = mangle_names_prefix } =
   Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Mangle";"Names";"Prefix"]
     ~value:("_")
     (fun x ->
@@ -245,6 +241,7 @@ let mangle_names_prefix =
       )
     )
     (fun x -> x)
+    ()
 
 (** The name "foo" becomes "_0" if we get_mangle_names and "_foo" if
     get_mangle_names_light is also set. Otherwise it is left alone. *)

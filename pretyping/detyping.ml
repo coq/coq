@@ -198,12 +198,11 @@ type _ delay =
 let print_universes = ref false
 
 (** Should we print hidden sort quality variables? *)
-let print_sort_quality =
+let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Sort";"Qualities"]
     ~value:false
+    ()
 
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
@@ -300,54 +299,47 @@ module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
 (* Flags.for printing or not wildcard and synthetisable types *)
 
-let force_wildcard =
+let { Goptions.get = force_wildcard } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Wildcard"]
     ~value:true
+    ()
 
-let fast_name_generation =
+let { Goptions.get = fast_name_generation } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Fast";"Name";"Printing"]
     ~value:false
+    ()
 
-let synthetize_type =
+let { Goptions.get = synthetize_type } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Synth"]
     ~value:true
+    ()
 
-let reverse_matching =
+let { Goptions.get = reverse_matching } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Matching"]
     ~value:true
+    ()
 
-let print_primproj_params =
+let { Goptions.get = print_primproj_params } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Primitive";"Projection";"Parameters"]
     ~value:false
+    ()
 
-let print_unfolded_primproj_asmatch =
+let { Goptions.get = print_unfolded_primproj_asmatch } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Unfolded";"Projection";"As";"Match"]
     ~value:false
+    ()
 
-let print_match_paramunivs =
+let { Goptions.get = print_match_paramunivs } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Match";"All";"Subterms"]
     ~value:false
+    ()
 
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
@@ -408,21 +400,19 @@ let lookup_index_as_renamed env sigma t n =
 (**********************************************************************)
 (* Factorization of match patterns *)
 
-let print_factorize_match_patterns =
+let { Goptions.get = print_factorize_match_patterns } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Factorizable";"Match";"Patterns"]
     ~value:true
+    ()
 
 let print_allow_match_default_opt_name =
   ["Printing";"Allow";"Match";"Default";"Clause"]
-let print_allow_match_default_clause =
+let { Goptions.get = print_allow_match_default_clause } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:print_allow_match_default_opt_name
     ~value:true
+    ()
 
 let rec join_eqns (ids,rhs as x) patll = function
   | ({CAst.loc; v=(ids',patl',rhs')} as eqn')::rest ->

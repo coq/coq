@@ -756,12 +756,11 @@ let vernac_assumption ~atts discharge kind l nl =
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?deprecation:atts.deprecated nl l
 
-let is_polymorphic_inductive_cumulativity =
+let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
-    ~value:false
     ~key:["Polymorphic";"Inductive";"Cumulativity"]
+    ~value:false
+    ()
 
 let polymorphic_cumulative ~is_defclass =
   let error_poly_context () =
@@ -799,12 +798,11 @@ let polymorphic_cumulative ~is_defclass =
      else
        return (false, false)
 
-let get_uniform_inductive_parameters =
+let { Goptions.get = get_uniform_inductive_parameters } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Uniform"; "Inductive"; "Parameters"]
     ~value:false
+    ()
 
 let should_treat_as_uniform () =
   if get_uniform_inductive_parameters ()
@@ -856,12 +854,11 @@ let private_ind =
   | None -> return false
 
 (** Flag governing use of primitive projections. Disabled by default. *)
-let primitive_flag =
+let { Goptions.get = primitive_flag } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Primitive";"Projections"]
     ~value:false
+    ()
 
 let primitive_proj =
   let open Attributes in

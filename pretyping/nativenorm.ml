@@ -29,21 +29,19 @@ exception Find_at of int
 
 (* timing *)
 
-let get_timing_enabled =
+let { Goptions.get = get_timing_enabled } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["NativeCompute"; "Timing"]
     ~value:false
+    ()
 
 (* profiling *)
 
-let get_profiling_enabled =
+let { Goptions.get = get_profiling_enabled } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["NativeCompute"; "Profiling"]
     ~value:false
+    ()
 
 (* for supported platforms, filename for profiler results *)
 
@@ -57,12 +55,11 @@ let profiler_platform () =
   | "Win32" -> "Windows (Win32)"
   | "Cygwin" -> "Windows (Cygwin)"
 
-let get_profile_filename =
+let { Goptions.get = get_profile_filename } =
   Goptions.declare_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["NativeCompute"; "Profile"; "Filename"]
     ~value:"native_compute_profile.data"
+    ()
 
 (* find unused profile filename *)
 let get_available_profile_filename () =

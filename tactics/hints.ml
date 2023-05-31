@@ -199,14 +199,13 @@ let string_to_warn_hint = function
 | "Strict" -> HintStrict
 | _ -> user_err Pp.(str "Only the following values are accepted: Lax, Warn, Strict.")
 
-let warn_hint =
+let { Goptions.get = warn_hint } =
   Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Loose"; "Hint"; "Behavior"]
     ~value:HintLax
     string_to_warn_hint
     warn_hint_to_string
+    ()
 
 let fresh_key =
   let id = Summary.ref ~name:"HINT-COUNTER" 0 in

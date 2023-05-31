@@ -334,12 +334,11 @@ let instantiate_variable l (b : Universe.t) v =
 
 exception UniversesDiffer
 
-let drop_weak_constraints =
+let { Goptions.get = drop_weak_constraints } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false
+    ()
 
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in

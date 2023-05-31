@@ -30,11 +30,11 @@ let typeclasses_db = "typeclass_instances"
 (** Options handling *)
 
 let typeclasses_depth_opt_name = ["Typeclasses";"Depth"]
-let get_typeclasses_depth =
+let { Goptions.get = get_typeclasses_depth } =
   Goptions.declare_intopt_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:typeclasses_depth_opt_name
+    ~value:None
+    ()
 
 let set_typeclasses_depth =
   Goptions.set_int_option_value typeclasses_depth_opt_name
@@ -43,27 +43,24 @@ let set_typeclasses_depth =
     useless introductions. This is no longer useful since we have eta, but is
     here for compatibility purposes. Another compatibility issues is that the
     cost (in terms of search depth) can differ. *)
-let get_typeclasses_limit_intros =
+let { Goptions.get = get_typeclasses_limit_intros } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Limit";"Intros"]
     ~value:true
+    ()
 
-let get_typeclasses_dependency_order =
+let { Goptions.get = get_typeclasses_dependency_order } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Dependency";"Order"]
     ~value:false
+    ()
 
 let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
-let get_typeclasses_iterative_deepening =
+let { Goptions.get = get_typeclasses_iterative_deepening } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:iterative_deepening_opt_name
     ~value:false
+    ()
 
 module Debug : sig
   val ppdebug : int -> (unit -> Pp.t) -> unit

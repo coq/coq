@@ -26,12 +26,11 @@ type 'a hint_info_gen =
 
 type hint_info = (Id.Set.t * Pattern.constr_pattern) hint_info_gen
 
-let get_typeclasses_unique_solutions =
+let { Goptions.get = get_typeclasses_unique_solutions } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
+    ()
 
 let solve_one_instance = ref (fun env evm t unique -> assert false)
 

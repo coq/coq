@@ -61,12 +61,11 @@ let use_injection_pattern_l2r_order = function
   | None -> true
   | Some flags -> flags.injection_pattern_l2r_order
 
-let injection_in_context_flag =
+let { Goptions.get = injection_in_context_flag } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Structural";"Injection"]
     ~value:false
+    ()
 
 (* Rewriting tactics *)
 

@@ -397,13 +397,12 @@ let top_goal_print ~doc c oldp newp =
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
   [@@ocaml.warning "-3"]
 
-let exit_on_error =
+let { Goptions.get = exit_on_error } =
   let open Goptions in
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Coqtop";"Exit";"On";"Error"]
     ~value:false
+    ()
 
 let show_proof_diff_cmd ~state diff_opt =
   let open Vernac.State in

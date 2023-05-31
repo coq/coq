@@ -252,19 +252,17 @@ let build_env gamma=
                      mkApp(force node_count l_push,[|mkProp;p;e|]))
     gamma.env (mkApp (force node_count l_empty,[|mkProp|]))
 
-let verbose =
+let { Goptions.get = verbose } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Rtauto";"Verbose"]
     ~value:false
+    ()
 
-let check =
+let { Goptions.get = check } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Rtauto";"Check"]
     ~value:false
+    ()
 
 open Pp
 

@@ -500,11 +500,13 @@ let info_file f =
    so we register them to coq save/undo mechanism. *)
 
 let my_bool_option name value =
-  declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
+  let { Goptions.get } =
+    declare_bool_option_and_ref
     ~key:["Extraction"; name]
     ~value
+    ()
+  in
+  get
 
 (*s Extraction AccessOpaque *)
 
@@ -587,20 +589,18 @@ let () = declare_int_option
 
 (* This option controls whether "dummy lambda" are removed when a
    toplevel constant is defined. *)
-let conservative_types =
+let { Goptions.get = conservative_types } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Extraction"; "Conservative"; "Types"]
     ~value:false
+    ()
 
 (* Allows to print a comment at the beginning of the output files *)
-let file_comment =
+let { Goptions.get = file_comment } =
   declare_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Extraction"; "File"; "Comment"]
     ~value:""
+    ()
 
 (*s Extraction Lang *)
 

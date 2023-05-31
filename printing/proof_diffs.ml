@@ -67,14 +67,13 @@ let string_to_diffs = function
 
 let opt_name = ["Diffs"]
 
-let diff_option =
+let { Goptions.get = diff_option } =
   Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:opt_name
     ~value:DiffOff
     string_to_diffs
     diffs_to_string
+    ()
 
 let show_diffs () = match diff_option () with DiffOff -> false | _ -> true
 let show_removed () = match diff_option () with DiffRemoved -> true | _ -> false

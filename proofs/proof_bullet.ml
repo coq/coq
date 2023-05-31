@@ -174,10 +174,8 @@ module Strict = struct
 end
 
 (* Current bullet behavior, controlled by the option *)
-let current_behavior =
+let { Goptions.get = current_behavior } =
   Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Bullet";"Behavior"]
     ~value:Strict.strict
     (fun n ->
@@ -185,6 +183,7 @@ let current_behavior =
       with Not_found ->
         CErrors.user_err Pp.(str ("Unknown bullet behavior: \"" ^ n ^ "\".")))
     (fun v -> v.name)
+    ()
 
 let put p b =
   (current_behavior ()).put p b

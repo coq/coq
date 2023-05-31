@@ -12,12 +12,11 @@ open Univ
 open UnivSubst
 
 (* To disallow minimization to Set *)
-let get_set_minimization =
+let { Goptions.get = get_set_minimization } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Universe";"Minimization";"ToSet"]
     ~value:true
+    ()
 
 (** Simplification *)
 

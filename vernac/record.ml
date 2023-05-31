@@ -28,19 +28,17 @@ module RelDecl = Context.Rel.Declaration
 
 (********** definition d'un record (structure) **************)
 
-let typeclasses_strict =
+let { Goptions.get = typeclasses_strict } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Strict";"Resolution"]
     ~value:false
+    ()
 
-let typeclasses_unique =
+let { Goptions.get = typeclasses_unique } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Unique";"Instances"]
     ~value:false
+    ()
 
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =

@@ -22,17 +22,16 @@ open Attributes
    programs that cannot be statically classified. *)
 let proof_mode_opt_name = ["Default";"Proof";"Mode"]
 
-let get_default_proof_mode =
+let { Goptions.get = get_default_proof_mode } =
   Goptions.declare_interpreted_string_option_and_ref
     ~stage:Summary.Stage.Synterp
-    ~depr:false
     ~key:proof_mode_opt_name
     ~value:(Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
     (fun name -> match Pvernac.lookup_proof_mode name with
     | Some pm -> pm
     | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name)))
     Pvernac.proof_mode_to_string
-
+    ()
 
 let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
 

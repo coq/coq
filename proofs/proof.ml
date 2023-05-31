@@ -467,12 +467,11 @@ let pr_proof p =
     str "]"
   )
 
-let use_unification_heuristics =
+let { Goptions.get = use_unification_heuristics } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Solve";"Unification";"Constraints"]
     ~value:true
+    ()
 
 exception SuggestNoSuchGoals of int * t
 

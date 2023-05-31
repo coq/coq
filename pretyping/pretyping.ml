@@ -122,12 +122,11 @@ let esearch_guard ?loc env sigma indexes fix =
 
 (* To force universe name declaration before use *)
 
-let is_strict_universe_declarations =
+let { Goptions.get = is_strict_universe_declarations } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Strict";"Universe";"Declaration"]
     ~value:true
+    ()
 
 (** Miscellaneous interpretation functions *)
 
