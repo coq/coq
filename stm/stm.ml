@@ -1112,8 +1112,8 @@ end = struct (* {{{ *)
 
   let undo_costly_in_batch_mode =
     CWarnings.create ~name:"undo-batch-mode" Pp.(fun v ->
-        str "Command " ++ Ppvernac.pr_vernac v ++
-        str (" is not recommended in batch mode. In particular, going back in the document" ^
+        str "Command" ++ spc() ++ quote (Ppvernac.pr_vernac v) ++
+        strbrk (" is not recommended in batch mode. In particular, going back in the document" ^
              " is not efficient in batch mode due to Coq not caching previous states for memory optimization reasons." ^
              " If your use is intentional, you may want to disable this warning and pass" ^
              " the \"-async-proofs-cache force\" option to Coq."))
