@@ -234,6 +234,7 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 (** Revert an hypothesis and its dependencies :
     this is actually generalize dependent... *)
 
+#[deprecated(note="Use ""generalize dependent"" instead (""revert dependent"" is currently an alias)", since="8.18")]
 Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
 
