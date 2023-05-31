@@ -33,21 +33,6 @@ val translate_modtype :
   'a Conversion.universe_state ->
   env -> ModPath.t -> inline -> module_type_entry -> module_type_body * 'a
 
-(** Low-level function for translating a module struct entry :
-    - We translate to a module when a [ModPath.t] is given,
-      otherwise to a module type.
-    - The first output is the expanded signature
-    - The second output is the algebraic expression, kept mostly for
-      the extraction. *)
-
-type 'alg translation =
-  module_signature * 'alg * delta_resolver * Univ.Constraints.t
-
-val translate_mse :
-  'a Conversion.universe_state ->
-  env -> ModPath.t option -> inline -> module_struct_entry ->
-  module_signature * (Constr.t * Univ.AbstractContext.t option) module_alg_expr * delta_resolver * 'a
-
 (** From an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 

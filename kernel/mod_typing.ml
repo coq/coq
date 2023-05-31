@@ -22,9 +22,6 @@ open Environ
 open Modops
 open Mod_subst
 
-type 'alg translation =
-  module_signature * 'alg * delta_resolver * Univ.Constraints.t
-
 let rec mp_from_mexpr = function
   | MEident mp -> mp
   | MEapply (expr,_) -> mp_from_mexpr expr
