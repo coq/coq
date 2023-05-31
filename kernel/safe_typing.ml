@@ -1047,10 +1047,18 @@ let add_mind ?typing_flags l mie senv =
 let check_state senv =
   (Environ.universes senv.env, Conversion.checked_universes)
 
+let vm_handler env univs c st =
+  let code = Vmbytegen.compile_constant_body ~fail_on_error:false env univs (Def c) in
+  st, code
+
+let vm_state _senv =
+  ((), { Mod_typing.vm_handler })
+
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let state = check_state senv in
-  let mtb, _ = Mod_typing.translate_modtype state senv.env mp inl params_mte  in
+  let vmstate = vm_state senv in
+  let mtb, _, _ = Mod_typing.translate_modtype state vmstate senv.env mp inl params_mte  in
   let mtb = Declareops.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv
@@ -1070,7 +1078,8 @@ let full_add_module_type mp mt senv =
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let state = check_state senv in
-  let mb, _ = Mod_typing.translate_module state senv.env mp inl me in
+  let vmstate = vm_state senv in
+  let mb, _, _ = Mod_typing.translate_module state vmstate senv.env mp inl me in
   let mb = Declareops.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
@@ -1120,7 +1129,8 @@ let add_module_parameter mbid mte inl senv =
   let () = check_empty_struct senv in
   let mp = MPbound mbid in
   let state = check_state senv in
-  let mtb, _ = Mod_typing.translate_modtype state senv.env mp inl ([],mte) in
+  let vmstate = vm_state senv in
+  let mtb, _, _ = Mod_typing.translate_modtype state vmstate senv.env mp inl ([],mte) in
   let senv = full_add_module_type mp mtb senv in
   let new_variant = match senv.modvariant with
     | STRUCT (params,oldenv) -> STRUCT ((mbid,mtb) :: params, oldenv)
@@ -1172,8 +1182,9 @@ let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
   let state = check_state senv in
-  let mb, _ =
-    Mod_typing.finalize_module state senv.env senv.modpath
+  let vmstate = vm_state senv in
+  let mb, _, _ =
+    Mod_typing.finalize_module state vmstate senv.env senv.modpath
       (struc, senv.modresolver) restype'
   in
   let mb' = functorize_module params mb in
@@ -1253,8 +1264,9 @@ let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
   let state = check_state senv in
-  let sign,(),resolver, _ =
-    translate_mse_include is_module state senv.env mp_sup inl me
+  let vmstate = vm_state senv in
+  let sign,(),resolver, _, _ =
+    translate_mse_include is_module state vmstate senv.env mp_sup inl me
   in
   (* Include Self support  *)
   let struc = NoFunctor (List.rev senv.revstruct) in

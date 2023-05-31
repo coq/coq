@@ -729,6 +729,11 @@ let openmod_syntax_info () = match !openmod_syntax_info with
   | None -> anomaly Pp.(str "missing init of openmod_syntax_info")
   | Some v -> v
 
+let vm_state =
+  (* VM bytecode is not needed here *)
+  let vm_handler _ _ _ () = (), None in
+  ((), { Mod_typing.vm_handler })
+
 module RawModOps = struct
 
 module Synterp = struct
@@ -925,7 +930,7 @@ let build_subtypes env mp args mtys =
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-       let mtb, (_, cst) = Mod_typing.translate_modtype state env mp inl (args,mte) in
+       let mtb, (_, cst), _ = Mod_typing.translate_modtype state vm_state env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
        ctx, mtb)
     Univ.ContextSet.empty mtys
@@ -944,7 +949,7 @@ let intern_arg (acc, cst) (mbidl,(mty, base, kind, inl)) =
   let () = Global.push_context_set ~strict:true cst' in
   let () =
     let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-    let _, (_, cst) = Mod_typing.translate_modtype state (Global.env ()) base inl ([], mty) in
+    let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state (Global.env ()) base inl ([], mty) in
     Global.add_constraints cst
   in
   let env = Global.env () in
@@ -989,7 +994,7 @@ let start_module_core id args res =
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
         let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-        let _, (_, cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
+        let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -1019,8 +1024,8 @@ let end_module_core id m_info objects fs =
   let struc = current_struct () in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst) =
-    Mod_typing.finalize_module state (Global.env ()) (Global.current_modpath ())
+  let _, (_, cst), _ =
+    Mod_typing.finalize_module state vm_state (Global.env ()) (Global.current_modpath ())
       (struc, current_modresolver ()) restype'
   in
   let () = Global.add_constraints cst in
@@ -1098,7 +1103,7 @@ let declare_module id args res mexpr_o =
   in
   let () = Global.push_context_set ~strict:true ctx in
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst) = Mod_typing.translate_module state (Global.env ()) mp inl entry in
+  let _, (_, cst), _ = Mod_typing.translate_module state vm_state (Global.env ()) mp inl entry in
   let () = Global.add_constraints cst in
   let mp_env,resolver = Global.add_module id entry inl in
 
@@ -1222,7 +1227,7 @@ let declare_modtype id args mtys (mte,base,kind,inl) =
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, mte_cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
+  let _, (_, mte_cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let entry = params, mte in
   let env = Global.env () in
@@ -1341,8 +1346,8 @@ let declare_one_include_core (me,base,kind,inl) =
   let base_mp = get_module_path me in
 
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let sign, (), resolver, (_, cst) =
-    Mod_typing.translate_mse_include is_mod state (Global.env ()) (Global.current_modpath ()) inl me
+  let sign, (), resolver, (_, cst), _ =
+    Mod_typing.translate_mse_include is_mod state vm_state (Global.env ()) (Global.current_modpath ()) inl me
   in
   let () = Global.add_constraints cst in
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
