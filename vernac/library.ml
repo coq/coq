@@ -103,6 +103,7 @@ type library_t = {
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
   library_info : Library_info.t;
+  library_vm : Vmlibrary.on_disk;
 }
 
 type library_summary = {
@@ -232,8 +233,9 @@ type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaques.opaque_disk
+type seg_vm = Vmlibrary.on_disk
 
-let mk_library sd md digests univs =
+let mk_library sd md digests univs vm =
   {
     library_name     = sd.md_name;
     library_data     = md;
@@ -241,6 +243,7 @@ let mk_library sd md digests univs =
     library_digests  = digests;
     library_extra_univs = univs;
     library_info     = sd.md_info;
+    library_vm = vm;
   }
 
 let mk_summary m = {
@@ -266,6 +269,7 @@ let library_seg : seg_lib ObjFile.id = ObjFile.make_id "library"
 let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
 let tasks_seg () : (Opaqueproof.opaque_handle option, 'doc) tasks option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
+let vm_seg : seg_vm ObjFile.id = ObjFile.make_id "vmlibrary"
 
 let intern_from_file lib_resolver dir =
   let f = lib_resolver dir in
@@ -275,6 +279,7 @@ let intern_from_file lib_resolver dir =
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
   let univs, digest_u = ObjFile.marshal_in_segment ch ~segment:universes_seg in
   let del_opaque, _ = in_delayed f ch ~segment:opaques_seg in
+  let vmlib, _ = ObjFile.marshal_in_segment ch ~segment:vm_seg in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;
@@ -286,7 +291,7 @@ let intern_from_file lib_resolver dir =
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
-  lsd, lmd, digest_lmd, univs, digest_u, del_opaque
+  lsd, lmd, digest_lmd, univs, digest_u, del_opaque, vmlib
 
 let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
@@ -295,8 +300,8 @@ let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if already listed and consequently its dependencies too *)
   try mk_summary (DPmap.find dir contents), acc
   with Not_found ->
-  let lsd, lmd, digest_lmd, univs, digest_u, del_opaque = intern dir in
-  let m = mk_intern_library lsd lmd digest_lmd univs digest_u del_opaque in
+  let lsd, lmd, digest_lmd, univs, digest_u, del_opaque, vmlib = intern dir in
+  let m = mk_intern_library lsd lmd digest_lmd univs digest_u del_opaque vmlib in
   mk_summary m, intern_library_deps ~intern acc dir m
 
 and intern_library_deps ~intern libs dir m =
@@ -353,7 +358,9 @@ let register_library m =
     l.md_compiled
     l.md_objects
     m.library_digests
-    m.library_extra_univs;
+    m.library_extra_univs
+    m.library_vm
+  ;
   register_native_library m.library_name
 
 let register_library_syntax m =
@@ -439,12 +446,13 @@ let load_library_todo f =
   let s2, _ = ObjFile.marshal_in_segment ch ~segment:universes_seg in
   let tasks, _ = ObjFile.marshal_in_segment ch ~segment:(tasks_seg ()) in
   let s4, _ = ObjFile.marshal_in_segment ch ~segment:opaques_seg in
+  let s5, _ = ObjFile.marshal_in_segment ch ~segment:vm_seg in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
   if tasks = None then user_err (str "Not a .vio file.");
   if s2 = None then user_err (str "Not a .vio file.");
   if snd (Option.get s2) then user_err (str "Not a .vio file.");
-  s0, s1, Option.get s2, Option.get tasks, s4
+  s0, s1, Option.get s2, Option.get tasks, s4, s5
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
@@ -478,7 +486,7 @@ type 'doc todo_proofs =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_base f sum lib univs tasks proofs =
+let save_library_base f sum lib univs tasks proofs vmlib =
   let ch = raw_extern_library f in
   try
     ObjFile.marshal_out_segment ch ~segment:summary_seg sum;
@@ -486,6 +494,7 @@ let save_library_base f sum lib univs tasks proofs =
     ObjFile.marshal_out_segment ch ~segment:universes_seg univs;
     ObjFile.marshal_out_segment ch ~segment:(tasks_seg ()) tasks;
     ObjFile.marshal_out_segment ch ~segment:opaques_seg proofs;
+    ObjFile.marshal_out_segment ch ~segment:vm_seg vmlib;
     ObjFile.close_out ch
   with reraise ->
     let reraise = Exninfo.capture reraise in
@@ -496,7 +505,7 @@ let save_library_base f sum lib univs tasks proofs =
 
 (* This is the basic vo save structure *)
 let save_library_struct ~output_native_objects dir =
-  let md_compiled, md_objects, md_syntax_objects, ast, info =
+  let md_compiled, md_objects, md_syntax_objects, vmlib, ast, info =
     Declaremods.end_library ~output_native_objects dir in
   let sd =
     { md_name = dir
@@ -511,7 +520,7 @@ let save_library_struct ~output_native_objects dir =
     } in
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
-  sd, md, ast
+  sd, md, vmlib, ast
 
 let save_library_to todo_proofs ~output_native_objects dir f =
   assert(
@@ -546,9 +555,9 @@ let save_library_to todo_proofs ~output_native_objects dir f =
       Some tasks,
       Some (Univ.ContextSet.empty,false)
   in
-  let sd, md, ast = save_library_struct ~output_native_objects dir in
+  let sd, md, vmlib, ast = save_library_struct ~output_native_objects dir in
   (* Writing vo payload *)
-  save_library_base f sd md utab tasks opaque_table;
+  save_library_base f sd md utab tasks opaque_table vmlib;
   (* Writing native code files *)
   if output_native_objects then
     let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in

@@ -130,7 +130,7 @@ val end_modtype : unit -> ModPath.t
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.ContextSet.t ->
+  Univ.ContextSet.t -> Vmlibrary.on_disk ->
   unit
 
 (** [import_module export mp] imports the module [mp].
@@ -155,7 +155,7 @@ val start_library : library_name -> unit
 
 val end_library :
   output_native_objects:bool -> library_name ->
-  Safe_typing.compiled_library * library_objects * library_objects * Nativelib.native_library * Library_info.t
+  Safe_typing.compiled_library * library_objects * library_objects * Vmlibrary.on_disk * Nativelib.native_library * Library_info.t
 
 (** append a function to be executed at end_library *)
 val append_end_library_hook : (unit -> unit) -> unit

@@ -263,7 +263,9 @@ let rec slot_for_getglobal env sigma kn envcache table =
       | None -> set_global (val_of_constant kn) table
       | Some code ->
         match code with
-        | BCdefined code ->
+        | BCdefined (index, patches) ->
+           let code = Environ.lookup_vm_code index env in
+           let code = (code, patches) in
            let v = eval_to_patch env sigma code envcache table in
            set_global v table
         | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table

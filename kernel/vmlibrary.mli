@@ -7,28 +7,27 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+
 open Names
-open Vmvalues
-open Vmbytecodes
+open Vmemitcodes
 
-type reloc_info =
-  | Reloc_annot of annot_switch
-  | Reloc_const of structured_constant
-  | Reloc_getglobal of Constant.t
-  | Reloc_caml_prim of caml_prim
+type t
+(** Type of VM libraries. *)
 
-type to_patch
-type patches
+type index
 
-val patch : (to_patch * patches) -> (reloc_info -> int) -> Vmvalues.tcode * fv
+type indirect_code = index pbody_code
 
-type 'a pbody_code =
-  | BCdefined of ('a * patches)
-  | BCalias of Constant.t
-  | BCconstant
+type on_disk
 
-type body_code = to_patch pbody_code
+val empty : t
 
-val subst_body_code : Mod_subst.substitution -> 'a pbody_code -> 'a pbody_code
+val set_path : DirPath.t -> t -> t
 
-val to_memory : fv -> bytecodes -> to_patch * patches
+val add : to_patch -> t -> t * index
+
+val link : on_disk -> t -> t
+
+val resolve : index -> t -> to_patch
+
+val export : t -> on_disk

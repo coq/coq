@@ -25,7 +25,7 @@ val compile_constant_body : fail_on_error:bool ->
 
 (** Shortcut of the previous function used during module strengthening *)
 
-val compile_alias : Names.Constant.t -> body_code
+val compile_alias : Names.Constant.t -> 'a pbody_code
 
 (** Dump the bytecode after compilation (for debugging purposes) *)
 val dump_bytecode : bool ref

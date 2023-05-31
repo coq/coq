@@ -60,7 +60,7 @@ let infer_gen_conv_leq state env c1 c2 =
 type with_body = {
   w_def : Constr.t;
   w_univs : universes;
-  w_bytecode : Vmemitcodes.body_code option;
+  w_bytecode : Vmlibrary.indirect_code option;
 }
 
 let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
@@ -227,7 +227,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   | Not_found -> error_no_such_label lab mp
   | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
-type 'a vm_handler = { vm_handler : env -> universes -> Constr.t -> 'a -> 'a * Vmemitcodes.body_code option }
+type 'a vm_handler = { vm_handler : env -> universes -> Constr.t -> 'a -> 'a * Vmlibrary.indirect_code option }
 type 'a vm_state = 'a * 'a vm_handler
 
 let check_with ustate vmstate env mp (sign,reso,cst,vm) = function

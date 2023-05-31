@@ -113,10 +113,10 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
   | Vio2Vo ->
       Flags.async_proofs_worker_id := "Vio2Vo";
-      let sum, lib, univs, tasks, proofs =
+      let sum, lib, univs, tasks, proofs, vmlib =
         Library.load_library_todo long_f_dot_in in
       let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
-      Library.save_library_raw long_f_dot_out sum lib univs proofs;
+      Library.save_library_raw long_f_dot_out sum lib univs proofs vmlib;
       (* Like in direct .vo production, dump an empty .vok file and an empty .vos file. *)
       dump_empty_vos();
       create_empty_file (long_f_dot_out ^ "k")

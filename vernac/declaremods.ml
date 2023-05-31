@@ -1547,7 +1547,7 @@ let declare_include me_asts =
   RawIncludeOps.Interp.declare_include me_asts
 
 (** For the native compiler, we cache the library values *)
-let register_library dir cenv (objs:library_objects) digest univ =
+let register_library dir cenv (objs:library_objects) digest univ vmtab =
   let mp = MPfile dir in
   let () =
     try
@@ -1556,7 +1556,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
     with Not_found ->
       begin
       (* If not, let's do it now ... *)
-      let mp' = Global.import cenv univ digest in
+      let mp' = Global.import cenv univ vmtab digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.")
       end
@@ -1588,11 +1588,11 @@ let end_library_hook () =
 let end_library ~output_native_objects dir =
   end_library_hook();
   let prefix, info, lib_stack, lib_stack_syntax = Lib.end_compilation dir in
-  let mp,cenv,ast = Global.export ~output_native_objects dir in
+  let mp,cenv,vmlib,ast = Global.export ~output_native_objects dir in
   assert (ModPath.equal mp (MPfile dir));
   let {Lib.Interp.substobjs = substitute; keepobjs = keep; anticipateobjs = _; } = lib_stack in
   let {Lib.Synterp.substobjs = substitute_syntax; keepobjs = keep_syntax; anticipateobjs = _; } = lib_stack_syntax in
-  cenv,(substitute,keep),(substitute_syntax,keep_syntax),ast,info
+  cenv,(substitute,keep),(substitute_syntax,keep_syntax),vmlib,ast,info
 
 (** {6 Iterators} *)
 
