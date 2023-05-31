@@ -75,6 +75,27 @@ let generic_intern ist (GenArg (Rawwit wit, v)) =
   let (ist, v) = intern wit ist v in
   (ist, in_gen (glbwit wit) v)
 
+type ('raw,'glb) intern_pat_fun = ?loc:Loc.t -> ('raw,'glb) intern_fun
+
+module InternPatObj = struct
+  type ('raw, 'glb, 'top) obj = ('raw, 'glb) intern_pat_fun
+  let name = "intern_pat"
+  let default tag =
+    Some (fun ?loc ->
+        let name = Genarg.(ArgT.repr (get_arg_tag tag)) in
+        CErrors.user_err ?loc Pp.(str "This quotation is not supported in tactic patterns (" ++ str name ++ str ")"))
+end
+
+module InternPat = Register (InternPatObj)
+
+let intern_pat = InternPat.obj
+
+let register_intern_pat = InternPat.register0
+
+let generic_intern_pat ?loc ist (GenArg (Rawwit wit, v)) =
+  let (ist, v) = intern_pat wit ?loc ist v in
+  (ist, in_gen (glbwit wit) v)
+
 (** Notation substitution *)
 
 let substitute_notation = NtnSubst.obj

@@ -2400,7 +2400,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_sign;
           strict_check = match env.strict_check with None -> false | Some b -> b;
         } in
-        let (_, glb) = Genintern.generic_intern ist gen in
+        let intern = if pattern_mode
+          then Genintern.generic_intern_pat ?loc
+          else Genintern.generic_intern
+        in
+        let (_, glb) = intern ist gen in
         DAst.make ?loc @@
         GGenarg glb
     (* Parsing pattern variables *)
@@ -2739,6 +2743,11 @@ let intern_constr_pattern env sigma ?(as_type=false) ?strict_check ?(ltacvars=em
   let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
             ?strict_check ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr c
+
+let intern_uninstantiated_constr_pattern env sigma ?(as_type=false) ?strict_check ?(ltacvars=empty_ltac_sign) c =
+  let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
+            ?strict_check ~pattern_mode:true ~ltacvars env sigma c in
+  uninstantiated_pattern_of_glob_constr c
 
 let intern_core kind env sigma ?strict_check ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
       { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =

@@ -31,6 +31,7 @@ let t_constr = coq_type "constr"
 let t_ltac1 = ltac1_kn "t"
 let ltac1_lamdba = ltac1_kn "lambda"
 let t_preterm = coq_type "preterm"
+let t_pattern = coq_type "pattern"
 let t_bool = coq_type "bool"
 
 let ltac2_env : Tac2typing_env.t Genintern.Store.field =
@@ -1996,20 +1997,31 @@ let () = Gensubst.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_exp
 let () = Gensubst.register_subst0 wit_ltac2in1_val subst_expr
 let () = Gensubst.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
-let intern_var_quotation ist (kind, { CAst.v = id; loc }) =
+let intern_var_quotation_gen ~ispat ist (kind, { CAst.v = id; loc }) =
   let open Genintern in
   let kind = match kind with
     | None -> ConstrVar
     | Some kind -> match Id.to_string kind.CAst.v with
       | "constr" -> ConstrVar
       | "preterm" -> PretermVar
+      | "pattern" -> PatternVar
       | _ ->
         CErrors.user_err ?loc:kind.loc
           Pp.(str "Unknown Ltac2 variable quotation kind" ++ spc() ++ Id.print kind.v)
   in
   let typ = match kind with
-    | ConstrVar -> t_constr
-    | PretermVar -> t_preterm
+    | ConstrVar ->
+      if ispat
+      then CErrors.user_err ?loc Pp.(str "constr quotations not supported in tactic patterns.")
+      else t_constr
+    | PretermVar ->
+      if ispat
+      then CErrors.user_err ?loc Pp.(str "preterm quotations not supported in tactic patterns.")
+      else t_preterm
+    | PatternVar ->
+      if not ispat
+      then CErrors.user_err ?loc Pp.(str "pattern quotations not supported outside tactic patterns.")
+      else t_pattern
   in
   let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
@@ -2032,6 +2044,14 @@ let intern_var_quotation ist (kind, { CAst.v = id; loc }) =
   let () = unify ?loc env t (GTypRef (Other typ, [])) in
   (ist, (kind, id))
 
+let intern_var_quotation = intern_var_quotation_gen ~ispat:false
+
 let () = Genintern.register_intern0 wit_ltac2_var_quotation intern_var_quotation
+
+let intern_var_quotation_pat ?loc ist v =
+  intern_var_quotation_gen ~ispat:true ist v
+
+let () = Genintern.register_intern_pat wit_ltac2_var_quotation
+    intern_var_quotation_pat
 
 let () = Gensubst.register_subst0 wit_ltac2_var_quotation (fun _ v -> v)

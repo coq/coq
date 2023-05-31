@@ -20,27 +20,37 @@ type case_info_pattern =
       cip_ind : inductive option;
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
-type constr_pattern =
+type 'i uninstantiated_pattern =
+  | PGenarg : Genarg.glob_generic_argument -> [ `uninstantiated ] uninstantiated_pattern
+
+type 'i constr_pattern_r =
   | PRef of GlobRef.t
   | PVar of Id.t
-  | PEvar of (Evar.t * constr_pattern list)
+  | PEvar of (Evar.t * 'i constr_pattern_r list)
   | PRel of int
-  | PApp of constr_pattern * constr_pattern array
-  | PSoApp of patvar * constr_pattern list
-  | PProj of Projection.t * constr_pattern
-  | PLambda of Name.t * constr_pattern * constr_pattern
-  | PProd of Name.t * constr_pattern * constr_pattern
-  | PLetIn of Name.t * constr_pattern * constr_pattern option * constr_pattern
+  | PApp of 'i constr_pattern_r * 'i constr_pattern_r array
+  | PSoApp of patvar * 'i constr_pattern_r list
+  | PProj of Projection.t * 'i constr_pattern_r
+  | PLambda of Name.t * 'i constr_pattern_r * 'i constr_pattern_r
+  | PProd of Name.t * 'i constr_pattern_r * 'i constr_pattern_r
+  | PLetIn of Name.t * 'i constr_pattern_r * 'i constr_pattern_r option * 'i constr_pattern_r
   | PSort of Sorts.family
   | PMeta of patvar option
-  | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of case_info_pattern * (Name.t array * constr_pattern) option * constr_pattern *
-      (int * Name.t array * constr_pattern) list (** index of constructor, nb of args *)
-  | PFix of (int array * int) * (Name.t array * constr_pattern array * constr_pattern array)
-  | PCoFix of int * (Name.t array * constr_pattern array * constr_pattern array)
+  | PIf of 'i constr_pattern_r * 'i constr_pattern_r * 'i constr_pattern_r
+  | PCase of case_info_pattern * (Name.t array * 'i constr_pattern_r) option * 'i constr_pattern_r *
+      (int * Name.t array * 'i constr_pattern_r) list (** index of constructor, nb of args *)
+  | PFix of (int array * int) * (Name.t array * 'i constr_pattern_r array * 'i constr_pattern_r array)
+  | PCoFix of int * (Name.t array * 'i constr_pattern_r array * 'i constr_pattern_r array)
   | PInt of Uint63.t
   | PFloat of Float64.t
-  | PArray of constr_pattern array * constr_pattern * constr_pattern
+  | PArray of 'i constr_pattern_r array * 'i constr_pattern_r * 'i constr_pattern_r
+  | PUninstantiated of 'i uninstantiated_pattern
+
+type constr_pattern = [ `any ] constr_pattern_r
 
 (** Nota : in a [PCase], the array of branches might be shorter than
     expected, denoting the use of a final "_ => _" branch *)
+
+type _ pattern_kind =
+  | Any
+  | Uninstantiated : [`uninstantiated] pattern_kind

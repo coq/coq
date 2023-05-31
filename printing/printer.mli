@@ -109,9 +109,9 @@ val pr_lglob_constr_env    : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
 val pr_glob_constr_env     : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
-val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> Pp.t
+val pr_lconstr_pattern_env : env -> evar_map -> _ constr_pattern_r -> Pp.t
 
-val pr_constr_pattern_env  : env -> evar_map -> constr_pattern -> Pp.t
+val pr_constr_pattern_env  : env -> evar_map -> _ constr_pattern_r -> Pp.t
 
 val pr_cases_pattern       : cases_pattern -> Pp.t
 

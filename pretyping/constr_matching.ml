@@ -285,7 +285,7 @@ let matches_core env sigma allow_bound_rels
     | ConstructRef c, Construct (c',u) -> Environ.QConstruct.equal env c c'
     | _, _ -> false
   in
-  let rec sorec ctx env subst p t =
+  let rec sorec ctx env subst (p:constr_pattern) t =
     let cT = strip_outer_cast sigma t in
     match p, EConstr.kind sigma cT with
       | PSoApp (n,args),m ->
@@ -478,6 +478,8 @@ let matches_core env sigma allow_bound_rels
       | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
          | PProd _ | PLetIn _ | PSort _ | PIf _ | PCase _
          | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _ | PArray _), _ -> raise PatternMatchingFailure
+
+      | PUninstantiated _, _ -> .
 
   in
   sorec [] env ((Id.Map.empty,Id.Set.empty), Id.Map.empty) pat c

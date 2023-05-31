@@ -1642,11 +1642,15 @@ let () =
   define_ml_object Tac2quote.wit_ident obj
 
 let () =
-  let intern self ist c =
-    let env = ist.Genintern.genv in
+  let intern self {Genintern.ltacvars=lfun; genv=env; extra; intern_sign=_; strict_check} c =
     let sigma = Evd.from_env env in
-    let strict_check = ist.Genintern.strict_check in
-    let _, pat = Constrintern.intern_constr_pattern env sigma ~strict_check ~as_type:false c in
+    let ltacvars = {
+      Constrintern.ltac_vars = lfun;
+      ltac_bound = Id.Set.empty;
+      ltac_extra = extra;
+    }
+    in
+    let _, pat = Constrintern.intern_uninstantiated_constr_pattern env sigma ~strict_check ~as_type:false ~ltacvars c in
     GlbVal pat, gtypref t_pattern
   in
   let subst subst c =
@@ -1656,7 +1660,13 @@ let () =
   in
   let print env sigma pat = str "pat:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
   let raw_print env sigma pat = str "pat:(" ++ Ppconstr.pr_constr_pattern_expr env sigma pat ++ str ")" in
-  let interp _ c = return (Tac2ffi.of_pattern c) in
+  let interp env c =
+    let ist = to_lvar env in
+    pf_apply ~catch_exceptions:true begin fun env sigma ->
+      let c = Patternops.interp_pattern env sigma ist c in
+      return (Tac2ffi.of_pattern c)
+    end
+  in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
@@ -1917,10 +1927,25 @@ let () =
     let f = match kind with
       | ConstrVar -> interp_constr_var_as_constr
       | PretermVar -> interp_preterm_var_as_constr
+      | PatternVar -> assert false
     in
     f ?loc env sigma tycon id
   in
   GlobEnv.register_constr_interp0 wit_ltac2_var_quotation interp
+
+let () =
+  let interp env sigma ist (kind,id) =
+    let () = match kind with
+      | ConstrVar -> assert false (* checked at intern time *)
+      | PretermVar -> assert false
+      | PatternVar -> ()
+    in
+    let ist = Tac2interp.get_env ist.Ltac_pretype.ltac_genargs in
+    let c = Id.Map.find id ist.env_ist in
+    let c = Tac2ffi.to_pattern c in
+    c
+  in
+  Patternops.register_interp_pat wit_ltac2_var_quotation interp
 
 let () =
   let pr_raw (kind,id) = Genprint.PrinterBasic (fun _env _sigma ->
@@ -1935,6 +1960,7 @@ let () =
       let ppkind = match kind with
         | ConstrVar -> mt()
         | PretermVar -> str "preterm:"
+        | PatternVar -> str "pattern:"
       in
       str "$" ++ ppkind ++ Id.print id) in
   let pr_top x = Util.Empty.abort x in

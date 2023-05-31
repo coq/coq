@@ -95,7 +95,7 @@ val of_format : lstring -> raw_tacexpr
 
 (** {5 Generic arguments} *)
 
-val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
+val wit_pattern : (Constrexpr.constr_expr, [`uninstantiated] Pattern.constr_pattern_r) Arg.tag
 
 val wit_ident : (Id.t, Id.t) Arg.tag
 

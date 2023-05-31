@@ -35,7 +35,7 @@ let eta_reduce = Reductionops.shrink_eta
 
 (* TODO: instead of doing that on patterns we should try to perform it on terms
    before translating them into patterns in Hints. *)
-let rec eta_reduce_pat p = match p with
+let rec eta_reduce_pat (p:constr_pattern) = match p with
 | PLambda (_, _, q) ->
   let f, cl = match eta_reduce_pat q with
   | PApp (f, cl) -> f, cl
@@ -54,6 +54,7 @@ let rec eta_reduce_pat p = match p with
 | PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
 | PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
 | PFloat _ | PArray _ -> p
+| PUninstantiated _ -> .
 
 let decomp_pat p =
   let rec decrec acc = function

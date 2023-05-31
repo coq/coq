@@ -1399,7 +1399,22 @@ let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in
   compute_displayed_name_in_gen (fun _ -> Patternops.noccurn_pattern) sigma avoid na c
 
-let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
+let glob_of_pat_under_context glob_of_pat avoid env sigma (nas, pat) =
+  let fold (avoid, env, nas, epat) na =
+    let na, avoid = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na epat in
+    let env = Termops.add_name na env in
+    let epat = match epat with PLambda (_, _, p) -> p | _ -> assert false in
+    (avoid, env, na :: nas, epat)
+  in
+  let epat = Array.fold_right (fun na p -> PLambda (na, PMeta None, p)) nas pat in
+  let (avoid', env', nas, _) = Array.fold_left fold (avoid, env, [], epat) nas in
+  let pat = glob_of_pat avoid' env' sigma pat in
+  (Array.rev_of_list nas, pat)
+
+let rec glob_of_pat
+  : 'a. _ -> _ -> _ -> 'a constr_pattern_r -> _
+  = fun (type a) avoid env sigma (pat: a constr_pattern_r) ->
+    DAst.make @@ match pat with
   | PRef ref -> GRef (ref,None)
   | PVar id  -> GVar id
   | PEvar (evk,l) ->
@@ -1422,6 +1437,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       GVar id
   | PMeta None -> GHole (Evar_kinds.InternalHole, IntroAnonymous)
   | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
+  | PUninstantiated (PGenarg g) -> GGenarg g
   | PProj (p,c) -> GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p),None),
                          [glob_of_pat avoid env sigma c])
   | PApp (f,args) ->
@@ -1446,7 +1462,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
   | PCase ({cip_style=Constr.LetStyle},None,tm,[(0,n,b)]) ->
-      let n, b = glob_of_pat_under_context avoid env sigma (n, b) in
+      let n, b = glob_of_pat_under_context glob_of_pat avoid env sigma (n, b) in
       let nal = Array.to_list n in
       GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
@@ -1454,7 +1470,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
         | [], _ -> []
         | _, Some ind ->
           let map (i, n, c) =
-            let n, c = glob_of_pat_under_context avoid env sigma (n, c) in
+            let n, c = glob_of_pat_under_context glob_of_pat avoid env sigma (n, c) in
             let nal = Array.to_list n in
             let mkPatVar na = DAst.make @@ PatVar na in
             let p = DAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
@@ -1469,7 +1485,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       let indnames,rtn = match p, info.cip_ind with
         | None, _ -> (Anonymous,None),None
         | Some p, Some ind ->
-          let nas, p = glob_of_pat_under_context avoid env sigma p in
+          let nas, p = glob_of_pat_under_context glob_of_pat avoid env sigma p in
           let nas = Array.rev_to_list nas in
           ((List.hd nas, Some (CAst.make (ind, List.tl nas))), Some p)
         | _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
@@ -1514,18 +1530,6 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PArray(t,def,ty) ->
     let glob_of = glob_of_pat avoid env sigma in
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
-
-and glob_of_pat_under_context avoid env sigma (nas, pat) =
-  let fold (avoid, env, nas, epat) na =
-    let na, avoid = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na epat in
-    let env = Termops.add_name na env in
-    let epat = match epat with PLambda (_, _, p) -> p | _ -> assert false in
-    (avoid, env, na :: nas, epat)
-  in
-  let epat = Array.fold_right (fun na p -> PLambda (na, PMeta None, p)) nas pat in
-  let (avoid', env', nas, _) = Array.fold_left fold (avoid, env, [], epat) nas in
-  let pat = glob_of_pat avoid' env' sigma pat in
-  (Array.rev_of_list nas, pat)
 
 let extern_constr_pattern env sigma pat =
   extern true ((constr_some_level,None),([],[]))

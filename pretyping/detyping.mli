@@ -55,10 +55,10 @@ val detype_rel_context : 'a delay -> constr option -> Id.Set.t -> (names_context
   evar_map -> rel_context -> 'a glob_decl_g list
 
 val share_pattern_names :
-  (Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern -> 'a) -> int ->
+  (Id.Set.t -> names_context -> 'c -> 'd Pattern.constr_pattern_r -> 'a) -> int ->
   (Name.t * binding_kind * 'b option * 'a) list ->
-  Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern ->
-  Pattern.constr_pattern ->
+  Id.Set.t -> names_context -> 'c -> 'd Pattern.constr_pattern_r ->
+  'd Pattern.constr_pattern_r ->
   (Name.t * binding_kind * 'b option * 'a) list * 'a * 'a
 
 val detype_closed_glob :  ?isgoal:bool -> Id.Set.t -> env -> evar_map -> closed_glob_constr -> glob_constr

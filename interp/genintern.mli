@@ -46,6 +46,14 @@ val intern : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb) intern_fun
 
 val generic_intern : (raw_generic_argument, glob_generic_argument) intern_fun
 
+(** {5 Internalization in tactic patterns} *)
+
+type ('raw,'glb) intern_pat_fun = ?loc:Loc.t -> ('raw,'glb) intern_fun
+
+val intern_pat : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb) intern_pat_fun
+
+val generic_intern_pat : (raw_generic_argument, glob_generic_argument) intern_pat_fun
+
 (** {5 Notation functions} *)
 
 type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
@@ -58,6 +66,10 @@ val generic_substitute_notation : glob_generic_argument ntn_subst_fun
 
 val register_intern0 : ('raw, 'glb, 'top) genarg_type ->
   ('raw, 'glb) intern_fun -> unit
+
+val register_intern_pat : ('raw, 'glb, 'top) genarg_type ->
+  ('raw, 'glb) intern_pat_fun -> unit
+
 
 val register_ntn_subst0 : ('raw, 'glb, 'top) genarg_type ->
   'glb ntn_subst_fun -> unit

@@ -144,6 +144,10 @@ val intern_constr_pattern :
   env -> evar_map -> ?as_type:bool -> ?strict_check:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> Id.Set.t * constr_pattern
 
+val intern_uninstantiated_constr_pattern :
+  env -> evar_map -> ?as_type:bool -> ?strict_check:bool -> ?ltacvars:ltac_sign ->
+    constr_pattern_expr -> Id.Set.t * [`uninstantiated] constr_pattern_r
+
 (** Returns None if it's an abbreviation not bound to a name, raises an error
     if not existing *)
 val intern_reference : qualid -> GlobRef.t option
