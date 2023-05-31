@@ -986,7 +986,7 @@ let start_module_core id args res =
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
         let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
+        let _, (_, cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -1219,7 +1219,7 @@ let declare_modtype id args mtys (mte,base,kind,inl) =
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, _, _, (_, mte_cst) = Mod_typing.translate_mse state env None inl mte in
+  let _, (_, mte_cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let entry = params, mte in
   let env = Global.env () in
