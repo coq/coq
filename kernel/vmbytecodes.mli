@@ -63,7 +63,7 @@ type instruction =
   | Ksetfield of int                    (** accu[n] = sp[0] ; sp = pop sp *)
   | Kstop
   | Ksequence of bytecodes
-  | Kproj of Projection.Repr.t
+  | Kproj of int
   | Kensurestackcapacity of int
 
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)

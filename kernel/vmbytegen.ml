@@ -530,7 +530,7 @@ let rec compile_lam env cenv lam sz cont =
   | Lfloat f -> compile_structured_constant cenv (Const_float f) sz cont
 
   | Lproj (p,arg) ->
-     compile_lam env cenv arg sz (Kproj p :: cont)
+     compile_lam env cenv arg sz (Kproj (Projection.Repr.arg p) :: cont)
 
   | Lvar id -> pos_named id cenv :: cont
 
