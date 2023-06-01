@@ -29,6 +29,10 @@ sig
   val raw_pr : t -> Pp.t
   val to_string : t -> string
   (** Debug printing *)
+
+  module Set : CSig.SetS with type elt = t
+
+  module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
 module Quality : sig
@@ -36,9 +40,17 @@ module Quality : sig
     | QVar of QVar.t
     | QProp | QSProp | QType
 
+  val equal : t -> t -> bool
+
+  val compare : t -> t -> int
+
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 
   val raw_pr : t -> Pp.t
+
+  module Set : CSig.SetS with type elt = t
+
+  module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
 type t = private

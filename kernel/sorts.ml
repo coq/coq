@@ -54,10 +54,31 @@ struct
       Printf.sprintf "%sα%d" s q
 
   let raw_pr q = Pp.str (to_string q)
+
+  module Self = struct type nonrec t = t let compare = compare end
+  module Set = CSet.Make(Self)
+  module Map = CMap.Make(Self)
 end
 
 module Quality = struct
   type t = QVar of QVar.t | QProp | QSProp | QType
+
+  let equal a b = match a, b with
+    | QVar a, QVar b -> QVar.equal a b
+    | QProp, QProp | QSProp, QSProp | QType, QType -> true
+    | (QVar _ | QProp | QSProp | QType), _ -> false
+
+  let compare a b = match a, b with
+    | QVar a, QVar b -> QVar.compare a b
+    | QVar _, _ -> -1
+    | _, QVar _ -> 1
+    | QProp, QProp -> 0
+    | QProp, _ -> -1
+    | _, QProp -> 1
+    | QSProp, QSProp -> 0
+    | QSProp, _ -> -1
+    | _, QSProp -> 1
+    | QType, QType -> 0
 
   let pr prv = function
     | QVar v -> prv v
@@ -66,6 +87,10 @@ module Quality = struct
     | QType -> Pp.str "Type"
 
   let raw_pr q = pr QVar.raw_pr q
+
+  module Self = struct type nonrec t = t let compare = compare end
+  module Set = CSet.Make(Self)
+  module Map = CMap.Make(Self)
 
 end
 

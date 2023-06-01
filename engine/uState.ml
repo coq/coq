@@ -47,8 +47,8 @@ module QState : sig
 end =
 struct
 
-module QSet = Set.Make(Sorts.QVar)
-module QMap = Map.Make(Sorts.QVar)
+module QSet = Sorts.QVar.Set
+module QMap = Sorts.QVar.Map
 
 type t = {
   qmap : Sorts.Quality.t option QMap.t;
