@@ -130,5 +130,5 @@ let solve_constraints =
    try let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
        Unsafe.tclEVARSADVANCE sigma
    with e when CErrors.noncritical e ->
-     let info = Exninfo.reify () in
+     let e, info = Exninfo.capture e in
      tclZERO ~info e
