@@ -60,6 +60,12 @@ module UGlobal = struct
       let c = DirPath.compare u1.library u2.library in
       if c <> 0 then c
       else String.compare u1.process u2.process
+
+  let to_string { library = d; process = s; uid = n } =
+    DirPath.to_string d ^
+    (if CString.is_empty s then "" else "." ^ s) ^
+    "." ^ string_of_int n
+
 end
 
 module RawLevel =
@@ -173,10 +179,7 @@ module Level = struct
   let to_string x =
     match data x with
     | Set -> "Set"
-    | UGlobal.(Level { library = d; process = s; uid = n }) ->
-      Names.DirPath.to_string d ^
-      (if CString.is_empty s then "" else "." ^ s) ^
-      "." ^ string_of_int n
+    | Level l -> UGlobal.to_string l
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let raw_pr u = str (to_string u)

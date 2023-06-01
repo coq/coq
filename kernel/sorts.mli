@@ -17,10 +17,11 @@ val all_families : family list
 module QVar :
 sig
   type t
-  val make : int -> t
-  val repr : t -> int
+  val make : string -> int -> t
+  val repr : t -> string * int
   val equal : t -> t -> bool
   val compare : t -> t -> int
+  val to_string : t -> string
   val pr : t -> Pp.t
 end
 

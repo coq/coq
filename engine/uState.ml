@@ -121,6 +121,10 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | (QSProp, (QType | QProp)) -> fail ()
 | (QProp, QSProp) -> fail ()
 
+let nf_quality m = function
+  | QSProp | QProp | QType as q -> q
+  | QVar q -> repr q m
+
 let union ~fail s1 s2 =
   let extra = ref [] in
   let qmap = QMap.union (fun qk q1 q2 ->
@@ -140,7 +144,11 @@ let union ~fail s1 s2 =
   in
   let above = QSet.filter filter @@ QSet.union s1.above s2.above in
   let s = { qmap; above } in
-  List.fold_left (fun s (q1,q2) -> unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s) s extra
+  List.fold_left (fun s (q1,q2) ->
+      let q1 = nf_quality s q1 and q2 = nf_quality s q2 in
+      unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s)
+    s
+    extra
 
 let add q m = { qmap = QMap.add q None m.qmap; above = m.above }
 
