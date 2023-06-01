@@ -134,8 +134,19 @@ type comp_env = {
     in_stack : int Range.t;      (* position in the stack                  *)
     pos_rec : instruction array; (* instruction to access mutually-defined functions *)
     offset : int;
-    in_env : vm_env ref          (* The free variables of the expression   *)
+    in_env : vm_env ref;         (* The free variables of the expression   *)
+    max_stack_size : int ref;
+    (* Maximal stack size reached during the current function body. Used to
+       reallocate the stack if we lack space. *)
   }
+
+type glob_env = {
+  env : Environ.env;
+  mutable fun_code : instruction list; (** Code of closures *)
+}
+
+let push_fun env c =
+  env.fun_code <- Ksequence c :: env.fun_code
 
 module Config = struct
   let stack_threshold = 256 (* see byterun/coq_memory.h *)
@@ -160,25 +171,18 @@ let empty_comp_env ()=
     in_stack = Range.empty;
     pos_rec = [||];
     offset = 0;
-    in_env = ref empty_fv
+    in_env = ref empty_fv;
+    max_stack_size = ref 0;
   }
 
-(* Maximal stack size reached during the current function body. Used to
-   reallocate the stack if we lack space. *)
-let max_stack_size = ref 0
+let set_max_stack_size (cenv : comp_env) stack_size =
+  if stack_size > cenv.max_stack_size.contents then
+    cenv.max_stack_size := stack_size
 
-let set_max_stack_size stack_size =
-  if stack_size > !max_stack_size then
-    max_stack_size := stack_size
-
-let ensure_stack_capacity f x =
-  let old = !max_stack_size in
-  max_stack_size := 0;
-  let code = f x in
+let ensure_stack_capacity (cenv : comp_env) code =
   let used_safe =
-    !max_stack_size + Config.stack_safety_margin
+    cenv.max_stack_size.contents + Config.stack_safety_margin
   in
-  max_stack_size := old;
   if used_safe > Config.stack_threshold then
     Kensurestackcapacity used_safe :: code
   else code
@@ -195,7 +199,8 @@ let comp_env_fun ?(univs=0) arity =
     in_stack = add_param arity 0 Range.empty;
     pos_rec = [||];
     offset = 0;
-    in_env = ref empty_fv
+    in_env = ref empty_fv;
+    max_stack_size = ref 0;
   }
 
 
@@ -206,7 +211,8 @@ let comp_env_fix_type  rfv =
     in_stack = Range.empty;
     pos_rec = [||];
     offset = 0;
-    in_env = rfv
+    in_env = rfv;
+    max_stack_size = ref 0;
   }
 
 let comp_env_fix ndef arity rfv =
@@ -216,7 +222,8 @@ let comp_env_fix ndef arity rfv =
      in_stack = add_param arity 0 Range.empty;
      pos_rec = Array.init ndef (fun i -> Koffsetclosure i);
      offset = 0;
-     in_env = rfv
+     in_env = rfv;
+     max_stack_size = ref 0;
    }
 
 let comp_env_cofix_type ndef rfv =
@@ -226,7 +233,8 @@ let comp_env_cofix_type ndef rfv =
     in_stack = Range.empty;
     pos_rec = [||];
     offset = ndef;
-    in_env = rfv
+    in_env = rfv;
+    max_stack_size = ref 0;
   }
 
 let comp_env_cofix ndef arity rfv =
@@ -236,7 +244,8 @@ let comp_env_cofix ndef arity rfv =
      in_stack = add_param arity 0 Range.empty;
      pos_rec = Array.init ndef (fun i -> Kenvacc (ndef - 1 - i));
      offset = ndef;
-     in_env = rfv
+     in_env = rfv;
+     max_stack_size = ref 0;
    }
 
 (* [push_param ] add function parameters on the stack *)
@@ -407,12 +416,6 @@ let cont_cofix arity =
     Kacc 0;       (* accu = res                                           *)
     Kreturn (arity+2) ]
 
-
-(* Code of closures *)
-let fun_code = ref []
-
-let init_fun_code () = fun_code := []
-
 (* Compilation of constructors and inductive types *)
 
 
@@ -428,16 +431,16 @@ let nest_block tag arity cont =
   Kconst (Const_b0 (tag - Obj.last_non_constant_constructor_tag)) ::
     Kmakeblock(arity+1, Obj.last_non_constant_constructor_tag) :: cont
 
-let code_makeblock ~stack_size ~arity ~tag cont =
+let code_makeblock cenv ~stack_size ~arity ~tag cont =
   if tag < Obj.last_non_constant_constructor_tag then
     Kmakeblock(arity, tag) :: cont
   else begin
-    set_max_stack_size (stack_size + 1);
+    set_max_stack_size cenv (stack_size + 1);
     Kpush :: nest_block tag arity cont
   end
 
-let compile_structured_constant _cenv sc sz cont =
-  set_max_stack_size sz;
+let compile_structured_constant cenv sc sz cont =
+  set_max_stack_size cenv sz;
   Kconst sc :: cont
 
 (* compiling application *)
@@ -481,7 +484,9 @@ let compile_fv_elem cenv fv sz cont =
 let rec compile_fv cenv l sz cont =
   match l with
   | [] -> cont
-  | [fvn] -> set_max_stack_size (sz + 1); compile_fv_elem cenv fvn sz cont
+  | [fvn] ->
+    let () = set_max_stack_size cenv (sz + 1) in
+    compile_fv_elem cenv fvn sz cont
   | fvn :: tl ->
       compile_fv_elem cenv fvn sz
         (Kpush :: compile_fv cenv tl (sz + 1) cont)
@@ -512,7 +517,7 @@ let get_caml_prim = let open CPrimitives in function
 
 (* sz is the size of the local stack *)
 let rec compile_lam env cenv lam sz cont =
-  set_max_stack_size sz;
+  let () = set_max_stack_size cenv sz in
   match lam with
   | Lrel(_, i) -> pos_rel i cenv sz :: cont
 
@@ -560,7 +565,7 @@ let rec compile_lam env cenv lam sz cont =
       Sorts.qsort q u, s
     in
     let compile_get_univ cenv idx sz cont =
-      set_max_stack_size sz;
+      let () = set_max_stack_size cenv sz in
       compile_fv_elem cenv (FVuniv_var idx) sz cont
     in
     if List.is_empty subs then
@@ -583,10 +588,9 @@ let rec compile_lam env cenv lam sz cont =
      let arity = Array.length ids in
      let r_fun = comp_env_fun arity in
      let lbl_fun = Label.create() in
-     let cont_fun =
-       ensure_stack_capacity (compile_lam env r_fun body arity) [Kreturn arity]
-     in
-     fun_code := Ksequence (add_grab arity lbl_fun cont_fun) :: !fun_code;
+     let cont_fun = compile_lam env r_fun body arity [Kreturn arity] in
+     let cont_fun = ensure_stack_capacity r_fun cont_fun in
+     let () = push_fun env (add_grab arity lbl_fun cont_fun) in
      let fv = fv r_fun in
      compile_fv cenv fv.fv_rev sz (Kclosure(lbl_fun,fv.size) :: cont)
 
@@ -602,27 +606,25 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_types = Array.make ndef Label.no in
       let lbl_bodies = Array.make ndef Label.no in
       (* Compiling types *)
-      let env_type = comp_env_fix_type rfv in
       for i = 0 to ndef - 1 do
-        let fcode =
-          ensure_stack_capacity (compile_lam env env_type types.(i) 0) [Kstop]
-        in
+        let env_type = comp_env_fix_type rfv in
+        let fcode = compile_lam env env_type types.(i) 0 [Kstop] in
+        let fcode = ensure_stack_capacity env_type fcode in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-        fun_code := Ksequence fcode :: !fun_code
+        push_fun env fcode
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
         let params,body = decompose_Llam bodies.(i) in
         let arity = Array.length params in
         let env_body = comp_env_fix ndef arity rfv in
-        let cont1 =
-          ensure_stack_capacity (compile_lam env env_body body arity) [Kreturn arity]
-        in
+        let cont1 = compile_lam env env_body body arity [Kreturn arity] in
+        let cont1 = ensure_stack_capacity env_body cont1 in
         let lbl = Label.create () in
         lbl_bodies.(i) <- lbl;
         let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
-        fun_code := Ksequence fcode :: !fun_code
+        push_fun env fcode
       done;
       let fv = !rfv in
       compile_fv cenv fv.fv_rev sz
@@ -635,14 +637,13 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_bodies = Array.make ndef Label.no in
       (* Compiling types *)
       let rfv = ref empty_fv in
-      let env_type = comp_env_cofix_type ndef rfv in
       for i = 0 to ndef - 1 do
-        let fcode =
-          ensure_stack_capacity (compile_lam env env_type types.(i) 0) [Kstop]
-        in
+        let env_type = comp_env_cofix_type ndef rfv in
+        let fcode = compile_lam env env_type types.(i) 0 [Kstop] in
+        let fcode = ensure_stack_capacity env_type fcode in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-        fun_code := Ksequence fcode :: !fun_code
+        push_fun env fcode
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
@@ -650,23 +651,21 @@ let rec compile_lam env cenv lam sz cont =
         let arity = Array.length params in
         let env_body = comp_env_cofix ndef arity rfv in
         let lbl = Label.create () in
-        let comp arity =
-          (* 4 stack slots are needed to update the cofix when forced *)
-          set_max_stack_size (arity + 4);
-          compile_lam env env_body body (arity+1) (cont_cofix arity)
-        in
-        let cont = ensure_stack_capacity comp arity in
+        (* 4 stack slots are needed to update the cofix when forced *)
+        let () = set_max_stack_size env_body (arity + 4) in
+        let cont = compile_lam env env_body body (arity+1) (cont_cofix arity) in
+        let cont = ensure_stack_capacity env_body cont in
         lbl_bodies.(i) <- lbl;
-        fun_code := Ksequence (add_grab (arity+1) lbl cont) :: !fun_code;
+        push_fun env (add_grab (arity+1) lbl cont)
       done;
       let fv = !rfv in
-      set_max_stack_size (sz + fv.size + ndef + 2);
+      let () = set_max_stack_size cenv (sz + fv.size + ndef + 2) in
       compile_fv cenv fv.fv_rev sz
         (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
   | Lcase ((ci, rtbl, _), t, a, branches) ->
       let ind = ci.ci_ind in
-      let mib = lookup_mind (fst ind) env in
+      let mib = lookup_mind (fst ind) env.env in
       let oib = mib.mind_packets.(snd ind) in
       let lbl_consts = Array.make oib.mind_nb_constant Label.no in
       let nallblock = oib.mind_nb_args + 1 in (* +1 : accumulate *)
@@ -677,11 +676,11 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_eblocks = Array.make neblock Label.no in
       let branch1, cont = make_branch cont in
       (* Compilation of the return type *)
-      let fcode =
-        ensure_stack_capacity (compile_lam env cenv t sz) [Kpop sz; Kstop]
-      in
+      let ret_env = { cenv with max_stack_size = ref 0 } in
+      let fcode = compile_lam env ret_env t sz [Kpop sz; Kstop] in
+      let fcode = ensure_stack_capacity ret_env fcode in
       let lbl_typ,fcode = label_code fcode in
-      fun_code := Ksequence fcode :: !fun_code;
+      let () = push_fun env fcode in
       (* Compilation of the branches *)
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
@@ -723,11 +722,11 @@ let rec compile_lam env cenv lam sz cont =
             body (sz_b+arity) (add_pop arity (branch::!c)) in
         let code_b =
             if tag < Obj.last_non_constant_constructor_tag then begin
-                set_max_stack_size (sz_b + arity);
+                set_max_stack_size cenv (sz_b + arity);
                 Kpushfields arity :: code_b
               end
             else begin
-                set_max_stack_size (sz_b + arity + 1);
+                set_max_stack_size cenv (sz_b + arity + 1);
                 Kacc 0::Kpop 1::Kpushfields(arity+1)::Kpop 1::code_b
               end
         in
@@ -739,12 +738,12 @@ let rec compile_lam env cenv lam sz cont =
 
       let annot =
         {rtbl = rtbl; tailcall = is_tailcall;
-         max_stack_size = !max_stack_size - sz}
+         Vmvalues.max_stack_size = cenv.max_stack_size.contents - sz}
       in
 
      (* Compiling branch for accumulators *)
       let lbl_accu, code_accu =
-        set_max_stack_size (sz+3);
+        set_max_stack_size cenv (sz+3);
         label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
       in
       lbl_blocks.(0) <- lbl_accu;
@@ -761,7 +760,7 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lmakeblock (_, tag, args) ->
     let arity = Array.length args in
-    let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
+    let cont = code_makeblock cenv ~stack_size:(sz+arity-1) ~arity ~tag cont in
     if Int.equal arity 0 then cont
     else comp_args (compile_lam env) cenv args sz cont
 
@@ -793,7 +792,7 @@ let rec compile_lam env cenv lam sz cont =
             let params = Array.sub args 0 nparams in
             Kpush :: comp_args (compile_lam env) cenv params (sz + nargs) cont in
         Klabel lbl_default :: cont in
-      fun_code := Ksequence default :: !fun_code;
+      let () = push_fun env default in
       let cont = Kcamlprim (cop, lbl_default) :: cont in
       comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz cont
     | None ->
@@ -803,7 +802,7 @@ let rec compile_lam env cenv lam sz cont =
   | Lforce -> CErrors.anomaly Pp.(str "The VM should not use force")
 
 and compile_get_global cenv (kn,u) sz cont =
-  set_max_stack_size sz;
+  let () = set_max_stack_size cenv sz in
   if Univ.Instance.is_empty u then
     Kgetglobal kn :: cont
   else
@@ -811,13 +810,13 @@ and compile_get_global cenv (kn,u) sz cont =
       compile_universe cenv () (Univ.Instance.to_array u) sz cont
 
 and compile_universe cenv uni sz cont =
-  set_max_stack_size sz;
+  let () = set_max_stack_size cenv sz in
   match Univ.Level.var_index uni with
   | None -> compile_structured_constant cenv (Const_univ_level uni) sz cont
   | Some idx -> pos_universe_var idx cenv sz :: cont
 
 and compile_constant env cenv kn u args sz cont =
-  set_max_stack_size sz;
+  let () = set_max_stack_size cenv sz in
   if Univ.Instance.is_empty u then
     (* normal compilation *)
     comp_app (fun _ _ sz cont ->
@@ -862,15 +861,17 @@ let dump_bytecodes init code fvs =
      fnl ())
 
 let compile ~fail_on_error ?universes:(universes=0) env sigma c =
-  init_fun_code ();
   Label.reset_label_counter ();
   let cont = [Kstop] in
   try
-    let cenv, init_code =
+    let cenv, init_code, fun_code =
       if Int.equal universes 0 then
         let lam = lambda_of_constr ~optimize:true env sigma c in
         let cenv = empty_comp_env () in
-        cenv, ensure_stack_capacity (compile_lam env cenv lam 0) cont
+        let env = { env; fun_code = [] } in
+        let cont = compile_lam env cenv lam 0 cont in
+        let cont = ensure_stack_capacity cenv cont in
+        cenv, cont, env.fun_code
       else
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
@@ -882,22 +883,19 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
         let full_arity = arity + universes in
         let r_fun = comp_env_fun ~univs:universes arity in
         let lbl_fun = Label.create () in
-        let cont_fun =
-          ensure_stack_capacity (compile_lam env r_fun body full_arity)
-                         [Kreturn full_arity]
-        in
-        fun_code := Ksequence (add_grab full_arity lbl_fun cont_fun) :: !fun_code;
+        let env = { env; fun_code = [] } in
+        let cont_fun = compile_lam env r_fun body full_arity [Kreturn full_arity] in
+        let cont_fun = ensure_stack_capacity r_fun cont_fun in
+        let () = push_fun env (add_grab full_arity lbl_fun cont_fun) in
         let fv = fv r_fun in
-        let init_code =
-          ensure_stack_capacity (compile_fv cenv fv.fv_rev 0)
-                         (Kclosure(lbl_fun,fv.size) :: cont)
-        in
-        cenv, init_code
+        let init_code = compile_fv cenv fv.fv_rev 0 (Kclosure(lbl_fun,fv.size) :: cont) in
+        let init_code = ensure_stack_capacity cenv init_code in
+        cenv, init_code, env.fun_code
     in
     let fv = List.rev (!(cenv.in_env).fv_rev) in
     (if !dump_bytecode then
-      Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
-    let res = init_code @ !fun_code in
+      Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
+    let res = init_code @ fun_code in
     Some (to_memory res, Array.of_list fv)
   with TooLargeInductive msg as exn ->
     let _, info = Exninfo.capture exn in
