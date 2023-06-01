@@ -38,7 +38,7 @@ type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaques.opaque_disk
-type seg_vm = Vmlibrary.on_disk
+type seg_vm = Vmlibrary.compiled_library
 
 (** End the compilation of a library and save it to a ".vo" file,
     a ".vio" file, or a ".vos" file, depending on the todo_proofs

@@ -330,7 +330,7 @@ let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
 let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
 let tasks_seg : Obj.t option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
-let vm_seg : Vmlibrary.on_disk ObjFile.id = ObjFile.make_id "vmlibrary"
+let vm_seg = Vmlibrary.vm_segment
 
 let intern_from_file ~intern_mode (dir, f) =
   let validate = intern_mode <> Dep in
@@ -385,7 +385,7 @@ let intern_from_file ~intern_mode (dir, f) =
   let extra_cst =
     Option.default Univ.ContextSet.empty
       (Option.map (fun (cs,_) -> cs) opaque_csts) in
-  mk_library sd md f table digest extra_cst vmlib
+  mk_library sd md f table digest extra_cst (Vmlibrary.inject vmlib)
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph

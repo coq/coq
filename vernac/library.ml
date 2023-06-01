@@ -233,7 +233,7 @@ type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaques.opaque_disk
-type seg_vm = Vmlibrary.on_disk
+type seg_vm = Vmlibrary.compiled_library
 
 let mk_library sd md digests univs vm =
   {
@@ -269,7 +269,7 @@ let library_seg : seg_lib ObjFile.id = ObjFile.make_id "library"
 let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
 let tasks_seg () : (Opaqueproof.opaque_handle option, 'doc) tasks option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
-let vm_seg : seg_vm ObjFile.id = ObjFile.make_id "vmlibrary"
+let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
 let intern_from_file lib_resolver dir =
   let f = lib_resolver dir in
@@ -279,7 +279,7 @@ let intern_from_file lib_resolver dir =
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
   let univs, digest_u = ObjFile.marshal_in_segment ch ~segment:universes_seg in
   let del_opaque, _ = in_delayed f ch ~segment:opaques_seg in
-  let vmlib, _ = ObjFile.marshal_in_segment ch ~segment:vm_seg in
+  let vmlib = Vmlibrary.load dir ~file:f ch in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;

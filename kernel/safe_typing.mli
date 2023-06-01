@@ -242,7 +242,7 @@ val start_library : DirPath.t -> ModPath.t safe_transformer
 val export :
   output_native_objects:bool ->
   safe_environment -> DirPath.t ->
-    ModPath.t * compiled_library * Vmlibrary.on_disk * Nativelib.native_library
+    ModPath.t * compiled_library * Vmlibrary.compiled_library * Nativelib.native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
 val import : compiled_library -> Univ.ContextSet.t -> Vmlibrary.on_disk -> vodigest ->
