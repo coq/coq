@@ -1183,7 +1183,7 @@ let end_module l restype senv =
   let mb = build_module_body params restype senv in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let senv' = propagate_loads { senv with env = newenv } in
-  let newenv = Modops.add_module mb newenv in
+  let newenv = Modops.add_module mb senv'.env in
   let newresolver =
     if Modops.is_functor mb.mod_type then oldsenv.modresolver
     else Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
