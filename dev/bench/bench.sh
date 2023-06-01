@@ -378,8 +378,13 @@ create_opam() {
     for package in coq-core coq-stdlib coqide-server coq; do
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
+
+        # build stdlib with -j 1 to get nicer timings
+        local this_nproc=$number_of_processors
+        if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
+
         _RES=0
-        opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path $package.dev . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
@@ -417,6 +422,28 @@ echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $o
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
 zulip_edit "Benching continues..."
+
+# HTML for stdlib
+# NB: unlike coq_makefile packages, stdlib produces foo.timing not foo.v.timing
+new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
+old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
+for vo in $(cd $new_base_path/; find . -name '*.vo'); do
+    if [ -e $old_base_path/$vo ]; then
+        echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
+    fi
+    if [ -e $old_base_path/${vo%%.vo}.timing ] && \
+           [ -e $new_base_path/${vo%%.vo}.timing ]; then
+        mkdir -p $working_dir/html/coq-stdlib/$(dirname $vo)/
+        # NB: sometimes randomly fails
+        $timelog2html $new_base_path/${vo%%o} \
+                      $old_base_path/${vo%%.vo}.timing \
+                      $new_base_path/${vo%%.vo}.timing > \
+                      $working_dir/html/coq-stdlib/${vo%%o}.html ||
+            echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
+                 $old_base_path/${vo%%.vo}.timing \
+                 $new_base_path/${vo%%.vo}.timing
+    fi
+done
 
 # --------------------------------------------------------------------------------
 # Measure the compilation times of the specified OPAM packages in both switches
