@@ -22,9 +22,6 @@ open Environ
 open Modops
 open Mod_subst
 
-type 'alg translation =
-  module_signature * 'alg * delta_resolver * Univ.Constraints.t
-
 let rec mp_from_mexpr = function
   | MEident mp -> mp
   | MEapply (expr,_) -> mp_from_mexpr expr
@@ -60,7 +57,13 @@ let infer_gen_conv state env c1 c2 =
 let infer_gen_conv_leq state env c1 c2 =
   Conversion.generic_conv Conversion.CUMUL ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
 
-let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
+type with_body = {
+  w_def : Constr.t;
+  w_univs : universes;
+  w_bytecode : Vmemitcodes.body_code option;
+}
+
+let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
@@ -78,23 +81,23 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaque terms,
          as long as they have the right type *)
-      let univs, ctx' =
-        match cb.const_universes, ctx with
-        | Monomorphic, None ->
+      let ctx' =
+        match cb.const_universes, wth.w_univs with
+        | Monomorphic, Monomorphic ->
           let cst = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
-              let j = Typeops.infer env' c in
-              assert (j.uj_val == c); (* relevances should already be correct here *)
+              let j = Typeops.infer env' wth.w_def in
+              assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               let cst = infer_gen_conv_leq (cst, ustate) env' j.uj_type typ in
               cst
             | Def c' ->
-              infer_gen_conv (cst, ustate) env' c c'
+              infer_gen_conv (cst, ustate) env' wth.w_def c'
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
-          Monomorphic, cst
-        | Polymorphic uctx, Some ctx ->
+          cst
+        | Polymorphic uctx, Polymorphic ctx ->
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
@@ -103,8 +106,8 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
           let env' = Environ.push_context ~strict:false (Univ.AbstractContext.repr uctx) env in
           let () = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
-              let j = Typeops.infer env' c in
-              assert (j.uj_val == c); (* relevances should already be correct here *)
+              let j = Typeops.infer env' wth.w_def in
+              assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               begin
                 try Conversion.conv_leq env' j.uj_type typ
@@ -112,23 +115,20 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
               end
             | Def c' ->
               begin
-                try Conversion.conv env' c c'
+                try Conversion.conv env' wth.w_def c'
                 with Conversion.NotConvertible -> error_incorrect_with_constraint lab
               end
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
-          Polymorphic ctx, cst
+          cst
         | _ -> error_incorrect_with_constraint lab
       in
-      let def = Def c in
-      (*      let ctx' = Univ.UContext.make (newus, cst) in *)
       let cb' =
         { cb with
-          const_body = def;
-          const_universes = univs ;
-          const_body_code =
-              (Vmbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
+          const_body = Def wth.w_def;
+          const_universes = wth.w_univs;
+          const_body_code = wth.w_bytecode; }
       in
       before@(lab,SFBconst(cb'))::after, ctx'
     else
@@ -141,7 +141,7 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
         | Abstract ->
           let struc = Modops.destr_nofunctor (MPdot (mp,lab)) mb.mod_type in
           let struc', cst =
-            check_with_def (cst, ustate) env' struc (idl,(c,ctx)) (MPdot(mp,lab)) mb.mod_delta
+            check_with_def (cst, ustate) env' struc (idl, wth) (MPdot(mp,lab)) mb.mod_delta
           in
           let mb' = { mb with
                       mod_type = NoFunctor struc';
@@ -230,7 +230,10 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
 let check_with ustate env mp (sign,reso,cst) = function
   | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
-    let struc', cst = check_with_def (cst, ustate) env struc (idl, (c, ctx)) mp reso in
+    let univs = match ctx with None -> Monomorphic | Some uctx -> Polymorphic uctx in
+    let bcode = Vmbytegen.compile_constant_body ~fail_on_error:false env univs (Def c) in
+    let body = { w_def = c; w_univs = univs; w_bytecode = bcode } in
+    let struc', cst = check_with_def (cst, ustate) env struc (idl, body) mp reso in
     NoFunctor struc', reso, cst
   | WithMod(idl,new_mp) ->
     let struc = destr_nofunctor mp sign in

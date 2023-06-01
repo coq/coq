@@ -157,11 +157,11 @@ let factor_fix env sg l cb msb =
     (hack proposed by Elie)
 *)
 
-let expand_mexpr env mpo me =
+let expand_mexpr env mp me =
   let inl = Some (Flags.get_inline_level()) in
   let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let sign, expr, delta, (_, cst) = Mod_typing.translate_mse state env mpo inl me in
-  sign, expr, delta, cst
+  let mb, (_, cst) = Mod_typing.translate_module state env mp inl (MExpr ([], me, None)) in
+  mb.mod_type, mb.mod_delta
 
 let expand_modtype env mp me =
   let inl = Some (Flags.get_inline_level()) in
@@ -335,7 +335,7 @@ and extract_mexpr env mp = function
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
-      let sign,_,delta,_ = expand_mexpr env (Some mp) me in
+      let sign, delta = expand_mexpr env mp me in
       extract_msignature env mp delta ~all:true sign
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
