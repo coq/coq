@@ -16,11 +16,28 @@ open Constrexpr
 open Glob_term
 open Notation_term
 
+val notation_entry_eq : notation_entry -> notation_entry -> bool
+(** Equality on [notation_entry]. *)
+
+val notation_with_optional_scope_eq : notation_with_optional_scope -> notation_with_optional_scope -> bool
+
+val notation_eq : notation -> notation -> bool
+(** Equality on [notation]. *)
+
 val interpretation_eq : interpretation -> interpretation -> bool
 (** Equality on [interpretation]. *)
 
 val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
 (** Equality on [notation_entry_level]. *)
+
+type level = notation_entry * entry_level * entry_relative_level list
+  (* first argument is InCustomEntry s for custom entries *)
+
+val level_eq : level -> level -> bool
+(** Equality on [level]. *)
+
+val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+(** Equality on [entry_relative_level]. *)
 
 (** Binds a notation in a given scope to an interpretation *)
 type 'a interp_rule_gen =

@@ -28,17 +28,17 @@ let declare_notation_grammar ntn rule =
 let grammar_of_notation ntn =
   NotationMap.find ntn !notation_grammar_map
 
-let notation_subentries_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_subentries_map" NotationMap.empty
+let notation_non_terminals_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_non_terminals_map" NotationMap.empty
 
-let declare_notation_subentries ntn entries =
+let declare_notation_non_terminals ntn entries =
   try
     let _ = NotationMap.find ntn !notation_grammar_map in
     anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a grammar.")
   with Not_found ->
-  notation_subentries_map := NotationMap.add ntn entries !notation_subentries_map
+  notation_non_terminals_map := NotationMap.add ntn entries !notation_non_terminals_map
 
-let subentries_of_notation ntn =
-  NotationMap.find ntn !notation_subentries_map
+let non_terminals_of_notation ntn =
+  NotationMap.find ntn !notation_non_terminals_map
 
 let get_defined_notations () =
   NotationSet.elements @@ NotationMap.domain !notation_grammar_map

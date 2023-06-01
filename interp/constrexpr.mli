@@ -37,11 +37,19 @@ type name_decl = lname * universe_decl_expr option
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
 
+type side = Left | Right
 type entry_level = int
 type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | LevelSome
 
+(* The entry in which a notation is declared *)
 type notation_entry = InConstrEntry | InCustomEntry of string
-type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * entry_level
+
+(* A notation entry with the level where the notation lives *)
+type notation_entry_level = notation_entry * entry_level
+
+(* Notation subentries, to be associated to the variables of the notation *)
+type notation_entry_relative_level = notation_entry * (entry_relative_level * side option)
+
 type notation_key = string
 
 (* A notation associated to a given parsing rule *)

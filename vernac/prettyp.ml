@@ -943,7 +943,7 @@ let print_notation env sigma entry raw_ntn =
   let ntn = (entry, interp_ntn) in
   try
     let lvl = Notation.level_of_notation ntn in
-    let args = Notgram_ops.subentries_of_notation ntn in
+    let args = Notgram_ops.non_terminals_of_notation ntn in
     let pplvl = Metasyntax.pr_level ntn lvl args in
     Pp.(str "Notation \"" ++ str interp_ntn ++ str "\"" ++ spc ()
       ++ pplvl ++ pr_comma () ++ print_notation_grammar env sigma ntn

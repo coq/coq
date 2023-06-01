@@ -21,7 +21,7 @@ type grammar_constr_prod_item =
 (** Grammar rules for a notation *)
 
 type one_notation_grammar = {
-  notgram_level : Notation.level;
+  notgram_level : Notationextern.level;
   notgram_assoc : Gramlib.Gramext.g_assoc option;
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;

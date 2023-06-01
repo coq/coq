@@ -15,7 +15,7 @@ open Nameops
 open Libnames
 open Namegen
 open Glob_term
-open Notation
+open Notationextern
 open Constrexpr
 
 (***********)

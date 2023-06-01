@@ -82,5 +82,5 @@ val declare_custom_entry : locality_flag -> string -> unit
 val check_custom_entry : string -> unit
 (** Check that the given string is a valid custom entry that has been declared *)
 
-val pr_level : Constrexpr.notation -> Notation.level -> Extend.constr_entry_key list -> Pp.t
+val pr_level : Constrexpr.notation -> Notationextern.level -> Extend.constr_entry_key list -> Pp.t
 (** Pretty print level information of a notation and all of its arguments *)

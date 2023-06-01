@@ -29,6 +29,16 @@ Notation "x" := x (in custom myconstr at level 0, x global).
 Check [ b + c ].
 Check fun a => [ a + a ].
 
+Module NonCoercions.
+
+(* Should we forbid extra coercions in constr (knowing the "( x )" is hard-wiree)? *)
+Notation "[[ x ]]" := x (at level 0, x at level 42).
+
+(* Check invalid coercions (thus not used for printing) *)
+Notation "[[[ x ]]]" := x (in custom myconstr at level 5, x custom myconstr at level 5).
+
+End NonCoercions.
+
 End A.
 
 Module B.
@@ -479,7 +489,7 @@ End MorePrecise3.
 
 Module TypedPattern.
 
-Notation "## x P" := (forall x:nat*nat, P) (x pattern, at level 0).
+Notation "## x P" := (forall x:nat*nat, P) (x pattern, at level 1).
 Check ## (x,y) (x=0).
 Fail Check ## ((x,y):bool*bool) (x=y).
 
@@ -487,7 +497,7 @@ End TypedPattern.
 
 Module SingleBinder.
 
-Notation "## x P" := (forall x, x = x -> P) (x binder, at level 0).
+Notation "## x P" := (forall x, x = x -> P) (x binder, at level 1).
 Check ## '(x,y) (x+y=0).
 Check ## (x:nat) (x=0).
 Check ## '((x,y):nat*nat) (x=0).

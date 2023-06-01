@@ -319,7 +319,7 @@ let precedence_of_position_and_level from_level = function
   | NextLevel, _ -> LevelLt from_level, None
   | DefaultLevel, _ -> LevelSome, None
 
-(** Computing precedences of subentries for parsing *)
+(** Computing precedences of non-terminals for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     fst (precedence_of_position_and_level from_level x)
@@ -682,7 +682,7 @@ let is_constr_typ (s,lev) x etyps =
      sublevel sent to camlp5, so as to include the case of
      DefaultLevel which are valid *)
   | ETConstr (s',_,(lev',InternalProd | (NumLevel _ | NextLevel as lev'), _)) ->
-    Notation.notation_entry_eq s s' && production_level_eq lev lev'
+    notation_entry_eq s s' && production_level_eq lev lev'
   | _ -> false
 
 let include_possible_similar_trailing_pattern typ etyps sl l =
@@ -870,8 +870,8 @@ let check_and_extend_constr_grammar ntn rule =
         Some (Notgram_ops.grammar_of_notation ntn_for_grammar)
       with Not_found -> None
     in
-    let oldtyps = Notgram_ops.subentries_of_notation ntn_for_grammar in
-    if not (Notation.level_eq prec oldprec) && oldparsing <> None then
+    let oldtyps = Notgram_ops.non_terminals_of_notation ntn_for_grammar in
+    if not (level_eq prec oldprec) && oldparsing <> None then
       error_parsing_incompatible_level ntn ntn_for_grammar oldprec oldtyps prec typs;
     if oldparsing = None then raise Not_found
   with Not_found ->
@@ -888,15 +888,15 @@ let cache_one_syntax_extension (ntn,synext) =
           Some (Notgram_ops.grammar_of_notation ntn)
         with Not_found -> None
       in
-      let oldtyps = Notgram_ops.subentries_of_notation ntn in
-      if not (Notation.level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
+      let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
+      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
          (oldparsing <> None || synext.synext_notgram = None) then
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
-      let () = Notgram_ops.declare_notation_subentries ntn synext.synext_nottyps in
+      let () = Notgram_ops.declare_notation_non_terminals ntn synext.synext_nottyps in
       let () = Option.iter (Notgram_ops.declare_notation_grammar ntn) synext.synext_notgram in
       None in
   (* Declare the parsing rule *)
@@ -1186,22 +1186,15 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
   | ETBigint, true | ETGlobal, true -> NtnTypeConstrList
   | ETBigint, false | ETGlobal, false -> NtnTypeConstr
 
-let subentry_of_constr_prod_entry from_level = function
-  (* Specific 8.2 approximation *)
-  | ETConstr (InCustomEntry s,_,x) ->
-    let n = match fst (precedence_of_position_and_level from_level x) with
-     | LevelLt n -> n-1
-     | LevelLe n -> n
-     | LevelSome -> max_int in
-    InCustomEntryLevel (s,n)
-  (* level and use of parentheses for coercion is hard-wired for "constr";
-     we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeLevel
-  | _ -> InConstrEntrySomeLevel
+let entry_relative_level_of_constr_prod_entry from_level = function
+  | ETConstr (entry,_,(_,y)) as x ->
+     let side = match y with BorderProd (side,_) -> Some side | _ -> None in
+     (entry,(precedence_of_entry_type from_level x,side))
+  | _ -> InConstrEntry,(LevelSome,None) (*??*)
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
-   recvars level allvars typs =
+   recvars allvars (from,level,_) typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     List.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1217,7 +1210,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((subentry_of_constr_prod_entry level typ,sc),
+    ((entry_relative_level_of_constr_prod_entry (from,level) typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1249,10 +1242,12 @@ let is_coercion level typs =
   | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let customkey = make_notation_entry_level custom n in
-         let subentry = subentry_of_constr_prod_entry n e in
-         if Notationextern.notation_entry_level_eq subentry customkey then None
-         else Some (IsEntryCoercion subentry)
+         let entry = (custom,n) in
+         let entry_relative = entry_relative_level_of_constr_prod_entry entry e in
+         if is_coercion entry entry_relative then
+           Some (IsEntryCoercion (entry,entry_relative))
+         else
+           None
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
      | _ -> None)
@@ -1573,7 +1568,7 @@ exception NoSyntaxRule
 let recover_notation_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
-    let pa_typs = Notgram_ops.subentries_of_notation ntn in
+    let pa_typs = Notgram_ops.non_terminals_of_notation ntn in
     let pa_rule = try Some (Notgram_ops.grammar_of_notation ntn) with Not_found -> None in
     let pp_rule = try Some (find_generic_notation_printing_rule ntn) with Not_found -> None in
     {
@@ -1722,8 +1717,8 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     ninterp_rec_vars = Id.Map.of_list recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
-  let interp = make_interpretation_vars recvars plevel acvars i_typs in
+  let plevel = match level with Some (from,level,l) -> (from,level,l) | None (* numeral: irrelevant )*) -> (InConstrEntry,0,[]) in
+  let interp = make_interpretation_vars recvars acvars plevel i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
   let also_in_cases_pattern = has_no_binders_type vars in
@@ -1925,8 +1920,10 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] 0 acvars (List.map in_pat vars) in
+  let level_arg = NumLevel 9 (* level of arguments of an application *) in
+  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd))) in
+  let level = (InConstrEntry,0,[]) in
+  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in

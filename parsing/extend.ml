@@ -10,10 +10,8 @@
 
 (** Entry keys for constr notations *)
 
-type side = Left | Right
-
 type production_position =
-  | BorderProd of side * Gramlib.Gramext.g_assoc option
+  | BorderProd of Constrexpr.side * Gramlib.Gramext.g_assoc option
   | InternalProd
 
 type production_level =
@@ -46,7 +44,7 @@ let constr_entry_key_eq v1 v2 = match v1, v2 with
   | ETBigint, ETBigint -> true
   | ETBinder b1, ETBinder b2 -> b1 == b2
   | ETConstr (s1,bko1,_lev1), ETConstr (s2,bko2,_lev2) ->
-    Notation.notation_entry_eq s1 s2 && Option.equal (=) bko1 bko2
+    Notationextern.notation_entry_eq s1 s2 && Option.equal (=) bko1 bko2
   | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
   | (ETIdent | ETName | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
 
@@ -72,9 +70,9 @@ and constr_prod_entry_key =
   | ETProdGlobal          (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdOneBinder of bool (* Parsed as name, or name:type or 'pattern, possibly in closed form *)
-  | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
+  | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or custom when extending a constr or custom entry; parsed as pattern or custom pattern when extending a pattern or custom pattern entry *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * (bool * string) list (* Parsed as non-empty list of constr, or subentries of those *)
+  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * (bool * string) list (* Parsed as a non-empty list of constr or custom entry *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
 (** {5 AST for user-provided entries} *)

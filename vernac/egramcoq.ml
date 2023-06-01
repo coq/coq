@@ -14,6 +14,7 @@ open Names
 open Libnames
 open Constrexpr
 open Extend
+open Notationextern
 open Notation_gram
 open Pcoq
 
@@ -214,12 +215,12 @@ let assoc_eq al ar =
      NumLevel n = constr LEVEL n *)
 let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
 (* If a level in a different grammar, no other choice than denoting it by absolute level *)
-  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> NumLevel n
+  | (NumLevel n,_) when not (notation_entry_eq custom custom') -> NumLevel n
 (* If a default level in a different grammar, the entry name is ok *)
   | (DefaultLevel,InternalProd) ->
-    if Notation.notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
-  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') ->
-    if Notation.notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
+    if notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
+  | (DefaultLevel,BorderProd _) when not (notation_entry_eq custom custom') ->
+    if notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
 (* Associativity is None means force the level *)
   | (NumLevel n,BorderProd (_,None)) -> NumLevel n
   | (DefaultLevel,BorderProd (_,None)) -> assert false
@@ -239,7 +240,7 @@ let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in mat
   | (NumLevel n,BorderProd (Left,Some LeftA)) -> NumLevel n
   | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some _)) -> NextLevel
   (* None means NEXT *)
-  | (NextLevel,_) -> assert (Notation.notation_entry_eq custom custom'); NextLevel
+  | (NextLevel,_) -> assert (notation_entry_eq custom custom'); NextLevel
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
     if from = n + 1 then NextLevel else NumLevel n
@@ -322,7 +323,7 @@ let target_entry : type s. notation_entry -> s target -> s Entry.t = function
    | ForConstr -> entry_for_constr
    | ForPattern -> entry_for_patttern
 
-let is_self custom (custom',from) e = Notation.notation_entry_eq custom custom' && match e with
+let is_self custom (custom',from) e = notation_entry_eq custom custom' && match e with
 | (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
 | (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
 | _ -> false
@@ -557,7 +558,7 @@ let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
 let different_levels (custom,opt_level) (custom',string_level) =
   match opt_level with
   | None -> true
-  | Some level -> not (Notation.notation_entry_eq custom custom') || level <> int_of_string string_level
+  | Some level -> not (notation_entry_eq custom custom') || level <> int_of_string string_level
 
 let rec pure_sublevels' assoc from forpat level = function
 | [] -> []

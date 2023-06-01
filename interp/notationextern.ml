@@ -20,10 +20,30 @@ open Notation_term
 open Glob_term
 (*i*)
 
-let notation_entry_level_eq s1 s2 = match (s1,s2) with
-| InConstrEntrySomeLevel, InConstrEntrySomeLevel -> true
-| InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
-| (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
+let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
+  | LastLonelyNotation, LastLonelyNotation -> true
+  | NotationInScope s1, NotationInScope s2 -> String.equal s1 s2
+  | (LastLonelyNotation | NotationInScope _), _ -> false
+
+let entry_relative_level_eq t1 t2 = match t1, t2 with
+  | LevelLt n1, LevelLt n2 -> Int.equal n1 n2
+  | LevelLe n1, LevelLe n2 -> Int.equal n1 n2
+  | LevelSome, LevelSome -> true
+  | (LevelLt _ | LevelLe _ | LevelSome), _ -> false
+
+let notation_entry_eq s1 s2 = match (s1,s2) with
+  | InConstrEntry, InConstrEntry -> true
+  | InCustomEntry s1, InCustomEntry s2 -> String.equal s1 s2
+  | (InConstrEntry | InCustomEntry _), _ -> false
+
+let notation_entry_level_eq (e1,n1) (e2,n2) =
+  notation_entry_eq e1 e2 && Int.equal n1 n2
+
+let notation_entry_relative_level_eq (e1,(n1,s1)) (e2,(n2,s2)) =
+  notation_entry_eq e1 e2 && entry_relative_level_eq n1 n2 && s1 = s2
+
+let notation_eq (from1,ntn1) (from2,ntn2) =
+  notation_entry_eq from1 from2 && String.equal ntn1 ntn2
 
 let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
@@ -48,7 +68,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
-  notation_entry_level_eq entry1 entry2 &&
+  notation_entry_relative_level_eq entry1 entry2 &&
   pair_eq (List.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
@@ -56,6 +76,12 @@ let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
   x1 == x2 ||
   List.equal var_attributes_eq vars1 vars2 &&
   Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
+
+type level = notation_entry * entry_level * entry_relative_level list
+  (* first argument is InCustomEntry s for custom entries *)
+
+let level_eq (s1, l1, t1) (s2, l2, t2) =
+  notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
 
 (* Uninterpretation tables *)
 

@@ -62,7 +62,7 @@ type tmp_scope_name = scope_name
 
 type subscopes = tmp_scope_name list * scope_name list
 
-type extended_subscopes = Constrexpr.notation_entry_level * subscopes
+type extended_subscopes = Constrexpr.notation_entry_relative_level * subscopes
 
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
