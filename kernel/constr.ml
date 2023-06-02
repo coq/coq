@@ -1013,18 +1013,11 @@ let compare_invert f iv1 iv2 =
     Array.compare f iv1.indices iv2.indices
 
 let constr_ord_int f t1 t2 =
-  let (=?) f g i1 i2 j1 j2=
-    let c = f i1 i2 in
-    if Int.equal c 0 then g j1 j2 else c in
-  let (==?) fg h i1 i2 j1 j2 k1 k2=
-    let c=fg i1 i2 j1 j2 in
-    if Int.equal c 0 then h k1 k2 else c in
+  let open! Compare in
   let fix_cmp (a1, i1) (a2, i2) =
-    ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
+    compare [(Array.compare Int.compare,a1,a2); (Int.compare,i1,i2)]
   in
-  let ctx_cmp f (_n1, p1) (_n2, p2) =
-    f p1 p2
-  in
+  let ctx_cmp f (_n1, p1) (_n2, p2) = f p1 p2 in
   match kind t1, kind t2 with
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
@@ -1038,19 +1031,17 @@ let constr_ord_int f t1 t2 =
     | Meta m1, Meta m2 -> Int.compare m1 m2
     | Meta _, _ -> -1 | _, Meta _ -> 1
     | Evar (e1,l1), Evar (e2,l2) ->
-        (Evar.compare =? (SList.compare f)) e1 e2 l1 l2
+      compare [(Evar.compare, e1, e2); (SList.compare f, l1, l2)]
     | Evar _, _ -> -1 | _, Evar _ -> 1
     | Sort s1, Sort s2 -> Sorts.compare s1 s2
     | Sort _, _ -> -1 | _, Sort _ -> 1
     | Prod (_,t1,c1), Prod (_,t2,c2)
-    | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-        (f =? f) t1 t2 c1 c2
+    | Lambda (_,t1,c1), Lambda (_,t2,c2) -> compare [(f,t1,t2); (f,c1,c2)]
     | Prod _, _ -> -1 | _, Prod _ -> 1
     | Lambda _, _ -> -1 | _, Lambda _ -> 1
-    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
-        ((f =? f) ==? f) b1 b2 t1 t2 c1 c2
+    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> compare [(f,b1,b2); (f,t1,t2); (f,c1,c2)]
     | LetIn _, _ -> -1 | _, LetIn _ -> 1
-    | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
+    | App (c1,l1), App (c2,l2) -> compare [(f,c1,c2); (Array.compare f, l1, l2)]
     | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
@@ -1059,28 +1050,27 @@ let constr_ord_int f t1 t2 =
     | Construct (ct1,_u1), Construct (ct2,_u2) -> Construct.CanOrd.compare ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
     | Case (_,_u1,pms1,p1,iv1,c1,bl1), Case (_,_u2,pms2,p2,iv2,c2,bl2) ->
-      let c = Array.compare f pms1 pms2 in
-      if Int.equal c 0 then let c = ctx_cmp f p1 p2 in
-      if Int.equal c 0 then let c = compare_invert f iv1 iv2 in
-      if Int.equal c 0 then let c = f c1 c2 in
-      if Int.equal c 0 then Array.compare (ctx_cmp f) bl1 bl2
-      else c else c else c else c
+      compare [
+        (Array.compare f, pms1, pms2);
+        (ctx_cmp f, p1, p2);
+        (compare_invert f, iv1, iv2);
+        (f, c1, c2);
+        (Array.compare (ctx_cmp f), bl1, bl2);
+      ]
     | Case _, _ -> -1 | _, Case _ -> 1
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-        ((fix_cmp =? (Array.compare f)) ==? (Array.compare f))
-        ln1 ln2 tl1 tl2 bl1 bl2
+      compare [(fix_cmp, ln1, ln2); (Array.compare f, tl1, tl2); (Array.compare f, bl1, bl2)]
     | Fix _, _ -> -1 | _, Fix _ -> 1
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-        ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
-        ln1 ln2 tl1 tl2 bl1 bl2
+      compare [(Int.compare, ln1, ln2); (Array.compare f, tl1, tl2); (Array.compare f, bl1, bl2)]
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
-    | Proj (p1,c1), Proj (p2,c2) -> (Projection.CanOrd.compare =? f) p1 p2 c1 c2
+    | Proj (p1,c1), Proj (p2,c2) -> compare [(Projection.CanOrd.compare, p1, p2); (f, c1, c2)]
     | Proj _, _ -> -1 | _, Proj _ -> 1
     | Int i1, Int i2 -> Uint63.compare i1 i2
     | Int _, _ -> -1 | _, Int _ -> 1
     | Float f1, Float f2 -> Float64.total_compare f1 f2
     | Array(_u1,t1,def1,ty1), Array(_u2,t2,def2,ty2) ->
-      (((Array.compare f) =? f) ==? f) t1 t2 def1 def2 ty1 ty2
+      compare [(Array.compare f, t1, t2); (f, def1, def2); (f, ty1, ty2)]
     | Array _, _ -> -1 | _, Array _ -> 1
 
 let rec compare m n=
