@@ -139,7 +139,7 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 (** Predefined handlers **)
 
-let _ = register_handler begin function
+let () = register_handler begin function
   | UserError pps ->
     Some pps
   | _ -> None
@@ -149,11 +149,8 @@ let _ = register_handler begin function
     by inner functions during a [vernacinterp]. They should be handled
     only at the very end of interp, to be displayed to the user. *)
 
-[@@@ocaml.warning "-52"]
 let noncritical = function
   | Sys.Break | Out_of_memory | Stack_overflow
   | Assert_failure _ | Match_failure _ | Anomaly _
-  | Control.Timeout -> false
-  | Invalid_argument "equal: functional value" -> false
+  | Control.Timeout | Invalid_argument _ -> false
   | _ -> true
-[@@@ocaml.warning "+52"]
