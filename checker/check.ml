@@ -303,7 +303,7 @@ type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = depe
 (* Dependency graph *)
 let depgraph = ref LibraryMap.empty
 
-let marshal_in_segment ~validate ~value ~segment f ch =
+let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) f ch : a =
   let () = LargeFile.seek_in ch segment.ObjFile.pos in
   if validate then
     let v =
@@ -321,6 +321,12 @@ let marshal_in_segment ~validate ~value ~segment f ch =
   else
     System.marshal_in f ch
 
+let summary_seg : summary_disk ObjFile.id = ObjFile.make_id "summary"
+let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
+let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
+let tasks_seg : Obj.t option ObjFile.id = ObjFile.make_id "tasks"
+let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
+
 let intern_from_file ~intern_mode (dir, f) =
   let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
@@ -328,20 +334,20 @@ let intern_from_file ~intern_mode (dir, f) =
     try
       (* First pass to read the metadata of the file *)
       let ch = System.with_magic_number_check raw_intern_library f in
-      let seg_sd = ObjFile.get_segment ch ~segment:"summary" in
-      let seg_md = ObjFile.get_segment ch ~segment:"library" in
-      let seg_univs = ObjFile.get_segment ch ~segment:"universes" in
-      let seg_tasks = ObjFile.get_segment ch ~segment:"tasks" in
-      let seg_opaque = ObjFile.get_segment ch ~segment:"opaques" in
+      let seg_sd = ObjFile.get_segment ch ~segment:summary_seg in
+      let seg_md = ObjFile.get_segment ch ~segment:library_seg in
+      let seg_univs = ObjFile.get_segment ch ~segment:universes_seg in
+      let seg_tasks = ObjFile.get_segment ch ~segment:tasks_seg in
+      let seg_opaque = ObjFile.get_segment ch ~segment:opaques_seg in
       let () = ObjFile.close_in ch in
       (* Actually read the data *)
       let ch = open_in_bin f in
 
-      let (sd:summary_disk) = marshal_in_segment ~validate ~value:Values.v_libsum ~segment:seg_sd f ch in
-      let (md:library_disk) = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
-      let (opaque_csts:seg_univ option) = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
-      let (tasks:'a option) = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
-      let (table:seg_proofs) = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
+      let sd = marshal_in_segment ~validate ~value:Values.v_libsum ~segment:seg_sd f ch in
+      let md = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
+      let opaque_csts = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
+      let tasks = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
+      let table = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in

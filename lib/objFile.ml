@@ -55,7 +55,7 @@ summary |
 
 *)
 
-type segment = {
+type 'a segment = {
   name : string;
   pos : int64;
   len : int64;
@@ -65,15 +65,18 @@ type segment = {
 type in_handle = {
   in_filename : string;
   in_channel : in_channel;
-  in_segments : segment CString.Map.t;
+  in_segments : Obj.t segment CString.Map.t;
 }
 
 type out_handle = {
   out_filename : string;
   out_channel : out_channel;
-  mutable out_segments : segment CString.Map.t;
+  mutable out_segments : Obj.t segment CString.Map.t;
 }
 
+type 'a id = { id : string }
+
+let make_id id = { id }
 
 let input_segment_summary ch =
   let nlen = input_int32 ch in
@@ -101,7 +104,7 @@ let rec input_segment_summaries ch n accu =
 
 let marshal_in_segment (type a) h ~segment : a * Digest.t =
   let { in_channel = ch } = h in
-  let s = CString.Map.find segment h.in_segments in
+  let s = CString.Map.find segment.id h.in_segments in
   let () = LargeFile.seek_in ch s.pos in
   let (v : a) = marshal_in h.in_filename ch in
   let () = assert (Int64.equal (LargeFile.pos_in ch) (Int64.add s.pos s.len)) in
@@ -111,7 +114,7 @@ let marshal_in_segment (type a) h ~segment : a * Digest.t =
 
 let marshal_out_segment h ~segment v =
   let { out_channel = ch } = h in
-  let () = assert (not (CString.Map.mem segment h.out_segments)) in
+  let () = assert (not (CString.Map.mem segment.id h.out_segments)) in
   let pos = LargeFile.pos_out ch in
   let () = Marshal.to_channel ch v [] in
   let () = flush ch in
@@ -125,13 +128,13 @@ let marshal_out_segment h ~segment v =
     digest
   in
   let () = Digest.output ch hash in
-  let s = { name = segment; pos; len; hash } in
-  let () = h.out_segments <- CString.Map.add segment s h.out_segments in
+  let s = { name = segment.id; pos; len; hash } in
+  let () = h.out_segments <- CString.Map.add segment.id s h.out_segments in
   ()
 
 let marshal_out_binary h ~segment =
   let { out_channel = ch } = h in
-  let () = assert (not (CString.Map.mem segment h.out_segments)) in
+  let () = assert (not (CString.Map.mem segment.id h.out_segments)) in
   let pos = LargeFile.pos_out ch in
   let finish () =
     let () = flush ch in
@@ -145,8 +148,8 @@ let marshal_out_binary h ~segment =
       digest
     in
     let () = Digest.output ch hash in
-    let s = { name = segment; pos; len; hash } in
-    h.out_segments <- CString.Map.add segment s h.out_segments
+    let s = { name = segment.id; pos; len; hash } in
+    h.out_segments <- CString.Map.add segment.id s h.out_segments
   in
   ch, finish
 
@@ -178,8 +181,8 @@ let open_in ~file =
 let close_in ch =
   close_in ch.in_channel
 
-let get_segment ch ~segment =
-  CString.Map.find segment ch.in_segments
+let get_segment (type a) ch ~(segment : a id) : a segment =
+  (CString.Map.find segment.id ch.in_segments :> a segment)
 
 let segments ch = ch.in_segments
 

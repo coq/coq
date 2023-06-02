@@ -128,11 +128,15 @@ let mk_library sd f md digests univs =
     library_extra_univs = univs;
   }
 
+let summary_seg : summary_disk ObjFile.id = ObjFile.make_id "summary"
+let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
+let universes_seg : (Univ.ContextSet.t * bool) option ObjFile.id = ObjFile.make_id "universes"
+
 let intern_from_file f =
   let ch = System.with_magic_number_check (fun file -> ObjFile.open_in ~file) f in
-  let (lsd : summary_disk), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
-  let ((lmd : library_disk), digest_lmd) = ObjFile.marshal_in_segment ch ~segment:"library" in
-  let (univs : (Univ.ContextSet.t * bool) option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
+  let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
+  let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
+  let univs, digest_u = ObjFile.marshal_in_segment ch ~segment:universes_seg in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   let open Safe_typing in
