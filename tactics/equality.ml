@@ -1355,6 +1355,12 @@ let build_injector env sigma dflt c cpath =
 let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
 let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
+let warn_inject_no_eqdep_dec =
+  CWarnings.create ~name:"injection-missing-eqdep-dec" ~category:CWarnings.CoreCategories.tactics
+    Pp.(fun (env,ind) ->
+        str "The equality scheme for" ++ spc() ++ Printer.pr_inductive env ind ++ spc() ++
+        str "could not be used as Coq.Logic.Eqdep_dec has not been required.")
+
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->
   try
@@ -1377,10 +1383,14 @@ let inject_if_homogenous_dependent_pair ty =
     (* Note: should work even if not an inductive type, but the table only *)
     (* knows inductive types *)
     if not (Option.has_some (Ind_tables.lookup_scheme (!eq_dec_scheme_kind_name()) ind) &&
-      pf_apply is_conv gl ar1.(2) ar2.(2)) then raise_notrace Exit;
-    check_required_library ["Coq";"Logic";"Eqdep_dec"];
+            pf_apply is_conv gl ar1.(2) ar2.(2)) then raise_notrace Exit;
+    let inj2 = match lib_ref_opt "core.eqdep_dec.inj_pair2" with
+      | None ->
+        warn_inject_no_eqdep_dec (env,ind);
+        raise_notrace Exit
+      | Some v -> v
+    in
     let new_eq_args = [|pf_get_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
-    let inj2 = lib_ref "core.eqdep_dec.inj_pair2" in
     find_scheme (!eq_dec_scheme_kind_name()) ind >>= fun c ->
     let c = if Global.is_polymorphic (ConstRef c)
       then CErrors.anomaly Pp.(str "Unexpected univ poly in inject_if_homogenous_dependent_pair")
