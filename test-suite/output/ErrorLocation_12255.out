@@ -1,4 +1,4 @@
 File "./output/ErrorLocation_12255.v", line 4, characters 5-21:
 The command has indeed failed with message:
-Ltac variable x is bound to i > 0 which cannot be coerced to
+Ltac variable x is bound to i > 0 of type constr which cannot be coerced to
 an evaluable reference.

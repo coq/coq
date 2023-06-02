@@ -12,12 +12,12 @@ The command has indeed failed with message:
 Cannot coerce to a disjunctive/conjunctive pattern.
 File "./output/InvalidDisjunctiveIntro.v", line 10, characters 32-33:
 The command has indeed failed with message:
-Ltac variable H is bound to idtac which cannot be coerced to
+Ltac variable H is bound to idtac of type tacvalue which cannot be coerced to
 an introduction pattern.
 File "./output/InvalidDisjunctiveIntro.v", line 13, characters 2-52:
 The command has indeed failed with message:
 Disjunctive/conjunctive introduction pattern expected.
 File "./output/InvalidDisjunctiveIntro.v", line 15, characters 50-52:
 The command has indeed failed with message:
-Ltac variable H' is bound to idtac which cannot be coerced to
-an introduction pattern.
+Ltac variable H' is bound to idtac of type tacvalue which cannot be coerced
+to an introduction pattern.
