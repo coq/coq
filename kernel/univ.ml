@@ -506,8 +506,6 @@ struct
 
 end
 
-type constraints = Constraints.t
-
 module Hconstraint =
   Hashcons.Make(
     struct
@@ -522,7 +520,7 @@ module Hconstraint =
 module Hconstraints =
   Hashcons.Make(
     struct
-      type t = constraints
+      type t = Constraints.t
       type u = univ_constraint -> univ_constraint
       let hashcons huc s =
         Constraints.fold (fun x -> Constraints.add (huc x)) s Constraints.empty
@@ -538,13 +536,13 @@ let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate Hconstraints
 
 
 (** A value with universe constraints. *)
-type 'a constrained = 'a * constraints
+type 'a constrained = 'a * Constraints.t
 
 let constraints_of (_, cst) = cst
 
 (** Constraints functions. *)
 
-type 'a constraint_function = 'a -> 'a -> constraints -> constraints
+type 'a constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
 
 let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
