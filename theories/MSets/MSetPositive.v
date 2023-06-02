@@ -314,7 +314,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
   (** Specification of [eq] *)
 
-  Local Instance eq_equiv : Equivalence eq.
+  #[global] Instance eq_equiv : Equivalence eq.
   Proof. firstorder. Qed.
 
   (** Specification of [mem] *)
