@@ -27,6 +27,8 @@ module NamedDecl = Context.Named.Declaration
 
 type inline = bool
 
+(* this is a constant_body without the VM body_code and with
+   unchecked section variable set *)
 type 'opaque result = {
   cook_body : (constr, 'opaque) constant_def;
   cook_type : types;
@@ -209,58 +211,68 @@ let infer_opaque ~sec_univs env entry =
     cook_flags = Environ.typing_flags env;
   }, context
 
+(* Checks the section variables for the body.
+   Returns the closure of the union with the variables in the type.
+*)
 let check_section_variables env declared_set typ body =
-  let ids_typ = global_vars_set env typ in
-  let ids_def = global_vars_set env body in
-  let inferred_set = Environ.really_needed env (Id.Set.union ids_typ ids_def) in
-  if not (Id.Set.subset inferred_set declared_set) then
-    let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
-    let n = List.length l in
-    let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
-    let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
-    let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-    user_err Pp.(prlist str
-        ["The following section "; (String.plural n "variable"); " ";
-        (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-        missing_vars ++ str "." ++ fnl () ++ fnl () ++
-        str "You can either update your proof to not depend on " ++ missing_vars ++
-        str ", or you can update your Proof line from" ++ fnl () ++
-        str "Proof using " ++ declared_vars ++ fnl () ++
-        str "to" ++ fnl () ++
-        str "Proof using " ++ inferred_vars)
+  let tyvars = global_vars_set env typ in
+  let declared_set = Environ.really_needed env (Id.Set.union declared_set tyvars) in
+  let () = match body with
+  | None -> ()
+  | Some body ->
+    let ids_def = global_vars_set env body in
+    let inferred_set = Environ.really_needed env (Id.Set.union declared_set ids_def) in
+    if not (Id.Set.subset inferred_set declared_set) then
+      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
+      let n = List.length l in
+      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
+      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
+      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
+      user_err Pp.(prlist str
+                     ["The following section "; (String.plural n "variable"); " ";
+                      (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
+                   missing_vars ++ str "." ++ fnl () ++ fnl () ++
+                   str "You can either update your proof to not depend on " ++ missing_vars ++
+                   str ", or you can update your Proof line from" ++ fnl () ++
+                   str "Proof using " ++ declared_vars ++ fnl () ++
+                   str "to" ++ fnl () ++
+                   str "Proof using " ++ inferred_vars)
+  in
+  declared_set
 
 let build_constant_declaration env result =
   let typ = result.cook_type in
   (* We try to postpone the computation of used section variables *)
-  let hyps, def =
-    let context_ids = List.map NamedDecl.get_id (named_context env) in
-    let def = result.cook_body in
-    match result.cook_context with
-    | None ->
-      if List.is_empty context_ids then
-        (* Empty section context: no need to check *)
-        Id.Set.empty, def
-      else
-        (* No declared section vars, and non-empty section context:
-           we must look at the body NOW, if any *)
-        let ids_typ = global_vars_set env typ in
-        let ids_def = match def with
-        | Undef _ | Primitive _ -> Id.Set.empty
-        | Def cs -> global_vars_set env cs
-        | OpaqueDef _ ->
-          (* Opaque definitions always come with their section variables *)
-          assert false
+  let def = result.cook_body in
+  let hyps =
+      if List.is_empty (named_context env) then
+        (* Empty section context *)
+        let () = match result.cook_context with
+          | None -> ()
+          | Some ids -> assert (Id.Set.is_empty ids)
         in
-        Environ.really_needed env (Id.Set.union ids_typ ids_def), def
-    | Some declared ->
-      let declared = Environ.really_needed env declared in
-      (* We use the declared set and chain a check of correctness *)
-      declared,
-      match def with
-      | Undef _ | Primitive _ | OpaqueDef _ as x -> x (* nothing to check *)
-      | Def cs as x ->
-        let () = check_section_variables env declared typ cs in
-        x
+        Id.Set.empty
+      else match result.cook_context with
+        | None ->
+          (* No declared section vars, and non-empty section context:
+             we must look at the body NOW, if any *)
+          let ids_typ = global_vars_set env typ in
+          let ids_def = match def with
+            | Undef _ | Primitive _ -> Id.Set.empty
+            | Def cs -> global_vars_set env cs
+            | OpaqueDef _ ->
+              (* Opaque definitions always come with their section variables *)
+              assert false
+          in
+          Environ.really_needed env (Id.Set.union ids_typ ids_def)
+        | Some declared ->
+          let body = match def with
+            | Undef _ -> None
+            | Primitive _ -> assert false (* not allowed in sections *)
+            | OpaqueDef _ -> None (* checked in check_delayed *)
+            | Def cs -> Some cs
+          in
+          check_section_variables env declared typ body
   in
   let univs = result.cook_universes in
   let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
@@ -297,7 +309,11 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let j = Typeops.infer env body in
   let j = unzip ectx j in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
-  let () = check_section_variables env declared tyj.utj_val body in
+  let declared =
+    Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
+  in
+  let declared' = check_section_variables env declared tyj.utj_val (Some body) in
+  let () = assert (Id.Set.equal declared declared') in
   (* Note: non-trivial usubst only in polymorphic case *)
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
   def, univs
@@ -317,22 +333,15 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_local_def env _id centry =
-  let centry = {
-    const_entry_body = centry.secdef_body;
-    const_entry_secctx = centry.secdef_secctx;
-    const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_entry;
-    const_entry_inline_code = false;
-  } in
-  let decl = infer_constant ~sec_univs:None env (DefinitionEntry centry) in
-  let typ = decl.cook_type in
-  let () = match decl.cook_universes with
-  | Monomorphic -> ()
-  | Polymorphic _ -> assert false
+let translate_local_def env _id { secdef_body; secdef_type; } =
+  let j = Typeops.infer env secdef_body in
+  let typ = match secdef_type with
+    | None -> j.uj_type
+    | Some typ ->
+      let tj = Typeops.infer_type env typ in
+      let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+      tj.utj_val
   in
-  let c = match decl.cook_body with
-  | Def c -> c
-  | Undef _ | Primitive _ | OpaqueDef _ -> assert false
-  in
-  c, decl.cook_relevance, typ
+  let c = j.uj_val in
+  let r = Relevanceops.relevance_of_term env c in
+  c, r, typ

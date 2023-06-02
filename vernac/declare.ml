@@ -521,9 +521,9 @@ let declare_variable_core ~name ~kind d =
       (* We must declare the universe constraints before type-checking the
          term. *)
       let () = DeclareUctx.declare_universe_context ~poly univs in
+      (* NB: de.proof_entry_secctx is ignored *)
       let se = {
         Entries.secdef_body = body;
-        secdef_secctx = de.proof_entry_secctx;
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in

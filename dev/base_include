@@ -38,7 +38,7 @@ open Term
 open Vars
 open Context
 open Typeops
-open Term_typing
+open Constant_typing
 open Univ
 open Inductive
 open Indtypes
