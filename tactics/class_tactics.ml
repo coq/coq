@@ -1019,14 +1019,6 @@ module Search = struct
     in
     let finished = Proofview.finished pv' in
     let evm' = Proofview.return pv' in
-    let shelf = Evd.shelf evm' in
-    assert(Evd.fold_undefined (fun ev _ acc ->
-        let okev = Evd.mem evm ev || List.mem ev shelf in
-          if not okev then
-            Feedback.msg_debug
-              (str "leaking evar " ++ int (Evar.repr ev) ++
-                  spc () ++ pr_ev_with_id evm' ev);
-          acc && okev) evm' true);
     let _, evm' = Evd.pop_future_goals evm' in
     let () = ppdebug 1 (fun () ->
         str"Finished resolution with " ++ str(if finished then "a complete" else "an incomplete") ++
