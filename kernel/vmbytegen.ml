@@ -906,17 +906,27 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
     fn msg; None
 
 let compile_constant_body ~fail_on_error env univs = function
-  | Undef _ | OpaqueDef _ | Primitive _ -> Some BCconstant
+  | Undef _ | OpaqueDef _ -> Some BCconstant
+  | Primitive _ -> None
   | Def body ->
       let instance_size = Univ.AbstractContext.size (Declareops.universes_context univs) in
-      match kind body with
+      let alias =
+        match kind body with
         | Const (kn',u) when is_univ_copy instance_size u ->
             (* we use the canonical name of the constant*)
-            let con= Constant.make1 (Constant.canonical kn') in
-              Some (BCalias (get_alias env con))
-        | _ ->
-            let res = compile ~fail_on_error ~universes:instance_size env empty_evars body in
-            Option.map (fun (code, fv) -> BCdefined (code, fv)) res
+            let con = Constant.make1 (Constant.canonical kn') in
+            let kn = get_alias env con in
+            let cb = lookup_constant kn env in
+            begin match cb.const_body with
+            | Primitive _ -> None
+            | _ -> Some kn
+            end
+        | _ -> None in
+      match alias with
+      | Some kn -> Some (BCalias kn)
+      | _ ->
+          let res = compile ~fail_on_error ~universes:instance_size env empty_evars body in
+          Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
