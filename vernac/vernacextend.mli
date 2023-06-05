@@ -156,13 +156,49 @@ type (_, _) ty_sig =
 
 type ty_ml = TyML : bool (* deprecated *) * ('r, 's) ty_sig * 'r * 's option -> ty_ml
 
-(** Wrapper to dynamically extend vernacular commands. *)
-val vernac_extend :
-  ?plugin:string ->
+(** Statically extend vernacular commands.
+
+    This is used by coqpp VERNAC EXTEND.
+    It should not be used directly, use [declare_dynamic_vernac_extend] instead.
+
+    Commands added by plugins at Declare ML Module / Require time should provide [plugin].
+
+    Commands added without providing [plugin] cannot be removed from
+    the grammar or modified. Not passing [plugin] is possible for
+    non-plugin coq-core commands and deprecated for all other callers.
+*)
+val static_vernac_extend :
+  plugin:string option ->
   command:string ->
   ?classifier:(string -> vernac_classification) ->
   ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
   ty_ml list -> unit
+
+(** Used to tell the system that all future vernac extends are from plugins. *)
+val static_linking_done : unit -> unit
+
+(** Dynamically extend vernacular commands (for instance when importing some module).
+
+    Reusing a [command] string will replace previous uses. The result
+    is undefined and probably produces anomalies if the previous
+    grammar rule is still active and was different from the new one.
+
+    The polymorphic arguments are as in [TyML].
+
+    The declared grammar extension is disabled, one needs to call
+    [Egramml.extend_vernac_command_grammar] in order to enable it.
+    That call should use [undoable:true] to make it possible to
+    disable the extension, e.g. by backtracking over the command which
+    enabled it.
+*)
+val declare_dynamic_vernac_extend
+  : command:string
+  -> ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t
+  -> depr:bool
+  -> 's (* classifier *)
+  -> ('r, 's) ty_sig (* grammar *)
+  -> 'r (* command interpretation *)
+  -> Vernacexpr.extend_name
 
 (** {5 VERNAC ARGUMENT EXTEND} *)
 

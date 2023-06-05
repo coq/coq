@@ -61,9 +61,9 @@ let force_is_plugin ~what () = match !plugin_name with
   | Some (Some n) -> n
   | Some None | None -> fatal ("DECLARE PLUGIN required before "^what)
 
-let check_is_plugin () = match !plugin_name with
+let check_is_plugin ~what () = match !plugin_name with
   | Some b -> b
-  | None -> plugin_name := Some None; None
+  | None -> fatal ("DECLARE PLUGIN required before "^what)
 
 let print_list fmt pr l =
   let rec prl fmt = function
@@ -297,7 +297,7 @@ let gramext_plugin_uid name =
   " ~plugin_uid:(\""^name^"\", \""^(!file_name)^":"^string_of_int cnt^"\")"
 
 let grammar_extend () =
-  match check_is_plugin () with
+  match check_is_plugin ~what:"GRAMMAR EXTEND" () with
   | Some name -> "Egramml.grammar_extend"^gramext_plugin_uid name
   | None -> "Pcoq.grammar_extend"
 
@@ -448,8 +448,8 @@ let print_entry fmt = function
 
 let print_ast fmt ext =
   let pr fmt () =
-    fprintf fmt "Vernacextend.vernac_extend %s ~command:\"%s\" %a ?entry:%a %a"
-      (match check_is_plugin () with | Some name -> "~plugin:\""^name^"\"" | None -> "")
+    fprintf fmt "Vernacextend.static_vernac_extend ~plugin:%s ~command:\"%s\" %a ?entry:%a %a"
+      (match check_is_plugin ~what:"VERNAC EXTEND" () with | Some name -> "(Some \""^name^"\")" | None -> "None")
       ext.vernacext_name print_classifier ext.vernacext_class
       print_entry ext.vernacext_entry (print_rules ext.vernacext_state) ext.vernacext_rules
   in
@@ -662,11 +662,10 @@ let print_ast fmt arg =
 end
 
 let declare_plugin fmt name =
-  fprintf fmt "let _ = Mltop.add_known_module \"%s\"@\n" name;
+  Option.iter (fprintf fmt "let _ = Mltop.add_known_module \"%s\"@\n") name;
   let () = match !plugin_name with
-    | None -> plugin_name := Some (Some name)
-    | Some (Some _) -> fatal "Multiple DECLARE PLUGIN not allowed";
-    | Some None -> fatal "DECLARE PLUGIN must be before VERNAC / GRAMMAR EXTEND"
+    | None -> plugin_name := Some name
+    | Some _ -> fatal "Multiple DECLARE PLUGIN not allowed";
   in
   ()
 

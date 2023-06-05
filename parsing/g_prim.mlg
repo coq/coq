@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+DECLARE GLOBAL PLUGIN
+
 {
 
 open Names

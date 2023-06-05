@@ -103,7 +103,8 @@ node:
 ;
 
 declare_plugin:
-| DECLARE PLUGIN STRING { DeclarePlugin $3 }
+| DECLARE PLUGIN STRING { DeclarePlugin (Some $3) }
+| DECLARE GLOBAL PLUGIN { DeclarePlugin None }
 ;
 
 grammar_extend:

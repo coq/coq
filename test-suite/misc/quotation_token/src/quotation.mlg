@@ -1,3 +1,5 @@
+DECLARE PLUGIN "coq-test-suite.quotation"
+
 {
 open Pcoq.Constr
 }
