@@ -525,10 +525,26 @@ let ref_value_cache info flags tab ref =
     in
     KeyTable.add tab ref v; v
 
+type lconstr =
+| Thunk of fconstr * Esubst.lift * Univ.Instance.t
+| Value of Constr.t
+
+type dconstr = { mutable value : lconstr; }
+
+let return el u c = { value = Thunk (c, el, u) }
+
 let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
   begin match expand_rel i subst with
-  | Inl (k, lazy v) -> Vars.lift k v
+  | Inl (k, v) ->
+    let v = match v.value with
+    | Value v -> v
+    | Thunk (c, el, u) ->
+      let r = to_constr (el, u) c in
+      let () = v.value <- Value r in
+      r
+    in
+    Vars.lift k v
   | Inr (m, _) -> mkRel m
   end
 | Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
@@ -545,7 +561,7 @@ let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.
 
 (* The inverse of mk_clos: move back to constr *)
 (* XXX should there be universes in lfts???? *)
-let rec to_constr (lfts, usubst as ulfts) v =
+and to_constr (lfts, usubst as ulfts) v =
   let subst_us c = subst_instance_constr usubst c in
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
@@ -650,7 +666,7 @@ and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
             Array.map f_ctx ve)
 
 and comp_subs (el,u) (s,u') =
-  Esubst.lift_subst (fun el c -> lazy (to_constr (el,u) c)) el s, u'
+  Esubst.lift_subst (fun el c -> return el u c) el s, u'
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
