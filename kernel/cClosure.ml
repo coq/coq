@@ -527,7 +527,7 @@ let ref_value_cache info flags tab ref =
 
 type lconstr =
 | Thunk of fconstr * Esubst.lift * Univ.Instance.t
-| Value of Constr.t
+| Value of Constr.t * bool (* closed ? *)
 
 type dconstr = { mutable value : lconstr; }
 
@@ -537,14 +537,15 @@ let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.
 | Rel i ->
   begin match expand_rel i subst with
   | Inl (k, v) ->
-    let v = match v.value with
-    | Value v -> v
+    let v, clos = match v.value with
+    | Value (v, clos) -> (v, clos)
     | Thunk (c, el, u) ->
       let r = to_constr (el, u) c in
-      let () = v.value <- Value r in
-      r
+      let clos = Vars.closed0 r in
+      let () = v.value <- Value (r, clos) in
+      r, clos
     in
-    Vars.lift k v
+    if clos then v else Vars.lift k v
   | Inr (m, _) -> mkRel m
   end
 | Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
