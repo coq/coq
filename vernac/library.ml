@@ -34,7 +34,7 @@ module Delayed :
 sig
 
 type 'a delayed
-val in_delayed : string -> ObjFile.in_handle -> segment:string -> 'a delayed * Digest.t
+val in_delayed : string -> ObjFile.in_handle -> segment:'a ObjFile.id -> 'a delayed * Digest.t
 val fetch_delayed : 'a delayed -> 'a
 
 end =
@@ -254,14 +254,22 @@ let mk_intern_library sum lib digest_lib univs digest_univs proofs =
   | Some (_,false) ->
     mk_library sum lib (Dvo_or_vi digest_lib) Univ.ContextSet.empty
 
+type ('uid, 'doc) tasks = (('uid, 'doc) Stateid.request * bool) list
+
+let summary_seg : seg_sum ObjFile.id = ObjFile.make_id "summary"
+let library_seg : seg_lib ObjFile.id = ObjFile.make_id "library"
+let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
+let tasks_seg () : (Opaqueproof.opaque_handle option, 'doc) tasks option ObjFile.id = ObjFile.make_id "tasks"
+let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
+
 let intern_from_file lib_resolver dir =
   let f = lib_resolver dir in
   Feedback.feedback(Feedback.FileDependency (Some f, DirPath.to_string dir));
   let ch = raw_intern_library f in
-  let (lsd : seg_sum), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
-  let ((lmd : seg_lib), digest_lmd) = ObjFile.marshal_in_segment ch ~segment:"library" in
-  let (univs : seg_univ option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch ~segment:"opaques" in
+  let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
+  let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
+  let univs, digest_u = ObjFile.marshal_in_segment ch ~segment:universes_seg in
+  let del_opaque, _ = in_delayed f ch ~segment:opaques_seg in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;
@@ -310,7 +318,7 @@ let rec_intern_library ~lib_resolver libs dir =
 
 let native_name_from_filename f =
   let ch = raw_intern_library f in
-  let (lmd : seg_sum), digest_lmd = ObjFile.marshal_in_segment ch ~segment:"summary" in
+  let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
 (**********************************************************************)
@@ -416,15 +424,13 @@ let require_library_syntax_from_dirpath ~lib_resolver modrefl =
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
 
-type ('uid, 'doc) tasks = (('uid, 'doc) Stateid.request * bool) list
-
 let load_library_todo f =
   let ch = raw_intern_library f in
-  let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
-  let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
-  let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let (tasks : (Opaqueproof.opaque_handle option, 'doc) tasks option), _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
-  let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
+  let s0, _ = ObjFile.marshal_in_segment ch ~segment:summary_seg in
+  let s1, _ = ObjFile.marshal_in_segment ch ~segment:library_seg in
+  let s2, _ = ObjFile.marshal_in_segment ch ~segment:universes_seg in
+  let tasks, _ = ObjFile.marshal_in_segment ch ~segment:(tasks_seg ()) in
+  let s4, _ = ObjFile.marshal_in_segment ch ~segment:opaques_seg in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
   if tasks = None then user_err (str "Not a .vio file.");
@@ -467,11 +473,11 @@ type 'doc todo_proofs =
 let save_library_base f sum lib univs tasks proofs =
   let ch = raw_extern_library f in
   try
-    ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
-    ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
-    ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
-    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks : (Opaqueproof.opaque_handle option, 'doc) tasks option);
-    ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
+    ObjFile.marshal_out_segment ch ~segment:summary_seg sum;
+    ObjFile.marshal_out_segment ch ~segment:library_seg lib;
+    ObjFile.marshal_out_segment ch ~segment:universes_seg univs;
+    ObjFile.marshal_out_segment ch ~segment:(tasks_seg ()) tasks;
+    ObjFile.marshal_out_segment ch ~segment:opaques_seg proofs;
     ObjFile.close_out ch
   with reraise ->
     let reraise = Exninfo.capture reraise in
