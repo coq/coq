@@ -780,6 +780,7 @@ library:ci-paco:
 library:ci-itree:
   extends: .ci-template
   needs:
+    - build:base
     - library:ci-paco
 
 library:ci-sf:
