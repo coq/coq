@@ -195,11 +195,16 @@ let rec find_dependencies st basename =
             let s = basename_noext str in
             if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
+                let pick_mldir mldir =
+                  match meta_file with
+                  | None -> mldir
+                  | Some _ -> Some(Filename.dirname str)
+                in
                 match Loadpath.search_mllib_known st s with
-                | Some mldir -> declare ".cma" mldir s
+                | Some mldir -> declare ".cma" (pick_mldir mldir) s
                 | None ->
                   match Loadpath.search_mlpack_known st s with
-                  | Some mldir -> declare ".cmo" mldir s
+                  | Some mldir -> declare ".cmo" (pick_mldir mldir) s
                   | None -> warning_declare f str
               end
           in
