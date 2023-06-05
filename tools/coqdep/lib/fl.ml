@@ -86,18 +86,69 @@ let rec find_plugin meta_file plugin_name path p { Fl_metascanner.pkg_defs ; pkg
     let path = path @ [find_plugin_field "directory" "." c.Fl_metascanner.pkg_defs] in
     find_plugin meta_file plugin_name path ps c
 
+(** [to_relative_path path] takes as input a file path [path], and constructs
+    an equivalent relative path from the current working directory. If [path]
+    is already relative, then it is returned immediately. *)
+let to_relative_path : string -> string = fun full_path ->
+  if Filename.is_relative full_path then full_path else
+  let cwd  = String.split_on_char '/' (Sys.getcwd ()) in
+  let path = String.split_on_char '/' full_path in
+  let rec remove_common_prefix l1 l2 =
+    match (l1, l2) with
+    | (x1 :: l1, x2 :: l2) when x1 = x2 -> remove_common_prefix l1 l2
+    | (_       , _       )              -> (l1, String.concat "/" l2)
+  in
+  let (cwd, path) = remove_common_prefix cwd path in
+  let add_parent path _ = Filename.concat Filename.parent_dir_name path in
+  List.fold_left add_parent path cwd
+
+(** [normalize_path path] takes as input a file path [path], and returns an
+    equivalent path that: (1) does not contain the current directory member
+    ["."] unless the path is to the current directory (in which case ["."]
+    is returned, or ["./"] if [path] has a trailing ["/"]), (2) only uses
+    parent directory members [".."] for a prefix of the path, and (3), has
+    a trailing ["/"] only if and only if [path] does.
+
+    For example, paths ["dir1/dir2/file.v"], ["."], ["dir1/dir2/dir3/"] and
+    ["../../dir/file.v"] are possible return values, but ["./file.v"] and
+    ["dir1/../dir2"] are not. *)
+let normalize_path : string -> string = fun path ->
+  let path = String.split_on_char '/' path in
+  let rec normalize acc path =
+    match (path, acc) with
+    | ([]          , _          ) -> List.rev acc
+    | ("."  :: path, _          ) -> normalize acc path
+    | (".." :: path, []         ) -> normalize (".." :: []) path
+    | (".." :: path, ".." :: _  ) -> normalize (".." :: acc) path
+    | (".." :: path, _    :: acc) -> normalize acc path
+    | (dir  :: path, _          ) -> normalize (dir :: acc) path
+  in
+  match normalize [] path with
+  | []   -> "."
+  | path -> String.concat "/" path
+
 let findlib_resolve ~meta_files ~file ~package ~plugin_name =
-  match find_parsable_META meta_files package with
-  | None -> Error.no_meta file package
-  | Some (meta_file, meta) ->
-    (* let meta = parse_META meta_file package in *)
-    let path = [find_plugin_field "directory" "." meta.Fl_metascanner.pkg_defs] in
-    let path, plug = find_plugin meta_file plugin_name path plugin_name meta in
-    let cmxs_file =
+  let (meta_file, meta) =
+    match find_parsable_META meta_files package with
+    | None   -> Error.no_meta file package
+    | Some v -> v
+  in
+  let path = [find_plugin_field "directory" "." meta.Fl_metascanner.pkg_defs] in
+  let path, plug = find_plugin meta_file plugin_name path plugin_name meta in
+  let cmxs_file =
+    let file =
       match find_plugin_field_opt "plugin" plug with
-      | None ->
-        Error.meta_file_lacks_field meta_file package "plugin"
-      | Some res_file ->
-        String.concat "/" path ^ "/" ^ Filename.chop_extension res_file
+      | None -> Error.meta_file_lacks_field meta_file package "plugin"
+      | Some file -> file
     in
-    meta_file, cmxs_file
+    let add d file =
+      if d = Filename.current_dir_name then file else Filename.concat d file
+    in
+    List.fold_right add path file
+  in
+  let meta_file = normalize_path (to_relative_path meta_file) in
+  let cmxs_file =
+    let meta_dir = Filename.dirname meta_file in
+    normalize_path (Filename.concat meta_dir cmxs_file)
+  in
+  (meta_file, cmxs_file)
