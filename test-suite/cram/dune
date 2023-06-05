@@ -1,0 +1,4 @@
+(cram
+ (applies_to :whole_subtree)
+ (deps (package coq-core) (package coq-stdlib))
+ (alias runtest-cram))
