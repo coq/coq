@@ -190,18 +190,18 @@ module Btauto = struct
         in
         h ++ aux t
     in
-    try
-      let var = to_list var in
-      let assign = List.combine penv var in
-      let map_msg (key, v) =
-        let b = if v then str "true" else str "false" in
-        let term = Printer.pr_constr_env env sigma key in
-        term ++ spc () ++ str ":=" ++ spc () ++ b
-      in
-      let assign = List.map map_msg assign in
-      let l = str "[" ++ (concat (str ";" ++ spc ()) assign) ++ str "]" in
-      str "Not a tautology:" ++ spc () ++ l
-    with e when CErrors.noncritical e -> (str "Not a tautology")
+    let var = to_list var in
+    let len = List.length var in
+    let penv = CList.firstn len penv in
+    let assign = List.combine penv var in
+    let map_msg (key,v) =
+      let b = bool v in
+      let term = Printer.pr_constr_env env sigma key in
+      term ++ spc () ++ str ":=" ++ spc () ++ b
+    in
+    let assign = List.map map_msg assign in
+    let l = str "[" ++ (concat (str ";" ++ spc ()) assign) ++ str "]" in
+    str "Not a tautology:" ++ spc () ++ l
 
   let print_counterexample p penv =
   Proofview.Goal.enter begin fun gl ->
