@@ -39,6 +39,11 @@ Private (matching) inductive types
    quotient types / higher-order inductive types in projects such as
    the `HoTT library <https://github.com/HoTT/HoTT>`_.
 
+   Reducing definitions from the inductive's module can expose
+   :g:`match` constructs to unification, which may result in invalid proof terms.
+   Errors from such terms are delayed until proof completion (i.e. on the :cmd:`Qed`). Use
+   :cmd:`Validate Proof` to identify which tactic produced the problematic term.
+
 .. example::
 
    .. coqtop:: all

@@ -486,6 +486,7 @@ type nonrec synpure_vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
+  | VernacValidateProof
   | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
 
   | VernacAddOption of Goptions.option_name * Goptions.table_value list

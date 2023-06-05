@@ -520,6 +520,7 @@ command: [
 | "Show" "Intros"
 | "Show" "Match" reference
 | "Guarded"
+| "Validate" "Proof"
 | "Create" "HintDb" IDENT; [ "discriminated" | ]
 | "Remove" "Hints" LIST1 global opt_hintbases
 | "Hint" hint opt_hintbases

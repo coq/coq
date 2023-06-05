@@ -100,7 +100,7 @@ let classify_vernac e =
     | VernacProof _
     | VernacFocus _ | VernacUnfocus
     | VernacSubproof _
-    | VernacCheckGuard
+    | VernacCheckGuard | VernacValidateProof
     | VernacUnfocused
     | VernacBullet _ ->
         VtProofStep { proof_block_detection = Some "bullet" }
