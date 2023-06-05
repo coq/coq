@@ -777,6 +777,11 @@ library:ci-analysis:
 library:ci-paco:
   extends: .ci-template
 
+library:ci-itree:
+  extends: .ci-template
+  needs:
+    - library:ci-paco
+
 library:ci-sf:
   extends: .ci-template
 
