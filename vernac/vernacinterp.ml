@@ -146,7 +146,7 @@ let rec interp_expr ?loc ~atts ~st c =
 
 and vernac_load ~verbosely entries =
   (* Note that no proof should be open here, so the state here is just token for now *)
-  let st = Vernacstate.freeze_full_state ~marshallable:false in
+  let st = Vernacstate.freeze_full_state () in
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let interp_entry (stack, pm) (CAst.{ loc; v = cmd }, synterp_st) =
     Vernacstate.Synterp.unfreeze synterp_st;
@@ -215,7 +215,7 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     let v_mod = if verbosely then Flags.verbosely else Flags.silently in
     let ontop = v_mod (interp_fn ~st) cmd in
     Vernacstate.Declare.set ontop [@ocaml.warning "-3"];
-    Vernacstate.Interp.freeze_interp_state ~marshallable:false
+    Vernacstate.Interp.freeze_interp_state ()
   with exn ->
     let exn = Exninfo.capture exn in
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
@@ -228,7 +228,7 @@ let interp ?(verbosely=true) ~st cmd =
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr cmd.CAst.v.expr);
   let entry = Synterp.synterp_control cmd in
   let interp = interp_gen ~verbosely ~st ~interp_fn:interp_control entry in
-  Vernacstate.{ synterp = Vernacstate.Synterp.freeze ~marshallable:false; interp }
+  Vernacstate.{ synterp = Vernacstate.Synterp.freeze (); interp }
 
 let interp_entry ?(verbosely=true) ~st entry =
   Vernacstate.unfreeze_full_state st;

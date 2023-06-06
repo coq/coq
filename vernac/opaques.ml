@@ -18,17 +18,9 @@
 
 type 'a const_entry_body = 'a Entries.proof_output Future.computation
 
-type 'a joinable =
-| Computation of 'a Future.computation
-| Joined of 'a
-
 type opaque_result =
-| OpaqueCertif of Safe_typing.opaque_certificate joinable ref
+| OpaqueCertif of Safe_typing.opaque_certificate Future.computation
 | OpaqueValue of Opaqueproof.opaque_proofterm
-
-let force c = match !c with
-| Computation c -> Future.force c
-| Joined v -> v
 
 (** Current table of opaque terms *)
 
@@ -37,36 +29,19 @@ struct
   type t = opaque_result Opaqueproof.HandleMap.t
   let state : t ref = ref Opaqueproof.HandleMap.empty
   let init () = state := Opaqueproof.HandleMap.empty
-  let freeze ~marshallable =
-    if marshallable then
-      let iter _ pf = match pf with
-      | OpaqueCertif cert ->
-        begin match !cert with
-        | Computation c -> cert := Joined (Future.force c)
-        | Joined _ -> ()
-        end
-      | OpaqueValue _ -> ()
-      in
-      let () = Opaqueproof.HandleMap.iter iter !state in
-      !state
-    else !state
+  let freeze () = !state
   let unfreeze s = state := s
 
   let join ?(except=Future.UUIDSet.empty) () =
     let iter i pf = match pf with
     | OpaqueValue _ -> ()
     | OpaqueCertif cert ->
-      match !cert with
-      | Joined cert ->
-        (* FIXME: in this case we lost the fix_exn wrapper. Does that matter? *)
-        if not @@ Safe_typing.is_filled_opaque i (Global.safe_env ()) then Global.fill_opaque cert
-      | Computation cert ->
-        if Future.UUIDSet.mem (Future.uuid cert) except then ()
-        else if Safe_typing.is_filled_opaque i (Global.safe_env ()) then
-          assert (Future.is_over cert)
-        else
-          (* Little belly dance to preserve the fix_exn wrapper around filling *)
-          Future.force @@ Future.chain cert (fun cert -> Global.fill_opaque cert)
+      if Future.UUIDSet.mem (Future.uuid cert) except then ()
+      else if Safe_typing.is_filled_opaque i (Global.safe_env ()) then
+        assert (Future.is_over cert)
+      else
+        (* Little belly dance to preserve the fix_exn wrapper around filling *)
+        Future.force @@ Future.chain cert (fun cert -> Global.fill_opaque cert)
     in
     Opaqueproof.HandleMap.iter iter !state
 
@@ -104,7 +79,7 @@ let declare_defined_opaque ?feedback_id i (body : Safe_typing.private_constants 
   | None -> ()
   | Some cert -> Global.fill_opaque cert
   in
-  let proof = OpaqueCertif (ref (Computation proof)) in
+  let proof = OpaqueCertif proof in
   let () = assert (not @@ Opaqueproof.HandleMap.mem i !current_opaques) in
   current_opaques := Opaqueproof.HandleMap.add i proof !current_opaques
 
@@ -121,7 +96,7 @@ let get_current_opaque i =
     match pf with
     | OpaqueValue pf -> Some pf
     | OpaqueCertif cert ->
-      let c, ctx = Safe_typing.repr_certificate (force cert) in
+      let c, ctx = Safe_typing.repr_certificate (Future.force cert) in
       let ctx = match ctx with
       | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
       | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
@@ -135,7 +110,7 @@ let get_current_constraints i =
     match pf with
     | OpaqueValue _ -> None
     | OpaqueCertif cert ->
-      let _, ctx = Safe_typing.repr_certificate (force cert) in
+      let _, ctx = Safe_typing.repr_certificate (Future.force cert) in
       let ctx = match ctx with
       | Opaqueproof.PrivateMonomorphic ctx -> ctx
       | Opaqueproof.PrivatePolymorphic _ -> Univ.ContextSet.empty
@@ -154,19 +129,17 @@ let dump ?(except=Future.UUIDSet.empty) () =
     let i = Opaqueproof.repr_handle h in
     let () = opaque_table.(i) <- Some p in
     f2t_map
-  | OpaqueCertif c ->
+  | OpaqueCertif cert ->
     let i = Opaqueproof.repr_handle h in
-    let f2t_map, proof = match !c with
-    | Computation cert ->
+    let f2t_map, proof =
       let uid = Future.uuid cert in
       let f2t_map = Future.UUIDMap.add uid h f2t_map in
       let c = Future.peek_val cert in
       let () = if Option.is_empty c && (not @@ Future.UUIDSet.mem uid except) then
-        CErrors.anomaly
-          Pp.(str"Proof object "++int i++str" is not checked nor to be checked")
+          CErrors.anomaly
+            Pp.(str"Proof object "++int i++str" is not checked nor to be checked")
       in
       f2t_map, c
-    | Joined cert -> f2t_map, Some cert
     in
     let c = match proof with
     | None -> None

@@ -291,7 +291,7 @@ val register_grammars_by_name : string -> Entry.any_t list -> unit
 val find_grammars_by_name : string -> Entry.any_t list
 
 (** Parsing state handling *)
-val freeze : marshallable:bool -> frozen_t
+val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 
 val get_keyword_state : unit -> CLexer.keyword_state

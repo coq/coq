@@ -402,7 +402,7 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
     let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
     check_section_fresh obj_dir id;
-    let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
+    let fs = Summary.Synterp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs));
     (*Pushed for the lifetime of the section: removed by unfreezing the summary*)
     push_section_name obj_dir;
@@ -473,7 +473,7 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
   let open_section id =
     Global.open_section ();
     let prefix = !synterp_state.path_prefix in
-    let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+    let fs = Summary.Interp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs))
 
   let pop_path_prefix () = ()

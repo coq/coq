@@ -198,7 +198,7 @@ let declare_uninterpretation ?(also_in_cases_pattern=true) rule (metas,c as pat)
   let (key,n) = notation_constr_key c in
   notations_key_table := keymap_add key (also_in_cases_pattern,(rule,pat,n)) !notations_key_table
 
-let freeze ~marshallable =
+let freeze () =
   !notations_key_table
 
 let unfreeze fkm =
@@ -215,7 +215,7 @@ let () =
       Summary.init_function = init }
 
 let with_notation_uninterpretation_protection f x =
-  let fs = freeze ~marshallable:false in
+  let fs = freeze () in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = Exninfo.capture reraise in

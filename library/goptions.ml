@@ -263,7 +263,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
   let change =
       let () = Summary.declare_summary (nickname key)
         { stage;
-          Summary.freeze_function = (fun ~marshallable -> read ());
+          Summary.freeze_function = read;
           Summary.unfreeze_function = write;
           Summary.init_function = (fun () -> write default) } in
       let cache_options (l,m,v) =
