@@ -475,6 +475,20 @@ let { Goptions.get = use_unification_heuristics } =
 
 exception SuggestNoSuchGoals of int * t
 
+exception FailedConstraints of exn
+
+let () = CErrors.register_handler (function
+    | FailedConstraints e ->
+      Some Pp.(CErrors.print e ++ spc() ++
+               hov 1
+                 (str "(while solving unification constraints," ++ spc() ++
+                  str "see flag \"Solve Unification Constraints\")"))
+    | _ -> None)
+
+let solve_constraints =
+  Proofview.tclOR Refine.solve_constraints
+    (fun (e,info) -> Proofview.tclZERO ~info (FailedConstraints e))
+
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
       | None -> tac
@@ -490,7 +504,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let tac = Goal_select.tclSELECT ~nosuchgoal gi tac in
     let tac =
       if use_unification_heuristics () then
-        Proofview.tclTHEN tac Refine.solve_constraints
+        Proofview.tclTHEN tac solve_constraints
       else tac
     in
     let env = Global.env () in
