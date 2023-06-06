@@ -29,6 +29,13 @@ type global_data = {
 val define_global : ltac_constant -> global_data -> unit
 val interp_global : ltac_constant -> global_data
 
+type compile_info = {
+  source : string;
+}
+
+val set_compiled_global : ltac_constant -> compile_info -> valexpr -> unit
+val get_compiled_global : ltac_constant -> (compile_info * valexpr) option
+
 val globals : unit -> global_data KNmap.t
 
 (** {5 Toplevel definition of types} *)

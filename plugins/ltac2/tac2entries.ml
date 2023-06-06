@@ -1008,19 +1008,24 @@ end
 
 (** Printing *)
 
-let print_constant ~print_def qid data =
+let print_constant ~print_def qid ?info data =
   let e = data.Tac2env.gdata_expr in
   let (_, t) = data.Tac2env.gdata_type in
   let name = int_name () in
   let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e) else mt() in
+  let info = match info with
+    | None -> mt()
+    | Some info -> fnl() ++ fnl() ++ hov 2 (str "Compiled as" ++ spc() ++ str info.Tac2env.source)
+  in
   hov 0 (
-    hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ def
+    hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ def ++ info
   )
 
 let print_tacref ~print_def qid = function
   | TacConstant kn ->
     let data = Tac2env.interp_global kn in
-    print_constant ~print_def qid data
+    let info = Option.map fst (Tac2env.get_compiled_global kn) in
+    print_constant ~print_def qid data ?info
   | TacAlias kn -> str "Alias to ..."
 
 let locatable_ltac2 = "Ltac2"

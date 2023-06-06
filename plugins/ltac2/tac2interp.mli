@@ -21,6 +21,12 @@ val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 val interp_value : environment -> glb_tacexpr -> valexpr
 (** Same as [interp] but assumes that the argument is a syntactic value. *)
 
+val eval_global : ltac_constant -> valexpr
+
+val eval_glb_ext : environment -> Tac2dyn.Arg.glb -> valexpr Proofview.tactic
+
+val push_id : environment -> Id.t -> valexpr -> environment
+
 (* val interp_app : closure -> ml_tactic *)
 
 (** {5 Cross-boundary encodings} *)

@@ -21,6 +21,9 @@ val intern_open_type : raw_typexpr -> type_scheme
 (** Check that a term is a value. Only values are safe to marshall between
     processes. *)
 val is_value : glb_tacexpr -> bool
+
+val is_pure_constructor : type_constant -> bool
+
 val check_unit : ?loc:Loc.t -> type_scheme -> unit
 
 val check_subtype : type_scheme -> type_scheme -> bool
