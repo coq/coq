@@ -182,7 +182,7 @@ let warn_no_native_compiler =
                    strbrk " option ignored.")
 
 let warn_deprecated_native_compiler =
-  CWarnings.create ~name:"deprecated-native-compiler-option" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"deprecated-native-compiler-option" ~category:Deprecation.Version.v8_14
          (fun () ->
           Pp.strbrk "The native-compiler option is deprecated. To compile native \
           files ahead of time, use the coqnative binary instead.")

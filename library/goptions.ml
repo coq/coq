@@ -11,6 +11,7 @@
 (* This module manages customization parameters at the vernacular level     *)
 
 open Util
+open Summary.Stage
 
 type option_name = string list
 type option_value =
@@ -25,7 +26,7 @@ type table_value =
 
 (** Summary of an option status *)
 type option_state = {
-  opt_depr  : bool;
+  opt_depr  : Deprecation.t option;
   opt_value : option_value;
 }
 
@@ -216,7 +217,7 @@ let iter_table env f key lv =
 
 type 'a option_sig = {
   optstage : Summary.Stage.t;
-  optdepr  : bool;
+  optdepr  : Deprecation.t option;
   optkey   : option_name;
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
@@ -252,15 +253,15 @@ with Not_found ->
 open Libobject
 
 let warn_deprecated_option =
-  CWarnings.create ~name:"deprecated-option" ~category:CWarnings.CoreCategories.deprecated (fun key ->
-    Pp.(str "Option" ++ spc () ++ str (nickname key) ++ strbrk " is deprecated"))
+  Deprecation.create_warning ~object_name:"Option" ~warning_name_if_no_since:"deprecated-option"
+    (fun key -> Pp.str (nickname key))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
   { optstage=stage; optdepr=depr; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   let change =
-      let _ = Summary.declare_summary (nickname key)
+      let () = Summary.declare_summary (nickname key)
         { stage;
           Summary.freeze_function = (fun ~marshallable -> read ());
           Summary.unfreeze_function = write;
@@ -300,7 +301,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
             classify_function = classify_options } in
       (fun l m v -> let v = preprocess v in Lib.add_leaf (options (l, m, v)))
   in
-  let warn () = if depr then warn_deprecated_option key in
+  let warn () = depr |> Option.iter (fun depr -> warn_deprecated_option (key,depr)) in
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
@@ -328,34 +329,36 @@ let declare_stringopt_option =
     (function StringOptValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
     (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 
+type 'a getter = { get : unit -> 'a }
 
-type 'a opt_decl = stage:Summary.Stage.t -> depr:bool -> key:option_name -> 'a
+type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:Deprecation.t -> key:option_name -> value:'a -> unit -> 'a getter
 
-let declare_int_option_and_ref ~stage ~depr ~key ~(value:int) =
+let declare_int_option_and_ref ?(stage=Interp) ?depr ~key ~(value:int) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
-      optread; optwrite
+      optread;
+      optwrite;
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_intopt_option_and_ref ~stage ~depr ~key =
-  let r_opt = ref None in
+let declare_intopt_option_and_ref ?(stage=Interp) ?depr ~key ~value () =
+  let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_nat_option_and_ref ~stage ~depr ~key ~(value:int) =
+let declare_nat_option_and_ref ?(stage=Interp) ?depr ~key ~(value:int) () =
   assert (value >= 0);
   let r_opt = ref value in
   let optwrite v =
@@ -365,61 +368,61 @@ let declare_nat_option_and_ref ~stage ~depr ~key ~(value:int) =
     r_opt := v
   in
   let optread () = Some !r_opt in
-  let _ = declare_int_option {
+  let () = declare_int_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_bool_option_and_ref ~stage ~depr ~key ~(value:bool) =
+let declare_bool_option_and_ref ?(stage=Interp) ?depr ~key ~(value:bool) () =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_bool_option {
+  let () = declare_bool_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_string_option_and_ref ~stage ~depr ~key ~(value:string) =
+let declare_string_option_and_ref ?(stage=Interp) ?depr ~key ~(value:string) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
-let declare_stringopt_option_and_ref ~stage ~depr ~key =
-  let r_opt = ref None in
+let declare_stringopt_option_and_ref ?(stage=Interp) ?depr ~key ~value () =
+  let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  optread
+  { get = optread }
 
-let declare_interpreted_string_option_and_ref ~stage ~depr ~key ~(value:'a) from_string to_string =
+let declare_interpreted_string_option_and_ref from_string to_string ?(stage=Interp) ?depr ~key ~(value:'a) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value @@ Option.map from_string v in
   let optread () = Some (to_string !r_opt) in
-  let _ = declare_stringopt_option {
+  let () = declare_stringopt_option {
       optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
-  fun () -> !r_opt
+  { get = fun () -> !r_opt }
 
 (* 3- User accessible commands *)
 
@@ -543,8 +546,15 @@ let print_tables () =
   let open Pp in
   let print_option key value depr =
     let msg = str "  " ++ str (nickname key) ++ str ": " ++ msg_option_value value in
-    if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
-    else msg ++ fnl ()
+    let depr = pr_opt (fun depr ->
+        hov 2
+          (str "[DEPRECATED" ++
+           pr_opt (fun since -> str "since " ++ str since) depr.Deprecation.since ++
+           pr_opt str depr.Deprecation.note ++
+           str "]"))
+        depr
+    in
+    msg ++ depr ++ fnl()
   in
   str "Options:" ++ fnl () ++
     OptionMap.fold

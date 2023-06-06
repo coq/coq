@@ -301,19 +301,17 @@ let pr_table env sigma = pr_table env sigma !from_function
 (*********************************)
 (* Debugging *)
 
-let do_rewrite_dependent =
+let { Goptions.get = do_rewrite_dependent } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Functional"; "Induction"; "Rewrite"; "Dependent"]
     ~value:true
+    ()
 
-let do_observe =
+let { Goptions.get = do_observe } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Function_debug"]
     ~value:false
+    ()
 
 let observe strm = if do_observe () then Feedback.msg_debug strm else ()
 let debug_queue = Stack.create ()
@@ -356,12 +354,11 @@ let do_observe_tac ~header s tac =
 let observe_tac ~header s tac =
   if do_observe () then do_observe_tac ~header s tac else tac
 
-let is_strict_tcc =
+let { Goptions.get = is_strict_tcc } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Function_raw_tcc"]
     ~value:false
+    ()
 
 exception Building_graph of exn
 exception Defining_principle of exn

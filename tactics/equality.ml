@@ -61,12 +61,11 @@ let use_injection_pattern_l2r_order = function
   | None -> true
   | Some flags -> flags.injection_pattern_l2r_order
 
-let injection_in_context_flag =
+let { Goptions.get = injection_in_context_flag } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Structural";"Injection"]
     ~value:false
+    ()
 
 (* Rewriting tactics *)
 
@@ -719,7 +718,7 @@ let keep_proof_equalities_for_injection = ref false
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Keep";"Proof";"Equalities"];
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
@@ -1705,7 +1704,7 @@ let cutSubstClause l2r eqn cls =
     | Some id -> cutSubstInHyp l2r eqn id
 
 let warn_deprecated_cutrewrite =
-  CWarnings.create ~name:"deprecated-cutrewrite" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"deprecated-cutrewrite" ~category:Deprecation.Version.v8_5
     (fun () -> strbrk"\"cutrewrite\" is deprecated. Use \"replace\" instead.")
 
 let cutRewriteClause l2r eqn cls =
@@ -1876,7 +1875,7 @@ let default_subst_tactic_flags =
   { only_leibniz = false; rewrite_dependent_proof = true }
 
 let warn_deprecated_simple_subst =
-  CWarnings.create ~name:"deprecated-simple-subst" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"deprecated-simple-subst" ~category:Deprecation.Version.v8_8
     (fun () -> strbrk"\"simple subst\" is deprecated")
 
 let subst_all ?(flags=default_subst_tactic_flags) () =

@@ -34,12 +34,11 @@ open Evarconv
 open Evd
 open Globnames
 
-let get_use_typeclasses_for_conversion =
+let { Goptions.get = get_use_typeclasses_for_conversion } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclass"; "Resolution"; "For"; "Conversion"]
     ~value:true
+    ()
 
 (* Typing operations dealing with coercions *)
 exception NoCoercion

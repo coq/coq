@@ -486,7 +486,7 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:CWarnings.CoreCategories.deprecated
+let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:Deprecation.Version.v8_18
   Pp.(fun name ->
     Id.print name ++
     strbrk " is declared opaque (Qed) but this is not fully respected" ++
@@ -1688,12 +1688,11 @@ type proof_object =
 
 let get_po_name { name } = name
 
-let private_poly_univs =
+let { Goptions.get = private_poly_univs } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Private";"Polymorphic";"Universes"]
     ~value:true
+    ()
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 (* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
@@ -2060,12 +2059,11 @@ end
 (************************************************************************)
 
 (* Admitted *)
-let get_keep_admitted_vars =
+let { Goptions.get = get_keep_admitted_vars } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Keep"; "Admitted"; "Variables"]
     ~value:true
+    ()
 
 let compute_proof_using_for_admitted proof typ iproof =
   if not (get_keep_admitted_vars ()) || not (Lib.sections_are_opened()) then None

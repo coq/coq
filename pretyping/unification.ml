@@ -42,12 +42,11 @@ type subst0 =
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let is_keyed_unification =
+let { Goptions.get = is_keyed_unification } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Keyed";"Unification"]
     ~value:false
+    ()
 
 let debug_tactic_unification = CDebug.create ~name:"tactic-unification" ()
 

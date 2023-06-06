@@ -500,11 +500,13 @@ let info_file f =
    so we register them to coq save/undo mechanism. *)
 
 let my_bool_option name value =
-  declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
+  let { Goptions.get } =
+    declare_bool_option_and_ref
     ~key:["Extraction"; name]
     ~value
+    ()
+  in
+  get
 
 (*s Extraction AccessOpaque *)
 
@@ -571,14 +573,14 @@ let optims () = !opt_flag_ref
 
 let () = declare_bool_option
           {optstage = Summary.Stage.Interp;
-           optdepr = false;
+           optdepr = None;
            optkey = ["Extraction"; "Optimize"];
            optread = (fun () -> not (Int.equal !int_flag_ref 0));
            optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
           { optstage = Summary.Stage.Interp;
-            optdepr = false;
+            optdepr = None;
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function
@@ -587,20 +589,18 @@ let () = declare_int_option
 
 (* This option controls whether "dummy lambda" are removed when a
    toplevel constant is defined. *)
-let conservative_types =
+let { Goptions.get = conservative_types } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Extraction"; "Conservative"; "Types"]
     ~value:false
+    ()
 
 (* Allows to print a comment at the beginning of the output files *)
-let file_comment =
+let { Goptions.get = file_comment } =
   declare_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Extraction"; "File"; "Comment"]
     ~value:""
+    ()
 
 (*s Extraction Lang *)
 

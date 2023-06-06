@@ -29,12 +29,11 @@ DECLARE PLUGIN "coq-core.plugins.firstorder"
 
 {
 
-let ground_depth =
+let { Goptions.get = ground_depth } =
   declare_nat_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Firstorder";"Depth"]
     ~value:3
+    ()
 
 let default_intuition_tac =
   let tac _ _ = Auto.h_auto None [] (Some []) in

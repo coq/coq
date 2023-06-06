@@ -297,7 +297,7 @@ let global_info_eauto = ref false
 let () =
   Goptions.(declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Debug";"Eauto"];
       optread  = (fun () -> !global_debug_eauto);
       optwrite = (:=) global_debug_eauto })
@@ -305,7 +305,7 @@ let () =
 let () =
   Goptions.(declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Info";"Eauto"];
       optread  = (fun () -> !global_info_eauto);
       optwrite = (:=) global_info_eauto })

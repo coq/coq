@@ -756,12 +756,11 @@ let vernac_assumption ~atts discharge kind l nl =
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?deprecation:atts.deprecated nl l
 
-let is_polymorphic_inductive_cumulativity =
+let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
-    ~value:false
     ~key:["Polymorphic";"Inductive";"Cumulativity"]
+    ~value:false
+    ()
 
 let polymorphic_cumulative ~is_defclass =
   let error_poly_context () =
@@ -799,12 +798,11 @@ let polymorphic_cumulative ~is_defclass =
      else
        return (false, false)
 
-let get_uniform_inductive_parameters =
+let { Goptions.get = get_uniform_inductive_parameters } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Uniform"; "Inductive"; "Parameters"]
     ~value:false
+    ()
 
 let should_treat_as_uniform () =
   if get_uniform_inductive_parameters ()
@@ -856,12 +854,11 @@ let private_ind =
   | None -> return false
 
 (** Flag governing use of primitive projections. Disabled by default. *)
-let primitive_flag =
+let { Goptions.get = primitive_flag } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Primitive";"Projections"]
     ~value:false
+    ()
 
 let primitive_proj =
   let open Attributes in
@@ -1495,7 +1492,7 @@ let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id TransparentState.full b
 
 let warn_implicit_core_hint_db =
-  CWarnings.create ~name:"implicit-core-hint-db" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"implicit-core-hint-db" ~category:Deprecation.Version.v8_10
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 
@@ -1549,7 +1546,7 @@ let allow_sprop_opt_name = ["Allow";"StrictProp"]
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = allow_sprop_opt_name;
       optread  = (fun () -> Global.sprop_allowed());
       optwrite = Global.set_allow_sprop }
@@ -1557,7 +1554,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Silent"];
       optread  = (fun () -> !Flags.quiet);
       optwrite = ((:=) Flags.quiet) }
@@ -1565,7 +1562,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Implicit";"Arguments"];
       optread  = Impargs.is_implicit_args;
       optwrite = Impargs.make_implicit_args }
@@ -1573,7 +1570,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Strict";"Implicit"];
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
@@ -1581,7 +1578,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Strongly";"Strict";"Implicit"];
       optread  = Impargs.is_strongly_strict_implicit_args;
       optwrite = Impargs.make_strongly_strict_implicit_args }
@@ -1589,7 +1586,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
@@ -1597,7 +1594,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Reversible";"Pattern";"Implicit"];
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }
@@ -1605,7 +1602,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Maximal";"Implicit";"Insertion"];
       optread  = Impargs.is_maximal_implicit_args;
       optwrite = Impargs.make_maximal_implicit_args }
@@ -1613,7 +1610,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
@@ -1621,7 +1618,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Parentheses"];
       optread  = (fun () -> !Constrextern.print_parentheses);
       optwrite = (fun b ->  Constrextern.print_parentheses := b) }
@@ -1629,7 +1626,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Implicit"];
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
@@ -1637,7 +1634,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Implicit";"Defensive"];
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
       optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
@@ -1645,7 +1642,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Projections"];
       optread  = (fun () -> !Constrextern.print_projections);
       optwrite = (fun b ->  Constrextern.print_projections := b) }
@@ -1653,7 +1650,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Notations"];
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
@@ -1661,7 +1658,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Raw";"Literals"];
       optread  = (fun () -> !Constrextern.print_raw_literal);
       optwrite = (fun b ->  Constrextern.print_raw_literal := b) }
@@ -1669,7 +1666,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
@@ -1677,7 +1674,7 @@ let () =
 let () =
   declare_int_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
       optwrite = (fun o ->
@@ -1687,7 +1684,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Kernel"; "Term"; "Sharing"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
       optwrite = Global.set_share_reduction }
@@ -1695,7 +1692,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Compact";"Contexts"];
       optread  = (fun () -> Printer.get_compact_context());
       optwrite = (fun b -> Printer.set_compact_context b) }
@@ -1703,7 +1700,7 @@ let () =
 let () =
   declare_int_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Depth"];
       optread  = Topfmt.get_depth_boxes;
       optwrite = Topfmt.set_depth_boxes }
@@ -1711,7 +1708,7 @@ let () =
 let () =
   declare_int_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Width"];
       optread  = Topfmt.get_margin;
       optwrite = Topfmt.set_margin }
@@ -1719,7 +1716,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Printing";"Universes"];
       optread  = (fun () -> !Constrextern.print_universes);
       optwrite = (fun b -> Constrextern.print_universes:=b) }
@@ -1727,7 +1724,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Dump";"Bytecode"];
       optread  = (fun () -> !Vmbytegen.dump_bytecode);
       optwrite = (:=) Vmbytegen.dump_bytecode }
@@ -1735,7 +1732,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Dump";"Lambda"];
       optread  = (fun () -> !Vmlambda.dump_lambda);
       optwrite = (:=) Vmlambda.dump_lambda }
@@ -1743,7 +1740,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Parsing";"Explicit"];
       optread  = (fun () -> !Constrintern.parsing_explicit);
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
@@ -1751,7 +1748,7 @@ let () =
 let () =
   declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Warnings"];
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
@@ -1759,7 +1756,7 @@ let () =
 let () =
   declare_string_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Debug"];
       optread  = CDebug.get_flags;
       optwrite = CDebug.set_flags }
@@ -1767,7 +1764,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Guard"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
       optwrite = (fun b -> Global.set_check_guarded b) }
@@ -1775,7 +1772,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Positivity"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
       optwrite = (fun b -> Global.set_check_positive b) }
@@ -1783,7 +1780,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Universe"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
       optwrite = (fun b -> Global.set_check_universes b) }
@@ -1791,7 +1788,7 @@ let () =
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Definitional"; "UIP"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.allow_uip);
       optwrite = (fun b -> Global.set_typing_flags

@@ -37,30 +37,53 @@ let debug = false
 
 let max_depth = max_int
 
+let since_8_14 = Deprecation.make ~since:"8.14" ()
+
 (* Search limit for provers over Q R *)
-let lra_proof_depth =
-  declare_int_option_and_ref ~stage:Summary.Stage.Interp ~depr:true ~key:["Lra"; "Depth"] ~value:max_depth
+let { Goptions.get = lra_proof_depth } =
+  declare_int_option_and_ref
+    ~depr:since_8_14
+    ~key:["Lra"; "Depth"]
+    ~value:max_depth
+    ()
 
 (* Search limit for provers over Z *)
-let lia_enum =
-  declare_bool_option_and_ref ~stage:Summary.Stage.Interp ~depr:true ~key:["Lia"; "Enum"] ~value:true
+let { Goptions.get = lia_enum } =
+  declare_bool_option_and_ref
+    ~depr:since_8_14
+    ~key:["Lia"; "Enum"]
+    ~value:true
+    ()
 
-let lia_proof_depth =
-  declare_int_option_and_ref ~stage:Summary.Stage.Interp ~depr:true ~key:["Lia"; "Depth"] ~value:max_depth
+let { Goptions.get = lia_proof_depth } =
+  declare_int_option_and_ref
+    ~depr:since_8_14
+    ~key:["Lia"; "Depth"]
+    ~value:max_depth
+    ()
 
 let get_lia_option () =
   (true, lia_enum (), lia_proof_depth ())
 
 (* Enable/disable caches *)
 
-let use_lia_cache =
-  declare_bool_option_and_ref ~stage:Summary.Stage.Interp ~depr:false ~key:["Lia"; "Cache"] ~value:true
+let { Goptions.get = use_lia_cache } =
+  declare_bool_option_and_ref
+    ~key:["Lia"; "Cache"]
+    ~value:true
+    ()
 
-let use_nia_cache =
-  declare_bool_option_and_ref ~stage:Summary.Stage.Interp ~depr:false ~key:["Nia"; "Cache"] ~value:true
+let { Goptions.get = use_nia_cache } =
+  declare_bool_option_and_ref
+    ~key:["Nia"; "Cache"]
+    ~value:true
+    ()
 
-let use_nra_cache =
-  declare_bool_option_and_ref ~stage:Summary.Stage.Interp ~depr:false ~key:["Nra"; "Cache"] ~value:true
+let { Goptions.get = use_nra_cache } =
+  declare_bool_option_and_ref
+    ~key:["Nra"; "Cache"]
+    ~value:true
+    ()
 
 let use_csdp_cache () = true
 

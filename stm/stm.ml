@@ -2587,12 +2587,11 @@ let process_back_meta_command ~newtip ~head oid aast =
     VCS.checkout_shallowest_proof_branch ();
     Backtrack.record (); Ok
 
-let get_allow_nested_proofs =
+let { Goptions.get = get_allow_nested_proofs } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:Vernac_classifier.stm_allow_nested_proofs_option_name
     ~value:false
+    ()
 
 (** [process_transaction] adds a node in the document *)
 let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =

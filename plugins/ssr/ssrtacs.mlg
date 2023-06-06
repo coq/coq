@@ -749,7 +749,7 @@ let () =
     { optstage = Summary.Stage.Synterp;
       optkey   = ["SsrRewrite"];
       optread  = (fun _ -> !ssr_rw_syntax);
-      optdepr  = false;
+      optdepr  = None;
       optwrite = (fun b -> ssr_rw_syntax := b) })
 
 let lbrace = Char.chr 123

@@ -127,7 +127,7 @@ let rec add_vio_args peek next oval =
   else oval
 
 let warn_deprecated_quick =
-  CWarnings.create ~name:"deprecated-quick" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"deprecated-quick" ~category:Deprecation.Version.v8_11
          (fun () ->
           Pp.strbrk "The -quick option is renamed -vio. Please consider using the -vos feature instead.")
 

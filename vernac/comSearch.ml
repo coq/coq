@@ -109,7 +109,7 @@ let search_output_name_only = ref false
 let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Search";"Output";"Name";"Only"];
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }

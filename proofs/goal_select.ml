@@ -50,14 +50,13 @@ let parse_goal_selector = function
 
 (* Default goal selector: selector chosen when a tactic is applied
    without an explicit selector. *)
-let get_default_goal_selector =
+let { Goptions.get = get_default_goal_selector } =
   Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
-    ~key:["Default";"Goal";"Selector"]
-    ~value:(SelectNth 1)
     parse_goal_selector
     (fun v -> Pp.string_of_ppcmds @@ pr_goal_selector v)
+    ~key:["Default";"Goal";"Selector"]
+    ~value:(SelectNth 1)
+    ()
 
 (* Select a subset of the goals *)
 let tclSELECT ?nosuchgoal g tac = match g with

@@ -40,7 +40,7 @@ let should_auto_template =
   let auto = ref true in
   let () = declare_bool_option
       { optstage = Summary.Stage.Interp;
-        optdepr  = false;
+        optdepr  = None;
         optkey   = ["Auto";"Template";"Polymorphism"];
         optread  = (fun () -> !auto);
         optwrite = (fun b -> auto := b); }

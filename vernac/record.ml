@@ -28,19 +28,17 @@ module RelDecl = Context.Rel.Declaration
 
 (********** definition d'un record (structure) **************)
 
-let typeclasses_strict =
+let { Goptions.get = typeclasses_strict } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Strict";"Resolution"]
     ~value:false
+    ()
 
-let typeclasses_unique =
+let { Goptions.get = typeclasses_unique } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Typeclasses";"Unique";"Instances"]
     ~value:false
+    ()
 
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =
@@ -636,14 +634,15 @@ let implicits_of_context ctx =
 (* deprecated in 8.16, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/15802 ) *)
 let warn_future_coercion_class_constructor =
-  CWarnings.create ~name:"future-coercion-class-constructor" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"future-coercion-class-constructor" ~category:Deprecation.Version.v8_16
     ~default:CWarnings.AsError
     Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
 (* deprecated in 8.17, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/16230 ) *)
 let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:CWarnings.CoreCategories.deprecated Pp.(fun definitional ->
+  CWarnings.create ~name:"future-coercion-class-field" ~category:Deprecation.Version.v8_17
+    Pp.(fun definitional ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
     ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
     ++ strbrk (if definitional then "" else " Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\""))

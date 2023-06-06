@@ -122,7 +122,7 @@ let init_scope_map () =
 (* Operations on scopes *)
 
 let warn_undeclared_scope =
-  CWarnings.create ~name:"undeclared-scope" ~category:CWarnings.CoreCategories.deprecated
+  CWarnings.create ~name:"undeclared-scope" ~category:Deprecation.Version.v8_10
                    (fun (scope) ->
                     strbrk "Declaring a scope implicitly is deprecated; use in advance an explicit "
                     ++ str "\"Declare Scope " ++ str scope ++ str ".\".")
@@ -950,11 +950,11 @@ let bigint_of_coqpos_neg_int63 c =
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
-let get_printing_float = Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
+let { Goptions.get = get_printing_float } =
+  Goptions.declare_bool_option_and_ref
     ~key:["Printing";"Float"]
     ~value:true
+    ()
 
 let uninterp_float64 c =
   match Constr.kind c with

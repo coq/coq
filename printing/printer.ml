@@ -27,26 +27,23 @@ module CompactedDecl = Context.Compacted.Declaration
 (* This is set on by proofgeneral proof-tree mode. But may be used for
    other purposes *)
 let print_goal_tag_opt_name = ["Printing";"Goal";"Tags"]
-let should_tag =
+let { Goptions.get = should_tag } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:print_goal_tag_opt_name
     ~value:false
+    ()
 
-let should_unfoc =
+let { Goptions.get = should_unfoc } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Unfocused"]
     ~value:false
+    ()
 
-let should_gname =
+let { Goptions.get = should_gname } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Goal";"Names"]
     ~value:false
+    ()
 
 let print_goal_names = should_gname (* for export *)
 
@@ -450,11 +447,11 @@ let pr_context_limit_compact ?n env sigma =
 
 (* The number of printed hypothesis in a goal *)
 (* If [None], no limit *)
-let print_hyps_limit =
+let { Goptions.get = print_hyps_limit } =
   Goptions.declare_intopt_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Hyps";"Limit"]
+    ~value:None
+    ()
 
 let pr_context_of env sigma = match print_hyps_limit () with
   | None -> hv 0 (pr_context_limit_compact env sigma)
@@ -677,12 +674,11 @@ let print_evar_constraints gl sigma =
         str" with candidates:" ++ fnl () ++ hov 0 ppcandidates
     else mt ()
 
-let should_print_dependent_evars =
+let { Goptions.get = should_print_dependent_evars } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Dependent";"Evars";"Line"]
     ~value:false
+    ()
 
 let evar_nodes_of_term c =
   let rec evrec acc c =

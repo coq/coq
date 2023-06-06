@@ -64,12 +64,11 @@ let print_universes = Detyping.print_universes
 let print_no_symbol = ref false
 
 (* This tells to skip types if a variable has this type by default *)
-let print_use_implicit_types =
+let { Goptions.get = print_use_implicit_types } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Use";"Implicit";"Types"]
     ~value:true
+    ()
 
 (* Print primitive tokens, like strings *)
 let print_raw_literal = ref false
@@ -104,12 +103,11 @@ let without_symbols f = Flags.with_option print_no_symbol f
 (* Control printing of records *)
 
 (* Set Record Printing flag *)
-let get_record_print =
+let { Goptions.get = get_record_print } =
   Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
     ~key:["Printing";"Records"]
     ~value:true
+    ()
 
 let is_record indsp =
   try

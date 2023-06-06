@@ -458,7 +458,7 @@ let () =
   let open Goptions in
   declare_bool_option
     { optstage = Summary.Stage.Interp;
-      optdepr  = false;
+      optdepr  = None;
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;
       optwrite = set_profiling }

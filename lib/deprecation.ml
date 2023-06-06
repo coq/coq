@@ -59,3 +59,18 @@ let create_warning ~object_name ~warning_name_if_no_since pp =
           w
     in
     w ?loc (v,info)
+
+module Version = struct
+
+  let v8_3 = get_generic_cat "8.3"
+  let v8_5 = get_generic_cat "8.5"
+  let v8_8 = get_generic_cat "8.8"
+  let v8_10 = get_generic_cat "8.10"
+  let v8_11 = get_generic_cat "8.11"
+  let v8_14 = get_generic_cat "8.14"
+  let v8_15 = get_generic_cat "8.15"
+  let v8_16 = get_generic_cat "8.16"
+  let v8_17 = get_generic_cat "8.17"
+  let v8_18 = get_generic_cat "8.18"
+
+end

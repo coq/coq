@@ -1682,11 +1682,11 @@ let is_non_zero_pat c = match c with
   | { CAst.v = CPatPrim (Number p) } -> not (NumTok.Signed.is_zero p)
   | _ -> false
 
-let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
+let { Goptions.get = get_asymmetric_patterns } =
+  Goptions.declare_bool_option_and_ref
     ~key:["Asymmetric";"Patterns"]
     ~value:false
+    ()
 
 type global_reference_test = {
   for_ind : bool;
