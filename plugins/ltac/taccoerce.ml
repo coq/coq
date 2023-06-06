@@ -408,13 +408,15 @@ let pr_argument_type arg =
 
 (* Displays a value *)
 let pr_value env v =
+  let ppty = spc() ++ str "of type" ++ spc () ++ pr_argument_type v in
   let pr_with_env pr =
     match env with
-    | Some (env,sigma) -> pr env sigma
-    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
+    | Some (env,sigma) -> pr env sigma ++ ppty
+    | None -> str "a value" ++ ppty
+  in
   let open Genprint in
   match generic_val_print v with
-  | TopPrinterBasic pr -> pr ()
+  | TopPrinterBasic pr -> pr () ++ ppty
   | TopPrinterNeedsContext pr -> pr_with_env pr
   | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
