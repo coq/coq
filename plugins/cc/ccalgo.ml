@@ -813,7 +813,7 @@ let process_mark t m state =
 type explanation =
     Discrimination of (int*pa_constructor*int*pa_constructor)
   | Contradiction of disequality
-  | Incomplete
+  | Incomplete of (EConstr.t * int) list
 
 let check_disequalities state =
   let uf=state.uf in
@@ -1021,6 +1021,17 @@ let find_instances state =
     with Stack.Empty -> () in
     !res
 
+let build_term_to_complete uf pac =
+  let open EConstr in
+  let cinfo = get_constructor_info uf pac.cnode in
+  let real_args = List.rev_map (fun i -> EConstr.of_constr (ATerm.constr (aterm uf i))) pac.args in
+  let (kn, u) = cinfo.ci_constr in
+  (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
+
+let terms_to_complete state =
+  let uf = forest state in
+  List.map (build_term_to_complete uf) (epsilons uf)
+
 let rec execute first_run state =
   debug_congruence (fun () -> str "Executing ... ");
   try
@@ -1058,10 +1069,10 @@ let rec execute first_run state =
       | Some dis -> Some
           begin
             if first_run then Contradiction dis
-            else Incomplete
+            else Incomplete (terms_to_complete state)
           end
   with Discriminable(s,spac,t,tpac) -> Some
     begin
       if first_run then Discrimination (s,spac,t,tpac)
-      else Incomplete
+      else Incomplete (terms_to_complete state)
     end
