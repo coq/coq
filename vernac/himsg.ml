@@ -1023,7 +1023,7 @@ let pr_constraints printenv msg env sigma evars cstrs =
       let filter evk _ = Evar.Map.mem evk evars in
       pr_evar_map_filter ~with_univs:false filter env sigma
 
-let explain_unsatisfiable_constraints env sigma constr comp =
+let explain_unsatisfiable_constraints env sigma constr comp err =
   let (_, constraints) = Evd.extract_all_conv_pbs sigma in
   let tcs = Evd.get_typeclass_evars sigma in
   let undef = Evd.undefined_map sigma in
@@ -1035,7 +1035,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
       if Evar.Map.is_empty m then undef
       else m
   in
-  match constr with
+  let main = match constr with
   | None ->
     if List.is_empty constraints then
       let msg = "Could not find an instance for the following existential variables:" in
@@ -1053,6 +1053,11 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     in
     let info = Evar.Map.find ev undef in
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
+  in
+  match err with
+  | None -> main
+  | Some err -> main ++ surround (str "resolution failed with " ++ CErrors.print err)
+
 
 let rec explain_pretype_error env sigma err =
   let env = Evardefine.env_nf_betaiotaevar sigma env in
@@ -1090,7 +1095,7 @@ let rec explain_pretype_error env sigma err =
   | CantApplyBadTypeExplained ((t, rator, randl),error) ->
     explain_cant_apply_bad_type env sigma ~error t rator randl
   | CannotUnifyOccurrences (b,c1,c2) -> explain_cannot_unify_occurrences env sigma b c1 c2
-  | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
+  | UnsatisfiableConstraints (c,comp,err) -> explain_unsatisfiable_constraints env sigma c comp err
   | DisallowedSProp -> explain_disallowed_sprop ()
 
 (* Module errors *)

@@ -450,7 +450,7 @@ type solver = { solver :
   unique:bool ->
   best_effort:bool ->
   goals:Evar.t list ->
-  (bool * Evd.evar_map)
+  ((bool * Evd.evar_map), exn) union
 }
 
 module Search = struct
@@ -496,7 +496,7 @@ module Search = struct
 
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimit
-  exception NoApplicableHint
+  exception NoApplicableHint of Proofview.Goal.t option
   exception StuckGoal
 
   (** ReachedLimit has priority over NoApplicableHint to handle
@@ -545,14 +545,14 @@ module Search = struct
   let pr_internal_exception ie =
     match fst ie with
     | ReachedLimit -> str "Proof-search reached its limit."
-    | NoApplicableHint -> str "Proof-search failed."
+    | NoApplicableHint _ -> str "Proof-search failed."
     | StuckGoal | NonStuckFailure -> str "Proof-search got stuck."
     | e -> CErrors.iprint ie
 
   (* XXX Is this handler needed for something? *)
   let () = CErrors.register_handler begin function
     | NonStuckFailure -> Some (str "NonStuckFailure")
-    | NoApplicableHint -> Some (str "NoApplicableHint")
+    | NoApplicableHint _ -> Some (str "NoApplicableHint")
     | _ -> None
     end
 
@@ -647,7 +647,7 @@ module Search = struct
           else (* No progress can be made on the stuck goals arising from this resolution,
             try a different solution on the non-stuck goals, if any. *)
           begin
-            tclORELSE (fk (NoApplicableHint, Exninfo.null))
+            tclORELSE (fk (NoApplicableHint None, Exninfo.null))
               (fun (e, info) ->
                  let () = ppdebug 1 (fun () -> int (List.length stuck) ++ str " remaining goals left, no progress, calling continuation failed")
                  in
@@ -724,7 +724,9 @@ module Search = struct
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         ppdebug 1 (fun () ->
-            let idx = if fst ie == NoApplicableHint then pred !idx else !idx in
+            let idx = if (match fst ie with NoApplicableHint _ -> true | _ -> false)
+              then pred !idx else !idx
+            in
             let header =
               pr_depth (idx :: info.search_depth) ++ str": " ++
               Lazy.force pp ++
@@ -843,7 +845,7 @@ module Search = struct
          match e with
          | (ReachedLimit,ie) -> Proofview.tclZERO ~info:ie ReachedLimit
          | (StuckGoal,ie) -> Proofview.tclZERO ~info:ie StuckGoal
-         | (NoApplicableHint,ie) ->
+         | (NoApplicableHint _ as e,ie) ->
             (* If the constraint abides by the (non-trivial) modes but no
                solution could be found, we consider it a failed goal, and let
                proof search proceed on the rest of the
@@ -851,11 +853,11 @@ module Search = struct
             if all_mode_match &&
               info.search_best_effort then
               Proofview.tclZERO ~info:ie NonStuckFailure
-            else Proofview.tclZERO ~info:ie NoApplicableHint
-         | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableHint
+            else Proofview.tclZERO ~info:ie e
+         | (_,ie) -> Proofview.tclZERO ~info:ie (NoApplicableHint (Some gl))
     in
-    if backtrack then aux (NoApplicableHint,Exninfo.null) poss
-    else tclONCE (aux (NoApplicableHint,Exninfo.null) poss)
+    if backtrack then aux (NoApplicableHint (Some gl),Exninfo.null) poss
+    else tclONCE (aux (NoApplicableHint (Some gl),Exninfo.null) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =
     Proofview.Goal.enter
@@ -964,10 +966,12 @@ module Search = struct
       match e with
       | ReachedLimit ->
         Tacticals.tclFAIL ~info (str"Proof search reached its limit")
-      | NoApplicableHint ->
-        Tacticals.tclFAIL ~info (str"Proof search failed" ++
-                                    (if Option.is_empty depth then mt()
-                                     else str" without reaching its limit"))
+      | NoApplicableHint gl ->
+        Tacticals.tclFAIL ~info
+          (str"Proof search failed" ++
+           (pr_opt (fun gl -> str "on goal " ++ Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl)) gl) ++
+           (if Option.is_empty depth then mt()
+            else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
         Tacticals.tclFAIL ~info (str"Proof search failed: " ++
                                        str"more than one success found")
@@ -1024,17 +1028,16 @@ module Search = struct
       if get_debug () > 1 then Proofview.Trace.record_info_trace tac
       else tac
     in
-    let (), pv', unsafe, info =
-      try Proofview.apply ~name ~poly env tac pv
-      with Logic_monad.TacticFailure _ -> raise Not_found
-    in
+    match Proofview.apply ~name ~poly env tac pv with
+    | exception Logic_monad.TacticFailure e -> Inr e
+    | (), pv', unsafe, info ->
     let () =
       ppdebug 1 (fun () ->
           str"The tactic trace is: " ++ hov 0 (Proofview.Trace.pr_info env evm ~lvl:1 info))
     in
     let finished = Proofview.finished pv' in
     let evm' = Proofview.return pv' in
-    (finished, evm')
+    Inl (finished, evm')
 
   let post_process_goals ~goals ~nongoals ~old_metas ~sigma ~finished =
     let _, sigma = Evd.pop_future_goals sigma in
@@ -1062,7 +1065,7 @@ module Search = struct
         str"New typeclass evars are: " ++
         hov 0 (prlist_with_sep spc (pr_ev_with_id sigma) (Evar.Set.elements nongoals)))
     in
-    sigma
+    (finished, sigma)
 
 
   (** Typeclasses eauto is an eauto which tries to resolve only
@@ -1166,7 +1169,7 @@ let find_undefined p oevd evd =
   let check ev evi = p oevd ev in
   Evar.Map.domain (Evar.Map.filter check (Evd.undefined_map evd))
 
-exception Unresolved of evar_map
+exception Unresolved of evar_map * exn option
 
 type condition = Environ.env -> evar_map -> Evar.Set.t -> bool
 
@@ -1215,13 +1218,13 @@ let resolve_all_evars depth unique env p oevd fail =
   in
   let split = split_evars p oevd in
   let in_comp comp ev = Evar.Set.mem ev comp in
-  let rec docomp evd = function
+  let rec docomp (failed:exn option) evd = function
     | [] ->
       let () = ppdebug 2 (fun () ->
           str"Final evar map: " ++
           Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env evd)
       in
-      evd
+      evd, failed
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
@@ -1231,27 +1234,32 @@ let resolve_all_evars depth unique env p oevd fail =
           | Some (goals, nongoals) ->
             let solver = find_solver env evd comp in
             let evd, old_metas, sorted_goals = Search.preprocess_goals evd goals in
-            let finished, evd = solver.solver env evd ~goals:sorted_goals ~best_effort:true ~depth ~unique in
-            let evd = Search.post_process_goals ~goals ~nongoals ~old_metas ~sigma:evd ~finished in
-            if has_undefined p oevd evd then
-              let () = if finished then ppdebug 1 (fun () ->
-                  str"Proof is finished but there remain undefined evars: " ++
-                  prlist_with_sep spc (pr_ev evd)
-                    (Evar.Set.elements (find_undefined p oevd evd)))
-              in
-              raise (Unresolved evd)
-            else docomp evd comps
-          | None -> docomp evd comps (* No typeclass evars left in this component *)
+            let res = solver.solver env evd ~goals:sorted_goals ~best_effort:true ~depth ~unique in
+            begin match res with
+            | Inl (finished, evd) ->
+              let finished, evd = Search.post_process_goals ~goals ~nongoals ~old_metas ~sigma:evd ~finished in
+              if has_undefined p oevd evd then
+                let () = if finished then ppdebug 1 (fun () ->
+                    str"Proof is finished but there remain undefined evars: " ++
+                    prlist_with_sep spc (pr_ev evd)
+                      (Evar.Set.elements (find_undefined p oevd evd)))
+                in
+                raise (Unresolved (evd,None))
+              else docomp failed evd comps
+            | Inr e -> (* Typeclass resolution failed *)
+              raise (Unresolved (evd,Some e))
+            end
+          | None -> docomp failed evd comps (* No typeclass evars left in this component *)
         with Not_found ->
           (* Typeclass resolution failed *)
-          raise (Unresolved evd))
-      with Unresolved evd' ->
+          raise (Unresolved (evd,None)))
+      with Unresolved (evd',err) ->
         if fail && is_mandatory (p evd') comp evd'
         then (* Unable to satisfy the constraints. *)
-          error_unresolvable env evd' comp
+          error_unresolvable env evd' ?err comp
         else (* Best effort: use the best found solution on this component *)
-          docomp evd' comps
-  in docomp oevd split
+          docomp (if Option.has_some err then err else failed) evd' comps
+  in docomp None oevd split
 
 let initial_select_evars filter =
   fun evd ev evi ->
@@ -1275,12 +1283,14 @@ let resolve_typeclass_evars depth unique env evd filter fail =
       (initial_select_evars filter) evd fail
 
 let solve_inst env evd filter unique fail =
-  let ((), sigma) = Hints.wrap_hint_warning_fun env evd begin fun evd ->
-    (), resolve_typeclass_evars
-    (get_typeclasses_depth ())
-    unique env evd filter fail
-  end in
-  sigma
+  let (failed, sigma) = Hints.wrap_hint_warning_fun env evd begin fun evd ->
+      let evd, failed = resolve_typeclass_evars
+          (get_typeclasses_depth ())
+          unique env evd filter fail
+      in
+      failed, evd
+    end in
+  sigma, failed
 
 let () =
   Typeclasses.set_solve_all_instances solve_inst
@@ -1367,5 +1377,5 @@ let resolve_tc c =
   let evars = Evarutil.undefined_evars_of_term sigma c in
   let filter = (fun ev _ -> Evar.Set.mem ev evars) in
   let fail = true in
-  let sigma = resolve_all_evars depth unique env (initial_select_evars filter) sigma fail in
+  let sigma, _ = resolve_all_evars depth unique env (initial_select_evars filter) sigma fail in
   Proofview.Unsafe.tclEVARS sigma

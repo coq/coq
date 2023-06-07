@@ -64,7 +64,7 @@ type pretype_error =
   | CantApplyBadTypeExplained of (constr,types) pcant_apply_bad_type * unification_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
-    (Evar.t * Evar_kinds.t) option * Evar.Set.t
+    (Evar.t * Evar_kinds.t) option * Evar.Set.t * exn option
   | DisallowedSProp
 
 exception PretypeError of env * Evd.evar_map * pretype_error
@@ -192,14 +192,14 @@ let error_disallowed_sprop env sigma  =
 
 (*s Typeclass errors *)
 
-let unsatisfiable_constraints env evd ev comp =
+let unsatisfiable_constraints env evd ev ?err comp =
   match ev with
   | None ->
-    let err = UnsatisfiableConstraints (None, comp) in
+    let err = UnsatisfiableConstraints (None, comp, err) in
     raise (PretypeError (env,evd,err))
   | Some ev ->
     let loc, kind = Evd.evar_source (Evd.find_undefined evd ev) in
-    let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
+    let err = UnsatisfiableConstraints (Some (ev, kind), comp, err) in
     Loc.raise ?loc (PretypeError (env,evd,err))
 
 let unsatisfiable_exception exn =

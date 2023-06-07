@@ -253,14 +253,17 @@ let solve_all_instances env evd filter unique fail =
 
 let set_solve_all_instances f = solve_all_instances_hook := f
 
-let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
+let resolve_typeclasses_keep_err ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(fail=true) env evd =
-  if not (has_typeclasses filter evd) then evd
+  if not (has_typeclasses filter evd) then evd, None
   else solve_all_instances env evd filter unique fail
+
+let resolve_typeclasses ?filter ?unique ?fail env evd =
+  fst (resolve_typeclasses_keep_err ?filter ?unique ?fail env evd)
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 
-let error_unresolvable env evd comp =
+let error_unresolvable env evd ?err comp =
   let exception MultipleFound in
   let fold ev accu =
     let evi = Evd.find_undefined evd ev in
@@ -271,7 +274,7 @@ let error_unresolvable env evd comp =
     else (Some ev)
   in
   let ev = try Evar.Set.fold fold comp None with MultipleFound -> None in
-  Pretype_errors.unsatisfiable_constraints env evd ev comp
+  Pretype_errors.unsatisfiable_constraints env evd ev ?err comp
 
 (** Deprecated *)
 
