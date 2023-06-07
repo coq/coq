@@ -1249,48 +1249,28 @@ struct
       sigma, { uj_val = v; uj_type = tval }
     in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma cj tycon
 
-(* [pretype_type valcon env sigma c] coerces [c] into a type *)
-let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.get c with
-  | GHole (knd, naming) ->
-      let loc = loc_of_glob_constr c in
-      (match valcon with
-       | Some v ->
-           let sigma, s =
-             let t = Retyping.get_type_of !!env sigma v in
-               match EConstr.kind sigma (whd_all !!env sigma t) with
-               | Sort s ->
-                 sigma, s
-               | Evar ev when is_Type sigma (existential_type sigma ev) ->
-                 define_evar_as_sort !!env sigma ev
-               | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
-           in
-           (* Correction of bug #5315 : we need to define an evar for *all* holes *)
-           let sigma, evkt = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
-           let ev,_ = destEvar sigma evkt in
-           let sigma = Evd.define ev (nf_evar sigma v) sigma in
-           (* End of correction of bug #5315 *)
-           sigma, { utj_val = v;
-                    utj_type = s }
-       | None ->
-         let sigma, s = new_sort_variable univ_flexible_alg sigma in
-         let sigma, utj_val = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
-         let sigma = if flags.program_mode then mark_obligation_evar sigma knd utj_val else sigma in
-         sigma, { utj_val; utj_type = s})
-  | _ ->
-      let sigma, j = eval_pretyper self ~flags empty_tycon env sigma c in
-      let loc = loc_of_glob_constr c in
-      let sigma, tj =
-        let use_coercions = flags.use_coercions in
-        Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
-      match valcon with
-      | None -> sigma, tj
-      | Some v ->
-        begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
-        | sigma -> sigma, tj
-        | exception Evarconv.UnableToUnify (sigma,e) ->
-          error_unexpected_type
-            ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
-        end
+  (* [pretype_type valcon env sigma c] coerces [c] into a type.
+     The result must be a supertype of valcon if provided. *)
+  let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma =
+    (* When the term is a hole and there is a valcon we could just return the valcon
+       (modulo checking that the hole name is not already used)
+       but pattern_of_constr broken:true and funind expect an evar...
+       cf #5315
+    *)
+    let sigma, j = eval_pretyper self ~flags empty_tycon env sigma c in
+    let loc = loc_of_glob_constr c in
+    let sigma, tj =
+      let use_coercions = flags.use_coercions in
+      Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
+    match valcon with
+    | None -> sigma, tj
+    | Some v ->
+      begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
+      | sigma -> sigma, tj
+      | exception Evarconv.UnableToUnify (sigma,e) ->
+        error_unexpected_type
+          ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
+      end
 
   let pretype_int self i =
     fun ?loc ~flags tycon env sigma ->
