@@ -50,6 +50,7 @@ CI_TARGETS= \
     ci-iris \
     ci-jasmin \
     ci-lean_importer \
+    ci-ltac2_compiler \
     ci-math_classes \
     ci-mathcomp \
     ci-mathcomp_test \
