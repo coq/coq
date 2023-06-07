@@ -278,63 +278,34 @@ Definition div_le_compat_l := div_le_compat_l.
 Definition div_add := div_add.
 Definition div_add_l := div_add_l.
 
-(** Deprecation statements.
-    After deprecation phase, remove statements below
-    in favor of Div0 statements. *)
+Import Div0.
 
-#[deprecated(since="8.17",note="Use Div0.mod_eq instead.")]
 Notation mod_eq := mod_eq (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_same instead.")]
 Notation mod_same := mod_same (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_0_l instead.")]
 Notation div_0_l := div_0_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_0_l instead.")]
 Notation mod_0_l := mod_0_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_mul instead.")]
 Notation mod_mul := mod_mul (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_le instead.")]
 Notation mod_le := mod_le (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_le_mono instead.")]
 Notation div_le_mono := div_le_mono (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_div_le instead.")]
 Notation mul_div_le := mul_div_le (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_exact instead.")]
 Notation div_exact := div_exact (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_lt_upper_bound instead.")]
 Notation div_lt_upper_bound := div_lt_upper_bound (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_le_upper_bound instead.")]
 Notation div_le_upper_bound := div_le_upper_bound (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_add instead.")]
 Notation mod_add := mod_add (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_mul_cancel_r instead.")]
 Notation div_mul_cancel_r := div_mul_cancel_r (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_mul_cancel_l instead.")]
 Notation div_mul_cancel_l := div_mul_cancel_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_mod_distr_r instead.")]
 Notation mul_mod_distr_r := mul_mod_distr_r (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_mod_distr_l instead.")]
 Notation mul_mod_distr_l := mul_mod_distr_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_mod instead.")]
 Notation mod_mod := mod_mod (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_mod_idemp_l instead.")]
 Notation mul_mod_idemp_l := mul_mod_idemp_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_mod_idemp_r instead.")]
 Notation mul_mod_idemp_r := mul_mod_idemp_r (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mul_mod instead.")]
 Notation mul_mod := mul_mod (only parsing).
-#[deprecated(since="8.17",note="Use Div0.add_mod_idemp_l instead.")]
 Notation add_mod_idemp_l := add_mod_idemp_l (only parsing).
-#[deprecated(since="8.17",note="Use Div0.add_mod_idemp_r instead.")]
 Notation add_mod_idemp_r := add_mod_idemp_r (only parsing).
-#[deprecated(since="8.17",note="Use Div0.add_mod instead.")]
 Notation add_mod := add_mod (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_div instead.")]
 Notation div_div := div_div (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_mul_r instead.")]
 Notation mod_mul_r := mod_mul_r (only parsing).
-#[deprecated(since="8.17",note="Use Div0.div_mul_le instead.")]
 Notation div_mul_le := div_mul_le (only parsing).
-#[deprecated(since="8.17",note="Use Div0.mod_divides instead.")]
 Notation mod_divides := mod_divides (only parsing).
 
 End NDivProp0.

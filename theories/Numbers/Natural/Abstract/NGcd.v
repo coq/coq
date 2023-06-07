@@ -57,15 +57,6 @@ Definition gcd_eq_0_r := gcd_eq_0_r.
 Definition gcd_eq_0 := gcd_eq_0.
 Definition gcd_mul_diag_l n m := gcd_mul_diag_l n m (le_0_l n).
 
-#[deprecated(since="8.17",note="Use divide_antisym instead.")]
-Notation divide_antisym_nonneg := divide_antisym_nonneg (only parsing).
-#[deprecated(since="8.17",note="Use gcd_unique instead.")]
-Notation gcd_unique' n m p := gcd_unique (only parsing).
-#[deprecated(since="8.17",note="Use gcd_unique_alt instead.")]
-Notation gcd_unique_alt' := gcd_unique_alt.
-#[deprecated(since="8.17",note="Use divide_gcd_iff instead.")]
-Notation divide_gcd_iff' := divide_gcd_iff.
-
 Lemma divide_add_cancel_r : forall n m p, (n | m) -> (n | m + p) -> (n | p).
 Proof.
  intros n m p (q,Hq) (r,Hr).

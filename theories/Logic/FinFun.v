@@ -59,16 +59,6 @@ Proof.
     split; [ exists l | ]; assumption.
 Qed.
 
-(* Finite_alt is a weaker version of Finite_dec and has been deprecated.  *)
-Lemma Finite_alt_deprecated A (d:decidable_eq A) : Finite A <-> Finite' A.
-Proof.
- split.
- - intros F. now apply Finite_dec.
- - intros (l & _ & F). now exists l.
-Qed.
-#[deprecated(since="8.17", note="Use Finite_dec instead.")]
-Notation Finite_alt := Finite_alt_deprecated.
-
 (** Injections characterized in term of lists *)
 
 Lemma Injective_map_NoDup A B (f:A->B) (l:list A) :
