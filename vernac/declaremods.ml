@@ -790,7 +790,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
   let sobjs0, keep, special = match m_info.cur_typ with
     | None -> ([], Objs substitute), keep, special
     | Some (mty, inline) ->
-      SynterpVisitor.get_module_sobjs false () inline mty, [], []
+      SynterpVisitor.get_module_sobjs false () inline mty, [], special
   in
   Summary.Synterp.unfreeze_summaries fs;
   let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_mbids@ms,objs) in
