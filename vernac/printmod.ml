@@ -230,7 +230,7 @@ let get_typ_expr_alg mtb = match mtb.mod_type_alg with
   | Some (MENoFunctor me) -> me
   | _ -> raise Not_found
 
-let nametab_register_modparam mbid mtb =
+let nametab_register_modparam used mbid mtb =
   let id = MBId.to_id mbid in
   match mtb.mod_type with
   | MoreFunctor _ -> id (* functorial param : nothing to register *)
@@ -243,7 +243,7 @@ let nametab_register_modparam mbid mtb =
     with e when CErrors.noncritical e ->
       (* Otherwise, we try to play with the nametab ourselves *)
       let mp = MPbound mbid in
-      let check id = Nametab.exists_module (DirPath.make [id]) in
+      let check id = Id.Set.mem id used || Nametab.exists_module (DirPath.make [id]) in
       let id = Namegen.next_ident_away_from id check in
       let dir = DirPath.make [id] in
       nametab_register_dir mp;
@@ -340,19 +340,20 @@ let print_mod_expr env mp locals = function
         (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let rec print_functor fty fatom is_type extent env mp locals = function
+let rec print_functor fty fatom is_type extent env mp used locals = function
   | NoFunctor me -> fatom is_type extent env mp locals me
   | MoreFunctor (mbid,mtb1,me2) ->
-      let id = nametab_register_modparam mbid mtb1 in
+      let id = nametab_register_modparam !used mbid mtb1 in
+      let () = used := Id.Set.add id !used in
       let mp1 = MPbound mbid in
-      let pr_mtb1 = fty extent env mp1 locals mtb1 in
+      let pr_mtb1 = fty extent env mp1 used locals mtb1 in
       let env' = Modops.add_module_type mp1 mtb1 env in
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
          str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
-         spc() ++ print_functor fty fatom is_type extent env' mp locals' me2)
+         spc() ++ print_functor fty fatom is_type extent env' mp used locals' me2)
 
 let rec print_expression x =
   print_functor
@@ -362,22 +363,22 @@ let rec print_expression x =
 and print_signature x =
   print_functor print_modtype print_structure x
 
-and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
+and print_modtype extent env mp used locals mtb = match mtb.mod_type_alg with
   | Some me ->
     let me = Modops.annotate_module_expression me mtb.mod_type in
-    print_expression true extent env mp locals me
-  | None -> print_signature true extent env mp locals mtb.mod_type
+    print_expression true extent env mp used locals me
+  | None -> print_signature true extent env mp used locals mtb.mod_type
 
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
 
 let print_expression' is_type extent env mp me =
   Vernacstate.System.protect
-    (fun e -> print_expression is_type extent env mp [] e) me
+    (fun e -> print_expression is_type extent env mp (ref Id.Set.empty) [] e) me
 
 let print_signature' is_type extent env mp me =
   Vernacstate.System.protect
-    (fun e -> print_signature is_type extent env mp [] e) me
+    (fun e -> print_signature is_type extent env mp (ref Id.Set.empty) [] e) me
 
 let unsafe_print_module extent env mp with_body mb =
   let name = print_modpath [] mp in
