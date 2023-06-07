@@ -164,10 +164,7 @@ module Btauto = struct
 
   let reify env t = lapp eval [|convert_env env; convert t|]
 
-  let print_counterexample p penv =
-  Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+  let print_counterexample env sigma p penv =
     let var = lapp witness [|p|] in
     let var = EConstr.of_constr var in
     (* Compute an assignment that dissatisfies the goal *)
@@ -175,39 +172,43 @@ module Btauto = struct
     let _, var = redfun env sigma var in
     let var = EConstr.Unsafe.to_constr var in
     let rec to_list l = match decomp_term sigma l with
-    | App (c, _)
-      when c === (Lazy.force CoqList._nil) -> []
-    | App (c, [|_; h; t|])
-      when c === (Lazy.force CoqList._cons) ->
-      if h === (Lazy.force Bool.trueb) then (true :: to_list t)
-      else if h === (Lazy.force Bool.falseb) then (false :: to_list t)
-      else invalid_arg "to_list"
-    | _ -> invalid_arg "to_list"
+      | App (c, _)
+        when c === (Lazy.force CoqList._nil) -> []
+      | App (c, [|_; h; t|])
+        when c === (Lazy.force CoqList._cons) ->
+        if h === (Lazy.force Bool.trueb) then (true :: to_list t)
+        else if h === (Lazy.force Bool.falseb) then (false :: to_list t)
+        else invalid_arg "to_list"
+      | _ -> invalid_arg "to_list"
     in
     let concat sep = function
-    | [] -> mt ()
-    | h :: t ->
-      let rec aux = function
       | [] -> mt ()
-      | x :: t -> (sep ++ x ++ aux t)
-      in
-      h ++ aux t
-    in
-    let msg =
-      try
-        let var = to_list var in
-        let assign = List.combine penv var in
-        let map_msg (key, v) =
-          let b = if v then str "true" else str "false" in
-          let term = Printer.pr_constr_env env sigma key in
-          term ++ spc () ++ str ":=" ++ spc () ++ b
+      | h :: t ->
+        let rec aux = function
+          | [] -> mt ()
+          | x :: t -> (sep ++ x ++ aux t)
         in
-        let assign = List.map map_msg assign in
-        let l = str "[" ++ (concat (str ";" ++ spc ()) assign) ++ str "]" in
-        str "Not a tautology:" ++ spc () ++ l
-      with e when CErrors.noncritical e -> (str "Not a tautology")
+        h ++ aux t
     in
-    Tacticals.tclFAIL msg
+    try
+      let var = to_list var in
+      let assign = List.combine penv var in
+      let map_msg (key, v) =
+        let b = if v then str "true" else str "false" in
+        let term = Printer.pr_constr_env env sigma key in
+        term ++ spc () ++ str ":=" ++ spc () ++ b
+      in
+      let assign = List.map map_msg assign in
+      let l = str "[" ++ (concat (str ";" ++ spc ()) assign) ++ str "]" in
+      str "Not a tautology:" ++ spc () ++ l
+    with e when CErrors.noncritical e -> (str "Not a tautology")
+
+  let print_counterexample p penv =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let msg = lazy (print_counterexample env sigma p penv) in
+    Proofview.tclZERO ~info:(Exninfo.reify()) (Tacticals.FailError (0, msg))
   end
 
   let try_unification env =
