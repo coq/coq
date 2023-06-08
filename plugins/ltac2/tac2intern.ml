@@ -1904,30 +1904,42 @@ let () = Genintern.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_ex
 let () = Genintern.register_subst0 wit_ltac2in1_val subst_expr
 let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
-let () =
+let intern_var_quotation ist (kind, { CAst.v = id; loc }) =
   let open Genintern in
-  let intern ist (loc, id) =
-    let env = match Genintern.Store.get ist.extra ltac2_env with
+  let kind = match kind with
+    | None -> ConstrVar
+    | Some kind -> match Id.to_string kind.CAst.v with
+      | "constr" -> ConstrVar
+      | "preterm" -> PretermVar
+      | _ ->
+        CErrors.user_err ?loc:kind.loc
+          Pp.(str "Unknown Ltac2 variable quotation kind" ++ spc() ++ Id.print kind.v)
+  in
+  let typ = match kind with
+    | ConstrVar -> t_constr
+    | PretermVar -> t_preterm
+  in
+  let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
       (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
       empty_env ~strict:ist.strict_check ()
     | Some env -> env
-    in
-    (* Special handling of notation variables *)
-    let () =
-      if Id.Map.mem id ist.intern_sign.notation_variable_status then
-        (* Always fail *)
-        unify ?loc env (GTypRef (Other t_preterm, [])) (GTypRef (Other t_constr, []))
-    in
-    let t =
-      try find_var id env
-      with Not_found ->
-        CErrors.user_err ?loc (str "Unbound value " ++ Id.print id)
-    in
-    let t = fresh_mix_type_scheme env t in
-    let () = unify ?loc env t (GTypRef (Other t_constr, [])) in
-    (ist, id)
   in
-  Genintern.register_intern0 wit_ltac2_quotation intern
+  (* Special handling of notation variables *)
+  let () =
+    if Id.Map.mem id ist.intern_sign.notation_variable_status then
+      (* Always fail for constr, never for preterm *)
+      unify ?loc env (GTypRef (Other t_preterm, [])) (GTypRef (Other typ, []))
+  in
+  let t =
+    try find_var id env
+    with Not_found ->
+      CErrors.user_err ?loc (str "Unbound value " ++ Id.print id)
+  in
+  let t = fresh_mix_type_scheme env t in
+  let () = unify ?loc env t (GTypRef (Other typ, [])) in
+  (ist, (kind, id))
 
-let () = Genintern.register_subst0 wit_ltac2_quotation (fun _ id -> id)
+let () = Genintern.register_intern0 wit_ltac2_var_quotation intern_var_quotation
+
+let () = Genintern.register_subst0 wit_ltac2_var_quotation (fun _ v -> v)

@@ -98,6 +98,10 @@ val understand_ltac : inference_flags ->
   env -> evar_map -> ltac_var_map ->
   typing_constraint -> glob_constr -> evar_map * EConstr.t
 
+val understand_ltac_ty : inference_flags ->
+  env -> evar_map -> ltac_var_map ->
+  typing_constraint -> glob_constr -> evar_map * EConstr.t * EConstr.types
+
 (** Standard call to get a constr from a glob_constr, resolving
     implicit arguments and coercions, and compiling pattern-matching;
     the default inference_flags tells to use type classes and

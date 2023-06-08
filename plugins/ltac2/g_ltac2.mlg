@@ -65,6 +65,12 @@ let test_dollar_ident =
     lk_kw "$" >> lk_ident >> check_no_space
   end
 
+let test_dollar_ident_colon_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_dollar_ident_colon_ident" begin
+    lk_kw "$" >> lk_ident >> lk_kw ":" >> lk_ident >> check_no_space
+  end
+
 let test_ltac1_env =
   let open Pcoq.Lookahead in
   to_entry "test_ltac1_env" begin
@@ -939,8 +945,19 @@ let rules = [
     Production.make
       (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
-      let id = Loc.tag ~loc id in
-      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
+      let id = CAst.make ~loc id in
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_var_quotation) (None, id) in
+      CAst.make ~loc (CGenarg arg)
+    end
+  );
+
+  Pcoq.(
+    Production.make
+      (Rule.stop ++ Symbol.nterm test_dollar_ident_colon_ident ++
+       Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.identref ++
+       Symbol.token (PKEYWORD ":") ++ Symbol.nterm Prim.identref)
+    begin fun id _ kind _ _ loc ->
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_var_quotation) (Some kind, id) in
       CAst.make ~loc (CGenarg arg)
     end
   );
