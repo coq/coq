@@ -76,7 +76,7 @@ type generic_notation_printing_rules = {
 }
 
 let generic_notation_printing_rules =
-  Summary.ref ~name:"generic-notation-printing-rules" (NotationMap.empty : generic_notation_printing_rules NotationMap.t)
+  Summary.ref ~stage:Synterp ~name:"generic-notation-printing-rules" (NotationMap.empty : generic_notation_printing_rules NotationMap.t)
 
 let specific_notation_printing_rules =
   Summary.ref ~name:"specific-notation-printing-rules" (SpecificNotationMap.empty : notation_printing_rules SpecificNotationMap.t)
