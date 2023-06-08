@@ -326,6 +326,11 @@ project coqtail "https://github.com/whonore/Coqtail" "master"
 project deriving "https://github.com/arthuraa/deriving" "master"
 
 ########################################################################
+# VsCoq
+########################################################################
+project vscoq "https://github.com/coq-community/vscoq" "main"
+
+########################################################################
 # category-theory
 ########################################################################
 project category_theory "https://github.com/jwiegley/category-theory" "master"
