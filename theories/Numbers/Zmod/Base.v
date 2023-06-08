@@ -335,7 +335,10 @@ Lemma mul_1_r {m} a : @mul m a one = a. Proof. rewrite <-mul_comm; apply mul_1_l
 Lemma mul_0_l {m} a : @mul m zero a = zero. Proof. r. Qed.
 Lemma mul_0_r {m} a : @mul m a zero = zero. Proof. rewrite <-mul_comm; apply mul_0_l. Qed.
 
+(* TODO: high half of signed and unsigned multiplication? *)
+
 (** Three notions of division *)
+(* TODO: udiv vs divu, etc *)
 
 Definition udiv {m} (x y : Zmod m) : Zmod m.
   refine (of_small_N m (N.div x y) (fun _ => _)).
@@ -399,6 +402,8 @@ Proof. apply to_Z_inj. cbv [ndiv inv]. rewrite mul_comm; trivial. Qed.
 Lemma mul_inv_r {m} x y : mul x (@inv m y) = ndiv x y.
 Proof. rewrite mul_comm, mul_inv_l; trivial. Qed.
 
+(* TODO: quotient and remainder? *)
+
 (**  Powers  *)
 
 Definition pow_N {m} (a : Zmod m) n := N.iter_op mul one a n.
@@ -458,16 +463,6 @@ Qed.
 
 (** Bitwise operations *)
 
-(* TODO: prove, move *)
-Module N.
-  Local Open Scope N_scope.
-  Lemma land_mono a b : N.land a b <= a. Admitted.
-  Lemma ldiff_mono a b : N.ldiff a b <= a. Admitted.
-
-  Lemma pos_pow a b : N.pos (a ^ b) = N.pow a b.
-  Proof. trivial. Qed.
-End N.
-
 Definition xor {m} (x y : Zmod m) := of_N m (N.lxor x y).
 
 Definition or {m} (x y : Zmod m) := of_N m (N.lor x y).
@@ -516,8 +511,48 @@ Qed.
 Lemma to_N_and {m} x y : @to_N m (and x y) = N.land x y.
 Proof. apply to_N_of_small_N. Qed.
 
-Lemma to_N_ldiff {m} x y : @to_N m (ndn x y) = N.ldiff x y.
+Lemma to_N_ndn {m} x y : @to_N m (ndn x y) = N.ldiff x y.
 Proof. apply to_N_of_small_N. Qed.
+
+(** Shifts *)
+
+Definition sru_N {m} (x : Zmod m) (n : N) : Zmod m.
+  refine (of_small_N m (N.shiftr x n) (fun _ => _)).
+  abstract (pose (to_N_range x); pose (N.shiftr_mono x n); lia).
+Defined.
+
+Definition srs_N {m} x (n : N) := of_Z m (Z.shiftr (@signed m x) n).
+
+Definition slu_N {m} x n := of_N m (N.shiftl x n).
+
+Lemma to_N_sru_N {m} x n : @to_N m (sru_N x n) = N.shiftr x n.
+Proof. apply to_N_of_small_N. Qed.
+
+Lemma to_Z_sru_N {m} x n : @to_Z m (sru_N x n) = Z.shiftr x n.
+Proof. cbv [to_Z]. rewrite to_N_sru_N, N2Z.inj_shiftr; trivial. Qed.
+
+Lemma signed_srs_N {m} x n : @signed m (srs_N x n) = Z.shiftr (signed x) n.
+Proof.
+  cbv [srs_N]; rewrite signed_of_Z; apply Z.smod_small.
+  rewrite Z.shiftr_div_pow2 by lia; pose proof signed_range x.
+  Z.to_euclidean_division_equations; nia.
+Qed.
+
+Lemma to_Z_srs_N {m} x n : @to_Z m (srs_N x n) = Z.shiftr (signed x) n mod m.
+Proof. rewrite <-mod_to_Z, <-Z.mod_smod, <-signed_srs_N, <-signed_of_Z, of_Z_to_Z; trivial. Qed.
+
+Lemma to_N_slu_N {m} x n : @to_N m (slu_N x n) = (N.shiftl x n mod m)%N.
+Proof. cbv [slu_N]; rewrite to_N_of_N; trivial. Qed.
+
+Lemma to_Z_slu_N {m} x n : @to_Z m (slu_N x n) = Z.shiftl x n mod m.
+Proof. cbv [slu_N]; rewrite to_Z_of_N, N2Z.inj_shiftl; trivial. Qed.
+
+(** Shifts by [Zmod] *)
+(* Note: some systems truncate the shift amount first *)
+
+Definition sru {m} (x y : Zmod m) := @sru_N m x y.
+Definition slu {m} (x y : Zmod m) := @slu_N m x y.
+Definition srs {m} (x y : Zmod m) := @srs_N m x y.
 
 (* To Z *)
 
@@ -525,10 +560,10 @@ Lemma testbit_high_pow2 {w} (x : Zmod (2^w)) i (Hi : (w <= i)) : Z.testbit x i =
 Proof. cbv [to_Z]. rewrite Z.testbit_of_N', Ntestbit_high_pow2; trivial; lia. Qed.
 
 Lemma to_Z_xor_pow2 {w} x y : @to_Z (2^w) (xor x y) = Z.lxor x y.
-Admitted.
+Proof. cbv [to_Z]. rewrite to_N_xor_pow2, N2Z.inj_lxor; trivial. Qed.
 
 Lemma to_Z_or_pow2 {w} x y : @to_Z (2^w) (or x y) = Z.lor x y.
-Admitted.
+Proof. cbv [to_Z]. rewrite to_N_or_pow2, N2Z.inj_lor; trivial. Qed.
 
 Lemma to_Z_not {w} x : @to_Z (2^w) (not x) = Z.lnot x mod 2^w.
 Proof.
@@ -538,10 +573,10 @@ Proof.
 Qed.
 
 Lemma to_Z_and {m} x y : @to_Z m (and x y) = Z.land x y.
-Admitted.
+Proof. cbv [to_Z]. rewrite to_N_and, N2Z.inj_land; trivial. Qed.
 
-Lemma to_Z_ldiff {m} x y : @to_Z m (ndn x y) = Z.ldiff x y.
-Admitted.
+Lemma to_Z_ndn {m} x y : @to_Z m (ndn x y) = Z.ldiff x y.
+Proof. cbv [to_Z]. rewrite to_N_ndn, N2Z.inj_ldiff; trivial. Qed.
 
 (** Misc *)
 

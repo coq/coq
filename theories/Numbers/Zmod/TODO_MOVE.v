@@ -138,6 +138,30 @@ Qed.
 End Znumtheory.
 
 Module Pos.
+  Import BinPosDef.
+  Lemma land_mono : forall a b, (Pos.land a b <= N.pos a)%N.
+  Proof. induction a, b; cbn [Pos.land]; try specialize (IHa b); lia. Qed.
+
+  Lemma ldiff_mono : forall a b, (Pos.ldiff a b <= N.pos a)%N.
+  Proof. induction a, b; cbn [Pos.ldiff]; try specialize (IHa b); try lia. Qed.
+
+  Lemma div2_le a : (Pos.div2 a <= a)%positive.
+  Proof. induction a; cbn [Pos.div2]; lia. Qed.
+
+  Lemma shiftr_mono a b : (Pos.shiftr a b <= a)%positive.
+  Proof.
+    case b as [|b]; cbn [Pos.shiftr]; [lia|].
+    revert a; induction b; cbn [Pos.iter];
+      repeat (etransitivity; [eapply div2_le || eapply IHb|]); reflexivity.
+  Qed.
+
+  Lemma shiftl_mono a b : (a <= Pos.shiftl a b)%positive.
+  Proof.
+    case b as [|b]; cbn [Pos.shiftl]; [lia|].
+    revert a; induction b; cbn [Pos.iter]; intros;
+      try pose (IHb (Pos.iter xO a b)); try pose (IHb a); lia.
+  Qed.
+
   Definition ones (p : positive) : positive :=
     N.iter (Pos.pred_N p) (fun n => n~1)%positive xH.
 
@@ -158,6 +182,54 @@ Module Pos.
     replace (N.pos (b+c)) with (N.pos b + N.pos c)%N by lia; rewrite N.pow_add_r; lia.
   Qed.
 End Pos.
+
+Module N2Z.
+  Lemma inj_lxor n m : Z.of_N (N.lxor n m) = Z.lxor (Z.of_N n) (Z.of_N m).
+  Proof. destruct n, m; reflexivity. Qed.
+
+  Lemma inj_land n m : Z.of_N (N.land n m) = Z.land (Z.of_N n) (Z.of_N m).
+  Proof. destruct n, m; reflexivity. Qed.
+
+  Lemma inj_lor n m : Z.of_N (N.lor n m) = Z.lor (Z.of_N n) (Z.of_N m).
+  Proof. destruct n, m; reflexivity. Qed.
+
+  Lemma inj_ldiff n m : Z.of_N (N.ldiff n m) = Z.ldiff (Z.of_N n) (Z.of_N m).
+  Proof. destruct n, m; reflexivity. Qed.
+
+  Lemma inj_shiftl: forall x y, Z.of_N (N.shiftl x y) = Z.shiftl (Z.of_N x) (Z.of_N y).
+  Proof.
+    intros x y.
+    apply Z.bits_inj_iff'; intros k Hpos.
+    rewrite Z2N.inj_testbit; [|assumption].
+    rewrite Z.shiftl_spec; [|assumption].
+
+    assert ((Z.to_N k) >= y \/ (Z.to_N k) < y)%N as g by (
+        unfold N.ge, N.lt; induction (N.compare (Z.to_N k) y); [left|auto|left];
+        intro H; inversion H).
+
+    destruct g as [g|g];
+    [ rewrite N.shiftl_spec_high; [|apply N2Z.inj_le; rewrite Z2N.id|apply N.ge_le]
+    | rewrite N.shiftl_spec_low]; try assumption.
+
+    - rewrite <- N2Z.inj_testbit; f_equal.
+        rewrite N2Z.inj_sub, Z2N.id; [reflexivity|assumption|apply N.ge_le; assumption].
+
+    - apply N2Z.inj_lt in g.
+        rewrite Z2N.id in g; [symmetry|assumption].
+        apply Z.testbit_neg_r; lia.
+  Qed.
+
+  Lemma inj_shiftr: forall x y, Z.of_N (N.shiftr x y) = Z.shiftr (Z.of_N x) (Z.of_N y).
+  Proof.
+    intros.
+    apply Z.bits_inj_iff'; intros k Hpos.
+    rewrite Z2N.inj_testbit; [|assumption].
+    rewrite Z.shiftr_spec, N.shiftr_spec; [|apply N2Z.inj_le; rewrite Z2N.id|]; try assumption.
+    rewrite <- N2Z.inj_testbit; f_equal.
+    rewrite N2Z.inj_add; f_equal.
+    apply Z2N.id; assumption.
+  Qed.
+End N2Z.
 
 Module Z.
   Lemma ones_succ n (H : Z.le 0 n) : Z.ones (Z.succ n) = Z.succ_double (Z.ones n).
@@ -327,6 +399,28 @@ End Z.
 
 Module N.
   Local Open Scope N_scope.
+
+  Lemma land_mono a b : N.land a b <= a.
+  Proof. case a, b; cbn [N.land]; trivial using Pos.land_mono; lia. Qed.
+
+  Lemma ldiff_mono a b : N.ldiff a b <= a.
+  Proof. case a, b; cbn [N.ldiff]; trivial using Pos.ldiff_mono; lia. Qed.
+
+  Lemma div2_le a : N.div2 a <= a.
+  Proof. case a; cbn; [lia|]. destruct p; lia. Qed.
+
+  Lemma shiftr_mono a b : N.shiftr a b <= a.
+  Proof.
+    case b as [|b]; cbn [N.shiftr]; try lia.
+    revert a; induction b; cbn [Pos.iter];
+      repeat (etransitivity; [eapply div2_le || eapply IHb|]); reflexivity.
+  Qed.
+
+  Lemma shiftl_mono a b : a <= N.shiftl a b.
+  Proof. case a as []; [lia|]. apply Pos.shiftl_mono. Qed.
+
+  Lemma pos_pow a b : N.pos (a ^ b) = N.pow (N.pos a) (N.pos b).
+  Proof. trivial. Qed.
 
   Lemma ones_succ n (H : N.le 0 n) : N.ones (N.succ n) = N.succ_double (N.ones n).
   Proof. rewrite 2N.ones_equiv, N.pow_succ_r; lia. Qed.
