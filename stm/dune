@@ -5,4 +5,4 @@
  (wrapped false)
  ; until ocaml/dune#4892 fixed
  ; (private_modules dag proofBlockDelimiter tQueue vcs workerPool)
- (libraries sysinit coqworkmgrapi))
+ (libraries sysinit coqworkmgrlib))
