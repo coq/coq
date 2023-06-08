@@ -57,7 +57,13 @@ let empty_state = {
   ltac_aliases = KNmap.empty;
 }
 
+type compile_info = {
+  source : string;
+}
+
 let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
+
+let compiled_tacs = Summary.ref ~local:true ~name:"ltac2-compiled-state" KNmap.empty
 
 let ltac_notations = Summary.ref KNmap.empty ~stage:Summary.Stage.Synterp ~name:"ltac2-notations"
 
@@ -68,6 +74,12 @@ let define_global kn e =
 let interp_global kn =
   let data = KNmap.find kn ltac_state.contents.ltac_tactics in
   data
+
+let set_compiled_global kn info v =
+  assert (not (interp_global kn).gdata_mutable);
+  compiled_tacs := KNmap.add kn (info,v) !compiled_tacs
+
+let get_compiled_global kn = KNmap.find_opt kn !compiled_tacs
 
 let globals () = (!ltac_state).ltac_tactics
 

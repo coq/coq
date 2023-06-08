@@ -429,6 +429,8 @@ let rec apply : type a. a arity -> _ -> a -> valexpr list -> valexpr Proofview.t
 
 let apply (MLTactic (arity, wrap, f)) args = apply arity wrap f args
 
+let apply_val v args = apply (to_closure v) args
+
 type n_closure =
 | NClosure : 'a arity * (valexpr list -> 'a) -> n_closure
 
