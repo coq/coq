@@ -1302,7 +1302,9 @@ Managing the local context
 
    .. tacn:: revert dependent @ident
 
-      Moves the named hypothesis and all the hypotheses that depend on it to the goal.
+      .. deprecated:: 8.18
+
+      An alias for :tacn:`generalize dependent`.
 
 .. tacn:: move @ident__from @where
 
