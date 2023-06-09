@@ -62,13 +62,13 @@ check_variable () {
 : "${old_ocaml_version:=4.09.1}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
-: "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
-: "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
-: "${new_coq_opam_archive_git_branch:=master}"
-: "${old_coq_opam_archive_git_branch:=master}"
+: "${new_coq_opam_archive_git_uri:=https://github.com/skyskimmer/opam-coq-archive.git}"
+: "${old_coq_opam_archive_git_uri:=https://github.com/skyskimmer/opam-coq-archive.git}"
+: "${new_coq_opam_archive_git_branch:=tac2compile}"
+: "${old_coq_opam_archive_git_branch:=tac2compile-off}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
+: "${coq_opam_packages:=coq-ltac2-compiler}"
 : "${coq_native:=}"
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
