@@ -32,7 +32,7 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        r ~local:true ~poly:false ~nonuniform:false ~reversible:true in
+        r ~local:true ~poly:false ~reversible:true in
   ()
 
 let instance_of_univ_entry = function
@@ -59,7 +59,7 @@ let declare_axiom is_coe ~poly ~local ~kind ?deprecation typ (univs, ubinders) i
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        gr ~local ~poly ~nonuniform:false ~reversible:true in
+        gr ~local ~poly ~reversible:true in
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 

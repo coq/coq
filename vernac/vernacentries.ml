@@ -60,7 +60,6 @@ module DefAttributes = struct
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
-    nonuniform : bool;
     reversible : bool;
     clearbody: bool option;
   }
@@ -71,23 +70,21 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
-    let nonuniform = if coercion then ComCoercion.nonuniform else return None in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let ((((((((locality, deprecated), polymorphic), program),
-         canonical_instance), typing_flags), using), nonuniform),
+    let (((((((locality, deprecated), polymorphic), program),
+         canonical_instance), typing_flags), using),
          reversible), clearbody =
       parse (locality ++ deprecation ++ polymorphic ++ program ++
-             canonical_instance ++ typing_flags ++ using ++ nonuniform ++
+             canonical_instance ++ typing_flags ++ using ++
              reversible ++ clearbody)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
     let reversible = Option.default true reversible in
-    let nonuniform = Option.default false nonuniform in
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; nonuniform; reversible; clearbody }
+    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; reversible; clearbody }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -646,9 +643,9 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~d
   (* XXX: This should be handled in start_with_initialization, see duplicate using in declare.ml *)
   |> vernac_set_used_variables_opt ?using
 
-let vernac_definition_hook ~canonical_instance ~local ~poly ~nonuniform ~reversible = let open Decls in function
+let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->
-  Some (ComCoercion.add_coercion_hook ~poly ~nonuniform ~reversible)
+  Some (ComCoercion.add_coercion_hook ~poly ~reversible)
 | CanonicalStructure ->
   Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | SubClass ->
@@ -680,7 +677,7 @@ let vernac_definition_name lid local =
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~nonuniform:atts.nonuniform ~reversible:atts.reversible kind in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~reversible:atts.reversible kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
@@ -692,7 +689,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~nonuniform:atts.nonuniform ~reversible:atts.reversible in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~reversible:atts.reversible in
   let program_mode = atts.program in
   let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid scope in
@@ -1407,14 +1404,13 @@ let vernac_coercion ~atts ref qidst =
   let ref' = smart_global ref in
   match qidst with
   | Some (qids, qidt) ->
-     let ((local, poly), nonuniform), reversible =
-       Attributes.parse Notations.(locality ++ polymorphic ++ ComCoercion.nonuniform ++ reversible) atts in
+     let (local, poly), reversible =
+       Attributes.parse Notations.(locality ++ polymorphic ++ reversible) atts in
      let local = enforce_locality local in
-     let nonuniform = Option.default false nonuniform in
      let reversible = Option.default false reversible in
      let target = cl_of_qualid qidt in
      let source = cl_of_qualid qids in
-     ComCoercion.try_add_new_coercion_with_target ref' ~local ~poly ~nonuniform ~reversible
+     ComCoercion.try_add_new_coercion_with_target ref' ~local ~poly ~reversible
        ~source ~target;
      Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
   | None ->

@@ -4,7 +4,3 @@ Warning: f does not respect the uniform inheritance condition.
 File "./output/coercions_nonuniform.v", line 55, characters 0-17:
 Warning: f' does not respect the uniform inheritance condition.
 [uniform-inheritance,coercions,default]
-File "./output/coercions_nonuniform.v", line 71, characters 7-17:
-The command has indeed failed with message:
-This command does not support this attribute: nonuniform.
-[unsupported-attributes,parsing,default]
