@@ -805,8 +805,8 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
   let relevance = Sorts.relevance_of_sort knd in
 
   let pnas, deparsign =
-    let arsign, sort = get_arity env indf in
-    let r = Sorts.relevance_of_sort_family sort in
+    let arsign = get_arity env indf in
+    let r = Inductiveops.relevance_of_inductive_family env indf in
     let depind = build_dependent_inductive env indf in
     let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
     let set_names env l =

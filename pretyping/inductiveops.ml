@@ -453,7 +453,7 @@ let get_arity env ((ind,u),params) =
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = subst_of_rel_context_instance_list parsign params in
   let arsign = Vars.subst_instance_context u arsign in
-  (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
+  substl_rel_context subst arsign
 
 (* Functions to build standard types related to inductive *)
 let build_dependent_constructor cs =
@@ -463,7 +463,7 @@ let build_dependent_constructor cs =
       @(Context.Rel.instance_list mkRel 0 cs.cs_args))
 
 let build_dependent_inductive env ((ind, params) as indf) =
-  let arsign,_ = get_arity env indf in
+  let arsign = get_arity env indf in
   let nrealargs = List.length arsign in
   applist
     (mkIndU ind,
@@ -471,9 +471,9 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
-let make_arity_signature env sigma dep indf =
-  let (arsign,s) = get_arity env indf in
-  let r = Sorts.relevance_of_sort_family s in
+let make_arity_signature env sigma dep ((ind,_), _ as indf) =
+  let arsign = get_arity env indf in
+  let r = Inductive.relevance_of_inductive env ind in
   let anon = make_annot Anonymous r in
   let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
   if dep then
@@ -621,8 +621,8 @@ let find_coinductive env sigma c =
 
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
-  let arsign,s = get_arity env (ind,params) in
-  let r = Sorts.relevance_of_sort_family s in
+  let arsign = get_arity env (ind,params) in
+  let r = Inductive.relevance_of_inductive env (fst ind) in
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   Term.it_mkProd_or_LetIn concl arsign

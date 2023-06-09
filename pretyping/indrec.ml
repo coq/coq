@@ -187,8 +187,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
     let nbprod = Array.length mip.mind_consnames + 1 in
 
     let indf' = lift_inductive_family nbprod indf in
-    let arsign,sort = get_arity !!env indf' in
-    let r = Sorts.relevance_of_sort_family sort in
+    let arsign = get_arity !!env indf' in
+    let r = Inductiveops.relevance_of_inductive_family !!env indf' in
     let depind = build_dependent_inductive !!env indf' in
     let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
 
@@ -448,8 +448,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
           let args = Context.Rel.instance_list mkRel (nrec+nbconstruct) lnamesparrec in
           let indf = make_ind_family((indi,u),args) in
 
-          let arsign,s = get_arity !!env indf in
-          let r = Sorts.relevance_of_sort_family s in
+          let arsign = get_arity !!env indf in
+          let r = Inductiveops.relevance_of_inductive_family !!env indf in
           let depind = build_dependent_inductive !!env indf in
           let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
 
@@ -485,8 +485,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             (* Predicate in the context of the case *)
 
             let depind' = build_dependent_inductive !!env indf' in
-            let arsign',s = get_arity !!env indf' in
-            let r = Sorts.relevance_of_sort_family s in
+            let arsign' = get_arity !!env indf' in
+            let r = Inductiveops.relevance_of_inductive_family !!env indf' in
             let deparsign' = LocalAssum (make_annot Anonymous r,depind')::arsign' in
 
             let pargs =

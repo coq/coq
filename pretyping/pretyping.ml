@@ -1094,8 +1094,8 @@ struct
     in
     (* Make dependencies from arity signature impossible *)
     let arsgn, indr =
-      let arsgn,s = get_arity !!env indf in
-      List.map (set_name Anonymous) arsgn, Sorts.relevance_of_sort_family s
+      let arsgn = get_arity !!env indf in
+      List.map (set_name Anonymous) arsgn, Inductiveops.relevance_of_inductive_family !!env indf
     in
       let indt = build_dependent_inductive !!env indf in
       let psign = LocalAssum (make_annot na indr, indt) :: arsgn in (* For locating names in [po] *)
@@ -1160,9 +1160,9 @@ struct
                       (str "If is only for inductive types with two constructors.");
 
       let arsgn, indr =
-        let arsgn,s = get_arity !!env indf in
+        let arsgn = get_arity !!env indf in
         (* Make dependencies from arity signature impossible *)
-        List.map (set_name Anonymous) arsgn, Sorts.relevance_of_sort_family s
+        List.map (set_name Anonymous) arsgn, Inductiveops.relevance_of_inductive_family !!env indf
       in
       let nar = List.length arsgn in
       let indt = build_dependent_inductive !!env indf in
