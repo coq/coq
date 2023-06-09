@@ -1,9 +1,11 @@
 File "./output/coercions_nonuniform.v", line 22, characters 0-21:
-Warning: f does not respect the uniform inheritance condition.
-[uniform-inheritance,coercions,default]
+Warning: f does not respect the uniform inheritance condition. Use the
+'#[nonuniform]' attribute to silence this warning (available since Coq
+8.16.0). [uniform-inheritance,coercions,default]
 File "./output/coercions_nonuniform.v", line 55, characters 0-17:
-Warning: f' does not respect the uniform inheritance condition.
-[uniform-inheritance,coercions,default]
+Warning: f' does not respect the uniform inheritance condition. Use the
+'#[nonuniform]' attribute to silence this warning (available since Coq
+8.16.0). [uniform-inheritance,coercions,default]
 File "./output/coercions_nonuniform.v", line 71, characters 7-17:
 The command has indeed failed with message:
 This command does not support this attribute: nonuniform.

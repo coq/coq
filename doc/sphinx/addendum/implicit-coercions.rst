@@ -205,7 +205,7 @@ Coercion Classes
 
      The inferred target class of the coercion differs from the one specified.
 
-  .. warn:: @qualid does not respect the uniform inheritance condition.
+  .. warn:: @qualid does not respect the uniform inheritance condition. Use the '#[nonuniform]' attribute to silence this warning (available since Coq 8.16.0).
 
      The :ref:`test for ambiguous coercion paths <ambiguous-paths>`
      may yield false positives involving the coercion :token:`qualid`.
