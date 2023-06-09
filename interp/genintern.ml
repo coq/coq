@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Mod_subst
 open Genarg
 
 module Store = Store.Make ()
@@ -50,20 +49,12 @@ type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr optio
 type glob_constr_pattern_and_expr = Id.Set.t * glob_constr_and_expr * Pattern.constr_pattern
 
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
-type 'glb subst_fun = substitution -> 'glb -> 'glb
 type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
 
 module InternObj =
 struct
   type ('raw, 'glb, 'top) obj = ('raw, 'glb) intern_fun
   let name = "intern"
-  let default _ = None
-end
-
-module SubstObj =
-struct
-  type ('raw, 'glb, 'top) obj = 'glb subst_fun
-  let name = "subst"
   let default _ = None
 end
 
@@ -75,7 +66,6 @@ struct
 end
 
 module Intern = Register (InternObj)
-module Subst = Register (SubstObj)
 module NtnSubst = Register (NtnSubstObj)
 
 let intern = Intern.obj
@@ -84,16 +74,6 @@ let register_intern0 = Intern.register0
 let generic_intern ist (GenArg (Rawwit wit, v)) =
   let (ist, v) = intern wit ist v in
   (ist, in_gen (glbwit wit) v)
-
-(** Substitution functions *)
-
-let substitute = Subst.obj
-let register_subst0 = Subst.register0
-
-let generic_substitute subs (GenArg (Glbwit wit, v)) =
-  in_gen (glbwit wit) (substitute wit subs v)
-
-let () = Hook.set Detyping.subst_genarg_hook generic_substitute
 
 (** Notation substitution *)
 

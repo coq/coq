@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Mod_subst
 open Genarg
 
 module Store : Store.S
@@ -47,15 +46,6 @@ val intern : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb) intern_fun
 
 val generic_intern : (raw_generic_argument, glob_generic_argument) intern_fun
 
-(** {5 Substitution functions} *)
-
-type 'glb subst_fun = substitution -> 'glb -> 'glb
-(** The type of functions used for substituting generic arguments. *)
-
-val substitute : ('raw, 'glb, 'top) genarg_type -> 'glb subst_fun
-
-val generic_substitute : glob_generic_argument subst_fun
-
 (** {5 Notation functions} *)
 
 type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
@@ -68,9 +58,6 @@ val generic_substitute_notation : glob_generic_argument ntn_subst_fun
 
 val register_intern0 : ('raw, 'glb, 'top) genarg_type ->
   ('raw, 'glb) intern_fun -> unit
-
-val register_subst0 : ('raw, 'glb, 'top) genarg_type ->
-  'glb subst_fun -> unit
 
 val register_ntn_subst0 : ('raw, 'glb, 'top) genarg_type ->
   'glb ntn_subst_fun -> unit

@@ -1138,8 +1138,6 @@ let rec subst_cases_pattern subst = DAst.map (function
           PatCstr (((kn',i),j),cpl',n)
   )
 
-let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
-
 let rec subst_glob_constr env subst = DAst.map (function
   | GRef (ref,u) as raw ->
     let ref',t = subst_global subst ref in
@@ -1250,7 +1248,7 @@ let rec subst_glob_constr env subst = DAst.map (function
     else GHole (nknd, naming)
 
   | GGenarg arg as raw ->
-    let arg' = Hook.get f_subst_genarg subst arg in
+    let arg' = Gensubst.generic_substitute subst arg in
     if arg' == arg then raw
     else GGenarg arg'
 

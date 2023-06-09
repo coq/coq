@@ -1773,7 +1773,7 @@ let () =
     else
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
-  let subst s (ids, tac) = (ids, Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
+  let subst s (ids, tac) = (ids, Gensubst.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
   let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
@@ -1830,7 +1830,7 @@ let () =
     else
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
-  let subst s (ids, tac) = (ids, Genintern.substitute Tacarg.wit_tactic s tac) in
+  let subst s (ids, tac) = (ids, Gensubst.substitute Tacarg.wit_tactic s tac) in
   let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
@@ -2007,7 +2007,7 @@ let () =
   let intern_fun _ e = Empty.abort e in
   let subst_fun s v = v in
   let () = Genintern.register_intern0 wit_ltac2_val intern_fun in
-  let () = Genintern.register_subst0 wit_ltac2_val subst_fun in
+  let () = Gensubst.register_subst0 wit_ltac2_val subst_fun in
   (* These are bound names and not relevant *)
   let tac_id = Id.of_string "F" in
   let arg_id = Id.of_string "X" in

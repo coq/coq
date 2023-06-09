@@ -1992,9 +1992,9 @@ let () =
   in
   Genintern.register_intern0 wit_ltac2_constr intern
 
-let () = Genintern.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_expr s e)
-let () = Genintern.register_subst0 wit_ltac2in1_val subst_expr
-let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
+let () = Gensubst.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_expr s e)
+let () = Gensubst.register_subst0 wit_ltac2in1_val subst_expr
+let () = Gensubst.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
 let intern_var_quotation ist (kind, { CAst.v = id; loc }) =
   let open Genintern in
@@ -2034,4 +2034,4 @@ let intern_var_quotation ist (kind, { CAst.v = id; loc }) =
 
 let () = Genintern.register_intern0 wit_ltac2_var_quotation intern_var_quotation
 
-let () = Genintern.register_subst0 wit_ltac2_var_quotation (fun _ v -> v)
+let () = Gensubst.register_subst0 wit_ltac2_var_quotation (fun _ v -> v)

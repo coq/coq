@@ -2061,7 +2061,7 @@ let def_interp ist x = Ftactic.return x
 
 let declare_uniform t =
   Genintern.register_intern0 t def_intern;
-  Genintern.register_subst0 t def_subst;
+  Gensubst.register_subst0 t def_subst;
   register_interp0 t def_interp
 
 let () =

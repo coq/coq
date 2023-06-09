@@ -1183,7 +1183,7 @@ let subst_autohint (subst, obj) =
           if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern (pat, tac) ->
           let pat' = Option.Smart.map (subst_pattern env sigma subst) pat in
-          let tac' = Genintern.generic_substitute subst tac in
+          let tac' = Gensubst.generic_substitute subst tac in
           if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
     in
     let name' = Option.Smart.map (subst_global_reference subst) data.name in

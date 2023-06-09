@@ -156,7 +156,7 @@ type ('a, 'b) argument_intern =
 | ArgInternWit : ('a, 'b, 'c) Genarg.genarg_type -> ('a, 'b) argument_intern
 
 type 'b argument_subst =
-| ArgSubstFun : 'b Genintern.subst_fun -> 'b argument_subst
+| ArgSubstFun : 'b Gensubst.subst_fun -> 'b argument_subst
 | ArgSubstWit : ('a, 'b, 'c) Genarg.genarg_type -> 'b argument_subst
 
 type ('b, 'c) argument_interp =

@@ -479,7 +479,7 @@ let subst_hintrewrite (subst,(rbase,list as node)) =
     let cst' = subst_mps subst hint.rew_lemma in
     let typ' = subst_mps subst hint.rew_type in
     let pat' = subst_mps subst hint.rew_pat in
-    let t' = Option.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
+    let t' = Option.Smart.map (Gensubst.generic_substitute subst) hint.rew_tac in
       if hint.rew_id == id' && hint.rew_lemma == cst' && hint.rew_type == typ' &&
          hint.rew_tac == t' && hint.rew_pat == pat' then hint else
         { hint with

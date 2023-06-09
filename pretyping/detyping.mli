@@ -70,9 +70,6 @@ val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 
-val subst_genarg_hook :
-  (substitution -> Genarg.glob_generic_argument -> Genarg.glob_generic_argument) Hook.t
-
 module PrintingInductiveMake :
   functor (Test : sig
     val encode : Environ.env -> Libnames.qualid -> Names.inductive
