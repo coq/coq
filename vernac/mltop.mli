@@ -45,6 +45,7 @@ type toplevel =
 (** Sets and initializes a toplevel (if any) *)
 val set_top : toplevel -> unit
 
+(** Low level module loading, for the native compiler and similar users. *)
 val load_module : string -> unit
 
 (** Removes the toplevel (if any) *)
