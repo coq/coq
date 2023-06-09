@@ -298,7 +298,6 @@ and slot_for_fv env sigma fv envcache table =
         cache_rel envcache i v; v
       | Some v -> v
       end
-  | FVevar evk -> val_of_evar evk
   | FVuniv_var _idu ->
     assert false
 
