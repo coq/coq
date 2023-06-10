@@ -15,7 +15,7 @@ Require Import BinPos BinNat PeanoNat Pnat.
 Module N2Nat.
 
 (** [N.to_nat] is a bijection between [N] and [nat],
-    with [Pos.of_nat] as reciprocal.
+    with [N.of_nat] as reciprocal.
     See [Nat2N.id] below for the dual equation. *)
 
 Lemma id a : N.of_nat (N.to_nat a) = a.
@@ -174,7 +174,7 @@ Global Hint Rewrite N2Nat.inj_div N2Nat.inj_mod N2Nat.inj_pow
 Module Nat2N.
 
 (** [N.of_nat] is an bijection between [nat] and [N],
-    with [Pos.to_nat] as reciprocal.
+    with [N.to_nat] as reciprocal.
     See [N2Nat.id] above for the dual equation. *)
 
 Lemma id n : N.to_nat (N.of_nat n) = n.

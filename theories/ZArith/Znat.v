@@ -296,7 +296,7 @@ End N2Z.
 Module Z2N.
 
 (** [Z.to_N] is a bijection between non-negative [Z] and [N],
-    with [Pos.of_N] as reciprocal.
+    with [Z.of_N] as reciprocal.
     See [N2Z.id] above for the dual equation. *)
 
 Lemma id n : 0<=n -> Z.of_N (Z.to_N n) = n.
@@ -773,8 +773,8 @@ End Nat2Z.
 Module Z2Nat.
 
 (** [Z.to_nat] is a bijection between non-negative [Z] and [nat],
-    with [Pos.of_nat] as reciprocal.
-    See [nat2Z.id] above for the dual equation. *)
+    with [Z.of_nat] as reciprocal.
+    See [Nat2Z.id] above for the dual equation. *)
 
 Lemma id n : 0<=n -> Z.of_nat (Z.to_nat n) = n.
 Proof.
