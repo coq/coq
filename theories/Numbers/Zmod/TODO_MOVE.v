@@ -137,6 +137,14 @@ Qed.
 
 End Znumtheory.
 
+Module Bool.
+  Lemma xorb_true_iff a b : xorb a b = true <-> a <> b.
+  Proof. case a, b; cbn; intuition congruence. Qed.
+
+  Lemma neq_iff_eq_true_false a b : a <> b <-> (a = true <-> b = false).
+  Proof. case a, b; cbn; intuition congruence. Qed.
+End Bool.
+
 Module Pos.
   Import BinPosDef.
   Lemma land_mono : forall a b, (Pos.land a b <= N.pos a)%N.

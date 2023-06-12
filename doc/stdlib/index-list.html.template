@@ -246,6 +246,15 @@ through the <tt>Require Import</tt> command.</p>
     </dt>
     <dd>
     theories/Numbers/Zmod.v
+    (theories/Numbers/Zmod.v)
+    (theories/Numbers/Zmod/Base.v)
+    (theories/Numbers/Zmod/FastPow2.v)
+    (theories/Numbers/Zmod/Inverse.v)
+    (theories/Numbers/Zmod/Mask.v)
+    (theories/Numbers/Zmod/NonuniformDependent.v)
+    (theories/Numbers/Zmod/TODO_MOVE.v)
+    (theories/Numbers/Zstar/Base.v)
+    (theories/Numbers/Zstar/Fermat.v)
     </dd>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:

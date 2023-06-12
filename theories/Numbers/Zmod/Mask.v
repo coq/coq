@@ -161,14 +161,25 @@ Qed.
 Definition less {w} x y : Zmod (2^w) :=
   msb (xor x (or (xor x y) (xor (sub x y) x))).
 
-Lemma less_correct w x y : less x y = mask (2^w) (x <? y)%N.
+Lemma less_correct w x y : less x y = mask w (x <? y)%N.
 Proof.
+  assert ((2 ^ w)%positive = 2*2^Pos.pred_N w :> Z)
+    by (rewrite Pos2Z.inj_pow, <-Z.pow_succ_r; f_equal; lia);
+  pose proof to_N_range x; pose proof to_N_range y; pose proof to_N_range (sub x y).
+
   cbv [less]; repeat rewrite ?msb_xor, ?msb_or, ?msb_and; rewrite ?msb_correct_N.
   repeat rewrite <-?mask_xorb, <-?mask_orb, <-?mask_andb; f_equal.
-  set (Pos.pred_N (2 ^ w)) as i.
-  destruct (xorb (N.testbit x i) (N.testbit y i)) eqn:?; cbn [orb]; cycle 1.
-  { rewrite Bool.xorb_comm, Bool.xorb_assoc, ?Bool.xorb_nilpotent.
-    assert (xorb (N.testbit (sub x y) i) false = (x <? y)%N) by admit; trivial. }
-  rewrite Bool.xorb_true_r, N.ltb_antisym; f_equal.
-  assert (xorb (N.testbit x i) (N.testbit y i) = true -> N.testbit x i = (y <=? x)%N) by admit; auto.
-Abort.
+  rewrite !N.leb_testbit in * by lia; set (Pos.pred_N w) as i in *.
+
+  destruct (xorb (2 ^ i <=? x)%N (2 ^ i <=? y)%N) eqn:E; cbn [orb]; cycle 1.
+  { rewrite Bool.xorb_comm, Bool.xorb_assoc, ?Bool.xorb_nilpotent, ?Bool.xorb_false_r.
+    (* TODO: maybe factor out pull out <? by sub overflow *)
+    apply Bool.xorb_eq, Bool.eq_iff_eq_true in E; apply Bool.eq_iff_eq_true;
+      rewrite ?N.leb_le, ?N.ltb_lt in *; rewrite to_N_sub in *.
+    assert ((Z.of_N x - Z.of_N y) / (2 ^ w)%positive = 1 \/ (Z.of_N x - Z.of_N y) / (2 ^ w)%positive = 0 \/ (Z.of_N x - Z.of_N y) / (2 ^ w)%positive = -1);
+      (Z.to_euclidean_division_equations; nia). }
+  (* TODO: maybe factor out <? by different highest bits *)
+  rewrite Bool.xorb_true_r, N.ltb_antisym; f_equal; symmetry; apply Bool.eq_iff_eq_true.
+  rewrite Bool.xorb_comm, Bool.xorb_true_iff in E; apply Bool.neq_iff_eq_true_false in E.
+  rewrite ?N.leb_nle, ?N.leb_le, ?N.ltb_lt in *; lia.
+Qed.
