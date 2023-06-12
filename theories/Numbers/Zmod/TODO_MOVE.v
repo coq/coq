@@ -235,6 +235,12 @@ Module Z.
   Lemma of_N_b2n b : Z.of_N (N.b2n b) = Z.b2z b.
   Proof. case b; trivial. Qed.
 
+  Lemma ltb_of_N n m : (Z.of_N n <? Z.of_N m) = (n <? m)%N.
+  Proof. case (Z.ltb_spec (Z.of_N n) (Z.of_N m)), (N.ltb_spec n m); lia. Qed.
+
+  Lemma leb_of_N n m : (Z.of_N n <=? Z.of_N m) = (n <=? m)%N.
+  Proof. case (Z.leb_spec (Z.of_N n) (Z.of_N m)), (N.leb_spec n m); lia. Qed.
+
   Lemma ones_succ n (H : Z.le 0 n) : Z.ones (Z.succ n) = Z.succ_double (Z.ones n).
   Proof. rewrite 2Z.ones_equiv, Z.pow_succ_r; lia. Qed.
 
@@ -245,6 +251,28 @@ Module Z.
     induction (Pos.pred_N p) using N.peano_ind; trivial.
     rewrite Z.ones_succ, N2Z.inj_succ, <-IHn by lia; clear IHn.
     rewrite N.iter_succ. rewrite Pos2Z.pos_xI, Z.succ_double_spec; trivial.
+  Qed.
+
+  Lemma div_eq_iff c a b :
+    (b = 0 /\ c = 0 \/ c*b <= a < c*b + b \/ c*b + b < a <= c*b) <-> a/b = c.
+  Proof.
+    destruct (Z.eqb_spec b 0).
+    { subst. rewrite Zdiv_0_r; intuition lia. }
+    rewrite <-(Z.sub_move_0_r (_/_)),  <-(Z.add_opp_r (_/_)).
+    rewrite <-Z.div_add, Z.div_small_iff; lia.
+  Qed.
+
+  Definition div_eq c a b := proj1 (div_eq_iff c a b).
+
+  Lemma testbit_neqb0 n (Hn : 0 <= n) x (Hx : -2^n <= x < 2^n) :
+    Z.testbit (Z.lor x (- x)) n = negb (Z.eqb x 0).
+  Proof.
+    destruct (Z.eqb_spec x 0); cbn [negb].
+    { subst. rewrite Z.bits_0. trivial. }
+    rewrite Z.lor_spec, Bool.orb_true_iff, 2 Z.testbit_true by trivial.
+    set (h := 2^n) in *; assert (0 < h) by (apply Z.pow_pos_nonneg; lia).
+    assert ((x/h = 0 \/ x/h = -1) /\ (-x/h = 1 \/ -x/h = 0 \/ -x/h = -1));
+      (Z.to_euclidean_division_equations; nia).
   Qed.
 
   Import Znumtheory.
@@ -306,8 +334,10 @@ Module Z.
   Proof. intros; apply omod_small_iff; auto 3. Qed.
 
   Local Ltac t := cbv [Z.omodulo]; repeat rewrite
-    ?Zplus_mod_idemp_l, ?Zplus_mod_idemp_r, ?Zminus_mod_idemp_l, ?Zminus_mod_idemp_r;
+    ?Zplus_mod_idemp_l, ?Zplus_mod_idemp_r, ?Zminus_mod_idemp_l, ?Zminus_mod_idemp_r, ?Z.add_simpl_r, ?Zmod_mod;
     try solve [trivial | lia | f_equal; lia].
+
+  Lemma omod_omod d a b : Z.omodulo d (Z.omodulo d a b) b = Z.omodulo d a b. Proof. t. Qed.
 
   Lemma omod_mod d a b : Z.omodulo d (Z.modulo a b) b = Z.omodulo d a b. Proof. t. Qed.
 
@@ -352,6 +382,9 @@ Module Z.
     | inleft (right pos) => or_intror (smod_pos_bound a b ltac:(lia))
     | inright zero => ltac:(lia)
     end.
+
+  Lemma smod_smod a b : Z.smodulo (Z.smodulo a b) b = Z.smodulo a b.
+  Proof. apply omod_omod. Qed.
 
   Lemma smod_mod a b : Z.smodulo (Z.modulo a b) b = Z.smodulo a b.
   Proof. apply omod_mod. Qed.
@@ -414,8 +447,7 @@ Module Z.
     pose proof Z.div_smod a b ltac:(lia).
     progress replace (Z.quot b 2) with h in *
       by (clear -n H; Z.to_euclidean_division_equations; nia).
-    assert (
-      (a/h = 1 \/ a/h = 0 \/ a/h = -1) /\ ((a+h)/b = 1 \/ (a+h)/b = 0) /\
+    assert ((a/h = 1 \/ a/h = 0 \/ a/h = -1) /\ ((a+h)/b = 1 \/ (a+h)/b = 0) /\
       (Z.smodulo a b / h = 1 \/ Z.smodulo a b / h = 0 \/ Z.smodulo a b / h = -1)
     ); Z.to_euclidean_division_equations; nia.
     (* ─xnia (tactic) -----------------------  36.0%  94.1%       1    0.518s *)
@@ -438,6 +470,12 @@ Module N.
 
   Lemma ldiff_mono a b : N.ldiff a b <= a.
   Proof. case a, b; cbn [N.ldiff]; trivial using Pos.ldiff_mono; lia. Qed.
+
+  Lemma lnot_ones_same n : N.lnot (N.ones n) n = 0.
+  Proof.
+    apply N.bits_inj; intro i; destruct (N.ltb_spec i n);
+      rewrite ?N.lnot_spec_low, ?N.lnot_spec_high, ?N.ones_spec_low, ?N.ones_spec_high, ?N.bits_0 by lia; trivial.
+  Qed.
 
   Lemma div2_le a : N.div2 a <= a.
   Proof. case a; cbn; [lia|]. destruct p; lia. Qed.
@@ -465,6 +503,19 @@ Module N.
     induction (Pos.pred_N p) using N.peano_ind; trivial.
     rewrite N.ones_succ, <-IHn by lia; clear IHn.
     rewrite N.iter_succ. rewrite N.succ_double_spec; trivial.
+  Qed.
+
+  Lemma div_eq_iff c a b :
+    (b = 0 /\ c = 0 \/ c*b <= a < c*b + b \/ c*b + b < a <= c*b) <-> a/b = c.
+  Proof. zify; apply Z.div_eq_iff. Qed.
+
+  Definition div_eq c a b := proj1 (div_eq_iff c a b).
+
+  Lemma leb_testbit a n (H : a < 2*2^n) : N.testbit a n = N.leb (2^n) a.
+  Proof.
+    destruct (N.leb_spec (2^n) a);
+      try apply N.testbit_false; try apply N.testbit_true;
+      rewrite ?(N.div_eq 0), ?(N.div_eq 1) by lia; trivial.
   Qed.
 
   (* TODO: high part first or low part first? *)
