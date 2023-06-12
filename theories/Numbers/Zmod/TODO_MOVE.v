@@ -232,6 +232,9 @@ Module N2Z.
 End N2Z.
 
 Module Z.
+  Lemma of_N_b2n b : Z.of_N (N.b2n b) = Z.b2z b.
+  Proof. case b; trivial. Qed.
+
   Lemma ones_succ n (H : Z.le 0 n) : Z.ones (Z.succ n) = Z.succ_double (Z.ones n).
   Proof. rewrite 2Z.ones_equiv, Z.pow_succ_r; lia. Qed.
 
@@ -388,6 +391,20 @@ Module Z.
 
   Lemma smod_0_l m : Z.smodulo 0 m = 0.
   Proof. apply smod_small_iff; Z.to_euclidean_division_equations; lia. Qed.
+
+  Lemma smod_complement a b h (H : b = 2*h) :
+    Z.smodulo a b / h = - (Z.modulo a b / h).
+  Proof.
+    destruct (Z.eqb_spec h 0); [subst; rewrite ?Zdiv_0_r; trivial|].
+    rewrite <-smod_mod.
+    pose proof Z.mod_bound_or a b ltac:(lia).
+    set (a mod b) as a' in *; clearbody a'; clear a; rename a' into a.
+    destruct (Z.ltb_spec (Z.abs a) (Z.quot (Z.abs b) 2)).
+    { unshelve erewrite (proj1 (Z.smod_small_iff _ _) _).
+      { Z.to_euclidean_division_equations; lia. }
+      enough (a / h = 0) by lia; apply Z.div_small_iff;
+      Z.to_euclidean_division_equations; lia. }
+  Admitted.
 
   Lemma smod_idemp_opp x m :
     Z.smodulo (- Z.smodulo x m) m = Z.smodulo (- x) m.
