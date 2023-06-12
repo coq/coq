@@ -132,6 +132,7 @@ ci-geocoq: ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
+ci-itree: ci-ext_lib ci-paco
 
 ci-equations_test: ci-equations
 

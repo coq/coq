@@ -268,6 +268,11 @@ project aac_tactics "https://github.com/coq-community/aac-tactics" "master"
 project paco "https://github.com/snu-sf/paco" "master"
 
 ########################################################################
+# coq-itree
+########################################################################
+project itree "https://github.com/DeepSpec/InteractionTrees" "master"
+
+########################################################################
 # paramcoq
 ########################################################################
 project paramcoq "https://github.com/coq-community/paramcoq" "master"
