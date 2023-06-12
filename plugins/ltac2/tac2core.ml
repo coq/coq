@@ -185,7 +185,7 @@ let has_fatal_flag info = match Exninfo.get info fatal_flag with
 let set_bt info =
   if !Tac2bt.print_ltac2_backtrace then
     Tac2bt.get_backtrace >>= fun bt ->
-    Proofview.tclUNIT (Exninfo.add info Tac2entries.backtrace bt)
+    Proofview.tclUNIT (Exninfo.add info Tac2bt.backtrace bt)
   else Proofview.tclUNIT info
 
 let throw ?(info = Exninfo.null) e =
@@ -1158,8 +1158,7 @@ let () = define1 "progress" closure begin fun f ->
 end
 
 let () = define2 "abstract" (option ident) closure begin fun id f ->
-    let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
-    Proofview.tclOR (Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f))) wrap >>= fun () ->
+    Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
   return v_unit
 end
 
@@ -1827,8 +1826,7 @@ let () =
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
       let tac = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
-      let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
-      Proofview.tclOR tac wrap >>= fun () ->
+      tac >>= fun () ->
       return v_unit
     in
     let len = List.length ids in

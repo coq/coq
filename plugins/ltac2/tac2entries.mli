@@ -67,10 +67,6 @@ val call : pstate:Declare.Proof.t -> Goal_select.t option -> with_end_tac:bool -
 val call_par : pstate:Declare.Proof.t -> with_end_tac:bool -> raw_tacexpr
   -> Declare.Proof.t
 
-(** {5 Toplevel exceptions} *)
-
-val backtrace : backtrace Exninfo.t
-
 (** {5 Parsing entries} *)
 
 module Pltac :

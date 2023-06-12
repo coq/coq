@@ -11,20 +11,22 @@
 open Tac2expr
 open Proofview.Notations
 
-let backtrace : backtrace Evd.Store.field = Evd.Store.field ()
+let backtrace_evd : backtrace Evd.Store.field = Evd.Store.field ()
+
+let backtrace : backtrace Exninfo.t = Exninfo.make ()
 
 let print_ltac2_backtrace = ref false
 
 let get_backtrace =
   Proofview.tclEVARMAP >>= fun sigma ->
-  match Evd.Store.get (Evd.get_extra_data sigma) backtrace with
+  match Evd.Store.get (Evd.get_extra_data sigma) backtrace_evd with
   | None -> Proofview.tclUNIT []
   | Some bt -> Proofview.tclUNIT bt
 
 let set_backtrace bt =
   Proofview.tclEVARMAP >>= fun sigma ->
   let store = Evd.get_extra_data sigma in
-  let store = Evd.Store.set store backtrace bt in
+  let store = Evd.Store.set store backtrace_evd bt in
   let sigma = Evd.set_extra_data store sigma in
   Proofview.Unsafe.tclEVARS sigma
 
@@ -35,7 +37,13 @@ let with_frame frame tac =
     if !print_ltac2_backtrace then
       get_backtrace >>= fun bt ->
       set_backtrace (frame :: bt) >>= fun () ->
-      tac >>= fun ans ->
+      Proofview.tclOR tac (fun (e,info) ->
+          (* If it's already present assume it's more precise *)
+          let info = if Option.has_some (Exninfo.get info backtrace) then info
+            else Exninfo.add info backtrace (frame::bt)
+          in
+          Proofview.tclZERO ~info e)
+          >>= fun ans ->
       set_backtrace bt >>= fun () ->
       Proofview.tclUNIT ans
     else tac
