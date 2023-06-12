@@ -1158,7 +1158,8 @@ let () = define1 "progress" closure begin fun f ->
 end
 
 let () = define2 "abstract" (option ident) closure begin fun id f ->
-  Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
+    let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
+    Proofview.tclOR (Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f))) wrap >>= fun () ->
   return v_unit
 end
 
