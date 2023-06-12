@@ -282,6 +282,13 @@ Module Z.
   Lemma omod_neg_bound d a b : b < 0 -> d+b < Z.omodulo d a b <= d.
   Proof. cbv [Z.omodulo]. Z.to_euclidean_division_equations; lia. Qed.
 
+  Definition omod_bound_or d a b (H : b <> 0) : _ \/ _ :=
+    match Z_dec b 0 with
+    | inleft (left neg) => or_introl (omod_neg_bound d a b neg)
+    | inleft (right pos) => or_intror (omod_pos_bound d a b ltac:(lia))
+    | inright zero => ltac:(lia)
+    end.
+
   Lemma omod_small_iff d a b :
     (d <= a < d+b \/ b = 0 \/ d+b < a <= d) <-> Z.omodulo d a b = a.
   Proof.
@@ -339,6 +346,13 @@ Module Z.
   Lemma smod_neg_bound a b: b < 0 -> b < 2*Z.smodulo a b <= -b.
   Proof. cbv [Z.smodulo Z.omodulo]. Z.to_euclidean_division_equations; lia. Qed.
 
+  Definition smod_bound_or a b (H : b <> 0) : _ \/ _ :=
+    match Z_dec b 0 with
+    | inleft (left neg) => or_introl (smod_neg_bound a b neg)
+    | inleft (right pos) => or_intror (smod_pos_bound a b ltac:(lia))
+    | inright zero => ltac:(lia)
+    end.
+
   Lemma smod_mod a b : Z.smodulo (Z.modulo a b) b = Z.smodulo a b.
   Proof. apply omod_mod. Qed.
   Lemma mod_smod a b : Z.modulo (Z.smodulo a b) b = Z.modulo a b.
@@ -395,16 +409,18 @@ Module Z.
   Lemma smod_complement a b h (H : b = 2*h) :
     Z.smodulo a b / h = - (Z.modulo a b / h).
   Proof.
-    destruct (Z.eqb_spec h 0); [subst; rewrite ?Zdiv_0_r; trivial|].
-    rewrite <-smod_mod.
-    pose proof Z.mod_bound_or a b ltac:(lia).
-    set (a mod b) as a' in *; clearbody a'; clear a; rename a' into a.
-    destruct (Z.ltb_spec (Z.abs a) (Z.quot (Z.abs b) 2)).
-    { unshelve erewrite (proj1 (Z.smod_small_iff _ _) _).
-      { Z.to_euclidean_division_equations; lia. }
-      enough (a / h = 0) by lia; apply Z.div_small_iff;
-      Z.to_euclidean_division_equations; lia. }
-  Admitted.
+    destruct (Z.eqb_spec h 0); [subst; rewrite ?Zdiv_0_r; trivial|]; rewrite <-smod_mod.
+    specialize (Z.mod_bound_or a b); generalize (a mod b); clear a; intros a **.
+    pose proof Z.div_smod a b ltac:(lia).
+    progress replace (Z.quot b 2) with h in *
+      by (clear -n H; Z.to_euclidean_division_equations; nia).
+    assert (
+      (a/h = 1 \/ a/h = 0 \/ a/h = -1) /\ ((a+h)/b = 1 \/ (a+h)/b = 0) /\
+      (Z.smodulo a b / h = 1 \/ Z.smodulo a b / h = 0 \/ Z.smodulo a b / h = -1)
+    ); Z.to_euclidean_division_equations; nia.
+    (* ─xnia (tactic) -----------------------  36.0%  94.1%       1    0.518s *)
+    (* ─exact (uconstr) ---------------------  57.3%  57.3%       2    0.219s *)
+  Qed.
 
   Lemma smod_idemp_opp x m :
     Z.smodulo (- Z.smodulo x m) m = Z.smodulo (- x) m.
