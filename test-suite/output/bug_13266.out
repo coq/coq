@@ -9,5 +9,5 @@ cannot be applied to the terms
  "proc S0" : "Prop"
  "p0" : "proc S0"
  "Tick" : "proc unit"
-The 3rd term has type "proc unit" which should be coercible to 
+The 3rd term has type "proc unit" which should be a subtype of 
 "proc S0".

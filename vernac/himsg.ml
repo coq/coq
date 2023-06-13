@@ -409,10 +409,11 @@ let explain_incorrect_primitive env sigma j exp =
   str "has type" ++ brk(1,1) ++ pct ++ spc () ++
   str "while it is expected to have type" ++ brk(1,1) ++ pt ++ str ".")
 
-let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
+let explain_cant_apply_bad_type env sigma ?error (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar env sigma randl in
   let actualtyp = Reductionops.nf_betaiota env sigma actualtyp in
   let env = make_all_name_different env sigma in
+  let error = explain_unification_error env sigma actualtyp exptyp error in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env sigma in*)
@@ -432,8 +433,8 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   str "cannot be applied to the " ++ term_string1 ++ fnl () ++
   str " " ++ v 0 appl ++ fnl () ++ term_string2 ++ str " has type" ++
   brk(1,1) ++ actualtyp ++ spc () ++
-  str "which should be coercible to" ++ brk(1,1) ++
-  exptyp ++ str "."
+  str "which should be a subtype of" ++ brk(1,1) ++
+  exptyp ++ str "." ++ error
 
 let explain_cant_apply_not_functional env sigma rator randl =
   let env = make_all_name_different env sigma in
@@ -988,6 +989,8 @@ let rec explain_pretype_error env sigma err =
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
   | NonLinearUnification (m,c) -> explain_non_linear_unification env sigma m c
   | TypingError t -> explain_type_error env sigma t
+  | CantApplyBadTypeExplained ((t, rator, randl),error) ->
+    explain_cant_apply_bad_type env sigma ~error t rator randl
   | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
   | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
   | DisallowedSProp -> explain_disallowed_sprop ()
