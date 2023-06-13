@@ -9,6 +9,7 @@
 (************************************************************************)
 
 (** This library has been deprecated since Coq version 8.10. *)
+Local Set Warnings "-deprecated".
 
 (** * Int31 numbers defines indeed a cyclic structure : Z/(2^31)Z *)
 
@@ -33,6 +34,7 @@ Section Basics.
 
  (** * Basic results about [iszero], [shiftl], [shiftr] *)
 
+ #[deprecated(since="8.10")]
  Lemma iszero_eq0 : forall x, iszero x = true -> x=0.
  Proof.
  destruct x; simpl; intros.
@@ -43,23 +45,27 @@ Section Basics.
  reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma iszero_not_eq0 : forall x, iszero x = false -> x<>0.
  Proof.
  intros x H Eq; rewrite Eq in H; simpl in *; discriminate.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sneakl_shiftr : forall x,
   x = sneakl (firstr x) (shiftr x).
  Proof.
  destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sneakr_shiftl : forall x,
   x = sneakr (firstl x) (shiftl x).
  Proof.
  destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma twice_zero : forall x,
   twice x = 0 <-> twice_plus_one x = 1.
  Proof.
@@ -67,6 +73,7 @@ Section Basics.
  intro H; injection H; intros; subst; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma twice_or_twice_plus_one : forall x,
   x = twice (shiftr x) \/ x = twice_plus_one (shiftr x).
  Proof.
@@ -79,14 +86,17 @@ Section Basics.
 
  (** * Iterated shift to the right *)
 
+ #[deprecated(since="8.10")]
  Definition nshiftr x := nat_rect _ x (fun _ => shiftr).
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_S :
   forall n x, nshiftr x (S n) = shiftr (nshiftr x n).
  Proof.
  reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_S_tail :
   forall n x, nshiftr x (S n) = nshiftr (shiftr x) n.
  Proof.
@@ -94,17 +104,20 @@ Section Basics.
  intros; now f_equal.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_n_0 : forall n, nshiftr 0 n = 0.
  Proof.
  induction n; simpl; auto.
  rewrite IHn; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_size : forall x, nshiftr x size = 0.
  Proof.
  destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_above_size : forall k x, size<=k ->
   nshiftr x k = 0.
  Proof.
@@ -117,31 +130,37 @@ Section Basics.
 
  (** * Iterated shift to the left *)
 
+ #[deprecated(since="8.10")]
  Definition nshiftl x := nat_rect _ x (fun _ => shiftl).
 
+ #[deprecated(since="8.10")]
  Lemma nshiftl_S :
   forall n x, nshiftl x (S n) = shiftl (nshiftl x n).
  Proof.
  reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftl_S_tail :
   forall n x, nshiftl x (S n) = nshiftl (shiftl x) n.
  Proof.
  intros n; elim n; simpl; intros; now f_equal.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftl_n_0 : forall n, nshiftl 0 n = 0.
  Proof.
  induction n; simpl; auto.
  rewrite IHn; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftl_size : forall x, nshiftl x size = 0.
  Proof.
  destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftl_above_size : forall k x, size<=k ->
   nshiftl x k = 0.
  Proof.
@@ -152,12 +171,14 @@ Section Basics.
  - simpl; rewrite IHn; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma firstr_firstl :
   forall x, firstr x = firstl (nshiftl x (pred size)).
  Proof.
  destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma firstl_firstr :
   forall x, firstl x = firstr (nshiftr x (pred size)).
  Proof.
@@ -166,12 +187,14 @@ Section Basics.
 
  (** More advanced results about [nshiftr] *)
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_predsize_0_firstl : forall x,
   nshiftr x (pred size) = 0 -> firstl x = D0.
  Proof.
  destruct x; compute; intros H; injection H; intros; subst; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_0_propagates : forall n p x, n <= p ->
   nshiftr x n = 0 -> nshiftr x p = 0.
  Proof.
@@ -182,6 +205,7 @@ Section Basics.
  - simpl; rewrite IHn0; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma nshiftr_0_firstl : forall n x, n < size ->
   nshiftr x n = 0 -> firstl x = D0.
  Proof.
@@ -194,6 +218,7 @@ Section Basics.
 
  (** Not used for the moment. Are they really useful ? *)
 
+ #[deprecated(since="8.10")]
  Lemma int31_ind_sneakl : forall P : int31->Prop,
   P 0 ->
   (forall x d, P x -> P (sneakl d x)) ->
@@ -212,6 +237,7 @@ Section Basics.
  change x with (nshiftr x (size-size)); auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma int31_ind_twice : forall P : int31->Prop,
   P 0 ->
   (forall x, P x -> P (twice x)) ->
@@ -231,6 +257,7 @@ Section Basics.
 
  Variable (A:Type)(case0:A)(caserec:digits->int31->A->A).
 
+ #[deprecated(since="8.10")]
  Lemma recr_aux_eqn : forall n x, iszero x = false ->
    recr_aux (S n) A case0 caserec x =
    caserec (firstr x) (shiftr x) (recr_aux n A case0 caserec (shiftr x)).
@@ -238,6 +265,7 @@ Section Basics.
  intros; simpl; rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma recr_aux_converges :
   forall n p x, n <= size -> n <= p ->
   recr_aux n A case0 caserec (nshiftr x (size - n)) =
@@ -257,6 +285,7 @@ Section Basics.
      apply IHn; auto with zarith.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma recr_eqn : forall x, iszero x = false ->
   recr A case0 caserec x =
   caserec (firstr x) (shiftr x) (recr A case0 caserec (shiftr x)).
@@ -271,6 +300,7 @@ Section Basics.
  (** [recr] is usually equivalent to a variant [recrbis]
      written without [iszero] check. *)
 
+ #[deprecated(since="8.10")]
  Fixpoint recrbis_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
  (i:int31) : A :=
   match n with
@@ -280,10 +310,12 @@ Section Basics.
       caserec (firstr i) si (recrbis_aux next A case0 caserec si)
   end.
 
+ #[deprecated(since="8.10")]
  Definition recrbis := recrbis_aux size.
 
  Hypothesis case0_caserec : caserec D0 0 case0 = case0.
 
+ #[deprecated(since="8.10")]
  Lemma recrbis_aux_equiv : forall n x,
    recrbis_aux n A case0 caserec x = recr_aux n A case0 caserec x.
  Proof.
@@ -294,6 +326,7 @@ Section Basics.
  clear H IHn; induction n; simpl; congruence.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma recrbis_equiv : forall x,
    recrbis A case0 caserec x = recr A case0 caserec x.
  Proof.
@@ -314,8 +347,10 @@ Section Basics.
    | D1 => sneakl D0 rec
   end.
 
+ #[deprecated(since="8.10")]
  Definition incrbis_aux n x := recrbis_aux n _ In Incr x.
 
+ #[deprecated(since="8.10")]
  Lemma incrbis_aux_equiv : forall x, incrbis_aux size x = incr x.
  Proof.
  unfold incr, recr, incrbis_aux; fold Incr; intros.
@@ -324,6 +359,7 @@ Section Basics.
 
  (** Recursive equations satisfied by [incr] *)
 
+ #[deprecated(since="8.10")]
  Lemma incr_eqn1 :
   forall x, firstr x = D0 -> incr x = twice_plus_one (shiftr x).
  Proof.
@@ -334,6 +370,7 @@ Section Basics.
    rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma incr_eqn2 :
   forall x, firstr x = D1 -> incr x = twice (incr (shiftr x)).
  Proof.
@@ -344,12 +381,14 @@ Section Basics.
    rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma incr_twice : forall x, incr (twice x) = twice_plus_one x.
  Proof.
  intros.
  rewrite incr_eqn1; destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma incr_twice_plus_one_firstl :
   forall x, firstl x = D0 -> incr (twice_plus_one x) = twice (incr x).
  Proof.
@@ -374,8 +413,10 @@ Section Basics.
  Let Phi := fun b (_:int31) =>
        match b with D0 => Z.double | D1 => Z.succ_double end.
 
+ #[deprecated(since="8.10")]
  Definition phibis_aux n x := recrbis_aux n _ Z0 Phi x.
 
+ #[deprecated(since="8.10")]
  Lemma phibis_aux_equiv : forall x, phibis_aux size x = phi x.
  Proof.
  unfold phi, recr, phibis_aux; fold Phi; intros.
@@ -384,6 +425,7 @@ Section Basics.
 
  (** Recursive equations satisfied by [phi] *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_eqn1 : forall x, firstr x = D0 ->
   phi x = Z.double (phi (shiftr x)).
  Proof.
@@ -394,6 +436,7 @@ Section Basics.
    rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_eqn2 : forall x, firstr x = D1 ->
   phi x = Z.succ_double (phi (shiftr x)).
  Proof.
@@ -404,6 +447,7 @@ Section Basics.
    rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_twice_firstl : forall x, firstl x = D0 ->
   phi (twice x) = Z.double (phi x).
  Proof.
@@ -413,6 +457,7 @@ Section Basics.
  destruct x; simpl in *; rewrite H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_twice_plus_one_firstl : forall x, firstl x = D0 ->
   phi (twice_plus_one x) = Z.succ_double (phi x).
  Proof.
@@ -426,6 +471,7 @@ Section Basics.
 
  (** [phi x] is positive and lower than [2^31] *)
 
+ #[deprecated(since="8.10")]
  Lemma phibis_aux_pos : forall n x, (0 <= phibis_aux n x)%Z.
  Proof.
  induction n.
@@ -438,6 +484,7 @@ Section Basics.
    + specialize IHn with (shiftr x); rewrite Z.succ_double_spec; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phibis_aux_bounded :
   forall n x, n <= size ->
   (phibis_aux n (nshiftr x (size-n)) < 2 ^ (Z.of_nat n))%Z.
@@ -460,6 +507,7 @@ Section Basics.
      * rewrite Z.succ_double_spec; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_nonneg : forall x, (0 <= phi x)%Z.
  Proof.
  intros.
@@ -470,6 +518,7 @@ Section Basics.
  #[local]
  Hint Resolve phi_nonneg : zarith.
 
+ #[deprecated(since="8.10")]
  Lemma phi_bounded  : forall x, (0 <= phi x < 2 ^ (Z.of_nat size))%Z.
  Proof.
  intros. split; [auto with zarith|].
@@ -478,6 +527,7 @@ Section Basics.
  apply phibis_aux_bounded; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phibis_aux_lowerbound :
   forall n x, firstr (nshiftr x n) = D1 ->
   (2 ^ Z.of_nat n <= phibis_aux (S n) x)%Z.
@@ -504,6 +554,7 @@ Section Basics.
      * rewrite Z.succ_double_spec; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_lowerbound :
   forall x, firstl x = D1 -> (2^(Z.of_nat (pred size)) <= phi x)%Z.
  Proof.
@@ -520,19 +571,23 @@ Section Basics.
 
  (** After killing [n] bits at the left, are the numbers equal ?*)
 
+ #[deprecated(since="8.10")]
  Definition EqShiftL n x y :=
   nshiftl x n = nshiftl y n.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_zero : forall x y, EqShiftL O x y <-> x = y.
  Proof.
  unfold EqShiftL; intros; unfold nshiftl; simpl; split; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_size : forall k x y, size<=k -> EqShiftL k x y.
  Proof.
  red; intros; rewrite 2 nshiftl_above_size; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_le : forall k k' x y, k <= k' ->
    EqShiftL k x y -> EqShiftL k' x y.
  Proof.
@@ -544,6 +599,7 @@ Section Basics.
  f_equal; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_firstr : forall k x y, k < size ->
   EqShiftL k x y -> firstr x = firstr y.
  Proof.
@@ -554,6 +610,7 @@ Section Basics.
  apply Nat.lt_succ_r; assumption.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_twice : forall k x y,
   EqShiftL k (twice x) (twice y) <-> EqShiftL (S k) x y.
  Proof.
@@ -565,38 +622,46 @@ Section Basics.
 
  (** Lower (=rightmost) bits comes first. *)
 
+ #[deprecated(since="8.10")]
  Definition i2l := recrbis _ nil (fun d _ rec => d::rec).
 
+ #[deprecated(since="8.10")]
  Lemma i2l_length : forall x, length (i2l x) = size.
  Proof.
  intros; reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Fixpoint lshiftl l x :=
    match l with
      | nil => x
      | d::l => sneakl d (lshiftl l x)
    end.
 
+ #[deprecated(since="8.10")]
  Definition l2i l := lshiftl l On.
 
+ #[deprecated(since="8.10")]
  Lemma l2i_i2l : forall x, l2i (i2l x) = x.
  Proof.
  destruct x; compute; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma i2l_sneakr : forall x d,
    i2l (sneakr d x) = tail (i2l x) ++ d::nil.
  Proof.
  destruct x; compute; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma i2l_sneakl : forall x d,
    i2l (sneakl d x) = d :: removelast (i2l x).
  Proof.
  destruct x; compute; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma i2l_l2i : forall l, length l = size ->
   i2l (l2i l) = l.
  Proof.
@@ -605,12 +670,14 @@ Section Basics.
  intros _; compute; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Fixpoint cstlist (A:Type)(a:A) n :=
   match n with
    | O => nil
    | S n => a::cstlist _ a n
   end.
 
+ #[deprecated(since="8.10")]
  Lemma i2l_nshiftl : forall n x, n<=size ->
   i2l (nshiftl x n) = cstlist _ D0 n ++ firstn (size-n) (i2l x).
  Proof.
@@ -643,6 +710,7 @@ Section Basics.
 
  (** [i2l] can be used to define a relation equivalent to [EqShiftL] *)
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_i2l : forall k x y,
    EqShiftL k x y  <-> firstn (size-k) (i2l x) = firstn (size-k) (i2l y).
  Proof.
@@ -669,6 +737,7 @@ Section Basics.
  (** This equivalence allows proving easily the following delicate
      result *)
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_twice_plus_one : forall k x y,
   EqShiftL k (twice_plus_one x) (twice_plus_one y) <-> EqShiftL (S k) x y.
  Proof.
@@ -692,6 +761,7 @@ Section Basics.
    + subst lx n; rewrite i2l_length; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_shiftr : forall k x y, EqShiftL k x y ->
   EqShiftL (S k) (shiftr x) (shiftr y).
  Proof.
@@ -713,6 +783,7 @@ Section Basics.
      * lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_incrbis : forall n k x y, n<=size ->
   (n+k=S size)%nat ->
   EqShiftL k x y ->
@@ -735,6 +806,7 @@ Section Basics.
        apply EqShiftL_shiftr; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma EqShiftL_incr : forall x y,
   EqShiftL 1 x y -> EqShiftL 1 (incr x) (incr y).
  Proof.
@@ -747,6 +819,7 @@ Section Basics.
 
  (** * More equations about [incr] *)
 
+ #[deprecated(since="8.10")]
  Lemma incr_twice_plus_one :
   forall x, incr (twice_plus_one x) = twice (incr x).
  Proof.
@@ -756,6 +829,7 @@ Section Basics.
  red; destruct x; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma incr_firstr : forall x, firstr (incr x) <> firstr x.
  Proof.
  intros.
@@ -766,6 +840,7 @@ Section Basics.
    destruct (incr (shiftr x)); simpl; discriminate.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma incr_inv : forall x y,
   incr x = twice_plus_one y -> x = twice y.
  Proof.
@@ -786,6 +861,7 @@ Section Basics.
 
  (** First, recursive equations *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_double_plus_one : forall z,
    phi_inv (Z.succ_double z) = twice_plus_one (phi_inv z).
  Proof.
@@ -798,6 +874,7 @@ Section Basics.
  - auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_double : forall z,
    phi_inv (Z.double z) = twice (phi_inv z).
  Proof.
@@ -805,6 +882,7 @@ Section Basics.
  rewrite incr_twice_plus_one; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_incr : forall z,
   phi_inv (Z.succ z) = incr (phi_inv z).
  Proof.
@@ -828,6 +906,7 @@ Section Basics.
  (** [phi_inv o inv], the always-exact and easy-to-prove trip :
      from int31 to Z and then back to int31. *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_phi_aux :
   forall n x, n <= size ->
    phi_inv (phibis_aux n (nshiftr x (size-n))) =
@@ -857,6 +936,7 @@ Section Basics.
        destruct y; simpl in H1; rewrite H1; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_phi : forall x, phi_inv (phi x) = x.
  Proof.
  intros.
@@ -875,6 +955,7 @@ Section Basics.
  (** A variant of [p2i] with [twice] and [twice_plus_one] instead of
      [2*i] and [2*i+1] *)
 
+ #[deprecated(since="8.10")]
  Fixpoint p2ibis n p : (N*int31)%type :=
   match n with
     | O => (Npos p, On)
@@ -885,6 +966,7 @@ Section Basics.
              end
   end.
 
+ #[deprecated(since="8.10")]
  Lemma p2ibis_bounded : forall n p,
   nshiftr (snd (p2ibis n p)) n = 0.
  Proof.
@@ -918,6 +1000,7 @@ Section Basics.
 
  Local Open Scope Z_scope.
 
+ #[deprecated(since="8.10")]
  Lemma p2ibis_spec : forall n p, (n<=size)%nat ->
     Zpos p = (Z.of_N (fst (p2ibis n p)))*2^(Z.of_nat n) +
              phi (snd (p2ibis n p)).
@@ -948,6 +1031,7 @@ Section Basics.
 
  (** We now prove that this [p2ibis] is related to [phi_inv_positive] *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_inv_positive_p2ibis : forall n p, (n<=size)%nat ->
   EqShiftL (size-n) (phi_inv_positive p) (snd (p2ibis n p)).
  Proof.
@@ -966,6 +1050,7 @@ Section Basics.
  (** This gives the expected result about [phi o phi_inv], at least
      for the positive case. *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_phi_inv_positive : forall p,
   phi (phi_inv_positive p) = (Zpos p) mod (2^(Z.of_nat size)).
  Proof.
@@ -984,6 +1069,7 @@ Section Basics.
  (** Moreover, [p2ibis] is also related with [p2i] and hence with
     [positive_to_int31]. *)
 
+ #[deprecated(since="8.10")]
  Lemma double_twice_firstl : forall x, firstl x = D0 ->
   (Twon*x = twice x)%int31.
  Proof.
@@ -992,6 +1078,7 @@ Section Basics.
  rewrite <- Z.double_spec, <- phi_twice_firstl, phi_inv_phi; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma double_twice_plus_one_firstl : forall x, firstl x = D0 ->
   (Twon*x+In = twice_plus_one x)%int31.
  Proof.
@@ -1002,6 +1089,7 @@ Section Basics.
    <- phi_twice_plus_one_firstl, phi_inv_phi; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma p2i_p2ibis : forall n p, (n<=size)%nat ->
   p2i n p = p2ibis n p.
  Proof.
@@ -1016,6 +1104,7 @@ Section Basics.
    apply (nshiftr_0_firstl n); auto; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma positive_to_int31_phi_inv_positive : forall p,
    snd (positive_to_int31 p) = phi_inv_positive p.
  Proof.
@@ -1026,6 +1115,7 @@ Section Basics.
  apply (phi_inv_positive_p2ibis size); auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma positive_to_int31_spec : forall p,
     Zpos p = (Z.of_N (fst (positive_to_int31 p)))*2^(Z.of_nat size) +
                phi (snd (positive_to_int31 p)).
@@ -1039,6 +1129,7 @@ Section Basics.
      now establish easily the most general results about
      [phi o twice] and so one. *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_twice : forall x,
    phi (twice x) = (Z.double (phi x)) mod 2^(Z.of_nat size).
  Proof.
@@ -1053,6 +1144,7 @@ Section Basics.
    + compute in H; elim H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_twice_plus_one : forall x,
    phi (twice_plus_one x) = (Z.succ_double (phi x)) mod 2^(Z.of_nat size).
  Proof.
@@ -1067,6 +1159,7 @@ Section Basics.
    + compute in H; elim H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_incr : forall x,
    phi (incr x) = (Z.succ (phi x)) mod 2^(Z.of_nat size).
  Proof.
@@ -1085,6 +1178,7 @@ Section Basics.
  (** With the previous results, we can deal with [phi o phi_inv] even
     in the negative case *)
 
+ #[deprecated(since="8.10")]
  Lemma phi_phi_inv_negative :
   forall p, phi (incr (complement_negative p)) = (Zneg p) mod 2^(Z.of_nat size).
  Proof.
@@ -1107,6 +1201,7 @@ Section Basics.
  - simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_phi_inv :
   forall z, phi (phi_inv z) = z mod 2 ^ (Z.of_nat size).
  Proof.
@@ -1119,6 +1214,7 @@ Section Basics.
 End Basics.
 
 #[global]
+(* #[deprecated(since="8.10")] *)
 Instance int31_ops : ZnZ.Ops int31 :=
 {
  digits      := 31%positive; (* number of digits *)
@@ -1180,53 +1276,65 @@ Section Int31_Specs.
 
  Local Open Scope Z_scope.
 
+ #[deprecated(since="8.10")]
  Notation "[| x |]" := (phi x)  (at level 0, x at level 99).
 
  Local Notation wB := (2 ^ (Z.of_nat size)).
 
+ #[deprecated(since="8.10")]
  Lemma wB_pos : wB > 0.
  Proof.
   auto with zarith.
  Qed.
 
+ #[deprecated(since="8.10")]
  Notation "[+| c |]" :=
    (interp_carry 1 wB phi c)  (at level 0, c at level 99).
 
+ #[deprecated(since="8.10")]
  Notation "[-| c |]" :=
    (interp_carry (-1) wB phi c)  (at level 0, c at level 99).
 
+ #[deprecated(since="8.10")]
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB phi x)  (at level 0, x at level 99).
 
+ #[deprecated(since="8.10")]
  Lemma spec_zdigits : [| 31 |] = 31.
  Proof.
   reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_more_than_1_digit: 1 < 31.
  Proof. reflexivity. Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_0   : [| 0 |] = 0.
  Proof.
   reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_1   : [| 1 |] = 1.
  Proof.
   reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_m1 : [| Tn |] = wB - 1.
  Proof.
   reflexivity.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_compare : forall x y,
    (x ?= y)%int31 = ([|x|] ?= [|y|]).
  Proof. reflexivity. Qed.
 
  (** Addition *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_add_c  : forall x y, [+|add31c x y|] = [|x|] + [|y|].
  Proof.
  intros; unfold add31c, add31, interp_carry; rewrite phi_phi_inv.
@@ -1245,11 +1353,13 @@ Section Int31_Specs.
      [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_succ_c : forall x, [+|add31c x 1|] = [|x|] + 1.
  Proof.
  intros; apply spec_add_c.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_add_carry_c : forall x y, [+|add31carryc x y|] = [|x|] + [|y|] + 1.
  Proof.
  intros.
@@ -1269,11 +1379,13 @@ Section Int31_Specs.
      [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_add : forall x y, [|x+y|] = ([|x|] + [|y|]) mod wB.
  Proof.
  intros; apply phi_phi_inv.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_add_carry :
          forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
  Proof.
@@ -1282,6 +1394,7 @@ Section Int31_Specs.
  apply Zplus_mod_idemp_l.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_succ : forall x, [|x+1|] = ([|x|] + 1) mod wB.
  Proof.
  intros; rewrite <- spec_1; apply spec_add.
@@ -1289,6 +1402,7 @@ Section Int31_Specs.
 
  (** Subtraction *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_sub_c : forall x y, [-|sub31c x y|] = [|x|] - [|y|].
  Proof.
  unfold sub31c, sub31, interp_carry; intros.
@@ -1308,6 +1422,7 @@ Section Int31_Specs.
      [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_sub_carry_c : forall x y, [-|sub31carryc x y|] = [|x|] - [|y|] - 1.
  Proof.
  unfold sub31carryc, sub31, interp_carry; intros.
@@ -1327,11 +1442,13 @@ Section Int31_Specs.
      [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_sub : forall x y, [|x-y|] = ([|x|] - [|y|]) mod wB.
  Proof.
  intros; apply phi_phi_inv.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_sub_carry :
    forall x y, [|x-y-1|] = ([|x|] - [|y|] - 1) mod wB.
  Proof.
@@ -1340,16 +1457,19 @@ Section Int31_Specs.
  apply Zminus_mod_idemp_l.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_opp_c : forall x, [-|sub31c 0 x|] = -[|x|].
  Proof.
  intros; apply spec_sub_c.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_opp : forall x, [|0 - x|] = (-[|x|]) mod wB.
  Proof.
  intros; apply phi_phi_inv.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_opp_carry : forall x, [|0 - x - 1|] = wB - [|x|] - 1.
  Proof.
  unfold sub31; intros.
@@ -1360,11 +1480,13 @@ Section Int31_Specs.
  rewrite Zmod_small; generalize (phi_bounded x); lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_pred_c : forall x, [-|sub31c x 1|] = [|x|] - 1.
  Proof.
  intros; apply spec_sub_c.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_pred : forall x, [|x-1|] = ([|x|] - 1) mod wB.
  Proof.
  intros; apply spec_sub.
@@ -1372,6 +1494,7 @@ Section Int31_Specs.
 
  (** Multiplication *)
 
+ #[deprecated(since="8.10")]
  Lemma phi2_phi_inv2 : forall x, [||phi_inv2 x||] = x mod (wB^2).
  Proof.
  assert (forall z, (z / wB) mod wB * wB + z mod wB = z mod wB ^ 2).
@@ -1392,6 +1515,7 @@ Section Int31_Specs.
      change base with wB; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_mul_c : forall x y, [|| mul31c x y ||] = [|x|] * [|y|].
  Proof.
  unfold mul31c; intros.
@@ -1401,11 +1525,13 @@ Section Int31_Specs.
  nia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_mul : forall x y, [|x*y|] = ([|x|] * [|y|]) mod wB.
  Proof.
  intros; apply phi_phi_inv.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_square_c : forall x, [|| mul31c x x ||] = [|x|] * [|x|].
  Proof.
  intros; apply spec_mul_c.
@@ -1413,6 +1539,7 @@ Section Int31_Specs.
 
  (** Division *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_div21 : forall a1 a2 b,
       wB/2 <= [|b|] ->
       [|a1|] < [|b|] ->
@@ -1446,6 +1573,7 @@ Section Int31_Specs.
    apply Z.mul_le_mono_nonneg; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_div : forall a b, 0 < [|b|] ->
       let (q,r) := div31 a b in
       [|a|] = [|q|] * [|b|] + [|r|] /\
@@ -1471,6 +1599,7 @@ Section Int31_Specs.
    nia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_mod :  forall a b, 0 < [|b|] ->
       [|let (_,r) := (a/b)%int31 in r|] = [|a|] mod [|b|].
  Proof.
@@ -1485,6 +1614,7 @@ Section Int31_Specs.
  apply Zmod_small; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_gcd : forall i j,
   [|gcd31 i j|] = Zgcdn (2*size) [|j|] [|i|].
  Proof.
@@ -1504,6 +1634,7 @@ Section Int31_Specs.
     + rewrite H1 in H; destruct H as [H _]; compute in H; elim H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd31 a b|].
  Proof.
  intros.
@@ -1519,6 +1650,7 @@ Section Int31_Specs.
  - intros (H,_); compute in H; elim H; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma iter_int31_iter_nat : forall A f i a,
   iter_int31 i A f a = iter_nat (Z.abs_nat [|i|]) A f a.
  Proof.
@@ -1546,12 +1678,14 @@ Section Int31_Specs.
      lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Fixpoint addmuldiv31_alt n i j :=
   match n with
     | O => i
     | S n => addmuldiv31_alt n (sneakl (firstl j) i) (shiftl j)
   end.
 
+ #[deprecated(since="8.10")]
  Lemma addmuldiv31_equiv : forall p x y,
   addmuldiv31 p x y = addmuldiv31_alt (Z.abs_nat [|p|]) x y.
  Proof.
@@ -1567,6 +1701,7 @@ Section Int31_Specs.
    rewrite nat_rect_plus; simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_add_mul_div : forall x y p, [|p|] <= Zpos 31 ->
    [| addmuldiv31 p x y |] =
    ([|x|] * (2 ^ [|p|]) + [|y|] / (2 ^ ((Zpos 31) - [|p|]))) mod wB.
@@ -1641,6 +1776,7 @@ Section Int31_Specs.
           ++ apply Z.lt_gt; apply Z.pow_pos_nonneg; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma shift_unshift_mod_2 : forall n p a, 0 <= p <= n ->
    ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) =
    a mod 2 ^ p.
@@ -1671,6 +1807,7 @@ Section Int31_Specs.
      * nia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_pos_mod : forall w p,
        [|ZnZ.pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
  Proof.
@@ -1711,6 +1848,7 @@ Section Int31_Specs.
 
  (** Shift operations *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_head00:  forall x, [|x|] = 0 -> [|head031 x|] = Zpos 31.
  Proof.
   intros.
@@ -1720,6 +1858,7 @@ Section Int31_Specs.
   simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Fixpoint head031_alt n x :=
   match n with
     | O => 0%nat
@@ -1729,6 +1868,7 @@ Section Int31_Specs.
              end
   end.
 
+ #[deprecated(since="8.10")]
  Lemma head031_equiv :
    forall x, [|head031 x|] = Z.of_nat (head031_alt size x).
  Proof.
@@ -1776,6 +1916,7 @@ Section Int31_Specs.
        rewrite (iszero_eq0 _ H0) in H; discriminate.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma phi_nz : forall x, 0 < [|x|] <-> x <> 0%int31.
  Proof.
  split; intros.
@@ -1786,6 +1927,7 @@ Section Int31_Specs.
    + generalize (phi_bounded x); lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_head0  : forall x,  0 < [|x|] ->
          wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
  Proof.
@@ -1820,6 +1962,7 @@ Section Int31_Specs.
      apply phi_lowerbound; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_tail00:  forall x, [|x|] = 0 -> [|tail031 x|] = Zpos 31.
  Proof.
   intros.
@@ -1829,6 +1972,7 @@ Section Int31_Specs.
   simpl; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Fixpoint tail031_alt n x :=
   match n with
     | O => 0%nat
@@ -1838,6 +1982,7 @@ Section Int31_Specs.
              end
   end.
 
+ #[deprecated(since="8.10")]
  Lemma tail031_equiv :
    forall x, [|tail031 x|] = Z.of_nat (tail031_alt size x).
  Proof.
@@ -1884,6 +2029,7 @@ Section Int31_Specs.
           rewrite (iszero_eq0 _ H0) in H; discriminate.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_tail0  : forall x, 0 < [|x|] ->
          exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|tail031 x|]).
  Proof.
@@ -1924,12 +2070,14 @@ Section Int31_Specs.
  (* Direct transcription of an old proof
      of a fortran program in boyer-moore *)
 
+ #[deprecated(since="8.10")]
  Lemma quotient_by_2 a: a - 1 <= (a/2) + (a/2).
  Proof.
  case (Z_mod_lt a 2); auto with zarith.
  intros H1; rewrite Zmod_eq_full; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt_main_trick j k: 0 <= j -> 0 <= k ->
    (j * k) + j <= ((j + k)/2 + 1)  ^ 2.
  Proof.
@@ -1954,6 +2102,7 @@ Section Int31_Specs.
        apply f_equal2 with (f := Z.div); lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt_main i j: 0 <= i -> 0 < j -> i < ((j + (i/j))/2 + 1) ^ 2.
  Proof.
  intros Hi Hj.
@@ -1962,6 +2111,7 @@ Section Int31_Specs.
  pattern i at 1; rewrite (Z_div_mod_eq_full i j); case (Z_mod_lt i j); auto with zarith.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt_init i: 1 < i -> i < (i/2 + 1) ^ 2.
  Proof.
  intros Hi.
@@ -1981,6 +2131,7 @@ Section Int31_Specs.
  lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt_test_true i j: 0 <= i -> 0 < j -> i/j >= j -> j ^ 2 <= i.
  Proof.
  intros Hi Hj Hd; rewrite Z.pow_2_r.
@@ -1989,6 +2140,7 @@ Section Int31_Specs.
  - apply Z_mult_div_ge; auto with zarith.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt_test_false i j: 0 <= i -> 0 < j -> i/j < j ->  (j + (i/j))/2 < j.
  Proof.
  intros Hi Hj H; case (Z.le_gt_cases j ((j + (i/j))/2)); auto.
@@ -1998,6 +2150,7 @@ Section Int31_Specs.
  apply Z_mult_div_ge; auto with zarith.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt31_step_def rec i j:
    sqrt31_step rec i j =
    match (fst (i/j) ?= j)%int31 with
@@ -2009,12 +2162,14 @@ Section Int31_Specs.
  simpl; case compare31; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma div31_phi i j: 0 < [|j|] -> [|fst (i/j)%int31|] = [|i|]/[|j|].
  intros Hj; generalize (spec_div i j Hj).
  case div31; intros q r; simpl @fst.
  intros (H1,H2); apply Zdiv_unique with [|r|]; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt31_step_correct rec i j:
   0 < [|i|] -> 0 < [|j|] -> [|i|] < ([|j|] + 1) ^ 2 ->
    2 * [|j|] < wB ->
@@ -2049,6 +2204,7 @@ Section Int31_Specs.
    change [|2|] with 2. lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma iter31_sqrt_correct n rec i j: 0 < [|i|] -> 0 < [|j|] ->
   [|i|] < ([|j|] + 1) ^ 2 -> 2 * [|j|] < 2 ^ (Z.of_nat size) ->
   (forall j1, 0 < [|j1|] -> 2^(Z.of_nat n) + [|j1|] <= [|j|] ->
@@ -2069,6 +2225,7 @@ Section Int31_Specs.
    apply Z.le_trans with (2 ^Z.of_nat n + [|j2|]); lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_sqrt : forall x,
        [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
  Proof.
@@ -2097,6 +2254,7 @@ Section Int31_Specs.
    * lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt312_step_def rec ih il j:
    sqrt312_step rec ih il j =
    match (ih ?= j)%int31 with
@@ -2116,6 +2274,7 @@ Section Int31_Specs.
  simpl; case compare31; auto.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt312_lower_bound ih il j:
    phi2 ih  il  < ([|j|] + 1) ^ 2 -> [|ih|] <= [|j|].
  Proof.
@@ -2131,6 +2290,7 @@ Section Int31_Specs.
  - unfold phi2. change base with wB; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma div312_phi ih il j: (2^30 <= [|j|] -> [|ih|] < [|j|] ->
   [|fst (div3121 ih il j)|] = phi2 ih il/[|j|])%Z.
  Proof.
@@ -2141,6 +2301,7 @@ Section Int31_Specs.
  simpl @fst; apply eq_trans with (1 := Hq); ring.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma sqrt312_step_correct rec ih il j:
   2 ^ 29 <= [|ih|] -> 0 < [|j|] -> phi2 ih il < ([|j|] + 1) ^ 2 ->
   (forall j1, 0 < [|j1|] < [|j|] ->  phi2 ih il < ([|j1|] + 1) ^ 2 ->
@@ -2237,6 +2398,7 @@ Section Int31_Specs.
      * apply Z.ge_le; apply Z_div_ge; lia.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma iter312_sqrt_correct n rec ih il j:
   2^29 <= [|ih|] ->  0 < [|j|] -> phi2 ih il < ([|j|] + 1) ^ 2 ->
   (forall j1, 0 < [|j1|] -> 2^(Z.of_nat n) + [|j1|] <= [|j|] ->
@@ -2261,6 +2423,7 @@ Section Int31_Specs.
  (* Avoid expanding [iter312_sqrt] before variables in the context. *)
  Strategy 1 [iter312_sqrt].
 
+ #[deprecated(since="8.10")]
  Lemma spec_sqrt2 : forall x y,
        wB/ 4 <= [|x|] ->
        let (s,r) := sqrt312 x y in
@@ -2422,6 +2585,7 @@ Section Int31_Specs.
 
  (** [iszero] *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_eq0 : forall x, ZnZ.eq0 x = true -> [|x|] = 0.
  Proof.
  clear; unfold ZnZ.eq0, int31_ops.
@@ -2433,6 +2597,7 @@ Section Int31_Specs.
 
  (* Even *)
 
+ #[deprecated(since="8.10")]
  Lemma spec_is_even : forall x,
       if ZnZ.is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
  Proof.
@@ -2451,6 +2616,7 @@ Section Int31_Specs.
 
  (* Bitwise *)
 
+ #[deprecated(since="8.10")]
  Lemma log2_phi_bounded x : Z.log2 [|x|] < Z.of_nat size.
  Proof.
   destruct (phi_bounded x) as (H,H').
@@ -2459,6 +2625,7 @@ Section Int31_Specs.
   - now rewrite <- H.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_lor x y : [| ZnZ.lor x y |] = Z.lor [|x|] [|y|].
  Proof.
  unfold ZnZ.lor,int31_ops. unfold lor31.
@@ -2470,6 +2637,7 @@ Section Int31_Specs.
    apply Z.max_lub_lt; apply log2_phi_bounded.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_land x y : [| ZnZ.land x y |] = Z.land [|x|] [|y|].
  Proof.
  unfold ZnZ.land, int31_ops. unfold land31.
@@ -2482,6 +2650,7 @@ Section Int31_Specs.
    + apply Z.min_lt_iff; left; apply log2_phi_bounded.
  Qed.
 
+ #[deprecated(since="8.10")]
  Lemma spec_lxor x y : [| ZnZ.lxor x y |] = Z.lxor [|x|] [|y|].
  Proof.
  unfold ZnZ.lxor, int31_ops. unfold lxor31.
@@ -2546,8 +2715,11 @@ End Int31_Specs.
 
 
 Module Int31Cyclic <: CyclicType.
+  #[deprecated(since="8.10")]
   Definition t := int31.
+  #[deprecated(since="8.10")]
   Definition ops := int31_ops.
+  #[deprecated(since="8.10")]
   Definition specs := int31_specs.
 End Int31Cyclic.
 

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 (** This library has been deprecated since Coq version 8.10. *)
+Local Set Warnings "-deprecated".
 
 (** * Int31 numbers defines Z/(2^31)Z, and can hence be equipped
       with a ring structure and a ring tactic *)
@@ -61,12 +62,14 @@ Module Int31ring := CyclicRing Int31Cyclic.
 
 (** Unlike in the generic [CyclicRing], we can use Leibniz here. *)
 
+#[deprecated(since="8.10")]
 Lemma Int31_canonic : forall x y, phi x = phi y -> x = y.
 Proof.
  intros x y EQ.
  now rewrite <- (phi_inv_phi x), <- (phi_inv_phi y), EQ.
 Qed.
 
+#[deprecated(since="8.10")]
 Lemma ring_theory_switch_eq :
  forall A (R R':A->A->Prop) zero one add mul sub opp,
   (forall x y : A, R x y -> R' x y) ->
@@ -77,11 +80,13 @@ intros A R R' zero one add mul sub opp Impl Ring.
 constructor; intros; apply Impl; apply Ring.
 Qed.
 
+#[deprecated(since="8.10")]
 Lemma Int31Ring : ring_theory 0 1 add31 mul31 sub31 opp31 Logic.eq.
 Proof.
 exact (ring_theory_switch_eq _ _ _ _ _ _ _ _ _ Int31_canonic Int31ring.CyclicRing).
 Qed.
 
+#[deprecated(since="8.10")]
 Lemma eqb31_eq : forall x y, eqb31 x y = true <-> x=y.
 Proof.
 unfold eqb31. intros x y.
@@ -93,6 +98,7 @@ split.
 - now intros ->; rewrite Z.compare_refl.
 Qed.
 
+#[deprecated(since="8.10")]
 Lemma eqb31_correct : forall x y, eqb31 x y = true -> x=y.
 Proof. now apply eqb31_eq. Qed.
 

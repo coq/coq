@@ -1,5 +1,5 @@
 Require Import Int31 Cyclic31.
-
+Local Set Warnings "-deprecated".
 Open Scope int31_scope.
 Check I31. (* Would be nice to have I31 : digits->digits->...->int31
               For the moment, I31 : digits31 int31, which is better
