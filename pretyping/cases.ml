@@ -941,7 +941,7 @@ let specialize_predicate_var (cur,typ,dep) env tms ccl =
     match typ with
     | IsInd (_, IndType (_, _), []) -> []
     | IsInd (_, IndType (indf, realargs), names) ->
-       let arsign,_ = get_arity env indf in
+       let arsign = get_arity env indf in
        let arsign = List.map EConstr.of_rel_decl arsign in
        subst_of_rel_context_instance_list arsign realargs
     | NotInd _ -> [] in
@@ -1451,7 +1451,7 @@ let compile ~program_mode sigma pb =
         let mind,_ = dest_ind_family indf in
         let () = Tacred.check_privacy !!(pb.env) (fst mind) in
         let cstrs = get_constructors !!(pb.env) indf in
-        let arsign, _ = get_arity !!(pb.env) indf in
+        let arsign = get_arity !!(pb.env) indf in
         let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
         let no_cstr = Int.equal (Array.length cstrs) 0 in
         if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
@@ -1981,7 +1981,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
           let indf' = if dolift then lift_inductive_family n indf else indf in
           let ((ind,u),_) = dest_ind_family indf' in
           let nrealargs_ctxt = inductive_nrealdecls env0 ind in
-          let arsign, inds = get_arity env0 indf' in
+          let arsign = get_arity env0 indf' in
           let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
           let realnal =
             match t with
@@ -1993,7 +1993,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
                   List.rev realnal
               | None ->
                   List.make nrealargs_ctxt Anonymous in
-          let r = Sorts.relevance_of_sort_family inds in
+          let r = Inductive.relevance_of_inductive env0 ind in
           let t = EConstr.of_constr (build_dependent_inductive env0 indf') in
           LocalAssum (make_annot na r, t) :: List.map2 RelDecl.set_name realnal arsign in
   let rec buildrec n = function
@@ -2287,8 +2287,7 @@ let constr_of_pat env sigma arsign pat avoid =
               Anonymous ->
                 sigma, pat', sign, app, apptype, realargs, n, avoid
             | Name id ->
-                let _, inds = get_arity env indf in
-                let r = Sorts.relevance_of_sort_family inds in
+                let r = Inductiveops.relevance_of_inductive_family env indf in
                 let sign = LocalAssum (make_annot alias r, lift m ty) :: sign in
                 let avoid = Id.Set.add id avoid in
                 let sigma, sign, i, avoid =

@@ -181,7 +181,7 @@ val get_constructors : env -> inductive_family -> constructor_summary array
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not
     part of the inductive family, they appears in the arity *)
-val get_arity        : env -> inductive_family -> Constr.rel_context * Sorts.family
+val get_arity        : env -> inductive_family -> Constr.rel_context
 
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
