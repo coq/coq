@@ -11,6 +11,7 @@
 (************************************************************************)
 
 (** This library has been deprecated since Coq version 8.10. *)
+Local Set Warnings "-deprecated".
 
 Require Import NaryFunctions.
 Require Import Wf_nat.
@@ -31,6 +32,7 @@ Local Unset Elimination Schemes.
   [int31], its constructor [I31] and any pattern matching on it.
   If you modify this file, please preserve this genericity.  *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition size := 31%nat.
 
 (** Digits *)
@@ -42,6 +44,7 @@ Inductive digits : Type := D0 | D1.
 (** The type [int31] has a unique constructor [I31] that expects
    31 arguments of type [digits]. *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition digits31 t := Eval compute in nfun digits size t.
 
 Inductive int31 : Type := I31 : digits31 int31.
@@ -58,15 +61,19 @@ Local Open Scope int31_scope.
 (** * Constants *)
 
 (** Zero is [I31 D0 ... D0] *)
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition On : int31 := Eval compute in napply_cst _ _ D0 size I31.
 
 (** One is [I31 D0 ... D0 D1] *)
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition In : int31 := Eval compute in (napply_cst _ _ D0 (size-1) I31) D1.
 
 (** The biggest integer is [I31 D1 ... D1], corresponding to [(2^size)-1] *)
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition Tn : int31 := Eval compute in napply_cst _ _ D1 size I31.
 
 (** Two is [I31 D0 ... D0 D1 D0] *)
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition Twon : int31 := Eval compute in (napply_cst _ _ D0 (size-2) I31) D1 D0.
 
 (** * Bits manipulation *)
@@ -78,6 +85,7 @@ Definition Twon : int31 := Eval compute in (napply_cst _ _ D0 (size-2) I31) D1 D
     [ match x with (I31 d0 ... dN) => I31 b d0 ... d(N-1) end ]
 *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sneakr : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (napply_except_last _ _ (size-1) (I31 b)).
 
@@ -87,6 +95,7 @@ Definition sneakr : digits -> int31 -> int31 := Eval compute in
     [ match x with (I31 d0 ... dN) => I31 d1 ... dN b end ]
 *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sneakl : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (fun _ => napply_then_last _ _ b (size-1) I31).
 
@@ -94,26 +103,33 @@ Definition sneakl : digits -> int31 -> int31 := Eval compute in
 (** [shiftl], [shiftr], [twice] and [twice_plus_one] are direct
     consequences of [sneakl] and [sneakr]. *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition shiftl := sneakl D0.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition shiftr := sneakr D0.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition twice := sneakl D0.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition twice_plus_one := sneakl D1.
 
 (** [firstl x] returns the leftmost digit of number [x].
     Pseudo-code is [ match x with (I31 d0 ... dN) => d0 end ] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition firstl : int31 -> digits := Eval compute in
  int31_rect _ (fun d => napply_discard _ _ d (size-1)).
 
 (** [firstr x] returns the rightmost digit of number [x].
     Pseudo-code is [ match x with (I31 d0 ... dN) => dN end ] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition firstr : int31 -> digits := Eval compute in
  int31_rect _ (napply_discard _ _ (fun d=>d) (size-1)).
 
 (** [iszero x] is true iff [x = I31 D0 ... D0]. Pseudo-code is
     [ match x with (I31 D0 ... D0) => true | _ => false end ] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition iszero : int31 -> bool := Eval compute in
  let f d b := match d with D0 => b | D1 => false end
  in int31_rect _ (nfold_bis _ _ f true size).
@@ -126,11 +142,13 @@ Definition iszero : int31 -> bool := Eval compute in
    It can also be seen as the smallest b > 0 s.t. phi_inv b = 0
    (see below) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition base := Eval compute in
  iter_nat size Z Z.double 1%Z.
 
 (** * Recursors *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint recl_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
  (i:int31) : A :=
   match n with
@@ -143,6 +161,7 @@ Fixpoint recl_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
              caserec (firstl i) si (recl_aux next A case0 caserec si)
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint recr_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
  (i:int31) : A :=
   match n with
@@ -155,13 +174,16 @@ Fixpoint recr_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
              caserec (firstr i) si (recr_aux next A case0 caserec si)
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition recl := recl_aux size.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition recr := recr_aux size.
 
 (** * Conversions *)
 
 (** From int31 to Z, we simply iterates [Z.double] or [Z.succ_double]. *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition phi : int31 -> Z :=
  recr Z (0%Z)
   (fun b _ => match b with D0 => Z.double | D1 => Z.succ_double end).
@@ -170,6 +192,7 @@ Definition phi : int31 -> Z :=
       [ phi_inv (2n) = 2*(phi_inv n) /\
         phi_inv 2n+1 = 2*(phi_inv n) + 1 ] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint phi_inv_positive p :=
   match p with
     | xI q => twice_plus_one (phi_inv_positive q)
@@ -179,6 +202,7 @@ Fixpoint phi_inv_positive p :=
 
 (** The negative part : 2-complement  *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint complement_negative p :=
   match p with
     | xI q => twice (complement_negative q)
@@ -188,6 +212,7 @@ Fixpoint complement_negative p :=
 
 (** A simple incrementation function *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition incr : int31 -> int31 :=
  recr int31 In
    (fun b si rec => match b with
@@ -196,6 +221,7 @@ Definition incr : int31 -> int31 :=
 
 (** We can now define the conversion from Z to int31. *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition phi_inv : Z -> int31 := fun n =>
  match n with
  | Z0 => On
@@ -204,6 +230,7 @@ Definition phi_inv : Z -> int31 := fun n =>
  end.
 
 (** [phi_inv_nonneg] returns [None] if the [Z] is negative; this matches the old behavior of parsing int31 numerals *)
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition phi_inv_nonneg : Z -> option int31 := fun n =>
  match n with
  | Zneg _ => None
@@ -213,6 +240,7 @@ Definition phi_inv_nonneg : Z -> option int31 := fun n =>
 (** [phi_inv2] is similar to [phi_inv] but returns a double word
     [zn2z int31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition phi_inv2 n :=
   match n with
   | Z0 => W0
@@ -221,6 +249,7 @@ Definition phi_inv2 n :=
 
 (** [phi2] is similar to [phi] but takes a double word (two args) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition phi2 nh nl :=
   ((phi nh)*base+(phi nl))%Z.
 
@@ -228,7 +257,9 @@ Definition phi2 nh nl :=
 
 (** Addition modulo [2^31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition add31 (n m : int31) := phi_inv ((phi n)+(phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n + m" := (add31 n m) : int31_scope.
 
 (** Addition with carry (the result is thus exact) *)
@@ -237,16 +268,19 @@ Notation "n + m" := (add31 n m) : int31_scope.
 (* mode, (phi n)+(phi m) is computed twice*)
 (* it may be considered to optimize it *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition add31c (n m : int31) :=
   let npm := n+m in
   match (phi npm ?= (phi n)+(phi m))%Z with
   | Eq => C0 npm
   | _ => C1 npm
   end.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n '+c' m" := (add31c n m) (at level 50, no associativity) : int31_scope.
 
 (**  Addition plus one with carry (the result is thus exact) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition add31carryc (n m : int31) :=
   let npmpone_exact := ((phi n)+(phi m)+1)%Z in
   let npmpone := phi_inv npmpone_exact in
@@ -259,21 +293,26 @@ Definition add31carryc (n m : int31) :=
 
 (** Subtraction modulo [2^31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sub31 (n m : int31) := phi_inv ((phi n)-(phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n - m" := (sub31 n m) : int31_scope.
 
 (** Subtraction with carry (thus exact) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sub31c (n m : int31) :=
   let nmm := n-m in
   match (phi nmm ?= (phi n)-(phi m))%Z with
   | Eq => C0 nmm
   | _ => C1 nmm
   end.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n '-c' m" := (sub31c n m) (at level 50, no associativity) : int31_scope.
 
 (** subtraction minus one with carry (thus exact) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sub31carryc (n m : int31) :=
   let nmmmone_exact := ((phi n)-(phi m)-1)%Z in
   let nmmmone := phi_inv nmmmone_exact in
@@ -284,19 +323,25 @@ Definition sub31carryc (n m : int31) :=
 
 (** Opposite *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition opp31 x := On - x.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "- x" := (opp31 x) : int31_scope.
 
 (** Multiplication *)
 
 (** multiplication modulo [2^31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition mul31 (n m : int31) := phi_inv ((phi n)*(phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n * m" := (mul31 n m) : int31_scope.
 
 (** multiplication with double word result (thus exact) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition mul31c (n m : int31) := phi_inv2 ((phi n)*(phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n '*c' m" := (mul31c n m) (at level 40, no associativity) : int31_scope.
 
 
@@ -304,23 +349,29 @@ Notation "n '*c' m" := (mul31c n m) (at level 40, no associativity) : int31_scop
 
 (** Division of a double size word modulo [2^31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition div3121 (nh nl m : int31) :=
   let (q,r) := Z.div_eucl (phi2 nh nl) (phi m) in
   (phi_inv q, phi_inv r).
 
 (** Division modulo [2^31] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition div31 (n m : int31) :=
   let (q,r) := Z.div_eucl (phi n) (phi m) in
   (phi_inv q, phi_inv r).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n / m" := (div31 n m) : int31_scope.
 
 
 (** * Unsigned comparison *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition compare31 (n m : int31) := ((phi n)?=(phi m))%Z.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Notation "n ?= m" := (compare31 n m) (at level 70, no associativity) : int31_scope.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition eqb31 (n m : int31) :=
  match n ?= m with Eq => true | _ => false end.
 
@@ -328,6 +379,7 @@ Definition eqb31 (n m : int31) :=
 (** Computing the [i]-th iterate of a function:
     [iter_int31 i A f = f^i] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition iter_int31 i A f :=
   recr (A->A) (fun x => x)
    (fun b si rec => match b with
@@ -339,6 +391,7 @@ Definition iter_int31 i A f :=
 (** Combining the [(31-p)] low bits of [i] above the [p] high bits of [j]:
     [addmuldiv31 p i j = i*2^p+j/2^(31-p)]  (modulo [2^31]) *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition addmuldiv31 p i j :=
  let (res, _ ) :=
  iter_int31 p (int31*int31)
@@ -349,13 +402,19 @@ Definition addmuldiv31 p i j :=
 
 (** Bitwise operations *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition lor31 n m := phi_inv (Z.lor (phi n) (phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition land31 n m := phi_inv (Z.land (phi n) (phi m)).
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition lxor31 n m := phi_inv (Z.lxor (phi n) (phi m)).
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition lnot31 n := lxor31 Tn n.
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition ldiff31 n m := land31 n (lnot31 m).
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint euler (guard:nat) (i j:int31) {struct guard} :=
   match guard with
     | O => In
@@ -365,6 +424,7 @@ Fixpoint euler (guard:nat) (i j:int31) {struct guard} :=
              end
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition gcd31 (i j:int31) := euler (2*size)%nat i j.
 
 (** Square root functions using newton iteration
@@ -374,6 +434,7 @@ Definition gcd31 (i j:int31) := euler (2*size)%nat i j.
 
 
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sqrt31_step (rec: int31 -> int31 -> int31) (i j: int31)  :=
 Eval lazy delta [Twon] in
   let (quo,_) := i/j in
@@ -382,6 +443,7 @@ Eval lazy delta [Twon] in
   | _ =>  j
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31)
           (i j: int31) {struct n} : int31 :=
   sqrt31_step
@@ -390,6 +452,7 @@ Fixpoint iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31)
    | S n => (iter31_sqrt n (iter31_sqrt n rec))
    end) i j.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sqrt31 i :=
 Eval lazy delta [On In Twon] in
   match compare31 In i with
@@ -398,8 +461,10 @@ Eval lazy delta [On In Twon] in
   | Lt => iter31_sqrt 31 (fun i j => j) i (fst (i/Twon))
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition v30 := Eval compute in (addmuldiv31 (phi_inv (Z.of_nat size - 1)) In On).
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31)
    (ih il j: int31)  :=
 Eval lazy delta [Twon v30] in
@@ -413,6 +478,7 @@ Eval lazy delta [Twon v30] in
   | _ =>  j
   end end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint iter312_sqrt (n: nat)
           (rec: int31  -> int31 -> int31 -> int31)
           (ih il j: int31) {struct n} : int31 :=
@@ -422,6 +488,7 @@ Fixpoint iter312_sqrt (n: nat)
    | S n => (iter312_sqrt n (iter312_sqrt n rec))
    end) ih il j.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition sqrt312 ih il :=
 Eval lazy delta [On In] in
   let s := iter312_sqrt 31 (fun ih il j => j) ih il Tn in
@@ -443,6 +510,7 @@ Eval lazy delta [On In] in
           end.
 
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Fixpoint p2i n p : (N*int31)%type :=
   match n with
     | O => (Npos p, On)
@@ -453,14 +521,17 @@ Fixpoint p2i n p : (N*int31)%type :=
              end
   end.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition positive_to_int31 (p:positive) := p2i size p.
 
 (** Constant 31 converted into type int31.
     It is used as default answer for numbers of zeros
     in [head0] and [tail0] *)
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition T31 : int31 := Eval compute in phi_inv (Z.of_nat size).
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition head031 (i:int31) :=
   recl _ (fun _ => T31)
    (fun b si rec n => match b with
@@ -469,6 +540,7 @@ Definition head031 (i:int31) :=
     end)
    i On.
 
+#[deprecated(note="Consider Numbers.Cyclic.Int63.Uint63 instead", since="8.10")]
 Definition tail031 (i:int31) :=
   recr _ (fun _ => T31)
    (fun b si rec n => match b with
