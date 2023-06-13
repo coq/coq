@@ -12,12 +12,14 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import Ndigits.
 
+Local Set Warnings "-deprecated".
 (** An ultrametric distance over [N] numbers *)
 
 Inductive natinf : Set :=
   | infty : natinf
   | ni : nat -> natinf.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Fixpoint Pplength (p:positive) : nat :=
   match p with
   | xH => 0
@@ -25,18 +27,21 @@ Fixpoint Pplength (p:positive) : nat :=
   | xO p' => S (Pplength p')
   end.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Definition Nplength (a:N) :=
   match a with
   | N0 => infty
   | Npos p => ni (Pplength p)
   end.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_infty : forall a:N, Nplength a = infty -> a = N0.
 Proof.
   simple induction a; trivial.
   unfold Nplength; intros; discriminate H.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_zeros :
  forall (a:N) (n:nat),
    Nplength a = ni n -> forall k:nat, k < n -> N.testbit_nat a k = false.
@@ -58,6 +63,7 @@ Proof.
   - simpl. intros n H. inversion H. intros. inversion H0.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_one :
  forall (a:N) (n:nat), Nplength a = ni n -> N.testbit_nat a n = true.
 Proof.
@@ -69,6 +75,7 @@ Proof.
     + intros. simpl in H. inversion H. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_first_one :
  forall (a:N) (n:nat),
    (forall k:nat, k < n -> N.testbit_nat a k = false) ->
@@ -94,6 +101,7 @@ Proof.
       * intros. simpl in H0. discriminate H0.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Definition ni_min (d d':natinf) :=
   match d with
   | infty => d'
@@ -103,6 +111,7 @@ Definition ni_min (d d':natinf) :=
             end
   end.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_idemp : forall d:natinf, ni_min d d = d.
 Proof.
   simple induction d; trivial.
@@ -116,6 +125,7 @@ Proof.
   reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_comm : forall d d':natinf, ni_min d d' = ni_min d' d.
 Proof.
   simple induction d.
@@ -128,6 +138,7 @@ Proof.
       exact (H n2).
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_assoc :
  forall d d' d'':natinf, ni_min (ni_min d d') d'' = ni_min d (ni_min d' d'').
 Proof.
@@ -140,55 +151,66 @@ Proof.
   intros. simpl. auto.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_O_l : forall d:natinf, ni_min (ni 0) d = ni 0.
 Proof.
   simple induction d; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_O_r : forall d:natinf, ni_min d (ni 0) = ni 0.
 Proof.
   intros. rewrite ni_min_comm. apply ni_min_O_l.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_inf_l : forall d:natinf, ni_min infty d = d.
 Proof.
   trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_inf_r : forall d:natinf, ni_min d infty = d.
 Proof.
   simple induction d; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Definition ni_le (d d':natinf) := ni_min d d' = d.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_refl : forall d:natinf, ni_le d d.
 Proof.
   exact ni_min_idemp.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_antisym : forall d d':natinf, ni_le d d' -> ni_le d' d -> d = d'.
 Proof.
   unfold ni_le. intros d d'. rewrite ni_min_comm. intro H. rewrite H. trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_trans :
  forall d d' d'':natinf, ni_le d d' -> ni_le d' d'' -> ni_le d d''.
 Proof.
   unfold ni_le. intros. rewrite <- H. rewrite ni_min_assoc. rewrite H0. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_min_1 : forall d d':natinf, ni_le (ni_min d d') d.
 Proof.
   unfold ni_le. intros. rewrite (ni_min_comm d d'). rewrite ni_min_assoc.
   rewrite ni_min_idemp. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_min_2 : forall d d':natinf, ni_le (ni_min d d') d'.
 Proof.
   unfold ni_le. intros. rewrite ni_min_assoc. rewrite ni_min_idemp. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_min_case : forall d d':natinf, ni_min d d' = d \/ ni_min d d' = d'.
 Proof.
   destruct d.
@@ -202,11 +224,13 @@ Proof.
       * destruct (Nat.min_dec n n0); [left|right]; assumption.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_total : forall d d':natinf, ni_le d d' \/ ni_le d' d.
 Proof.
   unfold ni_le. intros. rewrite (ni_min_comm d' d). apply ni_min_case.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_min_induc :
  forall d d' dm:natinf,
    ni_le dm d ->
@@ -228,16 +252,19 @@ Proof.
     + exact H0.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma le_ni_le : forall m n:nat, m <= n -> ni_le (ni m) (ni n).
 Proof.
   intros * H. unfold ni_le, ni_min. rewrite (Peano.min_l m n H). reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma ni_le_le : forall m n:nat, ni_le (ni m) (ni n) -> m <= n.
 Proof.
   unfold ni_le. unfold ni_min. intros. inversion H. apply Nat.le_min_r.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_lb :
  forall (a:N) (n:nat),
    (forall k:nat, k < n -> N.testbit_nat a k = false) -> ni_le (ni n) (Nplength a).
@@ -254,6 +281,7 @@ Proof.
       * apply H. exact H0.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_ub :
  forall (a:N) (n:nat), N.testbit_nat a n = true -> ni_le (Nplength a) (ni n).
 Proof.
@@ -277,16 +305,19 @@ Qed.
     Instead of working with $d$, we work with $pd$, namely
     [Npdist]: *)
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Definition Npdist (a a':N) := Nplength (N.lxor a a').
 
 (** d is a distance, so $d(a,a')=0$ iff $a=a'$; this means that
     $pd(a,a')=infty$ iff $a=a'$: *)
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Npdist_eq_1 : forall a:N, Npdist a a = infty.
 Proof.
   intros. unfold Npdist. rewrite N.lxor_nilpotent. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Npdist_eq_2 : forall a a':N, Npdist a a' = infty -> a = a'.
 Proof.
   intros. apply N.lxor_eq. apply Nplength_infty. exact H.
@@ -294,6 +325,7 @@ Qed.
 
 (** $d$ is a distance, so $d(a,a')=d(a',a)$: *)
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Npdist_comm : forall a a':N, Npdist a a' = Npdist a' a.
 Proof.
   unfold Npdist. intros. rewrite N.lxor_comm. reflexivity.
@@ -311,6 +343,7 @@ Qed.
   (lemma [Nplength_ultra]).
 *)
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_ultra_1 :
  forall a a':N,
    ni_le (Nplength a) (Nplength a') ->
@@ -339,6 +372,7 @@ Proof.
            ++ apply ni_le_le. exact H.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Nplength_ultra :
  forall a a':N,
    ni_le (ni_min (Nplength a) (Nplength a')) (Nplength (N.lxor a a')).
@@ -350,6 +384,7 @@ Proof.
     rewrite ni_min_comm. exact H.
 Qed.
 
+#[deprecated(since="8.19", note="Please step up to maintain Ndist.v if you need it.")]
 Lemma Npdist_ultra :
  forall a a' a'':N,
    ni_le (ni_min (Npdist a a'') (Npdist a'' a')) (Npdist a a').

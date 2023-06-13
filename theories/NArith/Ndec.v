@@ -58,10 +58,11 @@ Proof.
 Qed.
 
 Lemma Nodd_not_double a :
-  Nodd a -> forall a0, N.eqb (N.double a0) a = false.
+  N.odd a = true -> forall a0, N.eqb (N.double a0) a = false.
 Proof.
-  intros. eqb2eq. intros <-.
-  unfold Nodd in *. now rewrite Ndouble_bit0 in *.
+  intros H **; eqb2eq.
+  rewrite N.double_spec; intro; subst.
+  rewrite N.odd_mul, N.odd_2 in *; discriminate.
 Qed.
 
 Lemma Nnot_div2_not_double a a0 :
@@ -71,10 +72,11 @@ Proof.
 Qed.
 
 Lemma Neven_not_double_plus_one a :
-  Neven a -> forall a0, N.eqb (N.succ_double a0) a = false.
+  N.even a = true -> forall a0, N.eqb (N.succ_double a0) a = false.
 Proof.
-  intros. eqb2eq. intros <-.
-  unfold Neven in *. now rewrite Ndouble_plus_one_bit0 in *.
+  intros H **; eqb2eq.
+  rewrite N.succ_double_spec; intro; subst.
+  rewrite N.add_comm, N.even_add_mul_2 in *; discriminate.
 Qed.
 
 Lemma Nnot_div2_not_double_plus_one a a0 :
@@ -131,7 +133,7 @@ Lemma Ndouble_or_double_plus_un a :
 Proof.
   elim (sumbool_of_bool (N.odd a)); intros H; [right|left];
     exists (N.div2 a); symmetry;
-    apply Ndiv2_double_plus_one || apply Ndiv2_double; auto.
+  rewrite ?N.succ_double_spec, ?N.double_spec, N.div2_odd, H, ?N.add_0_r; trivial.
 Qed.
 
 (** An inefficient boolean order on [N]. Please use [N.leb] instead now. *)
