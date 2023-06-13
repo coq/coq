@@ -42,6 +42,9 @@ Proof. apply to_N_inj; apply eq_sym, N.mod_small, pf, I. Qed.
 Lemma to_N_of_N {m} n : to_N (of_N m n) = (n mod (N.pos m))%N.
 Proof. trivial. Qed.
 
+Lemma to_N_of_N_small {m} n (H : (n < N.pos m)%N) : to_N (of_N m n) = n.
+Proof. rewrite to_N_of_N, N.mod_small; trivial. Qed.
+
 Lemma of_N_to_N {m} x : of_N m (to_N x) = x.
 Proof. apply to_N_inj. rewrite to_N_of_N, N.mod_small; trivial; apply to_N_range. Qed.
 
@@ -53,11 +56,16 @@ Proof. apply to_N_inj. rewrite ?to_N_of_N, ?N.Div0.mod_mod; trivial. Qed.
 Definition of_nat m (a : nat) := of_N m (N.of_nat a).
 Definition to_nat {m} (a : Zmod m) := N.to_nat (to_N a).
 
+Lemma fold_to_nat {m} a : N.to_nat (to_N a) = @to_nat m a. Proof. trivial. Qed.
+
 Lemma of_nat_to_nat {m} a : of_nat m (to_nat a) = a.
 Proof. cbv [of_nat to_nat]. rewrite N2Nat.id, of_N_to_N; trivial. Qed.
 
 Lemma to_N_of_nat {m} a : to_N (of_nat m a) = N.modulo (N.of_nat a) (N.pos m).
 Proof. cbv [of_nat to_nat]. rewrite to_N_of_N; trivial. Qed.
+
+Lemma to_N_to_nat {m} a : N.of_nat (@to_nat m a) = to_N a.
+Proof.  apply N2Nat.id. Qed.
 
 Lemma to_nat_of_nat {m} a : to_nat (of_nat m a) = Nat.modulo a (Pos.to_nat m).
 Proof.  cbv [to_nat]. rewrite to_N_of_nat, N2Nat.inj_mod, Nat2N.id, positive_N_nat; trivial. Qed.
@@ -67,6 +75,9 @@ Proof. intros H. apply to_N_inj, N2Nat.inj, H. Qed.
 
 Lemma to_nat_inj_iff {m} (x y : Zmod m) : to_nat x = to_nat y <-> x = y.
 Proof. split; try apply to_nat_inj; congruence. Qed.
+
+Lemma to_nat_range {m} (x : Zmod m) : (to_nat x < Pos.to_nat m)%nat.
+Proof. cbv [to_nat]. pose proof to_N_range x. lia. Qed.
 
 (** Conversions to Z *)
 
@@ -104,6 +115,9 @@ Proof. apply to_N_inj; cbv [to_N]. apply f_equal, eq_sym, Z.mod_small, H, I. Qed
 Lemma to_Z_of_Z {m} z : to_Z (of_Z m z) = z mod (Z.pos m).
 Proof. apply Z2N.id, Z.mod_pos_bound, eq_refl. Qed.
 
+Lemma to_Z_of_Z_small {m} n (H : 0 <= n < Z.pos m) : to_Z (of_Z m n) = n.
+Proof. rewrite to_Z_of_Z, Z.mod_small; trivial. Qed.
+
 Lemma of_Z_to_Z {m} x : of_Z m (to_Z x) = x.
 Proof. apply to_Z_inj. rewrite to_Z_of_Z, Z.mod_small; trivial; apply to_Z_range. Qed.
 
@@ -121,6 +135,12 @@ Proof. cbv [to_Z]. rewrite to_N_of_N, N2Z.inj_mod; trivial. Qed.
 
 Lemma to_N_of_Z {m} z : to_N (of_Z m z) = Z.to_N (z mod (Z.pos m)).
 Proof. trivial. Qed.
+
+Lemma to_N_of_Z_small {m} n (H : 0 <= n < Z.pos m) : to_N (of_Z m n) = Z.to_N n.
+Proof. rewrite to_N_of_Z, Z.mod_small; trivial. Qed.
+
+Lemma to_Z_of_N_small {m} n (H : (n < N.pos m)%N) : to_Z (of_N m n) = Z.of_N n.
+Proof. rewrite to_Z_of_N, Z.mod_small; lia. Qed.
 
 Lemma fold_to_Z {m} z : Z.of_N (@to_N m z) = to_Z z. Proof. trivial. Qed.
 
@@ -145,9 +165,9 @@ Definition signed {m} (x : Zmod m) : Z :=
 Lemma smod_unsigned {m} (x : Zmod m) : Z.smodulo (unsigned x) m = signed x.
 Proof.
   pose proof to_Z_range x. cbv [signed unsigned Z.smodulo Z.omodulo] in *.
-  case (N.ltb_spec (N.double x) m) as []; cycle 1.
-  1: erewrite <-Z.mod_add with (b:=-(1)), Z.mul_opp_l by inversion 1.
-  all : rewrite Z.mod_small; Z.to_euclidean_division_equations; try lia.
+  case (N.ltb_spec (N.double x) m) as []; cycle 1;
+  rewrite ?(Z.mod_div_eq 0), ?(Z.mod_div_eq 1) by (Z.quot_rem_to_equations; lia);
+    Z.quot_rem_to_equations; lia.
 Qed.
 
 Lemma signed_range {m} (x : Zmod m) : -m <= 2*signed x < m.
@@ -170,6 +190,23 @@ Proof. rewrite <-smod_unsigned, Z.smod_smod; trivial. Qed.
 
 Lemma signed_of_Z {m} z : signed (of_Z m z) = Z.smodulo z m.
 Proof. rewrite <-smod_unsigned, to_Z_of_Z, Z.smod_mod; trivial. Qed.
+
+Lemma signed_of_Z_small {m} z (H : - Z.pos m <= 2 * z - Z.rem m 2 < m) :
+  signed (of_Z m z) = z.
+Proof. rewrite signed_of_Z, Z.smod_small; trivial. Qed.
+
+Lemma signed_of_Z_even_small {m} (Hm : Z.rem (Z.pos m) 2 = 0)
+  z (H : - Z.pos m <= 2 * z < m) : signed (of_Z m z) = z.
+Proof. rewrite signed_of_Z, Z.smod_even_small; trivial. Qed.
+
+Lemma signed_of_Z_pow2_small {w : positive} z (H : - 2^w <= 2 * z < 2^w) :
+  signed (of_Z (2^w)%positive z) = z.
+Proof.
+  (* TODO: smod_pow2_small *)
+  assert ((2 ^ w)%positive = 2*2^Pos.pred_N w :> Z)
+    by (rewrite Pos2Z.inj_pow, <-Z.pow_succ_r; f_equal; lia).
+  rewrite signed_of_Z_even_small; Z.quot_rem_to_equations; lia.
+Qed.
 
 Lemma signed_small {m} (x : Zmod m) (H : 2*x < m) : signed x = unsigned x.
 Proof.
@@ -213,6 +250,82 @@ Proof.
   { pose proof signed_neg_iff x; intuition try lia. }
 Qed.
 
+(* Zmod <-> Zmod *)
+
+Notation of_Zmod m x := (of_N m (to_N x)).
+Notation of_signed m x := (of_Z m (signed x)).
+Notation truncate w x := (of_Zmod (2^w) x).
+Notation zext w x := (of_Zmod (2^w) x).
+Notation sext w x := (of_signed (2^w) x).
+
+Example of_Zmod_of_N_same {m} x : of_Zmod m (of_N m x) = of_N m x.
+Proof. rewrite of_N_to_N; trivial. Qed.
+
+Example of_Zmod_of_Z_same {m} x : of_Zmod m (of_Z m x) = of_Z m x.
+Proof. rewrite of_N_to_N; trivial. Qed.
+
+(* bool <-> Zmod *)
+
+Definition of_bool m (b : bool) : Zmod m := of_N m (N.b2n b).
+Definition odd {m} (x : Zmod m) := N.odd (to_N x).
+Notation to_bool := (@odd 2).
+
+Lemma to_N_of_bool' {m} b : to_N (of_bool m b) = (N.b2n b mod m)%N.
+Proof. apply to_N_of_N. Qed.
+
+Lemma to_N_of_bool_small {m} b (H : (N.b2n b < N.pos m)%N) :
+  to_N (of_bool m b) = N.b2n b.
+Proof. apply to_N_of_N_small; trivial. Qed.
+
+Lemma to_N_of_bool {m} (Hm : 2 <= Z.pos m) b : to_N (of_bool m b) = N.b2n b.
+Proof. apply to_N_of_bool_small; trivial. pose proof N.b2n_range b; lia. Qed.
+
+Lemma to_N_odd {m} (x : Zmod m) : odd x = N.odd (to_N x). Proof. trivial. Qed.
+
+Lemma odd_of_bool {m} b (Hm : 2 <= Z.pos m) : odd (of_bool m b) = b.
+Proof. rewrite to_N_odd, to_N_of_bool, N.odd_b2n; trivial. Qed.
+
+Lemma to_bool_of_bool b : to_bool (of_bool _ b) = b.
+Proof. rewrite odd_of_bool; reflexivity. Qed.
+
+Lemma of_bool_to_bool x : of_bool _ (to_bool x) = x.
+Proof.
+  apply to_N_inj.
+  rewrite to_N_of_bool, to_N_odd, N.b2n_odd, mod_to_N; reflexivity.
+Qed.
+
+(* byte <-> Zmod *)
+
+Import Init.Byte.
+Definition of_byte m (b : byte) : Zmod m := of_N m (Byte.to_N b).
+Definition low_byte {m} (x : Zmod m) : byte := Byte.truncate_N x.
+Notation to_byte := (@low_byte (2^8)).
+
+Lemma to_N_of_byte' {m} b : to_N (of_byte m b) = (Byte.to_N b mod m)%N.
+Proof. apply to_N_of_N. Qed.
+
+Lemma to_N_of_byte_small {m} b (H : (Byte.to_N b < N.pos m)%N) :
+  to_N (of_byte m b) = Byte.to_N b.
+Proof. apply to_N_of_N_small; trivial. Qed.
+
+Lemma to_N_of_byte {m} (Hm : 2^8 <= Z.pos m) b : to_N (of_byte m b) = Byte.to_N b.
+Proof. apply to_N_of_byte_small; trivial. pose proof Byte.to_N_bounded b. lia. Qed.
+
+Lemma to_N_low_byte {m} (x : Zmod m) : Byte.to_N (low_byte x) = (x mod 2^8)%N.
+Proof. apply Byte.to_N_truncate_N. Qed.
+
+Lemma low_byte_of_byte {m} b (Hm : 2^8 <= Z.pos m) : low_byte (of_byte m b) = b.
+Proof. cbv [low_byte]. rewrite to_N_of_byte, Byte.truncate_N_to_N; trivial. Qed.
+
+Lemma to_byte_of_byte b : to_byte (of_byte _ b) = b.
+Proof. rewrite low_byte_of_byte; reflexivity. Qed.
+
+Lemma of_byte_to_byte x : of_byte _ (to_byte x) = x.
+Proof.
+  apply to_N_inj; pose proof to_N_range x.
+  rewrite to_N_of_byte, to_N_low_byte, N.mod_small; try lia.
+Qed.
+
 (** Constants *)
 Notation zero := (of_N_value _ 0 I).
 Notation one := (of_N _ 1).
@@ -225,14 +338,22 @@ Lemma of_N_1 {m} : of_N m 1 = one. Proof. trivial. Qed.
 Lemma of_Z_1 {m} : of_Z m 1 = one.
 Proof. apply to_Z_inj. rewrite to_Z_of_Z, to_Z_of_N; trivial. Qed.
 
-Lemma of_N_nz {m} x (H : (x mod N.pos m <> 0)%N) : of_N m x <> zero.
-Proof.
-  intro Hx. apply (f_equal to_N) in Hx. rewrite to_N_of_N, to_N_0 in Hx; contradiction.
-Qed.
+Lemma to_N_1 {m : positive} (Hm : 2 <= m) : @to_N m one = 1%N.
+Proof. rewrite to_N_of_N, N.mod_small; lia. Qed.
 
-Lemma of_Z_nz {m} x (H : (x mod Z.pos m <> 0)%Z) : of_Z m x <> zero.
+Lemma to_Z_1 {m : positive} (Hm : 2 <= m) : @to_Z m one = 1.
+Proof. rewrite to_Z_of_N, Z.mod_small; lia. Qed.
+
+Lemma to_N_nz {m} (x : Zmod m) (H : x <> zero) : to_N x <> 0%N.
+Proof. intros X; apply H, to_N_inj. rewrite X; trivial. Qed.
+
+Lemma to_Z_nz {m} (x : Zmod m) (H : x <> zero) : to_Z x <> 0.
+Proof. intros X; apply H, to_Z_inj. rewrite X; trivial. Qed.
+
+Lemma one_neq_zero {m : positive} (Hm : 2 <= m) : one <> zero :> Zmod m.
 Proof.
-  intro Hx. apply (f_equal to_Z) in Hx. rewrite to_Z_of_Z, to_Z_0 in Hx; contradiction.
+  intro H. apply (f_equal to_N) in H.
+  rewrite to_N_1, to_N_0 in H; lia.
 Qed.
 
 Definition elements m : list (Zmod m) := List.map (of_nat m) (List.seq 0 (Pos.to_nat m)).
@@ -283,12 +404,9 @@ Lemma to_N_add {m} (x y : Zmod m) : to_N (add x y) = ((to_N x + to_N y) mod m)%N
 Proof.
   pose proof to_N_range x; pose proof to_N_range y.
   cbv [add]. rewrite of_small_N_ok, to_N_of_N.
-  case (N.ltb_spec (x + y) m) as [?|?].
-  { rewrite N.mod_small; trivial. }
-  { apply N2Z.inj; rewrite 2N2Z.inj_mod.
-    symmetry; rewrite <-Z_mod_plus_full with (b:=-1).
-    rewrite N2Z.inj_sub; trivial. }
-Defined.
+  case (N.ltb_spec (x + y) m) as [?|?]; trivial.
+  rewrite ?(N.mod_div_eq 0), ?(N.mod_div_eq 1) by lia; lia.
+Qed.
 
 Lemma to_Z_add {m} (x y : Zmod m) : to_Z (add x y) = (to_Z x + to_Z y) mod m.
 Proof. cbv [to_Z]. rewrite to_N_add, N2Z.inj_mod; f_equal; zify; trivial. Qed.
@@ -305,9 +423,8 @@ Lemma to_Z_sub {m} (x y : Zmod m) : to_Z (sub x y) = (to_Z x - to_Z y) mod m.
 Proof.
   pose proof to_Z_range x; pose proof to_Z_range y.
   cbv [sub]. rewrite of_small_Z_ok, to_Z_of_Z.
-  case (Z.leb_spec 0 (x - y)) as [?|?].
-  { rewrite Z.mod_small; lia. }
-  { symmetry; rewrite <-Z_mod_plus_full with (b:=1); trivial. }
+  case (Z.leb_spec 0 (x - y)) as [?|?]; trivial.
+  rewrite ?(Z.mod_div_eq 0), ?(Z.mod_div_eq (-1)) by lia; lia.
 Qed.
 
 Lemma signed_sub {m} x y : signed (@sub m x y) = Z.smodulo (signed x-signed y) m.
@@ -433,6 +550,7 @@ Lemma sdiv_overflow {m : positive} x y
 Proof.
   apply signed_inj; rewrite signed_sdiv, Hx, Hy.
   change (-1) with (-(1)); rewrite Z_div_zero_opp_full, Z.div_opp_opp, Z.div_1_r by lia.
+  (* TODO: smod_add *)
   rewrite <-Z.smod_mod, <-Z.mod_add with (b:=-1), Z.smod_mod by lia.
   rewrite Z.smod_even_small; Z.to_euclidean_division_equations; nia.
 Qed.
@@ -695,22 +813,14 @@ Qed.
 
 (** Misc *)
 
-Lemma to_N_1 {m : positive} (Hm : 2 <= m) : @to_N m one = 1%N.
-Proof. rewrite to_N_of_N, N.mod_small; lia. Qed.
-
-Lemma to_Z_1 {m : positive} (Hm : 2 <= m) : @to_Z m one = 1.
-Proof. rewrite to_Z_of_N, Z.mod_small; lia. Qed.
-
-Lemma to_N_nz {m} (x : Zmod m) (H : x <> zero) : to_N x <> 0%N.
-Proof. intros X; apply H, to_N_inj. rewrite X; trivial. Qed.
-
-Lemma to_Z_nz {m} (x : Zmod m) (H : x <> zero) : to_Z x <> 0.
-Proof. intros X; apply H, to_Z_inj. rewrite X; trivial. Qed.
-
-Lemma one_neq_zero {m : positive} (Hm : 2 <= m) : one <> zero :> Zmod m.
+Lemma of_N_nz {m} x (H : (x mod N.pos m <> 0)%N) : of_N m x <> zero.
 Proof.
-  intro H. apply (f_equal to_N) in H.
-  rewrite to_N_1, to_N_0 in H; lia.
+  intro Hx. apply (f_equal to_N) in Hx. rewrite to_N_of_N, to_N_0 in Hx; contradiction.
+Qed.
+
+Lemma of_Z_nz {m} x (H : (x mod Z.pos m <> 0)%Z) : of_Z m x <> zero.
+Proof.
+  intro Hx. apply (f_equal to_Z) in Hx. rewrite to_Z_of_Z, to_Z_0 in Hx; contradiction.
 Qed.
 
 Lemma hprop_Zmod_1 (a b : Zmod 1) : a = b.

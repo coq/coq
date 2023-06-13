@@ -9,7 +9,6 @@ Definition transparent_true (b : bool) : (True -> Is_true b) -> Is_true b :=
   | false => fun H => False_rect _ (H I)
   end.
 
-
 Require Import ZArith Lia Znumtheory.
 Module Import Znumtheory.
 
@@ -240,6 +239,11 @@ Module N2Z.
 End N2Z.
 
 Module Z.
+  Lemma b2z_range b : 0 <= Z.b2z b < 2. Proof. case b; cbn; lia. Qed.
+
+  Lemma b2z_squared b : Z.b2z b * Z.b2z b = Z.b2z b. case b; cbn; lia. Qed.
+
+  (* TODO: should these be in Z2N? *)
   Lemma of_N_b2n b : Z.of_N (N.b2n b) = Z.b2z b.
   Proof. case b; trivial. Qed.
 
@@ -264,11 +268,19 @@ Module Z.
   Lemma div_eq_iff c a b :
     (b = 0 /\ c = 0 \/ c*b <= a < c*b + b \/ c*b + b < a <= c*b) <-> a/b = c.
   Proof.
-    destruct (Z.eqb_spec b 0).
-    { subst. rewrite Zdiv_0_r; intuition lia. }
+    destruct (Z.eqb_spec b 0); [subst; rewrite Zdiv_0_r; intuition lia|].
     rewrite <-(Z.sub_move_0_r (_/_)),  <-(Z.add_opp_r (_/_)).
     rewrite <-Z.div_add, Z.div_small_iff; lia.
   Qed.
+
+  Lemma mod_div_eq_iff c a b :
+    (b = 0 \/ c*b <= a < c*b + b \/ c*b + b < a <= c*b) <-> a mod b = a-b*c.
+  Proof.
+    destruct (Z.eqb_spec b 0); [subst; rewrite Zmod_0_r; intuition lia|].
+    rewrite Z.mod_eq by trivial; pose proof div_eq_iff c a b; nia.
+  Qed.
+
+  Definition mod_div_eq c a b := proj1 (mod_div_eq_iff c a b).
 
   Definition div_eq c a b := proj1 (div_eq_iff c a b).
 
@@ -473,6 +485,17 @@ End Z.
 Module N.
   Local Open Scope N_scope.
 
+  Lemma odd_b2n b : N.odd (N.b2n b) = b. Proof. case b; trivial. Qed.
+  Lemma b2n_odd n : N.b2n (N.odd n) = n mod 2.
+  Proof.
+    pose proof N.div2_odd n.
+    case N.odd in *; cbn [N.b2n] in *; zify; Z.quot_rem_to_equations; lia.
+  Qed.
+
+  Lemma b2n_range b : N.b2n b < 2. Proof. case b; cbn; lia. Qed.
+
+  Lemma b2n_squared b : N.b2n b * N.b2n b = N.b2n b. case b; cbn; lia. Qed.
+
   Lemma land_mono a b : N.land a b <= a.
   Proof. case a, b; cbn [N.land]; trivial using Pos.land_mono; lia. Qed.
 
@@ -498,12 +521,14 @@ Module N.
   Lemma shiftl_mono a b : a <= N.shiftl a b.
   Proof. case a as []; [lia|]. apply Pos.shiftl_mono. Qed.
 
+  Definition adc a b c := a + b + N.b2n c.
+
   Lemma pos_pow a b : N.pos (a ^ b) = N.pow (N.pos a) (N.pos b).
   Proof. trivial. Qed.
 
   Lemma ones_succ n (H : N.le 0 n) : N.ones (N.succ n) = N.succ_double (N.ones n).
   Proof. rewrite 2N.ones_equiv, N.pow_succ_r; lia. Qed.
-  
+
   Lemma pos_ones p : N.pos (Pos.ones p) = N.ones (N.pos p).
   Proof.
     cbv [Pos.ones]. set (fun n => _) as step.
@@ -514,10 +539,21 @@ Module N.
   Qed.
 
   Lemma div_eq_iff c a b :
-    (b = 0 /\ c = 0 \/ c*b <= a < c*b + b \/ c*b + b < a <= c*b) <-> a/b = c.
-  Proof. zify; apply Z.div_eq_iff. Qed.
+    (b = 0 /\ c = 0 \/ c*b <= a < c*b + b) <-> a/b = c.
+  Proof. zify. rewrite <-Z.div_eq_iff; lia. Qed.
 
   Definition div_eq c a b := proj1 (div_eq_iff c a b).
+
+  Lemma mod_div_eq_iff' c a b :
+    (b = 0 \/ c*b <= a < c*b + b) <-> a mod b + b*c = a.
+  Proof. rewrite N.Div0.mod_eq. pose proof div_eq_iff c a b; nia. Qed.
+
+  Lemma mod_div_eq_or_subtraction_underflow_iff c a b :
+    (b = 0 \/ c*b <= a < c*b + b \/ a mod b = 0 /\ a < c*b) <-> a mod b = a - c*b.
+  Proof. pose proof mod_div_eq_iff' c a b; lia. Qed.
+
+  Lemma mod_div_eq c a b :(b = 0 \/ c*b <= a < c*b + b) -> a mod b = a - c*b.
+  Proof. pose proof mod_div_eq_iff' c a b; lia. Qed.
 
   Lemma leb_testbit a n (H : a < 2*2^n) : N.testbit a n = N.leb (2^n) a.
   Proof.
@@ -592,6 +628,39 @@ Module N.
   Qed.
 End N.
 
+Module Byte.
+  Local Open Scope N_scope.
+  Import Byte.
+
+  Lemma to_N_inj a b (H : to_N a = to_N b) : a = b.
+  Proof.
+    apply (f_equal of_N) in H; rewrite 2 of_to_N in H; inversion H; trivial.
+  Qed.
+
+  Lemma to_N_inj_iff a b : to_N a = to_N b <-> a = b.
+  Proof. split; intros; subst; auto using to_N_inj. Qed.
+
+  Definition truncate_N (n : N) : byte :=
+    match Byte.of_N (N.land n (N.pos (Pos.ones 8))) with
+    | Some b => b
+    | None => (* unreachable *) x00
+    end.
+
+  Lemma to_N_truncate_N n : to_N (truncate_N n) = n mod 256.
+  Proof.
+    cbv [truncate_N]; rewrite N.pos_ones, N.land_ones.
+    destruct of_N eqn:E in *; auto using to_of_N .
+    pose proof proj1 (of_N_None_iff (n mod (2^8))) E.
+    pose proof N.mod_upper_bound n (2^8); lia.
+  Qed.
+
+  Lemma truncate_N_to_N b : truncate_N (to_N b) = b.
+  Proof.
+    apply to_N_inj. rewrite to_N_truncate_N. apply N.mod_small.
+    pose proof to_N_bounded b; lia.
+  Qed.
+End Byte.
+
 Module List.
   Import Coq.Lists.List.
 
@@ -607,7 +676,7 @@ Module List.
   Lemma skipn_seq n : forall start len, skipn n (seq start len) = seq (start+n) (len-n).
   Proof. induction n, len; cbn [skipn seq]; rewrite ?Nat.add_0_r, ?IHn; auto. Qed.
 
-  Lemma nth_error_seq n start len : nth_error (seq start len) n = 
+  Lemma nth_error_seq n start len : nth_error (seq start len) n =
     if Nat.ltb n len then Some (Nat.add start n) else None.
   Proof.
     rewrite <-hd_error_skipn, skipn_seq.
@@ -640,7 +709,7 @@ Module List.
       case f eqn:?; try constructor; trivial.
       intros (y&?&?)%in_mapfilter.
       firstorder congruence || (* Tactic failure: no link *)
-      assert (x <> y) as HH by congruence; 
+      assert (x <> y) as HH by congruence;
       specialize (Hf x y ltac:(congruence) HH); congruence.
     Qed.
   End WithF.
@@ -681,3 +750,10 @@ Proof.
   intros; eapply Permutation.NoDup_Permutation_bis; rewrite ?List.map_length; trivial.
 Qed.
 End Permutation.
+
+Module Fin.
+  Lemma f2n_inj_dep {m n} (a : Fin.t m) (b : Fin.t n) :
+    m = n -> FinFun.Fin2Restrict.f2n a = FinFun.Fin2Restrict.f2n b ->
+    existT Fin.t _ a = existT _ _ b.
+  Proof. destruct 1; auto using f_equal, FinFun.Fin2Restrict.f2n_inj. Qed.
+End Fin.

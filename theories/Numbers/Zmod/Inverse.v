@@ -29,7 +29,7 @@ Lemma in_invertibles m (x : Zmod m) : List.In x (invertibles m) <-> Z.gcd x m = 
 Proof.
   cbv [invertibles].
   rewrite List.in_map_iff.
-  setoid_rewrite 
+  setoid_rewrite
     ( ltac:(intuition eauto using Zstar.in_elements)
     : forall (m : positive) (x : Zstar m), List.In x (Zstar.elements m) <-> True).
   firstorder subst; trivial using Zstar.coprime_to_Zmod.

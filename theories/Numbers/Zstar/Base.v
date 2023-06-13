@@ -206,7 +206,7 @@ Qed.
 
 Definition mul {m} (a b : Zstar m) : Zstar m.
   refine (of_small_coprime_N m (a * b mod m) _)%positive.
-  abstract (split; 
+  abstract (split;
     [ apply N.mod_upper_bound; inversion 1
     | rewrite N.Lcm0.gcd_mod, N.gcd_comm; apply N.coprime_mul; apply to_N_range ]).
 Defined.

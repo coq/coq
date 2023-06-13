@@ -83,7 +83,7 @@ End Zmod.
 
 Module N.
 Local Open Scope N_scope.
-Theorem fermat_nz (m a : N) (Hm : prime m) (Ha : a mod m <> 0) : 
+Theorem fermat_nz (m a : N) (Hm : prime m) (Ha : a mod m <> 0) :
   a^(m-1) mod m = 1.
 Proof.
   pose proof prime_ge_2 _ Hm; case m as [|m]; try lia; [].
@@ -99,6 +99,17 @@ Qed.
 End N.
 
 Module Z.
+Theorem fermat_nz (m a : Z) (Hm : prime m) (Ha : a mod m <> 0) :
+  a^(m-1) mod m = 1.
+Proof.
+  pose proof prime_ge_2 _ Hm as Hm'.
+  pose proof N.fermat_nz (Z.to_N m) (Z.to_N (a mod m)).
+  rewrite <-!N2Z.inj_iff, !N2Z.inj_mod, !N2Z.inj_pow, !Z2N.id, Z.mod_mod in H
+    by (Z.div_mod_to_equations; lia).
+  rewrite N2Z.inj_sub, Z2N.id in H by lia; cbn in H.
+  rewrite <-Z.mod_pow_l; eauto.
+Qed.
+
 Theorem fermat (m a : Z) (Hm : prime m) : Z.pow a m mod m = a mod m.
 Proof.
   pose proof prime_ge_2 _ Hm; case m as [|m|]; try lia; [].

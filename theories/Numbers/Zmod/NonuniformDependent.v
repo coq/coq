@@ -41,6 +41,42 @@ Lemma to_Z_inj_dep {m} (a : Zmod m) {n} (b : Zmod n) :
   m = n -> to_Z a = to_Z b -> existT _ _ a = existT _ _ b.
 Proof. destruct 1; auto using f_equal, to_Z_inj. Qed.
 
+(** Conversions to Fin.t *)
+
+(* Please consider using [to_nat] or [to_N] instead. *)
+Definition to_Fin {m} (a : Zmod m) : Fin.t (Pos.to_nat m) :=
+  @Fin.of_nat_lt (to_nat a) (Pos.to_nat m) (to_nat_range a).
+
+(* Please consider using [of_nat] or [ofN] instead. *)
+Definition of_Fin {n} (f : Fin.t n) : Zmod (Pos.of_nat n).
+  refine (of_small_N _ (N.of_nat (FinFun.Fin2Restrict.f2n f)) (fun _ => _)).
+  abstract (pose proof FinFun.Fin2Restrict.f2n_ok f; lia).
+Defined.
+
+Lemma to_nat_of_Fin {n} f : to_nat (@of_Fin n f) = FinFun.Fin2Restrict.f2n f.
+Proof. cbv [to_nat of_Fin]. rewrite to_N_of_small_N; lia. Qed.
+
+Lemma to_N_of_Fin {n} f : to_N (@of_Fin n f) = N.of_nat (FinFun.Fin2Restrict.f2n f).
+Proof. cbv [of_Fin]. rewrite to_N_of_small_N; lia. Qed.
+
+Lemma to_Z_of_Fin {n} f : to_Z (@of_Fin n f) = N.of_nat (FinFun.Fin2Restrict.f2n f).
+Proof. cbv [of_Fin]. rewrite to_Z_of_small_N; lia. Qed.
+
+Lemma of_Fin_to_Fin_dep {m} a :
+  existT Zmod _ (of_Fin (@to_Fin m a)) = existT Zmod _ a.
+Proof.
+  apply to_Z_inj_dep; [lia|]; cbv [to_Fin].
+  rewrite to_Z_of_Fin, FinFun.Fin2Restrict.f2n_n2f, to_N_to_nat; trivial.
+Qed.
+
+Lemma to_fin_of_Fin_dep {n} f :
+  existT Fin.t _ (to_Fin (@of_Fin n f)) = existT Fin.t _ f.
+Proof.
+  destruct n; [apply Fin.case0; assumption|].
+  apply Fin.f2n_inj_dep; [lia|]; cbv [to_Fin].
+  rewrite FinFun.Fin2Restrict.f2n_n2f, to_nat_of_Fin; trivial.
+Qed.
+
 (* TODO: high part first or low part first? *)
 Definition undivmodM {a b} (hi : Zmod a) (lo : Zmod b) : Zmod (a * b).
   refine (of_small_N _ (N.undivmod b hi lo) (fun _ => _))%N.
