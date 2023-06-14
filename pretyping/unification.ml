@@ -1083,6 +1083,24 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             error_cannot_unify curenv sigma (cM,cN)
           else None
     in
+    let rec is_unnamed (hd, args) = match EConstr.kind sigma hd with
+    | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|Array _) ->
+      Stack.not_purely_applicative args
+    | (CoFix _|Rel _)-> true
+    | (Evar _ | Meta _)-> Stack.not_purely_applicative args
+    (* false (* immediate solution without Canon Struct *)*)
+    | Lambda _ -> assert (match args with [] -> true | _ -> false); true
+    | LetIn (_,b,_,c) -> is_unnamed
+    (whd_betaiota_deltazeta_for_iota_state
+              flags.modulo_delta env sigma (subst1 b c, args))
+    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
+    | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
+    | Case _ | App _| Cast _ -> assert false in
+    let is_unnamed x =
+      let rc = is_unnamed x in
+      (*Printf.eprintf "UNNAMED %b %s\n%!" rc (Pp.string_of_ppcmds (Termops.Internal.print_constr_env env sigma (Stack.zip sigma x)));*)
+      rc in
+
       match res with
       | Some substn -> substn
       | None ->
@@ -1091,10 +1109,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | None -> error_cannot_unify curenv sigma (cM,cN)
         | Some true ->
             (match expand_key flags.modulo_delta curenv sigma cf1 with
-            | Some c ->
+            | Some c when not(is_unnamed (whd_betaiota_deltazeta_for_iota_state (TransparentState.empty) curenv sigma (mkApp(c,l1),Reductionops.Stack.empty))) ->
                 unirec_rec curenvnb pb opt substn
                   (whd_betaiotazeta curenv sigma (mkApp(c,l1))) cN
-            | None ->
+            | _ ->
                 (match expand_key flags.modulo_delta curenv sigma cf2 with
                 | Some c ->
                     unirec_rec curenvnb pb opt substn cM
@@ -1103,10 +1121,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                     error_cannot_unify curenv sigma (cM,cN)))
         | Some false ->
             (match expand_key flags.modulo_delta curenv sigma cf2 with
-            | Some c ->
+            | Some c when not(is_unnamed (whd_betaiota_deltazeta_for_iota_state (TransparentState.empty) curenv sigma (mkApp(c,l2),Reductionops.Stack.empty))) ->
                 unirec_rec curenvnb pb opt substn cM
                   (whd_betaiotazeta curenv sigma (mkApp(c,l2)))
-            | None ->
+            | _ ->
                 (match expand_key flags.modulo_delta curenv sigma cf1 with
                 | Some c ->
                     unirec_rec curenvnb pb opt substn

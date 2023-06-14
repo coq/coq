@@ -1,3 +1,33 @@
+
+Module DoNotLoseCP.
+
+Structure A : Type := mkA { a : Type }.
+Structure B : Type := mkB { b : Type }.
+Structure C : Type := mkC { c : Type }.
+
+Canonical c_b (x : B) := mkC (b x).
+
+Goal forall x, (a (mkA (b x))) = (a (mkA (b x))).
+intros.
+apply (@refl_equal _ (c _)).
+Abort.
+
+Canonical b_c (x : C) := mkB (c x).
+
+Goal forall x, c x = c x.
+intros.
+(*
+pose proof (H := fun x => @refl_equal _ (a (mkA (b x)))).
+simpl in H.
+apply H.
+*)
+apply (@refl_equal _ (a (mkA (b _)))).
+Abort.
+
+End DoNotLoseCP.
+
+
+
 (* Bug #1172 *)
 
 Structure foo : Type := Foo {
