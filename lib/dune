@@ -4,4 +4,6 @@
  (public_name coq-core.lib)
  (wrapped false)
  (modules_without_implementation xml_datatype)
- (libraries coq-core.boot coq-core.clib coq-core.config))
+ (libraries
+  coq-core.boot coq-core.clib coq-core.config
+  (select instr.ml from (!perf -> instr.noperf.ml) (perf -> instr.perf.ml))))
