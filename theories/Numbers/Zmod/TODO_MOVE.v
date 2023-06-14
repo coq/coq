@@ -243,9 +243,33 @@ Module Z.
 
   Lemma b2z_squared b : Z.b2z b * Z.b2z b = Z.b2z b. case b; cbn; lia. Qed.
 
+  Lemma odd_b2z b : Z.odd (Z.b2z b) = b. Proof. case b; trivial. Qed.
+
+  Lemma b2z_odd n : Z.b2z (Z.odd n) = n mod 2.
+  Proof.
+    pose proof Z.div2_odd n.
+    case Z.odd in *; cbn [Z.b2z] in *; Z.div_mod_to_equations; lia.
+  Qed.
+
   (* TODO: should these be in Z2N? *)
   Lemma of_N_b2n b : Z.of_N (N.b2n b) = Z.b2z b.
   Proof. case b; trivial. Qed.
+
+  Lemma odd_of_N n : Z.odd (Z.of_N n) = N.odd n.
+  Proof.
+    rewrite eq_iff_eq_true, Z.odd_spec, N.odd_spec.
+    cbv [Z.Odd N.Odd]; split; inversion 1.
+    { exists (Z.to_N x); lia. } { exists (Z.of_N x); lia. }
+  Qed.
+
+  Lemma b2z_inj a b : Z.b2z a = Z.b2z b -> a = b.
+  Proof. case a, b; cbn; congruence. Qed.
+
+  Lemma b2z_inj_iff a b : Z.b2z a = Z.b2z b <-> a = b.
+  Proof. split; eauto using f_equal, b2z_inj. Qed.
+
+  Lemma odd_mod2 n : Z.odd (n mod 2) = Z.odd n.
+  Proof. apply b2z_inj. rewrite !b2z_odd, Z.mod_mod; lia. Qed.
 
   Lemma ltb_of_N n m : (Z.of_N n <? Z.of_N m) = (n <? m)%N.
   Proof. case (Z.ltb_spec (Z.of_N n) (Z.of_N m)), (N.ltb_spec n m); lia. Qed.
@@ -283,6 +307,35 @@ Module Z.
   Definition mod_div_eq c a b := proj1 (mod_div_eq_iff c a b).
 
   Definition div_eq c a b := proj1 (div_eq_iff c a b).
+
+  Lemma mod_mod_divide a b c : (c | b) -> (a mod b) mod c = a mod c.
+  Proof.
+    destruct (Z.eqb_spec b 0); subst. { rewrite Zmod_0_r; trivial. }
+    inversion_clear 1; subst.
+    destruct (Z.eqb_spec c 0); subst. { rewrite Z.mul_0_r, 2Zmod_0_r; trivial. }
+    apply cong_iff_ex; trivial; eexists (- x * (a/(x*c))); rewrite Z.mod_eq; lia.
+  Qed.
+
+  Lemma mod_mod_pow a b n m : 0 <= n < m -> (a mod b^m) mod b^n = a mod b^n.
+  Proof.
+    intro; apply mod_mod_divide. exists (b^(m-n)).
+    rewrite <-Z.pow_add_r; f_equal; try lia.
+  Qed.
+
+  Lemma div_mod_l_mul_r a b c (Hb : 0 <> b) (Hc : 0 < c) :
+    a mod (b * c) / b = (a / b) mod c.
+  Proof.
+    rewrite 2Z.mod_eq by lia.
+    rewrite <-Z.add_opp_r, <-Z.mul_opp_r, <-Z.mul_assoc, Z.mul_comm.
+    rewrite Z.div_add, Z.div_div; lia.
+  Qed.
+
+  Lemma div_mod_l_pow2_r a b m n (Hb : 0 < b) (H : 0 <= n <= m) :
+    a mod b ^ m / b ^ n = a / b ^ n mod b ^ (m - n).
+  Proof.
+    replace m with (n+(m-n)) at 1 by lia; rewrite Z.pow_add_r by lia.
+    rewrite div_mod_l_mul_r; lia.
+  Qed.
 
   Lemma testbit_neqb0 n (Hn : 0 <= n) x (Hx : -2^n <= x < 2^n) :
     Z.testbit (Z.lor x (- x)) n = negb (Z.eqb x 0).
@@ -486,11 +539,21 @@ Module N.
   Local Open Scope N_scope.
 
   Lemma odd_b2n b : N.odd (N.b2n b) = b. Proof. case b; trivial. Qed.
+
   Lemma b2n_odd n : N.b2n (N.odd n) = n mod 2.
   Proof.
     pose proof N.div2_odd n.
     case N.odd in *; cbn [N.b2n] in *; zify; Z.quot_rem_to_equations; lia.
   Qed.
+
+  Lemma b2n_inj a b : N.b2n a = N.b2n b -> a = b.
+  Proof. case a, b; cbn; congruence. Qed.
+
+  Lemma b2n_inj_iff a b : N.b2n a = N.b2n b <-> a = b.
+  Proof. split; eauto using f_equal, b2n_inj. Qed.
+
+  Lemma odd_mod2 n : N.odd (n mod 2) = N.odd n.
+  Proof. apply b2n_inj. rewrite !b2n_odd, N.Div0.mod_mod; trivial. Qed.
 
   Lemma b2n_range b : N.b2n b < 2. Proof. case b; cbn; lia. Qed.
 
@@ -640,18 +703,42 @@ Module Byte.
   Lemma to_N_inj_iff a b : to_N a = to_N b <-> a = b.
   Proof. split; intros; subst; auto using to_N_inj. Qed.
 
-  Definition truncate_N (n : N) : byte :=
-    match Byte.of_N (N.land n (N.pos (Pos.ones 8))) with
+  Local Open Scope Z_scope.
+  Local Coercion Z.of_N : N >-> Z.
+
+  Definition truncate_Z (n : Z) : byte :=
+    match Byte.of_N (Z.to_N (Z.land n (Z.pos (Pos.ones 8)))) with
     | Some b => b
     | None => (* unreachable *) x00
     end.
 
-  Lemma to_N_truncate_N n : to_N (truncate_N n) = n mod 256.
+  Lemma to_N_truncate_Z n : to_N (truncate_Z n) = Z.to_N (n mod (2^8)).
   Proof.
-    cbv [truncate_N]; rewrite N.pos_ones, N.land_ones.
-    destruct of_N eqn:E in *; auto using to_of_N .
-    pose proof proj1 (of_N_None_iff (n mod (2^8))) E.
-    pose proof N.mod_upper_bound n (2^8); lia.
+    pose proof Z.mod_pos_bound n (2^8) ltac:(lia).
+    cbv [truncate_Z]; rewrite Z.pos_ones, Z.land_ones by lia.
+    destruct of_N eqn:E in *; [rewrite ?N2Z.id; auto using to_of_N|].
+    pose proof proj1 (of_N_None_iff (Z.to_N (n mod (2^8)))) E; lia.
+  Qed.
+
+  Lemma truncate_Z_to_N b : truncate_Z (to_N b) = b.
+  Proof.
+    pose proof to_N_bounded b. apply to_N_inj.
+    rewrite to_N_truncate_Z, Z2N.inj_mod, N.mod_small; lia.
+  Qed.
+
+  Lemma truncate_Z_mod n : truncate_Z (n mod (2^8)) = truncate_Z n.
+  Proof. apply to_N_inj. rewrite 2to_N_truncate_Z, Z.mod_mod; lia. Qed.
+
+  Local Open Scope N_scope.
+
+  Definition truncate_N (n : N) : byte := truncate_Z (Z.of_N n).
+
+  Lemma truncate_Z_of_N n : truncate_Z (Z.of_N n) = truncate_N n.
+  Proof. trivial. Qed.
+
+  Lemma to_N_truncate_N n : to_N (truncate_N n) = n mod (2^8).
+  Proof.
+    cbv [truncate_N]. rewrite to_N_truncate_Z, Z2N.inj_mod, N2Z.id; cbn;try lia.
   Qed.
 
   Lemma truncate_N_to_N b : truncate_N (to_N b) = b.
@@ -659,6 +746,10 @@ Module Byte.
     apply to_N_inj. rewrite to_N_truncate_N. apply N.mod_small.
     pose proof to_N_bounded b; lia.
   Qed.
+
+  Lemma truncate_N_mod n : truncate_N (n mod (2^8)) = truncate_N n.
+  Proof. apply to_N_inj. rewrite 2to_N_truncate_N, !N.Div0.mod_mod; trivial. Qed.
+
 End Byte.
 
 Module List.
@@ -669,6 +760,10 @@ Module List.
 
   Lemma tl_map {A B} (f : A -> B) l : tl (map f l) = map f (tl l).
   Proof. case l; trivial. Qed.
+
+  Lemma map_inj {A B} (f : A -> B) (f_inj : forall x y, f x = f y -> x = y) :
+    forall xs ys, map f xs = map f ys -> xs = ys.
+  Proof. induction xs, ys; inversion 1; f_equal; eauto; congruence. Qed.
 
   Lemma hd_error_skipn {A} n : forall xs, @hd_error A (skipn n xs) = nth_error xs n.
   Proof. induction n, xs; cbn [hd_error skipn]; auto. Qed.

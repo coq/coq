@@ -144,6 +144,9 @@ Proof. rewrite to_Z_of_N, Z.mod_small; lia. Qed.
 
 Lemma fold_to_Z {m} z : Z.of_N (@to_N m z) = to_Z z. Proof. trivial. Qed.
 
+Lemma of_Z_of_N {m} n : of_Z m (Z.of_N n) = of_N m n.
+Proof. apply to_Z_inj. rewrite to_Z_of_Z, to_Z_of_N; trivial. Qed.
+
 (* Converting nat<->Z through Zmod *)
 
 Lemma to_Z_of_nat {m} a : to_Z (of_nat m a) = Z.modulo (Z.of_nat a) (Z.pos m).
@@ -294,6 +297,23 @@ Proof.
   rewrite to_N_of_bool, to_N_odd, N.b2n_odd, mod_to_N; reflexivity.
 Qed.
 
+Lemma to_bool_of_N v : to_bool (of_N 2 v) = N.odd v.
+Proof. cbv [to_bool]. rewrite to_N_of_N. apply N.odd_mod2. Qed.
+
+Lemma to_bool_of_Z v : to_bool (of_Z 2 v) = Z.odd v.
+Proof.
+  cbv [to_bool]. rewrite to_N_of_Z, <-Z.odd_of_N, Z2N.id, Z.odd_mod2
+    by (apply Z.mod_pos_bound; lia); trivial.
+Qed.
+
+Lemma of_bool_inj {m} x y (Hm : 2 <= Z.pos m) :
+  of_bool m x = of_bool m y -> x = y.
+Proof.
+  cbv [of_bool]; intros H; eapply (f_equal to_N) in H.
+  pose proof N.b2n_range x; pose proof N.b2n_range y.
+  rewrite ?to_N_of_N, ?N.mod_small in *; auto using N.b2n_inj; try lia.
+Qed.
+
 (* byte <-> Zmod *)
 
 Import Init.Byte.
@@ -317,6 +337,16 @@ Proof. apply Byte.to_N_truncate_N. Qed.
 Lemma low_byte_of_byte {m} b (Hm : 2^8 <= Z.pos m) : low_byte (of_byte m b) = b.
 Proof. cbv [low_byte]. rewrite to_N_of_byte, Byte.truncate_N_to_N; trivial. Qed.
 
+Lemma to_byte_of_N v : to_byte (of_N (2 ^ 8) v) = Byte.truncate_N v.
+Proof. cbv [to_byte]. rewrite to_N_of_N, Byte.truncate_N_mod; trivial. Qed.
+
+Lemma to_byte_of_Z v : to_byte (of_Z (2 ^ 8) v) = Byte.truncate_Z v.
+Proof.
+  cbv [to_byte].
+  rewrite to_N_of_Z, <-Byte.truncate_Z_of_N, Z2N.id, Byte.truncate_Z_mod
+    by (apply Z.mod_pos_bound; lia); trivial.
+Qed.
+
 Lemma to_byte_of_byte b : to_byte (of_byte _ b) = b.
 Proof. rewrite low_byte_of_byte; reflexivity. Qed.
 
@@ -324,6 +354,14 @@ Lemma of_byte_to_byte x : of_byte _ (to_byte x) = x.
 Proof.
   apply to_N_inj; pose proof to_N_range x.
   rewrite to_N_of_byte, to_N_low_byte, N.mod_small; try lia.
+Qed.
+
+Lemma of_byte_inj {m} x y (Hm : 2^8 <= Z.pos m) :
+  of_byte m x = of_byte m y -> x = y.
+Proof.
+  cbv [of_byte]; intros H; eapply (f_equal to_N) in H.
+  pose proof Byte.to_N_bounded x; pose proof Byte.to_N_bounded y.
+  rewrite ?to_N_of_N, ?N.mod_small in *; auto using Byte.to_N_inj; lia.
 Qed.
 
 (** Constants *)

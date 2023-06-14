@@ -47,7 +47,7 @@ Proof. destruct 1; auto using f_equal, to_Z_inj. Qed.
 Definition to_Fin {m} (a : Zmod m) : Fin.t (Pos.to_nat m) :=
   @Fin.of_nat_lt (to_nat a) (Pos.to_nat m) (to_nat_range a).
 
-(* Please consider using [of_nat] or [ofN] instead. *)
+(* Please consider using [of_nat] or [of_N] instead. *)
 Definition of_Fin {n} (f : Fin.t n) : Zmod (Pos.of_nat n).
   refine (of_small_N _ (N.of_nat (FinFun.Fin2Restrict.f2n f)) (fun _ => _)).
   abstract (pose proof FinFun.Fin2Restrict.f2n_ok f; lia).
