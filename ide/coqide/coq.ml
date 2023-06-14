@@ -93,7 +93,7 @@ let display_coqtop_answer cmd lines =
 
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = Filename.quote (coqtop_path ()) ^" -nois -batch " ^ argstr in
+  let cmd = Filename.quote (coqtop_path ()) ^" -q -nois -batch " ^ argstr in
   let cmd = requote cmd in
   let filtered_args = ref [] in
   let errlines = ref [] in
