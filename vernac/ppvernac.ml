@@ -63,10 +63,12 @@ let pr_uconstraint (l, d, r) =
   pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
   pr_sort_name_expr r
 
-let pr_univ_name_list = function
-  | None -> mt ()
-  | Some l ->
-    str "@{" ++ prlist_with_sep spc pr_lname l ++ str"}"
+let pr_full_univ_name_list = function
+  | None -> mt()
+  | Some (ql, ul) ->
+    str "@{" ++ prlist_with_sep spc pr_lname ql ++
+    (if List.is_empty ql then mt() else strbrk " | ") ++
+    prlist_with_sep spc pr_lname ul ++ str "}"
 
 let pr_variance_lident (lid,v) =
   let v = Option.cata UVars.Variance.pr (mt()) v in
@@ -82,7 +84,7 @@ let pr_cumul_univdecl_instance l extensible =
 
 let pr_univdecl_constraints l extensible =
   if List.is_empty l && extensible then mt ()
-  else str"|" ++ spc () ++ prlist_with_sep (fun () -> str",") pr_uconstraint l ++
+  else str"|" ++ spc () ++ prlist_with_sep (fun () -> strbrk" | ") pr_uconstraint l ++
        (if extensible then str"+" else mt())
 
 let pr_universe_decl l =
@@ -622,7 +624,7 @@ let pr_printable = function
     let pr_subgraph = prlist_with_sep spc pr_qualid in
     keyword cmd ++ pr_opt pr_subgraph g ++ pr_opt str fopt
   | PrintName (qid,udecl) ->
-    keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list udecl
+    keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_full_univ_name_list udecl
   | PrintModuleType qid ->
     keyword "Print Module Type" ++ spc() ++ pr_qualid qid
   | PrintModule qid ->
@@ -637,7 +639,7 @@ let pr_printable = function
     keyword "Print Visibility" ++ pr_opt str s
   | PrintAbout (qid,l,gopt) ->
     pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
-    ++ keyword "About" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list l
+    ++ keyword "About" ++ spc()  ++ pr_smart_global qid ++ pr_full_univ_name_list l
   | PrintImplicit qid ->
     keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
   (* spiwack: command printing all the axioms and section variables used in a

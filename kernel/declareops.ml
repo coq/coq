@@ -61,7 +61,7 @@ let universes_context = function
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
-    Univ.empty_level_subst, Monomorphic
+    UVars.empty_sort_subst, Monomorphic
   | Entries.Polymorphic_entry uctx ->
     let (inst, auctx) = UVars.abstract_universes uctx in
     let inst = UVars.make_instance_subst inst in

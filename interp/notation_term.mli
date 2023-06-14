@@ -21,10 +21,10 @@ open Glob_term
 
 type notation_constr =
   (* Part common to [glob_constr] and [cases_pattern] *)
-  | NRef of GlobRef.t * glob_level list option
+  | NRef of GlobRef.t * glob_instance option
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
-  | NProj of (Constant.t * glob_level list option) * notation_constr list * notation_constr
+  | NProj of (Constant.t * glob_instance option) * notation_constr list * notation_constr
   | NHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr
   | NGenarg of Genarg.glob_generic_argument
   | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool

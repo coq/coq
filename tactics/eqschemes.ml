@@ -72,7 +72,7 @@ let fresh env id avoid =
   let freshid = next_global_ident_away id avoid in
   freshid, Id.Set.add freshid avoid
 let with_context_set ctx (b, ctx') =
-  (b, Univ.ContextSet.union ctx ctx')
+  (b, UnivGen.sort_context_union ctx ctx')
 
 let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
@@ -408,7 +408,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
                      rel_vect 1 nrealargs;
                      [|mkRel 1|]]) in
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
-  let ctx = Univ.ContextSet.union ctx ctx' in
+  let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info env ind rci RegularStyle in
@@ -516,7 +516,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let realsign_ind_P n aP =
     name_context env ((LocalAssum (make_annot (Name varH) indr,aP))::realsign_P n) in
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
-  let ctx = Univ.ContextSet.union ctx ctx' in
+  let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in
   let ci = make_case_info env ind rci RegularStyle in
@@ -598,7 +598,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
-  let ctx = Univ.ContextSet.union ctx ctx' in
+  let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info env ind rci RegularStyle in
@@ -809,8 +809,11 @@ let build_congr env (eq,refl,ctx) ind =
   let varf,avoid = fresh env (Id.of_string "f") avoid in
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info env ind rci RegularStyle in
-  let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
-  let ctx = (fst ctx, UnivSubst.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
+  let uni, ctx' = UnivGen.new_global_univ () in
+  let ctx =
+    let (qs,us),csts = ctx in
+    let us, csts = Univ.ContextSet.union (us,csts) ctx' in
+    ((qs, us), UnivSubst.enforce_leq uni (univ_of_eq env eq) csts) in
   let c =
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)
@@ -845,4 +848,4 @@ let build_congr env (eq,refl,ctx) ind =
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
   (fun env _ ind ->
      (* May fail if equality is not defined *)
-   build_congr env (get_coq_eq env Univ.ContextSet.empty) ind)
+   build_congr env (get_coq_eq env UnivGen.empty_sort_context) ind)

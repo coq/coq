@@ -215,7 +215,7 @@ struct
       | Cst_const (c, u) ->
         if UVars.Instance.is_empty u then Constant.debug_print c
         else str"(" ++ Constant.debug_print c ++ str ", " ++
-          UVars.Instance.pr Univ.Level.raw_pr u ++ str")"
+          UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str")"
       | Cst_proj p ->
         str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
@@ -450,21 +450,28 @@ let magically_constant_of_fixbody env sigma reference bd = function
         let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
           | Some csts ->
+            let addqs l r (qs,us) = Sorts.QVar.Map.add l r qs, us in
+            let addus l r (qs,us) = qs, Univ.Level.Map.add l r us in
             let subst = Set.fold (fun cst acc ->
-                let l, r = match cst with
-                  | ULub (u, v) | UWeak (u, v) -> u, v
+                match cst with
+                | QEq (a,b) | QLeq (a,b) ->
+                  let a = match a with
+                    | QVar q -> q
+                    | _ -> assert false
+                  in
+                  addqs a b acc
+                  | ULub (u, v) | UWeak (u, v) -> addus u v acc
                   | UEq (u, v) | ULe (u, v) ->
+                    (* XXX add something when qsort? *)
                     let get u = match u with
                     | Sorts.SProp | Sorts.Prop -> assert false
                     | Sorts.Set -> Level.set
                     | Sorts.Type u | Sorts.QSort (_, u) -> Option.get (Universe.level u)
                     in
-                    get u, get v
-                in
-                Univ.Level.Map.add l r acc)
-                csts Univ.Level.Map.empty
+                    addus (get u) (get v) acc)
+                csts UVars.empty_sort_subst
             in
-            let inst = UVars.subst_univs_level_instance subst u in
+            let inst = UVars.subst_sort_level_instance subst u in
             mkConstU (cst, EInstance.make inst)
           | None -> bd
         end

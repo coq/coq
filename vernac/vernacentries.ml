@@ -443,7 +443,7 @@ let print_universes ?loc ~sort ~subgraph dst =
     if Global.is_joined_environment () then mt ()
     else str"There may remain asynchronous universe constraints"
   in
-  let prl = UnivNames.pr_with_global_universes in
+  let prl = UnivNames.pr_level_with_global_universes in
   begin match dst with
     | None -> UGraph.pr_universes prl univ ++ pr_remaining
     | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s

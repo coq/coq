@@ -175,9 +175,9 @@ let convert_instances_cumul pb var u u' (s, check) =
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
-    UVars.enforce_eq_variance_instances variance u u' Univ.Constraints.empty
+    UVars.enforce_eq_variance_instances variance u u' Sorts.QUConstraints.empty
   | CUMUL ->
-    UVars.enforce_leq_variance_instances variance u u' Univ.Constraints.empty
+    UVars.enforce_leq_variance_instances variance u u' Sorts.QUConstraints.empty
 
 let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_nparams +
@@ -212,7 +212,8 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
     else
       (** By invariant, both constructors have a common supertype,
           so they are convertible _at that type_. *)
-      let variance = Array.make (UVars.Instance.length u1) UVars.Variance.Irrelevant in
+      (* NB: no variance for qualities *)
+      let variance = Array.make (snd (UVars.Instance.length u1)) UVars.Variance.Irrelevant in
       cmp_cumul CONV variance u1 u2 s
 
 let convert_constructors ctor nargs u1 u2 (s, check) =
@@ -289,10 +290,13 @@ let esubst_of_rel_context_instance_list ctx u args e =
   in
   aux 0 e args (List.rev ctx)
 
-let irr_flex env = function
-  | ConstKey (con,_) -> Cset_env.mem con env.Environ.irr_constants
-  | VarKey x -> Context.Named.Declaration.get_relevance (Environ.lookup_named x env) == Sorts.Irrelevant
-  | RelKey x -> Context.Rel.Declaration.get_relevance (Environ.lookup_rel x env) == Sorts.Irrelevant
+let irr_flex infos = function
+  | ConstKey (con,u) -> begin match Cmap_env.find_opt con (info_env infos).Environ.irr_constants with
+      | None -> false
+      | Some r -> is_irrelevant infos @@ UVars.subst_instance_relevance u r
+    end
+  | VarKey x -> is_irrelevant infos @@ Context.Named.Declaration.get_relevance (Environ.lookup_named x (info_env infos))
+  | RelKey x -> is_irrelevant infos @@ Context.Rel.Declaration.get_relevance (Environ.lookup_rel x (info_env infos))
 
 let eq_universes (_,e1) (_,e2) u1 u2 =
   let subst e u = if UVars.Instance.is_empty e then u else UVars.subst_instance_instance e u in
@@ -428,7 +432,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       (try
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
-         let () = if irr_flex (info_env infos.cnv_inf) fl1 then raise NotConvertible (* trigger the fallback *) in
+         let () = if irr_flex infos.cnv_inf fl1 then raise NotConvertible (* trigger the fallback *) in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | UGraph.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
@@ -526,6 +530,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
+        let x1 = usubst_binder e x1 in
         ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
@@ -592,7 +597,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd (ind1,u1 as pind1), FInd (ind2,u2 as pind2)) ->
       if Ind.CanOrd.equal ind1 ind2 then
-        if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
+        if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
@@ -609,7 +614,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
       if Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2 then
-        if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
+        if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
@@ -651,6 +656,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
+            let na1 = Array.map (usubst_binder e1) na1 in
             let infos = push_relevances infos na1 in
             convert_vect l2r infos
                          (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
@@ -670,6 +676,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
+            let na1 = Array.map (usubst_binder e1) na1 in
             let infos = push_relevances infos na1 in
             convert_vect l2r infos
                          (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
@@ -766,7 +773,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
                 let mip = mind.Declarations.mind_packets.(snd ci1.ci_ind) in
                 let cu =
-                  if UVars.Instance.length u1 = 0 || UVars.Instance.length u2 = 0 then
+                  if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
                     convert_instances ~flex:false u1 u2 cu
                   else
                     let u1 = CClosure.usubst_instance e1 u1 in
@@ -821,7 +828,7 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
   in
   let lft1 = el_liftn n lft1 in
   let lft2 = el_liftn n lft2 in
-  let infos = push_relevances infos nas1 in
+  let infos = push_relevances infos (Array.map (usubst_binder e1) nas1) in
   ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
 
 and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
@@ -894,8 +901,8 @@ let check_convert_instances ~flex:_ u u' univs =
 
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
-  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if (UGraph.check_constraints csts univs) then univs
+  let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
+  if Sorts.QConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then univs
   else raise NotConvertible
 
 let checked_universes =

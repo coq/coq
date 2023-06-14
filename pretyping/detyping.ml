@@ -47,7 +47,6 @@ end =
 struct
 open CVars
 open Declarations
-open Univ
 open UVars
 open Constr
 
@@ -79,7 +78,7 @@ let return_clause env sigma ind u params (nas, p) =
     let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
     let self =
       let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-      let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+      let inst = Instance.(abstract_instance (length u)) in
       mkApp (mkIndU (ind, inst), args)
     in
     let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
@@ -202,7 +201,7 @@ let print_universes = ref false
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
     ~key:["Printing";"Sort";"Qualities"]
-    ~value:false
+    ~value:true
     ()
 
 (** If true, prints local context of evars, whatever print_arguments *)
@@ -760,6 +759,20 @@ let detype_level_name sigma l =
     | Some id -> GLocalUniv (CAst.make id)
     | None -> GUniv l
 
+let detype_level sigma l =
+  UNamed (detype_level_name sigma l)
+
+let detype_qvar sigma q =
+  match UState.id_of_qvar (Evd.evar_universe_context sigma) q with
+  | Some id -> GLocalQVar (CAst.make (Name id))
+  | None -> GQVar q
+
+let detype_quality sigma q =
+  let open Sorts.Quality in
+  match q with
+  | QConstant q -> GQConstant q
+  | QVar q -> GQualVar (detype_qvar sigma q)
+
 let detype_universe sigma u =
   List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
 
@@ -773,7 +786,7 @@ let detype_sort sigma = function
        else UAnonymous {rigid=UnivRigid})
   | QSort (q, u) ->
     if !print_universes then
-      let q = if print_sort_quality () then Some q else None in
+      let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
       UNamed (q, detype_universe sigma u)
     else UAnonymous {rigid=UnivRigid}
 
@@ -782,15 +795,16 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let detype_level sigma l =
-  UNamed (detype_level_name sigma l)
-
 let detype_instance sigma l =
   if not !print_universes then None
   else
     let l = EInstance.kind sigma l in
     if UVars.Instance.is_empty l then None
-    else Some (List.map (detype_level sigma) (Array.to_list (UVars.Instance.to_array l)))
+    else
+      let qs, us = UVars.Instance.to_array l in
+      let qs = List.map (detype_quality sigma) (Array.to_list qs) in
+      let us = List.map (detype_level sigma) (Array.to_list us) in
+      Some (qs, us)
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =
   match d with

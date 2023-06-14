@@ -1038,16 +1038,13 @@ let checked_sort_cmp_universes _env pb s0 s1 univs =
   check_sort_cmp_universes pb s0 s1 univs; univs
 
 let check_convert_instances ~flex:_ u u' univs =
-  let u = UVars.Instance.to_array u in
-  let u' = UVars.Instance.to_array u' in
-  let fold accu l1 l2 = Constraints.add (l1, Eq, l2) accu in
-  let cst = Array.fold_left2 fold Constraints.empty u u' in
-  if Evd.check_constraints univs cst then univs else raise NotConvertible
+  let csts = UVars.enforce_eq_instances u u' (Sorts.QConstraints.empty,Constraints.empty) in
+  if Evd.check_quconstraints univs csts then univs else raise NotConvertible
 
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
   let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if (Evd.check_constraints univs csts) then univs
+  if (Evd.check_quconstraints univs csts) then univs
   else raise NotConvertible
 
 let checked_universes =
@@ -1113,17 +1110,7 @@ let univproblem_compare_sorts env pb s0 s1 uset =
 let univproblem_compare_instances ~flex i0 i1 uset =
   UnivProblem.enforce_eq_instances_univs flex i0 i1 uset
 
-let univproblem_check_inductive_instances cv_pb variances u u' uset =
-  let open UnivProblem in
-  let open UVars.Variance in
-  let mk u = Sorts.sort_of_univ @@ Univ.Universe.make u in
-  let fold cstr v u u' = match v with
-  | Irrelevant -> Set.add (UWeak (u,u')) cstr
-  | Covariant when cv_pb == Conversion.CUMUL -> Set.add (ULe (mk u, mk u')) cstr
-  | Covariant | Invariant -> Set.add (UEq (mk u, mk u')) cstr
-  in
-  Array.fold_left3 fold uset
-    variances (UVars.Instance.to_array u) (UVars.Instance.to_array u')
+let univproblem_check_inductive_instances = UnivProblem.compare_cumulative_instances
 
 let univproblem_univ_state =
   let open Conversion in
@@ -1531,11 +1518,13 @@ let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
     if UGraph.check_eq_instances univs u u' then cuniv
     else raise NotConvertible
   else
-    let cstrs' = UVars.enforce_eq_instances u u' Constraints.empty in
+    let qcstrs, cstrs' = UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty in
+    let () = if not (Sorts.QConstraints.trivial qcstrs) then raise NotConvertible in
     (univs, Constraints.union cstrs cstrs')
 
 let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =
-  let csts' = get_cumulativity_constraints cv_pb variance u1 u2 in
+  let qcsts, csts' = get_cumulativity_constraints cv_pb variance u1 u2 in
+    let () = if not (Sorts.QConstraints.trivial qcsts) then raise NotConvertible in
   (UGraph.merge_constraints csts' univs, Univ.Constraints.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =

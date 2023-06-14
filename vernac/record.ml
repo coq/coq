@@ -249,7 +249,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     let sigma = Evd.minimize_universes sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
-      let varsc = EConstr.universes_of_constr sigma c in
+      let _, varsc = EConstr.universes_of_constr sigma c in
       let c = EConstr.to_constr sigma c in
       uvars := Univ.Level.Set.union !uvars varsc;
       c
@@ -819,7 +819,7 @@ let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj fini
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
 let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
-  Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
+  Option.iter (Global.push_context_set ~strict:true) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj ~indlocs
   in

@@ -22,6 +22,15 @@ type existential_name = Id.t
 
 (** Sorts *)
 
+type glob_qvar =
+  | GLocalQVar of lname
+  | GQVar of Sorts.QVar.t
+  | GRawQVar of Sorts.QVar.t (* hack for funind *)
+
+type glob_quality =
+  | GQConstant of Sorts.Quality.constant
+  | GQualVar of glob_qvar
+
 type glob_sort_name =
   | GSProp (** representation of [SProp] literal *)
   | GProp (** representation of [Prop] level *)
@@ -41,8 +50,10 @@ type 'a glob_sort_gen =
 (** levels, occurring in universe instances *)
 type glob_level = glob_sort_name glob_sort_gen
 
+type glob_instance = glob_quality list * glob_level list
+
 (** sort expressions *)
-type glob_sort = (Sorts.QVar.t option * (glob_sort_name * int) list) glob_sort_gen
+type glob_sort = (glob_qvar option * (glob_sort_name * int) list) glob_sort_gen
 
 type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 
@@ -67,7 +78,7 @@ type binding_kind = Explicit | MaxImplicit | NonMaxImplicit
 
 (** Representation of an internalized (or in other words globalized) term. *)
 type 'a glob_constr_r =
-  | GRef of GlobRef.t * glob_level list option
+  | GRef of GlobRef.t * glob_instance option
       (** An identifier that represents a reference to an object defined
           either in the (global) environment or in the (local) context. *)
   | GVar of Id.t
@@ -89,10 +100,10 @@ type 'a glob_constr_r =
   | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr
   | GGenarg of Genarg.glob_generic_argument
   | GCast of 'a glob_constr_g * Constr.cast_kind option * 'a glob_constr_g
-  | GProj of (Constant.t * glob_level list option) * 'a glob_constr_g list * 'a glob_constr_g
+  | GProj of (Constant.t * glob_instance option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
   | GFloat of Float64.t
-  | GArray of glob_level list option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
+  | GArray of glob_instance option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 
 and 'a glob_decl_g = Name.t * binding_kind * 'a glob_constr_g option * 'a glob_constr_g

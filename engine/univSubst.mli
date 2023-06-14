@@ -10,30 +10,31 @@
 
 open Constr
 open Univ
-open UVars
+open Sorts
 
 type 'a universe_map = 'a Level.Map.t
 type universe_subst = Universe.t universe_map
 type universe_subst_fn = Level.t -> Universe.t option
 type universe_level_subst_fn = Level.t -> Level.t
 
+type quality_subst = Quality.t QVar.Map.t
+type quality_subst_fn = QVar.t -> Quality.t
+
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 (** The resulting function must never be called on a level which would produce an algebraic. *)
 
 val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
-val subst_instance : universe_level_subst_fn -> Instance.t -> Instance.t
 
 val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
   'a Context.binder_annot -> 'a Context.binder_annot
 
 (** Full universes substitutions into terms *)
 
-val nf_evars_and_universes_opt_subst :
-  (existential -> constr option) ->
-  (Level.t -> Level.t) ->
-  (Sorts.t -> Sorts.t) ->
-  (Sorts.relevance -> Sorts.relevance) ->
-  constr -> constr
+val nf_evars_and_universes_opt_subst
+  : (existential -> constr option)
+  -> quality_subst_fn
+  -> universe_subst_fn
+  -> constr -> constr
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
 

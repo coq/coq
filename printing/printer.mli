@@ -140,7 +140,7 @@ val pr_universes  : evar_map ->
 
     Inefficient on large contexts due to name generation. *)
 val universe_binders_with_opt_names : UVars.AbstractContext.t ->
-  UnivNames.univ_name_list option -> UnivNames.universe_binders * Id.t Univ.Level.Map.t
+  UnivNames.full_name_list option -> UnivNames.universe_binders * UnivNames.rev_binders
 
 (** Printing global references using names as short as possible *)
 

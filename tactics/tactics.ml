@@ -3345,7 +3345,8 @@ let constr_eq ~strict x y =
       match EConstr.eq_constr_universes env evd x y with
       | Some csts ->
         if strict then
-          if UnivProblem.Set.check (Evd.universes evd) csts then Proofview.tclUNIT ()
+          if UState.check_universe_constraints (Evd.evar_universe_context evd) csts
+          then Proofview.tclUNIT ()
           else
             let info = Exninfo.reify () in
             fail_universes ~info

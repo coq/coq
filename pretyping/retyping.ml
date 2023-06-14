@@ -343,7 +343,9 @@ let relevance_of_term env sigma c =
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
         aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
-      | Const (c,_) -> Relevanceops.relevance_of_constant env c
+      | Const (c,u) ->
+        let u = EInstance.kind sigma u in
+        Relevanceops.relevance_of_constant env (c,u)
       | Ind _ -> Sorts.Relevant
       | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
       | Case (ci, _, _, _, _, _, _) -> ci.ci_relevance

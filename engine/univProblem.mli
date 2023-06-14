@@ -21,14 +21,14 @@ open UVars
 *)
 
 type t =
+  | QEq of Sorts.Quality.t * Sorts.Quality.t
+  | QLeq of Sorts.Quality.t * Sorts.Quality.t
   | ULe of Sorts.t * Sorts.t
   | UEq of Sorts.t * Sorts.t
   | ULub of Level.t * Level.t
   | UWeak of Level.t * Level.t
 
 val is_trivial : t -> bool
-
-val check : UGraph.t -> t -> bool
 
 (** Wrapper around the UGraph function to handle Prop *)
 val check_eq_level : UGraph.t -> Level.t -> Level.t -> bool
@@ -40,10 +40,12 @@ module Set : sig
 
   (** Replace ULub constraints by UEq *)
   val force : t -> t
-
-  val check : UGraph.t -> t -> bool
 end
 
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
 val enforce_eq_instances_univs : bool -> Instance.t constraint_function
+
+val enforce_eq_qualities : Sorts.Quality.t array constraint_function
+
+val compare_cumulative_instances : Conversion.conv_pb -> Variance.t array -> Instance.t constraint_function

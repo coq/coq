@@ -71,7 +71,9 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
+  | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
+  | UndeclaredQualities of Sorts.QVar.Set.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadBinderRelevance of Sorts.relevance * ('constr, 'types) Context.Rel.Declaration.pt
@@ -150,8 +152,14 @@ let error_ill_formed_rec_body env why lna i fixenv vdefj =
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
+let error_unsatisfied_qconstraints env c =
+  raise (TypeError (env, UnsatisfiedQConstraints c))
+
 let error_unsatisfied_constraints env c =
   raise (TypeError (env, UnsatisfiedConstraints c))
+
+let error_undeclared_qualities env l =
+  raise (TypeError (env, UndeclaredQualities l))
 
 let error_undeclared_universe env l =
   raise (TypeError (env, UndeclaredUniverse l))
@@ -200,7 +208,8 @@ let map_pguard_error f = function
 
 let map_ptype_error f = function
 | UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _ | IllFormedCaseParams
-| UndeclaredUniverse _ | DisallowedSProp | UnsatisfiedConstraints _
+| UndeclaredQualities _ | UndeclaredUniverse _ | DisallowedSProp
+| UnsatisfiedQConstraints _ | UnsatisfiedConstraints _
 | ReferenceVariables _ | BadInvert | BadVariance _ | UndeclaredUsedVariables _ as e -> e
 | NotAType j -> NotAType (on_judgment f j)
 | BadAssumption j -> BadAssumption (on_judgment f j)

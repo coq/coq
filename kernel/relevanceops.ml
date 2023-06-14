@@ -25,9 +25,9 @@ let relevance_of_var env x =
   let decl = lookup_named x env in
   Context.Named.Declaration.get_relevance decl
 
-let relevance_of_constant env c =
+let relevance_of_constant env (c,u) =
   let decl = lookup_constant c env in
-  decl.const_relevance
+  UVars.subst_instance_relevance u decl.const_relevance
 
 let relevance_of_constructor env ((mi,i),_) =
   let decl = lookup_mind mi env in
@@ -52,7 +52,7 @@ let rec relevance_of_term_extra env extra lft c =
   | LetIn ({binder_relevance=r;_}, _, _, bdy) ->
     relevance_of_term_extra env (Range.cons r extra) (lft + 1) bdy
   | App (c, _) -> relevance_of_term_extra env extra lft c
-  | Const (c,_) -> relevance_of_constant env c
+  | Const c -> relevance_of_constant env c
   | Construct (c,_) -> relevance_of_constructor env c
   | Case (ci, _, _, _, _, _, _) -> ci.ci_relevance
   | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance

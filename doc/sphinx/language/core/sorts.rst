@@ -17,7 +17,7 @@ Sorts
    | SProp
    | Type
    | Type @%{ _ %}
-   | Type @%{ @universe %}
+   | Type @%{ {? @qualid %| } @universe %}
    universe ::= max ( {+, @universe_expr } )
    | @universe_expr
    universe_expr ::= @universe_name {? + @natural }

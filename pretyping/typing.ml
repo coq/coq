@@ -192,6 +192,32 @@ let type_case_branches env sigma (ind,largs) specif pj c =
   let ty = whd_betaiota env sigma (lambda_applist_decls sigma (n+1) p (realargs@[c])) in
   sigma, (lc, ty, ESorts.relevance_of_sort sigma ps)
 
+let unify_relevance sigma r1 r2 =
+  match Evarutil.nf_relevance sigma r1, Evarutil.nf_relevance sigma r2 with
+  | Relevant, Relevant | Irrelevant, Irrelevant -> Some sigma
+  | Relevant, Irrelevant | Irrelevant, Relevant -> None
+  | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
+    let sigma =
+      Evd.add_quconstraints sigma
+        (Sorts.QConstraints.singleton (Sorts.Quality.qsprop, Equal, QVar q),
+         Univ.Constraints.empty)
+    in
+    Some sigma
+  | Relevant, RelevanceVar q | RelevanceVar q, Relevant ->
+    let sigma =
+      Evd.add_quconstraints sigma
+        (Sorts.QConstraints.singleton (Sorts.Quality.qprop, Leq, QVar q),
+         Univ.Constraints.empty)
+    in
+    Some sigma
+  | RelevanceVar q1, RelevanceVar q2 ->
+    let sigma =
+      Evd.add_quconstraints sigma
+        (Sorts.QConstraints.singleton (QVar q1, Equal, QVar q2),
+         Univ.Constraints.empty)
+    in
+    Some sigma
+
 let judge_of_case env sigma case ci pj iv cj lfj =
   let ((ind, u), spec) =
     try find_mrectype env sigma cj.uj_type
@@ -200,6 +226,13 @@ let judge_of_case env sigma case ci pj iv cj lfj =
   let () = if Inductive.is_private specif then Type_errors.error_case_on_private_ind env ind in
   let indspec = ((ind, EInstance.kind sigma u), spec) in
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
+  (* should we have evar map aware check_case_info and should_invert_case? *)
+  let sigma, ci =
+    if Sorts.relevance_equal ci.ci_relevance rci then sigma, ci
+    else match unify_relevance sigma ci.ci_relevance rci with
+    | None -> sigma, ci (* will fail in check_case_info *)
+    | Some sigma -> sigma, { ci with ci_relevance = rci }
+  in
   let () = check_case_info env (fst indspec) rci ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true) != should_invert_case env ci
@@ -226,18 +259,19 @@ let check_allowed_sort env sigma ind c p =
   let sorts = elim_sort specif in
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = whd_decompose_prod env sigma pj.uj_type in
-  let ksort = match EConstr.kind sigma s with
-  | Sort s ->
-    begin match ESorts.family sigma s with
+  let sort =  match EConstr.kind sigma s with
+    | Sort s -> EConstr.ESorts.kind sigma s
+    | _ -> error_elim_arity env sigma ind c None
+  in
+  let ksort = match Sorts.family sort with
     | InType | InSProp | InSet | InProp as f -> f
     | InQSort -> InType (* FIXME *)
-    end
-  | _ -> error_elim_arity env sigma ind c None in
+  in
   if not (Sorts.family_leq ksort sorts) then
     let s = inductive_sort_family (snd specif) in
     error_elim_arity env sigma ind c (Some (pj, sorts, ksort, s))
   else
-    Sorts.relevance_of_sort_family ksort
+    Sorts.relevance_of_sort sort
 
 let check_actual_type env sigma cj t =
   try Evarconv.unify_leq_delay env sigma cj.uj_type t
@@ -360,7 +394,7 @@ let judge_of_float env v =
 
 let judge_of_array env sigma u tj defj tyj =
   let ulev = match UVars.Instance.to_array u with
-    | [|u|] -> u
+    | [||], [|u|] -> u
     | _ -> assert false
   in
   let sigma = Evd.set_leq_sort env sigma tyj.utj_type

@@ -234,9 +234,9 @@ let contract_curly_brackets_pat ntn (l,ll,bl) =
   (* side effect; don't inline *)
   (InConstrEntry,!ntn'),(l,ll,bl)
 
-type local_univs = { bound : Univ.Level.t Id.Map.t; unb_univs : bool }
+type local_univs = { bound : UnivNames.universe_binders; unb_univs : bool }
 
-let empty_local_univs = { bound = Id.Map.empty; unb_univs = false }
+let empty_local_univs = { bound = UnivNames.empty_binders; unb_univs = false }
 
 type abstraction_kind = AbsLambda | AbsPi
 
@@ -1104,7 +1104,7 @@ let string_of_ty = function
   | Variable -> "var"
 
 let gvar (loc, id) us = match us with
-  | None | Some [] -> DAst.make ?loc @@ GVar id
+  | None | Some ([],[]) -> DAst.make ?loc @@ GVar id
   | Some _ ->
     user_err ?loc  (str "Variable " ++ Id.print id ++
       str " cannot have a universe instance")
@@ -1187,7 +1187,7 @@ let intern_sort_name ~local_univs = function
   | CType qid ->
     let is_id = qualid_is_ident qid in
     let local = if not is_id then None
-      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
+      else Id.Map.find_opt (qualid_basename qid) (snd local_univs.bound)
     in
     match local with
     | Some u -> GUniv u
@@ -1197,18 +1197,41 @@ let intern_sort_name ~local_univs = function
         if is_id && local_univs.unb_univs
         then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
         else
-          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
+          CErrors.user_err ?loc:qid.loc Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
+
+let intern_qvar ~local_univs = function
+  | CQAnon loc -> GLocalQVar (CAst.make ?loc Anonymous)
+  | CRawQVar q -> GRawQVar q
+  | CQVar qid ->
+    let is_id = qualid_is_ident qid in
+    let local = if not is_id then None
+      else Id.Map.find_opt (qualid_basename qid) (fst local_univs.bound)
+    in
+    match local with
+    | Some u -> GQVar u
+    | None ->
+      if is_id && local_univs.unb_univs
+      then GLocalQVar (CAst.make ?loc:qid.loc (Name (qualid_basename qid)))
+      else
+        CErrors.user_err ?loc:qid.loc Pp.(str "Undeclared quality " ++ pr_qualid qid ++ str".")
+
+let intern_quality ~local_univs q =
+  match q with
+  | CQConstant q -> GQConstant q
+  | CQualVar q -> GQualVar (intern_qvar ~local_univs q)
 
 let intern_sort ~local_univs s =
   let map (q, l) =
-    (* No user-facing syntax for qualities *)
-    let () = assert (Option.is_empty q) in
-    None, List.map (on_fst (intern_sort_name ~local_univs)) l
+    Option.map (intern_qvar ~local_univs) q, List.map (on_fst (intern_sort_name ~local_univs)) l
   in
   map_glob_sort_gen map s
 
-let intern_instance ~local_univs us =
-  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
+let intern_instance ~local_univs = function
+  | None -> None
+  | Some (qs, us) ->
+    let qs = List.map (intern_quality ~local_univs) qs in
+    let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
+    Some (qs, us)
 
 let intern_name_alias = function
   | { CAst.v = CRef(qid,u) } ->
@@ -1326,8 +1349,9 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
           DAst.make ?loc @@ GApp (DAst.make ?loc:loc' @@ GRef (ref, us), arg)
         | _ -> err ()
         end
-      | Some [s], GSort (UAnonymous {rigid=UnivRigid}) -> DAst.make ?loc @@ GSort (glob_sort_of_level s)
-      | Some [_old_level], GSort _new_sort ->
+      | Some ([],[s]), GSort (UAnonymous {rigid=UnivRigid}) ->
+        DAst.make ?loc @@ GSort (glob_sort_of_level s)
+      | Some ([],[_old_level]), GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)
         user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)
       | Some _, _ -> err ()
@@ -2907,21 +2931,26 @@ let interp_univ_constraints env evd cstrs =
     with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~info
-        (UGraph.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
+        (UGraph.explain_universe_inconsistency (Termops.pr_evd_qvar evd) (Termops.pr_evd_level evd) e)
   in
   List.fold_left interp (evd,Univ.Constraints.empty) cstrs
 
 let interp_univ_decl env decl =
   let open UState in
-  let binders : lident list = decl.univdecl_instance in
   let evd = Evd.from_env env in
+  let evd, qualities = List.fold_left_map (fun evd lid ->
+      Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+      evd
+      decl.univdecl_qualities
+  in
   let evd, instance = List.fold_left_map (fun evd lid ->
       Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
       evd
-      binders
+      decl.univdecl_instance
   in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = {
+    univdecl_qualities = qualities;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
     univdecl_constraints = cstrs;
@@ -2934,6 +2963,11 @@ let interp_cumul_univ_decl env decl =
   let binders = List.map fst decl.univdecl_instance in
   let variances = Array.map_of_list snd decl.univdecl_instance in
   let evd = Evd.from_env env in
+  let evd, qualities = List.fold_left_map (fun evd lid ->
+      Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+      evd
+      decl.univdecl_qualities
+  in
   let evd, instance = List.fold_left_map (fun evd lid ->
       Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
       evd
@@ -2941,6 +2975,7 @@ let interp_cumul_univ_decl env decl =
   in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = {
+    univdecl_qualities = qualities;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
     univdecl_constraints = cstrs;

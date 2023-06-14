@@ -367,14 +367,20 @@ let compare_cumulative_instances pbty evd variances u u' =
     Success evd
   | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
 
+let compare_constructor_instances evd u u' =
+  match Evarutil.compare_constructor_instances evd u u' with
+  | Inl evd ->
+    Success evd
+  | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
+
 type application = FullyApplied | NumArgs of int
 
 let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
 
 let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
-    let cstrs = UVars.enforce_eq_instances u u' Univ.Constraints.empty in
-    try Success (Evd.add_constraints evd cstrs)
+    let cstrs = UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty in
+    try Success (Evd.add_quconstraints evd cstrs)
     with UGraph.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
   in
   match EConstr.kind evd term, EConstr.kind evd term' with
@@ -416,8 +422,7 @@ let compare_heads pbty env evd ~nargs term term' =
           let needed = Conversion.constructor_cumulativity_arguments (mind,ind,ctor) in
           if not (is_applied nargs needed)
           then check_strict evd u u'
-          else
-            Success (compare_constructor_instances evd u u')
+          else compare_constructor_instances evd u u'
       end
   | Construct _, Construct _ -> UnifFailure (evd, NotSameHead)
   | _, _ -> anomaly (Pp.str "")

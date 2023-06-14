@@ -19,8 +19,8 @@ type universe_subst = Universe.t universe_map
 type universe_subst_fn = Level.t -> Universe.t option
 type universe_level_subst_fn = Level.t -> Level.t
 
-let subst_instance fn i =
-  Instance.of_array (Array.Smart.map fn (Instance.to_array i))
+type quality_subst = Quality.t QVar.Map.t
+type quality_subst_fn = QVar.t -> Quality.t
 
 let subst_univs_universe fn ul =
   let addn n u = iterate Universe.super n u in
@@ -159,7 +159,7 @@ let level_subst_of f =
     | Some l -> l
 
 let subst_univs_fn_puniverses f (c, u as cu) =
-  let u' = subst_instance f u in
+  let u' = Instance.subst_fn f u in
     if u' == u then cu else (c, u')
 
 let nf_binder_annot frel na =
@@ -168,7 +168,9 @@ let nf_binder_annot frel na =
   if rel' == na.binder_relevance then na
   else { binder_name = na.binder_name; binder_relevance = rel' }
 
-let nf_evars_and_universes_opt_subst fevar flevel fsort frel c =
+let nf_evars_and_universes_opt_subst fevar fqual funiv c =
+  let frel = Sorts.relevance_subst_fn fqual in
+  let flevel = fqual, level_subst_of funiv in
   let rec aux c =
     match kind c with
     | Evar (evk, args) ->
@@ -186,10 +188,10 @@ let nf_evars_and_universes_opt_subst fevar flevel fsort frel c =
       let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstructU pu'
     | Sort s ->
-      let s' = fsort s in
+      let s' = Sorts.subst_fn (fqual, subst_univs_universe funiv) s in
       if s' == s then c else mkSort s'
     | Case (ci,u,pms,p,iv,t,br) ->
-      let u' = subst_instance flevel u in
+      let u' = Instance.subst_fn flevel u in
       let ci' =
         let rel' = frel ci.ci_relevance in
         if rel' == ci.ci_relevance then ci else { ci with ci_relevance = rel' }
@@ -202,7 +204,7 @@ let nf_evars_and_universes_opt_subst fevar flevel fsort frel c =
       if ci' == ci && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
       else mkCase (ci', u', pms', p', iv', t', br')
     | Array (u,elems,def,ty) ->
-      let u' = subst_instance flevel u in
+      let u' = Instance.subst_fn flevel u in
       let elems' = CArray.Smart.map aux elems in
       let def' = aux def in
       let ty' = aux ty in

@@ -66,6 +66,8 @@ sig
 
   val family : Evd.evar_map -> t -> Sorts.family
 
+  val quality : Evd.evar_map -> t -> Sorts.Quality.t
+
 end
 
 module EInstance :
@@ -334,7 +336,7 @@ val fold_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> 'b -> t -> 'b) -> '
 
 (** Gather the universes transitively used in the term, including in the
    type of evars appearing in it. *)
-val universes_of_constr : Evd.evar_map -> t -> Univ.Level.Set.t
+val universes_of_constr : Evd.evar_map -> t -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
 (** {6 Substitutions} *)
 
@@ -368,7 +370,7 @@ val noccur_between : Evd.evar_map -> int -> int -> t -> bool
 val closedn : Evd.evar_map -> int -> t -> bool
 val closed0 : Evd.evar_map -> t -> bool
 
-val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
+val subst_univs_level_constr : UVars.sort_level_subst -> t -> t
 val subst_instance_context : UVars.Instance.t -> rel_context -> rel_context
 val subst_instance_constr : UVars.Instance.t -> t -> t
 

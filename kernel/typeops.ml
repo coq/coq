@@ -42,6 +42,10 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
+let check_qconstraints qcst env =
+  if Sorts.QConstraints.trivial qcst then ()
+  else error_unsatisfied_qconstraints env qcst
+
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
   match kind(Reduction.whd_all env t) with
@@ -91,15 +95,8 @@ let warn_bad_relevance_binder ?loc env rlv bnd =
 | CWarnings.AsError ->
   error_bad_binder_relevance env rlv bnd
 
-let anomaly_sort_variable q =
-  anomaly Pp.(str "The kernel received a unification sort variable " ++ Sorts.QVar.raw_pr q)
-
 let check_assumption env x t ty =
   let r = x.binder_relevance in
-  let () = match r with
-  | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar q -> (* TODO check *) anomaly_sort_variable q
-  in
   let r' = infer_assumption env t ty in
   let x =
     if Sorts.relevance_equal r r' then x
@@ -120,17 +117,22 @@ exception ArgumentsMismatch
 
 let instantiate_context u subst nas ctx =
   let open Context.Rel.Declaration in
+  let instantiate_relevance na =
+    { na with binder_relevance = UVars.subst_instance_relevance u na.binder_relevance }
+  in
   let rec instantiate i ctx = match ctx with
   | [] -> if 0 <= i then raise ArgumentsMismatch else []
   | LocalAssum (na, ty) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let subst = Esubst.subs_liftn i subst in
+    let na = instantiate_relevance na in
     let ty = esubst u subst ty in
     let () = check_binding_relevance na nas.(i) in
     LocalAssum (nas.(i), ty) :: ctx
   | LocalDef (na, ty, bdy) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let subst = Esubst.subs_liftn i subst in
+    let na = instantiate_relevance na in
     let ty = esubst u subst ty in
     let bdy = esubst u subst bdy in
     let () = check_binding_relevance na nas.(i) in
@@ -306,7 +308,7 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
     Constr.mkSet
   | CPrimitives.PT_array ->
     begin match UVars.Instance.to_array u with
-    | [|u|] ->
+    | [||], [|u|] ->
       let ty = Constr.mkType (Univ.Universe.make u) in
       Constr.mkProd(Context.anonR, ty , ty)
     | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
@@ -323,7 +325,7 @@ let type_of_float env =
   | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
-  assert (UVars.Instance.length u = 1);
+  assert (UVars.Instance.length u = (0,1));
   match env.retroknowledge.Retroknowledge.retro_array with
   | Some c -> mkConstU (c,u)
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
@@ -512,11 +514,12 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
-  let cst = match mib.mind_variance with
-  | None -> UVars.enforce_eq_instances u u' Univ.Constraints.empty
-  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
+  let qcst, ucst = match mib.mind_variance with
+  | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
+  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
   in
-  let () = check_constraints cst env in
+  let () = check_qconstraints qcst env in
+  let () = check_constraints ucst env in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
@@ -532,10 +535,6 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct l
     error_elim_arity env (ind, u') c None
   in
   let rp = Sorts.relevance_of_sort sp in
-  let () = match ci.ci_relevance with
-  | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar q -> anomaly_sort_variable q
-  in
   let ci =
     if Sorts.relevance_equal ci.ci_relevance rp then ci
     else
@@ -618,10 +617,6 @@ let type_of_global_in_context env r =
 
 let check_assum_annot env s x t =
   let r = x.binder_relevance in
-  let () = match r with
-  | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar q -> anomaly_sort_variable q
-  in
   let r' = Sorts.relevance_of_sort s in
   if Sorts.relevance_equal r' r
   then x
@@ -631,10 +626,6 @@ let check_assum_annot env s x t =
 
 let check_let_annot env s x c t =
   let r = x.binder_relevance in
-  let () = match r with
-  | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar q -> anomaly_sort_variable q
-  in
   let r' = Sorts.relevance_of_sort s in
   if Sorts.relevance_equal r' r
   then x
@@ -653,8 +644,7 @@ let rec execute env cstr =
     | Sort s ->
       let () = match s with
       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
-      | QSort (q, _) -> anomaly_sort_variable q
-      | Prop | Set | Type _ -> ()
+      | QSort _ | Prop | Set | Type _ -> ()
       in
       cstr, type_of_sort s
 
@@ -754,7 +744,7 @@ let rec execute env cstr =
           let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
           let self =
             let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-            let inst = UVars.Instance.of_array (Array.init (UVars.Instance.length u) Level.var) in
+            let inst = UVars.Instance.(abstract_instance (length u)) in
             mkApp (mkIndU (ci.ci_ind, inst), args)
           in
           let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
@@ -815,7 +805,7 @@ let rec execute env cstr =
     | Array(u,t,def,ty) ->
       (* ty : Type@{u} and all of t,def : ty *)
       let ulev = match UVars.Instance.to_array u with
-        | [|u|] -> u
+        | [||], [|u|] -> u
         | _ -> assert false
       in
       let ty',tyty = execute env ty in
@@ -860,8 +850,15 @@ let execute env c =
 
 (* Derived functions *)
 
+let check_declared_qualities env qualities =
+  let module S = Sorts.QVar.Set in
+  let unknown = S.diff qualities env.env_qualities in
+  if S.is_empty unknown then ()
+  else error_undeclared_qualities env unknown
+
 let check_wellformed_universes env c =
-  let univs = universes_of_constr c in
+  let qualities, univs = sort_and_universes_of_constr c in
+  check_declared_qualities env qualities;
   try UGraph.check_declared_universes (universes env) univs
   with UGraph.UndeclaredLevel u ->
     error_undeclared_universe env u

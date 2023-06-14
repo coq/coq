@@ -367,6 +367,7 @@ let one_base where conds tac_main bas =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let subst, ctx' = UnivGen.fresh_universe_context_set_instance h.rew_ctx in
+    let subst = Sorts.QVar.Map.empty, subst in
     let c' = Vars.subst_univs_level_constr subst h.rew_lemma in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (rewrite h.rew_l2r c' tc)

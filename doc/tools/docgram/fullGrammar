@@ -27,6 +27,7 @@ sort: [
 | "SProp"
 | "Type"
 | "Type" "@{" "_" "}"
+| "Type" "@{" test_sort_qvar reference "|" universe "}"
 | "Type" "@{" universe "}"
 ]
 
@@ -182,12 +183,13 @@ evar_instance: [
 ]
 
 univ_annot: [
-| "@{" LIST0 universe_level "}"
+| "@{" LIST0 univ_level_or_quality OPT [ "|" LIST0 univ_level_or_quality ] "}"
 |
 ]
 
-universe_level: [
+univ_level_or_quality: [
 | "Set"
+| "SProp"
 | "Prop"
 | "Type"
 | "_"
@@ -866,8 +868,14 @@ univ_constraint: [
 | universe_name [ "<" | "=" | "<=" ] universe_name
 ]
 
+univ_decl_constraints: [
+| "|" LIST0 univ_constraint SEP "," [ "+" | ] "}"
+| [ "}" | bar_cbrace ]
+]
+
 univ_decl: [
-| "@{" LIST0 identref [ "+" | ] [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
+| "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "+" | ] univ_decl_constraints
+| "@{" LIST0 identref [ "+" | ] univ_decl_constraints
 ]
 
 variance: [
@@ -882,7 +890,8 @@ variance_identref: [
 ]
 
 cumul_univ_decl: [
-| "@{" LIST0 variance_identref [ "+" | ] [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
+| "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] univ_decl_constraints
+| "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
 ]
 
 ident_decl: [

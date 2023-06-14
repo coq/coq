@@ -360,7 +360,7 @@ let find env sigma (proj,pat) =
   let bs' = List.map (EConstr.of_constr %> EConstr.Vars.subst_instance_constr u) bs in
   let params = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) params in
   let us = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) us in
-  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
+  let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx' in
   sigma, { body = t'; constant = c'; abstractions_ty = bs'; nparams; params; cvalue_arguments = us; cvalue_abstraction = n }
 
 

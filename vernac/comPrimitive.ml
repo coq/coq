@@ -33,7 +33,7 @@ let do_primitive id udecl prim typopt =
     let env = Global.env () in
     let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
     let auctx = CPrimitives.op_or_type_univs prim in
-    let evd, u = Evd.with_context_set UState.univ_flexible evd (UnivGen.fresh_instance auctx) in
+    let evd, u = Evd.with_sort_context_set UState.univ_flexible evd (UnivGen.fresh_instance auctx) in
     let expected_typ = EConstr.of_constr @@ Typeops.type_of_prim_or_type env u prim in
     let evd, (typ,impls) =
       Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
@@ -47,7 +47,7 @@ let do_primitive id udecl prim typopt =
     in
     Pretyping.check_evars_are_solved ~program_mode:false env evd;
     let evd = Evd.minimize_universes evd in
-    let uvars = EConstr.universes_of_constr evd typ in
+    let _qvars, uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in
     let typ = EConstr.to_constr evd typ in
     let univ_entry = Evd.check_univ_decl ~poly:(not (UVars.AbstractContext.is_empty auctx)) evd udecl in

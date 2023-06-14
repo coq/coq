@@ -81,7 +81,8 @@ type env = {
   env_nb_rel        : int;
   env_universes : UGraph.t;
   env_universes_lbound : UGraph.Bound.t;
-  irr_constants : Cset_env.t;
+  env_qualities : Sorts.QVar.Set.t;
+  irr_constants : Sorts.relevance Cmap_env.t;
   irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
@@ -110,7 +111,8 @@ let empty_env = {
   env_nb_rel = 0;
   env_universes = UGraph.initial_universes;
   env_universes_lbound = UGraph.Bound.Set;
-  irr_constants = Cset_env.empty;
+  env_qualities = Sorts.QVar.Set.empty;
+  irr_constants = Cmap_env.empty;
   irr_inds = Indset_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
@@ -375,13 +377,28 @@ let check_constraints c env =
   UGraph.check_constraints c env.env_universes
 
 let add_universes ~lbound ~strict ctx g =
+  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
-            (fun g v -> UGraph.add_universe ~lbound ~strict v g)
-            g (UVars.Instance.to_array (UVars.UContext.instance ctx))
+      (fun g v -> UGraph.add_universe ~lbound ~strict v g)
+      g us
   in
-    UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+  UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+
+let add_qualities qs known =
+  let open Sorts.Quality in
+  Array.fold_left (fun known q ->
+      match q with
+      | QVar q ->
+        let known' = Sorts.QVar.Set.add q known in
+        let () = if known == known' then CErrors.anomaly Pp.(str"multiply bound sort quality") in
+        known'
+      | QConstant _ -> CErrors.anomaly Pp.(str "constant quality in ucontext"))
+    known
+    qs
 
 let push_context ?(strict=false) ctx env =
+  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let env = { env with env_qualities = add_qualities qs env.env_qualities } in
   map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
 
 let add_universes_set ~lbound ~strict ctx g =
@@ -468,8 +485,8 @@ let add_constant_key kn cb linkinfo env =
     { env.env_globals with
       Globals.constants = new_constants }
   in
-  let irr_constants = if cb.const_relevance == Sorts.Irrelevant
-    then Cset_env.add kn env.irr_constants
+  let irr_constants = if cb.const_relevance != Sorts.Relevant
+    then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
   in
   { env with irr_constants; env_globals = new_globals }

@@ -202,6 +202,24 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
+let include_constructor_argument env evd ~ctor_sort ~inductive_sort =
+  (* We ignore the quality when comparing the sorts: it has an impact
+     on squashing in the kernel but cannot cause a universe error. *)
+  let univ_of_sort s =
+    match ESorts.kind evd s with
+    | SProp | Prop -> None
+    | Set -> Some Univ.Universe.type0
+    | Type u | QSort (_,u) -> Some u
+  in
+  match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
+  | _, None ->
+    (* This function is only called when [s] is not impredicative *)
+    assert false
+  | None, Some _ -> evd
+  | Some uctor, Some uind ->
+    let mk u = ESorts.make (Sorts.sort_of_univ u) in
+    Evd.set_leq_sort env evd (mk uctor) (mk uind)
+
 let inductive_levels env evd arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
@@ -290,10 +308,7 @@ let inductive_levels env evd arities ctors =
       if is_impredicative_sort evd s then evd
       else List.fold_left
           (List.fold_left (fun evd ctor_sort ->
-               (* Special behaviour of SProp:
-                  constructors of any inductive can have SProp arguments *)
-               if ESorts.is_sprop evd ctor_sort then evd
-               else Evd.set_leq_sort env evd ctor_sort s))
+               include_constructor_argument env evd ~ctor_sort ~inductive_sort:s))
           evd (Option.List.cons indices ctors))
       evd inds
   in
@@ -434,7 +449,7 @@ let check_param = function
 
 let restrict_inductive_universes sigma ctx_params arities constructors =
   let merge_universes_of_constr c =
-    Univ.Level.Set.union (EConstr.universes_of_constr sigma (EConstr.of_constr c)) in
+    Univ.Level.Set.union (snd (EConstr.universes_of_constr sigma (EConstr.of_constr c))) in
   let uvars = Univ.Level.Set.empty in
   let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
   let uvars = List.fold_right merge_universes_of_constr arities uvars in
@@ -456,7 +471,7 @@ let variance_of_entry ~cumulative ~variances uctx =
     if not cumulative then begin check_trivial_variances variances; None end
     else
       let lvs = Array.length variances in
-      let lus = UVars.UContext.size uctx in
+      let _, lus = UVars.UContext.size uctx in
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
@@ -738,7 +753,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in
   (* Declare the global universes *)
-  DeclareUctx.declare_universe_context ~poly:false uctx;
+  Global.push_context_set ~strict:true uctx;
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags ~indlocs mie binders implicits);
   (* Declare the possible notations of inductive types *)

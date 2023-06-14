@@ -76,9 +76,9 @@ let clenv_refresh env sigma ctx clenv =
   let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
   match ctx with
   | Some ctx ->
-    let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
+    let (subst, ctx) = UnivGen.fresh_sort_context_instance ctx in
     let emap c = Vars.subst_univs_level_constr subst c in
-    let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
+    let evd = Evd.merge_sort_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
     mk_clausenv env (Evd.map_metas emap evd) clenv.metas
       (emap clenv.templval)

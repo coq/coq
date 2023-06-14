@@ -87,13 +87,24 @@ let compare_glob_universe_instances lt strictly_lt us1 us2 =
   | None, None -> true
   | Some _, None -> strictly_lt := true; lt
   | None, Some _ -> false
-  | Some l1, Some l2 ->
-     CList.for_all2eq (fun u1 u2 ->
+  | Some (ql1,ul1), Some (ql2,ul2) ->
+    let is_anon = function
+      | GQualVar (GLocalQVar {v=Anonymous}) -> true
+      | _ -> false
+    in
+    CList.for_all2eq (fun q1 q2 ->
+        match is_anon q1, is_anon q2 with
+        | true, true -> true
+        | false, true -> strictly_lt := true; lt
+        | true, false -> false
+        | false, false -> glob_quality_eq q1 q2)
+      ql1 ql2
+    && CList.for_all2eq (fun u1 u2 ->
          match u1, u2 with
          | UAnonymous {rigid}, UAnonymous {rigid=rigid'} -> eq_rigid rigid rigid'
          | UNamed _, UAnonymous _ -> strictly_lt := true; lt
          | UAnonymous _, UNamed _ -> false
-         | UNamed _, UNamed _ -> glob_level_eq u1 u2) l1 l2
+         | UNamed _, UNamed _ -> glob_level_eq u1 u2) ul1 ul2
 
 (* Compute us1 <= us2, as a boolean *)
 let compare_glob_universe_instances_le us1 us2 =

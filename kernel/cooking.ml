@@ -348,17 +348,16 @@ let discharge_abstract_universe_context abstr auctx =
       together with the substitution
       [u₀ ↦ Var(0), ... ,uₙ₋₁ ↦ Var(n - 1), Var(0) ↦  Var(n), ..., Var(m - 1) ↦  Var (n + m - 1)].
   *)
-  let open Univ in
   let n = AbstractContext.size abstr.abstr_auctx in
-  if (Int.equal n 0) then
+  if (UVars.eq_sizes n (0,0)) then
     (** Optimization: still need to take the union for the constraints between globals *)
     abstr, n, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
-    let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
+    let suff = UVars.make_abstract_instance auctx in
     let ainst = Instance.append subst suff in
     let substf = make_instance_subst ainst in
-    let auctx = UVars.subst_univs_level_abstract_universe_context substf auctx in
+    let auctx = UVars.subst_univs_level_abstract_universe_context (snd substf) auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
     { abstr with abstr_ausubst = ainst }, n, auctx'
 
@@ -387,5 +386,5 @@ let lift_private_mono_univs info a =
   a
 
 let lift_private_poly_univs info (inst, cstrs) =
-  let cstrs = Univ.subst_univs_level_constraints (make_instance_subst info.abstr_info.abstr_ausubst) cstrs in
+  let cstrs = Univ.subst_univs_level_constraints (snd (make_instance_subst info.abstr_info.abstr_ausubst)) cstrs in
   (inst, cstrs)

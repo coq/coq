@@ -1362,7 +1362,8 @@ let ssrpatterntac _ist arg =
   let pat = interp_rpattern env sigma0 arg in
   let (t, uc), concl_x =
     fill_occ_pattern env sigma0 concl0 pat noindex 1 in
-  let sigma, tty = Typing.type_of env sigma0 t in
+  let sigma = Evd.set_universe_context sigma0 uc in
+  let sigma, tty = Typing.type_of env sigma t in
   let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
   Proofview.Unsafe.tclEVARS sigma <*>
   convert_concl ~cast:false ~check:true concl DEFAULTcast

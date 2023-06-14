@@ -271,6 +271,8 @@ val is_undefined : evar_map -> Evar.t-> bool
 val add_constraints : evar_map -> Univ.Constraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
+val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
+
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
@@ -639,11 +641,13 @@ val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
+val quality_of_name : evar_map -> Id.t -> Sorts.QVar.t
 
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * esorts
+val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
+val new_sort_variable : ?loc:Loc.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
@@ -667,9 +671,12 @@ val check_eq : evar_map -> esorts -> esorts -> bool
 val check_leq : evar_map -> esorts -> esorts -> bool
 
 val check_constraints : evar_map -> Univ.Constraints.t -> bool
+val check_qconstraints : evar_map -> Sorts.QConstraints.t -> bool
+val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
+val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
@@ -687,7 +694,13 @@ val set_universe_context : evar_map -> UState.t -> evar_map
 
 val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
 
+val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> UnivGen.sort_context_set -> evar_map
+
+val merge_sort_variables : ?loc:Loc.t -> ?sideff:bool -> evar_map -> Sorts.QVar.Set.t -> evar_map
+
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+
+val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map
 

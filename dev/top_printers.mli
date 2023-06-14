@@ -147,6 +147,7 @@ val ppuni_level : Univ.Level.t -> unit (* raw *)
 val ppqvar : Sorts.QVar.t -> unit
 val ppesorts : EConstr.ESorts.t -> unit
 val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
+val ppqvarset : Sorts.QVar.Set.t -> unit
 val ppuniverse_set : Univ.Level.Set.t -> unit
 val ppuniverse_instance : UVars.Instance.t -> unit
 val ppuniverse_context : UVars.UContext.t -> unit

@@ -120,10 +120,14 @@ let to_binder b =
 
 let of_instance u =
   let u = UVars.Instance.to_array (EConstr.Unsafe.to_instance u) in
-  Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) u
+  let toqs = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_quality v) in
+  let tous = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) in
+  Tac2ffi.of_pair toqs tous u
 
 let to_instance u =
-  let u = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) u in
+  let toqs = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_quality v) in
+  let tous = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) in
+  let u = Tac2ffi.to_pair toqs tous u in
   EConstr.EInstance.make (UVars.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =

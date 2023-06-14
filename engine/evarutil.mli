@@ -194,9 +194,12 @@ val compare_cumulative_instances : Conversion.conv_pb -> UVars.Variance.t array 
   (evar_map, UGraph.univ_inconsistency) Util.union
 
 (** We should only compare constructors at convertible types, so this
-   is only an opportunity to unify universes. *)
+    is only an opportunity to unify universes.
+
+    But what about qualities?
+*)
 val compare_constructor_instances : evar_map ->
-  UVars.Instance.t -> UVars.Instance.t -> evar_map
+  UVars.Instance.t -> UVars.Instance.t -> (evar_map, UGraph.univ_inconsistency) Util.union
 
 (** {6 Unification problems} *)
 type unification_pb = conv_pb * env * constr * constr

@@ -221,6 +221,7 @@ val val_projection : Projection.t Val.tag
 val val_case : Constr.case_info Val.tag
 val val_binder : (Name.t Context.binder_annot * types) Val.tag
 val val_univ : Univ.Level.t Val.tag
+val val_quality : Sorts.Quality.t Val.tag
 val val_free : Id.Set.t Val.tag
 val val_uint63 : Uint63.t Val.tag
 val val_float : Float64.t Val.tag

@@ -171,9 +171,20 @@ let eq_symbol sy1 sy2 =
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
   | SymbInd ind1, SymbInd ind2 -> Ind.CanOrd.equal ind1 ind2
   | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
-  | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
+  | SymbInstance u1, SymbInstance u2 -> UVars.Instance.equal u1 u2
   | SymbProj (i1, k1), SymbProj (i2, k2) -> Ind.CanOrd.equal i1 i2 && Int.equal k1 k2
-  | _, _ -> false
+
+  | (SymbValue _
+    | SymbSort _
+    | SymbName _
+    | SymbConst _
+    | SymbMatch _
+    | SymbInd _
+    | SymbEvar _
+    | SymbInstance _
+    | SymbProj _), _
+    -> false
+
 
 let hash_symbol symb =
   match symb with
@@ -184,7 +195,7 @@ let hash_symbol symb =
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
   | SymbInd ind -> combinesmall 6 (Ind.CanOrd.hash ind)
   | SymbEvar evk -> combinesmall 7 (Evar.hash evk)
-  | SymbLevel l -> combinesmall 8 (Univ.Level.hash l)
+  | SymbInstance u -> combinesmall 8 (UVars.Instance.hash u)
   | SymbProj (i, k) -> combinesmall 9 (combine (Ind.CanOrd.hash i) k)
 
 module HashedTypeSymbol = struct
@@ -234,10 +245,10 @@ let get_evar tbl i =
     | SymbEvar ev -> ev
     | _ -> anomaly (Pp.str "get_evar failed.")
 
-let get_level tbl i =
+let get_instance tbl i =
   match tbl.(i) with
-    | SymbLevel u -> u
-    | _ -> anomaly (Pp.str "get_level failed.")
+    | SymbInstance u -> u
+    | _ -> anomaly (Pp.str "get_instance failed.")
 
 let get_proj tbl i =
   match tbl.(i) with
@@ -284,7 +295,7 @@ type primitive =
   | MLnot
   | MLland
   | MLmagic
-  | MLarrayget
+  | MLsubst_instance_instance
   | MLparray_of_array
   | Get_value
   | Get_sort
@@ -293,11 +304,12 @@ type primitive =
   | Get_match
   | Get_ind
   | Get_evar
-  | Get_level
+  | Get_instance
   | Get_proj
   | Get_symbols
   | Lazy
   | Coq_primitive of CPrimitives.t * bool (* check for accu *)
+  | Mk_empty_instance
 
 let eq_primitive p1 p2 =
   match p1, p2 with
@@ -322,7 +334,7 @@ let eq_primitive p1 p2 =
   | MLnot, MLnot
   | MLland, MLland
   | MLmagic, MLmagic
-  | MLarrayget, MLarrayget
+  | MLsubst_instance_instance, MLsubst_instance_instance
   | MLparray_of_array, MLparray_of_array
   | Get_value, Get_value
   | Get_sort, Get_sort
@@ -331,10 +343,11 @@ let eq_primitive p1 p2 =
   | Get_match, Get_match
   | Get_ind, Get_ind
   | Get_evar, Get_evar
-  | Get_level, Get_level
+  | Get_instance, Get_instance
   | Get_proj, Get_proj
   | Get_symbols, Get_symbols
   | Lazy, Lazy
+  | Mk_empty_instance, Mk_empty_instance
     -> true
 
   | Mk_fix (rp1, i1), Mk_fix (rp2, i2) -> Int.equal i1 i2 && eq_rec_pos rp1 rp2
@@ -369,7 +382,7 @@ let eq_primitive p1 p2 =
     | MLnot
     | MLland
     | MLmagic
-    | MLarrayget
+    | MLsubst_instance_instance
     | MLparray_of_array
     | Get_value
     | Get_sort
@@ -378,11 +391,12 @@ let eq_primitive p1 p2 =
     | Get_match
     | Get_ind
     | Get_evar
-    | Get_level
+    | Get_instance
     | Get_proj
     | Get_symbols
     | Lazy
-    | Coq_primitive _), _
+    | Coq_primitive _
+    | Mk_empty_instance), _
     -> false
 
 let primitive_hash = function
@@ -413,7 +427,7 @@ let primitive_hash = function
   | MLmagic -> 21
   | Coq_primitive (prim, b) -> combinesmall 22 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
   | Mk_proj -> 23
-  | MLarrayget -> 24
+  | MLsubst_instance_instance -> 24
   | Mk_float -> 25
   | Is_float -> 26
   | Is_parray -> 27
@@ -426,10 +440,11 @@ let primitive_hash = function
   | Get_match -> 34
   | Get_ind -> 35
   | Get_evar -> 36
-  | Get_level -> 37
+  | Get_instance -> 37
   | Get_proj -> 38
   | Get_symbols -> 39
   | Lazy -> 40
+  | Mk_empty_instance -> 41
 
 type mllambda =
   | MLlocal        of lname
@@ -999,8 +1014,8 @@ let get_evar_code i =
   MLprimitive (Get_evar,
     [|MLglobal symbols_tbl_name; MLint i|])
 
-let get_level_code i =
-  MLprimitive (Get_level,
+let get_instance_code i =
+  MLprimitive (Get_instance,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_proj_code i =
@@ -1047,6 +1062,8 @@ let merge_branches t =
   Array.of_list (to_list newt)
 
 let app_prim p args = MLprimitive (p, args)
+
+let ml_empty_instance = MLprimitive (Mk_empty_instance, [||])
 
 type prim_aux =
   | PAprim of string * pconstant * CPrimitives.t * prim_aux array
@@ -1095,19 +1112,23 @@ let cast_to_int v =
   | _ -> MLprimitive (Val_to_int, [|v|])
 
 let ml_of_instance instance u =
-  let ml_of_level l =
-    match Univ.Level.var_index l with
-    | Some i ->
-      (* FIXME: use a proper cast function *)
-       let univ = MLprimitive (MLmagic, [|MLlocal (Option.get instance)|]) in
-       MLprimitive (MLarrayget, [|univ; MLint i|])
-    | None -> let i = push_symbol (SymbLevel l) in get_level_code i
-  in
-  let u = UVars.Instance.to_array u in
-  if Array.is_empty u then [||]
-  else let u = Array.map ml_of_level u in
-      (* FIXME: use a proper cast function *)
-       [|MLprimitive (MLmagic, [|MLarray u|])|]
+  if UVars.Instance.is_empty u then [||]
+  else
+    let i = push_symbol (SymbInstance u) in
+    let u_code = get_instance_code i in
+    let has_variable =
+      let qs, us = UVars.Instance.to_array u in
+      Array.exists (fun q -> Option.has_some (Sorts.Quality.var_index q)) qs
+      || Array.exists (fun u -> Option.has_some (Univ.Level.var_index u)) us
+    in
+    let u_code =
+      if has_variable then
+        (* if there are variables then [instance] guaranteed non-None *)
+        let univ = MLprimitive (MLmagic, [|MLlocal (Option.get instance)|]) in
+        MLprimitive (MLsubst_instance_instance, [|univ; u_code|])
+      else u_code
+    in
+    [|MLprimitive (MLmagic, [|u_code|])|]
 
 let compile_prim env decl cond paux =
 
@@ -1442,7 +1463,7 @@ let compile_prim env decl cond paux =
   | Lsort s ->
     let i = push_symbol (SymbSort s) in
     let uarg = match env.env_univ with
-      | None -> MLarray [||]
+      | None -> ml_empty_instance
       | Some u -> MLlocal u
     in
     (* FIXME: use a dedicated cast function *)
@@ -1890,6 +1911,7 @@ let pp_mllam fmt l =
     | Mk_var id ->
         Format.fprintf fmt "mk_var_accu (Names.Id.of_string \"%s\")" (string_of_id id)
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
+    | Mk_empty_instance -> Format.fprintf fmt "UVars.Instance.empty"
     | Is_int -> Format.fprintf fmt "is_int"
     | Is_float -> Format.fprintf fmt "is_float"
     | Is_parray -> Format.fprintf fmt "is_parray"
@@ -1905,7 +1927,7 @@ let pp_mllam fmt l =
     | MLnot -> Format.fprintf fmt "not"
     | MLland -> Format.fprintf fmt "(land)"
     | MLmagic -> Format.fprintf fmt "Obj.magic"
-    | MLarrayget -> Format.fprintf fmt "Array.get"
+    | MLsubst_instance_instance -> Format.fprintf fmt "UVars.subst_instance_instance"
     | MLparray_of_array -> Format.fprintf fmt "parray_of_array"
     | Coq_primitive (op, false) ->
        Format.fprintf fmt "no_check_%s" (CPrimitives.to_string op)
@@ -1917,7 +1939,7 @@ let pp_mllam fmt l =
     | Get_match -> Format.fprintf fmt "get_match"
     | Get_ind -> Format.fprintf fmt "get_ind"
     | Get_evar -> Format.fprintf fmt "get_evar"
-    | Get_level -> Format.fprintf fmt "get_level"
+    | Get_instance -> Format.fprintf fmt "get_instance"
     | Get_proj -> Format.fprintf fmt "get_proj"
     | Get_symbols -> Format.fprintf fmt "get_symbols"
     | Lazy -> Format.fprintf fmt "lazy"
@@ -1939,7 +1961,7 @@ let type_of_global gn c = match gn with
   | _ -> match c with
     | MLprimitive (Lazy, _) -> " : Nativevalues.t Lazy.t"
     | MLlam ([|_|], MLprimitive (Lazy, _)) -> " : Nativevalues.t -> Nativevalues.t Lazy.t"
-    | MLprimitive ((Mk_ind | Mk_const), [|_|]) -> " : Univ.Level.t array -> Nativevalues.t"
+    | MLprimitive ((Mk_ind | Mk_const), [|_|]) -> " : UVars.Instance.t -> Nativevalues.t"
     | MLsetref (_,_) -> " : unit"
     | _ -> " : Nativevalues.t"
 
@@ -2040,7 +2062,7 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id, [||]))::auxdefs
 
 let compile_constant env sigma con cb =
-    let no_univs = 0 = UVars.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
+    let no_univs = (0,0) = UVars.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let code = lambda_of_constr env sigma t in
@@ -2065,7 +2087,7 @@ let compile_constant env sigma con cb =
     | _ ->
         let i = push_symbol (SymbConst con) in
         let args =
-          if no_univs then [|get_const_code i; MLarray [||]|]
+          if no_univs then [|get_const_code i; ml_empty_instance|]
           else [|get_const_code i|]
         in
         (*
@@ -2101,8 +2123,8 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-        if Int.equal (UVars.AbstractContext.size u) 0 then
-          [|get_ind_code j; MLarray [||]|]
+        if (UVars.AbstractContext.size u) = (0,0) then
+          [|get_ind_code j; ml_empty_instance|]
         else [|get_ind_code j|]
       in
       (* FIXME: pass universes here *)

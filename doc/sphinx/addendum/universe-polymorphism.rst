@@ -530,14 +530,15 @@ Explicit Universes
    universe_name ::= @qualid
    | Set
    | Prop
-   univ_annot ::= @%{ {* @universe_level } %}
-   universe_level ::= Set
+   univ_annot ::= @%{ {* @univ_level_or_quality } {? %| {* @univ_level_or_quality } } %}
+   univ_level_or_quality ::= Set
+   | SProp
    | Prop
    | Type
    | _
    | @qualid
-   univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
-   cumul_univ_decl ::= @%{ {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   univ_decl ::= @%{ {? {* @ident } %| } {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   cumul_univ_decl ::= @%{ {? {* @ident } %| } {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
    univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 The syntax has been extended to allow users to explicitly bind names

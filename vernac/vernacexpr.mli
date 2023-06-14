@@ -40,7 +40,7 @@ type printable =
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of qualid or_by_notation * UnivNames.univ_name_list option
+  | PrintName of qualid or_by_notation * UnivNames.full_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeclasses
@@ -56,7 +56,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of qualid or_by_notation * UnivNames.univ_name_list option * Goal_select.t option
+  | PrintAbout of qualid or_by_notation * UnivNames.full_name_list option * Goal_select.t option
   | PrintImplicit of qualid or_by_notation
   | PrintAssumptions of bool * bool * qualid or_by_notation
   | PrintStrategy of qualid or_by_notation option

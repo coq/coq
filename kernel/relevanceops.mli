@@ -18,6 +18,6 @@ val relevance_of_term : Environ.env -> Constr.constr -> Sorts.relevance
 open Names
 val relevance_of_rel : Environ.env -> int -> Sorts.relevance
 val relevance_of_var : Environ.env -> Id.t -> Sorts.relevance
-val relevance_of_constant : Environ.env -> Constant.t -> Sorts.relevance
+val relevance_of_constant : Environ.env -> Constr.pconstant -> Sorts.relevance
 val relevance_of_constructor : Environ.env -> constructor -> Sorts.relevance
 val relevance_of_projection : Environ.env -> Projection.t -> Sorts.relevance

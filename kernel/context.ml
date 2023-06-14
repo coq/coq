@@ -92,6 +92,10 @@ struct
       | LocalAssum (x,ty) -> LocalAssum ({x with binder_name=na}, ty)
       | LocalDef (x,v,ty) -> LocalDef ({x with binder_name=na}, v, ty)
 
+    let set_relevance r = function
+      | LocalAssum (x,ty) -> LocalAssum ({x with binder_relevance=r}, ty)
+      | LocalDef (x,v,ty) -> LocalDef ({x with binder_relevance=r}, v, ty)
+
     (** Set the type of the bound variable in a given declaration. *)
     let set_type ty = function
       | LocalAssum (na,_) -> LocalAssum (na, ty)
@@ -132,6 +136,11 @@ struct
       let na = get_name x in
       let na' = f na in
       if na == na' then x else set_name na' x
+
+    let map_relevance f x =
+      let r = get_relevance x in
+      let r' = f r in
+      if r == r' then x else set_relevance r' x
 
     (** For local assumptions, this function returns the original local assumptions.
         For local definitions, this function maps the value in the local definition. *)

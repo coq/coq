@@ -200,17 +200,17 @@ and nf_whd env sigma whd typ =
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
-    if Int.equal nb_univs 0 then UVars.Instance.empty
+    if UVars.eq_sizes nb_univs (0,0) then UVars.Instance.empty
     else match stk with
     | Zapp args :: _ ->
       let inst = arg args 0 in
       let inst = uni_instance inst in
-      let () = assert (Int.equal (UVars.Instance.length inst) nb_univs) in
+      let () = assert (UVars.eq_sizes (UVars.Instance.length inst) nb_univs) in
       inst
     | _ -> assert false
   in
   let (t,ty) = mk u in
-  let from = if Int.equal nb_univs 0 then 0 else 1 in
+  let from = if UVars.Instance.is_empty u then 0 else 1 in
   nf_stk ~from env sigma t ty stk
 
 and nf_evar env sigma evk stk =

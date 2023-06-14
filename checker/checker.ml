@@ -245,7 +245,7 @@ let explain_exn = function
     let msg =
       if CDebug.(get_flag misc) then
         str "." ++ spc() ++
-          UGraph.explain_universe_inconsistency Univ.Level.raw_pr i
+          UGraph.explain_universe_inconsistency Sorts.QVar.raw_pr Univ.Level.raw_pr i
       else
         mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
@@ -288,11 +288,13 @@ let explain_exn = function
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
+      | UnsatisfiedQConstraints _ -> str"UnsatisfiedQConstraints"
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
       | DisallowedSProp -> str"DisallowedSProp"
       | BadBinderRelevance _ -> str"BadBinderRelevance"
       | BadCaseRelevance _ -> str"BadCaseRelevance"
       | BadInvert -> str"BadInvert"
+      | UndeclaredQualities _ -> str"UndeclaredQualities"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"
       | BadVariance _ -> str "BadVariance"
       | UndeclaredUsedVariables _ -> str "UndeclaredUsedVariables"

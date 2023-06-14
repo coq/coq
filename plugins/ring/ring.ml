@@ -146,7 +146,7 @@ let decl_constant name univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
-  let () = DeclareUctx.declare_universe_context ~poly:false univs in
+  let () = Global.push_context_set ~strict:true univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
   (* UnsafeMonomorphic: we always do poly:false *)

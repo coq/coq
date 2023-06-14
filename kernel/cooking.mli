@@ -68,7 +68,7 @@ val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.C
 
 (** The [int] is how many universes got discharged, ie size of
     returned context - size of input context. *)
-val lift_poly_univs : cooking_info -> UVars.AbstractContext.t -> cooking_info * int * UVars.AbstractContext.t
+val lift_poly_univs : cooking_info -> UVars.AbstractContext.t -> cooking_info * (int * int) * UVars.AbstractContext.t
 
 val lift_private_mono_univs : cooking_info -> 'a -> 'a
 

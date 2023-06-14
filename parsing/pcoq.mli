@@ -29,12 +29,14 @@ module Lookahead : sig
   val to_entry : string -> t -> unit Entry.t
   val (>>) : t -> t -> t
   val (<+>) : t -> t -> t
+  val lk_empty : t
   val lk_list : t -> t
   val check_no_space : t
   val lk_kw : string -> t
   val lk_kws : string list -> t
   val lk_nat : t
   val lk_ident : t
+  val lk_field : t
   val lk_name : t
   val lk_qualid : t
   val lk_ident_except : string list -> t
@@ -183,7 +185,6 @@ module Constr :
     val ident : Id.t Entry.t
     val global : qualid Entry.t
     val universe_name : sort_name_expr Entry.t
-    val universe_level : univ_level_expr Entry.t
     val sort : sort_expr Entry.t
     val sort_family : Sorts.family Entry.t
     val pattern : cases_pattern_expr Entry.t

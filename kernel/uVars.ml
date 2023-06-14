@@ -12,6 +12,8 @@ open Pp
 open Util
 open Univ
 
+module Quality = Sorts.Quality
+
 module Variance =
 struct
   (** A universe position in the instance given to a cumulative
@@ -65,62 +67,73 @@ struct
 end
 
 module Instance : sig
-    type t = Level.t array
+    type t
 
     val empty : t
     val is_empty : t -> bool
 
-    val of_array : Level.t array -> t
-    val to_array : t -> Level.t array
+    val of_array : Quality.t array * Level.t array -> t
+    val to_array : t -> Quality.t array * Level.t array
+
+    val abstract_instance : int * int -> t
 
     val append : t -> t -> t
     val equal : t -> t -> bool
-    val length : t -> int
+    val length : t -> int * int
 
     val hcons : t -> t
     val hash : t -> int
 
     val share : t -> t * int
 
-    val subst_fn : (Level.t -> Level.t) -> t -> t
+    val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
 
-    val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
-    val levels : t -> Level.Set.t
+    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+    val levels : t -> Quality.Set.t * Level.Set.t
 end =
 struct
-  type t = Level.t array
+  type t = Quality.t array * Level.t array
 
-  let empty : t = [||]
+  let empty : t = [||], [||]
 
   module HInstancestruct =
   struct
     type nonrec t = t
-    type u = Level.t -> Level.t
+    type u = (Quality.t -> Quality.t) * (Level.t -> Level.t)
 
-    let hashcons huniv a =
-      let len = Array.length a in
-        if Int.equal len 0 then empty
+    let hashcons (hqual, huniv) (aq, au as a) =
+      let qlen = Array.length aq in
+      let ulen = Array.length au in
+        if Int.equal qlen 0 && Int.equal ulen 0 then empty
         else begin
-          for i = 0 to len - 1 do
-            let x = Array.unsafe_get a i in
+          for i = 0 to qlen - 1 do
+            let x = Array.unsafe_get aq i in
+            let x' = hqual x in
+              if x == x' then ()
+              else Array.unsafe_set aq i x'
+          done;
+          for i = 0 to ulen - 1 do
+            let x = Array.unsafe_get au i in
             let x' = huniv x in
               if x == x' then ()
-              else Array.unsafe_set a i x'
+              else Array.unsafe_set au i x'
           done;
           a
         end
 
     let eq t1 t2 =
-      t1 == t2 ||
-        (Int.equal (Array.length t1) (Array.length t2) &&
-           let rec aux i =
-             (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
-           in aux 0)
+      CArray.equal (==) (fst t1) (fst t2)
+      && CArray.equal (==) (snd t1) (snd t2)
 
-    let hash a =
+    let hash (aq,au) =
       let accu = ref 0 in
-        for i = 0 to Array.length a - 1 do
-          let l = Array.unsafe_get a i in
+        for i = 0 to Array.length aq - 1 do
+          let l = Array.unsafe_get aq i in
+          let h = Quality.hash l in
+            accu := Hashset.Combine.combine !accu h;
+        done;
+        for i = 0 to Array.length au - 1 do
+          let l = Array.unsafe_get au i in
           let h = Level.hash l in
             accu := Hashset.Combine.combine !accu h;
         done;
@@ -131,67 +144,106 @@ struct
 
   module HInstance = Hashcons.Make(HInstancestruct)
 
-  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons Level.hcons
+  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons (Quality.hcons,Level.hcons)
 
   let hash = HInstancestruct.hash
 
   let share a = (hcons a, hash a)
 
-  let empty = hcons [||]
+  let empty = hcons empty
 
-  let is_empty x = Int.equal (Array.length x) 0
+  let is_empty (x,y) = CArray.is_empty x && CArray.is_empty y
 
-  let append x y =
-    if Array.length x = 0 then y
-    else if Array.length y = 0 then x
-    else Array.append x y
 
-  let of_array a =
-    a
+  let append (xq,xu as x) (yq,yu as y) =
+    if is_empty x then y
+    else if is_empty y then x
+    else Array.append xq yq, Array.append xu yu
 
-  let to_array a = a
+  let of_array a : t = a
 
-  let length a = Array.length a
+  let to_array (a:t) = a
 
-  let subst_fn fn t =
-    let t' = CArray.Smart.map fn t in
-      if t' == t then t else of_array t'
+  let abstract_instance (qlen,ulen) =
+    let qs = Array.init qlen Quality.var in
+    let us = Array.init ulen Level.var in
+    of_array (qs,us)
 
-  let levels x = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty x
+  let length (aq,au) = Array.length aq, Array.length au
 
-  let pr prl ?variance =
+  let subst_fn (fq, fn) (q,u as orig) : t =
+    let q' = CArray.Smart.map (Quality.subst fq) q in
+    let u' = CArray.Smart.map fn u in
+    if q' == q && u' == u then orig else q', u'
+
+  let levels (xq,xu) =
+    let q = Array.fold_left (fun acc x -> Quality.Set.add x acc) Quality.Set.empty xq in
+    let u = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty xu in
+    q, u
+
+  let pr prq prl ?variance (q,u) =
     let ppu i u =
       let v = Option.map (fun v -> v.(i)) variance in
       pr_opt_no_spc Variance.pr v ++ prl u
     in
-    prvecti_with_sep spc ppu
+    (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
+    ++ prvecti_with_sep spc ppu u
 
-  let equal t u =
-    t == u ||
-      (Array.is_empty t && Array.is_empty u) ||
-      (CArray.for_all2 Level.equal t u
-         (* Necessary as universe instances might come from different modules and
-            unmarshalling doesn't preserve sharing *))
+  let equal (xq,xu) (yq,yu) =
+    CArray.equal Quality.equal xq yq
+    && CArray.equal Level.equal xu yu
 
 end
 
-let enforce_eq_instances x y =
-  let ax = Instance.to_array x and ay = Instance.to_array y in
-    if Array.length ax != Array.length ay then
-      CErrors.anomaly (Pp.(++) (Pp.str "Invalid argument: enforce_eq_instances called with")
-                 (Pp.str " instances of different lengths."));
-    CArray.fold_right2 enforce_eq_level ax ay
+let eq_sizes (a,b) (a',b') = Int.equal a a' && Int.equal b b'
 
-let enforce_eq_variance_instances = Variance.eq_constraints
-let enforce_leq_variance_instances = Variance.leq_constraints
+type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t
+
+let enforce_eq_instances x y (qcs, ucs as orig) =
+  let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
+  if Array.length xq != Array.length yq || Array.length xu != Array.length yu then
+    CErrors.anomaly (Pp.(++) (Pp.str "Invalid argument: enforce_eq_instances called with")
+                       (Pp.str " instances of different lengths."));
+  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
+  let ucs' = CArray.fold_right2 enforce_eq_level xu yu ucs in
+  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
+
+let enforce_eq_variance_instances variances x y (qcs,ucs as orig) =
+  let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
+  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
+  let ucs' = Variance.eq_constraints variances xu yu ucs in
+  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
+
+let enforce_leq_variance_instances variances x y (qcs,ucs as orig) =
+  let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
+  (* no variance for quality variables -> enforce_eq *)
+  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
+  let ucs' = Variance.leq_constraints variances xu yu ucs in
+  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let subst_instance_level s l =
   match Level.var_index l with
-  | Some n -> s.(n)
+  | Some n -> (snd (Instance.to_array s)).(n)
   | None -> l
 
+let subst_instance_qvar s v =
+  match Sorts.QVar.var_index v with
+  | Some n -> (fst (Instance.to_array s)).(n)
+  | None -> Quality.QVar v
+
+let subst_instance_quality s l =
+  match l with
+  | Quality.QVar v -> begin match Sorts.QVar.var_index v with
+      | Some n -> (fst (Instance.to_array s)).(n)
+      | None -> l
+    end
+  | _ -> l
+
 let subst_instance_instance s i =
-  Array.Smart.map (fun l -> subst_instance_level s l) i
+  let qs, us = Instance.to_array i in
+  let qs' = Array.Smart.map (fun l -> subst_instance_quality s l) qs in
+  let us' = Array.Smart.map (fun l -> subst_instance_level s l) us in
+  if qs' == qs && us' == us then i else Instance.of_array (qs', us')
 
 let subst_instance_universe s univ =
   let f (v,n as vn) =
@@ -204,10 +256,11 @@ let subst_instance_universe s univ =
   if u == u' then univ
   else Universe.unrepr u'
 
-let subst_instance_sort u = let open Sorts in function
-  | SProp | Prop | Set as s -> s
-  | Type v -> sort_of_univ (subst_instance_universe u v)
-  | QSort (q, v) -> qsort q (subst_instance_universe u v)
+let subst_instance_sort u s =
+  Sorts.subst_fn ((subst_instance_qvar u), (subst_instance_universe u)) s
+
+let subst_instance_relevance u r =
+  Sorts.relevance_subst_fn (subst_instance_qvar u) r
 
 let subst_instance_constraint s (u,d,v as c) =
   let u' = subst_instance_level s u in
@@ -226,50 +279,62 @@ let in_punivs x = (x, Instance.empty)
 let eq_puniverses f (x, u) (y, u') =
   f x y && Instance.equal u u'
 
+type bound_names = Names.Name.t array * Names.Name.t array
+
 (** A context of universe levels with universe constraints,
     representing local universe variables and constraints *)
 
 module UContext =
 struct
-  type t = Names.Name.t array * Instance.t constrained
+  type t = bound_names * Instance.t constrained
 
-  let make names (univs, _ as x) =
-    assert (Array.length names = Array.length univs);
+  let make names (univs, _ as x) : t =
+    let qs, us = Instance.to_array univs in
+    assert (Array.length (fst names) = Array.length qs && Array.length(snd names) = Array.length us);
     (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = ([||], (Instance.empty, Constraints.empty))
+  let empty = (([||], [||]), (Instance.empty, Constraints.empty))
   let is_empty (_, (univs, cst)) = Instance.is_empty univs && Constraints.is_empty cst
 
-  let pr prl ?variance (_, (univs, cst) as ctx) =
+  let pr prq prl ?variance (_, (univs, cst) as ctx) =
     if is_empty ctx then mt() else
-      h (Instance.pr prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
+      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
 
-  let hcons (names, (univs, cst)) =
-    (Array.map Names.Name.hcons names, (Instance.hcons univs, hcons_constraints cst))
+  let hcons ((qnames, unames), (univs, cst)) =
+    ((Array.map Names.Name.hcons qnames, Array.map Names.Name.hcons unames), (Instance.hcons univs, hcons_constraints cst))
 
-  let names (names, _) = names
+  let names ((names, _) : t) = names
   let instance (_, (univs, _cst)) = univs
   let constraints (_, (_univs, cst)) = cst
 
-  let union (na, (univs, cst)) (na', (univs', cst')) =
-    Array.append na na', (Instance.append univs univs', Constraints.union cst cst')
+  let union ((qna, una), (univs, cst)) ((qna', una'), (univs', cst')) =
+    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union cst cst')
 
   let size (_,(x,_)) = Instance.length x
 
-  let refine_names names' (names, x) =
+  let refine_names (qnames',unames') ((qnames, unames), x) =
     let merge_names = Array.map2 Names.(fun old refined -> match refined with Anonymous -> old | Name _ -> refined) in
-    (merge_names names names', x)
+    ((merge_names qnames qnames', merge_names unames unames'), x)
 
   let sort_levels a =
     Array.sort Level.compare a; a
 
-  let of_context_set f (ctx, cst) =
-    let inst = Instance.of_array (sort_levels (Array.of_list (Level.Set.elements ctx))) in
+  let sort_qualities a =
+    Array.sort Quality.compare a; a
+
+  let of_context_set f qctx (uctx, cst) =
+    let qctx = sort_qualities
+        (Array.map_of_list (fun q -> Quality.QVar q)
+           (Sorts.QVar.Set.elements qctx))
+    in
+    let uctx = sort_levels (Array.of_list (Level.Set.elements uctx)) in
+    let inst = Instance.of_array (qctx, uctx) in
     (f inst, (inst, cst))
 
   let to_context_set (_, (ctx, cst)) =
-    (Instance.levels ctx, cst)
+    let qctx, uctx = Instance.levels ctx in
+    qctx, (uctx, cst)
 
 end
 
@@ -280,31 +345,40 @@ let hcons_universe_context = UContext.hcons
 
 module AbstractContext =
 struct
-  type t = Names.Name.t array constrained
+  type t = bound_names constrained
 
   let make names csts : t = names, csts
 
-  let repr (inst, cst) =
-    (inst, (Array.init (Array.length inst) (fun i -> Level.var i), cst))
-
-  let pr f ?variance ctx = UContext.pr f ?variance (repr ctx)
-
-  let instantiate inst (u, cst) =
-    assert (Array.length u = Array.length inst);
+  let instantiate inst ((qnames,unames), cst) =
+    let q, u = Instance.to_array inst in
+    assert (Array.length q == Array.length qnames && Array.length u = Array.length unames);
     subst_instance_constraints inst cst
 
   let names (nas, _) = nas
 
-  let hcons (univs, cst) =
-    (Array.map Names.Name.hcons univs, hcons_constraints cst)
+  let hcons ((qnames,unames), cst) =
+    let qnames = Array.map Names.Name.hcons qnames in
+    let unames = Array.map Names.Name.hcons unames in
+    ((qnames, unames), hcons_constraints cst)
 
-  let empty = ([||], Constraints.empty)
+  let empty = (([||],[||]), Constraints.empty)
 
-  let is_empty (nas, cst) = Array.is_empty nas && Constraints.is_empty cst
+  let is_constant ((qnas,unas),_) =
+    Array.is_empty qnas && Array.is_empty unas
 
-  let union (nas, cst) (nas', cst') = (Array.append nas nas', Constraints.union cst cst')
+  let is_empty (_, cst as ctx) =
+    is_constant ctx && Constraints.is_empty cst
 
-  let size (nas, _) = Array.length nas
+  let union ((qnas,unas), cst) ((qnas',unas'), cst') =
+    ((Array.append qnas qnas', Array.append unas unas'), Constraints.union cst cst')
+
+  let size ((qnas,unas), _) = Array.length qnas, Array.length unas
+
+  let repr (names, cst as self) : UContext.t =
+    let inst = Instance.abstract_instance (size self) in
+    (names, (inst, cst))
+
+  let pr prq pru ?variance ctx = UContext.pr prq pru ?variance (repr ctx)
 
 end
 
@@ -319,29 +393,56 @@ let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
 
 let hcons_abstract_universe_context = AbstractContext.hcons
 
-let subst_univs_level_instance subst i =
-  let i' = Instance.subst_fn (subst_univs_level_level subst) i in
-    if i == i' then i
-    else i'
+type sort_level_subst = Quality.t Sorts.QVar.Map.t * universe_level_subst
+
+let is_empty_sort_subst (qsubst,usubst) = Sorts.QVar.Map.is_empty qsubst && is_empty_level_subst usubst
+
+let empty_sort_subst = Sorts.QVar.Map.empty, empty_level_subst
+
+let subst_sort_level_instance (qsubst,usubst) i =
+  let i' = Instance.subst_fn (Quality.subst_fn qsubst, subst_univs_level_level usubst) i in
+  if i == i' then i
+  else i'
 
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
+let subst_fn_of_qsubst qsubst qv =
+  match Sorts.QVar.Map.find_opt qv qsubst with
+  | None -> Quality.QVar qv
+  | Some q -> q
+
+let subst_sort_level_sort (qsubst,usubst) s =
+  let fq qv = subst_fn_of_qsubst qsubst qv in
+  let fu u = subst_univs_level_universe usubst u in
+  Sorts.subst_fn (fq,fu) s
+
+let subst_sort_level_relevance (qsubst,_) r =
+  Sorts.relevance_subst_fn (subst_fn_of_qsubst qsubst) r
+
 let make_instance_subst i =
-  let arr = Instance.to_array i in
+  let qarr, uarr = Instance.to_array i in
+  let qsubst =
+    Array.fold_left_i (fun i acc l ->
+      let l = match l with Quality.QVar l -> l | _ -> assert false in
+      Sorts.QVar.Map.add l (Quality.var i) acc)
+      Sorts.QVar.Map.empty qarr
+  in
+  let usubst =
     Array.fold_left_i (fun i acc l ->
       Level.Map.add l (Level.var i) acc)
-      Level.Map.empty arr
+      Level.Map.empty uarr
+  in
+  qsubst, usubst
 
-let make_abstract_instance (ctx, _) =
-  Array.init (Array.length ctx) (fun i -> Level.var i)
+let make_abstract_instance ctx =
+  UContext.instance (AbstractContext.repr ctx)
 
 let abstract_universes uctx =
   let nas = UContext.names uctx in
   let instance = UContext.instance uctx in
-  let () = assert (Int.equal (Array.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
-  let cstrs = subst_univs_level_constraints subst
+  let cstrs = subst_univs_level_constraints (snd subst)
       (UContext.constraints uctx)
   in
   let ctx = (nas, cstrs) in

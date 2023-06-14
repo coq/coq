@@ -30,6 +30,8 @@ type usubs = fconstr subs UVars.puniverses
 
 type table_key = Constant.t UVars.puniverses tableKey
 
+(** Relevances (eg in binder_annot or case_info) have NOT been substituted
+    when there is a usubs field *)
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
@@ -92,6 +94,8 @@ val usubs_cons : fconstr -> usubs -> usubs
 (** identity if the first instance is empty *)
 val usubst_instance : 'a UVars.puniverses -> UVars.Instance.t -> UVars.Instance.t
 
+val usubst_binder : _ UVars.puniverses -> 'a Context.binder_annot -> 'a Context.binder_annot
+
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
@@ -130,6 +134,8 @@ val push_relevances : clos_infos -> 'b Context.binder_annot array -> clos_infos
 val set_info_relevances : clos_infos -> Sorts.relevance Range.t -> clos_infos
 
 val info_relevances : clos_infos -> Sorts.relevance Range.t
+
+val is_irrelevant : clos_infos -> Sorts.relevance -> bool
 
 val infos_with_reds : clos_infos -> reds -> clos_infos
 

@@ -1375,8 +1375,8 @@ module Strategies =
     let inj_open hint = (); fun sigma ->
       let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
       let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
+      let subst = Sorts.QVar.Map.empty, subst in
       let lemma = Vars.subst_univs_level_constr subst (EConstr.of_constr lemma) in
-      (* not sure sideff:true is really needed here *)
       let sigma = Evd.merge_context_set UnivRigid sigma ctx in
       (sigma, (lemma, NoBindings))
 

@@ -39,7 +39,7 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraints.t
 
 val get_cumulativity_constraints : conv_pb -> UVars.Variance.t array ->
-  UVars.Instance.t -> UVars.Instance.t -> Univ.Constraints.t
+  UVars.Instance.t -> UVars.Instance.t -> Sorts.QUConstraints.t
 
 val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
 val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int

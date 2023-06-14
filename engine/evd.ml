@@ -10,7 +10,6 @@
 
 open Pp
 open CErrors
-open Sorts
 open Util
 open Names
 open Nameops
@@ -913,8 +912,8 @@ let mkLEvar sigma (evk, args) =
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
   let qvar_relevant q = match UState.nf_qvar sigma.universes q with
-  | QSProp -> false
-  | QProp | QType | QVar _ -> true
+  | QConstant QSProp -> false
+  | QConstant QProp | QConstant QType | QVar _ -> true
   in
   let evar_relevant (evk, _) = match find sigma evk with
   | EvarInfo evi ->
@@ -942,6 +941,9 @@ let existential_type0 = existential_type
 
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
+
+let add_quconstraints d c =
+  { d with universes = UState.add_quconstraints d.universes c }
 
 let add_universe_constraints d c =
   { d with universes = UState.add_universe_constraints d.universes c }
@@ -1084,6 +1086,8 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
+let sort_context_set d = UState.sort_context_set d.universes
+
 let to_universe_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
@@ -1099,8 +1103,17 @@ let universe_subst evd =
 let merge_context_set ?loc ?(sideff=false) rigid evd uctx' =
   {evd with universes = UState.merge ?loc ~sideff rigid evd.universes uctx'}
 
+let merge_sort_context_set ?loc ?(sideff=false) rigid evd ctx' =
+  {evd with universes = UState.merge_sort_context ?loc ~sideff rigid evd.universes ctx'}
+
+let merge_sort_variables ?loc ?(sideff=false) evd qs =
+  { evd with universes = UState.merge_sort_variables ?loc ~sideff evd.universes qs }
+
 let with_context_set ?loc rigid evd (a, uctx) =
   (merge_context_set ?loc rigid evd uctx, a)
+
+let with_sort_context_set ?loc rigid d (a, ctx) =
+  (merge_sort_context_set ?loc rigid d ctx, a)
 
 let new_univ_level_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
@@ -1110,8 +1123,12 @@ let new_univ_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name rigid sigma =
-  let (sigma, u) = new_univ_variable ?loc rigid ?name sigma in
+let new_quality_variable ?loc ?name evd =
+  let uctx, q = UState.new_sort_variable ?loc ?name evd.universes in
+  {evd with universes = uctx}, q
+
+let new_sort_variable ?loc rigid sigma =
+  let (sigma, u) = new_univ_variable ?loc rigid sigma in
   let uctx, q = UState.new_sort_variable sigma.universes in
   ({ sigma with universes = uctx }, Sorts.qsort q u)
 
@@ -1126,22 +1143,22 @@ let make_nonalgebraic_variable evd u =
 (****************************************)
 
 let fresh_sort_in_family ?loc ?(rigid=univ_flexible) evd s =
-  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
 
 let fresh_constant_instance ?loc ?(rigid=univ_flexible) env evd c =
-  with_context_set ?loc rigid evd (UnivGen.fresh_constant_instance env c)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_constant_instance env c)
 
 let fresh_inductive_instance ?loc ?(rigid=univ_flexible) env evd i =
-  with_context_set ?loc rigid evd (UnivGen.fresh_inductive_instance env i)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_inductive_instance env i)
 
 let fresh_constructor_instance ?loc ?(rigid=univ_flexible) env evd c =
-  with_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
 
 let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
-  with_context_set ?loc rigid evd (UnivGen.fresh_array_instance env)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_array_instance env)
 
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
+  with_sort_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 
 let is_flexible_level evd l =
   let uctx = evd.universes in
@@ -1159,33 +1176,11 @@ let universe_rigidity evd l =
     UnivFlexible (UState.is_algebraic l uctx)
   else UnivRigid
 
-let normalize_universe evd =
-  let vars = UState.subst evd.universes in
-  let normalize = UnivFlex.normalize_universe vars in
-    normalize
-
 let normalize_universe_instance evd l =
-  let vars = UState.subst evd.universes in
-  let normalize = UnivSubst.level_subst_of (UnivFlex.normalize_univ_variable vars) in
-  UnivSubst.subst_instance normalize l
+  UState.nf_instance evd.universes l
 
 let normalize_sort evars s =
-  match s with
-  | SProp | Prop | Set -> s
-  | Type u ->
-    let u' = normalize_universe evars u in
-    if u' == u then s else Sorts.sort_of_univ u'
-  | QSort (q, u) ->
-    begin match UState.nf_qvar evars.universes q with
-    | QProp -> Sorts.prop
-    | QSProp -> Sorts.sprop
-    | QType ->
-      let u' = normalize_universe evars u in
-      Sorts.sort_of_univ u'
-    | QVar q' ->
-      let u' = normalize_universe evars u in
-      if q' == q && u' == u then s else Sorts.qsort q' u'
-    end
+  UState.nf_sort evars.universes s
 
 (* FIXME inefficient *)
 let set_eq_sort env d s1 s2 =
@@ -1230,6 +1225,12 @@ let check_leq evd s s' =
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
 
+let check_qconstraints evd csts =
+  UState.check_qconstraints evd.universes csts
+
+let check_quconstraints evd (qcsts,ucsts) =
+  check_qconstraints evd qcsts && check_constraints evd ucsts
+
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
@@ -1248,6 +1249,8 @@ let minimize_universes evd =
   {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
+
+let quality_of_name evd s = UState.quality_of_name evd.universes s
 
 let universe_binders evd = UState.universe_binders evd.universes
 
@@ -1703,12 +1706,11 @@ module MiniEConstr = struct
       Some (instantiate_evar_array sigma info c args)
     in
     let lsubst = universe_subst sigma in
-    let level_value l =
-      UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
+    let univ_value l =
+      UnivFlex.normalize_univ_variable lsubst l
     in
-    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
-    let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value c
+    let qvar_value q = UState.nf_qvar sigma.universes q in
+    UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
@@ -1718,12 +1720,11 @@ module MiniEConstr = struct
       v
     in
     let lsubst = universe_subst sigma in
-    let level_value l =
-      UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
+    let univ_value l =
+      UnivFlex.normalize_univ_variable lsubst l
     in
-    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
-    let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value c in
+    let qvar_value q = UState.nf_qvar sigma.universes q in
+    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in

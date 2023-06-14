@@ -117,7 +117,10 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let sigma, l = new_univ_level_variable status !evdref in
-    let s' = Sorts.sort_of_univ @@ Univ.Universe.make l in (* FIXME *)
+    let s' = match ESorts.kind sigma s with
+      | QSort (q, _) -> Sorts.qsort q (Univ.Universe.make l)
+      | _ -> Sorts.sort_of_univ @@ Univ.Universe.make l
+    in
     let s' = ESorts.make s' in
     evdref := sigma;
     let evd =
@@ -136,7 +139,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
         | Some l ->
            (match Evd.universe_rigidity !evdref l with
             | UnivRigid ->
-               if not onlyalg then refresh_sort status ~direction s
+              if not onlyalg && (not (Univ.Level.is_set l) || (refreshset && not direction))
+              then refresh_sort status ~direction s
                else t
             | UnivFlexible alg ->
                (if alg then

@@ -296,6 +296,9 @@ let has_no_evar sigma =
   with Exit -> false
 
 let pr_evd_level sigma = UState.pr_uctx_level (Evd.evar_universe_context sigma)
+
+let pr_evd_qvar sigma = UState.pr_uctx_qvar (Evd.evar_universe_context sigma)
+
 let reference_of_level sigma l = UState.qualid_of_level (Evd.evar_universe_context sigma) l
 
 let pr_evar_universe_context ctx =

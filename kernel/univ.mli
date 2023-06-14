@@ -228,9 +228,6 @@ end
 (** A value in a universe context set. *)
 type 'a in_universe_context_set = 'a * ContextSet.t
 
-val extend_in_context_set : 'a in_universe_context_set -> ContextSet.t ->
-  'a in_universe_context_set
-
 (** {6 Substitution} *)
 
 type universe_level_subst = Level.t Level.Map.t

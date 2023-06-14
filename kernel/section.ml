@@ -32,7 +32,7 @@ type 'a t = {
   (** Global universes introduced in the section *)
   poly_universes : UContext.t;
   (** Universes local to the section *)
-  all_poly_univs : Univ.Level.t array;
+  all_poly_univs : Instance.t;
   (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
@@ -60,15 +60,12 @@ let push_local_universe_context ctx sec =
   else
     let sctx = sec.poly_universes in
     let poly_universes = UContext.union sctx ctx in
-    let all_poly_univs =
-      Array.append sec.all_poly_univs (Instance.to_array @@ UContext.instance ctx)
-    in
+    let all_poly_univs = Instance.append sec.all_poly_univs (UContext.instance ctx) in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
-let rec is_polymorphic_univ u sec =
-  let uctx = sec.poly_universes in
-  let here = Array.exists (fun u' -> Level.equal u u') (Instance.to_array (UContext.instance uctx)) in
-  here || Option.cata (is_polymorphic_univ u) false sec.prev
+let is_polymorphic_univ u sec =
+  let _, us = Instance.to_array sec.all_poly_univs in
+  Array.exists (fun u' -> Level.equal u u') us
 
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
@@ -87,7 +84,7 @@ let open_section ~custom prev =
     context = [];
     mono_universes = ContextSet.empty;
     poly_universes = UContext.empty;
-    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] prev;
+    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) Instance.empty prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
     expand_info_map = (Cmap.empty, Mindmap.empty);

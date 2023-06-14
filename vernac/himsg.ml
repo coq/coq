@@ -368,7 +368,10 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk " is expected to have a functional type but it has type " ++ u]
      | UnifUnivInconsistency p ->
        [str "universe inconsistency: " ++
-        UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
+        UGraph.explain_universe_inconsistency
+          (Termops.pr_evd_qvar sigma)
+          (Termops.pr_evd_level sigma)
+          p]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
@@ -774,9 +777,20 @@ let explain_unsatisfied_constraints env sigma cst =
     Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
+let explain_unsatisfied_qconstraints env sigma cst =
+  strbrk "Unsatisfied quality constraints: " ++
+  Sorts.QConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
+  spc() ++ str "(maybe a bugged tactic)."
+
 let explain_undeclared_universe env sigma l =
   strbrk "Undeclared universe: " ++
     Termops.pr_evd_level sigma l ++
+    spc () ++ str "(maybe a bugged tactic)."
+
+let explain_undeclared_qualities env sigma l =
+  let n = Sorts.QVar.Set.cardinal l in
+  strbrk "Undeclared " ++ str (if n = 1 then "quality" else "qualities") ++ strbrk": " ++
+    prlist_with_sep spc (Termops.pr_evd_qvar sigma) (Sorts.QVar.Set.elements l) ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_disallowed_sprop () =
@@ -893,9 +907,13 @@ let explain_type_error env sigma err =
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
   | UnsatisfiedConstraints cst ->
-      explain_unsatisfied_constraints env sigma cst
+    explain_unsatisfied_constraints env sigma cst
+  | UnsatisfiedQConstraints cst ->
+    explain_unsatisfied_qconstraints env sigma cst
   | UndeclaredUniverse l ->
-     explain_undeclared_universe env sigma l
+    explain_undeclared_universe env sigma l
+  | UndeclaredQualities l ->
+    explain_undeclared_qualities env sigma l
   | DisallowedSProp -> explain_disallowed_sprop ()
   | BadBinderRelevance (rlv, decl) -> explain_bad_binder_relevance env sigma rlv decl
   | BadCaseRelevance (rlv, case) -> explain_bad_case_relevance env sigma rlv case
@@ -1089,7 +1107,10 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
+    UGraph.explain_universe_inconsistency
+      Sorts.QVar.raw_pr
+      UnivNames.pr_level_with_global_universes
+      incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1109,7 +1130,7 @@ let explain_not_match_error = function
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
-    (if not (Int.equal (AbstractContext.size got) (AbstractContext.size expect)) then mt() else
+    (if not (UVars.eq_sizes (AbstractContext.size got) (AbstractContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
     str "incompatible variance information"
@@ -1550,7 +1571,10 @@ let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
+    UGraph.explain_universe_inconsistency
+      Sorts.QVar.raw_pr
+      UnivNames.pr_level_with_global_universes
+      i ++ str "."
   | TypeError(env,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error env (Evd.from_env env) te

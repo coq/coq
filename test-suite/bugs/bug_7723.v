@@ -45,6 +45,19 @@ Eval vm_compute in foo.
 
 End LocalClosure.
 
+Module QVar.
+
+  Definition bar@{q|i|} := Type@{q|i}.
+
+  Definition gbar@{q1 q2|i j|} := bar@{q2|i}.
+
+  Eval vm_compute in gbar.
+
+  Definition gprop := Eval vm_compute in gbar@{Type Prop|Set Set}.
+  Check eq_refl : gprop = Prop.
+
+End QVar.
+
 Require Import Hurkens.
 Polymorphic Inductive unit := tt.
 

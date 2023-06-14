@@ -30,11 +30,11 @@ val infer_local_def : env -> Id.t -> section_def_entry ->
 val infer_local_assum : env -> types -> types * Sorts.relevance
 
 val infer_constant :
-  sec_univs:Univ.Level.t array option -> env -> constant_entry ->
+  sec_univs:UVars.Instance.t option -> env -> constant_entry ->
     'a pconstant_body
 
 val infer_opaque :
-  sec_univs:Univ.Level.t array option -> env -> 'a opaque_entry ->
+  sec_univs:UVars.Instance.t option -> env -> 'a opaque_entry ->
     unit pconstant_body * typing_context
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)

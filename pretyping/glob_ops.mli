@@ -19,6 +19,10 @@ val glob_sort_gen_eq : ('a -> 'a -> bool) -> 'a glob_sort_gen -> 'a glob_sort_ge
 
 val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
 
+val glob_qvar_eq :  glob_qvar -> glob_qvar -> bool
+
+val glob_quality_eq :  glob_quality -> glob_quality -> bool
+
 val glob_level_eq : Glob_term.glob_level -> Glob_term.glob_level -> bool
 
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool

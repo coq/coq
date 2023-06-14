@@ -44,6 +44,17 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
+let glob_qvar_eq g1 g2 = match g1, g2 with
+  | GLocalQVar na1, GLocalQVar na2 -> CAst.eq Name.equal na1 na2
+  | GQVar q1, GQVar q2 -> Sorts.QVar.equal q1 q2
+  | GRawQVar q1, GRawQVar q2 -> Sorts.QVar.equal q1 q2
+  | (GLocalQVar _ | GQVar _ | GRawQVar _), _ -> false
+
+let glob_quality_eq g1 g2 = match g1, g2 with
+  | GQConstant q1, GQConstant q2 -> Sorts.Quality.Constants.equal q1 q2
+  | GQualVar q1, GQualVar q2 -> glob_qvar_eq q1 q2
+  | (GQConstant _ | GQualVar _), _ -> false
+
 let glob_sort_name_eq g1 g2 = match g1, g2 with
   | GSProp, GSProp
   | GProp, GProp
@@ -74,13 +85,17 @@ let glob_sort_gen_eq f u1 u2 =
 
 let glob_sort_eq u1 u2 =
   let eq (q1, l1) (q2, l2) =
-    Option.equal Sorts.QVar.equal q1 q2 &&
+    Option.equal glob_qvar_eq q1 q2 &&
     List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
   in
   glob_sort_gen_eq eq u1 u2
 
 let glob_level_eq u1 u2 =
   glob_sort_gen_eq glob_sort_name_eq u1 u2
+
+let instance_eq (q1,u1) (q2,u2) =
+  List.equal glob_quality_eq q1 q2
+  && List.equal glob_level_eq u1 u2
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true
@@ -134,16 +149,16 @@ let fix_kind_eq k1 k2 = match k1, k2 with
   | GCoFix i1, GCoFix i2 -> Int.equal i1 i2
   | (GFix _ | GCoFix _), _ -> false
 
-let instance_eq f (x1,c1) (x2,c2) =
+let evar_instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1.CAst.v x2.CAst.v && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->
     GlobRef.CanOrd.equal gr1 gr2 &&
-    Option.equal (List.equal glob_level_eq) u1 u2
+    Option.equal instance_eq u1 u2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
-    Id.equal id1.CAst.v id2.CAst.v && List.equal (instance_eq f) arg1 arg2
+    Id.equal id1.CAst.v id2.CAst.v && List.equal (evar_instance_eq f) arg1 arg2
   | GPatVar k1, GPatVar k2 -> matching_var_kind_eq k1 k2
   | GApp (f1, arg1), GApp (f2, arg2) ->
     f f1 f2 && List.equal f arg1 arg2
@@ -176,13 +191,13 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     f c1 c2 && Option.equal cast_kind_eq k1 k2 && f t1 t2
   | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
     GlobRef.(CanOrd.equal (ConstRef cst1) (ConstRef cst2)) &&
-    Option.equal (List.equal glob_level_eq) u1 u2 &&
+    Option.equal instance_eq u1 u2 &&
     List.equal f args1 args2 && f c1 c2
   | GInt i1, GInt i2 -> Uint63.equal i1 i2
   | GFloat f1, GFloat f2 -> Float64.equal f1 f2
   | GArray (u1, t1, def1, ty1), GArray (u2, t2, def2, ty2) ->
     Array.equal f t1 t2 && f def1 def2 && f ty1 ty2 &&
-    Option.equal (List.equal glob_level_eq) u1 u2
+    Option.equal instance_eq u1 u2
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
      GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _ | GCast _ | GProj _ |
      GInt _ | GFloat _ | GArray _), _ -> false

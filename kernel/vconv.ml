@@ -9,10 +9,8 @@ open Vmsymtable
 (* Test la structure des piles *)
 
 let table_key_instance env = function
-| ConstKey cst ->
-  let ctx = Environ.constant_context env cst in
-  UVars.AbstractContext.size ctx
-| RelKey _ | VarKey _ | EvarKey _ -> 0
+| ConstKey cst -> Environ.constant_context env cst
+| RelKey _ | VarKey _ | EvarKey _ -> UVars.AbstractContext.empty
 
 let compare_zipper z1 z2 =
   match z1, z2 with
@@ -96,10 +94,9 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind ((mi,_i) as ind1) , Aind ind2 ->
     if Names.Ind.CanOrd.equal ind1 ind2 && compare_stack stk1 stk2 then
-      let ulen = UVars.AbstractContext.size (Environ.mind_context env mi) in
-      if ulen = 0 then
+      if UVars.AbstractContext.is_constant (Environ.mind_context env mi) then
         conv_stack env k stk1 stk2 cu
-      else
+      else begin
         match stk1 , stk2 with
         | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
           assert (0 < nargs args1);
@@ -110,11 +107,11 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
+      end
     else raise NotConvertible
   | Aid ik1, Aid ik2 ->
     if Vmvalues.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-      let ulen = table_key_instance env ik1 in
-      if ulen = 0 then
+      if UVars.AbstractContext.is_constant (table_key_instance env ik1) then
         conv_stack env k stk1 stk2 cu
       else
         match stk1 , stk2 with
