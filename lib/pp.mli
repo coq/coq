@@ -91,6 +91,7 @@ val spc : unit -> t
 val cut : unit -> t
 val align : unit -> t
 val int : int -> t
+val int64 : Int64.t -> t
 val real : float -> t
 val bool : bool -> t
 val qstring : string -> t

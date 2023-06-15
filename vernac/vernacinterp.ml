@@ -101,6 +101,14 @@ let interp_control_entry ~loc (f : control_entry) ~st
     | Ok (v,_) -> v
     | Error (exn, _) -> Exninfo.iraise exn
     end
+  | ControlInstructions { synterp_instructions } ->
+    let result = System.count_instructions (fun () -> fn ~st) () in
+    let result = Result.map (fun (v,d) -> v, System.instruction_count_add d synterp_instructions) result in
+    Feedback.msg_notice @@ System.fmt_instructions_result result;
+    begin match result with
+    | Ok (v,_) -> v
+    | Error (exn, _) -> Exninfo.iraise exn
+    end
   | ControlRedirect s ->
     Topfmt.with_output_to_file s (fun () -> fn ~st) ()
 

@@ -94,6 +94,8 @@ GRAMMAR EXTEND Gram
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
         { add_control_flag ~loc ~flag:ControlTime c }
+      | IDENT "Instructions"; c = vernac_control ->
+        { add_control_flag ~loc ~flag:ControlInstructions c }
       | IDENT "Redirect"; s = ne_string; c = vernac_control ->
         { add_control_flag ~loc ~flag:(ControlRedirect s) c }
       | IDENT "Timeout"; n = natural; c = vernac_control ->

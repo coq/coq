@@ -352,6 +352,49 @@ let fmt_transaction_result x =
   in
   str msg ++ fmt_duration duration ++ str msg2
 
+type instruction_count = (Int64.t, string) Result.t
+
+let instruction_count_add c1 c2 =
+  match (c1, c2) with
+  | (Ok i1, Ok i2) -> Ok (Int64.add i1 i2)
+  | (Error _, _) -> c1
+  | (_, Error _) -> c2
+
+type 'a instructions_result =
+  (('a * instruction_count), (Exninfo.iexn * instruction_count)) Result.t
+
+let instructions_between ~c_start ~c_end =
+  match (c_start, c_end) with
+  | (Error _, _) -> c_start
+  | (_, Error _) -> c_end
+  | (Ok c0, Ok c1) -> Ok (Int64.sub c1 c0)
+
+let count_instructions f x =
+  let c_start = Instr.read_counter () in
+  try
+    let y = f x in
+    let c_end = Instr.read_counter () in
+    Ok(y, instructions_between ~c_start ~c_end)
+  with e ->
+    let exn = Exninfo.capture e in
+    let c_end = Instr.read_counter () in
+    Error(exn, instructions_between ~c_start ~c_end)
+
+let fmt_instructions_result r =
+  let (failing, count, status) =
+    match r with
+    | Ok(_, count) -> ("", count, " (successful)")
+    | Error(_, count) -> ("failing ", count, " (failure)"   )
+  in
+  match count with
+  | Ok i ->
+      str "Finished " ++ str failing ++ str "transaction in " ++ int64 i ++
+      str " instructions" ++ str status
+  | Error m ->
+      str "Finished " ++ str failing ++
+      str "transaction with instruction count error \"" ++
+      str m ++ str "\"" ++ str status
+
 (* We use argv.[0] as we don't want to resolve symlinks *)
 let get_toplevel_path ?(byte=Sys.(backend_type = Bytecode)) top =
   let open Filename in

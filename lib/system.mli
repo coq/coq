@@ -126,6 +126,20 @@ type 'a transaction_result = (('a * duration), (Exninfo.iexn * duration)) Result
 val measure_duration : ('a -> 'b) -> 'a -> 'b transaction_result
 val fmt_transaction_result : 'a transaction_result -> Pp.t
 
+(** {6 Instruction count.} *)
+
+type instruction_count = (Int64.t, string) Result.t
+
+val instructions_between : c_start:instruction_count -> c_end:instruction_count -> instruction_count
+val instruction_count_add : instruction_count -> instruction_count -> instruction_count
+
+type 'a instructions_result =
+  (('a * instruction_count), (Exninfo.iexn * instruction_count)) Result.t
+
+val count_instructions : ('a -> 'b) -> 'a -> 'b instructions_result
+
+val fmt_instructions_result : 'a instructions_result -> Pp.t
+
 (** [get_toplevel_path program] builds a complete path to the
    executable denoted by [program]. This involves:
 

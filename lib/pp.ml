@@ -114,6 +114,7 @@ let spc   () = Ppcmd_print_break (1,0)
 let cut   () = Ppcmd_print_break (0,0)
 let align () = Ppcmd_print_break (0,0)
 let int   n  = str (string_of_int n)
+let int64 n  = str (Int64.to_string n)
 let real  r  = str (string_of_float r)
 let bool  b  = str (string_of_bool b)
 

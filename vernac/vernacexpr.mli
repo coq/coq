@@ -504,6 +504,7 @@ type vernac_expr = synterp_vernac_expr vernac_expr_gen
 
 type control_flag =
   | ControlTime
+  | ControlInstructions
   | ControlRedirect of string
   | ControlTimeout of int
   | ControlFail
