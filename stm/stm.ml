@@ -2432,11 +2432,7 @@ let observe ~doc id =
 let finish ~doc =
   let head = VCS.current_branch () in
   let () = observe ~doc (VCS.get_branch_pos head) in
-  let tip = VCS.cur_tip () in
-  if not (State.is_cached ~cache:true tip) then
-    CErrors.anomaly Pp.(str "Stm.finish: tip not cached");
-  VCS.print ();
-  State.get_cached tip
+  VCS.print ()
 
 let wait ~doc =
   let () = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
@@ -2542,7 +2538,7 @@ let handle_failure (e, info) vcs =
   Exninfo.iraise (e, info)
 
 let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
-  let _ : Vernacstate.t = finish ~doc in
+  let () = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
     CErrors.user_err (str"Cannot dump a vio with open proofs.");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,

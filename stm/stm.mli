@@ -128,7 +128,7 @@ val edit_at : doc:doc -> Stateid.t -> doc * edit_focus
 val observe : doc:doc -> Stateid.t -> unit
 
 (* [finish doc] Fully checks a document up to the "current" tip. *)
-val finish : doc:doc -> Vernacstate.t
+val finish : doc:doc -> unit
 
 (* Internal use (fake_ide) only, do not use *)
 val wait : doc:doc -> unit

@@ -25,6 +25,18 @@ let source ldir file = Loc.InFile {
     file = file;
   }
 
+let check_pending_proofs filename =
+  let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
+  if not (CList.is_empty pfs) then
+    fatal_error Pp.(str "There are pending proofs in file " ++ str filename ++ str": "
+                 ++ (pfs
+                     |> List.rev
+                     |> prlist_with_sep pr_comma Names.Id.print)
+                 ++ str ".");
+  let pm = Vernacstate.Declare.get_program () [@ocaml.warning "-3"] in
+  let what_for = Pp.str ("file " ^ filename) in
+  NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
+
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let open Vernac.State in
@@ -68,8 +80,8 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
       let source = source ldir long_f_dot_in in
       let state = Vernac.load_vernac ~echo ~check ~state ~source long_f_dot_in in
-      let fullstate = Stm.finish ~doc:state.doc in
-      ensure_no_pending_proofs ~filename:long_f_dot_in fullstate;
+      let () = Stm.finish ~doc:state.doc in
+      check_pending_proofs long_f_dot_in;
       let () = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       (* In .vo production, dump a complete .vo file. *)
@@ -98,8 +110,8 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let ldir = Stm.get_ldir ~doc:state.doc in
       let source = source ldir long_f_dot_in in
       let state = Vernac.load_vernac ~echo ~check:false ~source ~state long_f_dot_in in
-      let state = Stm.finish ~doc:state.doc in
-      ensure_no_pending_proofs state ~filename:long_f_dot_in;
+      let () = Stm.finish ~doc:state.doc in
+      check_pending_proofs long_f_dot_in;
       let create_vos = (mode = BuildVos) in
       (* In .vos production, the output .vos file contains compiled statements.
          In .vio production, the output .vio file contains compiled statements and suspended proofs. *)
