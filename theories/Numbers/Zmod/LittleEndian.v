@@ -41,10 +41,10 @@ Qed.
 Lemma encode_decode {m} bs n (H : length bs = n) : encode m n (@decode m bs) = bs.
 Proof. rewrite encode_of_N, encode_N_decode; trivial. Qed.
 
-Lemma of_N_decode_encode m n v : decode (encode m n v) = v mod (m^N.of_nat n)%N :> Z.
+Lemma of_N_decode_encode m n v : decode (encode m n v) = v mod m^Z.of_nat n :> Z.
 Proof.
   revert v; induction n; cbn [encode decode]; intros;
-    rewrite ?N.pow_0_r, ?Z.mod_1_r, ?Nnat.Nat2N.inj_succ, ?N.pow_succ_r; try lia.
+    rewrite ?N.pow_0_r, ?Z.mod_1_r, ?Nat2Z.inj_succ, ?Z.pow_succ_r; try lia.
   specialize (IHn (v/m)); cbv [N.undivmod].
   zify; rewrite IHn, Z.rem_mul_r, Z.add_comm, fold_to_Z, to_Z_of_Z; lia.
 Qed.
@@ -116,7 +116,7 @@ Proof.
   destruct (Nat.leb_spec n i); rewrite ?Nat.min_l, ?Nat.min_r by lia.
   { rewrite firstn_all2; trivial. rewrite length_encode; lia. }
   apply decode_inj, N2Z.inj. { rewrite firstn_length, 2 length_encode; lia. }
-  rewrite decode_firstn, N2Z.inj_mod, 2of_N_decode_encode, 2N2Z.inj_pow, Z.mod_mod_pow; lia.
+  rewrite decode_firstn, N2Z.inj_mod, 2of_N_decode_encode, N2Z.inj_pow, Z.mod_mod_pow; lia.
 Qed.
 
 Lemma skipn_encode i m n v : skipn i (encode m n v) = encode m (n-i) (v / m^Z.of_nat i).
@@ -125,7 +125,7 @@ Proof.
   { rewrite skipn_all2, (proj2 (Nat.sub_0_le _ _)), encode_0; trivial.
     rewrite length_encode; lia. }
   apply decode_inj, N2Z.inj. { rewrite skipn_length, 2 length_encode; lia. }
-  rewrite decode_skipn, N2Z.inj_div, 2of_N_decode_encode, 3N2Z.inj_pow.
+  rewrite decode_skipn, N2Z.inj_div, 2of_N_decode_encode, N2Z.inj_pow.
   rewrite ?N2Z.inj_pos, ?nat_N_Z, ?Nat2Z.inj_sub, Z.div_mod_l_pow2_r; lia.
 Qed.
 
@@ -187,7 +187,7 @@ Qed.
 
 Lemma of_bits_inj xs ys
   (Hl : length ys = length xs) (H : of_bits xs = of_bits ys) : xs = ys.
-Proof. 
+Proof.
   apply decode_inj, List.map_inj in H; rewrite ?map_length; trivial.
   intros ? ? ?% of_bool_inj; trivial; lia.
 Qed.
@@ -286,7 +286,7 @@ Qed.
 
 Lemma of_bytes_inj xs ys
   (Hl : length ys = length xs) (H : of_bytes xs = of_bytes ys) : xs = ys.
-Proof. 
+Proof.
   eapply decode_inj, List.map_inj in H; rewrite ?map_length; trivial.
   intros ? ? ?% of_byte_inj; trivial; lia.
 Qed.
