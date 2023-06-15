@@ -233,12 +233,11 @@ class CoqObject(ObjectDescription):
             signode['first'] = (not self.names)
             self._record_name(name, targetid, signode)
         else:
-            # todo: make the following a real error or warning
-            # todo: then maybe the above "if" is not needed
-            names_in_subdomain = self.subdomain_data()
-            if name in names_in_subdomain:
-                print("Duplicate", self.subdomain, "name: ", name)
-            # self._warn_if_duplicate_name(names_in_subdomain, name, signode)
+            # We don't warn for duplicates in the SSReflect chapter, because
+            # it's the style of this chapter to repeat all the defined
+            # objects at the end.
+            if self.env.docname != 'proof-engine/ssreflect-proof-language':
+                self._warn_if_duplicate_name(self.subdomain_data(), name, signode)
         return targetid
 
     def _add_index_entry(self, name, target):

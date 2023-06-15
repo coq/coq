@@ -1577,19 +1577,13 @@ succeeds, and results in an error otherwise.
    .. exn:: Not equal (due to universes).
       :undocumented:
 
-.. tacn:: constr_eq @one_term @one_term
+   .. tacn:: constr_eq @one_term @one_term
 
-   Like :tacn:`constr_eq_strict`, but may add constraints to make universes equal.
+      Like :tacn:`constr_eq_strict`, but may add constraints to make universes equal.
 
-   .. exn:: Not equal.
-      :undocumented:
+   .. tacn:: constr_eq_nounivs @one_term @one_term
 
-   .. exn:: Not equal (due to universes).
-      :undocumented:
-
-.. tacn:: constr_eq_nounivs @one_term @one_term
-
-   Like :tacn:`constr_eq_strict`, but all universes are considered equal.
+      Like :tacn:`constr_eq_strict`, but all universes are considered equal.
 
 .. tacn:: unify @one_term @one_term {? with @ident }
 

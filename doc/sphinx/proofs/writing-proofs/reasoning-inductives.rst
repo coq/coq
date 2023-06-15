@@ -332,9 +332,6 @@ Induction
      that was automatically generated when the inductive type was declared based
      on the sort of the goal.
 
-   .. exn:: Not an inductive product.
-      :undocumented:
-
    .. exn:: Cannot recognize a statement based on @reference.
 
       The type of the :n:`@induction_arg` (in an :n:`@induction_clause`) must reduce to the
@@ -665,9 +662,6 @@ This section describes some special purpose tactics to work with
       the use of a sigma type is avoided.
 
    .. exn:: No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop. You can try to use option Set Keep Proof Equalities.
-      :undocumented:
-
-   .. exn:: No primitive equality found.
       :undocumented:
 
    .. exn:: Not a negated primitive equality
