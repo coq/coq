@@ -491,7 +491,8 @@ The following attribute is supported by every command:
    Consequently, using this attribute around an :cmd:`Import` command
    will prevent it from changing the warning state.
 
-   See also :opt:`Warnings`.
+   See also :opt:`Warnings` for the concrete syntax to use inside the
+   quoted string.
 
 .. attr:: warning = @string
    :name: warning

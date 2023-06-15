@@ -24,4 +24,4 @@ For reference, here are direct links to the documentation of:
 - :ref:`attributes`
 - :ref:`flags-options-tables`;
 - controlling the display of warning messages with the :opt:`Warnings`
-  option;
+  option or the :attr:`warnings` attribute;

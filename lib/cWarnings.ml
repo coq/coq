@@ -386,6 +386,10 @@ module CoreCategories = struct
 
   let make name = create_category ~name ()
 
+  (* Update the list of core categories in
+     doc/sphinx/proof-engine/vernacular-commands.rst
+     when adding a new category here. *)
+
   let automation = make "automation"
   let bytecode_compiler = make "bytecode-compiler"
   let coercions = make "coercions"
