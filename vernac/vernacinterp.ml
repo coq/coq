@@ -104,6 +104,12 @@ let interp_control_entry ~loc (f : control_entry) ~st
   | ControlRedirect s ->
     Topfmt.with_output_to_file s (fun () -> fn ~st) ()
 
+let deprecated_nonuniform =
+  CWarnings.create ~name:"deprecated-nonuniform-attribute"
+    ~category:Deprecation.Version.v8_18
+    Pp.(fun () -> strbrk "Attribute '#[nonuniform]' is deprecated, \
+                          use '#[warning=\"-uniform-inheritance\"]' instead.")
+
 let warnings_att =
   Attributes.attribute_of_list [
     "warnings", Attributes.payload_parser ~cat:(^) ~name:"warnings";
@@ -112,6 +118,12 @@ let warnings_att =
 
 let with_generic_atts atts f =
   let atts, warnings = Attributes.parse_with_extra warnings_att atts in
+  let atts, nonuniform = Attributes.parse_with_extra ComCoercion.nonuniform atts in
+  let warnings =
+    let () = if nonuniform <> None then deprecated_nonuniform () in
+    if nonuniform <> Some true then warnings else
+      let ui = "-uniform-inheritance" in
+      Some (match warnings with Some w -> w ^ "," ^ ui | None -> ui) in
   match warnings with
   | None -> f ~atts
   | Some warnings -> CWarnings.with_warn warnings (fun () -> f ~atts) ()

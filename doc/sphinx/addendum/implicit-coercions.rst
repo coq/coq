@@ -171,6 +171,10 @@ Coercion Classes
 
      Silence the non uniform inheritance warning.
 
+     .. deprecated:: 8.18
+
+        Use the :attr:`warnings` attribute instead with "-uniform-inheritance".
+
   .. exn:: @qualid not declared.
 
      :token:`qualid` is not defined globally.
@@ -209,7 +213,7 @@ Coercion Classes
 
      The :ref:`test for ambiguous coercion paths <ambiguous-paths>`
      may yield false positives involving the coercion :token:`qualid`.
-     Use the :attr:`nonuniform` attribute to silence this warning.
+     Use the :attr:`warnings` attribute with "-uniform-inheritance" to silence this warning.
 
   .. warn:: New coercion path ... is ambiguous with existing ...
 

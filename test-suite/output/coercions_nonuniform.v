@@ -30,7 +30,7 @@ Parameter D : Type.
 Parameter f : forall (b : bool) (n : nat), C n b -> D.
 
 (* uniform inheritance not satisfied but attribute, no warning *)
-#[nonuniform] Coercion f : C >-> D.
+#[warning="-uniform-inheritance"] Coercion f : C >-> D.
 
 End Test2.
 
@@ -63,9 +63,6 @@ Parameter D : Type.
 Parameter f : forall (b : bool) (n : nat), C n b -> D.
 
 (* uniform inheritance not satisfied but attribute, no warning *)
-#[nonuniform] Coercion f' := f.
+#[warning="-uniform-inheritance"] Coercion f' := f.
 
 End Test5.
-
-(* Check that attribute is not supported for non coercion definitions *)
-Fail #[nonuniform] Definition f := id.
