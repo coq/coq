@@ -84,16 +84,20 @@ let duration ~time name ph ?args ?(last=",") () =
 
 let sums = ref []
 
-let enter ?time name ?args ?last () =
+let enter_sums ?time () =
   let time = gettimeopt time in
-  sums := (time, CString.Map.empty) :: !sums;
-  duration ~time name "B" ?args ?last ()
+  sums := (time, CString.Map.empty) :: !sums
 
-let leave ?time name ?(args=[]) ?last () =
+let enter ?time name ?args () =
   let time = gettimeopt time in
-  let sum = match !sums with
+  enter_sums ~time ();
+  duration ~time name "B" ?args ()
+
+let leave_sums ?time name () =
+  let time = gettimeopt time in
+  match !sums with
     | [] -> assert false
-    | [_,sum] -> sum
+    | [start,sum] -> sums := []; sum, time -. start
     | (start, sum) :: (start', next) :: rest ->
       let dur = time -. start in
       let next = CString.Map.update name (function
@@ -107,8 +111,11 @@ let leave ?time name ?(args=[]) ?last () =
           sum next
       in
       sums := (start', next) :: rest;
-      sum
-  in
+      sum, dur
+
+let leave ?time name ?(args=[]) ?last () =
+  let time = gettimeopt time in
+  let sum, dur = leave_sums ~time name () in
   let sum = List.map (fun (name, (t, cnt)) ->
       name, MiniJson.String
         (Printf.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
@@ -126,9 +133,19 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
   let pp tdiff = MiniJson.String (Printf.sprintf "%.3G w" tdiff) in
   [("major",pp major); ("minor", pp minor)]
 
+(* NB: "process" and "init" are unconditional because they don't go
+   through [profile] and I'm too lazy to make them conditional *)
+let components =
+  match Sys.getenv_opt "COQ_PROFILE_COMPONENTS" with
+  | None -> CString.Pred.full
+  | Some s ->
+    List.fold_left (fun cs c -> CString.Pred.add c cs)
+      CString.Pred.empty
+      (String.split_on_char ',' s)
+
 let profile name ?args f () =
   if not (is_profiling ()) then f ()
-  else begin
+  else if CString.Pred.mem name components then begin
     let args = Option.map (fun f -> f()) args in
     enter name ?args ();
     let mstart = Gc.quick_stat () in
@@ -143,6 +160,17 @@ let profile name ?args f () =
     let mend = Gc.quick_stat () in
     let args = make_mem_diff ~mstart ~mend in
     leave name ~args ();
+    v
+  end
+  else begin
+    enter_sums ();
+    let v = try f ()
+      with e ->
+        let e = Exninfo.capture e in
+        ignore (leave_sums name () : _ * _);
+        Exninfo.iraise e
+    in
+    ignore (leave_sums name () : _ * _);
     v
   end
 
