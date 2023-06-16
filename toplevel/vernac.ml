@@ -124,7 +124,12 @@ let load_vernac_core ~echo ~check ~state ?source file =
           (fun () ->
              NewProfile.profile "command"
                ~args:(fun () ->
-                   [("cmd", String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)))])
+                   let lnum = match ast.loc with
+                     | None -> "unknown"
+                     | Some loc -> string_of_int loc.line_nb
+                   in
+                   [("cmd", String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)));
+                    ("line", String lnum)])
                (fun () ->
              Flags.silently (interp_vernac ~check ~state) ast) ())
           ()
