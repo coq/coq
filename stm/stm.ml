@@ -2695,7 +2695,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
             begin match w with
               | VtNow ->
                 (* We need to execute to get the new parsing state *)
-                ignore(finish ~doc:dummy_doc);
+                let () = observe ~doc:dummy_doc (VCS.get_branch_pos (VCS.current_branch ())) in
                 let parsing = Vernacstate.Parser.cur_state () in
                 (* If execution has not been put in cache, we need to save the parsing state *)
                 if (VCS.get_info id).state == EmptyState then VCS.set_parsing_state id parsing;
