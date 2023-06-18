@@ -44,6 +44,8 @@ OVERLAY_FILE=$(mktemp overlay-XXXX)
 # Create the overlay file
 > "$OVERLAY_FILE"
 
+skipped_repos=
+
 # We first try to build the contribs
 while test $# -gt 0
 do
@@ -57,9 +59,14 @@ do
     _CONTRIB_DIR=_build_ci/$_CONTRIB_NAME
 
     # extract the relevant part of the repository
-    _CONTRIB_GITSUFFIX=${_CONTRIB_GITURL#https://github.com/*/}
-    _CONTRIB_GITURL="https://github.com/$DEVELOPER_NAME/$_CONTRIB_GITSUFFIX"
-    _CONTRIB_GITPUSHURL="git@github.com:$DEVELOPER_NAME/${_CONTRIB_GITSUFFIX}.git"
+    if [[ $_CONTRIB_GITURL == https://github.com/*/* ]]; then
+        _CONTRIB_GITSUFFIX=${_CONTRIB_GITURL#https://github.com/*/}
+        _CONTRIB_GITURL="https://github.com/$DEVELOPER_NAME/$_CONTRIB_GITSUFFIX"
+        _CONTRIB_GITPUSHURL="git@github.com:$DEVELOPER_NAME/${_CONTRIB_GITSUFFIX}.git"
+    else
+        skipped_repos="$skipped_repos $_CONTRIB_NAME"
+        continue
+    fi
 
     DOWNLOAD_ONLY=1 make ci-$_CONTRIB_NAME || true
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
@@ -72,3 +79,8 @@ done
 # Copy to overlays folder.
 PR_NUMBER=$(printf '%05d' "$PR_NUMBER")
 mv $OVERLAY_FILE dev/ci/user-overlays/$PR_NUMBER-$DEVELOPER_NAME-${OVERLAY_BRANCH///}.sh
+
+if [ -n "$skipped_repos" ]; then
+    >&2 echo "Skipped non-github repos: $skipped_repos"
+    exit 1
+fi
