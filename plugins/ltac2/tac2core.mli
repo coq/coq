@@ -30,6 +30,8 @@ val c_false : ltac_constructor
 
 end
 
+val throw : ?info:Exninfo.info -> exn -> 'a Proofview.tactic
+
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
 
 module type MapType = sig
