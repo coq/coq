@@ -1796,3 +1796,26 @@ let evars_of_filtered_evar_info (type a) evd (evi : a evar_info) =
        | Evar_empty -> Evar.Set.empty
        | Evar_defined b -> evars_of_term evd b)
        (evars_of_named_context evd (evar_filtered_context evi)))
+
+let drop_new_defined ~original sigma =
+  let to_keep, to_drop = Evar.Map.partition (fun ev _ ->
+      Evar.Map.mem ev original.defn_evars || Evar.Map.mem ev original.undf_evars)
+      sigma.defn_evars
+  in
+  let dummy = { empty with defn_evars = to_drop } in
+  let nfc c = MiniEConstr.to_constr_nocheck dummy c in
+  assert (Metamap.is_empty sigma.metas);
+  assert (List.is_empty sigma.conv_pbs);
+  let normalize_changed _ev orig evi =
+    match orig, evi with
+    | _, None -> None
+    | None, Some evi -> Some (map_evar_info nfc evi)
+    | Some orig, Some evi -> if orig == evi then None else Some (map_evar_info nfc evi)
+  in
+  let normalize_against original current =
+    let normalized = EvMap.merge normalize_changed original current in
+    EvMap.union (fun _ _ x -> Some x) current normalized
+  in
+  let to_keep = normalize_against original.defn_evars to_keep in
+  let undf_evars = normalize_against original.undf_evars sigma.undf_evars in
+  { sigma with defn_evars = to_keep; undf_evars }
