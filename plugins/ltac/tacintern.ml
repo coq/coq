@@ -818,6 +818,7 @@ let notation_subst _avoid bindings tac =
   (* This is theoretically not correct due to potential variable
      capture, but Ltac has no true variables so one cannot simply
      substitute *)
-  CAst.make (TacLetIn (false, bindings, tac))
+  if List.is_empty bindings then tac
+  else CAst.make (TacLetIn (false, bindings, tac))
 
 let () = Genintern.register_ntn_subst0 wit_tactic notation_subst
