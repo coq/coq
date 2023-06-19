@@ -1763,7 +1763,11 @@ let () =
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
 
 let () =
-  declare_string_option ~preprocess:CWarnings.normalize_flags_string
+  let preprocess flags =
+    CWarnings.check_unknown_warnings flags;
+    CWarnings.normalize_flags_string flags
+  in
+  declare_string_option ~preprocess
     { optstage = Summary.Stage.Interp;
       optdepr  = None;
       optkey   = ["Warnings"];
