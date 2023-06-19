@@ -19,7 +19,9 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    At least one of :n:`since` or :n:`note` must be present.  If both
    are present, either one may appear first and they must be separated
-   by a comma. If :n:`since` is present, it will be used in the warning name.
+   by a comma. If they are present, they will be used in the warning
+   message, and :n:`since` will also be used in the warning name and
+   categories.
 
    This attribute is supported by the following commands: :cmd:`Ltac`,
    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`, :cmd:`Ltac2`,
@@ -57,7 +59,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    .. coqtop:: all abort warn
 
-      #[deprecated(since="0.9", note="Use idtac instead.")]
+      #[deprecated(since="mylib 0.9", note="Use idtac instead.")]
       Ltac foo := idtac.
       Goal True.
       Proof.
@@ -80,7 +82,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
    .. coqtop:: in reset
 
       Definition bar x := S x.
-      #[deprecated(since="1.2", note="Use bar instead.")]
+      #[deprecated(since="mylib 1.2", note="Use bar instead.")]
       Notation foo := bar (only parsing).
 
    Then, the following code still works, but emits a warning:
