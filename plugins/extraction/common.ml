@@ -587,11 +587,11 @@ let pp_haskell_gen k mp rls = match rls with
 
 (* Main name printing function for a reference *)
 
-let pp_global k r =
+let pp_global_with_key k key r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
-  let mp,l = repr_of_r r in
+  let mp,l = KerName.repr key in
   if ModPath.equal mp (top_visible_mp ()) then
     (* simplest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
@@ -603,6 +603,9 @@ let pp_global k r =
       | JSON -> dottify (List.map unquote rls)
       | Haskell -> if modular () then pp_haskell_gen k mp rls else s
       | Ocaml -> pp_ocaml_gen k mp rls (Some l)
+
+let pp_global k r =
+  pp_global_with_key k (repr_of_r r) r
 
 (* Main name printing function for declaring a reference *)
 
