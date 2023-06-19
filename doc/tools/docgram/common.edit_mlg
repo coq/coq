@@ -1560,6 +1560,8 @@ vernac_control: [
    cover this the descriptions of these commands *)
 | REPLACE "Time" vernac_control
 | WITH "Time" sentence
+| REPLACE "Instructions" vernac_control
+| WITH "Instructions" sentence
 | REPLACE "Redirect" ne_string vernac_control
 | WITH "Redirect" ne_string sentence
 | REPLACE "Timeout" natural vernac_control

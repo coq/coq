@@ -970,6 +970,7 @@ command: [
 | "Hint" "Constructors" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Hint" "Extern" natural OPT one_pattern "=>" ltac_expr OPT ( ":" LIST1 ident )
 | "Time" sentence
+| "Instructions" sentence
 | "Redirect" string sentence
 | "Timeout" natural sentence
 | "Fail" sentence
