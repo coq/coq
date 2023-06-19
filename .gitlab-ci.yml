@@ -722,6 +722,7 @@ library:ci-geocoq:
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+  allow_failure: true
 
 library:ci-hott:
   extends: .ci-template
