@@ -4,6 +4,9 @@
 Programmable proof search
 =========================
 
+Tactics
+-------
+
 .. tacn:: auto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
    .. insertprodn auto_using hintbases
@@ -306,8 +309,8 @@ integer and an optional pattern. Hints with lower costs are tried first.
 :tacn:`auto` tries a hint when the conclusion of the current goal matches its
 pattern or when the hint has no pattern.
 
-Creating Hint databases
------------------------
+Creating hint databases
+```````````````````````
 
 Hint databases can be created with the :cmd:`Create HintDb` command or implicitly
 by adding a hint to an unknown database.  We recommend you always use :cmd:`Create HintDb`
@@ -331,6 +334,48 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
    unification.
 
    By default, hint databases are undiscriminated.
+
+Hint databases defined in the Coq standard library
+``````````````````````````````````````````````````
+
+Several hint databases are defined in the Coq standard library. The
+actual content of a database is the collection of hints declared
+to belong to this database in each of the various modules currently
+loaded. Especially, requiring new modules may extend the database.
+At Coq startup, only the core database is nonempty and can be used.
+
+:core: This special database is automatically used by ``auto``, except when
+       pseudo-database ``nocore`` is given to ``auto``. The core database
+       contains only basic lemmas about negation, conjunction, and so on.
+       Most of the hints in this database come from the Init and Logic directories.
+
+:arith: This database contains all lemmas about Peano’s arithmetic proved in the
+        directories Init and Arith.
+
+:zarith: contains lemmas about binary signed integers from the
+         directories theories/ZArith. The database also contains
+         high-cost hints that call :tacn:`lia` on equations and
+         inequalities in ``nat`` or ``Z``.
+
+:bool: contains lemmas about booleans, mostly from directory theories/Bool.
+
+:datatypes: is for lemmas about lists, streams and so on that are mainly proved
+            in the Lists subdirectory.
+
+:sets: contains lemmas about sets and relations from the directories Sets and
+       Relations.
+
+:typeclass_instances: contains all the typeclass instances declared in the
+                      environment, including those used for ``setoid_rewrite``,
+                      from the Classes directory.
+
+:fset: internal database for the implementation of the ``FSets`` library.
+
+:ordered_type: lemmas about ordered types (as defined in the legacy ``OrderedType`` module),
+               mainly used in the ``FSets`` and ``FMaps`` libraries.
+
+You are advised not to put your own hints in the core database, but
+use one or several databases specific to your development.
 
 .. _creating_hints:
 
@@ -632,53 +677,10 @@ Creating Hints
 
    This command displays all hints from database :n:`@ident`.
 
-
-Hint databases defined in the Coq standard library
---------------------------------------------------
-
-Several hint databases are defined in the Coq standard library. The
-actual content of a database is the collection of hints declared
-to belong to this database in each of the various modules currently
-loaded. Especially, requiring new modules may extend the database.
-At Coq startup, only the core database is nonempty and can be used.
-
-:core: This special database is automatically used by ``auto``, except when
-       pseudo-database ``nocore`` is given to ``auto``. The core database
-       contains only basic lemmas about negation, conjunction, and so on.
-       Most of the hints in this database come from the Init and Logic directories.
-
-:arith: This database contains all lemmas about Peano’s arithmetic proved in the
-        directories Init and Arith.
-
-:zarith: contains lemmas about binary signed integers from the
-         directories theories/ZArith. The database also contains
-         high-cost hints that call :tacn:`lia` on equations and
-         inequalities in ``nat`` or ``Z``.
-
-:bool: contains lemmas about booleans, mostly from directory theories/Bool.
-
-:datatypes: is for lemmas about lists, streams and so on that are mainly proved
-            in the Lists subdirectory.
-
-:sets: contains lemmas about sets and relations from the directories Sets and
-       Relations.
-
-:typeclass_instances: contains all the typeclass instances declared in the
-                      environment, including those used for ``setoid_rewrite``,
-                      from the Classes directory.
-
-:fset: internal database for the implementation of the ``FSets`` library.
-
-:ordered_type: lemmas about ordered types (as defined in the legacy ``OrderedType`` module),
-               mainly used in the ``FSets`` and ``FMaps`` libraries.
-
-You are advised not to put your own hints in the core database, but
-use one or several databases specific to your development.
-
 Hint locality
--------------
+`````````````
 
-As explained in :ref:`creating_hints`, hints outside sections have three
+As explained at the beginning of :ref:`creating_hints`, hints outside sections have three
 possible localities: :attr:`local`, :attr:`export`, and :attr:`global`,
 with :attr:`export` now being the default. The default used to
 be :attr:`global`, so old code bases may still use it. The following
