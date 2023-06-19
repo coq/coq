@@ -382,6 +382,23 @@ let create ~name ?category ?default pp =
   let w = create_warning ?from ?default ~name () in
   create_in w pp
 
+let warn_unknown_warnings = create ~name:"unknown-warning" Pp.(fun flags ->
+    str "Could not enable unknown " ++
+    str (CString.plural (List.length flags) "warning") ++ spc() ++
+    prlist_with_sep spc str flags)
+
+let check_unknown_warnings flags =
+  let flags = flags_of_string flags in
+  let flags = List.filter_map (function
+      | Disabled, _ | _, All -> None
+      | (Enabled|AsError), Other name ->
+        if String.Map.mem name !graph then None
+        else Some name)
+      flags
+  in
+  if not (List.is_empty flags) then
+    warn_unknown_warnings flags
+
 module CoreCategories = struct
 
   let make name = create_category ~name ()
