@@ -3,7 +3,11 @@
 
 (* This is also #4560 and #6273 *)
 
+#[universes(template)]
+#[warnings="-no-template-universe"]
 Inductive foo := foo_1.
+
+Add Keep Equalities foo.
 
 Goal forall (a b : foo), Some a = Some b -> a = b.
 Proof.

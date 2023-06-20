@@ -710,8 +710,6 @@ This section describes some special purpose tactics to work with
       This :term:`table` specifies a set of inductive types for which proof
       equalities are always kept by :tacn:`injection`. This overrides the
       :flag:`Keep Proof Equalities` flag for those inductive types.
-      :attr:`Template polymorphic <universes(template)>` inductive types are
-      implicitly added to this table when defined.
       Use the :cmd:`Add` and :cmd:`Remove` commands to update this set manually.
 
 .. tacn:: simplify_eq {? @induction_arg }
