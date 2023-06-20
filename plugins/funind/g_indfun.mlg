@@ -209,7 +209,7 @@ VERNAC COMMAND EXTEND Function STATE CUSTOM
 | ["Function" ne_function_fix_definition_list_sep(recsl,"with")]
     => { classify_funind recsl }
     -> {
-    let warn = "-unused-pattern-matching-variable,-matching-variable,-non-recursive" in
+    let warn = "-unused-pattern-matching-variable,-non-recursive" in
     if is_interactive recsl then
       Vernacextend.vtopenproof (fun () ->
           CWarnings.with_warn warn
