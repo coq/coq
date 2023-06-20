@@ -74,6 +74,23 @@ affect a person's ability to participate within them.
   necessary and do not persist in the exact same behavior you have been
   reported for.
 
+
+## Interaction on Coq forums (Zulip, Discourse, etc.) ##
+
+Anyone is welcome to ask questions and bring answers, provided they
+respect the aforementioned rules. In addition we ask that
+- you do your best to put your questions into their context by
+  providing Coq code or pointers to it, and enough indications to
+  understand where the Coq goals or error message come from.
+- if you are running through educational material, we kindly ask you
+  to explicitly state it, and that answers do not solve such exercises
+  for you, but only provide hints.
+
+Admins and moderators will, at their discretion, review and remove
+some content, and provide indications or warnings to users. Repeatedly
+not taking into accounts these warnings may result into a temporary or
+permanent ban.
+
 ## Enforcement ##
 
 If you believe someone is violating the code of conduct, we ask that you report
