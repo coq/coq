@@ -1,5 +1,4 @@
 open Util
-open Names
 open Esubst
 open Declarations
 open Genlambda
@@ -21,27 +20,6 @@ let simplify subst lam = simplify can_subst subst lam
 (*s Translation from [constr] to [lambda] *)
 
 (* Translation of constructor *)
-
-(* Limitation due to OCaml's representation of non-constant
-  constructors: limited to 245 + 1 (0 tag) cases. *)
-
-exception TooLargeInductive of Pp.t
-
-let max_nb_const = 0x1000000
-let max_nb_block = 0x1000000 + Obj.last_non_constant_constructor_tag - 1
-
-let str_max_constructors =
-  Format.sprintf
-    " which has more than %i constant constructors or more than %i non-constant constructors" max_nb_const max_nb_block
-
-let check_compilable ib =
-
-  if not (ib.mind_nb_args <= max_nb_block && ib.mind_nb_constant <= max_nb_const) then
-    let msg =
-      Pp.(str "Cannot compile code for virtual machine as it uses inductive "
-          ++ Id.print ib.mind_typename ++ str str_max_constructors)
-    in
-    raise (TooLargeInductive msg)
 
 let is_value lc =
   match lc with
@@ -69,7 +47,9 @@ module Val =
 struct
   type value = structured_values
   let as_value = as_value
-  let check_inductive (_, i) mb = check_compilable mb.mind_packets.(i)
+  let check_inductive (_, i) mb =
+    let { mind_typename=name; mind_nb_args; mind_nb_constant; _ } = mb.mind_packets.(i) in
+    Vmerrors.check_compilable_ind ~name ~mind_nb_args ~mind_nb_constant
   let get_constant knu _ = Lconst knu
 end
 
