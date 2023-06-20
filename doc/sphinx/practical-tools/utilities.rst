@@ -734,8 +734,10 @@ variables are already accessible in recipes for rules added in
 Timing targets and performance testing
 ++++++++++++++++++++++++++++++++++++++
 
-The generated ``Makefile`` supports the generation of two kinds of timing
-data: per-file build-times, and per-line times for an individual file.
+The generated ``Makefile`` supports the generation of three kinds of
+timing data: per-file build-times, per-line times for an individual
+file, and profiling data in Google trace format for an individual
+file.
 
 The following targets and Makefile variables allow collection of per-
 file timing data:
@@ -875,7 +877,7 @@ line timing data:
 
 
 + ``TIMING=1``
-    passing this variable will cause ``make`` to use ``coqc -time`` to
+    passing this variable will cause ``make`` to use ``coqc -time-file`` to
     write to a ``.v.timing`` file for each ``.v`` file compiled, which contains
     line-by-line timing information.
 
@@ -972,6 +974,13 @@ line timing data:
     .. note::
       This target requires python to build the table.
 
++ ``PROFILE=1``
+  passing this variable or setting it in the environment will cause
+  ``make`` to use ``coqc -profile`` to write to a ``.v.prof.json``
+  file for each ``.v`` file compiled, which contains :ref:`profiling`
+  information.
+
+  The ``.v.prof.json`` is then compressed by ``gzip`` to a ``.v.prof.json.gz``.
 
 Building a subset of the targets with ``-j``
 ++++++++++++++++++++++++++++++++++++++++++++
