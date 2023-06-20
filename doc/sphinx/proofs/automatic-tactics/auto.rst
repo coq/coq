@@ -339,33 +339,33 @@ Hint databases defined in the Coq standard library
 ``````````````````````````````````````````````````
 
 Several hint databases are defined in the Coq standard library. The
-actual content of a database is the collection of hints declared
-to belong to this database in each of the various modules currently
-loaded. Especially, requiring new modules may extend the database.
-At Coq startup, only the core database is nonempty and can be used.
+database contains all hints declared
+to belong to it in the currently loaded modules.
+In particular, requiring new modules may extend the database.
+At Coq startup, only the core database is nonempty and ready to be used immediately.
 
 :core: This special database is automatically used by ``auto``, except when
        pseudo-database ``nocore`` is given to ``auto``. The core database
        contains only basic lemmas about negation, conjunction, and so on.
        Most of the hints in this database come from the Init and Logic directories.
 
-:arith: This database contains all lemmas about Peano’s arithmetic proved in the
+:arith: all lemmas about Peano’s arithmetic proved in the
         directories Init and Arith.
 
-:zarith: contains lemmas about binary signed integers from the
+:zarith: lemmas about binary signed integers from the
          directories theories/ZArith. The database also contains
          high-cost hints that call :tacn:`lia` on equations and
          inequalities in ``nat`` or ``Z``.
 
-:bool: contains lemmas about booleans, mostly from directory theories/Bool.
+:bool: lemmas about booleans, mostly from directory theories/Bool.
 
-:datatypes: is for lemmas about lists, streams and so on that are mainly proved
+:datatypes: lemmas about lists, streams and so on that are mainly proved
             in the Lists subdirectory.
 
-:sets: contains lemmas about sets and relations from the directories Sets and
+:sets: lemmas about sets and relations from the directories Sets and
        Relations.
 
-:typeclass_instances: contains all the typeclass instances declared in the
+:typeclass_instances: special database containing all typeclass instances declared in the
                       environment, including those used for ``setoid_rewrite``,
                       from the Classes directory.
 
@@ -375,7 +375,7 @@ At Coq startup, only the core database is nonempty and can be used.
                mainly used in the ``FSets`` and ``FMaps`` libraries.
 
 You are advised not to put your own hints in the core database, but
-use one or several databases specific to your development.
+use one or more databases specific to your development.
 
 .. _creating_hints:
 
