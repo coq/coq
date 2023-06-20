@@ -12,6 +12,8 @@ open Tac2expr
 
 (** {5 Backtrace} *)
 
+val backtrace : backtrace Exninfo.t
+
 val get_backtrace : backtrace Proofview.tactic
 
 val with_frame : frame -> 'a Proofview.tactic -> 'a Proofview.tactic

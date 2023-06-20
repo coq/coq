@@ -967,8 +967,6 @@ let () = Goptions.declare_bool_option {
   Goptions.optwrite = (fun b -> Tac2bt.print_ltac2_backtrace := b);
 }
 
-let backtrace : backtrace Exninfo.t = Exninfo.make ()
-
 let pr_frame = function
 | FrAnon e -> str "Call {" ++ pr_glbexpr e ++ str "}"
 | FrLtac kn ->
@@ -994,7 +992,7 @@ end
 
 let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2bt.print_ltac2_backtrace then
-    let bt = Exninfo.get info backtrace in
+    let bt = Exninfo.get info Tac2bt.backtrace in
     let bt = match bt with
     | Some bt -> List.rev bt
     | None -> []
