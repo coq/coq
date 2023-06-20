@@ -387,6 +387,11 @@ let warn_unknown_warnings = create ~name:"unknown-warning" Pp.(fun flags ->
     str (CString.plural (List.length flags) "warning") ++ spc() ++
     prlist_with_sep spc str flags)
 
+let override_unknown_warning = ref false
+
+let warn_unknown_warnings ?loc flags =
+  if not !override_unknown_warning then warn_unknown_warnings ?loc flags
+
 let check_unknown_warnings flags =
   let flags = flags_of_string flags in
   let flags = List.filter_map (function
