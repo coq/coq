@@ -1562,9 +1562,7 @@ Binding types or coercion classes to notation scopes
    :attr:`add_top` and :attr:`add_bottom` attributes.
 
    .. attr:: add_top
-      :undocumented:
-
-   .. attr:: add_bottom
+             add_bottom
 
       These :ref:`attributes <attribute>` allow adding additional
       bindings at the top or bottom of the stack of already declared
