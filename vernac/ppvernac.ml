@@ -853,8 +853,8 @@ let pr_synpure_vernac_expr v =
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
   | VernacInductive (f,l) ->
-    let pr_constructor ((coe,ins),(id,c)) =
-      hov 2 (pr_lident id ++ pr_oc coe ins ++
+    let pr_constructor ((attr,coe,ins),(id,c)) =
+      hov 2 (pr_vernac_attributes attr ++ pr_lident id ++ pr_oc coe ins ++
              Flags.without_option Flags.beautify pr_spc_lconstr c)
     in
     let pr_constructor_list l = match l with

@@ -190,7 +190,7 @@ type inductive_kind = Inductive_kw | CoInductive | Variant | Record | Structure 
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
-type 'a with_coercion_instance = (coercion_flag * instance_flag) * 'a
+type 'a with_coercion_instance = (Attributes.vernac_flags * coercion_flag * instance_flag) * 'a
 (* Attributes of a record field declaration *)
 type record_field_attr = {
   rf_coercion: coercion_flag; (* the projection is an implicit coercion *)

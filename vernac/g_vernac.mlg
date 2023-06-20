@@ -393,6 +393,7 @@ GRAMMAR EXTEND Gram
   (* Inductives and records *)
   opt_constructors_or_fields:
     [ [ ":="; lc = constructors_or_record -> { lc }
+      | ":=" -> { Constructors [] }
       | -> { RecordDecl (None, [], None) } ] ]
   ;
   inductive_or_record_definition:
@@ -404,13 +405,16 @@ GRAMMAR EXTEND Gram
   ;
   constructors_or_record:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
-      | id = identref ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
-          { Constructors ((c id)::l) }
-      | id = identref ; c = constructor_type -> { Constructors [ c id ] }
-      | cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
-          { RecordDecl (Some cstr,fs,id) }
-      | "{";fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) }
-      |  -> { Constructors [] } ] ]
+      | attr = quoted_attributes ; id = identref ; c = constructor_type;
+        "|"; l = LIST1 constructor SEP "|" ->
+          { Constructors ((c attr id)::l) }
+      | attr = quoted_attributes ; id = identref ; c = constructor_type ->
+          { Constructors [ c attr id ] }
+      | attr = quoted_attributes ;
+        cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
+          { let () = unsupported_attributes attr in
+            RecordDecl (Some cstr,fs,id) }
+      | "{";fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) } ] ]
   ;
   default_inhabitant_ident:
     [ [ "as"; id = identref -> { Some id }
@@ -518,15 +522,16 @@ GRAMMAR EXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_inst; c = lconstr ->
-                    { fun l id -> (coe,(id,mkProdCN ~loc l c)) }
+                    { fun l attr id -> ((attr, fst coe, snd coe),(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l id -> ((NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous)))) } ]
+                 { fun l attr id -> ((attr,NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous)))) } ]
          -> { t l }
      ]]
 ;
 
   constructor:
-    [ [ id = identref; c=constructor_type -> { c id } ] ]
+    [ [ attr = quoted_attributes ;
+        id = identref; c=constructor_type -> { c attr id } ] ]
   ;
   of_type:
     [ [   ":>" -> { AddCoercion }

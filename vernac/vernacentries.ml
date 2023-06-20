@@ -929,10 +929,13 @@ let preprocess_inductive_decl ~atts kind indl =
     in
     if fst id = AddCoercion then
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
-    let ((rf_coercion, rf_instance), (lid, ce)) = l in
+    let ((attr, rf_coercion, rf_instance), (lid, ce)) = l in
+    let rf_locality = match rf_coercion, rf_instance with
+      | AddCoercion, _ | _, (BackInstance | BackInstanceWarning) -> parse option_locality attr
+      | _ -> let () = unsupported_attributes attr in Goptions.OptDefault in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
-              rf_locality = Goptions.OptDefault ; rf_notation = [] ; rf_canonical = true } in
+              rf_locality ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in

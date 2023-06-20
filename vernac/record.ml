@@ -644,8 +644,9 @@ let warn_future_coercion_class_field =
   CWarnings.create ~name:"future-coercion-class-field" ~category:Deprecation.Version.v8_17
     Pp.(fun definitional ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
-    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
-    ++ strbrk (if definitional then "" else " Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\""))
+    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.18). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
+    ++ strbrk (if definitional then " Add an explicit #[global] attribute if you need to keep the current behavior. For example: \"Class foo := #[global] baz :: bar.\""
+               else " Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\""))
 
 let check_proj_flags kind rf =
   let open Vernacexpr in

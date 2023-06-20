@@ -551,7 +551,7 @@ inductive_definition: [
 ]
 
 constructor: [
-| ident LIST0 binder OPT of_type_inst
+| LIST0 [ "#[" LIST0 attribute SEP "," "]" ] ident LIST0 binder OPT of_type_inst
 ]
 
 import_categories: [

@@ -932,6 +932,7 @@ decl_notations: [
 
 opt_constructors_or_fields: [
 | ":=" constructors_or_record
+| ":="
 |
 ]
 
@@ -941,11 +942,10 @@ inductive_or_record_definition: [
 
 constructors_or_record: [
 | "|" LIST1 constructor SEP "|"
-| identref constructor_type "|" LIST1 constructor SEP "|"
-| identref constructor_type
-| identref "{" record_fields "}" default_inhabitant_ident
+| quoted_attributes identref constructor_type "|" LIST1 constructor SEP "|"
+| quoted_attributes identref constructor_type
+| quoted_attributes identref "{" record_fields "}" default_inhabitant_ident
 | "{" record_fields "}" default_inhabitant_ident
-|
 ]
 
 default_inhabitant_ident: [
@@ -1021,7 +1021,7 @@ constructor_type: [
 ]
 
 constructor: [
-| identref constructor_type
+| quoted_attributes identref constructor_type
 ]
 
 of_type: [

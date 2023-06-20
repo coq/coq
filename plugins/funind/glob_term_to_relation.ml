@@ -1480,7 +1480,7 @@ let do_build_inductive evd (funconstants : pconstant list)
   let ext_rels_constructors =
     Array.map
       (List.map (fun (id, t) ->
-           ( Vernacexpr.(NoCoercion, NoInstance)
+           ( Vernacexpr.([], NoCoercion, NoInstance)
            , ( CAst.make id
              , with_full_print
                  Constrextern.(extern_glob_type empty_extern_env)
