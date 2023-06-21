@@ -15,6 +15,8 @@
 Require Bool.
 Require Import ssreflect ssrfun.
 
+#[export] Set Warnings "-overwriting-delimiting-key".
+
 (**
  A theory of boolean predicates and operators. A large part of this file is
  concerned with boolean reflection.
