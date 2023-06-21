@@ -507,6 +507,7 @@ type control_flag =
   | ControlTimeout of int
   | ControlFail
   | ControlSucceed
+  | ControlTry
 
 type ('a, 'b) vernac_control_gen_r =
   { control : 'a list

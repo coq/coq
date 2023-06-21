@@ -61,6 +61,12 @@ let classify_under_control_flag ?loc flag x = match flag with
     | VtQed _ -> VtProofStep { proof_block_detection = None }
     | VtStartProof _ | VtProofMode _ -> VtQuery
     end
+  | ControlTry ->
+    begin match x with
+    | VtQuery | VtProofStep _ | VtSideff _ as x -> x
+    | VtMeta | VtQed _ | VtStartProof _ | VtProofMode _ ->
+      CErrors.user_err Pp.(str "The STM cannot handle this command with Try.")
+    end
 
 let classify_under_control_flags ?loc flags x =
   List.fold_right (classify_under_control_flag ?loc) flags x

@@ -30,6 +30,7 @@ type control_entry =
   | ControlTimeout of { remaining : float }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
+  | ControlTry
 
 
 type synterp_entry =

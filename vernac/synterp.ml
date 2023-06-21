@@ -55,6 +55,7 @@ type control_entry =
   | ControlTimeout of { remaining : float }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
+  | ControlTry
 
 type synterp_entry =
   | EVernacNoop
@@ -407,6 +408,19 @@ let with_succeed f =
   Vernacstate.Synterp.unfreeze st;
   ControlSucceed { st = transient_st } :: ctrl, v
 
+let with_try ~loc f =
+  let st = Vernacstate.Synterp.freeze () in
+  match f () with
+  | exception e when CErrors.noncritical e ->
+    (* XXX print exn and use real_error_loc *)
+    let loc = if !test_mode then loc else None in
+    if not !Flags.quiet || !test_mode
+    then Feedback.msg_notice ?loc Pp.(str "The command has failed.");
+    Vernacstate.Synterp.unfreeze st;
+    [], VernacSynterp EVernacNoop
+  | (ctrl,v) ->
+    ControlTry :: ctrl, v
+
 (* We restore the state always *)
 let rec synterp_control_flag ~loc (f : control_flag list)
     (fn : vernac_expr -> vernac_entry) expr =
@@ -416,6 +430,8 @@ let rec synterp_control_flag ~loc (f : control_flag list)
     with_fail ~loc (fun () -> synterp_control_flag ~loc l fn expr)
   | ControlSucceed :: l ->
     with_succeed (fun () -> synterp_control_flag ~loc l fn expr)
+  | ControlTry :: l ->
+    with_try ~loc (fun () -> synterp_control_flag ~loc l fn expr)
   | ControlTimeout timeout :: l ->
     with_timeout ~timeout (synterp_control_flag ~loc l fn) expr
   | ControlTime :: l ->

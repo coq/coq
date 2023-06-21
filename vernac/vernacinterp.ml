@@ -79,6 +79,18 @@ let with_succeed ~st f =
   if not !Flags.quiet
   then Feedback.msg_notice Pp.(str "The command has succeeded and its effects have been reverted.")
 
+let with_try ~loc ~st f =
+  match f () with
+  | v -> v
+  | exception e when CErrors.noncritical e ->
+    (* XXX print exn and use real_error_loc *)
+    let loc = if !test_mode then loc else None in
+    if not !Flags.quiet || !test_mode
+    then Feedback.msg_notice ?loc Pp.(str "The command has failed.");
+    Vernacstate.Interp.invalidate_cache ();
+    Vernacstate.unfreeze_full_state st;
+    st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
+
 let locate_if_not_already ?loc (e, info) =
   (e, Option.cata (Loc.add_loc info) info (real_error_loc ~cmdloc:loc ~eloc:(Loc.get_loc info)))
 
@@ -91,6 +103,8 @@ let interp_control_entry ~loc (f : control_entry) ~st
   | ControlSucceed { st = synterp_st } ->
     with_succeed ~st (fun () -> Vernacstate.Synterp.unfreeze synterp_st; fn ~st);
     st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
+  | ControlTry ->
+    with_try ~loc ~st (fun () -> fn ~st)
   | ControlTimeout { remaining } ->
     vernac_timeout ~timeout:remaining (fun () -> fn ~st) ()
   | ControlTime { synterp_duration } ->
