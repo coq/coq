@@ -50,6 +50,21 @@ let options_affecting_stm_scheduling =
     Proof_using.proof_using_opt_name;
   ]
 
+let classify_under_control_flag ?loc flag x = match flag with
+  | ControlTime | ControlRedirect _ | ControlTimeout _ -> x
+  | ControlFail | ControlSucceed ->
+    (* Fail Qed or Fail Lemma must not join/fork the DAG *)
+    (* XXX why is Fail not always Query? *)
+    begin match x with
+    | VtQuery | VtProofStep _ | VtSideff _
+    | VtMeta -> x
+    | VtQed _ -> VtProofStep { proof_block_detection = None }
+    | VtStartProof _ | VtProofMode _ -> VtQuery
+    end
+
+let classify_under_control_flags ?loc flags x =
+  List.fold_right (classify_under_control_flag ?loc) flags x
+
 let classify_vernac e =
   let static_synterp_classifier ~atts e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
@@ -205,17 +220,7 @@ let classify_vernac e =
     | VernacSynPure e -> static_pure_classifier ~atts e
     | VernacSynterp e -> static_synterp_classifier ~atts e
   in
-  let static_control_classifier ({ CAst.v ; _ } as cmd) =
-    (* Fail Qed or Fail Lemma must not join/fork the DAG *)
-    (* XXX why is Fail not always Query? *)
-    if Vernacprop.has_query_control cmd then
-      (match static_classifier ~atts:v.attrs v.expr with
-         | VtQuery | VtProofStep _ | VtSideff _
-         | VtMeta as x -> x
-         | VtQed _ -> VtProofStep { proof_block_detection = None }
-         | VtStartProof _ | VtProofMode _ -> VtQuery)
-    else
-      static_classifier ~atts:v.attrs v.expr
-
+  let static_control_classifier { CAst.v=cmd ; loc } =
+    classify_under_control_flags ?loc cmd.control (static_classifier ~atts:cmd.attrs cmd.expr)
   in
   static_control_classifier e
