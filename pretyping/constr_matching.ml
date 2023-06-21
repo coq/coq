@@ -273,12 +273,16 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
   in
   constrain sigma n c subst
 
+let rec kind_upto_cast sigma c = match EConstr.kind sigma c with
+| Cast (c, _, _) -> kind_upto_cast sigma c
+| v -> c, v
+
 let matches_core env sigma allow_bound_rels
     (binding_vars,pat) c =
   let open EConstr in
   let convref ref c =
     let open GlobRef in
-    match ref, EConstr.kind sigma c with
+    match ref, c with
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Environ.QConstant.equal env c c'
     | IndRef i, Ind (i', _) -> Environ.QInd.equal env i i'
@@ -286,8 +290,8 @@ let matches_core env sigma allow_bound_rels
     | _, _ -> false
   in
   let rec sorec ctx env subst p t =
-    let cT = strip_outer_cast sigma t in
-    match p, EConstr.kind sigma cT with
+    let cT, v = kind_upto_cast sigma t in
+    match p, v with
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
         | PRel n ->
@@ -310,7 +314,7 @@ let matches_core env sigma allow_bound_rels
 
       | PVar v1, Var v2 when Id.equal v1 v2 -> subst
 
-      | PRef ref, _ when convref ref cT -> subst
+      | PRef ref, _ when convref ref v -> subst
 
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
@@ -318,10 +322,10 @@ let matches_core env sigma allow_bound_rels
         if Sorts.family_equal ps (ESorts.family sigma s)
         then subst else raise PatternMatchingFailure
 
-      | PApp (p, [||]), _ -> sorec ctx env subst p t
+      | PApp (p, [||]), _ -> sorec ctx env subst p cT
 
       | PApp (PApp (h, a1), a2), _ ->
-          sorec ctx env subst (PApp(h,Array.append a1 a2)) t
+          sorec ctx env subst (PApp(h,Array.append a1 a2)) cT
 
       | PApp (PMeta meta,args1), App (c2,args2) ->
          (let diff = Array.length args2 - Array.length args1 in
