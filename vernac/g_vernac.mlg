@@ -473,14 +473,13 @@ GRAMMAR EXTEND Gram
   (* ... with coercions *)
   record_field:
   [ [ attr = LIST0 quoted_attributes ;
-      bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
-      rf_notation = decl_notations -> {
-      let (rf_canonical, rf_reversible), rf_locality = attr |> List.flatten
-        |> parse Notations.(canonical_field ++ reversible ++ option_locality) in
-      let (rf_coercion, rf_instance), rf_decl = bd in
+      bd = record_binder; rfu_priority = OPT [ "|"; n = natural -> { n } ];
+      rfu_notation = decl_notations -> {
+      let rfu_attrs = List.flatten attr in
+      let (rfu_coercion, rfu_instance), rf_decl = bd in
       rf_decl,
-      { rf_coercion ; rf_reversible ; rf_instance ; rf_priority ; rf_locality ;
-        rf_notation ; rf_canonical } } ] ]
+      { rfu_attrs ; rfu_coercion ; rfu_instance ; rfu_priority ;
+        rfu_notation } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }

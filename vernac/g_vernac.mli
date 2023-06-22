@@ -39,7 +39,7 @@ val notation_declaration : Vernacexpr.notation_declaration Pcoq.Entry.t
 val decl_notations : Vernacexpr.notation_declaration list Pcoq.Entry.t
 
 val record_field :
-  (Vernacexpr.local_decl_expr * Vernacexpr.record_field_attr) Pcoq.Entry.t
+  (Vernacexpr.local_decl_expr * Vernacexpr.record_field_attr_unparsed) Pcoq.Entry.t
 
 val of_type : Vernacexpr.coercion_flag Pcoq.Entry.t
 

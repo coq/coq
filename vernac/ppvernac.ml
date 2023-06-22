@@ -526,6 +526,11 @@ let pr_lconstrarg c =
   spc () ++ pr_lconstr c
 let pr_intarg n = spc () ++ int n
 
+let pr_vernac_attributes =
+  function
+  | [] -> mt ()
+  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
+
 let pr_oc coe ins = match coe, ins with
   | NoCoercion, NoInstance -> str" :"
   | AddCoercion, NoInstance -> str" :>"
@@ -533,21 +538,24 @@ let pr_oc coe ins = match coe, ins with
   | AddCoercion, BackInstance -> str" ::>"
   | _, BackInstanceWarning -> str" :>"  (* remove this line at end of deprecation phase *)
 
-let pr_record_field (x, { rf_coercion = coe ; rf_instance = ins ; rf_priority = pri ; rf_notation = ntn }) =
+let pr_record_field (x, { rfu_attrs = attr ; rfu_coercion = coe ; rfu_instance = ins ; rfu_priority = pri ; rfu_notation = ntn }) =
   let prx = match x with
     | AssumExpr (id,binders,t) ->
-      hov 1 (pr_lname id ++
+      hov 1 (pr_vernac_attributes attr ++
+             pr_lname id ++
              pr_binders_arg binders ++ spc() ++
              pr_oc coe ins ++ spc() ++
              pr_lconstr_expr t)
     | DefExpr(id,binders,b,opt) -> (match opt with
         | Some t ->
-          hov 1 (pr_lname id ++
+          hov 1 (pr_vernac_attributes attr ++
+                 pr_lname id ++
                  pr_binders_arg binders ++ spc() ++
                  pr_oc coe ins ++ spc() ++
                  pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
         | None ->
-          hov 1 (pr_lname id ++ str" :=" ++ spc() ++
+          hov 1 (pr_vernac_attributes attr ++
+                 pr_lname id ++ str" :=" ++ spc() ++
                  pr_lconstr b)) in
   let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
   prx ++ prpri ++ prlist pr_where_notation ntn
@@ -1365,11 +1373,6 @@ let pr_control_flag (p : control_flag) =
   w ++ spc ()
 
 let pr_vernac_control flags = Pp.prlist pr_control_flag flags
-
-let pr_vernac_attributes =
-  function
-  | [] -> mt ()
-  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
 
 let pr_vernac_expr v =
   match v with

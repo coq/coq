@@ -201,10 +201,18 @@ type record_field_attr = {
   rf_notation: notation_declaration list;
   rf_canonical: bool; (* use this projection in the search for canonical instances *)
   }
+(* Same before parsing the attributes *)
+type record_field_attr_unparsed = {
+  rfu_attrs: Attributes.vernac_flags;
+  rfu_coercion: coercion_flag;
+  rfu_instance: instance_flag;
+  rfu_priority: int option;
+  rfu_notation: notation_declaration list;
+  }
 type constructor_expr = (lident * constr_expr) with_coercion_instance
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * (local_decl_expr * record_field_attr) list * lident option
+  | RecordDecl of lident option * (local_decl_expr * record_field_attr_unparsed) list * lident option
 type inductive_params_expr = local_binder_expr list * local_binder_expr list option
 (** If the option is nonempty the "|" marker was used *)
 
