@@ -967,13 +967,47 @@ Controlling display
 
 .. opt:: Warnings "{+, {? {| - | + } } @ident }"
 
-   This :term:`option` configures the display of warnings. It is experimental, and
-   expects, between quotes, a comma-separated list of warning names or
-   categories. Adding - in front of a warning or category disables it, adding +
-   makes it an error. It is possible to use the special categories all and
-   default, the latter containing the warnings enabled by default. The flags are
+   This :term:`option` configures the display of warnings. The :n:`@ident`\s
+   are warning or category names. Adding `-` in front of a warning or category
+   disables it, adding `+` makes it an error.
+
+   Warning name and categories are printed between brackets when the warning
+   is displayed (the warning name appears first). Warnings can belong to
+   multiple categories. The special category `all` contains all warnings, and
+   the special category `default` contains the warnings enabled by default.
+
+   Coq defines a set of core warning categories, which may be extended by
+   plugins, so this list is not exhaustive. The core categories are:
+   `automation`,
+   `bytecode-compiler`,
+   `coercions`,
+   `deprecated`,
+   `extraction`,
+   `filesystem`,
+   `fixpoints`,
+   `fragile`,
+   `funind`,
+   `implicits`,
+   `ltac`,
+   `ltac2`,
+   `native-compiler`,
+   `numbers`,
+   `parsing`,
+   `pedantic`,
+   `records`,
+   `ssr`,
+   `syntax`,
+   `tactics`,
+   `vernacular`.
+
+   .. This list is from lib/cWarnings.ml
+
+   The flags are
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
+
+   See also the :attr:`warnings` attribute, which can be used to
+   configure the display of warnings for a single command.
 
 .. opt:: Debug "{+, {? - } @ident }"
 
