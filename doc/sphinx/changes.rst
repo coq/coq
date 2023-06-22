@@ -679,6 +679,33 @@ Miscellaneous
   (`#16725 <https://github.com/coq/coq/pull/16725>`_,
   by Jim Fehrle).
 
+Changes in 8.17.1
+~~~~~~~~~~~~~~~~~
+
+A variety of bug fixes and improvements to error messages, including:
+
+- **Fixed:**
+  in some cases, coqdep emitted incorrect paths for META files which prevented dune builds for plugins from working correctly
+  (`#17270 <https://github.com/coq/coq/pull/17270>`_,
+  fixes `#16571 <https://github.com/coq/coq/issues/16571>`_,
+  by Rodolphe Lepigre).
+- **Fixed:**
+  Shadowing of record fields in extraction to OCaml
+  (`#17324 <https://github.com/coq/coq/pull/17324>`_,
+  fixes `#12813 <https://github.com/coq/coq/issues/12813>`_
+  and `#14843 <https://github.com/coq/coq/issues/14843>`_
+  and `#16677 <https://github.com/coq/coq/issues/16677>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  an impossible to turn off debug message "backtracking and redoing byextend on ..."
+  (`#17495 <https://github.com/coq/coq/pull/17495>`_,
+  fixes `#17488 <https://github.com/coq/coq/issues/17488>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  major memory regression affecting MathComp 2
+  (`#17743 <https://github.com/coq/coq/pull/17743>`_,
+  by Enrico Tassi and Pierre Roux).
+
 Version 8.16
 ------------
 
