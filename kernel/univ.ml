@@ -798,6 +798,7 @@ struct
 
   let make names (univs, _ as x) =
     assert (Array.length names = Array.length univs);
+    assert (Array.for_all (fun u -> not (Level.is_small u)) univs);
     (names, x)
 
   (** Universe contexts (variables as a list) *)

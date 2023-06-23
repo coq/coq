@@ -268,6 +268,8 @@ sig
   type t
 
   val make : Names.Name.t array -> Instance.t constrained -> t
+  (** The name array must be the same length as the instance, and the
+      instance must not contain constant levels (ie no Set). *)
 
   val empty : t
   val is_empty : t -> bool
