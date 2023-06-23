@@ -11,6 +11,6 @@ Variable (n : nat).
 
 Goal True.
 Proof.
-wait 15.
+wait 18.
 elim tt0.
 Qed.
