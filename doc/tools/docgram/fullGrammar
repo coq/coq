@@ -740,11 +740,11 @@ vernac_control: [
 ]
 
 decorated_vernac: [
-| LIST0 quoted_attributes vernac
+| quoted_attributes vernac
 ]
 
 quoted_attributes: [
-| "#[" attribute_list "]"
+| LIST0 [ "#[" attribute_list "]" ]
 ]
 
 attribute_list: [
@@ -983,7 +983,7 @@ scheme_type: [
 ]
 
 record_field: [
-| LIST0 quoted_attributes record_binder OPT [ "|" natural ] decl_notations
+| quoted_attributes record_binder OPT [ "|" natural ] decl_notations
 ]
 
 record_fields: [

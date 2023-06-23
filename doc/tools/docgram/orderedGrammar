@@ -525,7 +525,7 @@ record_definition: [
 ]
 
 record_field: [
-| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_spec OPT [ "|" natural ]
+| LIST0 [ "#[" LIST0 attribute SEP "," "]" ] name OPT field_spec OPT [ "|" natural ]
 ]
 
 field_spec: [

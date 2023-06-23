@@ -107,11 +107,11 @@ GRAMMAR EXTEND Gram
     ]
   ;
   decorated_vernac:
-    [ [ a = LIST0 quoted_attributes ; fv = vernac ->
-        { let (f, v) = fv in (List.append (List.flatten a) f, v) } ] ]
+    [ [ a = quoted_attributes ; fv = vernac ->
+        { let (f, v) = fv in (List.append a f, v) } ] ]
   ;
   quoted_attributes:
-    [ [ "#[" ; a = attribute_list ; "]" -> { a } ]
+    [ [ l = LIST0 [ "#[" ; a = attribute_list ; "]" -> { a } ] -> { List.flatten l } ]
     ]
   ;
   attribute_list:
@@ -472,10 +472,9 @@ GRAMMAR EXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-  [ [ attr = LIST0 quoted_attributes ;
+  [ [ rfu_attrs = quoted_attributes ;
       bd = record_binder; rfu_priority = OPT [ "|"; n = natural -> { n } ];
       rfu_notation = decl_notations -> {
-      let rfu_attrs = List.flatten attr in
       let (rfu_coercion, rfu_instance), rf_decl = bd in
       rf_decl,
       { rfu_attrs ; rfu_coercion ; rfu_instance ; rfu_priority ;
