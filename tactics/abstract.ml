@@ -27,7 +27,7 @@ let interpretable_as_section_decl env sigma d1 d2 =
       try
         let _sigma = Evd.add_universe_constraints sigma cstr in
         true
-      with UState.UniversesDiffer -> false
+      with UGraph.UniverseInconsistency _ | UState.UniversesDiffer -> false
   in
   match d2, d1 with
   | LocalDef _, LocalAssum _ -> false
