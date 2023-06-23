@@ -749,25 +749,29 @@ let rec ext_gcd a b =
     (t, Z_.sub s (Z_.mul q t))
 
 let extract_coprime (c1, p1) (c2, p2) =
-  if c1.op == Eq && c2.op == Eq then
+  let () = assert (c1.op == Eq) in
+  if c2.op == Eq then
     Vect.exists2
       (fun n1 n2 ->
         Int.equal (Z_.compare (Z_.gcd (Q.num n1) (Q.num n2)) Z_.one) 0)
       c1.coeffs c2.coeffs
   else None
 
-let extract2 pred l =
+let extract_coprime_equation psys =
   let rec xextract2 rl l =
     match l with
     | [] -> (None, rl) (* Did not find *)
-    | e :: l -> (
-      match extract (pred e) l with
-      | None, _ -> xextract2 (e :: rl) l
-      | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l') )
+    | e :: l ->
+      match (fst e).op with
+      | Eq ->
+        begin match extract (extract_coprime e) l with
+        | None, _ -> xextract2 (e :: rl) l
+        | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l')
+        end
+      | Gt | Ge -> xextract2 (e :: rl) l
   in
-  xextract2 [] l
+  xextract2 [] psys
 
-let extract_coprime_equation psys = extract2 extract_coprime psys
 let pivot_sys v (cstr, prf) psys =
   let a = Vect.get v cstr.coeffs in
   if a =/ Q.zero then List.rev psys
