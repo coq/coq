@@ -320,23 +320,6 @@ let extend_values_with_bindings (ln,lm) lfun =
   let accu = lfun +++ accu in
   Id.Map.fold (fun id c accu -> Id.Map.add id (of_cub c) accu) lm accu
 
-let flush_value_evars sigma v =
-  if has_type v (topwit wit_constr) then
-    let c = out_gen (topwit wit_constr) v in
-    let c =
-      try EConstr.of_constr (Evarutil.flush_and_check_evars sigma c)
-      with Evarutil.Uninstantiated_evar _ ->
-        (* How to tell to not use this binding anymore? *)
-        (* If it is used it might fail because of the evar *)
-        (* But this has to work if it is not used *)
-        c
-    in
-    in_gen (topwit wit_constr) c
-  else v
-
-let flush_ist_evars sigma ist =
-  { ist with lfun = Id.Map.map (flush_value_evars sigma) ist.lfun }
-
 (***************************************************************************)
 (* Evaluation/interpretation *)
 
@@ -1162,7 +1145,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       Profile_ltac.do_profile stack
         (catch_error_tac stack begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic (flush_ist_evars (project gl) ist) t)
+        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
       end end)
   | TacThen (t1,t) ->
       Tacticals.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
