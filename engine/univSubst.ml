@@ -154,7 +154,7 @@ let level_subst_of f =
   | None  -> l
   | Some u ->
     match Universe.level u with
-    | None -> l
+    | None -> assert false
     | Some l -> l
 
 let normalize_univ_variable ~find =
