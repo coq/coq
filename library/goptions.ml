@@ -109,13 +109,14 @@ module MakeTable =
          (fun c -> Lib.add_leaf (inGo (GOrmv, c))))
 
     let print_table table_name printer table =
-      Feedback.msg_notice
-        Pp.(str table_name ++
-           (hov 0
-              (if MySet.is_empty table then str " None" ++ fnl ()
-               else MySet.fold
-                 (fun a b -> spc () ++ printer a ++ b)
-                 table (mt ()) ++ str "." ++ fnl ())))
+      let open Pp in
+      let pp = if MySet.is_empty table then str table_name ++ str " is empty."
+        else
+          str table_name ++ str ":" ++ spc() ++
+          (hov 0 (prlist_with_sep spc printer (MySet.elements table))) ++
+          str "."
+      in
+      Feedback.msg_notice pp
 
     let table_of_A = {
        add = (fun env x -> add_option (A.encode env x));
