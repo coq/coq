@@ -4,6 +4,9 @@
 Programmable proof search
 =========================
 
+Tactics
+-------
+
 .. tacn:: auto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
    .. insertprodn auto_using hintbases
@@ -104,10 +107,6 @@ Programmable proof search
    As a consequence, :tacn:`eauto` can solve goals such as:
 
    .. example::
-
-      .. coqtop:: none
-
-         Set Warnings "-deprecated-hint-without-locality".
 
       .. coqtop:: all
 
@@ -310,8 +309,8 @@ integer and an optional pattern. Hints with lower costs are tried first.
 :tacn:`auto` tries a hint when the conclusion of the current goal matches its
 pattern or when the hint has no pattern.
 
-Creating Hint databases
------------------------
+Creating hint databases
+```````````````````````
 
 Hint databases can be created with the :cmd:`Create HintDb` command or implicitly
 by adding a hint to an unknown database.  We recommend you always use :cmd:`Create HintDb`
@@ -336,6 +335,48 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
 
    By default, hint databases are undiscriminated.
 
+Hint databases defined in the Coq standard library
+``````````````````````````````````````````````````
+
+Several hint databases are defined in the Coq standard library. The
+database contains all hints declared
+to belong to it in the currently loaded modules.
+In particular, requiring new modules may extend the database.
+At Coq startup, only the core database is nonempty and ready to be used immediately.
+
+:core: This special database is automatically used by ``auto``, except when
+       pseudo-database ``nocore`` is given to ``auto``. The core database
+       contains only basic lemmas about negation, conjunction, and so on.
+       Most of the hints in this database come from the Init and Logic directories.
+
+:arith: all lemmas about Peano’s arithmetic proved in the
+        directories Init and Arith.
+
+:zarith: lemmas about binary signed integers from the
+         directories theories/ZArith. The database also contains
+         high-cost hints that call :tacn:`lia` on equations and
+         inequalities in ``nat`` or ``Z``.
+
+:bool: lemmas about booleans, mostly from directory theories/Bool.
+
+:datatypes: lemmas about lists, streams and so on that are mainly proved
+            in the Lists subdirectory.
+
+:sets: lemmas about sets and relations from the directories Sets and
+       Relations.
+
+:typeclass_instances: special database containing all typeclass instances declared in the
+                      environment, including those used for ``setoid_rewrite``,
+                      from the Classes directory.
+
+:fset: internal database for the implementation of the ``FSets`` library.
+
+:ordered_type: lemmas about ordered types (as defined in the legacy ``OrderedType`` module),
+               mainly used in the ``FSets`` and ``FMaps`` libraries.
+
+You are advised not to put your own hints in the core database, but
+use one or more databases specific to your development.
+
 .. _creating_hints:
 
 Creating Hints
@@ -348,7 +389,7 @@ Creating Hints
    are given, the hint is added to the `core` database.)
 
    Outside of sections, these commands support the :attr:`local`, :attr:`export`
-   and :attr:`global` attributes. :attr:`global` is the default.
+   and :attr:`global` attributes. :attr:`export` is the default.
 
    Inside sections, some commands only support the :attr:`local` attribute. These are
    :cmd:`Hint Immediate`, :cmd:`Hint Resolve`, :cmd:`Hint Constructors`,
@@ -368,12 +409,10 @@ Creating Hints
 
       The :cmd:`Hint Rewrite` now supports locality attributes like other `Hint` commands.
 
-   .. deprecated:: 8.13
+   .. versionchanged:: 8.18
 
-      The default value for hint locality will change in a future release. Hints
-      added outside of sections without an explicit locality are deprecated. We
-      recommend using :attr:`export` where possible. This warning is treated as
-      an error by default.
+      The default value for hint locality outside sections is
+      now :attr:`export`. It used to be :attr:`global`.
 
    The `Hint` commands are:
 
@@ -488,10 +527,6 @@ Creating Hints
 
       .. example::
 
-         .. coqtop:: none
-
-            Set Warnings "-deprecated-hint-without-locality".
-
          .. coqtop:: in
 
             Hint Extern 4 (~(_ = _)) => discriminate : core.
@@ -506,11 +541,7 @@ Creating Hints
 
       .. example::
 
-         .. coqtop:: reset none
-
-            Set Warnings "-deprecated-hint-without-locality".
-
-         .. coqtop:: all
+         .. coqtop:: reset all
 
             Require Import List.
             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) =>
@@ -646,89 +677,30 @@ Creating Hints
 
    This command displays all hints from database :n:`@ident`.
 
-
-Hint databases defined in the Coq standard library
---------------------------------------------------
-
-Several hint databases are defined in the Coq standard library. The
-actual content of a database is the collection of hints declared
-to belong to this database in each of the various modules currently
-loaded. Especially, requiring new modules may extend the database.
-At Coq startup, only the core database is nonempty and can be used.
-
-:core: This special database is automatically used by ``auto``, except when
-       pseudo-database ``nocore`` is given to ``auto``. The core database
-       contains only basic lemmas about negation, conjunction, and so on.
-       Most of the hints in this database come from the Init and Logic directories.
-
-:arith: This database contains all lemmas about Peano’s arithmetic proved in the
-        directories Init and Arith.
-
-:zarith: contains lemmas about binary signed integers from the
-         directories theories/ZArith. The database also contains
-         high-cost hints that call :tacn:`lia` on equations and
-         inequalities in ``nat`` or ``Z``.
-
-:bool: contains lemmas about booleans, mostly from directory theories/Bool.
-
-:datatypes: is for lemmas about lists, streams and so on that are mainly proved
-            in the Lists subdirectory.
-
-:sets: contains lemmas about sets and relations from the directories Sets and
-       Relations.
-
-:typeclass_instances: contains all the typeclass instances declared in the
-                      environment, including those used for ``setoid_rewrite``,
-                      from the Classes directory.
-
-:fset: internal database for the implementation of the ``FSets`` library.
-
-:ordered_type: lemmas about ordered types (as defined in the legacy ``OrderedType`` module),
-               mainly used in the ``FSets`` and ``FMaps`` libraries.
-
-You are advised not to put your own hints in the core database, but
-use one or several databases specific to your development.
-
 Hint locality
--------------
+`````````````
 
-Hints provided by the ``Hint`` commands are erased when closing a section.
-Conversely, all hints of a module ``A`` that are not defined inside a
-section (and not defined with option ``Local``) become available when the
-module ``A`` is required (using e.g. ``Require A.``).
-
-As of today, hints only have a binary behavior regarding locality, as
-described above: either they disappear at the end of a section scope,
-or they remain global forever. This causes a scalability issue,
-because hints coming from an unrelated part of the code may badly
-influence another development. It can be mitigated to some extent
-thanks to the :cmd:`Remove Hints` command,
-but this is a mere workaround and has some limitations (for instance, external
-hints cannot be removed).
-
-A proper way to fix this issue is to bind the hints to their module scope, as
-for most of the other objects Coq uses. Hints should only be made available when
-the module they are defined in is imported, not just required. It is very
-difficult to change the historical behavior, as it would break a lot of scripts.
-We propose a smooth transitional path by providing the :opt:`Loose Hint Behavior`
-option which accepts three flags allowing for a fine-grained handling of
-non-imported hints.
+As explained at the beginning of :ref:`creating_hints`, hints outside sections have three
+possible localities: :attr:`local`, :attr:`export`, and :attr:`global`,
+with :attr:`export` now being the default. The default used to
+be :attr:`global`, so old code bases may still use it. The following
+option may be useful to help transition hints from the :attr:`global`
+to the :attr:`export` locality, as it can provide an over-approximation
+of where these hints are used:
 
 .. opt:: Loose Hint Behavior {| "Lax" | "Warn" | "Strict" }
 
-   This :term:`option` accepts three values, which control the behavior of hints w.r.t.
-   :cmd:`Import`:
+   This :term:`option` accepts three values:
 
-   - "Lax": this is the default, and corresponds to the historical behavior,
-     that is, hints defined outside of a section have a global scope.
+   - "Lax": no scope errors or warnings are generated for hints. This is the default.
 
    - "Warn": outputs a warning when a non-imported hint is used. Note that this
      is an over-approximation, because a hint may be triggered by a run that
      will eventually fail and backtrack, resulting in the hint not being
      actually useful for the proof.
 
-   - "Strict": changes the behavior of an unloaded hint to a immediate fail
-     tactic, allowing to emulate an import-scoped hint mechanism.
+   - "Strict": fails when a non-imported hint is used, with the same caveats
+     as "Warn".
 
 .. _tactics-implicit-automation:
 

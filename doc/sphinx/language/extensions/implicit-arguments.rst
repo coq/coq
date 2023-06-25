@@ -605,10 +605,6 @@ this behavior may be disabled by prefixing the type with a ``!`` or
 by forcing the typeclass name to be an explicit application using
 ``@`` (however the later ignores implicit argument information).
 
-.. coqtop:: none
-
-   Set Warnings "-deprecated-instance-without-locality".
-
 .. coqtop:: all
 
    Class Op (A:Type) := op : A -> A -> A.
