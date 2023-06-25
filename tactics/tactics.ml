@@ -1097,26 +1097,26 @@ let build_intro_tac id dest tac = match dest with
   | dest -> Tacticals.tclTHENLIST
     [introduction id; move_hyp id dest; tac id]
 
-let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
+let rec intro_then_gen name_flag move_flag ~force ~dep tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.project gl in
     let env = Tacmach.pf_env gl in
     let concl = Proofview.Goal.concl gl in
     match EConstr.kind sigma concl with
-    | Prod (name,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
+    | Prod (name,t,u) when not dep || not (noccurn sigma 1 u) ->
         let name = find_name false (LocalAssum (name,t)) name_flag gl in
         build_intro_tac name move_flag tac
-    | LetIn (name,b,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
+    | LetIn (name,b,t,u) when not dep || not (noccurn sigma 1 u) ->
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
         build_intro_tac name move_flag tac
-    | Evar ev when force_flag ->
+    | Evar ev when force ->
         let sigma, t = Evardefine.define_evar_as_product env sigma ev in
         Tacticals.tclTHEN
           (Proofview.Unsafe.tclEVARS sigma)
-          (intro_then_gen name_flag move_flag force_flag dep_flag tac)
+          (intro_then_gen name_flag move_flag ~force ~dep tac)
     | _ ->
-        begin if not force_flag
+        begin if not force
           then
             let info = Exninfo.reify () in
             Proofview.tclZERO ~info (RefinerError (env, sigma, IntroNeedsProduct))
@@ -1128,7 +1128,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
         end <*>
           Proofview.tclORELSE
           (Tacticals.tclTHEN hnf_in_concl
-             (intro_then_gen name_flag move_flag false dep_flag tac))
+             (intro_then_gen name_flag move_flag ~force:false ~dep tac))
           begin function (e, info) -> match e with
             | RefinerError (env, sigma, IntroNeedsProduct) ->
               Tacticals.tclZEROMSG ~info (str "No product even after head-reduction.")
@@ -1138,19 +1138,19 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 
 let drop_intro_name (_ : Id.t) = Proofview.tclUNIT ()
 
-let intro_gen n m f d = intro_then_gen n m f d drop_intro_name
-let intro_mustbe_force id = intro_gen (NamingMustBe (CAst.make id)) MoveLast true false
-let intro_using_then id = intro_then_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_gen n m ~force ~dep = intro_then_gen n m ~force ~dep drop_intro_name
+let intro_mustbe_force id = intro_gen (NamingMustBe (CAst.make id)) MoveLast ~force:true ~dep:false
+let intro_using_then id = intro_then_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast ~force:false ~dep:false
 let intro_using id = intro_using_then id drop_intro_name
 
-let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
+let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast ~force:false ~dep:false
 let intro = intro_then drop_intro_name
-let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast true false
-let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
+let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast ~force:true ~dep:false
+let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast ~force:false ~dep:false
 
 let intro_move_avoid idopt avoid hto = match idopt with
-  | None -> intro_gen (NamingAvoid avoid) hto true false
-  | Some id -> intro_gen (NamingMustBe (CAst.make id)) hto true false
+  | None -> intro_gen (NamingAvoid avoid) hto ~force:true ~dep:false
+  | Some id -> intro_gen (NamingMustBe (CAst.make id)) hto ~force:true ~dep:false
 
 let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
 
@@ -1220,17 +1220,17 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
 let intros =
   intro_forthcoming_last_then_gen Id.Set.empty false None 0 (fun _ -> tclIDTAC)
 
-let intro_forthcoming_then_gen avoid move_flag dep_flag bound n tac = match move_flag with
+let intro_forthcoming_then_gen avoid move_flag ~dep bound n tac = match move_flag with
 | MoveLast ->
   (* Fast path *)
-  intro_forthcoming_last_then_gen avoid dep_flag bound n tac
+  intro_forthcoming_last_then_gen avoid dep bound n tac
 | MoveFirst | MoveAfter _ | MoveBefore _ ->
   let rec aux n ids =
     (* Note: we always use the bound when there is one for "*" and "**" *)
     if not (is_overbound bound n) then
     Proofview.tclORELSE
       begin
-      intro_then_gen (NamingAvoid avoid) move_flag false dep_flag
+      intro_then_gen (NamingAvoid avoid) move_flag ~force:false ~dep
          (fun id -> aux (n+1) (id::ids))
       end
       begin function (e, info) -> match e with
@@ -1300,7 +1300,7 @@ let auto_intros_tac ids =
     | Name id -> NamingMustBe CAst.(make id)
     | Anonymous -> avoid
   in
-  Tacticals.tclMAP (fun name -> intro_gen (naming name) MoveLast true false) (List.rev ids)
+  Tacticals.tclMAP (fun name -> intro_gen (naming name) MoveLast ~force:true ~dep:false) (List.rev ids)
 
 (* User-level introduction tactics *)
 
@@ -1365,7 +1365,7 @@ let try_intros_until tac = function
 let rec intros_move = function
   | [] -> Proofview.tclUNIT ()
   | (hyp,destopt) :: rest ->
-      Tacticals.tclTHEN (intro_gen (NamingMustBe (CAst.make hyp)) destopt false false)
+      Tacticals.tclTHEN (intro_gen (NamingMustBe (CAst.make hyp)) destopt ~force:false ~dep:false)
         (intros_move rest)
 
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
@@ -2626,19 +2626,19 @@ let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
   match pat with
   | IntroForthcoming onlydeps ->
       let naming = Id.Set.union avoid (explicit_intro_names l) in
-      intro_forthcoming_then_gen naming destopt onlydeps bound n
+      intro_forthcoming_then_gen naming destopt ~dep:onlydeps bound n
         (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
       let naming = make_naming_action avoid l pat in
-      intro_then_gen naming destopt true false
+      intro_then_gen naming destopt ~force:true ~dep:false
         (intro_pattern_action ?loc with_evars pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
       let naming = make_naming avoid l pat in
-      intro_then_gen naming destopt true false
+      intro_then_gen naming destopt ~force:true ~dep:false
         (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound (n+1) tac l)
 
 and intro_pattern_action ?loc with_evars pat thin destopt tac id =
@@ -2805,7 +2805,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let ans = term,
             Tacticals.tclTHENLIST
               [
-               intro_gen (NamingMustBe CAst.(make ?loc heq)) (decode_hyp lastlhyp) true false;
+               intro_gen (NamingMustBe CAst.(make ?loc heq)) (decode_hyp lastlhyp) ~force:true ~dep:false;
               clear_body [heq;id]]
           in
           (sigma, ans)
@@ -2815,7 +2815,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       Tacticals.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
         convert_concl ~cast:false ~check:false newcl DEFAULTcast;
-        intro_gen (NamingMustBe (CAst.make id)) (decode_hyp lastlhyp) true false;
+        intro_gen (NamingMustBe (CAst.make id)) (decode_hyp lastlhyp) ~force:true ~dep:false;
         Tacticals.tclMAP (convert_hyp ~check:false ~reorder:false) depdecls;
         eq_tac ]
   end
