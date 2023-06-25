@@ -60,7 +60,6 @@ let classify_vernac e =
         options_affecting_stm_scheduling ->
        VtSideff ([], VtNow)
     | VernacBeginSection {v=id} -> VtSideff ([id], VtLater)
-    | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
     | VernacChdir _ | VernacExtraDependency _
     | VernacSetOption _ -> VtSideff ([], VtLater)
     (* (Local) Notations have to disappear *)

@@ -13,14 +13,11 @@ let commands = [
    "Add Abstract Ring A Aplus Amult Aone Azero Ainv Aeq T.";
    "Add Abstract Semi Ring A Aplus Amult Aone Azero Aeq T.";
    "Add Field";
-   "Add LoadPath";
-   "Add ML Path";
    "Add Morphism";
    "Add Printing Constructor";
    "Add Printing If";
    "Add Printing Let";
    "Add Printing Record";
-   "Add Rec LoadPath";
    "Add Ring A Aplus Amult Aone Azero Ainv Aeq T [ c1 ... cn ]. ";
    "Add Semi Ring A Aplus Amult Aone Azero Aeq T [ c1 ... cn ].";
    "Add Relation";
@@ -94,7 +91,6 @@ let commands = [
   ["Read Module";
    "Record";
    "Remark";
-   "Remove LoadPath";
    "Remove Printing Constructor";
    "Remove Printing If";
    "Remove Printing Let";

@@ -720,9 +720,6 @@ command: [
 | "Locate" "Ltac" qualid
 | "Locate" "Library" qualid
 | "Locate" "File" string
-| "Add" "LoadPath" string "as" dirpath
-| "Add" "Rec" "LoadPath" string "as" dirpath
-| "Remove" "LoadPath" string
 | "Type" term
 | "Print" "All"
 | "Print" "Section" qualid
@@ -764,7 +761,6 @@ command: [
 | "Print" "Module" qualid
 | "Print" "Namespace" dirpath
 | "Inspect" natural
-| "Add" "ML" "Path" string
 | "Print" "Table" setting_name
 | "Add" setting_name LIST1 [ qualid | string ]
 | "Test" setting_name OPT ( "for" LIST1 [ qualid | string ] )

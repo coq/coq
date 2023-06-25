@@ -116,9 +116,6 @@ for example).
 ``-init-file file`` on the command line uses the specified file instead of a startup
 script from a configuration directory.  ``-q`` prevents the use of a startup script.
 
-The start up script may contain, for instance, :cmd:`Add LoadPath` commands to add
-directories to Coq's :term:`load path`.
-
 .. _customization-by-environment-variables:
 
 Environment variables

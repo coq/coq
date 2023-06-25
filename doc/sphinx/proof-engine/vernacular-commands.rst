@@ -532,6 +532,11 @@ file is a particular case of a module called a *library file*.
 .. cmd:: {? From @dirpath } Require {? {| Import | Export } {? @import_categories } } {+ @filtered_import }
    :name: From … Require; Require; Require Import; Require Export
 
+   .. insertprodn dirpath dirpath
+
+   .. prodn::
+      dirpath ::= {* @ident . } @ident
+
    Loads compiled files into the Coq environment. For the first
    :n:`@qualid` in each :n:`@filtered_import`, the command looks in the
    :term:`load path` for a compiled file :n:`@ident.vo` whose
@@ -715,50 +720,10 @@ the toplevel, and using them in source files is discouraged.
 
    This command displays the current working directory.
 
-
 .. cmd:: Cd {? @string }
 
    If :n:`@string` is specified, changes the current directory according to :token:`string` which
    can be any valid path.  Otherwise, it displays the current directory.
-
-
-.. cmd:: Add LoadPath @string as @dirpath
-
-   .. deprecated:: 8.16
-
-      Use command line `-Q` or `-R` or put them in your `_CoqProject` file instead.
-
-      If this command is an important feature for you, please open an
-      issue at https://github.com/coq/coq/issues and explain your
-      workflow.
-
-   .. insertprodn dirpath dirpath
-
-   .. prodn::
-      dirpath ::= {* @ident . } @ident
-
-   This command is equivalent to the command line option
-   :n:`-Q @string @dirpath`. It adds a mapping to the :term:`load path` from
-   the logical name :n:`@dirpath` to the file system directory :n:`@string`.
-
-   * :n:`@dirpath` is a prefix of a module name.  The module name hierarchy
-     follows the file system hierarchy.  On Linux, for example, the prefix
-     `A.B.C` maps to the directory :n:`@string/B/C`.  Avoid using spaces after a `.` in the
-     path because the parser will interpret that as the end of a command or tactic.
-
-.. cmd:: Add Rec LoadPath @string as @dirpath
-
-   .. deprecated:: 8.16
-
-   This command is equivalent to the command line option
-   :n:`-R @string @dirpath`. It adds the directory specified by the
-   :n:`@string`` and all its subdirectories to the current Coq :term:`load path`.
-
-
-.. cmd:: Remove LoadPath @string
-
-   This command removes the path :n:`@string` from the current Coq :term:`load path`.
-
 
 .. cmd:: Print LoadPath {? @dirpath }
 
@@ -766,22 +731,11 @@ the toplevel, and using them in source files is discouraged.
    displays only the paths that extend that prefix.  In the output,
    the logical path `<>` represents an empty logical path.
 
-
-.. cmd:: Add ML Path @string
-
-   Equivalent to the :ref:`command line option <command-line-options>`
-   :n:`-I @string`.  Adds the path :n:`@string` to the current OCaml
-   loadpath (cf. :cmd:`Declare ML Module`). It is for
-   convenience, such as for use in an interactive session, and it
-   is not exported to compiled files. For separation of concerns with
-   respect to the relocability of files, we recommend using
-   :n:`-I @string`.
-
 .. cmd:: Print ML Path
 
-   Displays the current OCaml loadpath, as provided by
-   the :ref:`command line option <command-line-options>` :n:`-I @string` or by the command :cmd:`Add
-   ML Path` `@string` (cf. :cmd:`Declare ML Module`).
+   Displays the current OCaml loadpath, as provided by the
+   :ref:`command line option <command-line-options>` :n:`-I @string`
+   (cf. :cmd:`Declare ML Module`).
 
 .. _extra_dependencies:
 
