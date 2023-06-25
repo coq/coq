@@ -208,6 +208,12 @@ let make_current_scopes (tmp_scopes,scopes) =
 (**********************************************************************)
 (* Delimiters *)
 
+let warn_overwriting_key = CWarnings.create ~name:"overwriting-delimiting-key" ~category:CWarnings.CoreCategories.parsing
+    Pp.(fun (oldkey,scope) -> str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope)
+
+let warn_hiding_key =  CWarnings.create ~name:"hiding-delimiting-key" ~category:CWarnings.CoreCategories.parsing
+    Pp.(fun (key,oldscope) -> str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope)
+
 let declare_delimiters scope key =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = Some key } in
@@ -215,16 +221,15 @@ let declare_delimiters scope key =
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-        (* FIXME: implement multikey scopes? *)
-        Flags.if_verbose Feedback.msg_info
-          (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
-        scope_map := String.Map.add scope newsc !scope_map
+      (* FIXME: implement multikey scopes? *)
+      warn_overwriting_key (oldkey,scope);
+      scope_map := String.Map.add scope newsc !scope_map
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      Flags.if_verbose Feedback.msg_info (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
+      warn_hiding_key (key,oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
