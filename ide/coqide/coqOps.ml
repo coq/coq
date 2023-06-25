@@ -39,13 +39,17 @@ module SentenceId : sig
     stop : GText.mark;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
+    start_offset : int;
+    (** Original start offset of the sentence, to be compared when moved *)
+    start_line : int;
+    (** Original start line of the sentence, to be compared when moved *)
     edit_id : int;
     mutable index : int;
     changed_sig : (int * mem_flag list) GUtil.signal;
   }
 
   val mk_sentence :
-    start:GText.mark -> stop:GText.mark -> flag list -> sentence
+    start:GText.mark -> stop:GText.mark -> start_offset:int -> start_line:int -> flag list -> sentence
 
   val add_flag : sentence -> flag -> unit
   val has_flag : sentence -> mem_flag -> bool
@@ -58,6 +62,12 @@ module SentenceId : sig
 
   val start_iter : GText.buffer -> sentence -> GText.iter
   val start_stop_iters : GText.buffer -> sentence -> GText.iter * GText.iter
+
+  (** [offset_compensation] Drift of a sentence over its original
+      location, as an [(offset, line)] pair. Needed to repair outdated
+      Coq locations *)
+  val offset_compensation : GText.buffer -> sentence -> int * int
+
   val phrase : GText.buffer -> sentence -> string
 
   val dbg_to_string :
@@ -70,6 +80,10 @@ end = struct
     stop : GText.mark;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
+    start_offset : int;
+    (** Original start offset of the sentence, to be compared when moved *)
+    start_line : int;
+    (** Original start line of the sentence, to be compared when moved *)
     edit_id : int;
     mutable index : int;
     changed_sig : (int * mem_flag list) GUtil.signal;
@@ -82,12 +96,14 @@ end = struct
     end
 
   let id = ref 0
-  let mk_sentence ~start ~stop flags = decr id; {
+  let mk_sentence ~start ~stop ~start_offset ~start_line flags = decr id; {
     start;
     stop;
     flags;
     edit_id = !id;
     tooltips = [];
+    start_offset;
+    start_line;
     index = -1;
     changed_sig = new GUtil.signal ();
   }
@@ -111,6 +127,10 @@ end = struct
   let start_iter buffer sentence = buffer#get_iter_at_mark sentence.start
   let stop_iter buffer sentence = buffer#get_iter_at_mark sentence.stop
   let start_stop_iters buffer sentence = start_iter buffer sentence, stop_iter buffer sentence
+  let offset_compensation buffer sentence =
+    let s_start = buffer#get_iter_at_mark sentence.start in
+    s_start#offset - sentence.start_offset, s_start#line - sentence.start_line
+
   let phrase buffer sentence =
     let start, stop = start_stop_iters buffer sentence in
     start#get_slice ~stop
@@ -140,9 +160,9 @@ open SentenceId
 
 (* Given a Coq loc, convert it to a pair of iterators start / end in
    the buffer. *)
-let coq_loc_to_gtk_offset (buffer : GText.buffer) loc =
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb (loc.bp - loc.bol_pos),
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb_last (loc.ep - loc.bol_pos_last)
+let coq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
+  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
+  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
 
 (** increase [uni_off] by the number of bytes until [s_uni] This can
     be used to convert a character offset to byte offset if we know a
@@ -181,10 +201,10 @@ let coq_loc_from_gtk_offset cached buffer sentence =
   (* Coq lines start at 1, GTK lines at 0 *)
   let line = start#line + 1 in
   (* [line_index] already returns byte offsets *)
-  let bol = start#line_index in
+  let bol_pos = bp - start#line_index in
   (*  *)
   let new_cached = bp, start#offset in
-  bp, line, bol, new_cached
+  bp, line, bol_pos, new_cached
 
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
@@ -364,7 +384,7 @@ object(self)
     let x, y = script#window_to_buffer_coords ~tag:`WIDGET ~x ~y in
     let iter = script#get_iter_at_location ~x ~y in
     if iter#has_tag Tags.Script.tooltip then begin
-      let s =
+      let s : SentenceId.sentence =
         let rec aux iter =
           let marks = iter#marks in
           if marks = [] then aux iter#backward_char
@@ -376,7 +396,12 @@ object(self)
             try Doc.find document mem_marks
             with Not_found -> aux iter#backward_char in
         aux iter in
-      let ss = find_all_tooltips s iter#offset in
+      (* The original list of tooltips contains offset that were not
+         set up to date if the sentences moved, however the GTK model
+         has the up-to-date information in the marks, so we can
+         compare and compensate for the shift. *)
+      let offset, _line_shift = offset_compensation script#buffer s in
+      let ss = find_all_tooltips s (iter#offset - offset) in
       let msg = String.concat "\n" (CList.uniquize ss) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
@@ -532,16 +557,21 @@ object(self)
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
    end
 
+  (* Invariant, we store the tooltips with "original" Coq locations,
+     that means we must correct the offset even the Some case will get
+     the actual offset, beware this is a big fragile, but kinda
+     inherent to the model *)
   method private attach_tooltip ?loc sentence text =
+    let offset, line_drift = offset_compensation buffer sentence in
     let start, stop = match loc with
       | None ->
         start_stop_iters buffer sentence
       | Some loc ->
-        coq_loc_to_gtk_offset buffer loc
+        coq_loc_to_gtk_offset ~line_drift buffer loc
     in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
-    add_tooltip sentence start#offset stop#offset markup
+    add_tooltip sentence (start#offset - offset) (stop#offset - offset) markup
 
   method private debug_prompt ~tag msg =
     match tag with
@@ -673,7 +703,8 @@ object(self)
       let start, stop = start_stop_iters buffer sentence in
       buffer#apply_tag tag ~start ~stop
     | Some loc ->
-      let start, stop = coq_loc_to_gtk_offset buffer loc in
+      let _offset, line_drift = offset_compensation buffer sentence in
+      let start, stop = coq_loc_to_gtk_offset ~line_drift buffer loc in
       buffer#apply_tag tag ~start ~stop
 
   method private position_tag_at_sentence ?loc tag sentence =
@@ -718,9 +749,11 @@ object(self)
         end else begin
           buffer#apply_tag Tags.Script.to_process ~start ~stop;
           let sentence =
+            let start_offset = start#offset in
+            let start_line = start#line in
             let start = `MARK (buffer#create_mark start) in
             let stop = `MARK (buffer#create_mark stop) in
-            mk_sentence ~start ~stop []
+            mk_sentence ~start ~stop ~start_offset ~start_line []
           in
           Queue.push (`Sentence sentence) queue;
           if start#offset <> prev_start && not stop#is_end then loop (succ n) stop start#offset

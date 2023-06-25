@@ -1,3 +1,12 @@
+## Changes between Coq 8.17 and Coq 8.18
+
+### XML protocol
+
+Version 20230413, see xml-protocol.md for details.
+
+- Coq locations are now fully transmitted, including line and column
+  information vs the previous start/end offset.
+
 ## Changes between Coq 8.15 and Coq 8.16
 
 ### Plugin Interface
