@@ -69,6 +69,15 @@ sig
   val of_list : (key * 'a) list -> 'a t
   (** Turns an association list into a map *)
 
+  val symmetric_diff_fold :
+    (key -> 'a option -> 'a option -> 'b -> 'b) ->
+    'a t -> 'a t -> 'b -> 'b
+  (** [symmetric_diff f ml mr acc] will efficiently fold over the difference
+      between [ml] and [mr], assumed that they share most of their internal
+      structure. A call to [f k vl vr] means that if [vl] is [Some], then [k] exists
+      in [ml]. Similarly, if [vr] is [Some], then [k] exists in [mr]. If both [vl]
+      and [vr] are [Some], then [vl != vr]. *)
+
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t

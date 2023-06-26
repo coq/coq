@@ -447,4 +447,13 @@ struct
       IntM.mapi (fun _ m -> ExtM.mapi f m) s
   end
 
+  let symmetric_diff_fold f lm rm acc =
+    Int.Map.symmetric_diff_fold
+      (fun _ l r -> match l, r with
+         | Some m, None -> Map.fold (fun k v acc -> f k (Some v) None acc) m
+         | None, Some m -> Map.fold (fun k v acc -> f k None (Some v) acc) m
+         | Some lm, Some rm -> Map.symmetric_diff_fold f lm rm
+         | None, None -> assert false)
+      lm rm acc
+
 end
