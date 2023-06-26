@@ -710,11 +710,11 @@ file is a particular case of a module called a *library file*.
 Load paths
 ----------
 
-:term:`Load paths <load path>` are preferably managed using Coq command line options (see
-Section :ref:`logical-paths-load-path`), but there are also commands
-to manage them within Coq. These commands are only meant to be issued in
-the toplevel, and using them in source files is discouraged.
+.. versionchanged:: 8.18
 
+   Commands to manage :term:`load paths <load path>` within Coq have been
+   removed. Load paths can be managed using Coq command line options or
+   enviroment variables (see :ref:`logical-paths-load-path`).
 
 .. cmd:: Pwd
 
