@@ -929,10 +929,13 @@ let preprocess_inductive_decl ~atts kind indl =
     in
     if fst id = AddCoercion then
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
-    let ((rf_coercion, rf_instance), (lid, ce)) = l in
+    let ((attr, rf_coercion, rf_instance), (lid, ce)) = l in
+    let rf_locality = match rf_coercion, rf_instance with
+      | AddCoercion, _ | _, (BackInstance | BackInstanceWarning) -> parse option_locality attr
+      | _ -> let () = unsupported_attributes attr in Goptions.OptDefault in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
-              rf_locality = Goptions.OptDefault ; rf_notation = [] ; rf_canonical = true } in
+              rf_locality ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
@@ -950,13 +953,31 @@ let preprocess_inductive_decl ~atts kind indl =
       user_err (str "\"where\" clause not supported for records.")
     in
     let () = List.iter check_where indl in
+    let parse_record_field_attr (x, f) =
+      let attr =
+        let rev = match f.rfu_coercion with
+          | AddCoercion -> reversible
+          | NoCoercion -> Notations.return None in
+        let loc = match f.rfu_coercion, f.rfu_instance with
+          | AddCoercion, _ | _, (BackInstance | BackInstanceWarning) -> option_locality
+          | _ -> Notations.return Goptions.OptDefault in
+        Notations.(rev ++ loc ++ canonical_field) in
+      let (rf_reversible, rf_locality), rf_canonical = parse attr f.rfu_attrs in
+      x,
+      { rf_coercion = f.rfu_coercion;
+        rf_reversible;
+        rf_instance = f.rfu_instance;
+        rf_priority = f.rfu_priority;
+        rf_locality;
+        rf_notation = f.rfu_notation;
+        rf_canonical } in
     let unpack ((id, bl, c, decl), _) = match decl with
     | RecordDecl (oc, fs, ido) ->
       let bl = match bl with
         | bl, None -> bl
         | _ -> CErrors.user_err Pp.(str "Records do not support the \"|\" syntax.")
       in
-      (id, bl, c, oc, fs, ido)
+      (id, bl, c, oc, List.map parse_record_field_attr fs, ido)
     | Constructors _ -> assert false (* ruled out above *)
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in

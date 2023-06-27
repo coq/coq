@@ -721,7 +721,7 @@ let eq_params (up1,p1) (up2,p2) =
 
 let extract_coercions indl =
   let mkqid (_,({CAst.v=id},_)) = qualid_of_ident id in
-  let iscoe (coe, inst) = match inst with
+  let iscoe (_, coe, inst) = match inst with
     (* remove BackInstanceWarning after deprecation phase *)
     | Vernacexpr.(NoInstance | BackInstanceWarning) -> coe = Vernacexpr.AddCoercion
     | _ -> user_err (Pp.str "'::' not allowed in inductives.") in

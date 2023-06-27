@@ -107,11 +107,11 @@ GRAMMAR EXTEND Gram
     ]
   ;
   decorated_vernac:
-    [ [ a = LIST0 quoted_attributes ; fv = vernac ->
-        { let (f, v) = fv in (List.append (List.flatten a) f, v) } ] ]
+    [ [ a = quoted_attributes ; fv = vernac ->
+        { let (f, v) = fv in (List.append a f, v) } ] ]
   ;
   quoted_attributes:
-    [ [ "#[" ; a = attribute_list ; "]" -> { a } ]
+    [ [ l = LIST0 [ "#[" ; a = attribute_list ; "]" -> { a } ] -> { List.flatten l } ]
     ]
   ;
   attribute_list:
@@ -393,6 +393,7 @@ GRAMMAR EXTEND Gram
   (* Inductives and records *)
   opt_constructors_or_fields:
     [ [ ":="; lc = constructors_or_record -> { lc }
+      | ":=" -> { Constructors [] }
       | -> { RecordDecl (None, [], None) } ] ]
   ;
   inductive_or_record_definition:
@@ -404,13 +405,16 @@ GRAMMAR EXTEND Gram
   ;
   constructors_or_record:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
-      | id = identref ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
-          { Constructors ((c id)::l) }
-      | id = identref ; c = constructor_type -> { Constructors [ c id ] }
-      | cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
-          { RecordDecl (Some cstr,fs,id) }
-      | "{";fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) }
-      |  -> { Constructors [] } ] ]
+      | attr = quoted_attributes ; id = identref ; c = constructor_type;
+        "|"; l = LIST1 constructor SEP "|" ->
+          { Constructors ((c attr id)::l) }
+      | attr = quoted_attributes ; id = identref ; c = constructor_type ->
+          { Constructors [ c attr id ] }
+      | attr = quoted_attributes ;
+        cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
+          { let () = unsupported_attributes attr in
+            RecordDecl (Some cstr,fs,id) }
+      | "{";fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) } ] ]
   ;
   default_inhabitant_ident:
     [ [ "as"; id = identref -> { Some id }
@@ -472,15 +476,13 @@ GRAMMAR EXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-  [ [ attr = LIST0 quoted_attributes ;
-      bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
-      rf_notation = decl_notations -> {
-      let (rf_canonical, rf_reversible), rf_locality = attr |> List.flatten
-        |> parse Notations.(canonical_field ++ reversible ++ option_locality) in
-      let (rf_coercion, rf_instance), rf_decl = bd in
+  [ [ rfu_attrs = quoted_attributes ;
+      bd = record_binder; rfu_priority = OPT [ "|"; n = natural -> { n } ];
+      rfu_notation = decl_notations -> {
+      let (rfu_coercion, rfu_instance), rf_decl = bd in
       rf_decl,
-      { rf_coercion ; rf_reversible ; rf_instance ; rf_priority ; rf_locality ;
-        rf_notation ; rf_canonical } } ] ]
+      { rfu_attrs ; rfu_coercion ; rfu_instance ; rfu_priority ;
+        rfu_notation } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
@@ -520,15 +522,16 @@ GRAMMAR EXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_inst; c = lconstr ->
-                    { fun l id -> (coe,(id,mkProdCN ~loc l c)) }
+                    { fun l attr id -> ((attr, fst coe, snd coe),(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l id -> ((NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous)))) } ]
+                 { fun l attr id -> ((attr,NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous)))) } ]
          -> { t l }
      ]]
 ;
 
   constructor:
-    [ [ id = identref; c=constructor_type -> { c id } ] ]
+    [ [ attr = quoted_attributes ;
+        id = identref; c=constructor_type -> { c attr id } ] ]
   ;
   of_type:
     [ [   ":>" -> { AddCoercion }
