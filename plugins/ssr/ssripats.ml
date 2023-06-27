@@ -438,7 +438,11 @@ let notTAC = tclUNIT false
 
 let duplicate_clear =
   CWarnings.create ~name:"duplicate-clear" ~category:CWarnings.CoreCategories.ssr
-    (fun id -> Pp.(str "Duplicate clear of " ++ Id.print id))
+    (fun id -> Pp.(
+      str "Duplicate clear of" ++ spc () ++ Id.print id ++ str "." ++ spc ()
+      ++ str "Use {}" ++ Id.print id ++ spc ()
+      ++ str "instead of {" ++ Id.print id ++ str "}" ++ Id.print id
+    ))
 
 (* returns true if it was a tactic (eg /ltac:tactic) *)
 let rec ipat_tac1 ipat : bool tactic =
