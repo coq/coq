@@ -330,6 +330,7 @@ val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
 val constr_eq : strict:bool -> constr -> constr -> unit Proofview.tactic
 
 val unify           : ?state:TransparentState.t -> constr -> constr -> unit Proofview.tactic
+val evarconv_unify : ?state:TransparentState.t -> ?with_ho:bool -> constr -> constr -> unit Proofview.tactic
 
 val specialize_eqs : Id.t -> unit Proofview.tactic
 

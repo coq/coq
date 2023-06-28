@@ -28,6 +28,28 @@ Proof.
   end.
 Abort.
 
+Goal forall (x: nat), exists y, f x = g y.
+Proof.
+  intros.
+  eexists.
+  Unification.unify TransparentState.full 'f 'g.
+  lazy_match! goal with
+  | [ |- ?a ?b = ?rhs ] => Unification.unify_with_full_ts '($a $b) rhs
+  end.
+Abort.
+
+Goal True.
+Proof.
+  Fail Unification.unify TransparentState.empty '(1 + 1) '2.
+  Unification.unify TransparentState.full '(1 + 1) '2.
+  Unification.unify (TransparentState.current ()) '(1 + 1) '2.
+  Opaque Nat.add.
+  Fail Unification.unify (TransparentState.current ()) '(1 + 1) '2.
+  Succeed Unification.unify TransparentState.full '(1 + 1) '2.
+  exact I.
+Qed.
+
+
 (* Test that by clause of assert doesn't eat all semicolons:
    https://github.com/coq/coq/issues/17491 *)
 Goal forall (a: nat), a = a.

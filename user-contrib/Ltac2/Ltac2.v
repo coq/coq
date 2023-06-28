@@ -37,5 +37,7 @@ Require Ltac2.String.
 Require Ltac2.Uint63.
 Require Ltac2.FSet.
 Require Ltac2.FMap.
+Require Ltac2.TransparentState.
+Require Ltac2.Unification.
 
 Require Export Ltac2.Notations.

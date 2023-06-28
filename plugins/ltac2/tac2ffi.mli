@@ -219,6 +219,7 @@ val val_float : Float64.t Val.tag
 val val_ltac1 : Geninterp.Val.t Val.tag
 
 val val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag
+val val_transparent_state : TransparentState.t Val.tag
 
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 (** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]

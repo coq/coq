@@ -121,3 +121,7 @@ val unify : constr -> constr -> unit tactic
 val inversion : Inv.inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
 
 val contradiction : constr_with_bindings option -> unit tactic
+
+val current_transparent_state : unit -> TransparentState.t tactic
+
+val evarconv_unify : TransparentState.t -> constr -> constr -> unit tactic

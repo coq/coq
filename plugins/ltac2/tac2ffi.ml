@@ -114,6 +114,7 @@ let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_uint63 = Val.create "uint63"
 let val_float = Val.create "float"
 let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = Val.create "ind_data"
+let val_transparent_state : TransparentState.t Val.tag = Val.create "transparent_state"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
