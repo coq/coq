@@ -30,7 +30,7 @@ To produce the complete documentation in HTML, you will need Coq dependencies
 listed in [`INSTALL.md`](../INSTALL.md). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
-  - sphinx >= 3.0.2
+  - sphinx >= 4.5.0
   - sphinx_rtd_theme >= 0.4.3
   - beautifulsoup4 >= 4.0.6
   - antlr4-python3-runtime >= 4.7.1
