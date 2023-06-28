@@ -1,0 +1,6 @@
+nat : S
+     : S
+reverse_coercion S_nat nat : S
+     : S
+@reverse_coercion S Set S_nat nat : S
+     : S
