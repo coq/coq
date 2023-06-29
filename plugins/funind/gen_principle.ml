@@ -1218,18 +1218,20 @@ let get_funs_constant mp =
   function
   | const ->
     let find_constant_body const =
-      match Global.body_of_constant Library.indirect_accessor const with
-      | Some (body, _, _) ->
+      let env = Global.env () in
+      let body = Environ.lookup_constant const env in
+      match body.Declarations.const_body with
+      | Def body ->
         let body =
           Tacred.cbv_norm_flags
             (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
-            (Global.env ())
-            (Evd.from_env (Global.env ()))
+            env
+            (Evd.from_env env)
             (EConstr.of_constr body)
         in
         let body = EConstr.Unsafe.to_constr body in
         body
-      | None ->
+      | Undef _ | OpaqueDef _ | Primitive _ ->
         CErrors.user_err Pp.(str "Cannot define a principle over an axiom ")
     in
     let f = find_constant_body const in
@@ -2057,9 +2059,9 @@ let make_graph (f_ref : GlobRef.t) =
             ++ Termops.pr_global_env env (ConstRef c))
     | _ -> CErrors.user_err Pp.(str "Not a function reference")
   in
-  match Global.body_of_constant_body Library.indirect_accessor c_body with
-  | None -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
-  | Some (body, _, _) ->
+  match c_body.Declarations.const_body with
+  | Undef _ | Primitive _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
+  | Def body ->
     let env = Global.env () in
     let extern_body, extern_type =
       with_full_print
