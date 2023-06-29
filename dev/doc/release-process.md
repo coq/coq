@@ -37,7 +37,7 @@
 - [ ] Ping the development coordinator (`@mattam82`) to get him started on writing the release summary.
   The [`dev/tools/list-contributors.sh`](../tools/list-contributors.sh) script computes the number and list of contributors between Coq revisions. Typically used with `VX.X+alpha..vX.X` to check the contributors of version `VX.X`.
   Note that this script relies on [`.mailmap`](../../.mailmap) to merge multiple identities.  If you notice anything incorrect while using it, use the opportunity to fix the `.mailmap` file.  Same thing if you want to have the full name of a contributor shown instead of a pseudonym.
-- [ ] Put the branch name in CACHEKEY in [`.gitlab-ci.yml`](../../.gitlab-ci.yml) (for instance ``bionic_coq-V2022-05-20-c34331afa5`` to ``"bionic_coq-v8.16-V2022-05-20-c34331afa5``) to indicate that it shouldn't be cleaned up even once it gets old. This should be done after all PRs touching CACHEKEY have been merged.
+- [ ] Put the branch name in CACHEKEY in [`.gitlab-ci.yml`](../../.gitlab-ci.yml) (for instance ``ubuntu_coq-V2022-05-20-c34331afa5`` to ``"ubuntu_coq-v8.16-V2022-05-20-c34331afa5``) to indicate that it shouldn't be cleaned up even once it gets old. This should be done after all PRs touching CACHEKEY have been merged.
 
 ## For each release (preview, final, patch-level) ##
 

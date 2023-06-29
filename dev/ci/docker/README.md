@@ -1,7 +1,7 @@
 ## Overall Docker Setup for Coq's CI.
 
-This directory provides Docker images to be used by Coq's CI. The
-images do support Docker autobuild on `hub.docker.com` and Gitlab's
+This directory provides the Docker image used by Coq's CI. The
+image supports Docker autobuild on `hub.docker.com` and Gitlab's
 private registry.
 
 The Gitlab CI will build a Docker image unless the CI environment variable
