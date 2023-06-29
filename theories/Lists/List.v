@@ -172,6 +172,14 @@ Section Facts.
     now destruct l, l'.
   Qed.
 
+  Lemma app_eq_cons x y z (a : A):
+    x ++ y = a :: z -> (x = nil /\ y = a :: z) \/ exists x', x = a :: x' /\ z = x' ++ y.
+  Proof.
+    intro H. destruct x as [|b x].
+    - now left.
+    - right. injection H as ->. now exists x.
+  Qed.
+
   Theorem app_eq_unit (x y:list A) (a:A) :
       x ++ y = [a] -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof.
@@ -319,6 +327,21 @@ Section Facts.
   intros x y l1 l2 Hin.
   apply in_app_or in Hin.
   destruct Hin as [Hin|[Hin|Hin]]; [right|left|right]; try apply in_or_app; intuition.
+  Qed.
+
+  Lemma app_inj_pivot x1 x2 y1 y2 (a : A): x1 ++ a :: x2 = y1 ++ a :: y2 ->
+    ((In a x1 /\ In a y2) \/ (In a x2 /\ In a y1)) \/ (x1 = y1 /\ x2 = y2).
+  Proof.
+    induction y1 as [|b y1 IHy] in x1 |- *; intros [[-> H]|[x' [-> H]]]%app_eq_cons.
+    - right. now injection H.
+    - subst y2.
+      left; left. split; [apply in_eq | apply in_elt].
+    - injection H as -> ->.
+      left; right. split; [ apply in_elt | apply in_eq ].
+    - symmetry in H. apply IHy in H as [[[]|[]]|[]].
+      + left; left. split; [apply in_cons|]; assumption.
+      + left; right. split; [|apply in_cons]; assumption.
+      + right. split; congruence.
   Qed.
 
   (** Inversion *)
@@ -904,6 +927,13 @@ Section ListOps.
     intro l; induction l as [| a l IHl].
     - reflexivity.
     - cbn. now rewrite rev_unit, IHl.
+  Qed.
+
+  Lemma rev_inj (l1 l2: list A):
+    rev l1 = rev l2 -> l1 = l2.
+  Proof.
+    intro H. apply (f_equal rev) in H.
+    rewrite !rev_involutive in H. assumption.
   Qed.
 
   Lemma rev_eq_app : forall l l1 l2, rev l = l1 ++ l2 -> l = rev l2 ++ rev l1.
