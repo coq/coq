@@ -1,4 +1,4 @@
-image: "$IMAGE"
+image: $BASE_IMAGE
 
 include:
   - local: '/dev/ci/gitlab-modes/protected-mode.yml'
@@ -31,15 +31,16 @@ stages:
 
 # some default values
 variables:
-  # Format: bionic_coq-V$DATE-$hash
+  # Format: image_name-V$DATE-$hash
   # $DATE is so we can tell what's what in the image list
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
-  # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
-  CACHEKEY: "bionic_coq-V2023-06-29-2b9dca3152"
-  IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
+  # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
+  # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
+  BASE_CACHEKEY: "old_ubuntu_lts-V2023-06-30-8ca33f9dfd"
+  EDGE_CACHEKEY: "edge_ubuntu-V2023-06-30-f22617bedf"
+  BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
+  EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
-  # By default, jobs run in the base switch; override to select another switch
-  OPAM_SWITCH: "base"
   # Used to select special compiler switches such as flambda, 32bits, etc...
   OPAM_VARIANT: ""
   GIT_DEPTH: "10"
@@ -50,9 +51,7 @@ before_script:
   - ulimit -s
   - ls -a # figure out if artifacts are around
   - printenv -0 | sort -z | tr '\0' '\n'
-  - declare -A switch_table
-  - switch_table=( ["base"]="$COMPILER" ["edge"]="$COMPILER_EDGE" )
-  - opam switch set -y "${switch_table[$OPAM_SWITCH]}$OPAM_VARIANT"
+  - opam switch set -y "${COMPILER}${OPAM_VARIANT}"
   - eval $(opam env)
   - opam list
   - opam config list
@@ -99,21 +98,15 @@ before_script:
 
 # Developer build, with build layout. Faster and useful for those
 # jobs needing _build
-.build-template:dev:
+.build-template:base:dev:
   stage: build
   interruptible: true
   extends: .auto-use-tags
   script:
-    # flambda can be pretty stack hungry, specially with -O3
-    # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
-    # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
-    - ulimit -S -s 16384
     - make $DUNE_TARGET
     - find _build -name '*.vio' -exec rm -f {} \;
     - tar cfj _build.tar.bz2 _build
   variables:
-    OPAM_SWITCH: edge
-    OPAM_VARIANT: "+flambda"
     DUNE_TARGET: world
   artifacts:
     name: "$CI_JOB_NAME"
@@ -125,19 +118,16 @@ before_script:
       - user-contrib/Ltac2/dune
     expire_in: 1 month
 
-.dev-ci-template:
+.doc-template:
   stage: build
   interruptible: true
   extends: .auto-use-tags
   needs:
-    - build:edge+flambda:dev
+    - build:base:dev
   script:
     - ulimit -S -s 16384
     - tar xfj _build.tar.bz2
     - make "$DUNE_TARGET"
-  variables:
-    OPAM_SWITCH: edge
-    OPAM_VARIANT: "+flambda"
   artifacts:
     when: always
     name: "$CI_JOB_NAME"
@@ -214,10 +204,10 @@ before_script:
 
 .ci-template-flambda:
   extends: .ci-template
+  image: $EDGE_IMAGE
   needs:
     - build:edge+flambda
   variables:
-    OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
 .deploy-template:
@@ -234,6 +224,7 @@ before_script:
 
 .pkg:opam-template:
   stage: build
+  image: $EDGE_IMAGE
   interruptible: true
   extends: .auto-use-tags
   # OPAM will build out-of-tree so no point in importing artifacts
@@ -243,7 +234,6 @@ before_script:
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
   variables:
-    OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
@@ -284,10 +274,10 @@ docker-boot:
   script:
     - dev/tools/check-cachekey.sh
     - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
-    - cd dev/ci/docker/bionic_coq/
-    - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
-    - docker build -t "$IMAGE" .
-    - docker push "$IMAGE"
+    - cd dev/ci/docker/old_ubuntu_lts
+    - if docker pull "$BASE_IMAGE"; then echo "Base image prebuilt!"; else docker build -t "$BASE_IMAGE" .; docker push "$BASE_IMAGE"; fi
+    - cd ../edge_ubuntu
+    - if docker pull "$EDGE_IMAGE"; then echo "Edge image prebuilt!"; else docker build -t "$EDGE_IMAGE" .; docker push "$EDGE_IMAGE"; fi
   except:
     variables:
       - $SKIP_DOCKER == "true"
@@ -298,6 +288,7 @@ build:base:
   extends: .build-template
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes"
+  only: *full-ci
 
 # no coqide for 32bit: libgtk installation problems
 build:base+32bit:
@@ -310,14 +301,13 @@ build:base+32bit:
 
 build:edge+flambda:
   extends: .build-template
+  image: $EDGE_IMAGE
   variables:
-    OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes"
-  only: *full-ci
 
-build:edge+flambda:dev:
-  extends: .build-template:dev
+build:base:dev:
+  extends: .build-template:base:dev
 
 build:base+async:
   extends: .build-template
@@ -343,7 +333,7 @@ build:base+async:
   timeout: 1h 30min
 
 build:vio:
-  extends: .build-template:dev
+  extends: .build-template:base:dev
   variables:
     COQ_EXTRA_CONF: "-native-compiler no"
     COQ_DUNE_EXTRA_OPT: "-vio"
@@ -362,11 +352,11 @@ build:vio:
 
 lint:
   stage: build
+  image: $EDGE_IMAGE
   script: dev/lint-repository.sh
   extends: .auto-use-tags
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
-    OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
 # pkg:opam:
@@ -425,7 +415,7 @@ pkg:nix:
     - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
 
 doc:refman:
-  extends: .dev-ci-template
+  extends: .doc-template
   variables:
     DUNE_TARGET: refman-html
   artifacts:
@@ -434,7 +424,7 @@ doc:refman:
       - _build/default/doc/refman-html
 
 doc:refman-pdf:
-  extends: .dev-ci-template
+  extends: .doc-template
   variables:
     DUNE_TARGET: refman-pdf
   artifacts:
@@ -443,7 +433,7 @@ doc:refman-pdf:
       - _build/default/doc/refman-pdf
 
 doc:stdlib:
-  extends: .dev-ci-template
+  extends: .doc-template
   variables:
     DUNE_TARGET: stdlib-html
   artifacts:
@@ -479,7 +469,7 @@ doc:refman:deploy:
     - git push # TODO: rebase and retry on failure
 
 doc:ml-api:odoc:
-  extends: .dev-ci-template
+  extends: .doc-template
   variables:
     DUNE_TARGET: apidoc
   artifacts:
@@ -491,6 +481,7 @@ test-suite:base:
   extends: .test-suite-template
   needs:
     - build:base
+  only: *full-ci
 
 test-suite:base+32bit:
   extends: .test-suite-template
@@ -502,25 +493,21 @@ test-suite:base+32bit:
 
 test-suite:edge+flambda:
   extends: .test-suite-template
+  image: $EDGE_IMAGE
   needs:
     - build:edge+flambda
   variables:
-    OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
-  only: *full-ci
 
-test-suite:edge:dev:
+test-suite:base:dev:
   stage: build
   interruptible: true
   extends: .auto-use-tags
   needs:
-    - build:edge+flambda:dev
+    - build:base:dev
   script:
     - tar xfj _build.tar.bz2
     - make test-suite
-  variables:
-    OPAM_SWITCH: edge
-    OPAM_VARIANT: "+flambda"
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
@@ -542,8 +529,6 @@ test-suite:edge:dev:
     - eval $(opam env)
     - export COQ_UNIT_TEST=noop
     - make test-suite
-  variables:
-    OPAM_SWITCH: base
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: always
@@ -568,6 +553,7 @@ validate:base:
   extends: .validate-template
   needs:
     - build:base
+  only: *full-ci
 
 validate:base+32bit:
   extends: .validate-template
@@ -579,12 +565,11 @@ validate:base+32bit:
 
 validate:edge+flambda:
   extends: .validate-template
+  image: $EDGE_IMAGE
   needs:
     - build:edge+flambda
   variables:
-    OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
-  only: *full-ci
 
 validate:vio:
   extends: .validate-template
@@ -684,13 +669,15 @@ library:ci-fiat_crypto_legacy:
 # https://github.com/ocaml/ocaml/issues/7842, see
 # https://github.com/coq/coq/pull/11916#issuecomment-609977375
 library:ci-fiat_crypto_ocaml:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-coqprime
   - plugin:ci-bignums
   - plugin:ci-rewriter
   - library:ci-fiat_crypto
+  artifacts:
+    paths: [] # These artifacts would go over the size limit
 
 library:ci-flocq:
   extends: .ci-template-flambda
