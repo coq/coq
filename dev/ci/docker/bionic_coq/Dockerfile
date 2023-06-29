@@ -26,7 +26,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         wdiff
 
 # More dependencies of the sphinx doc, pytest for coqtail
-RUN pip3 install docutils==0.16 sphinx==4.5.0 sphinx_rtd_theme==0.4.3 \
+RUN pip3 install docutils==0.17.1 sphinx==4.5.0 sphinx_rtd_theme==1.0.0 \
         antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.2 \
         pytest==5.4.3
 
