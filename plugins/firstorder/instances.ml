@@ -138,7 +138,7 @@ let left_instance_tac ~flags (inst,id) continue seq=
                 (pf_constr_of_global id >>= fun idc ->
                 Proofview.Goal.enter begin fun gl ->
                   let id0 = List.nth (pf_ids_of_hyps gl) 0 in
-                  generalize [mkApp(idc, [|mkVar id0|])]
+                  Generalize.generalize [mkApp(idc, [|mkVar id0|])]
                 end);
                 introf;
                 tclSOLVE [wrap ~flags 1 false continue
@@ -161,10 +161,10 @@ let left_instance_tac ~flags (inst,id) continue seq=
                     with e when CErrors.noncritical e ->
                       user_err Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
                   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evmap)
-                    (generalize [gt])
+                    (Generalize.generalize [gt])
                 end)
             else
-              pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|snd @@ Item.repr c|])]
+              pf_constr_of_global id >>= fun idc -> Generalize.generalize [mkApp(idc,[|snd @@ Item.repr c|])]
           in
             tclTHENLIST
               [special_generalize;

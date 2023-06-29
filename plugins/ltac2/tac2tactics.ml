@@ -135,7 +135,7 @@ let elim ev c copt =
 let generalize pl =
   let mk_occ occs = mk_occurrences (fun i -> i) occs in
   let pl = List.map (fun (c, occs, na) -> (mk_occ occs, c), na) pl in
-  Tactics.new_generalize_gen pl
+  Generalize.new_generalize_gen pl
 
 let general_case_analysis ev c =
   let c = mk_with_bindings c in

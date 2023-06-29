@@ -234,7 +234,7 @@ END
 (** Revert *)
 
 TACTIC EXTEND revert
-| [ "revert" ne_hyp_list(hl) ] -> { Tactics.revert hl }
+| [ "revert" ne_hyp_list(hl) ] -> { Generalize.revert hl }
 END
 
 (** Simple induction / destruct *)
@@ -300,7 +300,7 @@ END
 (* Generalize dependent *)
 
 TACTIC EXTEND generalize_dependent
-| [ "generalize" "dependent" constr(c) ] -> { Tactics.generalize_dep c }
+| [ "generalize" "dependent" constr(c) ] -> { Generalize.generalize_dep c }
 END
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)

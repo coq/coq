@@ -196,12 +196,9 @@ val specialize    : constr with_bindings -> intro_pattern option -> unit Proofvi
 val move_hyp      : Id.t -> Id.t Logic.move_location -> unit Proofview.tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
 
-val revert        : Id.t list -> unit Proofview.tactic
-
 (** {6 Resolution tactics. } *)
 
 val apply_type : typecheck:bool -> constr -> constr list -> unit Proofview.tactic
-val bring_hyps : named_context -> unit Proofview.tactic
 
 val apply                 : constr -> unit Proofview.tactic
 val eapply : ?with_classes:bool -> constr -> unit Proofview.tactic
@@ -388,15 +385,6 @@ val letin_tac : (bool * intro_pattern_naming) option ->
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
   Name.t -> (evar_map option * constr) -> clause -> unit Proofview.tactic
 
-(** {6 Generalize tactics. } *)
-
-val generalize      : constr list -> unit Proofview.tactic
-val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> unit Proofview.tactic
-
-val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
-
-val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> unit Proofview.tactic
-
 (** {6 Other tactics. } *)
 
 (** Syntactic equality up to universes. With [strict] the universe
@@ -406,7 +394,6 @@ val constr_eq : strict:bool -> constr -> constr -> unit Proofview.tactic
 
 val unify           : ?state:TransparentState.t -> constr -> constr -> unit Proofview.tactic
 
-val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Id.t -> unit Proofview.tactic
 val specialize_eqs : Id.t -> unit Proofview.tactic
 
 val general_rewrite_clause :

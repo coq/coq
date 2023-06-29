@@ -140,7 +140,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
     let type_of_a = Tacmach.pf_get_type_of gl a in
     Tacticals.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
     Tacticals.tclTHENLIST
-         [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
+         [Generalize.generalize [(mkApp(req, [| type_of_a; a|]))];
           Proofview.Goal.enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in

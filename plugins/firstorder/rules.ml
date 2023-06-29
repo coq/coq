@@ -80,7 +80,7 @@ let ll_atom_tac ~flags a backtrack id continue seq =
           gr >>= fun gr ->
           pf_constr_of_global gr >>= fun left ->
           pf_constr_of_global id >>= fun id ->
-            generalize [(mkApp(id, [|left|]))]);
+            Generalize.generalize [(mkApp(id, [|left|]))]);
          clear_global id;
          intro])
     (wrap ~flags 1 false continue seq) backtrack
@@ -153,7 +153,7 @@ let ll_ind_tac ~flags (ind,u as indu) largs backtrack id continue seq =
        let newhyps idc =List.init lp (myterm idc) in
          tclIFTHENELSE
            (tclTHENLIST
-              [(pf_constr_of_global id >>= fun idc -> generalize (newhyps idc));
+              [(pf_constr_of_global id >>= fun idc -> Generalize.generalize (newhyps idc));
                clear_global id;
                tclDO lp intro])
            (wrap ~flags lp false continue seq) backtrack
@@ -174,7 +174,7 @@ let ll_arrow_tac ~flags a b c backtrack id continue seq=
           tclTHENS (cut cc)
             [(pf_constr_of_global id >>= fun c -> exact_no_check c);
              tclTHENLIST
-               [(pf_constr_of_global id >>= fun idc -> generalize [d idc]);
+               [(pf_constr_of_global id >>= fun idc -> Generalize.generalize [d idc]);
                 clear_global id;
                 introf;
                 introf;
@@ -215,7 +215,7 @@ let ll_forall_tac ~flags prod backtrack id continue seq=
               let open EConstr in
               let id0 = List.nth (pf_ids_of_hyps gls) 0 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
-              tclTHEN (generalize [term]) (clear [id0])
+              tclTHEN (Generalize.generalize [term]) (clear [id0])
            end);
            clear_global id;
            intro;

@@ -616,7 +616,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
                       make_refl_eq (Lazy.force refl_equal) type_of_term t
                     in
                     tclTHENLIST
-                      [ generalize (term_eq :: List.map mkVar dyn_infos.rec_hyps)
+                      [ Generalize.generalize (term_eq :: List.map mkVar dyn_infos.rec_hyps)
                       ; thin dyn_infos.rec_hyps
                       ; pattern_option [(Locus.AllOccurrencesBut [1], t)] None
                       ; observe_tac "toto"
@@ -807,14 +807,14 @@ let generalize_non_dep hyp =
       (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
       Tacticals.tclTHEN
         ((* observe_tac "h_generalize" *)
-         generalize (List.map mkVar to_revert))
+         Generalize.generalize (List.map mkVar to_revert))
         ((* observe_tac "thin" *) clear to_revert))
 
 let id_of_decl = RelDecl.get_name %> Nameops.Name.get_id
 let var_of_decl = id_of_decl %> mkVar
 
 let revert idl =
-  Tacticals.tclTHEN (generalize (List.map mkVar idl)) (clear idl)
+  Tacticals.tclTHEN (Generalize.generalize (List.map mkVar idl)) (clear idl)
 
 let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_num
     =
@@ -1473,7 +1473,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
       in
       let open Tacticals in
       let revert l =
-        tclTHEN (Tactics.generalize (List.map mkVar l)) (clear l)
+        tclTHEN (Generalize.generalize (List.map mkVar l)) (clear l)
       in
       let fix_id = Nameops.Name.get_id (fresh_id (Name hrec_id)) in
       let prove_rec_arg_acc =
@@ -1520,7 +1520,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
                 (Id.Set.of_list hyps)
             in
             tclTHENLIST
-              [ generalize [lemma]
+              [ Generalize.generalize [lemma]
               ; Simple.intro hid
               ; Elim.h_decompose_and (mkVar hid)
               ; Proofview.Goal.enter (fun g ->
