@@ -420,7 +420,6 @@ let _is_empty_clause ((_, kprem) : clause) = ClausesOf.is_empty kprem
 (* Comparison on this type is pointer equality *)
 type canonical_node =
   { canon: Index.t;
-    value : int option;
     clauses_bwd : ClausesOf.t; (* premises -> canon + k *)
     clauses_fwd : ClausesOf.t PMap.t (* canon + k, ... ->  concl + k' *) }
 
@@ -433,11 +432,13 @@ type entry =
 
 type model = {
   entries : entry PMap.t;
+  values : int PMap.t;
   canonical : int; (* Number of canonical nodes *)
   table : Index.table }
 
 let empty_model = {
   entries = PMap.empty;
+  values = PMap.empty;
   canonical = 0;
   table = Index.empty
 }
@@ -467,6 +468,7 @@ let enter_equiv m u v =
           | Canonical _ -> Equiv v
           | _ -> assert false) m.entries;
     canonical = m.canonical - 1;
+    values = PMap.remove u m.values;
     table = m.table }
 
 let change_equiv entries u v =
@@ -682,7 +684,7 @@ let check_invariants ~(required_canonical:Point.t -> bool) model =
     | Canonical can ->
       assert (Index.equal idx can.canon);
       assert (Index.mem (Index.repr idx model.table) model.table);
-      assert (match can.value with Some v -> v >= 0 | None -> false);
+      assert (PMap.mem idx model.values);
       let cls = can.clauses_bwd in
       ClausesOf.iter
         (fun (k, prems) ->
@@ -714,14 +716,10 @@ let max_opt = lift_opt max
 let min_opt = lift_opt min
 
 let model_max (m : model) : int option =
-  PMap.fold (fun _ k acc ->
-    match k with Equiv _ -> acc | Canonical can -> max_opt can.value acc)
-    m.entries None
+  PMap.fold (fun _ v acc -> max_opt (Some v) acc) m.values None
 
 let model_min (m : model) : int option =
-  PMap.fold (fun _ k acc ->
-    match k with Equiv _ -> acc | Canonical can -> min_opt can.value acc)
-    m.entries None
+  PMap.fold (fun _ v acc -> min_opt (Some v) acc) m.values None
 
 let clauses_cardinal (m : model) : int =
   PMap.fold (fun _ k acc ->
@@ -775,9 +773,16 @@ let debug_check_invariants m =
 
 exception Undeclared of Point.t
 
+let canonical_value m c = PMap.find_opt c.canon m.values
+
+let set_canonical_value m c v =
+  { m with values = PMap.modify c.canon (fun _ _ -> v) m.values }
+
 let model_value m l =
-  try (repr m l).value
-  with Not_found -> raise (Undeclared (Index.repr l m.table))
+  let canon =
+    try repr m l
+    with Not_found -> raise (Undeclared (Index.repr l m.table))
+  in canonical_value m canon
 
 exception VacuouslyTrue
 
@@ -839,31 +844,29 @@ end
 
 let pr_w m w = CanSet.pr m w
 
-let update_value (c, m) clause : (canonical_node * model) option =
+let update_value (c, m) clause : model option =
   let (k, premises) = clause in
   match min_premise m premises with
   | exception VacuouslyTrue -> None
   | k0 when k0 < 0 -> None
   | k0 ->
     let newk = k + k0 in
-    match c.value with
+    match canonical_value m c with
     | Some v when newk <= v -> None
-    | _ ->
-      let c' = { c with value = Some newk } in
-      Some (c', change_node m c')
+    | _ -> Some (set_canonical_value m c newk)
 
 let pr_can m can =
   Point.pr (Index.repr can.canon m.table)
 
 let check_model_clauses_of_aux m can cls =
   let (can', m') =
-    ClausesOf.fold (fun cls cwm ->
+    ClausesOf.fold (fun cls (can, m as cwm) ->
     match update_value cwm cls with
     | None -> cwm
-    | Some (can, _ as cwm') ->
-      debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int can.value);
+    | Some m' ->
+      debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int (canonical_value m' can));
       debug Pp.(fun () -> str" due to clause " ++ pr_clauses_bwd m (ClausesBackward.singleton (can.canon, ClausesOf.singleton cls)));
-      cwm')
+      (can, m'))
     cls (can, m)
   in (can', m')
 
@@ -998,8 +1001,8 @@ let check model (w : CanSet.t) =
 
 let entry_value m e =
   match e with
-  | Equiv idx -> (repr m idx).value
-  | Canonical can -> can.value
+  | Equiv idx -> canonical_value m (repr m idx)
+  | Canonical can -> canonical_value m can
 
 let pr_levelmap (m : model) : Pp.t =
   let open Pp in
@@ -1187,7 +1190,7 @@ let _to_clause_info m (k, prems : pclause_info) : clause_info =
 
 (* Precondition: canu.value = canv.value, so no new model needs to be computed *)
 let enforce_eq_can model canu canv : canonical_node * t =
-  assert (canu.value = canv.value);
+  assert (canonical_value model canu = canonical_value model canv);
   assert (canu != canv);
   (* v := u or u := v, depending on Point.keep_canonical (e.g. for Set) *)
   debug_check_invariants model;
@@ -1241,7 +1244,7 @@ let make_equiv m equiv =
     (* We are about to merge all these universes as they should be equal in the model,
       they should hence have the same values *)
     if CDebug.(get_flag debug_loop_checking_invariants) then
-      assert (List.for_all (fun x -> x.value = can.value) (can' :: tl));
+      assert (List.for_all (fun x -> canonical_value m x = canonical_value m can) (can' :: tl));
     let can, m =
       List.fold_left (fun (can, m) can' -> enforce_eq_can m can can')
         (enforce_eq_can m can can') tl
@@ -1271,7 +1274,7 @@ let find_to_merge model status canv canu =
       let merge =
         ClausesBackward.fold (fun concl _cls merge ->
           let conclcan = repr model concl in
-          if conclcan != can && conclcan.value = can.value then (* We stay in the same equivalence class *)
+          if conclcan != can && canonical_value model conclcan = canonical_value model can then (* We stay in the same equivalence class *)
             let merge' = forward conclcan in
             merge' || merge
           else merge) cls merge
@@ -1291,11 +1294,12 @@ let find_to_merge =
 
 let simplify_clauses_between model canv canu =
   if canv == canu then model
-  else if not (Option.equal Int.equal canu.value canv.value) then
+  else if not (Option.equal Int.equal (canonical_value model canu) (canonical_value model canv)) then
       (* We know v -> u and check for u -> v, this can only be true if both levels
         already have the same value *)
-    (debug Pp.(fun () -> pr_can model canu ++ str"'s value =  " ++ pr_opt int canu.value ++ str" and " ++ pr_can model canv ++ str "'s value = "
-      ++ pr_opt int canv.value ++ str", no simplification possible");
+    (debug Pp.(fun () -> pr_can model canu ++ str"'s value =  " ++
+        pr_opt int (canonical_value model canu) ++ str" and " ++ pr_can model canv ++ str "'s value = "
+      ++ pr_opt int (canonical_value model canv) ++ str", no simplification possible");
       model)
   else
     let status = Status.create model in
@@ -1350,8 +1354,8 @@ let mem_clause m ((l, kprem) : clause) : bool =
 type 'a check_function = t -> 'a -> 'a -> bool
 
 (* @raises VacuouslyTrue if there is an undefined level in the premises *)
-let min_can_premise prem =
-  let g (l, k) = (match l.value with Some v -> v | None -> raise VacuouslyTrue) - k in
+let min_can_premise model prem =
+  let g (l, k) = (match canonical_value model l with Some v -> v | None -> raise VacuouslyTrue) - k in
   let f prem minl = min minl (g prem) in
   Premises.fold_ne f g prem
 
@@ -1605,7 +1609,7 @@ let check_clause_of m conclv clause =
     k + k0 <= conclv)
 
 let _check_clause_info m (concl, clause) =
-  let v = (repr m concl).value in
+  let v = canonical_value m (repr m concl) in
   match v with
   | Some v -> ClausesOf.for_all (check_clause_of m v) clause
   | None -> true (* concl is undefined *)
@@ -1616,14 +1620,15 @@ let _mem_clause = time2 (Pp.str"mem_clause") mem_clause
 let _add_clauses_of_model = time2 (Pp.str "add_clauses_of_model") add_clauses_of_model
 
 let update_model_value (m : model) can k' : model =
-  let k' = max_opt can.value k' in
-  if Option.equal Int.equal k' can.value then m
+  let v = canonical_value m can in
+  let k' = max_opt v k' in
+  if Option.equal Int.equal k' v then m
   else
     (debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int k');
-    change_node m { can with value = k' })
+    set_canonical_value m can (Option.get k'))
 
 let update_model ((prems, (can, k)) : can_clause) (m : model) : CanSet.t * model =
-  match min_can_premise prems with
+  match min_can_premise m prems with
   | exception VacuouslyTrue -> (CanSet.empty, m)
   | k0 ->
     let m' = update_model_value m can (Some (k + k0)) in
@@ -1699,7 +1704,7 @@ let enforce_lt u v m =
   infer_extension canu 1 canv m
 
 let get_proper_value m can =
-  match can.value with
+  match canonical_value m can with
   | Some v -> v
   | None -> raise (Undeclared (Index.repr can.canon m.table))
 
@@ -1762,16 +1767,17 @@ let enforce_constraint u k v (m : t) =
 
 exception AlreadyDeclared
 
-let add_model u { entries; table; canonical } =
+let add_model u { entries; table; values; canonical } =
   if Index.mem u table then
    (debug Pp.(fun () -> str"Already declared level: " ++ Point.pr u);
     raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
-    let can = Canonical { canon = idx; value = Some 0;
+    let can = Canonical { canon = idx;
       clauses_fwd = PMap.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
-    idx, { entries; table; canonical = canonical + 1 }
+    let values = PMap.add idx 0 values in
+    idx, { entries; table; values; canonical = canonical + 1 }
 
 let add ?(rank:int option) u model =
   let _r = rank in
