@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     hostname
-    python3
+    python311
     # coq-makefile timing tools
     time
     dune_3
@@ -54,10 +54,10 @@ stdenv.mkDerivation rec {
   ]
   ++ optionals buildDoc [
     # Sphinx doc dependencies
-    pkg-config (python3.withPackages
+    pkg-config (python311.withPackages
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
-             ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
-    antlr4
+             (ps.antlr4-python3-runtime.override {antlr4 = pkgs.antlr4_9;}) ps.sphinxcontrib-bibtex ]))
+    antlr4_9
     ocamlPackages.odoc
   ]
   ++ optionals doInstallCheck [
