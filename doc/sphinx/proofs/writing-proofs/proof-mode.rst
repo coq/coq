@@ -246,9 +246,6 @@ When the proof is completed, you can exit proof mode with commands such as
    :n:`All`
      Aborts all current proofs.
 
-   .. exn:: No focused proof (No proof-editing in progress).
-      :undocumented:
-
 .. cmd:: Proof @term
    :name: Proof `term`
 
