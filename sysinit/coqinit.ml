@@ -195,4 +195,6 @@ let handle_injection = let open Coqargs in function
 
 let start_library ~top injections =
   Flags.verbosely Declaremods.start_library top;
-  List.iter handle_injection injections
+  CWarnings.override_unknown_warning[@ocaml.warning "-3"] := true;
+  List.iter handle_injection injections;
+  CWarnings.override_unknown_warning[@ocaml.warning "-3"] := false
