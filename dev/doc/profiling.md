@@ -78,7 +78,28 @@ EOF
         flamegraph.pl
 ```
 
-## Memory
+## Memory (memtrace)
+
+[memtrace](https://github.com/janestreet/memtrace) is a client library
+for OCaml's Memprof statistical memory profiler.
+
+See this blog post for more details:
+https://blog.janestreet.com/finding-memory-leaks-with-memtrace/
+
+To profile a file, you need to install the `memtrace` library, then
+recompile Coq. We also recommend you make a copy of the .v file (if
+working on the stdlib to avoid issues with artifacts.
+
+The following command sequence will do all that:
+```
+opam install memtrace
+dune build theories/Strings/Byte.vo  # to build deps of Byte
+cp theories/Strings/Byte.v ./MyByte.v
+MEMTRACE=trace-byte.tcr dune exec -- dev/shim/coqc MyByte.v
+memtrace-viewer trace-byte.tcr
+```
+
+## Memory (legacy)
 
 You first need a few commits atop trunk for this to work.
 
