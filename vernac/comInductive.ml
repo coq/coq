@@ -185,7 +185,7 @@ let max_sort s1 s2 = match s1, s2 with
 | (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
 | (QSort _, _) | (_, QSort _) -> assert false
 
-let compute_constructor_level env evd sign =
+let compute_constructor_levels env evd sign =
   fst (List.fold_right
     (fun d (lev,env) ->
       match d with
@@ -193,19 +193,17 @@ let compute_constructor_level env evd sign =
       | LocalAssum _ ->
         let s = Retyping.get_sort_of env evd (RelDecl.get_type d) in
         let s = EConstr.ESorts.kind evd s in
-          (max_sort s lev, EConstr.push_rel d env))
-    sign (Sorts.sprop,env))
-
-let sign_level env sigma sign =
-  compute_constructor_level env sigma sign
+          (s :: lev, EConstr.push_rel d env))
+    sign ([],env))
 
 let sup_list min = List.fold_left max_sort min
 
-let extract_level env evd min tys =
-  let sorts = List.map (fun ty ->
-    let ctx, concl = Reductionops.hnf_decompose_prod_decls env evd ty in
-    sign_level env evd ctx) tys
-  in sup_list min sorts
+let sign_level env sigma sign =
+  let levs = compute_constructor_levels env sigma sign in
+  sup_list Sorts.sprop levs
+
+let extract_level env evd min sorts =
+  sup_list min (List.flatten sorts)
 
 let is_flexible_sort evd s = match s with
 | QSort _ -> assert false
@@ -285,7 +283,7 @@ let solve_constraints_system levels level_bounds =
   done;
   v
 
-let inductive_levels env evd arities inds =
+let inductive_levels env evd arities ctors =
   let destarities = List.map (fun x ->
       let ctx, s = Reductionops.dest_arity env evd x in
       let s = EConstr.ESorts.kind evd s in
@@ -297,6 +295,10 @@ let inductive_levels env evd arities inds =
   | QSort _ -> assert false
   in
   let levels = List.map map destarities in
+  let ctors = List.map (List.map (fun ctx ->
+      compute_constructor_levels env evd ctx))
+      ctors
+  in
   let cstrs_levels =
     List.map2 (fun tys (arity,(ctx,du)) ->
         let len = List.length tys in
@@ -316,7 +318,7 @@ let inductive_levels env evd arities inds =
         in
         let clev = extract_level env evd minlev tys in
         clev)
-      inds destarities
+      ctors destarities
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
@@ -524,7 +526,14 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
-  let sigma, arities = inductive_levels env_ar_params sigma arities (List.map snd constructors) in
+  let ctor_args =  List.map (fun (_,tys) ->
+      List.map (fun ty ->
+          let ctx = fst (Reductionops.hnf_decompose_prod_decls env_ar_params sigma ty) in
+          ctx)
+        tys)
+      constructors
+  in
+  let sigma, arities = inductive_levels env_ar_params sigma arities ctor_args in
   let sigma = Evd.minimize_universes sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
@@ -844,6 +853,6 @@ let make_cases ind =
 module Internal =
 struct
 
-let compute_constructor_level = compute_constructor_level
+let inductive_levels = inductive_levels
 
 end
