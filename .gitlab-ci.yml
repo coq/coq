@@ -839,6 +839,9 @@ library:ci-coq_library_undecidability:
 plugin:ci-aac_tactics:
   extends: .ci-template-flambda
 
+plugin:ci-atbr:
+  extends: .ci-template-flambda
+
 plugin:ci-itauto:
   extends: .ci-template
 

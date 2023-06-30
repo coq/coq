@@ -12,6 +12,7 @@ CI_TARGETS= \
     ci-itauto \
     ci-aac_tactics \
     ci-argosy \
+    ci-atbr \
     ci-autosubst \
     ci-bbv \
     ci-bedrock2 \
