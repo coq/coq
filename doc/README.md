@@ -31,7 +31,7 @@ listed in [`INSTALL.md`](../INSTALL.md). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
   - sphinx >= 4.5.0
-  - sphinx_rtd_theme >= 0.4.3
+  - sphinx_rtd_theme >= 1.0.0
   - beautifulsoup4 >= 4.0.6
   - antlr4-python3-runtime >= 4.7.1
   - pexpect >= 4.2.1
