@@ -40,8 +40,7 @@ let print_usage_common co command =
 \n  -l f                   (idem)\
 \n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\
 \n  -lv f	           (idem)\
-\n  -require lib, -r lib\
-\n                         load Coq library lib (Require lib)\
+\n  -require lib           load Coq library lib (Require lib)\
 \n  -require-import lib, -ri lib\
 \n                         load and import Coq library lib\
 \n                         (equivalent to Require Import lib.)\

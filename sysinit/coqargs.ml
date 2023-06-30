@@ -321,7 +321,7 @@ let parse_args ~usage ~init arglist : t * string list =
       Flags.profile_ltac_cutoff := get_float ~opt (next ());
       oval
 
-    |"-load-vernac-object"|"-require"|"-r" ->
+    |"-load-vernac-object"|"-require" ->
       add_vo_require oval (next ()) None None
 
     |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some Lib.Import)

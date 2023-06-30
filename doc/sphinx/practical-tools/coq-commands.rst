@@ -236,8 +236,10 @@ and ``coqtop``, unless stated otherwise:
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
   Coq script from *file.v*. Write its contents to the standard output as
   it is executed.
-:-r *qualid*, -require *qualid*: Load Coq compiled library :n:`@qualid`.
-  This is equivalent to running :cmd:`Require` :n:`@qualid`.
+:-require *qualid*: Load Coq compiled library :n:`@qualid`.
+  This is equivalent to running :cmd:`Require` :n:`@qualid`
+  (note: the short form `-r *qualid*` is intentionally not provided to
+  prevent the risk of collision with `-R`).
 
   .. _interleave-command-line:
 
