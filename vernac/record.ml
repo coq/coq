@@ -217,17 +217,20 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let fold sigma (typ, esort) (_, newfs) =
     let sort = EConstr.ESorts.kind sigma esort in
     let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in
-    let univ = if Sorts.is_sprop sort then univ else if Sorts.is_sprop univ then Sorts.prop else univ in
-      if not def && is_impredicative_sort env0 sort then
-        sigma, (sort, typ)
-      else
-        let sigma = Evd.set_leq_sort env_ar sigma (EConstr.ESorts.make univ) esort in
-        if Sorts.is_small univ &&
-           Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma esort) then
-           (* We can assume that the level in aritysort is not constrained
-               and clear it, if it is flexible *)
-          Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ))
-        else sigma, (univ, typ)
+    let univ = if Sorts.is_sprop sort then univ
+      else if Sorts.is_sprop univ then Sorts.prop
+      else univ
+    in
+    if not def && is_impredicative_sort env0 sort then
+      sigma, (sort, typ)
+    else
+      let sigma = Evd.set_leq_sort env_ar sigma (EConstr.ESorts.make univ) esort in
+      if Sorts.is_small univ &&
+         Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma esort) then
+        (* We can assume that the level in aritysort is not constrained
+            and clear it, if it is flexible *)
+        Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ))
+      else sigma, (univ, typ)
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
   (* TODO: Have this use Declaredef.prepare_definition *)
