@@ -284,6 +284,7 @@ let solve_constraints_system levels level_bounds =
   v
 
 let inductive_levels env evd arities ctors =
+  let evd = Evd.minimize_universes evd in
   let destarities = List.map (fun x ->
       let ctx, s = Reductionops.dest_arity env evd x in
       let s = EConstr.ESorts.kind evd s in
@@ -524,7 +525,6 @@ let variance_of_entry ~cumulative ~variances uctx =
 
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
-  let sigma = Evd.minimize_universes sigma in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->

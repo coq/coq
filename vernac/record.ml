@@ -180,15 +180,15 @@ type tc_result =
   * Constr.rel_context
   * DataR.t list
 
-let rec all_subprop_args env sigma = function
+let rec all_prop_args env sigma = function
   | [] -> true
   | (LocalDef _ as d) :: rest ->
-    all_subprop_args (EConstr.push_rel d env) sigma rest
+    all_prop_args (EConstr.push_rel d env) sigma rest
   | (LocalAssum (_,t) as d) :: rest ->
     let s = Retyping.get_sort_of env sigma t in
     match EConstr.ESorts.kind sigma s with
-    | SProp | Prop -> all_subprop_args (EConstr.push_rel d env) sigma rest
-    | Set | Type _ | QSort _ -> false
+    | Prop -> all_prop_args (EConstr.push_rel d env) sigma rest
+    | SProp | Set | Type _ | QSort _ -> false
 
 let propositional_def_class ~def env_ar sigma aritysorts ctors =
   if not def then None
@@ -199,8 +199,9 @@ let propositional_def_class ~def env_ar sigma aritysorts ctors =
         s, ctor
       | _ -> CErrors.user_err Pp.(str "Mutual definitional classes are not supported.")
     in
+    let sigma = Evd.minimize_universes sigma in
     if Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma s)
-        && all_subprop_args env_ar sigma (List.rev ctor)
+        && all_prop_args env_ar sigma (List.rev ctor)
     then (* We assume that the level in aritysort is not constrained
             and clear it, if it is flexible *)
       let sigma = Evd.set_eq_sort env_ar sigma EConstr.ESorts.set s in
@@ -241,7 +242,6 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let (sigma, data) = List.fold_left_map fold sigma records in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
-  let sigma = Evd.minimize_universes sigma in
   let sigma, typs =
     match propositional_def_class ~def env_ar sigma aritysorts data with
     | Some res -> res
