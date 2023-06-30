@@ -294,8 +294,8 @@ let inductive_levels env evd arities inds =
   | QSort _ -> assert false
   in
   let levels = List.map map destarities in
-  let cstrs_levels, sizes =
-    CList.split (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
+  let cstrs_levels =
+    List.map2 (fun (_,tys) (arity,(ctx,du)) ->
         let len = List.length tys in
         let minlev = du in
         let minlev =
@@ -312,8 +312,8 @@ let inductive_levels env evd arities inds =
           else minlev
         in
         let clev = extract_level env evd minlev tys in
-        (clev, len))
-        inds destarities)
+        clev)
+      inds destarities
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
@@ -321,11 +321,11 @@ let inductive_levels env evd arities inds =
     (Array.of_list cstrs_levels)
   in
   let evd, arities =
-    CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
+    CList.fold_left2_map (fun evd cu (arity,(ctx,du)) ->
       let cu = EConstr.ESorts.make cu in
       if is_impredicative_sort env du then
         (* Any product is allowed here. *)
-        evd, arity :: arities
+        evd, arity
       else (* If in a predicative sort, or asked to infer the type,
               we take the max of:
               - indices (if in indices-matter mode)
@@ -340,35 +340,24 @@ let inductive_levels env evd arities inds =
             else evd
           else evd
         in
-        let evd =
-          if len >= 2 && EConstr.ESorts.is_prop evd cu then
-           (* "Polymorphic" type constraint and more than one constructor,
-               should not land in Prop. Add constraint only if it would
-               land in Prop directly (no informative arguments as well). *)
-            Evd.set_leq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du)
-          else evd
-        in
-        let evd, arity =
-          if not (Sorts.is_small du) && EConstr.ESorts.equal evd cu (EConstr.ESorts.make du) then
-            if is_flexible_sort evd du && not (Evd.check_leq evd EConstr.ESorts.set (EConstr.ESorts.make du))
-            then if Term.isArity arity
-            (* If not a syntactic arity, the universe may be used in a
-               polymorphic instance and so cannot be lowered to Prop.
-               See #13300. *)
-              then
-                (* Workaround: the kernel does not handle non-Prop unbounded
-                   arities. In this situation we have no constraints from the
-                   constructor so we cook up a new type and unify the unbound
-                   universe to a dummy value. *)
-                let evd = Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du) in
-                evd, Term.mkArity (ctx, Sorts.prop)
-              else Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du), arity
-            else evd, arity
-          else Evd.set_eq_sort env evd cu (EConstr.ESorts.make du), arity
-        in
-          (evd, arity :: arities))
-    (evd,[]) (Array.to_list levels') destarities sizes
-  in evd, List.rev arities
+        if not (Sorts.is_small du) && EConstr.ESorts.equal evd cu (EConstr.ESorts.make du) then
+          if is_flexible_sort evd du && not (Evd.check_leq evd EConstr.ESorts.set (EConstr.ESorts.make du))
+          then if Term.isArity arity
+          (* If not a syntactic arity, the universe may be used in a
+             polymorphic instance and so cannot be lowered to Prop.
+             See #13300. *)
+            then
+              (* Workaround: the kernel does not handle non-Prop unbounded
+                 arities. In this situation we have no constraints from the
+                 constructor so we cook up a new type and unify the unbound
+                 universe to a dummy value. *)
+              let evd = Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du) in
+              evd, Term.mkArity (ctx, Sorts.prop)
+            else Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du), arity
+          else evd, arity
+        else Evd.set_eq_sort env evd cu (EConstr.ESorts.make du), arity)
+    evd (Array.to_list levels') destarities
+  in evd, arities
 
 let check_named {CAst.loc;v=na} = match na with
 | Name _ -> ()
