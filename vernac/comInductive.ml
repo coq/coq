@@ -197,13 +197,13 @@ let compute_constructor_level env evd sign =
     sign (Sorts.sprop,env))
 
 let sign_level env sigma sign =
-  compute_constructor_level env sigma (EConstr.of_rel_context sign)
+  compute_constructor_level env sigma sign
 
 let sup_list min = List.fold_left max_sort min
 
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
-    let ctx, concl = Reduction.hnf_decompose_prod_decls env ty in
+    let ctx, concl = Reductionops.hnf_decompose_prod_decls env evd ty in
       sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
   in sup_list min sorts
 
@@ -286,7 +286,10 @@ let solve_constraints_system levels level_bounds =
   v
 
 let inductive_levels env evd arities inds =
-  let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
+  let destarities = List.map (fun x ->
+      let ctx, s = Reductionops.dest_arity env evd x in
+      let s = EConstr.ESorts.kind evd s in
+      x, (ctx, s)) arities in
   let map (x, (ctx, s)) = match s with
   | Prop | SProp -> None
   | Set -> Some Univ.Universe.type0
@@ -295,7 +298,7 @@ let inductive_levels env evd arities inds =
   in
   let levels = List.map map destarities in
   let cstrs_levels =
-    List.map2 (fun (_,tys) (arity,(ctx,du)) ->
+    List.map2 (fun tys (arity,(ctx,du)) ->
         let len = List.length tys in
         let minlev = du in
         let minlev =
@@ -342,7 +345,7 @@ let inductive_levels env evd arities inds =
         in
         if not (Sorts.is_small du) && EConstr.ESorts.equal evd cu (EConstr.ESorts.make du) then
           if is_flexible_sort evd du && not (Evd.check_leq evd EConstr.ESorts.set (EConstr.ESorts.make du))
-          then if Term.isArity arity
+          then if EConstr.isArity evd arity
           (* If not a syntactic arity, the universe may be used in a
              polymorphic instance and so cannot be lowered to Prop.
              See #13300. *)
@@ -352,7 +355,7 @@ let inductive_levels env evd arities inds =
                  constructor so we cook up a new type and unify the unbound
                  universe to a dummy value. *)
               let evd = Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du) in
-              evd, Term.mkArity (ctx, Sorts.prop)
+              evd, EConstr.mkArity (ctx, EConstr.ESorts.prop)
             else Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du), arity
           else evd, arity
         else Evd.set_eq_sort env evd cu (EConstr.ESorts.make du), arity)
@@ -520,15 +523,11 @@ let variance_of_entry ~cumulative ~variances uctx =
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
-  let nf = Evarutil.nf_evars_universes sigma in
-  let constructors = List.map (on_snd (List.map nf)) constructors in
-  let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
-  let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
+  let sigma, arities = inductive_levels env_ar_params sigma arities (List.map snd constructors) in
   let sigma = Evd.minimize_universes sigma in
-  let nf = Evarutil.nf_evars_universes sigma in
-  let arities = List.map nf arities in
-  let constructors = List.map (on_snd (List.map nf)) constructors in
+  let arities = List.map EConstr.(to_constr sigma) arities in
+  let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
@@ -677,7 +676,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let uparam_subst =
     List.init ninds EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
     @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in
-  let generalize_constructor c = EConstr.Unsafe.to_constr (EConstr.Vars.substnl uparam_subst nparams c) in
+  let generalize_constructor c = EConstr.Vars.substnl uparam_subst nparams c in
   let cimpls = List.map pi3 constructors in
   let constructors = List.map (fun (cnames,ctypes,cimpls) ->
       (cnames,List.map generalize_constructor ctypes))

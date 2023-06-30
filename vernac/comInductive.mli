@@ -71,6 +71,17 @@ val interp_mutual_inductive
   -> Declarations.recursivity_kind
   -> Mind_decl.t
 
+(** Returns the modified arities (the result sort may be replaced by Prop).
+    Should be called with minimized universes. *)
+val inductive_levels
+  : Environ.env
+  -> Evd.evar_map
+  -> EConstr.constr list
+  (* arities *)
+  -> EConstr.constr list list
+  (* constructors *)
+  -> Evd.evar_map * EConstr.t list
+
 (** the post-elaboration part of interp_mutual_inductive, mainly dealing with
     universe levels *)
 val interp_mutual_inductive_constr
@@ -82,7 +93,7 @@ val interp_mutual_inductive_constr
   -> indnames:Names.Id.t list
   -> arities:EConstr.t list
   -> arityconcl:(bool * EConstr.ESorts.t) option list
-  -> constructors:(Names.Id.t list * Constr.constr list) list
+  -> constructors:(Names.Id.t list * EConstr.constr list) list
   -> env_ar_params:Environ.env
   (** Environment with the inductives and parameters in the rel_context *)
   -> cumulative:bool
