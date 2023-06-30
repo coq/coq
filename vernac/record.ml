@@ -793,6 +793,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
 
 
 let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
+  assert (kind <> Vernacexpr.Class true);
   let impargs, params, univs, variances, projections_kind, data, indlocs =
     pre_process_structure udecl kind ~poly records in
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
