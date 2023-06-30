@@ -170,13 +170,13 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
 
 .. _COQ_PROFILE_COMPONENTS:
 
-Control which components produce events when using the
-:ref:`profiling` system. It should be a comma separated list of
-components.
+Specifies which components produce events when using the
+:ref:`profiling` system. It is a comma separated list of
+component names.
 
 If the variable is not set, all components produce events.
 
-Components are internally defined, but `command` which corresponds to
+Component names are internally defined, but `command` which corresponds to
 the interpretation of one command is particularly notable.
 
 .. _command-line-options:
@@ -452,19 +452,19 @@ and ``coqtop``, unless stated otherwise:
 Profiling
 ---------
 
-Using the `coqc` command line argument `-profile` or the environment
-variable `PROFILE` with `coq_makefile`, profiling information is produced in
+Use the `coqc` command line argument `-profile` or the environment
+variable `PROFILE` in `coq_makefile`, to generate profiling information in
 `Google trace format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit>`.
 
-The output consists of duration events for the execution of various
+The output gives the duration and event counts for the execution of
 components of Coq (for instance `process` for the whole file,
 `command` for each command, `pretyping` for elaboration).
 
-Environment variable `COQ_PROFILE_COMPONENTS` can be used to filter
-the components which produce events. This may be needed to reduce the
-size of the produced file.
+Environment variable :ref:`COQ_PROFILE_COMPONENTS <COQ_PROFILE_COMPONENTS>` can be used to filter
+which components produce events. This may be needed to reduce the
+size of the generated file.
 
-The produced file can be visualized for instance in
+The generated file can be visualized with
 <https://ui.perfetto.dev> (which can directly load the `.gz`
 compressed file produced by `coq_makefile`) or processed using any
 JSON-capable system.
@@ -475,8 +475,8 @@ Events are annotated with additional information in the `args` field
 - `major` and `minor` indicate how many major and minor words were allocated during the event.
 
 - `subtimes` indicates how much time was spent in sub-components and
-  how many times each sub-component was profiled during the event
-  (including sub-components which do not appear in
+  how many times each subcomponent was profiled during the event
+  (including subcomponents which do not appear in
   `COQ_PROFILE_COMPONENTS`).
 
 - for the `command` event, `cmd` displays the precise location of the

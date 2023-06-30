@@ -735,9 +735,9 @@ Timing targets and performance testing
 ++++++++++++++++++++++++++++++++++++++
 
 The generated ``Makefile`` supports the generation of three kinds of
-timing data: per-file build-times, per-line times for an individual
-file, and profiling data in Google trace format for an individual
-file.
+timing data: per-file build-times, per-line times for individual
+files, and profiling data in Google trace format for individual
+files.
 
 The following targets and Makefile variables allow collection of per-
 file timing data:
