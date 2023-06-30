@@ -204,7 +204,7 @@ let sup_list min = List.fold_left max_sort min
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
     let ctx, concl = Reductionops.hnf_decompose_prod_decls env evd ty in
-      sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
+    sign_level env evd ctx) tys
   in sup_list min sorts
 
 let is_flexible_sort evd s = match s with
