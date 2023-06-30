@@ -7,18 +7,24 @@ want to profile time or memory consumption. AFAIK, this only works for Linux.
 
 In Coq source folder:
 
+```
 opam switch 4.09.0+trunk+fp
 make world
 perf record -g _build/install/default/bin/coqc file.v
 perf report -g fractal,callee --no-children
+```
 
 To profile only part of a file, first load it using
 
+```
 bin/coqtop -l file.v
+```
 
 and plug into the process
 
+```
 perf record -g -p PID
+```
 
 ### Per-component [flame graphs](https://github.com/brendangregg/FlameGraph)
 
@@ -30,7 +36,7 @@ edit the stack trace to merge "equivalent" frames, or simply look at the
 aggregate profile on a component-by-component basis. Here is how to do the
 second for the standard library ([example output](https://cdn.rawgit.com/andres-erbsen/b29b29cb6480dfc6a662062e4fcd0ae3/raw/304fc3fea9630c8e453929aa7920ca8a2a570d0b/stdlib_categorized_outermost.svg)).
 
-~~~~~
+```
 #!/usr/bin/env bash
 make clean
 make states
@@ -70,21 +76,25 @@ perf script --time '0%-100%'  |
 EOF
         ) |
         flamegraph.pl
-~~~~~
+```
 
 ## Memory
 
 You first need a few commits atop trunk for this to work.
 
+```
 git remote add ppedrot https://github.com/ppedrot/coq.git
 git fetch ppedrot
 git checkout ppedrot/allocation-profiling
 git rebase master
+```
 
 Then:
 
+```
 opam switch 4.00.1+alloc-profiling
 make world
+```
 
 Note that linking the coqtop binary takes quite an amount of time with this
 branch, so do not worry too much. There are more recent branches of
@@ -94,33 +104,41 @@ https://github.com/mshinwell/opam-repo-dev
 
 ### For memory dump:
 
+```
 CAMLRUNPARAM=T,mj bin/coqc file.v
+```
 
 In another terminal:
 
+```
 pkill -SIGUSR1 $COQTOPPID
 ...
 pkill -SIGUSR1 $COQTOPPID
 dev/decode-major-heap.sh heap.$COQTOPPID.$N bin/coqtop
+```
 
-where $COQTOPPID is coqtop pid and $N the index of the call to pkill.
+where `$COQTOPPID` is coqtop pid and $N the index of the call to pkill.
 
 First column is the memory taken by the objects (in words), second one is the
 number of objects and third is the place where the objects where allocated.
 
 ### For complete memory graph:
 
+```
 CAMLRUNPARAM=T,gr bin/coqc file.v
+```
 
 In another terminal:
 
+```
 pkill -SIGUSR1 $COQTOPPID
 ...
 pkill -SIGUSR1 $COQTOPPID
 ocaml dev/decodegraph.ml edge.$COQTOPPID.$N bin/coqtop > memory.dot
 dot -Tpdf -o memory.pdf memory.dot
+```
 
-where $COQTOPPID is coqtop pid and $N the index of the call to pkill.
+where `$COQTOPPID` is coqtop pid and $N the index of the call to pkill.
 
 The pdf produced by the last command gives a compact graphical representation of
 the various objects allocated.
