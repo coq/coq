@@ -877,28 +877,6 @@ match unsafe_eq with
 
 end
 
-let rec isArity sigma c =
-  match kind sigma c with
-  | Prod (_,_,c)    -> isArity sigma c
-  | LetIn (_,b,_,c) -> isArity sigma (Vars.subst1 b c)
-  | Cast (c,_,_)      -> isArity sigma c
-  | Sort _          -> true
-  | _               -> false
-
-type arity = rel_context * ESorts.t
-
-let destArity sigma =
-  let open Context.Rel.Declaration in
-  let rec prodec_rec l c =
-    match kind sigma c with
-    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
-    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
-    | Cast (c,_,_)      -> prodec_rec l c
-    | Sort s          -> l,s
-    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity.")
-  in
-  prodec_rec []
-
 (* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
 let mkProd_or_LetIn decl c =
   let open Context.Rel.Declaration in
@@ -962,6 +940,30 @@ let it_mkNamedProd_or_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd
 let it_mkNamedLambda_or_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedLambda_or_LetIn sigma d c) t ctx
 
 let it_mkNamedProd_wo_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd_wo_LetIn sigma d c) t ctx
+
+let rec isArity sigma c =
+  match kind sigma c with
+  | Prod (_,_,c)    -> isArity sigma c
+  | LetIn (_,b,_,c) -> isArity sigma (Vars.subst1 b c)
+  | Cast (c,_,_)      -> isArity sigma c
+  | Sort _          -> true
+  | _               -> false
+
+type arity = rel_context * ESorts.t
+
+let mkArity (ctx, s) = it_mkProd_or_LetIn (mkSort s) ctx
+
+let destArity sigma =
+  let open Context.Rel.Declaration in
+  let rec prodec_rec l c =
+    match kind sigma c with
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
+    | Cast (c,_,_)      -> prodec_rec l c
+    | Sort s          -> l,s
+    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity.")
+  in
+  prodec_rec []
 
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
