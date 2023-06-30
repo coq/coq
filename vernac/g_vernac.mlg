@@ -57,6 +57,7 @@ let of_type_inst = Entry.make "of_type_inst"
 let section_subset_expr = Entry.make "section_subset_expr"
 let scope_delimiter = Entry.make "scope_delimiter"
 let syntax_modifiers = Entry.make "syntax_modifiers"
+let univ_constraint = Entry.make "univ_constraint"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -212,7 +213,8 @@ let test_variance_ident =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
+    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl
+    univ_constraint inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -991,6 +993,8 @@ GRAMMAR EXTEND Gram
           { fun g -> VernacCheckMayEval (Some r, g, c) }
       | IDENT "Compute"; c = lconstr; "." ->
           { fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c) }
+      | IDENT "Check"; IDENT "Constraint"; l = LIST1 univ_constraint SEP "," ->
+          { fun g -> VernacCheckConstraint (l, g) }
       | IDENT "Check"; c = lconstr; "." ->
          { fun g -> VernacCheckMayEval (None, g, c) }
       (* Searching the environment *)

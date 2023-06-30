@@ -1171,6 +1171,14 @@ let pr_synpure_vernac_expr v =
     let pr_i = match io with None -> mt ()
                            | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
     return (pr_i ++ pr_mayeval r c)
+  | VernacCheckConstraint (c,io) ->
+    let pr_check_constraint c =
+      hov 2 (keyword "Check" ++ spc() ++ keyword "Constraint" ++
+      prlist_with_sep (fun _ -> str",") pr_uconstraint c)
+    in
+    let pr_i = match io with None -> mt ()
+    | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
+    return (pr_i ++ pr_check_constraint c)
   | VernacGlobalCheck c ->
     return (hov 2 (keyword "Type" ++ pr_constrarg c))
   | VernacDeclareReduction (s,r) ->

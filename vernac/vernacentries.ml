@@ -1897,6 +1897,11 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
   let sigma, env = get_current_context_of_args ~pstate glopt in
   check_may_eval env sigma redexp rc
 
+let vernac_check_constraint ~pstate c glopt =
+  let glopt = query_command_selector glopt in
+  let sigma, env = get_current_context_of_args ~pstate glopt in
+  DeclareUniv.check_constraint env sigma c
+
 let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
@@ -2464,7 +2469,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
-
+  | VernacCheckConstraint (c,g) ->
+    vtreadproofopt(fun ~pstate ->
+        unsupported_attributes atts;
+        vernac_check_constraint ~pstate c g)
   | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)

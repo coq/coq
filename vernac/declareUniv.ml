@@ -152,3 +152,13 @@ let do_constraint ~poly l =
   in
   let uctx = ContextSet.add_constraints constraints ContextSet.empty in
   DeclareUctx.declare_universe_context ~poly uctx
+
+let check_constraint env sigma l =
+  let open Univ in
+  let constraints = List.fold_left (fun acc cst ->
+      let cst = Constrintern.interp_univ_constraint sigma cst in
+      Constraints.add cst acc)
+      Constraints.empty l
+  in
+  if Evd.check_constraints sigma constraints then ()
+  else CErrors.user_err (Pp.str"Constraints do not hold")
