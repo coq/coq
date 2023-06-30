@@ -180,6 +180,33 @@ type tc_result =
   * Constr.rel_context
   * DataR.t list
 
+let rec all_subprop_args env sigma = function
+  | [] -> true
+  | (LocalDef _ as d) :: rest ->
+    all_subprop_args (EConstr.push_rel d env) sigma rest
+  | (LocalAssum (_,t) as d) :: rest ->
+    let s = Retyping.get_sort_of env sigma t in
+    match EConstr.ESorts.kind sigma s with
+    | SProp | Prop -> all_subprop_args (EConstr.push_rel d env) sigma rest
+    | Set | Type _ | QSort _ -> false
+
+let propositional_def_class ~def env_ar sigma aritysorts ctors =
+  if not def then None
+  else (* special treatment of definitional class because we didn't set lbound = Prop *)
+    let s, ctor = match aritysorts, ctors with
+      | [s], [_,ctor] ->
+        (* XXX I think it's always exactly one LocalAssum but this might not be the right place to rely on this invariant  *)
+        s, ctor
+      | _ -> CErrors.user_err Pp.(str "Mutual definitional classes are not supported.")
+    in
+    if Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma s)
+        && all_subprop_args env_ar sigma (List.rev ctor)
+    then (* We assume that the level in aritysort is not constrained
+            and clear it, if it is flexible *)
+      let sigma = Evd.set_eq_sort env_ar sigma EConstr.ESorts.set s in
+      Some (sigma, [EConstr.mkProp])
+    else None
+
 (* ps = parameter list *)
 let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_result =
   let env0 = Global.env () in
@@ -195,8 +222,9 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     Constrintern.interp_context_evars ~program_mode:false env0 sigma ps in
   let sigma, typs =
     List.fold_left_map (build_type_telescope newps env0) sigma records in
-  let arities = List.map (fun (typ, _) -> EConstr.it_mkProd_or_LetIn typ newps) typs in
-  let relevances = List.map (fun (_,s) -> EConstr.ESorts.relevance_of_sort sigma s) typs in
+  let typs, aritysorts = List.split typs in
+  let arities = List.map (fun typ -> EConstr.it_mkProd_or_LetIn typ newps) typs in
+  let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort sigma s) aritysorts in
   let fold accu { DataI.name; _ } arity r =
     EConstr.push_rel (LocalAssum (make_annot (Name name) r,arity)) accu in
   let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
@@ -214,25 +242,14 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let sigma = Evd.minimize_universes sigma in
-  let fold sigma (typ, esort) (_, newfs) =
-    let sort = EConstr.ESorts.kind sigma esort in
-    let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in
-    let univ = if Sorts.is_sprop sort then univ
-      else if Sorts.is_sprop univ then Sorts.prop
-      else univ
-    in
-    if not def && is_impredicative_sort env0 sort then
-      sigma, (sort, typ)
-    else
-      let sigma = Evd.set_leq_sort env_ar sigma (EConstr.ESorts.make univ) esort in
-      if Sorts.is_small univ &&
-         Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma esort) then
-        (* We can assume that the level in aritysort is not constrained
-            and clear it, if it is flexible *)
-        Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ))
-      else sigma, (univ, typ)
+  let sigma, typs =
+    match propositional_def_class ~def env_ar sigma aritysorts data with
+    | Some res -> res
+    | None ->
+      (* each inductive has one constructor *)
+      let ctors = List.map (fun (_,newfs) -> [newfs]) data in
+      ComInductive.Internal.inductive_levels env_ar sigma typs ctors
   in
-  let (sigma, typs) = List.fold_left2_map fold sigma typs data in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let sigma, (newps, ans) = Evarutil.finalize sigma (fun nf ->
       let nf_rel r = Evarutil.nf_relevance sigma r in
@@ -241,12 +258,13 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
       in
       let newps = List.map map_decl newps in
-      let map (implfs, fields) (min_univ, typ) =
+      let map (implfs, fields) typ min_univ =
         let fields = List.map map_decl fields in
         let arity = nf typ in
+        let min_univ = EConstr.ESorts.kind sigma min_univ in
         { DataR.min_univ; arity; implfs; fields }
       in
-      let ans = List.map2 map data typs in
+      let ans = List.map3 map data typs aritysorts in
       newps, ans)
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in

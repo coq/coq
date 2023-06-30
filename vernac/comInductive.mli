@@ -71,17 +71,6 @@ val interp_mutual_inductive
   -> Declarations.recursivity_kind
   -> Mind_decl.t
 
-(** Returns the modified arities (the result sort may be replaced by Prop).
-    Should be called with minimized universes. *)
-val inductive_levels
-  : Environ.env
-  -> Evd.evar_map
-  -> EConstr.constr list
-  (* arities *)
-  -> EConstr.constr list list
-  (* constructors *)
-  -> Evd.evar_map * EConstr.t list
-
 (** the post-elaboration part of interp_mutual_inductive, mainly dealing with
     universe levels *)
 val interp_mutual_inductive_constr
@@ -135,5 +124,14 @@ val variance_of_entry
 
 module Internal :
 sig
-  val compute_constructor_level : Environ.env -> Evd.evar_map -> EConstr.rel_context -> Sorts.t
+  (** Returns the modified arities (the result sort may be replaced by Prop).
+      Should be called with minimized universes. *)
+  val inductive_levels
+    : Environ.env
+    -> Evd.evar_map
+    -> EConstr.constr list
+    (* arities *)
+    -> EConstr.rel_context list list
+    (* constructors *)
+    -> Evd.evar_map * EConstr.t list
 end

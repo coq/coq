@@ -96,7 +96,7 @@ Module OtherBug.
   Set Implicit Arguments.
   Set Universe Polymorphism.
 
-  Record SpecializedCategory (obj : Type) :=
+  Record SpecializedCategory (obj : Type) : Set :=
     {
       Object : _ := obj
     }.
