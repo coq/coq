@@ -999,7 +999,7 @@ let is_sort_variable uctx s =
   | Sorts.QSort (q, u) ->
     let q = nf_qvar uctx q in
     (match q, Universe.level u with
-    | QType, Some l ->
+    | (QVar _ | QType), Some l ->
         if Level.Set.mem l (ContextSet.levels uctx.local) then Some l
         else None
     | (_, Some _ | _, None) -> None)

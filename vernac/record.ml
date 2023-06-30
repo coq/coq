@@ -190,8 +190,7 @@ let def_class_levels ~def env_ar sigma aritysorts ctors =
   in
   let ctor_sort = Retyping.get_sort_of env_ar sigma ctor in
   let is_prop_ctor = EConstr.ESorts.is_prop sigma ctor_sort in
-  let sigma = if is_prop_ctor then sigma else Evd.set_leq_sort env_ar sigma ctor_sort s in
-  let sigma = Evd.minimize_universes sigma in
+  let sigma = Evd.set_leq_sort env_ar sigma ctor_sort s in
   if Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma s)
   && is_prop_ctor
   then (* We assume that the level in aritysort is not constrained
@@ -242,21 +241,34 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       ComInductive.Internal.inductive_levels env_ar sigma typs ctors
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
-  let sigma, (newps, ans) = Evarutil.finalize sigma (fun nf ->
-      let nf_rel r = Evarutil.nf_relevance sigma r in
-      let map_decl = function
-      | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
-      | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
+  let sigma, (newps, ans) =
+    (* too complex for Evarutil.finalize as we normalize non-constr *)
+    let sigma = Evd.minimize_universes sigma in
+    let uvars = ref Univ.Level.Set.empty in
+    let nf c =
+      let varsc = EConstr.universes_of_constr sigma c in
+      let c = EConstr.to_constr sigma c in
+      uvars := Univ.Level.Set.union !uvars varsc;
+      c
+    in
+    let nf_rel r = Evarutil.nf_relevance sigma r in
+    let map_decl = function
+    | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
+    | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
+    in
+    let newps = List.map map_decl newps in
+    let map (implfs, fields) typ min_univ =
+      let fields = List.map map_decl fields in
+      let arity = nf typ in
+      let min_univ = EConstr.ESorts.kind sigma min_univ in
+      let () = if not (Sorts.is_small min_univ)
+        then uvars := Univ.Level.Set.union !uvars (Sorts.levels min_univ)
       in
-      let newps = List.map map_decl newps in
-      let map (implfs, fields) typ min_univ =
-        let fields = List.map map_decl fields in
-        let arity = nf typ in
-        let min_univ = EConstr.ESorts.kind sigma min_univ in
-        { DataR.min_univ; arity; implfs; fields }
-      in
-      let ans = List.map3 map data typs aritysorts in
-      newps, ans)
+      { DataR.min_univ; arity; implfs; fields }
+    in
+    let ans = List.map3 map data typs aritysorts in
+    let sigma = Evd.restrict_universe_context sigma !uvars in
+    sigma, (newps, ans)
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
