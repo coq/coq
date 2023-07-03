@@ -179,6 +179,8 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   in
   (sigma, pred ind_rel), (cnames, ctyps, cimpls)
 
+(***** Generate constraints from constructor arguments *****)
+
 let compute_constructor_levels env evd sign =
   fst (List.fold_right
     (fun d (lev,env) ->
@@ -190,18 +192,13 @@ let compute_constructor_levels env evd sign =
     sign ([],env))
 
 let is_flexible_sort evd s = match ESorts.kind evd s with
-| QSort _ -> assert false
 | Set | Prop | SProp -> false
-| Type u ->
+| Type u | QSort (_, u) ->
   match Univ.Universe.level u with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-(**********************************************************************)
-(* Tools for template polymorphic inductive types                         *)
-
 let inductive_levels env evd arities ctors =
-  let evd = Evd.minimize_universes evd in
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -298,6 +295,8 @@ let inductive_levels env evd arities ctors =
   in
   let arities = List.map (fun (arity,_,_,_) -> arity) inds in
   evd, arities
+
+(** Template poly ***)
 
 let check_named {CAst.loc;v=na} = match na with
 | Name _ -> ()
