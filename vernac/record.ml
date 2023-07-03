@@ -120,8 +120,7 @@ end
    type-inference *)
 module DataR = struct
   type t =
-    { min_univ : Sorts.t
-    ; arity : Constr.t
+    { arity : Constr.t
     ; implfs : Impargs.manual_implicits list
     ; fields : Constr.rel_declaration list
     }
@@ -257,16 +256,12 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
     in
     let newps = List.map map_decl newps in
-    let map (implfs, fields) typ min_univ =
+    let map (implfs, fields) typ =
       let fields = List.map map_decl fields in
       let arity = nf typ in
-      let min_univ = EConstr.ESorts.kind sigma min_univ in
-      let () = if not (Sorts.is_small min_univ)
-        then uvars := Univ.Level.Set.union !uvars (Sorts.levels min_univ)
-      in
-      { DataR.min_univ; arity; implfs; fields }
+      { DataR.arity; implfs; fields }
     in
-    let ans = List.map3 map data typs aritysorts in
+    let ans = List.map2 map data typs in
     let sigma = Evd.restrict_universe_context sigma !uvars in
     sigma, (newps, ans)
   in
@@ -771,8 +766,8 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   let blocks = List.mapi mk_block data in
   let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
-    let concl = Some data.Data.rdata.DataR.min_univ in
     let env_ar_params = Environ.push_rel_context params (Global.env ()) in
+    let concl = Some (snd (Reduction.dest_arity env_ar_params data.rdata.arity)) in
     ComInductive.compute_template_inductive ~user_template:template
       ~env_ar_params ~ctx_params:params ~univ_entry:univs entry concl
   | _ ->

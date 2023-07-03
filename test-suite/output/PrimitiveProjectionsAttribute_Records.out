@@ -10,6 +10,6 @@ C has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.C
 G : Prop
 
-G is template universe polymorphic
+G is not universe polymorphic
 G has primitive projections without eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.G
