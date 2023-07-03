@@ -24,10 +24,10 @@ depends: [
   "coqide-server" {= version}
   "cairo2" {>= "0.6.4"}
   "lablgtk3-sourceview3" {>= "3.1.2"}
+  "odoc" {with-doc}
 ]
 build: [
-  # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
-  # ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
@@ -35,9 +35,11 @@ build: [
     name
     "-j"
     jobs
+    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/coq/coq.git"
