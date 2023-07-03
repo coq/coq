@@ -188,8 +188,8 @@ automatically as a side effect of other tactics.
       Unshelve. (* moves the shelved goals into focus--not needed and usually not done *)
       exact H1. (* resolves the first goal and by side effect ?x and ?m *)
 
-   The :n:`?x` and :n:`?m` goals ask for proof that :n:`nat` has a
-   :term:`witness`, i.e. it is not an empty type.  This can be proved directly
+   The :n:`?x` and :n:`?m` goals ask for proof that :n:`nat` has an
+   :term:`inhabitant`, i.e. it is not an empty type.  This can be proved directly
    by applying a constructor of :n:`nat`, which assigns values for :n:`?x` and
    :n:`?m`.  However if you choose poorly, you can end up with unprovable goals
    (in this case :n:`0 < 0`).  Like this:

@@ -31,7 +31,7 @@ and :math:`\Set`.
 The sort :math:`\Prop` intends to be the type of logical propositions. If :math:`M` is a
 logical proposition then it denotes the class of terms representing
 proofs of :math:`M`. An object :math:`m` belonging to :math:`M`
-:term:`witnesses <witness>` the fact that :math:`M` is
+witnesses the fact that :math:`M` is
 provable. An object of type :math:`\Prop` is called a :gdef:`proposition`.
 We denote propositions by :n:`@form`.
 This constitutes a semantic subclass of the syntactic class :n:`@term`.

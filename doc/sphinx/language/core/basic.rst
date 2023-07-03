@@ -325,7 +325,7 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
      Intuitively, types may be viewed as sets containing terms.  We
      say that a type is :gdef:`inhabited` if it contains at least one
      term (i.e. if we can find a term which is associated with this
-     type).  We call such terms :gdef:`witnesses <witness>`.  Note that deciding
+     type).  We call such terms :gdef:`inhabitants <inhabitants>`.  Note that deciding
      whether a type is inhabited is `undecidable
      <https://en.wikipedia.org/wiki/Undecidable_problem>`_.
 
