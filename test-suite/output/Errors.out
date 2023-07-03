@@ -4,7 +4,7 @@ The field t is missing in Errors.M.
 File "./output/Errors.v", line 19, characters 18-19:
 The command has indeed failed with message:
 Unable to unify "nat" with "True".
-File "./output/Errors.v", line 20, characters 0-16:
+File "./output/Errors.v", line 20, characters 12-15:
 The command has indeed failed with message:
 In nested Ltac calls to "f" and "apply x", last call failed.
 Unable to unify "nat" with "True".
@@ -24,11 +24,11 @@ The command has indeed failed with message:
 Cannot infer ?T in the partial instance "forall x : nat, ?T" found for the
 type of f in environment:
 x : nat
-File "./output/Errors.v", line 44, characters 0-24:
+File "./output/Errors.v", line 44, characters 5-23:
 The command has indeed failed with message:
 The first term has type "nat" while the second term has incompatible type
 "bool".
-File "./output/Errors.v", line 49, characters 2-25:
+File "./output/Errors.v", line 49, characters 7-24:
 The command has indeed failed with message:
 Replacement would lead to an ill-typed term: Illegal application: 
 The term "@eq" of type "forall A : Type, A -> A -> Prop"
