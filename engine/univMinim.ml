@@ -319,6 +319,18 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
       Level.Set.fold fold above_prop smallles
     | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
   in
+  (* keep Set <= r when r is bounded from below
+     being bounded from below should prevent r from being unified with Set
+     We can cleanup this mess when we stop using Prop lbound for template *)
+  let used_smallles = if get_set_minimization () then smallles
+    else Constraints.filter (fun (_,_,r) ->
+        Constraints.exists (fun (l',d,r') ->
+            match d with
+            | Eq -> Level.equal l' r || Level.equal r' r
+            | Lt | Le -> Level.equal r' r)
+          csts)
+        smallles
+  in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
@@ -344,7 +356,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
       (fun (l,d,r) -> not (d == Le && Level.is_set l))
       csts
   in
-  let noneqs = if get_set_minimization () then Constraints.union noneqs smallles else noneqs in
+  let noneqs = Constraints.union noneqs used_smallles in
   let flex x = Level.Map.mem x us in
   let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) s ->
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
