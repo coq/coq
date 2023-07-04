@@ -306,6 +306,11 @@ project stdlib2 "https://github.com/coq/stdlib2" "master"
 project argosy "https://github.com/mit-pdos/argosy" "master"
 
 ########################################################################
+# ATBR
+########################################################################
+project atbr "https://github.com/coq-community/atbr" "master"
+
+########################################################################
 # perennial
 ########################################################################
 project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
