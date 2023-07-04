@@ -776,7 +776,7 @@ exception Undeclared of Point.t
 let canonical_value m c = PMap.find_opt c.canon m.values
 
 let set_canonical_value m c v =
-  { m with values = PMap.modify c.canon (fun _ _ -> v) m.values }
+  { m with values = PMap.add c.canon v m.values }
 
 let model_value m l =
   let canon =
@@ -844,7 +844,7 @@ end
 
 let pr_w m w = CanSet.pr m w
 
-let update_value (c, m) clause : model option =
+let update_value c m clause : model option =
   let (k, premises) = clause in
   match min_premise m premises with
   | exception VacuouslyTrue -> None
@@ -859,51 +859,49 @@ let pr_can m can =
   Point.pr (Index.repr can.canon m.table)
 
 let check_model_clauses_of_aux m can cls =
-  let (can', m') =
-    ClausesOf.fold (fun cls (can, m as cwm) ->
-    match update_value cwm cls with
-    | None -> cwm
+  ClausesOf.fold (fun cls m ->
+    match update_value can m cls with
+    | None -> m
     | Some m' ->
       debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int (canonical_value m' can));
       debug Pp.(fun () -> str" due to clause " ++ pr_clauses_bwd m (ClausesBackward.singleton (can.canon, ClausesOf.singleton cls)));
-      (can, m'))
-    cls (can, m)
-  in (can', m')
+      m')
+    cls m
 
 (** Check a set of forward clauses *)
-let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : bool * (CanSet.t * model)) : bool * (CanSet.t * model) =
-  PMap.fold (fun concl cls (* premises -> concl + k *) (_modified, (w, m) as acc) ->
+let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : PSet.t * (CanSet.t * model)) : PSet.t * (CanSet.t * model) =
+  PMap.fold (fun concl cls (* premises -> concl + k *) (modified, (w, m) as acc) ->
     let can = repr m concl in
-    let can', m' = check_model_clauses_of_aux m can cls in
-    if can == can' then (* not modifed *) acc
+    let m' = check_model_clauses_of_aux m can cls in
+    if m == m' then (* not modifed *) acc
     else
       let upd = function
         | None -> Some (can.clauses_bwd, can.clauses_fwd)
         | Some _ -> Some (can.clauses_bwd, can.clauses_fwd)
       in
       let w' = CanSet.update can.canon upd w in
-      (true, (w', m')))
+      (PSet.add can.canon modified, (w', m')))
     cls acc
 
-let check_model_fwd_aux (w, _ as wm : CanSet.t * model) =
-  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux fwd acc) w (false, wm)
+let check_model_fwd_aux (w, _ as wm) : PSet.t * (CanSet.t * model) =
+  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux fwd acc) w (PSet.empty, wm)
 
-let check_clauses_with_premises (updates : CanSet.t) model : (CanSet.t * model) option =
+let check_clauses_with_premises (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
   let (modified, acc) = check_model_fwd_aux (updates, model) in
-  if modified then Some acc else
-    (debug Pp.(fun () -> str"Found a model"); None)
+  if PSet.is_empty modified then (debug Pp.(fun () -> str"Found a model"); None)
+  else Some (modified, acc)
 
 (* let _check_model_bwd = check_model *)
 let cardinal_fwd w =
   CanSet.fold (fun _idx (_, fwd) acc -> ClausesBackward.cardinal fwd + acc) w 0
 
-let check_clauses_with_premises (updates : CanSet.t) model : (CanSet.t * model) option =
+let check_clauses_with_premises (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
   let open Pp in
   debug_check_model (fun () -> str"check_model on " ++ int (CanSet.cardinal updates) ++ str" universes, " ++
   int (cardinal_fwd updates) ++ str " clauses");
   check_clauses_with_premises updates model
 
-let check_clauses_with_premises = time2 (Pp.str"check_clauses_with_premises") check_clauses_with_premises
+(*let check_clauses_with_premises = time3 (Pp.str"check_clauses_with_premises") check_clauses_with_premises*)
 
 (* let check_model = time3 (Pp.str "check_model") check_model *)
 
@@ -938,7 +936,18 @@ let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t 
     w (CanSet.empty, CanSet.empty, CanSet.empty)
 
 let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clauses_fwd
+(* a = 0
+      b -> c
+      a -> b + 1
+      c -> c + 1
 
+      1st round: b = 0.
+      W = {b}
+      2nd round: c = 0.
+      W = {b, c}
+      c = 1.
+      W = {b, c}
+      *)
 (* model is a model for the variables outside w and clauses not mentionning w *)
 let check model (w : CanSet.t) =
   let cV = canonical_cardinal model in
@@ -951,34 +960,35 @@ let check model (w : CanSet.t) =
       str " Conclusions in w: " ++ pr_w m conclw);
     (* Warning: m is not necessarily a model for w *)
     let rec inner_loop_partition w m =
-      debug_loop Pp.(fun () -> str "w = " ++ pr_w m w);
+      debug_loop Pp.(fun () -> str "cls = " ++ pr_w m w);
       match loop cardW w m with
       | Loop -> Loop
       | Model (wr, mr) ->
         debug_loop Pp.(fun () -> str "wr = " ++ pr_w mr wr);
         (match check_clauses_with_premises conclw mr with
-        | Some (wconcl, mconcl) ->
+        | Some (_modified, (wconcl, mconcl)) ->
           debug_loop Pp.(fun () -> str "wconcl = " ++ pr_w mconcl wconcl);
           inner_loop_partition wconcl mconcl
         | None ->
           debug_loop Pp.(fun () -> str"Inner loop found a model");
           Model (wr, mr))
       in inner_loop_partition premconclw m
-  and loop cV w m =
-    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m w);
-    match check_clauses_with_premises w m with
-    | None -> Model (w, m)
-    | Some (w, m) ->
-      let cardW = (CanSet.cardinal w) in
+  and loop cV cls m =
+    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m cls ++ str" with bound " ++ int cV);
+    match check_clauses_with_premises cls m with
+    | None -> Model (cls, m)
+    | Some (modified, (cls, m)) ->
+      debug_loop Pp.(fun () -> str"Updated universes: " ++ prlist_with_sep spc (pr_index_point m) (PSet.elements modified) ++ str", bound is " ++ int cV);
+      let cardW = (CanSet.cardinal cls) in
       if Int.equal cardW cV
-      then (debug_loop Pp.(fun () -> str"Found a loop on " ++ int cardW ++ str" universes" ); Loop)
+      then (debug_loop Pp.(fun () -> str"Found a loop on " ++ int cV ++ str" universes" ); Loop)
       else
-        let (premconclw, conclw, premw) = partition_clauses_fwd m w in
+        let (premconclw, conclw, premw) = partition_clauses_fwd m cls in
         debug_loop Pp.(fun () -> str"partitioned clauses: from and to w " ++ spc () ++
           CanSet.pr_clauses { m with entries = PMap.empty } premconclw);
         debug_loop Pp.(fun () -> str"partitioned clauses: to w, not from w: " ++ spc () ++
           CanSet.pr_clauses { m with entries = PMap.empty } conclw);
-        debug_loop Pp.(fun () -> str"partitioned clauses: not from w, to w " ++ spc () ++
+        debug_loop Pp.(fun () -> str"partitioned clauses: from w, not to w " ++ spc () ++
           CanSet.pr_clauses { m with entries = PMap.empty } premw);
 
         (* debug_check_invariants { model = m; updates = w; clauses = conclnW }; *)
@@ -989,7 +999,7 @@ let check model (w : CanSet.t) =
           (* wc is a subset of w *)
           (match check_clauses_with_premises premw mc with
           | None -> Model (wc, mc)
-          | Some (wcls, mcls) -> loop cV wcls mcls))
+          | Some (_modified, (wcls, mcls)) -> loop cV wcls mcls))
   in loop cV w model
 
 (* let check m w = *)
@@ -1488,6 +1498,44 @@ let check_clause_singleton m prem concl k =
    We generate the minimal model starting from the premises. I.e. we make the premises true.
    Then we check that the conclusion holds in this minimal model.  *)
 
+let check_clause_singleton_alt model prem concl k =
+  (* premise -> concl + k ? *)
+  debug Pp.(fun () -> str"Checking entailment: " ++ pr_index_point model prem.canon ++
+    str " -> " ++ pr_index_point model concl.canon ++ str"+" ++ int k);
+  let values = PMap.singleton prem.canon 0 in
+  let model = { model with values } in
+  let modified, (w, model) = check_model_fwd_clauses_aux prem.clauses_fwd (PSet.empty, (CanSet.empty, model)) in
+  if PSet.is_empty modified then false else begin
+  (* We have a model where only the premise is true, check if the conclusion follows *)
+  debug Pp.(fun () -> str"Launching loop-checking to check for entailment");
+  match check model w with
+  | Loop ->
+    debug Pp.(fun () -> str"loop-checking found a loop");
+    false
+  | Model (_updates, model') ->
+    debug Pp.(fun () -> str"loop-checking found a model");
+    debug_check_invariants model';
+    debug_model model';
+    match canonical_value model' concl with
+    | None ->
+      debug Pp.(fun () -> str"Conclusion has no value in the minimal model, not implied");
+      false
+    | Some value ->
+      debug Pp.(fun () -> str"Conclusion has value " ++ int value ++
+        str" in the minimal model, expecting conclusion + " ++ int k ++ str " to hold");
+      k <= value
+  end
+
+let check_clause_singleton model prem concl k =
+  let res = check_clause_singleton model prem concl k in
+  let res' = check_clause_singleton_alt model prem concl k in
+  if res == res' then res
+  else
+    (debug Pp.(fun () -> str"check_clause_singleton discrepancy: original gave " ++ bool res ++
+      str " while alternative gave " ++ bool res');
+      res)
+
+
 (* a -> b
    b -> c
 
@@ -1543,7 +1591,8 @@ let check_leq (m : t) u vp =
   debug_check Pp.(fun () -> str"checking : " ++ Point.pr u ++ str " ≤ " ++ Point.pr vp);
   let canu = repr_node m u in
   let canv = repr_node m vp in
-  canu == canv || check_clause_singleton m canv canu 0
+  canu == canv ||
+  check_clause_singleton m canv canu 0
 
 let check_eq m u v =
   let canu = repr_node m u in
@@ -1635,7 +1684,7 @@ let update_model ((prems, (can, k)) : can_clause) (m : model) : CanSet.t * model
     if m' != m then
       let canset = CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) CanSet.empty in
       match check_clauses_with_premises canset m' with
-      | Some wm -> wm
+      | Some (_modified, wm) -> wm
       | None -> (CanSet.empty, m')
     else (CanSet.empty, m)
 
