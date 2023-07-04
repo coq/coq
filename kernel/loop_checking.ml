@@ -949,7 +949,7 @@ let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clau
       W = {b, c}
       *)
 (* model is a model for the variables outside w and clauses not mentionning w *)
-let check model (w : CanSet.t) =
+let check model (cls : CanSet.t) =
   let cV = canonical_cardinal model in
   debug_check_invariants model;
   let rec inner_loop cardW premconclw conclw m =
@@ -959,9 +959,9 @@ let check model (w : CanSet.t) =
       str " Premises and conclusions in w: " ++ pr_w m premconclw ++
       str " Conclusions in w: " ++ pr_w m conclw);
     (* Warning: m is not necessarily a model for w *)
-    let rec inner_loop_partition w m =
-      debug_loop Pp.(fun () -> str "cls = " ++ pr_w m w);
-      match loop cardW w m with
+    let rec inner_loop_partition cls m =
+      debug_loop Pp.(fun () -> str "cls = " ++ pr_w m cls);
+      match loop cardW cls m with
       | Loop -> Loop
       | Model (wr, mr) ->
         debug_loop Pp.(fun () -> str "wr = " ++ pr_w mr wr);
@@ -1000,7 +1000,7 @@ let check model (w : CanSet.t) =
           (match check_clauses_with_premises premw mc with
           | None -> Model (wc, mc)
           | Some (_modified, (wcls, mcls)) -> loop cV wcls mcls))
-  in loop cV w model
+  in loop cV cls model
 
 (* let check m w = *)
   (* debug Pp.(fun () -> str"Calling loop-checking"); *)
