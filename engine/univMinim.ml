@@ -288,10 +288,6 @@ let minimize_univ_variables ctx us algs left right cstrs =
 module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
-let is_bound l lbound = match lbound with
-| UGraph.Bound.Prop -> false
-| UGraph.Bound.Set -> Level.is_set l
-
 type extra = {
   weak_constraints : UPairSet.t;
   above_prop : Univ.Level.Set.t;
@@ -327,7 +323,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = UGraph.initial_universes_with g in
-    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g)
+    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:Set ~strict:false v g)
                            ctx g
     in
     let add_soft u g =
@@ -345,7 +341,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
   (* We ignore the trivial Prop/Set <= i constraints. *)
   let noneqs =
     Constraints.filter
-      (fun (l,d,r) -> not (d == Le && is_bound l lbound))
+      (fun (l,d,r) -> not (d == Le && Level.is_set l))
       csts
   in
   let noneqs = if get_set_minimization () then Constraints.union noneqs smallles else noneqs in
