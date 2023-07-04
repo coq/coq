@@ -58,14 +58,10 @@ Solvers for logic and equality
    simpler than it) and applies :n:`@ltac_expr` to them :cite:`Mun94`. If
    :n:`@ltac_expr` is not specified, it defaults to ``Tauto.intuition_solver``.
 
-   The initial value of ``intuition_solver`` is equivalent to :n:`auto
-   with *` but prints warning ``intuition-auto-with-star`` when it
-   solves a goal that :tacn:`auto` cannot solve. In a future version
-   it will be changed to just :tacn:`auto`. Use ``intuition tac``
-   locally or ``Ltac Tauto.intuition_solver ::= tac`` globally to
-   silence the warning in a forward compatible way with your choice of
-   tactic ``tac`` (``auto``, ``auto with *``, ``auto with`` your
-   prefered databases, or any other tactic).
+   The default value of ``intuition_solver`` is :tacn:`auto`. Use
+   ``intuition tac`` or ``Ltac Tauto.intuition_solver ::= tac`` to use
+   your choice of tactic ``tac`` instead (``auto``, ``auto with *``,
+   ``auto with`` your prefered databases, or any other tactic).
 
    If :n:`@ltac_expr` fails on some goals then :tacn:`intuition` fails. In fact,
    :tacn:`tauto` is simply :g:`intuition fail`.

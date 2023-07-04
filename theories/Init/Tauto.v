@@ -105,9 +105,7 @@ Local Ltac tauto_gen flags := tauto_intuitionistic flags || tauto_classical flag
 Ltac tauto := with_uniform_flags ltac:(fun flags => tauto_gen flags).
 Ltac dtauto := with_power_flags ltac:(fun flags => tauto_gen flags).
 
-Ltac intuition_solver :=
-  first [solve [auto]
-        | tryif solve [auto with *] then warn_auto_with_star else idtac].
+Ltac intuition_solver := auto.
 
 Local Ltac intuition_then tac := with_uniform_flags ltac:(fun flags => intuition_gen flags tac).
 Ltac intuition := intuition_then ltac:(idtac;intuition_solver).
