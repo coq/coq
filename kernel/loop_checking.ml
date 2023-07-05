@@ -840,6 +840,18 @@ struct
     (* let can = repr model idx in *)
     (* add can.canon (can.clauses_bwd, can.clauses_fwd)) w empty *)
 
+  (* Right-biased union *)
+  let _union (w, c) (w', _) =
+    let card = ref c in
+    let merge _idx cls cls' =
+      match cls, cls' with
+      | None, None -> cls
+      | _, Some _ -> incr card; cls'
+      | Some _, None -> cls
+    in
+    let union = PMap.merge merge w w' in
+    (union, !card)
+
 end
 
 let pr_w m w = CanSet.pr m w
@@ -883,13 +895,14 @@ let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : PSet.t * (CanSe
       (PSet.add can.canon modified, (w', m')))
     cls acc
 
-let check_model_fwd_aux (_w : PSet.t) (cls, _ as clsm) : PSet.t * (CanSet.t * model) =
-  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux fwd acc) cls (PSet.empty, clsm)
+let check_model_fwd_aux w (cls, m) : PSet.t * (CanSet.t * model) =
+  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux fwd acc) cls
+    (PSet.empty, ((if PSet.is_empty w then CanSet.empty else cls), m))
 
 let check_clauses_with_premises (w : PSet.t) (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
-  let (modified, acc) = check_model_fwd_aux w (updates, model) in
+  let (modified, (cls, m)) = check_model_fwd_aux w (updates, model) in
   if PSet.is_empty modified then (debug Pp.(fun () -> str"Found a model"); None)
-  else Some (modified, acc)
+  else Some (PSet.union w modified, (cls, m))
 
 (* let _check_model_bwd = check_model *)
 let cardinal_fwd w =
@@ -974,16 +987,19 @@ let check model (cls : CanSet.t) =
           Model (wr, mr))
       in inner_loop_partition w premconclw m
   and loop cV w cls m =
+    Control.check_for_interrupt ();
     debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m cls ++ str" with bound " ++ int cV);
     match check_clauses_with_premises w cls m with
     | None -> Model (cls, m)
     | Some (w, (cls, m)) ->
       debug_loop Pp.(fun () -> str"Updated universes: " ++ prlist_with_sep spc (pr_index_point m) (PSet.elements w) ++ str", bound is " ++ int cV);
-      let cardW = (CanSet.cardinal cls) in
+      let cardW = (PSet.cardinal w) in
       if Int.equal cardW cV
       then (debug_loop Pp.(fun () -> str"Found a loop on " ++ int cV ++ str" universes" ); Loop)
       else
         let (premconclw, conclw, premw) = partition_clauses_fwd m cls in
+        (* debug_loop Pp.(fun () -> str"partitionning clauses: " ++ spc () ++
+          CanSet.pr_clauses { m with entries = PMap.empty } cls); *)
         debug_loop Pp.(fun () -> str"partitioned clauses: from and to w " ++ spc () ++
           CanSet.pr_clauses { m with entries = PMap.empty } premconclw);
         debug_loop Pp.(fun () -> str"partitioned clauses: to w, not from w: " ++ spc () ++
@@ -992,7 +1008,7 @@ let check model (cls : CanSet.t) =
           CanSet.pr_clauses { m with entries = PMap.empty } premw);
 
         (* debug_check_invariants { model = m; updates = w; clauses = conclnW }; *)
-        (match inner_loop cardW w premconclw conclw m with
+        (match inner_loop cardW PSet.empty premconclw conclw m with
         | Loop -> Loop
         | Model (wc, mc) ->
           debug_loop Pp.(fun () -> str "wc = " ++ pr_w mc wc);
@@ -1531,9 +1547,8 @@ let check_clause_singleton model prem concl k =
   let res' = check_clause_singleton_alt model prem concl k in
   if res == res' then res
   else
-    (debug Pp.(fun () -> str"check_clause_singleton discrepancy: original gave " ++ bool res ++
-      str " while alternative gave " ++ bool res');
-      res)
+    (CErrors.anomaly Pp.(str"check_clause_singleton discrepancy: original gave " ++ bool res ++
+      str " while alternative gave " ++ bool res'))
 
 
 (* a -> b
