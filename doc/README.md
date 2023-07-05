@@ -32,8 +32,8 @@ reference manual requires Python 3, and the following Python packages:
 
   - sphinx >= 4.5.0
   - sphinx_rtd_theme >= 1.0.0
-  - beautifulsoup4 >= 4.0.6
-  - antlr4-python3-runtime >= 4.7.1
+  - beautifulsoup4 >= 4.6.0
+  - antlr4-python3-runtime >= 4.7.1 & <= 4.9.3
   - pexpect >= 4.2.1
   - sphinxcontrib-bibtex >= 0.4.2
 
