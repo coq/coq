@@ -622,6 +622,30 @@ let lookup_reversible_path_to_common_point env sigma ~src_expected ~src_inferred
   in
     aux r
 
+type hook = env -> evar_map -> flags:Evarconv.unify_flags -> constr ->
+  inferred:types -> expected:types -> (evar_map * constr) option
+
+let all_hooks = ref (CString.Map.empty : hook CString.Map.t)
+
+let register_hook ~name ?(override=false) h =
+  if not override && CString.Map.mem name !all_hooks then
+    CErrors.anomaly ~label:"Coercion.register_hook"
+      Pp.(str "Hook already registered: \"" ++ str name ++ str "\".");
+  all_hooks := CString.Map.add name h !all_hooks
+
+let active_hooks = Summary.ref ~name:"coercion_hooks" ([] : string list)
+
+let deactivate_hook ~name =
+  active_hooks := List.filter (fun s -> not (String.equal s name)) !active_hooks
+
+let activate_hook ~name =
+  assert (CString.Map.mem name !all_hooks);
+  deactivate_hook ~name;
+  active_hooks := name :: !active_hooks
+
+let active_hooks () =
+  List.map (fun name -> CString.Map.get name !all_hooks) !active_hooks
+
 let add_reverse_coercion env sigma v'_ty v_ty v' v =
   match Coqlib.lib_ref_opt "core.coercion.reverse_coercion" with
   | None -> sigma, v'
@@ -657,7 +681,16 @@ let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty ta
       unify_leq_delay ~flags env sigma v'_ty target_type, v', trace
     with (Evarconv.UnableToUnify _ | Not_found) as exn ->
       let _, info = Exninfo.capture exn in
-      Exninfo.iraise (NoCoercion,info)
+      (* 3 if none of the above works, try hook *)
+      let hook_res =
+        List.fold_left
+          (fun r h ->
+            if r <> None then r else
+              h env sigma ~flags v ~inferred:v_ty ~expected:target_type)
+          None (active_hooks ()) in
+      match hook_res with
+      | Some (sigma, r) -> (sigma, r, ReplaceCoe r)
+      | None -> Exninfo.iraise (NoCoercion,info)
 
 let default_flags_of env =
   default_flags_of TransparentState.full
