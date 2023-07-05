@@ -207,7 +207,12 @@ let wrap_error tac k =
   if is_traced () then Proofview.tclORELSE tac k else tac
 
 let wrap_error_loc loc tac k =
-  if is_traced () then Proofview.tclORELSE tac k
+  if is_traced () then
+    let k = match loc with
+      | None -> k
+      | Some loc -> fun e -> k (update_loc loc e)
+    in
+    Proofview.tclORELSE tac k
   else catch_error_loc loc tac
 
 let catch_error_tac call_trace tac =
