@@ -35,7 +35,6 @@ val error_unknown_module : ?loc:Loc.t -> qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : GlobRef.t -> 'a
 val error_MPfile_as_mod : ModPath.t -> bool -> 'a
-val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : ModPath.t -> unit
 val msg_of_implicit : kill_reason -> string

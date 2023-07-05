@@ -61,13 +61,15 @@ let raw_string_of_modfile = function
   | MPfile f -> String.capitalize_ascii (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
-let is_toplevel mp = ModPath.equal mp (Lib.current_mp ())
+let extraction_current_mp () = fst (Safe_typing.flatten_env (Global.safe_env ()))
+
+let is_toplevel mp = ModPath.equal mp (extraction_current_mp ())
 
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
 let mp_length mp =
-  let mp0 = Lib.current_mp () in
+  let mp0 = extraction_current_mp () in
   let rec len = function
     | mp when ModPath.equal mp mp0 -> 1
     | MPdot (mp,_) -> 1 + len mp
@@ -89,15 +91,13 @@ let common_prefix_from_list mp0 mpl =
     | mp :: l -> if MPset.mem mp prefixes then Some mp else f l
   in f mpl
 
-let rec parse_labels2 ll mp1 = function
-  | mp when ModPath.equal mp1 mp -> mp,ll
-  | MPdot (mp,l) -> parse_labels2 (l::ll) mp1 mp
+let rec parse_labels2 ll = function
+  | MPdot (mp,l) -> parse_labels2 (l::ll) mp
   | mp -> mp,ll
 
 let labels_of_ref r =
-  let mp_top = Lib.current_mp () in
   let mp,l = KerName.repr (repr_of_r r) in
-  parse_labels2 [l] mp_top mp
+  parse_labels2 [l] mp
 
 
 (*S The main tables: constants, inductives, records, ... *)
@@ -367,19 +367,6 @@ let error_axiom_scheme ?loc r i =
        safe_pr_global r ++ spc () ++ str "needs " ++ int i ++
        str " type variable(s).")
 
-let warn_extraction_inside_module =
-  CWarnings.create ~name:"extraction-inside-module" ~category:CWarnings.CoreCategories.extraction
-      (fun () -> strbrk "Extraction inside an opened module is experimental." ++ spc () ++
-       strbrk "In case of problem, close it first.")
-
-
-let check_inside_module () =
-  if Lib.is_modtype () then
-    err (str "You can't do that within a Module Type." ++ fnl () ++
-         str "Close it and try again.")
-  else if Lib.is_module () then
-    warn_extraction_inside_module ()
-
 let check_inside_section () =
   if Lib.sections_are_opened () then
     err (str "You can't do that within a section." ++ fnl () ++
@@ -482,7 +469,7 @@ let warning_remaining_implicit k =
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->
       if not (Library.library_is_loaded dp) then begin
-        match base_mp (Lib.current_mp ()) with
+        match base_mp (extraction_current_mp ()) with
           | MPfile dp' when not (DirPath.equal dp dp') ->
             err (str "Please load library " ++ DirPath.print dp ++ str " first.")
           | _ -> ()
