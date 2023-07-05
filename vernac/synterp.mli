@@ -60,7 +60,7 @@ type synterp_entry =
   | EVernacInclude of Declaremods.module_expr list
   | EVernacSetOption of { export : bool; key : Goptions.option_name; value : Vernacexpr.option_setting }
   | EVernacLoad of Vernacexpr.verbose_flag * (vernac_control_entry * Vernacstate.Synterp.t) list
-  | EVernacExtend of Vernacextend.typed_vernac
+  | EVernacExtend of Vernactypes.typed_vernac
 
 and vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
 
