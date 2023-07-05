@@ -799,6 +799,8 @@ struct
 
   let add k v (w, cw) = (PMap.add k v w, succ cw)
 
+  let singleton k v = (PMap.singleton k v, 1)
+
   let mem x (w, _cw) = PMap.mem x w
 
   let empty = (PMap.empty, 0)
@@ -1520,11 +1522,12 @@ let check_clause_singleton_alt model prem concl k =
     str " -> " ++ pr_index_point model concl.canon ++ str"+" ++ int k);
   let values = PMap.singleton prem.canon 0 in
   let model = { model with values } in
-  let modified, (w, model) = check_model_fwd_clauses_aux prem.clauses_fwd (PSet.empty, (CanSet.empty, model)) in
-  if PSet.is_empty modified then false else begin
+  let cls = CanSet.singleton prem.canon (prem.clauses_bwd, prem.clauses_fwd) in
+  (* let modified, (w, model) = check_model_fwd_clauses_aux prem.clauses_fwd (PSet.empty, (mo.empty, model)) in
+  if PSet.is_empty modified then false else begin *)
   (* We have a model where only the premise is true, check if the conclusion follows *)
   debug Pp.(fun () -> str"Launching loop-checking to check for entailment");
-  match check model w with
+  match check model cls with
   | Loop ->
     debug Pp.(fun () -> str"loop-checking found a loop");
     false
@@ -1540,7 +1543,6 @@ let check_clause_singleton_alt model prem concl k =
       debug Pp.(fun () -> str"Conclusion has value " ++ int value ++
         str" in the minimal model, expecting conclusion + " ++ int k ++ str " to hold");
       k <= value
-  end
 
 let check_clause_singleton model prem concl k =
   let res = check_clause_singleton model prem concl k in
