@@ -1008,22 +1008,15 @@ let is_sort_variable uctx s =
 let subst_univs_context_with_def def usubst (uctx, cst) =
   (Level.Set.diff uctx def, UnivSubst.subst_univs_constraints usubst cst)
 
-let refresh_constraints univs (ctx, cstrs) =
-  let cstrs', univs' =
-    Constraints.fold (fun c (cstrs', univs) ->
-      (Constraints.add c cstrs', UGraph.enforce_constraint c univs))
-      cstrs (Constraints.empty, univs)
-  in ((ctx, cstrs'), univs')
-
 let normalize_variables uctx =
   let normalized_variables, def, subst =
     UnivSubst.normalize_univ_variables uctx.univ_variables
   in
   let make_subst subst l = Level.Map.find_opt l subst in
   let uctx_local = subst_univs_context_with_def def (make_subst subst) uctx.local in
-  let uctx_local', univs = refresh_constraints uctx.initial_universes uctx_local in
+  let univs = UGraph.merge_constraints (snd uctx_local) uctx.initial_universes in
   { uctx with
-    local = uctx_local';
+    local = uctx_local;
     univ_variables = normalized_variables;
     universes = univs }
 
@@ -1059,9 +1052,7 @@ let minimize uctx =
   in
   if ContextSet.equal us' uctx.local then uctx
   else
-    let us', universes =
-      refresh_constraints uctx.initial_universes us'
-    in
+    let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
       { names = uctx.names;
         local = us';
         seff_univs = uctx.seff_univs; (* not sure about this *)
