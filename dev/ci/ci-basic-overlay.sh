@@ -207,7 +207,7 @@ project bedrock2 'https://github.com/mit-plv/bedrock2' '0893c1f7d9ac2ef60c9b62cb
 ########################################################################
 # coq-lsp
 ########################################################################
-project coq_lsp 'https://github.com/ejgallego/coq-lsp' 'f21555ee3903bd9a2ac1c70b5f7adbb0b5f38425'
+project coq_lsp 'https://github.com/ejgallego/coq-lsp' 'c1faca2ed1d4c1432bad43be05e7d03176c246dc'
 
 ########################################################################
 # Equations
