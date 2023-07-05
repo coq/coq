@@ -963,8 +963,23 @@ let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clau
       c = 1.
       W = {b, c}
       *)
-(* model is a model for the variables outside w and clauses not mentionning w *)
-let check model (cls : CanSet.t) =
+
+exception FoundImplication
+
+(* If early_stop is given, check raises FoundImplication as soon as
+   it finds that the given atom is true *)
+
+(* model is a model for the clauses outside cls *)
+let check ?early_stop model (cls : CanSet.t) =
+  let check_early_stop =
+    match early_stop with
+    | None -> fun _ _ -> ()
+    | Some (can, k) ->
+      fun w m ->
+        if PSet.mem can w then
+          if k <= Option.get (model_value m can) then raise FoundImplication else ()
+        else ()
+  in
   let cV = canonical_cardinal model in
   debug_check_invariants model;
   let rec inner_loop cardW w premconclw conclw m =
@@ -994,6 +1009,7 @@ let check model (cls : CanSet.t) =
     match check_clauses_with_premises w cls m with
     | None -> Model (cls, m)
     | Some (w, (cls, m)) ->
+      check_early_stop w m;
       debug_loop Pp.(fun () -> str"Updated universes: " ++ prlist_with_sep spc (pr_index_point m) (PSet.elements w) ++ str", bound is " ++ int cV);
       let cardW = (PSet.cardinal w) in
       if Int.equal cardW cV
@@ -1527,7 +1543,10 @@ let check_clause_singleton_alt model prem concl k =
   if PSet.is_empty modified then false else begin *)
   (* We have a model where only the premise is true, check if the conclusion follows *)
   debug Pp.(fun () -> str"Launching loop-checking to check for entailment");
-  match check model cls with
+  match check ~early_stop:(concl.canon, k) model cls with
+  | exception FoundImplication ->
+    debug Pp.(fun () -> str"loop-checking found the implication early");
+    true
   | Loop ->
     debug Pp.(fun () -> str"loop-checking found a loop");
     false
