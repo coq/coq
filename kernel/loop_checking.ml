@@ -1470,7 +1470,7 @@ type check_clause_mark = VisitedAt of int
 
 exception Found
 
-let check_clause_singleton m prem concl k =
+let _check_clause_singleton m prem concl k =
   (* premise -> concl + k ? *)
   let premidx = prem.canon in
   let test_idx y kpath = Index.equal y premidx && kpath <= 0 in
@@ -1564,13 +1564,15 @@ let check_clause_singleton_alt model prem concl k =
       k <= value
 
 let check_clause_singleton model prem concl k =
-  let res = check_clause_singleton model prem concl k in
+  check_clause_singleton_alt model prem concl k
+
+  (*
   let res' = check_clause_singleton_alt model prem concl k in
   if res == res' then res
   else
     (CErrors.anomaly Pp.(str"check_clause_singleton discrepancy: original gave " ++ bool res ++
       str " while alternative gave " ++ bool res'))
-
+*)
 
 (* a -> b
    b -> c
