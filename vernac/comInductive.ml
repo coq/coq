@@ -112,7 +112,7 @@ let make_anonymous_conclusion_flexible sigma = function
      | Type u ->
        (match Univ.Universe.level u with
         | Some u ->
-          Evd.make_flexible_variable sigma ~algebraic:true u
+          Evd.make_flexible_algebraic_variable sigma u
         | None -> sigma)
      | _ -> sigma)
 

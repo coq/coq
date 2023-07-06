@@ -175,7 +175,7 @@ let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
        (if poly then
           match is_sort_variable sigma s' with
           | Some l ->
-            let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
+            let sigma = Evd.make_flexible_algebraic_variable sigma l in
             sigma, (s, s')
           | None ->
             sigma, (s, s')
