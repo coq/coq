@@ -320,7 +320,7 @@ let precedence_of_position_and_level from_level = function
   | DefaultLevel, _ -> LevelSome, None
 
 (** Computing precedences of non-terminals for parsing *)
-let precedence_of_entry_type (from_custom,from_level) = function
+let precedence_of_entry_type { notation_entry = from_custom; notation_level = from_level } = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     fst (precedence_of_position_and_level from_level x)
   | ETConstr (custom,_,(NumLevel n,_)) -> LevelLe n
@@ -644,7 +644,7 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
 (**********************************************************************)
 (* Build parsing rules                                                *)
 
-let assoc_of_type from n (_,typ) = precedence_of_entry_type (from,n) typ
+let assoc_of_type from n (_,typ) = precedence_of_entry_type {notation_entry = from; notation_level = n} typ
 
 let is_not_small_constr = function
     ETProdConstr _ -> true
@@ -721,7 +721,7 @@ let keyword_needed need s =
     need
   | _ -> true
 
-let make_production (_,lev,_) etyps symbols =
+let make_production ({notation_level = lev}, _) etyps symbols =
   let rec aux need = function
     | [] -> [[]]
     | NonTerminal m :: l ->
@@ -793,7 +793,7 @@ let pr_arg_level from (lev,typ) =
   | LevelSome -> mt () in
   Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++ pplev lev
 
-let pr_level ntn (from,fromlevel,args) typs =
+let pr_level ntn ({notation_entry = from; notation_level = fromlevel}, args) typs =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
   str "at level " ++ int fromlevel ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
@@ -1189,12 +1189,12 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
 let entry_relative_level_of_constr_prod_entry from_level = function
   | ETConstr (entry,_,(_,y)) as x ->
      let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-     (entry,(precedence_of_entry_type from_level x,side))
-  | _ -> InConstrEntry,(LevelSome,None) (*??*)
+     { notation_subentry = entry; notation_relative_level = precedence_of_entry_type from_level x; notation_position = side }
+  | _ -> constr_some_level
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
-   recvars allvars (from,level,_) typs =
+   recvars allvars (entry,_) typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     List.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1210,7 +1210,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((entry_relative_level_of_constr_prod_entry (from,level) typ,sc),
+    ((entry_relative_level_of_constr_prod_entry entry typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1239,10 +1239,9 @@ let warn_non_reversible_notation =
 
 let is_coercion level typs =
   match level, typs with
-  | Some (custom,n,_), [_,e] ->
+  | Some ({notation_entry = custom; notation_level = n} as entry,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let entry = (custom,n) in
          let entry_relative = entry_relative_level_of_constr_prod_entry entry e in
          if is_coercion entry entry_relative then
            Some (IsEntryCoercion (entry,entry_relative))
@@ -1435,7 +1434,7 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let pp_sy_data = (sy_typs,symbols) in
   let sy_fulldata = {
       ntn_for_grammar;
-      prec_for_grammar = (main_data.entry,n,prec_for_grammar);
+      prec_for_grammar = ({notation_entry = main_data.entry; notation_level = n}, prec_for_grammar);
       typs_for_grammar = List.map snd sy_typs_for_grammar;
       need_squash
     } in
@@ -1443,7 +1442,7 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   (* Return relevant data for interpretation and for parsing/printing *)
   {
     msgs;
-    level  = (main_data.entry,n,prec);
+    level = ({notation_entry = main_data.entry; notation_level = n}, prec);
     subentries = sy_typs;
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
@@ -1624,7 +1623,7 @@ let make_parsing_rules main_data (sd : SynData.syn_data) =
 
 let make_generic_printing_rules reserved main_data ntn sd =
   let open SynData in
-  let custom,level,_ = sd.level in
+  let {notation_entry = custom; notation_level = level},_ = sd.level in
   let make_rule rule =
     {
       notation_printing_reserved = reserved;
@@ -1666,7 +1665,7 @@ let make_syntax_rules reserved main_data ntn sd =
 let make_specific_printing_rules etyps symbols level pp_rule format =
   match level with
   | None -> None
-  | Some (_,level,_) ->
+  | Some ({ notation_level = level},_) ->
   match format, pp_rule with
     | None, Some _ when not (has_implicit_format symbols) -> None
     | _ ->
@@ -1717,7 +1716,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     ninterp_rec_vars = Id.Map.of_list recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let plevel = match level with Some (from,level,l) -> (from,level,l) | None (* numeral: irrelevant )*) -> (InConstrEntry,0,[]) in
+  let plevel = match level with Some (entry,l) -> (entry,l) | None (* numeral: irrelevant )*) -> (constr_lowest_level,[]) in
   let interp = make_interpretation_vars recvars acvars plevel i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
@@ -1922,7 +1921,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   in
   let level_arg = NumLevel 9 (* level of arguments of an application *) in
   let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd))) in
-  let level = (InConstrEntry,0,[]) in
+  let level = (* not relevant *) (constr_lowest_level,[]) in
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
