@@ -988,23 +988,6 @@ let make_nonalgebraic_variable uctx u =
 let make_flexible_nonalgebraic uctx =
   { uctx with univ_algebraic = Level.Set.empty }
 
-let is_sort_variable uctx s =
-  match s with (* FIXME: normalize here *)
-  | Sorts.Type u ->
-    (match Universe.level u with
-    | Some l as x ->
-        if Level.Set.mem l (ContextSet.levels uctx.local) then x
-        else None
-    | None -> None)
-  | Sorts.QSort (q, u) ->
-    let q = nf_qvar uctx q in
-    (match q, Universe.level u with
-    | (QVar _ | QType), Some l ->
-        if Level.Set.mem l (ContextSet.levels uctx.local) then Some l
-        else None
-    | (_, Some _ | _, None) -> None)
-  | _ -> None
-
 let subst_univs_context_with_def def usubst (uctx, cst) =
   (Level.Set.diff uctx def, UnivSubst.subst_univs_constraints usubst cst)
 

@@ -146,6 +146,17 @@ module Data = struct
   }
 end
 
+(** Is [s] a single local level (type or qsort)? If so return it. *)
+let is_sort_variable sigma s =
+  match EConstr.ESorts.kind sigma s with
+  | SProp | Prop | Set -> None
+  | Type u | QSort (_, u) -> match Univ.Universe.level u with
+    | None -> None
+    | Some l ->
+      if Univ.Level.Set.mem l (fst (Evd.universe_context_set sigma))
+      then Some l
+      else None
+
 let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
     let uvarkind = Evd.univ_flexible_alg in
@@ -162,7 +173,7 @@ let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
     (match EConstr.kind sigma sred with
      | Sort s' ->
        (if poly then
-          match Evd.is_sort_variable sigma s' with
+          match is_sort_variable sigma s' with
           | Some l ->
             let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
             sigma, (s, s')
@@ -190,7 +201,7 @@ let def_class_levels ~def env_ar sigma aritysorts ctors =
   let ctor_sort = Retyping.get_sort_of env_ar sigma ctor in
   let is_prop_ctor = EConstr.ESorts.is_prop sigma ctor_sort in
   let sigma = Evd.set_leq_sort env_ar sigma ctor_sort s in
-  if Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma s)
+  if Option.cata (Evd.is_flexible_level sigma) false (is_sort_variable sigma s)
   && is_prop_ctor
   then (* We assume that the level in aritysort is not constrained
           and clear it, if it is flexible *)

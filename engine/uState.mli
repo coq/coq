@@ -198,8 +198,6 @@ val make_nonalgebraic_variable : t -> Univ.Level.t -> t
    (typically for polymorphic program obligations). *)
 val make_flexible_nonalgebraic : t -> t
 
-val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
-
 val normalize_variables : t -> t
 
 val constrain_variables : Univ.Level.Set.t -> t -> t
