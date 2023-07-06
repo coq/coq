@@ -17,7 +17,7 @@ open Context
 open Vars
 open Names
 open Pp
-open Tactics
+open Induction
 open Context.Rel.Declaration
 open Indfun_common
 module RelDecl = Context.Rel.Declaration

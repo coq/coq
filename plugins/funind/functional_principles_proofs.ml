@@ -20,6 +20,7 @@ open Namegen
 open Names
 open Pp
 open Tactics
+open Induction
 open Indfun_common
 open Libnames
 open Context.Rel.Declaration
