@@ -104,17 +104,14 @@ let rec check_type_conclusion ind =
     | GCast (e, _, _) -> check_type_conclusion e
     | _ -> None
 
-let make_anonymous_conclusion_flexible sigma = function
-  | None -> sigma
-  | Some (false, _) -> sigma
-  | Some (true, s) ->
-    (match ESorts.kind sigma s with
-     | Type u ->
-       (match Univ.Universe.level u with
-        | Some u ->
-          Evd.make_flexible_algebraic_variable sigma u
-        | None -> sigma)
-     | _ -> sigma)
+let make_anonymous_conclusion_flexible sigma s =
+  match ESorts.kind sigma s with
+  | Type u ->
+    (match Univ.Universe.level u with
+     | Some u ->
+       Evd.make_flexible_algebraic_variable sigma u
+     | None -> sigma)
+  | _ -> sigma
 
 let intern_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
@@ -128,9 +125,12 @@ let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
-    let concl = match pseudo_poly with
-      | Some b -> Some (b, s)
-      | None -> None
+    let sigma, concl = match pseudo_poly with
+      | Some true ->
+        let sigma = make_anonymous_conclusion_flexible sigma s in
+        sigma, Some s
+      | Some false -> sigma, Some s
+      | None -> sigma, None
     in
     sigma, (t, Retyping.relevance_of_sort sigma s, concl, impls)
 
@@ -458,7 +458,6 @@ let variance_of_entry ~cumulative ~variances uctx =
 
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
-  let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->
           let ctx = fst (Reductionops.hnf_decompose_prod_decls env_ar_params sigma ty) in
@@ -471,7 +470,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
-  let arityconcl = List.map (Option.map (fun (_anon, s) -> ESorts.kind sigma s)) arityconcl in
+  let arityconcl = List.map (Option.map (fun s -> ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
