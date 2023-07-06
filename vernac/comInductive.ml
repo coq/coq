@@ -94,27 +94,39 @@ let check_all_names_different indl =
 
 let rec check_type_conclusion ind =
   let open Glob_term in
-    match DAst.get ind with
-    | GSort (UAnonymous {rigid=UnivRigid}) -> (Some true)
-    | GSort (UNamed _) -> (Some false)
-    | GProd ( _, _, _, e)
-    | GLetIn (_, _, _, e) ->
-      check_type_conclusion e
-    | _ -> None
+  match DAst.get ind with
+  | GSort (UAnonymous {rigid=UnivRigid}) ->
+    (* should have been made flexible *)
+    assert false
+  | GSort (UNamed _) -> true
+  | GProd ( _, _, _, e)
+  | GLetIn (_, _, _, e) ->
+    check_type_conclusion e
+  | _ -> false
 
-let make_anonymous_conclusion_flexible sigma s =
-  match ESorts.kind sigma s with
-  | Type u ->
-    (match Univ.Universe.level u with
-     | Some u ->
-       Evd.make_flexible_algebraic_variable sigma u
-     | None -> sigma)
-  | _ -> sigma
+let rec make_anonymous_conclusion_flexible ind =
+  let open Glob_term in
+  match DAst.get ind with
+  | GSort (UAnonymous {rigid=UnivRigid}) ->
+    Some (DAst.make ?loc:ind.loc (GSort (UAnonymous {rigid=UnivFlexible true})))
+  | GSort (UNamed _) -> None
+  | GProd (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+      | None -> None
+      | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, e)))
+    end
+  | GLetIn (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+      | None -> None
+      | Some e -> Some (DAst.make ?loc:ind.loc (GLetIn (a, b, c, e)))
+    end
+  | _ -> None
 
 let intern_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-  let pseudo_poly = check_type_conclusion c in
+  let pseudo_poly, c = match make_anonymous_conclusion_flexible c with
+    | None -> check_type_conclusion c, c
+    | Some c -> true, c
+  in
   (constr_loc ind.ind_arity, c, impls, pseudo_poly)
 
 let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
@@ -123,13 +135,7 @@ let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
-    let sigma, concl = match pseudo_poly with
-      | Some true ->
-        let sigma = make_anonymous_conclusion_flexible sigma s in
-        sigma, Some s
-      | Some false -> sigma, Some s
-      | None -> sigma, None
-    in
+    let concl = if pseudo_poly then Some s else None in
     sigma, (t, Retyping.relevance_of_sort sigma s, concl, impls)
 
 (* ind_rel is the Rel for this inductive in the context without params.

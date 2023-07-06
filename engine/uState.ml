@@ -955,31 +955,6 @@ let make_with_initial_binders ~lbound univs binders =
 let from_env ?(binders=[]) env =
   make_with_initial_binders ~lbound:(Environ.universes_lbound env) (Environ.universes env) binders
 
-let make_flexible_algebraic_variable uctx u =
-  let {local = cstrs; univ_variables = uvars;
-       univ_algebraic = avars; universes=g; } = uctx in
-  assert (try Level.Map.find u uvars == None with Not_found -> true);
-  match UGraph.choose (fun v -> not (Level.equal u v)) g u with
-  | Some v ->
-    let uvars' = Level.Map.add u (Some (Universe.make v)) uvars in
-    { uctx with univ_variables = uvars'; }
-  | None ->
-    let uvars' = Level.Map.add u None uvars in
-    let avars' =
-      let uu = Universe.make u in
-      let substu_not_alg u' v =
-        Option.cata (fun vu -> Universe.equal uu vu && not (Level.Set.mem u' avars)) false v
-      in
-      let has_upper_constraint () =
-        Constraints.exists
-          (fun (l,d,r) -> d == Lt && Level.equal l u)
-          (ContextSet.constraints cstrs)
-      in
-      if not (Level.Map.exists substu_not_alg uvars || has_upper_constraint ())
-      then Level.Set.add u avars else avars
-    in
-    { uctx with univ_variables = uvars'; univ_algebraic = avars' }
-
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_algebraic = Level.Set.remove u uctx.univ_algebraic }
 

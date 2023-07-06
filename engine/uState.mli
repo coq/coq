@@ -179,15 +179,6 @@ val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Leve
 
 val add_global_univ : t -> Univ.Level.t -> t
 
-(** [make_flexible_algebraic_variable g l]
-
-    Turn the variable [l] flexible, and algebraic if [l] can be.
-    That is if there are no strict upper constraints on
-    [l] and and it does not appear in the instance of any non-algebraic
-    universe.
-    Otherwise the variable is just made flexible. *)
-val make_flexible_algebraic_variable : t -> Univ.Level.t -> t
-
 val make_nonalgebraic_variable : t -> Univ.Level.t -> t
 (** Make the level non algebraic. Undefined behaviour on
    already-defined algebraics. *)

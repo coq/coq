@@ -1105,10 +1105,6 @@ let new_sort_variable ?loc ?name rigid sigma =
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
 
-let make_flexible_algebraic_variable evd u =
-  { evd with universes =
-      UState.make_flexible_algebraic_variable evd.universes u }
-
 let make_nonalgebraic_variable evd u =
   { evd with universes = UState.make_nonalgebraic_variable evd.universes u }
 
