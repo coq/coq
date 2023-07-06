@@ -528,14 +528,6 @@ let variance_of_entry ~cumulative ~variances uctx =
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
-let warn_bad_set_minimization =
-  CWarnings.create ~name:"bad-set-minimization" ~category:Deprecation.Version.v8_18
-    Pp.(fun () -> strbrk "This inductive will be minimized to Set even though Universe Minimization ToSet is unset. This will change in a future version.")
-
-let warn_bad_set_minimization ?loc () =
-  if UnivMinim.get_set_minimization () then ()
-  else warn_bad_set_minimization ?loc ()
-
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
@@ -543,18 +535,8 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let constructors = List.map (on_snd (List.map nf)) constructors in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
-  let sigma', arities = inductive_levels env_ar_params sigma arities constructors in
-  let sigma =
-    let sigma' = Evd.minimize_universes sigma' in
-    let () = List.iter (fun ty ->
-        let _, s = Reduction.dest_arity env_ar_params ty in
-        let s = EConstr.ESorts.make s in
-        if EConstr.ESorts.is_set sigma' s && not (EConstr.ESorts.is_set sigma s)
-        then warn_bad_set_minimization ())
-        arities
-    in
-    sigma'
-  in
+  let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
+  let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
   let arities = List.map nf arities in
   let constructors = List.map (on_snd (List.map nf)) constructors in
@@ -875,5 +857,5 @@ module Internal =
 struct
 
 let compute_constructor_level = compute_constructor_level
-let warn_bad_set_minimization = warn_bad_set_minimization
+
 end

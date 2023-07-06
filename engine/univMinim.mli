@@ -39,5 +39,3 @@ val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
   Level.Set.t (* univ variables that can be substituted by algebraics *) ->
   extra ->
   (universe_opt_subst * Level.Set.t) in_universe_context_set
-
-val get_set_minimization : unit -> bool
