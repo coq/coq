@@ -111,6 +111,12 @@ module type ExtS = sig
 
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   (** Folding keys in decreasing order. *)
+
+  val fold_left_map : (key -> 'a -> 'b -> 'b * 'c) -> 'a t -> 'b -> 'b * 'c t
+  (** Combination of fold_left and map *)
+
+  val fold_right_map : (key -> 'a -> 'b -> 'b * 'c) -> 'a t -> 'b -> 'b * 'c t
+  (** Combination of fold_right and map *)
 end
 
 module Make(M : Map.OrderedType) : ExtS with
