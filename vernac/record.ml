@@ -225,9 +225,8 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
         if Sorts.is_small univ &&
            Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma esort) then
            (* We can assume that the level in aritysort is not constrained
-               and clear it, if it is flexible *) begin
-          ComInductive.Internal.warn_bad_set_minimization ();
-          Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ)) end
+               and clear it, if it is flexible *)
+          Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ))
         else sigma, (univ, typ)
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
