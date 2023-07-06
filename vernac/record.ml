@@ -159,27 +159,20 @@ let is_sort_variable sigma s =
 
 let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
-    let uvarkind = Evd.univ_flexible_alg in
-    let sigma, s = Evd.new_sort_variable uvarkind sigma in
+    let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+    sigma, (EConstr.mkSort s, s)
+  | Some { CAst.v = CSort (Glob_term.UAnonymous {rigid=UnivRigid}); loc } ->
+    (* special case: the user wrote ": Type". We want to allow it to become algebraic
+       (and Prop but that may change in the future) *)
+    let sigma, s = Evd.new_sort_variable ?loc UState.univ_flexible_alg sigma in
     sigma, (EConstr.mkSort s, s)
   | Some t ->
     let env = EConstr.push_rel_context newps env0 in
-    let poly =
-      match t with
-      | { CAst.v = CSort (Glob_term.UAnonymous {rigid=UnivRigid}) } -> true | _ -> false in
     let impls = Constrintern.empty_internalization_env in
     let sigma, s = Constrintern.interp_type_evars ~program_mode:false env sigma ~impls t in
     let sred = Reductionops.whd_allnolet env sigma s in
     (match EConstr.kind sigma sred with
-     | Sort s' ->
-       (if poly then
-          match is_sort_variable sigma s' with
-          | Some l ->
-            let sigma = Evd.make_flexible_algebraic_variable sigma l in
-            sigma, (s, s')
-          | None ->
-            sigma, (s, s')
-        else sigma, (s, s'))
+     | Sort s' -> (sigma, (s, s'))
      | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
 
 type tc_result =
