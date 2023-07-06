@@ -98,10 +98,8 @@ let rec check_type_conclusion ind =
     | GSort (UAnonymous {rigid=true}) -> (Some true)
     | GSort (UNamed _) -> (Some false)
     | GProd ( _, _, _, e)
-    | GLetIn (_, _, _, e)
-    | GLambda (_, _, _, e)
-    | GApp (e, _)
-    | GCast (e, _, _) -> check_type_conclusion e
+    | GLetIn (_, _, _, e) ->
+      check_type_conclusion e
     | _ -> None
 
 let make_anonymous_conclusion_flexible sigma s =
