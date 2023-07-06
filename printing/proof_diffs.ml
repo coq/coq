@@ -104,9 +104,7 @@ let tokenize_string s =
   try
     let istr = Gramlib.Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
-    let toks = stream_tok [] lex in
-    CLexer.Lexer.State.set st;
-    toks
+    stream_tok [] lex
   with exn when CErrors.noncritical exn ->
     raise (Diff_Failure "Input string is not lexable")
 
