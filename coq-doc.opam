@@ -19,10 +19,10 @@ depends: [
   "dune" {>= "2.9"}
   "conf-python-3" {build}
   "coq" {build & = version}
+  "odoc" {with-doc}
 ]
 build: [
-  # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
-  # ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
@@ -30,9 +30,11 @@ build: [
     name
     "-j"
     jobs
+    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/coq/coq.git"

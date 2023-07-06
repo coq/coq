@@ -5,8 +5,7 @@
 (formatting
  (enabled_for ocaml))
 
-; After Dune 2.8 we can use this, but let's wait for the build consolidation PR
-; (generate_opam_files true)
+(generate_opam_files true)
 
 (license LGPL-2.1-only)
 (maintainers "The Coq development team <coqdev@inria.fr>")
