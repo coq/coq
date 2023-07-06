@@ -68,7 +68,7 @@ let nf_evar sigma c =
   let lsubst = Evd.universe_subst sigma in
   let evar_value ev = Evd.existential_opt_value0 sigma ev in
   let level_value l =
-    UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+    UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
   in
   let sort_value s = UState.nf_sort (Evd.evar_universe_context sigma) s in
   let rel_value r = UState.nf_relevance (Evd.evar_universe_context sigma) r in

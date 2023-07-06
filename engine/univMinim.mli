@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Univ
-open UnivSubst
 
 (** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
 module UPairSet : CSet.S with type elt = (Level.t * Level.t)
@@ -35,7 +34,6 @@ val extra_union : extra -> extra -> extra
     the constraints w.r.t to the equalities. *)
 
 val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
-  universe_opt_subst (* The defined and undefined variables *) ->
-  Level.Set.t (* univ variables that can be substituted by algebraics *) ->
+  UnivFlex.t (* The defined and undefined variables *) ->
   extra ->
-  (universe_opt_subst * Level.Set.t) in_universe_context_set
+  UnivFlex.t in_universe_context_set

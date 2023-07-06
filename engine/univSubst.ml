@@ -157,41 +157,6 @@ let level_subst_of f =
     | None -> assert false
     | Some l -> l
 
-let normalize_univ_variable ~find =
-  let rec aux cur =
-    find cur |>
-    Option.map (fun b ->
-        let b' = subst_univs_universe aux b in
-        if Universe.equal b' b then b
-        else b')
-  in aux
-
-type universe_opt_subst = Universe.t option universe_map
-
-let normalize_univ_variable_opt_subst ectx =
-  let find l = Option.flatten (Univ.Level.Map.find_opt l ectx) in
-  normalize_univ_variable ~find
-
-let normalize_universe_opt_subst subst =
-  let normlevel = normalize_univ_variable_opt_subst subst in
-  subst_univs_universe normlevel
-
-let normalize_opt_subst ctx =
-  let normalize = normalize_universe_opt_subst ctx in
-  Univ.Level.Map.mapi (fun u -> function
-      | None -> None
-      | Some v -> Some (normalize v)) ctx
-
-let normalize_univ_variables ctx =
-  let ctx = normalize_opt_subst ctx in
-  let def, subst =
-    Univ.Level.Map.fold (fun u v (def, subst) ->
-      match v with
-      | None -> (def, subst)
-      | Some b -> (Univ.Level.Set.add u def, Univ.Level.Map.add u b subst))
-    ctx (Univ.Level.Set.empty, Univ.Level.Map.empty)
-  in ctx, def, subst
-
 let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = subst_instance f u in
     if u' == u then cu else (c, u')

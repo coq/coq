@@ -213,13 +213,6 @@ module Level = struct
     let lunion l r =
       union (fun _k l _r -> Some l) l r
 
-    let subst_union l r =
-      union (fun _k l r ->
-        match l, r with
-        | Some _, _ -> Some l
-        | None, None -> Some l
-        | _, _ -> Some r) l r
-
     let diff ext orig =
       fold (fun u v acc ->
         if mem u orig then acc

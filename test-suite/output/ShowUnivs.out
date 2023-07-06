@@ -7,7 +7,7 @@ UNIVERSES:
    ShowUnivs.5 <= ShowUnivs.1
 ALGEBRAIC UNIVERSES:
  {ShowUnivs.5 ShowUnivs.4 ShowUnivs.1}
-UNDEFINED UNIVERSES:
+FLEXIBLE UNIVERSES:
  ShowUnivs.5
  ShowUnivs.4
  ShowUnivs.3

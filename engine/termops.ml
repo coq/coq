@@ -305,10 +305,7 @@ let pr_evar_universe_context ctx =
   else
     v 0 (str"UNIVERSES:"++brk(0,1)++
        h (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
-     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-     h (Univ.Level.Set.pr prl (UState.algebraics ctx)) ++ fnl() ++
-     str"UNDEFINED UNIVERSES:"++brk(0,1)++
-     h (UState.pr_universe_opt_subst prl (UState.subst ctx)) ++ fnl() ++
+     UnivFlex.pr prl (UState.subst ctx) ++ fnl() ++
      str"SORTS:"++brk(0,1)++
      h (UState.pr_sort_opt_subst ctx) ++ fnl() ++
      str "WEAK CONSTRAINTS:"++brk(0,1)++
