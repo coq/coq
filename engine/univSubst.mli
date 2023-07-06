@@ -22,19 +22,6 @@ val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
 val subst_instance : universe_level_subst_fn -> Instance.t -> Instance.t
 
-type universe_opt_subst = Universe.t option universe_map
-
-val normalize_univ_variables : universe_opt_subst ->
-  universe_opt_subst * Level.Set.t * universe_subst
-
-val normalize_univ_variable_opt_subst : universe_opt_subst ->
-  (Level.t -> Universe.t option)
-
-val normalize_universe_opt_subst : universe_opt_subst ->
-  (Universe.t -> Universe.t)
-
-val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
-
 val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
   'a Context.binder_annot -> 'a Context.binder_annot
 
@@ -47,7 +34,7 @@ val nf_evars_and_universes_opt_subst :
   (Sorts.relevance -> Sorts.relevance) ->
   constr -> constr
 
-val subst_univs_universe : (Level.t -> Universe.t option) -> Universe.t -> Universe.t
+val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
 
 val pr_universe_subst : (Level.t -> Pp.t) -> universe_subst -> Pp.t
 

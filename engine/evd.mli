@@ -662,7 +662,7 @@ val check_constraints : evar_map -> Univ.Constraints.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
-val universe_subst : evar_map -> UnivSubst.universe_opt_subst
+val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and
