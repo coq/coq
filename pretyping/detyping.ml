@@ -769,12 +769,12 @@ let detype_sort sigma = function
   | Type u ->
       (if !print_universes
        then UNamed (None, detype_universe sigma u)
-       else UAnonymous {rigid=true})
+       else UAnonymous {rigid=UnivRigid})
   | QSort (q, u) ->
     if !print_universes then
       let q = if print_sort_quality () then Some q else None in
       UNamed (q, detype_universe sigma u)
-    else UAnonymous {rigid=true}
+    else UAnonymous {rigid=UnivRigid}
 
 type binder_kind = BProd | BLambda | BLetIn
 

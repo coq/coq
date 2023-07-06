@@ -56,7 +56,7 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
 exception ComplexSort
 
 let glob_sort_family = let open Sorts in function
-  | UAnonymous {rigid=true} -> InType
+  | UAnonymous {rigid=UnivRigid} -> InType
   | UNamed (None, [GSProp, 0]) -> InSProp
   | UNamed (None, [GProp, 0]) -> InProp
   | UNamed (None, [GSet, 0]) -> InSet

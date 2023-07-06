@@ -95,7 +95,7 @@ let check_all_names_different indl =
 let rec check_type_conclusion ind =
   let open Glob_term in
     match DAst.get ind with
-    | GSort (UAnonymous {rigid=true}) -> (Some true)
+    | GSort (UAnonymous {rigid=UnivRigid}) -> (Some true)
     | GSort (UNamed _) -> (Some false)
     | GProd ( _, _, _, e)
     | GLetIn (_, _, _, e) ->
@@ -667,7 +667,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
+    ind_arity = Option.default (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=UnivRigid})) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

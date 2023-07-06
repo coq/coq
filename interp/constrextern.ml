@@ -865,7 +865,7 @@ let extern_glob_sort uvars u =
 let extern_glob_sort uvars = function
   (* In case we print a glob_constr w/o having passed through detyping *)
   | UNamed (None, [(GSProp, 0) | (GProp, 0) | (GSet, 0)]) as u -> extern_glob_sort uvars u
-  | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
+  | UNamed _ when not !print_universes -> UAnonymous {rigid=UnivRigid}
   | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
 
 let extern_instance uvars = function
@@ -1486,7 +1486,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort Sorts.InSProp -> GSort (UNamed (None, [GSProp,0]))
   | PSort Sorts.InProp -> GSort (UNamed (None, [GProp,0]))
   | PSort Sorts.InSet -> GSort (UNamed (None, [GSet,0]))
-  | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=true})
+  | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=UnivRigid})
   | PInt i -> GInt i
   | PFloat f -> GFloat f
   | PArray(t,def,ty) ->

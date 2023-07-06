@@ -109,8 +109,8 @@ GRAMMAR EXTEND Gram
     [ [ "Set"  -> { UNamed (None, [CSet, 0]) }
       | "Prop" -> { UNamed (None, [CProp, 0]) }
       | "SProp" -> { UNamed (None, [CSProp, 0]) }
-      | "Type" -> { UAnonymous {rigid=true} }
-      | "Type"; "@{"; "_"; "}" -> { UAnonymous {rigid=false} }
+      | "Type" -> { UAnonymous {rigid=UnivRigid} }
+      | "Type"; "@{"; "_"; "}" -> { UAnonymous {rigid=UnivFlexible false} }
       | "Type"; "@{"; u = universe; "}" -> { UNamed (None, u) } ] ]
   ;
   sort_family:
@@ -287,8 +287,8 @@ GRAMMAR EXTEND Gram
     [ [ "Set" -> { UNamed CSet }
       (* no parsing SProp as a level *)
       | "Prop" -> { UNamed CProp }
-      | "Type" -> { UAnonymous {rigid=true} }
-      | "_" -> { UAnonymous {rigid=false} }
+      | "Type" -> { UAnonymous {rigid=UnivRigid} }
+      | "_" -> { UAnonymous {rigid=UnivFlexible false} }
       | id = global -> { UNamed (CType id) } ] ]
   ;
   fix_decls:

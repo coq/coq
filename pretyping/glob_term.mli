@@ -35,7 +35,7 @@ type glob_sort_name =
       is OK, just don't try to reinterp it. *)
 
 type 'a glob_sort_gen =
-  | UAnonymous of { rigid : bool } (** not rigid = unifiable by minimization *)
+  | UAnonymous of { rigid : UState.rigid } (** not rigid = unifiable by minimization *)
   | UNamed of 'a
 
 (** levels, occurring in universe instances *)

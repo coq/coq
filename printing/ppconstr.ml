@@ -203,16 +203,18 @@ let tag_var = tag Tag.variable
     | UNamed (None, [CSProp, 0]) -> tag_type (str "SProp")
     | UNamed (None, [CProp, 0]) -> tag_type (str "Prop")
     | UNamed (None, [CSet, 0]) -> tag_type (str "Set")
-    | UAnonymous {rigid=true} -> tag_type (str "Type")
-    | UAnonymous {rigid=false} -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
+    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible b} ->
+      tag_type (str "Type") ++
+      pr_univ_annot (fun _ -> str "_" ++ if b then str " (* algebraic *)" else mt()) ()
     | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
 
   let pr_univ_level_expr = function
     | UNamed CSProp -> tag_type (str "SProp")
     | UNamed CProp -> tag_type (str "Prop")
     | UNamed CSet -> tag_type (str "Set")
-    | UAnonymous {rigid=true} -> tag_type (str "Type")
-    | UAnonymous {rigid=false} -> tag_type (str "_")
+    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
     | UNamed (CType u) -> tag_type (pr_qualid u)
     | UNamed (CRawType s) -> tag_type (Univ.Level.raw_pr s)
 
