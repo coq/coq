@@ -1134,8 +1134,6 @@ let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 
-let is_sort_variable evd s = UState.is_sort_variable evd.universes s
-
 let is_flexible_level evd l =
   let uctx = evd.universes in
     Univ.Level.Map.mem l (UState.subst uctx)

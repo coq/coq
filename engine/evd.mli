@@ -646,10 +646,6 @@ val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_
 val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 (** See [UState.make_nonalgebraic_variable]. *)
 
-val is_sort_variable : evar_map -> esorts -> Univ.Level.t option
-(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is
-    not a local sort variable declared in [evm] *)
-
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
 val normalize_universe_instance : evar_map -> Univ.Instance.t -> Univ.Instance.t
