@@ -407,7 +407,9 @@ let pretype_id pretype loc env sigma id =
 (* Main pretyping function                                               *)
 
 let glob_level ?loc evd : glob_level -> _ = function
-  | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
+  | UAnonymous {rigid} ->
+    assert (rigid <> UnivFlexible true);
+    new_univ_level_variable ?loc rigid evd
   | UNamed s ->
     match level_name evd s with
     | None ->
@@ -461,7 +463,7 @@ let pretype_ref ?loc sigma env ref us =
 
 let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
-    let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
+    let evd, l = new_univ_level_variable ?loc rigid evd in
     evd, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make l))
   | UNamed (q, l) ->
     (* No user-facing syntax for qualities *)
@@ -1495,7 +1497,7 @@ let path_convertible env sigma cl p q =
       let params = class_nparams cl in
       let clty =
         match cl with
-        | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=false})
+        | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=UnivFlexible false})
         | CL_FUN -> anomaly (str "A source class must not be Funclass.")
         | CL_SECVAR v -> mkGRef (GlobRef.VarRef v)
         | CL_CONST c -> mkGRef (GlobRef.ConstRef c)

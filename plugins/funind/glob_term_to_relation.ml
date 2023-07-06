@@ -1272,7 +1272,7 @@ let rec rebuild_return_type rt =
     @@ Constrexpr.CProdN
          ( [ Constrexpr.CLocalAssum
                ([CAst.make Anonymous], Constrexpr.Default Explicit, rt) ]
-         , CAst.make @@ Constrexpr.CSort (UAnonymous {rigid = true}) )
+         , CAst.make @@ Constrexpr.CSort (UAnonymous {rigid=UnivRigid}) )
 
 let do_build_inductive evd (funconstants : pconstant list)
     (funsargs : (Name.t * glob_constr * glob_constr option) list list)

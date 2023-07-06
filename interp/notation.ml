@@ -592,7 +592,7 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSProp, 0])))
   | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
   | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
-  | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=true}))
+  | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=UnivRigid}))
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
 let no_such_prim_token uninterpreted_token_kind ?loc ty =
