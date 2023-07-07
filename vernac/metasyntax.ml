@@ -1199,17 +1199,21 @@ let make_interpretation_vars
     List.equal String.equal l1 l2
   in
   let check (x, y) =
-    let (_,scope1) = Id.Map.find x allvars in
-    let (_,scope2) = Id.Map.find y allvars in
+    let (_,scope1,_ntn_binding_ids1) = Id.Map.find x allvars in
+    let (_,scope2,_ntn_binding_ids2) = Id.Map.find y allvars in
     if not (eq_subscope scope1 scope2) then error_not_same_scope x y
+    (* Note: binding_ids should currently be the same, and even with
+      eventually more complex notations, such as e.g.
+        Notation "!! x .. y , P .. Q" := (fun x => (P, .. (fun y => (Q, True)) ..)).
+      each occurrence of the recursive notation variables may have its own binders *)
   in
   let () = List.iter check recvars in
   let useless_recvars = List.map snd recvars in
   let mainvars =
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
-  Id.Map.mapi (fun x (isonlybinding, sc) ->
+  Id.Map.mapi (fun x (isonlybinding, sc, ntn_binding_ids) ->
     let typ = Id.List.assoc x typs in
-    ((entry_relative_level_of_constr_prod_entry entry typ,sc),
+    ((entry_relative_level_of_constr_prod_entry entry typ, sc), ntn_binding_ids,
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =

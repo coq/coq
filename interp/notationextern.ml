@@ -71,9 +71,10 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeBinderList s1, NtnTypeBinderList s2 -> notation_binder_source_eq s1 s2
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
 
-let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
+let var_attributes_eq (_, ((entry1, sc1), binders1, tp1)) (_, ((entry2, sc2), binders2, tp2)) =
   notation_entry_relative_level_eq entry1 entry2 &&
   pair_eq (List.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  Id.Set.equal binders1 binders2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =

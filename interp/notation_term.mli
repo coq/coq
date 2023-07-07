@@ -98,9 +98,16 @@ type notation_var_internalization_type =
   | NtnInternTypeAny of scope_name option
   | NtnInternTypeOnlyBinder
 
+(** The set of other notation variables that are bound to a binder or
+    binder list and that bind the given notation variable, for
+    instance, in ["{ x | P }" := (sigT (fun x => P)], "x" is under an
+    empty set of binders and "P" is under the binders bound to "x",
+    that is, its notation_var_binders set is "x" *)
+type notation_var_binders = Id.Set.t
+
 (** This characterizes to what a notation is interpreted to *)
 type interpretation =
-    (Id.t * (extended_subscopes * notation_var_instance_type)) list *
+    (Id.t * (extended_subscopes * notation_var_binders * notation_var_instance_type)) list *
     notation_constr
 
 type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t list

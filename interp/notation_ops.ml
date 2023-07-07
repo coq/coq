@@ -1628,7 +1628,7 @@ and match_disjunctive_equations u alp metas sigma {CAst.v=(ids,disjpatl1,rhs1)} 
    substitution based on entry production: indeed some binders may
    have to be seen as terms from the parsing/printing point of view *)
 let group_by_type ids (terms,termlists,binders,binderlists) =
-  List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders',binderlists') ->
+  List.fold_right (fun (x,(scl,_,typ)) (terms',termlists',binders',binderlists') ->
     match typ with
     | NtnTypeConstr ->
        (* term -> term *)
@@ -1667,7 +1667,7 @@ let group_by_type ids (terms,termlists,binders,binderlists) =
     ids ([],[],[],[])
 
 let match_notation_constr ~print_univ c ~vars (metas,pat) =
-  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let metatyps = List.map (fun (id,(_,_,typ)) -> (id,typ)) metas in
   let subst = match_ false print_univ {actualvars=vars;staticbinders=[];renaming=[]} metatyps ([],[],[],[]) c pat in
   group_by_type metas subst
 
@@ -1741,7 +1741,7 @@ let match_ind_pattern metas sigma ind pats a2 =
   |_ -> raise No_match
 
 let reorder_canonically_substitution terms termlists metas =
-  List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
+  List.fold_right (fun (x,(scl,_,typ)) (terms',termlists',binders') ->
     match typ with
       | NtnTypeConstr | NtnTypeBinder (NtnBinderParsedAsConstr _) -> ((Id.List.assoc x terms, scl)::terms',termlists',binders')
       | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
@@ -1751,11 +1751,11 @@ let reorder_canonically_substitution terms termlists metas =
     metas ([],[],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =
-  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let metatyps = List.map (fun (id,(_,_,typ)) -> (id,typ)) metas in
   let (terms,termlists,(),()),more_args = match_cases_pattern metatyps ([],[],(),()) c pat in
   reorder_canonically_substitution terms termlists metas, more_args
 
 let match_notation_constr_ind_pattern ind args (metas,pat) =
-  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let metatyps = List.map (fun (id,(_,_,typ)) -> (id,typ)) metas in
   let (terms,termlists,(),()),more_args = match_ind_pattern metatyps ([],[],(),()) ind args pat in
   reorder_canonically_substitution terms termlists metas, more_args
