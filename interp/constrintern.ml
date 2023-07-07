@@ -1903,12 +1903,6 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
   in in_pat test_kind_top env.pat_scopes pat
 
 let rec intern_pat genv ntnvars aliases pat =
-  let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
-    let idslpl2 = List.map (intern_pat genv ntnvars empty_alias) pl2 in
-    let (ids',pll) = product_of_cases_patterns aliases (idslpl1@idslpl2) in
-    let pl' = List.map (fun (asubst,pl) ->
-      (asubst, DAst.make ?loc @@ PatCstr (c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
-    ids',pl' in
   let loc = pat.loc in
   match DAst.get pat with
     | RCPatAlias (p, id) ->
@@ -1916,7 +1910,11 @@ let rec intern_pat genv ntnvars aliases pat =
       intern_pat genv ntnvars aliases' p
     | RCPatCstr (head, pl) ->
       let c = find_constructor_head ?loc head in
-      intern_cstr_with_all_args loc c true [] pl
+      let idslpl = List.map (intern_pat genv ntnvars empty_alias) pl in
+      let (ids',pll) = product_of_cases_patterns aliases idslpl in
+      let pl' = List.map (fun (asubst,pl) ->
+          (asubst, DAst.make ?loc @@ PatCstr (c,chop_params_pattern loc (fst c) pl true,alias_of aliases))) pll in
+      ids',pl'
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
       set_var_is_binder ?loc id ntnvars;
