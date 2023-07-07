@@ -126,7 +126,9 @@ let with_generic_atts atts f =
       Some (match warnings with Some w -> w ^ "," ^ ui | None -> ui) in
   match warnings with
   | None -> f ~atts
-  | Some warnings -> CWarnings.with_warn warnings (fun () -> f ~atts) ()
+  | Some warnings ->
+    CWarnings.check_unknown_warnings warnings;
+    CWarnings.with_warn warnings (fun () -> f ~atts) ()
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
