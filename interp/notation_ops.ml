@@ -956,29 +956,29 @@ let rec push_context_binders vars = function
     push_context_binders vars bl
 
 let is_term_meta id metas =
-  try match Id.List.assoc id metas with _,(NtnTypeConstr | NtnTypeConstrList) -> true | _ -> false
+  try match Id.List.assoc id metas with NtnTypeConstr | NtnTypeConstrList -> true | _ -> false
   with Not_found -> false
 
 let is_onlybinding_strict_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern) -> true | _ -> false
+  try match Id.List.assoc id metas with NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern) -> true | _ -> false
   with Not_found -> false
 
 let is_onlybinding_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinder _ -> true | _ -> false
+  try match Id.List.assoc id metas with NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
 let is_onlybinding_pattern_like_meta isvar id metas =
   try match Id.List.assoc id metas with
-    | _,NtnTypeBinder (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern)) -> true
-    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern | NtnBinderParsedAsBinder) -> not isvar
-    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsAnyPattern) -> true
-    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (AsIdent | AsName)) -> false
-    | _,NtnTypeBinder (NtnBinderParsedAsConstr (AsIdent | AsName)) -> false
-    | _,NtnTypeBinderList _ | _,NtnTypeConstr | _,NtnTypeConstrList -> false
+    | NtnTypeBinder (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern)) -> true
+    | NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern | NtnBinderParsedAsBinder) -> not isvar
+    | NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsAnyPattern) -> true
+    | NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (AsIdent | AsName)) -> false
+    | NtnTypeBinder (NtnBinderParsedAsConstr (AsIdent | AsName)) -> false
+    | NtnTypeBinderList _ | NtnTypeConstr | NtnTypeConstrList -> false
   with Not_found -> false
 
 let is_bindinglist_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinderList _ -> true | _ -> false
+  try match Id.List.assoc id metas with NtnTypeBinderList _ -> true | _ -> false
   with Not_found -> false
 
 exception No_match
@@ -1315,9 +1315,9 @@ let remove_sigma x (terms,termlists,binders,binderlists) =
 let remove_bindinglist_sigma x (terms,termlists,binders,binderlists) =
   (terms,termlists,binders,Id.List.remove_assoc x binderlists)
 
-let add_ldots_var metas = (ldots_var,((constr_some_level,([],[])),NtnTypeConstr))::metas
+let add_ldots_var metas = (ldots_var,NtnTypeConstr)::metas
 
-let add_meta_bindinglist x metas = (x,((constr_some_level,([],[])),NtnTypeBinderList (*arbitrary:*) NtnBinderParsedAsBinder))::metas
+let add_meta_bindinglist x metas = (x,NtnTypeBinderList (*arbitrary:*) NtnBinderParsedAsBinder)::metas
 
 (* This tells if letins in the middle of binders should be included in
    the sequence of binders *)
@@ -1363,7 +1363,7 @@ let match_binderlist match_iter_fun match_termin_fun alp metas sigma rest x y it
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
   match_termin_fun alp metas sigma rest termin
 
-let add_meta_term x metas = (x,((constr_some_level,([],[])),NtnTypeConstr))::metas (* Should reuse the scope of the partner of x! *)
+let add_meta_term x metas = (x,NtnTypeConstr)::metas
 
 let match_termlist match_fun alp metas sigma rest x y iter termin revert =
   let rec aux alp sigma acc rest =
@@ -1667,7 +1667,8 @@ let group_by_type ids (terms,termlists,binders,binderlists) =
     ids ([],[],[],[])
 
 let match_notation_constr ~print_univ c ~vars (metas,pat) =
-  let subst = match_ false print_univ {actualvars=vars;staticbinders=[];renaming=[]} metas ([],[],[],[]) c pat in
+  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let subst = match_ false print_univ {actualvars=vars;staticbinders=[];renaming=[]} metatyps ([],[],[],[]) c pat in
   group_by_type metas subst
 
 (* Matching cases pattern *)
@@ -1750,9 +1751,11 @@ let reorder_canonically_substitution terms termlists metas =
     metas ([],[],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =
-  let (terms,termlists,(),()),more_args = match_cases_pattern metas ([],[],(),()) c pat in
+  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let (terms,termlists,(),()),more_args = match_cases_pattern metatyps ([],[],(),()) c pat in
   reorder_canonically_substitution terms termlists metas, more_args
 
 let match_notation_constr_ind_pattern ind args (metas,pat) =
-  let (terms,termlists,(),()),more_args = match_ind_pattern metas ([],[],(),()) ind args pat in
+  let metatyps = List.map (fun (id,(_,typ)) -> (id,typ)) metas in
+  let (terms,termlists,(),()),more_args = match_ind_pattern metatyps ([],[],(),()) ind args pat in
   reorder_canonically_substitution terms termlists metas, more_args
