@@ -9,6 +9,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Local Set Warnings "-deprecated".
 (** Bit vectors interpreted as integers.
     Contribution by Jean Duprat (ENS Lyon). *)
 
@@ -35,12 +36,14 @@ Section VALUE_OF_BOOLEAN_VECTORS.
     size is greater or equal to one (a sign bit should be present).
 *)
 
+  #[deprecated(note="Use Z.b2z instead", since="8.18")]
   Definition bit_value (b:bool) : Z :=
     match b with
       | true => 1%Z
       | false => 0%Z
     end.
 
+  #[deprecated(note="Consider Z.setbit instead", since="8.18")]
   Lemma binary_value : forall n:nat, Bvector n -> Z.
   Proof.
     refine (nat_rect _ _ _); intros.
@@ -50,6 +53,7 @@ Section VALUE_OF_BOOLEAN_VECTORS.
       exact (bit_value h + 2 * H H2)%Z.
   Defined.
 
+  #[deprecated(since="8.18")]
   Lemma two_compl_value : forall n:nat, Bvector (S n) -> Z.
   Proof.
     simple induction n; intros.
@@ -72,6 +76,7 @@ Section ENCODING_VALUE.
     with Zmod2, the parameter is the size minus one.
 *)
 
+  #[deprecated(note="Consider Z.odd or Z.modulo instead", since="8.18")]
   Definition Zmod2 (z:Z) :=
     match z with
       | Z0 => 0%Z
@@ -89,6 +94,7 @@ Section ENCODING_VALUE.
     end.
 
 
+  #[deprecated(note="Use Z.div2_odd instead", since="8.18")]
   Lemma Zmod2_twice :
     forall z:Z, z = (2 * Zmod2 z + bit_value (Z.odd z))%Z.
   Proof.
@@ -110,6 +116,7 @@ Section ENCODING_VALUE.
       + trivial.
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Z_to_binary : forall n:nat, Z -> Bvector n.
   Proof.
     simple induction n; intros.
@@ -118,6 +125,7 @@ Section ENCODING_VALUE.
     - exact (Bcons (Z.odd H0) n0 (H (Z.div2 H0))).
   Defined.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Z_to_two_compl : forall n:nat, Z -> Bvector (S n).
   Proof.
     simple induction n; intros.
@@ -134,6 +142,7 @@ Section Z_BRIC_A_BRAC.
       Deserve to be properly rewritten.
   *)
 
+  #[deprecated(note="Consider Z.div2_odd instead", since="8.18")]
   Lemma binary_value_Sn :
     forall (n:nat) (b:bool) (bv:Bvector n),
       binary_value (S n) ( b :: bv) =
@@ -142,6 +151,7 @@ Section Z_BRIC_A_BRAC.
     intros; auto.
   Qed.
 
+  #[deprecated(note="Consider Z.div2_odd instead", since="8.18")]
   Lemma Z_to_binary_Sn :
     forall (n:nat) (b:bool) (z:Z),
       (z >= 0)%Z ->
@@ -151,6 +161,7 @@ Section Z_BRIC_A_BRAC.
     intro H; elim H; trivial.
   Qed.
 
+  #[deprecated(note="Consider N.testbit instead", since="8.18")]
   Lemma binary_value_pos :
     forall (n:nat) (bv:Bvector n), (binary_value n bv >= 0)%Z.
   Proof.
@@ -161,6 +172,7 @@ Section Z_BRIC_A_BRAC.
       discriminate.
   Qed.
 
+  #[deprecated(note="Consider Z.bits_opp instead", since="8.18")]
   Lemma two_compl_value_Sn :
     forall (n:nat) (bv:Bvector (S n)) (b:bool),
       two_compl_value (S n) (Bcons b (S n) bv) =
@@ -169,6 +181,7 @@ Section Z_BRIC_A_BRAC.
     intros; auto.
   Qed.
 
+  #[deprecated(note="Consider Z.bits_opp instead", since="8.18")]
   Lemma Z_to_two_compl_Sn :
     forall (n:nat) (b:bool) (z:Z),
       Z_to_two_compl (S n) (bit_value b + 2 * z) =
@@ -180,6 +193,7 @@ Section Z_BRIC_A_BRAC.
     intros; rewrite (Pos.succ_pred_double p); trivial.
   Qed.
 
+  #[deprecated(note="Consider Z.div2_odd instead", since="8.18")]
   Lemma Z_to_binary_Sn_z :
     forall (n:nat) (z:Z),
       Z_to_binary (S n) z =
@@ -188,6 +202,7 @@ Section Z_BRIC_A_BRAC.
     intros; auto.
   Qed.
 
+  #[deprecated(note="Consider Z.div2_odd instead", since="8.18")]
   Lemma Z_div2_value :
     forall z:Z,
       (z >= 0)%Z -> (bit_value (Z.odd z) + 2 * Z.div2 z)%Z = z.
@@ -197,6 +212,7 @@ Section Z_BRIC_A_BRAC.
     - intro H; elim H; trivial.
   Qed.
 
+  #[deprecated(note="Use Z.div2_nonneg instead", since="8.18")]
   Lemma Pdiv2 : forall z:Z, (z >= 0)%Z -> (Z.div2 z >= 0)%Z.
   Proof.
     destruct z as [| p| p].
@@ -208,6 +224,7 @@ Section Z_BRIC_A_BRAC.
     - intro H; elim H; trivial.
   Qed.
 
+  #[deprecated(note="Consider Z.div_lt_upper_bound instead", since="8.18")]
   Lemma Zdiv2_two_power_nat :
     forall (z:Z) (n:nat),
       (z >= 0)%Z ->
@@ -221,6 +238,7 @@ Section Z_BRIC_A_BRAC.
     - generalize (Zeven.Zodd_div2 z Hodd); lia.
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Z_to_two_compl_Sn_z :
     forall (n:nat) (z:Z),
       Z_to_two_compl (S n) z =
@@ -229,6 +247,7 @@ Section Z_BRIC_A_BRAC.
     intros; auto.
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Zeven_bit_value :
     forall z:Z, Zeven.Zeven z -> bit_value (Z.odd z) = 0%Z.
   Proof.
@@ -237,6 +256,7 @@ Section Z_BRIC_A_BRAC.
     - destruct p; tauto || (intro H; elim H).
   Qed.
 
+  #[deprecated(note="Use Zodd_bool_iff instead", since="8.18")]
   Lemma Zodd_bit_value :
     forall z:Z, Zeven.Zodd z -> bit_value (Z.odd z) = 1%Z.
   Proof.
@@ -246,6 +266,7 @@ Section Z_BRIC_A_BRAC.
     - destruct p; tauto || (intros; elim H).
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Zge_minus_two_power_nat_S :
     forall (n:nat) (z:Z),
       (z >= - two_power_nat (S n))%Z -> (Zmod2 z >= - two_power_nat n)%Z.
@@ -258,6 +279,7 @@ Section Z_BRIC_A_BRAC.
     - rewrite (Zodd_bit_value z H); intros; lia.
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma Zlt_two_power_nat_S :
     forall (n:nat) (z:Z),
       (z < two_power_nat (S n))%Z -> (Zmod2 z < two_power_nat n)%Z.
@@ -278,6 +300,7 @@ Section COHERENT_VALUE.
     This uses earlier library lemmas.
 *)
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma binary_to_Z_to_binary :
     forall (n:nat) (bv:Bvector n), Z_to_binary n (binary_value n bv) = bv.
   Proof.
@@ -291,6 +314,7 @@ Section COHERENT_VALUE.
       + apply binary_value_pos.
   Qed.
 
+  #[deprecated(note="Consider Z.testbit instead", since="8.18")]
   Lemma two_compl_to_Z_to_two_compl :
     forall (n:nat) (bv:Bvector n) (b:bool),
       Z_to_two_compl n (two_compl_value n (Bcons b n bv)) = Bcons b n bv.
@@ -303,6 +327,7 @@ Section COHERENT_VALUE.
       rewrite IHbv; trivial.
   Qed.
 
+  #[deprecated(note="Consider Z.mod_small or Z.bits_inj' instead", since="8.18")]
   Lemma Z_to_binary_to_Z :
     forall (n:nat) (z:Z),
       (z >= 0)%Z ->
@@ -321,6 +346,7 @@ Section COHERENT_VALUE.
       + apply Zdiv2_two_power_nat; trivial.
   Qed.
 
+  #[deprecated(note="Consider Z.mod_small with an input offset or Z.bits_inj' instead", since="8.18")]
   Lemma Z_to_two_compl_to_Z :
     forall (n:nat) (z:Z),
       (z >= - two_power_nat n)%Z ->
