@@ -13,9 +13,9 @@ Coq < 1 goal
 
 Unnamed_thm < Unnamed_thm_subproof
 Unnamed_thm_subproof
-Toplevel input, characters 2-8:
+Toplevel input, characters 2-7:
 >   baz I.
->   ^^^^^^
+>   ^^^^^
 Error:
 In nested Ltac calls to "baz", "f" (bound to fun f x y => idtac v; f x), 
 "f" (bound to
