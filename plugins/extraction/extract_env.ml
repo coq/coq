@@ -27,11 +27,12 @@ open Common
 (***************************************)
 
 let toplevel_env () =
-  List.rev (Safe_typing.structure_body_of_safe_env (Global.safe_env ()))
+  let mp, struc = Safe_typing.flatten_env (Global.safe_env ()) in
+  mp, List.rev struc
 
 let environment_until dir_opt =
   let rec parse = function
-    | [] when Option.is_empty dir_opt -> [Lib.current_mp (), toplevel_env ()]
+    | [] when Option.is_empty dir_opt -> [toplevel_env ()]
     | [] -> []
     | d :: l ->
       let meb =
@@ -565,7 +566,7 @@ let reset () =
   Visit.reset (); reset_tables (); reset_renaming_tables Everything
 
 let init ?(compute=false) ?(inner=false) modular library =
-  if not inner then (check_inside_section (); check_inside_module ());
+  if not inner then check_inside_section ();
   set_keywords (descr ()).keywords;
   set_modular modular;
   set_library library;
