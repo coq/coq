@@ -18,6 +18,7 @@ New coercion path [h1; f3] : B >-> C' is ambiguous with existing
 [f2; h2] : B >-> C'
 [h2] : B' >-> C'
 [f3] : C >-> C'
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 File "./output/relaxed_ambiguous_paths.v", line 33, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
@@ -28,6 +29,7 @@ New coercion path [ab; bc] : A >-> C is ambiguous with existing
 [bc] : B >-> C
 [bc; cd] : B >-> D
 [cd] : C >-> D
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 File "./output/relaxed_ambiguous_paths.v", line 50, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
@@ -41,12 +43,15 @@ New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
 [ac] : A >-> C
 [ba] : B >-> A
 [bc] : B >-> C
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [B_A] : B >-> A
 [C_A] : C >-> A
 [D_A] : D >-> A
 [D_B] : D >-> B (reversible)
 [D_C] : D >-> C (reversible)
 [A'_A] : A' >-> A (reversible)
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [B_A'; A'_A] : B >-> A
 [B_A'] : B >-> A'
 [C_A'; A'_A] : C >-> A
@@ -59,6 +64,7 @@ File "./output/relaxed_ambiguous_paths.v", line 147, characters 0-86:
 Warning:
 New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
 [D_B; B_A'] : D >-> A'. [ambiguous-paths,coercions,default]
+[reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [A'_A] : A' >-> A
 [B_A'; A'_A] : B >-> A
 [B_A'] : B >-> A'

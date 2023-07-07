@@ -622,6 +622,13 @@ let lookup_reversible_path_to_common_point env sigma ~src_expected ~src_inferred
   in
     aux r
 
+let add_reverse_coercion env sigma v'_ty v_ty v' v =
+  match Coqlib.lib_ref_opt "core.coercion.reverse_coercion" with
+  | None -> sigma, v'
+  | Some reverse_coercion ->
+     let sigma, reverse_coercion = Evd.fresh_global env sigma reverse_coercion in
+     Typing.checked_appvect env sigma reverse_coercion [| v'_ty; v_ty; v'; v |]
+
 let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty target_type =
   if not use_coercions || (rigidonly && not (Heads.is_rigid env sigma target_type && Heads.is_rigid env sigma v_ty))
   then
@@ -644,7 +651,8 @@ let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty ta
           let sigma = unify_leq_delay ~flags env sigma direct_v rev_x in
           (try let _ = Evarutil.head_evar sigma (whd_evar sigma x) in raise Not_found
            with NoHeadEvar -> ());  (* fail if x is stil an unresolved evar *)
-          sigma, x, target_type, ReplaceCoe x
+          let sigma, rev_x = add_reverse_coercion env sigma target_type v_ty x v in
+          sigma, rev_x, target_type, ReplaceCoe rev_x
       in
       unify_leq_delay ~flags env sigma v'_ty target_type, v', trace
     with (Evarconv.UnableToUnify _ | Not_found) as exn ->

@@ -54,3 +54,14 @@ Export Byte.ByteSyntaxNotations.
 
 (* Default substrings not considered by queries like Search *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".
+
+(* Dummy coercion used by the elaborator to leave a trace in its
+   result. When [x] is (reversible) coerced to [x'], the result
+   [reverse_coercion x' x], convertible to [x'] will still be displayed [x]
+   thanks to the reverse_coercion coercion. *)
+#[universes(polymorphic=yes)] Definition ReverseCoercionSource (T : Type) := T.
+#[universes(polymorphic=yes)] Definition ReverseCoercionTarget (T : Type) := T.
+#[warning="-uniform-inheritance", reversible=no, universes(polymorphic=yes)]
+Coercion reverse_coercion {T' T} (x' : T') (x : ReverseCoercionSource T)
+  : ReverseCoercionTarget T' := x'.
+Register reverse_coercion as core.coercion.reverse_coercion.
