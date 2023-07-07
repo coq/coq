@@ -118,7 +118,6 @@ term0: [
 | NUMBER
 | "(" term200 ")"
 | "{|" record_declaration bar_cbrace
-| "{" binder_constr "}"
 | "`{" term200 "}"
 | test_array_opening "[" "|" array_elems "|" lconstr type_cstr test_array_closing "|" "]" univ_annot
 | "`(" term200 ")"

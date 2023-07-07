@@ -100,13 +100,7 @@ Entry term is
   | SELF; ".("; global; univ_annot; LIST0 arg; ")"
   | SELF; "%"; IDENT ]
 | "0" LEFTA
-  [ IDENT "ltac"; ":"; "("; ltac_expr; ")"
-  | "("; term LEVEL "200"; ","; term LEVEL "200"; ","; LIST1 (term LEVEL
-    "200") SEP ","; ")"
-  | "("; term LEVEL "200"; ","; term LEVEL "200"; ")"
-  | "("; term LEVEL "200"; ")"
-  | "{|"; record_declaration; '|}'
-  | "{"; "'"; pattern LEVEL "0"; "&"; term LEVEL "200"; "&"; term LEVEL
+  [ "{"; "'"; pattern LEVEL "0"; "&"; term LEVEL "200"; "&"; term LEVEL
     "200"; "}"
   | "{"; "'"; pattern LEVEL "0"; "&"; term LEVEL "200"; "}"
   | "{"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; "&"; term LEVEL
@@ -131,7 +125,12 @@ Entry term is
   | "{"; term LEVEL "99"; "|"; term LEVEL "200"; "&"; term LEVEL "200"; "}"
   | "{"; term LEVEL "99"; "|"; term LEVEL "200"; "}"
   | "{"; term LEVEL "99"; "}"
-  | "{"; binder_constr; "}"
+  | IDENT "ltac"; ":"; "("; ltac_expr; ")"
+  | "("; term LEVEL "200"; ","; term LEVEL "200"; ","; LIST1 (term LEVEL
+    "200") SEP ","; ")"
+  | "("; term LEVEL "200"; ","; term LEVEL "200"; ")"
+  | "("; term LEVEL "200"; ")"
+  | "{|"; record_declaration; '|}'
   | "`{"; term LEVEL "200"; "}"
   | "`("; term LEVEL "200"; ")"
   | NUMBER

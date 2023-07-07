@@ -190,8 +190,6 @@ GRAMMAR EXTEND Gram
                 CAst.make ~loc @@ CNotation(None,(InConstrEntry,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
-      | "{"; c = binder_constr ; "}" ->
-        { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = term LEVEL "200"; "}" ->
         { CAst.make ~loc @@ CGeneralization (MaxImplicit, c) }
       | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_annot ->
