@@ -1022,7 +1022,7 @@ type scheme_signature = (Id.Set.t * branch_argument list) array
 
 type eliminator_source =
   | CaseOver of Id.t * (inductive * EInstance.t)
-  | ElimOver of bool * Id.t * (inductive * EInstance.t)
+  | ElimOver of Id.t * (inductive * EInstance.t)
   | ElimUsing of Id.t * (Evd.econstr with_bindings * EConstr.types * scheme_signature)
   | ElimUsingList of (Evd.econstr with_bindings * EConstr.types * scheme_signature) * Id.t list * Id.t list * EConstr.t list
 
@@ -1031,7 +1031,7 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   let is_elim, ind, typ = guess_elim_shape env sigma isrec sort hyp0 in
   (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
     needs no update to sigma at this point. *)
-  let elim = if is_elim then ElimOver (isrec, hyp0, ind) else CaseOver (hyp0, ind) in
+  let elim = if is_elim then ElimOver (hyp0, ind) else CaseOver (hyp0, ind) in
   sigma, typ, elim
 | Some (elimc, lbind as e) ->
   let sigma, elimt = Typing.type_of env sigma elimc in
@@ -1114,7 +1114,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.pf_concl gl in
     let hyp0 = match elim with
-    | ElimUsing (hyp0, _) | ElimOver (_, hyp0, _) | CaseOver (hyp0, _) -> Some hyp0
+    | ElimUsing (hyp0, _) | ElimOver (hyp0, _) | CaseOver (hyp0, _) -> Some hyp0
     | ElimUsingList _ -> None
     in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
@@ -1133,14 +1133,14 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       let indsign = compute_case_signature env mind dep id in
       let tac = destruct_tac with_evars id dep in
       sigma, false, tac, indsign
-    | ElimOver (isrec, id, (mind, u)) ->
+    | ElimOver (id, (mind, u)) ->
       let sigma, ind = find_ind_eliminator env sigma mind s in
       (* FIXME: we should store this instead of recomputing it *)
       let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
       let scheme = compute_elim_sig sigma elimt in
       let indsign = compute_scheme_signature sigma scheme id (mkIndU (mind, u)) in
       let tac = induction_tac with_evars [] [id] (ElimConstant ind, elimt) in
-      sigma, isrec, tac, indsign
+      sigma, true, tac, indsign
     | ElimUsing (hyp0, (elim, elimt, indsign)) ->
       let tac = induction_tac with_evars [] [hyp0] (ElimClause elim, elimt) in
       sigma, (* bugged, should be computed *) true, tac, indsign
