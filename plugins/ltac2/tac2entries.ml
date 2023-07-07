@@ -595,8 +595,13 @@ let parse_scope = function
 
 let parse_token = function
 | SexprStr {v=s} -> TacTerm s
-| SexprRec (_, {v=na}, [tok]) ->
-  let na = match na with None -> Anonymous | Some id -> Name id in
+| SexprRec (_, na, [tok]) ->
+  let na = match na.CAst.v with
+  | None -> Anonymous
+  | Some id ->
+    let () = check_lowercase (CAst.make ?loc:na.CAst.loc id) in
+    Name id
+  in
   let scope = parse_scope tok in
   TacNonTerm (na, scope)
 | tok ->
