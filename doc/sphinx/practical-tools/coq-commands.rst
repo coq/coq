@@ -361,7 +361,7 @@ and ``coqtop``, unless stated otherwise:
 :-vok: Indicate Coq to check a file completely, to load ``.vos`` files instead
   of ``.vo`` files when interpreting :cmd:`Require` commands, and to output an empty
   ``.vok`` files upon success instead of writing a ``.vo`` file.
-:-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
+:-w (all|none|\ *w1*,…,\ *wn*): Configure the display of warnings. This
   option expects all, none or a comma-separated list of warning names or
   categories (see Section :ref:`controlling-display`).
 :-color (on|off|auto): *Coqtop only*.  Enable or disable color output.
