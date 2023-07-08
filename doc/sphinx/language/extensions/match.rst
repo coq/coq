@@ -132,17 +132,11 @@ pattern can either be done using :g:`match` or the :g:`let` construction
 If term inhabits an inductive type with one constructor `C`, we have an
 equivalence between
 
-::
-
-   let (ident₁, …, identₙ) [dep_ret_type] := term in term'
+:n:`let (ident__1, …, ident__n) [dep_ret_type] := term in term'`
 
 and
 
-::
-
-   match term [dep_ret_type] with
-   C ident₁ … identₙ => term'
-   end
+:n:`match term [dep_ret_type] with C ident__1 …  ident__n => term' end`
 
 
 Second destructuring let syntax
