@@ -99,30 +99,40 @@ ARGUMENT EXTEND rewstrategy
 
     RAW_PRINTED BY { pr_raw_strategy env sigma }
     GLOB_PRINTED BY { pr_glob_strategy env sigma }
+END
 
-  | [ glob(c) ] -> { StratConstr (c, true) }
-  | [ "<-" constr(c) ] -> { StratConstr (c, false) }
-  | [ "subterms" rewstrategy(h) ] -> { StratUnary (Subterms, h) }
-  | [ "subterm" rewstrategy(h) ] -> { StratUnary (Subterm, h) }
-  | [ "innermost" rewstrategy(h) ] -> { StratUnary(Innermost, h) }
-  | [ "outermost" rewstrategy(h) ] -> { StratUnary(Outermost, h) }
-  | [ "bottomup" rewstrategy(h) ] -> { StratUnary(Bottomup, h) }
-  | [ "topdown" rewstrategy(h) ] -> { StratUnary(Topdown, h) }
-  | [ "id" ] -> { StratId }
-  | [ "fail" ] -> { StratFail }
-  | [ "refl" ] -> { StratRefl }
-  | [ "progress" rewstrategy(h) ] -> { StratUnary (Progress, h) }
-  | [ "try" rewstrategy(h) ] -> { StratUnary (Try, h) }
-  | [ "any" rewstrategy(h) ] -> { StratUnary (Any, h) }
-  | [ "repeat" rewstrategy(h) ] -> { StratUnary (Repeat, h) }
-  | [ rewstrategy(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
-  | [ "(" rewstrategy(h) ")" ] -> { h }
-  | [ "choice" ne_rewstrategy_list(h) ] -> { StratNAry (Choice, h) }
-  | [ "old_hints" preident(h) ] -> { StratHints (true, h) }
-  | [ "hints" preident(h) ] -> { StratHints (false, h) }
-  | [ "terms" constr_list(h) ] -> { StratTerms h }
-  | [ "eval" red_expr(r) ] -> { StratEval r }
-  | [ "fold" constr(c) ] -> { StratFold c }
+GRAMMAR EXTEND Gram
+  GLOBAL: rewstrategy;
+  rewstrategy:
+    [ LEFTA
+      [ h = SELF; ";"; h' = rewstrategy_atom -> { StratBinary (Compose, h, h') }
+      | h = rewstrategy_atom -> { h } ] ]
+  ;
+  rewstrategy_atom:
+    [ RIGHTA
+      [ c = glob -> { StratConstr (c, true) }
+      | "<-"; c = constr -> { StratConstr (c, false) }
+      | IDENT "subterms"; h = SELF -> { StratUnary (Subterms, h) }
+      | IDENT "subterm"; h = SELF -> { StratUnary (Subterm, h) }
+      | IDENT "innermost"; h = SELF -> { StratUnary(Innermost, h) }
+      | IDENT "outermost"; h = SELF -> { StratUnary(Outermost, h) }
+      | IDENT "bottomup"; h = SELF -> { StratUnary(Bottomup, h) }
+      | IDENT "topdown"; h = SELF -> { StratUnary(Topdown, h) }
+      | IDENT "id" -> { StratId }
+      | IDENT "fail" -> { StratFail }
+      | IDENT "refl" -> { StratRefl }
+      | IDENT "progress"; h = SELF -> { StratUnary (Progress, h) }
+      | IDENT "try"; h = SELF -> { StratUnary (Try, h) }
+      | IDENT "any"; h = SELF -> { StratUnary (Any, h) }
+      | IDENT "repeat"; h = SELF -> { StratUnary (Repeat, h) }
+      | IDENT "choice"; h = LIST1 rewstrategy -> { StratNAry (Choice, h) }
+      | IDENT "old_hints"; h = preident -> { StratHints (true, h) }
+      | IDENT "hints"; h = preident -> { StratHints (false, h) }
+      | IDENT "terms"; h = LIST0 constr -> { StratTerms h }
+      | IDENT "eval"; r = red_expr -> { StratEval r }
+      | IDENT "fold"; c = constr -> { StratFold c }
+      | "("; h = rewstrategy; ")" -> { h } ] ]
+  ;
 END
 
 (* By default the strategy for "rewrite_db" is top-down *)

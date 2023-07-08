@@ -2436,6 +2436,7 @@ SPLICE: [
 
 RENAME: [
 | occurrences rewrite_occs
+| rewstrategy1 rewstrategy
 ]
 
 RENAME: [
