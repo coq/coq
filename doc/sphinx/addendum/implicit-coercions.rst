@@ -61,12 +61,12 @@ A name ``f`` can be declared as a coercion between a source user-defined class
 conditions holds:
 
  * ``D`` is a user-defined class, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ), D u₁..uₘ` where :math:`m`
+   :n:`forall (x__1:A__1)..(x__k:A__k)(y:C v__1..v__n), D u__1..u__m` where :math:`m`
    is the number of parameters of ``D``.
  * ``D`` is ``Funclass``, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ)(x:A), B`.
+   :n:`forall (x__1:A__1)..(x__k:A__k)(y:C v__1..v__n)(x:A), B`.
  * ``D`` is ``Sortclass``, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ), s` with ``s`` a sort.
+   :n:`forall (x__1:A__1)..(x__k:A__k)(y:C v__1..v__n), s` with ``s`` a sort.
 
 We then write :g:`f : C >-> D`.
 
@@ -74,8 +74,8 @@ We then write :g:`f : C >-> D`.
 
 When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
 paths with the same classes as existing ones are ignored. Coq will generate
-a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
-the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
+a warning when the two paths may be non convertible. When the :n:`x__1..x__k` are exactly
+the :n:`v__1..v__n` (in the same order), the coercion is said to satisfy
 the :gdef:`uniform inheritance condition`. When possible, we recommend
 using coercions that satisfy this condition. This guarantees that
 no spurious warning will be generated.
@@ -83,7 +83,7 @@ no spurious warning will be generated.
 .. note:: The built-in class ``Sortclass`` can be used as a source class, but
           the built-in class ``Funclass`` cannot.
 
-To coerce an object :g:`t:C t₁..tₙ` of ``C`` towards ``D``, we have to
+To coerce an object :n:`t:C t__1..t__n` of ``C`` towards ``D``, we have to
 apply the coercion ``f`` to it; the obtained term :g:`f _.._ t` is
 then an object of ``D``.
 
@@ -137,8 +137,8 @@ the *oldest* one is valid and the others are ignored. So the order
 of declaration of coercions is important.
 
 We extend notations for coercions to coercion paths. For instance
-:g:`[f₁;..;fₖ] : C >-> D` is the coercion path composed
-by the coercions ``f₁..fₖ``.  The application of a coercion path to a
+:n:`[f__1;..;f__k] : C >-> D` is the coercion path composed
+by the coercions :n:`f__1..f__k`.  The application of a coercion path to a
 term consists of the successive application of its coercions.
 
 
@@ -219,7 +219,7 @@ Coercion Classes
 
      The check for :ref:`ambiguous paths <ambiguous-paths>` failed.
      The paths for which this check fails are displayed by a warning
-     in the form :g:`[f₁;..;fₙ] : C >-> D`.
+     in the form :n:`[f__1;..;f__n] : C >-> D`.
 
      The convertibility checking procedure for coercion paths is complete for
      paths consisting of coercions satisfying the :term:`uniform inheritance condition`,
@@ -244,9 +244,9 @@ type of the assumption to do so.  See :n:`@of_type`.
 
 
    Checks that :n:`@coercion_class__src` is a :term:`constant` with a :term:`body` of the form
-   :n:`fun (x₁:T₁)..(xₙ:Tₙ) => @coercion_class__dest t₁..tₘ` where `m` is the
+   :n:`fun (x__1:T__1)..(x__n:T__n) => @coercion_class__dest t__1..t__m` where `m` is the
    number of parameters of :n:`@coercion_class__dest`.  Then we define an identity
-   function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
+   function with type :n:`forall (x__1:T__1)..(x__n:T__n)(y:C x__1..x__n),D t__1..t__m`,
    and we declare it as an identity coercion between ``C`` and ``D``.
    See below for an :ref:`example <example-identity-coercion>`.
 
