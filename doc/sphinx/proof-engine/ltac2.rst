@@ -357,15 +357,13 @@ Reduction
 
 We use the usual ML call-by-value reduction, with an otherwise unspecified
 evaluation order. This is a design choice making it compatible with OCaml,
-if ever we implement native compilation. The expected equations are as follows::
+if ever we implement native compilation. The expected equations are as follows:
 
-  (fun x => t) V ≡ t{x := V} (βv)
+- :n:`(fun x => t) V ≡ t{x := V}` (βv)
+- :n:`let x := V in t ≡ t{x := V}` (let)
+- :n:`match C V__0 ... V__n with ... | C x__0 ... x__n  => t | ... end ≡ t {x__i := V__i}` (ι)
 
-  let x := V in t ≡ t{x := V} (let)
-
-  match C V₀ ... Vₙ with ... | C x₀ ... xₙ  => t | ... end ≡ t {xᵢ := Vᵢ} (ι)
-
-  (t any term, V values, C constructor)
+(:n:`t` any term, :n:`V` values, :n:`C` constructor)
 
 Note that call-by-value reduction is already a departure from Ltac1 which uses
 heuristics to decide when to evaluate an expression. For instance, the following
