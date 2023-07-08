@@ -1543,13 +1543,17 @@ let sublevel_ord lev lev' =
   | LevelLt n, LevelLe n' -> n < n'
   | LevelLe n, LevelLt n' -> n <= n'-1
 
-let is_coercion (e1,n1) (e2,(n2,_)) =
+let is_coercion
+    { notation_entry = e1; notation_level = n1 }
+    { notation_subentry = e2; notation_relative_level = n2 } =
   not (notation_entry_eq e1 e2) ||
   match n2 with
   | LevelLt n2 | LevelLe n2 -> n1 < n2
   | LevelSome -> true (* unless n2 is the entry top level but we shall know it only dynamically *)
 
-let included (e1,n1) (e2,(n2,_)) =
+let included
+    { notation_entry = e1; notation_level = n1 }
+    { notation_subentry = e2; notation_relative_level = n2 } =
   notation_entry_eq e1 e2 && entry_relative_level_le n1 n2
 
 let rec search nfrom nto = function
@@ -1557,7 +1561,9 @@ let rec search nfrom nto = function
   | ((pfrom,pto),coe)::l ->
     if entry_relative_level_le pfrom nfrom && entry_relative_level_le nto pto then coe else search nfrom nto l
 
-let availability_of_entry_coercion (entry,(sublev,_) as entry_sublev) (entry',lev' as entry_lev) =
+let availability_of_entry_coercion
+    ({ notation_subentry = entry; notation_relative_level = sublev } as entry_sublev)
+    ({ notation_entry = entry'; notation_level = lev' } as entry_lev) =
   if included entry_lev entry_sublev then
     (* [entry] is by default included in [relative_entry] *)
     Some []
@@ -1578,21 +1584,23 @@ let rec insert_coercion_path path = function
       else path'::insert_coercion_path path paths
 
 let declare_entry_coercion ntn entry_level entry_relative_level' =
-  let entry, lev = entry_level in
-  let entry', (sublev',_) = entry_relative_level' in
+  let { notation_entry = entry; notation_level = lev } = entry_level in
+  let { notation_subentry = entry'; notation_relative_level = sublev' } = entry_relative_level' in
   (* Transitive closure *)
   let toaddleft =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',sublev'''),path) l ->
-        if included entry_level (entry''',(sublev''',None)) &&
-           not (included (entry'',lev'') entry_relative_level')
+            if included entry_level
+                { notation_subentry = entry'''; notation_relative_level = sublev'''; notation_position = None } &&
+               not (included { notation_entry = entry''; notation_level = lev'' } entry_relative_level')
         then ((entry'',entry'),((lev'',sublev'),path@[ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',sublev'''),path) l ->
-        if included (entry'',lev'') entry_relative_level' &&
-           not (included entry_level (entry''',(sublev''',None)))
+        if included { notation_entry = entry''; notation_level = lev'' } entry_relative_level' &&
+           not (included entry_level
+                  { notation_subentry = entry'''; notation_relative_level = sublev'''; notation_position = None })
         then ((entry,entry'''),((lev,sublev'''),path@[ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=
@@ -1615,9 +1623,10 @@ let declare_custom_entry_has_global s n =
   with Not_found ->
     entry_has_global_map := String.Map.add s n !entry_has_global_map
 
-let entry_has_global = function
-  | InConstrEntry, _ -> true
-  | InCustomEntry s, (n,_) ->
+let entry_has_global { notation_subentry = entry; notation_relative_level = n } =
+  match entry with
+  | InConstrEntry -> true
+  | InCustomEntry s ->
      try entry_relative_level_le (String.Map.find s !entry_has_global_map) n with Not_found -> false
 
 let entry_has_ident_map = ref String.Map.empty
@@ -1630,9 +1639,10 @@ let declare_custom_entry_has_ident s n =
   with Not_found ->
     entry_has_ident_map := String.Map.add s n !entry_has_ident_map
 
-let entry_has_ident = function
-  | InConstrEntry, _ -> true
-  | InCustomEntry s, (n,_) ->
+let entry_has_ident { notation_subentry = entry; notation_relative_level = n } =
+  match entry with
+  | InConstrEntry -> true
+  | InCustomEntry s ->
      try entry_relative_level_le (String.Map.find s !entry_has_ident_map) n with Not_found -> false
 
 type entry_coercion_kind =
@@ -2002,7 +2012,7 @@ let is_numeral_in_constr (entry,symbs) =
 let level_of_notation ntn =
   if is_numeral_in_constr (decompose_notation_key ntn) then
     (* A primitive notation *)
-    (fst ntn, 0, []) (* TODO: string notations*)
+    ({ notation_entry = fst ntn; notation_level = 0}, []) (* TODO: string notations*)
   else
     NotationMap.find ntn !notation_level_map
 

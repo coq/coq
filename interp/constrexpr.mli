@@ -45,10 +45,17 @@ type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | Le
 type notation_entry = InConstrEntry | InCustomEntry of string
 
 (* A notation entry with the level where the notation lives *)
-type notation_entry_level = notation_entry * entry_level
+type notation_entry_level = {
+  notation_entry : notation_entry;
+  notation_level : entry_level;
+}
 
 (* Notation subentries, to be associated to the variables of the notation *)
-type notation_entry_relative_level = notation_entry * (entry_relative_level * side option)
+type notation_entry_relative_level = {
+  notation_subentry : notation_entry;
+  notation_relative_level : entry_relative_level;
+  notation_position : side option;
+}
 
 type notation_key = string
 

@@ -206,14 +206,15 @@ let assoc_eq al ar =
   | LeftA, LeftA -> true
   | _, _ -> false
 
-(** [adjust_level assoc from prod] where [assoc] and [from] are the name
+(** [adjust_level assoc fromlev prod] where [assoc] and [fromlev] are the name
    and associativity of the level where to add the rule; the meaning of
    the result is
 
      DefaultLevel = entry name
      NextLevel = NEXT
      NumLevel n = constr LEVEL n *)
-let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
+let adjust_level custom assoc {notation_entry = custom'; notation_level = fromlev} p =
+  let open Gramlib.Gramext in match p with
 (* If a level in a different grammar, no other choice than denoting it by absolute level *)
   | (NumLevel n,_) when not (notation_entry_eq custom custom') -> NumLevel n
 (* If a default level in a different grammar, the entry name is ok *)
@@ -229,7 +230,7 @@ let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in mat
   | ((NumLevel _ | DefaultLevel),BorderProd (Right,Some (NonA|LeftA))) -> NextLevel
   (* If RightA on the right-hand side, set to the explicit (current) level *)
   | (NumLevel n,BorderProd (Right,Some RightA)) -> NumLevel n
-  | (DefaultLevel,BorderProd (Right,Some RightA)) -> NumLevel from
+  | (DefaultLevel,BorderProd (Right,Some RightA)) -> NumLevel fromlev
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
   | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some NonA)) -> DefaultLevel
@@ -243,7 +244,7 @@ let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in mat
   | (NextLevel,_) -> assert (notation_entry_eq custom custom'); NextLevel
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
-    if from = n + 1 then NextLevel else NumLevel n
+    if fromlev = n + 1 then NextLevel else NumLevel n
 
 type _ target =
 | ForConstr : constr_expr target
@@ -296,9 +297,9 @@ let exists_custom_entry s = match find_custom_entry s with
 
 let locality_of_custom_entry s = String.Set.mem s !custom_entry_locality
 
-(* This computes the name of the level where to add a new rule *)
-let interp_constr_entry_key : type r. _ -> r target -> int -> r Entry.t * int option =
-  fun custom forpat level ->
+(** This computes the name of the level where to add a new rule *)
+let interp_constr_entry_key : type r. _ -> r target -> r Entry.t * int option =
+  fun {notation_entry = custom; notation_level = level} forpat ->
   match custom with
   | InCustomEntry s ->
      (let (entry_for_constr, entry_for_patttern) = find_custom_entry s in
@@ -323,15 +324,17 @@ let target_entry : type s. notation_entry -> s target -> s Entry.t = function
    | ForConstr -> entry_for_constr
    | ForPattern -> entry_for_patttern
 
-let is_self custom (custom',from) e = notation_entry_eq custom custom' && match e with
-| (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
-| (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
-| _ -> false
+let is_self custom {notation_entry = custom'; notation_level = fromlev} e =
+  notation_entry_eq custom custom' && match e with
+  | (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
+  | (NumLevel n, BorderProd (Left, _)) -> Int.equal fromlev n
+  | _ -> false
 
-let is_binder_level custom (custom',from) e = match e with
-| (NumLevel 200, (BorderProd (Right, _) | InternalProd)) ->
-  custom = InConstrEntry && custom' = InConstrEntry && from = 200
-| _ -> false
+let is_binder_level custom {notation_entry = custom'; notation_level = fromlev} e =
+  match e with
+  | (NumLevel 200, (BorderProd (Right, _) | InternalProd)) ->
+    custom = InConstrEntry && custom' = InConstrEntry && fromlev = 200
+  | _ -> false
 
 let make_pattern (keyword,s) =
    if keyword then TPattern (Tok.PKEYWORD s) else
@@ -570,7 +573,7 @@ let rec pure_sublevels' assoc from forpat level = function
        (match Pcoq.level_of_nonterm sym with
         | None -> rem
         | Some i ->
-          if different_levels (fst from,level) (where,i) then
+          if different_levels (from.notation_entry,level) (where,i) then
             (where,int_of_string i) :: rem
           else rem)
      | _ -> rem in
@@ -589,12 +592,12 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CAst.make ~loc @@ CPatNotation (None, notation, env, [])
 
 let extend_constr state forpat ng =
-  let custom,n,_ = ng.notgram_level in
+  let {notation_entry = custom; notation_level = _} as fromlev,_ = ng.notgram_level in
   let assoc = ng.notgram_assoc in
-  let (entry, level) = interp_constr_entry_key custom forpat n in
+  let (entry, level) = interp_constr_entry_key fromlev forpat in
   let fold (accu, state) pt =
-    let AnyTyRule r = make_ty_rule assoc (custom,n) forpat pt in
-    let pure_sublevels = pure_sublevels' assoc (custom,n) forpat level pt in
+    let AnyTyRule r = make_ty_rule assoc fromlev forpat pt in
+    let pure_sublevels = pure_sublevels' assoc fromlev forpat level pt in
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in

@@ -36,10 +36,14 @@ let notation_entry_eq s1 s2 = match (s1,s2) with
   | InCustomEntry s1, InCustomEntry s2 -> String.equal s1 s2
   | (InConstrEntry | InCustomEntry _), _ -> false
 
-let notation_entry_level_eq (e1,n1) (e2,n2) =
+let notation_entry_level_eq
+    { notation_entry = e1; notation_level = n1 }
+    { notation_entry = e2; notation_level = n2 } =
   notation_entry_eq e1 e2 && Int.equal n1 n2
 
-let notation_entry_relative_level_eq (e1,(n1,s1)) (e2,(n2,s2)) =
+let notation_entry_relative_level_eq
+    { notation_subentry = e1; notation_relative_level = n1; notation_position = s1 }
+    { notation_subentry = e2; notation_relative_level = n2; notation_position = s2 } =
   notation_entry_eq e1 e2 && entry_relative_level_eq n1 n2 && s1 = s2
 
 let notation_eq (from1,ntn1) (from2,ntn2) =
@@ -77,13 +81,12 @@ let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
   List.equal var_attributes_eq vars1 vars2 &&
   Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
 
-type level = notation_entry * entry_level * entry_relative_level list
-  (* first argument is InCustomEntry s for custom entries *)
+type level = notation_entry_level * entry_relative_level list
 
-let level_eq (s1, l1, t1) (s2, l2, t2) =
+let level_eq ({ notation_entry = s1; notation_level = l1}, t1) ({ notation_entry = s2; notation_level = l2}, t2) =
   notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
 
-(* Uninterpretation tables *)
+(** Uninterpretation tables *)
 
 type 'a interp_rule_gen =
   | NotationRule of Constrexpr.specific_notation

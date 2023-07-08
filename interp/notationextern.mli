@@ -30,8 +30,8 @@ val interpretation_eq : interpretation -> interpretation -> bool
 val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
 (** Equality on [notation_entry_level]. *)
 
-type level = notation_entry * entry_level * entry_relative_level list
-  (* first argument is InCustomEntry s for custom entries *)
+type level = notation_entry_level * entry_relative_level list
+(** The "signature" of a rule: its level together with the levels of its subentries *)
 
 val level_eq : level -> level -> bool
 (** Equality on [level]. *)
