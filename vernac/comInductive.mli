@@ -125,4 +125,5 @@ val variance_of_entry
 module Internal :
 sig
   val compute_constructor_level : Environ.env -> Evd.evar_map -> EConstr.rel_context -> Sorts.t
+  val warn_bad_set_minimization : ?loc:Loc.t  -> unit -> unit
 end

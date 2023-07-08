@@ -1,0 +1,121 @@
+
+type nat =
+| O
+| S of nat
+
+(** val f : nat **)
+
+let f =
+  O
+
+(** val f : nat **)
+
+let f =
+  O
+
+type nat =
+| O
+| S of nat
+
+(** val f : nat **)
+
+let f =
+  O
+
+module M =
+ struct
+  (** val g : nat **)
+
+  let g =
+    f
+ end
+
+(** val g : nat **)
+
+let g =
+  f
+
+type nat =
+| O
+| S of nat
+
+(** val f : nat **)
+
+let f =
+  O
+
+module M =
+ struct
+  (** val g : nat **)
+
+  let g =
+    f
+
+  module N =
+   struct
+    (** val h : nat **)
+
+    let h =
+      g
+   end
+ end
+
+(** val h : nat **)
+
+let h =
+  M.g
+
+type nat =
+| O
+| S of nat
+
+(** val add : nat -> nat -> nat **)
+
+let rec add n m =
+  match n with
+  | O -> m
+  | S p -> S (add p m)
+
+(** val f : nat **)
+
+let f =
+  O
+
+module M =
+ struct
+  (** val g : nat **)
+
+  let g =
+    f
+
+  module type S =
+   sig
+    val b : nat
+   end
+
+  module F =
+   functor (X:S) ->
+   struct
+    (** val h : nat **)
+
+    let h =
+      add g X.b
+   end
+ end
+
+(** val h : nat **)
+
+let h =
+  add M.g X.b
+
+type nat =
+| O
+| S of nat
+
+type nat =
+| O
+| S of nat
+(** val foo : nat **)
+
+let foo =
+  O

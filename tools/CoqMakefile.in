@@ -592,13 +592,27 @@ beautify: $(BEAUTYFILES)
 # There rules can be extended in @LOCAL_FILE@
 # Extensions can't assume when they run.
 
+# We use $(file) to avoid generating a very long command string to pass to the shell
+# (cf https://coq.zulipchat.com/#narrow/stream/250632-Coq-Platform-devs-.26-users/topic/Strange.20command.20length.20limit.20on.20Linux)
+# However Apple ships old make which doesn't have $(file) so we need a fallback
+$(file >.hasfile,1)
+HASFILE:=$(shell if [ -e .hasfile ]; then echo 1; rm .hasfile; fi)
+
+.filestoinstall:
+	@:$(if $(HASFILE),$(file >$@,$(FILESTOINSTALL)),\
+	  $(shell rm -f $@) \
+	  $(foreach x,$(FILESTOINSTALL),$(shell printf '%s\n' "$x" >> $@)))
+
+
+.PHONY: .filestoinstall
+
 # findlib needs the package to not be installed, so we remove it before
 # installing it (see the call to findlib_remove)
-install: META
-	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
+install: META .filestoinstall
+	$(HIDE)code=0; for f in $$(cat .filestoinstall); do\
 	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
 	done; exit $$code
-	$(HIDE)for f in $(FILESTOINSTALL); do\
+	$(HIDE)for f in $$(cat .filestoinstall); do\
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\
 	 if [ "$$?" != "0" -o -z "$$df" ]; then\
 	   echo SKIP "$$f" since it has no logical path;\
@@ -640,16 +654,16 @@ install-doc:: html mlihtml
 	done
 .PHONY: install-doc
 
-uninstall::
+uninstall:: .filestoinstall
 	@# Extension point
 	$(call findlib_remove)
-	$(HIDE)for f in $(FILESTOINSTALL); do \
+	$(HIDE)for f in $$(cat .filestoinstall); do \
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
 	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
 	 rm -f "$$instf" &&\
 	 echo RM "$$instf" ;\
 	done
-	$(HIDE)for f in $(FILESTOINSTALL); do \
+	$(HIDE)for f in $$(cat .filestoinstall); do \
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
 	 echo RMDIR "$(COQLIBINSTALL)/$$df/" &&\
 	 (rmdir "$(COQLIBINSTALL)/$$df/" 2>/dev/null || true); \

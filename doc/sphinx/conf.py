@@ -50,7 +50,7 @@ with open("refman-preamble.rst") as s:
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '3.0.2'
+needs_sphinx = '4.5.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -213,7 +213,8 @@ html_context = {
     'versions': [
         ("dev", "https://coq.github.io/doc/master/refman/"),
         ("stable", "https://coq.inria.fr/distrib/current/refman/"),
-        ("8.17", "https://coq.github.io/doc/v8.17/refman/"),
+        ("8.18", "https://coq.github.io/doc/v8.18/refman/"),
+        ("8.17", "https://coq.inria.fr/distrib/V8.17.1/refman/"),
         ("8.16", "https://coq.inria.fr/distrib/V8.16.1/refman/"),
         ("8.15", "https://coq.inria.fr/distrib/V8.15.2/refman/"),
         ("8.14", "https://coq.inria.fr/distrib/V8.14.1/refman/"),

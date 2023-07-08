@@ -21,11 +21,17 @@ Fixpoint f (l:list nat) : nat :=
    test would then need to be updated. *)
 
 (* Ensuring the warning is a warning. *)
-Set Warnings "matching-variable".
-(* But no warning generated here. *)
-Function f (l:list nat) : nat :=
+Fixpoint f (l:list nat) : nat :=
   match l with
   | nil => O
   | S n :: nil  => 1
   | n :: l'  => f l'
+  end.
+
+(* But no warning generated here. *)
+Function g (l:list nat) : nat :=
+  match l with
+  | nil => O
+  | S n :: nil  => 1
+  | n :: l'  => g l'
   end.

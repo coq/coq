@@ -32,28 +32,25 @@ Generating ML Code
   can be used to refer to any kind of Coq global "object" : :term:`constant`,
   inductive type, inductive constructor or module name.
 
-The next two commands are meant to be used for rapid preview of
-extraction. They both display extracted term(s) inside Coq.
-
 .. cmd:: Extraction @qualid
+         Recursive Extraction {+ @qualid }
+         Extraction @string {+ @qualid }
 
-   Extraction of the mentioned object in the Coq toplevel.
+   The first two forms display the extracted term(s) in Coq as a convenient preview
+   of the extracted term(s):
 
-.. cmd:: Recursive Extraction {+ @qualid }
+   - the first form extracts :n:`@qualid` and displays the resulting term;
+   - the second form extracts the listed :n:`@qualid`\s and all their
+     dependencies, and displays the resulting terms.
 
-   Recursive extraction of all the mentioned objects and
-   all their dependencies in the Coq toplevel.
+   The third form produces a single extraction file named :n:`@string`
+   for all the specified objects and all of their dependencies.
 
-All the following commands produce real ML files. User can choose to
-produce one monolithic file or one file per Coq library.
-
-.. cmd:: Extraction @string {+ @qualid }
-
-   Recursive extraction of all the mentioned objects and all
-   their dependencies in one monolithic file :token:`string`.
-   Global and local identifiers are renamed according to the chosen ML
-   language to fulfill its syntactic conventions, keeping original
+   Global and local identifiers are renamed as needed to fulfill the syntactic
+   requirements of the target language, keeping original
    names as much as possible.
+
+The following commands also generate file(s).
   
 .. cmd:: Extraction Library @ident
 

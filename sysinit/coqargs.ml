@@ -305,9 +305,6 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-init-file" ->
       { oval with config = { oval.config with rcfile = Some (next ()); }}
 
-    |"-load-vernac-object" ->
-      add_vo_require oval (next ()) None None
-
     |"-load-vernac-source"|"-l" ->
       add_load_vernacular oval false (next ())
 
@@ -323,12 +320,15 @@ let parse_args ~usage ~init arglist : t * string list =
       Flags.profile_ltac_cutoff := get_float ~opt (next ());
       oval
 
-    |"-rfrom" ->
-      let from = next () in add_vo_require oval (next ()) (Some from) None
+    |"-load-vernac-object"|"-require" ->
+      add_vo_require oval (next ()) None None
 
     |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some Lib.Import)
 
     |"-require-export" | "-re" -> add_vo_require oval (next ()) None (Some Lib.Export)
+
+    |"-require-from"|"-rfrom" ->
+      let from = next () in add_vo_require oval (next ()) (Some from) None
 
     |"-require-import-from" | "-rifrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Import)
