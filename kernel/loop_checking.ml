@@ -935,14 +935,15 @@ type 'a result = Loop | Model of 'a * model
 
 let canonical_cardinal m = m.canonical
 
-let can_all_premises_in m w prem =
+let _can_all_premises_in m w prem =
   Premises.for_all (fun (l, _) -> CanSet.mem (repr m l).canon w) prem
 let _ise = ClausesOf.is_empty
 let _ise' = ClausesBackward.is_empty
 (* Partition the clauses according to the presence of w in the premises, and only w in the conclusions *)
 let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t =
-  CanSet.fold (fun idx (bwd, fwd) (allw, conclw, conclnw) ->
-    let bwdw, bwdnw = ClausesOf.partition (fun (_k, prems) -> can_all_premises_in model w prems) bwd in
+  CanSet.fold (fun idx (_bwd, fwd) (allw, conclw, conclnw) ->
+    (* let bwdw, bwdnw = ClausesOf.partition (fun (_k, prems) -> can_all_premises_in model w prems) bwd in *)
+    let bwdw, bwdnw = ClausesOf.empty, ClausesOf.empty in
     let fwdw, fwdnw = ClausesBackward.partition (fun concl _clsinfo -> CanSet.mem (repr model concl).canon w) fwd in
     let allw =
       if ClausesOf.is_empty bwdw && ClausesBackward.is_empty fwdw then allw
@@ -995,9 +996,13 @@ let check ?early_stop model (cls : CanSet.t) =
       | Loop -> Loop
       | Model (wr, mr) ->
         debug_loop Pp.(fun () -> str "wr = " ++ pr_w mr wr);
+        (* This is only necessary when clauses do have multiple premises,
+           otherwise each clause is either in premconclw and already considered
+           or in conclw but then the premise cannot be updated and this is useless work *)
         (match check_clauses_with_premises ?early_stop w conclw mr with
         | Some (wconcl, (clsconcl, mconcl)) ->
           debug_loop Pp.(fun () -> str "clsconcl = " ++ pr_w mconcl clsconcl);
+          debug Pp.(fun () -> str"Found an update in conclw");
           inner_loop_partition wconcl clsconcl mconcl
         | None ->
           debug_loop Pp.(fun () -> str"Inner loop found a model");
