@@ -155,14 +155,28 @@ module Event = struct
     | NewInstance of instance
 end
 
-let observers = ref []
+type observer = string
 
-let add_observer o =
-  observers := o :: !observers
+let observers = ref CString.Map.empty
 
+let active_observers = Summary.ref ~name:"active typeclass observers" []
+
+let register_observer ~name ?(override=false) o =
+  if not override && CString.Map.mem name !observers then
+    CErrors.anomaly Pp.(str "Typeclass observer " ++ str name ++ str " already registered.");
+  observers := CString.Map.add name o !observers;
+  name
+
+let deactivate_observer name =
+  active_observers := List.remove String.equal name !active_observers
+
+let activate_observer name =
+  assert (CString.Map.mem name !observers);
+  deactivate_observer name;
+  active_observers := name :: !active_observers
 
 let observe event =
-  List.iter (fun f -> f event) !observers
+  List.iter (fun name -> (CString.Map.get name !observers) event) !active_observers
 
 let add_instance cl info global impl =
   let () = match global with

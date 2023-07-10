@@ -84,8 +84,22 @@ module Event : sig
     | NewInstance of instance
 end
 
-(* Observers are called whenever a class or an instance are declared *)
-val add_observer : (Event.t -> unit) -> unit
+(** Activated observers are called whenever a class or an instance are declared.
+
+    [register_observer] is to be called once per process for a given
+    string, unless [override] is [true]. The registered observer is not activated.
+
+    Activation state is part of the summary. It is up to the caller to
+    use libobject for persistence if desired.
+*)
+
+type observer
+
+val register_observer : name:string -> ?override:bool -> (Event.t -> unit) -> observer
+
+val activate_observer : observer -> unit
+
+val deactivate_observer : observer -> unit
 
 (** Setting opacity *)
 
