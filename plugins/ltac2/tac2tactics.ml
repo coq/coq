@@ -125,7 +125,7 @@ let mk_induction_clause (arg, eqn, as_, occ) =
 let induction_destruct isrec ev (ic : induction_clause list) using =
   let ic = List.map mk_induction_clause ic in
   let using = Option.map mk_with_bindings using in
-  Tactics.induction_destruct isrec ev (ic, using)
+  Induction.induction_destruct isrec ev (ic, using)
 
 let elim ev c copt =
   let c = mk_with_bindings c in
