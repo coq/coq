@@ -91,6 +91,13 @@ some content, and provide indications or warnings to users. Repeatedly
 not taking into accounts these warnings may result into a temporary or
 permanent ban.
 
+Based on forum histories, short technical questions with brief code examples
+in the proper context are the most likely to receive useful answers. In
+contrast, long and open-ended questions or comments usually see less engagement.
+This is not to say that long questions or comments that otherwise abide by the
+rules are discouraged, only that users should carefully set expectations about
+what answers they are likely to receive.
+
 ## Enforcement ##
 
 If you believe someone is violating the code of conduct, we ask that you report
