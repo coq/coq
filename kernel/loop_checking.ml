@@ -858,7 +858,9 @@ end
 
 let pr_w m w = CanSet.pr m w
 
-let update_value c m clause : model option =
+exception FoundImplication
+
+let update_value check_early_stop c m clause : model option =
   let (k, premises) = clause in
   match min_premise m premises with
   | exception VacuouslyTrue -> None
@@ -867,14 +869,16 @@ let update_value c m clause : model option =
     let newk = k + k0 in
     match canonical_value m c with
     | Some v when newk <= v -> None
-    | _ -> Some (set_canonical_value m c newk)
+    | _ ->
+      check_early_stop newk;
+      Some (set_canonical_value m c newk)
 
 let pr_can m can =
   Point.pr (Index.repr can.canon m.table)
 
-let check_model_clauses_of_aux m can cls =
+let check_model_clauses_of_aux check_early_stop m can cls =
   ClausesOf.fold (fun cls m ->
-    match update_value can m cls with
+    match update_value check_early_stop can m cls with
     | None -> m
     | Some m' ->
       debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int (canonical_value m' can));
@@ -883,10 +887,17 @@ let check_model_clauses_of_aux m can cls =
     cls m
 
 (** Check a set of forward clauses *)
-let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : PSet.t * (CanSet.t * model)) : PSet.t * (CanSet.t * model) =
+let check_model_fwd_clauses_aux ?early_stop (cls : ClausesBackward.t) (acc : PSet.t * (CanSet.t * model)) : PSet.t * (CanSet.t * model) =
   PMap.fold (fun concl cls (* premises -> concl + k *) (modified, (w, m) as acc) ->
     let can = repr m concl in
-    let m' = check_model_clauses_of_aux m can cls in
+    let check_early_stop =
+      match early_stop with
+      | None -> fun _ -> ()
+      | Some (can', k) ->
+        if can == can' then fun k' -> if k <= k' then raise FoundImplication else ()
+        else fun _ -> ()
+    in
+    let m' = check_model_clauses_of_aux check_early_stop m can cls in
     if m == m' then (* not modifed *) acc
     else
       let upd = function
@@ -897,12 +908,12 @@ let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : PSet.t * (CanSe
       (PSet.add can.canon modified, (w', m')))
     cls acc
 
-let check_model_fwd_aux w (cls, m) : PSet.t * (CanSet.t * model) =
-  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux fwd acc) cls
+let check_model_fwd_aux ?early_stop w (cls, m) : PSet.t * (CanSet.t * model) =
+  CanSet.fold (fun _ (_, fwd) acc -> check_model_fwd_clauses_aux ?early_stop fwd acc) cls
     (PSet.empty, ((if PSet.is_empty w then CanSet.empty else cls), m))
 
-let check_clauses_with_premises (w : PSet.t) (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
-  let (modified, (cls, m)) = check_model_fwd_aux w (updates, model) in
+let check_clauses_with_premises ?early_stop (w : PSet.t) (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
+  let (modified, (cls, m)) = check_model_fwd_aux ?early_stop w (updates, model) in
   if PSet.is_empty modified then (debug Pp.(fun () -> str"Found a model"); None)
   else Some (PSet.union w modified, (cls, m))
 
@@ -910,11 +921,11 @@ let check_clauses_with_premises (w : PSet.t) (updates : CanSet.t) model : (PSet.
 let cardinal_fwd w =
   CanSet.fold (fun _idx (_, fwd) acc -> ClausesBackward.cardinal fwd + acc) w 0
 
-let check_clauses_with_premises w (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
+let check_clauses_with_premises ?early_stop w (updates : CanSet.t) model : (PSet.t * (CanSet.t * model)) option =
   let open Pp in
   debug_check_model (fun () -> str"check_model on " ++ int (CanSet.cardinal updates) ++ str" universes, " ++
   int (cardinal_fwd updates) ++ str " clauses");
-  check_clauses_with_premises w updates model
+  check_clauses_with_premises ?early_stop w updates model
 
 (*let check_clauses_with_premises = time3 (Pp.str"check_clauses_with_premises") check_clauses_with_premises*)
 
@@ -964,22 +975,11 @@ let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clau
       W = {b, c}
       *)
 
-exception FoundImplication
-
 (* If early_stop is given, check raises FoundImplication as soon as
    it finds that the given atom is true *)
 
 (* model is a model for the clauses outside cls *)
 let check ?early_stop model (cls : CanSet.t) =
-  let check_early_stop =
-    match early_stop with
-    | None -> fun _ _ -> ()
-    | Some (can, k) ->
-      fun w m ->
-        if PSet.mem can w then
-          if k <= Option.get (model_value m can) then raise FoundImplication else ()
-        else ()
-  in
   let cV = canonical_cardinal model in
   debug_check_invariants model;
   let rec inner_loop cardW w premconclw conclw m =
@@ -995,7 +995,7 @@ let check ?early_stop model (cls : CanSet.t) =
       | Loop -> Loop
       | Model (wr, mr) ->
         debug_loop Pp.(fun () -> str "wr = " ++ pr_w mr wr);
-        (match check_clauses_with_premises w conclw mr with
+        (match check_clauses_with_premises ?early_stop w conclw mr with
         | Some (wconcl, (clsconcl, mconcl)) ->
           debug_loop Pp.(fun () -> str "clsconcl = " ++ pr_w mconcl clsconcl);
           inner_loop_partition wconcl clsconcl mconcl
@@ -1006,10 +1006,9 @@ let check ?early_stop model (cls : CanSet.t) =
   and loop cV w cls m =
     Control.check_for_interrupt ();
     debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m cls ++ str" with bound " ++ int cV);
-    match check_clauses_with_premises w cls m with
+    match check_clauses_with_premises ?early_stop w cls m with
     | None -> Model (cls, m)
     | Some (w, (cls, m)) ->
-      check_early_stop w m;
       debug_loop Pp.(fun () -> str"Updated universes: " ++ prlist_with_sep spc (pr_index_point m) (PSet.elements w) ++ str", bound is " ++ int cV);
       let cardW = (PSet.cardinal w) in
       if Int.equal cardW cV
@@ -1543,7 +1542,7 @@ let check_clause_singleton_alt model prem concl k =
   if PSet.is_empty modified then false else begin *)
   (* We have a model where only the premise is true, check if the conclusion follows *)
   debug Pp.(fun () -> str"Launching loop-checking to check for entailment");
-  match check ~early_stop:(concl.canon, k) model cls with
+  match check ~early_stop:(concl, k) model cls with
   | exception FoundImplication ->
     debug Pp.(fun () -> str"loop-checking found the implication early");
     true
