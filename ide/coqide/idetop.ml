@@ -570,7 +570,8 @@ let slave_feeder fmt xml_oc msg =
 
 let msg_format = ref (fun () ->
     let width = Option.default 72 (Topfmt.get_margin ()) in
-    Xmlprotocol.Richpp { width; depth = max_int }
+    let depth = Option.default max_int (Topfmt.get_depth_boxes ()) in
+    Xmlprotocol.Richpp { width; depth }
   )
 
 (* The loop ignores the command line arguments as the current model delegates
