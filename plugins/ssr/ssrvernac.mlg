@@ -144,7 +144,7 @@ END
 let declare_one_prenex_implicit locality f =
   let fref =
     try Smartlocate.global_with_alias f
-    with _ -> errorstrm (pr_qualid f ++ str " is not declared") in
+    with e when CErrors.noncritical e -> errorstrm (pr_qualid f ++ str " is not declared") in
   let rec loop = function
   | a :: args' when Impargs.is_status_implicit a ->
     MaxImplicit :: loop args'

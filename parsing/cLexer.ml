@@ -563,9 +563,9 @@ let peek_string v s =
     if Int.equal i l then true
     else
       let l' = Stream.npeek () (i + 1) s in
-      match List.nth l' i with
-      | c -> Char.equal c v.[i] && aux (i + 1)
-      | exception _ -> false (* EOF *) in
+      match List.nth_opt l' i with
+      | Some c -> Char.equal c v.[i] && aux (i + 1)
+      | None -> false (* EOF *) in
   aux 0
 
 let find_keyword ttree loc id bp s =

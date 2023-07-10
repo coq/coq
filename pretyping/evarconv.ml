@@ -265,8 +265,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       let ty = Retyping.get_type_of ~lax:true env sigma c in
       let (i,u), ind_args =
         (* Are we sure that ty is not an evar? *)
-        try Inductiveops.find_mrectype env sigma ty
-        with _ -> raise Not_found
+        Inductiveops.find_mrectype env sigma ty
       in ind_args, c, sk1
     | None ->
       match Stack.strip_n_app solution.nparams sk1 with
