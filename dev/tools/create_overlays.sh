@@ -53,6 +53,7 @@ do
     _CONTRIB_GITURL=${_CONTRIB_NAME}_CI_GITURL
     _CONTRIB_GITURL=${!_CONTRIB_GITURL}
     echo "Processing Contrib $_CONTRIB_NAME"
+    shift
 
     # check _CONTRIB_GIT exists and it is of the from github...
 
@@ -73,7 +74,6 @@ do
 
     echo "overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH $PR_NUMBER" >> $OVERLAY_FILE
     echo "" >> $OVERLAY_FILE
-    shift
 done
 
 # Copy to overlays folder.
