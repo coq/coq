@@ -98,14 +98,12 @@ let tokenize_string s =
       stream_tok ((Tok.extract_string true e) :: acc) str
   in
   let st = CLexer.Lexer.State.get () in
+  Fun.protect ~finally:(fun () -> CLexer.Lexer.State.set st) @@ fun () ->
   try
     let istr = Gramlib.Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
-    let toks = stream_tok [] lex in
-    CLexer.Lexer.State.set st;
-    toks
-  with exn ->
-    CLexer.Lexer.State.set st;
+    stream_tok [] lex
+  with exn when CErrors.noncritical exn ->
     raise (Diff_Failure "Input string is not lexable")
 
 type hyp_info = {
@@ -318,7 +316,7 @@ let goal_info goal =
     let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
-  with _ -> ([], !map, Pp.mt ())
+  with e when CErrors.noncritical e -> ([], !map, Pp.mt ())
 
 let diff_goal_info ~short o_info n_info =
   let (o_idents_in_lines, o_hyp_map, o_concl_pp) = o_info in

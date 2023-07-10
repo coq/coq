@@ -394,7 +394,7 @@ let make_eq () =
   try
     EConstr.of_constr
       (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type"))
-  with _ -> assert false
+  with e when CErrors.noncritical e -> assert false
 
 let evaluable_of_global_reference r =
   let open Tacred in

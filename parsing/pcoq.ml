@@ -318,7 +318,7 @@ let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let entry = Entry.make "epsilon" in
   let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
   let () = safe_extend entry ext in
-  try Some (parse_string entry "") with _ -> None
+  try Some (parse_string entry "") with e when CErrors.noncritical e -> None
 
 (** Synchronized grammar extensions *)
 

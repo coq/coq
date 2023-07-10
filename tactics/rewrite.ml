@@ -1929,7 +1929,7 @@ let setoid_proof ty fn fallback =
           let rel, ty1, ty2, concl, _, _ = decompose_app_rel_error env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
-            (try init_relation_classes () with _ -> raise Not_found);
+            (try init_relation_classes () with e when CErrors.noncritical e -> raise Not_found);
             fn env sigma car rel
         with e when CErrors.noncritical e ->
           (* XXX what is the right test here as to whether e can be converted ? *)

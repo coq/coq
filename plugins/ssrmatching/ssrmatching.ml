@@ -937,13 +937,13 @@ let glob_cpattern gs p =
      if k = Cpattern then glob_ssrterm gs {kind=InParens; pattern=(v, Some t); interpretation=None} else
      match t.CAst.v with
      | CNotation(_,(InConstrEntry,"( _ in _ )"), ([t1; t2], [], [], [])) ->
-         (try match glob t1, glob t2 with
-         | (r1, None), (r2, None) -> encode k "In" [r1;r2]
-         | (r1, Some _), (r2, Some _) when isCVar t1 ->
-             encode k "In" [r1; r2; bind_in t1 t2]
-         | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
-         | _ -> CErrors.anomaly (str"where are we?.")
-         with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
+       (try match glob t1, glob t2 with
+          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
+          | (r1, Some _), (r2, Some _) when isCVar t1 ->
+            encode k "In" [r1; r2; bind_in t1 t2]
+          | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
+          | _ -> CErrors.anomaly (str"where are we?.")
+        with e when CErrors.noncritical e && isCVar t1 -> encode k "In" [bind_in t1 t2])
      | CNotation(_,(InConstrEntry,"( _ in _ in _ )"), ([t1; t2; t3], [], [], [])) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
      | CNotation(_,(InConstrEntry,"( _ as _ )"), ([t1; t2], [], [], [])) ->
@@ -1324,13 +1324,13 @@ let fill_occ_term env sigma0 cl occ (sigma, t) =
     if changed then CErrors.user_err Pp.(str "matching impacts evars")
     else cl, t'
   with NoMatch -> try
-    let changed, sigma', uc, t' =
-      unif_end env sigma0 (create_evar_defs sigma) t (fun _ -> true) in
-    if changed then raise NoMatch
-    else cl, t'
-  with _ ->
-    errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
-            ++ str " does not match any subterm of the goal")
+      let changed, sigma', uc, t' =
+        unif_end env sigma0 (create_evar_defs sigma) t (fun _ -> true) in
+      if changed then raise NoMatch
+      else cl, t'
+    with e when CErrors.noncritical e ->
+      errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
+                 ++ str " does not match any subterm of the goal")
 
 let cpattern_of_id id =
   { kind= NoFlag

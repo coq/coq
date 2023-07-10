@@ -427,8 +427,8 @@ let () = define1 "ident_to_string" ident begin fun id ->
 end
 
 let () = define1 "ident_of_string" string begin fun s ->
-  let id = try Some (Id.of_string s) with _ -> None in
-  return (Value.of_option Value.of_ident id)
+    let id = try Some (Id.of_string s) with e when CErrors.noncritical e -> None in
+    return (Value.of_option Value.of_ident id)
 end
 
 (** Int *)
