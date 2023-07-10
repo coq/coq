@@ -211,7 +211,7 @@ let make ~lbound univs =
   { empty with
     universes = univs;
     universes_lbound = lbound;
-    initial_universes = univs}
+    initial_universes = univs }
 
 let is_empty uctx =
   ContextSet.is_empty uctx.local &&
@@ -945,12 +945,12 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_global_univ uctx u = add_universe None true UGraph.Bound.Set uctx u
 
-let make_with_initial_binders ~lbound univs us =
+let make_with_initial_binders ~lbound univs binders =
   let uctx = make ~lbound univs in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
-    uctx us
+    uctx binders
 
 let from_env ?(binders=[]) env =
   make_with_initial_binders ~lbound:(Environ.universes_lbound env) (Environ.universes env) binders

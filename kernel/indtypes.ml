@@ -233,7 +233,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                  not (List.for_all (noccur_between n ntypes) largs)
               then failwith_non_pos_list n ntypes largs
               else (nmr1,rarg)
-              with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
+             with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
         | Ind ind_kn ->
             (** If one of the inductives of the mutually inductive
                 block being defined appears in a parameter, then we
