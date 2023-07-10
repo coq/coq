@@ -292,7 +292,7 @@ let find_custom_entry s =
 
 let exists_custom_entry s = match find_custom_entry s with
 | _ -> true
-| exception _ -> false
+| exception e when CErrors.noncritical e -> false
 
 let locality_of_custom_entry s = String.Set.mem s !custom_entry_locality
 

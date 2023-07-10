@@ -45,14 +45,14 @@ let interp_nbargs ist env sigma rc =
     let rc6 = mkRApp rc (mkRHoles 6) in
     let t = interp_open_constr env sigma ist (rc6, None) in
     6 + Ssrcommon.nbargs_open_constr env t
-  with _ -> 5
+  with e when CErrors.noncritical e -> 5
 
 let interp_view_nbimps ist env sigma rc =
   try
     let t = interp_open_constr env sigma ist (rc, None) in
     let pl, c = splay_open_constr env t in
     if Ssrcommon.isAppInd env sigma c then List.length pl else (-(List.length pl))
-  with _ -> 0
+  with e when CErrors.noncritical e -> 0
 
 let interp_agens ist env sigma ~concl gagens =
   match List.fold_right (interp_agen ist env sigma) gagens ([], []) with
@@ -63,7 +63,7 @@ let interp_agens ist env sigma ~concl gagens =
          errorstrm Pp.(str "Cannot apply lemma " ++ pr_glob_constr_env env sigma rlemma)
       else
         try interp_refine env sigma ist ~concl (mkRApp rlemma (mkRHoles i @ args))
-        with _ -> loop (i + 1) in
+        with e when CErrors.noncritical e -> loop (i + 1) in
     clr, loop 0
   | _ -> assert false
 
@@ -81,7 +81,8 @@ let apply_rconstr ?ist t =
   let rec loop i =
     if i > n then
       errorstrm Pp.(str"Cannot apply lemma "++pr_glob_constr_env env sigma t)
-    else try understand_tcc env sigma ~expected_type:(OfType cl) (mkRlemma i) with _ -> loop (i + 1) in
+    else try understand_tcc env sigma ~expected_type:(OfType cl) (mkRlemma i)
+      with e when CErrors.noncritical e -> loop (i + 1) in
   refine_with (loop 0)
   end
 
@@ -103,7 +104,7 @@ let refine_interp_apply_view dbl ist gv =
   | h :: hs ->
     match interp_with h with
     | t -> Proofview.tclORELSE (refine_with t) (fun _ -> loop hs)
-    | exception e -> loop hs
+    | exception e when CErrors.noncritical e -> loop hs
   in
   loop (pair dbl (Ssrview.AdaptorDb.get dbl) @
         if dbl = Ssrview.AdaptorDb.Equivalence
