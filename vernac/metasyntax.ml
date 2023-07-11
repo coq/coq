@@ -306,6 +306,10 @@ let pr_notation_entry = function
   | InConstrEntry -> str "constr"
   | InCustomEntry s -> str "custom " ++ str s
 
+let side = function
+  | BorderProd (b,_) -> Some b
+  | _ -> None
+
 let precedence_of_position_and_level from_level = function
   | NumLevel n, BorderProd (b,Some a) ->
     (let open Gramlib.Gramext in
@@ -315,9 +319,9 @@ let precedence_of_position_and_level from_level = function
      | LeftA, Left -> LevelLe n
      | LeftA, Right -> LevelLt n
      | NonA, _ -> LevelLt n), Some b
-  | NumLevel n, _ -> LevelLe n, None
-  | NextLevel, _ -> LevelLt from_level, None
-  | DefaultLevel, _ -> LevelSome, None
+  | NumLevel n, b -> LevelLe n, side b
+  | NextLevel, b -> LevelLt from_level, side b
+  | DefaultLevel, b -> LevelSome, side b
 
 (** Computing precedences of non-terminals for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
@@ -341,11 +345,11 @@ let unparsing_precedence_of_entry_type from_level = function
        with precedence in a constr entry is managed using [prec_less]
        in [ppconstr.ml] *)
     precedence_of_position_and_level from_level x
-  | ETConstr (custom,_,_) ->
+  | ETConstr (custom,_,(_,x)) ->
     (* Precedence of printing for a custom entry is managed using
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
-    LevelSome, None
+    LevelSome, side x
   | ETPattern (_,n) -> (* in constr *) LevelLe (pattern_entry_level n), None
   | _ -> LevelSome, None (* should not matter *)
 

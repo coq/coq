@@ -21,7 +21,7 @@ nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
                  :
                  forall n1 : nat,
                  (((n1 + (p * m)) + p) = (n1 + ((p * m) + p))) ->
-                 (((S n1) + (p * m)) + p) = ((S n1) + ((p * m) + p))) m
+                 ((((S n1) + (p * m)) + p) = ((S n1) + ((p * m) + p)))) m
               :
               ((m + (p * m)) + p) = (m + ((p * m) + p))))
           ((m + (p * m)) + (S p)) (plus_n_Sm (m + (p * m)) p)
