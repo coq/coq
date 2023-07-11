@@ -1,9 +1,0 @@
-- **Removed:**
-  The `\'[=\'` keyword. `\'[=\'`
-  tokens in notation definitions should be replaced with the pair of
-  tokens `\'[\' \'=\'`. If compatibility with Coq < 8.18
-  is needed, replace `[=` in uses of the notation with
-  an added space (`[ =`)
-  (`#16788 <https://github.com/coq/coq/pull/16788>`_,
-  fixes `#16785 <https://github.com/coq/coq/issues/16785>`_,
-  by Pierre Roux).

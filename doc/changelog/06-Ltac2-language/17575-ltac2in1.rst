@@ -1,5 +1,0 @@
-- **Added:**
-  Ltac2 quotations :ref:`ltac2val:(ltac2 tactic) <ltac2in1>` in Ltac1 which produce Ltac1 values
-  (as opposed to `ltac2:()` quotations which are only useful for their side effects)
-  (`#17575 <https://github.com/coq/coq/pull/17575>`_,
-  by Gaëtan Gilbert).
