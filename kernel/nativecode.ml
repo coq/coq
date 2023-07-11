@@ -301,23 +301,89 @@ type primitive =
 
 let eq_primitive p1 p2 =
   match p1, p2 with
-  | Mk_prod, Mk_prod -> true
-  | Mk_sort, Mk_sort -> true
-  | Mk_ind, Mk_ind -> true
-  | Mk_const, Mk_const -> true
-  | Mk_sw, Mk_sw -> true
+  | Mk_prod, Mk_prod
+  | Mk_sort, Mk_sort
+  | Mk_ind, Mk_ind
+  | Mk_const, Mk_const
+  | Mk_sw, Mk_sw
+  | Mk_proj, Mk_proj
+  | Is_int, Is_int
+  | Is_float, Is_float
+  | Is_parray, Is_parray
+  | Cast_accu, Cast_accu
+  | Upd_cofix, Upd_cofix
+  | Force_cofix, Force_cofix
+  | Mk_uint, Mk_uint
+  | Mk_float, Mk_float
+  | Mk_int, Mk_int
+  | Val_to_int, Val_to_int
+  | Mk_evar, Mk_evar
+  | MLand, MLand
+  | MLnot, MLnot
+  | MLland, MLland
+  | MLmagic, MLmagic
+  | MLarrayget, MLarrayget
+  | MLparray_of_array, MLparray_of_array
+  | Get_value, Get_value
+  | Get_sort, Get_sort
+  | Get_name, Get_name
+  | Get_const, Get_const
+  | Get_match, Get_match
+  | Get_ind, Get_ind
+  | Get_evar, Get_evar
+  | Get_level, Get_level
+  | Get_proj, Get_proj
+  | Get_symbols, Get_symbols
+  | Lazy, Lazy
+    -> true
+
   | Mk_fix (rp1, i1), Mk_fix (rp2, i2) -> Int.equal i1 i2 && eq_rec_pos rp1 rp2
   | Mk_cofix i1, Mk_cofix i2 -> Int.equal i1 i2
   | Mk_rel i1, Mk_rel i2 -> Int.equal i1 i2
   | Mk_var id1, Mk_var id2 -> Id.equal id1 id2
-  | Cast_accu, Cast_accu -> true
-  | Upd_cofix, Upd_cofix -> true
-  | Force_cofix, Force_cofix -> true
-  | Mk_evar, Mk_evar -> true
-  | Mk_proj, Mk_proj -> true
-  | MLarrayget, MLarrayget -> true
+  | Coq_primitive (prim1,b1), Coq_primitive (prim2,b2) ->
+    CPrimitives.equal prim1 prim2 && Bool.equal b1 b2
 
-  | _ -> false
+  | (Mk_prod
+    | Mk_sort
+    | Mk_ind
+    | Mk_const
+    | Mk_sw
+    | Mk_fix _
+    | Mk_cofix _
+    | Mk_rel _
+    | Mk_var _
+    | Mk_proj
+    | Is_int
+    | Is_float
+    | Is_parray
+    | Cast_accu
+    | Upd_cofix
+    | Force_cofix
+    | Mk_uint
+    | Mk_float
+    | Mk_int
+    | Val_to_int
+    | Mk_evar
+    | MLand
+    | MLnot
+    | MLland
+    | MLmagic
+    | MLarrayget
+    | MLparray_of_array
+    | Get_value
+    | Get_sort
+    | Get_name
+    | Get_const
+    | Get_match
+    | Get_ind
+    | Get_evar
+    | Get_level
+    | Get_proj
+    | Get_symbols
+    | Lazy
+    | Coq_primitive _), _
+    -> false
 
 let primitive_hash = function
   | Mk_prod -> 1
