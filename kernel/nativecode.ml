@@ -19,8 +19,6 @@ open Genlambda
 open Nativelambda
 open Environ
 
-[@@@ocaml.warning "-37"]
-
 (** This file defines the mllambda code generation phase of the native
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
@@ -280,25 +278,13 @@ type primitive =
   | Mk_uint
   | Mk_float
   | Mk_int
-  | Mk_bool
   | Val_to_int
   | Mk_evar
   | MLand
   | MLnot
-  | MLle
-  | MLlt
-  | MLinteq
-  | MLlsl
-  | MLlsr
   | MLland
-  | MLlor
-  | MLlxor
-  | MLadd
-  | MLsub
-  | MLmul
   | MLmagic
   | MLarrayget
-  | Mk_empty_instance
   | MLparray_of_array
   | Get_value
   | Get_sort
@@ -354,42 +340,30 @@ let primitive_hash = function
   | Force_cofix -> 14
   | Mk_uint -> 15
   | Mk_int -> 16
-  | Mk_bool -> 17
-  | Val_to_int -> 18
-  | Mk_evar -> 19
-  | MLand -> 20
-  | MLle -> 21
-  | MLlt -> 22
-  | MLinteq -> 23
-  | MLlsl -> 24
-  | MLlsr -> 25
-  | MLland -> 26
-  | MLlor -> 27
-  | MLlxor -> 28
-  | MLadd -> 29
-  | MLsub -> 30
-  | MLmul -> 31
-  | MLmagic -> 32
-  | Coq_primitive (prim, b) -> combinesmall 33 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
-  | Mk_proj -> 34
-  | MLarrayget -> 35
-  | Mk_empty_instance -> 36
-  | Mk_float -> 37
-  | Is_float -> 38
-  | Is_parray -> 39
-  | MLnot -> 40
-  | MLparray_of_array -> 41
-  | Get_value -> 42
-  | Get_sort -> 43
-  | Get_name -> 44
-  | Get_const -> 45
-  | Get_match -> 46
-  | Get_ind -> 47
-  | Get_evar -> 48
-  | Get_level -> 49
-  | Get_proj -> 50
-  | Get_symbols -> 51
-  | Lazy -> 52
+  | Val_to_int -> 17
+  | Mk_evar -> 18
+  | MLand -> 19
+  | MLland -> 20
+  | MLmagic -> 21
+  | Coq_primitive (prim, b) -> combinesmall 22 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
+  | Mk_proj -> 23
+  | MLarrayget -> 24
+  | Mk_float -> 25
+  | Is_float -> 26
+  | Is_parray -> 27
+  | MLnot -> 28
+  | MLparray_of_array -> 29
+  | Get_value -> 30
+  | Get_sort -> 31
+  | Get_name -> 32
+  | Get_const -> 33
+  | Get_match -> 34
+  | Get_ind -> 35
+  | Get_evar -> 36
+  | Get_level -> 37
+  | Get_proj -> 38
+  | Get_symbols -> 39
+  | Lazy -> 40
 
 type mllambda =
   | MLlocal        of lname
@@ -1859,25 +1833,13 @@ let pp_mllam fmt l =
     | Mk_uint -> Format.fprintf fmt "mk_uint"
     | Mk_float -> Format.fprintf fmt "mk_float"
     | Mk_int -> Format.fprintf fmt "mk_int"
-    | Mk_bool -> Format.fprintf fmt "mk_bool"
     | Val_to_int -> Format.fprintf fmt "val_to_int"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
     | MLand -> Format.fprintf fmt "(&&)"
     | MLnot -> Format.fprintf fmt "not"
-    | MLle -> Format.fprintf fmt "(<=)"
-    | MLlt -> Format.fprintf fmt "(<)"
-    | MLinteq -> Format.fprintf fmt "(==)"
-    | MLlsl -> Format.fprintf fmt "(lsl)"
-    | MLlsr -> Format.fprintf fmt "(lsr)"
     | MLland -> Format.fprintf fmt "(land)"
-    | MLlor -> Format.fprintf fmt "(lor)"
-    | MLlxor -> Format.fprintf fmt "(lxor)"
-    | MLadd -> Format.fprintf fmt "(+)"
-    | MLsub -> Format.fprintf fmt "(-)"
-    | MLmul -> Format.fprintf fmt "( * )"
     | MLmagic -> Format.fprintf fmt "Obj.magic"
     | MLarrayget -> Format.fprintf fmt "Array.get"
-    | Mk_empty_instance -> Format.fprintf fmt "Univ.Instance.empty"
     | MLparray_of_array -> Format.fprintf fmt "parray_of_array"
     | Coq_primitive (op, false) ->
        Format.fprintf fmt "no_check_%s" (CPrimitives.to_string op)
