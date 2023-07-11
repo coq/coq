@@ -1,8 +1,0 @@
-- **Fixed:**
-  the :tacn:`tauto` tactic and its variants now try to match types
-  up to universe unification. This makes them compatible with
-  universe-polymorphic code
-  (`#8905 <https://github.com/coq/coq/pull/8905>`_,
-  fixes `#4721 <https://github.com/coq/coq/issues/4721>`_
-  and `#5351 <https://github.com/coq/coq/issues/5351>`_,
-  by Pierre-Marie Pédrot).
