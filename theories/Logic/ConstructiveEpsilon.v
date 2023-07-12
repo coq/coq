@@ -185,7 +185,7 @@ Definition linear_search_conform_alt start (b : before_witness start) : {n : nat
       | right no => loop (S start) (inv_before_witness start b no) _
       end).
   - apply rq, (Rstop yes).
-  - intros y r. apply rq, (Rnext no r).
+  - intros y0 r. apply rq, (Rnext no r).
 Defined.
 
 (** Start at 0 *)
