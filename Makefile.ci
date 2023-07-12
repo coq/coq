@@ -84,7 +84,8 @@ CI_TARGETS= \
     ci-unicoq \
     ci-verdi_raft \
     ci-vscoq \
-    ci-vst
+    ci-vst \
+    ci-waterproof
 
 .PHONY: ci-all $(CI_TARGETS)
 
