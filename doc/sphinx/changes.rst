@@ -460,7 +460,7 @@ CoqIDE
   XML Protocol now sends (and expects) full Coq locations, including
   line and column information. This makes some IDE operations (such as
   UTF-8 decoding) more efficient. Clients of the XML protocol can just
-  ignore the new fields if they are not useful for them.
+  ignore the new fields if they are not useful for them
   (`#17382 <https://github.com/coq/coq/pull/17382>`_,
   fixes `#17023 <https://github.com/coq/coq/issues/17023>`_,
   by Emilio Jesus Gallego Arias).
@@ -482,7 +482,7 @@ Standard library
   the relevant decidability facts: :g:`Bool`, :g:`PeanoNat`, and :g:`BinInt`
   (`#17021 <https://github.com/coq/coq/pull/17021>`_,
   by Andres Erbsen).
-- **Changed:** `Hint Extern` `btauto.Algebra.bool` from `#[global]` to `#[export]`
+- **Changed:** `Hint Extern` `btauto.Algebra.bool` locality from :attr:`global` to :attr:`export`
   (`#17281 <https://github.com/coq/coq/pull/17281>`_,
   by Andres Erbsen).
 - **Changed:**
@@ -533,7 +533,7 @@ Standard library
   would benefit from such functinality
   (`#17733 <https://github.com/coq/coq/pull/17733>`_,
   by Andres Erbsen).
-- **Deprecated:** :g: Deprecation warnings are now generated for
+- **Deprecated:** Deprecation warnings are now generated for
   :g:`Numbers.Cyclic.Int31.Cyclic31`, :g:`NNumbers.Cyclic.Int31.Int31`, and
   :g:`NNumbers.Cyclic.Int31.Ring31`. These modules have been deprecated since
   Coq 8.10. The modules under :g:`Numbers.Cyclic.Int63` remain available
