@@ -153,6 +153,12 @@ Tactics
   :tacn:`injection` continues working using sigma types when `Eqdep_dec` has not been required even if an equality scheme was found, instead of failing
   (`#17670 <https://github.com/coq/coq/pull/17670>`_,
   by Gaëtan Gilbert).
+- **Changed:**
+  the unification heuristics for implicit arguments of the :tacn:`case` tactic.
+  We unconditionally recommend using :tacn:`destruct` instead, and even more so
+  in case of incompatibility.
+  (`#17564 <https://github.com/coq/coq/pull/17564>`_,
+  by Pierre-Marie Pédrot).
 - **Removed:**
   the no-argument form of the :tacn:`instantiate` tactic, deprecated since 8.16
   (`#16910 <https://github.com/coq/coq/pull/16910>`_,
@@ -194,10 +200,6 @@ Tactics
   tactic
   (`#17564 <https://github.com/coq/coq/pull/17564>`_,
   by Pierre-Marie Pédrot).
-- **Changed:**
-  the unification heuristics for implicit arguments of the :tacn:`case` tactic.
-  We unconditionally recommend using :tacn:`destruct` instead, and even more so
-  in case of incompatibility.
 - **Fixed:**
   the :tacn:`field_simplify` tactic, so that it no longer
   introduces side-conditions when working on a hypothesis
@@ -487,10 +489,24 @@ Standard library
   :g:`xorb` to a simpler definition
   (`#17427 <https://github.com/coq/coq/pull/17427>`_,
   by Guillaume Melquiond).
-- **Deprecated:**
-  :g:`List.app_nil_end`, :g:`List.app_assoc_reverse`, :g:`List.ass_app`, :g:`List.app_ass`
-  (`#16920 <https://github.com/coq/coq/pull/16920>`_,
-  by Olivier Laurent).
+- **Changed** lemmas in `Reals/RIneq.v`
+
+  - :g:`completeness_weak` renamed as :g:`upper_bound_thm`,
+  - :g:`le_epsilon` renamed as :g:`Rle_epsilon`,
+  - :g:`Rplus_eq_R0` renamed as :g:`Rplus_eq_0`,
+  - :g:`Req_EM_T` renamed as :g:`Req_dec_T`,
+  - :g:`Rinv_r_simpl_m` renamed as :g:`Rmult_inv_r_id_m`,
+  - :g:`Rinv_r_simpl_l` renamed as :g:`Rmult_inv_r_id_l`,
+  - :g:`Rinv_r_simpl_r` renamed as :g:`Rmult_inv_m_id_r`,
+  - :g:`tech_Rgt_minus` renamed as :g:`Rgt_minus_pos`,
+  - :g:`tech_Rplus` renamed as :g:`Rplus_le_lt_0_neq_0`,
+  - :g:`IZR_POS_xI` modified with `2` instead of `1 + 1`,
+  - :g:`IZR_POS_xO` modified with `2` instead of `1 + 1`,
+  - :g:`Rge_refl` modified with `>=` instead of `<=`
+
+  (`#17036 <https://github.com/coq/coq/pull/17036>`_,
+  by Pierre Rousselin, reviewer Laurent Théry).
+
 - **Removed:**
   :g:`Datatypes.prod_curry`, :g:`Datatypes.prod_uncurry`, :g:`Datatypes.prodT_curry`, :g:`Datatypes.prodT_uncurry`, :g:`Combinators.prod_curry_uncurry`, :g:`Combinators.prod_uncurry_curry`,
   :g:`Bool.leb`, :g:`Bool.leb_implb`,
@@ -501,6 +517,10 @@ Standard library
   :g:`Rtrigo_calc.cos3PI4`, :g:`Rtrigo_calc.sin3PI4`,
   :g:`MSetRBT.filter_app`
   after deprecation for at least two Coq versions
+  (`#16920 <https://github.com/coq/coq/pull/16920>`_,
+  by Olivier Laurent).
+- **Deprecated:**
+  :g:`List.app_nil_end`, :g:`List.app_assoc_reverse`, :g:`List.ass_app`, :g:`List.app_ass`
   (`#16920 <https://github.com/coq/coq/pull/16920>`_,
   by Olivier Laurent).
 - **Deprecated:**
@@ -519,6 +539,28 @@ Standard library
   Coq 8.10. The modules under :g:`Numbers.Cyclic.Int63` remain available
   (`#17734 <https://github.com/coq/coq/pull/17734>`_,
   by Andres Erbsen).
+- **Deprecated**
+  lemmas in `Reals/RIneq.v`
+
+  :g:`inser_trans_R`,
+  :g:`IZR_neq`,
+  :g:`double`,
+  :g:`double_var`,
+  :g:`Rinv_mult_simpl`,
+  :g:`Rle_Rinv`,
+  :g:`Rlt_Rminus`,
+  :g:`Rminus_eq_0`,
+  :g:`Rminus_gt_0_lt`,
+  :g:`Ropp_div`,
+  :g:`Ropp_minus_distr'`,
+  :g:`Rplus_sqr_eq_0_l`,
+  :g:`sum_inequa_Rle_lt_depr`,
+  :g:`S_O_plus_INR_depr`,
+  :g:`single_z_r_R1_depr`,
+  :g:`tech_single_z_r_R1_depr`,
+
+  (`#17036 <https://github.com/coq/coq/pull/17036>`_,
+  by Pierre Rousselin, reviewer Laurent Théry).
 - **Added:**
   lemmas :g:`L_inj`, :g:`R_inj`, :g:`L_R_neq`, :g:`case_L_R`, :g:`case_L_R'` to ``Fin.v``,
   and :g:`nil_spec`, :g:`nth_append_L`, :g:`nth_append_R`, :g:`In_nth`, :g:`nth_replace_eq`, :g:`nth_replace_neq`,
@@ -683,47 +725,6 @@ Standard library
   (`#17036 <https://github.com/coq/coq/pull/17036>`_,
   by Pierre Rousselin, reviewer Laurent Théry).
 
-- **Changed**
-  lemmas in `Reals/RIneq.v`
-
-  - :g:`completeness_weak` renamed as :g:`upper_bound_thm`,
-  - :g:`le_epsilon` renamed as :g:`Rle_epsilon`,
-  - :g:`Rplus_eq_R0` renamed as :g:`Rplus_eq_0`,
-  - :g:`Req_EM_T` renamed as :g:`Req_dec_T`,
-  - :g:`Rinv_r_simpl_m` renamed as :g:`Rmult_inv_r_id_m`,
-  - :g:`Rinv_r_simpl_l` renamed as :g:`Rmult_inv_r_id_l`,
-  - :g:`Rinv_r_simpl_r` renamed as :g:`Rmult_inv_m_id_r`,
-  - :g:`tech_Rgt_minus` renamed as :g:`Rgt_minus_pos`,
-  - :g:`tech_Rplus` renamed as :g:`Rplus_le_lt_0_neq_0`,
-  - :g:`IZR_POS_xI` modified with `2` instead of `1 + 1`,
-  - :g:`IZR_POS_xO` modified with `2` instead of `1 + 1`,
-  - :g:`Rge_refl` modified with `>=` instead of `<=`
-
-  (`#17036 <https://github.com/coq/coq/pull/17036>`_,
-  by Pierre Rousselin, reviewer Laurent Théry).
-
-- **Deprecated**
-  lemmas in `Reals/RIneq.v`
-
-  :g:`inser_trans_R`,
-  :g:`IZR_neq`,
-  :g:`double`,
-  :g:`double_var`,
-  :g:`Rinv_mult_simpl`,
-  :g:`Rle_Rinv`,
-  :g:`Rlt_Rminus`,
-  :g:`Rminus_eq_0`,
-  :g:`Rminus_gt_0_lt`,
-  :g:`Ropp_div`,
-  :g:`Ropp_minus_distr'`,
-  :g:`Rplus_sqr_eq_0_l`,
-  :g:`sum_inequa_Rle_lt_depr`,
-  :g:`S_O_plus_INR_depr`,
-  :g:`single_z_r_R1_depr`,
-  :g:`tech_single_z_r_R1_depr`,
-
-  (`#17036 <https://github.com/coq/coq/pull/17036>`_,
-  by Pierre Rousselin, reviewer Laurent Théry).
 - **Added:** lemmas :g:`concat_length`, :g:`flat_map_length`,
   :g:`flat_map_constant_length`, :g:`list_power_length` to `Lists.List`
   (`#17082 <https://github.com/coq/coq/pull/17082>`_,
