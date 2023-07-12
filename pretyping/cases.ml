@@ -1254,6 +1254,8 @@ end
 module type ConcreteTermS = sig
   type t
 
+  type univ_instance
+
   type rel_declaration = (t, t) Context.Rel.Declaration.pt
 
   type rel_context = (t, t) Context.Rel.pt
@@ -1264,7 +1266,7 @@ module type ConcreteTermS = sig
 
   val mkProp : t
 
-  val mkInd : Names.inductive -> t
+  val mkIndU : Names.inductive * univ_instance -> t
 
   val mkApp : t * t array -> t
 
@@ -1480,7 +1482,7 @@ module type AbstractTermS = sig
 
   val mkProp : unit -> 'a t
 
-  val mkInd : 'ind InductiveDef.t -> 'env t
+  val mkIndU : 'ind InductiveDef.t * Concrete.univ_instance -> 'env t
 
   val mkApp : 'env t -> 'env t array -> 'env t
 
@@ -1524,8 +1526,8 @@ module AbstractTerm (X : ConcreteTermS) :
 
   let mkProp () : 'env t = Eq.cast (Eq.sym eq) X.mkProp
 
-  let mkInd (ind : 'ind InductiveDef.t) : 'env t =
-    Eq.cast (Eq.sym (Eq.arrow InductiveDef.eq eq)) X.mkInd ind
+  let mkIndU ((ind : 'ind InductiveDef.t), (instance : X.univ_instance)) : 'env t =
+    Eq.cast (Eq.sym (Eq.((InductiveDef.eq ^* Eq.Refl) ^-> eq))) X.mkIndU (ind, instance)
 
   let mkApp (f : 'env t) (args : 'env t array) : 'env t =
     Eq.cast (Eq.sym eq) (X.mkApp (Eq.cast eq f, Eq.cast (Eq.array eq) args))
@@ -1550,6 +1552,8 @@ end
 
 module Term = struct
   include AbstractTerm (struct
+    type univ_instance = Univ.Instance.t
+
     include Constr
 
     include Term
@@ -1567,6 +1571,8 @@ end
 
 module ETerm = struct
   include AbstractTerm (struct
+    type univ_instance = EConstr.EInstance.t
+
     include EConstr
 
     include Vars
@@ -1575,7 +1581,7 @@ module ETerm = struct
       of_constr (Constr.exliftn el (Evd.MiniEConstr.unsafe_to_constr t))
   end)
 
-  let mkIndU (ind : 'ind InductiveDef.t) instance : 'env t =
+  let mkIndU ((ind : 'ind InductiveDef.t), (instance : EConstr.EInstance.t)) : 'env t =
     Eq.(cast (sym ((InductiveDef.eq ^* Refl) ^-> eq)))
       EConstr.mkIndU (ind, instance)
 
@@ -1601,7 +1607,7 @@ module ETerm = struct
   let of_term (t : 'env Term.t) : 'env t =
     Eq.(cast (sym (Term.eq ^-> eq))) EConstr.of_constr t
 
-  let mkSort (s : Sorts.t) : 'env t =
+  let mkSort (s : EConstr.ESorts.t) : 'env t =
     Eq.(cast (sym (Refl ^-> eq))) EConstr.mkSort s
 
   let print (env : 'env Env.t) sigma (term : 'env t) : Pp.t =
@@ -1609,8 +1615,8 @@ module ETerm = struct
       Termops.Internal.print_constr_env env sigma term
   [@@ocaml.warning "-32"] (* can be unused *)
 
-  let debug_print (term : 'env t) : Pp.t =
-    Termops.Internal.debug_print_constr (Eq.cast eq term)
+  let debug_print sigma (term : 'env t) : Pp.t =
+    Termops.Internal.debug_print_constr sigma (Eq.cast eq term)
   [@@ocaml.warning "-32"] (* can be unused *)
 
   let retype_of (type env) (env : env Env.t) sigma (term : env t) : env t =
@@ -1731,7 +1737,7 @@ module EvarMapMonad = struct
   type 'a t = ('a, Evd.evar_map) Monad.State.t
 
   let new_type_evar (env : 'env Env.t)
-        ?(filter : Evd.Filter.t option) rigid : ('env ETerm.t * Sorts.t) t =
+        ?(filter : Evd.Filter.t option) rigid : ('env ETerm.t * EConstr.ESorts.t) t =
   fun sigma ->
     Eq.cast (Eq.pair Refl (Eq.pair (Eq.sym ETerm.eq) Refl))
       (Evarutil.new_type_evar ?filter (Eq.cast Env.eq env) sigma rigid)
@@ -1922,9 +1928,9 @@ module EJudgment = struct
       ETerm.print env sigma (uj_type j))
   [@@ocaml.warning "-32"] (* can be unused *)
 
-  let debug_print j =
-    Pp.(ETerm.debug_print (uj_val j) ++ spc () ++ str ":" ++ spc () ++
-      ETerm.debug_print (uj_type j))
+  let debug_print sigma j =
+    Pp.(ETerm.debug_print sigma (uj_val j) ++ spc () ++ str ":" ++ spc () ++
+      ETerm.debug_print sigma (uj_type j))
   [@@ocaml.warning "-32"] (* can be unused *)
 end
 
@@ -2472,7 +2478,7 @@ module GlobalEnv = struct
 end
 
 module InductiveSpecif = struct
-  include Phantom2 (struct type t = Inductive.mind_specif end)
+  include Phantom2 (struct type t = Declarations.mind_specif end)
 
   let lookup (type env ind) (env : env Env.t) (ind : ind InductiveDef.t) :
       (env, ind) t =
@@ -2625,8 +2631,8 @@ module InductiveFamily = struct
       (indf : (env, ind, params, nrealargs, nrealdecls) t) :
       (env, nrealdecls, nrealargs) ERelContext.t =
     let Exists context =
-      ERelContext.of_concrete (List.map EConstr.of_rel_decl (fst
-        (Inductiveops.get_arity (Eq.cast Env.eq env) (to_concrete indf)))) in
+      ERelContext.of_concrete (List.map EConstr.of_rel_decl
+        (Inductiveops.get_arity (Eq.cast Env.eq env) (to_concrete indf))) in
     match Nat.is_eq (ERelContext.length context) indf.nrealdecls,
      Nat.is_eq (ERelContext.nb_args context) indf.nrealargs with
     | Some Refl, Some Refl -> context
@@ -2719,7 +2725,7 @@ module InductiveType = struct
       EvarMapMonad.new_evar env e) in
     let* (ind, instance) = EvarMapMonad.fresh_inductive_instance env ind in
     let term =
-      ETerm.mkApp (ETerm.mkIndU ind (EConstr.EInstance.make instance)) args in
+      ETerm.mkApp (ETerm.mkIndU (ind, EConstr.EInstance.make instance)) args in
     EvarMapMonad.use (fun sigma ->
       match of_term_opt env sigma term with
       | None -> assert false
@@ -4162,12 +4168,12 @@ module ReturnPred = struct
         return_pred)
   [@@ocaml.warning "-32"] (* can be unused *)
 
-  let debug_print (Exists { return_pred; previous; _ }) =
+  let debug_print sigma (Exists { return_pred; previous; _ }) =
     Pp.(
       str "previous:" ++ spc () ++
-      pr_enum ETerm.debug_print (Vector.to_list previous) ++
+      pr_enum (ETerm.debug_print sigma) (Vector.to_list previous) ++
       Pp.cut () ++
-      str "return pred:" ++ ETerm.debug_print return_pred)
+      str "return pred:" ++ ETerm.debug_print sigma return_pred)
   [@@ocaml.warning "-32"] (* can be unused *)
 
   let apply (type env args tail_height)
