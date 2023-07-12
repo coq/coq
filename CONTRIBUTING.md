@@ -623,6 +623,10 @@ We have a linter that checks a few different things:
   won't do that for you, although it should detect in most cases if you
   have forgotten to add documentation for your new command or tactic,
   or if the documentation is not consistent with the parser.
+- **.opam files are up to date**. Coq's `*.opam` files are generated
+  automatically from metadata in `dune-project`. If the meta-data
+  becomes out of sync, the linter will complain. This can be fixed
+  doing `dune build *.opam` at the root of Coq's repository.
 
 You may run the linter yourself with `dev/lint-repository.sh`.
 
