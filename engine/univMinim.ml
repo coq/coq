@@ -227,7 +227,10 @@ let minimize_univ_variables ctx us left right cstrs =
     in
     let instantiate_lbound lbound =
       let alg = UnivFlex.is_algebraic u us in
-        if alg then
+        if Universe.is_type0 lbound && not (get_set_minimization()) then
+          (* Minim to Set disabled, do not instantiate with Set *)
+          instantiate_with_lbound u lbound lower ~alg ~enforce:true acc
+        else if alg then
           (* u is algebraic: we instantiate it with its lower bound, if any,
               or enforce the constraints if it is bounded from the top. *)
           let lower = Level.Set.fold Level.Map.remove (Universe.levels lbound) lower in
@@ -303,10 +306,9 @@ let extra_union a b = {
   above_prop = Level.Set.union a.above_prop b.above_prop;
 }
 
-(* TODO check is_small/sprop *)
 let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;above_prop} =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
-  (* Keep the Prop/Set <= i constraints separate for minimization *)
+  (* Keep the Set <= i constraints separate *)
   let smallles, csts =
     Constraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
   in
@@ -319,24 +321,13 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
       Level.Set.fold fold above_prop smallles
     | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
   in
-  (* keep Set <= r when r is bounded from below
-     being bounded from below should prevent r from being unified with Set
-     We can cleanup this mess when we stop using Prop lbound for template *)
-  let used_smallles = if get_set_minimization () then smallles
-    else Constraints.filter (fun (_,_,r) ->
-        Constraints.exists (fun (l',d,r') ->
-            match d with
-            | Eq -> Level.equal l' r || Level.equal r' r
-            | Lt | Le -> Level.equal r' r)
-          csts)
-        smallles
-  in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = UGraph.initial_universes_with g in
+    (* use lbound:Set to collapse [u <= v <= Set] into [u = v = Set] *)
     let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:Set ~strict:false v g)
-                           ctx g
+        ctx g
     in
     let add_soft u g =
       if not (Level.is_set u || Level.Set.mem u ctx)
@@ -350,13 +341,14 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
     let g = UGraph.merge_constraints csts g in
       UGraph.constraints_of_universes g
   in
-  (* We ignore the trivial Prop/Set <= i constraints. *)
+  (* Ignore constraints from lbound:Set *)
   let noneqs =
     Constraints.filter
       (fun (l,d,r) -> not (d == Le && Level.is_set l))
       csts
   in
-  let noneqs = Constraints.union noneqs used_smallles in
+  (* Put back constraints [Set <= u] from type inference *)
+  let noneqs = Constraints.union noneqs smallles in
   let flex x = UnivFlex.mem x us in
   let algebraic x = UnivFlex.is_algebraic x us in
   let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) s ->
@@ -426,16 +418,6 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
   (* Now we construct the instantiation of each variable. *)
   let ctx', us, inst, noneqs =
     minimize_univ_variables ctx us ucstrsr ucstrsl noneqs
-  in
-  let noneqs = if get_set_minimization () then noneqs
-    else
-      let fold (u,d,v) noneqs =
-        assert (Level.is_set u && d == Le);
-        let v = UnivFlex.normalize_universe us (Universe.make v) in
-        enforce_leq Universe.type0 v noneqs
-      in
-      let smallles = Constraints.fold fold smallles Constraints.empty in
-      Constraints.union noneqs smallles
   in
   let us = UnivFlex.normalize us in
   us, (ctx', Constraints.union noneqs eqs)
