@@ -18,6 +18,7 @@ CI_TARGETS= \
     ci-bedrock2 \
     ci-bignums \
     ci-category_theory \
+    ci-coinduction \
     ci-color \
     ci-compcert \
     ci-coq_dpdgraph \
