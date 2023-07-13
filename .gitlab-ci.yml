@@ -612,6 +612,17 @@ library:ci-bedrock2:
     NJOBS: "1"
   timeout: 2h
 
+library:ci-ext_lib:
+  extends: .ci-template
+
+library:ci-brick:
+  extends: .ci-template-flambda
+  needs:
+    - build:edge+flambda
+    - library:ci-iris
+    - plugin:ci-elpi_test
+    - library:ci-ext_lib
+
 library:ci-category_theory:
   extends: .ci-template
   needs:

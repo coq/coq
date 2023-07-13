@@ -394,3 +394,8 @@ project tactician "https://github.com/coq-tactician/coq-tactician" "coqdev"
 # Ltac2 compiler
 ########################################################################
 project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
+
+########################################################################
+# BedRock Systems BRiCk (formerly cpp2v)
+########################################################################
+project brick "https://github.com/Janno/BRiCk" "coq-ci"

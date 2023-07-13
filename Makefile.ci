@@ -17,6 +17,7 @@ CI_TARGETS= \
     ci-bbv \
     ci-bedrock2 \
     ci-bignums \
+    ci-brick \
     ci-category_theory \
     ci-color \
     ci-compcert \
@@ -148,6 +149,8 @@ ci-relation_algebra: ci-aac_tactics ci-mathcomp
 ci-serapi_test: ci-mathcomp ci-serapi
 
 ci-coq_lsp: ci-serapi
+
+ci-brick: ci-iris ci-elpi_test ci-ext_lib
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
