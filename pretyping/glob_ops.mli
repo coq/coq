@@ -62,6 +62,7 @@ val map_glob_constr_left_to_right :
 val warn_variable_collision : ?loc:Loc.t -> Id.t -> unit
 
 val mk_glob_constr_eq : (glob_constr -> glob_constr -> bool) ->
+  (Name.t -> Name.t -> glob_constr option -> glob_constr option -> bool) ->
   glob_constr -> glob_constr -> bool
 
 val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a

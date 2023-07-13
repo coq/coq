@@ -152,7 +152,7 @@ let fix_kind_eq k1 k2 = match k1, k2 with
 let evar_instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1.CAst.v x2.CAst.v && f c1 c2
 
-let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
+let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->
     GlobRef.CanOrd.equal gr1 gr2 &&
     Option.equal instance_eq u1 u2
@@ -163,9 +163,9 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GApp (f1, arg1), GApp (f2, arg2) ->
     f f1 f2 && List.equal f arg1 arg2
   | GLambda (na1, bk1, t1, c1), GLambda (na2, bk2, t2, c2) ->
-    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
   | GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
-    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
   | GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
     Name.equal na1 na2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
   | GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
@@ -202,7 +202,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
      GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _ | GCast _ | GProj _ |
      GInt _ | GFloat _ | GArray _), _ -> false
 
-let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
+let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq (fun na1 na2 _ _ -> Name.equal na1 na2) c
 
 let map_glob_constr_left_to_right f = DAst.map (function
   | GApp (g,args) ->

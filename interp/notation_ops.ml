@@ -540,7 +540,9 @@ let subtract_loc loc1 loc2 =
   let l2 = fst (Option.cata Loc.unloc (0,0) loc2) in
   Some (Loc.make_loc (l1,l2-1))
 
-let check_is_hole id t = match DAst.get t with GHole _ -> () | _ ->
+let check_is_hole id = function
+  | None -> ()
+  | Some t -> match DAst.get t with GHole _ -> () | _ ->
   user_err ?loc:(loc_of_glob_constr t)
    (strbrk "In recursive notation with binders, " ++ Id.print id ++
     strbrk " is expected to come without type.")
@@ -564,6 +566,27 @@ type recursive_pattern_kind =
 let compare_recursive_parts recvars found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
+  let treat_binder ?loc x y t_x t_y =
+    match x, y with
+    | Name x, Name y when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
+      (* We found a binding position where it differs *)
+      check_is_hole x t_x;
+      check_is_hole y t_y;
+      let revert = mem_recursive_pair (y,x) recvars in
+      let x,y = if revert then y,x else x,y in
+      begin match !diff with
+      | None -> diff := Some (x, y, RecursiveBinders revert)
+      | Some (x', y', RecursiveBinders revert') ->
+        check_pair_matching ?loc x y x' y' revert revert'
+      | Some (x', y', RecursiveTerms revert') ->
+        (* Recursive binders have precedence: they can be coerced to
+           terms but not reciprocally *)
+        check_pair_matching ?loc x y x' y' revert revert';
+        diff := Some (x, y, RecursiveBinders revert)
+      end;
+      true
+    | _ -> Name.equal x y
+  in
   let rec aux c1 c2 = match DAst.get c1, DAst.get c2 with
   | GVar v, term when Id.equal v ldots_var ->
       (* We found the pattern *)
@@ -578,7 +601,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
       assert (match !terminator with None -> true | Some _ -> false);
       terminator := Some term;
       List.for_all2eq aux l1 l2
-    | _ -> mk_glob_constr_eq aux c1 c2
+    | _ -> mk_glob_constr_eq aux (treat_binder ?loc:c1.CAst.loc) c1 c2
     end
   | GVar x, GVar y
         when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
@@ -594,30 +617,8 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
         true
       end
-  | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
-  | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term)
-        when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
-      (* We found a binding position where it differs *)
-      check_is_hole x t_x;
-      check_is_hole y t_y;
-      let revert = mem_recursive_pair (y,x) recvars in
-      let x,y = if revert then y,x else x,y in
-      begin match !diff with
-      | None ->
-        let () = diff := Some (x, y, RecursiveBinders revert) in
-        aux c term
-      | Some (x', y', RecursiveBinders revert') ->
-        check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
-        aux c term
-      | Some (x', y', RecursiveTerms revert') ->
-        (* Recursive binders have precedence: they can be coerced to
-           terms but not reciprocally *)
-        check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
-        let () = diff := Some (x, y, RecursiveBinders revert) in
-        aux c term
-      end
   | _ ->
-      mk_glob_constr_eq aux c1 c2 in
+      mk_glob_constr_eq aux (treat_binder ?loc:c1.CAst.loc) c1 c2 in
   if aux iterator subc then
     match !diff with
     | None ->
