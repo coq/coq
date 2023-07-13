@@ -239,11 +239,6 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
       term and the outcomes of the case analysis.  We recommend using the
       :tacn:`destruct` tactic with an `eqn:` clause instead.
 
-.. tacn:: casetype @one_type
-   :undocumented:
-
-   .. deprecated:: 8.18
-
 .. tacn:: simple destruct {| @ident | @natural }
 
    Equivalent to :tacn:`intros` :n:`until {| @ident | @natural }; case @ident`
@@ -403,17 +398,6 @@ Induction
 
       If the type of :n:`@one_term` has dependent premises, this turns them into
       existential variables to be resolved later on.
-
-.. tacn:: elimtype @one_type
-
-   The argument :token:`one_type` must be inductively defined. :n:`elimtype I` is
-   equivalent to :tacn:`cut` :n:`I. intro Hn; elim Hn;` :tacn:`clear` :n:`Hn.` Therefore the
-   hypothesis :g:`Hn` will not appear in the context(s) of the subgoal(s).
-   Conversely, if :g:`t` is a :n:`@one_term` of (inductive) type :g:`I` that does
-   not occur in the goal, then :n:`elim t` is equivalent to
-   :n:`elimtype I; only 2:` :tacn:`exact` `t.`
-
-   .. deprecated:: 8.18
 
 .. tacn:: simple induction {| @ident | @natural }
 

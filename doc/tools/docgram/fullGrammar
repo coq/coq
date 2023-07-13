@@ -1536,8 +1536,6 @@ simple_tactic: [
 | "exact_no_check" constr
 | "vm_cast_no_check" constr
 | "native_cast_no_check" constr
-| "casetype" constr
-| "elimtype" constr
 | "exfalso"
 | "lapply" constr
 | "transitivity" constr

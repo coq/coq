@@ -243,8 +243,6 @@ val simplest_case         : constr -> unit Proofview.tactic
 
 (** {6 Eliminations giving the type instead of the proof. } *)
 
-val case_type         : types -> unit Proofview.tactic
-val elim_type         : types -> unit Proofview.tactic
 val exfalso : unit Proofview.tactic
 
 (** {6 Constructor tactics. } *)

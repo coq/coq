@@ -960,16 +960,12 @@ simple_tactic: [
 | WITH "eassert" "(" identref ":" type ")" by_tactic
 | REPLACE "eassert" constr as_ipat by_tactic
 | WITH "eassert" one_type as_ipat by_tactic
-| REPLACE "elimtype" constr
-| WITH "elimtype" one_type
 | REPLACE "cut" constr
 | WITH "cut" one_type
 | REPLACE "evar" constr
 | WITH "evar" one_type
 | REPLACE "absurd" constr
 | WITH "absurd" one_type
-| REPLACE "casetype" constr
-| WITH "casetype" one_type
 | REPLACE "enough" "(" identref ":" lconstr ")" by_tactic
 | WITH "enough" "(" identref ":" type ")" by_tactic
 | REPLACE "enough" constr as_ipat by_tactic
