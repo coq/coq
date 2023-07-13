@@ -147,7 +147,7 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
 
-NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
+NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coq.install
 
 world: dunestrap
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)

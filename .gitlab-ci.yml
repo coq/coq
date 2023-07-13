@@ -78,7 +78,6 @@ before_script:
     expire_in: 1 month
   script:
     - PKGS=coq-core,coq-stdlib,coqide-server,coq
-    - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
     - dev/ci/gitlab-section.sh end coq.clean
