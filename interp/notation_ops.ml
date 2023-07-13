@@ -335,18 +335,13 @@ let subst_binder_type_vars l = function
 
 let rec subst_glob_vars l gc = DAst.map (function
   | GVar id as r -> (try DAst.get (Id.List.assoc id l) with Not_found -> r)
-  | GProd (Name id,bk,t,c) ->
-      let id =
-        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
-        with Not_found -> id in
-      GProd (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
-  | GLambda (Name id,bk,t,c) ->
-      let id =
-        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
-        with Not_found -> id in
-      GLambda (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | GHole x -> GHole (subst_binder_type_vars l x)
-  | _ -> DAst.get (map_glob_constr (subst_glob_vars l) gc) (* assume: id is not binding *)
+  | _ ->
+    let g =
+      Name.map (fun id ->
+          try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
+          with Not_found -> id) in
+    DAst.get (map_glob_constr_left_to_right_with_names (subst_glob_vars l) g gc) (* assume: id is not binding *)
   ) gc
 
 type 'a binder_status_fun = {
