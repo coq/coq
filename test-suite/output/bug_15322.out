@@ -1,0 +1,8 @@
+x `+ (y `+ z)
+     : nat
+[x `+ (y `+ z)]
+     : nat
+fun x y z : nat => [x `+ (y `+ z)]
+     : nat -> (nat -> (nat -> nat))
+fun x y z : nat => [x `+ (y `+ z)]
+     : nat -> (nat -> (nat -> nat))
