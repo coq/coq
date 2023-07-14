@@ -176,6 +176,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
       RefKey (canonical_gr ref), AppBoundedNotation (List.length args + List.length args')
   | NApp (NList (_,_,NApp (_,args),_,_), args') ->
       Oth, AppBoundedNotation (List.length args + List.length args')
+  | NApp (NVar _,_) -> Oth, AppUnboundedNotation
   | NApp (_,args) -> Oth, AppBoundedNotation (List.length args)
   | NList (_,_,NApp (NVar x,_),_,_) when x = Notation_ops.ldots_var -> Oth, AppUnboundedNotation
   | _ -> Oth, NotAppNotation

@@ -1403,6 +1403,11 @@ let does_not_come_from_already_eta_expanded_var glob =
   (* checked). *)
   match DAst.get glob with GVar _ -> false | _ -> true
 
+let eta_well_typed pat =
+  (* A criterion for well-typedness of the eta-expansion
+     is that the head of the pattern is rigid (see #15221) *)
+  match pat with NVar _ -> false | _ -> true
+
 let is_var_term = function
   (* The kind of expressions allowed to be both a term and a binding variable *)
   | GVar _ -> true
@@ -1446,7 +1451,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
         else if n1 > n2 then
           let l11,l12 = List.chop (n1-n2) l1 in DAst.make ?loc @@ GApp (f1,l11),l12, f2,l2
         else f1,l1, f2, l2 in
-      let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
+      let may_use_eta = does_not_come_from_already_eta_expanded_var f1 && eta_well_typed f2 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_hd u alp metas sigma f1 f2) l1 l2
   | GProj ((cst1,u1),l1,a1), NProj ((cst2,u2),l2,a2) when GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
