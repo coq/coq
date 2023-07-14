@@ -955,6 +955,15 @@ if it reduces the subterm under consideration. The ``fold`` strategy takes
 a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
 on success. It is stronger than the tactic ``fold``.
 
+.. note::
+   The symbol ';' is used to separate sequences of tactics as well as
+   sequences of rewriting strategies.
+   `rewrite_strat s; fail` is interpreted as `rewrite_strat (s; fail)`,
+   in which `fail` is a rewriting strategy.
+   Use `(rewrite_strat s); fail` to make `fail` a tactic.
+   `rewrite_strat s; apply I` gives a syntax error (`apply` is not
+   a valid rewrite strategy).
+
 .. _rewrite_strat_innermost_outermost:
 
 .. example:: :n:`innermost` and :n:`outermost`
