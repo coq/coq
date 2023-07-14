@@ -607,7 +607,7 @@ Locality attributes supported by :cmd:`Set` and :cmd:`Unset`
 
 The :cmd:`Set` and :cmd:`Unset` commands support the mutually
 exclusive :attr:`local`, :attr:`export` and :attr:`global` locality
-attributes (or the ``Local``, ``Export`` or ``Global`` prefixes).
+attributes.
 
 If no attribute is specified, the original value of the flag or option
 is restored at the end of the current module but it is *not* restored
