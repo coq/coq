@@ -982,6 +982,10 @@ let is_onlybinding_meta id metas =
   try match Id.List.assoc id metas with NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
+let is_onlybindinglist_meta id metas =
+  try match Id.List.assoc id metas with NtnTypeBinderList _ -> true | _ -> false
+  with Not_found -> false
+
 let is_onlybinding_pattern_like_meta isvar id metas =
   try match Id.List.assoc id metas with
     | NtnTypeBinder (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern)) -> true
@@ -1314,8 +1318,17 @@ let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1
   match DAst.get pat1, DAst.get pat2 with
   | PatVar _, PatVar (Name id2) when is_onlybinding_pattern_like_meta true id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
+  | PatVar id1, PatVar (Name id2) when is_onlybindinglist_meta id2 metas ->
+      let t1 = DAst.make @@ GHole(GBinderType id1) in
+      bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalAssum (id1,Explicit,t1)]
   | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta false id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
+  | _, PatVar (Name id2) when is_onlybindinglist_meta id2 metas ->
+      (* dummy data; should not be used anyway *)
+      let id1 = Namegen.next_ident_away (Id.of_string "x") Id.Set.empty in
+      let t1 = DAst.make @@ GHole(GBinderType (Name id1)) in
+      let ids1 = [] in
+      bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalPattern (([pat1],ids1),id1,Explicit,t1)]
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
@@ -1479,11 +1492,12 @@ let rec match_ inner u alp metas sigma a1 a2 =
      match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
      match_extended_binders (not inner) u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
-  | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
-  | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
+  | GLetIn (na1,b1,t1,c1), NLetIn (na2,b2,None,c2)
+  | GLetIn (na1,b1,(None as t1),c1), NLetIn (na2,b2,_,c2) ->
+     let t = match t1 with Some t -> t | None -> DAst.make @@ GHole(GBinderType na1) in
+     match_extended_binders false u alp metas na1 na2 Explicit t (match_in u alp metas sigma b1 b2) c1 c2
   | GLetIn (na1,b1,Some t1,c1), NLetIn (na2,b2,Some t2,c2) ->
-     match_binders u alp metas na1 na2
+     match_extended_binders false u alp metas na1 na2 Explicit t1
        (match_in u alp metas (match_in u alp metas sigma b1 b2) t1 t2) c1 c2
   | GCases (sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
       when sty1 == sty2 && Int.equal (List.length tml1) (List.length tml2) ->
