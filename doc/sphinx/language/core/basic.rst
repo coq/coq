@@ -259,15 +259,15 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
      .. insertprodn term qualid_annotated
 
      .. prodn::
-        term ::= @term_forall_or_fun
-        | @term_let
-        | @term_if
-        | @term_fix
-        | @term_cofix
-        | @term100
+        term ::= @term100
         term100 ::= @term_cast
         | @term10
         term10 ::= @term_application
+        | @term_forall_or_fun
+        | @term_let
+        | @term_fix
+        | @term_cofix
+        | @term_if
         | @one_term
         one_term ::= @term_explicit
         | @term1
