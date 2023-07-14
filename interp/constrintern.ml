@@ -750,7 +750,15 @@ let cook_pattern ((disjpat, ids), id) =
     | _ -> Some ((ids,disjpat),id), Name id in
   pat, na
 
-let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) na ty =
+let extract_pattern_from_binder b =
+  match DAst.get b with
+  | GLocalDef (n, b, oty) -> user_err ?loc:b.CAst.loc (str "Local definitions not supported here.")
+  | GLocalAssum (na, bk, t) -> None, na, bk, t
+  | GLocalPattern (patl, id, bk, ty) ->
+    let pat, na = cook_pattern (patl, id) in
+    pat, na, bk, ty
+
+let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) binderopt avoid (renaming,env) na ty =
   match na with
   | Anonymous -> (renaming,env), None, Anonymous, Explicit, set_type ty None
   | Name id ->
@@ -778,6 +786,11 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
       let pat, na = cook_pattern pat in
       (renaming,env), pat, na, bk, set_type ty (Some t)
   with Not_found ->
+  if option_mem_assoc id binderopt then
+    let binder = snd (Option.get binderopt) in
+    let pat, na, bk, t = extract_pattern_from_binder binder in
+    (renaming,env), pat, na, bk, set_type ty (Some t)
+  else
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let id' = find_fresh_name renaming subst avoid id in
@@ -962,7 +975,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         expand_binders ?loc mkGLambda [binder] (aux subst' (renaming,env) c')
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
-        (traverse_binder intern_pat ntnvars subst avoid) (aux subst') ~h:binder_status_fun subinfos t
+        (traverse_binder intern_pat ntnvars subst binderopt avoid) (aux subst') ~h:binder_status_fun subinfos t
   and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
