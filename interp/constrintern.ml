@@ -1624,7 +1624,8 @@ let merge_aliases aliases {loc;v=na} =
   match na with
   | Anonymous -> aliases
   | Name id ->
-  let alias_ids = aliases.alias_ids @ [make ?loc id] in
+  let alias_ids = List.add_set (fun id1 id2 -> Id.equal id1.v id2.v) (make ?loc id) aliases.alias_ids in
+  (* Note: assumes that add_set adds in front, see alias_of *)
   let alias_map = match aliases.alias_ids with
   | [] -> aliases.alias_map
   | {v=id'} :: _ -> Id.Map.add id id' aliases.alias_map
@@ -1633,7 +1634,7 @@ let merge_aliases aliases {loc;v=na} =
 
 let alias_of als = match als.alias_ids with
   | [] -> Anonymous
-  | {v=id} :: _ -> Name id
+  | l -> Name (List.last l).v
 
 (** {6 Expanding notations }
 
