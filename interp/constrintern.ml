@@ -1452,26 +1452,16 @@ let rec adjust_to_down l l' default =
   | false::l, [] -> default :: adjust_to_down l [] default
   | false::l, y::l' -> y :: adjust_to_down l l' default
 
-(* @return the first variable that occurs twice in a pattern
-
-naive n^2 algo *)
-let rec has_duplicate = function
-  | [] -> None
-  | x::l -> if Id.List.mem x l then (Some x) else has_duplicate l
-
 let loc_of_multiple_pattern pl =
  Loc.merge_opt (cases_pattern_expr_loc (List.hd pl)) (cases_pattern_expr_loc (List.last pl))
 
-let loc_of_lhs lhs =
- Loc.merge_opt (loc_of_multiple_pattern (List.hd lhs)) (loc_of_multiple_pattern (List.last lhs))
-
-let check_linearity lhs ids =
-  match has_duplicate ids with
-    | Some id ->
-      let loc = loc_of_lhs lhs in
-      Loc.raise ?loc (InternalizationError (NonLinearPattern id))
-    | None ->
-        ()
+let check_linearity mpl ids =
+  match List.duplicates (fun id1 id2 -> Id.equal id1.v id2.v) ids with
+  | id::_ ->
+      let loc = loc_of_multiple_pattern mpl in
+      Loc.raise ?loc (InternalizationError (NonLinearPattern id.v))
+  | [] ->
+      ()
 
 (* Match the number of pattern against the number of matched args *)
 let check_number_of_pattern loc n l =
@@ -1634,7 +1624,8 @@ let merge_aliases aliases {loc;v=na} =
   match na with
   | Anonymous -> aliases
   | Name id ->
-  let alias_ids = aliases.alias_ids @ [make ?loc id] in
+  let alias_ids = List.add_set (fun id1 id2 -> Id.equal id1.v id2.v) (make ?loc id) aliases.alias_ids in
+  (* Note: assumes that add_set adds in front, see alias_of *)
   let alias_map = match aliases.alias_ids with
   | [] -> aliases.alias_map
   | {v=id'} :: _ -> Id.Map.add id id' aliases.alias_map
@@ -1643,7 +1634,7 @@ let merge_aliases aliases {loc;v=na} =
 
 let alias_of als = match als.alias_ids with
   | [] -> Anonymous
-  | {v=id} :: _ -> Name id
+  | l -> Name (List.last l).v
 
 (** {6 Expanding notations }
 
@@ -2377,6 +2368,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     let mpl' = List.map (intern_multiple_pattern env n) mpl in
     let (idsl,mpl') = List.split mpl' in
     let ids = List.hd idsl in
+    List.iter2 check_linearity mpl idsl;
     check_or_pat_variables loc ids (List.tl idsl);
     (ids,List.flatten mpl')
 
@@ -2385,7 +2377,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     let eqn_ids,pll = intern_disjunctive_multiple_pattern env loc n lhs in
     (* Linearity implies the order in ids is irrelevant *)
     let eqn_ids = List.map (fun x -> x.v) eqn_ids in
-    check_linearity lhs eqn_ids;
     let env_ids = List.fold_right Id.Set.add eqn_ids env.ids in
     List.map (fun (asubst,pl) ->
       let rhs = replace_vars_constr_expr asubst rhs in
