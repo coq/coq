@@ -443,12 +443,15 @@ module PrimTokenNotation = struct
     https://github.com/coq/coq/issues/9840 for details on what goes
     wrong if this does not happen, e.g., from using the vm rather than
     cbv.
+
+    Using a combination of vm and cbv gives a factor 10 speedup though.
 *)
 
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
-  let sigma, _ = Typing.type_of env sigma c in
-  let c' = Tacred.compute env sigma c in
+  let sigma, t = Typing.type_of env sigma c in
+  let c' = if (Environ.typing_flags env).enable_VM then Vnorm.cbv_vm env sigma c t else c in
+  let c' = Tacred.compute env sigma c' in
   EConstr.Unsafe.to_constr c'
 
 let eval_constr_app env sigma c1 c2 =
