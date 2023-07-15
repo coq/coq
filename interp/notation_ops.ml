@@ -591,13 +591,13 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         aux c term
       | Some (x', y', RecursiveBinders revert') ->
         check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
-        true
+        aux c term
       | Some (x', y', RecursiveTerms revert') ->
         (* Recursive binders have precedence: they can be coerced to
            terms but not reciprocally *)
         check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
         let () = diff := Some (x, y, RecursiveBinders revert) in
-        true
+        aux c term
       end
   | _ ->
       mk_glob_constr_eq aux c1 c2 in
