@@ -23,7 +23,7 @@ let set_keyword_state s = keyword_state := s
 (** Not marshallable! *)
 let estate = ref EState.empty
 
-let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
+let gstate () = { GState.estate = !estate; kwstate = !keyword_state; recover = true }
 
 module Parsable = struct
   include Parsable

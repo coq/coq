@@ -138,6 +138,7 @@ module type ExtS = sig
     type t = {
       estate : EState.t;
       kwstate : keyword_state;
+      recover : bool;
     }
   end
 
