@@ -139,6 +139,7 @@ module type ExtS = sig
     type t = {
       estate : EState.t;
       kwstate : keyword_state;
+      recover : bool;
     }
   end
 
@@ -255,11 +256,13 @@ and GState : sig
   type t = {
     estate : EState.t;
     kwstate : L.keyword_state;
+    recover : bool;
   }
 end = struct
   type t = {
     estate : EState.t;
     kwstate : L.keyword_state;
+    recover : bool;
   }
 end
 open GState
@@ -1240,7 +1243,10 @@ and parser_cont : type s tr tr' a r.
          « SELF; "\/"; same-entry-at-top-level » with application e.g. to
          accept "A \/ forall x, x = x" w/o requiring the expected
          parentheses as in "A \/ (forall x, x = x)". *)
-      parser_of_tree entry nlevn alevn (top_tree entry son) gstate strm__
+      if gstate.recover then
+        parser_of_tree entry nlevn alevn (top_tree entry son) gstate strm__
+      else
+        raise Stream.Failure
     with
       Stream.Failure ->
       try
@@ -1259,6 +1265,7 @@ and parser_cont : type s tr tr' a r.
            is retried with « "{"; same-entry-at-top-level; "}" », allowing
            e.g. to parse « {1 + 1} » while « {(1 + 1)} » would
            have been expected according to the level. *)
+      if gstate.recover then
         let p1 = parser_of_tree entry nlevn alevn son in
         let a = continue_parser_of_entry gstate (entry_of_symb entry s) 0 bp a strm__ in
         let act =
@@ -1266,6 +1273,8 @@ and parser_cont : type s tr tr' a r.
             Stream.Failure -> raise (Error (tree_failed entry a s son))
         in
         fun _ -> act a
+      else
+        raise (Stream.Error (tree_failed entry a s son))
 
 (** [parser_of_token_list] attempts to look-ahead an arbitrary-long
 finite sequence of tokens. E.g., in
@@ -1310,7 +1319,10 @@ and parser_of_token_list : type s tr lt r.
          match
            try Some (ps gstate strm) with Stream.Failure ->
            (* Tolerance: retry w/o granting the level constraint (see recover) *)
-           try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) with Stream.Failure -> None
+           if gstate.recover then
+             try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) with Stream.Failure -> None
+           else
+             None
          with
          | Some act -> act
          | None -> raise (TokenListFailed (entry, last_a, (Stoken last_tok), tree))
