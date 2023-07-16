@@ -18,6 +18,8 @@ sig
   val explode : string -> string list
   val implode : string list -> string
   val drop_simple_quotes : string -> string
+  val quote_coq_string : string -> string
+  val unquote_coq_string : string -> string option
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
@@ -61,6 +63,32 @@ let is_empty s = String.length s = 0
 let drop_simple_quotes s =
   let n = String.length s in
   if n > 2 && s.[0] = '\'' && s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+
+let quote_coq_string s =
+  let b = Buffer.create (String.length s + 2) in
+  Buffer.add_char b '"';
+  for i = 0 to String.length s - 1 do
+    Buffer.add_char b s.[i];
+    if s.[i] = '"' then Buffer.add_char b s.[i];
+  done;
+  Buffer.add_char b '"';
+  Buffer.contents b
+
+let unquote_coq_string s =
+  let b = Buffer.create (String.length s) in
+  let n = String.length s in
+  if n < 2 || s.[0] <> '"' || s.[n-1] <> '"' then None else
+    let i = ref 1 in
+    try
+      while !i < n - 1 do
+        Buffer.add_char b s.[!i];
+        if s.[!i] = '"' then
+          if !i < n - 2 && s.[!i+1] = '"' then incr i
+          else raise Exit;
+        incr i
+      done;
+      Some (Buffer.contents b)
+    with Exit -> None
 
 (* substring searching... *)
 

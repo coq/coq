@@ -26,6 +26,7 @@ The main command to provide custom notations for tactics is :cmd:`Tactic Notatio
 Notations
 ---------
 
+.. _BasicNotations:
 
 Basic notations
 ~~~~~~~~~~~~~~~
@@ -74,8 +75,21 @@ lose their role as parameters. For example:
 
    Notation "'IF' c1 'then' c2 'else' c3" := (c1 /\ c2 \/ ~ c1 /\ c3) (at level 200, right associativity).
 
-Symbols that start with a single quote with 3 or more characters must be single quoted.
-For example, the symbol `'ab` is represented by `''ab'` in the notation string.
+Symbols that start with a single quote followed by at least 2
+characters must be single quoted.  For example, the symbol `'ab` is
+represented by `''ab'` in the notation string. Quoted strings can be used in
+notations: they must begin and end with two double quotes.
+Embedded spaces in these strings are
+part of the string and do not contribute to the separation
+between notation tokens. To embed double quotes in these strings, use four
+double quotes (e.g. the notation :g:`"A ""I'm an """"infix"""" string symbol"" B"`
+defines an infix notation whose infix symbol is the string
+:g:`"I'm an ""infix"" string symbol"`). Symbols may contain
+double quotes without being strings themselves (as e.g. in symbol :g:`|"|`) but notations with such symbols can be
+used only for printing (see :ref:`Use of notations for printing <UseOfNotationsForPrinting>`).
+In this case, no spaces are allowed in the symbol.  Also, if the
+symbol starts with a double quote, it must be surrounded with single
+quotes to prevent confusion with the beginning of a string symbol.
 
 A notation binds a syntactic expression to a term. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
@@ -90,6 +104,20 @@ associativity rules have to be given.
    <ImplicitArguments>` and other notations are resolved at the
    time of the declaration of the notation. The right-hand side is
    currently typed only at use time but this may change in the future.
+
+.. exn:: Unterminated string in notation
+
+   Occurs when the notation string contains an unterminated quoted
+   string, as e.g. in :g:`Reserved Notation "A ""an unended string B"`, for which the
+   user may instead mean :g:`Reserved Notation "A ""an ended string"" B`.
+
+.. exn:: End of quoted string not followed by a space in notation.
+
+   Occurs when the notation string contains a quoted string which
+   contains a double quote not ending the quoted string, as e.g. in
+   :g:`Reserved Notation "A ""string""! B"` or `Reserved Notation "A ""string""!"" B"`, for which
+   the user may instead mean :g:`Reserved Notation "A ""string"""" ! B`,
+   :g:`Reserved Notation "A ""string""""!"" B`, or :g:`Reserved Notation "A '""string""!' B`.
 
 Precedences and associativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,6 +244,8 @@ For the sake of factorization with Coq predefined rules, simple rules
 have to be observed for notations starting with a symbol, e.g., rules
 starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
 of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
+
+.. _UseOfNotationsForPrinting:
 
 Use of notations for printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

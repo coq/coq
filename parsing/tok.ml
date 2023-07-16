@@ -144,7 +144,10 @@ let match_pattern (type c) (p : c p) : t -> c =
   let err () = raise Gramlib.Stream.Failure in
   let seq = string_equal in
   match p with
-  | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s' | NUMBER n when seq s (NumTok.Unsigned.sprint n) -> s | _ -> err ())
+  | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s'
+                          | NUMBER n when seq s (NumTok.Unsigned.sprint n) -> s
+                          | STRING s' when seq s (CString.quote_coq_string s') -> s
+                          | _ -> err ())
   | PIDENT None -> (function IDENT s' -> s' | _ -> err ())
   | PIDENT (Some s) -> (function (IDENT s' | KEYWORD s') when seq s s' -> s' | _ -> err ())
   | PPATTERNIDENT None -> (function PATTERNIDENT s -> s | _ -> err ())
