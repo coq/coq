@@ -314,11 +314,11 @@ let tag_var = tag Tag.variable
         let pp p = hov 0 (pr_patt mt pr lpattop p) in
         surround (hov 0 (prlist_with_sep pr_spcbar pp pl)), lpator
 
-      | CPatNotation (_,(_,"( _ )"),([p],[]),[]) ->
+      | CPatNotation (_,(_,"( _ )"),([p],[],[]),[]) ->
         pr_patt (fun()->str"(") pr lpattop p ++ str")", latom
 
-      | CPatNotation (which,s,(l,ll),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt pr) (fun _ _ _ _ -> mt ()) (fun _ _ _ _ -> mt()) which s (l,ll,[],[]) in
+      | CPatNotation (which,s,(l,ll,bl),args) ->
+        let strm_not, l_not = pr_notation (pr_patt mt pr) (pr_patt_binder pr) (fun _ _ _ -> mt) which s (l,ll,bl,[]) in
         (if List.is_empty args||prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc pr (LevelLt lapp)) args, if not (List.is_empty args) then lapp else l_not
 
@@ -335,16 +335,16 @@ let tag_var = tag Tag.variable
     pr_with_comments ?loc
       (sep() ++ if prec_less prec inh then strm else surround strm)
 
-  let pr_patt = pr_patt mt
-
-  let pr_patt_binder pr prec style bk c =
+  and pr_patt_binder pr prec style bk c =
     match bk with
-    | MaxImplicit -> str "{" ++ pr_patt pr lpattop c ++ str "}"
-    | NonMaxImplicit -> str "[" ++ pr_patt pr lpattop c ++ str "]"
+    | MaxImplicit -> str "{" ++ pr_patt mt pr lpattop c ++ str "}"
+    | NonMaxImplicit -> str "[" ++ pr_patt mt pr lpattop c ++ str "]"
     | Explicit ->
       match style, c with
-      | NotQuotedPattern, _ | _, {v=CPatAtom _} -> pr_patt pr prec c
-      | QuotedPattern, _ -> str "'" ++ pr_patt pr prec c
+      | NotQuotedPattern, _ | _, {v=CPatAtom _} -> pr_patt mt pr prec c
+      | QuotedPattern, _ -> str "'" ++ pr_patt mt pr prec c
+
+  let pr_patt = pr_patt mt
 
   let pr_eqn pr {loc;v=(pl,rhs)} =
     spc() ++ hov 4

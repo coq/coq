@@ -1113,13 +1113,6 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
   in
   List.fold_left set (main_data,[]) mods
 
-(* Check if an interpretation can be used for printing a cases printing *)
-let has_no_binders_type =
-  List.for_all (fun (_,(_,typ)) ->
-  match typ with
-  | NtnTypeBinder _ | NtnTypeBinderList _ -> false
-  | NtnTypeConstr | NtnTypeConstrList -> true)
-
 (* Compute precedences from modifiers (or find default ones) *)
 
 let set_entry_type from n etyps (x,typ) =
@@ -1467,7 +1460,6 @@ type notation_obj = {
   notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : notation_printing_rules option;
-  notobj_also_in_cases_pattern : bool;
 }
 
 let load_notation_common silently_define_scope_if_undefined _ nobj =
@@ -1490,10 +1482,9 @@ let open_notation i nobj =
     let pat = nobj.notobj_interp in
     let deprecation = nobj.notobj_deprecation in
     let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-    let also_in_cases_pattern = nobj.notobj_also_in_cases_pattern in
     (* Declare the notation *)
     (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use ~also_in_cases_pattern nobj.notobj_coercion deprecation
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
     | None -> ());
     (* Declare specific format if any *)
     (match nobj.notobj_specific_pp_rules with
@@ -1729,7 +1720,6 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
   let interp = make_interpretation_vars recvars acvars plevel i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
-  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing,coe = printability level i_typs vars main_data.onlyparsing reversibility ac in
   let main_data = { main_data with onlyparsing } in
   let use = make_use false onlyparsing main_data.onlyprinting in
@@ -1742,7 +1732,6 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     notobj_deprecation = main_data.deprecation;
     notobj_notation = df';
     notobj_specific_pp_rules = sy_pp_rules;
-    notobj_also_in_cases_pattern = also_in_cases_pattern;
   }
 
 (* Notations without interpretation (Reserved Notation) *)
@@ -1933,9 +1922,8 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let level = (* not relevant *) (constr_lowest_level,[]) in
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
-  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
-  Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
+  Abbreviation.declare_abbreviation ~local deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Activating/deactivating notations                                  *)

@@ -170,7 +170,7 @@ let rec insert_entry_coercion ?loc l c = match l with
 
 let rec insert_pat_coercion ?loc l c = match l with
   | [] -> c
-  | (inscope,ntn)::l -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,([insert_pat_coercion ?loc l c],[]),[])
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,([insert_pat_coercion ?loc l c],[],[]),[])
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -289,10 +289,12 @@ let make_notation loc (inscope,ntn) (terms,termlists,binders,binderlists as subs
       (fun (loc,p) -> CAst.make ?loc @@ CPrim p)
       destPrim terms binders
 
-let make_pat_notation ?loc (inscope,ntn) (terms,termlists as subst) args =
-  if not (List.is_empty termlists) then (CAst.make ?loc @@ CPatNotation (Some inscope,ntn,subst,args)) else
+let make_pat_notation ?loc (inscope,ntn) (terms,termlists,binders as subst) args =
+  if not (List.is_empty termlists && List.is_empty binders) then
+    (CAst.make ?loc @@ CPatNotation (Some inscope,ntn,subst,args))
+  else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l,_) -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,(l,[]),args))
+    (fun (loc,ntn,l,_) -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,(l,[],[]),args))
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
     destPatPrim terms []
 
@@ -389,7 +391,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
       in
       insert_pat_coercion coercion pat
 
-and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop,more_args))
+and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb_to_drop,more_args))
     (custom, (tmp_scope, scopes) as allscopes) vars rule =
   match rule with
     | NotationRule (_,ntn as specific_ntn) ->
@@ -408,12 +410,18 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
               List.map (fun (c,subscope) ->
                 let scopes = update_with_subscope subscope scopes' in
                 extern_cases_pattern_in_scope scopes vars c)
-                subst in
+                terms in
             let ll =
               List.map (fun (c,subscope) ->
                 let scopes = update_with_subscope subscope scopes' in
                 List.map (extern_cases_pattern_in_scope scopes vars) c)
-                substlist in
+                termlists in
+            let bl =
+              List.map (fun (c,subscope) ->
+                let scopes = update_with_subscope subscope scopes' in
+                (extern_cases_pattern_in_scope scopes vars c, Explicit))
+                binders
+            in
             let subscopes = find_arguments_scope gr in
             let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
             let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
@@ -427,7 +435,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
             in
             insert_pat_coercion coercion
               (insert_pat_delimiters ?loc
-                 (make_pat_notation ?loc specific_ntn (l,ll) l2') key)
+                 (make_pat_notation ?loc specific_ntn (l,ll,bl) l2') key)
       end
     | AbbrevRule kn ->
       match availability_of_entry_coercion custom constr_lowest_level with
@@ -437,7 +445,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
       let l1 =
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
-          subst in
+          terms in
       let subscopes = find_arguments_scope gr in
       let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
       let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
@@ -449,7 +457,8 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
             |Some true_args -> true_args
             |None -> raise No_match
       in
-      assert (List.is_empty substlist);
+      assert (List.is_empty termlists);
+      assert (List.is_empty binders);
       insert_pat_coercion ?loc coercion (mkPat ?loc qid (List.rev_append l1 l2'))
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match

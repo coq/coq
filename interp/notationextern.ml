@@ -120,7 +120,7 @@ type notation_rule = interp_rule * interpretation * notation_applicative_status
 let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
   x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
 
-let strictly_finer_interpretation_than (_,(_,interp1,_)) (_,(_,interp2,_)) =
+let strictly_finer_interpretation_than (_,interp1,_) (_,interp2,_) =
   Notation_ops.strictly_finer_interpretation_than interp1 interp2
 
 let keymap_add key interp map =
@@ -131,15 +131,14 @@ let keymap_add key interp map =
 
 let keymap_remove key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
-  KeyMap.add key (List.remove_first (fun (_,rule) -> notation_rule_eq interp rule) old) map
+  KeyMap.add key (List.remove_first (fun rule -> notation_rule_eq interp rule) old) map
 
 let keymap_find key map =
   try KeyMap.find key map
   with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
-(* Boolean = for cases pattern also *)
-let notations_key_table = ref (KeyMap.empty : (bool * notation_rule) list KeyMap.t)
+let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
   | GRef (ref, _) -> Some (canonical_gr ref)
@@ -182,25 +181,22 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | _ -> Oth, NotAppNotation
 
 let uninterp_notations c =
-  List.map_append (fun key -> List.map snd (keymap_find key !notations_key_table))
+  List.map_append (fun key -> keymap_find key !notations_key_table)
     (glob_constr_keys c)
 
-let filter_also_for_pattern =
-  List.map_filter (function (true,x) -> Some x | _ -> None)
-
 let uninterp_cases_pattern_notations c =
-  filter_also_for_pattern (keymap_find (cases_pattern_key c) !notations_key_table)
+  keymap_find (cases_pattern_key c) !notations_key_table
 
 let uninterp_ind_pattern_notations ind =
-  filter_also_for_pattern (keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table)
+  keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table
 
 let remove_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
   notations_key_table := keymap_remove key ((rule,pat,n)) !notations_key_table
 
-let declare_uninterpretation ?(also_in_cases_pattern=true) rule (metas,c as pat) =
+let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_add key (also_in_cases_pattern,(rule,pat,n)) !notations_key_table
+  notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
 
 let freeze () =
   !notations_key_table

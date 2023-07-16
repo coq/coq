@@ -21,6 +21,15 @@ let on_fst f (a,b) = (f a,b)
 let on_snd f (a,b) = (a,f b)
 let map_pair f (a,b) = (f a,f b)
 
+(* Folding under pairs *)
+
+let fold_fst f acc (a,b) = let acc, a = f acc a in acc, (a, b)
+let fold_snd f acc (a,b) = let acc, b = f acc b in acc, (a, b)
+
+(* Equality on pairs *)
+
+let eq_pair eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
+
 (* Mapping under triplets *)
 
 let on_pi1 f (a,b,c) = (f a,b,c)

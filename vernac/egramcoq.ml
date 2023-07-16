@@ -255,8 +255,8 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTIdent : ('self, lident) entry
 | TTName : ('self, lname) entry
-| TTGlobal : ('self, qualid) entry
-| TTBigint : ('self, string) entry
+| TTGlobal : ('r, qualid) entry
+| TTBigint : ('r, string) entry
 | TTBinder : bool -> ('self, kinded_cases_pattern_expr) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : notation_entry * prod_info * (bool * string) list * 'r target -> ('r, 'r list) entry
@@ -429,21 +429,9 @@ let push_constr subst v = { subst with constrs = v :: subst.constrs }
 let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
 match e with
 | TTConstr _ -> push_constr subst v
-| TTIdent ->
-  begin match forpat with
-  | ForConstr -> { subst with binders = (cases_pattern_expr_of_id v, Glob_term.Explicit) :: subst.binders }
-  | ForPattern -> push_constr subst (cases_pattern_expr_of_id v)
-  end
-| TTName ->
-  begin match forpat with
-  | ForConstr -> { subst with binders = (cases_pattern_expr_of_name v, Glob_term.Explicit) :: subst.binders }
-  | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
-  end
-| TTPattern _ ->
-  begin match forpat with
-  | ForConstr -> { subst with binders = (v, Glob_term.Explicit) :: subst.binders }
-  | ForPattern -> push_constr subst v
-  end
+| TTIdent -> { subst with binders = (cases_pattern_expr_of_id v, Glob_term.Explicit) :: subst.binders }
+| TTName -> { subst with binders = (cases_pattern_expr_of_name v, Glob_term.Explicit) :: subst.binders }
+| TTPattern _ -> { subst with binders = (v, Glob_term.Explicit) :: subst.binders }
 | TTBinder o -> { subst with binders = v :: subst.binders }
 | TTOpenBinderList -> { subst with binderlists = v :: subst.binderlists }
 | TTClosedBinderListPure _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
@@ -591,7 +579,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   let env = (env.constrs, env.constrlists, env.binders, env.binderlists) in
   CAst.make ~loc @@ CNotation (None, notation, env)
 | ForPattern -> fun notation loc env ->
-  let env = (env.constrs, env.constrlists) in
+  let env = (env.constrs, env.constrlists, env.binders) in
   CAst.make ~loc @@ CPatNotation (None, notation, env, [])
 
 let extend_constr state forpat ng =

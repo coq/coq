@@ -250,7 +250,6 @@ type entry_coercion_kind =
 
 val declare_notation : notation_with_optional_scope * notation ->
   interpretation -> notation_location -> use:notation_use ->
-  also_in_cases_pattern:bool ->
   entry_coercion_kind option ->
   Deprecation.t option -> unit
 

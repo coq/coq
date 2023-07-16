@@ -472,3 +472,38 @@ Notation "∀' x .. y , P" := (FORALL (fun x => .. (FORALL (fun y => P)) .. ))
 Check ∀ A (B : ValTerm A -> TypTerm), (∀ (a : ◻A), ◻{B a}) -> ◻(∀' {a}, {B a}).
 
 End PartOfIssue17094PrintingAssumption.
+
+Module PartOfIssue17094Pattern.
+
+(* The same but referring this time to a pattern *)
+
+Notation "'FORALL' x .. y , P" := (forall x , .. (forall y , P) .. )
+  (at level 200, x constr at level 8 as pattern, right associativity,
+      format "'[  ' '[  ' 'FORALL'  x  ..  y ']' ,  '/' P ']'") : type_scope.
+Notation "[[ x , y ]]" := (x,y) (x pattern, y pattern).
+Check FORALL [[a , b]], a - b = 0.
+
+End PartOfIssue17094Pattern.
+
+Module PartOfIssue17094Ident.
+
+(* A variant with custom entries and referring this time to a ident *)
+
+Declare Custom Entry quoted_binder'.
+Notation "x" := x (in custom quoted_binder' at level 0, x ident).
+Notation "'FORALL' x .. y , P" := (forall x , .. (forall y , P) .. )
+  (at level 200, x custom quoted_binder' as pattern, right associativity,
+   format "'[  ' '[  ' 'FORALL'  x  ..  y ']' ,  '/' P ']'") : type_scope.
+
+(* Note: notation not used for printing because no rule to print "a:nat" and "b:nat" *)
+Check FORALL a b, a - b = 0.
+
+End PartOfIssue17094Ident.
+
+Module BetterFix13078.
+
+(* We now support referring to ident and pattern in notations for pattern *)
+Notation "# x &" := (Some x) (at level 0, x pattern).
+Check fun (x : option unit) => match x with | None => None | # tt & => # tt & end.
+
+End BetterFix13078.

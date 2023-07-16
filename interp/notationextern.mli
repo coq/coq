@@ -47,7 +47,7 @@ type 'a interp_rule_gen =
 type interp_rule = KerName.t interp_rule_gen
 
 val remove_uninterpretation : interp_rule -> interpretation -> unit
-val declare_uninterpretation : ?also_in_cases_pattern:bool -> interp_rule -> interpretation -> unit
+val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 type notation_applicative_status =
   | AppBoundedNotation of int

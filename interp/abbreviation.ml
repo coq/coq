@@ -23,7 +23,6 @@ type abbreviation =
   { abbrev_pattern : interpretation;
     abbrev_onlyparsing : bool;
     abbrev_deprecation : Deprecation.t option;
-    abbrev_also_in_cases_pattern : bool;
     abbrev_activated : bool; (* Not really necessary in practice *)
   }
 
@@ -77,7 +76,7 @@ let open_abbreviation i ((sp,kn),(_local,abbrev)) =
     if not abbrev.abbrev_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)
-      Notationextern.declare_uninterpretation ~also_in_cases_pattern:abbrev.abbrev_also_in_cases_pattern (AbbrevRule kn) pat
+      Notationextern.declare_uninterpretation (AbbrevRule kn) pat
   end
 
 let import_abbreviation i sp kn =
@@ -103,12 +102,11 @@ let inAbbreviation : Id.t -> (bool * abbreviation) -> obj =
     subst_function = subst_abbreviation;
     classify_function = classify_abbreviation }
 
-let declare_abbreviation ~local ?(also_in_cases_pattern=true) deprecation id ~onlyparsing pat =
+let declare_abbreviation ~local deprecation id ~onlyparsing pat =
   let abbrev =
     { abbrev_pattern = pat;
       abbrev_onlyparsing = onlyparsing;
       abbrev_deprecation = deprecation;
-      abbrev_also_in_cases_pattern = also_in_cases_pattern;
       abbrev_activated = true;
     }
   in
