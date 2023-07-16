@@ -48,7 +48,6 @@ let tag_path = tag Tag.path
 let tag_ref = tag Tag.reference
 let tag_var = tag Tag.variable
 
-
   let keyword s = tag_keyword (str s)
   let sep_v = fun _ -> str"," ++ spc()
   let pr_tight_coma () = str "," ++ cut ()
@@ -76,11 +75,15 @@ let tag_var = tag Tag.variable
     | Number (NumTok.SMinus,_) -> lnegint
     | String _ -> latom
 
-  let print_hunks n pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
+  let adjust_level side prec =
+    match side with
+    | Some _ when !Constrextern.print_parentheses -> LevelLe 0
+    | _ -> prec (* should we care about the separator being possibly empty? *)
+
+  let print_hunks l_not pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
     let env = ref terms and envlist = ref termlists and bl = ref binders and bll = ref binderlists in
     let pop r = let a = List.hd !r in r := List.tl !r; a in
     let return unp pp1 pp2 = (tag_unparsing unp pp1) ++ pp2 in
-    let parens = !Constrextern.print_parentheses in
     (* Warning:
        The following function enforces a very precise order of
        evaluation of sub-components.
@@ -91,7 +94,8 @@ let tag_var = tag Tag.variable
       | UnpMetaVar {notation_relative_level = prec; notation_position = side} as unp :: l ->
         let c = pop env in
         let pp2 = aux l in
-        let pp1 = pr (if parens && side <> None then LevelLe 0 else prec) c in
+        let prec = adjust_level side prec in
+        let pp1 = pr prec c in
         return unp pp1 pp2
       | UnpBinderMetaVar (subentry,style) as unp :: l ->
         let c,bk = pop bl in
@@ -100,7 +104,8 @@ let tag_var = tag Tag.variable
         return unp pp1 pp2
       | UnpListMetaVar ({notation_relative_level = prec; notation_position = side}, sl) as unp :: l ->
         let cl = pop envlist in
-        let pp1 = prlist_with_sep (fun () -> aux sl) (pr (if parens && side <> None then LevelLe 0 else prec)) cl in
+        let prec' = adjust_level side prec in
+        let pp1 = prlist_with_sep (fun () -> aux sl) (pr prec') cl in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpBinderListMetaVar (isopen, withquote, sl) as unp :: l ->
@@ -125,7 +130,7 @@ let tag_var = tag Tag.variable
 
   let pr_notation pr pr_patt pr_binders which s env =
     let { notation_printing_unparsing = unpl; notation_printing_level = level } = find_notation_printing_rule which s in
-    print_hunks level pr pr_patt pr_binders env unpl, level
+    print_hunks level pr pr_patt pr_binders env unpl
 
   let pr_delimiters key strm =
     strm ++ str ("%"^key)
@@ -278,57 +283,72 @@ let tag_var = tag Tag.variable
   let lpatcast = LevelLe 100
   let lpattop = LevelLe 200
 
-  let rec pr_patt sep pr inh p =
-    let (strm,prec) = match CAst.(p.v) with
+  let rec pr_patt_args pr args =
+    match args with
+    | [] -> mt ()
+    | args ->
+      let last, args = List.sep_last args in
+      prlist (pr_patt spc pr (LevelLt lapp)) args ++ pr_patt spc pr (LevelLt lapp) last
+
+  and pr_patt sep pr inh p =
+    let return pp prec =
+      let no_surround = Notation.prec_less prec inh in
+      let pp = if no_surround then pp else surround pp in
+      pr_with_comments ?loc:p.CAst.loc (sep() ++ pp) in
+    match CAst.(p.v) with
       | CPatRecord l ->
-        pr_record_body "{|" "|}" (pr_patt spc pr lpattop) l, lpatrec
+        return (pr_record_body "{|" "|}" (pr_patt spc pr lpattop) l) lpatrec
 
       | CPatAlias (p, na) ->
-        pr_patt mt pr (LevelLe las) p ++ str " as " ++ pr_lname na, las
+        return (pr_patt mt pr (LevelLe las) p ++ str " as " ++ pr_lname na) las
 
       | CPatCstr (c, None, []) ->
-        pr_reference c, latom
+        return (pr_reference c) latom
 
       | CPatCstr (c, None, args) ->
-        pr_reference c ++ prlist (pr_patt spc pr (LevelLt lapp)) args, lapp
+        return (pr_reference c ++ pr_patt_args pr args) lapp
 
       | CPatCstr (c, Some args, []) ->
-        str "@" ++ pr_reference c ++ prlist (pr_patt spc pr (LevelLt lapp)) args, lapp
+        return (str "@" ++ pr_reference c ++ pr_patt_args pr args) lapp
 
       | CPatCstr (c, Some expl_args, extra_args) ->
-        surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc pr (LevelLt lapp)) expl_args)
-        ++ prlist (pr_patt spc pr (LevelLt lapp)) extra_args, lapp
+        return (
+            surround (str "@" ++ pr_reference c ++ pr_patt_args pr expl_args)
+            ++ pr_patt_args pr extra_args) lapp
 
       | CPatAtom (None) ->
-        str "_", latom
+        return (str "_") latom
 
       | CPatAtom (Some r) ->
-        pr_reference r, latom
+        return (pr_reference r) latom
 
       | CPatOr pl ->
-        let pp p = hov 0 (pr_patt mt pr lpattop p) in
-        surround (hov 0 (prlist_with_sep pr_spcbar pp pl)), lpator
+        return (
+            let pp p = hov 0 (pr_patt mt pr lpattop p) in
+            surround (hov 0 (prlist_with_sep pr_spcbar pp pl))) lpator
 
       | CPatNotation (_,(_,"( _ )"),([p],[],[]),[]) ->
-        pr_patt (fun()->str"(") pr lpattop p ++ str")", latom
+        return (pr_patt (fun()->str"(") pr lpattop p ++ str")") latom
 
       | CPatNotation (which,s,(l,ll,bl),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt pr) (pr_patt_binder pr) (fun _ _ _ -> mt) which s (l,ll,bl,[]) in
-        (if List.is_empty args||Notation.prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
-        ++ prlist (pr_patt spc pr (LevelLt lapp)) args, if not (List.is_empty args) then lapp else l_not
+        let l_not = (find_notation_printing_rule which s).notation_printing_level in
+        let no_inner_surrounding = List.is_empty args || Notation.prec_less l_not (LevelLt lapp) in
+        return (
+            let strm_not = pr_notation (pr_patt mt pr) (pr_patt_binder pr) (fun _ _ _ _ -> mt()) which s (l,ll,bl,[]) in
+            (if List.is_empty args then strm_not else
+            if Notation.prec_less l_not (LevelLt lapp) then strm_not else
+              surround strm_not)
+            ++ pr_patt_args pr args)
+          (if not (List.is_empty args) then lapp else if no_inner_surrounding then l_not else latom)
 
       | CPatPrim p ->
-        pr_prim_token p, latom
+        return (pr_prim_token p) latom
 
       | CPatDelimiters (k,p) ->
-        pr_delimiters k (pr_patt mt pr lsimplepatt p), 1
+        return (pr_delimiters k (pr_patt mt pr lsimplepatt p)) 1
 
       | CPatCast (p,t) ->
-        (pr_patt mt pr lpatcast p ++ spc () ++ str ":" ++ ws 1 ++ pr t), 1
-    in
-    let loc = p.CAst.loc in
-    pr_with_comments ?loc
-      (sep() ++ if Notation.prec_less prec inh then strm else surround strm)
+        return (pr_patt mt pr lpatcast p ++ spc () ++ str ":" ++ ws 1 ++ pr t) 1
 
   and pr_patt_binder pr prec style bk c =
     match bk with
@@ -495,15 +515,24 @@ let tag_var = tag Tag.variable
     hov 0 (pr (LevelLe lproj) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
 
   let pr_appexpl pr (f,us) l =
+    let pargs = match l with
+    | [] -> mt ()
+    | args ->
+      let last, l = List.sep_last l in
+      prlist (pr_sep_com spc (pr (LevelLt lapp))) l ++
+      pr_sep_com spc (pr (LevelLt lapp)) last in
     hov 2 (
       str "@" ++ pr_reference f ++
-        pr_universe_instance us ++
-        prlist (pr_sep_com spc (pr (LevelLt lapp))) l)
+        pr_universe_instance us ++ pargs)
 
   let pr_app pr a l =
-    hov 2 (
-      pr (LevelLt lapp) a  ++
-        prlist (fun a -> spc () ++ pr_expl_args pr a) l)
+    let pargs = match l with
+    | [] -> mt ()
+    | args ->
+      let last, l = List.sep_last l in
+      prlist (fun a -> spc () ++ pr_expl_args pr a) l ++
+      spc () ++ pr_expl_args pr last in
+    hov 2 (pr (LevelLt lapp) a ++ pargs)
 
   let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
 
@@ -557,41 +586,41 @@ let tag_var = tag Tag.variable
       else name
     in
     let pp = if String.is_empty name then parg else str name ++ str ":" ++ surround parg in
-    return (pp, latom)
+    return pp latom
 
   let pr pr sep inherited a =
-    let return (cmds, prec) = (tag_constr_expr a cmds, prec) in
-    let (strm, prec) = match CAst.(a.v) with
+    let return cmds prec =
+      let no_surround = Notation.prec_less prec inherited in
+      let pp = tag_constr_expr a (cmds) in
+      let pp = if no_surround then pp else surround pp in
+      pr_with_comments ?loc:a.CAst.loc (sep() ++ pp) in
+    match CAst.(a.v) with
       | CRef (r, us) ->
-        return (pr_cref r us, latom)
+        return (pr_cref r us) latom
       | CFix (id,fix) ->
         return (
           hv 0 (pr_recursive "fix"
-                   (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v fix),
+                   (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v fix))
           lfix
-        )
       | CCoFix (id,cofix) ->
         return (
           hv 0 (pr_recursive "cofix"
-                   (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v cofix),
+                   (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v cofix))
           lfix
-        )
       | CProdN (bl,a) ->
         return (
           hov 0 (
             hov 2 (pr_delimited_binders pr_forall spc true
                      (pr mt ltop) bl) ++
-              str "," ++ pr spc ltop a),
+              str "," ++ pr spc ltop a))
           lprod
-        )
       | CLambdaN (bl,a) ->
         return (
           hov 0 (
             hov 2 (pr_delimited_binders pr_fun spc true
                      (pr mt ltop) bl) ++
-              pr_fun_sep ++ pr spc ltop a),
+              pr_fun_sep ++ pr spc ltop a))
           llambda
-        )
       | CLetIn ({v=Name x}, ({ v = CFix({v=x'},[_])}
                           |  { v = CCoFix({v=x'},[_]) } as fx), t, b)
           when Id.equal x x' ->
@@ -600,9 +629,8 @@ let tag_var = tag Tag.variable
             hov 2 (keyword "let" ++ spc () ++ pr mt ltop fx
                    ++ spc ()
                    ++ keyword "in") ++
-              pr spc ltop b),
+              pr spc ltop b))
           lletin
-        )
       | CLetIn (x,a,t,b) ->
         return (
           hv 0 (
@@ -610,27 +638,25 @@ let tag_var = tag Tag.variable
                    ++ pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr mt ltop t) t
                    ++ str " :=" ++ pr spc ltop a ++ spc ()
                    ++ keyword "in") ++
-              pr spc ltop b),
+              pr spc ltop b))
           lletin
-        )
       | CProj (true,(f,us),l,c) ->
         let l = List.map (function (c,None) -> c | _ -> assert false) l in
-        return (pr_proj (pr mt) pr_appexpl c (f,us) l, lproj)
+        return (pr_proj (pr mt) pr_appexpl c (f,us) l) lproj
       | CProj (false,(f,us),l,c) ->
-        return (pr_proj (pr mt) pr_app c (CAst.make (CRef (f,us))) l, lproj)
+        return (pr_proj (pr mt) pr_app c (CAst.make (CRef (f,us))) l) lproj
       | CAppExpl ((qid,us),[t])
       | CApp ({v = CRef(qid,us)},[t,None])
           when qualid_is_ident qid && Id.equal (qualid_basename qid) Notation_ops.ldots_var ->
         return (
-          hov 0 (str ".." ++ pr spc (LevelLe latom) t ++ spc () ++ str ".."),
+          hov 0 (str ".." ++ pr spc (LevelLe latom) t ++ spc () ++ str ".."))
           larg
-        )
       | CAppExpl ((f,us),l) ->
-        return (pr_appexpl (pr mt) (f,us) l, lapp)
+        return (pr_appexpl (pr mt) (f,us) l) lapp
       | CApp (a,l) ->
-        return (pr_app (pr mt) a l, lapp)
+        return (pr_app (pr mt) a l) lapp
       | CRecord l ->
-        return (pr_record_body "{|" "|}" (pr spc ltop) l, latom)
+        return (pr_record_body "{|" "|}" (pr spc ltop) l) latom
       | CCases (Constr.LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
         return (
           hv 0 (
@@ -639,9 +665,8 @@ let tag_var = tag Tag.variable
                        pr_as_in (pr mt ltop) as_clause in_clause ++
                        str " :=" ++ pr spc ltop c ++
                        pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
-                       spc () ++ keyword "in" ++ pr spc ltop b)),
+                       spc () ++ keyword "in" ++ pr spc ltop b)))
           lletpattern
-        )
       | CCases(_,rtntypopt,c,eqns) ->
         return (
           v 0
@@ -652,9 +677,8 @@ let tag_var = tag Tag.variable
                        ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
                      spc () ++ keyword "with") ++
                prlist (pr_eqn (pr mt)) eqns ++ spc()
-             ++ keyword "end"),
+             ++ keyword "end"))
           latom
-        )
       | CLetTuple (nal,(na,po),c,b) ->
         return (
           hv 0 (
@@ -665,9 +689,8 @@ let tag_var = tag Tag.variable
                        pr_simple_return_type (pr mt) na po ++ str " :=") ++
                        pr spc ltop c
                      ++ keyword " in") ++
-              pr spc ltop b),
+              pr spc ltop b))
           lletin
-        )
       | CIf (c,(na,po),b1,b2) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
          parsing est lui plus tolérant) *)
@@ -678,48 +701,42 @@ let tag_var = tag Tag.variable
               spc () ++
               hov 0 (keyword "then"
                      ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
-              hov 0 (keyword "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
+              hov 0 (keyword "else" ++ pr (fun () -> brk (1,1)) ltop b2)))
         lif
-        )
-
       | CHole (_,IntroIdentifier id) ->
-        return (str "?[" ++ pr_id id ++ str "]", latom)
+        return (str "?[" ++ pr_id id ++ str "]") latom
       | CHole (_,IntroFresh id) ->
-        return (str "?[?" ++ pr_id id ++ str "]", latom)
-      | CHole _ -> return (str "_", latom)
+        return (str "?[?" ++ pr_id id ++ str "]") latom
+      | CHole _ -> return (str "_") latom
       | CGenarg arg -> pr_genarg return (Rawarg arg)
       | CGenargGlob arg -> pr_genarg return (Globarg arg)
       | CEvar (n,l) ->
-        return (pr_evar (pr mt) n l, latom)
+        return (pr_evar (pr mt) n l) latom
       | CPatVar p ->
-        return (str "@?" ++ pr_patvar p, latom)
+        return (str "@?" ++ pr_patvar p) latom
       | CSort s ->
-        return (pr_sort_expr s, latom)
+        return (pr_sort_expr s) latom
       | CCast (a,k,b) ->
         return (
           hv 0 (pr mt (LevelLt lcast) a ++ spc () ++
-                (pr_cast k) ++ ws 1 ++ pr mt (LevelLe (-lcast)) b),
+                (pr_cast k) ++ ws 1 ++ pr mt (LevelLe lprod) b))
           lcast
-        )
       | CNotation (_,(_,"( _ )"),([t],[],[],[])) ->
-        return (pr (fun()->str"(") ltop t ++ str")", latom)
+        return (pr (fun()->str"(") ltop t ++ str")") latom
       | CNotation (which,s,env) ->
-        pr_notation (pr mt) (pr_patt_binder (pr mt ltop)) (pr_binders_gen (pr mt ltop)) which s env
+        let l_not = (find_notation_printing_rule which s).notation_printing_level in
+        return (pr_notation (pr mt) (pr_patt_binder (pr mt ltop)) (pr_binders_gen (pr mt ltop)) which s env) l_not
       | CGeneralization (bk,c) ->
-        return (pr_generalization bk (pr mt ltop c), latom)
+        return (pr_generalization bk (pr mt ltop c)) latom
       | CPrim p ->
-        return (pr_prim_token p, prec_of_prim_token p)
+        return (pr_prim_token p) (prec_of_prim_token p)
       | CDelimiters (sc,a) ->
-        return (pr_delimiters sc (pr mt (LevelLe ldelim) a), ldelim)
+        return (pr_delimiters sc (pr mt (LevelLe ldelim) a)) ldelim
       | CArray(u, t,def,ty) ->
-        hov 0 (str "[| " ++ prvect_with_sep (fun () -> str "; ") (pr mt ltop) t ++
+        return (hov 0 (str "[| " ++ prvect_with_sep (fun () -> str "; ") (pr mt ltop) t ++
                (if not (Array.is_empty t) then str " " else mt()) ++
                str "|" ++ spc() ++ pr mt ltop def ++ pr_opt_type_spc (pr mt) ty ++
-               str " |]" ++ pr_universe_instance u), 0
-    in
-    let loc = constr_loc a in
-    pr_with_comments ?loc
-      (sep() ++ if Notation.prec_less prec inherited then strm else surround strm)
+               str " |]" ++ pr_universe_instance u)) 0
 
   type term_pr = {
     pr_constr_expr   : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
@@ -771,4 +788,3 @@ let tag_var = tag Tag.variable
   let pr_cases_pattern_expr = pr_patt (pr ltop) ltop
 
   let pr_binders env sigma = pr_undelimited_binders spc true (pr_expr env sigma ltop)
-
