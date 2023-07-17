@@ -205,6 +205,11 @@ project bbv "https://github.com/mit-plv/bbv" "master"
 project bedrock2 "https://github.com/mit-plv/bedrock2" "tested"
 
 ########################################################################
+# Coinduction
+########################################################################
+project coinduction "https://github.com/damien-pous/coinduction" "master"
+
+########################################################################
 # coq-lsp
 ########################################################################
 project coq_lsp "https://github.com/ejgallego/coq-lsp" "main"

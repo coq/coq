@@ -848,6 +848,9 @@ plugin:ci-itauto:
 plugin:ci-bignums:
   extends: .ci-template-flambda
 
+plugin:ci-coinduction:
+  extends: .ci-template-flambda
+
 plugin:ci-coq_dpdgraph:
   extends: .ci-template
 
