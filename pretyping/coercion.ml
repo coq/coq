@@ -627,13 +627,16 @@ type hook = env -> evar_map -> flags:Evarconv.unify_flags -> constr ->
 
 let all_hooks = ref (CString.Map.empty : hook CString.Map.t)
 
+let registered_hooks = Summary.ref ~name:"coercion_hooks" CString.Set.empty
+
 let register_hook ~name ?(override=false) h =
-  if not override && CString.Map.mem name !all_hooks then
+  if not override && CString.Set.mem name !registered_hooks then
     CErrors.anomaly ~label:"Coercion.register_hook"
       Pp.(str "Hook already registered: \"" ++ str name ++ str "\".");
+  registered_hooks := CString.Set.add name !registered_hooks;
   all_hooks := CString.Map.add name h !all_hooks
 
-let active_hooks = Summary.ref ~name:"coercion_hooks" ([] : string list)
+let active_hooks = Summary.ref ~name:"coercion_hooks_active" ([] : string list)
 
 let deactivate_hook ~name =
   active_hooks := List.filter (fun s -> not (String.equal s name)) !active_hooks
