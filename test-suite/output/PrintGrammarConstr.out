@@ -58,7 +58,6 @@ Entry term is
   | "["; term LEVEL "10"; "|"; term LEVEL "200"; "]"
   | "("; term LEVEL "200"; ")"
   | "{|"; record_declaration; '|}'
-  | "{"; binder_constr; "}"
   | "`{"; term LEVEL "200"; "}"
   | "`("; term LEVEL "200"; ")"
   | NUMBER
