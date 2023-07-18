@@ -1645,6 +1645,13 @@ let entry_has_ident { notation_subentry = entry; notation_relative_level = n } =
   | InCustomEntry s ->
      try entry_relative_level_le (String.Map.find s !entry_has_ident_map) n with Not_found -> false
 
+let app_level = 10
+
+let prec_less child = function
+  | LevelLt parent -> child < parent
+  | LevelLe parent -> child <= parent
+  | LevelSome -> true
+
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int

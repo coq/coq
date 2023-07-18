@@ -62,7 +62,7 @@ let tag_var = tag Tag.variable
   let lfix = 200
   let lcast = 100
   let larg = 9
-  let lapp = 10
+  let lapp = Notation.app_level
   let lposint = 0
   let lnegint = 35 (* must be consistent with Notation "- x" *)
   let ltop = LevelLe 200
@@ -70,11 +70,6 @@ let tag_var = tag Tag.variable
   let ldelim = 1
   let lsimpleconstr = LevelLe 8
   let lsimplepatt = LevelLe 1
-
-  let prec_less child = function
-    | LevelLt parent -> (<) child parent
-    | LevelLe parent -> if parent < 0 && Int.equal child lprod then true else child <= abs parent
-    | LevelSome -> true
 
   let prec_of_prim_token = function
     | Number (NumTok.SPlus,_) -> lposint
@@ -319,7 +314,7 @@ let tag_var = tag Tag.variable
 
       | CPatNotation (which,s,(l,ll,bl),args) ->
         let strm_not, l_not = pr_notation (pr_patt mt pr) (pr_patt_binder pr) (fun _ _ _ -> mt) which s (l,ll,bl,[]) in
-        (if List.is_empty args||prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
+        (if List.is_empty args||Notation.prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc pr (LevelLt lapp)) args, if not (List.is_empty args) then lapp else l_not
 
       | CPatPrim p ->
@@ -333,7 +328,7 @@ let tag_var = tag Tag.variable
     in
     let loc = p.CAst.loc in
     pr_with_comments ?loc
-      (sep() ++ if prec_less prec inh then strm else surround strm)
+      (sep() ++ if Notation.prec_less prec inh then strm else surround strm)
 
   and pr_patt_binder pr prec style bk c =
     match bk with
@@ -724,7 +719,7 @@ let tag_var = tag Tag.variable
     in
     let loc = constr_loc a in
     pr_with_comments ?loc
-      (sep() ++ if prec_less prec inherited then strm else surround strm)
+      (sep() ++ if Notation.prec_less prec inherited then strm else surround strm)
 
   type term_pr = {
     pr_constr_expr   : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;

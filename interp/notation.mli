@@ -373,6 +373,10 @@ val declare_custom_entry_has_ident : string -> int -> unit
 val entry_has_global : notation_entry_relative_level -> bool
 val entry_has_ident : notation_entry_relative_level -> bool
 
+val app_level : int
+
+val prec_less : entry_level -> entry_relative_level -> bool
+
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
 val declare_notation_level : notation -> level -> unit

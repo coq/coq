@@ -16,8 +16,6 @@ open Libnames
 open Constrexpr
 open Names
 
-val prec_less : entry_level -> entry_relative_level -> bool
-
 val pr_tight_coma : unit -> Pp.t
 
 val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
