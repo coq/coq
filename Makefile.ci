@@ -12,12 +12,14 @@ CI_TARGETS= \
     ci-itauto \
     ci-aac_tactics \
     ci-argosy \
+    ci-async_test \
     ci-atbr \
     ci-autosubst \
     ci-bbv \
     ci-bedrock2 \
     ci-bignums \
     ci-category_theory \
+    ci-ceres \
     ci-coinduction \
     ci-color \
     ci-compcert \
@@ -48,8 +50,12 @@ CI_TARGETS= \
     ci-fourcolor \
     ci-coqhammer \
     ci-hott \
+    ci-http \
     ci-iris \
+    ci-itree \
+    ci-itree_io \
     ci-jasmin \
+    ci-json \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-math_classes \
@@ -66,8 +72,10 @@ CI_TARGETS= \
     ci-oddorder \
     ci-paco \
     ci-paramcoq \
+    ci-parsec \
     ci-perennial \
     ci-quickchick \
+    ci-quickchick_test \
     ci-reduction_effects \
     ci-relation_algebra \
     ci-rewriter \
@@ -132,7 +140,14 @@ ci-iris: ci-autosubst
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
+ci-quickchick_test: ci-quickchick
 ci-itree: ci-ext_lib ci-paco
+ci-itree_io: ci-itree ci-simple_io
+
+ci-parsec: ci-ext_lib ci-ceres
+ci-json: ci-parsec ci-menhir
+ci-async_test: ci-itree_io ci-json ci-quickchick
+ci-http: ci-async_test
 
 ci-equations_test: ci-equations
 
