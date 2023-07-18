@@ -30,6 +30,9 @@ val interpretation_eq : interpretation -> interpretation -> bool
 val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
 (** Equality on [notation_entry_level]. *)
 
+val notation_entry_relative_level_eq : notation_entry_relative_level -> notation_entry_relative_level -> bool
+(** Equality on [notation_entry_relative_level]. *)
+
 type level = notation_entry_level * entry_relative_level list
 (** The "signature" of a rule: its level together with the levels of its subentries *)
 

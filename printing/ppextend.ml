@@ -39,9 +39,9 @@ let ppcmd_of_cut = function
 type pattern_quote_style = QuotedPattern | NotQuotedPattern
 
 type unparsing =
-  | UnpMetaVar of entry_relative_level * side option
-  | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
-  | UnpListMetaVar of entry_relative_level * unparsing list * side option
+  | UnpMetaVar of notation_entry_relative_level
+  | UnpBinderMetaVar of notation_entry_relative_level * pattern_quote_style
+  | UnpListMetaVar of notation_entry_relative_level * unparsing list
   | UnpBinderListMetaVar of
       bool (* true if open binder *) *
       bool (* true if printed with a quote *) *
@@ -53,9 +53,9 @@ type unparsing =
 type unparsing_rule = unparsing list
 
 let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
-  | UnpMetaVar (p1,s1), UnpMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
-  | UnpBinderMetaVar (p1,s1), UnpBinderMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
-  | UnpListMetaVar (p1,l1,s1), UnpListMetaVar (p2,l2,s2) -> entry_relative_level_eq p1 p2 && List.for_all2eq unparsing_eq l1 l2 && s1 = s2
+  | UnpMetaVar subentry1, UnpMetaVar subentry2 -> notation_entry_relative_level_eq subentry1 subentry2
+  | UnpBinderMetaVar (subentry1,s1), UnpBinderMetaVar (subentry2,s2) -> notation_entry_relative_level_eq subentry1 subentry2 && s1 = s2
+  | UnpListMetaVar (subentry1,l1), UnpListMetaVar (subentry2,l2) -> notation_entry_relative_level_eq subentry1 subentry2 && List.for_all2eq unparsing_eq l1 l2
   | UnpBinderListMetaVar (b1,q1,l1), UnpBinderListMetaVar (b2,q2,l2) -> b1 = b2 && q1 = q2 && List.for_all2eq unparsing_eq l1 l2
   | UnpTerminal s1, UnpTerminal s2 -> String.equal s1 s2
   | UnpBox (b1,l1), UnpBox (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq (List.map snd l1) (List.map snd l2)

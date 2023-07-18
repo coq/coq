@@ -93,17 +93,17 @@ let tag_var = tag Tag.variable
     let rec aux = function
       | [] ->
         mt ()
-      | UnpMetaVar (prec, side) as unp :: l ->
+      | UnpMetaVar {notation_relative_level = prec; notation_position = side} as unp :: l ->
         let c = pop env in
         let pp2 = aux l in
         let pp1 = pr (if parens && side <> None then LevelLe 0 else prec) c in
         return unp pp1 pp2
-      | UnpBinderMetaVar (prec,style) as unp :: l ->
+      | UnpBinderMetaVar (subentry,style) as unp :: l ->
         let c,bk = pop bl in
         let pp2 = aux l in
-        let pp1 = pr_patt prec style bk c in
+        let pp1 = pr_patt subentry.notation_relative_level style bk c in
         return unp pp1 pp2
-      | UnpListMetaVar (prec, sl, side) as unp :: l ->
+      | UnpListMetaVar ({notation_relative_level = prec; notation_position = side}, sl) as unp :: l ->
         let cl = pop envlist in
         let pp1 = prlist_with_sep (fun () -> aux sl) (pr (if parens && side <> None then LevelLe 0 else prec)) cl in
         let pp2 = aux l in
