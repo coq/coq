@@ -8,7 +8,7 @@ protocol that coqtop and IDEs use to communicate. The protocol first appeared
 with Coq 8.5, and is used by CoqIDE, [vscoq](https://github.com/coq-community/vscoq/), and other user interfaces.
 
 A somewhat out-of-date description of the async state machine is
-[documented here](https://github.com/ejgallego/jscoq/blob/v8.10/etc/notes/coq-notes.md).
+[documented here](https://github.com/ejgallego/jscoq/blob/v8.16/etc/notes/coq-notes.md).
 OCaml types for the protocol can be found in the [`ide/protocol/interface.ml` file](/ide/protocol/interface.ml).
 
 Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/dev/doc/changes.md).
