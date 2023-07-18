@@ -568,3 +568,23 @@ Notation "! x" := (list x) (at level 0, x at level 50, right associativity, form
 Check ((!!nat) + bool)%type.
 
 End CyclicNotations.
+
+Module CustomCyclicNotations.
+
+Declare Custom Entry myconstr2.
+Notation "[ x ]" := x (x custom myconstr2 at level 6).
+Notation "! x" := (x,1) (in custom myconstr2 at level 0, x at level 2, format "! x").
+Notation "x + y" := (x,y,2) (in custom myconstr2 at level 2, left associativity).
+Notation "x" := x (in custom myconstr2 at level 0, x ident).
+
+(* Check that the custom notation is not used, because parentheses are
+    missing in the entry *)
+Check fun z:nat => ((z,1),z,2).
+
+Notation "( x )" := x (in custom myconstr2 at level 0, x at level 2).
+
+(* Check that parentheses are preserved when an entry refers on the
+   right on a higher level than where it is *)
+Check fun z:nat => [(!! z) + z].
+
+End CustomCyclicNotations.

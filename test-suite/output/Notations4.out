@@ -263,3 +263,7 @@ lambda x y : nat, x + y = 0
      : nat -> nat -> Prop
 ((!!nat) + bool)%type
      : Set
+fun z : nat => (z, 1, z, 2)
+     : nat -> nat * nat * nat * nat
+fun z : nat => [(!!z) + z]
+     : nat -> nat * nat * nat * nat * nat
