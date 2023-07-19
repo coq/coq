@@ -260,7 +260,7 @@ and nf_args env sigma args t =
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
   in
-  let t,l = Array.fold_right aux args (t,[]) in
+  let t,l = List.fold_right aux args (t,[]) in
   t, List.rev l
 
 and nf_bargs env sigma b t =
@@ -406,7 +406,7 @@ and nf_evar env sigma evk args =
     let fold accu d = EConstr.mkNamedProd_or_LetIn sigma d accu in
     let t = List.fold_left fold ty hyps in
     let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
-    let ty, args = nf_args env sigma args t in
+    let ty, args = nf_args env sigma (Array.to_list args) t in
     (* nf_args takes arguments in the reverse order but produces them
        in the correct one, so we have to reverse them again for the
        evar node *)
