@@ -37,6 +37,7 @@ val cofix_evaluated_tag : tag
 type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
+  | Const_evar of Evar.t
   | Const_b0 of tag
   | Const_univ_level of Univ.Level.t
   | Const_val of structured_values

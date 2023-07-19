@@ -103,15 +103,12 @@ type t = fv_elem
 
 let compare e1 e2 = match e1, e2 with
 | FVnamed id1, FVnamed id2 -> Id.compare id1 id2
-| FVnamed _, (FVrel _ | FVuniv_var _ | FVevar _) -> -1
+| FVnamed _, (FVrel _ | FVuniv_var _) -> -1
 | FVrel _, FVnamed _ -> 1
 | FVrel r1, FVrel r2 -> Int.compare r1 r2
-| FVrel _, (FVuniv_var _ | FVevar _) -> -1
+| FVrel _, (FVuniv_var _) -> -1
 | FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
 | FVuniv_var _, (FVnamed _ | FVrel _) -> 1
-| FVuniv_var _, FVevar _ -> -1
-| FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
-| FVevar e1, FVevar e2 -> Evar.compare e1 e2
 
 end
 
@@ -309,15 +306,6 @@ let pos_universe_var i r sz =
       r.in_env := push_fv db env;
       Kenvacc(r.offset + pos)
 
-let pos_evar evk r =
-  let env = !(r.in_env) in
-  let cid = FVevar evk in
-  try Kenvacc(r.offset + find_at cid env)
-  with Not_found ->
-    let pos = env.size in
-    r.in_env := push_fv cid env;
-    Kenvacc (r.offset + pos)
-
 (*i  Examination of the continuation *)
 
 (* Discard all instructions up to the next label.                        *)
@@ -479,7 +467,6 @@ let compile_fv_elem cenv fv sz cont =
   | FVrel i -> pos_rel i cenv sz :: cont
   | FVnamed id -> pos_named id cenv :: cont
   | FVuniv_var i -> pos_universe_var i cenv sz :: cont
-  | FVevar evk -> pos_evar evk cenv :: cont
 
 let rec compile_fv cenv l sz cont =
   match l with
@@ -536,12 +523,12 @@ let rec compile_lam env cenv lam sz cont =
 
   | Levar (evk, args) ->
       if Array.is_empty args then
-        compile_fv_elem cenv (FVevar evk) sz cont
+        compile_structured_constant cenv (Const_evar evk) sz cont
       else
         (** Arguments are reversed in evar instances *)
         let args = Array.copy args in
         let () = Array.rev args in
-        comp_app compile_fv_elem (compile_lam env) cenv (FVevar evk) args sz cont
+        comp_app compile_structured_constant (compile_lam env) cenv (Const_evar evk) args sz cont
 
   | Lconst (kn,u) -> compile_constant env cenv kn u [||] sz cont
 
