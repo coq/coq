@@ -71,6 +71,21 @@ let tag_var = tag Tag.variable
   let lsimplepatt = LevelLe 1
   let no_after = None
 
+  let overlap_right_left which s lev_after =
+    let { notation_printing_unparsing = unpl } = find_notation_printing_rule which s in
+    let rec aux = function
+      | [] -> false
+      | [UnpMetaVar subentry | UnpListMetaVar (subentry, _)] ->
+        if Notationextern.notation_entry_eq subentry.notation_subentry InConstrEntry then
+          Notation.may_capture_cont_after lev_after subentry.notation_relative_level
+        else
+          (* Handled in constextern.ml *)
+          false
+      | [UnpBox (b,sub)] -> aux (List.map snd sub)
+      | (UnpMetaVar _ | UnpListMetaVar _ | UnpBinderMetaVar _
+        | UnpBinderListMetaVar _ | UnpTerminal _ | UnpBox _ | UnpCut _) :: l -> aux l in
+    aux unpl
+
   let prec_of_prim_token = function
     | Number (NumTok.SPlus,_) -> lposint
     | Number (NumTok.SMinus,_) -> lnegint
@@ -78,8 +93,11 @@ let tag_var = tag Tag.variable
 
   let adjust_level side lev_after l_not prec =
     match side with
-    | Some _ when !Constrextern.print_parentheses -> lev_after, LevelLe 0
-    | _ -> lev_after,prec (* should we care about the separator being possibly empty? *)
+    | Some _ when !Constrextern.print_parentheses -> no_after, LevelLe 0
+    | Some Right ->
+      (if Notation.may_capture_cont_after lev_after prec then no_after else lev_after), prec
+    | Some Left -> Some l_not, prec
+    | None -> no_after,prec (* should we care about the separator being possibly empty? *)
 
   let print_hunks l_not lev_after pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
     let env = ref terms and envlist = ref termlists and bl = ref binders and bll = ref binderlists in
@@ -301,6 +319,7 @@ let tag_var = tag Tag.variable
   and pr_patt sep pr lev_after inh p =
     let return cmds prec =
       let no_surround = Notation.prec_less prec inh in
+      let lev_after = if no_surround then lev_after else no_after in
       let pp = cmds lev_after in
       let pp = if no_surround then pp else surround pp in
       pr_with_comments ?loc:p.CAst.loc (sep() ++ pp) in
@@ -346,6 +365,7 @@ let tag_var = tag Tag.variable
             let lev_after' = if no_inner_surrounding then lev_after else no_after in
             let strm_not = pr_notation lev_after (pr_patt mt pr) (pr_patt_binder pr) (fun _ _ _ _ -> mt()) which s (l,ll,bl,[]) in
             (if List.is_empty args then strm_not else
+            if overlap_right_left which s lev_after then surround strm_not else
             if Notation.prec_less l_not (LevelLt lapp) then strm_not else
               surround strm_not)
             ++ pr_patt_args pr lev_after' args)
@@ -601,6 +621,7 @@ let tag_var = tag Tag.variable
   let pr pr sep lev_after inherited a =
     let return cmds prec =
       let no_surround = Notation.prec_less prec inherited in
+      let lev_after = if no_surround then lev_after else no_after in
       let pp = tag_constr_expr a (cmds lev_after) in
       let pp = if no_surround then pp else surround pp in
       pr_with_comments ?loc:a.CAst.loc (sep() ++ pp) in
@@ -735,6 +756,7 @@ let tag_var = tag Tag.variable
         return (fun lev_after -> pr (fun()->str"(") no_after ltop t ++ str")") latom
       | CNotation (which,s,env) ->
         let l_not = (find_notation_printing_rule which s).notation_printing_level in
+        let l_not = if overlap_right_left which s lev_after then max_int else l_not in
         return (fun lev_after -> pr_notation lev_after (pr mt) (pr_patt_binder (pr mt no_after ltop)) (pr_binders_gen (pr mt no_after ltop)) which s env) l_not
       | CGeneralization (bk,c) ->
         return (fun lev_after -> pr_generalization bk (pr mt no_after ltop c)) latom

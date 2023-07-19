@@ -1652,6 +1652,11 @@ let prec_less child = function
   | LevelLe parent -> child <= parent
   | LevelSome -> true
 
+let may_capture_cont_after child parent =
+  match child with
+  | None -> false
+  | Some lev_after -> prec_less lev_after parent
+
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int

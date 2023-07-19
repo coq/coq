@@ -261,3 +261,5 @@ Notation "[[ _ ]]" is already defined at level 0 with arguments custom foo
 while it is now required to be at level 0 with arguments custom bar.
 lambda x y : nat, x + y = 0
      : nat -> nat -> Prop
+((!!nat) + bool)%type
+     : Set

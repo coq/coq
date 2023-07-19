@@ -561,3 +561,10 @@ Notation "'lambda' x .. y , t" := (λ x .. y, t) (at level 200, x binder, y bind
 Check lambda x y, x+y=0.
 
 End RecursivePatternsArgumentsInRecursiveNotations.
+
+Module CyclicNotations.
+
+Notation "! x" := (list x) (at level 0, x at level 50, right associativity, format "! x").
+Check ((!!nat) + bool)%type.
+
+End CyclicNotations.
