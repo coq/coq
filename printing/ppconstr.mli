@@ -77,5 +77,5 @@ val default_term_pr : term_pr
 val lsimpleconstr : entry_relative_level
 val ltop : entry_relative_level
 val modular_constr_pr :
-  ((unit->Pp.t) -> entry_relative_level -> constr_expr -> Pp.t) ->
-  (unit->Pp.t) -> entry_relative_level -> constr_expr -> Pp.t
+  ((unit->Pp.t) -> int option -> entry_relative_level -> constr_expr -> Pp.t) ->
+  (unit->Pp.t) -> int option -> entry_relative_level -> constr_expr -> Pp.t
