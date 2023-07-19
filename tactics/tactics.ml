@@ -1459,7 +1459,7 @@ let check_unresolved_evars_of_metas sigma clenv =
       error (CannotFindInstance id)
     | _ -> ())
   | _ -> ())
-  (meta_list (clenv_evd clenv))
+  (clenv_meta_list clenv)
 
 let do_replace id = function
   | NamingMustBe {CAst.v=id'} when Option.equal Id.equal id (Some id') -> true
@@ -1585,7 +1585,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
-  let metas = Evd.meta_list (clenv_evd indclause) in
+  let metas = clenv_meta_list indclause in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
   Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
   Tacticals.tclTHEN
@@ -1626,7 +1626,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
     let (sigma, ev) = Evarutil.new_evar env sigma argtype in
     let _, sigma = Evd.pop_future_goals sigma in
     let evk, _ = destEvar sigma ev in
-    let indclause = Clenv.update_clenv_evd indclause (meta_merge (meta_list @@ Clenv.clenv_evd indclause) sigma) in
+    let indclause = Clenv.update_clenv_evd indclause (meta_merge (Clenv.clenv_meta_list indclause) sigma) in
     Proofview.Unsafe.tclEVARS sigma <*>
     Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.goal_with_state evk state] <*>
     Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
@@ -1947,7 +1947,7 @@ let progress_with_clause env flags (id, t) clause mvs =
   if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
-      let metas = Evd.meta_list (clenv_evd innerclause) in
+      let metas = clenv_meta_list innerclause in
       let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments innerclause) in
       try
         Some (clenv_instantiate mv ~flags ~submetas clause (mkVar id, clenv_type innerclause))
