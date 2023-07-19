@@ -194,7 +194,7 @@ let vm_conv_gen cv_pb sigma env univs t1 t2 =
     let v1 = val_of_constr env sigma t1 in
     let v2 = val_of_constr env sigma t2 in
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
-  with Not_found | Invalid_argument _ ->
+  with Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
     Conversion.generic_conv cv_pb ~l2r:false sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2

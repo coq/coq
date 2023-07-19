@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Vmvalues
-open Environ
+type error
 
-type lambda = structured_values Genlambda.lambda
+val pr_error : error -> Pp.t
 
-val lambda_of_constr : optimize:bool -> env -> Genlambda.evars -> Constr.t -> lambda
+val too_large_code : unit -> 'a
 
-(** Dump the VM lambda code after compilation (for debugging purposes) *)
-val dump_lambda : bool ref
+val check_compilable_ind : name:Names.Id.t -> mind_nb_args:int -> mind_nb_constant:int -> unit
+
+exception CompileError of error

@@ -860,10 +860,9 @@ let dump_bytecodes init code fvs =
      prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
      fnl ())
 
-let compile ~fail_on_error ?universes:(universes=0) env sigma c =
+let compile ?universes:(universes=0) env sigma c =
   Label.reset_label_counter ();
   let cont = [Kstop] in
-  try
     let cenv, init_code, fun_code =
       if Int.equal universes 0 then
         let lam = lambda_of_constr ~optimize:true env sigma c in
@@ -896,14 +895,22 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in
-    Some (to_memory res, Array.of_list fv)
-  with TooLargeInductive msg as exn ->
-    let _, info = Exninfo.capture exn in
-    let fn = if fail_on_error then
-        CErrors.user_err ?loc:None ~info
-      else
-        (fun x -> Feedback.msg_warning x) in
-    fn msg; None
+    (to_memory res, Array.of_list fv)
+
+let warn_compile_error =
+  CWarnings.create ~name:"bytecode-compiler-failed-compilation" ~category:CWarnings.CoreCategories.bytecode_compiler
+    Vmerrors.pr_error
+
+let compile ~fail_on_error ?universes env sigma c =
+  try Some (compile ?universes env sigma c)
+  with Vmerrors.CompileError msg as exn ->
+    let exn = Exninfo.capture exn in
+    if fail_on_error then
+      Exninfo.iraise exn
+    else begin
+      warn_compile_error msg;
+      None
+    end
 
 let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
