@@ -445,10 +445,29 @@ sig
 end =
 struct
 
-type t = Constr.t (* Guaranteed to be in strong normal form *)
+open Term
+open Constr
+open Vars
+open Environ
+open Inductive
+open Vmvalues
 
-let kind c =
+type node =
+| Delayed of {
+  env : env;
+  sigma : Evd.evar_map;
+  value : Vmvalues.values;
+  typ : EConstr.types;
+}
+| Value of Constr.t (* Guaranteed to be in strong normal form *)
+
+type t = node ref
+
+let return c = ref (Value c)
+
+let kind_of_constr c =
   let hd, args = decompose_app_list c in
+  let args = List.map return args in
   match Constr.kind hd with
   | Var id -> TVar (id, args)
   | Sort s -> TSort s
@@ -457,15 +476,177 @@ let kind c =
   | Construct (c, _) -> TConstruct (c, args)
   | Int i -> TInt i
   | Float f -> TFloat f
-  | Array (_, t, u, v) -> TArray (t, u, v)
+  | Array (_, t, u, v) -> TArray (Array.map return t, return u, return v)
   | Rel _ | Meta _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
   | Proj _ | Case _ | Fix _ | CoFix _ -> TOther
 
-let make env sigma c =
-  let c' = Tacred.compute env sigma c.Environ.uj_val in
-  EConstr.Unsafe.to_constr @@ c'
+let make0 env sigma c ty =
+  let evars_of_evar_map sigma = { Genlambda.evars_val = Evd.evar_handler sigma } in
+  let v = Vmsymtable.val_of_constr env (evars_of_evar_map sigma) (EConstr.Unsafe.to_constr c) in
+  Delayed { env; sigma; value = v; typ = ty }
 
-let repr c = c
+let make env sigma c =
+  if (Environ.typing_flags env).enable_VM then
+    ref (make0 env sigma c.uj_val c.uj_type)
+  else
+    let c = EConstr.Unsafe.to_constr @@ Tacred.compute env sigma c.uj_val in
+    ref (Value c)
+
+let e_whd_all = Reductionops.clos_whd_flags RedFlags.all
+
+let decompose_prod env sigma t =
+  let (_, dom, codom) = EConstr.destProd sigma (e_whd_all env sigma t) in
+  (dom, codom)
+
+exception Find_at of int
+
+let invert_tag cst tag reloc_tbl =
+  try
+    for j = 0 to Array.length reloc_tbl - 1 do
+      let tagj,arity = reloc_tbl.(j) in
+      let no_arity = Int.equal arity 0 in
+      if Int.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
+        raise (Find_at j)
+      else ()
+    done;raise Not_found
+  with Find_at j -> (j+1)
+
+let app_type env sigma c =
+  let t = e_whd_all env sigma c in
+  decompose_app (EConstr.Unsafe.to_constr t)
+
+let type_of_ind env (ind, u) =
+  EConstr.of_constr @@ Inductiveops.type_of_inductive env (ind, u)
+
+let rec nf_val env sigma v t = nf_whd env sigma (Vmvalues.whd_val v) t
+
+and nf_whd env sigma whd typ = match whd with
+| Vfun _ | Vfix _ | Vcofix _ | Vprod _ -> TOther
+| Vconst n -> nf_construct env sigma n typ None
+| Vblock b ->
+    let tag = btag b in
+    let tag =
+      if tag = Obj.last_non_constant_constructor_tag then
+        match whd_val (bfield b 0) with
+        | Vconst tag -> (tag + Obj.last_non_constant_constructor_tag)
+        | _ -> assert false
+      else tag
+    in
+    nf_construct env sigma tag typ (Some b)
+| Vint64 i -> TInt (Uint63.of_int64 i)
+| Vfloat64 f -> TFloat (Float64.of_float f)
+| Varray t -> nf_array env sigma t typ
+| Vaccu (Aid idkey, stk) -> constr_type_of_idkey env sigma idkey stk
+| Vaccu (Aind ((mi, i) as ind), stk) ->
+  let mib = Environ.lookup_mind mi env in
+  let nb_univs = Univ.AbstractContext.size (Declareops.inductive_polymorphic_context mib) in
+  let k args = TInd (ind, args) in
+  let mkty u = type_of_ind env (ind, u) in
+  nf_univ_args ~nb_univs k mkty env sigma stk
+| Vaccu (Asort s, stk) ->
+  let () = assert (List.is_empty stk) in
+  TSort s
+
+and nf_univ_args ~nb_univs k mkty env sigma stk =
+  let u =
+    if Int.equal nb_univs 0 then Univ.Instance.empty
+    else match stk with
+    | Zapp args :: _ ->
+      let inst = arg args 0 in
+      let inst = uni_instance inst in
+      let () = assert (Int.equal (Univ.Instance.length inst) nb_univs) in
+      inst
+    | _ -> assert false
+  in
+  let ty = mkty u in
+  let from = if Int.equal nb_univs 0 then 0 else 1 in
+  nf_stk ~from env sigma k ty stk
+
+and constr_type_of_idkey env sigma (idkey : Vmvalues.id_key) stk = match idkey with
+| ConstKey cst ->
+  let cbody = Environ.lookup_constant cst env in
+  let nb_univs =
+    Univ.AbstractContext.size (Declareops.constant_polymorphic_context cbody)
+  in
+  let k args = TConst (cst, args) in
+  let mkty u = EConstr.of_constr @@ Typeops.type_of_constant_in env (cst, u) in
+  nf_univ_args ~nb_univs k mkty env sigma stk
+| VarKey id ->
+  let ty = Typing.type_of_variable env id in
+  let k args = TVar (id, args) in
+  nf_stk env sigma k ty stk
+| RelKey _ | EvarKey _ -> TOther
+
+and nf_stk ?from:(from=0) env sigma k t stk = match stk with
+| [] -> k []
+| Zapp vargs :: stk ->
+  if nargs vargs >= from then
+    let len = nargs vargs - from in
+    let t, args = nf_args env sigma len (fun i -> arg vargs (from + i)) t in
+    nf_stk env sigma (fun r -> k (r @ args)) t stk
+  else
+    let rest = from - nargs vargs in
+    nf_stk ~from:rest env sigma k t stk
+| (Zfix _ | Zswitch _ | Zproj _) :: stk -> TOther
+
+and nf_args env sigma len arg t =
+  let t = ref t in
+  let args =
+    List.init len
+      (fun i ->
+        let dom,codom = decompose_prod env sigma !t in
+        let v = arg i in
+        let c = Vnorm.reify_vm env sigma v dom in
+        let ans = return (EConstr.Unsafe.to_constr c) in
+        t := EConstr.Vars.subst1 c codom; ans) in
+  !t, args
+
+and nf_construct env sigma tag typ args =
+  let t, allargs = app_type env sigma typ in
+  match Constr.kind t with
+  | Ind ((mind,_ as ind), u) ->
+    let mib,mip = lookup_mind_specif env ind in
+    let nparams = mib.mind_nparams in
+    let i = invert_tag (Option.is_empty args) tag mip.mind_reloc_tbl in
+    let params = Array.sub allargs 0 nparams in
+    let (cctx, ctyp) = mip.mind_nf_lc.(i - 1) in
+    let ctyp = EConstr.of_constr @@ subst_instance_constr u (it_mkProd_or_LetIn ctyp cctx) in
+    let evars_of_evar_map = { Genlambda.evars_val = Evd.evar_handler sigma } in
+    let eval c = Vmsymtable.val_of_constr env evars_of_evar_map c in
+    let params = Array.map eval params in
+    let ctyp, params = nf_args env sigma (Array.length params) (fun i -> params.(i)) ctyp in
+    let args = match args with
+    | None -> []
+    | Some args ->
+      let ofs = if Int.equal tag Obj.last_non_constant_constructor_tag then 1 else 0 in
+      let len = bsize args - ofs in
+      snd @@ nf_args env sigma len (fun i -> bfield args (i + ofs)) ctyp
+    in
+    TConstruct ((ind, i), params @ args)
+  | _ ->
+    let () = assert (Constr.equal t (Typeops.type_of_int env)) in
+    TInt (Uint63.of_int tag)
+
+and nf_array env sigma t typ =
+  let ty, allargs = app_type env sigma typ in
+  let typ_elem = EConstr.of_constr @@ allargs.(0) in
+  let vdef = Parray.default t in
+  let init i = ref (Delayed { env; sigma; value = Parray.get t (Uint63.of_int i); typ = typ_elem }) in
+  let t = Array.init (Parray.length_int t) init in
+  let vdef = ref (Delayed { env; sigma; value = vdef; typ = typ_elem }) in
+  let typ_elem = make0 env sigma typ_elem (Retyping.get_type_of env sigma typ_elem) in
+  TArray (t, vdef, ref typ_elem)
+
+let repr c = match !c with
+| Delayed { env; sigma; value; typ } ->
+  let ans = EConstr.Unsafe.to_constr @@ Vnorm.reify_vm env sigma value typ in
+  let () = c := Value ans in
+  ans
+| Value c -> c
+
+let kind c = match !c with
+| Delayed { env; sigma; value; typ } -> nf_val env sigma value typ
+| Value c -> kind_of_constr c
 
 end
 

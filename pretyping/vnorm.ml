@@ -435,6 +435,10 @@ and nf_array env sigma t typ =
 let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
 
+let reify_vm env sigma v typ =
+  let typ = EConstr.Unsafe.to_constr typ in
+  EConstr.of_constr (nf_val env sigma v typ)
+
 let cbv_vm env sigma c t  =
   if not (Environ.typing_flags env).enable_VM then
     CErrors.user_err Pp.(str "vm_compute reduction has been disabled.");
@@ -442,6 +446,5 @@ let cbv_vm env sigma c t  =
     CErrors.user_err Pp.(str "vm_compute does not support metas.");
   (* This evar-normalizes terms beforehand *)
   let c = EConstr.Unsafe.to_constr c in
-  let t = EConstr.Unsafe.to_constr t in
   let v = Vmsymtable.val_of_constr env (evars_of_evar_map sigma) c in
-  EConstr.of_constr (nf_val env sigma v t)
+  reify_vm env sigma v t

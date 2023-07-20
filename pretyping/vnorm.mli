@@ -13,3 +13,5 @@ open Environ
 
 (** {6 Reduction functions } *)
 val cbv_vm : env -> Evd.evar_map -> constr -> types -> constr
+
+val reify_vm : env -> Evd.evar_map -> Vmvalues.values -> types -> constr
