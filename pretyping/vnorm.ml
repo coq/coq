@@ -338,27 +338,36 @@ and nf_predicate env sigma ind mip params v pctx =
   let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
   body, rel
 
+and nf_telescope env sigma len f typ =
+  let open CClosure in
+  let t = ref (inject typ) in
+  let infos = Evarutil.create_clos_infos env sigma all in
+  let tab = create_tab () in
+  let init i =
+    let typ, stk = whd_stack infos tab !t [] in
+    let typ = zip typ stk in
+    match fterm_of typ with
+    | FProd (na, dom, codom, e) ->
+      let arg = f i in
+      let dom = term_of_fconstr dom in
+      let arg = nf_val env sigma arg dom in
+      let () = t := mk_clos (CClosure.usubs_cons (inject arg) e) codom in
+      arg
+    | _ -> assert false
+  in
+  let args = Array.init len init in
+  !t, args
+
 and nf_args env sigma vargs ?from:(f=0) t =
-  let t = ref t in
   let len = nargs vargs - f in
-  let args =
-    Array.init len
-      (fun i ->
-        let _,dom,codom = decompose_prod env sigma !t in
-        let c = nf_val env sigma (arg vargs (f+i)) dom in
-        t := subst1 c codom; c) in
-  !t,args
+  let fargs i = arg vargs (f + i) in
+  let typ, args = nf_telescope env sigma len fargs t in
+  CClosure.term_of_fconstr typ, args
 
 and nf_bargs env sigma b ofs t =
-  let t = ref t in
   let len = bsize b - ofs in
-  let args =
-    Array.init len
-      (fun i ->
-        let _,dom,codom = decompose_prod env sigma !t in
-        let c = nf_val env sigma (bfield b (i+ofs)) dom in
-        t := subst1 c codom; c) in
-  args
+  let fargs i = bfield b (i + ofs) in
+  snd @@ nf_telescope env sigma len fargs t
 
 and nf_fun env sigma f typ =
   let k = nb_rel env in
