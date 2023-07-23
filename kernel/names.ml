@@ -381,6 +381,12 @@ module KerName = struct
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 
+  let pop kn =
+    let mp = match kn.modpath with
+    | ModPath.MPdot (mp,_) -> mp
+    | _ -> CErrors.anomaly (str "No field to pop.") in
+    make mp kn.knlabel
+
   let to_string_gen mp_to_string kn =
     mp_to_string kn.modpath ^ "." ^ Label.to_string kn.knlabel
 
@@ -514,6 +520,10 @@ module KerPair = struct
       if mp1 == mp2 then same kn
       else make kn (KerName.make mp2 lbl)
 
+  let pop = function
+    | Same kn -> Same (KerName.pop kn)
+    | Dual (knu,knc) -> Dual (KerName.pop knu, KerName.pop knc)
+
   let to_string kp = KerName.to_string (user kp)
   let print kp = str (to_string kp)
 
@@ -625,6 +635,8 @@ struct
                                     BEWARE: indexing starts from 0. *)
   let modpath (mind, _) = MutInd.modpath mind
 
+  let pop (mind,i) = (MutInd.pop mind, i)
+
   module CanOrd =
   struct
     type nonrec t = t
@@ -672,6 +684,8 @@ struct
                                     BEWARE: indexing starts from 1. *)
 
   let modpath (ind, _) = Ind.modpath ind
+
+  let pop (ind,i) = (Ind.pop ind, i)
 
   module CanOrd =
   struct

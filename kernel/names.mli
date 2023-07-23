@@ -291,6 +291,9 @@ sig
   val modpath : t -> ModPath.t
   val label : t -> Label.t
 
+  (** Remove the last modpath segment *)
+  val pop : t -> t
+
   val to_string : t -> string
   (** Encode as a string (not to be used for user-facing messages). *)
 
@@ -395,6 +398,9 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
+  (** Remove the last modpath segment *)
+  val pop : t -> t
+
   (** Comparisons *)
 
   include QNameS with type t := t
@@ -466,6 +472,9 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
+  (** Remove the last modpath segment *)
+  val pop : t -> t
+
   (** Comparisons *)
 
   include QNameS with type t := t
@@ -504,6 +513,9 @@ sig
                                     BEWARE: indexing starts from 0. *)
   val modpath : t -> ModPath.t
 
+  (** Remove the last modpath segment *)
+  val pop : t -> t
+
   include QNameS with type t := t
 
 end
@@ -518,6 +530,9 @@ sig
                                     BEWARE: indexing starts from 1. *)
 
   val modpath : t -> ModPath.t
+
+  (** Remove the last modpath segment *)
+  val pop : t -> t
 
   include QNameS with type t := t
 
