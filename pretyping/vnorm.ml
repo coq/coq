@@ -90,6 +90,7 @@ let construct_of_constr const env sigma tag typ =
     let i = invert_tag const tag mip.mind_reloc_tbl in
     let params = Array.sub allargs 0 nparams in
     let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
+    let params = Array.map (fun c -> EConstr.Unsafe.to_constr (Reductionops.nf_all env sigma (EConstr.of_constr c))) params in
     (mkApp(mkConstructUi(indu,i), params), ctyp)
   | _ ->
      assert (Constr.equal t (Typeops.type_of_int env));
