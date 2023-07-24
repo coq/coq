@@ -137,3 +137,9 @@ val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
 *)
 val make_return_predicate_ltac_lvar : GlobEnv.t -> Evd.evar_map -> Name.t ->
   Glob_term.glob_constr -> constr -> GlobEnv.t
+
+module ETerm : sig
+  type 'a t
+
+  val 
+end
