@@ -8,13 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type 'a pervasives_ref = 'a ref
-let pervasives_ref = ref
-let pervasives_compare = compare
-let (!) = (!)
-let (+) = (+)
-let (-) = (-)
-
 (* Mapping under pairs *)
 
 let on_fst f (a,b) = (f a,b)

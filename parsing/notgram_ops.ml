@@ -10,7 +10,6 @@
 
 open Pp
 open CErrors
-open Util
 open Notation
 
 (* Register the grammar of notation for parsing and printing
