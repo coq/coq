@@ -79,6 +79,27 @@ let type_constructor mind mib u (ctx, typ) params =
     substl (subst_of_rel_context_instance mib.mind_params_ctxt params)
       ctyp
 
+
+
+let construct_of_constr const env sigma tag typ =
+  let t, allargs = app_type env sigma (EConstr.of_constr typ) in
+  match Constr.kind t with
+  | Ind ((mind,_ as ind), u as indu) ->
+    let mib,mip = lookup_mind_specif env ind in
+    let nparams = mib.mind_nparams in
+    let i = invert_tag const tag mip.mind_reloc_tbl in
+    let params = Array.sub allargs 0 nparams in
+    let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
+    (mkApp(mkConstructUi(indu,i), params), ctyp)
+  | _ ->
+     assert (Constr.equal t (Typeops.type_of_int env));
+      (mkInt (Uint63.of_int tag), t)
+
+let construct_of_constr_const env sigma tag typ =
+  fst (construct_of_constr true env sigma tag typ)
+
+let construct_of_constr_block = construct_of_constr false
+
 let type_of_ind env (ind, u) =
   type_of_inductive (Inductive.lookup_mind_specif env ind, u)
 
@@ -121,9 +142,6 @@ let build_case_type (pctx, p) realargs c =
   let p = it_mkLambda_or_LetIn p pctx in (* TODO: prevent useless cut? *)
   mkApp(mkApp(p, realargs), [|c|])
 
-let evars_of_evar_map sigma =
-  { Genlambda.evars_val = Evd.evar_handler sigma }
-
 (* La fonction de normalisation *)
 
 let rec nf_val env sigma v t = nf_whd env sigma (Vmvalues.whd_val v) t
@@ -151,7 +169,7 @@ and nf_whd env sigma whd typ =
       let _, args = nf_args env sigma vargs t in
       mkApp(cfd,args)
   | Vconst n ->
-      nf_constructor env sigma n typ None
+    construct_of_constr_const env sigma n typ
   | Vblock b ->
       let tag = btag b in
       let (tag,ofs) =
@@ -160,7 +178,9 @@ and nf_whd env sigma whd typ =
           | Vconst tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
           | _ -> assert false
         else (tag, 0) in
-      nf_constructor env sigma tag typ (Some (b, ofs))
+      let capp,ctyp = construct_of_constr_block env sigma tag typ in
+      let args = nf_bargs env sigma b ofs ctyp in
+      mkApp(capp,args)
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vfloat64 f -> f |> Float64.of_float |> mkFloat
   | Varray t -> nf_array env sigma t typ
@@ -318,46 +338,27 @@ and nf_predicate env sigma ind mip params v pctx =
   let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
   body, rel
 
-and nf_telescope env sigma len f t =
-  let t = ref t in
-  let init i =
-    let _, dom, codom = decompose_prod env sigma !t in
-    let c = nf_val env sigma (f i) dom in
-    let () = t := subst1 c codom in
-    c
-  in
-  let args = Array.init len init in
-  !t, args
-
 and nf_args env sigma vargs ?from:(f=0) t =
-  nf_telescope env sigma (nargs vargs - f) (fun i -> arg vargs (f + i)) t
+  let t = ref t in
+  let len = nargs vargs - f in
+  let args =
+    Array.init len
+      (fun i ->
+        let _,dom,codom = decompose_prod env sigma !t in
+        let c = nf_val env sigma (arg vargs (f+i)) dom in
+        t := subst1 c codom; c) in
+  !t,args
 
-and nf_constructor env sigma tag typ args =
-  let t, allargs = app_type env sigma (EConstr.of_constr typ) in
-  match Constr.kind t with
-  | Ind ((mind,_ as ind), u as indu) ->
-    let const = Option.is_empty args in
-    let mib,mip = lookup_mind_specif env ind in
-    let nparams = mib.mind_nparams in
-    let i = invert_tag const tag mip.mind_reloc_tbl in
-    let (cctx, ctyp) = mip.mind_nf_lc.(i - 1) in
-    let ctyp = it_mkProd_or_LetIn ctyp cctx in
-    let ctyp = subst_instance_constr u ctyp in
-    let params = Array.sub allargs 0 nparams in
-    let evars = evars_of_evar_map sigma in
-    let fparam i = Vmsymtable.val_of_constr env evars params.(i) in
-    let ctyp, params = nf_telescope env sigma nparams fparam ctyp in
-    let args = match args with
-    | None -> params
-    | Some (args, ofs) ->
-      let _, args = nf_telescope env sigma (bsize args - ofs) (fun i -> bfield args (i + ofs)) ctyp in
-      Array.append params args
-    in
-    mkApp (mkConstructUi (indu, i), args)
-  | _ ->
-    let () = assert (Constr.equal t (Typeops.type_of_int env)) in
-    let () = assert (Option.is_empty args) in
-    mkInt (Uint63.of_int tag)
+and nf_bargs env sigma b ofs t =
+  let t = ref t in
+  let len = bsize b - ofs in
+  let args =
+    Array.init len
+      (fun i ->
+        let _,dom,codom = decompose_prod env sigma !t in
+        let c = nf_val env sigma (bfield b (i+ofs)) dom in
+        t := subst1 c codom; c) in
+  args
 
 and nf_fun env sigma f typ =
   let k = nb_rel env in
@@ -420,6 +421,9 @@ and nf_array env sigma t typ =
   let t = Array.init (Parray.length_int t) init in
   let u = snd (destConst ty) in
   mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
+
+let evars_of_evar_map sigma =
+  { Genlambda.evars_val = Evd.evar_handler sigma }
 
 let cbv_vm env sigma c t  =
   if not (Environ.typing_flags env).enable_VM then
