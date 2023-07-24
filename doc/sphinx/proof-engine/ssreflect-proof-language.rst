@@ -1670,6 +1670,15 @@ Intro patterns
   :token:`ident` with ``{}`` one can *replace* a context entry.
   This behavior can be avoided by separating the :token:`clear_switch`
   from the :token:`ident` with the ``-`` intro pattern.
+
+  Thus, trying to clear an :token:`ident` `H` with `{H}H` triggers the
+  following warning:
+
+  .. warn:: Duplicate clear of H. Use %{ %}H instead of %{ H %}H
+
+    The warning can be silenced or made fatal with the :opt:`Warnings` option
+    with the `duplicate-clear` key.
+
 ``>``
   pops every variable occurring in the rest of the stack.
   Type class instances are popped even if they don't occur
