@@ -84,7 +84,7 @@ let discharge_univ_names decl = match decl.udecl_src with
   | BoundUniv -> None
   | (QualifiedUniv _ | UnqualifiedUniv) -> Some decl
 
-let input_univ_names : universe_name_decl -> Libobject.obj =
+let inUnivNames : universe_name_decl -> Libobject.obj =
   let open Libobject in
   declare_named_object_gen
     { (default_object "Global universe name state") with
@@ -97,7 +97,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
 
 let input_univ_names (src, l, a) =
   if CList.is_empty l && CList.is_empty a then ()
-  else Lib.add_leaf (input_univ_names { udecl_src = src; udecl_named = l; udecl_anon = a })
+  else Lib.add_leaf (inUnivNames { udecl_src = src; udecl_named = l; udecl_anon = a })
 
 let label_of = let open GlobRef in function
 | ConstRef c -> Label.to_id @@ Constant.label c
