@@ -1,4 +1,4 @@
-include GADT
+open GADT
 
   include AbstractTerm (struct
     type univ_instance = EConstr.EInstance.t
@@ -159,3 +159,5 @@ include GADT
   let nf_evar (type env) sigma (t : env t) : env t =
     Eq.(cast (sym (eq ^-> eq))) (Evarutil.nf_evar sigma) t
 *)
+
+let pr_eterm (env:Environ.env) sigma t = print Eq.(cast (sym Env.eq) env) sigma t

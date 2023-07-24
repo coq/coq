@@ -28,6 +28,8 @@
 #install_printer  (* int set *) ppintset;;
 #install_printer  (* id set *) ppidmapgen;;
 #install_printer  (* int set *) ppintmapgen;;
+#install_printer  (* eterm *) ppeterm;;
+#install_printer  (* ejudgement *) ppejudgement;;
 
 (*#install_printer  (* hint_db *)  print_hint_db;;*)
 (*#install_printer  (* hints_path *)  pphintspath;;*)

@@ -85,6 +85,8 @@ let ppglob_constr = (fun x -> pp(with_env_evm pr_lglob_constr_env x))
 let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
+let ppeterm c = pp (ETerm.pr_eterm (Global.env()) (Evd.from_env (Global.env())) c)
+let ppejudgement c = pp (EJudgment.pr_judgement (Global.env()) (Evd.from_env (Global.env())) c)
 
 let ppuint63 i = pp (str (Uint63.to_string i))
 
