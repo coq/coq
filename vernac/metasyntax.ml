@@ -1847,30 +1847,32 @@ let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,
 let load_scope_command =
   load_scope_command_common true
 
-let open_scope_command i (local,scope,o) =
+let open_scope_command i (noexport,scope,o) =
   if Int.equal i 1 then
     match o with
     | ScopeDeclare -> ()
     | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
     | ScopeDelimRemove -> Notation.remove_delimiters scope
-    | ScopeClasses (where, cl) -> List.iter (Notation.declare_scope_class scope ?where) cl
+    | ScopeClasses (where, cl) ->
+      let local = Lib.sections_are_opened () in
+      List.iter (Notation.declare_scope_class local scope ?where) cl
 
 let cache_scope_command o =
   load_scope_command_common false 1 o;
   open_scope_command 1 o
 
-let subst_scope_command (subst,(local,scope,o as x)) = match o with
+let subst_scope_command (subst,(noexport,scope,o as x)) = match o with
   | ScopeClasses (where, cl) ->
       let env = Global.env () in
       let cl' = List.map_filter (subst_scope_class env subst) cl in
       let cl' =
         if List.for_all2eq (==) cl cl' then cl
         else cl' in
-      local, scope, ScopeClasses (where, cl')
+      noexport, scope, ScopeClasses (where, cl')
   | _ -> x
 
-let classify_scope_command (local, _, _) =
-  if local then Dispose else Substitute
+let classify_scope_command (noexport, _, _) =
+  if noexport then Dispose else Substitute
 
 let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with

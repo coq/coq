@@ -303,7 +303,7 @@ val subst_scope_class :
 
 type add_scope_where = AddScopeTop | AddScopeBottom
 (** add new scope at top or bottom of existing stack (default is reset) *)
-val declare_scope_class : scope_name -> ?where:add_scope_where -> scope_class -> unit
+val declare_scope_class : (* local: *) bool -> scope_name -> ?where:add_scope_where -> scope_class -> unit
 val declare_ref_arguments_scope : GlobRef.t -> unit
 
 val compute_arguments_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name list list

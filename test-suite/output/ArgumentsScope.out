@@ -112,3 +112,23 @@ g'' is not universe polymorphic
 Arguments g'' x%B_scope
 g'' is transparent
 Expands to: Constant ArgumentsScope.g''
+f : A -> B -> A
+
+f is not universe polymorphic
+Arguments f _%X _%Y
+f is transparent
+Expands to: Constant ArgumentsScope.SectionTest1.S.f
+f : A -> B -> A
+
+f is not universe polymorphic
+f is transparent
+Expands to: Constant ArgumentsScope.SectionTest1.f
+N.f : A -> A
+
+N.f is not universe polymorphic
+Arguments N.f _%X
+Expands to: Constant ArgumentsScope.SectionTest2.N.f
+g : A -> A
+
+g is not universe polymorphic
+Expands to: Constant ArgumentsScope.SectionTest2.g
