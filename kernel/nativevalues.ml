@@ -120,13 +120,13 @@ let accumulate_tag = 0
 (** Unique pointer used to drive the accumulator function *)
 let ret_accu = Obj.repr (ref ())
 
-type accu_val = { mutable acc_atm : atom; acc_arg : Obj.t list }
+type accu_val = { mutable acc_atm : atom; acc_arg : t list }
 
 external set_tag : Obj.t -> int -> unit = "coq_obj_set_tag"
 
 let mk_accu (a : atom) : t =
   let rec accumulate data x =
-    if x == ret_accu then Obj.repr data
+    if Obj.repr x == ret_accu then Obj.repr data
     else
       let data = { data with acc_arg = x :: data.acc_arg } in
       let ans = Obj.repr (accumulate data) in
@@ -224,8 +224,7 @@ let accu_nargs (k:accumulator) =
   List.length (get_accu k).acc_arg
 
 let args_of_accu (k:accumulator) =
-  let acc = (get_accu k).acc_arg in
-  (Obj.magic (Array.of_list acc) : t array)
+  (get_accu k).acc_arg
 
 let mk_fix_accu rec_pos pos types bodies =
   mk_accu (Afix(types,bodies,rec_pos, pos))
@@ -246,7 +245,7 @@ let force_cofix (cofix : t) =
   match atom with
   | Acofix (typ, norm, pos, CofixLazy f) ->
     let args = args_of_accu accu in
-    let f = Array.fold_right (fun arg f -> apply f arg) args f in
+    let f = List.fold_right (fun arg f -> apply f arg) args f in
     let v = apply f (Obj.magic ()) in
     let () = set_atom_of_accu accu (Acofix (typ, norm, pos, CofixValue v)) in
       v

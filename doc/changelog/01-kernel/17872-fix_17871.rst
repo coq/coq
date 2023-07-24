@@ -1,0 +1,5 @@
+- **Fixed:**
+  a bug enabling :tacn:`native_compute` to yield arbitrary floating-point values
+  (`#17872 <https://github.com/coq/coq/pull/17872>`_,
+  fixes `#17871 <https://github.com/coq/coq/issues/17871>`_,
+  by Guillaume Melquiond and Pierre Roux, bug found by Jason Gross).
