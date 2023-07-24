@@ -14,129 +14,6 @@
 
 include GADT
 
-module EvarMapMonad = struct
-  include Monad.State
-
-  type 'a t = ('a, Evd.evar_map) Monad.State.t
-
-  let new_type_evar (env : 'env Env.t)
-        ?(filter : Evd.Filter.t option) rigid : ('env ETerm.t * EConstr.ESorts.t) t =
-  fun sigma ->
-    Eq.cast (Eq.pair Refl (Eq.pair (Eq.sym ETerm.eq) Refl))
-      (Evarutil.new_type_evar ?filter (Eq.cast Env.eq env) sigma rigid)
-
-  let new_evar (env : 'env Env.t)
-        ?(filter : Evd.Filter.t option)
-        ?(candidates : 'env ETerm.t list option)
-        (ty : 'env ETerm.t) : 'env ETerm.t t =
-  fun sigma ->
-    Eq.cast (Eq.pair Refl (Eq.sym ETerm.eq))
-      (Evarutil.new_evar (Eq.cast Env.eq env) sigma (Eq.cast ETerm.eq ty)
-        ?filter
-        ?candidates:(Eq.(cast (option (list ETerm.eq))) candidates))
-
-(*
-  let merge_context_set ?loc ?sideff rigid ctx : unit t =
-    let open Ops in
-    let* sigma = get in
-    set (Evd.merge_context_set rigid sigma ctx)
-*)
-  let set_leq_sort env s s' =
-    update (fun sigma -> Evd.set_leq_sort (Eq.cast Env.eq env) sigma s s')
-
-(*
-  let set_eq_sort env s s' =
-    let open Ops in
-    let* sigma = get in
-    set (Evd.set_eq_sort (Eq.cast Env.eq env) sigma s s')
-*)
-
-  let fresh_inductive_instance env ind =
-    fun sigma ->
-      Eq.(cast (sym (Env.eq ^-> Refl ^-> InductiveDef.eq ^->
-        (Refl ^* (InductiveDef.eq ^* Refl)))))
-        Evd.fresh_inductive_instance env sigma ind
-end
-
-module EJudgment = struct
-  include AbstractJudgment.Make (ETerm)
-
-  let inh_conv_coerce_to (type env) ~program_mode ~resolve_tc ?use_coercions
-        ?flags (env : env Env.t) (judgment : env t) (t : env ETerm.t) :
-      (env t  * Coercion.coercion_trace option) EvarMapMonad.t =
-    Eq.cast (EvarMapMonad.eq (Eq.pair (Eq.sym eq) Refl) Refl) (fun sigma ->
-      let sigma, result, trace =
-        Coercion.inh_conv_coerce_to ~program_mode ?flags ?use_coercions
-          ~resolve_tc (Eq.cast Env.eq env)
-          sigma (Eq.cast eq judgment) (Eq.cast ETerm.eq t) in
-       (sigma, (result, trace)))
-
-  let inh_conv_coerce_to_tycon (type env) ~program_mode (env : env Env.t)
-      (judgment : env t) (tycon : env ETerm.t option) : env t EvarMapMonad.t =
-    let open EvarMapMonad.Ops in
-    match tycon with
-    | Some p ->
-        let* result, _trace =
-          inh_conv_coerce_to ~program_mode ~resolve_tc:true env judgment p
-            ~flags:(Evarconv.default_flags_of TransparentState.full) in
-        return result
-    | None -> return judgment
-(*
-  let unit (type env) (env : env Env.t) : env t Univ.in_universe_context_set EvarMapMonad.t =
-    try
-      Eq.(cast (sym (Env.eq ^-> eq ^* Refl))) Evarconv.coq_unit_judge env
-    with _ ->
-      make (ETerm.mkLambda Context.anonR (ETerm.mkProp ())
-          (ETerm.mkLambda Context.anonR (ETerm.mkRel (Rel.zero ()))
-            (ETerm.mkRel (Rel.zero ()))))
-        (ETerm.mkProd Context.anonR (ETerm.mkProp ())
-          (ETerm.mkProd Context.anonR (ETerm.mkRel (Rel.zero ()))
-            (ETerm.mkRel (Rel.succ (Rel.zero ()))))), Univ.ContextSet.empty
-*)
-
-  let unit_m (type env) (env : env Env.t) : env t EvarMapMonad.t =
-    fun sigma ->
-    try
-      Eq.(cast (sym (Env.eq ^-> Refl ^-> Refl ^* eq))) Evarconv.coq_unit_judge env
-        sigma
-    with _ ->
-      sigma,
-      make (ETerm.mkLambda Context.anonR (ETerm.mkProp ())
-          (ETerm.mkLambda Context.anonR (ETerm.mkRel (Rel.zero ()))
-            (ETerm.mkRel (Rel.zero ()))))
-        (ETerm.mkProd Context.anonR (ETerm.mkProp ())
-          (ETerm.mkProd Context.anonR (ETerm.mkRel (Rel.zero ()))
-            (ETerm.mkRel (Rel.succ (Rel.zero ())))))
-
-(*
-  let new_evar env =
-    let open EvarMapMonad.Ops in
-    let* (ty, _) = EvarMapMonad.new_type_evar env Evd.univ_flexible_alg in
-    let* v = EvarMapMonad.new_evar env ty in
-    return (make v ty)
-*)
-
-  let of_term (type env) (env : env Env.t) sigma (term : env ETerm.t) : env t =
-    make term (ETerm.retype_of env sigma term)
-
-(*
-  let of_term_via_typing (type env) (env : env Env.t) (term : env ETerm.t) : env t EvarMapMonad.t =
-    let open EvarMapMonad.Ops in
-    let* ty = ETerm.get_type_of env term in
-    return (make term ty)
-*)
-
-  let print env sigma j =
-    Pp.(ETerm.print env sigma (uj_val j) ++ spc () ++ str ":" ++ spc () ++
-      ETerm.print env sigma (uj_type j))
-  [@@ocaml.warning "-32"] (* can be unused *)
-
-  let debug_print sigma j =
-    Pp.(ETerm.debug_print sigma (uj_val j) ++ spc () ++ str ":" ++ spc () ++
-      ETerm.debug_print sigma (uj_type j))
-  [@@ocaml.warning "-32"] (* can be unused *)
-end
-
 module AbstractDeclaration = struct
   module Self (X : AbstractTermS) = struct
     type ('env, 'nb_args, 'nb_args_tail) desc =
@@ -2404,6 +2281,7 @@ module PatternMatchingProblem = struct
       return_pred : ('env, 'return_pred_height) ReturnPred.t;
       previously_bounds : ('env Rel.t, 'previously_bounds) Vector.t;
       expand_self : bool;
+      allow_destruct_empty : bool;
     }
 end
 
@@ -3616,7 +3494,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let* judgment =
       MatchContext.compile_loop
         { env; tomatches; eqns; return_pred; previously_bounds;
-          expand_self = problem.expand_self } in
+          expand_self = problem.expand_self;
+          allow_destruct_empty = problem.allow_destruct_empty } in
 (*
     let* sigma = EvarMapMonad.get in
     Format.eprintf "subst trivial: %a@." Pp.pp_with
@@ -3757,6 +3636,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           rhs = Rhs.make tomatch_length { f = make_unit_rhs }; }];
       previously_bounds = [];
       expand_self = true;
+      allow_destruct_empty = true;
     } in
     let* judgment = MatchContext.compile_loop problem in
     return (EJudgment.uj_val judgment)
@@ -3865,7 +3745,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           (height, refine_tomatches, refine_patterns) Nat.plus)
         (tail_tomatches :
           (env * height, tail_length, <ind: ind_tail; size: tail_height>)
-            TomatchVector.t) :
+            TomatchVector.t)
+        (allow_destruct_empty : bool) :
         (env * height, refine_patterns, nrealdecls', nrealargs') Rhs.f =
     fun { globenv; context; return_pred; matches } ->
       let open EvarMapMonad.Ops in
@@ -4135,6 +4016,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         return_pred = generalized_return_pred;
         previously_bounds;
         expand_self;
+        allow_destruct_empty = allow_destruct_empty;
       } in
       let* judgment = MatchContext.compile_loop sub_problem in
       let sub_return_pred =
@@ -4183,6 +4065,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         (tail_tomatches :
           (env, tail_length, <ind: ind_tail; size: tail_height>)
             TomatchVector.t)
+        (allow_destruct_empty : bool)
         (Exists { summary; clauses } :
            (env, ind, nrealargs, tail_length, ind_tail)
            branch_clauses) :
@@ -4291,7 +4174,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
                 arity_patterns.terms refine.result.apply terms
                 old_previously_bounds
                 new_previously_bounds new_tomatches match_length.plus
-                tail_tomatches rhs_args in
+                tail_tomatches allow_destruct_empty rhs_args in
             let make_idprop ({ globenv; _ } : _ Rhs.args) =
               EJudgment.unit_m (GlobalEnv.env globenv) in
   (*
@@ -4353,6 +4236,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
                   rhs = Rhs.make tomatch_length { f = make_idprop; }; }];
               previously_bounds = old_previously_bounds;
               expand_self = true;
+              allow_destruct_empty = true;
             } in
             let* body = MatchContext.compile_loop problem in
             return (EJudgment.uj_val body) in
@@ -4381,7 +4265,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         (branches :
            ((env, ind, nrealargs, tail_length, ind_tail)
              branch_clauses, ind) Tuple.t)
-        (previously_bounds : (env Rel.t, previously_bounds) Vector.t) :
+        (previously_bounds : (env Rel.t, previously_bounds) Vector.t)
+        (allow_destruct_empty : bool) :
         (env, ind, nrealdecls, tail_height) compile_branches EvarMapMonad.t =
       let open EvarMapMonad.Ops in
       let Exists arity_patterns = tomatch_type.pattern_structure in
@@ -4503,7 +4388,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
              inverted_return_pred sub_return_pred arity_patterns
              old_previously_bounds new_previously_bounds tomatch_vector
              generalize_context
-             (TomatchVector.tl tomatches)) in
+             (TomatchVector.tl tomatches) allow_destruct_empty) in
       return { branches; return_pred = inverted_return_pred;
         apply = Exists generalize_context.apply; }
   end
@@ -4584,7 +4469,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let* { branches; return_pred; apply = Exists apply } =
       Compiler.compile_branches tomatch_type
         tomatch_vector problem.return_pred problem.tomatches
-        branches problem.previously_bounds in
+        branches problem.previously_bounds problem.allow_destruct_empty in
     let tail_return_vector =
       tail_tomatches |>
       TomatchVector.concat_rev_map { f = fun tomatch ->
@@ -4675,18 +4560,17 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let problem = { problem with eqns } in
     let module V = Vector.UseMonad (Monad.Option) in
     match
-      V.map Clause.extract_pat_var problem.eqns, problem.eqns,
+      (V.map Clause.extract_pat_var problem.eqns, problem.eqns),
       tomatch.inductive_type
     with
-    | None, _, Inductive _
-    | Some _, [], Inductive _ ->
-        begin match tomatch.inductive_type with
-        | Not_inductive _ -> assert false
-        | Inductive desc -> compile_destruct tomatch desc problem
-        end
-    | Some vars, _, _ ->
+    | (None, _ | Some _, []), Inductive desc ->
+       if problem.allow_destruct_empty then
+        compile_destruct tomatch desc { problem with allow_destruct_empty = false }
+       else
+         assert false
+    | (Some vars, _), _ ->
         compile_case_trivial tomatch vars problem
-    | None, _, Not_inductive _ ->
+    | (None, _), Not_inductive _ ->
         assert false
 
   let compile_loop
@@ -4809,6 +4693,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           rhs = Rhs.make tomatch_length { f = make_unit_rhs }; }];
       previously_bounds = [];
       expand_self = true;
+      allow_destruct_empty = true;
     } in
     let* judgment = MatchContext.compile_loop problem in
 (*
@@ -4885,7 +4770,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         return_pred_height in
     compile_loop
       { env; tomatches; return_pred; eqns;
-        previously_bounds = []; expand_self = false; }
+        previously_bounds = []; expand_self = false;
+        allow_destruct_empty = true; }
 end
 
 let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
