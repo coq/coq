@@ -168,7 +168,7 @@ val set_allow_sprop : bool -> safe_transformer0
 
 (** {6 Interactive section functions } *)
 
-val open_section : safe_transformer0
+val open_section : Id.t -> safe_transformer0
 
 val close_section : safe_transformer0
 

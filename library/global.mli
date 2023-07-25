@@ -77,7 +77,7 @@ val add_include :
 
 (** Sections *)
 
-val open_section : unit -> unit
+val open_section : Id.t -> unit
 (** [poly] is true when the section should be universe polymorphic *)
 
 val close_section : Summary.Interp.frozen -> unit

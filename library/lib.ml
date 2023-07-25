@@ -221,12 +221,17 @@ let recalc_path_prefix () =
   in
   synterp_state := { !synterp_state with path_prefix }
 
+let pop_modpath = function
+  | MPdot (mp, _) -> mp
+  | _ -> assert false
+
 let pop_path_prefix () =
   let op = !synterp_state.path_prefix in
   synterp_state := {
     !synterp_state
     with path_prefix = Nametab.{
-        op with obj_dir = Libnames.pop_dirpath op.obj_dir;
+        obj_dir = Libnames.pop_dirpath op.obj_dir;
+        obj_mp = pop_modpath op.obj_mp;
       } }
 
 (* Modules. *)
@@ -285,18 +290,25 @@ let is_in_section ref = match sections () with
 let section_instance ref =
   Cooking.instance_of_cooking_info (section_segment_of_reference ref)
 
-let discharge_mind mind = mind
+let discharge_mind mind =
+  if is_in_section (IndRef (mind,0)) then MutInd.pop mind else mind
 
-let discharge_inductive ind = ind
+let discharge_inductive ind =
+  if is_in_section (IndRef ind) then Ind.pop ind else ind
 
-let discharge_constant cst = cst
+let discharge_constant cst =
+  if is_in_section (ConstRef cst) then Constant.pop cst else cst
 
-let discharge_global_reference ref = Some ref
+let discharge_global_reference ref =
+  if is_in_section ref then
+    if Globnames.isVarRef ref then None
+    else Some (Globnames.pop_global_reference ref)
+  else Some ref
 
 let discharge_global_reference_with_instance ref =
   if is_in_section ref then
     if Globnames.isVarRef ref then None
-    else Some (ref, section_instance ref)
+    else Some (Globnames.pop_global_reference ref, section_instance ref)
   else Some (ref, [||])
 
 let discharge_item = Libobject.(function
@@ -414,7 +426,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   let open_section id =
     let opp = !synterp_state.path_prefix in
     let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
-    let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
+    let obj_mp = MPdot (opp.Nametab.obj_mp, Label.of_id id) in
+    let prefix = Nametab.{ obj_dir; obj_mp; } in
     check_section_fresh obj_dir id;
     let fs = Summary.Synterp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs));
@@ -485,7 +498,7 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
     interp_state := stk
 
   let open_section id =
-    Global.open_section ();
+    Global.open_section id;
     let prefix = !synterp_state.path_prefix in
     let fs = Summary.Interp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs))
