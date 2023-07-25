@@ -15,21 +15,18 @@ type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
 type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
 
-let make_oname Nametab.{ obj_dir; obj_mp } id =
+let make_oname Nametab.{ obj_dir; obj_mp; section_depth } id =
   Names.(Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
-
-let oname_prefix (sp, kn) =
-  { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
 
 type 'summary node =
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
-  | OpenedSection of Nametab.object_prefix * 'summary
+  | OpenedSection of Nametab.object_prefix * 'summary * (bool * Nametab.object_prefix * Libobject.t) list
 
 let node_prefix = function
   | CompilingLibrary prefix
   | OpenedModule (_,_,prefix,_)
-  | OpenedSection (prefix,_) -> prefix
+  | OpenedSection (prefix,_,_) -> prefix
 
 let prefix_id prefix = snd (Libnames.split_dirpath prefix.Nametab.obj_dir)
 
@@ -90,7 +87,7 @@ let is_opening_node = function
 let open_blocks_message es =
   let open Pp in
   let open_block_name = function
-    | OpenedSection (prefix,_) ->
+    | OpenedSection (prefix,_,_) ->
       str "section " ++ Id.print (prefix_id prefix)
     | OpenedModule (ty,_,prefix,_) ->
       str (module_kind ty) ++ spc () ++ Id.print (prefix_id prefix)
@@ -110,6 +107,7 @@ let open_blocks_message es =
 let dummy_prefix = Nametab.{
   obj_dir = DirPath.dummy;
   obj_mp  = ModPath.dummy;
+  section_depth = 0;
 }
 
 type synterp_state = {
@@ -141,7 +139,7 @@ let start_compilation s mp =
   assert (List.is_empty !interp_state);
   if Global.sections_are_opened () then (* XXX not sure if we need this check *)
     CErrors.user_err Pp.(str "some sections are already opened");
-  let prefix = Nametab.{ obj_dir = s; obj_mp = mp } in
+  let prefix = Nametab.{ obj_dir = s; obj_mp = mp; section_depth = 0 } in
   let initial_stk = [ CompilingLibrary prefix, [] ] in
   let st = {
     comp_name = Some s;
@@ -177,15 +175,17 @@ let prefix () = !synterp_state.path_prefix
 let cwd () = !synterp_state.path_prefix.Nametab.obj_dir
 let current_mp () = !synterp_state.path_prefix.Nametab.obj_mp
 
-let sections_depth () =
-  !synterp_state.lib_stk |> List.count (function
-      | (OpenedSection _, _) -> true
-      | ((OpenedModule _ | CompilingLibrary _), _) -> false)
+let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
-let sections_are_opened () =
-  match split_lib_at_opening !synterp_state.lib_stk with
-  | (_, OpenedSection _, _) -> true
-  | _ -> false
+let sections_depth () =
+  if !Flags.in_synterp_phase then
+    !synterp_state.lib_stk |> List.count (function
+        | (OpenedSection _, _) -> true
+        | ((OpenedModule _ | CompilingLibrary _), _) -> false)
+  else
+    Section.depth (sections ())
+
+let sections_are_opened () = sections_depth () > 0
 
 let cwd_except_section () =
   Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
@@ -215,18 +215,24 @@ let error_still_opened s oname =
 
 let recalc_path_prefix () =
   let path_prefix = match pi2 (split_lib_at_opening !synterp_state.lib_stk) with
-    | CompilingLibrary dir
-    | OpenedModule (_, _, dir, _)
-    | OpenedSection (dir, _) -> dir
+    | CompilingLibrary prefix
+    | OpenedModule (_, _, prefix, _)
+    | OpenedSection (prefix, _, _) -> prefix
   in
   synterp_state := { !synterp_state with path_prefix }
+
+let pop_modpath = function
+  | MPdot (mp, _) -> mp
+  | _ -> assert false
 
 let pop_path_prefix () =
   let op = !synterp_state.path_prefix in
   synterp_state := {
     !synterp_state
     with path_prefix = Nametab.{
-        op with obj_dir = Libnames.pop_dirpath op.obj_dir;
+        obj_dir = Libnames.pop_dirpath op.obj_dir;
+        obj_mp = pop_modpath op.obj_mp;
+        section_depth = op.section_depth - 1;
       } }
 
 (* Modules. *)
@@ -259,8 +265,6 @@ let is_module () =
    - the list of substitution to do at section closing
 *)
 
-let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
-
 let force_sections () = match Safe_typing.sections_of_safe_env (Global.safe_env()) with
   | Some s -> s
   | None -> CErrors.user_err Pp.(str "No open section.")
@@ -285,24 +289,32 @@ let is_in_section ref = match sections () with
 let section_instance ref =
   Cooking.instance_of_cooking_info (section_segment_of_reference ref)
 
-let discharge_mind mind = mind
+let discharge_mind mind =
+  if is_in_section (IndRef (mind,0)) then MutInd.pop mind else mind
 
-let discharge_inductive ind = ind
+let discharge_inductive ind =
+  if is_in_section (IndRef ind) then Ind.pop ind else ind
 
-let discharge_constant cst = cst
+let discharge_constant cst =
+  if is_in_section (ConstRef cst) then Constant.pop cst else cst
 
-let discharge_global_reference ref = Some ref
+let discharge_global_reference ref =
+  if is_in_section ref then
+    if Globnames.isVarRef ref then None
+    else Some (Globnames.pop_global_reference ref)
+  else Some ref
 
 let discharge_global_reference_with_instance ref =
   if is_in_section ref then
     if Globnames.isVarRef ref then None
-    else Some (ref, section_instance ref)
+    else Some (Globnames.pop_global_reference ref, section_instance ref)
   else Some (ref, [||])
 
-let discharge_item = Libobject.(function
+let cache_item (discharged,prefix,item) =
+  Libobject.(match item with
   | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
-  | ExportObject _ -> None
-  | AtomicObject obj -> discharge_object obj)
+  | ExportObject _ -> ()
+  | AtomicObject obj -> cache_object (discharged,prefix,obj))
 
 (* Misc *)
 
@@ -328,6 +340,38 @@ let discharge_proj_repr p =
   let sec = section_segment_of_reference (GlobRef.IndRef ind) in
   Cooking.discharge_proj_repr sec p
 
+let set_top_leaf = function
+  | [] -> []
+  | (_, prefix, leaf) :: rest -> (false, prefix, leaf) :: rest
+
+let rec add_leaf_entry leaf = function
+  | [] ->
+    (* top_printers does set_bool_option_value which adds a leaf *)
+    if !Flags.in_debugger then [], [dummylib, [leaf]] else assert false
+  | ((CompilingLibrary prefix | OpenedModule (_, _, prefix, _)) as node, leaves) :: rest ->
+    [true, prefix, leaf], (node, leaf :: leaves) :: rest
+  | (OpenedSection (prefix, fs, discharged_leaves), sec_leaves) :: rest ->
+    (* adding leaf in opened sections as well as here *)
+    let open Libobject in
+    match leaf with
+    | AtomicObject obj ->
+      let obj_leaves, rest =
+        match Libobject.discharge_object obj with
+        | Some obj ->
+          Global.in_lower_section (fun () ->
+              let newleaf = Libobject.AtomicObject (Libobject.rebuild_object obj) in
+              add_leaf_entry newleaf rest) ()
+        | None ->
+          [], rest in
+      let node = OpenedSection (prefix, fs, set_top_leaf obj_leaves @ discharged_leaves) in
+      let obj_leaves = (true, prefix, leaf) :: obj_leaves in
+      obj_leaves, (node, List.map pi3 obj_leaves @ sec_leaves) :: rest
+    | _ ->
+      let obj_leaves, rest =
+        Global.in_lower_section (fun () -> add_leaf_entry leaf rest) () in
+      let node = OpenedSection (prefix, fs, set_top_leaf obj_leaves @ discharged_leaves) in
+      obj_leaves, (node, List.map pi3 obj_leaves @ sec_leaves) :: rest
+
 (** The [LibActions] abstraction represent the set of operations on the Lib
     structure that is specific to a given stage. Two instances are defined below,
     for Synterp and Interp. *)
@@ -344,7 +388,7 @@ module type LibActions = sig
   val close_section : summary -> unit
 
   val add_entry : summary node -> unit
-  val add_leaf_entry : Libobject.t -> unit
+  val add_leaf_entry : Libobject.t -> (bool * Nametab.object_prefix * Libobject.t) list
   val start_mod : is_type:is_type -> export -> Id.t -> ModPath.t -> summary -> Nametab.object_prefix
 
   val get_lib_stk : unit -> summary library_segment
@@ -388,18 +432,14 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     synterp_state := { !synterp_state with lib_stk = (node,[]) :: !synterp_state.lib_stk }
 
   let add_leaf_entry leaf =
-    let lib_stk = match !synterp_state.lib_stk with
-      | [] ->
-        (* top_printers does set_bool_option_value which adds a leaf *)
-        if !Flags.in_debugger then [dummylib, [leaf]] else assert false
-      | (node, leaves) :: rest -> (node, leaf :: leaves) :: rest
-    in
-    synterp_state := { !synterp_state with lib_stk }
+    let leaves, lib_stk = add_leaf_entry leaf !synterp_state.lib_stk in
+    synterp_state := { !synterp_state with lib_stk };
+    leaves
 
   (* Returns the opening node of a given name *)
   let start_mod ~is_type export id mp fs =
     let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Nametab.obj_dir id in
-    let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
+    let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; section_depth = 0 } in
     check_mod_fresh ~is_type prefix id;
     add_entry (OpenedModule (is_type,export,prefix,fs));
     synterp_state := { !synterp_state with path_prefix = prefix } ;
@@ -414,10 +454,11 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   let open_section id =
     let opp = !synterp_state.path_prefix in
     let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
-    let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
+    let obj_mp = MPdot (opp.Nametab.obj_mp, Label.of_id id) in
+    let prefix = Nametab.{ obj_dir; obj_mp ; section_depth = opp.section_depth + 1 } in
     check_section_fresh obj_dir id;
     let fs = Summary.Synterp.freeze_summaries () in
-    add_entry (OpenedSection (prefix, fs));
+    add_entry (OpenedSection (prefix, fs, []));
     (*Pushed for the lifetime of the section: removed by unfreezing the summary*)
     push_section_name obj_dir;
     synterp_state := { !synterp_state with path_prefix = prefix }
@@ -440,8 +481,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
       | CompilingLibrary _ as x -> x
       | OpenedModule (it,e,op,_) ->
         OpenedModule(it,e,op,Summary.Synterp.empty_frozen)
-      | OpenedSection (op, _) ->
-        OpenedSection(op,Summary.Synterp.empty_frozen)
+      | OpenedSection (op, _, _) ->
+        OpenedSection(op,Summary.Synterp.empty_frozen, [] (* ?? *))
     in
     let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
     { st with lib_stk = lib_synterp_stk }
@@ -464,13 +505,9 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
     interp_state := (node,[]) :: !interp_state
 
   let add_leaf_entry leaf =
-    let lib_stk = match !interp_state with
-      | [] ->
-        (* top_printers does set_bool_option_value which adds a leaf *)
-        if !Flags.in_debugger then [dummylib, [leaf]] else assert false
-      | (node, leaves) :: rest -> (node, leaf :: leaves) :: rest
-    in
-    interp_state := lib_stk
+    let leaves, lib_stk = add_leaf_entry leaf !interp_state in
+    interp_state := lib_stk;
+    leaves
 
   (* Returns the opening node of a given name *)
   let start_mod ~is_type export id mp fs =
@@ -485,10 +522,10 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
     interp_state := stk
 
   let open_section id =
-    Global.open_section ();
+    Global.open_section id;
     let prefix = !synterp_state.path_prefix in
     let fs = Summary.Interp.freeze_summaries () in
-    add_entry (OpenedSection (prefix, fs))
+    add_entry (OpenedSection (prefix, fs, []))
 
   let pop_path_prefix () = ()
   let recalc_path_prefix () = ()
@@ -508,29 +545,21 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
       | CompilingLibrary _ as x -> x
       | OpenedModule (it,e,op,_) ->
         OpenedModule(it,e,op,Summary.Interp.empty_frozen)
-      | OpenedSection (op, _) ->
-        OpenedSection(op,Summary.Interp.empty_frozen)
+      | OpenedSection (op, _, _) ->
+        OpenedSection(op,Summary.Interp.empty_frozen, [] (* ? *))
     in
     List.map (fun (node,_) -> drop_node node, []) interp_state
 
 end
 
-let add_discharged_leaf obj =
-  let newobj = Libobject.rebuild_object obj in
-  Libobject.cache_object (prefix(),newobj);
-  match Libobject.object_stage newobj with
-  | Summary.Stage.Synterp ->
-    SynterpActions.add_leaf_entry (AtomicObject newobj)
-  | Summary.Stage.Interp ->
-    InterpActions.add_leaf_entry (AtomicObject newobj)
-
 let add_leaf obj =
-  Libobject.cache_object (prefix(),obj);
-  match Libobject.object_stage obj with
+  let leaves = match Libobject.object_stage obj with
   | Summary.Stage.Synterp ->
     SynterpActions.add_leaf_entry (AtomicObject obj)
   | Summary.Stage.Interp ->
-    InterpActions.add_leaf_entry (AtomicObject obj)
+    InterpActions.add_leaf_entry (AtomicObject obj) in
+  let leaves = set_top_leaf leaves in
+  List.iter cache_item (List.rev leaves)
 
 module type StagedLibS = sig
 
@@ -596,7 +625,7 @@ let classify_segment seg =
   { substobjs; keepobjs; anticipateobjs; }
 
 let add_entry node = Actions.add_entry node
-let add_leaf_entry obj = Actions.add_leaf_entry obj
+let add_leaf_entry obj = ignore (Actions.add_leaf_entry obj)
 
 let open_section id = Actions.open_section id
 
@@ -623,7 +652,7 @@ let end_mod ~is_type =
     | OpenedModule (ty,_,prefix,fs) ->
       if ty == is_type then prefix, fs
       else error_still_opened (module_kind ty) prefix
-    | OpenedSection (prefix, _) -> error_still_opened "section" prefix
+    | OpenedSection (prefix, _, _) -> error_still_opened "section" prefix
     | CompilingLibrary _ -> CErrors.user_err (Pp.str "No opened modules.")
   in
   Actions.set_lib_stk before;
@@ -638,15 +667,14 @@ let end_modtype () = end_mod ~is_type:true
    add a ClosedSection object. *)
 let close_section () =
   let (secdecls,mark,before) = split_lib_at_opening (Actions.get_lib_stk ()) in
-  let fs = match mark with
-    | OpenedSection (_,fs) -> fs
+  let fs,newdecls = match mark with
+    | OpenedSection (_,fs,discharged_decls) -> fs, discharged_decls
     | _ -> CErrors.user_err Pp.(str "No opened section.")
   in
   Actions.set_lib_stk before;
   Actions.pop_path_prefix ();
-  let newdecls = List.map discharge_item secdecls in
   Actions.close_section fs;
-  List.iter (Option.iter add_discharged_leaf) newdecls
+  List.iter cache_item (List.rev newdecls)
 
 type frozen = Actions.frozen
 

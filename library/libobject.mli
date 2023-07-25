@@ -74,9 +74,12 @@ type object_name = Libnames.full_path * KerName.t
 
 type open_filter
 
+type section_level = Innermost | Outermost | AllLevels
+
 type ('a,'b) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
+  object_level : section_level;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
@@ -179,7 +182,7 @@ val declare_named_object :
 val declare_named_object_gen :
   ('a,object_prefix * 'a) object_declaration -> ('a -> obj)
 
-val cache_object : object_prefix * obj -> unit
+val cache_object : (* discharged: *) bool * object_prefix * obj -> unit
 val load_object : int -> object_prefix * obj -> unit
 val open_object : open_filter -> int -> object_prefix * obj -> unit
 val subst_object : substitution * obj -> obj

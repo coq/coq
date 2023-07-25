@@ -375,6 +375,7 @@ type require_obj = library_t list
 let in_require : require_obj -> obj =
   declare_object
     {(default_object "REQUIRE") with
+     object_level = Outermost;
      cache_function = cache_require;
      load_function = load_require;
      open_function = (fun _ _ -> assert false);
@@ -396,6 +397,7 @@ type require_obj_syntax = library_t list
 let in_require_syntax : require_obj_syntax -> obj =
   declare_object
     {(default_object "REQUIRE-SYNTAX") with
+     object_level = Outermost;
      object_stage = Summary.Stage.Synterp;
      cache_function = cache_require_syntax;
      load_function = load_require_syntax;

@@ -359,7 +359,7 @@ module ModObjs :
 (** Iterate some function [iter_objects] on all components of a module *)
 
 let do_module iter_objects i obj_dir obj_mp sobjs kobjs =
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let prefix = Nametab.{ obj_dir ; obj_mp; section_depth = 0; } in
   Actions.enter_module obj_mp obj_dir i;
   ModSubstObjs.set obj_mp sobjs;
   (* If we're not a functor, let's iter on the internal components *)
@@ -420,7 +420,7 @@ and load_include i (prefix, aobjs) =
 and load_keep i ((sp,kn),kobjs) =
   (* Invariant : seg isn't empty *)
   let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let prefix = Nametab.{ obj_dir ; obj_mp; section_depth = 0; } in
   let modobjs =
     try ModObjs.get obj_mp
     with Not_found -> assert false (* a substobjs should already be loaded *)
@@ -533,7 +533,7 @@ and open_export f i mpl =
 
 and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+  let prefix = Nametab.{ obj_dir; obj_mp; section_depth = 0; } in
   open_objects f i prefix kobjs
 
 let cache_include (prefix, aobjs) =
@@ -546,7 +546,7 @@ and cache_keep ((sp,kn),kobjs) =
 
 let cache_object (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.cache_object (prefix, o)
+  | AtomicObject o -> Libobject.cache_object (false, prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' load_objects 1 (name, sobjs)

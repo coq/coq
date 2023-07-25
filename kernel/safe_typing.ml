@@ -128,9 +128,7 @@ type reimport = compiled_library * Univ.ContextSet.t * vodigest
 type section_data = {
   rev_env : Environ.env;
   rev_univ : Univ.ContextSet.t;
-  rev_objlabels : Label.Set.t;
   rev_reimport : reimport list;
-  rev_revstruct : structure_body;
 }
 
 module HandleMap = Opaqueproof.HandleMap
@@ -155,6 +153,7 @@ type safe_environment =
   { env : Environ.env;
     sections : section_data Section.t option;
     modpath : ModPath.t;
+    secpath : Label.t list;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
     paramresolver : Mod_subst.delta_resolver;
@@ -184,6 +183,7 @@ let rec library_dp_of_senv senv =
 let empty_environment =
   { env = Environ.empty_env;
     modpath = ModPath.dummy;
+    secpath = [];
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.empty_delta_resolver;
@@ -549,6 +549,74 @@ let add_retroknowledge pttc senv =
     env = Primred.add_retroknowledge senv.env pttc;
     local_retroknowledge = pttc::senv.local_retroknowledge }
 
+let constant_drop_section_path con =
+  let kn = Constant.user con in
+  assert (KerName.equal kn (Constant.canonical con));
+  let mp,l = KerName.repr kn in
+  let mp = match mp with
+    | MPdot (mp,_) -> mp
+    | _ -> assert false in
+  Constant.make2 mp l
+
+let mind_drop_section_path mind =
+  let kn = MutInd.user mind in
+  assert (KerName.equal kn (MutInd.canonical mind));
+  let mp,l = KerName.repr kn in
+  let mp = match mp with
+    | MPdot (mp,_) -> mp
+    | _ -> assert false in
+  MutInd.make2 mp l
+
+let add_minds =
+  List.fold_right (fun (mind,mib) -> Environ.add_mind mind mib)
+
+let rec add_inductive_previous_sections ~nohash mind mib sections =
+  let mib = if Option.has_some sections || nohash then mib else Declareops.hcons_mind mib in
+  match sections with
+  | None ->
+    ([mind, if nohash then mib else Declareops.hcons_mind mib], mib), sections
+  | Some sections ->
+    let poly = Declareops.inductive_is_polymorphic mib in
+    let sections = Section.(push_global ~poly (SecInductive mind) mib.mind_hyps sections) in
+    let info = Section.segment_of_inductive mind sections in
+    let mind' = mind_drop_section_path mind in
+    let mib' = Discharge.cook_inductive info mib in
+    let (miblist, exported_mib), sections =
+      Section.on_previous_section (add_inductive_previous_sections ~nohash mind' mib') sections in
+    let sections = Section.map_custom (fun sec ->
+        { sec with rev_env = add_minds miblist sec.rev_env }) sections in
+    ((mind,mib) :: miblist, exported_mib), Some sections
+
+let add_inductive_all_sections ~nohash env sections mind mib =
+  let (miblist, exported_mib), sections = add_inductive_previous_sections ~nohash mind mib sections in
+  let env = add_minds miblist env in
+  env, SFBmind exported_mib, sections
+
+let add_constants =
+  List.fold_right (fun (con,cb) -> Environ.add_constant con cb)
+
+let rec add_constant_previous_sections ~nohash env con cb sections =
+  match sections with
+  | None ->
+    (* This is the only place where we hashcons the contents of a constant body *)
+    ([con, if nohash then cb else Declareops.hcons_const_body cb], cb), sections
+  | Some sections ->
+    let poly = Declareops.constant_is_polymorphic cb in
+    let sections = Section.(push_global ~poly (SecDefinition con) cb.const_hyps sections) in
+    let info = Section.segment_of_constant con sections in
+    let con' = constant_drop_section_path con in
+    let cb' = Discharge.cook_constant env info cb in
+    let (cblist, exported_cb), sections =
+      Section.on_previous_section (add_constant_previous_sections ~nohash env con' cb') sections in
+    let sections = Section.map_custom (fun sec ->
+        { sec with rev_env = add_constants cblist sec.rev_env }) sections in
+    ((con, cb) :: cblist, exported_cb), Some sections
+
+let add_constant_all_sections ~nohash env sections con cb =
+  let (cblist, exported_cb), sections = add_constant_previous_sections ~nohash env con cb sections in
+  let env = add_constants cblist env in
+  env, SFBconst exported_cb, sections
+
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
 
@@ -558,7 +626,7 @@ type generic_name =
   | M (** name already known, cf the mod_mp field *)
   | MT (** name already known, cf the mod_mp field *)
 
-let add_field ((l,sfb) as field) gn senv =
+let add_field ?(nohash=false) (l,sfb) gn senv =
   let mlabs,olabs = match sfb with
     | SFBmind mib ->
       let l = labels_of_mib mib in
@@ -568,30 +636,18 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
-  let env' = match sfb, gn with
-    | SFBconst cb, C con -> Environ.add_constant con cb senv.env
-    | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
-    | SFBmodtype mtb, MT -> Environ.add_modtype mtb senv.env
-    | SFBmodule mb, M -> Modops.add_module mb senv.env
+  let env', exported, sections =
+    match sfb, gn with
+    | SFBconst cb, C con -> add_constant_all_sections ~nohash senv.env senv.sections con cb
+    | SFBmind mib, I mind -> add_inductive_all_sections ~nohash senv.env senv.sections mind mib
+    | SFBmodtype mtb, MT -> Environ.add_modtype mtb senv.env, sfb, senv.sections
+    | SFBmodule mb, M -> Modops.add_module mb senv.env, sfb, senv.sections
     | _ -> assert false
-  in
-  let sections = match senv.sections with
-    | None -> None
-    | Some sections ->
-      match sfb, gn with
-      | SFBconst cb, C con ->
-        let poly = Declareops.constant_is_polymorphic cb in
-        Some Section.(push_global ~poly env' (SecDefinition con) sections)
-      | SFBmind mib, I mind ->
-        let poly = Declareops.inductive_is_polymorphic mib in
-        Some Section.(push_global ~poly env' (SecInductive mind) sections)
-      | _, (M | MT) -> Some sections
-      | _ -> assert false
   in
   { senv with
     env = env';
     sections;
-    revstruct = field :: senv.revstruct;
+    revstruct = (l,exported) :: senv.revstruct;
     modlabels = Label.Set.union mlabs senv.modlabels;
     objlabels = Label.Set.union olabs senv.objlabels }
 
@@ -621,8 +677,6 @@ let repr_exported_opaque o =
 
 let add_constant_aux senv (kn, cb) =
   let l = Constant.label kn in
-  (* This is the only place where we hashcons the contents of a constant body *)
-  let cb = if sections_are_opened senv then cb else Declareops.hcons_const_body cb in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
@@ -789,8 +843,8 @@ let export_side_effects senv eff =
   let seff, signatures = List.fold_left aux ([],[]) (SideEffects.repr eff) in
   let trusted = check_signatures senv signatures in
   let push_seff env eff =
-    let { seff_constant = kn; seff_body = cb ; _ } = eff in
-    let env = Environ.add_constant kn (lift_constant cb) env in
+    let { seff_constant = con; seff_body = cb ; _ } = eff in
+    let env, _, _ (* ?? *) = add_constant_all_sections ~nohash:true env senv.sections con (lift_constant cb) in
     env
   in
   match trusted with
@@ -849,8 +903,11 @@ let export_private_constants eff senv =
   let senv = List.fold_left fold senv bodies in
   exported, senv
 
+let make_constant_in_section (mp,sec,l) =
+  Constant.make2 (List.fold_right (fun s m -> MPdot (m,s)) sec mp) l
+
 let add_constant l decl senv =
-  let kn = Constant.make2 senv.modpath l in
+  let kn = make_constant_in_section (senv.modpath,senv.secpath,l) in
   let senv, cb =
     let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
@@ -942,7 +999,7 @@ let check_constraints uctx = function
 | Entries.Monomorphic_entry -> true
 
 let add_private_constant l uctx decl senv : (Constant.t * private_constants) * safe_environment =
-  let kn = Constant.make2 senv.modpath l in
+  let kn = make_constant_in_section (senv.modpath,senv.secpath,l) in
   let senv = push_context_set ~strict:true uctx senv in
     let cb =
       let sec_univs = Option.map Section.all_poly_univs senv.sections in
@@ -988,12 +1045,14 @@ let check_mind mie lab =
     assert (Id.equal (Label.to_id lab) oie.mind_entry_typename)
 
 let add_checked_mind kn mib senv =
-  let mib = if sections_are_opened senv then mib else Declareops.hcons_mind mib in
   add_field (MutInd.label kn,SFBmind mib) (I kn) senv
+
+let make_inductive_in_section (mp,sec,l) =
+  MutInd.make2 (List.fold_right (fun s m -> MPdot (m,s)) sec mp) l
 
 let add_mind l mie senv =
   let () = check_mind mie l in
-  let kn = MutInd.make2 senv.modpath l in
+  let kn = make_inductive_in_section (senv.modpath,senv.secpath,l) in
   let sec_univs = Option.map Section.all_poly_univs senv.sections in
   let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   (* We still have to add the template monomorphic constraints, and only those
@@ -1055,6 +1114,7 @@ let start_mod_modtype ~istype l senv =
   {
     (* modified fields *)
     modpath = mp;
+    secpath = [];
     modvariant = if istype then SIG ([], senv) else STRUCT ([],senv);
 
     (* carried over fields *)
@@ -1247,7 +1307,7 @@ let add_include me is_module inl senv =
       | SFBmodule _ -> M
       | SFBmodtype _ -> MT
     in
-    add_field field new_name senv
+    add_field ~nohash:true field new_name senv
   in
   resolver, List.fold_left add senv str
 
@@ -1272,6 +1332,7 @@ let start_library dir senv =
   mp,
   { env = senv.env;
     modpath = mp;
+    secpath = [];
     modvariant = LIBRARY;
     required = senv.required;
 
@@ -1350,51 +1411,31 @@ let import lib cst vodigest senv =
 
 (** {6 Interactive sections *)
 
-let open_section senv =
+let open_section id senv =
   let custom = {
     rev_env = senv.env;
     rev_univ = senv.univ;
-    rev_objlabels = senv.objlabels;
     rev_reimport = [];
-    rev_revstruct = senv.revstruct;
   } in
   let sections = Section.open_section ~custom senv.sections in
-  { senv with sections=Some sections }
+  { senv with sections = Some sections; secpath = Label.of_id id :: senv.secpath }
 
 let close_section senv =
-  let open Section in
   let sections0 = get_section senv.sections in
-  let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
-  let sections, entries, cstrs, revert = Section.close_section sections0 in
+  let sections, cstrs, revert = Section.close_section sections0 in
   (* Don't revert the delayed constraints (future_cst). If some delayed constraints
      were forced inside the section, they have been turned into global monomorphic
      that are going to be replayed. Those that are not forced are not readded
      by {!add_constant_aux}. *)
-  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
-        rev_reimport; rev_revstruct = revstruct } = revert in
-  let senv = { senv with env; revstruct; sections; univ; objlabels; } in
+  let { rev_env = env; rev_univ = univ; rev_reimport } = revert in
+  let senv = { senv with env; sections; univ; secpath = List.tl senv.secpath } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))
       senv (List.rev rev_reimport)
   in
-  (* Third phase: replay the discharged section contents *)
-  let senv = push_context_set ~strict:true cstrs senv in
-  let fold entry senv =
-    match entry with
-  | SecDefinition kn ->
-    let cb = Environ.lookup_constant kn env0 in
-    let info = Section.segment_of_constant kn sections0 in
-    let cb = Discharge.cook_constant senv.env info cb in
-    (* Delayed constants are already in the global environment *)
-    add_constant_aux senv (kn, cb)
-  | SecInductive ind ->
-    let mib = Environ.lookup_mind ind env0 in
-    let info = Section.segment_of_inductive ind sections0 in
-    let mib = Discharge.cook_inductive info mib in
-    add_checked_mind ind mib senv
-  in
-  List.fold_right fold entries senv
+  (* Third phase: universes *)
+  push_context_set ~strict:true cstrs senv
 
 let flatten_env senv =
   let label = function MPdot (_,l) -> l | _ -> assert false in

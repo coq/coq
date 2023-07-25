@@ -61,9 +61,12 @@ let filter_or f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Unfiltered
   | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
 
+type section_level = Innermost | Outermost | AllLevels
+
 type ('a,'b) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
+  object_level : section_level;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
@@ -76,6 +79,7 @@ type ('a,'b) object_declaration = {
 let default_object s = {
   object_name = s;
   object_stage = Summary.Stage.Interp;
+  object_level = AllLevels;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
@@ -138,7 +142,7 @@ let declare_object_full odecl =
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
   tag
 
-let make_oname Nametab.{ obj_dir; obj_mp } id =
+let make_oname Nametab.{ obj_dir; obj_mp; section_depth } id =
   Libnames.make_path obj_dir id, Names.KerName.make obj_mp (Names.Label.of_id id)
 
 let declare_named_object_full odecl =
@@ -146,6 +150,7 @@ let declare_named_object_full odecl =
     let oname = make_oname in
     { object_name = odecl.object_name;
       object_stage = odecl.object_stage;
+      object_level = odecl.object_level;
       cache_function = (fun (p, (id, o)) -> odecl.cache_function (oname p id, o));
       load_function = (fun i (p, (id, o)) -> odecl.load_function i (oname p id, o));
       open_function = (fun f i (p, (id, o)) -> odecl.open_function f i (oname p id, o));
@@ -179,9 +184,13 @@ let declare_object odecl =
   let infun v = Dyn.Dyn (tag, v) in
   infun
 
-let cache_object (sp, Dyn.Dyn (tag, v)) =
+let cache_object (discharged, sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
-  decl.cache_function (sp, v)
+  let docache = match decl.object_level with
+    | Innermost -> not discharged
+    | AllLevels -> true
+    | Outermost -> sp.Nametab.section_depth = 0 in
+  if docache then decl.cache_function (sp, v)
 
 let load_object i (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in

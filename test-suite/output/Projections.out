@@ -15,3 +15,9 @@ fun A : Type => let B := A in fun (C : Type) (u : U A C) => b _ _ u
        forall (C : Type) (u : U A C), (A, B, C, c _ _ u) = (A, B, C, c _ _ u)
 
 Arguments b (A C)%type_scope u
+1 goal
+  
+  A : Type
+  x : foo A
+  ============================
+  x.(bar A) = x.(bar _)

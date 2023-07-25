@@ -331,7 +331,7 @@ let register ~warn env sigma o =
           let new_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF) in
           let prj = Nametab.pr_global_env Id.Set.empty proj in
           let hd_val = ValuePattern.print cs_pat in
-          warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s)
+          warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s);
       )
 
 let discharge (ref,ind) =

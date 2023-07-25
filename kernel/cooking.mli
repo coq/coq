@@ -58,6 +58,9 @@ val create_cache : cooking_info -> cooking_cache
 val instance_of_cooking_cache : cooking_cache -> Constr.t array
 val rel_context_of_cooking_cache : cooking_cache -> rel_context
 
+val discharge_inductive : cooking_cache -> Ind.t -> Ind.t
+val discharge_constant : cooking_cache -> Constant.t -> Constant.t
+
 val abstract_as_type : cooking_cache -> types -> types
 
 val abstract_as_body : cooking_cache -> constr -> constr

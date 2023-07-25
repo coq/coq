@@ -261,6 +261,7 @@ let coe_cat = create_category "coercions"
 
 let inCoercion : coe_info_typ -> obj =
   declare_object {(default_object "COERCION") with
+    object_level = Innermost;
     open_function = simple_open ~cat:coe_cat open_coercion;
     cache_function = cache_coercion;
     subst_function = (fun (subst,c) -> subst_coercion subst c);

@@ -72,6 +72,7 @@ open Libnames
 type object_prefix = {
   obj_dir : DirPath.t;
   obj_mp  : ModPath.t;
+  section_depth : int;
 }
 
 val eq_op : object_prefix -> object_prefix -> bool

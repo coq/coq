@@ -751,7 +751,7 @@ let print_context env sigma with_values =
 let pr_prefix_name prefix = Id.print (snd (split_dirpath prefix.Nametab.obj_dir))
 
 let print_library_node = function
-  | Lib.OpenedSection (prefix, _) ->
+  | Lib.OpenedSection (prefix, _, _) ->
     str " >>>>>>> Section " ++ pr_prefix_name prefix
   | Lib.OpenedModule (_,_,prefix,_) ->
     str " >>>>>>> Module " ++ pr_prefix_name prefix
@@ -856,7 +856,7 @@ let read_sec_context qid =
     with Not_found ->
       user_err ?loc:qid.loc (str "Unknown section.") in
   let rec get_cxt in_cxt = function
-    | (Lib.OpenedSection ({Nametab.obj_dir;_},_), _ as hd)::rest ->
+    | (Lib.OpenedSection ({Nametab.obj_dir;_},_,_), _ as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest

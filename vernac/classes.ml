@@ -136,6 +136,7 @@ let classify_instance inst = match inst.locality with
 let instance_input : instance -> obj =
   declare_object
     { (default_object "type classes instances state") with
+      object_level = Innermost;
       cache_function = cache_instance;
       load_function = load_instance;
       open_function = simple_open ~cat:Hints.hint_cat open_instance;

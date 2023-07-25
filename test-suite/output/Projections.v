@@ -19,3 +19,17 @@ Print a.
 Print b.
 
 End LocalDefUnfolding.
+
+Module Discharge.
+
+Section A.
+Record foo A := { bar : A}.
+End A.
+Definition bar' := bar.
+Lemma f A x : bar' A x = bar A x.
+unfold bar'.
+Show. (* second should be the primitive construct *)
+reflexivity.
+Qed.
+
+End Discharge.

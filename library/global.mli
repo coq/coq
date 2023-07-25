@@ -77,7 +77,7 @@ val add_include :
 
 (** Sections *)
 
-val open_section : unit -> unit
+val open_section : Id.t -> unit
 (** [poly] is true when the section should be universe polymorphic *)
 
 val close_section : Summary.Interp.frozen -> unit
@@ -183,3 +183,5 @@ val current_dirpath : unit -> DirPath.t
 val with_global : (Environ.env -> DirPath.t -> 'a Univ.in_universe_context_set) -> 'a
 
 val global_env_summary_tag : Safe_typing.safe_environment Summary.Dyn.tag
+
+val in_lower_section : (unit -> 'a) -> unit -> 'a

@@ -125,11 +125,19 @@ type cooking_cache = {
   rel_ctx : rel_context Lazy.t;
 }
 
+let discharge_mind {info = {expand_info = (_csttab, mindtab);_};_} mind =
+  if Mindmap.mem mind mindtab then MutInd.pop mind else mind
+
+let discharge_inductive cache (mind,i) = (discharge_mind cache mind, i)
+
+let discharge_constant {info = {expand_info = (csttab, _mindtab);_};_} cst =
+  if Cmap.mem cst csttab then Constant.pop cst else cst
+
 let instantiate_my_gr gr u =
   match gr with
-  | ConstRef c -> mkConstU (c, u)
-  | IndRef i -> mkIndU (i, u)
-  | ConstructRef c -> mkConstructU (c, u)
+  | ConstRef c -> mkConstU (Constant.pop c, u)
+  | IndRef i -> mkIndU (Ind.pop i, u)
+  | ConstructRef c -> mkConstructU (Construct.pop c, u)
 
 let discharge_inst top_abst_subst sub_abst_rev_inst =
   let rec aux k relargs top_abst_subst sub_abst_rev_inst =
@@ -172,11 +180,11 @@ let share_univs cache top_abst_subst k r u l =
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
   let nnewpars = List.count NamedDecl.is_local_assum r.abstr_info.abstr_ctx in
   let map npars = npars + nnewpars in
-  Projection.Repr.map_npars map p
+  Projection.Repr.map_npars map (Projection.Repr.pop p)
 
 let discharge_proj (_,_,abstr_inst_length) p =
   let map npars = npars + abstr_inst_length in
-  Projection.map_npars map p
+  Projection.map_npars map (Projection.pop p)
 
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
@@ -190,7 +198,7 @@ let expand_constr cache modlist top_abst_subst c =
         | (abstr_uinst, abstr_inst_rel, abstr_inst_length) ->
           let u = Instance.append abstr_uinst u in
           let pms = Array.append (make_inst k abstr_inst_rel) pms in
-          let ci = { ci with ci_npar = ci.ci_npar + abstr_inst_length } in
+          let ci = { ci with ci_npar = ci.ci_npar + abstr_inst_length; ci_ind = Ind.pop ci.ci_ind } in
           Constr.map_with_binders succ substrec k (mkCase (ci,u,pms,p,iv,t,br))
         | exception Not_found ->
           Constr.map_with_binders succ substrec k c

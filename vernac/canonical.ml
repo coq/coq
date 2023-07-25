@@ -30,6 +30,7 @@ let canon_cat = create_category "canonicals"
 
 let inCanonStruc : Instance.t * bool -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
+                  object_level = Innermost;
                   open_function = simple_open ~cat:canon_cat open_canonical_structure;
                   cache_function = cache_canonical_structure;
                   subst_function = (fun (subst,(c,local)) -> Instance.subst subst c, local);

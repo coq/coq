@@ -66,6 +66,15 @@ let globalize_with_summary fs f =
   GlobalSafeEnv.set_safe_env env;
   res
 
+let in_lower_section f () =
+  if !Flags.in_synterp_phase then f ()
+  else
+    let env = safe_env () in
+    let env' = Safe_typing.close_section env in
+    GlobalSafeEnv.set_safe_env env';
+    try let a = f () in GlobalSafeEnv.set_safe_env env; a
+    with e -> GlobalSafeEnv.set_safe_env env; raise e
+
 (** [Safe_typing] operations, now operating on the global environment *)
 
 let i2l = Label.of_id
@@ -94,7 +103,7 @@ let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
 let add_include me ismod inl = globalize (Safe_typing.add_include me ismod inl)
 
-let open_section () = globalize0 Safe_typing.open_section
+let open_section id = globalize0 (Safe_typing.open_section id)
 let close_section fs = globalize0_with_summary fs Safe_typing.close_section
 let sections_are_opened () = Safe_typing.sections_are_opened (safe_env())
 

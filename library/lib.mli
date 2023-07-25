@@ -22,12 +22,11 @@ type export = (export_flag * Libobject.open_filter) option (* None for a Module 
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name
-val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
 type 'summary node =
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
-  | OpenedSection of Nametab.object_prefix * 'summary
+  | OpenedSection of Nametab.object_prefix * 'summary * (bool * Nametab.object_prefix * Libobject.t) list
 
 (** Extract the [object_prefix] component. Note that it is the prefix
    of the objects *inside* this node, eg in [Module M.] we have

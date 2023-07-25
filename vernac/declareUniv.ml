@@ -67,10 +67,13 @@ let get_names decl =
   univs
 
 let cache_univ_names (prefix, decl) =
-  let depth = Lib.sections_depth () in
-  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
-  let names = get_names decl in
-  List.iter (do_univ_name ~check:true (Nametab.Until 1) dp decl.udecl_src) names
+  let ok = match decl.udecl_src with
+  | BoundUniv -> true
+  | QualifiedUniv _ | UnqualifiedUniv -> prefix.Nametab.section_depth = 0 in
+  if ok then
+    let dp = prefix.Nametab.obj_dir in
+    let names = get_names decl in
+    List.iter (do_univ_name ~check:true (Nametab.Until 1) dp decl.udecl_src) names
 
 let load_univ_names i (prefix, decl) =
   let names = get_names decl in

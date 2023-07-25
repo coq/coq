@@ -111,6 +111,15 @@ let cook_projection cache ~params t =
   let _, t = decompose_prod_n_decls (Context.Rel.length params + 1 + nrels) t in
   t
 
+let cook_nested_type cache = function
+  | NestedInd ind -> NestedInd (Cooking.discharge_inductive cache ind)
+  | NestedPrimitive cst -> NestedPrimitive (Cooking.discharge_constant cache cst)
+
+let cook_recargs cache = function
+  | Mrec ind -> Mrec (Ind.pop ind)
+  | Norec -> Norec
+  | Nested t -> Nested (cook_nested_type cache t)
+
 let cook_one_ind cache ~ntypes mip =
   let mind_arity = match mip.mind_arity with
     | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
@@ -139,7 +148,7 @@ let cook_one_ind cache ~ntypes mip =
     mind_nf_lc;
     mind_consnrealargs = mip.mind_consnrealargs;
     mind_consnrealdecls = mip.mind_consnrealdecls;
-    mind_recargs = mip.mind_recargs;
+    mind_recargs = Rtree.Smart.map (cook_recargs cache) mip.mind_recargs;
     mind_relevance = mip.mind_relevance;
     mind_nb_constant = mip.mind_nb_constant;
     mind_nb_args = mip.mind_nb_args;
