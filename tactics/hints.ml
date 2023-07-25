@@ -356,6 +356,12 @@ let instantiate_hint env sigma p =
   in
   { p with code = { p.code with obj = code } }
 
+let hint_mode_eq m1 m2 = match m1, m2 with
+  | ModeInput, ModeInput -> true
+  | ModeNoHeadEvar, ModeNoHeadEvar -> true
+  | ModeOutput, ModeOutput -> true
+  | (ModeInput | ModeNoHeadEvar | ModeOutput), _ -> false
+
 let hints_path_atom_eq h1 h2 = match h1, h2 with
 | PathHints l1, PathHints l2 -> List.equal GlobRef.CanOrd.equal l1 l2
 | PathAny, PathAny -> true
@@ -442,17 +448,22 @@ let rec path_derivate hp hint =
 let rec normalize_path h =
   match h with
   | PathStar PathEpsilon -> PathEpsilon
-  | PathSeq (PathEmpty, _) | PathSeq (_, PathEmpty) -> PathEmpty
-  | PathSeq (PathEpsilon, p) | PathSeq (p, PathEpsilon) -> normalize_path p
-  | PathOr (PathEmpty, p) | PathOr (p, PathEmpty) -> normalize_path p
   | PathOr (p, q) ->
-    let p', q' = normalize_path p, normalize_path q in
-      if hints_path_eq p p' && hints_path_eq q q' then h
-      else normalize_path (PathOr (p', q'))
+    (match normalize_path p with
+     | PathEmpty -> normalize_path q
+     | p' ->
+     match normalize_path q with
+     | PathEmpty -> p'
+     | q' -> if hints_path_eq p' q' then p' else PathOr (p', q'))
   | PathSeq (p, q) ->
-    let p', q' = normalize_path p, normalize_path q in
-      if hints_path_eq p p' && hints_path_eq q q' then h
-      else normalize_path (PathSeq (p', q'))
+    (match normalize_path p with
+     | PathEmpty -> PathEmpty
+     | PathEpsilon -> normalize_path q
+     | p' ->
+     match normalize_path q with
+     | PathEmpty -> PathEmpty
+     | PathEpsilon -> p'
+     | q' -> PathSeq (p', q'))
   | _ -> h
 
 let path_derivate hp hint = normalize_path (path_derivate hp hint)
@@ -739,7 +750,7 @@ struct
 
   let add_mode gr m db =
     let se = find gr db in
-    let se = { se with sentry_mode = m :: se.sentry_mode } in
+    let se = { se with sentry_mode = m :: List.remove (Array.equal hint_mode_eq) m se.sentry_mode } in
     { db with hintdb_map = GlobRef.Map.add gr se db.hintdb_map }
 
   let cut db = db.hintdb_cut

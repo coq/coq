@@ -73,10 +73,10 @@ This command does not support the global attribute in sections.
 Non-discriminated database
 Unfoldable variable definitions: all
 Unfoldable constant definitions: all except: id
-Cut: (_ | _)
+Cut: _
 For any goal ->   
 For nat ->   
-For S (modes !, !) ->   
+For S (modes !) ->   
 
 Non-discriminated database
 Unfoldable variable definitions: all
