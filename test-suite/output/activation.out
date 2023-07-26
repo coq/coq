@@ -68,3 +68,6 @@ The following notations have been enabled:
 Notation activation.Abbrev.x := 0
 0
      : nat
+File "./output/activation.v", line 44, characters 0-49:
+The command has indeed failed with message:
+Found no matching notation to enable or disable.

@@ -37,3 +37,10 @@ Enable Notation x.
 Check x.
 
 End Abbrev.
+
+Module Bug17782.
+
+Declare Custom Entry trm.
+Fail Disable Notation "'foo' _"  (in custom trm).
+
+End Bug17782.

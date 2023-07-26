@@ -2497,11 +2497,14 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
   | _ :: _ as ntn_entries, Some (Inl ntn) ->
     (* shortcut *)
     List.fold_right (fun ntn_entry ntns ->
-      NotationMap.add (ntn_entry, ntn)
-        (toggle_notations_by_interpretation ~on found ntn_pattern
-           (inscope,(ntn_entry,ntn))
-           (NotationMap.find (ntn_entry, ntn) ntns))
-        ntns) ntn_entries ntns
+      try
+        NotationMap.add (ntn_entry, ntn)
+          (toggle_notations_by_interpretation ~on found ntn_pattern
+             (inscope,(ntn_entry,ntn))
+             (NotationMap.find (ntn_entry, ntn) ntns))
+          ntns
+      with Not_found -> ntns)
+        ntn_entries ntns
     (* Deal with full notations *)
   | ntn_entries, ntn_rule -> (* This is the table of notations, not of abbreviations *)
     NotationMap.mapi (fun (ntn_entry,ntn_key' as ntn') data ->
