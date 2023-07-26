@@ -190,3 +190,21 @@ Ltac2 is_const(c: constr) :=
   | Unsafe.Constant _ _ => true
   | _ => false
   end.
+
+Ltac2 is_float(c: constr) :=
+  match Unsafe.kind c with
+  | Unsafe.Float _ => true
+  | _ => false
+  end.
+
+Ltac2 is_uint63(c: constr) :=
+  match Unsafe.kind c with
+  | Unsafe.Uint63 _ => true
+  | _ => false
+  end.
+
+Ltac2 is_array(c: constr) :=
+  match Unsafe.kind c with
+  | Unsafe.Array _ _ _ _ => true
+  | _ => false
+  end.
