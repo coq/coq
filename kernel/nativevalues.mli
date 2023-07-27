@@ -293,6 +293,7 @@ val fsub : t -> t -> t -> t
 val fmul : t -> t -> t -> t
 val fdiv : t -> t -> t -> t
 val fsqrt : t -> t -> t
+val ffma : t -> t -> t -> t -> t
 val float_of_int : t -> t -> t
 val normfr_mantissa : t -> t -> t
 val frshiftexp : t -> t -> t

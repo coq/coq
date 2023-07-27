@@ -204,6 +204,8 @@ struct
 
   let get_float2 evd args = get_float evd args 0, get_float evd args 1
 
+  let get_float3 evd args = get_float evd args 0, get_float evd args 1, get_float evd args 2
+
   let get_parray evd args i = E.get_parray evd (E.get args i)
 
   let red_prim_aux env evd op u args =
@@ -347,6 +349,8 @@ struct
       let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.div f1 f2)
     | Float64sqrt ->
       let f = get_float1 evd args in E.mkFloat env (Float64.sqrt f)
+    | Float64fma ->
+      let f1, f2, f3 = get_float3 evd args in E.mkFloat env (Float64.fma f1 f2 f3)
     | Float64ofUint63 ->
       let i = get_int1 evd args in E.mkFloat env (Float64.of_uint63 i)
     | Float64normfr_mantissa ->

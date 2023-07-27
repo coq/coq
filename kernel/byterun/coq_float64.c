@@ -43,6 +43,17 @@ static double next_down(double x) {
   return bits.d;
 }
 
+#define DECLARE_FTRINOP(name, e)                                        \
+  double coq_##name(double x, double y, double z) {                     \
+    return e;                                                           \
+  }                                                                     \
+                                                                        \
+  value coq_##name##_byte(value x, value y, value z) {                  \
+    return caml_copy_double(coq_##name(Double_val(x),                   \
+                                       Double_val(y),                   \
+                                       Double_val(z)));                 \
+  }
+
 #define DECLARE_FBINOP(name, e)                                         \
   double coq_##name(double x, double y) {                               \
     return e;                                                           \
@@ -66,6 +77,7 @@ DECLARE_FBINOP(fadd, x + y)
 DECLARE_FBINOP(fsub, x - y)
 DECLARE_FBINOP(fdiv, x / y)
 DECLARE_FUNOP(fsqrt, sqrt(x))
+DECLARE_FTRINOP(fma, fma(x, y, z))
 DECLARE_FUNOP(next_up, next_up(x))
 DECLARE_FUNOP(next_down, next_down(x))
 

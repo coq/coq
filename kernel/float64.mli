@@ -75,6 +75,8 @@ val div : t -> t -> t
 
 val sqrt : t -> t
 
+val fma : t -> t -> t -> t
+
 (** Link with integers *)
 val of_uint63 : Uint63.t -> t
 [@@ocaml.inline always]

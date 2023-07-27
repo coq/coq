@@ -25,6 +25,9 @@ let div (x : float) (y : float) : float = x /. y
 let sqrt (x : float) : float = sqrt x
 [@@ocaml.inline always]
 
+let fma (x : float) (y : float) (z : float) : float = Float.fma x y z
+[@@ocaml.inline always]
+
 (*** Test at runtime that no harmful double rounding seems to
    be performed with an intermediate 80 bits representation (x87). *)
 let () =

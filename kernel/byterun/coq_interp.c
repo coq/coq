@@ -229,6 +229,8 @@ if (sp - num_args < coq_stack_threshold) {                                     \
                                                   && Is_uint63(sp[1]), apply3)
 #define CheckFloat1() CheckPrimArgs(Is_double(accu), apply1)
 #define CheckFloat2() CheckPrimArgs(Is_double(accu) && Is_double(sp[0]), apply2)
+#define CheckFloat3() CheckPrimArgs(Is_double(accu) && Is_double(sp[0]) \
+                                                    && Is_double(sp[1]), apply3)
 
 #define AllocCarry(cond) Coq_alloc_small(accu, 1, (cond)? coq_tag_C1 : coq_tag_C0)
 #define AllocPair() Coq_alloc_small(accu, 2, coq_tag_pair)
@@ -1777,6 +1779,15 @@ value coq_interprete
         print_instr("CHECKSQRTFLOAT");
         CheckFloat1();
         Coq_copy_double(sqrt(Double_val(accu)));
+        Next;
+      }
+
+      Instruct (CHECKFMAFLOAT) {
+        print_instr("CHECKFMAFLOAT");
+        CheckFloat3();
+        /* XXX FIXME TODO Deal with imprecise fma on MinGW, etc, cf https://github.com/coq/coq/issues/17893#issuecomment-1654794043 */
+        Coq_copy_double(fma(Double_val(accu),Double_val(sp[0]),Double_val(sp[1])));
+        sp += 2;
         Next;
       }
 

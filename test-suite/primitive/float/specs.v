@@ -333,6 +333,7 @@ Definition spec_list : list SPEC :=
     ; `sub_spec
     ; `div_spec
     ; `sqrt_spec
+    ; `fma_spec
 
     ; `of_uint63_spec
     ; `normfr_mantissa_spec

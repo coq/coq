@@ -733,6 +733,14 @@ let fsqrt accu x =
   if is_float x then no_check_fsqrt x
   else apply accu x
 
+let no_check_ffma x y z =
+  mk_float (Float64.fma (to_float x) (to_float y) (to_float z))
+[@@ocaml.inline always]
+
+let ffma accu x y z =
+  if is_float x && is_float y && is_float z then no_check_ffma x y z
+  else apply3 accu x y z
+
 let no_check_float_of_int x =
   mk_float (Float64.of_uint63 (to_uint x))
 [@@ocaml.inline always]

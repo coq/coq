@@ -73,6 +73,9 @@ Primitive sub := #float64_sub.
 
 Primitive div := #float64_div.
 
+(** [fma]: fused multiply and add: [fma x y z] is equivalent to [x * y + z] performed with infinite precision, then rounding once *)
+Primitive fma := #float64_fma.
+
 Module Import PrimFloatNotationsInternalB.
 Notation "- x" := (opp x) : float_scope.
 Notation "x =? y" := (eqb x y) (at level 70, no associativity) : float_scope.
