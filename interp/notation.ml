@@ -1449,19 +1449,8 @@ let interp_prim_token_gen ?loc g p local_scopes =
 let interp_prim_token ?loc =
   interp_prim_token_gen ?loc (fun _ -> ())
 
-let rec check_allowed_ref_in_pat looked_for = DAst.(with_val (function
-  | GVar _ | GHole _ -> ()
-  | GRef (g,_) -> looked_for g
-  | GApp (f, l) ->
-    begin match DAst.get f with
-    | GRef (g, _) ->
-      looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
-    | _ -> raise Not_found
-    end
-  | _ -> raise Not_found))
-
-let interp_prim_token_cases_pattern_expr ?loc looked_for p =
-  interp_prim_token_gen ?loc (check_allowed_ref_in_pat looked_for) p
+let interp_prim_token_cases_pattern_expr ?loc check_allowed p =
+  interp_prim_token_gen ?loc check_allowed p
 
 let warn_deprecated_notation =
   Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-notation"

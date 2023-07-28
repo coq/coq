@@ -1706,8 +1706,32 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       error_invalid_pattern_notation ?loc ()
   in
   (* [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
-  let rec rcp_of_glob scopes x = DAst.(map (function
-    | GVar id -> RCPatAtom (Some (CAst.make ?loc:x.loc id,scopes))
+  let make_pars ?loc g =
+    let env = Global.env () in
+    let n = match g with
+      | GlobRef.ConstructRef (ind,_) -> Inductiveops.inductive_nparams env ind
+      | _ -> 0 in
+    List.make n (DAst.make ?loc @@ RCPatAtom None)
+  in
+  (* Check Ind/Construct structure of patterns for primitive notation *)
+  let rec check_allowed_ref_in_pat test_kind = DAst.(with_loc_val (fun ?loc -> function
+      | GVar _ | GHole _ -> ()
+      | GRef (g,_) -> test_kind.test_kind ?loc g
+      | GApp (f, l) ->
+        begin match DAst.get f with
+        | GRef (g, _) ->
+          test_kind.test_kind ?loc g;
+          let nparams = match g with
+            | IndRef ind | ConstructRef (ind,_) -> Inductiveops.inductive_nparams (Global.env ()) ind
+            | _ -> assert false in
+          let l = try List.skipn nparams l with Failure _ -> raise Not_found in
+          List.iter (check_allowed_ref_in_pat test_kind_inner) l
+        | _ -> raise Not_found
+        end
+      | _ -> raise Not_found)) in
+  (* Interpret a primitive notation (part of Glob_ops.cases_pattern_of_glob_constr) *)
+  let rec rcp_of_glob scopes x = DAst.(map_with_loc (fun ?loc -> function
+    | GVar id -> RCPatAtom (Some (CAst.make ?loc id,scopes))
     | GHole (_,_) -> RCPatAtom None
     | GRef (g,_) -> RCPatCstr (g, [])
     | GApp (r, l) ->
@@ -1715,18 +1739,16 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       | GRef (g,_) ->
         let allscs = find_arguments_scope g in
         let allscs = simple_adjust_scopes (List.length l) allscs in
-        RCPatCstr (g, List.map2 (fun sc a -> rcp_of_glob (sc,snd scopes) a) allscs l)
+        let params = make_pars ?loc g in (* Rem: no letins *)
+        let nparams = List.length params in
+        let allscs = List.skipn nparams allscs in
+        let l = List.skipn nparams l in
+        let pl = List.map2 (fun sc a -> rcp_of_glob (sc,snd scopes) a) allscs l in
+        RCPatCstr (g, params @ pl)
       | _ ->
         CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr.")
       end
     | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr."))) x
-  in
-  let make_pars ?loc g =
-    let env = Global.env () in
-    let n = match g with
-      | GlobRef.ConstructRef (ind,_) -> Inductiveops.inductive_nparams env ind
-      | _ -> 0 in
-    List.make n (DAst.make ?loc @@ RCPatAtom None)
   in
   let rec drop_abbrev {test_kind} ?loc scopes qid add_par_if_no_ntn_with_par no_impl pats =
     try
@@ -1775,7 +1797,8 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       end
     | CPatNotation (_,(InConstrEntry,"- _"),([a],[],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Number (_, p)) -> p | _ -> assert false in
-      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind test_kind_inner) (Number (SMinus,p)) scopes in
+      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc
+          (check_allowed_ref_in_pat test_kind) (Number (SMinus,p)) scopes in
       rcp_of_glob scopes pat
     | CPatNotation (_,(InConstrEntry,"( _ )"),([a],[],[]),[]) ->
       in_pat test_kind scopes a
@@ -1788,7 +1811,8 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | CPatDelimiters (key, e) ->
       in_pat test_kind ([],find_delimiters_scope ?loc key::snd scopes) e
     | CPatPrim p ->
-      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc test_kind_inner.test_kind p scopes in
+      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc
+          (check_allowed_ref_in_pat test_kind) p scopes in
       rcp_of_glob scopes pat
     | CPatAtom (Some id) ->
       begin

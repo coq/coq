@@ -229,3 +229,10 @@ Fail Notation "[ x ]" := (id x) (x custom doesntexist, only printing).
 Fail Notation "# x" := (id x) (in custom doesntexist, only printing).
 
 End TestNonExistentCustomOnlyPrinting.
+
+Module NotationClauseIn.
+
+Notation "1" := unit.
+Check fun x => match x in 1 with tt => 0 end.
+
+End NotationClauseIn.
