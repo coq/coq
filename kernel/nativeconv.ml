@@ -70,7 +70,7 @@ and conv_accu env pb lvl k1 k2 cu =
     conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
     let cu = conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu in
-    Array.fold_right2 (conv_val env CONV lvl) (args_of_accu k1) (args_of_accu k2) cu
+    List.fold_right2 (conv_val env CONV lvl) (args_of_accu k1) (args_of_accu k2) cu
 
 and conv_atom env pb lvl a1 a2 cu =
   if a1 == a2 then cu
