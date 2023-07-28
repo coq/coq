@@ -450,11 +450,11 @@ let pr_located_qualid = function
       let s,mp =
         let open Nametab in
         let open GlobDirRef in match dir with
-        | DirOpenModule mp -> "Open Module", mp
-        | DirOpenModtype mp -> "Open Module Type", mp
-        | DirOpenSection _ -> anomaly (Pp.str"Sections are not locatable")
+        | DirOpenModule mp -> "Open Module", ModPath.print mp
+        | DirOpenModtype mp -> "Open Module Type", ModPath.print mp
+        | DirOpenSection dir -> "Open Section", DirPath.print dir
       in
-      str s ++ spc () ++ str (ModPath.to_string mp)
+      str s ++ spc () ++ mp
   | Module mp ->
     str "Module" ++ spc () ++ DirPath.print (Nametab.dirpath_of_module mp)
   | ModuleType mp ->

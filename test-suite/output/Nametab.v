@@ -46,3 +46,9 @@ Import Q.N.
 
 (* OK  *) Locate Module Q.
 (* OK  *) Locate Module Nametab.Q.
+
+(* A slightly different request *)
+Section T.
+Locate T.
+About T.
+End T.
