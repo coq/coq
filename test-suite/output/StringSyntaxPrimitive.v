@@ -142,6 +142,7 @@ Module Bug11237.
 
 Inductive bytes := wrap_bytes { unwrap_bytes : list byte }.
 
+Declare Scope bytes_scope.
 Delimit Scope bytes_scope with bytes.
 Bind Scope bytes_scope with bytes.
 String Notation bytes wrap_bytes unwrap_bytes : bytes_scope.
