@@ -1026,3 +1026,18 @@ Check NUnit (S O + S O).
    than a syntactic equality, but this could be more costly *)
 
 End Test30.
+
+Module Bug10878.
+
+Definition Zto_pos_opt (v : Z) : option positive
+  := match v with
+     | Zpos v => Some v
+     | _ => None
+     end.
+Declare Scope mypos_scope.
+Declare Scope mypos_scope2.
+Number Notation positive Zto_pos_opt Zpos : mypos_scope. (* success *)
+Arguments option {_}.
+Number Notation positive Zto_pos_opt Zpos : mypos_scope2. (* was failing *)
+
+End Bug10878.
