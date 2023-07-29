@@ -1782,8 +1782,9 @@ end
 
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
-(* Boolean is for locality *)
-type scope_class_map = (scope_name * bool) list ScopeClassMap.t
+(* pairs of Top and Bottom additions (Boolean is for locality) *)
+type scope_class_map =
+  ((scope_name * bool) list * (scope_name * bool) list) ScopeClassMap.t
 
 let initial_scope_class_map : scope_class_map =
   ScopeClassMap.empty
@@ -1795,16 +1796,24 @@ type add_scope_where = AddScopeTop | AddScopeBottom
 let declare_scope_class islocal sc ?where cl =
   let map = match where with
     | None ->
-      ScopeClassMap.add cl [sc, islocal] !scope_class_map
+      ScopeClassMap.add cl ([sc, islocal], []) !scope_class_map
     | Some where ->
-      let add scl = match where with AddScopeTop -> (sc,islocal) :: scl | AddScopeBottom -> scl @ [sc,islocal] in
-      let scl = try ScopeClassMap.find cl !scope_class_map with Not_found -> [] in
+      let add (scl1,scl2) = match where with AddScopeTop -> ((sc,islocal) :: scl1, scl2) | AddScopeBottom -> (scl1, scl2 @ [sc,islocal]) in
+      let scl = try ScopeClassMap.find cl !scope_class_map with Not_found -> ([],[]) in
       ScopeClassMap.add cl (add scl) !scope_class_map in
   scope_class_map := map
 
-let find_scope_class_opt map = function
-  | None -> []
-  | Some cl -> try List.map fst (ScopeClassMap.find cl map) with Not_found -> []
+let find_scope_class_blocks_opt map = function
+  | None -> [], []
+  | Some cl ->
+    try
+      let ltop, lbot = ScopeClassMap.find cl map in
+      List.map fst ltop, List.map fst lbot
+    with Not_found -> [], []
+
+let find_scope_class_opt map cl =
+  let ltop, lbot = find_scope_class_blocks_opt map cl in
+  ltop @ lbot
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
@@ -1851,9 +1860,9 @@ let scope_class_of_class (x : cl_typ) : scope_class =
 *)
 
 let update_scope sco cl =
-  match find_scope_class_opt !scope_class_map cl with
-  | [] -> sco
-  | sco' -> sco'
+  let (sctop,scbot) = find_scope_class_blocks_opt !scope_class_map cl in
+  let sco = List.filter (fun sc -> not (List.exists (String.equal sc) sctop || List.exists (String.equal sc) scbot)) sco in
+  sctop@sco@scbot
 
 let rec update_scopes cls scl = match cls, scl with
   | [], _ -> scl
@@ -1895,10 +1904,10 @@ let subst_arguments_scope (subst,(req,r,scl,cls,allscopes)) =
 
 let discharge_available_scopes map =
   (* Remove local scopes *)
-  ScopeClassMap.filter_map (fun cl l ->
-      match List.filter (fun x -> not (snd x)) l with
-      | [] -> None
-      | l -> Some l) map
+  ScopeClassMap.filter_map (fun cl (ltop, lbot) ->
+      let ltop = List.filter (fun x -> not (snd x)) ltop in
+      let lbot = List.filter (fun x -> not (snd x)) lbot in
+      if List.is_empty ltop && List.is_empty lbot then None else Some (ltop, lbot)) map
 
 let discharge_arguments_scope (req,r,scs,_cls,available_scopes) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
@@ -2070,7 +2079,10 @@ let pr_delimiters_info = function
 
 let classes_of_scope sc =
   let map = !scope_class_map in
-  ScopeClassMap.fold (fun cl scl l -> if List.exists (fun (sc',_) -> String.equal sc sc') scl then cl::l else l) map []
+  ScopeClassMap.fold (fun cl (scltop,sclbot) l ->
+      if List.exists (fun (sc',_) -> String.equal sc sc') scltop ||
+         List.exists (fun (sc',_) -> String.equal sc sc') sclbot
+      then cl::l else l) map []
 
 let pr_scope_class = pr_class
 
