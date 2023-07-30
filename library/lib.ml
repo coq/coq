@@ -285,6 +285,20 @@ let is_in_section ref = match sections () with
 let section_instance ref =
   Cooking.instance_of_cooking_info (section_segment_of_reference ref)
 
+let discharge_mind mind = mind
+
+let discharge_inductive ind = ind
+
+let discharge_constant cst = cst
+
+let discharge_global_reference ref = Some ref
+
+let discharge_global_reference_with_instance ref =
+  if is_in_section ref then
+    if Globnames.isVarRef ref then None
+    else Some (ref, section_instance ref)
+  else Some (ref, [||])
+
 let discharge_item = Libobject.(function
   | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
   | ExportObject _ -> None

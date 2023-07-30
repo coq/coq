@@ -123,17 +123,12 @@ module ReductionBehaviour = struct
     let r' = subst_global_reference subst r in if r==r' then orig
     else (local,(r',o))
 
-  let discharge = function
-    | false, (gr, b) ->
-      let b =
-        if Lib.is_in_section gr then
-          let vars = Lib.section_instance gr in
-          let extra = Array.length vars in
-          more_args extra b
-        else b
-      in
+  let discharge (local, (gr, b)) =
+    match Lib.discharge_global_reference_with_instance gr with
+    | Some (gr,inst) when not local ->
+      let b = more_args (Array.length inst) b in
       Some (false, (gr, b))
-    | true, _ -> None
+    | _ -> None
 
   let rebuild = function
     | req, (GlobRef.ConstRef c, _ as x) -> req, x

@@ -27,7 +27,7 @@ let subst_scheme (subst,(kind,l)) =
   (kind, CArray.Smart.map (subst_one_scheme subst) l)
 
 let discharge_scheme (kind,l) =
-  Some (kind, l)
+  Some (kind, Array.map (fun (c,i) -> (Lib.discharge_inductive c, Lib.discharge_constant i)) l)
 
 let inScheme : string * (inductive * Constant.t) array -> Libobject.obj =
   let open Libobject in

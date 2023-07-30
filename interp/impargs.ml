@@ -570,19 +570,24 @@ let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in
   adjust_side_condition p cond, extra_impls @ List.map (Option.map (lift_implicits p)) impls
 
+let discharge_request = function
+  | ImplMutualInductive (mind,flags) -> ImplMutualInductive (Lib.discharge_mind mind, flags)
+  | ImplInteractive _ | ImplConstant _ | ImplLocal as req -> req
+
 let discharge_implicits (req,l) =
   match req with
   | ImplLocal -> None
   | ImplMutualInductive _ | ImplInteractive _ | ImplConstant _ ->
      let l' =
-       try
-         List.map (fun (gr, l) ->
-             let vars = Array.map_to_list Constr.destVar (Lib.section_instance gr) in
+       List.map (fun (gr, l) ->
+           match Lib.discharge_global_reference_with_instance gr with
+           | Some (gr,inst) ->
+             let vars = Array.map_to_list Constr.destVar inst in
              let extra_impls = impls_of_context vars in
              let newimpls = List.map (add_section_impls vars extra_impls) l in
-             (gr, newimpls)) l
-       with Not_found -> l in
-     Some (req,l')
+             (gr, newimpls)
+           | None -> assert false (* Would be ImplLocal *)) l in
+     Some (discharge_request req,l')
 
 let rebuild_implicits (req,l) =
   match req with
@@ -591,8 +596,8 @@ let rebuild_implicits (req,l) =
       let ref,oldimpls = List.hd l in
       let newimpls = compute_global_implicits flags ref in
       req, [ref, List.map2 merge_impls oldimpls newimpls]
-  | ImplMutualInductive (kn,flags) ->
-      let newimpls = compute_all_mib_implicits flags kn in
+  | ImplMutualInductive (mind,flags) ->
+      let newimpls = compute_all_mib_implicits flags mind in
       let rec aux olds news =
        match olds, news with
        | (_, oldimpls) :: old, (gr, newimpls) :: tl ->

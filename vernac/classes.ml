@@ -125,8 +125,9 @@ let discharge_instance inst =
   match inst.locality with
   | Local -> None
   | SuperGlobal | Export ->
-    assert (not (isVarRef inst.instance));
-    Some inst
+    match Lib.discharge_global_reference inst.class_name, Lib.discharge_global_reference inst.instance with
+    | Some class_name, Some instance -> Some { inst with instance; class_name }
+    | _ -> None
 
 let classify_instance inst = match inst.locality with
 | Local -> Dispose
@@ -247,22 +248,27 @@ let subst_class (subst,cl) =
     cl_unique = cl.cl_unique }
 
 let discharge_class cl =
-  try
-    let info = Lib.section_segment_of_reference cl.cl_impl in
-    let info, _, cl_univs' = Cooking.lift_poly_univs info cl.cl_univs in
-    let nprops = List.length cl.cl_props in
-    let props, context = List.chop nprops (Discharge.cook_rel_context info (cl.cl_props @ cl.cl_context)) in
-    let discharge_proj x = x in
-    { cl_univs = cl_univs';
-      cl_impl = cl.cl_impl;
-      cl_context = context;
-      cl_props = props;
-      cl_projs = List.Smart.map discharge_proj cl.cl_projs;
-      cl_strict = cl.cl_strict;
-      cl_unique = cl.cl_unique
-    }
-  with Not_found -> (* not defined in the current section *)
-    cl
+  match Lib.discharge_global_reference cl.cl_impl with
+  | None -> None
+  | Some cl_impl ->
+    if Lib.is_in_section cl.cl_impl then
+      let info = Lib.section_segment_of_reference cl.cl_impl in
+      let info, _, cl_univs = Cooking.lift_poly_univs info cl.cl_univs in
+      let nprops = List.length cl.cl_props in
+      let cl_props, cl_context = List.chop nprops (Discharge.cook_rel_context info (cl.cl_props @ cl.cl_context)) in
+      let discharge_proj x =
+        { x with meth_const = Option.map Lib.discharge_constant x.meth_const } in
+      Some {
+        cl_univs;
+        cl_impl;
+        cl_context;
+        cl_props;
+        cl_projs = List.Smart.map discharge_proj cl.cl_projs;
+        cl_strict = cl.cl_strict;
+        cl_unique = cl.cl_unique;
+      }
+    else
+      Some cl
 
 let rebuild_class cl =
   try
@@ -276,7 +282,7 @@ let class_input : typeclass -> obj =
       cache_function = cache_class;
       load_function = (fun _ -> cache_class);
       classify_function = (fun x -> Substitute);
-      discharge_function = (fun a -> Some (discharge_class a));
+      discharge_function = discharge_class;
       rebuild_function = rebuild_class;
       subst_function = subst_class }
 

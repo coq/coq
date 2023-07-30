@@ -1911,13 +1911,12 @@ let discharge_available_scopes map =
       if List.is_empty ltop && List.is_empty lbot then None else Some (ltop, lbot)) map
 
 let discharge_arguments_scope (req,r,scs,_cls,available_scopes) =
-  if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
+  if req == ArgsScopeNoDischarge then None
   else
-    let n =
-      try
-        Array.length (Lib.section_instance r)
-      with
-        Not_found (* Not a ref defined in this section *) -> 0 in
+    match Lib.discharge_global_reference_with_instance r with
+    | None -> None
+    | Some (r, inst) ->
+    let n = Array.length inst in
     let available_scopes = discharge_available_scopes available_scopes in
     (* Hack: use list cls to encode an integer to pass to rebuild for Manual case *)
     (* since cls is anyway recomputed in rebuild *)
