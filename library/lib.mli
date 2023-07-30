@@ -171,6 +171,12 @@ val section_segment_of_reference : GlobRef.t -> Cooking.cooking_info
 val section_instance : GlobRef.t -> Constr.t array
 val is_in_section : GlobRef.t -> bool
 
+val discharge_mind : MutInd.t -> MutInd.t
+val discharge_inductive : Ind.t -> Ind.t
+val discharge_constant : Constant.t -> Constant.t
+val discharge_global_reference : GlobRef.t -> GlobRef.t option
+val discharge_global_reference_with_instance : GlobRef.t -> (GlobRef.t * Constr.t array) option
+
 (** {6 Discharge: decrease the section level if in the current section } *)
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t

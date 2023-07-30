@@ -867,6 +867,8 @@ struct
 
     let relevant c = c.proj_relevant
 
+    let pop p = { p with proj_ind = Ind.pop p.proj_ind }
+
     let hash p =
       Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
 
@@ -974,6 +976,7 @@ struct
   let repr = fst
   let unfolded = snd
   let unfold (c, b as p) = if b then p else (c, true)
+  let pop (p,b) = (Repr.pop p, b)
 
   let equal (c, b) (c', b') = Repr.equal c c' && b == b'
 

@@ -27,6 +27,9 @@ val destConstructRef : GlobRef.t -> constructor
 val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
+(** Remove the last modpath segment *)
+val pop_global_reference : GlobRef.t -> GlobRef.t
+
 (** {6 Extended global references } *)
 
 type abbreviation = KerName.t

@@ -21,9 +21,10 @@ let cache_canonical_structure (o,_) =
   Instance.register ~warn:true env sigma o
 
 let discharge_canonical_structure (x, local) =
-  let gref = Instance.repr x in
-  if local || (Globnames.isVarRef gref && Lib.is_in_section gref) then None
-  else Some (x, local)
+  if local then None else
+    match Instance.discharge x with
+    | Some x -> Some (x, local)
+    | None -> None
 
 let canon_cat = create_category "canonicals"
 

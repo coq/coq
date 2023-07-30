@@ -53,6 +53,12 @@ let canonical_gr = function
   | ConstructRef ((kn,i),j )-> ConstructRef((MutInd.make1(MutInd.canonical kn),i),j)
   | VarRef id -> VarRef id
 
+let pop_global_reference = function
+  | ConstRef cst -> ConstRef (Constant.pop cst)
+  | IndRef ind -> IndRef (Ind.pop ind)
+  | ConstructRef cstr -> ConstructRef (Construct.pop cstr)
+  | VarRef id -> VarRef id
+
 (* Extended global references *)
 
 type abbreviation = KerName.t

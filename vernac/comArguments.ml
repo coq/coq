@@ -31,10 +31,10 @@ let subst_bidi_hints (subst, (gr, ohint as orig)) =
   if gr == gr' then orig else (gr', ohint)
 
 let discharge_bidi_hints (gr, ohint) =
-  if Globnames.isVarRef gr && Lib.is_in_section gr then None
-  else
-    let vars = Lib.section_instance gr in
-    let n = Array.length vars in
+  match Lib.discharge_global_reference_with_instance gr with
+  | None -> None
+  | Some (gr, inst) ->
+    let n = Array.length inst in
     Some (gr, Option.map ((+) n) ohint)
 
 let inBidiHints =

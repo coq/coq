@@ -207,7 +207,19 @@ let subst_Function (subst, finfos) =
     ; sprop_lemma = sprop_lemma'
     ; is_general = finfos.is_general }
 
-let discharge_Function finfos = Some finfos
+let discharge_Function finfos =
+  Some {
+    function_constant = Lib.discharge_constant finfos.function_constant;
+    graph_ind = Lib.discharge_inductive finfos.graph_ind;
+    equation_lemma = Option.map Lib.discharge_constant finfos.equation_lemma;
+    correctness_lemma =  Option.map Lib.discharge_constant finfos.correctness_lemma;
+    completeness_lemma =  Option.map Lib.discharge_constant finfos.completeness_lemma;
+    rect_lemma =  Option.map Lib.discharge_constant finfos.rect_lemma;
+    rec_lemma =  Option.map Lib.discharge_constant finfos.rec_lemma;
+    prop_lemma =  Option.map Lib.discharge_constant finfos.prop_lemma;
+    sprop_lemma =  Option.map Lib.discharge_constant finfos.sprop_lemma;
+    is_general = finfos.is_general
+  }
 
 let pr_ocst env sigma c =
   Option.fold_right

@@ -647,6 +647,7 @@ module Projection : sig
     val arg : t -> int
     val label : t -> Label.t
     val relevant : t -> bool
+    val pop : t -> t
 
     val equal : t -> t -> bool [@@ocaml.deprecated "Use QProjection.equal"]
     val hash : t -> int [@@ocaml.deprecated "Use QProjection.hash"]
@@ -677,6 +678,7 @@ module Projection : sig
   val label : t -> Label.t
   val unfolded : t -> bool
   val unfold : t -> t
+  val pop : t -> t
 
   val equal : t -> t -> bool
   [@@ocaml.deprecated "Use QProjection.equal"]

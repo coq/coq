@@ -39,6 +39,12 @@ let cl_typ_ord t1 t2 = match t1, t2 with
 
 let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
 
+let discharge_coercion_class = function
+  | CL_SORT | CL_FUN | CL_SECVAR _ as x -> x
+  | CL_CONST cst -> CL_CONST (Lib.discharge_constant cst)
+  | CL_IND ind -> CL_IND (Lib.discharge_inductive ind)
+  | CL_PROJ p -> CL_PROJ (Lib.discharge_proj_repr p)
+
 module ClTyp = struct
   type t = cl_typ
   let compare = cl_typ_ord
