@@ -1289,10 +1289,10 @@ let discharge_autohint obj =
       | HintsVariables | HintsConstants -> grefs
       | HintsReferences grs ->
         let filter = function
-        | EvalConstRef c -> true
-        | EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
+        | EvalConstRef c -> Some (EvalConstRef (Lib.discharge_constant c))
+        | EvalVarRef id as x -> if not @@ Lib.is_in_section (GlobRef.VarRef id) then Some x else None
         in
-        let grs = List.filter filter grs in
+        let grs = List.filter_map filter grs in
         HintsReferences grs
       in
       AddTransparency { grefs; state }
@@ -1302,14 +1302,12 @@ let discharge_autohint obj =
     | AddCut path ->
       if is_section_path path then AddHints [] (* dummy *) else obj.hint_action
     | AddMode { gref; mode } ->
-      if Lib.is_in_section gref then
-        if isVarRef gref then AddHints [] (* dummy *)
-        else
-          let inst = Lib.section_instance gref in
+      (match Lib.discharge_global_reference_with_instance gref with
+       | None -> AddHints [] (* dummy *)
+       | Some (gref, inst) ->
           (* Default mode for discharged parameters is output *)
           let mode = Array.append (Array.make (Array.length inst) ModeOutput) mode in
-          AddMode { gref; mode }
-      else obj.hint_action
+          AddMode { gref; mode })
     in
     if is_trivial_action action then None
     else Some { obj with hint_action = action }

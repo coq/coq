@@ -76,7 +76,7 @@ let load_prim _ p = cache_prim p
 
 let subst_prim (subst,(p,c)) = Mod_subst.subst_proj_repr subst p, Mod_subst.subst_constant subst c
 
-let discharge_prim (p,c) = Some (Lib.discharge_proj_repr p, c)
+let discharge_prim (p,c) = Some (Lib.discharge_proj_repr p, Lib.discharge_constant c)
 
 let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
   let open Libobject in

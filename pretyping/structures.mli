@@ -32,6 +32,8 @@ val make : Environ.env -> Names.inductive -> projection list -> t
 val register : t -> unit
 val subst : Mod_subst.substitution -> t -> t
 
+val discharge : t -> t option
+
 (** refreshes nparams, e.g. after section discharging *)
 val rebuild : Environ.env -> t -> t
 
@@ -71,6 +73,8 @@ val register : warn:bool -> Environ.env -> Evd.evar_map -> t -> unit
 
 val subst : Mod_subst.substitution -> t -> t
 val repr : t -> Names.GlobRef.t
+
+val discharge : t -> t option
 
 end
 

@@ -80,6 +80,15 @@ let subst subst ({ name; projections; nparams } as s) =
   then s
   else { name; projections; nparams }
 
+let discharge_projection projs =
+  { projs with proj_body = Option.map Lib.discharge_constant projs.proj_body }
+
+let discharge { name; projections; nparams } =
+  Some
+    { name = Lib.discharge_inductive name;
+      projections = List.map discharge_projection projections;
+      nparams }
+
 let rebuild env s =
   let mib = Environ.lookup_mind (fst s.name) env in
   let nparams = mib.Declarations.mind_nparams in
@@ -324,6 +333,11 @@ let register ~warn env sigma o =
           let hd_val = ValuePattern.print cs_pat in
           warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s)
       )
+
+let discharge (ref,ind) =
+  match Lib.discharge_global_reference ref with
+  | None -> None
+  | Some ref -> Some (ref, Lib.discharge_inductive ind)
 
 end
 

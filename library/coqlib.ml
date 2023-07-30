@@ -64,6 +64,11 @@ let add_ref s c =
 let cache_ref (s,c) =
   add_ref s c
 
+let discharge_ref (s,gr) =
+  match Lib.discharge_global_reference gr with
+  | None -> None
+  | Some gr -> Some (s,gr)
+
 let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
   let open Libobject in
   declare_object { (default_object "COQLIBREF") with
@@ -71,7 +76,7 @@ let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
     load_function = (fun _ x -> cache_ref x);
     classify_function = (fun _ -> Substitute);
     subst_function = ident_subst_function;
-    discharge_function = (fun sc -> Some sc); }
+    discharge_function = discharge_ref; }
 
 (** Replaces a binding ! *)
 let register_ref s c =

@@ -31,6 +31,8 @@ val subst_cl_typ : env -> substitution -> cl_typ -> cl_typ
 (** Comparison of [cl_typ] *)
 val cl_typ_ord : cl_typ -> cl_typ -> int
 
+val discharge_coercion_class : cl_typ -> cl_typ
+
 (** This is the type of coercion kinds *)
 type coe_typ = GlobRef.t
 

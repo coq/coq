@@ -106,18 +106,12 @@ module ReductionBehaviour = struct
     let r' = subst_constant subst r in if r==r' then orig
     else (local,(r',o))
 
-  let discharge = function
-    | false, (gr, b) ->
-      let b =
-        let gr = GlobRef.ConstRef gr in
-        if Lib.is_in_section gr then
-          let vars = Lib.section_instance gr in
-          let extra = Array.length vars in
-          more_args extra b
-        else b
-      in
-      Some (false, (gr, b))
-    | true, _ -> None
+  let discharge (local, (cst, b)) =
+    if local then None
+    else
+      let (cst, inst) = Lib.discharge_constant_with_instance cst in
+      let b = more_args (Array.length inst) b in
+      Some (false, (cst, b))
 
   let inRedBehaviour = declare_object {
       (default_object "REDUCTIONBEHAVIOUR") with

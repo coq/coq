@@ -238,13 +238,16 @@ let open_coercion i o =
 let discharge_coercion c =
   if c.coe_local then None
   else
-    let n =
-      try Array.length (Lib.section_instance c.coe_value)
-      with Not_found -> 0
-    in
+    match Lib.discharge_global_reference_with_instance c.coe_value with
+    | None -> None
+    | Some (v, inst) ->
+    let n = Array.length inst in
     let nc = { c with
       coe_param = n + c.coe_param;
       coe_is_projection = Option.map Lib.discharge_proj_repr c.coe_is_projection;
+      coe_value = v;
+      coe_source = discharge_coercion_class c.coe_source;
+      coe_target = discharge_coercion_class c.coe_target;
     } in
     Some nc
 
