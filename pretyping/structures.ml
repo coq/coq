@@ -161,7 +161,7 @@ let compare p1 p2 = match p1, p2 with
   | Prod_cs, Prod_cs -> 0
   | Sort_cs s1, Sort_cs s2 -> Sorts.family_compare s1 s2
   | Default_cs, Default_cs -> 0
-  | _ -> pervasives_compare p1 p2
+  | _ -> Stdlib.compare p1 p2
 
 let rec of_constr env t =
   match kind t with

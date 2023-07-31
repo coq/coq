@@ -497,11 +497,11 @@ let print_run_ctr print =
 let rec prompt level =
   let runnoprint = print_run_ctr false in
     let open Proofview.NonLogical in
-    let nl = if Util.(!batch) then "\n" else "" in
+    let nl = if Stdlib.(!batch) then "\n" else "" in
     Comm.print_deferred () >>
     Comm.prompt (tag "message.prompt"
                    @@ fnl () ++ str "TcDebug (" ++ int level ++ str (") > " ^ nl)) >>
-    if Util.(!batch) && Comm.isTerminal () then return (DebugOn (level+1)) else
+    if Stdlib.(!batch) && Comm.isTerminal () then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise (Sys.Break, Exninfo.null) in
     Comm.read >>= fun inst ->
     let open DebugHook.Action in

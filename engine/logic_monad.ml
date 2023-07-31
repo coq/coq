@@ -69,7 +69,7 @@ struct
     let map f a = (); fun () -> f (a ())
   end)
 
-  type 'a ref = 'a Util.pervasives_ref
+  type 'a ref = 'a Stdlib.ref
 
   let ignore a = (); fun () -> ignore (a ())
 

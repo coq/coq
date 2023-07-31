@@ -128,7 +128,7 @@ module KOrd =
 struct
   type t = kind * string
   let compare (k1, s1) (k2, s2) =
-    let c = pervasives_compare k1 k2 (* OK *) in
+    let c = Stdlib.compare k1 k2 (* OK *) in
     if c = 0 then String.compare s1 s2
     else c
 end
