@@ -285,6 +285,8 @@ module ModPath = struct
     | MPbound uid -> MBId.to_string uid
     | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
 
+  let print mp = str (to_string mp)
+
   let rec debug_to_string = function
     | MPfile sl -> DirPath.to_string sl
     | MPbound uid -> MBId.debug_to_string uid

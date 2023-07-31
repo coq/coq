@@ -264,7 +264,10 @@ sig
   val dp : t -> DirPath.t
 
   val to_string : t -> string
-  (** Encode as a string (not to be used for user-facing messages). *)
+  (** Converts a identifier into an string. *)
+
+  val print : t -> Pp.t
+  (** Pretty-printer. *)
 
   val debug_to_string : t -> string
   (** Same as [to_string], but outputs extra information related to debug. *)
