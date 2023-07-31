@@ -92,6 +92,10 @@ test-suite/oUnit-anon.cache
 test-suite/redirect_test.out
 test-suite/unit-tests/**/*.test
 test-suite/ide/fake_ide.exe
+test-suite/Datatypes.ml
+test-suite/Datatypes.mli
+test-suite/bug_10796.ml
+test-suite/bug_10796.mli
 
 # documentation
 
