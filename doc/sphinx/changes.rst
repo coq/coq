@@ -65,6 +65,11 @@ Specification language, type inference
   (`#17754 <https://github.com/coq/coq/pull/17754>`_,
   fixes `#17451 <https://github.com/coq/coq/issues/17451>`_,
   by Pierre Roux).
+- **Added:**
+  a hook in the coercion mechanism to enable programming coercions in
+  external metalanguages such as Ltac, Ltac2, Elpi or OCaml plugins
+  (`#17794 <https://github.com/coq/coq/pull/17794>`_,
+  by Pierre Roux).
 - **Fixed:**
   canonical instance matching `match` terms
   (`#17206 <https://github.com/coq/coq/pull/17206>`_,
@@ -359,6 +364,11 @@ Commands and options
   now subsumed by :attr:`warnings` with "-uniform-inheritance"
   (`#17716 <https://github.com/coq/coq/pull/17716>`_,
   by Pierre Roux).
+- **Deprecated:**
+  Using :cmd:`Qed` with :cmd:`Let`. End the proof with :cmd:`Defined` and use :attr:`clearbody`
+  instead to get the same behavior
+  (`#17544 <https://github.com/coq/coq/pull/17544>`_,
+  by Gaëtan Gilbert).
 - **Added:**
   :cmd:`About` now prints information when a constant or inductive is syntactically equal to another through module aliasing
   (`#16796 <https://github.com/coq/coq/pull/16796>`_,
@@ -396,10 +406,9 @@ Commands and options
   provided by using :cmd:`Qed`, which is now deprecated for `Let`\s.)
   (`#17544 <https://github.com/coq/coq/pull/17544>`_,
   by Gaëtan Gilbert).
-- **Deprecated:**
-  Using :cmd:`Qed` with :cmd:`Let`. End the proof with :cmd:`Defined` and use :attr:`clearbody`
-  instead to get the same behavior
-  (`#17544 <https://github.com/coq/coq/pull/17544>`_,
+- **Added:**
+  option `-time-file`, like `time` but outputting to a file
+  (`#17430 <https://github.com/coq/coq/pull/17430>`_,
   by Gaëtan Gilbert).
 - **Fixed:**
   universe monomorphic inductives and records do not ignore :flag:`Universe Minimization ToSet`
@@ -441,10 +450,6 @@ Command-line tools
   `coqtimelog2html` command-line tool used to render the timing files produced with `-time`
   (which is passed by `coq_makefile` when environment variable `TIMING` is defined)
   (`#17411 <https://github.com/coq/coq/pull/17411>`_,
-  by Gaëtan Gilbert).
-- **Added:**
-  option `-timef`, like `time` but outputting to a file
-  (`#17430 <https://github.com/coq/coq/pull/17430>`_,
   by Gaëtan Gilbert).
 - **Fixed:**
   `coq_makefile` avoids generating a command containing all files to install in a make rule,
@@ -744,11 +749,6 @@ Infrastructure and dependencies
 Miscellaneous
 ^^^^^^^^^^^^^
 
-- **Added:**
-  a hook in the coercion mechanism to enable programming coercions in
-  external metalanguages such as Ltac, Ltac2, Elpi or OCaml plugins
-  (`#17794 <https://github.com/coq/coq/pull/17794>`_,
-  by Pierre Roux).
 - **Fixed:**
   Anomaly when extracting within a module or module type
   (`#17344 <https://github.com/coq/coq/pull/17344>`_,
