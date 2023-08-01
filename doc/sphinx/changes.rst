@@ -168,7 +168,7 @@ Tactics
   (`#17035 <https://github.com/coq/coq/pull/17035>`_,
   by Gaëtan Gilbert).
 - **Deprecated:**
-  the :tacn:`elimtype` and :tacn:`casetype` tactics
+  the `elimtype` and `casetype` tactics
   (`#16904 <https://github.com/coq/coq/pull/16904>`_,
   by Pierre-Marie Pédrot).
 - **Deprecated:**
