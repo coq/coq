@@ -399,3 +399,8 @@ project tactician "https://github.com/coq-tactician/coq-tactician" "coqdev"
 # Ltac2 compiler
 ########################################################################
 project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
+
+########################################################################
+# Waterproof
+########################################################################
+project waterproof "https://github.com/impermeable/coq-waterproof" "coq-master"

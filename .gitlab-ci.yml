@@ -959,3 +959,6 @@ plugin:ci-stalmarck:
 
 plugin:ci-tactician:
   extends: .ci-template-flambda
+
+plugin:ci-waterproof:
+  extends: .ci-template-flambda
