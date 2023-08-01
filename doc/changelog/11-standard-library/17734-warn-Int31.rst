@@ -1,6 +1,0 @@
-- **Deprecated:** :g: Deprecation warnings are now generated for
-  :g:`Numbers.Cyclic.Int31.Cyclic31`, :g:`NNumbers.Cyclic.Int31.Int31`, and
-  :g:`NNumbers.Cyclic.Int31.Ring31`. These modules have been deprecated since
-  Coq 8.10. The modules under :g:`Numbers.Cyclic.Int63` remain available
-  (`#17734 <https://github.com/coq/coq/pull/17734>`_,
-  by Andres Erbsen).

@@ -1,4 +1,0 @@
-- **Changed:**
-  :g:`xorb` to a simpler definition
-  (`#17427 <https://github.com/coq/coq/pull/17427>`_,
-  by Guillaume Melquiond).
