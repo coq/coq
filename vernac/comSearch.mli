@@ -10,6 +10,8 @@
 
 (* Interpretation of search commands *)
 
+val interp_search_restriction : Vernacexpr.search_restriction -> Names.DirPath.t list * Vernacexpr.verbose_flag
+
 val interp_search_request :
   Environ.env ->
   Evd.evar_map ->
