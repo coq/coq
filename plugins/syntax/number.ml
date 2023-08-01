@@ -23,6 +23,10 @@ let mkRef env sigma g =
   let sigma, c = Evd.fresh_global env sigma g in
   sigma, EConstr.Unsafe.to_constr c
 
+let cref q =
+  (* ensure no implicit arguments *)
+  CAst.make (CAppExpl ((q,None),[]))
+
 (** * Number notation *)
 
 type number_string_via = qualid * (bool * qualid * qualid) list
@@ -64,7 +68,7 @@ let locate_z () =
     Some ({
         z_ty = unsafe_locate_ind q_z;
         pos_ty = unsafe_locate_ind q_pos;
-    }, mkRefC q_z)
+    }, cref q_z)
   else None
 
 let locate_number () =
@@ -104,8 +108,8 @@ let locate_number () =
         hexadecimal = unsafe_locate_ind q_hex;
         number = unsafe_locate_ind q_num;
       } in
-    Some (int_ty, mkRefC q_int, mkRefC q_uint, mkRefC q_dint, mkRefC q_duint,
-          num_ty, mkRefC q_num, mkRefC q_dec)
+    Some (int_ty, cref q_int, cref q_uint, cref q_dint, cref q_duint,
+          num_ty, cref q_num, cref q_dec)
   else None
 
 let locate_int63 () =
@@ -115,16 +119,16 @@ let locate_int63 () =
   then
     let q_pos_neg_int63 = qualid_of_ref pos_neg_int63n in
     Some ({pos_neg_int63_ty = unsafe_locate_ind q_pos_neg_int63},
-          mkRefC q_pos_neg_int63)
+          cref q_pos_neg_int63)
   else None
 
 let locate_float () =
   let floatn = "num.float.type" in
-  if Coqlib.has_ref floatn then Some (mkRefC (qualid_of_ref floatn))
+  if Coqlib.has_ref floatn then Some (cref (qualid_of_ref floatn))
   else None
 
 let has_type env sigma f ty =
-  let c = mkCastC (mkRefC f, Some Constr.DEFAULTcast, ty) in
+  let c = mkCastC (cref f, Some Constr.DEFAULTcast, ty) in
   let flags = Pretyping.{ all_and_fail_flags with use_coercions = false } in
   try let _ = Constrintern.interp_constr ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
@@ -426,11 +430,11 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     let floatw = "Coq.Floats.PrimFloat.float_wrapper" in
     if allow_params && Coqlib.has_ref int63n
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
-    then TargetPrim (mkRefC (qualid_of_string int63w), [Coqlib.lib_ref int63c],
+    then TargetPrim (cref (qualid_of_string int63w), [Coqlib.lib_ref int63c],
                      (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
     else if allow_params && Coqlib.has_ref floatn
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
-    then TargetPrim (mkRefC (qualid_of_string floatw), [Coqlib.lib_ref floatc],
+    then TargetPrim (cref (qualid_of_string floatw), [Coqlib.lib_ref floatc],
                      (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
@@ -462,12 +466,12 @@ let vernac_number_notation local ty f g opts scope =
   let tyc_params = locate_global_inductive_or_int63_or_float env (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
-  let cty = mkRefC ty in
+  let cty = cref ty in
   let app x y = mkAppC (x,[y]) in
   let arrow x y =
     mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
   in
-  let opt r = app (mkRefC (q_option ())) r in
+  let opt r = app (cref (q_option ())) r in
   (* Check the type of f *)
   let to_kind =
     match num_ty with
