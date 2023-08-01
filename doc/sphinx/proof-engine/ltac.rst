@@ -3,6 +3,21 @@
 Ltac
 ====
 
+.. note::
+
+   As of today, writing automation using Ltac is discouraged.
+   Many alternatives are available as part of the Coq standard library
+   or the `Coq Platform <https://github.com/coq/platform>`_, and some
+   demonstration of their respective power is performed in the
+   `metaprogramming Rosetta stone project <https://github.com/coq-community/metaprogramming-rosetta-stone>`_.
+   The official alternative to Ltac is :ref:`ltac2`.
+   While Ltac is not going away anytime soon, we would like to strongly
+   encourage users to use Ltac2 (or other alternatives) instead of Ltac
+   for new projects and new automation code in existing projects.
+   Reports about hindrances in using Ltac2 for writing automation are
+   welcome as issues on the `Coq bug tracker <https://github.com/coq/coq/issues>`_
+   or as discussions on the `Ltac2 Zulip stream <https://coq.zulipchat.com/#narrow/stream/278935-Ltac2>`_.
+
 This chapter documents the tactic language |Ltac|.
 
 We start by giving the syntax followed by the informal
