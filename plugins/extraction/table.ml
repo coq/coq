@@ -410,7 +410,7 @@ let error_singleton_become_prop id og =
        str " has a Prop instance" ++ loc ++ str "." ++ fnl () ++
        str "This happens when a sort-polymorphic singleton inductive type\n" ++
        str "has logical parameters, such as (I,I) : (True * True) : Prop.\n" ++
-       str "The Ocaml extraction cannot handle this situation yet.\n" ++
+       str "Extraction cannot handle this situation yet.\n" ++
        str "Instead, use a sort-monomorphic type such as (True /\\ True)\n" ++
        str "or extract to Haskell.")
 
