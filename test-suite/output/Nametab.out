@@ -37,3 +37,5 @@ Module Nametab.Q.N
 Module Nametab.Q.N (shorter name to refer to it in current context is Q.N)
 Module Nametab.Q
 Module Nametab.Q (shorter name to refer to it in current context is Q)
+No object of basename T
+Open Section Nametab.T
