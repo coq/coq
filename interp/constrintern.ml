@@ -1496,16 +1496,24 @@ let check_or_pat_variables loc ids idsl =
        Id.print (List.hd ids'').v ++ strbrk " is not bound in all patterns).")
   | [] -> ()
 
+let error_wrong_numarg ?loc g ~expanded ~nargs ~expected_nassums ~expected_ndecls =
+  let env = Global.env() in
+  match g with
+  | GlobRef.ConstructRef cstr -> error_wrong_numarg_constructor ?loc env ~cstr ~expanded ~nargs ~expected_nassums ~expected_ndecls
+  | GlobRef.IndRef ind -> error_wrong_numarg_inductive ?loc env ~ind ~expanded ~nargs ~expected_nassums ~expected_ndecls
+  | _ -> assert false
+
+let error_wrong_numarg_with_notation_patterns ?loc g nargs tags =
+  error_wrong_numarg ?loc g ~expanded:true ~nargs
+    ~expected_nassums:(List.count (fun x -> not x) tags)
+    ~expected_ndecls:(List.length tags)
+
 let check_has_letin ?loc g expanded nargs nimps tags =
   let expected_ndecls = List.length tags - nimps in
   let expected_nassums = List.count (fun x -> not x) tags - nimps in
   if nargs = expected_nassums then false
   else if nargs = expected_ndecls then true else
-    let env = Global.env() in
-    match g with
-    | GlobRef.ConstructRef cstr -> error_wrong_numarg_constructor ?loc env ~cstr ~expanded ~nargs ~expected_nassums ~expected_ndecls
-    | GlobRef.IndRef ind -> error_wrong_numarg_inductive ?loc env ~ind ~expanded ~nargs ~expected_nassums ~expected_ndecls
-    | _ -> assert false
+    error_wrong_numarg ?loc g ~expanded ~nargs ~expected_nassums ~expected_ndecls
 
 (** Do not raise NotEnoughArguments thanks to preconditions*)
 let chop_params_pattern loc ind args with_letin =
@@ -1827,7 +1835,10 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       | GlobRef.IndRef ind -> inductive_alltags (Global.env()) ind
       | _ -> assert false in
       let ntnpats_with_letin = adjust_to_up tags ntnpats default in
-      ntnpats_with_letin, List.skipn (List.length ntnpats_with_letin) tags in
+      let tags =
+        try List.skipn (List.length ntnpats_with_letin) tags with Failure _ ->
+        error_wrong_numarg_with_notation_patterns ?loc gr (n+npats) tags in
+      ntnpats_with_letin, tags in
     let imps =
       let imps =
         if no_impl then [] else

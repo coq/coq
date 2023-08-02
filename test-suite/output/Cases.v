@@ -315,3 +315,14 @@ Definition c :=
  end.
 
 End Bug14207.
+
+Module Bug17071.
+
+Notation "x :||: l" := (true x l) (at level 51).
+
+Fail Check
+  match true with
+  | x :||: l => 0
+  end.
+
+End Bug17071.

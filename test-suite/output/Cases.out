@@ -260,3 +260,8 @@ silence this warning. [unused-pattern-matching-variable,default]
 File "./output/Cases.v", line 314, characters 3-4:
 Warning: Unused variable x might be a misspelled constructor. Use _ or _x to
 silence this warning. [unused-pattern-matching-variable,default]
+File "./output/Cases.v", line 325, characters 4-12:
+The command has indeed failed with message:
+Once notations are expanded, the resulting constructor true (in type bool) is
+expected to be applied to no arguments while it is actually applied to
+2 arguments.
