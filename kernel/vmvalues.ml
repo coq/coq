@@ -295,6 +295,7 @@ let arg args i =
 (*************************************************)
 
 let uni_lvl_val (v : values) : Univ.Level.t = Obj.magic v
+let uni_instance (v : values) : Univ.Instance.t = Obj.magic v
 
 let rec whd_accu a stk =
   let stk =

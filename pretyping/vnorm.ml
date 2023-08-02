@@ -203,14 +203,15 @@ and nf_univ_args ~nb_univs mk env sigma stk =
     if Int.equal nb_univs 0 then Univ.Instance.empty
     else match stk with
     | Zapp args :: _ ->
-       let inst =
-         Array.init nb_univs (fun i -> uni_lvl_val (arg args i))
-       in
-       Univ.Instance.of_array inst
+      let inst = arg args 0 in
+      let inst = uni_instance inst in
+      let () = assert (Int.equal (Univ.Instance.length inst) nb_univs) in
+      inst
     | _ -> assert false
   in
   let (t,ty) = mk u in
-  nf_stk ~from:nb_univs env sigma t ty stk
+  let from = if Int.equal nb_univs 0 then 0 else 1 in
+  nf_stk ~from env sigma t ty stk
 
 and nf_evar env sigma evk stk =
   let evi = try Evd.find_undefined sigma evk with Not_found -> assert false in

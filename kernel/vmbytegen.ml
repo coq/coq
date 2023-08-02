@@ -103,29 +103,31 @@ type t = fv_elem
 
 let compare e1 e2 = match e1, e2 with
 | FVnamed id1, FVnamed id2 -> Id.compare id1 id2
-| FVnamed _, (FVrel _ | FVuniv_var _) -> -1
+| FVnamed _, (FVrel _) -> -1
 | FVrel _, FVnamed _ -> 1
 | FVrel r1, FVrel r2 -> Int.compare r1 r2
-| FVrel _, (FVuniv_var _) -> -1
-| FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
-| FVuniv_var _, (FVnamed _ | FVrel _) -> 1
 
 end
 
 module FvMap = Map.Make(Fv_elem)
 
+type fv_or_univ =
+| FUniv
+| FV of fv_elem
+
 (*spiwack: both type have been moved from Vmbytegen because I needed then
   for the retroknowledge *)
 type vm_env = {
-    size : int;              (* longueur de la liste [n] *)
-    fv_rev : fv_elem list;   (* [fvn; ... ;fv1] *)
-    fv_fwd : int FvMap.t;    (* reverse mapping *)
+    size : int;               (* longueur de la liste [n] *)
+    fv_rev : fv_or_univ list; (* [fvn; ... ;fv1] *)
+    fv_fwd : int FvMap.t;     (* reverse mapping *)
+    fv_unv : int option;      (* position of the universe instance *)
   }
 
 
 type comp_env = {
     arity : int;                 (* arity of the current function, 0 if none *)
-    nb_uni_stack : int ;         (* number of universes on the stack,      *)
+    toplevel_univs : bool;       (* is the toplevel instance on the stack  *)
                                  (* universes are always at the bottom.    *)
     nb_stack : int;              (* number of variables on the stack       *)
     in_stack : int Range.t;      (* position in the stack                  *)
@@ -150,20 +152,21 @@ module Config = struct
   let stack_safety_margin = 15
 end
 
-type argument = ArgLambda of lambda | ArgUniv of Univ.Level.t
+type argument = ArgLambda of lambda | ArgInstance of Univ.Instance.t
 
-let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty }
+let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty; fv_unv = None }
 let push_fv d e = {
   size = e.size + 1;
-  fv_rev = d :: e.fv_rev;
+  fv_rev = (FV d) :: e.fv_rev;
   fv_fwd = FvMap.add d e.size e.fv_fwd;
+  fv_unv = e.fv_unv;
 }
 
 let fv r = !(r.in_env)
 
 let empty_comp_env ()=
   { arity = 0;
-    nb_uni_stack = 0;
+    toplevel_univs = false;
     nb_stack = 0;
     in_stack = Range.empty;
     pos_rec = [||];
@@ -189,9 +192,9 @@ let ensure_stack_capacity (cenv : comp_env) code =
 let rec add_param n sz l =
   if Int.equal n 0 then l else add_param (n - 1) sz (Range.cons (n+sz) l)
 
-let comp_env_fun ?(univs=0) arity =
+let comp_env_fun ?(univs=false) arity =
   { arity;
-    nb_uni_stack = univs ;
+    toplevel_univs = univs;
     nb_stack = arity;
     in_stack = add_param arity 0 Range.empty;
     pos_rec = [||];
@@ -203,7 +206,7 @@ let comp_env_fun ?(univs=0) arity =
 
 let comp_env_fix_type  rfv =
   { arity = 0;
-    nb_uni_stack = 0;
+    toplevel_univs = false;
     nb_stack = 0;
     in_stack = Range.empty;
     pos_rec = [||];
@@ -214,7 +217,7 @@ let comp_env_fix_type  rfv =
 
 let comp_env_fix ndef arity rfv =
    { arity;
-     nb_uni_stack = 0;
+     toplevel_univs = false;
      nb_stack = arity;
      in_stack = add_param arity 0 Range.empty;
      pos_rec = Array.init ndef (fun i -> Koffsetclosure i);
@@ -225,7 +228,7 @@ let comp_env_fix ndef arity rfv =
 
 let comp_env_cofix_type ndef rfv =
   { arity = 0;
-    nb_uni_stack = 0;
+    toplevel_univs = false;
     nb_stack = 0;
     in_stack = Range.empty;
     pos_rec = [||];
@@ -236,7 +239,7 @@ let comp_env_cofix_type ndef rfv =
 
 let comp_env_cofix ndef arity rfv =
    { arity;
-     nb_uni_stack = 0;
+     toplevel_univs = false;
      nb_stack = arity;
      in_stack = add_param arity 0 Range.empty;
      pos_rec = Array.init ndef (fun i -> Kenvacc (ndef - 1 - i));
@@ -287,24 +290,33 @@ let pos_rel i r sz =
         r.in_env := push_fv db env;
         Kenvacc(r.offset + pos)
 
-let pos_universe_var i r sz =
+let pos_instance r sz =
   (* Compilation of a universe variable can happen either at toplevel (the
   current closure correspond to a constant and has local universes) or in a
   local closure (which has no local universes). *)
-  if r.nb_uni_stack != 0 then
+  if r.toplevel_univs then
     (* Universe variables are represented by De Bruijn levels (not indices),
-    starting at 0. The shape of the stack will be [v1|..|vn|u1..up|arg1..argq]
-    with size = n + p + q, and q = r.arity. So Kacc (sz - r.arity - 1) will access
-    the last universe. *)
-    Kacc (sz - r.arity - (r.nb_uni_stack - i))
+    starting at 0. The shape of the stack will be [v1|..|vn|inst|arg1..argp]
+    with size = n + p + 1, and p = r.arity. So Kacc (sz - r.arity - 1) will access
+    the instance. *)
+    Kacc (sz - r.arity - 1)
   else
     let env = !(r.in_env) in
-    let db = FVuniv_var i in
-    try Kenvacc (r.offset + find_at db env)
-    with Not_found ->
+    let pos = match env.fv_unv with
+    | None ->
       let pos = env.size in
-      r.in_env := push_fv db env;
-      Kenvacc(r.offset + pos)
+      let env = {
+        size = pos + 1;
+        fv_rev = FUniv :: env.fv_rev;
+        fv_fwd = env.fv_fwd;
+        fv_unv = Some pos;
+      }
+      in
+      let () = r.in_env := env in
+      pos
+    | Some p -> p
+    in
+    Kenvacc (r.offset + pos)
 
 (*i  Examination of the continuation *)
 
@@ -464,9 +476,9 @@ let comp_app comp_fun comp_arg cenv f args sz cont =
 
 let compile_fv_elem cenv fv sz cont =
   match fv with
-  | FVrel i -> pos_rel i cenv sz :: cont
-  | FVnamed id -> pos_named id cenv :: cont
-  | FVuniv_var i -> pos_universe_var i cenv sz :: cont
+  | FV (FVrel i) -> pos_rel i cenv sz :: cont
+  | FV (FVnamed id) -> pos_named id cenv :: cont
+  | FUniv -> pos_instance cenv sz :: cont
 
 let rec compile_fv cenv l sz cont =
   match l with
@@ -535,8 +547,8 @@ let rec compile_lam env cenv lam sz cont =
   | Lind (ind,u) ->
     if Univ.Instance.is_empty u then
       compile_structured_constant cenv (Const_ind ind) sz cont
-    else comp_app compile_structured_constant compile_universe cenv
-        (Const_ind ind) (Univ.Instance.to_array u) sz cont
+    else comp_app compile_structured_constant compile_instance cenv
+        (Const_ind ind) [|u|] sz cont
 
   | Lsort s ->
     (* We represent universes as a global constant with local universes
@@ -553,7 +565,7 @@ let rec compile_lam env cenv lam sz cont =
     in
     let compile_get_univ cenv idx sz cont =
       let () = set_max_stack_size cenv sz in
-      compile_fv_elem cenv (FVuniv_var idx) sz cont
+      pos_instance cenv sz :: Kfield idx :: cont
     in
     if List.is_empty subs then
       compile_structured_constant cenv (Const_sort s) sz cont
@@ -794,13 +806,17 @@ and compile_get_global cenv (kn,u) sz cont =
     Kgetglobal kn :: cont
   else
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
-      compile_universe cenv () (Univ.Instance.to_array u) sz cont
+      compile_instance cenv () [|u|] sz cont
 
-and compile_universe cenv uni sz cont =
+and compile_instance cenv (u : Univ.Instance.t) sz cont =
   let () = set_max_stack_size cenv sz in
-  match Univ.Level.var_index uni with
-  | None -> compile_structured_constant cenv (Const_univ_level uni) sz cont
-  | Some idx -> pos_universe_var idx cenv sz :: cont
+  let len = Univ.Instance.length u in
+  let comp_univ cenv l sz cont = match Univ.Level.var_index l with
+  | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
+  | Some idx -> pos_instance cenv sz :: Kfield idx :: cont
+  in
+  let u = Univ.Instance.to_array u in
+  comp_args comp_univ cenv u sz (Kmakeblock (len, 0) :: cont)
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
@@ -813,13 +829,11 @@ and compile_constant env cenv kn u args sz cont =
     let compile_arg cenv constr_or_uni sz cont =
       match constr_or_uni with
       | ArgLambda t -> compile_lam env cenv t sz cont
-      | ArgUniv uni -> compile_universe cenv uni sz cont
+      | ArgInstance u -> compile_instance cenv u sz cont
     in
-    let u = Univ.Instance.to_array u in
-    let lu = Array.length u in
     let all =
-      Array.init (lu + Array.length args)
-        (fun i -> if i < lu then ArgUniv u.(i) else ArgLambda args.(i-lu))
+      Array.init (Array.length args + 1)
+        (fun i -> if Int.equal i 0 then ArgInstance u else ArgLambda args.(i - 1))
     in
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
@@ -866,8 +880,8 @@ let compile ?universes:(universes=0) env sigma c =
         let params, body = decompose_Llam lam in
         let arity = Array.length params in
         let cenv = empty_comp_env () in
-        let full_arity = arity + universes in
-        let r_fun = comp_env_fun ~univs:universes arity in
+        let full_arity = arity + 1 in
+        let r_fun = comp_env_fun ~univs:true arity in
         let lbl_fun = Label.create () in
         let env = { env; fun_code = [] } in
         let cont_fun = compile_lam env r_fun body full_arity [Kreturn full_arity] in
@@ -878,7 +892,11 @@ let compile ?universes:(universes=0) env sigma c =
         let init_code = ensure_stack_capacity cenv init_code in
         cenv, init_code, env.fun_code
     in
-    let fv = List.rev (!(cenv.in_env).fv_rev) in
+    let map_fv = function
+    | FV fv -> fv
+    | FUniv -> assert false
+    in
+    let fv = List.rev_map map_fv (!(cenv.in_env).fv_rev) in
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in

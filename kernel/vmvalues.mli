@@ -144,7 +144,7 @@ external val_of_annot_switch : annot_switch -> values = "%identity"
 (** Destructors *)
 
 val whd_val : values -> kind
-val uni_lvl_val : values -> Univ.Level.t
+val uni_instance : values -> Univ.Instance.t
 
 (** Arguments *)
 
