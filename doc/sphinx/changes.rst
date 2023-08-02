@@ -30,6 +30,11 @@ Kernel
   (`#17452 <https://github.com/coq/coq/pull/17452>`_,
   fixes `#9608 <https://github.com/coq/coq/issues/9608>`_,
   by Gaëtan Gilbert).
+- **Fixed:**
+  a bug enabling :tacn:`native_compute` to yield arbitrary floating-point values
+  (`#17872 <https://github.com/coq/coq/pull/17872>`_,
+  fixes `#17871 <https://github.com/coq/coq/issues/17871>`_,
+  by Guillaume Melquiond and Pierre Roux, bug found by Jason Gross).
 
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
