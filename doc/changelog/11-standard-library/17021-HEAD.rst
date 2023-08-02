@@ -1,4 +1,0 @@
-- **Changed:** Moved instances from :g:`DecidableClass` to files that prove
-  the relevant decidability facts: :g:`Bool`, :g:`PeanoNat`, and :g:`BinInt`
-  (`#17021 <https://github.com/coq/coq/pull/17021>`_,
-  by Andres Erbsen).
