@@ -227,7 +227,7 @@ val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
 val interp_prim_token : ?loc:Loc.t -> prim_token -> subscopes ->
   glob_constr * scope_name option
 (* This function returns a glob_const representing a pattern *)
-val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (GlobRef.t -> unit) -> prim_token ->
+val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (Glob_term.glob_constr -> unit) -> prim_token ->
   subscopes -> glob_constr * scope_name option
 
 (** Return the primitive token associated to a [term]/[cases_pattern];

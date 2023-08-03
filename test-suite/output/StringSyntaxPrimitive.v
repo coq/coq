@@ -137,3 +137,23 @@ Module Test4.
   Definition float' := float.
   Check mk_floatList (@cons float' 1 [0; 0])%float%list.
 End Test4.
+
+Module Bug11237.
+
+Inductive bytes := wrap_bytes { unwrap_bytes : list byte }.
+
+Declare Scope bytes_scope.
+Delimit Scope bytes_scope with bytes.
+Bind Scope bytes_scope with bytes.
+String Notation bytes wrap_bytes unwrap_bytes : bytes_scope.
+
+Open Scope bytes_scope.
+
+Example test_match :=
+  match "foo" with
+  | "foo" => "bar"
+  | "bar" => "foo"
+  | x => x
+  end.
+
+End Bug11237.
