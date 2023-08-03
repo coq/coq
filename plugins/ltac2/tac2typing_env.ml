@@ -298,8 +298,8 @@ let eq_or_tuple eq t1 t2 = match t1, t2 with
 | _ -> false
 
 let rec unify0 env t1 t2 = match kind env t1, kind env t2 with
-| GTypVar id, t | t, GTypVar id ->
-  unify_var env id t
+| GTypVar id, _ -> unify_var env id t2
+| _, GTypVar id -> unify_var env id t1
 | GTypArrow (t1, u1), GTypArrow (t2, u2) ->
   let () = unify0 env t1 t2 in
   unify0 env u1 u2
