@@ -5,7 +5,7 @@ Ltac
 
 .. note::
 
-   As of today, writing automation using Ltac is discouraged.
+   Writing automation using Ltac is discouraged.
    Many alternatives are available as part of the Coq standard library
    or the `Coq Platform <https://github.com/coq/platform>`_, and some
    demonstration of their respective power is performed in the
