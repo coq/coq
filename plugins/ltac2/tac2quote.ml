@@ -440,7 +440,11 @@ let of_constr_matching {loc;v=m} =
     let pat = inj_wit ?loc:ploc wit_pattern pat in
     of_tuple [knd; pat; e]
   in
-  of_list ?loc map m
+  let e = of_list ?loc map m in
+  let tykn = pattern_core "constr_matching" in
+  let ty = CAst.make ?loc (CTypRef (AbsKn (Other tykn),[CAst.make ?loc (CTypVar Anonymous)])) in
+  CAst.make ?loc (CTacCnv (e, ty))
+
 
 (** From the patterns and the body of the branch, generate:
     - a goal pattern: (constr_match list * constr_match)
@@ -503,7 +507,10 @@ let of_goal_matching {loc;v=gm} =
     let tac = abstract_vars loc hyps tac in
     of_tuple ?loc [pat; tac]
   in
-  of_list ?loc map gm
+  let e = of_list ?loc map gm in
+  let tykn = pattern_core "goal_matching" in
+  let ty = CAst.make ?loc (CTypRef (AbsKn (Other tykn),[CAst.make ?loc (CTypVar Anonymous)])) in
+  CAst.make ?loc (CTacCnv (e, ty))
 
 let of_move_location {loc;v=mv} = match mv with
 | QMoveAfter id -> std_constructor ?loc "MoveAfter" [of_anti of_ident id]

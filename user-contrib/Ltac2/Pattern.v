@@ -77,7 +77,9 @@ Ltac2 @ external instantiate : context -> constr -> constr :=
 
 (** Implementation of Ltac matching over terms and goals *)
 
-Ltac2 lazy_match0 t pats :=
+Ltac2 Type 'a constr_matching := (match_kind * t * (context -> constr array -> 'a)) list.
+
+Ltac2 lazy_match0 t (pats:'a constr_matching) :=
   let rec interp m := match m with
   | [] => Control.zero Match_failure
   | p :: m =>
@@ -98,7 +100,7 @@ Ltac2 lazy_match0 t pats :=
   end in
   Control.once (fun () => interp pats) ().
 
-Ltac2 multi_match0 t pats :=
+Ltac2 multi_match0 t (pats:'a constr_matching) :=
   let rec interp e m := match m with
   | [] => Control.zero e
   | p :: m =>
@@ -121,7 +123,11 @@ Ltac2 multi_match0 t pats :=
 
 Ltac2 one_match0 t m := Control.once (fun _ => multi_match0 t m).
 
-Ltac2 lazy_goal_match0 rev pats :=
+Ltac2 Type 'a goal_matching :=
+  ((((match_kind * t) option * (match_kind * t)) list * (match_kind * t)) *
+     (ident array -> context array -> context array -> constr array -> context -> 'a)) list.
+
+Ltac2 lazy_goal_match0 rev (pats:'a goal_matching) :=
   let rec interp m := match m with
   | [] => Control.zero Match_failure
   | p :: m =>
@@ -136,7 +142,7 @@ Ltac2 lazy_goal_match0 rev pats :=
   end in
   Control.once (fun () => interp pats) ().
 
-Ltac2 multi_goal_match0 rev pats :=
+Ltac2 multi_goal_match0 rev (pats:'a goal_matching) :=
   let rec interp e m := match m with
   | [] => Control.zero e
   | p :: m =>
