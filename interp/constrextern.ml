@@ -220,8 +220,8 @@ let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) =
   | a :: args, [] ->
     (a, (entry, ([], scopes))) :: fill_arg_scopes args [] all
 
-let overlap_right_left lev_after (typs,_) =
-  List.exists (fun (_id,(({notation_relative_level = lev; notation_position = side},_),_)) ->
+let overlap_right_left lev_after ((typs,_):Notation_term.interpretation) =
+  List.exists (fun (_id,(({notation_relative_level = lev; notation_position = side},_),_,_)) ->
       match side with
       | Some Right -> may_capture_cont_after lev_after lev
       | _ -> false) typs
