@@ -362,7 +362,7 @@ val declare_entry_coercion : specific_notation -> notation_entry_level -> notati
   (** Add a coercion from some-entry to some-relative-entry *)
 
 type entry_coercion = (notation_with_optional_scope * notation) list
-val availability_of_entry_coercion : notation_entry_relative_level -> notation_entry_level -> entry_coercion option
+val availability_of_entry_coercion : ?non_empty:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
   (** Return a coercion path from some-relative-entry to some-entry if there is one *)
 
 (** Special properties of entries *)
@@ -372,6 +372,11 @@ val declare_custom_entry_has_ident : string -> int -> unit
 
 val entry_has_global : notation_entry_relative_level -> bool
 val entry_has_ident : notation_entry_relative_level -> bool
+
+val app_level : int
+
+val prec_less : entry_level -> entry_relative_level -> bool
+val may_capture_cont_after : entry_level option -> entry_relative_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

@@ -305,21 +305,23 @@ let side = function
 
 let precedence_of_position_and_level from_level = function
   | NumLevel n, BorderProd (b,Some a) ->
-    (let open Gramlib.Gramext in
+    let prec =
+     let open Gramlib.Gramext in
      match a, b with
      | RightA, Left -> LevelLt n
      | RightA, Right -> LevelLe n
      | LeftA, Left -> LevelLe n
      | LeftA, Right -> LevelLt n
-     | NonA, _ -> LevelLt n), Some b
-  | NumLevel n, b -> LevelLe n, side b
-  | NextLevel, b -> LevelLt from_level, side b
-  | DefaultLevel, b -> LevelSome, side b
+     | NonA, _ -> LevelLt n in
+    {notation_subentry = InConstrEntry; notation_relative_level = prec; notation_position = Some b}
+  | NumLevel n, b -> {notation_subentry = InConstrEntry; notation_relative_level = LevelLe n; notation_position = side b}
+  | NextLevel, b -> {notation_subentry = InConstrEntry; notation_relative_level = LevelLt from_level; notation_position = side b}
+  | DefaultLevel, b -> {notation_subentry = InConstrEntry; notation_relative_level = LevelSome; notation_position = side b}
 
 (** Computing precedences of non-terminals for parsing *)
 let precedence_of_entry_type { notation_entry = from_custom; notation_level = from_level } = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
-    fst (precedence_of_position_and_level from_level x)
+    (precedence_of_position_and_level from_level x).notation_relative_level
   | ETConstr (custom,_,(NumLevel n,_)) -> LevelLe n
   | ETConstr (custom,_,(NextLevel,_)) ->
     user_err (strbrk "\"next level\" is only for sub-expressions in the same entry as where the notation is (" ++
@@ -338,13 +340,15 @@ let unparsing_precedence_of_entry_type from_level = function
        with precedence in a constr entry is managed using [prec_less]
        in [ppconstr.ml] *)
     precedence_of_position_and_level from_level x
-  | ETConstr (custom,_,(_,x)) ->
+  | ETConstr (custom,_,(_,b)) ->
     (* Precedence of printing for a custom entry is managed using
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
-    LevelSome, side x
-  | ETPattern (_,n) -> (* in constr *) LevelLe (pattern_entry_level n), None
-  | _ -> LevelSome, None (* should not matter *)
+    {notation_subentry = custom; notation_relative_level = LevelSome; notation_position = side b}
+  | ETPattern (_,n) -> (* in constr *)
+    {notation_subentry = InConstrEntry; notation_relative_level = LevelLe (pattern_entry_level n); notation_position = None}
+  | _ -> (* should not matter *)
+    {notation_subentry = InConstrEntry; notation_relative_level = LevelSome; notation_position = None}
 
 (** Utilities for building default printing rules *)
 
@@ -413,14 +417,14 @@ let check_open_binder isopen sl m =
 
 let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
-  let prec,side = unparsing_precedence_of_entry_type from x in
+  let subentry = unparsing_precedence_of_entry_type from x in
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
-     UnpMetaVar (prec,side)
+     UnpMetaVar subentry
   | ETPattern _ | ETName | ETIdent ->
-     UnpBinderMetaVar (prec,NotQuotedPattern)
+     UnpBinderMetaVar (subentry,NotQuotedPattern)
   | ETBinder isopen ->
-     UnpBinderMetaVar (prec,QuotedPattern)
+     UnpBinderMetaVar (subentry,QuotedPattern)
 
 (** Heuristics for building default printing rules *)
 
@@ -465,14 +469,14 @@ let make_hunks etyps symbols from_level =
     | SProdList (m,sl) :: prods ->
         let i = index_id m vars in
         let typ = List.nth typs (i-1) in
-        let prec,side = unparsing_precedence_of_entry_type from_level typ in
+        let subentry = unparsing_precedence_of_entry_type from_level typ in
         let sl' =
           (* If no separator: add a break *)
           if List.is_empty sl then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
           else make true sl in
         let hunk = match typ with
-          | ETConstr _ -> UnpListMetaVar (prec,List.map snd sl',side)
+          | ETConstr _ -> UnpListMetaVar (subentry,List.map snd sl')
           | ETBinder isopen ->
               check_open_binder isopen sl m;
               UnpBinderListMetaVar (isopen,true,List.map snd sl')
@@ -612,13 +616,13 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
   | SProdList (m,sl) :: symbs, fmt when has_ldots fmt ->
       let i = index_id m vars in
       let typ = List.nth typs (i-1) in
-      let prec,side = unparsing_precedence_of_entry_type from_level typ in
+      let subentry = unparsing_precedence_of_entry_type from_level typ in
       let loc_slfmt,rfmt = read_recursive_format sl fmt in
       let sl, slfmt = aux (sl,loc_slfmt) in
       if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
       let symbs, l = aux (symbs,rfmt) in
       let hunk = match typ with
-        | ETConstr _ -> UnpListMetaVar (prec,slfmt,side)
+        | ETConstr _ -> UnpListMetaVar (subentry,slfmt)
         | ETBinder isopen ->
             check_open_binder isopen sl m;
             UnpBinderListMetaVar (isopen,true,slfmt)

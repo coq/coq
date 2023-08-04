@@ -1060,7 +1060,7 @@ let pr_goal_selector ~toplevel s =
               pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
-          if prec_less prec inherited then strm
+          if Notation.prec_less prec inherited then strm
           else str"(" ++ strm ++ str")"
 
         and pr_tacarg = function
