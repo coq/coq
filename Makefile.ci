@@ -46,7 +46,6 @@ CI_TARGETS= \
     ci-fiat_parsers \
     ci-flocq \
     ci-fourcolor \
-    ci-geocoq \
     ci-coqhammer \
     ci-hott \
     ci-iris \
@@ -130,8 +129,6 @@ ci-hb_test: ci-elpi_hb
 ci-jasmin: ci-mathcomp_word
 
 ci-iris: ci-autosubst
-
-ci-geocoq: ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp

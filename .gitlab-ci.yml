@@ -704,13 +704,6 @@ library:ci-corn:
   - plugin:ci-bignums
   - library:ci-math_classes
 
-library:ci-geocoq:
-  extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
-  - library:ci-mathcomp
-  allow_failure: true
-
 library:ci-hott:
   extends: .ci-template
 

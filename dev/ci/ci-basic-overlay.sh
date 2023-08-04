@@ -110,11 +110,6 @@ project hott "https://github.com/HoTT/HoTT" "master"
 project coqhammer "https://github.com/lukaszcz/coqhammer" "master"
 
 ########################################################################
-# GeoCoq
-########################################################################
-project geocoq "https://github.com/GeoCoq/GeoCoq" "master"
-
-########################################################################
 # Flocq
 ########################################################################
 project flocq "https://gitlab.inria.fr/flocq/flocq" "master"
