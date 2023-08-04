@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 open Names
-open Univ
 open Values
 
 (********************************************)
@@ -294,7 +293,6 @@ let arg args i =
 (* Destructors ***********************************)
 (*************************************************)
 
-let uni_lvl_val (v : values) : Univ.Level.t = Obj.magic v
 let uni_instance (v : values) : Univ.Instance.t = Obj.magic v
 
 let rec whd_accu a stk =
@@ -307,11 +305,11 @@ let rec whd_accu a stk =
      begin match stk with
      | [] -> Vaccu (Obj.magic at, stk)
      | [Zapp args] ->
-        let args = Array.init (nargs args) (arg args) in
+        let () = assert (Int.equal (nargs args) 1) in
+        let inst = uni_instance (arg args 0) in
         let s = Obj.obj (Obj.field at 0) in
         begin match s with
         | Sorts.Type u ->
-          let inst = Instance.of_array (Array.map uni_lvl_val args) in
           let u = Univ.subst_instance_universe inst u in
           Vaccu (Asort (Sorts.sort_of_univ u), [])
         | _ -> assert false

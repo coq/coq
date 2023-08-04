@@ -552,26 +552,22 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lsort s ->
     (* We represent universes as a global constant with local universes
-       "compacted", i.e. as [u arg0 ... argn] where we will substitute (after
+       passed as the local universe instance, where we will substitute (after
        evaluation) [Var 0,...,Var n] with values of [arg0,...,argn] *)
-    let s, subs = match s with
-    | Sorts.Set | Sorts.Prop | Sorts.SProp as s -> s, []
-    | Sorts.Type u ->
-      let u, s = Univ.compact_univ u in
-      Sorts.sort_of_univ u, s
-    | Sorts.QSort (q, u) ->
-      let u, s = Univ.compact_univ u in
-      Sorts.qsort q u, s
+    let has_var = match s with
+    | Sorts.Set | Sorts.Prop | Sorts.SProp -> false
+    | Sorts.Type u | Sorts.QSort (_, u) ->
+      Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u
     in
-    let compile_get_univ cenv idx sz cont =
+    let compile_instance cenv () sz cont =
       let () = set_max_stack_size cenv sz in
-      pos_instance cenv sz :: Kfield idx :: cont
+      pos_instance cenv sz :: cont
     in
-    if List.is_empty subs then
+    if not has_var then
       compile_structured_constant cenv (Const_sort s) sz cont
     else
-      comp_app compile_structured_constant compile_get_univ cenv
-        (Const_sort s) (Array.of_list subs) sz cont
+      comp_app compile_structured_constant compile_instance cenv
+        (Const_sort s) [|()|] sz cont
 
   | Llet (_id,def,body) ->
       compile_lam env cenv def sz
