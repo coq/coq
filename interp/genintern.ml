@@ -17,7 +17,7 @@ module Store = Store.Make ()
 type intern_variable_status = {
   intern_ids : Id.Set.t;
   notation_variable_status :
-    (bool ref * Notation_term.subscopes option ref *
+    (bool ref * Notation_term.subscopes option ref * Notation_term.notation_var_binders option ref *
        Notation_term.notation_var_internalization_type)
       Id.Map.t
 }
