@@ -36,6 +36,7 @@ sig
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
+  val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t (* in OCaml 4.11 *)
   val of_list : (key * 'a) list -> 'a t
   val symmetric_diff_fold :
     (key -> 'a option -> 'a option -> 'b -> 'b) ->
@@ -66,6 +67,7 @@ sig
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val height : 'a map -> int
   val filter_range : (M.t -> int) -> 'a map -> 'a map
+  val filter_map: (M.t -> 'a -> 'b option) -> 'a map -> 'b map (* in OCaml 4.11 *)
   val symmetric_diff_fold :
     (M.t -> 'a option -> 'a option -> 'b -> 'b) ->
     'a map -> 'a map -> 'b -> 'b
@@ -196,6 +198,13 @@ struct
           let m = aux m (map_prj r) in
           F.add v d m
     in aux F.empty (map_prj m)
+
+  let filter_map f m = (* Waiting for the optimized version in OCaml >= 4.11 *)
+    F.fold (fun k v accu ->
+        match f k v with
+        | None -> accu
+        | Some v' -> F.add k v' accu)
+      m F.empty
 
   let of_list l =
     let fold accu (x, v) = F.add x v accu in

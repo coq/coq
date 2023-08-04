@@ -66,6 +66,9 @@ sig
       [filter_range] returns the submap of [m] whose keys are in
       range. Note that [in_range] has to define a continouous range. *)
 
+  val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t (* in OCaml 4.11 *)
+  (** Like [map] but keeping only bindings mapped to [Some] *)
+
   val of_list : (key * 'a) list -> 'a t
   (** Turns an association list into a map *)
 

@@ -319,6 +319,11 @@ struct
     let s = Int.Map.map ff s in
     Int.Map.filter (fun _ m -> not (Map.is_empty m)) s
 
+  let filter_map f s =
+    let ff m = Map.filter_map f m in
+    let s = Int.Map.map ff s in
+    Int.Map.filter (fun _ m -> not (Map.is_empty m)) s
+
   let partition f s =
     let fold h m (sl, sr) =
       let (ml, mr) = Map.partition f m in
