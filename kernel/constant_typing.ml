@@ -301,18 +301,12 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 
 (*s Global and local constant declaration. *)
 
-let translate_constant ~sec_univs env _kn ce =
-  infer_constant ~sec_univs env ce
-
-let translate_opaque ~sec_univs env _kn ce =
-  infer_opaque ~sec_univs env ce
-
-let translate_local_assum env t =
+let infer_local_assum env t =
   let j = Typeops.infer env t in
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_local_def env _id { secdef_body; secdef_type; } =
+let infer_local_def env _id { secdef_body; secdef_type; } =
   let j = Typeops.infer env secdef_body in
   let typ = match secdef_type with
     | None -> j.uj_type
