@@ -107,8 +107,8 @@ Some important points:
   The first one uses the minimum version of OCaml supported by Coq.
   The second one uses the highest version of OCaml supported by Coq,
   with flambda enabled (currently it actually uses OCaml 4.14.1 as 5.0
-  has significant performance issues). See also the
-  [`Dockerfile`](docker/bionic_coq/Dockerfile) to find out what
+  has significant performance issues). See also the corresponding
+  [`Dockerfiles`](docker/) to find out what
   specific packages are available in each switch.
 
   If your job depends on other jobs, you must use the same opam
