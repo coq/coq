@@ -36,7 +36,7 @@ type display_function =
 val blacklist_filter : filter_function
 (** Check whether a reference is blacklisted. *)
 
-val module_filter : DirPath.t list * bool -> filter_function
+val module_filter : DirPath.t list search_restriction -> filter_function
 (** Check whether a reference pertains or not to a set of modules *)
 
 val search_filter : glob_search_item -> filter_function
@@ -47,12 +47,12 @@ val search_filter : glob_search_item -> filter_function
 goal and the global environment for things matching [pattern] and
 satisfying module exclude/include clauses of [modinout]. *)
 
-val search_rewrite : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
+val search_rewrite : env -> Evd.evar_map -> constr_pattern -> DirPath.t list search_restriction
                   -> display_function -> unit
-val search_pattern : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
+val search_pattern : env -> Evd.evar_map -> constr_pattern -> DirPath.t list search_restriction
                   -> display_function -> unit
 val search         : env -> Evd.evar_map -> (bool * glob_search_request) list
-                  -> DirPath.t list * bool -> display_function -> unit
+                  -> DirPath.t list search_restriction -> display_function -> unit
 
 type search_constraint =
   | Name_Pattern of Str.regexp

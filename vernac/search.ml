@@ -191,13 +191,16 @@ let blacklist_filter ref kind env sigma typ =
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   CString.Set.for_all is_not_bl (SearchBlacklist.v ())
 
-let module_filter (mods, outside) ref kind env sigma typ =
+let module_filter mods ref kind env sigma typ =
   let sp = Nametab.path_of_global ref in
   let sl = dirpath sp in
-  let is_outside md = not (is_dirpath_prefix_of md sl) in
-  let is_inside md = is_dirpath_prefix_of md sl in
-  if outside then List.for_all is_outside mods
-  else List.is_empty mods || List.exists is_inside mods
+  match mods with
+  | SearchOutside mods ->
+    let is_outside md = not (is_dirpath_prefix_of md sl) in
+    List.for_all is_outside mods
+  | SearchInside mods ->
+    let is_inside md = is_dirpath_prefix_of md sl in
+    List.is_empty mods || List.exists is_inside mods
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 

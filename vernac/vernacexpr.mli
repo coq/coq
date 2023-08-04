@@ -101,9 +101,9 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type search_restriction =
-  | SearchInside of qualid list
-  | SearchOutside of qualid list
+type 'a search_restriction =
+  | SearchInside of 'a
+  | SearchOutside of 'a
 
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = AddCoercion | NoCoercion
@@ -467,7 +467,7 @@ type nonrec synpure_vernac_expr =
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable
-  | VernacSearch of searchable * Goal_select.t option * search_restriction
+  | VernacSearch of searchable * Goal_select.t option * qualid list search_restriction
   | VernacLocate of locatable
   | VernacRegister of qualid * register_kind
   | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
