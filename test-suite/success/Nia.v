@@ -96,12 +96,7 @@ Proof.
 Qed.
 Example Z_mod_same': forall a : Z, a <> 0 -> a mod a = 0. Proof. t. Qed.
 Example Z_mod_0_l: forall a : Z, a <> 0 -> 0 mod a = 0. Proof. t. Qed.
-Example Zmod_opp_opp: forall a b : Z, - a mod - b = - (a mod b).
-Proof.
-  intros a b.
-  pose proof (Z_eq_dec_or ((-a)/(-b)) (a/b)).
-  nia.
-Qed.
+Example Zmod_opp_opp: forall a b : Z, - a mod - b = - (a mod b). Proof. t_eq. Qed.
 Example Z_mod_le: forall a b : Z, 0 <= a -> 0 < b -> a mod b <= a. Proof. t. Qed.
 Example Zmod_le: forall a b : Z, 0 < b -> 0 <= a -> a mod b <= a. Proof. t. Qed.
 Example Zplus_mod_idemp_r: forall a b n : Z, (b + a mod n) mod n = (b + a) mod n.
@@ -126,8 +121,7 @@ Example Zmult_mod_distr_r: forall a b c : Z, (a * c) mod (b * c) = a mod b * c.
 Proof.
   intros a b c.
   destruct (Z_zerop c); try nia.
-  pose proof (Z_eq_dec_or ((a * c) / (b * c)) (a / b)).
-  nia.
+  t_eq.
 Qed.
 Example Z_mod_zero_opp_full: forall a b : Z, a mod b = 0 -> - a mod b = 0.
 Proof.
@@ -181,8 +175,7 @@ Example Zmult_mod_distr_l: forall a b c : Z, (c * a) mod (c * b) = c * (a mod b)
 Proof.
   intros a b c.
   destruct (Z_zerop c); try nia.
-  pose proof (Z_eq_dec_or ((c * a) / (c * b)) (a / b)).
-  nia.
+  t_eq.
 Qed.
 Example Z_mod_zero_opp_r: forall a b : Z, a mod b = 0 -> a mod - b = 0.
 Proof.
@@ -239,12 +232,7 @@ Proof.
 Qed.
 Example Z_div_zero_opp_r: forall a b : Z, a mod b = 0 -> a / - b = - (a / b). Proof. intros; nia. Qed.
 Example Z_mod_lt: forall a b : Z, b > 0 -> 0 <= a mod b < b. Proof. intros; nia. Qed.
-Example Z_mod_opp_opp: forall a b : Z, b <> 0 -> - a mod - b = - (a mod b).
-Proof.
-  intros a b.
-  pose proof (Z_eq_dec_or ((-a)/(-b)) ((a/b))).
-  nia.
-Qed.
+Example Z_mod_opp_opp: forall a b : Z, b <> 0 -> - a mod - b = - (a mod b). Proof. t_eq. Qed.
 Example Z_mod_bound_pos: forall a b : Z, 0 <= a -> 0 < b -> 0 <= a mod b < b. Proof. intros; nia. Qed.
 Example Z_mod_opp_l_z: forall a b : Z, b <> 0 -> a mod b = 0 -> - a mod b = 0.
 Proof.
@@ -346,18 +334,8 @@ Proof.
   assert (b <> 0 -> a mod b <> 0 -> a/(-b) = -1-a/b) by nia.
   nia.
 Qed.
-Example Z_mul_mod_distr_r: forall a b c : Z, b <> 0 -> c <> 0 -> (a * c) mod (b * c) = a mod b * c.
-Proof.
-  intros a b c.
-  pose proof (Z_eq_dec_or ((a*c)/(b*c)) (a/b)).
-  nia.
-Qed.
-Example Z_mul_mod_distr_l: forall a b c : Z, b <> 0 -> c <> 0 -> (c * a) mod (c * b) = c * (a mod b).
-Proof.
-  intros a b c.
-  pose proof (Z_eq_dec_or ((c*a)/(c*b)) (a/b)).
-  nia.
-Qed.
+Example Z_mul_mod_distr_r: forall a b c : Z, b <> 0 -> c <> 0 -> (a * c) mod (b * c) = a mod b * c. Proof. t_eq. Qed.
+Example Z_mul_mod_distr_l: forall a b c : Z, b <> 0 -> c <> 0 -> (c * a) mod (c * b) = c * (a mod b). Proof. t_eq. Qed.
 Example Z_mod_opp_l_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> - a mod b = b - a mod b.
 Proof.
   intros a b.
@@ -472,13 +450,14 @@ Example Zdiv_unique: forall a b q r : Z, 0 <= r < b -> a = b * q + r -> q = a / 
 Example Z_div_unique_pos: forall a b q r : Z, 0 <= r < b -> a = b * q + r -> q = a / b. Proof. intros; nia. Qed.
 Example Z_div_small_iff: forall a b : Z, b <> 0 -> a / b = 0 <-> 0 <= a < b \/ b < a <= 0. Proof. intros; nia. Qed.
 Example Z_div_unique: forall a b q r : Z, 0 <= r < b \/ b < r <= 0 -> a = b * q + r -> q = a / b. Proof. intros; nia. Qed.
+Example Z_mod_divide: forall a b : Z, b <> 0 -> a mod b = 0 <-> (b | a). Proof. split; intros. Fail all: nia. Abort.
+Example Zmod_divides: forall a b : Z, b <> 0 -> a mod b = 0 <-> (exists c : Z, a = b * c). Proof. split; intros. Fail all: nia. Abort.
 
 (** Now we do the same, but with [Z.quot] and [Z.rem] instead. *)
 Example N2Z_inj_quot : forall n m : N, Z.of_N (n / m) = Z.of_N n ÷ Z.of_N m. Proof. intros; nia. Qed.
 Example N2Z_inj_rem : forall n m : N, Z.of_N (n mod m) = Z.rem (Z.of_N n) (Z.of_N m). Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_DT_mul_quot_ge : forall a b : Z, a <= 0 -> b <> 0 -> a <= b * (a ÷ b) <= 0.
-Proof. intros; destruct (Z_zerop (a ÷ b)); nia. Qed.
-Example OrdersEx_Z_as_DT_mul_quot_le : forall a b : Z, 0 <= a -> b <> 0 -> 0 <= b * (a ÷ b) <= a. Proof. intros; destruct (Z_zerop (a ÷ b)); nia. Qed.
+Example OrdersEx_Z_as_DT_mul_quot_ge : forall a b : Z, a <= 0 -> b <> 0 -> a <= b * (a ÷ b) <= 0. Proof. t_zero. Qed.
+Example OrdersEx_Z_as_DT_mul_quot_le : forall a b : Z, 0 <= a -> b <> 0 -> 0 <= b * (a ÷ b) <= a. Proof. t_zero. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_0_l : forall a : Z, 0 < a -> 0 ÷ a = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_1_l : forall a : Z, 1 < a -> 1 ÷ a = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_1_r : forall a : Z, 0 <= a -> a ÷ 1 = a. Proof. intros; nia. Qed.
@@ -486,13 +465,7 @@ Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_add : forall a b c : Z, 0 <= a -
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_add_l : forall a b c : Z, 0 <= c -> 0 <= a * b + c -> 0 < b -> (a * b + c) ÷ b = a + c ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_div : forall a b c : Z, 0 <= a -> 0 < b -> 0 < c -> a ÷ b ÷ c = a ÷ (b * c).
 Proof. intros; assert (0 < b * c) by nia; nia. Qed.
-Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q.
-Proof.
-  intros.
-  destruct (Z_zerop p), (Z_zerop (p ÷ r)), (Z_zerop (p ÷ q)); subst; [ nia.. | ].
-  assert (0 < q) by nia; assert (0 < r) by nia; assert (0 < p) by nia.
-  nia.
-Qed.
+Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q. Proof. intros; saturate_quot_div_0; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_le_lower_bound : forall a b q : Z, 0 <= a -> 0 < b -> b * q <= a -> q <= a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_le_mono : forall a b c : Z, 0 < c -> 0 <= a <= b -> a ÷ c <= b ÷ c. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_Private_Div_NZQuot_div_le_upper_bound : forall a b q : Z, 0 <= a -> 0 < b -> a <= b * q -> a ÷ b <= q. Proof. intros; nia. Qed.
@@ -519,49 +492,58 @@ Example OrdersEx_Z_as_DT_quot_add_l : forall a b c : Z, b <> 0 -> 0 <= (a * b + 
 Example OrdersEx_Z_as_DT_quot_div_nonneg : forall a b : Z, 0 <= a -> 0 < b -> a ÷ b = a / b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q.
 Proof.
-  intros.
-  destruct (Z_zerop p), (Z_zerop (p ÷ r)), (Z_zerop (p ÷ q)); [ subst; nia.. | ].
-  assert (0 < p) by nia; assert (0 < r) by nia.
-  nia.
+  intros; destruct (Z_zerop p); t_zero.
 Qed.
 Example OrdersEx_Z_as_DT_quot_le_lower_bound : forall a b q : Z, 0 < b -> b * q <= a -> q <= a ÷ b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_DT_quot_le_mono : forall a b c : Z, 0 < c -> a <= b -> a ÷ c <= b ÷ c.
-Proof.
-  intros.
-  destruct (Z_zerop a), (Z_zerop b), (Z_zerop (a ÷ c)), (Z_zerop (b ÷ c)); [ subst; nia.. | ].
-  nia.
-Qed.
+Example OrdersEx_Z_as_DT_quot_le_mono : forall a b c : Z, 0 < c -> a <= b -> a ÷ c <= b ÷ c. Proof. t_zero. Qed.
 Example OrdersEx_Z_as_DT_quot_le_upper_bound : forall a b q : Z, 0 < b -> a <= b * q -> a ÷ b <= q. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_lt : forall a b : Z, 0 < a -> 1 < b -> a ÷ b < a. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_lt_upper_bound : forall a b q : Z, 0 <= a -> 0 < b -> a < b * q -> a ÷ b < q. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_DT_quot_mul_cancel_l : forall a b c : Z, b <> 0 -> c <> 0 -> c * a ÷ (c * b) = a ÷ b.
-Proof.
-  intros.
-  assert (c * b <> 0) by nia.
-  destruct (Z_zerop a), (Z_zerop (c * a)); subst; [ nia | exfalso; nia.. | ].
-Abort.
-Example OrdersEx_Z_as_DT_quot_mul_cancel_r : forall a b c : Z, b <> 0 -> c <> 0 -> a * c ÷ (b * c) = a ÷ b. Proof. Abort.
+Example OrdersEx_Z_as_DT_quot_mul_cancel_l : forall a b c : Z, b <> 0 -> c <> 0 -> c * a ÷ (c * b) = a ÷ b. Proof. intros; saturate_mod_div_0; repeat destr_step; nia. Qed.
+Example OrdersEx_Z_as_DT_quot_mul_cancel_r : forall a b c : Z, b <> 0 -> c <> 0 -> a * c ÷ (b * c) = a ÷ b. Proof. intros; saturate_mod_div_0; repeat destr_step; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_mul : forall a b : Z, b <> 0 -> a * b ÷ b = a. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_mul_le : forall a b c : Z, 0 <= a -> 0 < b -> 0 <= c -> c * (a ÷ b) <= c * a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_opp_l : forall a b : Z, b <> 0 -> - a ÷ b = - (a ÷ b). Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_opp_opp : forall a b : Z, b <> 0 -> - a ÷ - b = a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_opp_r : forall a b : Z, b <> 0 -> a ÷ - b = - (a ÷ b). Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_pos : forall a b : Z, 0 <= a -> 0 < b -> 0 <= a ÷ b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_DT_quot_quot : forall a b c : Z, b <> 0 -> c <> 0 -> a ÷ b ÷ c = a ÷ (b * c). Proof. intros; assert (b * c <> 0) by nia. Abort.
+Example OrdersEx_Z_as_DT_quot_quot : forall a b c : Z, b <> 0 -> c <> 0 -> a ÷ b ÷ c = a ÷ (b * c).
+Proof.
+  intros; assert (b * c <> 0) by nia.
+  assert (Hb : 0 < b \/ b < 0) by nia.
+  assert (Hc : 0 < c \/ c < 0) by nia.
+  destruct Hb, Hc.
+  all: first [ assert (0 < b * c) by nia | assert (b * c < 0) by nia ].
+  all: nia.
+Qed.
 Example OrdersEx_Z_as_DT_quot_same : forall a : Z, a <> 0 -> a ÷ a = 1. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_small : forall a b : Z, 0 <= a < b -> a ÷ b = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_str_pos : forall a b : Z, 0 < b <= a -> 0 < a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_unique_exact : forall a b q : Z, b <> 0 -> a = b * q -> q = a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_DT_quot_unique : forall a b q r : Z, 0 <= a -> 0 <= r < b -> a = b * q + r -> q = a ÷ b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_mul_quot_ge : forall a b : Z, a <= 0 -> b <> 0 -> a <= b * (a ÷ b) <= 0. Proof. intros. Fail nia. Abort.
-Example OrdersEx_Z_as_OT_mul_quot_le : forall a b : Z, 0 <= a -> b <> 0 -> 0 <= b * (a ÷ b) <= a. Proof. intros. Fail nia. Abort.
+Example OrdersEx_Z_as_OT_mul_quot_ge : forall a b : Z, a <= 0 -> b <> 0 -> a <= b * (a ÷ b) <= 0.
+Proof.
+  intros.
+  assert (0 < a ÷ b \/ a ÷ b = 0 \/ a ÷ b < 0) by nia.
+  nia.
+Qed.
+Example OrdersEx_Z_as_OT_mul_quot_le : forall a b : Z, 0 <= a -> b <> 0 -> 0 <= b * (a ÷ b) <= a.
+Proof.
+  intros.
+  assert (0 < a ÷ b \/ a ÷ b = 0 \/ a ÷ b < 0) by nia.
+  nia.
+Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_0_l : forall a : Z, 0 < a -> 0 ÷ a = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_1_l : forall a : Z, 1 < a -> 1 ÷ a = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_1_r : forall a : Z, 0 <= a -> a ÷ 1 = a. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_add : forall a b c : Z, 0 <= a -> 0 <= a + b * c -> 0 < c -> (a + b * c) ÷ c = a ÷ c + b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_add_l : forall a b c : Z, 0 <= c -> 0 <= a * b + c -> 0 < b -> (a * b + c) ÷ b = a + c ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_div : forall a b c : Z, 0 <= a -> 0 < b -> 0 < c -> a ÷ b ÷ c = a ÷ (b * c). Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q. Proof. intros. Abort.
+Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q.
+Proof.
+  intros.
+  destruct (Z_zerop p); t_zero.
+Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_le_lower_bound : forall a b q : Z, 0 <= a -> 0 < b -> b * q <= a -> q <= a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_le_mono : forall a b c : Z, 0 < c -> 0 <= a <= b -> a ÷ c <= b ÷ c. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_Private_Div_NZQuot_div_le_upper_bound : forall a b q : Z, 0 <= a -> 0 < b -> a <= b * q -> a ÷ b <= q. Proof. intros; nia. Qed.
@@ -586,33 +568,57 @@ Example OrdersEx_Z_as_OT_quot_1_r : forall a : Z, a ÷ 1 = a. Proof. intros; nia
 Example OrdersEx_Z_as_OT_quot_add : forall a b c : Z, c <> 0 -> 0 <= (a + b * c) * a -> (a + b * c) ÷ c = a ÷ c + b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_add_l : forall a b c : Z, b <> 0 -> 0 <= (a * b + c) * c -> (a * b + c) ÷ b = a + c ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_div_nonneg : forall a b : Z, 0 <= a -> 0 < b -> a ÷ b = a / b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_quot_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q. Proof. intros. Fail nia. Abort.
+Example OrdersEx_Z_as_OT_quot_le_compat_l : forall p q r : Z, 0 <= p -> 0 < q <= r -> p ÷ r <= p ÷ q. Proof. t_zero. Qed.
 Example OrdersEx_Z_as_OT_quot_le_lower_bound : forall a b q : Z, 0 < b -> b * q <= a -> q <= a ÷ b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_quot_le_mono : forall a b c : Z, 0 < c -> a <= b -> a ÷ c <= b ÷ c. Proof. intros. Fail nia. Abort.
+Example OrdersEx_Z_as_OT_quot_le_mono : forall a b c : Z, 0 < c -> a <= b -> a ÷ c <= b ÷ c. Proof. t_zero. Qed.
 Example OrdersEx_Z_as_OT_quot_le_upper_bound : forall a b q : Z, 0 < b -> a <= b * q -> a ÷ b <= q. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_lt : forall a b : Z, 0 < a -> 1 < b -> a ÷ b < a. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_lt_upper_bound : forall a b q : Z, 0 <= a -> 0 < b -> a < b * q -> a ÷ b < q. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_quot_mul_cancel_l : forall a b c : Z, b <> 0 -> c <> 0 -> c * a ÷ (c * b) = a ÷ b. Proof. intros. Abort.
-Example OrdersEx_Z_as_OT_quot_mul_cancel_r : forall a b c : Z, b <> 0 -> c <> 0 -> a * c ÷ (b * c) = a ÷ b. Proof. intros. Abort.
+Example OrdersEx_Z_as_OT_quot_mul_cancel_l : forall a b c : Z, b <> 0 -> c <> 0 -> c * a ÷ (c * b) = a ÷ b.
+Proof.
+  intros.
+  assert (0 < b \/ b < 0) by nia.
+  assert (0 < c \/ c < 0) by nia.
+  assert (0 < a \/ a = 0 \/ a < 0) by nia.
+  repeat destr_step.
+  all: first [ assert (0 < c * a) by nia | assert (c * a < 0) by nia | assert (c * a = 0) by nia ].
+  all: first [ assert (0 < c * b) by nia | assert (c * b < 0) by nia ].
+  all: nia.
+Qed.
+Example OrdersEx_Z_as_OT_quot_mul_cancel_r : forall a b c : Z, b <> 0 -> c <> 0 -> a * c ÷ (b * c) = a ÷ b.
+Proof.
+  intros.
+  assert (0 < b \/ b < 0) by nia.
+  assert (0 < c \/ c < 0) by nia.
+  assert (0 < a \/ a = 0 \/ a < 0) by nia.
+  repeat destr_step.
+  all: first [ assert (0 < c * a) by nia | assert (c * a < 0) by nia | assert (c * a = 0) by nia ].
+  all: first [ assert (0 < c * b) by nia | assert (c * b < 0) by nia ].
+  all: nia.
+Qed.
 Example OrdersEx_Z_as_OT_quot_mul : forall a b : Z, b <> 0 -> a * b ÷ b = a. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_mul_le : forall a b c : Z, 0 <= a -> 0 < b -> 0 <= c -> c * (a ÷ b) <= c * a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_opp_l : forall a b : Z, b <> 0 -> - a ÷ b = - (a ÷ b). Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_opp_opp : forall a b : Z, b <> 0 -> - a ÷ - b = a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_opp_r : forall a b : Z, b <> 0 -> a ÷ - b = - (a ÷ b). Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_pos : forall a b : Z, 0 <= a -> 0 < b -> 0 <= a ÷ b. Proof. intros; nia. Qed.
-Example OrdersEx_Z_as_OT_quot_quot : forall a b c : Z, b <> 0 -> c <> 0 -> a ÷ b ÷ c = a ÷ (b * c). Proof. intros. Abort.
+Example OrdersEx_Z_as_OT_quot_quot : forall a b c : Z, b <> 0 -> c <> 0 -> a ÷ b ÷ c = a ÷ (b * c).
+Proof.
+  intros.
+  assert (0 < b \/ b < 0) by nia.
+  assert (0 < c \/ c < 0) by nia.
+  repeat destr_step.
+  all: first [ assert (0 < b * c) by nia | assert (b * c < 0) by nia ].
+  all: nia.
+Qed.
 Example OrdersEx_Z_as_OT_quot_same : forall a : Z, a <> 0 -> a ÷ a = 1. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_small : forall a b : Z, 0 <= a < b -> a ÷ b = 0. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_str_pos : forall a b : Z, 0 < b <= a -> 0 < a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_unique_exact : forall a b q : Z, b <> 0 -> a = b * q -> q = a ÷ b. Proof. intros; nia. Qed.
 Example OrdersEx_Z_as_OT_quot_unique : forall a b q r : Z, 0 <= a -> 0 <= r < b -> a = b * q + r -> q = a ÷ b. Proof. intros; nia. Qed.
-Example Z2N_inj_quot : forall n m : Z, 0 <= n -> 0 <= m -> Z.to_N (n ÷ m) = (Z.to_N n / Z.to_N m)%N.
-Proof. intros; destruct (Z_zerop n), (Z_zerop m), (Z_zerop (n ÷ m)); [ subst; try nia.. | ]. Abort.
+Example Z2N_inj_quot : forall n m : Z, 0 <= n -> 0 <= m -> Z.to_N (n ÷ m) = (Z.to_N n / Z.to_N m)%N. Proof. t_zero. Qed.
 Example Z2N_inj_rem : forall n m : Z, 0 <= n -> 0 <= m -> Z.to_N (Z.rem n m) = (Z.to_N n mod Z.to_N m)%N. Proof. intros. Abort.
-Example Zabs2N_inj_quot : forall n m : Z, Z.abs_N (n ÷ m) = (Z.abs_N n / Z.abs_N m)%N. Proof. intros. Abort.
 Example Zabs2N_inj_rem : forall n m : Z, Z.abs_N (Z.rem n m) = (Z.abs_N n mod Z.abs_N m)%N. Proof. intros. Abort.
-(* Some of these don't work, and I haven't gone through and figured out which ones yet, so they're all commented out for now *)
-(*
 Example Z_add_rem : forall a b n : Z, n <> 0 -> 0 <= a * b -> Z.rem (a + b) n = Z.rem (Z.rem a n + Z.rem b n) n. Proof. intros. Fail nia. Abort.
 Example Z_add_rem_idemp_l : forall a b n : Z, n <> 0 -> 0 <= a * b -> Z.rem (Z.rem a n + b) n = Z.rem (a + b) n. Proof. intros. Fail nia. Abort.
 Example Z_add_rem_idemp_r : forall a b n : Z, n <> 0 -> 0 <= a * b -> Z.rem (a + Z.rem b n) n = Z.rem (a + b) n. Proof. intros. Fail nia. Abort.
@@ -918,4 +924,3 @@ Example Z_rem_unique : forall a b q r : Z, 0 <= a -> 0 <= r < b -> a = b * q + r
 Example Z_rem_divide: forall a b : Z, b <> 0 -> Z.rem a b = 0 <-> (b | a). Proof. split; intros. Fail all: nia. Abort.
 Example Zrem_divides: forall a b : Z, b <> 0 -> Z.rem a b = 0 <-> (exists c : Z, a = b * c). Proof. split; intros. Fail all: nia. Abort.
 Example Z_rem_wd : Morphisms.Proper (Morphisms.respectful Z.eq (Morphisms.respectful Z.eq Z.eq)) Z.rem. Proof. repeat intro; subst. Fail nia. Abort.
-*)
