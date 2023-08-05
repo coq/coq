@@ -4,38 +4,78 @@ Open Scope Z_scope.
 
 (** Add [Z.to_euclidean_division_equations] to the end of [zify], just for this
     file. *)
-Require  Zify.
+Require Zify.
 Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations.
 
-Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. nia. Qed.
-Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. nia. Qed.
+Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. apply Z.eq_decidable. Qed.
+Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. apply Z.eq_decidable. Qed.
 
-Ltac unique_pose_proof pf :=
-  let T := type of pf in
+Ltac pose_eq_fact x y :=
+  assert_fails constr_eq x y;
   lazymatch goal with
-  | [ H : T |- _ ] => fail
-  | _ => pose proof pf
+  | [ H : x = y |- _ ] => fail
+  | [ H : y = x |- _ ] => fail
+  | [ H : x = y \/ x <> y |- _ ] => fail
+  | [ H : y = x \/ y <> x |- _ ] => fail
+  | [ H : x < y |- _ ] => fail
+  | [ H : y < x |- _ ] => fail
+  | [ H : x <> y |- _ ] => fail
+  | [ H : y <> x |- _ ] => fail
+  | _ => pose proof (Z.eq_decidable x y : x = y \/ x <> y)
   end.
 
-Ltac saturate_mod_div :=
-  repeat match goal with
-         | [ |- context[?x mod ?y] ] => unique_pose_proof (Z_zerop_or (x / y))
-         | [ H : context[?x mod ?y] |- _ ] => unique_pose_proof (Z_zerop_or (x / y))
-         | [ |- context[?x / ?y] ] => unique_pose_proof (Z_zerop_or y)
-         | [ H : context[?x / ?y] |- _ ] => unique_pose_proof (Z_zerop_or y)
-         | [ |- context[Z.rem ?x ?y] ] => unique_pose_proof (Z_zerop_or (Z.quot x y))
-         | [ H : context[Z.rem ?x ?y] |- _ ] => unique_pose_proof (Z_zerop_or (Z.quot x y))
-         | [ |- context[Z.quot ?x ?y] ] => unique_pose_proof (Z_zerop_or y)
-         | [ H : context[Z.quot ?x ?y] |- _ ] => unique_pose_proof (Z_zerop_or y)
-         end.
+Ltac with_mod tac :=
+  match goal with
+  | [ |- context[?x mod ?y] ] => tac x y
+  | [ H : context[?x mod ?y] |- _ ] => tac x y
+  end.
 
-Ltac t := intros; saturate_mod_div; try nia.
+Ltac with_rem tac :=
+  match goal with
+  | [ |- context[Z.rem ?x ?y] ] => tac x y
+  | [ H : context[Z.rem ?x ?y] |- _ ] => tac x y
+  end.
+
+Ltac with_div tac :=
+  match goal with
+  | [ |- context[?x / ?y] ] => tac x y
+  | [ H : context[?x / ?y] |- _ ] => tac x y
+  end.
+
+Ltac with_quot tac :=
+  match goal with
+  | [ |- context[Z.quot ?x ?y] ] => tac x y
+  | [ H : context[Z.quot ?x ?y] |- _ ] => tac x y
+  end.
+
+Ltac with_mod_rem tac := first [ with_mod tac | with_rem tac ].
+Ltac with_div_quot tac := first [ with_div tac | with_quot tac ].
+Ltac with_div_mod tac := first [ with_div tac | with_mod tac ].
+Ltac with_quot_rem tac := first [ with_quot tac | with_rem tac ].
+
+Ltac saturate_mod_div_0 :=
+  repeat first [ with_mod_rem ltac:(fun x y => pose_eq_fact (x / y) 0)
+               | with_div_quot ltac:(fun x y => pose_eq_fact y 0) ].
+Ltac saturate_quot_div_0 :=
+  repeat first [ with_quot ltac:(fun x y => pose_eq_fact (x ÷ y) 0)
+               | with_div ltac:(fun x y => pose_eq_fact (x / y) 0) ].
+Ltac saturate_mod_div_eq :=
+  let with_the_quot tac := first [ with_div_mod ltac:(fun x y => tac (x / y))
+                                 | with_quot_rem ltac:(fun x y => tac (x ÷ y)) ] in
+  repeat with_the_quot ltac:(fun q => with_the_quot ltac:(fun q' => pose_eq_fact q q')).
 
 Ltac destr_step :=
   match goal with
   | [ H : and _ _ |- _ ] => destruct H
   | [ H : or _ _ |- _ ] => destruct H
   end.
+
+Ltac t := intros; saturate_mod_div_0; try nia.
+Ltac t_zero := intros; saturate_mod_div_0; saturate_quot_div_0; try nia.
+(* sometimes this next one is faster? *)
+Ltac t_zero_subst := intros; saturate_mod_div_0; saturate_quot_div_0; repeat destr_step; try nia.
+Ltac t_eq := intros; saturate_mod_div_eq; try nia.
+Ltac t_all := intros; saturate_mod_div_0; saturate_mod_div_eq; try nia.
 
 Example mod_0_l: forall x : Z, 0 mod x = 0. Proof. t. Qed.
 Example mod_0_r: forall x : Z, x mod 0 = x. Proof. intros; nia. Qed.
