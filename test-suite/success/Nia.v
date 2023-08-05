@@ -385,12 +385,7 @@ Proof.
   assert (q = a / b) by nia.
   nia.
 Qed.
-Example Z_rem_mul_r: forall a b c : Z, b <> 0 -> 0 < c -> a mod (b * c) = a mod b + b * ((a / b) mod c).
-Proof.
-  intros a b c ??.
-  assert (a / (b * c) = ((a / b) / c)) by nia.
-  nia.
-Qed.
+Example Z_rem_mul_r: forall a b c : Z, b <> 0 -> 0 < c -> a mod (b * c) = a mod b + b * ((a / b) mod c). Proof. t_eq. Qed.
 Example Z_mod_bound_or: forall a b : Z, b <> 0 -> 0 <= a mod b < b \/ b < a mod b <= 0. Proof. intros; nia. Qed.
 Example Z_div_opp_l_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> - a / b = - (a / b) - 1. Proof. intros; nia. Qed.
 Example Z_div_opp_r_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> a / - b = - (a / b) - 1. Proof. intros; nia. Qed.
