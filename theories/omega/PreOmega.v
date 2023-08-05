@@ -18,10 +18,15 @@ Local Open Scope Z_scope.
 (** These tactics use the complete specification of [Z.div] and
     [Z.modulo] ([Z.quot] and [Z.rem], respectively) to remove these
     functions from the goal without losing information.  The
-    [Z.euclidean_division_equations_cleanup] tactic removes needless
-    hypotheses, which makes tactics like [nia] run faster.  The tactic
-    [Z.to_euclidean_division_equations] combines the handling of both variants
-    of division/quotient and modulo/remainder. *)
+    [Z.euclidean_division_equations_find_duplicate_quotients] tactic
+    poses facts of the form [q₁ = q₂ \/ q₁ <> q₂] for quotients that
+    are likely to be the same, which allows tactics like [nia] to
+    prove more goals, including those relating [Z.div]/[Z.mod] to
+    [Z.quot]/[Z.rem].  The [Z.euclidean_division_equations_cleanup]
+    tactic removes needless hypotheses, which makes tactics like [nia]
+    run faster.  The tactic [Z.to_euclidean_division_equations]
+    combines the handling of both variants of division/quotient and
+    modulo/remainder. *)
 
 Module Z.
   Lemma mod_0_r_ext x y : y = 0 -> x mod y = x.
@@ -124,9 +129,39 @@ Module Z.
            | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
            | [ H : 0 <= ?x < _ |- _ ] => destruct H
            end.
+  (** poses [x = y \/ x <> y] unless that is redundant or contradictory *)
+  Ltac euclidean_division_equations_pose_eq_fact x y :=
+    assert_fails constr_eq x y;
+    lazymatch goal with
+    | [ H : x = y |- _ ] => fail
+    | [ H : y = x |- _ ] => fail
+    | [ H : x = y \/ x <> y |- _ ] => fail
+    | [ H : y = x \/ y <> x |- _ ] => fail
+    | [ H : x < y |- _ ] => fail
+    | [ H : y < x |- _ ] => fail
+    | [ H : x <> y |- _ ] => fail
+    | [ H : y <> x |- _ ] => fail
+    | _ => pose proof (Z.eq_decidable x y : x = y \/ x <> y)
+    end.
+
+  Ltac euclidean_division_equations_find_duplicate_quotients_step :=
+    let pose_eq_fact x y := euclidean_division_equations_pose_eq_fact x y in
+    match goal with
+    | [ H : context[?x = ?y * ?q1], H' : context[?x = ?y * ?q2] |- _ ] => pose_eq_fact q1 q2
+    | [ H : context[?x = ?y * ?q1 + _], H' : context[?x = ?y * ?q2] |- _ ] => pose_eq_fact q1 q2
+    | [ H : context[?x = ?y * ?q1 + _], H' : context[?x = ?y * ?q2 + _] |- _ ] => pose_eq_fact q1 q2
+    | [ H : context[?y * ?q2 + _ = ?y * ?q1 + _] |- _ ] => pose_eq_fact q1 q2
+    | [ H : context[?x * ?y = ?y * ?q1 + _] |- _ ] => pose_eq_fact x q1
+    | [ H : context[?y * ?x = ?y * ?q1 + _] |- _ ] => pose_eq_fact x q1
+    end.
+  Ltac euclidean_division_equations_find_duplicate_quotients :=
+    repeat euclidean_division_equations_find_duplicate_quotients_step.
   Ltac div_mod_to_equations := div_mod_to_equations'; euclidean_division_equations_cleanup.
   Ltac quot_rem_to_equations := quot_rem_to_equations'; euclidean_division_equations_cleanup.
-  Ltac to_euclidean_division_equations := div_mod_to_equations'; quot_rem_to_equations'; euclidean_division_equations_cleanup.
+  Ltac to_euclidean_division_equations :=
+    div_mod_to_equations'; quot_rem_to_equations';
+    euclidean_division_equations_cleanup;
+    euclidean_division_equations_find_duplicate_quotients.
 End Z.
 
 Require Import ZifyClasses ZifyInst.

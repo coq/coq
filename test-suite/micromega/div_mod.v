@@ -23,13 +23,8 @@ Proof. lia. Qed.
 Goal forall (m n:nat), m > 0 -> (n * m) / m = n.
 Proof. nia. Qed.
 
-(* just nia is not strong enough in 8.14 *)
 Goal forall (m n:nat), m > 0 -> (n * m) mod m = 0.
-Proof.
-  Fail nia. (* if this suceeds, please update test *)
-  intros.
-  cut ((n * m) / m = n); nia.
-Qed.
+Proof. nia. Qed.
 
 Goal forall (n m:nat), 1 <= (1+n)^m.
 Proof. lia. Qed.
