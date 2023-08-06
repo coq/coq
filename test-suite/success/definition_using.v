@@ -35,6 +35,20 @@ Fixpoint c7 (n : nat) {struct n} : bool :=
   | S p => c7 p
   end.
 
+Fail #[using="dummy", program]
+Fixpoint c7' (n : nat) {struct n} : bool :=
+  match n with
+  | O => true
+  | S p => c7' p
+  end.
+
+Fail #[using="c7'", program]
+Fixpoint c7' (n : nat) {struct n} : bool :=
+  match n with
+  | O => true
+  | S p => c7' p
+  end.
+
 End A.
 
 Check c1 : bogus -> bool.
