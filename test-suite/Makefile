@@ -75,11 +75,9 @@ endif
 
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
-COQCHKEXTRAFLAGS?=
-COQCHKFLAGS?=-bytecode-compiler yes $(COQCHKEXTRAFLAGS)
 
 coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
-coqchk := $(BIN)coqchk -R prerequisite TestSuite $(COQCHKFLAGS)
+coqchk := $(BIN)coqchk -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
 coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte -q
