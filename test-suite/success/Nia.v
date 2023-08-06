@@ -1,3 +1,4 @@
+(* -*- coqchk-prog-args: ("-bytecode-compiler" "yes") -*- *)
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
