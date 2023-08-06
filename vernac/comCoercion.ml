@@ -184,6 +184,7 @@ let build_id_coercion idf_opt source poly =
     | Some c -> c
     | None -> error_not_transparent source in
   let lams,t = decompose_lambda_decls c in
+  let lams = EConstr.Unsafe.to_rel_context (Namegen.name_context env sigma (EConstr.of_rel_context lams)) in
   let val_f =
     Term.it_mkLambda_or_LetIn
       (mkLambda (make_annot (Name Namegen.default_dependent_ident) Sorts.Relevant,
