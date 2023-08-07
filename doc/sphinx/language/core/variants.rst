@@ -6,11 +6,30 @@ Variants and the `match` construct
 Variants
 --------
 
+The :cmd:`Variant` command allows defining types by listing
+the :term:`inhabitants <inhabitant>` of the type.  Each inhabitant is
+specified by a :gdef:`constructor`.  For instance, Booleans have two
+constructors: :g:`true` and :g:`false`. Types can include enumerated types from
+programming languages, such as Booleans, characters or even the
+degenerate cases of the unit and empty types. Variant types more
+generally include enumerated types with arguments or even enumerated
+types with parametric arguments such as option types and sum types.
+It also includes predicates or type families defined by cases
+such as the Boolean reflection or equality predicates. Observing the
+form of the :term:`inhabitants <inhabitant>` of a variant type is done by case analysis
+using the `match` expression.
+
+When a constructor of a type takes an argument of that same type,
+the type becomes recursive, in which case it can be either
+:cmd:`Inductive` or :cmd:`CoInductive`. The keyword :cmd:`Variant`
+is reserved for non-recursive types. Natural numbers, lists or streams cannot
+be defined using :cmd:`Variant`.
+
 .. cmd:: Variant @ident_decl {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
 
-   The :cmd:`Variant` command is similar to the :cmd:`Inductive` command, except
-   that it disallows recursive definition of types (for instance, lists cannot
-   be defined using :cmd:`Variant`). No induction scheme is generated for
+   Defines a variant type named :n:`@ident` (in :n:`@ident_decl`)
+   with the given list of constructors.
+   No induction scheme is generated for
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
    :n:`{? %| {* @binder } }`
@@ -23,6 +42,52 @@ Variants
 
    .. exn:: The @natural th argument of @ident must be @ident in @type.
       :undocumented:
+
+.. example::
+
+  The Booleans, the unit type and the empty type are respectively defined by:
+
+   .. coqtop:: none
+
+      Module FreshNameSpace.
+
+   .. coqtop:: in
+
+      Variant bool : Type := true : bool | false : bool.
+      Variant unit : Type := tt : unit.
+      Variant Empty_set : Type :=.
+
+  The option and sum types are defined by:
+
+   .. coqtop:: in
+
+      Variant option (A : Type) : Type := None : option A | Some : A -> option A.
+      Variant sum (A B : Type) : Type := inl : A -> sum A B | inr : B -> sum A B.
+
+  *Boolean reflection* is a relation reflecting under the form of a
+  Boolean value when a given proposition :n:`P` holds. It can be
+  defined as a two-constructor type family over :g:`bool`
+  parameterized by the proposition :n:`P`:
+
+  .. coqtop:: in
+
+     Variant reflect (P : Prop) : bool -> Set :=
+     | ReflectT : P -> reflect P true
+     | ReflectF : ~ P -> reflect P false.
+
+  .. coqtop:: none
+
+     End FreshNameSpace.
+
+  :term:`Leibniz equality` is another example of variant type.
+
+.. note::
+   The standard library commonly uses :cmd:`Inductive` in
+   place of :cmd:`Variant` even for non-recursive types in order to
+   automatically derive the schemes
+   :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``, :n:`@ident`\
+   ``_rec`` and :n:`@ident`\ ``_sind``.  (These schemes are also created
+   for :cmd:`Variant` if the :flag:`Nonrecursive Elimination Schemes` flag is set.)
 
 Private (matching) inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,6 +1,23 @@
 Inductive types and recursive functions
 =======================================
 
+The :cmd:`Inductive` command allows defining types by cases on the form of the
+:term:`inhabitants <inhabitant>` of the type. These constructors can recursively
+have arguments in the type being defined.  In contrast, in types defined by the
+:cmd:`Variant` command, such recursive references are not permitted.
+Inductive types include natural numbers,
+lists and well-founded trees. Inhabitants of inductive types can
+recursively nest only a finite number of constructors. So, they are
+well-founded. This distinguishes them from :cmd:`CoInductive` types,
+such as streams, whose constructors can be infinitely nested. In Coq,
+:cmd:`Variant` types thus correspond to the common subset of inductive
+and coinductive types that are non-recursive.
+
+Due to the recursive structure of inductive types, functions on
+inductive types generally must be defined
+recursively using the :n:`fix` expression (see :n:`@term_fix`) or the
+:cmd:`Fixpoint` command.
+
 .. _gallina-inductive-definitions:
 
 Inductive types
