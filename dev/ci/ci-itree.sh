@@ -10,6 +10,6 @@ git_download itree
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/itree"
-  dune build @install -p coq-itree
-  dune install -p coq-itree coq-itree --prefix="$CI_INSTALL_DIR"
+  make all
+  make install
 )

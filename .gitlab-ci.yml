@@ -756,12 +756,12 @@ library:ci-analysis:
   - plugin:ci-elpi_hb  # for Hierarchy Builder
 
 library:ci-paco:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 library:ci-itree:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-    - build:base
+    - build:edge+flambda
     - library:ci-paco
 
 library:ci-sf:
@@ -813,6 +813,14 @@ library:ci-coq_library_undecidability:
   - build:base
   - plugin:ci-equations
   - plugin:ci-metacoq
+
+library:ci-http:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-menhir
+  - library:ci-itree
+  - plugin:ci-quickchick
 
 # Plugins are by definition the projects that depend on Coq's ML API
 
@@ -898,6 +906,12 @@ plugin:ci-quickchick:
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+
+plugin:ci-quickchick_test:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-quickchick
 
 plugin:ci-reduction_effects:
   extends: .ci-template

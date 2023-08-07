@@ -273,6 +273,36 @@ project paco "https://github.com/snu-sf/paco" "master"
 project itree "https://github.com/DeepSpec/InteractionTrees" "master"
 
 ########################################################################
+# coq-itree_io
+########################################################################
+project itree_io "https://github.com/Lysxia/coq-itree-io" "master"
+
+########################################################################
+# coq-ceres
+########################################################################
+project ceres "https://github.com/Lysxia/coq-ceres" "master"
+
+########################################################################
+# coq-parsec
+########################################################################
+project parsec "https://github.com/liyishuai/coq-parsec" "master"
+
+########################################################################
+# coq-json
+########################################################################
+project json "https://github.com/liyishuai/coq-json" "master"
+
+########################################################################
+# coq-async-test
+########################################################################
+project async_test "https://github.com/liyishuai/coq-async-test" "master"
+
+########################################################################
+# coq-http
+########################################################################
+project http "https://github.com/liyishuai/coq-http" "master"
+
+########################################################################
 # paramcoq
 ########################################################################
 project paramcoq "https://github.com/coq-community/paramcoq" "master"

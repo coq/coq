@@ -5,11 +5,11 @@ set -e
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-git_download paco
+git_download itree_io
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-( cd "${CI_BUILD_DIR}/paco/src"
+( cd "${CI_BUILD_DIR}/itree_io"
   make
-  make -f Makefile.coq install
+  make install
 )
