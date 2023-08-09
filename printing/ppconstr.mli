@@ -76,6 +76,15 @@ val default_term_pr : term_pr
 
 val lsimpleconstr : entry_relative_level
 val ltop : entry_relative_level
+
+(* Print at level "simpleconstr"  (applications are surrounded with parentheses)
+   ensured not to be overriden, on the contrary of pr_constr_expr *)
+val pr_simpleconstr : constr_expr -> Pp.t
+
+(* Print at level "top" (no parentheses)
+   ensured not to be overriden, on the contrary of pr_lconstr_expr *)
+val pr_top : constr_expr -> Pp.t
+
 val modular_constr_pr :
   ((unit->Pp.t) -> int option -> entry_relative_level -> constr_expr -> Pp.t) ->
   (unit->Pp.t) -> int option -> entry_relative_level -> constr_expr -> Pp.t

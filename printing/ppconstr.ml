@@ -798,18 +798,22 @@ let tag_var = tag Tag.variable
   let pr_expr env sigma lev_after prec c =
     pr lev_after prec (transf env sigma c)
 
-  let pr_simpleconstr env sigma = pr_expr env sigma no_after lsimpleconstr
+  let pr_simpleconstr_env env sigma = pr_expr env sigma no_after lsimpleconstr
+  let pr_top_env env sigma = pr_expr env sigma no_after ltop
 
   let default_term_pr = {
-    pr_constr_expr   = pr_simpleconstr;
-    pr_lconstr_expr  = (fun env sigma -> pr_expr env sigma no_after ltop);
-    pr_constr_pattern_expr  = pr_simpleconstr;
-    pr_lconstr_pattern_expr = (fun env sigma -> pr_expr env sigma no_after ltop)
+    pr_constr_expr   = pr_simpleconstr_env;
+    pr_lconstr_expr  = pr_top_env;
+    pr_constr_pattern_expr  = pr_simpleconstr_env;
+    pr_lconstr_pattern_expr = pr_top_env;
   }
 
   let term_pr = ref default_term_pr
 
   let set_term_pr = (:=) term_pr
+
+  let pr_simpleconstr = pr no_after lsimpleconstr
+  let pr_top = pr no_after ltop
 
   let pr_constr_expr_n n c = pr_expr n c no_after
   let pr_constr_expr c   = !term_pr.pr_constr_expr   c
