@@ -18,7 +18,7 @@ open Util
    - Node denotes the usual tree node, labelled with 'a, to the
      exception that it takes an array of arrays as argument
    - Rec(j,v1..vn) introduces infinite tree. It denotes
-     v(j+1) with parameters 0..n-1 replaced by
+     v(j+1) with variables 0..n-1 replaced by
      Rec(0,v1..vn)..Rec(n-1,v1..vn) respectively.
  *)
 type 'a t =
@@ -53,16 +53,16 @@ let rec subst_rtree_rec depth sub = function
 let subst_rtree sub t = subst_rtree_rec 0 sub t
 
 (* To avoid looping, we must check that every body introduces a node
-   or a parameter *)
+   or a variable *)
 let rec expand = function
   | Rec(j,defs) ->
       expand (subst_rtree defs defs.(j))
   | t -> t
 
 (* Given a vector of n bodies, builds the n mutual recursive trees.
-   Recursive calls are made with parameters (0,0) to (0,n-1). We check
+   Recursive calls are made with variables (0,0) to (0,n-1). We check
    the bodies actually build something by checking it is not
-   directly one of the parameters of depth 0. Some care is taken to
+   directly one of the variables of depth 0. Some care is taken to
    accept definitions like  rec X=Y and Y=f(X,Y) *)
 let mk_rec defs =
   let rec check histo d = match expand d with
@@ -120,7 +120,7 @@ struct
 
 end
 
-(** Structural equality test, parametrized by an equality on elements *)
+(** Structural equality test, parameterized by an equality on elements *)
 
 let rec raw_eq cmp t t' = match t, t' with
   | Var (i,j), Var (i',j') -> Int.equal i i' && Int.equal j j'
@@ -130,7 +130,7 @@ let rec raw_eq cmp t t' = match t, t' with
 
 let raw_eq2 cmp (t,u) (t',u') = raw_eq cmp t t' && raw_eq cmp u u'
 
-(** Equivalence test on expanded trees. It is parametrized by two
+(** Equivalence test on expanded trees. It is parameterized by two
     equalities on elements:
     - [cmp] is used when checking for already seen trees
     - [cmp'] is used when comparing node labels. *)

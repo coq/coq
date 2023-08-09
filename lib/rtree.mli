@@ -45,7 +45,7 @@ val mk_node  : 'a -> 'a t array array -> 'a t
 val mk_rec_calls : int -> 'a t array
 val mk_rec   : 'a t array -> 'a t array
 
-(** [lift k t] increases of [k] the free parameters of [t]. Needed
+(** [lift k t] increases of [k] the free variables of [t]. Needed
    to avoid captures when a tree appears under [mk_rec] *)
 val lift : int -> 'a t -> 'a t
 
@@ -64,7 +64,7 @@ val is_infinite : ('a -> 'a -> bool) -> 'a t -> bool
 (** [Rtree.equiv eq eqlab t1 t2] compares t1 t2 (top-down).
    If t1 and t2 are both nodes, [eqlab] is called on their labels,
    in case of success deeper nodes are examined.
-   In case of loop (detected via structural equality parametrized
+   In case of loop (detected via structural equality parameterized
    by [eq]), then the comparison is successful. *)
 val equiv :
   ('a -> 'a -> bool) -> ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
