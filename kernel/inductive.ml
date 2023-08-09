@@ -1459,6 +1459,16 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let raise_err env i err =
     error_ill_formed_rec_body env (Type_errors.FixGuardError err) names i fixenv vdefj in
   (* Check the i-th definition with recarg k *)
+  let check_relevance (ind, u) i mip =
+    (* recursive sprop means non record with projections -> squashed *)
+    if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
+    else match relevance_of_ind_body mip u with
+      | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
+        if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
+        then raise_err env i FixpointOnIrrelevantInductive
+      | Sorts.Relevant -> () in
+  let check_finiteness finiteness i a =
+    if finiteness != Finite then raise_err env i (RecursionNotOnInductiveType a) in
   let find_ind i k def =
     (* check fi does not appear in the k+1 first abstractions,
        gives the type of the k+1-eme abstraction (must be an inductive)  *)
@@ -1469,30 +1479,19 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
               let env' = push_rel (LocalAssum (x,a)) env in
               if Int.equal n (k + 1) then
                 (* get the inductive type of the fixpoint *)
-                let (mind, _) =
+                let (ind, _) =
                   try find_inductive env a
                   with Not_found ->
                     raise_err env i (RecursionNotOnInductiveType a) in
-                let mib,_ = lookup_mind_specif env (out_punivs mind) in
-                if mib.mind_finite != Finite then
-                  raise_err env i (RecursionNotOnInductiveType a);
-                (mind, (env', b))
+                let mib,mip = lookup_mind_specif env (out_punivs ind) in
+                check_finiteness mib.mind_finite i a;
+                check_relevance ind i mip;
+                (ind, (env', b))
               else check_occur env' (n+1) b
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
         | _ -> raise_err env i NotEnoughAbstractionInFixBody
     in
-    let ((ind, u), _) as res = check_occur fixenv 1 def in
-    let _, mip = lookup_mind_specif env ind in
-    (* recursive sprop means non record with projections -> squashed *)
-    let () =
-      if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
-      else match relevance_of_ind_body mip u with
-        | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
-          if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
-          then raise_err env i FixpointOnIrrelevantInductive
-        | Sorts.Relevant -> ()
-    in
-    res
+    check_occur fixenv 1 def
   in
   (* Do it on every fixpoint *)
   let rv = Array.map2_i find_ind nvect bodies in
