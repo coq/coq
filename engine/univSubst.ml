@@ -235,13 +235,10 @@ let nf_evars_and_universes_opt_subst fevar flevel fsort frel c =
       let br' = Array.Smart.map aux_ctx br in
       if ci' == ci && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
       else mkCase (ci', u', pms', p', iv', t', br')
-    | Array (u,elems,def,ty) ->
-      let u' = subst_instance flevel u in
-      let elems' = CArray.Smart.map aux elems in
-      let def' = aux def in
-      let ty' = aux ty in
-      if u == u' && elems == elems' && def == def' && ty == ty' then c
-      else mkArray (u',elems',def',ty')
+    | PVal v ->
+      let v' = CPrimVal.map aux aux (subst_instance flevel) v in
+      if v == v' then c
+      else mkPVal v'
     | Prod (na, t, u) ->
       let na' = nf_binder_annot frel na in
       let t' = aux t in

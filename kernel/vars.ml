@@ -320,13 +320,10 @@ let subst_univs_level_constr subst c =
           else
             (changed := true; Constr.map aux (mkCase (ci, u', pms, p, NoInvert, c, br)))
 
-      | Array (u,elems,def,ty) ->
-        let u' = f u in
-        let elems' = CArray.Smart.map aux elems in
-        let def' = aux def in
-        let ty' = aux ty in
-        if u == u' && elems == elems' && def == def' && ty == ty' then t
-        else (changed := true; mkArray (u',elems',def',ty'))
+      | PVal v ->
+        let v' = CPrimVal.map aux aux f v in
+        if v' == v then t
+        else (changed := true; mkPVal v')
 
       | _ -> Constr.map aux t
     in
@@ -370,13 +367,10 @@ let subst_instance_constr subst c =
         if u' == u then Constr.map aux t
         else Constr.map aux (mkCase (ci,u',pms,p,iv,c,br))
 
-      | Array (u,elems,def,ty) ->
-        let u' = f u in
-        let elems' = CArray.Smart.map aux elems in
-        let def' = aux def in
-        let ty' = aux ty in
-        if u == u' && elems == elems' && def == def' && ty == ty' then t
-        else mkArray (u',elems',def',ty')
+      | PVal v ->
+        let v' = CPrimVal.map aux aux f v in
+        if v' == v then t
+        else mkPVal v'
 
       | _ -> Constr.map aux t
     in
@@ -401,8 +395,8 @@ let universes_of_constr c =
       Level.Set.fold Level.Set.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
       Level.Set.fold Level.Set.add (Sorts.levels u) s
-    | Array (u,_,_,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
+    | PVal v ->
+      let s = CPrimVal.collect_universes (fun u -> u) s v in
       Constr.fold aux s c
     | Case (_, u, _, _, _,_ ,_) ->
       let s = Level.Set.fold Level.Set.add (Instance.levels u) s in

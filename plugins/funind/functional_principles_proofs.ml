@@ -662,15 +662,13 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
                    (*                            build_proof do_finalize new_infos g' *)))
           | _ -> do_finalize dyn_infos )
         | Cast (t, _, _) -> build_proof do_finalize {dyn_infos with info = t}
-        | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-         |Int _ | Float _ ->
+        | PVal (CPrimVal.Array _) -> CErrors.user_err Pp.(str "Arrays not handled yet")
+        | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ | PVal _ ->
           do_finalize dyn_infos
         | App (_, _) -> (
           let f, args = decompose_app_list sigma dyn_infos.info in
           match EConstr.kind sigma f with
-          | Int _ -> user_err Pp.(str "integer cannot be applied")
-          | Float _ -> user_err Pp.(str "float cannot be applied")
-          | Array _ -> user_err Pp.(str "array cannot be applied")
+          | PVal _ -> user_err Pp.(str "primitive value cannot be applied")
           | App _ ->
             assert false (* we have collected all the app in decompose_app *)
           | Proj _ -> assert false (*FIXME*)
@@ -719,8 +717,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
                 dyn_infos.rec_hyps
             ; h_reduce_with_zeta Locusops.onConcl
             ; build_proof do_finalize new_infos ]
-        | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
-        | Array _ -> CErrors.user_err Pp.(str "Arrays not handled yet"))
+        | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!"))
   and build_proof do_finalize dyn_infos =
     (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
     Indfun_common.observe_tac ~header:(str "observation")

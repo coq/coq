@@ -205,9 +205,9 @@ struct
       (* UnsafeMonomorphic is fine because the term will only be used
          by pat_of_constr which ignores universes *)
       pat_of_constr (mkApp (UnsafeMonomorphic.mkConst (Projection.constant p), [|c|]))
-    | Int i -> Some (DInt i, [])
-    | Float f -> Some (DFloat f, [])
-    | Array (_u,t,def,ty) ->
+    | PVal (CPrimVal.Int i) -> Some (DInt i, [])
+    | PVal (CPrimVal.Float f) -> Some (DFloat f, [])
+    | PVal (CPrimVal.Array (_u,t,def,ty)) ->
       Some (DArray, Array.to_list t @ [def ; ty])
     in
     pat_of_constr c

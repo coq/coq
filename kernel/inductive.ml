@@ -988,7 +988,7 @@ let rec subterm_specif renv stack t =
       end
 
     | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Ind _
-      | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Not_subterm
+      | Construct _ | CoFix _ | PVal _ -> Not_subterm
 
 
       (* Other terms are not subterms *)
@@ -1189,7 +1189,7 @@ let check_one_fix renv recpos trees def =
               match kind hd with
               | Construct cstr -> Some (apply_branch cstr args ci brs)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | PVal _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
@@ -1235,7 +1235,7 @@ let check_one_fix renv recpos trees def =
               match kind hd with
               | Construct _ -> Some (contract_fix fix)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | PVal _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
@@ -1300,7 +1300,7 @@ let check_one_fix renv recpos trees def =
               match kind hd with
               | Construct _ -> Some args.(Projection.npars p + Projection.arg p)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | PVal _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
             end
@@ -1330,16 +1330,13 @@ let check_one_fix renv recpos trees def =
             let rs = check_rec_call_stack renv stack rs c in
             rs
 
-        | Sort _ | Int _ | Float _ ->
+        | Sort _ ->
             (* See [Prod]: we cannot ensure that the stack is empty *)
             rs
 
-        | Array (_u,t,def,ty) ->
+        | PVal v ->
             (* See [Prod]: we cannot ensure that the stack is empty *)
-            let rs = Array.fold_left (check_inert_subterm_rec_call renv) rs t in
-            let rs = check_inert_subterm_rec_call renv rs def in
-            let rs = check_inert_subterm_rec_call renv rs ty in
-            rs
+            CPrimVal.fold (check_inert_subterm_rec_call renv) (check_inert_subterm_rec_call renv) rs v
 
         (* l is not checked because it is considered as the meta's context *)
         | (Evar _ | Meta _) ->
@@ -1558,7 +1555,7 @@ let check_one_cofix env nbfix def deftype =
         | Evar _ ->
             List.iter (check_rec_call env alreadygrd n tree vlra) args
         | Rel _ | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _
-          | Ind _ | Fix _ | Proj _ | Int _ | Float _ | Array _ ->
+          | Ind _ | Fix _ | Proj _ | PVal _ ->
            raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind env deftype in

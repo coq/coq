@@ -159,7 +159,7 @@ let reference_value env sigma c u =
     | Some d -> d
 
 let is_primitive_val sigma c = match EConstr.kind sigma c with
-  | Int _ | Float _ | Array _ -> true
+  | PVal _ -> true
   | _ -> false
 
 (************************************************************************)
@@ -757,7 +757,7 @@ and reduce_params allowed_reds env sigma stack l =
         let arg = List.nth stack i in
         let rarg = whd_construct_stack allowed_reds env sigma arg in
           match EConstr.kind sigma (fst rarg) with
-          | Construct _ | Int _ | Float _ | Array _ ->
+          | Construct _ | PVal _ ->
              List.assign stack i (applist rarg)
           | _ -> raise Redelimination)
       stack l

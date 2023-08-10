@@ -439,9 +439,9 @@ let mk_clos (e:_ usubs) t =
     | Meta _ -> {mark = Ntrl; term = FAtom t }
     | Ind kn -> {mark = Ntrl; term = FInd (usubst_punivs e kn) }
     | Construct kn -> {mark = Cstr; term = FConstruct (usubst_punivs e kn) }
-    | Int i -> {mark = Cstr; term = FInt i}
-    | Float f -> {mark = Cstr; term = FFloat f}
-    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _) ->
+    | PVal (CPrimVal.Int i) -> {mark = Cstr; term = FInt i}
+    | PVal (CPrimVal.Float f) -> {mark = Cstr; term = FFloat f}
+    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|PVal (CPrimVal.Array _)) ->
         {mark = Red; term = FCLOS(t,e)}
 
 let injectu c u = mk_clos (subs_id 0, u) c
@@ -536,7 +536,7 @@ let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.
   let u' = usubst_instance e u in
   let c = if u == u' then c else mkCase (ci, u', pms, p, iv, discr, br) in
   Constr.map_with_binders usubs_lift subst_constr e c
-| Array (u,elems,def,ty) ->
+| PVal (CPrimVal.Array (u,elems,def,ty)) ->
   let u' = usubst_instance e u in
   let c = if u == u' then c else mkArray (u',elems,def,ty) in
   Constr.map_with_binders usubs_lift subst_constr e c
@@ -1388,7 +1388,7 @@ and knht info e t stk =
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel (fst e) n) stk
     | Proj (p, c) -> knh info { mark = Red; term = FProj (p, mk_clos e c) } stk
-    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
+    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | PVal (CPrimVal.Int _ | CPrimVal.Float _)) -> (mk_clos e t, stk)
     | CoFix cfx -> { mark = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
     | Prod (n, t, c) ->
@@ -1405,7 +1405,7 @@ and knht info e t stk =
         else
           (mk_irrelevant, skip_irrelevant_stack info stk)
       end
-    | Array(u,t,def,ty) ->
+    | PVal (CPrimVal.Array (u,t,def,ty)) ->
       let len = Array.length t in
       let ty = mk_clos e ty in
       let t = Parray.init (Uint63.of_int len) (fun i -> mk_clos e t.(i)) (mk_clos e def) in
@@ -1582,7 +1582,7 @@ and klt info tab e t = match kind t with
     if hd' == hd && args' == args then t
     else mkApp (hd', args')
   | Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _
-  | Cast _ | LetIn _ | Proj _ | Array _ | Rel _ | Meta _ | Sort _ | Int _ | Float _ ->
+  | Cast _ | LetIn _ | Proj _ | Rel _ | Meta _ | Sort _ | PVal _ ->
     let share = info.i_cache.i_share in
     let (nm,s) = knit info tab e t [] in
     let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
@@ -1600,12 +1600,12 @@ and klt info tab e t = match kind t with
   if u' == u && v' == v then t
   else mkProd (na, u', v')
 | Cast (t, _, _) -> klt info tab e t
-| Var _ | Const _ | CoFix _ | Fix _ | Evar _ | Case _ | LetIn _ | Proj _ | Array _ ->
+| Var _ | Const _ | CoFix _ | Fix _ | Evar _ | Case _ | LetIn _ | Proj _ | PVal (CPrimVal.Array _) ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
   zip_term info tab (norm_head info tab nm) s
-| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ -> subst_instance_constr (snd e) t
+| Meta _ | Sort _ | Ind _ | Construct _ | PVal (CPrimVal.Int _ | CPrimVal.Float _) -> subst_instance_constr (snd e) t
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)

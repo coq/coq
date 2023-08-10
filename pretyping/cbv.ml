@@ -232,7 +232,7 @@ module VNativeEntries =
       match e with
       | VAL(_, ci) ->
           (match kind ci with
-          | Int i -> i
+          | PVal (CPrimVal.Int i) -> i
           | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
@@ -240,7 +240,7 @@ module VNativeEntries =
       match e with
       | VAL(_, cf) ->
         (match kind cf with
-        | Float f -> f
+        | PVal (CPrimVal.Float f) -> f
         | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
@@ -517,7 +517,7 @@ let rec norm_head info env t stack =
   | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
   | Construct c -> (CONSTR(c, [||]), stack)
 
-  | Array(u,t,def,ty) ->
+  | PVal (CPrimVal.Array(u,t,def,ty)) ->
     let ty = cbv_stack_term info TOP env ty in
     let len = Array.length t in
     let t =
@@ -527,7 +527,7 @@ let rec norm_head info env t stack =
     (ARRAY (u,t,ty), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _ | PVal _) -> (VAL(0, t), stack)
   | Prod _ -> (CBN(t,env), stack)
 
 and norm_head_ref k info env stack normt t =

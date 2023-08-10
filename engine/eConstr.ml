@@ -100,9 +100,10 @@ let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
 let mkArrow t1 r t2 = of_kind (Prod (make_annot Anonymous r, t1, t2))
 let mkArrowR t1 t2 = mkArrow t1 Sorts.Relevant t2
-let mkInt i = of_kind (Int i)
-let mkFloat f = of_kind (Float f)
-let mkArray (u,t,def,ty) = of_kind (Array (u,t,def,ty))
+let mkPVal v = of_kind (PVal v)
+let mkInt i = mkPVal (Int i)
+let mkFloat f = mkPVal (Float f)
+let mkArray (u,t,def,ty) = mkPVal (Array (u,t,def,ty))
 
 let mkRef (gr,u) = let open GlobRef in match gr with
   | ConstRef c -> mkConstU (c,u)
@@ -484,8 +485,7 @@ let contract_case env _sigma (ci, p, iv, c, bl) =
 let iter_with_full_binders env sigma g f n c =
   let open Context.Rel.Declaration in
   match kind sigma c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
@@ -507,7 +507,8 @@ let iter_with_full_binders env sigma g f n c =
     Array.iter (f n) tl;
     let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na,lift i t)) n) n lna tl in
     Array.iter (f n') bl
-  | Array (_u,t,def,ty) -> Array.Fun1.iter f n t; f n def; f n ty
+  | PVal v ->
+    CPrimVal.iter (f n) (f n) v
 
 let iter_with_binders sigma g f n c =
   let f l c = f l (of_constr c) in
@@ -730,8 +731,8 @@ let universes_of_constr sigma c =
     | Evar (k, args) ->
       let concl = Evd.evar_concl (Evd.find_undefined sigma k) in
       fold sigma aux (aux s concl) c
-    | Array (u,_,_,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
+    | PVal v ->
+      let s = CPrimVal.collect_universes (EInstance.kind sigma) s v in
       fold sigma aux s c
     | Case (_,u,_,_,_,_,_) ->
       let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
@@ -1025,7 +1026,7 @@ let kind_of_type sigma t = match kind sigma t with
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
-  | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> failwith "Not a type"
+  | (Lambda _ | Construct _ | PVal _) -> failwith "Not a type"
 
 module Unsafe =
 struct

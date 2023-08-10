@@ -803,7 +803,7 @@ let whd_state_gen ?csts flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | Array _ ->
+    | PVal _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_,u as kn),rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in

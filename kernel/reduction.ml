@@ -23,10 +23,10 @@ open Context.Rel.Declaration
 let whd_all env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|Array _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|PVal _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | Int _ | Float _ | Array _ -> t
+      | Ind _ | Construct _ | Evar _ | Meta _ | PVal _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos all env) (create_tab ()) (inject t)
@@ -37,10 +37,10 @@ let whd_all env t =
 let whd_allnolet env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|LetIn _|Int _|Float _|Array _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|LetIn _|PVal _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ | Int _ | Float _ | Array _ -> t
+      | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ | PVal _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)

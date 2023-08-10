@@ -118,7 +118,7 @@ let constr_val_discr env sigma ts t =
       (* Overapproximate wildly. TODO: be less brutal. *)
       Everything
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Fix _ | CoFix _
-    | Proj _ | Int _ | Float _ | Array _ -> Nothing
+    | Proj _ | PVal _ -> Nothing
 
 let constr_pat_discr env ts t =
   let open GlobRef in

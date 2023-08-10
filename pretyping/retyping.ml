@@ -186,9 +186,9 @@ let retype ?(polyprop=true) sigma =
          with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
-    | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
-    | Float _ -> EConstr.of_constr (Typeops.type_of_float env)
-    | Array(u, _, _, ty) ->
+    | PVal (CPrimVal.Int _) -> EConstr.of_constr (Typeops.type_of_int env)
+    | PVal (CPrimVal.Float _) -> EConstr.of_constr (Typeops.type_of_float env)
+    | PVal (CPrimVal.Array(u, _, _, ty)) ->
       let arr = EConstr.of_constr @@ Typeops.type_of_array env (EInstance.kind sigma u) in
       mkApp(arr, [|ty|])
 
@@ -350,7 +350,7 @@ let relevance_of_term env sigma c =
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, _) -> Relevanceops.relevance_of_projection env p
-      | Int _ | Float _ | Array _ -> Sorts.Relevant
+      | PVal _ -> Sorts.Relevant
       | Meta _ | Evar _ -> Sorts.Relevant
 
     in

@@ -559,17 +559,17 @@ struct
 
   let get_int evd e =
     match EConstr.kind evd e with
-    | Int i -> i
+    | PVal (CPrimVal.Int i) -> i
     | _ -> raise Primred.NativeDestKO
 
   let get_float evd e =
     match EConstr.kind evd e with
-    | Float f -> f
+    | PVal (CPrimVal.Float f) -> f
     | _ -> raise Primred.NativeDestKO
 
   let get_parray evd e =
     match EConstr.kind evd e with
-    | Array(_u,t,def,_ty) -> Parray.of_array t def
+    | PVal (CPrimVal.Array(_u,t,def,_ty)) -> Parray.of_array t def
     | _ -> raise Not_found
 
   let mkInt env i =
@@ -812,7 +812,7 @@ let whd_state_gen flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | Array _ ->
+    | PVal _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_, u as kn),rargs,kargs)::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
@@ -901,7 +901,7 @@ let local_whd_state_gen flags env sigma =
       else s
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ | Float _ | Array _ -> s
+    | PVal _ -> s
 
   in
   whrec
@@ -992,7 +992,7 @@ let shrink_eta sigma c =
         Some c -> whrec c
       | None -> x)
     | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
-    | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | Array _ -> x
+    | LetIn _ | Const _  | Ind _ | Proj _ | PVal _ -> x
   in
   whrec c
 
