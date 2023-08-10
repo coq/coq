@@ -140,9 +140,9 @@ let constr_key env kind c =
       | Evar _ -> raise Not_found
       | Sort _ -> KSort
       | LetIn _ -> KLet
-      | Int _ -> KInt
-      | Float _ -> KFloat
-      | Array _ -> KArray
+      | PVal (CPrimVal.Int _) -> KInt
+      | PVal (CPrimVal.Float _) -> KFloat
+      | PVal (CPrimVal.Array _) -> KArray
     in Some (aux c)
   with Not_found -> None
 

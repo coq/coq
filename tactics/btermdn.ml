@@ -102,7 +102,7 @@ let constr_val_discr env sigma ts t =
     | Evar _ -> Everything
     | Case _ -> Everything (* Overapproximate wildly. TODO: be less brutal. *)
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
-    | Int _ | Float _ | Array _ -> Nothing
+    | PVal _ -> Nothing
   in
   decomp [] (eta_reduce sigma t)
 

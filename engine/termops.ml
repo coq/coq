@@ -607,8 +607,7 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
   let open RelDecl in
   let open EConstr in
   match EConstr.kind sigma c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> c
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> c
   | Cast (b,k,t) ->
     let b' = f l b in
     let t' = f l t in
@@ -672,19 +671,16 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
         if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
         then c
         else mkCoFix (ln,(lna,tl',bl'))
-  | Array(u,t,def,ty) ->
-      let t' = Array.map_left (f l) t in
-      let def' = f l def in
-      let ty' = f l ty in
-      if def' == def && t' == t && ty' == ty then c
-      else mkArray(u,t',def',ty')
+  | PVal v ->
+      let v' = CPrimVal.map (f l) (f l) (fun u -> u) v in
+      if v' == v then c
+      else mkPVal v'
 
 (* strong *)
 let map_constr_with_full_binders env sigma g f l cstr =
   let open EConstr in
   match EConstr.kind sigma cstr with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> cstr
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> cstr
   | Cast (c,k, t) ->
       let c' = f l c in
       let t' = f l t in
@@ -739,11 +735,10 @@ let map_constr_with_full_binders env sigma g f l cstr =
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
       else mkCoFix (ln,(lna,tl',bl'))
-  | Array(u,t,def,ty) ->
-      let t' = Array.Smart.map (f l) t in
-      let def' = f l def in
-      let ty' = f l ty in
-      if def==def' && t == t' && ty==ty' then cstr else mkArray (u,t', def',ty')
+  | PVal v ->
+      let v' = CPrimVal.map (f l) (f l) (fun u -> u) v in
+      if v == v' then cstr
+      else mkPVal v'
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -756,7 +751,7 @@ let fold_constr_with_full_binders env sigma g f n acc c =
   let open EConstr.Vars in
   let open Context.Rel.Declaration in
   match EConstr.kind sigma c with
-  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
@@ -778,7 +773,8 @@ let fold_constr_with_full_binders env sigma g f n acc c =
       let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-  | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
+  | PVal v ->
+      CPrimVal.fold (f n) (f n) acc v
 
 (***************************)
 (* occurs check functions  *)

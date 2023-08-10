@@ -155,7 +155,7 @@ let flex_kind_of_term flags env evd c sk =
        else Rigid
     | Evar ev ->
        if is_evar_allowed flags (fst ev) then Flexible ev else Rigid
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | Array _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | PVal _ -> Rigid
     | Construct _ | CoFix _ (* Incorrect: should check only app in sk *) -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied (should check it?) *)
@@ -240,7 +240,7 @@ let occur_rigidly flags env evd (evk,_) t =
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
-    | Meta _ | Fix _ | CoFix _ | Int _ | Float _ | Array _ -> Reducible
+    | Meta _ | Fix _ | CoFix _ | PVal _ -> Reducible
   in
     match aux t with
     | Rigid b -> b
@@ -1021,7 +1021,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              only if necessary) or the second argument is potentially
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match EConstr.kind i hd with
-            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|Array _) ->
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|PVal _) ->
               Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> Stack.not_purely_applicative args
@@ -1139,9 +1139,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Const _, Const _
         | Ind _, Ind _
         | Construct _, Construct _
-        | Int _, Int _
-        | Float _, Float _
-        | Array _, Array _ ->
+        | PVal (CPrimVal.Int _), PVal (CPrimVal.Int _)
+        | PVal (CPrimVal.Float _), PVal (CPrimVal.Float _)
+        | PVal (CPrimVal.Array _), PVal (CPrimVal.Array _) ->
           rigids env evd sk1 term1 sk2 term2
 
         | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
@@ -1218,9 +1218,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           | None -> UnifFailure (evd,NotSameHead)
           end
 
-        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | Array _ | Evar _ | Lambda _), _ ->
+        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | PVal _ | Evar _ | Lambda _), _ ->
           UnifFailure (evd,NotSameHead)
-        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Array _ | Evar _ | Lambda _) ->
+        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | PVal _ | Evar _ | Lambda _) ->
           UnifFailure (evd,NotSameHead)
         | Case _, _ -> UnifFailure (evd,NotSameHead)
         | Proj _, _ -> UnifFailure (evd,NotSameHead)

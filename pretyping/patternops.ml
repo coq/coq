@@ -223,9 +223,9 @@ let pattern_of_constr ~broken env sigma t =
        let env' = Array.fold_left2 push env lna tl in
        PCoFix (ln,(Array.map binder_name lna,Array.map (pattern_of_constr env) tl,
                   Array.map (pattern_of_constr env') bl))
-    | Int i -> PInt i
-    | Float f -> PFloat f
-    | Array (_u, t, def, ty) ->
+    | PVal (CPrimVal.Int i) -> PInt i
+    | PVal (CPrimVal.Float f) -> PFloat f
+    | PVal (CPrimVal.Array (_u, t, def, ty)) ->
       PArray (Array.map (pattern_of_constr env) t, pattern_of_constr env def, pattern_of_constr env ty)
     in
   pattern_of_constr env t

@@ -110,9 +110,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * Sorts.relevance * 'constr
-  | Int       of Uint63.t
-  | Float     of Float64.t
-  | Array     of 'univs * 'constr array * 'constr * 'types
+  | PVal      of ('constr, 'types, 'univs) CPrimVal.t
 
 (* constr is the fixpoint of the previous type. *)
 type t = T of (t, t, Sorts.t, Instance.t) kind_of_term [@@unboxed]
@@ -275,14 +273,17 @@ let mkRef (gr,u) = let open GlobRef in match gr with
   | ConstructRef c -> mkConstructU (c,u)
   | VarRef x -> mkVar x
 
+(* Constructs a primitive value. *)
+let mkPVal v = of_kind @@ PVal v
+
 (* Constructs a primitive integer *)
-let mkInt i = of_kind @@ Int i
+let mkInt i = of_kind @@ PVal (CPrimVal.Int i)
 
 (* Constructs an array *)
-let mkArray (u,t,def,ty) = of_kind @@ Array (u,t,def,ty)
+let mkArray (u,t,def,ty) = of_kind @@ PVal (CPrimVal.Array (u,t,def,ty))
 
 (* Constructs a primitive float number *)
-let mkFloat f = of_kind @@ Float f
+let mkFloat f = of_kind @@ PVal (CPrimVal.Float f)
 
 module UnsafeMonomorphic = struct
   let mkConst = mkConst
@@ -485,8 +486,7 @@ let fold_invert f acc = function
     Array.fold_left f acc indices
 
 let fold f acc c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> acc
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> acc
   | Cast (c,_,t) -> f (f acc c) t
   | Prod (_,t,c) -> f (f acc t) c
   | Lambda (_,t,c) -> f (f acc t) c
@@ -500,8 +500,7 @@ let fold f acc c = match kind c with
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
   | CoFix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
-  | Array(_u,t,def,ty) ->
-    f (f (Array.fold_left f acc t) def) ty
+  | PVal v -> CPrimVal.fold f f acc v
 
 (* [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -513,8 +512,7 @@ let iter_invert f = function
     Array.iter f indices
 
 let iter f c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> ()
   | Cast (c,_,t) -> f c; f t
   | Prod (_,t,c) -> f t; f c
   | Lambda (_,t,c) -> f t; f c
@@ -526,7 +524,7 @@ let iter f c = match kind c with
     Array.iter f pms; f (snd @@ fst p); iter_invert f iv; f c; Array.iter (fun (_, b) -> f b) bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
-  | Array(_u,t,def,ty) -> Array.iter f t; f def; f ty
+  | PVal v -> CPrimVal.iter f f v
 
 (* [iter_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -535,8 +533,7 @@ let iter f c = match kind c with
    subterms are processed is not specified *)
 
 let iter_with_binders g f n c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (_,t,c) -> f n t; f (g n) c
   | Lambda (_,t,c) -> f n t; f (g n) c
@@ -556,8 +553,7 @@ let iter_with_binders g f n c = match kind c with
   | CoFix (_,(_,tl,bl)) ->
       Array.Fun1.iter f n tl;
       Array.Fun1.iter f (iterate g (Array.length tl) n) bl
-  | Array(_u,t,def,ty) ->
-    Array.iter (f n) t; f n def; f n ty
+  | PVal v -> CPrimVal.iter (f n) (f n) v
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -568,8 +564,7 @@ let iter_with_binders g f n c = match kind c with
 
 let fold_constr_with_binders g f n acc c =
   match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> acc
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_na,t,c) -> f (g  n) (f n acc t) c
   | Lambda (_na,t,c) -> f (g  n) (f n acc t) c
@@ -590,8 +585,7 @@ let fold_constr_with_binders g f n acc c =
       let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-  | Array(_u,t,def,ty) ->
-    f n (f n (Array.fold_left (f n) acc t) def) ty
+  | PVal v -> CPrimVal.fold (f n) (f n) acc v
 
 (* [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -632,8 +626,7 @@ let map_invert f = function
     else CaseInvert {indices=indices';}
 
 let map f c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> c
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> c
   | Cast (b,k,t) ->
       let b' = f b in
       let t' = f t in
@@ -686,12 +679,9 @@ let map f c = match kind c with
       let bl' = Array.Smart.map f bl in
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
-  | Array(u,t,def,ty) ->
-    let t' = Array.Smart.map f t in
-    let def' = f def in
-    let ty' = f ty in
-    if def'==def && t==t' && ty==ty' then c
-    else mkArray(u,t',def',ty')
+  | PVal v ->
+      let v' = CPrimVal.map f f (fun u -> u) v in
+      if v' == v then c else mkPVal v'
 
 (* Like {!map} but with an accumulator. *)
 
@@ -717,8 +707,7 @@ let fold_map_return_predicate f accu (p,r as v) =
   accu, v
 
 let fold_map f accu c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> accu, c
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> accu, c
   | Cast (b,k,t) ->
       let accu, b' = f accu b in
       let accu, t' = f accu t in
@@ -771,12 +760,10 @@ let fold_map f accu c = match kind c with
       let accu, bl' = Array.Smart.fold_left_map f accu bl in
       if tl'==tl && bl'==bl then accu, c
       else accu, mkCoFix (ln,(lna,tl',bl'))
-  | Array(u,t,def,ty) ->
-    let accu, t' = Array.Smart.fold_left_map f accu t in
-    let accu, def' = f accu def in
-    let accu, ty' = f accu ty in
-    if def'==def && t==t' && ty==ty' then accu, c
-    else accu, mkArray(u,t',def',ty')
+  | PVal v ->
+      let accu, v' = CPrimVal.fold_map f accu v in
+      if v' == v then accu, c
+      else accu, mkPVal v'
 
 (* [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -785,8 +772,7 @@ let fold_map f accu c = match kind c with
    subterms are processed is not specified *)
 
 let map_with_binders g f l c0 = match kind c0 with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> c0
+  | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ -> c0
   | Cast (c, k, t) ->
     let c' = f l c in
     let t' = f l t in
@@ -840,12 +826,10 @@ let map_with_binders g f l c0 = match kind c0 with
     let l' = iterate g (Array.length tl) l in
     let bl' = Array.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
-  | Array(u,t,def,ty) ->
-    let t' = Array.Fun1.Smart.map f l t in
-    let def' = f l def in
-    let ty' = f l ty in
-    if def'==def && t==t' && ty==ty' then c0
-    else mkArray(u,t',def',ty')
+  | PVal v ->
+    let v' = CPrimVal.map_fun1 f l v in
+    if v' == v then c0
+    else mkPVal v'
 
 (*********************)
 (*      Lifting      *)
@@ -902,8 +886,6 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
-  | Int i1, Int i2 -> Uint63.equal i1 i2
-  | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
@@ -933,13 +915,10 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
     Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
-  | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
-    leq_universes None u1 u2 &&
-    Array.equal_norefl (eq 0) t1 t2 &&
-    eq 0 def1 def2 && eq 0 ty1 ty2
+  | PVal v1, PVal v2 -> CPrimVal.equal (leq_universes None) (eq 0) v1 v2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _ | Int _ | Float _| Array _), _ -> false
+    | CoFix _ | PVal _), _ -> false
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -1071,12 +1050,8 @@ let constr_ord_int f t1 t2 =
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
     | Proj (p1,_r1,c1), Proj (p2,_r2,c2) -> compare [(Projection.CanOrd.compare, p1, p2); (f, c1, c2)]
     | Proj _, _ -> -1 | _, Proj _ -> 1
-    | Int i1, Int i2 -> Uint63.compare i1 i2
-    | Int _, _ -> -1 | _, Int _ -> 1
-    | Float f1, Float f2 -> Float64.total_compare f1 f2
-    | Array(_u1,t1,def1,ty1), Array(_u2,t2,def2,ty2) ->
-      compare [(Array.compare f, t1, t2); (f, def1, def2); (f, ty1, ty2)]
-    | Array _, _ -> -1 | _, Array _ -> 1
+    | PVal v1, PVal v2 -> CPrimVal.compare f v1 v2
+    (*| PVal _, _ -> -1 | _, PVal _ -> 1*)
 
 let rec compare m n=
   constr_ord_int compare m n
@@ -1173,13 +1148,10 @@ let hasheq t1 t2 =
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
-    | Int i1, Int i2 -> i1 == i2
-    | Float f1, Float f2 -> Float64.equal f1 f2
-    | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
-      u1 == u2 && def1 == def2 && ty1 == ty2 && array_eqeq t1 t2
+    | PVal v1, PVal v2 -> v1 == v2
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
       | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
-      | Fix _ | CoFix _ | Int _ | Float _ | Array _), _ -> false
+      | Fix _ | CoFix _ | PVal _), _ -> false
 
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
@@ -1242,10 +1214,8 @@ let rec hash t =
     | Rel n -> combinesmall 16 n
     | Proj (p,r, c) ->
       combinesmall 17 (combine3 (Projection.CanOrd.hash p) (Sorts.relevance_hash r) (hash c))
-    | Int i -> combinesmall 18 (Uint63.hash i)
-    | Float f -> combinesmall 19 (Float64.hash f)
-    | Array(u,t,def,ty) ->
-      combinesmall 20 (combine4 (Instance.hash u) (hash_term_array t) (hash def) (hash ty))
+    | PVal v ->
+      combinesmall 18 (CPrimVal.hash Instance.hash hash_term_array hash v)
 
 and hash_invert = function
   | NoInvert -> 0
@@ -1405,17 +1375,9 @@ let rec hash_term (t : t) =
     let c, hc = sh_rec c in
     let p' = Projection.hcons p in
     (Proj (p', r, c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
-  | Int i as t ->
-    let (h,l) = Uint63.to_int2 i in
-    (t, combinesmall 18 (combine h l))
-  | Float f as t -> (t, combinesmall 19 (Float64.hash f))
-  | Array (u,t,def,ty) ->
-    let u, hu = Instance.share u in
-    let t, ht = hash_term_array t in
-    let def, hdef = sh_rec def in
-    let ty, hty = sh_rec ty in
-    let h = combine4 hu ht hdef hty in
-    (Array(u,t,def,ty), combinesmall 20 h)
+  | PVal v as t ->
+    let v', h = CPrimVal.hash_term Instance.share hash_term_array sh_rec v in
+    ((if v' == v then t else PVal v'), combinesmall 18 h)
 
 and sh_invert = function
   | NoInvert -> NoInvert, 0
@@ -1537,11 +1499,8 @@ let rec debug_print c =
            Name.print na.binder_name ++ str":" ++ debug_print ty ++
            cut() ++ str":=" ++ debug_print bd) (Array.to_list fixl)) ++
          str"}")
-  | Int i -> str"Int("++str (Uint63.to_string i) ++ str")"
-  | Float i -> str"Float("++str (Float64.to_string i) ++ str")"
-  | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
-      ++ debug_print def ++ str " : " ++ debug_print ty
-      ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"}"
+  | PVal v ->
+      str"PVal("++CPrimVal.debug_print (fun u -> UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u) debug_print v++str")"
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()

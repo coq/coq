@@ -975,9 +975,9 @@ and detype_r d flags avoid env sigma t =
           avoid env sigma case
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
-    | Int i -> GInt i
-    | Float f -> GFloat f
-    | Array(u,t,def,ty) ->
+    | PVal (CPrimVal.Int i) -> GInt i
+    | PVal (CPrimVal.Float f) -> GFloat f
+    | PVal (CPrimVal.Array(u,t,def,ty)) ->
       let t = Array.map (detype d flags avoid env sigma) t in
       let def = detype d flags avoid env sigma def in
       let ty = detype d flags avoid env sigma ty in

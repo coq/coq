@@ -156,9 +156,7 @@ let rec v_constr =
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_relevance;v_constr|]; (* Proj *)
-    [|v_uint63|]; (* Int *)
-    [|Float64|]; (* Float *)
-    [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)
+    [|v_prim_val|]; (* PVal *)
   |])
 
 and v_prec = Tuple ("prec_declaration",
@@ -170,6 +168,13 @@ and v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|])
 and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
 
 and v_case_return = Tuple ("case_return", [|Tuple ("case_return'", [|Array (v_binder_annot v_name); v_constr|]); v_relevance|])
+
+and v_prim_val =
+  Sum ("prim_val",0,[|
+    [|v_uint63|]; (* CPrimVal.Int *)
+    [|Float64|]; (* CPrimVal.Float *)
+    [|v_instance;Array v_constr;v_constr;v_constr|]; (* CPrimVal.Array *)
+  |])
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)

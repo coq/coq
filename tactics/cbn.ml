@@ -601,9 +601,9 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
   | PHSort ps, Sort s -> match_sort ps (ESorts.kind sigma s) psubst
   | PHSymbol (c, pu), Const (c', u) ->
     if Constant.CanOrd.equal c c' then match_einstance sigma pu u psubst else raise PatternFailure
-  | PHInt i, Int i' ->
+  | PHInt i, PVal (CPrimVal.Int i') ->
     if Uint63.equal i i' then psubst else raise PatternFailure
-  | PHFloat f, Float f' ->
+  | PHFloat f, PVal (CPrimVal.Float f') ->
     if Float64.equal f f' then psubst else raise PatternFailure
   | PHLambda (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_lambda sigma t in
@@ -937,7 +937,7 @@ let whd_state_gen ?csts flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | Array _ ->
+    | PVal _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_,u as kn),rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in

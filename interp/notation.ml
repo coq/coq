@@ -470,9 +470,9 @@ let kind c =
   | Const (c, _) -> TConst (c, args)
   | Ind (ind, _) -> TInd (ind, args)
   | Construct (c, _) -> TConstruct (c, args)
-  | Int i -> TInt i
-  | Float f -> TFloat f
-  | Array (_, t, u, v) -> TArray (t, u, v)
+  | PVal (CPrimVal.Int i) -> TInt i
+  | PVal (CPrimVal.Float f) -> TFloat f
+  | PVal (CPrimVal.Array (_, t, u, v)) -> TArray (t, u, v)
   | Rel _ | Meta _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
   | Proj _ | Case _ | Fix _ | CoFix _ -> TOther
 
@@ -552,9 +552,9 @@ let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
        try List.fold_left2_map (check_glob env) sigma gcl (Array.to_list gc'a)
        with Invalid_argument _ -> raise NotAValidPrimToken in
      sigma, mkApp (c, Array.of_list cl)
-  | Glob_term.GInt i, Constr.Int i' when Uint63.equal i i' -> sigma, mkInt i
-  | Glob_term.GFloat f, Constr.Float f' when Float64.equal f f' -> sigma, mkFloat f
-  | Glob_term.GArray (_,t,def,ty), Constr.Array (_,t',def',ty') ->
+  | Glob_term.GInt i, Constr.PVal (CPrimVal.Int i') when Uint63.equal i i' -> sigma, mkInt i
+  | Glob_term.GFloat f, Constr.PVal (CPrimVal.Float f') when Float64.equal f f' -> sigma, mkFloat f
+  | Glob_term.GArray (_,t,def,ty), Constr.PVal (CPrimVal.Array (_,t',def',ty')) ->
      let sigma,u = Evd.fresh_array_instance env sigma in
      let sigma,def = check_glob env sigma def def' in
      let sigma,t =
@@ -640,9 +640,9 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (GlobRef.VarRef id, None))
-  | Int i -> DAst.make ?loc (Glob_term.GInt i)
-  | Float f -> DAst.make ?loc (Glob_term.GFloat f)
-  | Array (u,t,def,ty) ->
+  | PVal (CPrimVal.Int i) -> DAst.make ?loc (Glob_term.GInt i)
+  | PVal (CPrimVal.Float f) -> DAst.make ?loc (Glob_term.GFloat f)
+  | PVal (CPrimVal.Array (u,t,def,ty)) ->
       let def' = glob_of_constr token_kind ?loc env sigma def
       and t' = Array.map (glob_of_constr token_kind ?loc env sigma) t
       and ty' = glob_of_constr token_kind ?loc env sigma ty in

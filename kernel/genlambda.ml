@@ -686,11 +686,11 @@ let rec lambda_of_constr cache env sigma c =
       let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
       Lcofix(init, (names, ltypes, lbodies))
 
-  | Int i -> Luint i
+  | PVal (CPrimVal.Int i) -> Luint i
 
-  | Float f -> Lfloat f
+  | PVal (CPrimVal.Float f) -> Lfloat f
 
-  | Array (_u, t, def, _ty) ->
+  | PVal (CPrimVal.Array (_u, t, def, _ty)) ->
     let def = lambda_of_constr cache env sigma def in
     Lparray (lambda_of_args cache env sigma 0 t, def)
 

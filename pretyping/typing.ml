@@ -573,13 +573,13 @@ let rec execute env sigma cstr =
         let sigma, tj = type_judgment env sigma tj in
         judge_of_cast env sigma cj k tj
 
-    | Int i ->
+    | PVal (CPrimVal.Int i) ->
         sigma, judge_of_int env i
 
-    | Float f ->
+    | PVal (CPrimVal.Float f) ->
         sigma, judge_of_float env f
 
-    | Array(u,t,def,ty) ->
+    | PVal (CPrimVal.Array(u,t,def,ty)) ->
       let sigma, tyj = execute env sigma ty in
       let sigma, tyj = type_judgment env sigma tyj in
       let sigma, defj = execute env sigma def in
@@ -702,13 +702,12 @@ let rec recheck_against env sigma good c =
     let default () = maybe_changed (execute env sigma c) in
     match kind sigma good, kind sigma c with
     (* No subterms *)
-    | _, (Meta _ | Rel _ | Var _ | Const _ | Ind _ | Construct _
-         | Sort _ | Int _ | Float _) ->
+    | _, (Meta _ | Rel _ | Var _ | Const _ | Ind _ | Construct _ | Sort _) ->
       default ()
 
     (* Evar (todo deal with Evar differently??? execute recurses on its type)
        others: too annoying for now *)
-    | _, (Evar _ | Fix _ | CoFix _ | LetIn _ | Array _) ->
+    | _, (Evar _ | Fix _ | CoFix _ | LetIn _ | PVal _) ->
      default ()
 
     | Case (gci, gu, gpms, gp, giv, gc, glf),

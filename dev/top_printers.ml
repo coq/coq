@@ -364,11 +364,12 @@ let constr_display csr =
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
-  | Int i ->
+  | PVal (CPrimVal.Int i) ->
       "Int("^(Uint63.to_string i)^")"
-  | Float f ->
+  | PVal (CPrimVal.Float f) ->
       "Float("^(Float64.to_string f)^")"
-  | Array (u,t,def,ty) -> "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
+  | PVal (CPrimVal.Array (u,t,def,ty)) ->
+      "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
 
   and array_display v =
     "[|"^
@@ -523,11 +524,11 @@ let print_pure_constr csr =
           print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
-  | Int i ->
+  | PVal (CPrimVal.Int i) ->
      print_string ("Int("^(Uint63.to_string i)^")")
-  | Float f ->
+  | PVal (CPrimVal.Float f) ->
       print_string ("Float("^(Float64.to_string f)^")")
-  | Array (u,t,def,ty) ->
+  | PVal (CPrimVal.Array (u,t,def,ty)) ->
       print_string "Array(";
       Array.iter (fun x -> box_display x; print_space()) t;
       print_string "|";

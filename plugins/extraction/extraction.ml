@@ -418,7 +418,7 @@ let rec extract_type env sg db j c args =
             | (Info, TypeScheme) ->
               extract_type_app env sg db (r, type_sign env sg ty) args
             | (Info, Default) -> Tunknown))
-    | Cast _ | LetIn _ | Construct _ | Int _ | Float _ | Array _ -> assert false
+    | Cast _ | LetIn _ | Construct _ | PVal _ -> assert false
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],
@@ -759,9 +759,9 @@ let rec extract_term env sg mle mlt c args =
        let vty = extract_type env sg [] 0 ty [] in
        let extract_var mlt = put_magic (mlt,vty) (MLglob (GlobRef.VarRef v)) in
        extract_app env sg mle mlt extract_var args
-    | Int i -> assert (args = []); MLuint i
-    | Float f -> assert (args = []); MLfloat f
-    | Array (_u,t,def,_ty) ->
+    | PVal (CPrimVal.Int i) -> assert (args = []); MLuint i
+    | PVal (CPrimVal.Float f) -> assert (args = []); MLfloat f
+    | PVal (CPrimVal.Array (_u,t,def,_ty)) ->
       assert (args = []);
       let a = new_meta () in
       let ml_arr = Array.map (fun c -> extract_term env sg mle a c []) t in

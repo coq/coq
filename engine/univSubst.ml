@@ -203,13 +203,10 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
     let br' = Array.Smart.map aux_ctx br in
     if rel' == rel && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
     else mkCase (ci, u', pms', (p',rel'), iv', t', br')
-  | Array (u,elems,def,ty) ->
-    let u' = Instance.subst_fn flevel u in
-    let elems' = CArray.Fun1.Smart.map aux k elems in
-    let def' = aux k def in
-    let ty' = aux k ty in
-    if u == u' && elems == elems' && def == def' && ty == ty' then c
-    else mkArray (u',elems',def',ty')
+  | PVal v ->
+    let v' = CPrimVal.map (aux k) (aux k) (Instance.subst_fn flevel) v in
+    if v == v' then c
+    else mkPVal v'
   | Prod (na, t, u) ->
     let na' = Context.map_binder_relevance frel na in
     let t' = aux k t in

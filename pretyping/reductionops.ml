@@ -532,17 +532,17 @@ struct
 
   let get_int evd e =
     match EConstr.kind evd e with
-    | Int i -> i
+    | PVal (CPrimVal.Int i) -> i
     | _ -> raise Primred.NativeDestKO
 
   let get_float evd e =
     match EConstr.kind evd e with
-    | Float f -> f
+    | PVal (CPrimVal.Float f) -> f
     | _ -> raise Primred.NativeDestKO
 
   let get_parray evd e =
     match EConstr.kind evd e with
-    | Array(_u,t,def,_ty) -> Parray.of_array t def
+    | PVal (CPrimVal.Array(_u,t,def,_ty)) -> Parray.of_array t def
     | _ -> raise Not_found
 
   let mkInt env i =
@@ -718,9 +718,9 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
   | PHSort ps, Sort s -> match_sort ps (ESorts.kind sigma s) psubst
   | PHSymbol (c, pu), Const (c', u) ->
     if Constant.CanOrd.equal c c' then match_einstance sigma pu u psubst else raise PatternFailure
-  | PHInt i, Int i' ->
+  | PHInt i, PVal (CPrimVal.Int i') ->
     if Uint63.equal i i' then psubst else raise PatternFailure
-  | PHFloat f, Float f' ->
+  | PHFloat f, PVal (CPrimVal.Float f') ->
     if Float64.equal f f' then psubst else raise PatternFailure
   | PHLambda (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_lambda sigma t in
@@ -908,7 +908,7 @@ let whd_state_gen flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | Array _ ->
+    | PVal _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_, u as kn),rargs,kargs)::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
@@ -997,7 +997,7 @@ let local_whd_state_gen flags env sigma =
       else s
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ | Float _ | Array _ -> s
+    | PVal _ -> s
 
   in
   whrec
@@ -1084,7 +1084,7 @@ let shrink_eta sigma c =
         Some c -> whrec c
       | None -> x)
     | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
-    | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | Array _ -> x
+    | LetIn _ | Const _  | Ind _ | Proj _ | PVal _ -> x
   in
   whrec c
 

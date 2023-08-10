@@ -467,11 +467,11 @@ let matches_core env sigma allow_bound_rels
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
         let args2 = Evd.expand_existential sigma (c2, args2) in
          List.fold_left2 (sorec ctx env) subst args1 args2
-      | PInt i1, Int i2 when Uint63.equal i1 i2 -> subst
+      | PInt i1, PVal (CPrimVal.Int i2) when Uint63.equal i1 i2 -> subst
 
-      | PFloat f1, Float f2 when Float64.equal f1 f2 -> subst
+      | PFloat f1, PVal (CPrimVal.Float f2) when Float64.equal f1 f2 -> subst
 
-      | PArray(pt,pdef,pty), Array(_u,t,def,ty)
+      | PArray(pt,pdef,pty), PVal (CPrimVal.Array(_u,t,def,ty))
              when Array.length pt = Array.length t ->
          sorec ctx env (sorec ctx env (Array.fold_left2 (sorec ctx env) subst pt t) pdef def) pty ty
 
@@ -623,14 +623,14 @@ let sub_match ?(closed=true) env sigma pat c =
     | term -> aux env term mk_ctx next
     | exception Retyping.RetypeError _ -> next ()
     end
-  | Array(u, t, def, ty) ->
+  | PVal (CPrimVal.Array(u, t, def, ty)) ->
     let next_mk_ctx = function
     | def :: ty :: l -> mk_ctx (mkArray(u, Array.of_list l, def, ty))
     | _ -> assert false
     in
     let sub = (env,def) :: (env,ty) :: subargs env t in
     try_aux sub next_mk_ctx next
-  | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _ ->
+  | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|PVal _ ->
     next ()
   in
   here next

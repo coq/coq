@@ -55,12 +55,11 @@ let fresh_lname n =
 let rec is_lazy env t =
   match Constr.kind t with
   | App _ | LetIn _ | Case _ | Proj _ -> true
-  | Array (_, t, d, _) -> Array.exists (fun t -> is_lazy env t) t || is_lazy env d
+  | PVal v -> CPrimVal.exists_constr (is_lazy env) v
   | Cast (c, _, _) | Prod (_, c, _) -> is_lazy env c
   | Const (c, _) -> get_const_lazy env c
-  | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _ | Int _
-  | Float _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
-    false
+  | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _
+  | Lambda _ | Evar _ | Fix _ | CoFix _ -> false
 
 and is_lazy_constant env cb =
   (* Bound universes are turned into lambda-abstractions *)

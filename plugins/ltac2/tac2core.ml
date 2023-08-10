@@ -574,11 +574,11 @@ let () =
       of_relevance r;
       Tac2ffi.of_constr c;
     |]
-  | Int n ->
+  | PVal (CPrimVal.Int n) ->
     v_blk 17 [|Tac2ffi.of_uint63 n|]
-  | Float f ->
+  | PVal (CPrimVal.Float f) ->
     v_blk 18 [|Tac2ffi.of_float f|]
-  | Array(u,t,def,ty) ->
+  | PVal (CPrimVal.Array(u,t,def,ty)) ->
     v_blk 19 [|
       of_instance u;
       Tac2ffi.of_array Tac2ffi.of_constr t;

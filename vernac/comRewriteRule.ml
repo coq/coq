@@ -261,8 +261,8 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
   | Construct (c, u) ->
     let state, mask = update_invtblu ~loc evd usubst state u in
     state, PHConstr (c, mask)
-  | Int i -> state, PHInt i
-  | Float f -> state, PHFloat f
+  | PVal (CPrimVal.Int i) -> state, PHInt i
+  | PVal (CPrimVal.Float f) -> state, PHFloat f
   | Lambda _ ->
     let (ntys, b) = Term.decompose_lambda t in
     let tys = Array.rev_of_list ntys in

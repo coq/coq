@@ -294,7 +294,7 @@ let map_constr_relevance f c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | Array _ -> c
+  | PVal _ -> c
 
   | Prod (na,x,y) ->
     let na' = map_annot_relevance f na in
@@ -341,7 +341,7 @@ let fold_constr_relevance f acc c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | Array _ -> acc
+  | PVal _ -> acc
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
@@ -407,13 +407,10 @@ let subst_univs_level_constr subst c =
           else
             (changed := true; Constr.map aux (mkCase (ci, u', pms, p, NoInvert, c, br)))
 
-      | Array (u,elems,def,ty) ->
-        let u' = f u in
-        let elems' = CArray.Smart.map aux elems in
-        let def' = aux def in
-        let ty' = aux ty in
-        if u == u' && elems == elems' && def == def' && ty == ty' then t
-        else (changed := true; mkArray (u',elems',def',ty'))
+      | PVal v ->
+        let v' = CPrimVal.map aux aux f v in
+        if v' == v then t
+        else (changed := true; mkPVal v')
 
       | _ -> Constr.map aux t
     in
@@ -462,13 +459,10 @@ let subst_instance_constr subst c =
         if u' == u then Constr.map aux t
         else Constr.map aux (mkCase (ci,u',pms,p,iv,c,br))
 
-      | Array (u,elems,def,ty) ->
-        let u' = f u in
-        let elems' = CArray.Smart.map aux elems in
-        let def' = aux def in
-        let ty' = aux ty in
-        if u == u' && elems == elems' && def == def' && ty == ty' then t
-        else mkArray (u',elems',def',ty')
+      | PVal v ->
+        let v' = CPrimVal.map aux aux f v in
+        if v' == v then t
+        else mkPVal v'
 
       | _ -> Constr.map aux t
     in
@@ -514,8 +508,8 @@ let sort_and_universes_of_constr c =
     | Sort (Sorts.QSort (q,u)) ->
       let qs, us = s in
       Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
-    | Array (u,_,_,_) ->
-      let s = add_qvars_and_univs_of_instance s u in
+    | PVal v ->
+      let s = CPrimVal.fold_univs add_qvars_and_univs_of_instance s v in
       Constr.fold aux s c
     | Case (_, u, _, _, _,_ ,_) ->
       let s = add_qvars_and_univs_of_instance s u in

@@ -315,8 +315,6 @@ let rec compare_under e1 c1 e2 c2 =
     end
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
-  | Int i1, Int i2 -> Uint63.equal i1 i2
-  | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 ->
     let subst_instance_sort u s =
       if UVars.Instance.is_empty u then s else UVars.subst_instance_sort u s
@@ -349,13 +347,11 @@ let rec compare_under e1 c1 e2 c2 =
   | Construct (c1,u1), Construct (c2,u2) ->
     Construct.CanOrd.equal c1 c2 && eq_universes e1 e2 u1 u2
   | Case _, Case _ | Fix _, Fix _ | CoFix _, CoFix _ -> false (* todo some other time *)
-  | Array(_,t1,def1,ty1), Array(_,t2,def2,ty2) ->
-    Array.equal_norefl (fun c1 c2 -> compare_under e1 c1 e2 c2) t1 t2
-    && compare_under e1 def1 e2 def2
-    && compare_under e1 ty1 e2 ty2
+  | PVal v1, PVal v2 ->
+    CPrimVal.equal (fun _ _ -> true) (fun c1 c2 -> compare_under e1 c1 e2 c2) v1 v2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _ | Int _ | Float _| Array _), _ -> false
+    | CoFix _ | PVal _), _ -> false
 
 
 let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 with

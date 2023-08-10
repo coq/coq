@@ -800,9 +800,9 @@ let rec execute env cstr =
       check_cofix env cofix; cstr, fix_ty
 
     (* Primitive types *)
-    | Int _ -> cstr, type_of_int env
-    | Float _ -> cstr, type_of_float env
-    | Array(u,t,def,ty) ->
+    | PVal (CPrimVal.Int _) -> cstr, type_of_int env
+    | PVal (CPrimVal.Float _) -> cstr, type_of_float env
+    | PVal (CPrimVal.Array (u,t,def,ty)) ->
       (* ty : Type@{u} and all of t,def : ty *)
       let ulev = match UVars.Instance.to_array u with
         | [||], [|u|] -> u

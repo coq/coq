@@ -263,7 +263,7 @@ module VNativeEntries =
       match e with
       | VAL(_, ci) ->
           (match kind ci with
-          | Int i -> i
+          | PVal (CPrimVal.Int i) -> i
           | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
@@ -271,7 +271,7 @@ module VNativeEntries =
       match e with
       | VAL(_, cf) ->
         (match kind cf with
-        | Float f -> f
+        | PVal (CPrimVal.Float f) -> f
         | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
@@ -570,7 +570,7 @@ let rec norm_head info env t stack =
   | CoFix cofix -> (COFIX(cofix,env,[||]), stack)
   | Construct c -> (CONSTRUCT(c, [||]), stack)
 
-  | Array(u,t,def,ty) ->
+  | PVal (CPrimVal.Array(u,t,def,ty)) ->
     let ty = cbv_stack_term info TOP env ty in
     let len = Array.length t in
     let t =
@@ -580,7 +580,7 @@ let rec norm_head info env t stack =
     (ARRAY (u,t,ty), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _ | PVal _) -> (VAL(0, t), stack)
   | Prod (na,t,u) -> (PROD(na,t,u,env), stack)
 
 and norm_head_ref k info env stack normt t =
@@ -802,9 +802,9 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
   | PHSymbol (c, pu), SYMBOL { cst = c', u; _ } ->
     if Constant.CanOrd.equal c c' then match_instance pu u psubst else raise PatternFailure
   | PHInt i, VAL(0, t') ->
-    begin match kind t' with Int i' when Uint63.equal i i' -> psubst | _ -> raise PatternFailure end
+    begin match kind t' with PVal (CPrimVal.Int i') when Uint63.equal i i' -> psubst | _ -> raise PatternFailure end
   | PHFloat f, VAL(0, t') ->
-    begin match kind t' with Float f' when Float64.equal f f' -> psubst | _ -> raise PatternFailure end
+    begin match kind t' with PVal (CPrimVal.Float f') when Float64.equal f f' -> psubst | _ -> raise PatternFailure end
   | PHLambda (ptys, pbod), LAMBDA (nlam, ntys, body, env) ->
     let np = Array.length ptys in
     if np > nlam then raise PatternFailure;

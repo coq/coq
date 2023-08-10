@@ -506,7 +506,7 @@ module ECstOp = struct
 
   let isConstruct evd c =
     match EConstr.kind evd c with
-    | Construct _ | Int _ | Float _ -> true
+    | Construct _ | PVal (CPrimVal.Int _ | CPrimVal.Float _) -> true
     | _ -> false
 
   let mk_elt evd i a =
@@ -1053,7 +1053,7 @@ let get_operator barrow env evd e =
     | _ -> raise Not_found )
   | Const _ -> (e', [||], false)
   | Construct _ -> (e', [||], true)
-  | Int _ | Float _ -> (e', [||], true)
+  | PVal (CPrimVal.Int _ | CPrimVal.Float _) -> (e', [||], true)
   | _ -> raise Not_found
 
 let decompose_app env evd e =
