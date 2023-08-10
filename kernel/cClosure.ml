@@ -1321,6 +1321,7 @@ and knht info e t stk =
     | LetIn (n,b,t,c) ->
       { mark = Red; term = FLetIn (usubst_binder e n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
+(try
       begin match info.i_cache.i_sigma.evar_expand ev with
       | EvarDefined c -> knht info e c stk
       | EvarUndefined (evk, args) ->
@@ -1331,6 +1332,8 @@ and knht info e t stk =
           let repack = info.i_cache.i_sigma.evar_repack in
           { mark = Ntrl; term = FEvar (evk, args, e, repack) }, stk
       end
+with Assert_failure _ ->
+          { mark = Ntrl; term = FAtom t }, stk)
     | Array(u,t,def,ty) ->
       let len = Array.length t in
       let ty = mk_clos e ty in
