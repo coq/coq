@@ -101,13 +101,14 @@ HIDE := $(if $(VERBOSE),,@)
 REDIR := $(if $(VERBOSE),,> /dev/null 2>&1)
 
 # read out an emacs config and look for coq-prog-args; if such exists, return it
-get_coq_prog_args_helper = sed -n s'/^.*coq-prog-args:[[:space:]]*(\([^)]*\)).*/\1/p' $(1)
-get_coq_prog_args = $(strip $(shell $(call get_coq_prog_args_helper,$(1))))
+get_coq_prog_args_helper = sed -n s'/^.*$(1):[[:space:]]*(\([^)]*\)).*/\1/p' $(2)
+get_coq_prog_args = $(strip $(shell $(call get_coq_prog_args_helper,coq-prog-args,$(1))))
+get_coqchk_prog_args = $(strip $(shell $(call get_coq_prog_args_helper,coqchk-prog-args,$(1))) $(filter "-impredicative-set",$(call get_coq_prog_args,$(1))))
 SINGLE_QUOTE="
 #" # double up on the quotes, in a comment, to appease the emacs syntax highlighter
 # wrap the arguments in parens, but only if they exist
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
-get_set_impredicativity= $(filter "-impredicative-set",$(call get_coq_prog_args,$(1)))
+get_coqchk_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coqchk_prog_args,$(1)), ($(call get_coqchk_prog_args,$(1)))))
 
 bogomips:=
 ifneq (,$(wildcard /proc/cpuinfo))
@@ -339,9 +340,9 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v micromega/*.v modules/*
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1; R=$$?; \
+	  $(coqchk) -silent $(call get_coqchk_prog_args,"$<") $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
@@ -380,9 +381,9 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  $(coqchk) -silent $(call get_coqchk_prog_args,"$<") -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
@@ -404,9 +405,9 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  $(coqchk) -silent $(call get_coqchk_prog_args,"$<") -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
@@ -480,13 +481,13 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  echo $(call log_intro,$<); \
 	  output=$*.out.real; \
 	  export LC_CTYPE=C; \
 	  export LANG=C; \
-	  $(coqchk) -o -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) > $$output 2>&1 ; \
+	  $(coqchk) -o -silent $(call get_coqchk_prog_args,"$<") $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) > $$output 2>&1 ; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
