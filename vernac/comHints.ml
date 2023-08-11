@@ -62,7 +62,7 @@ let project_hint ~poly pri l2r r =
       cb
   in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
-  (info, true, Hints.PathAny, Hints.hint_globref (GlobRef.ConstRef c))
+  (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
 let warn_deprecated_hint_constr =
   CWarnings.create ~name:"fragile-hint-constr" ~category:CWarnings.CoreCategories.automation
@@ -97,7 +97,7 @@ let interp_hints ~poly h =
     match c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
-      (PathHints [gr], hint_globref gr)
+      (hint_globref gr)
     | HintsConstr c ->
       let () = warn_deprecated_hint_constr () in
       let env = Global.env () in
@@ -112,17 +112,17 @@ let interp_hints ~poly h =
           let () = DeclareUctx.declare_universe_context ~poly:false diff in
           (c, None)
       in
-      (PathAny, Hints.hint_constr c) [@ocaml.warning "-3"]
+      (Hints.hint_constr c) [@ocaml.warning "-3"]
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
-    let path, gr = fi r in
+    let gr = fi r in
     let info =
       { info with
         Typeclasses.hint_pattern = Option.map fp info.Typeclasses.hint_pattern
       }
     in
-    (info, b, path, gr)
+    (info, b, gr)
   in
   let open Hints in
   let open Vernacexpr in
@@ -151,7 +151,6 @@ let interp_hints ~poly h =
           let gr = GlobRef.ConstructRef c in
           ( empty_hint_info
           , true
-          , PathHints [gr]
           , hint_globref gr ))
     in
     HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
