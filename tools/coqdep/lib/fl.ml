@@ -113,7 +113,8 @@ let to_relative_path : string -> string = fun full_path ->
     ["../../dir/file.v"] are possible return values, but ["./file.v"] and
     ["dir1/../dir2"] are not. *)
 let normalize_path : string -> string = fun path ->
-  let path = String.split_on_char '/' path in
+  let re_delim = if Sys.win32 then "[/\\]" else "/" in
+  let path = Str.split_delim  (Str.regexp re_delim) path in
   let rec normalize acc path =
     match (path, acc) with
     | ([]          , _          ) -> List.rev acc
