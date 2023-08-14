@@ -529,26 +529,17 @@ let contract_cofix env sigma f
   substl_checking_arity env (List.rev subbodies)
     sigma (nf_beta env sigma bodies.(bodynum))
 
-type 'a miota_args = {
-  mU      : EInstance.t; (* Universe instance of the return clause *)
-  mParams : constr array; (* Parameters of the inductive *)
-  mP      : case_return;     (* the result type *)
-  mconstr : constr;     (** the constructor *)
-  mci     : case_info;  (** special info to re-build pattern *)
-  mcargs  : 'a list;    (** the constructor's arguments *)
-  mlf     : 'a pcase_branch array }  (** the branch code vector *)
-
-let reduce_mind_case env sigma f mia =
-  match EConstr.kind sigma mia.mconstr with
+let reduce_mind_case env sigma f (ci, u, pms, p, iv, (hd, args), lf) =
+  match EConstr.kind sigma hd with
     | Construct ((_, i as cstr),u) ->
-        let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        let br = mia.mlf.(i - 1) in
-        let ctx = EConstr.expand_branch env sigma mia.mU mia.mParams cstr br in
+        let real_cargs = List.skipn ci.ci_npar args in
+        let br = lf.(i - 1) in
+        let ctx = EConstr.expand_branch env sigma u pms cstr br in
         let br = it_mkLambda_or_LetIn (snd br) ctx in
         applist (br, real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
-        let cofix_def = contract_cofix env sigma f cofix mia.mcargs in
-        mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
+        let cofix_def = contract_cofix env sigma f cofix args in
+        mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf)
     | _ -> assert false
 
 
@@ -888,21 +879,14 @@ and special_red_case allowed_reds env sigma (ci, u, pms, p, iv, c, lf) =
       (match reference_opt_value env sigma ref u with
       | None -> NotReducible
       | Some gvalue ->
-        if reducible_mind_case sigma gvalue then
-          Reduced (reduce_mind_case env sigma (Some (ref, u))
-          {mP=p; mU = u; mParams = pms; mconstr=gvalue; mcargs=cargs;
-           mci=ci; mlf=lf})
-        else
-          redrec (gvalue, cargs))
+        if reducible_mind_case sigma gvalue then Reduced (Some (ref, u), gvalue, cargs)
+        else redrec (gvalue, cargs))
     | None ->
-      if reducible_mind_case sigma constr then
-        Reduced (reduce_mind_case env sigma None
-          {mP=p; mU = u; mParams = pms; mconstr=constr; mcargs=cargs;
-          mci=ci; mlf=lf})
-      else
-        NotReducible
+      if reducible_mind_case sigma constr then Reduced (None, constr, cargs)
+      else NotReducible
   in
-  redrec (push_app sigma (c, []))
+  let* f, head, args = redrec (push_app sigma (c, [])) in
+  Reduced (reduce_mind_case env sigma f (ci, u, pms, p, iv, (head, args), lf))
 
 (* reduce until finding an applied constructor (or primitive value) or fail *)
 
