@@ -497,11 +497,12 @@ let contract_cofix env sigma f
   (bodynum,(names,_,bodies as typedbodies) as fixp) args = match f with
 | None -> contract_cofix sigma fixp
 | Some f ->
-  let f =
-    if isConst sigma f then
+  let f = match f with
+  | EvalConst kn, u ->
+    begin
       let minargs = List.length args in
       fun i ->
-        if Int.equal i bodynum then Some (minargs, f)
+        if Int.equal i bodynum then Some (minargs, mkConstU (kn, u))
         else match names.(i).binder_name with
           | Anonymous -> None
           | Name id ->
@@ -509,7 +510,6 @@ let contract_cofix env sigma f
                   mutual inductive, try to reuse the global name if
                   the block was indeed initially built as a global
                   definition *)
-              let (kn, u) = destConst sigma f in
               let kn = Constant.change_label kn (Label.of_id id) in
               let cst = (kn, EInstance.kind sigma u) in
               try match constant_opt_value_in env cst with
@@ -517,7 +517,8 @@ let contract_cofix env sigma f
                     (* TODO: check kn is correct *)
                 | Some _ -> Some (minargs,mkConstU (kn, u))
               with Not_found -> None
-    else
+      end
+    | _ ->
       fun _ -> None in
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
@@ -871,7 +872,7 @@ and special_red_case allowed_reds env sigma (ci, u, pms, p, iv, c, lf) =
       | None -> raise Redelimination
       | Some gvalue ->
         if reducible_mind_case sigma gvalue then
-          reduce_mind_case env sigma (Some constr)
+          reduce_mind_case env sigma (Some (ref, u))
           {mP=p; mU = u; mParams = pms; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
         else
