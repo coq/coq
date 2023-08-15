@@ -1079,9 +1079,19 @@ let whd_simpl env sigma x = whd_simpl_with_reds (make_simpl_reds env) env sigma 
 
 let simpl env sigma c =
   let allowed_reds = make_simpl_reds env in
-  let rec strongrec env t =
-    map_constr_with_full_binders env sigma push_rel strongrec env
-        (whd_simpl_with_reds allowed_reds env sigma t) in
+  let rec strongrec env c =
+    let (hd, args) = whd_simpl_stack allowed_reds env sigma (c, []) in
+    let args = List.map (fun c -> strongrec env c) args in
+    let hd = match EConstr.kind sigma hd with
+    | Case _ | Proj _ ->
+      (* These cannot progress further when reducing on an empty stack *)
+      map_constr_with_full_binders env sigma push_rel strongrec env hd
+    | _ ->
+      if List.is_empty args then map_constr_with_full_binders env sigma push_rel strongrec env hd
+      else strongrec env hd
+    in
+    applist (hd, args)
+  in
   strongrec env c
 
 (* Reduction at specific subterms *)
