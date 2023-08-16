@@ -8,14 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
 val query_command :
   (Goal_select.t option -> Vernacexpr.synpure_vernac_expr) Pcoq.Entry.t
 
 val search_query : (bool * Vernacexpr.search_request) Pcoq.Entry.t
 
 val search_queries :
-  ((bool * Vernacexpr.search_request) list * Vernacexpr.search_restriction)
+  ((bool * Vernacexpr.search_request) list * Libnames.qualid list Vernacexpr.search_restriction)
     Pcoq.Entry.t
 
 val subprf : Vernacexpr.synpure_vernac_expr Pcoq.Entry.t
