@@ -25,20 +25,66 @@ open Univ
 
 module NamedDecl = Context.Named.Declaration
 
-type inline = bool
+(* Checks the section variables for the body.
+   Returns the closure of the union with the variables in the type.
+*)
+let check_section_variables env declared_set typ body =
+  let tyvars = global_vars_set env typ in
+  let declared_set = Environ.really_needed env (Id.Set.union declared_set tyvars) in
+  let () = match body with
+  | None -> ()
+  | Some body ->
+    let ids_def = global_vars_set env body in
+    let inferred_set = Environ.really_needed env (Id.Set.union declared_set ids_def) in
+    if not (Id.Set.subset inferred_set declared_set) then
+      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
+      let n = List.length l in
+      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
+      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
+      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
+      user_err Pp.(prlist str
+                     ["The following section "; (String.plural n "variable"); " ";
+                      (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
+                   missing_vars ++ str "." ++ fnl () ++ fnl () ++
+                   str "You can either update your proof to not depend on " ++ missing_vars ++
+                   str ", or you can update your Proof line from" ++ fnl () ++
+                   str "Proof using " ++ declared_vars ++ fnl () ++
+                   str "to" ++ fnl () ++
+                   str "Proof using " ++ inferred_vars)
+  in
+  declared_set
 
-(* this is a constant_body without the VM body_code and with
-   unchecked section variable set *)
-type 'opaque result = {
-  cook_body : (constr, 'opaque) constant_def;
-  cook_type : types;
-  cook_universes : universes;
-  cook_relevance : Sorts.relevance;
-  cook_inline : inline;
-  cook_context : Names.Id.Set.t option;
-  cook_univ_hyps : Univ.Instance.t;
-  cook_flags : typing_flags;
-}
+let used_section_variables env hyps def typ =
+  let hyps =
+    if List.is_empty (named_context env) then
+      (* Empty section context *)
+      let () = match hyps with
+        | None -> ()
+        | Some ids -> assert (Id.Set.is_empty ids)
+      in
+      Id.Set.empty
+    else match hyps with
+      | None ->
+        (* No declared section vars, and non-empty section context:
+             we must look at the body NOW, if any *)
+        let ids_typ = global_vars_set env typ in
+        let ids_def = match def with
+          | Undef _ | Primitive _ -> Id.Set.empty
+          | Def cs -> global_vars_set env cs
+          | OpaqueDef _ ->
+            (* Opaque definitions always come with their section variables *)
+            assert false
+        in
+        Environ.really_needed env (Id.Set.union ids_typ ids_def)
+      | Some declared ->
+        let body = match def with
+          | Undef _ -> None
+          | Primitive _ -> assert false (* not allowed in sections *)
+          | OpaqueDef _ -> None (* checked in check_delayed *)
+          | Def cs -> Some cs
+        in
+        check_section_variables env declared typ body in
+  List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env)
 
 (* Insertion of constants and parameters in environment. *)
 
@@ -133,16 +179,19 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     | OT_type _ -> Undef None
     | OT_const c -> Def (CPrimitives.body_of_prim_const c)
   in
+  (* Primitives not allowed in sections (checked in safe_typing) *)
+  assert (List.is_empty (named_context env));
+  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
   {
-    cook_body = body;
-    cook_type = typ;
-    cook_universes = univs;
-    cook_inline = false;
-    cook_relevance = Sorts.Relevant;
-    cook_flags = Environ.typing_flags env;
-    (* Primitives not allowed in sections *)
-    cook_context = None;
-    cook_univ_hyps = Instance.empty;
+    const_hyps = [];
+    const_univ_hyps = Instance.empty;
+    const_body = body;
+    const_type = typ;
+    const_body_code = tps;
+    const_universes = univs;
+    const_relevance = Sorts.Relevant;
+    const_inline_code = false;
+    const_typing_flags = Environ.typing_flags env;
   }
 
 let make_univ_hyps = function
@@ -153,16 +202,20 @@ let infer_parameter ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.parameter_entry_universes in
   let j = Typeops.infer env entry.parameter_entry_type in
   let r = Typeops.assumption_of_judgment env j in
-  let t = Vars.subst_univs_level_constr usubst j.uj_val in
+  let typ = Vars.subst_univs_level_constr usubst j.uj_val in
+  let undef = Undef entry.parameter_entry_inline_code in
+  let hyps = used_section_variables env entry.parameter_entry_secctx undef typ in
+  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs undef in
   {
-    cook_body = Undef entry.parameter_entry_inline_code;
-    cook_type = t;
-    cook_universes = univs;
-    cook_relevance = r;
-    cook_inline = false;
-    cook_context = entry.parameter_entry_secctx;
-    cook_univ_hyps = make_univ_hyps sec_univs;
-    cook_flags = Environ.typing_flags env;
+    const_hyps = hyps;
+    const_univ_hyps = make_univ_hyps sec_univs;
+    const_body = undef;
+    const_type = typ;
+    const_body_code = tps;
+    const_universes = univs;
+    const_relevance = r;
+    const_inline_code = false;
+    const_typing_flags = Environ.typing_flags env;
   }
 
 let infer_definition ~sec_univs env entry =
@@ -177,15 +230,18 @@ let infer_definition ~sec_univs env entry =
       Vars.subst_univs_level_constr usubst tj.utj_val
   in
   let def = Def (Vars.subst_univs_level_constr usubst j.uj_val) in
+  let hyps = used_section_variables env entry.const_entry_secctx def typ in
+  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
   {
-    cook_body = def;
-    cook_type = typ;
-    cook_universes = univs;
-    cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
-    cook_inline = entry.const_entry_inline_code;
-    cook_context = entry.const_entry_secctx;
-    cook_univ_hyps = make_univ_hyps sec_univs;
-    cook_flags = Environ.typing_flags env;
+    const_hyps = hyps;
+    const_univ_hyps = make_univ_hyps sec_univs;
+    const_body = def;
+    const_type = typ;
+    const_body_code = tps;
+    const_universes = univs;
+    const_relevance = Relevanceops.relevance_of_term env j.uj_val;
+    const_inline_code = entry.const_entry_inline_code;
+    const_typing_flags = Environ.typing_flags env;
   }
 
 let infer_constant ~sec_univs env = function
@@ -200,94 +256,19 @@ let infer_opaque ~sec_univs env entry =
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, univs) in
   let def = OpaqueDef () in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
-  {
-    cook_body = def;
-    cook_type = typ;
-    cook_universes = univs;
-    cook_relevance = Sorts.relevance_of_sort typj.utj_type;
-    cook_inline = false;
-    cook_context = Some entry.opaque_entry_secctx;
-    cook_univ_hyps = make_univ_hyps sec_univs;
-    cook_flags = Environ.typing_flags env;
-  }, context
-
-(* Checks the section variables for the body.
-   Returns the closure of the union with the variables in the type.
-*)
-let check_section_variables env declared_set typ body =
-  let tyvars = global_vars_set env typ in
-  let declared_set = Environ.really_needed env (Id.Set.union declared_set tyvars) in
-  let () = match body with
-  | None -> ()
-  | Some body ->
-    let ids_def = global_vars_set env body in
-    let inferred_set = Environ.really_needed env (Id.Set.union declared_set ids_def) in
-    if not (Id.Set.subset inferred_set declared_set) then
-      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
-      let n = List.length l in
-      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
-      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
-      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-      user_err Pp.(prlist str
-                     ["The following section "; (String.plural n "variable"); " ";
-                      (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-                   missing_vars ++ str "." ++ fnl () ++ fnl () ++
-                   str "You can either update your proof to not depend on " ++ missing_vars ++
-                   str ", or you can update your Proof line from" ++ fnl () ++
-                   str "Proof using " ++ declared_vars ++ fnl () ++
-                   str "to" ++ fnl () ++
-                   str "Proof using " ++ inferred_vars)
-  in
-  declared_set
-
-let build_constant_declaration env result =
-  let typ = result.cook_type in
-  (* We try to postpone the computation of used section variables *)
-  let def = result.cook_body in
-  let hyps =
-      if List.is_empty (named_context env) then
-        (* Empty section context *)
-        let () = match result.cook_context with
-          | None -> ()
-          | Some ids -> assert (Id.Set.is_empty ids)
-        in
-        Id.Set.empty
-      else match result.cook_context with
-        | None ->
-          (* No declared section vars, and non-empty section context:
-             we must look at the body NOW, if any *)
-          let ids_typ = global_vars_set env typ in
-          let ids_def = match def with
-            | Undef _ | Primitive _ -> Id.Set.empty
-            | Def cs -> global_vars_set env cs
-            | OpaqueDef _ ->
-              (* Opaque definitions always come with their section variables *)
-              assert false
-          in
-          Environ.really_needed env (Id.Set.union ids_typ ids_def)
-        | Some declared ->
-          let body = match def with
-            | Undef _ -> None
-            | Primitive _ -> assert false (* not allowed in sections *)
-            | OpaqueDef _ -> None (* checked in check_delayed *)
-            | Def cs -> Some cs
-          in
-          check_section_variables env declared typ body
-  in
-  let univs = result.cook_universes in
-  let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
+  let hyps = used_section_variables env (Some entry.opaque_entry_secctx) def typ in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
   {
     const_hyps = hyps;
-    const_univ_hyps = result.cook_univ_hyps;
+    const_univ_hyps = make_univ_hyps sec_univs;
     const_body = def;
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_relevance = result.cook_relevance;
-    const_inline_code = result.cook_inline;
-    const_typing_flags = result.cook_flags
-  }
+    const_relevance = Sorts.relevance_of_sort typj.utj_type;
+    const_inline_code = false;
+    const_typing_flags = Environ.typing_flags env;
+  }, context
 
 let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) =
   let TyCtx (env, tyj, declared, usubst, univs) = tyenv in
@@ -320,20 +301,12 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 
 (*s Global and local constant declaration. *)
 
-let translate_constant ~sec_univs env _kn ce =
-  build_constant_declaration env
-    (infer_constant ~sec_univs env ce)
-
-let translate_opaque ~sec_univs env _kn ce =
-  let def, ctx = infer_opaque ~sec_univs env ce in
-  build_constant_declaration env def, ctx
-
-let translate_local_assum env t =
+let infer_local_assum env t =
   let j = Typeops.infer env t in
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_local_def env _id { secdef_body; secdef_type; } =
+let infer_local_def env _id { secdef_body; secdef_type; } =
   let j = Typeops.infer env secdef_body in
   let typ = match secdef_type with
     | None -> j.uj_type

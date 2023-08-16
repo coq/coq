@@ -503,7 +503,7 @@ let safe_push_named d env =
 
 let push_named_def (id,de) senv =
   let sections = get_section senv.sections in
-  let c, r, typ = Constant_typing.translate_local_def senv.env id de in
+  let c, r, typ = Constant_typing.infer_local_def senv.env id de in
   let d = LocalDef (Context.make_annot id r, c, typ) in
   let env'' = safe_push_named d senv.env in
   let sections = Section.push_local d sections in
@@ -511,7 +511,7 @@ let push_named_def (id,de) senv =
 
 let push_named_assum (x,t) senv =
   let sections = get_section senv.sections in
-  let t, r = Constant_typing.translate_local_assum senv.env t in
+  let t, r = Constant_typing.infer_local_assum senv.env t in
   let d = LocalAssum (Context.make_annot x r, t) in
   let sections = Section.push_local d sections in
   let env'' = safe_push_named d senv.env in
@@ -770,8 +770,8 @@ let is_empty_private = function
 
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)
-let translate_direct_opaque ~sec_univs env kn ce =
-  let cb, ctx = Constant_typing.translate_opaque ~sec_univs env kn ce in
+let infer_direct_opaque ~sec_univs env ce =
+  let cb, ctx = Constant_typing.infer_opaque ~sec_univs env ce in
   let body = ce.Entries.opaque_entry_body, Univ.ContextSet.empty in
   let handle _env c () = (c, Univ.ContextSet.empty, 0) in
   let (c, u) = Constant_typing.check_delayed handle ctx (body, ()) in
@@ -804,14 +804,13 @@ let export_side_effects senv eff =
         let env = Environ.push_context_set ~strict:true uctx env in
         let univs = Univ.ContextSet.union uctx univs in
         let env, cb =
-          let kn = eff.seff_constant in
           let ce = constant_entry_of_side_effect eff in
           let open Entries in
           let cb = match ce with
             | DefinitionEff ce ->
-              Constant_typing.translate_constant ~sec_univs env kn (DefinitionEntry ce)
+              Constant_typing.infer_constant ~sec_univs env (DefinitionEntry ce)
             | OpaqueEff ce ->
-              translate_direct_opaque ~sec_univs env kn ce
+              infer_direct_opaque ~sec_univs env ce
           in
           let eff = { eff with seff_body = cb } in
           (push_seff env eff, export_eff eff)
@@ -830,7 +829,7 @@ let export_private_constants eff senv =
   let senv = push_context_set ~strict:true uctx senv in
   let map senv (kn, c) = match c.const_body with
   | OpaqueDef body ->
-    (* Don't care about the body, it has been checked by {!translate_direct_opaque} *)
+    (* Don't care about the body, it has been checked by {!infer_direct_opaque} *)
     let senv, o = push_opaque_proof senv in
     let (_, _, _, h) = Opaqueproof.repr o in
     let univs = match c.const_universes with
@@ -857,7 +856,7 @@ let add_constant l decl senv =
       match decl with
       | OpaqueEntry ce ->
         let senv, o = push_opaque_proof senv in
-        let cb, ctx = Constant_typing.translate_opaque ~sec_univs senv.env kn ce in
+        let cb, ctx = Constant_typing.infer_opaque ~sec_univs senv.env ce in
         (* Push the delayed data in the environment *)
         let (_, _, _, i) = Opaqueproof.repr o in
         let nonce = Nonce.create () in
@@ -865,7 +864,7 @@ let add_constant l decl senv =
         let senv = { senv with future_cst } in
         senv, { cb with const_body = OpaqueDef o }
       | ConstantEntry ce ->
-        senv, Constant_typing.translate_constant ~sec_univs senv.env kn ce
+        senv, Constant_typing.infer_constant ~sec_univs senv.env ce
   in
   let senv = add_constant_aux senv (kn, cb) in
 
@@ -950,10 +949,10 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
       match decl with
       | OpaqueEff ce ->
         let () = assert (check_constraints uctx ce.Entries.opaque_entry_universes) in
-        translate_direct_opaque ~sec_univs senv.env kn ce
+        infer_direct_opaque ~sec_univs senv.env ce
       | DefinitionEff ce ->
         let () = assert (check_constraints uctx ce.Entries.const_entry_universes) in
-        Constant_typing.translate_constant ~sec_univs senv.env kn (Entries.DefinitionEntry ce)
+        Constant_typing.infer_constant ~sec_univs senv.env (Entries.DefinitionEntry ce)
     in
   let dcb = match cb.const_body with
   | Def _ as const_body -> { cb with const_body }
