@@ -157,10 +157,6 @@ let reference_value env sigma c u =
     | None -> raise NotEvaluable
     | Some d -> d
 
-let is_primitive_val sigma c = match EConstr.kind sigma c with
-  | Int _ | Float _ | Array _ -> true
-  | _ -> false
-
 (************************************************************************)
 (* Reduction of constants hiding a fixpoint (e.g. for "simpl" tactic).  *)
 (* One reuses the name of the function after reduction of the fixpoint  *)
@@ -529,6 +525,11 @@ let contract_cofix env sigma f
   substl_checking_arity env (List.rev subbodies)
     sigma (nf_beta env sigma bodies.(bodynum))
 
+let reducible_construct sigma c = match EConstr.kind sigma c with
+| Construct _ | CoFix _ (* reduced by case *)
+| Int _ | Float _ | Array _ (* reduced by primitives *) -> true
+| _ -> false
+
 let reduce_mind_case env sigma f (ci, u, pms, p, iv, (hd, args), lf) =
   match EConstr.kind sigma hd with
     | Construct ((_, i as cstr),u) ->
@@ -536,10 +537,11 @@ let reduce_mind_case env sigma f (ci, u, pms, p, iv, (hd, args), lf) =
         let br = lf.(i - 1) in
         let ctx = EConstr.expand_branch env sigma u pms cstr br in
         let br = it_mkLambda_or_LetIn (snd br) ctx in
-        applist (br, real_cargs)
+        Reduced (applist (br, real_cargs))
     | CoFix (bodynum,(names,_,_) as cofix) ->
         let cofix_def = contract_cofix env sigma f cofix args in
-        mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf)
+        Reduced (mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf))
+    | Int _ | Float _ | Array _ -> NotReducible
     | _ -> assert false
 
 
@@ -872,34 +874,27 @@ and reduce_proj allowed_reds env sigma c =
   in redrec c
 
 and special_red_case allowed_reds env sigma (ci, u, pms, p, iv, c, lf) =
-  let rec redrec s =
-    let (constr, cargs) = whd_simpl_stack allowed_reds env sigma s in
-    match match_eval_ref env sigma constr cargs with
-    | Some (ref, u) ->
-      (match reference_opt_value env sigma ref u with
-      | None -> NotReducible
-      | Some gvalue ->
-        if reducible_mind_case sigma gvalue then Reduced (Some (ref, u), gvalue, cargs)
-        else redrec (gvalue, cargs))
-    | None ->
-      if reducible_mind_case sigma constr then Reduced (None, constr, cargs)
-      else NotReducible
-  in
-  let* f, head, args = redrec (push_app sigma (c, [])) in
-  Reduced (reduce_mind_case env sigma f (ci, u, pms, p, iv, (head, args), lf))
+  let* f, head, args = whd_construct allowed_reds env sigma (c, []) in
+  reduce_mind_case env sigma f (ci, u, pms, p, iv, (head, args), lf)
+
+and whd_construct_stack allowed_reds env sigma s =
+  let* _, head, args = whd_construct allowed_reds env sigma (s, []) in
+  Reduced (head, args)
 
 (* reduce until finding an applied constructor (or primitive value) or fail *)
 
-and whd_construct_stack allowed_reds env sigma s =
-  let (constr, cargs as s') = whd_simpl_stack allowed_reds env sigma (s, []) in
-  if reducible_mind_case sigma constr || is_primitive_val sigma constr then Reduced s'
-  else match match_eval_ref env sigma constr cargs with
+and whd_construct allowed_reds env sigma s =
+  let (constr, cargs) = whd_simpl_stack allowed_reds env sigma s in
+  match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
     (match reference_opt_value env sigma ref u with
     | None -> NotReducible
     | Some gvalue ->
-       whd_construct_stack allowed_reds env sigma (applist(gvalue, cargs)))
-  | _ -> NotReducible
+      if reducible_construct sigma gvalue then Reduced (Some (ref, u), gvalue, cargs)
+      else whd_construct allowed_reds env sigma (gvalue, cargs))
+  | None ->
+    if reducible_construct sigma constr then Reduced (None, constr, cargs)
+    else NotReducible
 
 (************************************************************************)
 (*            Special Purpose Reduction Strategies                     *)
