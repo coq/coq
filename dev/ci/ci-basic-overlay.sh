@@ -368,7 +368,7 @@ project deriving "https://github.com/arthuraa/deriving" "master"
 ########################################################################
 # VsCoq
 ########################################################################
-project vscoq "https://github.com/coq-community/vscoq" "main"
+project vscoq "https://github.com/coq-community/vscoq" "coq-master"
 
 ########################################################################
 # category-theory
