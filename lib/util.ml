@@ -164,6 +164,18 @@ struct
     | Inr y -> g a y
 end
 
+module Compare = struct
+  type list = [] | (::) : (('a -> 'a -> int) * 'a * 'a) * list -> list
+
+  let rec compare = function
+    | [] -> 0
+    | (cmp,x,y) :: rest ->
+      let c = cmp x y in
+      if c <> 0 then c
+      else compare rest
+
+end
+
 let map_union = Union.map
 
 type iexn = Exninfo.iexn

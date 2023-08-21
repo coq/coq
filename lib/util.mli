@@ -148,6 +148,15 @@ type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
 val sym : ('a, 'b) eq -> ('b, 'a) eq
 
+(** Helpers to write comparison functions *)
+module Compare : sig
+  type list = [] | (::) : (('a -> 'a -> int) * 'a * 'a) * list -> list
+
+  val compare : list -> int
+  (** Compare the elements in the order they are given using the
+      provided comparison function until the first non-zero result. *)
+end
+
 val open_utf8_file_in : string -> in_channel
 (** Open an utf-8 encoded file and skip the byte-order mark if any. *)
 
