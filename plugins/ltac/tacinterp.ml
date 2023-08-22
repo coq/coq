@@ -760,7 +760,7 @@ let interp_red_expr ist env sigma = function
     sigma , Fold l_interp
   | Cbv f -> sigma , Cbv (interp_flag ist env sigma f)
   | Cbn f -> sigma , Cbn (interp_flag ist env sigma f)
-  | Lazy f -> sigma , Lazy (interp_flag ist env sigma f)
+  | Lazy (b, f) -> sigma , Lazy (b, interp_flag ist env sigma f)
   | Pattern l ->
       let (sigma,l_interp) =
         Evd.MonadR.List.map_right

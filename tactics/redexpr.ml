@@ -236,7 +236,7 @@ let rec eval_red_expr env = function
   Simpl (f, o)
 | Cbv f -> Cbv (make_flag env f)
 | Cbn f -> Cbn (make_flag env f)
-| Lazy f -> Lazy (make_flag env f)
+| Lazy (b, f) -> Lazy (b, make_flag env f)
 | ExtraRedExpr s ->
   begin match String.Map.find s !red_expr_tab with
   | e -> eval_red_expr env e
@@ -256,7 +256,8 @@ let reduction_of_red_expr_val = function
   | Cbv f -> (e_red (cbv_norm_flags f),DEFAULTcast)
   | Cbn f ->
      (e_red (Cbn.norm_cbn f), DEFAULTcast)
-  | Lazy f -> (e_red (clos_norm_flags f),DEFAULTcast)
+  | Lazy (true, f) -> (e_red (clos_norm_flags f),DEFAULTcast)
+  | Lazy (false, f) -> (e_red (clos_whd_flags f),DEFAULTcast)
   | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
   | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
   | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)

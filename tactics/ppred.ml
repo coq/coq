@@ -59,8 +59,10 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
       keyword "compute"
     else
       hov 1 (keyword "cbv" ++ pr_red_flag pr_ref f)
-  | Lazy f ->
+  | Lazy (true, f) ->
     hov 1 (keyword "lazy" ++ pr_red_flag pr_ref f)
+  | Lazy (false, f) ->
+    hov 1 (keyword "lazywhnf" ++ pr_red_flag pr_ref f)
   | Cbn f ->
     hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
   | Unfold l ->

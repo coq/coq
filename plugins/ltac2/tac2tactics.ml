@@ -242,11 +242,11 @@ let cbn flags cl =
   let flags = { flags with rConst } in
   Tactics.reduce (Cbn flags) cl
 
-let lazy_ flags cl =
+let lazy_ full flags cl =
   let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  Tactics.reduce (Lazy flags) cl
+  Tactics.reduce (Lazy (full, flags)) cl
 
 let unfold occs cl =
   let cl = mk_clause cl in
@@ -302,10 +302,10 @@ let eval_cbn flags c =
   let flags = { flags with rConst } in
   eval_fun (Cbn flags) c
 
-let eval_lazy flags c =
+let eval_lazy full flags c =
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  eval_fun (Lazy flags) c
+  eval_fun (Lazy (full, flags)) c
 
 let eval_unfold occs c =
   let map (gr, occ) =

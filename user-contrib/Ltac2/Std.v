@@ -158,6 +158,7 @@ Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -
 Ltac2 @ external cbv : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbv".
 Ltac2 @ external cbn : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbn".
 Ltac2 @ external lazy : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_lazy".
+Ltac2 @ external lazy_whnf : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_lazy_whnf".
 Ltac2 @ external unfold : (reference * occurrences) list -> clause -> unit := "coq-core.plugins.ltac2" "tac_unfold".
 Ltac2 @ external fold : constr list -> clause -> unit := "coq-core.plugins.ltac2" "tac_fold".
 Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "coq-core.plugins.ltac2" "tac_pattern".
@@ -171,6 +172,7 @@ Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> con
 Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbv".
 Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbn".
 Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_lazy".
+Ltac2 @ external eval_lazy_whnf : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_lazy_whnf".
 Ltac2 @ external eval_unfold : (reference * occurrences) list -> constr -> constr := "coq-core.plugins.ltac2" "eval_unfold".
 Ltac2 @ external eval_fold : constr list -> constr -> constr := "coq-core.plugins.ltac2" "eval_fold".
 Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr := "coq-core.plugins.ltac2" "eval_pattern".

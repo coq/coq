@@ -65,7 +65,7 @@ val cbv : GlobRef.t glob_red_flag -> clause -> unit tactic
 
 val cbn : GlobRef.t glob_red_flag -> clause -> unit tactic
 
-val lazy_ : GlobRef.t glob_red_flag -> clause -> unit tactic
+val lazy_ : bool -> GlobRef.t glob_red_flag -> clause -> unit tactic
 
 val unfold : (GlobRef.t * occurrences) list -> clause -> unit tactic
 
@@ -86,7 +86,7 @@ val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic
 
 val eval_cbn : GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_lazy : GlobRef.t glob_red_flag -> constr -> constr tactic
+val eval_lazy : bool -> GlobRef.t glob_red_flag -> constr -> constr tactic
 
 val eval_unfold : (GlobRef.t * occurrences) list -> constr -> constr tactic
 

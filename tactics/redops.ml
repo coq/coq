@@ -57,7 +57,7 @@ let map_red_expr_gen f g h = function
      Simpl (map_flags g flags, Option.map (map_occs (Util.map_union g h)) occs_o)
   | Unfold occs_l -> Unfold (List.map (map_occs g) occs_l)
   | Cbv flags -> Cbv (map_flags g flags)
-  | Lazy flags -> Lazy (map_flags g flags)
+  | Lazy (b, flags) -> Lazy (b, map_flags g flags)
   | CbvVm occs_o -> CbvVm (Option.map (map_occs (Util.map_union g h)) occs_o)
   | CbvNative occs_o -> CbvNative (Option.map (map_occs (Util.map_union g h)) occs_o)
   | Cbn flags -> Cbn (map_flags g flags)

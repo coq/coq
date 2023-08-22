@@ -315,7 +315,12 @@ let () =
   define "tac_cbn" (red_flags @-> clause @-> tac unit) Tac2tactics.cbn
 
 let () =
-  define "tac_lazy" (red_flags @-> clause @-> tac unit) Tac2tactics.lazy_
+  define "tac_lazy" (red_flags @-> clause @-> tac unit)
+    (Tac2tactics.lazy_ true)
+
+let () =
+  define "tac_lazy_whnf" (red_flags @-> clause @-> tac unit)
+    (Tac2tactics.lazy_ false)
 
 let () =
   define "tac_unfold"
@@ -360,7 +365,12 @@ let () =
   define "eval_cbn" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbn
 
 let () =
-  define "eval_lazy" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_lazy
+  define "eval_lazy" (red_flags @-> constr @-> tac constr)
+    (Tac2tactics.eval_lazy true)
+
+let () =
+  define "eval_lazy_whnf" (red_flags @-> constr @-> tac constr)
+    (Tac2tactics.eval_lazy false)
 
 let () =
   define "eval_unfold"

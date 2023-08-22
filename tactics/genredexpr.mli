@@ -41,7 +41,7 @@ type ('a, 'b, 'c, 'flags) red_expr_gen0 =
   | Simpl of 'flags * ('b, 'c) Util.union Locus.with_occurrences option
   | Cbv of 'flags
   | Cbn of 'flags
-  | Lazy of 'flags
+  | Lazy of bool * 'flags (* true = full, false = whnf *)
   | Unfold of 'b Locus.with_occurrences list
   | Fold of 'a list
   | Pattern of 'a Locus.with_occurrences list

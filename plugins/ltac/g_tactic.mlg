@@ -367,7 +367,8 @@ GRAMMAR EXTEND Gram
       | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
       | IDENT "cbv"; s = strategy_flag -> { Cbv s }
       | IDENT "cbn"; s = strategy_flag -> { Cbn s }
-      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
+      | IDENT "lazy"; s = strategy_flag -> { Lazy (true, s) }
+      | IDENT "lazywhnf"; s = strategy_flag -> { Lazy (false, s) }
       | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
@@ -684,7 +685,9 @@ GRAMMAR EXTEND Gram
       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbn s, cl)) }
       | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
-          { CAst.make ~loc @@ TacAtom (TacReduce (Lazy s, cl)) }
+          { CAst.make ~loc @@ TacAtom (TacReduce (Lazy (true, s), cl)) }
+      | IDENT "lazywhnf"; s = strategy_flag; cl = clause_dft_concl ->
+          { CAst.make ~loc @@ TacAtom (TacReduce (Lazy (false, s), cl)) }
       | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv (all_with delta), cl)) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
