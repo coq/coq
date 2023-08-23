@@ -151,10 +151,10 @@ let display mode (view : #GText.view_skel) goals hints =
   | NoFocusGoals { bg; shelved; given_up } ->
     begin match (bg, shelved, given_up) with
     | [], [], [] ->
-      view#buffer#insert "No more goals."
+      view#buffer#insert "All goals completed."
     | [], [], _ ->
       (* The proof is finished, with the exception of given up goals. *)
-      view#buffer#insert "No more goals, but there are some goals you gave up:\n\n";
+      view#buffer#insert "All goals completed except some admitted goals:\n\n";
       let iter goal =
         insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
