@@ -123,7 +123,7 @@ type typed_vernac =
       run : pm:'inprog -> proof:'inproof -> 'outprog * 'outproof;
     } -> typed_vernac
 
-(** Some convenient typed_vernac constructors *)
+(** Some convenient typed_vernac constructors. Keep in sync with coqpp. *)
 
 val vtdefault : (unit -> unit) -> typed_vernac
 val vtnoproof : (unit -> unit) -> typed_vernac

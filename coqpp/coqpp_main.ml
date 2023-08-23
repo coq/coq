@@ -383,16 +383,29 @@ let print_atts_right fmt = function
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
 
 let understand_state = function
-  | "close_proof" -> "vtcloseproof", false
-  | "open_proof" -> "vtopenproof", true
-  | "proof" -> "vtmodifyproof", false
-  | "proof_opt_query" -> "vtreadproofopt", false
-  | "proof_query" -> "vtreadproof", false
-  | "read_program" -> "vtreadprogram", false
-  | "program" -> "vtmodifyprogram", false
-  | "declare_program" -> "vtdeclareprogram", false
-  | "program_interactive" -> "vtopenproofprogram", false
+  | "close_proof" -> "vtcloseproof", ["lemma"; "pm"]
+  | "open_proof" -> "vtopenproof", []
+  | "proof" -> "vtmodifyproof", ["pstate"]
+  | "proof_opt_query" -> "vtreadproofopt", ["pstate"]
+  | "proof_query" -> "vtreadproof", ["pstate"]
+  | "read_program" -> "vtreadprogram", ["pm"]
+  | "program" -> "vtmodifyprogram", ["pm"]
+  | "declare_program" -> "vtdeclareprogram", ["pm"]
+  | "program_interactive" -> "vtopenproofprogram", ["pm"]
   | s -> fatal ("unsupported state specifier: " ^ s)
+
+let rec pr_named_arguments fmt = function
+| [] -> assert false
+| [s] -> fprintf fmt "~%s" s
+| s :: l -> fprintf fmt "~%s@ %a" s pr_named_arguments l
+
+let pr_begin_wrapper fmt = function
+| [] -> fprintf fmt "fun () ->"
+| args -> fprintf fmt "fun %a ->" pr_named_arguments args
+
+let pr_end_wrapper fmt = function
+| [] -> fprintf fmt ""
+| args -> fprintf fmt "@ %a" pr_named_arguments args
 
 let print_body_state state fmt r =
   let state = match r.vernac_state with Some _ as s -> s | None -> state in
@@ -400,9 +413,9 @@ let print_body_state state fmt r =
   | None -> fprintf fmt "Vernacextend.vtdefault (fun () -> %a)" print_code r.vernac_body
   | Some "CUSTOM" -> print_code fmt r.vernac_body
   | Some state ->
-    let state, unit_wrap = understand_state state in
-    fprintf fmt "Vernacextend.%s (%s%a)" state (if unit_wrap then "fun () ->" else "")
-      print_code r.vernac_body
+    let state, wrap = understand_state state in
+    fprintf fmt "Vernacextend.%s (%a (%a)%a)" state pr_begin_wrapper wrap
+      print_code r.vernac_body pr_end_wrapper wrap
 
 let print_body_fun state fmt r =
   match r.vernac_synterp with
