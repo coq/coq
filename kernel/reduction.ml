@@ -150,7 +150,7 @@ let hnf_decompose_lambda_decls env =
   in
   lamec_rec env Context.Rel.empty
 
-let hnf_decompose_lambda_n_decls env n =
+let hnf_decompose_lambda_n_assum env n =
   let rec lamec_rec env n l c =
     if Int.equal n 0 then l,c
     else
@@ -165,6 +165,8 @@ let hnf_decompose_lambda_n_decls env n =
     | _ -> anomaly (Pp.str "dest_lam_n_assum: not enough abstractions")
   in
   lamec_rec env n Context.Rel.empty
+
+let hnf_decompose_lambda_n_decls = hnf_decompose_lambda_n_assum
 
 exception NotArity
 

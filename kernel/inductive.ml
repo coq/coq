@@ -945,7 +945,7 @@ let rec subterm_specif renv stack t =
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
-        let sign,strippedBody = hnf_decompose_lambda_n_decls renv.env nbOfAbst theBody in
+        let sign,strippedBody = hnf_decompose_lambda_n_assum renv.env nbOfAbst theBody in
                    (* pushing the fix parameters *)
         let stack' = push_stack_closures renv l stack in
         let renv'' = push_ctxt_renv renv' sign in

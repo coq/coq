@@ -48,7 +48,12 @@ val hnf_decompose_prod         : env -> types -> Constr.rel_context * types
 val hnf_decompose_prod_decls   : env -> types -> Constr.rel_context * types
 val hnf_decompose_lambda       : env -> constr -> Constr.rel_context * constr
 val hnf_decompose_lambda_decls : env -> constr -> Constr.rel_context * constr
-val hnf_decompose_lambda_n_decls : env -> int -> constr -> Constr.rel_context * constr
+
+(** This is typically the function to use to extract the context of a
+    Fix not already in normal form up to and including the decreasing
+    argument, counting as many lambda's as given by the decreasing
+    index + 1 *)
+val hnf_decompose_lambda_n_assum : env -> int -> constr -> Constr.rel_context * constr
 
 exception NotArity
 
@@ -66,4 +71,6 @@ val dest_prod_assum : env -> types -> Constr.rel_context * types
 val dest_lam        : env -> constr -> Constr.rel_context * constr
 [@@ocaml.deprecated "Use [hnf_decompose_lambda] instead."]
 val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [hnf_decompose_lambda_decls] instead."]
+[@@ocaml.deprecated "Use [hnf_decompose_lambda_assum] instead."]
+val hnf_decompose_lambda_n_decls : env -> int -> constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_lambda_n_assum] instead."]
