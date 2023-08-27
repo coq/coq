@@ -670,10 +670,12 @@ let push_stack_closures renv l stack =
 let push_stack_args l stack =
   List.fold_right (fun spec stack -> SArg spec :: stack) l stack
 
-let lift_stack =
+let lift_stack k =
    List.map (function
-       | SClosure (needreduce,s,n,c) -> SClosure (needreduce,s,n+1,c)
+       | SClosure (needreduce,s,n,c) -> SClosure (needreduce,s,n+k,c)
        | x -> x)
+
+let lift1_stack = lift_stack 1
 
 (******************************)
 (* {6 Computing the recursive subterms of a term (propagation of size
@@ -1266,7 +1268,7 @@ let check_one_fix ?evars renv recpos trees def =
               | NoNeedReduce, (SClosure (NoNeedReduce, _, n, c) as elt :: stack) ->
                   (* Neither function nor args have rec calls on internally bound variables *)
                   let spec = stack_element_specif ?evars elt in
-                  let stack = lift_stack stack in
+                  let stack = lift1_stack stack in
                   (* Thus, args do not a priori require to be rechecked, so we push a let *)
                   (* maybe the body of the let will have to be locally expanded though, see Rel case *)
                   check_rec_call_stack (push_let renv (x,lift n c,a,spec)) stack rs b
@@ -1275,7 +1277,7 @@ let check_one_fix ?evars renv recpos trees def =
                   check_rec_call_stack renv stack rs (subst1 (lift n c) b)
               | _, SArg spec :: stack ->
                   (* Going down a case branch *)
-                  let stack = lift_stack stack in
+                  let stack = lift1_stack stack in
                   check_rec_call_stack (push_var renv (x,a,spec)) stack rs b
               | _, [] ->
                   check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs b
@@ -1335,7 +1337,7 @@ let check_one_fix ?evars renv recpos trees def =
               | NoNeedReduce ->
                   (* Stack do not require to beta-reduce; let's look if the body of the let needs *)
                   let spec = lazy_subterm_specif ?evars renv [] c in
-                  let stack = lift_stack stack in
+                  let stack = lift1_stack stack in
                   check_rec_call_stack (push_let renv (x,c,t,spec)) stack rs b
               | NeedReduce _ -> check_rec_call_stack renv stack rs (subst1 c b)
             end
