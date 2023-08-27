@@ -184,9 +184,17 @@ val hnf_lam_app      : env ->  evar_map -> constr -> constr -> constr
 val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
-val hnf_decompose_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_prod : env ->  evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+(** Decompose a type into a sequence of products and a non-product conclusion
+    in head normal form, using head-reduction to expose the products *)
+
 val hnf_decompose_lambda : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
-val hnf_decompose_prod_decls : env ->  evar_map -> constr -> rel_context * constr
+(** Decompose a term into a sequence of lambdas and a non-lambda conclusion
+    in head normal form, using head-reduction to expose the lambdas *)
+
+val hnf_decompose_prod_decls : env ->  evar_map -> types -> rel_context * types
+(** Decompose a type into a context and a conclusion not starting with a product or let-in,
+    using head-reduction without zeta to expose the products and let-ins *)
 
 val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
 (** Raises [Reduction.NotArity] *)

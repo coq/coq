@@ -1313,22 +1313,22 @@ let hnf_lam_applist env sigma t nl =
   List.fold_left (fun acc t -> hnf_lam_app env sigma acc t) t nl
 
 let hnf_decompose_prod env sigma =
-  let rec decrec env m c =
+  let rec decrec env hyps c =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Prod (n,a,c0) ->
-         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
-      | _ -> m,t
+         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::hyps) c0
+      | _ -> hyps, t
   in
   decrec env []
 
 let hnf_decompose_lambda env sigma =
-  let rec decrec env m c =
+  let rec decrec env hyps c =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Lambda (n,a,c0) ->
-         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
-      | _ -> m,t
+         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::hyps) c0
+      | _ -> hyps, t
   in
   decrec env []
 
