@@ -39,7 +39,6 @@ type subst0 =
     metabinding list *
       ((Environ.env * int) * EConstr.existential * EConstr.t) list)
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 let { Goptions.get = is_keyed_unification } =
@@ -89,9 +88,7 @@ let abstract_scheme env evd c l lname_typ =
     mkLambda (map_annot (named_hd env evd a) n, a, b)
   in
   List.fold_left2
-    (fun (t,evd) (locc,a) decl ->
-       let na = RelDecl.get_annot decl in
-       let ta = RelDecl.get_type decl in
+    (fun (t,evd) (locc,a) (na,ta) ->
        let na = match EConstr.kind evd a with Var id -> {na with binder_name=Name id} | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -108,12 +105,12 @@ let abstract_scheme env evd c l lname_typ =
 (* Precondition: resulting abstraction is expected to be of type [typ] *)
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = hnf_decompose_prod_n_decls env evd (List.length l) typ in
+  let ctxt,_ = hnf_decompose_prod_n env evd (List.length l) typ in
   let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
   let evd,typp =
     try
-      let c = EConstr.it_mkLambda_or_LetIn (EConstr.Vars.lift (List.length ctxt) c) ctxt in
+      let c = EConstr.it_mkLambda (EConstr.Vars.lift (List.length ctxt) c) ctxt in
       Typing.recheck_against env evd c p
     with
     | UserError _ ->

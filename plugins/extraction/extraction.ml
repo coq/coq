@@ -913,8 +913,7 @@ and extract_fix env sg mle i (fi,ti,ci as recd) mlt =
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
 let decomp_lams_eta_n n m env sg c t =
-  let rels = fst (hnf_decompose_prod_n_decls env sg n t) in
-  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,c)) rels in
+  let rels = fst (hnf_decompose_prod_n env sg n t) in
   let rels',c = EConstr.decompose_lambda sg c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)

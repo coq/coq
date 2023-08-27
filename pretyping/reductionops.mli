@@ -208,11 +208,26 @@ val splay_arity : env -> evar_map -> constr -> (Name.t Context.binder_annot * co
 val sort_of_arity : env -> evar_map -> constr -> ESorts.t
 (** Raises [Reduction.NotArity] *)
 
-val hnf_decompose_prod_n_decls : env ->  evar_map -> int -> constr -> rel_context * constr
-(** Raises [Invalid_argument] *)
+val hnf_decompose_prod_n_decls : env -> evar_map -> int -> types -> rel_context * types
+[@@ocaml.deprecated "Either use hnf_decompose_prod_n (if only products are expected), hnf_decompose_prod_n_assum (if let-ins are expected to be preserved), or New.hnf_decompose_prod_n_decls (if let-ins are expected to be preserved and counted)"]
 
-val hnf_decompose_lambda_n_assum : env ->  evar_map -> int -> constr -> rel_context * constr
-(** Raises [Invalid_argument] *)
+val hnf_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_context * constr
+[@@ocaml.deprecated "Either use hnf_decompose_lambda_n (if only lambdas are expected) or New.hnf_decompose_lambda_n_assum (if let-ins are expected to be preserved)"]
+
+val hnf_decompose_prod_n_assum : env -> evar_map -> int -> types -> rel_context * types
+(** Extract the n first products of a type, preserving let-ins (but not counting them);
+    Raises [Invalid_argument] if not enough products *)
+
+module New :
+sig
+val hnf_decompose_prod_n_decls : env -> evar_map -> int -> types -> rel_context * types
+(** Extract the n first products of a type, counting and preserving let-ins;
+    Raises [Invalid_argument] if not enough products or let-ins *)
+
+val hnf_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_context * constr
+(** Extract the n first lambdas of a term, preserving let-ins (but not counting them);
+    Raises [Invalid_argument] if not enough lambdas *)
+end
 
 val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
 (** Raises [Reduction.NotArity] *)

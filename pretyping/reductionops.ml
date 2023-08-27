@@ -1375,6 +1375,7 @@ let splay_arity env sigma c =
 
 let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
+(* deprecated *)
 let hnf_decompose_prod_n_decls env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
@@ -1385,6 +1386,7 @@ let hnf_decompose_prod_n_decls env sigma n =
   in
   decrec env n Context.Rel.empty
 
+(* deprecated *)
 let hnf_decompose_lambda_n_assum env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
@@ -1394,6 +1396,48 @@ let hnf_decompose_lambda_n_assum env sigma n =
       | _                      -> invalid_arg "hnf_decompose_lambda_n_assum"
   in
   decrec env n Context.Rel.empty
+
+let hnf_decompose_prod_n_assum env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_allnolet env sigma c) with
+      | Prod (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) m (Context.Rel.add d ctx) c
+      | _ -> invalid_arg "hnf_decompose_prod_n_assum"
+  in
+  decrec env n Context.Rel.empty
+
+module New =
+struct
+let hnf_decompose_prod_n_decls env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Prod (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c
+      | _ -> invalid_arg "hnf_decompose_prod_n_decls"
+  in
+  decrec env n Context.Rel.empty
+
+let hnf_decompose_lambda_n_assum env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_allnolet env sigma c) with
+      | Lambda (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) m (Context.Rel.add d ctx) c
+      | _ -> invalid_arg "hnf_decompose_lambda_n_assum"
+  in
+  decrec env n Context.Rel.empty
+end
 
 let dest_prod_assum env sigma =
   let rec prodec_rec env l ty =
