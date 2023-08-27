@@ -177,22 +177,22 @@ val whd_stack_gen : RedFlags.reds -> stack_reduction_function
 
 val beta_applist : evar_map -> constr * constr list -> constr
 
-val hnf_prod_app     : env ->  evar_map -> constr -> constr -> constr
-val hnf_prod_appvect : env ->  evar_map -> constr -> constr array -> constr
-val hnf_prod_applist : env ->  evar_map -> constr -> constr list -> constr
-val hnf_lam_app      : env ->  evar_map -> constr -> constr -> constr
-val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
-val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
+val hnf_prod_app     : env -> evar_map -> constr -> constr -> constr
+val hnf_prod_appvect : env -> evar_map -> constr -> constr array -> constr
+val hnf_prod_applist : env -> evar_map -> constr -> constr list -> constr
+val hnf_lam_app      : env -> evar_map -> constr -> constr -> constr
+val hnf_lam_appvect  : env -> evar_map -> constr -> constr array -> constr
+val hnf_lam_applist  : env -> evar_map -> constr -> constr list -> constr
 
-val hnf_decompose_prod : env ->  evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+val hnf_decompose_prod : env -> evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
 (** Decompose a type into a sequence of products and a non-product conclusion
     in head normal form, using head-reduction to expose the products *)
 
-val hnf_decompose_lambda : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
 (** Decompose a term into a sequence of lambdas and a non-lambda conclusion
     in head normal form, using head-reduction to expose the lambdas *)
 
-val hnf_decompose_prod_decls : env ->  evar_map -> types -> rel_context * types
+val hnf_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
 (** Decompose a type into a context and a conclusion not starting with a product or let-in,
     using head-reduction without zeta to expose the products and let-ins *)
 
@@ -202,7 +202,7 @@ val hnf_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t Context.bi
 val hnf_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t Context.binder_annot * constr) list * constr
 (** Like [hnf_decompose_lambda] but limited at [n] lambdas; raises [Invalid_argument] if not enough lambdas *)
 
-val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
+val splay_arity : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
 (** Raises [Reduction.NotArity] *)
 
 val sort_of_arity : env -> evar_map -> constr -> ESorts.t
@@ -220,7 +220,7 @@ val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
 val reducible_mind_case : evar_map -> constr -> bool
 
 val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
-val is_arity : env ->  evar_map -> constr -> bool
+val is_arity : env -> evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
 val contract_fix : evar_map -> fixpoint -> constr
@@ -234,13 +234,13 @@ val is_transparent : Environ.env -> Constant.t tableKey -> bool
 type conversion_test = Constraints.t -> Constraints.t
 
 val is_conv : ?reds:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
-val is_conv_leq : ?reds:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
-val is_fconv : ?reds:TransparentState.t -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:TransparentState.t -> conv_pb -> env -> evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.
  *)
-val check_conv : ?pb:conv_pb -> ?ts:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
+val check_conv : ?pb:conv_pb -> ?ts:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
 [@@ocaml.deprecated "Use Reductionops.is_fconv instead"]
 
 (** [infer_conv] Adds necessary universe constraints to the evar map.
@@ -296,13 +296,13 @@ val inferred_universes : (UGraph.t * Univ.Constraints.t) Conversion.universe_com
 
 (** Deprecated *)
 
-val splay_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_prod : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [hnf_decompose_prod] instead."]
-val splay_lam : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_lam : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [hnf_decompose_lambda] instead."]
-val splay_prod_assum : env ->  evar_map -> constr -> rel_context * constr
+val splay_prod_assum : env -> evar_map -> constr -> rel_context * constr
 [@@ocaml.deprecated "Use [hnf_decompose_prod_decls] instead."]
-val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val splay_prod_n : env -> evar_map -> int -> constr -> rel_context * constr
 [@@ocaml.deprecated "Use [hnf_decompose_prod_n_decls] instead."]
-val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val splay_lam_n : env -> evar_map -> int -> constr -> rel_context * constr
 [@@ocaml.deprecated "Use [hnf_decompose_lambda_n_assum] instead."]
