@@ -130,7 +130,7 @@ let hnf_decompose_prod_decls env =
         let d = LocalDef (x,b,t) in
         prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | _               ->
-      let rty' = whd_all env rty in
+        let rty' = whd_all env rty in
         if Constr.equal rty' rty then l, rty
         else prodec_rec env l rty'
   in
@@ -146,7 +146,10 @@ let hnf_decompose_lambda_decls env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
         lamec_rec (push_rel d env) (Context.Rel.add d l) c
-    | _               -> l,rty
+    | _               ->
+        let rty' = whd_all env rty in
+        if Constr.equal rty' rty then l, rty
+        else lamec_rec env l rty'
   in
   lamec_rec env Context.Rel.empty
 
@@ -162,7 +165,10 @@ let hnf_decompose_lambda_n_assum env n =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
         lamec_rec (push_rel d env) n (Context.Rel.add d l) c
-    | _ -> anomaly (Pp.str "hnf_decompose_lambda_n_assum: not enough abstractions")
+    | _               ->
+        let c' = whd_all env c in
+        if Constr.equal c' c then anomaly (Pp.str "hnf_decompose_lambda_n_assum: not enough abstractions")
+        else lamec_rec env n l c'
   in
   lamec_rec env n Context.Rel.empty
 

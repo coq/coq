@@ -1358,9 +1358,15 @@ let hnf_decompose_prod_decls env sigma =
         let d = LocalAssum (x,t) in
         prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
+        (* note: there is a compromise in situations such as
+           "let x := forall y, P in x": expose the let-in and stop looking
+            for products or ignore the let and find a new product *)
         let d = LocalDef (x,b,t) in
         prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | _               ->
+      (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+         "(let x:=fun y => u in x) v", ...
+         ideally, shouldn't we move instead the let-ins outside the redexes? *)
       let t' = whd_all env sigma t in
         if EConstr.eq_constr sigma t t' then l,t
         else prodec_rec env l t'
@@ -1412,7 +1418,13 @@ let hnf_decompose_prod_n_assum env sigma n =
       | LetIn (x,b,t,c) ->
           let d = LocalDef (x,b,t) in
           decrec (push_rel d env) m (Context.Rel.add d ctx) c
-      | _ -> invalid_arg "hnf_decompose_prod_n_assum"
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "hnf_decompose_prod_n_assum"
+        else decrec env m ctx c'
   in
   decrec env n Context.Rel.empty
 
@@ -1427,7 +1439,13 @@ let hnf_decompose_prod_n_decls env sigma n =
       | LetIn (x,b,t,c) ->
           let d = LocalDef (x,b,t) in
           decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c
-      | _ -> invalid_arg "hnf_decompose_prod_n_decls"
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "hnf_decompose_prod_n_decls"
+        else decrec env m ctx c'
   in
   decrec env n Context.Rel.empty
 
@@ -1440,7 +1458,13 @@ let hnf_decompose_lambda_n_assum env sigma n =
       | LetIn (x,b,t,c) ->
           let d = LocalDef (x,b,t) in
           decrec (push_rel d env) m (Context.Rel.add d ctx) c
-      | _ -> invalid_arg "hnf_decompose_lambda_n_assum"
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "hnf_decompose_lambda_n_assum"
+        else decrec env m ctx c'
   in
   decrec env n Context.Rel.empty
 end
