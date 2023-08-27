@@ -162,7 +162,7 @@ let hnf_decompose_lambda_n_assum env n =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
         lamec_rec (push_rel d env) n (Context.Rel.add d l) c
-    | _ -> anomaly (Pp.str "dest_lam_n_assum: not enough abstractions")
+    | _ -> anomaly (Pp.str "hnf_decompose_lambda_n_assum: not enough abstractions")
   in
   lamec_rec env n Context.Rel.empty
 
