@@ -495,3 +495,71 @@ Succeed Theorem f@{u} (n:nat) : nat with g (n:nat) : nat. (* Accepted *)
 Succeed CoFixpoint f@{u} (n:nat) : Stream 0 with g (n:nat) : Stream 0. (* Accepted *)
 
 End TheoremWithUnivs.
+
+Module DependMutualFix.
+
+Inductive tree (A : Type) := Node : A -> list (tree A) -> tree A.
+
+Definition lmap' {A B} (f : A -> B) : list A -> list B :=
+fix F l :=
+match l with
+| nil => nil
+| cons x l => cons (f x) (G l)
+end
+with G l :=
+match l with
+| nil => nil
+| cons x l => cons (f x) (F l)
+end for F.
+
+(* Not yet able to accept this *)
+Fail Fixpoint map {A B} (f : A -> B) (t : tree A) {struct t} : tree B :=
+match t with
+| Node _ x l => Node _ (f x) (lmap' (map f) l)
+end.
+
+End DependMutualFix.
+
+Module Wish16040.
+
+Inductive tree (A : Type) := Node : A -> list (tree A) -> tree A.
+
+Fixpoint lmap {A B} (f : A -> B) (l : list A) : list B :=
+match l with
+| nil => nil
+| cons x l => cons (f x) (lmap f l)
+end.
+
+Fixpoint map {A B} (f : A -> B) (t : tree A) {struct t} : tree B :=
+match t with
+| Node _ x l => Node _ (f x) (lmap (map f) l)
+end.
+
+(* Check that we don't find too much uniform parameters *)
+
+Fixpoint lmap' {A} (f g : A -> A) (l : list A) : list A :=
+match l with
+| nil => nil
+| cons x l => cons (f x) (lmap' g f l)
+end.
+
+(* Not supposed to be detected guarded, as only A is uniform in lmap' *)
+Fail Fixpoint map' {A} (f : A -> A) (t : tree A) {struct t} : tree A :=
+match t with
+| Node _ x l => Node _ (f x) (lmap' (map' f) (map' f) l)
+end.
+
+(* Uniform arguments after a non-uniform one *)
+
+Fixpoint lmap'' {A} n (f : A -> A) (l : list A) : list A :=
+match l with
+| nil => nil
+| cons x l => cons (f x) (lmap'' (S n) f l)
+end.
+
+Fixpoint map'' {A} (f : A -> A) (t : tree A) {struct t} : tree A :=
+match t with
+| Node _ x l => Node _ (f x) (lmap'' 0 (map'' f) l)
+end.
+
+End Wish16040.
