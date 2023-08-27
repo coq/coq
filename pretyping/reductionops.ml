@@ -1360,7 +1360,6 @@ let hnf_decompose_prod_decls env sigma =
     | LetIn (x,b,t,c) ->
         prodec_rec (push_rel (LocalDef (x,b,t)) env)
           (Context.Rel.add (LocalDef (x,b,t)) l) c
-    | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let t' = whd_all env sigma t in
         if EConstr.eq_constr sigma t t' then l,t
