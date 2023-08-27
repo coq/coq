@@ -203,7 +203,10 @@ val hnf_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t Context
 (** Like [hnf_decompose_lambda] but limited at [n] lambdas; raises [Invalid_argument] if not enough lambdas *)
 
 val splay_arity : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
-(** Raises [Reduction.NotArity] *)
+(** Decompose an arity reducing let-ins; Raises [Reduction.NotArity] *)
+
+val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
+(** Decompose an arity preserving let-ins; Raises [Reduction.NotArity] *)
 
 val sort_of_arity : env -> evar_map -> constr -> ESorts.t
 (** Raises [Reduction.NotArity] *)
@@ -228,9 +231,6 @@ val hnf_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_conte
 (** Extract the n first lambdas of a term, preserving let-ins (but not counting them);
     Raises [Invalid_argument] if not enough lambdas *)
 end
-
-val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
-(** Raises [Reduction.NotArity] *)
 
 val reducible_mind_case : evar_map -> constr -> bool
 
