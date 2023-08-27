@@ -1332,6 +1332,24 @@ let hnf_decompose_lambda env sigma =
   in
   decrec env []
 
+let hnf_decompose_prod_n env sigma n =
+  let rec decrec env m hyps c = if Int.equal m 0 then (hyps,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Prod (n,a,c0) ->
+         decrec (push_rel (LocalAssum (n,a)) env) (m-1) ((n,a)::hyps) c0
+      | _ -> invalid_arg "hnf_decompose_prod_n"
+  in
+  decrec env n []
+
+let hnf_decompose_lambda_n env sigma n =
+  let rec decrec env m hyps c = if Int.equal m 0 then (hyps,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Lambda (n,a,c0) ->
+         decrec (push_rel (LocalAssum (n,a)) env) (m-1) ((n,a)::hyps) c0
+      | _ -> invalid_arg "hnf_decompose_lambda_n"
+  in
+  decrec env n []
+
 let hnf_decompose_prod_decls env sigma =
   let rec prodec_rec env l c =
     let t = whd_allnolet env sigma c in

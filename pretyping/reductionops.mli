@@ -196,6 +196,12 @@ val hnf_decompose_prod_decls : env ->  evar_map -> types -> rel_context * types
 (** Decompose a type into a context and a conclusion not starting with a product or let-in,
     using head-reduction without zeta to expose the products and let-ins *)
 
+val hnf_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t Context.binder_annot * constr) list * types
+(** Like [hnf_decompose_prod] but limited at [n] products; raises [Invalid_argument] if not enough products *)
+
+val hnf_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t Context.binder_annot * constr) list * constr
+(** Like [hnf_decompose_lambda] but limited at [n] lambdas; raises [Invalid_argument] if not enough lambdas *)
+
 val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
 (** Raises [Reduction.NotArity] *)
 
