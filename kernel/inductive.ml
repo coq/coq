@@ -1128,6 +1128,21 @@ let filter_stack_domain ?evars env nr p stack =
   in
   filter_stack env ar stack
 
+let pop_argument ?evars needreduce renv elt stack x a b =
+  match needreduce, elt with
+  | NoNeedReduce, SClosure (NoNeedReduce, _, n, c) ->
+    (* Neither function nor args have rec calls on internally bound variables *)
+    let spec = stack_element_specif ?evars elt in
+    (* Thus, args do not a priori require to be rechecked, so we push a let *)
+    (* maybe the body of the let will have to be locally expanded though, see Rel case *)
+    push_let renv (x,lift n c,a,spec), lift1_stack stack, b
+  | _, SClosure (_, _, n, c) ->
+    (* Either function or args have rec call on internally bound variables *)
+    renv, stack, subst1 (lift n c) b
+  | _, SArg spec ->
+    (* Going down a case branch *)
+    push_var renv (x,a,spec), lift1_stack stack, b
+
 let judgment_of_fixpoint (_, types, bodies) =
   Array.map2 (fun typ body -> { uj_val = body ; uj_type = typ }) types bodies
 
@@ -1264,23 +1279,12 @@ let check_one_fix ?evars renv recpos trees def =
         | Lambda (x,a,b) ->
             begin
               let needreduce, rs = check_rec_call renv rs a in
-              match needreduce, stack with
-              | NoNeedReduce, (SClosure (NoNeedReduce, _, n, c) as elt :: stack) ->
-                  (* Neither function nor args have rec calls on internally bound variables *)
-                  let spec = stack_element_specif ?evars elt in
-                  let stack = lift1_stack stack in
-                  (* Thus, args do not a priori require to be rechecked, so we push a let *)
-                  (* maybe the body of the let will have to be locally expanded though, see Rel case *)
-                  check_rec_call_stack (push_let renv (x,lift n c,a,spec)) stack rs b
-              | _, SClosure (_, _, n, c) :: stack ->
-                  (* Either function or args have rec call on internally bound variables *)
-                  check_rec_call_stack renv stack rs (subst1 (lift n c) b)
-              | _, SArg spec :: stack ->
-                  (* Going down a case branch *)
-                  let stack = lift1_stack stack in
-                  check_rec_call_stack (push_var renv (x,a,spec)) stack rs b
-              | _, [] ->
-                  check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs b
+              match stack with
+              | elt :: stack ->
+                let renv, stack, b = pop_argument ?evars needreduce renv elt stack x a b in
+                check_rec_call_stack renv stack rs b
+              | [] ->
+                check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs b
             end
 
         | Prod (x,a,u) ->
