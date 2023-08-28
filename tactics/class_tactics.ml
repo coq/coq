@@ -504,11 +504,18 @@ module Search = struct
     | _, _ -> e
 
   (** Determine if backtracking is needed for this goal.
-      If the type class is unique or in Prop
-      and there are no evars in the goal then we do
-      NOT backtrack. *)
-  let needs_backtrack env evd unique concl =
-    if unique || is_Prop env evd concl then
+      We generally backtrack except in the following (possibly
+      overlapping) cases:
+      - [unique_instances] is [true].
+        This is the case when the goal's class has [Unique Instances].
+      - [indep] is [true] and the current goal has no evars.
+        [indep] is generally [true] and only gets set to [false] if the
+        current goal's evar is mentioned in other goals.
+        ([indep] is the negation of [search_dep].)
+      - The current goal is a [Prop] and has no evars. *)
+  let needs_backtrack env evd ~unique_instances ~indep concl =
+    if unique_instances then false else
+    if indep || is_Prop env evd concl then
       occur_existential evd concl
     else true
 
@@ -677,8 +684,9 @@ module Search = struct
     let env = Goal.env gl in
     let concl = Goal.concl gl in
     let sigma = Goal.sigma gl in
-    let unique = not info.search_dep || is_unique env sigma concl in
-    let backtrack = needs_backtrack env sigma unique concl in
+    let unique_instances = is_unique env sigma concl in
+    let indep = not info.search_dep in
+    let backtrack = needs_backtrack env sigma ~unique_instances ~indep concl in
     let () = ppdebug 0 (fun () ->
         pr_depth info.search_depth ++ str": looking for " ++
         Printer.pr_econstr_env (Goal.env gl) sigma concl ++
