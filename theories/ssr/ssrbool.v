@@ -913,6 +913,7 @@ Proof. by case b1; constructor. Qed.
 Lemma boolP : alt_spec b1 b1 b1.
 Proof. exact: (altP idP). Qed.
 
+(* Left-to-right reflection of ~~b1 to (b1 = false), no-op otherwise. *)
 Lemma idPn : reflect (~~ b1) (~~ b1).
 Proof. by case b1; constructor. Qed.
 
@@ -922,6 +923,10 @@ Proof. by case b1; constructor; auto. Qed.
 Lemma negPn : reflect b1 (~~ ~~ b1).
 Proof. by case b1; constructor. Qed.
 
+(* Right-to-left reflection, no-op otherwise.
+   C.f., https://github.com/math-comp/math-comp/issues/284
+   To change `b1 = false` into `~~ b1`, use `apply/negbTE` or `apply/idPn` (goal)
+   or `move/negbT` or `move/idPn` (hypothesis). *)
 Lemma negPf : reflect (b1 = false) (~~ b1).
 Proof. by case b1; constructor. Qed.
 
