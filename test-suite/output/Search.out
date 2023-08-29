@@ -479,3 +479,4 @@ partition_cons1:
   forall [A : Type] (f : A -> bool) (a : A) (l : list A) [l1 l2 : list A],
   partition f l = (l1, l2) ->
   f a = true -> partition f (a :: l) = (a :: l1, l2)
+H: Some ?y = Some ?y

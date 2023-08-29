@@ -118,7 +118,7 @@ let interp_search env sigma s r =
   let r = interp_search_restriction r in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env sigma c) in
   let warnlist = ref [] in
-  let pr_search ref kind env c =
+  let pr_search ref kind env sigma c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
@@ -129,9 +129,9 @@ let interp_search env sigma s r =
         let impargs = List.map binding_kind_of_status impargs in
         if List.length impls > 1 ||
            List.exists Glob_term.(function Explicit -> false | MaxImplicit | NonMaxImplicit -> true)
-             (List.skipn_at_least (Termops.nb_prod_modulo_zeta Evd.(from_env env) (EConstr.of_constr c)) impargs)
+             (List.skipn_at_least (Termops.nb_prod_modulo_zeta sigma (EConstr.of_constr c)) impargs)
           then warnlist := pr :: !warnlist;
-        let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
+        let pc = pr_ltype_env env sigma ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp

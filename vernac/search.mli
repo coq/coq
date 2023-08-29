@@ -29,7 +29,7 @@ type glob_search_request =
 type filter_function =
   GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> bool
 type display_function =
-  GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
+  GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> unit
 
 (** {6 Generic filter functions} *)
 
@@ -76,7 +76,7 @@ val interface_search : env -> Evd.evar_map -> (search_constraint * bool) list ->
 
 (** {6 Generic search function} *)
 
-val generic_search : env -> display_function -> unit
+val generic_search : env -> Evd.evar_map -> display_function -> unit
 (** This function iterates over all hypothesis of the goal numbered
     [glnum] (if present) and all known declarations. *)
 
