@@ -448,7 +448,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
           match EConstr.kind sigma f with
           | App _ -> assert false (* f is coming from a decompose_app *)
           | Const _ | Construct _ | Rel _ | Evar _ | Meta _ | Ind _ | Sort _
-           |Prod _ | Var _ ->
+          | Prod _ | Var _ ->
             let new_infos = {expr_info with info = (f, args)} in
             let new_continuation_tac =
               jinfo.apP (f, args) expr_info continuation_tac
