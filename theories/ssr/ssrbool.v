@@ -913,6 +913,7 @@ Proof. by case b1; constructor. Qed.
 Lemma boolP : alt_spec b1 b1 b1.
 Proof. exact: (altP idP). Qed.
 
+(* Left-to-right reflection of ~~b1 to (b1 = false), no-op otherwise. *)
 Lemma idPn : reflect (~~ b1) (~~ b1).
 Proof. by case b1; constructor. Qed.
 
@@ -922,6 +923,7 @@ Proof. by case b1; constructor; auto. Qed.
 Lemma negPn : reflect b1 (~~ ~~ b1).
 Proof. by case b1; constructor. Qed.
 
+(* Right-to-left reflection, no-op otherwise. *)
 Lemma negPf : reflect (b1 = false) (~~ b1).
 Proof. by case b1; constructor. Qed.
 
