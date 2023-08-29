@@ -981,8 +981,8 @@ let check_entry_type = function
   | ETIdent | ETGlobal | ETBigint | ETName | ETBinder _-> ()
 
 let interp_modifiers entry modl = let open NotationMods in
-  let rec interp subtyps acc = function
-  | [] -> subtyps, acc
+  let rec interp acc = function
+  | [] -> acc
   | CAst.{loc;v} :: l -> match v with
     | SetEntryType (s,typ) ->
         let id = Id.of_string s in
@@ -990,15 +990,15 @@ let interp_modifiers entry modl = let open NotationMods in
         if Id.List.mem_assoc id acc.etyps then
           user_err ?loc
             (str s ++ str " is already assigned to an entry or constr level.");
-        interp subtyps { acc with etyps = (id,typ) :: acc.etyps; } l
+        interp { acc with etyps = (id,typ) :: acc.etyps; } l
     | SetItemLevel ([],bko,n) ->
-        interp subtyps acc l
+        interp acc l
     | SetItemLevel (s::idl,bko,n) ->
         let id = Id.of_string s in
         if Id.List.mem_assoc id acc.etyps then
           user_err ?loc
             (str s ++ str " is already assigned to an entry or constr level.");
-        interp ((id,bko,n)::subtyps) acc ((CAst.make ?loc @@ SetItemLevel (idl,bko,n))::l)
+        interp { acc with etyps = (id,ETConstr (entry,bko,n)) :: acc.etyps } ((CAst.make ?loc @@ SetItemLevel (idl,bko,n))::l)
     | SetLevel n ->
         (match entry with
         | InCustomEntry s ->
@@ -1012,24 +1012,20 @@ let interp_modifiers entry modl = let open NotationMods in
         | InConstrEntry ->
           if acc.level <> None then
             user_err ?loc (str "A level is already assigned.");
-          interp subtyps { acc with level = Some n; } l)
+          interp { acc with level = Some n; } l)
     | SetCustomEntry (s,Some n) ->
         (* Note: name of entry already registered in interp_non_syntax_modifiers *)
         if acc.level <> None then
           user_err ?loc (str ("isolated \"at level " ^ string_of_int (Option.get acc.level) ^ "\" unexpected."));
-        interp subtyps { acc with level = Some n } l
+        interp { acc with level = Some n } l
     | SetAssoc a ->
         if not (Option.is_empty acc.assoc) then user_err ?loc Pp.(str "An associativity is given more than once.");
-        interp subtyps { acc with assoc = Some a; } l
+        interp { acc with assoc = Some a; } l
     | SetOnlyParsing | SetOnlyPrinting | SetCustomEntry (_,None) | SetFormat _ | SetItemScope _ ->
         (* interpreted in interp_non_syntax_modifiers *)
         assert false
   in
-  let subtyps, mods = interp [] default modl in
-  (* interpret item levels wrt to main entry *)
-  let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (entry,bko,n))) subtyps in
-  (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
-  { mods with etyps = extra_etyps@mods.etyps }
+  interp default modl
 
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
@@ -1115,7 +1111,8 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
       entry = InConstrEntry; format = None; itemscopes = []
     }
   in
-  List.fold_left set (main_data,[]) mods
+  let main_data, rest = List.fold_left set (main_data,[]) mods in
+  main_data, List.rev rest
 
 (* Compute precedences from modifiers (or find default ones) *)
 
