@@ -347,7 +347,7 @@ and extract_type_app env sg db (r,s) args =
   let ml_args =
     List.fold_right
       (fun (b,c) a -> if b == Keep then
-         let p = List.length (fst (hnf_decompose_prod env sg (type_of env sg c))) in
+         let p = List.length (fst (whd_decompose_prod env sg (type_of env sg c))) in
          let db = iterate (fun l -> 0 :: l) p db in
          (extract_type_scheme env sg db c p) :: a
        else a)
@@ -371,7 +371,7 @@ and extract_type_scheme env sg db c p =
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) sg db d (p-1)
       | _ ->
-          let rels = fst (hnf_decompose_prod env sg (type_of env sg c)) in
+          let rels = fst (whd_decompose_prod env sg (type_of env sg c)) in
           let env = push_rels_assum rels env in
           let eta_args = List.rev_map EConstr.mkRel (List.interval 1 p) in
           extract_type env sg db 0 (EConstr.Vars.lift p c) eta_args
@@ -451,7 +451,7 @@ and extract_really_ind env kn mib =
         let types = arities_of_constructors env ((kn,i),u) in
         for j = 0 to Array.length types - 1 do
           let t = snd (decompose_prod_n_decls ndecls types.(j)) in
-          let prods,head = Reduction.hnf_decompose_prod epar t in
+          let prods,head = Reduction.whd_decompose_prod epar t in
           let nprods = List.length prods in
           let args = match Constr.kind head with
             | App (f,args) -> args (* [Constr.kind f = Ind ip] *)
@@ -913,7 +913,7 @@ and extract_fix env sg mle i (fi,ti,ci as recd) mlt =
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
 let decomp_lams_eta_n n m env sg c t =
-  let rels = fst (hnf_decompose_prod_n env sg n t) in
+  let rels = fst (whd_decompose_prod_n env sg n t) in
   let rels',c = EConstr.decompose_lambda sg c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)

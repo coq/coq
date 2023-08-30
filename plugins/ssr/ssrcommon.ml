@@ -152,7 +152,7 @@ let intern_term ist env (_, c) = glob_constr ist env c
 
 let splay_open_constr env (sigma, c) =
   let t = Retyping.get_type_of env sigma c in
-  Reductionops.hnf_decompose_prod env sigma t
+  Reductionops.whd_decompose_prod env sigma t
 
 let isAppInd env sigma c =
   let c = Reductionops.clos_whd_flags RedFlags.all env sigma c in

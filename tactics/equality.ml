@@ -455,7 +455,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
               | (e, info) ->
                   Proofview.tclEVARMAP >>= fun sigma ->
                   let env' = push_rel_context rels env in
-                  let rels',t' = hnf_decompose_prod_decls env' sigma t in (* Search for underlying eq *)
+                  let rels',t' = whd_decompose_prod_decls env' sigma t in (* Search for underlying eq *)
                   match match_with_equality_type env' sigma t' with
                     | Some (hdcncl,args) ->
                   let lft2rgt = adjust_rewriting_direction args lft2rgt in

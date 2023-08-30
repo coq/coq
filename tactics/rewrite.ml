@@ -206,7 +206,7 @@ let decompose_applied_relation env sigma (c,l) =
     match find_rel ctype with
     | Some c -> c
     | None ->
-      let ctx,t' = Reductionops.hnf_decompose_prod env sigma ctype in (* Search for underlying eq *)
+      let ctx,t' = Reductionops.whd_decompose_prod env sigma ctype in (* Search for underlying eq *)
       let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
       match find_rel t' with
       | Some c -> c
@@ -1903,7 +1903,7 @@ let setoid_proof ty fn fallback =
         try
           let rel, ty1, ty2, concl, _, _ = decompose_app_rel_error env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
-          let car = snd (List.hd (fst (Reductionops.hnf_decompose_prod env sigma t))) in
+          let car = snd (List.hd (fst (Reductionops.whd_decompose_prod env sigma t))) in
           (try init_relation_classes () with e when CErrors.noncritical e -> raise Not_found);
           fn env sigma car rel
         with e when CErrors.noncritical e ->

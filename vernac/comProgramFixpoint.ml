@@ -138,7 +138,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
         (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
     in
     let ctx, ar =
-      try Reductionops.hnf_decompose_prod_n env sigma 2 relty
+      try Reductionops.whd_decompose_prod_n env sigma 2 relty
       with Invalid_argument _ -> error () in
     match ctx, EConstr.kind sigma ar with
       | [(_,t); (_,u)], Sort s

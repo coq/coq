@@ -294,7 +294,7 @@ let infer_arity_constructor is_arity env variances arcn =
       (Environ.push_rel typ env, infer_term CUMUL env variances typ')
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
-  let typs, codom = Reduction.hnf_decompose_prod env arcn in
+  let typs, codom = Reduction.whd_decompose_prod env arcn in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)

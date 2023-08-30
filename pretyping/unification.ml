@@ -105,7 +105,7 @@ let abstract_scheme env evd c l lname_typ =
 (* Precondition: resulting abstraction is expected to be of type [typ] *)
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = hnf_decompose_prod_n env evd (List.length l) typ in
+  let ctxt,_ = whd_decompose_prod_n env evd (List.length l) typ in
   let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
   let evd,typp =

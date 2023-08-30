@@ -177,7 +177,7 @@ let declare_projection name instance_id r =
           | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.hnf_decompose_prod_n env sigma (3 * n) typ
+    let ctx,ccl = Reductionops.whd_decompose_prod_n env sigma (3 * n) typ
     in it_mkProd ccl ctx
   in
   let types = Some (it_mkProd_or_LetIn typ ctx) in

@@ -253,7 +253,7 @@ let is_rigid env sigma t =
   let open Context.Rel.Declaration in
   match whd_prod env sigma t with
   | Some (na,a,b) ->
-     let (_,t) = hnf_decompose_prod (push_rel (LocalAssum (na,a)) env) sigma b in
+     let (_,t) = whd_decompose_prod (push_rel (LocalAssum (na,a)) env) sigma b in
      is_rigid_head sigma t
   | _ -> true
 

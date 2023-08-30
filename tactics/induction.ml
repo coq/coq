@@ -1276,7 +1276,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
-      let sign,t = hnf_decompose_prod env sigma typ in it_mkProd t sign
+      let sign,t = whd_decompose_prod env sigma typ in it_mkProd t sign
     | Some (elimc, _) ->
       (* Otherwise, we compute the induction reference of the scheme
          and go looking for that. *)
@@ -1304,7 +1304,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
 let check_expected_type env sigma (elimc,bl) elimt =
   (* Compute the expected template type of the term in case a using
      clause is given *)
-  let sign,_ = hnf_decompose_prod env sigma elimt in
+  let sign,_ = whd_decompose_prod env sigma elimt in
   let n = List.length sign in
   if n == 0 then error SchemeDontApply;
   let sigma,cl = EClause.make_evar_clause env sigma ~len:(n - 1) elimt in

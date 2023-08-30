@@ -426,7 +426,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     *)
   let aux (sigma, prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
     let name, ty_relevance, ty, arity =
-      let rel, c = Reductionops.hnf_decompose_prod_n env sigma 1 prod in
+      let rel, c = Reductionops.whd_decompose_prod_n env sigma 1 prod in
       let ({binder_name=na;binder_relevance=r},t) = List.hd rel in
       na, r, t, c
     in

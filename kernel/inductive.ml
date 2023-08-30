@@ -701,9 +701,9 @@ let branches_specif renv c_spec ci =
       car
 
 let check_inductive_codomain env p =
-  let absctx, ar = hnf_decompose_lambda_decls env p in
+  let absctx, ar = whd_decompose_lambda_decls env p in
   let env = push_rel_context absctx env in
-  let arctx, s = hnf_decompose_prod_decls env ar in
+  let arctx, s = whd_decompose_prod_decls env ar in
   let env = push_rel_context arctx env in
   let i,_l' = decompose_app (whd_all env s) in
   isInd i
@@ -871,13 +871,13 @@ let restrict_spec env spec p =
   match spec with
   | Not_subterm | Internally_bound_subterm _ -> spec
   | _ ->
-  let absctx, ar = hnf_decompose_lambda_decls env p in
+  let absctx, ar = whd_decompose_lambda_decls env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
   if noccur_with_meta 1 (Context.Rel.length absctx) ar then spec
   else
   let env = push_rel_context absctx env in
-  let arctx, s = hnf_decompose_prod_decls env ar in
+  let arctx, s = whd_decompose_prod_decls env ar in
   let env = push_rel_context arctx env in
   let i,args = decompose_app_list (whd_all env s) in
   match kind i with
@@ -925,7 +925,7 @@ let rec subterm_specif renv stack t =
       *)
     if not (check_inductive_codomain renv.env typarray.(i)) then Not_subterm
     else
-      let (ctxt,clfix) = hnf_decompose_prod renv.env typarray.(i) in
+      let (ctxt,clfix) = whd_decompose_prod renv.env typarray.(i) in
       let oind =
         let env' = push_rel_context ctxt renv.env in
           try Some(fst(find_inductive env' clfix))
@@ -945,7 +945,7 @@ let rec subterm_specif renv stack t =
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
-        let sign,strippedBody = hnf_decompose_lambda_n_assum renv.env nbOfAbst theBody in
+        let sign,strippedBody = whd_decompose_lambda_n_assum renv.env nbOfAbst theBody in
                    (* pushing the fix parameters *)
         let stack' = push_stack_closures renv l stack in
         let renv'' = push_ctxt_renv renv' sign in
@@ -1089,7 +1089,7 @@ let filter_stack_domain env nr p stack =
     match kind t with
     | Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
-      let ctx, a = hnf_decompose_prod_decls env a in
+      let ctx, a = whd_decompose_prod_decls env a in
       let env = push_rel_context ctx env in
       let ty, args = decompose_app_list (whd_all env a) in
       let elt = match kind ty with

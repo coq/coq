@@ -163,7 +163,7 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
                   solve_unification_constraints = false }
     in
     let sigma, (ctyp, cimpl) = interp_type_evars_impls ~flags env sigma ~impls ctyp in
-    let ctx, concl = Reductionops.hnf_decompose_prod_decls env sigma ctyp in
+    let ctx, concl = Reductionops.whd_decompose_prod_decls env sigma ctyp in
     let concl_env = EConstr.push_rel_context ctx env in
     let sigma_with_model_evars, model =
       model_conclusion concl_env sigma ind_rel params (Context.Rel.length ctx) arity_indices
@@ -464,7 +464,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   (* Compute renewed arities *)
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->
-          let ctx = fst (Reductionops.hnf_decompose_prod_decls env_ar_params sigma ty) in
+          let ctx = fst (Reductionops.whd_decompose_prod_decls env_ar_params sigma ty) in
           ctx)
         tys)
       constructors

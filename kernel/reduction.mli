@@ -44,16 +44,16 @@ val betazeta_appvect : int -> constr -> constr array -> constr
 (***********************************************************************
   s Recognizing products and arities modulo reduction *)
 
-val hnf_decompose_prod         : env -> types -> Constr.rel_context * types
-val hnf_decompose_prod_decls   : env -> types -> Constr.rel_context * types
-val hnf_decompose_lambda       : env -> constr -> Constr.rel_context * constr
-val hnf_decompose_lambda_decls : env -> constr -> Constr.rel_context * constr
+val whd_decompose_prod         : env -> types -> Constr.rel_context * types
+val whd_decompose_prod_decls   : env -> types -> Constr.rel_context * types
+val whd_decompose_lambda       : env -> constr -> Constr.rel_context * constr
+val whd_decompose_lambda_decls : env -> constr -> Constr.rel_context * constr
 
 (** This is typically the function to use to extract the context of a
     Fix not already in normal form up to and including the decreasing
     argument, counting as many lambda's as given by the decreasing
     index + 1 *)
-val hnf_decompose_lambda_n_assum : env -> int -> constr -> Constr.rel_context * constr
+val whd_decompose_lambda_n_assum : env -> int -> constr -> Constr.rel_context * constr
 
 exception NotArity
 
@@ -65,12 +65,23 @@ val eta_expand : env -> constr -> types -> constr
 (** Deprecated *)
 
 val dest_prod       : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [hnf_decompose_prod] instead."]
+[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
 val dest_prod_assum : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [hnf_decompose_prod_decls] instead."]
+[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
 val dest_lam        : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [hnf_decompose_lambda] instead."]
+[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
 val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [hnf_decompose_lambda_assum] instead."]
+[@@ocaml.deprecated "Use [whd_decompose_lambda_assum] instead."]
+
+(** Re-deprecated in 8.19 *)
+
+val hnf_decompose_prod           : env -> types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
+val hnf_decompose_prod_decls     : env -> types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
+val hnf_decompose_lambda         : env -> constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
+val hnf_decompose_lambda_decls   : env -> constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [whd_decompose_lambda_decls] instead."]
 val hnf_decompose_lambda_n_decls : env -> int -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [hnf_decompose_lambda_n_assum] instead."]
+[@@ocaml.deprecated "Use [whd_decompose_lambda_n_assum] instead."]

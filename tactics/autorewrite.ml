@@ -524,7 +524,7 @@ let decompose_applied_relation env sigma c ctype left2right =
     match find_rel ctype with
     | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
     | None ->
-        let ctx,t' = Reductionops.hnf_decompose_prod_decls env sigma ctype in (* Search for underlying eq *)
+        let ctx,t' = Reductionops.whd_decompose_prod_decls env sigma ctype in (* Search for underlying eq *)
         let ctype = EConstr.it_mkProd_or_LetIn t' ctx in
         match find_rel ctype with
         | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
