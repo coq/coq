@@ -475,8 +475,8 @@ type to_patch = emitcodes * patches
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _
-  | Const_float _ | Const_evar _ -> sc
+  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_univ_instance _
+  | Const_val _ | Const_uint _ | Const_float _ | Const_evar _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_annot _ (a : annot_switch) = a

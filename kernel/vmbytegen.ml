@@ -805,9 +805,9 @@ and compile_get_global env cenv (kn,u) sz cont =
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       (compile_instance env) cenv () [|u|] sz cont
 
-and compile_instance env cenv u sz cont =
+and compile_instance env cenv u0 sz cont =
   let () = set_max_stack_size cenv sz in
-  let u = Univ.Instance.to_array u in
+  let u = Univ.Instance.to_array u0 in
   let len = Array.length u in
   let is_id i l = match Univ.Level.var_index l with
   | None -> false
@@ -816,6 +816,9 @@ and compile_instance env cenv u sz cont =
   if Int.equal env.uinst_len len && Array.for_all_i is_id 0 u then
     (* Optimization: do not reallocate the same instance *)
     pos_instance cenv sz :: cont
+  else if Array.for_all (fun l -> Option.is_empty (Univ.Level.var_index l)) u then
+    (* Optimization: allocate closed instances globally *)
+    compile_structured_constant cenv (Const_univ_instance u0) sz cont
   else
     let comp_univ cenv l sz cont = match Univ.Level.var_index l with
     | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
