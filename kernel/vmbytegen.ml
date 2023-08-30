@@ -141,6 +141,7 @@ type comp_env = {
 
 type glob_env = {
   env : Environ.env;
+  uinst_len : int; (** Size of the toplevel universe instance *)
   mutable fun_code : instruction list; (** Code of closures *)
 }
 
@@ -547,7 +548,7 @@ let rec compile_lam env cenv lam sz cont =
   | Lind (ind,u) ->
     if Univ.Instance.is_empty u then
       compile_structured_constant cenv (Const_ind ind) sz cont
-    else comp_app compile_structured_constant compile_instance cenv
+    else comp_app compile_structured_constant (compile_instance env) cenv
         (Const_ind ind) [|u|] sz cont
 
   | Lsort s ->
@@ -780,7 +781,7 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_default = Label.create () in
       let default =
         let cont = [Kshort_apply arity; jump] in
-        let cont = Kpush :: compile_get_global cenv kn (sz + arity) cont in
+        let cont = Kpush :: compile_get_global env cenv kn (sz + arity) cont in
         let cont =
           if Int.equal nparams 0 then cont
           else
@@ -796,36 +797,44 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lforce -> CErrors.anomaly Pp.(str "The VM should not use force")
 
-and compile_get_global cenv (kn,u) sz cont =
+and compile_get_global env cenv (kn,u) sz cont =
   let () = set_max_stack_size cenv sz in
   if Univ.Instance.is_empty u then
     Kgetglobal kn :: cont
   else
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
-      compile_instance cenv () [|u|] sz cont
+      (compile_instance env) cenv () [|u|] sz cont
 
-and compile_instance cenv (u : Univ.Instance.t) sz cont =
+and compile_instance env cenv u sz cont =
   let () = set_max_stack_size cenv sz in
-  let len = Univ.Instance.length u in
-  let comp_univ cenv l sz cont = match Univ.Level.var_index l with
-  | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
-  | Some idx -> pos_instance cenv sz :: Kfield idx :: cont
-  in
   let u = Univ.Instance.to_array u in
-  comp_args comp_univ cenv u sz (Kmakeblock (len, 0) :: cont)
+  let len = Array.length u in
+  let is_id i l = match Univ.Level.var_index l with
+  | None -> false
+  | Some j -> Int.equal i j
+  in
+  if Int.equal env.uinst_len len && Array.for_all_i is_id 0 u then
+    (* Optimization: do not reallocate the same instance *)
+    pos_instance cenv sz :: cont
+  else
+    let comp_univ cenv l sz cont = match Univ.Level.var_index l with
+    | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
+    | Some idx -> pos_instance cenv sz :: Kfield idx :: cont
+    in
+    comp_args comp_univ cenv u sz (Kmakeblock (len, 0) :: cont)
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
   if Univ.Instance.is_empty u then
     (* normal compilation *)
     comp_app (fun _ _ sz cont ->
-        compile_get_global cenv (kn,u) sz cont)
+        compile_get_global env cenv (kn,u) sz cont)
       (compile_lam env) cenv () args sz cont
   else
     let compile_arg cenv constr_or_uni sz cont =
       match constr_or_uni with
       | ArgLambda t -> compile_lam env cenv t sz cont
-      | ArgInstance u -> compile_instance cenv u sz cont
+      | ArgInstance u -> compile_instance env cenv u sz cont
     in
     let all =
       Array.init (Array.length args + 1)
@@ -864,7 +873,7 @@ let compile ?universes:(universes=0) env sigma c =
       if Int.equal universes 0 then
         let lam = lambda_of_constr ~optimize:true env sigma c in
         let cenv = empty_comp_env () in
-        let env = { env; fun_code = [] } in
+        let env = { env; fun_code = []; uinst_len = 0 } in
         let cont = compile_lam env cenv lam 0 cont in
         let cont = ensure_stack_capacity cenv cont in
         cenv, cont, env.fun_code
@@ -879,7 +888,7 @@ let compile ?universes:(universes=0) env sigma c =
         let full_arity = arity + 1 in
         let r_fun = comp_env_fun ~univs:true arity in
         let lbl_fun = Label.create () in
-        let env = { env; fun_code = [] } in
+        let env = { env; fun_code = []; uinst_len = universes } in
         let cont_fun = compile_lam env r_fun body full_arity [Kreturn full_arity] in
         let cont_fun = ensure_stack_capacity r_fun cont_fun in
         let () = push_fun env (add_grab full_arity lbl_fun cont_fun) in
