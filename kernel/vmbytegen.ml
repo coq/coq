@@ -820,6 +820,7 @@ and compile_instance env cenv u0 sz cont =
     (* Optimization: allocate closed instances globally *)
     compile_structured_constant cenv (Const_univ_instance u0) sz cont
   else
+    let () = set_max_stack_size cenv (sz + len - 1) in
     let comp_univ cenv l sz cont = match Univ.Level.var_index l with
     | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
     | Some idx -> pos_instance cenv sz :: Kfield idx :: cont
