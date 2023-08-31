@@ -15,6 +15,7 @@ let observe x =
         (p (Printer.pr_global instance))
         (p (Pp.pr_opt Pp.int hint_priority))
         (if locality = Local then "local" else "")
-;;
 
-Classes.add_observer observe
+let obs = Classes.register_observer ~name:"test observer" observe
+
+let () = Classes.activate_observer obs
