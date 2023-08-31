@@ -615,6 +615,34 @@ Section Elts.
       intro n. exact (Hnth (S n)).
   Qed.
 
+  Lemma unfold_nth_error l n
+    : nth_error l n
+      = match n, l with
+        | O, x :: _ => Some x
+        | S n, _ :: l => nth_error l n
+        | _, _ => None
+        end.
+  Proof. destruct n; reflexivity. Qed.
+
+  Lemma nth_error_nil n : nth_error nil n = None.
+  Proof. destruct n; reflexivity. Qed.
+
+  Lemma nth_error_cons x xs n
+    : nth_error (x :: xs) n
+      = match n with
+        | O => Some x
+        | S n => nth_error xs n
+        end.
+  Proof. apply unfold_nth_error. Qed.
+
+  Lemma nth_error_O l
+    : nth_error l O = hd_error l.
+  Proof. destruct l; reflexivity. Qed.
+
+  Lemma nth_error_S l n
+    : nth_error l (S n) = nth_error (tl l) n.
+  Proof. destruct l; rewrite ?nth_error_nil; reflexivity. Qed.
+
   (** Results directly relating [nth] and [nth_error] *)
 
   Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
