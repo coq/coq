@@ -1401,7 +1401,7 @@ End Fold_Right_Recursor.
     match l with
       | nil => cons nil nil
       | cons x t =>
-	flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
+        flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
         (list_power t l')
     end.
 
@@ -1847,12 +1847,12 @@ End Fold_Right_Recursor.
 
     Lemma in_prod_aux :
       forall (x:A) (y:B) (l:list B),
-	In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
+        In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
     Proof.
       intros x y l; induction l;
-	[ simpl; auto
-	  | simpl; destruct 1 as [H1| ];
-	    [ left; rewrite H1; trivial | right; auto ] ].
+        [ simpl; auto
+          | simpl; destruct 1 as [H1| ];
+            [ left; rewrite H1; trivial | right; auto ] ].
     Qed.
 
     Lemma in_prod :
@@ -2081,9 +2081,9 @@ Section Cutting.
     match n with
       | 0 => nil
       | S n => match l with
-		 | nil => nil
-		 | a::l => a::(firstn n l)
-	       end
+                 | nil => nil
+                 | a::l => a::(firstn n l)
+               end
     end.
 
   Lemma firstn_nil n: firstn n [] = [].
@@ -2162,9 +2162,9 @@ Section Cutting.
     match n with
       | 0 => l
       | S n => match l with
-		 | nil => nil
-		 | a::l => skipn n l
-	       end
+                 | nil => nil
+                 | a::l => skipn n l
+               end
     end.
 
   Lemma firstn_skipn_comm : forall m n l,
