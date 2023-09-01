@@ -42,6 +42,7 @@ val mk_node  : 'a -> 'a t array array -> 'a t
   let [|y|] = mk_rec[|mk_node b [|[|x;vy;vy|]|]|]
   (note the lift so that Y links to the "rec Y" skipping the "rec X")
  *)
+val mk_rec_call : int -> int -> 'a t
 val mk_rec_calls : int -> 'a t array
 val mk_rec   : 'a t array -> 'a t array
 
@@ -49,6 +50,7 @@ val mk_rec   : 'a t array -> 'a t array
    to avoid captures when a tree appears under [mk_rec] *)
 val lift : int -> 'a t -> 'a t
 
+val is_param : 'a t -> bool
 val is_node : 'a t -> bool
 
 (** Destructors (recursive calls are expanded) *)
@@ -60,6 +62,8 @@ val dest_var : 'a t -> int * int
 (** Tells if a tree has an infinite branch. The first arg is a comparison
     used to detect already seen elements, hence loops *)
 val is_infinite : ('a -> 'a -> bool) -> 'a t -> bool
+
+val is_recursive : 'a t -> bool
 
 (** [Rtree.equiv eq eqlab t1 t2] compares t1 t2 (top-down).
    If t1 and t2 are both nodes, [eqlab] is called on their labels,

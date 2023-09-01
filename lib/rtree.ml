@@ -27,6 +27,7 @@ type 'a t =
   | Rec of int * 'a t array
 
 (* Building trees *)
+let mk_rec_call i j = Var(i,j)
 let mk_rec_calls i = Array.init i (fun j -> Var(0,j))
 let mk_node lab sons = Node (lab, sons)
 
@@ -97,6 +98,11 @@ let dest_node t =
   match expand t with
       Node (l,sons) -> (l,sons)
     | _ -> failwith "Rtree.dest_node"
+
+let is_param t =
+  match expand t with
+      Var _ -> true
+    | _ -> false
 
 let is_node t =
   match expand t with
@@ -209,6 +215,13 @@ let is_infinite cmp t =
     | _ -> false
   in
   is_inf [] t
+
+let is_recursive t =
+  let rec aux k = function
+    Var (i,j) -> i >= k
+  | Node (_,sons) -> Array.exists (Array.exists (aux k)) sons
+  | Rec (j,defs) -> Array.exists (aux (k+1)) defs in
+  aux 0 t
 
 (* Pretty-print a tree (not so pretty) *)
 open Pp

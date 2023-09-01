@@ -428,3 +428,38 @@ Fixpoint mapU (f:U->U) u :=
   end.
 
 End HighlyNested.
+
+Require Import Utf8.
+
+Module TestIntersection.
+
+(* This example used to stress rtree.inter (3 nested types) *)
+
+Inductive Pmap_ne (A : Type) :=
+| PNode010 : A → Pmap_ne A
+| PNode110 : Pmap_ne A → A → Pmap_ne A.
+Arguments PNode010 {A} _ : assert.
+Arguments PNode110 {A} _ _ : assert.
+
+Variant Pmap (A : Type) := PEmpty : Pmap A | PNodes : Pmap_ne A → Pmap A.
+Arguments PEmpty {A}.
+Arguments PNodes {A} _.
+
+Definition Pmap_ne_case {A B} (t : Pmap_ne A) (f : Pmap A → option A → Pmap A → B) : B :=
+  match t with
+  | PNode010 x => f PEmpty (Some x) PEmpty
+  | PNode110 l x => f (PNodes l) (Some x) PEmpty
+  end.
+Definition Pmap_fold_aux {A B} (go : B → Pmap_ne A → B) (y : B) (mt : Pmap A) : B :=
+  match mt with PEmpty => y | PNodes t => go y t end.
+Definition Pmap_ne_fold {A B} (f : A → B → B) : B → Pmap_ne A → B :=
+  fix go y t :=
+    Pmap_ne_case t (λ ml mx mr, Pmap_fold_aux go
+      (Pmap_fold_aux go match mx with None => y | Some x => f x y end ml) mr).
+Definition Pmap_fold {A} {B} (f : A -> B -> B) := Pmap_fold_aux (Pmap_ne_fold f).
+
+Inductive test := Test : Pmap test → test.
+Fixpoint test_size (t : test) : nat :=
+  let 'Test ts := t in S (Pmap_fold (λ t', plus (test_size t')) 0%nat ts).
+
+End TestIntersection.
