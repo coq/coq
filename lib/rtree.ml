@@ -39,16 +39,20 @@ let rec lift_rtree_rec depth n = function
 
 let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
 
+let safe_set2 v i j c = let v = Array.copy v in let w = Array.copy v.(i) in w.(j) <- c; v
+let safe_set v i c = let v = Array.copy v in v.(i) <- c; v
+
 (* The usual subst operation *)
 let rec subst_rtree_rec depth sub = function
-    Var (i,j) as t ->
+  | Var (i,j) as t ->
       if i < depth then t
       else if i = depth then
-        lift depth (Rec (j, sub))
+        Rec (j, sub depth t)
       else Var (i - 1, j)
-  | Node (l,sons) -> Node (l,Array.map (Array.map (subst_rtree_rec depth sub)) sons)
+  | Node (l,sons) ->
+      Node (l,Array.mapi (fun i -> Array.mapi (fun j -> subst_rtree_rec depth (fun k hole -> sub k (Node (l, safe_set2 (Array.map (Array.map (lift_rtree_rec (depth+1) k)) sons) i j hole))))) sons)
   | Rec(j,defs) ->
-      Rec(j, Array.map (subst_rtree_rec (depth+1) sub) defs)
+      Rec(j, Array.map (subst_rtree_rec (depth+1) (fun k _ -> sub k (Var (k-depth,j)))) defs)
 
 let subst_rtree sub t = subst_rtree_rec 0 sub t
 
@@ -56,7 +60,7 @@ let subst_rtree sub t = subst_rtree_rec 0 sub t
    or a variable *)
 let rec expand = function
   | Rec(j,defs) ->
-      expand (subst_rtree defs defs.(j))
+      expand (subst_rtree (fun k hole -> safe_set (Array.map (lift_rtree_rec 1 k) defs) j hole) defs.(j))
   | t -> t
 
 (* Given a vector of n bodies, builds the n mutual recursive trees.
