@@ -1476,10 +1476,9 @@ let rec adjust_to_down l l' default =
 let loc_of_multiple_pattern pl =
  Loc.merge_opt (cases_pattern_expr_loc (List.hd pl)) (cases_pattern_expr_loc (List.last pl))
 
-let check_linearity mpl ids =
+let check_linearity loc ids =
   match List.duplicates (fun id1 id2 -> Id.equal id1.v id2.v) ids with
   | id::_ ->
-      let loc = loc_of_multiple_pattern mpl in
       Loc.raise ?loc (InternalizationError (NonLinearPattern id.v))
   | [] ->
       ()
@@ -1970,6 +1969,7 @@ let rec intern_pat genv ntnvars aliases pat =
       let pl' = List.map (intern_pat genv ntnvars aliases) pl in
       let (idsl,pl') = List.split pl' in
       let ids = List.hd idsl in
+      List.iter2 check_linearity (List.map (fun x -> x.CAst.loc) pl) idsl;
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
@@ -2422,7 +2422,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     let mpl' = List.map (intern_multiple_pattern env n) mpl in
     let (idsl,mpl') = List.split mpl' in
     let ids = List.hd idsl in
-    List.iter2 check_linearity mpl idsl;
+    List.iter2 check_linearity (List.map loc_of_multiple_pattern mpl) idsl;
     check_or_pat_variables loc ids (List.tl idsl);
     (ids,List.flatten mpl')
 
