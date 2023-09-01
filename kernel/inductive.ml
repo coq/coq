@@ -1537,7 +1537,7 @@ let rec codomain_is_coind env c =
           raise (CoFixGuardError (env, CodomainNotInductiveType b)))
 
 let check_one_cofix env nbfix def deftype =
-  let rec check_rec_call env alreadygrd n tree vlra  t =
+  let rec check_rec_call env alreadygrd n tree vlra t =
     if not (noccur_with_meta n nbfix t) then
       let c,args = decompose_app_list (whd_all env t) in
       match kind c with
