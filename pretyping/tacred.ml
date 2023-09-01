@@ -460,8 +460,10 @@ let substl_checking_arity env subst sigma c =
 
 type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
 
-let contract_fix_use_function env sigma f
-  ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
+let contract_fix env sigma f
+  ((recindices,bodynum),(_names,_types,bodies as typedbodies) as fixp) = match f with
+| None -> contract_fix sigma fixp
+| Some f ->
   let (names, (nbfix, lv, n)), u, largs = f in
   let lu = List.firstn n largs in
   let p = List.length lv in
@@ -491,13 +493,16 @@ let contract_fix_use_function env sigma f
   let c = substl_checking_arity env (List.rev lbodies) sigma (nf_beta env sigma bodies.(bodynum)) in
   nf_beta env sigma c
 
-let contract_cofix_use_function env sigma f
-  (bodynum,(names,_,bodies as typedbodies)) args =
-  let f =
-    if isConst sigma f then
+let contract_cofix env sigma f
+  (bodynum,(names,_,bodies as typedbodies) as fixp) args = match f with
+| None -> contract_cofix sigma fixp
+| Some f ->
+  let f = match f with
+  | EvalConst kn, u ->
+    begin
       let minargs = List.length args in
       fun i ->
-        if Int.equal i bodynum then Some (minargs, f)
+        if Int.equal i bodynum then Some (minargs, mkConstU (kn, u))
         else match names.(i).binder_name with
           | Anonymous -> None
           | Name id ->
@@ -505,7 +510,6 @@ let contract_cofix_use_function env sigma f
                   mutual inductive, try to reuse the global name if
                   the block was indeed initially built as a global
                   definition *)
-              let (kn, u) = destConst sigma f in
               let kn = Constant.change_label kn (Label.of_id id) in
               let cst = (kn, EInstance.kind sigma u) in
               try match constant_opt_value_in env cst with
@@ -513,7 +517,8 @@ let contract_cofix_use_function env sigma f
                     (* TODO: check kn is correct *)
                 | Some _ -> Some (minargs,mkConstU (kn, u))
               with Not_found -> None
-    else
+      end
+    | _ ->
       fun _ -> None in
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
@@ -530,21 +535,7 @@ type 'a miota_args = {
   mcargs  : 'a list;    (** the constructor's arguments *)
   mlf     : 'a pcase_branch array }  (** the branch code vector *)
 
-let reduce_mind_case env sigma mia =
-  match EConstr.kind sigma mia.mconstr with
-    | Construct ((_, i as cstr), u) ->
-        let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        let br = mia.mlf.(i - 1) in
-        let ctx = EConstr.expand_branch env sigma mia.mU mia.mParams cstr br in
-        let br = it_mkLambda_or_LetIn (snd br) ctx in
-        applist (br, real_cargs)
-    | CoFix cofix ->
-        let cofix_def = contract_cofix sigma cofix in
-        (* XXX Is NoInvert OK here? *)
-        mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
-    | _ -> assert false
-
-let reduce_mind_case_use_function f env sigma mia =
+let reduce_mind_case env sigma f mia =
   match EConstr.kind sigma mia.mconstr with
     | Construct ((_, i as cstr),u) ->
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
@@ -553,8 +544,7 @@ let reduce_mind_case_use_function f env sigma mia =
         let br = it_mkLambda_or_LetIn (snd br) ctx in
         applist (br, real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
-        let cofix_def =
-          contract_cofix_use_function env sigma f cofix mia.mcargs in
+        let cofix_def = contract_cofix env sigma f cofix mia.mcargs in
         mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
@@ -722,8 +712,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
         let c = reference_value env sigma ref u in
         let d, lrest = whd_nothing_for_iota env sigma (c, largs) in
         let f = ([|Some (minfxargs,ref)|],infos), u, largs in
-        (match reduce_fix_use_function allowed_reds env sigma f
-                 (destFix sigma d) lrest with
+        (match reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
            | Reduced (c,rest) -> (c, rest), nocase)
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
@@ -737,8 +726,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
         let (_, midargs as s) = descend (ref,u) largs in
         let d, lrest = whd_nothing_for_iota env sigma s in
         let f = refinfos, u, midargs in
-        (match reduce_fix_use_function allowed_reds
-                 env sigma f (destFix sigma d) lrest with
+        (match reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
            | Reduced (c,rest) -> (c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
@@ -785,7 +773,7 @@ and whd_simpl_stack allowed_reds env sigma =
           with
               Redelimination -> s')
       | Fix fix ->
-          (try match reduce_fix allowed_reds env sigma fix stack with
+          (try match reduce_fix allowed_reds env sigma None fix stack with
             | Reduced s' -> redrec s'
             | NotReducible -> s'
           with Redelimination -> s')
@@ -845,7 +833,7 @@ and whd_simpl_stack allowed_reds env sigma =
   in
   redrec
 
-and reduce_fix allowed_reds env sigma fix stack =
+and reduce_fix allowed_reds env sigma f fix stack =
   match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
@@ -853,23 +841,7 @@ and reduce_fix allowed_reds env sigma fix stack =
          whd_construct_stack allowed_reds env sigma recarg in
         let stack' = List.assign stack recargnum (applist recarg') in
         (match EConstr.kind sigma recarg'hd with
-           | Construct _ -> Reduced (contract_fix sigma fix, stack')
-           | _ -> NotReducible)
-
-and reduce_fix_use_function allowed_reds env sigma f fix stack =
-  match fix_recarg fix stack with
-    | None -> NotReducible
-    | Some (recargnum,recarg) ->
-        let (recarg'hd,_ as recarg') =
-          if EConstr.isRel sigma recarg then
-            (* The recarg cannot be a local def, no worry about the right env *)
-            (recarg, [])
-          else
-            whd_construct_stack allowed_reds env sigma recarg in
-        let stack' = List.assign stack recargnum (applist recarg') in
-        (match EConstr.kind sigma recarg'hd with
-           | Construct _ ->
-               Reduced (contract_fix_use_function env sigma f fix,stack')
+           | Construct _ -> Reduced (contract_fix env sigma f fix, stack')
            | _ -> NotReducible)
 
 and reduce_proj allowed_reds env sigma c =
@@ -900,14 +872,14 @@ and special_red_case allowed_reds env sigma (ci, u, pms, p, iv, c, lf) =
       | None -> raise Redelimination
       | Some gvalue ->
         if reducible_mind_case sigma gvalue then
-          reduce_mind_case_use_function constr env sigma
+          reduce_mind_case env sigma (Some (ref, u))
           {mP=p; mU = u; mParams = pms; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
         else
           redrec (gvalue, cargs))
     | None ->
       if reducible_mind_case sigma constr then
-        reduce_mind_case env sigma
+        reduce_mind_case env sigma None
           {mP=p; mU = u; mParams = pms; mconstr=constr; mcargs=cargs;
           mci=ci; mlf=lf}
       else
@@ -1372,7 +1344,7 @@ let one_step_reduce env sigma c =
               stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
-          (try match reduce_fix betadeltazeta env sigma fix stack with
+          (try match reduce_fix betadeltazeta env sigma None fix stack with
              | Reduced s' -> s'
              | NotReducible -> raise NotStepReducible
            with Redelimination -> raise NotStepReducible)
