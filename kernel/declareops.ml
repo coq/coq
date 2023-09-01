@@ -166,7 +166,7 @@ let eq_nested_type t1 t2 = match t1, t2 with
 let eq_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> true
 | Norec, _ -> false
-| Mrec i1, Mrec i2 -> Names.Ind.CanOrd.equal i1 i2
+| (Mrec i1 | Nested (NestedInd i1)), (Mrec i2 | Nested (NestedInd i2)) -> Names.Ind.CanOrd.equal i1 i2
 | Mrec _, _ -> false
 | Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
 | Nested _, _ -> false
