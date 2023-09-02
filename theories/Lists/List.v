@@ -615,6 +615,34 @@ Section Elts.
       intro n. exact (Hnth (S n)).
   Qed.
 
+  Lemma unfold_nth_error l n
+    : nth_error l n
+      = match n, l with
+        | O, x :: _ => Some x
+        | S n, _ :: l => nth_error l n
+        | _, _ => None
+        end.
+  Proof. destruct n; reflexivity. Qed.
+
+  Lemma nth_error_nil n : nth_error nil n = None.
+  Proof. destruct n; reflexivity. Qed.
+
+  Lemma nth_error_cons x xs n
+    : nth_error (x :: xs) n
+      = match n with
+        | O => Some x
+        | S n => nth_error xs n
+        end.
+  Proof. apply unfold_nth_error. Qed.
+
+  Lemma nth_error_O l
+    : nth_error l O = hd_error l.
+  Proof. destruct l; reflexivity. Qed.
+
+  Lemma nth_error_S l n
+    : nth_error l (S n) = nth_error (tl l) n.
+  Proof. destruct l; rewrite ?nth_error_nil; reflexivity. Qed.
+
   (** Results directly relating [nth] and [nth_error] *)
 
   Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
@@ -1401,7 +1429,7 @@ End Fold_Right_Recursor.
     match l with
       | nil => cons nil nil
       | cons x t =>
-	flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
+        flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
         (list_power t l')
     end.
 
@@ -1847,12 +1875,12 @@ End Fold_Right_Recursor.
 
     Lemma in_prod_aux :
       forall (x:A) (y:B) (l:list B),
-	In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
+        In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
     Proof.
       intros x y l; induction l;
-	[ simpl; auto
-	  | simpl; destruct 1 as [H1| ];
-	    [ left; rewrite H1; trivial | right; auto ] ].
+        [ simpl; auto
+          | simpl; destruct 1 as [H1| ];
+            [ left; rewrite H1; trivial | right; auto ] ].
     Qed.
 
     Lemma in_prod :
@@ -2081,9 +2109,9 @@ Section Cutting.
     match n with
       | 0 => nil
       | S n => match l with
-		 | nil => nil
-		 | a::l => a::(firstn n l)
-	       end
+                 | nil => nil
+                 | a::l => a::(firstn n l)
+               end
     end.
 
   Lemma firstn_nil n: firstn n [] = [].
@@ -2162,9 +2190,9 @@ Section Cutting.
     match n with
       | 0 => l
       | S n => match l with
-		 | nil => nil
-		 | a::l => skipn n l
-	       end
+                 | nil => nil
+                 | a::l => skipn n l
+               end
     end.
 
   Lemma firstn_skipn_comm : forall m n l,
