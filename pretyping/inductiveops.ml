@@ -716,4 +716,6 @@ let control_only_guard env sigma c =
     check_fix_cofix env c;
     EConstr.iter_with_full_binders env sigma EConstr.push_rel iter env c
   in
-  iter env c
+  try iter env c
+  with Type_errors.TypeError (env, e) ->
+    raise (Pretype_errors.PretypeError (env, sigma, TypingError (Type_errors.map_ptype_error EConstr.of_constr e)))
