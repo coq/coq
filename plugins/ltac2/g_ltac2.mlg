@@ -263,8 +263,7 @@ GRAMMAR EXTEND Gram
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = ltac2_expr LEVEL "5" ->
         { CAst.make ~loc @@ CTacSet (e, RelId qid, r) } ]
     | "0"
-      [ "("; a = SELF; ")" ->
-        { CAst.make ~loc @@ a.CAst.v }
+      [ "("; a = SELF; ")" -> { CAst.make ~loc @@ a.CAst.v }
       | "("; a = SELF; ":"; t = ltac2_type; ")" ->
         { CAst.make ~loc @@ CTacCnv (a, t) }
       | "()" ->
@@ -319,10 +318,10 @@ GRAMMAR EXTEND Gram
       | "@"; id = Prim.ident -> { Tac2quote.of_ident (CAst.make ~loc id) }
       | "&"; id = lident -> { Tac2quote.of_hyp ~loc id }
       | "'"; c = Constr.constr -> { inj_open_constr loc c }
-      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
-      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr c }
-      | IDENT "preterm"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_preterm c }
-      | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
+      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr (CAst.make ~loc c.v) }
+      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr (CAst.make ~loc c.v) }
+      | IDENT "preterm"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_preterm (CAst.make ~loc c.v) }
+      | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident (CAst.make ~loc c.v) }
       | IDENT "pat"; ":"; "("; c = Constr.cpattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
       | IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }

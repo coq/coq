@@ -1312,8 +1312,14 @@ end
 
 let () = define1 "ltac1_run" ltac1 begin fun v ->
   let open Ltac_plugin in
-  Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v >>= fun () ->
-  return v_unit
+  DebugCommon.push_top_chunk ();
+  (* todo: what about wrapping ltac1_ref above and ltac1_apply below? *)
+  let wrap (e, info) = Proofview.tclUNIT () >>=
+      fun () -> DebugCommon.pop_chunk (); Proofview.tclZERO ~info e in
+  Proofview.tclOR
+    (Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v >>=
+        fun () -> DebugCommon.pop_chunk (); return v_unit)
+    wrap
 end
 
 let () = define3 "ltac1_apply" ltac1 (list ltac1) closure begin fun f args k ->
@@ -1826,14 +1832,13 @@ let () =
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
       DebugCommon.push_top_chunk ();
-      DebugCommon.set_top_chunk DebugCommon.empty_chunk CAst.(tac.loc);
       let tac2 = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
-      let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
+      let wrap (e, info) = set_bt info >>= fun info ->
+          DebugCommon.pop_chunk ();
+          Proofview.tclZERO ~info e in
       Proofview.tclTHEN
         (Ltac_plugin.Tactic_debug.entry_stop_check tac)
-        (Proofview.tclOR tac2 wrap >>= fun () ->
-          DebugCommon.pop_chunk ();
-          return v_unit)
+        (Proofview.tclOR tac2 wrap >>= fun () -> DebugCommon.pop_chunk (); return v_unit)
     in
     let len = List.length ids in
     if Int.equal len 0 then

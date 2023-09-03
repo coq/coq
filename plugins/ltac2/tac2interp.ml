@@ -112,8 +112,6 @@ let eval_glb_ext ist (Tac2dyn.Arg.Glb (tag,e)) =
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-let init () = () (* TODO: needed? *)
-
 let rec interp (ist : environment) e =
 (*  let p = "I" in *)
 (*  dump_expr2 ~p e; *)
@@ -136,9 +134,10 @@ match e with
   interp ist (GTacApp (f, args, loc))
 | GTacAls _ ->
   failwith "invalid GTacAls";
-| GTacApp (f, args, loc) ->
+| GTacApp (f, args, loc) ->  (* todo: move much of following to tac2debug.ml *)
   let fname = match f with
   | GTacRef kn -> let s = KerName.to_string kn in if false then Printf.eprintf "kn = %s\n%!" s; s
+  | GTacExt (tag,_) -> (Tac2dyn.Arg.repr tag)   (* for ltac1val: *)
   | _ -> "???"
   in
 (*  Printf.eprintf "fname = %s not starts_with = %b\n%!" fname (Bool.not (starts_with "Ltac2." fname)); *)
@@ -162,9 +161,10 @@ match e with
     else ist
   in
   let (>=) = Proofview.tclBIND in
-  (if stop then (DebugCommon.db_pr_goals ()) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
-  Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.apply (Tac2ffi.to_closure f) args
+  Proofview.tclTHEN (DebugCommon.save_goals ())
+    ((if stop then (DebugCommon.db_pr_goals ()) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
+    Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
+    Tac2ffi.apply (Tac2ffi.to_closure f) args)
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -223,7 +223,7 @@ match e with
     return (Tac2env.interp_primitive ml)
 | GTacExt (tag, e) ->
   let chunk = (ist.locs, fmt_stack2 ist.stack, fmt_vars2 (ist.env_ist :: ist.varmaps)) in
-  DebugCommon.set_top_chunk chunk None;
+  DebugCommon.set_top_chunk chunk;
   eval_glb_ext ist (Glb (tag,e))
 
 and interp_closure ist0 f =

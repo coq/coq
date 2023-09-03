@@ -1126,9 +1126,7 @@ let ltac2_interp e =
   let loc = e.loc in
   let (e, t) = intern ~strict:false [] e in
   let () = check_unit ?loc t in
-(*  Printf.eprintf "\nltac2_interp\n%!"; *)
   DebugCommon.init ();
-  Tac2interp.init ();
   let tac = Tac2interp.interp (Tac2interp.empty_environment ()) e in
   Proofview.tclIGNORE tac
 

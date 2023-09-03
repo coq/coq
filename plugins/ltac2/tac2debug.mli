@@ -25,3 +25,5 @@ val fmt_stack2 : (string * Loc.t option) list option -> unit ->
                 string list
 
 val fmt_vars2 : varmap list -> int -> DebugHook.Answer.vars
+
+val dump_expr2 : ?indent:int -> ?p:string -> Tac2expr.glb_tacexpr -> unit

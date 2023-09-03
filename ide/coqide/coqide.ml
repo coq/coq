@@ -816,22 +816,29 @@ let maybe_update_breakpoints () =
     ) notebook#pages upds
 
 module Nav = struct
-  let forward_one_sid ?sid _ =
-    maybe_update_breakpoints ();
+  let forward_one_sid ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOver) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
   let forward_one x = forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.Continue) then
       send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+  let continue_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.ContinueRev
   let step_in ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepIn) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+  let step_in_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.StepInRev
   let step_out ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOut) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let backward_one _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+  let step_out_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.StepOutRev
+  let backward_one_sid ?sid _ = maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.StepOverRev) then  (* right?? *)
+      send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+  let backward_one x = backward_one_sid x
   let run_to_cursor _ = maybe_update_breakpoints ();
     send_to_coq (fun sn -> sn.coqops#go_to_insert)
   let run_to_end _ = maybe_update_breakpoints ();
@@ -869,17 +876,25 @@ let f11      = GtkData.AccelGroup.parse "F11"
 let shft_f10 = GtkData.AccelGroup.parse "<Shift>F10"
 let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
 let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
+let ctl_f9       = GtkData.AccelGroup.parse "<Ctrl>F9"
+let ctl_f10      = GtkData.AccelGroup.parse "<Ctrl>F10"
+let ctl_shft_f10 = GtkData.AccelGroup.parse "<Ctrl><Shift>F10"
 
 (* handle certain function keys from detached Messages panel
    functions are directed to the specified session or the
    current session, not the Messages session (debatable) *)
+(* todo: Hardcoding keystrokes here does work with remapped key bindings.
+   Instead should forward the current keystroke for "continue" even it's not f9 *)
 let forward_keystroke key sid =
   if      key = f9 then (Nav.continue ~sid (); true)
   else if key = f10 then (Nav.step_in ~sid (); true)
   else if key = f11 then (Nav.break ~sid (); true)
   else if key = shft_f10 then (Nav.step_out ~sid (); true)
-  else if key = ctl_up then (Nav.backward_one (*~sid*) (); true)
+  else if key = ctl_up then (Nav.backward_one_sid ~sid (); true)
   else if key = ctl_down then (Nav.forward_one_sid ~sid (); true)
+  else if key = ctl_f9 then (Nav.continue_rev ~sid (); true)
+  else if key = ctl_f10 then (Nav.step_in_rev ~sid (); true)
+  else if key = ctl_shft_f10 then (Nav.step_out_rev ~sid (); true)
   else false
 
 let _ = Wg_MessageView.forward_keystroke := forward_keystroke
@@ -1603,6 +1618,9 @@ let build_ui () =
     item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
     item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
     (* todo: consider other names for Break and Interrupt to be clearer to users *)
+    item "Continue back" ~label:"_Continue back" ~accel:"<Ctrl>F9" ~callback:Nav.continue_rev;
+    item "Step in back" ~label:"Step in back" ~accel:"<Ctrl>F10" ~callback:Nav.step_in_rev;
+    item "Step out back" ~label:"Step out back" ~accel:"<Ctrl><Shift>F10" ~callback:Nav.step_out_rev;
     item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
     item "Show debug panel" ~label:"Show debug panel" ~callback:Nav.show_debugger;
   ];

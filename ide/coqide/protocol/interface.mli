@@ -126,9 +126,13 @@ type coq_info = {
 (* a subset of DebugHook.Action.t *)
 type db_continue_opt =
   | StepIn
+  | StepInRev
   | StepOver
+  | StepOverRev
   | StepOut
+  | StepOutRev
   | Continue
+  | ContinueRev
   | Interrupt
 
 (** Calls result *)

@@ -1651,7 +1651,6 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   CAst.make ?loc @@ CTacLet (isrec, bnd, e)
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
-  (* todo: debugger *)
   globalize ids @@ CAst.make ?loc @@ CTacLet(false, el, body)
 | CTacCnv (e, t) ->
   let e = globalize ids e in
@@ -1934,7 +1933,6 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacLet (isrec, bnd', e')
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
-  (* todo: debugger *)
   subst_rawexpr subst @@ CAst.make ?loc @@ CTacLet(false, el, body)
 | CTacCnv (e, c) ->
   let e' = subst_rawexpr subst e in

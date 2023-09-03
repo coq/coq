@@ -76,7 +76,7 @@ module Comm = struct
   let print g = (hook ()).submit_answer (Output (str g))
   [@@@ocaml.warning "+32"]
   let isTerminal = DebugCommon.isTerminal
-  let read = wrap DebugCommon.(fun () -> read ())
+  let read = wrap (fun () -> DebugCommon.read ())
 
 end
 
@@ -167,7 +167,7 @@ let save_top_chunk tac varmap trace =
   | None -> { locs=[]; stack=[]; varmaps=[]}
   in
   let chunk = (locs, fmt_stack1 stack, fmt_vars1 (varmap :: varmaps)) in  (* todo: tac? *)
-  DebugCommon.set_top_chunk chunk CAst.(tac.loc)
+  DebugCommon.save_chunk chunk CAst.(tac.loc)
 
 (* Prints the goal and the command to be executed *)
 let goal_com tac =
@@ -224,7 +224,7 @@ let rec prompt level =
     let nl = if Stdlib.(!batch) then "\n" else "" in
     Comm.print_deferred () >>
     Comm.prompt (tag "message.prompt"
-                   @@ fnl () ++ str "TcDebug (" ++ int level ++ str (") > " ^ nl)) >>
+                   @@ fnl () ++ str (Printf.sprintf "TcDebug (%d) > %s" level nl)) >>
     if Stdlib.(!batch) && Comm.isTerminal () then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise (Sys.Break, Exninfo.null) in
     Comm.read >>= fun inst ->  (* read call *)
@@ -234,6 +234,10 @@ let rec prompt level =
     | StepIn
     | StepOver
     | StepOut -> return (DebugOn (level+1))
+    | ContinueRev -> failwith "ContinueRev"  (* handled in read() loop *)
+    | StepInRev -> failwith "StepInRev"  (* handled in read() loop *)
+    | StepOverRev -> failwith "StepOverRev"  (* handled in read() loop *)
+    | StepOutRev -> failwith "StepOutRev"  (* handled in read() loop *)
     | Skip -> return DebugOff
     | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
     | Help -> help () >> prompt level
@@ -333,6 +337,12 @@ let debug_prompt lev tac f varmap trace =
               return (DebugOn (lev+1)))
           end
     in
+  let newlevel =
+    Proofview.tclTHEN
+      (DebugCommon.save_goals ())
+      newlevel
+  in
+
   newlevel >= fun newlevel ->
   (* What to execute *)
   Proofview.tclOR
@@ -348,7 +358,8 @@ let debug_prompt lev tac f varmap trace =
 
 (* for ltac1:(tac) *)
 let entry_stop_check tac =
-  let loc = !DebugCommon.cur_loc in
+(*  Printf.eprintf "entry_stop_check\n%!"; *)
+  let loc = !DebugCommon.cur_loc in  (* todo: necessary? *)
   let can_stop = match CAst.(tac.v) with (* avoid double stop for ltac1:(xx) *)
   | TacArg _ -> false
   | _ -> true

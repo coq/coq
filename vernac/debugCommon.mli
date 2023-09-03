@@ -53,7 +53,11 @@ val pop_chunk : unit -> unit
 
 val new_stop_point : unit -> unit
 
-val set_top_chunk : chunk -> Loc.t option -> unit
+val save_goals : unit -> unit Proofview.tactic
+
+val save_chunk : chunk -> Loc.t option -> unit
+
+val set_top_chunk : chunk -> unit
 
 val push_top_chunk : unit -> unit
 

@@ -144,6 +144,9 @@ let init () =
 \n    <menuitem action='Continue' />\
 \n    <menuitem action='Step in' />\
 \n    <menuitem action='Step out' />\
+\n    <menuitem action='Continue back' />\
+\n    <menuitem action='Step in back' />\
+\n    <menuitem action='Step out back' />\
 \n    <menuitem action='Break' />\
 \n    <menuitem action='Show debug panel' />\
 \n  </menu>\

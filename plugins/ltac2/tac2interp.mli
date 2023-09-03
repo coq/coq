@@ -38,5 +38,3 @@ val set_env : environment -> Ltac_pretype.unbound_ltac_var_map -> Ltac_pretype.u
 
 exception LtacError of KerName.t * valexpr array
 (** Ltac2-defined exceptions seen from OCaml side *)
-
-val init : unit -> unit

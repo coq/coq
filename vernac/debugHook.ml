@@ -13,9 +13,13 @@
 module Action = struct
   type t =
     | StepIn
+    | StepInRev
     | StepOver
+    | StepOverRev
     | StepOut
+    | StepOutRev
     | Continue
+    | ContinueRev
     | Skip
     | Interrupt
     | Help
@@ -65,11 +69,15 @@ module Action = struct
   let to_string t =
     match t with
     | Continue -> "Continue"
+    | ContinueRev -> "ContinueRev"
     | StepIn -> "StepIn"
+    | StepInRev -> "StepInRev"
     | StepOver -> "StepOver"
+    | StepOverRev -> "StepOverRev"
     | StepOut -> "StepOut"
+    | StepOutRev -> "StepOutRev"
     | Skip -> "Skip"
-    | Interrupt -> "Interrput"
+    | Interrupt -> "Interrupt"
     | Help -> "Help"
     | UpdBpts _ -> "UpdBpts"
     | Configd -> "Configd"

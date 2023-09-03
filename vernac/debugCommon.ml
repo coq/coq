@@ -1,6 +1,107 @@
 (* tells whether Ltac Debug is set *)
 let debug = ref false  (* todo: relation to tacinterp.is_traced *)
 
+
+(* todo: here? *)
+type fmt_stack_f = unit -> string list
+type fmt_vars_f = int -> DebugHook.Answer.vars
+type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f
+
+let empty_chunk = [], (fun _ -> []), (fun _ -> [])
+
+(* can some of these go away? *)
+let stack_chunks : chunk list ref = ref []
+let top_chunk : chunk ref = ref empty_chunk
+let cur_loc : Loc.t option ref = ref None
+
+
+(* Ltac history mechanism *)
+
+type history = {
+  stack_chunks : chunk list;
+  top_chunk : chunk;
+  cur_loc : Loc.t option;
+  goals : Proofview.Goal.t list;
+}
+
+(* circular buffer *)
+let history : history option array ref = ref [| |]
+
+let hist_first = ref 0 (* index of the first (oldest) entry *)
+let hist_count = ref 0 (* number of valid entries *)
+
+let cur_goals = ref [] (* current goals *)
+
+(* selects history entry to display; # of steps back in history,
+   0 = current Ltac* state *)
+let hist_index = ref 0
+
+let mod_len n =
+  let len = (Array.length !history) in
+  let rv = n mod len in
+  if rv >= 0 then rv else rv + len
+
+[@@@ocaml.warning "-32"]
+let test = (try let _ = Sys.getenv("TEST") in true with _ -> false)
+[@@@ocaml.warning "+32"]
+
+(* n is the # of entries before the current stop point to fetch.  0 = use current stop point
+ *)
+let get_history n =
+(*  if test then Printf.eprintf "get_history: n = %d hist_count = %d hist_index = %d\n%!" *)
+(*      n !hist_count !hist_index; *)
+  if n >= !hist_count || n < 0 then failwith (Printf.sprintf "get_history %d %d" n !hist_count);
+    (* todo: or just be silent? *)
+  let i = mod_len (!hist_first + !hist_count - 1 - n) in
+  match Array.get !history i with
+  | Some h -> h
+  | None -> failwith "get_history entry is None"
+
+let save_goals () =
+  let open Proofview in
+  let open Notations in
+  Proofview.Goal.goals >>= fun gl ->
+  Monad.List.map (fun x -> x) gl >>= fun gls ->
+  cur_goals := gls;
+  Proofview.tclLIFT (Proofview.NonLogical.return ())
+
+let history_default = 10
+let history_buf_size = ref history_default
+
+let set_history_size n =
+  history_buf_size := if n < 0 then 0 else n;
+  history := Array.make (n+1) None
+
+let () =
+  let open Goptions in
+  declare_int_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Ltac";"Debug";"History"];
+      optread  = (fun () -> Some !history_buf_size);
+      optwrite = (fun n -> set_history_size (Option.default history_default n)) }
+
+let reset_history n =
+(*  if test then Printf.eprintf "reset_history %d\n%!" n; *)
+(*  if test then Printexc.print_raw_backtrace stderr (Printexc.get_callstack 50); *)
+  assert (n >= 0);
+  (* allow garbage collection of previous contents *)
+  for i = !hist_first to !hist_first + !hist_count do
+      Array.set !history (mod_len i) None;
+  done;
+  hist_first := 0;
+  hist_count := 0;
+  hist_index := 0
+
+let append_history entry =
+  let i = mod_len (!hist_first + !hist_count) in
+  Array.set !history i (Some entry);
+  if !hist_count < (Array.length !history) then
+    incr hist_count
+  else
+    hist_first := mod_len (!hist_first + 1)
+(*  if test then Printf.eprintf "append_history: hist_count = %d hist_first = %d\n%!" !hist_count !hist_first *)
+
 let set_debug b = debug := b
 
 let get_debug () = !debug
@@ -85,20 +186,11 @@ let breakpoint_stop loc =
     | _ -> false
 
 
-type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> DebugHook.Answer.vars
-type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f
-let empty_chunk = [], (fun _ -> []), (fun _ -> [])
-
-let top_chunk : chunk ref = ref empty_chunk
-let stack_chunks : chunk list ref = ref []
-
 (* stack state for the previous stopping point, used to support StepIn and StepOut *)
 let prev_top_chunk : chunk ref = ref empty_chunk
 let prev_chunks : chunk list ref = ref []
-let cur_loc : Loc.t option ref = ref None
 
-(* let test = (try let _ = Sys.getenv("TEST") in true with _ -> false) *)
+(* let test = try let _ = Sys.getenv("TEST") in true with _ -> false *)
 (* TODO: shouldn't be printing messages during compile, need to check if debug enabled *)
 
 let pop_chunk () =
@@ -110,31 +202,36 @@ let new_stop_point () =
   prev_chunks := !stack_chunks
 (*  if test then Printf.eprintf "new_stop_point: num chunks = %d\n%!" (List.length !stack_chunks) *)
 
+let set_top_chunk chunk =
+  top_chunk := chunk
 
-let set_top_chunk chunk loc =
+let save_chunk chunk loc =
   top_chunk := chunk;
-  cur_loc := loc
+  cur_loc := loc;
+  append_history { stack_chunks=(!stack_chunks); top_chunk=(!top_chunk); cur_loc=(!cur_loc);
+      goals=(!cur_goals) }
 (*  let (locs,_,_)= chunk in *)
-(*  if test then Printf.eprintf "set_top_chunk: chunk size = %d loc = %s\n%!" (List.length locs) *)
-(*    (print_loc "" loc) *)
+(*  if test then Printf.eprintf "save_chunk: chunk size = %d loc = %s\n%!" (List.length locs) *)
+(*    (print_loc "" loc); *)
+(*  if test then Printf.eprintf "mem used by buf = %d\n%!" (Obj.reachable_words (Obj.magic history)) *)
 
 let push_top_chunk () =
   stack_chunks := !top_chunk :: !stack_chunks
 (*
-  if test then
-    let (locs,_,_)= !top_chunk in
-      Printf.eprintf "push_top_chunk: size = %d num chunks = %d\n%!"
-        (List.length locs) (List.length !stack_chunks)
+   if test then
+     let (locs,_,_)= !top_chunk in
+       Printf.eprintf "push_top_chunk: size = %d num chunks = %d\n%!"
+         (List.length locs) (List.length !stack_chunks)
 *)
 
 
 let action = ref DebugHook.Action.StepOver
 
-
 let stepping_stop () =
   let locs_info () =
     (* performance impact? *)
-    let st =      List.concat_map (fun (locs,_,_) -> locs)  (!top_chunk :: !stack_chunks) in
+    let hentry = get_history !hist_index in
+    let st =      List.concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
     let st_prev = List.concat_map (fun (locs,_,_) -> locs)  (!prev_top_chunk :: !prev_chunks) in
     let l_cur, l_prev = List.length st, List.length st_prev in
     st, st_prev, l_cur, l_prev
@@ -142,8 +239,11 @@ let stepping_stop () =
 
   let open DebugHook.Action in
   match !action with
+  | ContinueRev
   | Continue -> false
+  | StepInRev
   | StepIn   -> true
+  | StepOverRev
   | StepOver -> let st, st_prev, l_cur, l_prev = locs_info () in
                 if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
                 else if l_prev = 0 (*&& l_cur > 0*) then false
@@ -151,6 +251,7 @@ let stepping_stop () =
                   let peq = List.nth st (l_cur - l_prev) == (List.hd st_prev) in
                   (l_cur > l_prev && (not peq)) ||  (* stepped out *)
                   (l_cur = l_prev && peq)  (* stepped over *)
+  | StepOutRev
   | StepOut  -> let st, st_prev, l_cur, l_prev = locs_info () in
                 if l_cur < l_prev then true
                 else if l_prev = 0 then false
@@ -208,29 +309,32 @@ let cvt_loc loc =
   | None -> None (* nothing to highlight, e.g. not in a .v file *)
 
  let format_frame text loc =
-   try
-     let open Loc in
-       match loc with
-       | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
-         let dplen = String.length dp in
-         let lastdot = String.rindex dp '.' in
-         let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
-         let module_name = String.sub dp 0 lastdot in
-         let routine =
-           try
-             (* try text as a kername *)
-             assert (CString.is_prefix dp text);
-             let knlen = String.length text in
-             let lastdot = String.rindex text '.' in
-             String.sub text (lastdot+1) (knlen - (lastdot + 1))
-           with _ -> text
-         in
-         Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
-       | Some { fname=ToplevelInput; line_nb } ->
-         let items = String.split_on_char '.' text in
-         Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
-       | _ -> text
-   with _ -> text
+  try
+    let open Loc in
+      match loc with
+      | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
+        let dplen = String.length dp in
+        let lastdot = String.rindex dp '.' in
+        let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
+        let module_name = String.sub dp 0 lastdot in
+        let routine =
+          try
+            (* try text as a kername *)
+            assert (CString.is_prefix dp text);
+            let knlen = String.length text in
+            let lastdot = String.rindex text '.' in
+            String.sub text (lastdot+1) (knlen - (lastdot + 1))
+          with _ -> text
+        in
+        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name
+      | Some { fname=ToplevelInput; line_nb } ->
+        let items = String.split_on_char '.' text in
+        if List.length items > 1 then
+          Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items)
+        else
+          Printf.sprintf "%s:%d" (List.hd items) line_nb
+      | _ -> text
+  with _ -> text
 
 
 let format_stack s locs =
@@ -274,6 +378,7 @@ let init () =
   top_chunk := empty_chunk;
   prev_top_chunk := empty_chunk;
   cur_loc := None;
+  reset_history !history_buf_size;
   let open DebugHook in
   match Intf.get () with
   | Some intf ->
@@ -316,12 +421,15 @@ let clear_queue () = wrap (fun () -> Queue.clear out_queue)
 
 let print g = (hook ()).submit_answer (Output (str g))
 
-let get_full_stack () = !top_chunk :: !stack_chunks
+let get_full_stack () =
+  let hist = get_history !hist_index in
+  hist.top_chunk :: hist.stack_chunks
 
 let fmt_stack () =
   let full = get_full_stack () in
-  let common = List.concat_map (fun (_, fmt_stack, _) -> fmt_stack ()) full in
-  let locs = !cur_loc :: List.concat_map (fun (locs, _, _) -> locs) full in
+  let cur_loc = (get_history !hist_index).cur_loc in
+  let common = List.concat_map (fun (_, fmt_stackL, _) -> fmt_stackL ()) full in
+  let locs = cur_loc :: List.concat_map (fun (locs, _, _) -> locs) full in
   let common = List.map (fun i -> Some i) common in
   format_stack (common @ [None]) locs
 
@@ -338,44 +446,75 @@ let get_vars framenum =
   in
   get_chunk (get_full_stack ()) framenum
 
+let db_fmt_goals () =
+  let db_fmt_goal gl =
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl gl in
+    let penv = Termops.Internal.print_named_context env in
+    let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
+      str"  " ++ hv 0 (penv ++ fnl () ++
+                     str "============================" ++ fnl ()  ++
+                     str" "  ++ pc) ++ fnl () ++ fnl ()
+  in
+  let gls = (get_history !hist_index).goals in
+  (* todo: say "No more goals"?  What if they are shelved?  Same behavior in Ltac1 *)
+  str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
+      Pp.seq (List.map db_fmt_goal gls)
+
+let db_pr_goals () =
+  let gs = db_fmt_goals () in
+  Proofview.tclLIFT (goals gs)   (* TODO: MAYBE DROP THIS LINE? *)
+
 let isTerminal () = (hook ()).isTerminal
 let read () =
   let rec l () =
     let cmd = (hook ()).read_cmd () in
+    action := cmd;  (* todo: issue being here, don't want to lose initial setting??? *)
+(*    Printf.eprintf "\naction = %s\n%!" (DebugHook.Action.to_string cmd); *)
     let open DebugHook.Action in
-    match cmd with
-    | Ignore -> l ()
-    | UpdBpts updates -> upd_bpts updates; l ()
-    | GetStack ->
-      ((hook)()).submit_answer (Stack (fmt_stack ()));
+    (* handle operations that don't change Ltac* or history state *)
+    begin match cmd with
+      | UpdBpts updates -> upd_bpts updates; l ()
+      | GetStack ->
+        ((hook)()).submit_answer (Stack (fmt_stack ()));
+        l ()
+      | GetVars framenum ->
+        ((hook)()).submit_answer (Vars (get_vars framenum));
+        l ()
+      (* should Skip reset hist_index to 0? *)
+      | StepIn | StepOver | StepOut | Continue -> hist_loop (-1) (* forwards *)
+      | StepInRev | StepOverRev | StepOutRev | ContinueRev -> hist_loop 1 (* backwards *)
+      | _ -> ()
+    end
+
+  and hist_loop incr =    (* step through history *)
+    let do_stop () =
+      let msg = tag "message.prompt"
+            @@ fnl () ++ str (Printf.sprintf "History (%d) > "(-(!hist_index))) in
+      (hook()).submit_answer (Goal (db_fmt_goals ()));
+      (hook()).submit_answer (Prompt msg);
       l ()
-    | GetVars framenum ->
-      ((hook)()).submit_answer (Vars (get_vars framenum));
-      l ()
-    | _ -> action := cmd; cmd
+    in
+
+(*    Printf.eprintf "hist_loop: incr = %d hist_index = %d hist_count = %d\n%!" *)
+(*      incr !hist_index !hist_count; *)
+    if incr = 1 && !hist_index+1 = !hist_count then begin
+(*      Printf.eprintf "hist_loop: hist_count = %d hist_index = %d\n%!" !hist_index !hist_count; *)
+      Feedback.msg_info Pp.(str "No more history available");
+      do_stop ();
+    end else if incr = 1 || !hist_index > 0 then begin
+      hist_index := !hist_index + incr;  (* assert >= 0? *)
+(*      Printf.eprintf "hist_index set to %d\n%!" !hist_index; *)
+      let hentry = get_history !hist_index in
+      if breakpoint_stop hentry.cur_loc || stepping_stop () then begin
+        (* stop in history *)
+        prev_top_chunk := hentry.top_chunk;
+        prev_chunks := hentry.stack_chunks;
+        do_stop ();
+      end else
+        hist_loop incr
+    end
+    (* else fall through, take step(s) in Ltac* *)
   in
-  l ()
-
-let db_fmt_goal gl =
-  let env = Proofview.Goal.env gl in
-  let concl = Proofview.Goal.concl gl in
-  let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
-    str"  " ++ hv 0 (penv ++ fnl () ++
-                   str "============================" ++ fnl ()  ++
-                   str" "  ++ pc) ++ fnl () ++ fnl ()
-
-let ssigma = ref None
-let senv = ref None
-
-let db_pr_goals () =
-  let open Proofview in
-  let open Notations in
-  Proofview.tclENV >>= fun genv -> senv := Some genv;
-  Proofview.tclEVARMAP >>= fun sigma -> ssigma := Some sigma;
-  Goal.goals >>= fun gl ->
-    Monad.List.map (fun x -> x) gl >>= fun gls ->
-      (* todo: say "No more goals"?  What if they are shelved?  Same behavior in Ltac1 *)
-      let gs = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
-          Pp.seq (List.map db_fmt_goal gls) in
-      Proofview.tclLIFT (goals gs)
+  l ();
+  !action
