@@ -112,8 +112,6 @@ let eval_glb_ext ist (Tac2dyn.Arg.Glb (tag,e)) =
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-let init () = () (* TODO: needed? *)
-
 let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string s)
@@ -158,9 +156,10 @@ let rec interp (ist : environment) = function
     else ist
   in
   let (>=) = Proofview.tclBIND in
-  (if stop then (DebugCommon.db_pr_goals ()) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
-  Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.apply (Tac2ffi.to_closure f) args
+  Proofview.tclTHEN (DebugCommon.save_goals ())
+    ((if stop then (DebugCommon.db_pr_goals ()) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
+    Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
+    Tac2ffi.apply (Tac2ffi.to_closure f) args)
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->

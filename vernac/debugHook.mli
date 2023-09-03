@@ -30,9 +30,13 @@
 module Action : sig
   type t =
     | StepIn    (* execute a single step in the tactic *)
+    | StepInRev (* reverse StepIn *)
     | StepOver  (* execute steps until DB is back in the current stack frame *)
+    | StepOverRev
     | StepOut   (* execute steps until DB exits current stack frame *)
+    | StepOutRev
     | Continue  (* execute steps until a breakpoint or the debugger exits *)
+    | ContinueRev
     | Skip      (* legacy: continue execution with no further debugging *)
     | Interrupt (* exit the debugger *)
     | Help      (* legacy: print help text *)

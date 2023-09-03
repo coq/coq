@@ -158,20 +158,28 @@ let of_pp (pp : Pp.t) =
 let of_dbcontinue_opt opt =
   let code = match opt with
   | StepIn -> 0
-  | StepOver -> 1
-  | StepOut -> 2
-  | Continue -> 3
-  | Interrupt -> 4
+  | StepInRev -> 1
+  | StepOver -> 2
+  | StepOverRev -> 3
+  | StepOut -> 4
+  | StepOutRev -> 5
+  | Continue -> 6
+  | ContinueRev -> 7
+  | Interrupt -> 8
   in
   of_int code
 
 let to_dbcontinue_opt opt =
   match to_int opt with
   | 0 -> StepIn
-  | 1 -> StepOver
-  | 2 -> StepOut
-  | 3 -> Continue
-  | 4 -> Interrupt
+  | 1 -> StepInRev
+  | 2 -> StepOver
+  | 3 -> StepOverRev
+  | 4 -> StepOut
+  | 5 -> StepOutRev
+  | 6 -> Continue
+  | 7 -> ContinueRev
+  | 8 -> Interrupt
   | _ -> failwith "to_dbcontinue_opt"
 
 let of_value f = function
@@ -493,9 +501,13 @@ end = struct
   let pr_state_id = Stateid.to_string
   let pr_db_continue_opt = function
     | StepIn -> "StepIn"
+    | StepInRev -> "StepInRev"
     | StepOver -> "StepOver"
+    | StepOverRev -> "StepOverRev"
     | StepOut -> "StepOut"
+    | StepOutRev -> "StepOutRev"
     | Continue -> "Continue"
+    | ContinueRev -> "ContinueRev"
     | Interrupt -> "Interrupt"
 
   let pr_search_cst = function

@@ -414,9 +414,13 @@ let db_continue opt =
   let open DebugHook.Action in
   debug_cmd := match opt with
   | Interface.StepIn -> StepIn
+  | Interface.StepInRev -> StepInRev
   | Interface.StepOver -> StepOver
+  | Interface.StepOverRev -> StepOverRev
   | Interface.StepOut -> StepOut
+  | Interface.StepOutRev -> StepOutRev
   | Interface.Continue -> Continue
+  | Interface.ContinueRev -> ContinueRev
   | Interface.Interrupt -> Interrupt
 
 let db_upd_bpts updates =

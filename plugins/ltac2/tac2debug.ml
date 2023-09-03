@@ -140,11 +140,15 @@ let rec read_loop () =
   let open DebugHook.Action in
   match !DebugCommon.action with
   | Continue
+  | ContinueRev
   | StepIn
+  | StepInRev
   | StepOver
-  | StepOut -> ()
+  | StepOverRev
+  | StepOut
+  | StepOutRev -> ()
   | Skip -> failwith "Skip not in Ltac2"
-  | Interrupt -> failwith "Interrupt"  (* todo: exit the debugger, for Ctrl C *)
+  | Interrupt -> raise Sys.Break
   | Help -> failwith "Help not in Ltac2"
   | UpdBpts updates -> failwith "UpdBpts"  (* handled in init() loop *)
   | Configd -> failwith "Configd" (* handled in init() loop *)
@@ -234,7 +238,6 @@ let rec dump_expr2 ?(indent=0) ?(p="D") e =
   | GTacExt (tag,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
   | GTacPrm ml -> print (Printf.sprintf "GTacPrm %s. %s\n%!" ml.mltac_plugin ml.mltac_tactic)
   | GTacAls  _ -> print "GTacAls"
-[@@@ocaml.warning "+32"]
 
 let push_locs item (ist : environment) =   (* ick *)
   match ist.stack with
@@ -263,7 +266,7 @@ let stop_stuff (ist : environment) loc =
     true || Bool.not (starts_with "user-contrib/Ltac2/" fname)
   in
   let chunk = (ist.locs, fmt_stack2 ist.stack, fmt_vars2 (ist.env_ist :: ist.varmaps)) in
-  DebugCommon.set_top_chunk chunk loc;
+  DebugCommon.save_chunk chunk loc;
   let stop = DebugCommon.get_debug () && (not_internal loc) &&
 (*    (Bool.not (starts_with "Ltac2." fname)) && *)
     (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop ())
