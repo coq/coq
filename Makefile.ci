@@ -59,6 +59,7 @@ CI_TARGETS= \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-math_classes \
+    ci-mathcomp_1 \
     ci-mathcomp \
     ci-mathcomp_test \
     ci-mathcomp_word \
@@ -107,9 +108,11 @@ ci-category_theory: ci-equations
 
 ci-color: ci-bignums
 
+ci-mathcomp: ci-elpi_hb
+
 ci-coqprime: ci-bignums
 ci-coquelicot: ci-mathcomp
-ci-deriving: ci-mathcomp
+ci-deriving: ci-mathcomp_1
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
@@ -123,12 +126,12 @@ ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
-ci-fcsl_pcm: ci-mathcomp
+ci-fcsl_pcm: ci-mathcomp_1
 ci-mczify: ci-mathcomp
 ci-mathcomp_test: ci-mathcomp
-ci-mathcomp_word: ci-mathcomp
-ci-finmap: ci-mathcomp
-ci-bigenough: ci-mathcomp
+ci-mathcomp_word: ci-mathcomp_1
+ci-finmap: ci-mathcomp_1
+ci-bigenough: ci-mathcomp_1
 ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
 
 ci-elpi_test: ci-elpi_hb
@@ -139,7 +142,7 @@ ci-jasmin: ci-mathcomp_word
 ci-iris: ci-autosubst
 
 ci-simple_io: ci-ext_lib
-ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
+ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp_1
 ci-quickchick_test: ci-quickchick
 ci-itree: ci-ext_lib ci-paco
 ci-itree_io: ci-itree ci-simple_io
@@ -159,7 +162,7 @@ ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-serapi_test: ci-mathcomp ci-serapi
+ci-serapi_test: ci-mathcomp_1 ci-serapi
 
 ci-coq_lsp: ci-serapi
 

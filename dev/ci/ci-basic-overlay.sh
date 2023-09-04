@@ -42,29 +42,23 @@ function project {
 ########################################################################
 # MathComp
 ########################################################################
-project mathcomp "https://github.com/math-comp/math-comp" "mathcomp-1"
+project mathcomp "https://github.com/math-comp/math-comp" "master"
 
-project fourcolor "https://github.com/math-comp/fourcolor" "e831b0b00e264285f91938917a0a5ef64ec1a829"
-# put back master when testing MathComp 2
-# project fourcolor "https://github.com/math-comp/fourcolor" "master"
+project mathcomp_1 "https://github.com/math-comp/math-comp" "mathcomp-1"
 
-project oddorder "https://github.com/math-comp/odd-order" "2c03794e64eef467442a4ea2ef1430b13b0faa97"
-# put back master when testing MathComp 2
-# project oddorder "https://github.com/math-comp/odd-order" "master"
+project fourcolor "https://github.com/math-comp/fourcolor" "master"
 
-project mczify "https://github.com/math-comp/mczify" "2046446984f7b8c8f5102df4df6076b60874e688"
-# put back master when testing MathComp 2
-# project mczify "https://github.com/math-comp/mczify" "master"
+project oddorder "https://github.com/math-comp/odd-order" "master"
+
+project mczify "https://github.com/math-comp/mczify" "master"
 
 project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4c7ebda35081b60"
-# put back master when testing MathComp 2
+# put back master when Analysis master moves to MathComp 2
 # project finmap "https://github.com/math-comp/finmap" "master"
 
 project bigenough "https://github.com/math-comp/bigenough" "master"
 
-project analysis "https://github.com/math-comp/analysis" "9193f4a1278409cc13a1de739adf3620aa24a638"
-# put back master when testing MathComp 2
-# project analysis "https://github.com/math-comp/analysis" "master"
+project analysis "https://github.com/math-comp/analysis" "master"
 
 ########################################################################
 # UniMath
@@ -219,7 +213,7 @@ project equations "https://github.com/mattam82/Coq-Equations" "main"
 ########################################################################
 project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
 
-project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "coq-master"
+project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "master"
 
 ########################################################################
 # Engine-Bench

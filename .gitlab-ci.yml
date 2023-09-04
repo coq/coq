@@ -37,7 +37,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2023-06-30-8ca33f9dfd"
-  EDGE_CACHEKEY: "edge_ubuntu-V2023-08-09-59f73e4e82"
+  EDGE_CACHEKEY: "edge_ubuntu-V2023-08-28-93124ee272"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -647,7 +647,7 @@ library:ci-fcsl_pcm:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
@@ -689,12 +689,14 @@ library:ci-oddorder:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
 
 library:ci-fourcolor:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
 
 library:ci-corn:
@@ -721,36 +723,44 @@ library:ci-math_classes:
 
 library:ci-mathcomp:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-elpi_hb  # for Hierarchy Builder
+
+library:ci-mathcomp_1:
+  extends: .ci-template-flambda
 
 library:ci-mathcomp_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
 
 library:ci-mczify:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
 
 library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 library:ci-analysis:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
   - library:ci-finmap
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
@@ -792,19 +802,19 @@ library:ci-deriving:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 library:ci-mathcomp_word:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 library:ci-jasmin:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
   - library:ci-mathcomp_word
 
 library:ci-coq_library_undecidability:
@@ -847,6 +857,8 @@ plugin:ci-coqhammer:
 
 plugin:ci-elpi_hb:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
@@ -906,7 +918,7 @@ plugin:ci-quickchick:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - library:ci-mathcomp_1
 
 plugin:ci-quickchick_test:
   extends: .ci-template-flambda
@@ -921,8 +933,9 @@ plugin:ci-relation_algebra:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - plugin:ci-aac_tactics
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  - plugin:ci-aac_tactics
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
@@ -934,7 +947,8 @@ plugin:ci-serapi_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp
+  - plugin:ci-elpi_hb
+  - library:ci-mathcomp_1
   - plugin:ci-serapi
 
 plugin:ci-coq_lsp:
