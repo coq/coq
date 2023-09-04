@@ -577,12 +577,6 @@ let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
   let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
   let using = Proof_using.definition_using env sigma ~fixnames ~using ~terms in
-  let vars = Environ.named_context env in
-  Names.Id.Set.iter (fun id ->
-      if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
-        user_err
-          (str "Unknown variable: " ++ Id.print id ++ str "."))
-    using;
   let _, pstate = Declare.Proof.set_used_variables pstate ~using in
   pstate
 
