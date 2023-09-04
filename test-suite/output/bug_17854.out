@@ -4,3 +4,6 @@ The variable a is bound several times in pattern.
 File "./output/bug_17854.v", line 9, characters 11-31:
 The command has indeed failed with message:
 The variable a is bound several times in pattern.
+File "./output/bug_17854.v", line 27, characters 12-21:
+The command has indeed failed with message:
+The variable n is bound several times in pattern.
