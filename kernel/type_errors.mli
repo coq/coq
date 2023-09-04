@@ -78,6 +78,7 @@ type ('constr, 'types) ptype_error =
   | BadCaseRelevance of Sorts.relevance * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
+  | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
 
 type type_error = (constr, types) ptype_error
 
@@ -157,6 +158,8 @@ val error_bad_case_relevance : env -> Sorts.relevance -> Constr.case -> 'a
 val error_bad_invert : env -> 'a
 
 val error_bad_variance : env -> lev:Level.t -> expected:Variance.t -> actual:Variance.t -> 'a
+
+val error_undeclared_used_variables : env -> declared_vars:Id.Set.t -> inferred_vars:Id.Set.t -> 'a
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error

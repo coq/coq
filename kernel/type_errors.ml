@@ -76,6 +76,7 @@ type ('constr, 'types) ptype_error =
   | BadCaseRelevance of Sorts.relevance * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
+  | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
 
 type type_error = (constr, types) ptype_error
 
@@ -168,6 +169,9 @@ let error_bad_invert env =
 let error_bad_variance env ~lev ~expected ~actual =
   raise (TypeError (env, BadVariance {lev;expected;actual}))
 
+let error_undeclared_used_variables env ~declared_vars ~inferred_vars =
+  raise (TypeError (env, UndeclaredUsedVariables {declared_vars; inferred_vars}))
+
 let map_pfix_guard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
@@ -195,7 +199,7 @@ let map_pguard_error f = function
 let map_ptype_error f = function
 | UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _
 | UndeclaredUniverse _ | DisallowedSProp | UnsatisfiedConstraints _
-| ReferenceVariables _ | BadInvert | BadVariance _ as e -> e
+| ReferenceVariables _ | BadInvert | BadVariance _ | UndeclaredUsedVariables _ as e -> e
 | NotAType j -> NotAType (on_judgment f j)
 | BadAssumption j -> BadAssumption (on_judgment f j)
 | ElimArity (pi, c, ar) ->

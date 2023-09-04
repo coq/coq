@@ -14,7 +14,6 @@
 (* This module provides the main entry points for type-checking basic
    declarations *)
 
-open CErrors
 open Util
 open Names
 open Constr
@@ -28,31 +27,18 @@ module NamedDecl = Context.Named.Declaration
 (* Checks the section variables for the body.
    Returns the closure of the union with the variables in the type.
 *)
-let check_section_variables env declared_set typ body =
+let check_section_variables env declared_vars typ body =
   let tyvars = global_vars_set env typ in
-  let declared_set = Environ.really_needed env (Id.Set.union declared_set tyvars) in
+  let declared_vars = Environ.really_needed env (Id.Set.union declared_vars tyvars) in
   let () = match body with
   | None -> ()
   | Some body ->
     let ids_def = global_vars_set env body in
-    let inferred_set = Environ.really_needed env (Id.Set.union declared_set ids_def) in
-    if not (Id.Set.subset inferred_set declared_set) then
-      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
-      let n = List.length l in
-      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
-      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
-      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-      user_err Pp.(prlist str
-                     ["The following section "; (String.plural n "variable"); " ";
-                      (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-                   missing_vars ++ str "." ++ fnl () ++ fnl () ++
-                   str "You can either update your proof to not depend on " ++ missing_vars ++
-                   str ", or you can update your Proof line from" ++ fnl () ++
-                   str "Proof using " ++ declared_vars ++ fnl () ++
-                   str "to" ++ fnl () ++
-                   str "Proof using " ++ inferred_vars)
+    let inferred_vars = Environ.really_needed env (Id.Set.union declared_vars ids_def) in
+    if not (Id.Set.subset inferred_vars declared_vars) then
+      Type_errors.error_undeclared_used_variables env ~declared_vars ~inferred_vars
   in
-  declared_set
+  declared_vars
 
 let used_section_variables env hyps def typ =
   let hyps =

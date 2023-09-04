@@ -294,6 +294,7 @@ let explain_exn = function
       | BadInvert -> str"BadInvert"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"
       | BadVariance _ -> str "BadVariance"
+      | UndeclaredUsedVariables _ -> str "UndeclaredUsedVariables"
       ))
 
   | InductiveError e ->
