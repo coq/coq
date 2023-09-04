@@ -94,8 +94,9 @@ let process_expr env sigma e ty =
 
 type t = Names.Id.Set.t
 
-let definition_using env evd ~using ~terms =
+let definition_using env evd ~fixnames ~using ~terms =
   let l = process_expr env evd using terms in
+  let l = List.fold_right (List.remove Names.Id.equal) fixnames l in
   Names.Id.Set.(List.fold_right add l empty)
 
 let name_set id expr =

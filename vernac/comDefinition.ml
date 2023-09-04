@@ -113,7 +113,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
 
 let definition_using env evd ~body ~types ~using =
   let terms = Option.List.cons types [body] in
-  Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using
+  Option.map (fun using -> Proof_using.definition_using env evd ~fixnames:[] ~using ~terms) using
 
 let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?deprecation udecl bl red_option c ctypopt =
   let program_mode = false in

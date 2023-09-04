@@ -1646,6 +1646,11 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
 
 let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
+let get_recnames pf =
+  if Option.has_some pf.pinfo.Proof_info.compute_guard then
+    List.map (fun c -> c.CInfo.name) pf.pinfo.Proof_info.cinfo
+  else
+    []
 
 let set_used_variables ps ~using =
   let open Context.Named.Declaration in
