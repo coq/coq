@@ -908,7 +908,7 @@ let preprocess_inductive_decl ~atts kind indl =
   in
   (* We only allow the #[projections(primitive)] attribute
      for records. *)
-  let prim_proj_attr : bool Attributes.Notations.t =
+  let prim_proj_attr : bool Attributes.attribute =
     if List.for_all is_record indl then primitive_proj
     else Notations.return false
   in
