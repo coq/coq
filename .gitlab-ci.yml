@@ -883,6 +883,7 @@ plugin:ci-metacoq:
   needs:
   - build:base
   - plugin:ci-equations
+  timeout: 1h 30min
 
 plugin:ci-mtac2:
   extends: .ci-template
