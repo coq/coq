@@ -37,6 +37,7 @@ type counter = bool -> metavariable
 
 type atom = { atom : constr }
 
+let hole_atom = { atom = mkMeta 1 }
 let repr_atom a = a.atom
 
 exception Is_atom of atom
@@ -212,7 +213,7 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of constr*left_arrow_pattern
+  | LA of atom*left_arrow_pattern
 
 type _ identifier =
 | GoalId : [ `Goal ] identifier
@@ -227,7 +228,7 @@ type _ pattern =
 
 type 'a t = {
   id : 'a identifier;
-  constr : constr;
+  constr : atom;
   pat : 'a pattern;
   atoms : atoms;
 }
@@ -274,7 +275,7 @@ let build_formula (type a) ~flags env sigma (side : a side) (nam : a identifier)
                   | Forall (d,_) ->
                       Lforall(m,d,trivial)
                   | Arrow (a,b) ->
-                      let nfa=normalize a in
+                      let nfa = { atom = normalize a } in
                         LA (nfa,
                             match kind_of_formula ~flags env sigma a with
                                 False(i,l)-> LLfalse(i,l)
@@ -287,7 +288,7 @@ let build_formula (type a) ~flags env sigma (side : a side) (nam : a identifier)
                 LeftPattern pat
       in
         Left {id=nam;
-              constr=normalize typ;
+              constr= { atom = normalize typ };
               pat=pattern;
               atoms=atoms}
     with Is_atom a-> Right a (* already in nf *)

@@ -12,7 +12,6 @@ open Util
 open Pp
 open CErrors
 open Names
-open EConstr
 open Formula
 open Unify
 
@@ -75,14 +74,14 @@ module CM=Map.Make(Constr)
 module History=Set.Make(Hitem)
 
 let cm_add sigma typ nam cm=
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
+  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
 let cm_remove env sigma typ nam cm=
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
+  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in
     let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
@@ -93,7 +92,7 @@ let cm_remove env sigma typ nam cm=
 
 module HP=Heap.Functional(OrderedFormula)
 
-type seqgoal = GoalTerm of EConstr.t | GoalAtom of atom
+type seqgoal = GoalTerm of atom | GoalAtom of atom
 
 type t=
     {redexes:HP.t;
@@ -139,7 +138,7 @@ let add_formula ~flags ~hint env sigma id t seq =
       context=cm_add sigma f.constr id seq.context}
   | Right t ->
     {seq with
-      context=cm_add sigma (repr_atom t) id seq.context;
+      context=cm_add sigma t id seq.context;
       latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=
@@ -151,10 +150,10 @@ let re_add_formula_list sigma lf seq=
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
-let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) seq.context)
+let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom t)) seq.context)
 
 let find_goal sigma seq =
-  let t = match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t in
+  let t = match seq.gl with GoalAtom a -> a | GoalTerm t -> t in
   find_left sigma t seq
 
 let rec take_formula env sigma seq=
@@ -177,7 +176,7 @@ let empty_seq depth=
   {redexes=HP.empty;
    context=CM.empty;
    latoms=[];
-   gl= GoalTerm (mkMeta 1);
+   gl= GoalTerm hole_atom;
    cnt=newcnt ();
    history=History.empty;
    depth=depth}

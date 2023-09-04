@@ -34,6 +34,7 @@ val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
 
 type atom
 
+val hole_atom : atom
 val repr_atom : atom -> EConstr.t
 
 type atoms = { positive:atom list; negative:atom list }
@@ -65,7 +66,7 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of constr*left_arrow_pattern
+  | LA of atom*left_arrow_pattern
 
 type _ identifier = private
 | GoalId : [ `Goal ] identifier
@@ -80,7 +81,7 @@ type _ pattern =
 
 type 'a t = private {
         id: 'a identifier;
-        constr: constr;
+        constr: atom;
         pat: 'a pattern;
         atoms: atoms}
 
