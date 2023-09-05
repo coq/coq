@@ -59,7 +59,7 @@ sig
   val pattern : t -> Pattern.constr_pattern option
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
-  val name : t -> hints_path_atom
+  val name : t -> GlobRef.t option
   val print : env -> evar_map -> t -> Pp.t
   val subgoals : t -> int option
 
@@ -162,8 +162,8 @@ type hnf = bool
 type hint_term
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * hint_term) list
+  | HintsResolveEntry of (hint_info * hnf * hint_term) list
+  | HintsImmediateEntry of hint_term list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of Tacred.evaluable_global_reference list
   | HintsTransparencyEntry of Tacred.evaluable_global_reference hints_transparency_target * bool

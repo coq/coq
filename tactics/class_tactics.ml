@@ -708,7 +708,11 @@ module Search = struct
     let idx = ref 1 in
     let foundone = ref false in
     let rec onetac e (tac, pat, b, name, pp) tl =
-      let derivs = path_derivate info.search_cut name in
+      let path = match name with
+      | None -> PathAny
+      | Some gr -> PathHints [gr]
+      in
+      let derivs = path_derivate info.search_cut path in
       let pr_error ie =
         ppdebug 1 (fun () ->
             let idx = if fst ie == NoApplicableHint then pred !idx else !idx in

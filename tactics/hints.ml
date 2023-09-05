@@ -159,7 +159,7 @@ type 'a with_metadata =
   (** A number lower is higher priority *)
   ; pat     : hint_pattern option
   (** A pattern for the concl of the Goal *)
-  ; name    : hints_path_atom
+  ; name    : GlobRef.t option
   (** A potential name to refer to the hint *)
   ; db : string option
   (** The database from which the hint comes *)
@@ -719,7 +719,7 @@ struct
 
   let remove_list env grs db =
     let filter (_, h) =
-      match h.name with PathHints [gr] -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | _ -> true in
+      match h.name with Some gr -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | None -> true in
     let hintmap = GlobRef.Map.map (remove_he (dn_ts db) filter) db.hintdb_map in
     let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
@@ -813,7 +813,7 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global env gr)
 
-let make_exact_entry env sigma info ?(name=PathAny) (c, cty, ctx) =
+let make_exact_entry env sigma info ?name (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
     match EConstr.kind sigma cty with
@@ -834,7 +834,11 @@ let make_exact_entry env sigma info ?(name=PathAny) (c, cty, ctx) =
            db = None; secvars;
            code = with_uid (Give_exact h); })
 
-let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
+let name_of_hint = function
+| IsGlobRef gr -> Some gr
+| IsConstr _ -> None
+
+let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
   let cty = if hnf then hnf_constr0 env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
@@ -879,7 +883,8 @@ let fresh_global_or_constr env sigma cr = match cr with
   (EConstr.of_constr c, ctx)
 | IsConstr (c, ctx) -> (c, ctx)
 
-let make_resolves env sigma (eapply, hnf) info ~check ?name cr =
+let make_resolves env sigma (eapply, hnf) info ~check cr =
+  let name = name_of_hint cr in
   let c, ctx = fresh_global_or_constr env sigma cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
@@ -907,7 +912,7 @@ let make_resolve_hyp env sigma hname =
   let c = mkVar hname in
   try
     [make_apply_entry env sigma true empty_hint_info
-       ~name:(PathHints [GlobRef.VarRef hname])
+       ~name:(GlobRef.VarRef hname)
        (c, NamedDecl.get_type decl, None)]
   with
     | Failure _ -> []
@@ -920,7 +925,7 @@ let make_unfold eref =
   (Some g,
    { pri = 4;
      pat = None;
-     name = PathHints [g];
+     name = Some g;
      db = None;
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
@@ -937,7 +942,7 @@ let make_extern pri pat tacast =
   (hdconstr,
    { pri = pri;
      pat = Option.map (fun p -> ConstrPattern p) pat;
-     name = PathAny;
+     name = None;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
      code = with_uid (Extern (pat, tacast)) })
@@ -954,7 +959,8 @@ let make_mode ref m =
            str" arguments while the mode declares " ++ int (Array.length m') ++ str ".")
     else m'
 
-let make_trivial env sigma ?(name=PathAny) r =
+let make_trivial env sigma r =
+  let name = name_of_hint r in
   let c,ctx = fresh_global_or_constr env sigma r in
   let sigma = merge_context_set_opt sigma ctx in
   let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
@@ -1180,7 +1186,7 @@ let subst_autohint (subst, obj) =
           let tac' = Genintern.generic_substitute subst tac in
           if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
     in
-    let name' = subst_path_atom subst data.name in
+    let name' = Option.Smart.map (subst_global_reference subst) data.name in
     let uid' = subst_kn subst data.code.uid in
     let data' =
       if data.code.uid == uid' && data.pat == pat' &&
@@ -1308,9 +1314,8 @@ let add_resolves env sigma clist ~locality dbnames =
   List.iter
     (fun dbname ->
       let r =
-        List.flatten (List.map (fun (pri, hnf, path, gr) ->
-          make_resolves env sigma (true, hnf)
-            pri ~check:true ~name:path gr) clist)
+        List.flatten (List.map (fun (pri, hnf, gr) ->
+          make_resolves env sigma (true, hnf) pri ~check:true gr) clist)
       in
       let check (_, hint) = match hint.code.obj with
       | ERes_pf { rhint_term = c; rhint_type = cty; rhint_uctx = ctx } ->
@@ -1379,7 +1384,7 @@ let add_externs info tacast ~locality dbnames =
 let add_trivials env sigma l ~locality dbnames =
   List.iter
     (fun dbname ->
-      let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
+      let l = List.map (fun c -> make_trivial env sigma c) l in
       let hint = make_hint ~locality dbname (AddHints l) in
       Lib.add_leaf (inAutoHint hint))
     dbnames
@@ -1389,8 +1394,8 @@ type hnf = bool
 type nonrec hint_info = hint_info
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * hint_term) list
+  | HintsResolveEntry of (hint_info * hnf * hint_term) list
+  | HintsImmediateEntry of hint_term list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
@@ -1522,8 +1527,7 @@ let make_db_list dbnames =
   List.map lookup dbnames
 
 let push_resolves env sigma hint db =
-  let name = PathHints [hint] in
-  let entries = make_resolves env sigma (true, false) empty_hint_info ~check:false ~name (IsGlobRef hint) in
+  let entries = make_resolves env sigma (true, false) empty_hint_info ~check:false (IsGlobRef hint) in
   Hint_db.add_list env sigma entries db
 
 let push_resolve_hyp env sigma decl db =

@@ -60,11 +60,12 @@ let set_typeclass_transparency_com ~locality refs b =
   in
   set_typeclass_transparency ~locality refs b
 
-let add_instance_hint inst path ~locality info =
+let add_instance_hint gr ~locality info =
+  let inst = Hints.hint_globref gr in
      Flags.silently (fun () ->
        Hints.add_hints ~locality [typeclasses_db]
           (Hints.HintsResolveEntry
-             [info, false, Hints.PathHints path, inst])) ()
+             [info, false, inst])) ()
 
 (* short names without opening all Hints *)
 type locality = Hints.hint_locality = Local | Export | SuperGlobal
@@ -92,7 +93,7 @@ let add_instance_base inst =
     if Lib.sections_are_opened () then Local
     else Export
   in
-  add_instance_hint (Hints.hint_globref inst.instance) [inst.instance] ~locality
+  add_instance_hint inst.instance ~locality
     inst.info
 
 (*
