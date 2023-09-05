@@ -11,6 +11,45 @@ Recent changes
 Version 8.18
 ------------
 
+Summary of changes
+~~~~~~~~~~~~~~~~~~
+
+Coq version 8.18 integrates two soundness fixes to the Coq kernel along
+with a host of improvements. We highlight a few impactful changes:
+
+  - the default :ref:`locality <818HintLocality>` of `Hint` and :cmd:`Instance`
+    commands was switched to :attr:`export`.
+  - the universe unification algorithm can now delay the commitment to a
+    sort (the algorithm used to pick `Type`). Thanks to this feature many `Prop`
+    and `SProp` annotations can be now omitted.
+  - Ltac2 supports array literals, maps and sets of primitive datatypes such
+    as names (of constants, inductive types, etc) and fine-grained
+    control over profiling.
+  - The warning system offers new categories, enabling finer (de)activation of specific warnings.
+    This should be particularly useful to handle deprecations.
+  - Many new lemmas useful for teaching analysis with Coq are now part of
+    the standard library about real numbers.
+  - The `#[deprecated]` attribute can now be applied to definitions.
+
+The 41 contributors to the 8.18 version are:
+Reynald Affeldt, Tanaka Akira, Matthieu Baty, Yves Bertot,
+Lasse Blaauwbroek, Ana Borges, Kate Deplaix, Ali Caglayan, Cyril Cohen, Maxime Dénès,
+Andrej Dudenhefner, Andres Erbsen, Jim Fehrle, Yannick Forster,
+Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Samuel Gruetter,
+Stefan Haan, Hugo Herbelin, Yoshihiro Imai, Emilio Jesús Gallego Arias,
+Olivier Laurent, Meven Lennon-Bertrand, Rodolphe Lepigre, Yishuai Li,
+Guillaume Melquiond, Karl Palmskog, Pierre-Marie Pédrot, Stefan Radziuk,
+Ramkumar Ramachandra, Pierre Rousselin, Pierre Roux, Julin Shaji,
+Kazuhiko Sakaguchi, Weng Shiwei, Michael Soegtrop, Matthieu Sozeau,
+Enrico Tassi, Hao Yang, Théo Zimmermann.
+
+We are very grateful to the Coq community for their help in creating 8.18
+in the 6 months since the release of
+Coq 8.17.0. Maxime Dénès and Enrico Tassi were the release managers.
+
+| Sophia-Antipolis, September 2023,
+| Enrico Tassi for the Coq development team
+
 Changes in 8.18.0
 ~~~~~~~~~~~~~~~~~
 
@@ -283,6 +322,8 @@ Ltac2 language
 
 Commands and options
 ^^^^^^^^^^^^^^^^^^^^
+
+ .. _818HintLocality:
 
 - **Changed:**
   the default locality of `Hint` and :cmd:`Instance` commands was
@@ -751,8 +792,8 @@ Infrastructure and dependencies
   fixes `#15778 <https://github.com/coq/coq/issues/15778>`_,
   by Ana Borges).
 
-Miscellaneous
-^^^^^^^^^^^^^
+Extraction
+^^^^^^^^^^
 
 - **Fixed:**
   Anomaly when extracting within a module or module type
