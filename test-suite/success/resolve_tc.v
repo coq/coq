@@ -1,6 +1,10 @@
 Class C := c {}.
 Local Existing Instance c.
 
+Require Ltac2.Ltac2.
+
+Ltac resolve_tc := ltac2:(x |- Std.resolve_tc (Option.get (Ltac1.to_constr x))).
+
 (* check that exact doesn't do the resolution *)
 Lemma bad : C.
 Proof.

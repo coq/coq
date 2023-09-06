@@ -258,4 +258,10 @@ Ltac2 @ external eauto : debug -> int option -> (unit -> constr) list -> ident l
 
 Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_typeclasses_eauto".
 
+Ltac2 @ external resolve_tc : constr -> unit := "coq-core.plugins.ltac2" "tac_resolve_tc".
+(** Resolve the existential variables appearing in the constr
+    whose types are typeclasses.
+    Fail if any of them cannot be resolved.
+    Does not focus. *)
+
 Ltac2 @ external unify : constr -> constr -> unit := "coq-core.plugins.ltac2" "tac_unify".

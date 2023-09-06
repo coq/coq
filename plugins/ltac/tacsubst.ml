@@ -219,7 +219,6 @@ and subst_tactic subst = CAst.map (function
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg a -> TacArg (subst_tacarg subst a)
   | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
-  | TacResolveTC id -> TacResolveTC id
 
   (* For extensions *)
   | TacAlias (s,l) ->

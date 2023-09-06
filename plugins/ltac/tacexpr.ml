@@ -233,7 +233,6 @@ and 'a gen_tactic_expr_r =
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg
   | TacSelect of Goal_select.t * 'a gen_tactic_expr
-  | TacResolveTC of lident
   (* For ML extensions *)
   | TacML of ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)

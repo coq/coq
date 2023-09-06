@@ -377,7 +377,6 @@ let tac_loc tac =
   | TacFun _ -> "TacFun"
   | TacArg _ -> "TacArg"
   | TacSelect _ -> "TacSelect"
-  | TacResolveTC _ -> "TacResolveTC"
   | TacML _ -> "TacML"
   | TacAlias _ -> "TacAlias"
   in
