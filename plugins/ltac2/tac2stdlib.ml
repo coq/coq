@@ -572,3 +572,26 @@ end
 let () = define_prim2 "tac_unify" constr constr begin fun x y ->
   Tac2tactics.unify x y
 end
+
+(** Tactics for [Ltac2/TransparentState.v]. *)
+
+let transparent_state = Tac2ffi.repr_ext Tac2ffi.val_transparent_state
+
+let () =
+  let tac _ =
+    Tac2tactics.current_transparent_state () >>= fun ts ->
+    return (Tac2ffi.of_ext Tac2ffi.val_transparent_state ts)
+  in
+  Tac2env.define_primitive (pname "current_transparent_state") (mk_closure_val arity_one tac)
+
+let () =
+  let v = Tac2ffi.of_ext Tac2ffi.val_transparent_state TransparentState.full in
+  Tac2env.define_primitive (pname "full_transparent_state") v
+
+let () =
+  let v = Tac2ffi.of_ext Tac2ffi.val_transparent_state TransparentState.empty in
+  Tac2env.define_primitive (pname "empty_transparent_state") v
+
+(** Tactics around Evarconv unification (in [Ltac2/Unification.v]). *)
+
+let () = define_prim3 "evarconv_unify" transparent_state constr constr Tac2tactics.evarconv_unify

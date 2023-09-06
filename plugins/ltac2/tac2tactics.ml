@@ -405,6 +405,13 @@ let typeclasses_eauto strategy depth dbs =
 
 let unify x y = Tactics.unify x y
 
+let current_transparent_state () =
+  Proofview.tclENV >>= fun env ->
+  let state = Conv_oracle.get_transp_state (Environ.oracle env) in
+  Proofview.tclUNIT state
+
+let evarconv_unify state x y = Tactics.evarconv_unify ~state x y
+
 (** Inversion *)
 
 let inversion knd arg pat ids =

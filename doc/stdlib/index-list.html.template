@@ -697,7 +697,9 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Proj.v
     user-contrib/Ltac2/Std.v
     user-contrib/Ltac2/String.v
+    user-contrib/Ltac2/TransparentState.v
     user-contrib/Ltac2/Uint63.v
+    user-contrib/Ltac2/Unification.v
   </dd>
 
   <dt> <b>Unicode</b>:

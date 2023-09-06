@@ -3393,6 +3393,19 @@ let unify ?(state=TransparentState.full) x y =
     Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 
+let evarconv_unify ?(state=TransparentState.full) ?(with_ho=true) x y =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  try
+    let flags = Evarconv.default_flags_of state in
+    let sigma = Evarconv.unify ~flags ~with_ho env sigma Conversion.CONV x y in
+    Proofview.Unsafe.tclEVARS sigma
+  with e when noncritical e ->
+    let e, info = Exninfo.capture e in
+    Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
+  end
+
 (** [tclWRAPFINALLY before tac finally] runs [before] before each
     entry-point of [tac] and passes the result of [before] to
     [finally], which is then run at each exit-point of [tac],
