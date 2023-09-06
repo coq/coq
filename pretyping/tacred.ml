@@ -122,21 +122,6 @@ let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Evar ev -> (EvalEvar ev, EInstance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference.")
 
-let unsafe_reference_opt_value env sigma eval =
-  match eval with
-  | EvalConst cst ->
-    (match (lookup_constant cst env).Declarations.const_body with
-    | Declarations.Def c -> Some (EConstr.of_constr c)
-    | _ -> None)
-  | EvalVar id ->
-      env |> lookup_named id |> NamedDecl.get_value
-  | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (Vars.lift n)
-  | EvalEvar ev ->
-    match EConstr.kind sigma (mkEvar ev) with
-    | Evar _ -> None
-    | c -> Some (EConstr.of_kind c)
-
 let reference_opt_value env sigma eval u =
   match eval with
   | EvalConst cst ->
@@ -165,7 +150,7 @@ type constant_evaluation =
   | EliminationFix of int * (int * (int * constr) list * int)
   | EliminationMutualFix of
       int * evaluable_reference *
-      (evaluable_reference option array *
+      ((evaluable_reference * EInstance.t) option array *
        (int * (int * constr) list * int))
   | EliminationCases of int
   | EliminationProj of int
@@ -243,12 +228,12 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
 (* Heuristic to look if global names are associated to other
    components of a mutual fixpoint *)
 
-let invert_name labs l {binder_name=na0} env sigma ref na =
+let invert_name labs l {binder_name=na0} env sigma ref u na =
   match na.binder_name with
   | Name id ->
       begin match na0 with
       | Name id' when Id.equal id' id ->
-        Some ref
+        Some (ref, u)
       | _ ->
         let refi = match ref with
           | EvalRel _ | EvalEvar _ -> None
@@ -260,7 +245,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
         match refi with
           | None -> None
           | Some ref ->
-              try match unsafe_reference_opt_value env sigma ref with
+              try match reference_opt_value env sigma ref u with
                 | None -> None
                 | Some c ->
                     let labs',ccl = decompose_lambda sigma c in
@@ -269,7 +254,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
                     (* ppedrot: there used to be generic equality on terms here *)
                     let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
                     if List.equal eq_constr labs' labs &&
-                       List.equal eq_constr l l' then Some ref
+                       List.equal eq_constr l l' then Some (ref, u)
                     else None
               with Not_found (* Undefined ref *) -> None
       end
@@ -279,7 +264,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
    [compute_consteval_mutual_fix] only one by one, until finding the
    last one before the Fix if the latter is mutually defined *)
 
-let compute_consteval_direct allowed_reds env sigma ref =
+let compute_consteval_direct allowed_reds env sigma ref u =
   let rec srec env n labs onlyproj c =
     let c',l = whd_stack_gen allowed_reds env sigma c in
     match EConstr.kind sigma c' with
@@ -294,58 +279,59 @@ let compute_consteval_direct allowed_reds env sigma ref =
       | Proj (p, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
-  match unsafe_reference_opt_value env sigma ref with
+  match reference_opt_value env sigma ref u with
     | None -> NotAnElimination
     | Some c -> srec env 0 [] false c
 
-let compute_consteval_mutual_fix allowed_reds env sigma ref =
-  let rec srec env minarg labs ref c =
+let compute_consteval_mutual_fix allowed_reds env sigma ref u =
+  let rec srec env minarg labs ref u c =
     let c',l = whd_betalet_stack env sigma c in
     let nargs = List.length l in
     match EConstr.kind sigma c' with
       | Lambda (na,t,g) when List.is_empty l ->
           let open Context.Rel.Declaration in
-          srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
+          srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref u g
       | Fix ((lv,i),(names,_,_)) ->
           (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
-          (match compute_consteval_direct allowed_reds env sigma ref with
+          (match compute_consteval_direct allowed_reds env sigma ref u with
              | NotAnElimination -> (*Above const was eliminable but this not!*)
                  NotAnElimination
              | EliminationFix (minarg',infos) ->
                  let refs =
                    Array.map
-                     (invert_name labs l names.(i) env sigma ref) names in
+                     (invert_name labs l names.(i) env sigma ref u) names in
                  let new_minarg = max (minarg'+minarg-nargs) minarg' in
                  EliminationMutualFix (new_minarg,ref,(refs,infos))
              | _ -> assert false)
       | _ when isEvalRef env sigma c' ->
           (* Forget all \'s and args and do as if we had started with c' *)
-          let ref,_ = destEvalRefU sigma c' in
-          (match unsafe_reference_opt_value env sigma ref with
+          let ref, u = destEvalRefU sigma c' in
+          (match reference_opt_value env sigma ref u with
             | None -> anomaly (Pp.str "Should have been trapped by compute_direct.")
-            | Some c -> srec env (minarg-nargs) [] ref c)
+            | Some c -> srec env (minarg-nargs) [] ref u c)
       | _ -> (* Should not occur *) NotAnElimination
   in
-  match unsafe_reference_opt_value env sigma ref with
+  match reference_opt_value env sigma ref u with
     | None -> (* Should not occur *) NotAnElimination
-    | Some c -> srec env 0 [] ref c
+    | Some c -> srec env 0 [] ref u c
 
-let compute_consteval allowed_reds env sigma ref =
-  match compute_consteval_direct allowed_reds env sigma ref with
+let compute_consteval allowed_reds env sigma ref u =
+  match compute_consteval_direct allowed_reds env sigma ref u with
     | EliminationFix (_,(nbfix,_,_)) when not (Int.equal nbfix 1) ->
-        compute_consteval_mutual_fix allowed_reds env sigma ref
+        compute_consteval_mutual_fix allowed_reds env sigma ref u
     | elim -> elim
 
-let reference_eval allowed_reds env sigma = function
+let reference_eval allowed_reds env sigma ref u =
+  match ref with
   | EvalConst cst as ref ->
       (try
          Cmap.find cst !eval_table
        with Not_found -> begin
-         let v = compute_consteval allowed_reds env sigma ref in
+         let v = compute_consteval allowed_reds env sigma ref u in
          eval_table := Cmap.add cst v !eval_table;
          v
        end)
-  | ref -> compute_consteval allowed_reds env sigma ref
+  | ref -> compute_consteval allowed_reds env sigma ref u
 
 (* If f is bound to EliminationFix (n',infos), then n' is the minimal
    number of args for starting the reduction and infos is
@@ -405,7 +391,7 @@ let contract_fix env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies) as fixp) = match f with
 | None -> contract_fix sigma fixp
 | Some f ->
-  let (names, (nbfix, lv, n)), u, largs = f in
+  let (names, (nbfix, lv, n)), largs = f in
   let lu = List.firstn n largs in
   let p = List.length lv in
   let lyi = List.map fst lv in
@@ -418,7 +404,7 @@ let contract_fix env sigma f
   in
   let make_Fi i = match names.(i) with
   | None -> mkFix((recindices,i),typedbodies)
-  | Some ref ->
+  | Some (ref, u) ->
       let body = applist (mkEvalRef ref u, la) in
       List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
           let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
@@ -638,7 +624,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
       not is_empty && nargs >= n,
       true)
   in
-  let ans = match reference_eval allowed_reds env sigma ref with
+  let ans = match reference_eval allowed_reds env sigma ref u with
     | EliminationCases n when nargs >= n ->
         let c = reference_value env sigma ref u in
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
@@ -652,7 +638,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
     | EliminationFix (min,infos) when nargs >= min ->
         let c = reference_value env sigma ref u in
         let d, lrest = whd_nothing_for_iota env sigma (c, largs) in
-        let f = ([|Some ref|],infos), u, largs in
+        let f = ([|Some (ref, u)|],infos), largs in
         let* (c, rest) = reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest in
         Reduced ((c, rest), nocase)
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
@@ -665,7 +651,7 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
             descend (destEvalRefU sigma c') lrest in
         let (_, midargs as s) = descend (ref,u) largs in
         let d, lrest = whd_nothing_for_iota env sigma s in
-        let f = refinfos, u, midargs in
+        let f = refinfos, midargs in
         let* (c, rest) = reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest in
         Reduced ((c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->

@@ -117,3 +117,14 @@ simpl u.
 match goal with |- 0 = 0 => idtac end. (* Check that it reduced *)
 Abort.
 End FurtherAppliedPrimitiveProjections.
+
+Module BugUniverseMutualFix.
+Set Universe Polymorphism.
+Fixpoint foo1@{u v} (A : Type@{u}) n : Type@{v} := match n with 0 => A | S n => (foo2 A n * A)%type end
+with foo2@{u v} (A : Type@{u}) n : Type@{v} := match n with 0 => A | S n => (foo1 A n * A)%type end.
+Set Printing Universes.
+Definition bar@{u} (A : Type@{u}) n := foo1@{u u} A n.
+Goal forall n, bar unit (S n) = unit.
+simpl.
+Abort.
+End BugUniverseMutualFix.
