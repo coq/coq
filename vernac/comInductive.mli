@@ -81,8 +81,8 @@ val interp_mutual_inductive_constr
   -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
   -> indnames:Names.Id.t list
   -> arities:EConstr.t list
-  -> arityconcl:(bool * EConstr.ESorts.t) option list
-  -> constructors:(Names.Id.t list * Constr.constr list) list
+  -> arityconcl:EConstr.ESorts.t option list
+  -> constructors:(Names.Id.t list * EConstr.constr list) list
   -> env_ar_params:Environ.env
   (** Environment with the inductives and parameters in the rel_context *)
   -> cumulative:bool
@@ -124,6 +124,14 @@ val variance_of_entry
 
 module Internal :
 sig
-  val compute_constructor_level : Environ.env -> Evd.evar_map -> EConstr.rel_context -> Sorts.t
-  val warn_bad_set_minimization : ?loc:Loc.t  -> unit -> unit
+  (** Returns the modified arities (the result sort may be replaced by Prop).
+      Should be called with minimized universes. *)
+  val inductive_levels
+    : Environ.env
+    -> Evd.evar_map
+    -> EConstr.constr list
+    (* arities *)
+    -> EConstr.rel_context list list
+    (* constructors *)
+    -> Evd.evar_map * EConstr.t list
 end

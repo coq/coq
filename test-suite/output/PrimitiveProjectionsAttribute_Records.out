@@ -8,7 +8,7 @@ C : Set
 C is not universe polymorphic
 C has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.C
-G : Type
+G : Prop
 
 G is not universe polymorphic
 G has primitive projections without eta conversion.

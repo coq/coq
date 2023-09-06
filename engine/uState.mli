@@ -62,10 +62,10 @@ val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
-type universe_opt_subst = UnivSubst.universe_opt_subst
+type universe_opt_subst = UnivFlex.t
 (* Reexport because UnivSubst is private *)
 
-val subst : t -> UnivSubst.universe_opt_subst
+val subst : t -> UnivFlex.t
 (** The local universes that are unification variables *)
 
 val nf_universes : t -> Constr.t -> Constr.t
@@ -77,9 +77,9 @@ val ugraph : t -> UGraph.t
 val initial_graph : t -> UGraph.t
 (** The initial graph with just the declarations of new universes. *)
 
-val algebraics : t -> Univ.Level.Set.t
-(** The subset of unification variables that can be instantiated with algebraic
-    universes as they appear in inferred types only. *)
+val is_algebraic : Level.t -> t -> bool
+(** Can this universe be instantiated with an algebraic
+    universe (ie it appears in inferred types only). *)
 
 val constraints : t -> Univ.Constraints.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
@@ -179,34 +179,18 @@ val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Leve
 
 val add_global_univ : t -> Univ.Level.t -> t
 
-(** [make_flexible_variable g algebraic l]
-
-  Turn the variable [l] flexible, and algebraic if [algebraic] is true
-  and [l] can be. That is if there are no strict upper constraints on
-  [l] and and it does not appear in the instance of any non-algebraic
-  universe. Otherwise the variable is just made flexible.
-
-    If [l] is already algebraic it will remain so even with [algebraic:false]. *)
-val make_flexible_variable : t -> algebraic:bool -> Univ.Level.t -> t
-
 val make_nonalgebraic_variable : t -> Univ.Level.t -> t
-(** Make the level non algebraic. Undefined behaviour on
-   already-defined algebraics. *)
+(** cf UnivFlex *)
 
-(** Turn all undefined flexible algebraic variables into simply flexible
-   ones. Can be used in case the variables might appear in universe instances
-   (typically for polymorphic program obligations). *)
 val make_flexible_nonalgebraic : t -> t
-
-val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
+(** cf UnivFlex *)
 
 val normalize_variables : t -> t
 
 val constrain_variables : Univ.Level.Set.t -> t -> t
 
-val abstract_undefined_variables : t -> t
-
 val fix_undefined_variables : t -> t
+(** cf UnivFlex *)
 
 (** Universe minimization *)
 val minimize : t -> t
@@ -253,7 +237,6 @@ val id_of_level : t -> Univ.Level.t -> Id.t option
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
-val pr_universe_opt_subst : (Level.t -> Pp.t) -> universe_opt_subst -> Pp.t
 val pr_sort_opt_subst : t -> Pp.t
 
 module Internal :

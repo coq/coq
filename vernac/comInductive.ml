@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
+
 open Pp
 open CErrors
 open Sorts
@@ -23,6 +25,7 @@ open Type_errors
 open Pretyping
 open Context.Rel.Declaration
 open Entries
+open EConstr
 
 module RelDecl = Context.Rel.Declaration
 
@@ -91,32 +94,39 @@ let check_all_names_different indl =
 
 let rec check_type_conclusion ind =
   let open Glob_term in
-    match DAst.get ind with
-    | GSort (UAnonymous {rigid=true}) -> (Some true)
-    | GSort (UNamed _) -> (Some false)
-    | GProd ( _, _, _, e)
-    | GLetIn (_, _, _, e)
-    | GLambda (_, _, _, e)
-    | GApp (e, _)
-    | GCast (e, _, _) -> check_type_conclusion e
-    | _ -> None
+  match DAst.get ind with
+  | GSort (UAnonymous {rigid=UnivRigid}) ->
+    (* should have been made flexible *)
+    assert false
+  | GSort (UNamed _) -> true
+  | GProd ( _, _, _, e)
+  | GLetIn (_, _, _, e) ->
+    check_type_conclusion e
+  | _ -> false
 
-let make_anonymous_conclusion_flexible sigma = function
-  | None -> sigma
-  | Some (false, _) -> sigma
-  | Some (true, s) ->
-    (match EConstr.ESorts.kind sigma s with
-     | Type u ->
-       (match Univ.Universe.level u with
-        | Some u ->
-          Evd.make_flexible_variable sigma ~algebraic:true u
-        | None -> sigma)
-     | _ -> sigma)
+let rec make_anonymous_conclusion_flexible ind =
+  let open Glob_term in
+  match DAst.get ind with
+  | GSort (UAnonymous {rigid=UnivRigid}) ->
+    Some (DAst.make ?loc:ind.loc (GSort (UAnonymous {rigid=UnivFlexible true})))
+  | GSort (UNamed _) -> None
+  | GProd (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+      | None -> None
+      | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, e)))
+    end
+  | GLetIn (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+      | None -> None
+      | Some e -> Some (DAst.make ?loc:ind.loc (GLetIn (a, b, c, e)))
+    end
+  | _ -> None
 
 let intern_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-  let pseudo_poly = check_type_conclusion c in
+  let pseudo_poly, c = match make_anonymous_conclusion_flexible c with
+    | None -> check_type_conclusion c, c
+    | Some c -> true, c
+  in
   (constr_loc ind.ind_arity, c, impls, pseudo_poly)
 
 let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
@@ -125,10 +135,7 @@ let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
-    let concl = match pseudo_poly with
-      | Some b -> Some (b, s)
-      | None -> None
-    in
+    let concl = if pseudo_poly then Some s else None in
     sigma, (t, Retyping.relevance_of_sort sigma s, concl, impls)
 
 (* ind_rel is the Rel for this inductive in the context without params.
@@ -143,7 +150,7 @@ let model_conclusion env sigma ind_rel params n arity_indices =
         let sigma, c = Evarutil.new_evar env sigma t in
         sigma, c::subst)
       arity_indices (sigma, []) in
-  sigma, EConstr.mkApp (EConstr.mkApp (model_head, model_params), Array.of_list (List.rev model_indices))
+  sigma, mkApp (mkApp (model_head, model_params), Array.of_list (List.rev model_indices))
 
 let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   let cnames,ctyps = List.split ind.ind_lc in
@@ -176,199 +183,124 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   in
   (sigma, pred ind_rel), (cnames, ctyps, cimpls)
 
-(** FIXME: This is a horrible hack, use a saner heuristic *)
-let max_sort s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> s1
-| (SProp, (Prop | Set | Type _ as s)) | ((Prop | Set | Type _) as s, SProp) -> s
-| (Prop, (Set | Type _ as s)) | ((Set | Type _) as s, Prop) -> s
-| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
-| (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
-| (QSort _, _) | (_, QSort _) -> assert false
+(***** Generate constraints from constructor arguments *****)
 
-let compute_constructor_level env evd sign =
+let compute_constructor_levels env evd sign =
   fst (List.fold_right
     (fun d (lev,env) ->
       match d with
       | LocalDef _ -> lev, EConstr.push_rel d env
       | LocalAssum _ ->
         let s = Retyping.get_sort_of env evd (RelDecl.get_type d) in
-        let s = EConstr.ESorts.kind evd s in
-          (max_sort s lev, EConstr.push_rel d env))
-    sign (Sorts.sprop,env))
+          (s :: lev, EConstr.push_rel d env))
+    sign ([],env))
 
-let sign_level env sigma sign =
-  compute_constructor_level env sigma (EConstr.of_rel_context sign)
-
-let sup_list min = List.fold_left max_sort min
-
-let extract_level env evd min tys =
-  let sorts = List.map (fun ty ->
-    let ctx, concl = Reduction.hnf_decompose_prod_decls env ty in
-      sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
-  in sup_list min sorts
-
-let is_flexible_sort evd s = match s with
-| QSort _ -> assert false
+let is_flexible_sort evd s = match ESorts.kind evd s with
 | Set | Prop | SProp -> false
-| Type u ->
+| Type u | QSort (_, u) ->
   match Univ.Universe.level u with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-(**********************************************************************)
-(* Tools for template polymorphic inductive types                         *)
-
-(* Miscellaneous functions to remove or test local univ assumed to
-   occur only in the le constraints *)
-
-(*
-   Solve a system of universe constraints of the form
-
-   u_s11, ..., u_s1p1, w1 <= u1
-   ...
-   u_sn1, ..., u_snpn, wn <= un
-
-where
-
-  - the ui (1 <= i <= n) are universe variables,
-  - the sjk select subsets of the ui for each equations,
-  - the wi are arbitrary complex universes that do not mention the ui.
-*)
-
-let is_direct_sort_constraint s v = match s with
-| None -> false
-| Some u ->
-  match v with
-  | Sorts.Prop | Sorts.Set | Sorts.SProp -> false
-  | Sorts.Type v -> Univ.univ_level_mem u v
-  | Sorts.QSort _ -> assert false
-
-let solve_constraints_system levels level_bounds =
-  let open Univ in
-  let levels =
-    Array.mapi (fun i o ->
-      match o with
-      | Some u ->
-        (match Universe.level u with
-        | Some u -> Some u
-        | _ -> level_bounds.(i) <- max_sort level_bounds.(i) (Sorts.sort_of_univ u); None)
-      | None -> None)
-      levels in
-  let v = Array.copy level_bounds in
-  let nind = Array.length v in
-  let clos = Array.map (fun _ -> Int.Set.empty) levels in
-  (* First compute the transitive closure of the levels dependencies *)
-  for i=0 to nind-1 do
-    for j=0 to nind-1 do
-      if not (Int.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
-        clos.(i) <- Int.Set.add j clos.(i);
-    done;
-  done;
-  let rec closure () =
-    let continue = ref false in
-      Array.iteri (fun i deps ->
-        let deps' =
-          Int.Set.fold (fun j acc -> Int.Set.union acc clos.(j)) deps deps
-        in
-          if Int.Set.equal deps deps' then ()
-          else (clos.(i) <- deps'; continue := true))
-        clos;
-      if !continue then closure ()
-      else ()
+let inductive_levels env evd arities ctors =
+  let inds = List.map2 (fun x ctors ->
+      let ctx, s = Reductionops.dest_arity env evd x in
+      x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
+      arities ctors
   in
-  closure ();
-  for i=0 to nind-1 do
-    for j=0 to nind-1 do
-      if not (Int.equal i j) && Int.Set.mem j clos.(i) then
-        (v.(i) <- max_sort v.(i) level_bounds.(j));
-    done;
-  done;
-  v
+  (* Inductives explicitly put in an impredicative sort can be
+     squashed, so there are no constraints to get from them. *)
+  let is_impredicative_sort evd s = is_impredicative_sort env (ESorts.kind evd s) in
+  (* Inductives with >= 2 constructors are >= Set *)
+  let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
+  let evd = List.fold_left (fun evd (raw_arity,(_,s),ctors) ->
+      if less_than_2 ctors || is_impredicative_sort evd s then evd
+      else Evd.set_leq_sort env evd ESorts.set s)
+      evd inds
+  in
+  (* If indices_matter, the index telescope acts like an extra
+     constructor except for constructor count checks. *)
+  let inds =
+    List.map (fun (raw_arity,(ctx,_ as arity),ctors) ->
+        let indices = if indices_matter env then
+            Some (compute_constructor_levels env evd ctx)
+          else None
+        in
+        (raw_arity,arity,indices,ctors))
+      inds
+  in
+  (* handle automatic lowering to Prop
+     We repeatedly add information about which inductives should not be Prop
+     until no more progress can be made
+  *)
+  let in_candidates evd s candidates = List.mem_f (ESorts.equal evd) s candidates in
+  let is_prop_candidate evd candidates (raw_arity,(_,s),indices,ctors) =
+    less_than_2 ctors
+    && EConstr.isArity evd raw_arity
+    && is_flexible_sort evd s
+    && not (Evd.check_leq evd ESorts.set s)
+    && List.for_all
+      (List.for_all (fun s -> match ESorts.kind evd s with
+           | SProp | Prop -> true
+           | Set -> false
+           | Type _ | QSort _ ->
+             not (Evd.check_leq evd ESorts.set s)
+             && in_candidates evd s candidates))
+      (Option.List.cons indices ctors)
+  in
+  let rec spread_nonprop evd candidates =
+    let (changed, candidates) = List.fold_left
+        (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
+           if is_prop_candidate evd candidates ind
+           then acc (* still a Prop candidate *)
+           else if in_candidates evd s candidates
+           then (true, List.remove (ESorts.equal evd) s candidates)
+           else acc)
+        (false,candidates)
+        inds
+    in
+    if changed then spread_nonprop evd candidates
+    else evd, candidates
+  in
+  let candidates = List.map (fun (_,(_,s),_,_) -> s) inds in
+  let evd, candidates = spread_nonprop evd candidates in
+  (* Do the lowering. We forget about the generated universe for the
+     lowered inductive and rely on universe restriction to get rid of
+     it.
 
-let inductive_levels env evd arities inds =
-  let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
-  let map (x, (ctx, s)) = match s with
-  | Prop | SProp -> None
-  | Set -> Some Univ.Universe.type0
-  | Type u -> Some u
-  | QSort _ -> assert false
+     NB: it would probably be less hacky to use the sort polymorphism system
+     ie lowering to Prop by setting a qvar equal to prop.
+
+     However this means we wouldn't lower "Inductive foo : Type := ."
+     as "Type" doesn't produce a qvar.
+
+     Perhaps someday we can stop lowering these explicit ": Type". *)
+  let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors as ind) ->
+      if in_candidates evd s candidates then
+        (mkArity (ctx, ESorts.prop),(ctx,ESorts.prop),indices,ctors)
+      else ind)
+      inds
   in
-  let levels = List.map map destarities in
-  let cstrs_levels, sizes =
-    CList.split (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
-        let len = List.length tys in
-        let minlev = du in
-        let minlev =
-          if len > 1 && not (is_impredicative_sort env du) then
-            max_sort minlev Sorts.set
-          else minlev
-        in
-        let minlev =
-          (* Indices contribute. *)
-          if indices_matter env then begin
-            let ilev = sign_level env evd ctx in
-            max_sort ilev minlev
-          end
-          else minlev
-        in
-        let clev = extract_level env evd minlev tys in
-        (clev, len))
-        inds destarities)
+  (* Add constraints from constructor arguments and indices.Q
+     We must do this after Prop lowering as otherwise we risk unifying sorts
+     eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
+     then ESorts.equal would make us believe that the constructor argument is a lowering candidate.
+  *)
+  let evd = List.fold_left (fun evd (_,(_,s),indices,ctors) ->
+      if is_impredicative_sort evd s then evd
+      else List.fold_left
+          (List.fold_left (fun evd ctor_sort ->
+               (* Special behaviour of SProp:
+                  constructors of any inductive can have SProp arguments *)
+               if ESorts.is_sprop evd ctor_sort then evd
+               else Evd.set_leq_sort env evd ctor_sort s))
+          evd (Option.List.cons indices ctors))
+      evd inds
   in
-  (* Take the transitive closure of the system of constructors *)
-  (* level constraints and remove the recursive dependencies *)
-  let levels' = solve_constraints_system (Array.of_list levels)
-    (Array.of_list cstrs_levels)
-  in
-  let evd, arities =
-    CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
-      let cu = EConstr.ESorts.make cu in
-      if is_impredicative_sort env du then
-        (* Any product is allowed here. *)
-        evd, arity :: arities
-      else (* If in a predicative sort, or asked to infer the type,
-              we take the max of:
-              - indices (if in indices-matter mode)
-              - constructors
-              - Type(1) if there is more than 1 constructor
-           *)
-        (* Constructors contribute. *)
-        let evd =
-          if Sorts.is_set du then
-            if not (Evd.check_leq evd cu (EConstr.ESorts.make Sorts.set)) then
-              raise (InductiveError LargeNonPropInductiveNotInType)
-            else evd
-          else evd
-        in
-        let evd =
-          if len >= 2 && EConstr.ESorts.is_prop evd cu then
-           (* "Polymorphic" type constraint and more than one constructor,
-               should not land in Prop. Add constraint only if it would
-               land in Prop directly (no informative arguments as well). *)
-            Evd.set_leq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du)
-          else evd
-        in
-        let evd, arity =
-          if not (Sorts.is_small du) && EConstr.ESorts.equal evd cu (EConstr.ESorts.make du) then
-            if is_flexible_sort evd du && not (Evd.check_leq evd EConstr.ESorts.set (EConstr.ESorts.make du))
-            then if Term.isArity arity
-            (* If not a syntactic arity, the universe may be used in a
-               polymorphic instance and so cannot be lowered to Prop.
-               See #13300. *)
-              then
-                (* Workaround: the kernel does not handle non-Prop unbounded
-                   arities. In this situation we have no constraints from the
-                   constructor so we cook up a new type and unify the unbound
-                   universe to a dummy value. *)
-                let evd = Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du) in
-                evd, Term.mkArity (ctx, Sorts.prop)
-              else Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du), arity
-            else evd, arity
-          else Evd.set_eq_sort env evd cu (EConstr.ESorts.make du), arity
-        in
-          (evd, arity :: arities))
-    (evd,[]) (Array.to_list levels') destarities sizes
-  in evd, List.rev arities
+  let arities = List.map (fun (arity,_,_,_) -> arity) inds in
+  evd, arities
+
+(** Template poly ***)
 
 let check_named {CAst.loc;v=na} = match na with
 | Name _ -> ()
@@ -420,7 +352,7 @@ let template_polymorphism_candidate uctx params entry concl = match concl with
 | Some (Set | SProp | Prop) -> Univ.Level.Set.empty
 | Some (Type u) ->
   let ctor_levels =
-    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+    let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
     let param_levels =
       List.fold_left (fun levels d -> match d with
           | LocalAssum _ -> levels
@@ -528,38 +460,21 @@ let variance_of_entry ~cumulative ~variances uctx =
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
-let warn_bad_set_minimization =
-  CWarnings.create ~name:"bad-set-minimization" ~category:Deprecation.Version.v8_18
-    Pp.(fun () -> strbrk "This inductive will be minimized to Set even though Universe Minimization ToSet is unset. This will change in a future version.")
-
-let warn_bad_set_minimization ?loc () =
-  if UnivMinim.get_set_minimization () then ()
-  else warn_bad_set_minimization ?loc ()
-
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
-  let sigma = Evd.minimize_universes sigma in
-  let nf = Evarutil.nf_evars_universes sigma in
-  let constructors = List.map (on_snd (List.map nf)) constructors in
-  let arities = List.map EConstr.(to_constr sigma) arities in
-  let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
-  let sigma', arities = inductive_levels env_ar_params sigma arities constructors in
-  let sigma =
-    let sigma' = Evd.minimize_universes sigma' in
-    let () = List.iter (fun ty ->
-        let _, s = Reduction.dest_arity env_ar_params ty in
-        let s = EConstr.ESorts.make s in
-        if EConstr.ESorts.is_set sigma' s && not (EConstr.ESorts.is_set sigma s)
-        then warn_bad_set_minimization ())
-        arities
-    in
-    sigma'
+  let ctor_args =  List.map (fun (_,tys) ->
+      List.map (fun ty ->
+          let ctx = fst (Reductionops.hnf_decompose_prod_decls env_ar_params sigma ty) in
+          ctx)
+        tys)
+      constructors
   in
-  let nf = Evarutil.nf_evars_universes sigma in
-  let arities = List.map nf arities in
-  let constructors = List.map (on_snd (List.map nf)) constructors in
+  let sigma, arities = inductive_levels env_ar_params sigma arities ctor_args in
+  let sigma = Evd.minimize_universes sigma in
+  let arities = List.map EConstr.(to_constr sigma) arities in
+  let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
-  let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
+  let arityconcl = List.map (Option.map (fun s -> ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
@@ -706,7 +621,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let uparam_subst =
     List.init ninds EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
     @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in
-  let generalize_constructor c = EConstr.Unsafe.to_constr (EConstr.Vars.substnl uparam_subst nparams c) in
+  let generalize_constructor c = EConstr.Vars.substnl uparam_subst nparams c in
   let cimpls = List.map pi3 constructors in
   let constructors = List.map (fun (cnames,ctypes,cimpls) ->
       (cnames,List.map generalize_constructor ctypes))
@@ -758,7 +673,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
+    ind_arity = Option.default (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=UnivRigid})) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 
@@ -874,6 +789,6 @@ let make_cases ind =
 module Internal =
 struct
 
-let compute_constructor_level = compute_constructor_level
-let warn_bad_set_minimization = warn_bad_set_minimization
+let inductive_levels = inductive_levels
+
 end

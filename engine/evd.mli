@@ -640,15 +640,9 @@ val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_ma
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
 val universe_rigidity : evar_map -> Univ.Level.t -> rigid
-val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_map
-(** See [UState.make_flexible_variable] *)
 
 val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 (** See [UState.make_nonalgebraic_variable]. *)
-
-val is_sort_variable : evar_map -> esorts -> Univ.Level.t option
-(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is
-    not a local sort variable declared in [evm] *)
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
@@ -668,7 +662,7 @@ val check_constraints : evar_map -> Univ.Constraints.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
-val universe_subst : evar_map -> UnivSubst.universe_opt_subst
+val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and

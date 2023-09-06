@@ -72,6 +72,13 @@ let rec alpha_var id1 id2 = function
    in NList and NBinderList, since the iterator has its own variable *)
 let replace_var i j var = j :: List.remove Id.equal i var
 
+let eq_rigid a b =
+  let open UState in
+  match a, b with
+  | UnivRigid, UnivRigid -> true
+  | UnivFlexible a, UnivFlexible b -> (a:bool) = b
+  | (UnivRigid | UnivFlexible _), _ -> false
+
 (* compare_glob_universe_instances true strictly_lt us1 us2 computes us1 <= us2,
    compare_glob_universe_instances false strictly_lt us1 us2 computes us1 = us2.
    strictly_lt will be set to true if any part is strictly less. *)
@@ -83,9 +90,7 @@ let compare_glob_universe_instances lt strictly_lt us1 us2 =
   | Some l1, Some l2 ->
      CList.for_all2eq (fun u1 u2 ->
          match u1, u2 with
-         | UAnonymous {rigid=true}, UAnonymous {rigid=true} -> true
-         | UAnonymous {rigid=false}, UAnonymous {rigid=false} -> true
-         | UAnonymous _, UAnonymous _ -> false
+         | UAnonymous {rigid}, UAnonymous {rigid=rigid'} -> eq_rigid rigid rigid'
          | UNamed _, UAnonymous _ -> strictly_lt := true; lt
          | UAnonymous _, UNamed _ -> false
          | UNamed _, UNamed _ -> glob_level_eq u1 u2) l1 l2

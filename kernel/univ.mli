@@ -82,10 +82,6 @@ sig
     val diff : 'a t -> 'a t -> 'a t
     (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
 
-    val subst_union : 'a option t -> 'a option t -> 'a option t
-    (** [subst_union x y] favors the bindings of the first map that are [Some],
-        otherwise takes y's bindings. *)
-
     val pr : (key -> Pp.t) -> ('a -> Pp.t) -> 'a t -> Pp.t
     (** Pretty-printing *)
   end

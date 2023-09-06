@@ -85,7 +85,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
 
 let check_anonymous_type ind =
   match ind with
-  | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true
+  | { CAst.v = CSort (Glob_term.UAnonymous {rigid=UnivRigid}) } -> true
   | _ -> false
 
 let error_parameters_must_be_named bk {CAst.loc; v=name} =
@@ -120,8 +120,7 @@ end
    type-inference *)
 module DataR = struct
   type t =
-    { min_univ : Sorts.t
-    ; arity : Constr.t
+    { arity : Constr.t
     ; implfs : Impargs.manual_implicits list
     ; fields : Constr.rel_declaration list
     }
@@ -147,29 +146,33 @@ module Data = struct
   }
 end
 
+(** Is [s] a single local level (type or qsort)? If so return it. *)
+let is_sort_variable sigma s =
+  match EConstr.ESorts.kind sigma s with
+  | SProp | Prop | Set -> None
+  | Type u | QSort (_, u) -> match Univ.Universe.level u with
+    | None -> None
+    | Some l ->
+      if Univ.Level.Set.mem l (fst (Evd.universe_context_set sigma))
+      then Some l
+      else None
+
 let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
-    let uvarkind = Evd.univ_flexible_alg in
-    let sigma, s = Evd.new_sort_variable uvarkind sigma in
+    let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+    sigma, (EConstr.mkSort s, s)
+  | Some { CAst.v = CSort (Glob_term.UAnonymous {rigid=UnivRigid}); loc } ->
+    (* special case: the user wrote ": Type". We want to allow it to become algebraic
+       (and Prop but that may change in the future) *)
+    let sigma, s = Evd.new_sort_variable ?loc UState.univ_flexible_alg sigma in
     sigma, (EConstr.mkSort s, s)
   | Some t ->
     let env = EConstr.push_rel_context newps env0 in
-    let poly =
-      match t with
-      | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true | _ -> false in
     let impls = Constrintern.empty_internalization_env in
     let sigma, s = Constrintern.interp_type_evars ~program_mode:false env sigma ~impls t in
     let sred = Reductionops.whd_allnolet env sigma s in
     (match EConstr.kind sigma sred with
-     | Sort s' ->
-       (if poly then
-          match Evd.is_sort_variable sigma s' with
-          | Some l ->
-            let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
-            sigma, (s, s')
-          | None ->
-            sigma, (s, s')
-        else sigma, (s, s'))
+     | Sort s' -> (sigma, (s, s'))
      | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
 
 type tc_result =
@@ -179,6 +182,26 @@ type tc_result =
   * Entries.variance_entry
   * Constr.rel_context
   * DataR.t list
+
+let def_class_levels ~def env_ar sigma aritysorts ctors =
+  let s, ctor = match aritysorts, ctors with
+    | [s], [_,ctor] -> begin match ctor with
+        | [LocalAssum (_,t)] -> s, t
+        | _ -> assert false
+      end
+    | _ -> CErrors.user_err Pp.(str "Mutual definitional classes are not supported.")
+  in
+  let ctor_sort = Retyping.get_sort_of env_ar sigma ctor in
+  let is_prop_ctor = EConstr.ESorts.is_prop sigma ctor_sort in
+  let sigma = Evd.set_leq_sort env_ar sigma ctor_sort s in
+  if Option.cata (Evd.is_flexible_level sigma) false (is_sort_variable sigma s)
+  && is_prop_ctor
+  then (* We assume that the level in aritysort is not constrained
+          and clear it, if it is flexible *)
+    let sigma = Evd.set_eq_sort env_ar sigma EConstr.ESorts.set s in
+    (sigma, [EConstr.mkProp])
+  else
+    sigma, [EConstr.mkSort s]
 
 (* ps = parameter list *)
 let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_result =
@@ -195,8 +218,9 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     Constrintern.interp_context_evars ~program_mode:false env0 sigma ps in
   let sigma, typs =
     List.fold_left_map (build_type_telescope newps env0) sigma records in
-  let arities = List.map (fun (typ, _) -> EConstr.it_mkProd_or_LetIn typ newps) typs in
-  let relevances = List.map (fun (_,s) -> EConstr.ESorts.relevance_of_sort sigma s) typs in
+  let typs, aritysorts = List.split typs in
+  let arities = List.map (fun typ -> EConstr.it_mkProd_or_LetIn typ newps) typs in
+  let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort sigma s) aritysorts in
   let fold accu { DataI.name; _ } arity r =
     EConstr.push_rel (LocalAssum (make_annot (Name name) r,arity)) accu in
   let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
@@ -213,39 +237,37 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let (sigma, data) = List.fold_left_map fold sigma records in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
-  let sigma = Evd.minimize_universes sigma in
-  let fold sigma (typ, esort) (_, newfs) =
-    let sort = EConstr.ESorts.kind sigma esort in
-    let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in
-    let univ = if Sorts.is_sprop sort then univ else if Sorts.is_sprop univ then Sorts.prop else univ in
-      if not def && is_impredicative_sort env0 sort then
-        sigma, (sort, typ)
-      else
-        let sigma = Evd.set_leq_sort env_ar sigma (EConstr.ESorts.make univ) esort in
-        if Sorts.is_small univ &&
-           Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma esort) then
-           (* We can assume that the level in aritysort is not constrained
-               and clear it, if it is flexible *) begin
-          ComInductive.Internal.warn_bad_set_minimization ();
-          Evd.set_eq_sort env_ar sigma EConstr.ESorts.set esort, (univ, EConstr.mkSort (EConstr.ESorts.make univ)) end
-        else sigma, (univ, typ)
+  let sigma, typs =
+    if def then def_class_levels ~def env_ar sigma aritysorts data
+    else (* each inductive has one constructor *)
+      let ctors = List.map (fun (_,newfs) -> [newfs]) data in
+      ComInductive.Internal.inductive_levels env_ar sigma typs ctors
   in
-  let (sigma, typs) = List.fold_left2_map fold sigma typs data in
   (* TODO: Have this use Declaredef.prepare_definition *)
-  let sigma, (newps, ans) = Evarutil.finalize sigma (fun nf ->
-      let nf_rel r = Evarutil.nf_relevance sigma r in
-      let map_decl = function
-      | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
-      | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
-      in
-      let newps = List.map map_decl newps in
-      let map (implfs, fields) (min_univ, typ) =
-        let fields = List.map map_decl fields in
-        let arity = nf typ in
-        { DataR.min_univ; arity; implfs; fields }
-      in
-      let ans = List.map2 map data typs in
-      newps, ans)
+  let sigma, (newps, ans) =
+    (* too complex for Evarutil.finalize as we normalize non-constr *)
+    let sigma = Evd.minimize_universes sigma in
+    let uvars = ref Univ.Level.Set.empty in
+    let nf c =
+      let varsc = EConstr.universes_of_constr sigma c in
+      let c = EConstr.to_constr sigma c in
+      uvars := Univ.Level.Set.union !uvars varsc;
+      c
+    in
+    let nf_rel r = Evarutil.nf_relevance sigma r in
+    let map_decl = function
+    | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
+    | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
+    in
+    let newps = List.map map_decl newps in
+    let map (implfs, fields) typ =
+      let fields = List.map map_decl fields in
+      let arity = nf typ in
+      { DataR.arity; implfs; fields }
+    in
+    let ans = List.map2 map data typs in
+    let sigma = Evd.restrict_universe_context sigma !uvars in
+    sigma, (newps, ans)
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
@@ -748,8 +770,8 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   let blocks = List.mapi mk_block data in
   let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
-    let concl = Some data.Data.rdata.DataR.min_univ in
     let env_ar_params = Environ.push_rel_context params (Global.env ()) in
+    let concl = Some (snd (Reduction.dest_arity env_ar_params data.rdata.arity)) in
     ComInductive.compute_template_inductive ~user_template:template
       ~env_ar_params ~ctx_params:params ~univ_entry:univs entry concl
   | _ ->
@@ -791,6 +813,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
 
 
 let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
+  assert (kind <> Vernacexpr.Class true);
   let impargs, params, univs, variances, projections_kind, data, indlocs =
     pre_process_structure udecl kind ~poly records in
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data

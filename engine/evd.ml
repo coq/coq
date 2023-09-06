@@ -1105,10 +1105,6 @@ let new_sort_variable ?loc ?name rigid sigma =
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
 
-let make_flexible_variable evd ~algebraic u =
-  { evd with universes =
-      UState.make_flexible_variable evd.universes ~algebraic u }
-
 let make_nonalgebraic_variable evd u =
   { evd with universes = UState.make_nonalgebraic_variable evd.universes u }
 
@@ -1134,11 +1130,9 @@ let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 
-let is_sort_variable evd s = UState.is_sort_variable evd.universes s
-
 let is_flexible_level evd l =
   let uctx = evd.universes in
-    Univ.Level.Map.mem l (UState.subst uctx)
+  UnivFlex.mem l (UState.subst uctx)
 
 let is_eq_sort s1 s2 =
   if Sorts.equal s1 s2 then None
@@ -1147,18 +1141,19 @@ let is_eq_sort s1 s2 =
 (* Precondition: l is not defined in the substitution *)
 let universe_rigidity evd l =
   let uctx = evd.universes in
+  (* XXX why are we considering all locals to be flexible here? *)
   if Univ.Level.Set.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
-    UnivFlexible (Univ.Level.Set.mem l (UState.algebraics uctx))
+    UnivFlexible (UState.is_algebraic l uctx)
   else UnivRigid
 
 let normalize_universe evd =
   let vars = UState.subst evd.universes in
-  let normalize = UnivSubst.normalize_universe_opt_subst vars in
+  let normalize = UnivFlex.normalize_universe vars in
     normalize
 
 let normalize_universe_instance evd l =
   let vars = UState.subst evd.universes in
-  let normalize = UnivSubst.level_subst_of (UnivSubst.normalize_univ_variable_opt_subst vars) in
+  let normalize = UnivSubst.level_subst_of (UnivFlex.normalize_univ_variable vars) in
   UnivSubst.subst_instance normalize l
 
 let normalize_sort evars s =
@@ -1689,7 +1684,7 @@ module MiniEConstr = struct
     in
     let lsubst = universe_subst sigma in
     let level_value l =
-      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+      UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
     in
     let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
     let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
@@ -1704,7 +1699,7 @@ module MiniEConstr = struct
     in
     let lsubst = universe_subst sigma in
     let level_value l =
-      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+      UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
     in
     let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
     let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
