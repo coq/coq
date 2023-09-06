@@ -128,7 +128,7 @@ let define ?loc internal role id c poly univs =
   let id = compute_name internal id in
   let uctx = UState.minimize univs in
   let c = UState.nf_universes uctx c in
-  let univs = UState.univ_entry ~poly uctx in
+  let univs = UState.univ_entry ~poly:(internal || poly) uctx in
   !declare_definition_scheme ~internal ~univs ~role ~name:id ?loc c
 
   module Locmap : sig

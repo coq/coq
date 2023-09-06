@@ -94,8 +94,9 @@ let () =
       optwrite = (fun b -> rewriting_flag := b) }
 
 (* Util *)
-let define ~poly name sigma c types =
-  let univs = Evd.univ_entry ~poly sigma in
+let define name sigma c types =
+  (* schemes always declared univ poly *)
+  let univs = Evd.univ_entry ~poly:true sigma in
   let entry = Declare.definition_entry ~univs ?types c in
   let kind = Decls.(IsDefinition Scheme) in
   let kn = Declare.declare_constant ~kind ~name (Declare.DefinitionEntry entry) in
@@ -394,16 +395,10 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
     l (Evd.from_env env,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec in
-  let poly =
-    (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
-       (force_mutual is about the generated schemes) *)
-    let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (Names.GlobRef.IndRef ind)
-  in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
-    let cst = define ~poly fi sigma decl (Some decltype) in
+    let cst = define fi sigma decl (Some decltype) in
     Names.GlobRef.ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
@@ -498,14 +493,7 @@ let build_combined_scheme env schemes =
 let do_combined_scheme name csts =
   let open CAst in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
-  (* It is possible for the constants to have different universe
-     polymorphism from each other, however that is only when the user
-     manually defined at least one of them (as Scheme would pick the
-     polymorphism of the inductive block). In that case if they want
-     some other polymorphism they can also manually define the
-     combined scheme. *)
-  let poly = Global.is_polymorphic (Names.GlobRef.ConstRef (List.hd csts)) in
-  ignore (define ~poly name.v sigma body (Some typ));
+  ignore (define name.v sigma body (Some typ));
   Declare.fixpoint_message None [name.v]
 
 (**********************************************************************)
