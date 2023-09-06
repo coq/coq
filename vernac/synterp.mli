@@ -15,12 +15,15 @@ vernacexpr into a [vernac_control_entry]. *)
 open Names
 open Libnames
 
-val module_locality : bool Attributes.Notations.t
+val module_locality : bool Attributes.attribute
 
 val with_locality : atts:Attributes.vernac_flags -> (local:bool option -> 'a) -> 'a
 
 val with_module_locality :
   atts:Attributes.vernac_flags -> (module_local:bool -> 'a) -> 'a
+
+val with_generic_atts :
+  check:bool -> Attributes.vernac_flags -> (atts:Attributes.vernac_flags -> 'a) -> 'a
 
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 
