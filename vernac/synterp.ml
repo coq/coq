@@ -47,6 +47,32 @@ let warn_legacy_export_set =
   CWarnings.create ~name:"legacy-export-set" ~category:Deprecation.Version.v8_18
     Pp.(fun () -> strbrk "Syntax \"Export Set\" is deprecated, use the attribute syntax \"#[export] Set\" instead.")
 
+let deprecated_nonuniform =
+  CWarnings.create ~name:"deprecated-nonuniform-attribute"
+    ~category:Deprecation.Version.v8_18
+    Pp.(fun () -> strbrk "Attribute '#[nonuniform]' is deprecated, \
+                          use '#[warning=\"-uniform-inheritance\"]' instead.")
+
+let warnings_att =
+  Attributes.attribute_of_list [
+    "warnings", Attributes.payload_parser ~cat:(^) ~name:"warnings";
+    "warning", Attributes.payload_parser ~cat:(^) ~name:"warning";
+  ]
+
+let with_generic_atts ~check atts f =
+  let atts, warnings = Attributes.parse_with_extra warnings_att atts in
+  let atts, nonuniform = Attributes.parse_with_extra ComCoercion.nonuniform atts in
+  let warnings =
+    let () = if nonuniform <> None && check then deprecated_nonuniform () in
+    if nonuniform <> Some true then warnings else
+      let ui = "-uniform-inheritance" in
+      Some (match warnings with Some w -> w ^ "," ^ ui | None -> ui) in
+  match warnings with
+  | None -> f ~atts
+  | Some warnings ->
+    if check then CWarnings.check_unknown_warnings warnings;
+    CWarnings.with_warn warnings (fun () -> f ~atts) ()
+
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 
 type control_entry =
@@ -497,7 +523,10 @@ and synterp_load verbosely fname =
   EVernacLoad(verbosely, entries)
 
 and synterp_control CAst.{ loc; v = cmd } =
-  let fn expr = synterp ?loc ~atts:cmd.attrs cmd.expr in
+  let fn expr =
+    with_generic_atts ~check:true cmd.attrs (fun ~atts ->
+        synterp ?loc ~atts cmd.expr)
+  in
   let control, expr = synterp_control_flag ~loc cmd.control fn cmd.expr in
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
 
