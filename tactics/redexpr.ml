@@ -237,12 +237,10 @@ let rec eval_red_expr env = function
   | e -> eval_red_expr env e
   | exception Not_found -> ExtraRedExpr s (* delay to runtime interpretation *)
   end
-| (Red _ | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _) as e -> e
+| (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _) as e -> e
 
 let reduction_of_red_expr_val = function
-  | Red internal ->
-      if internal then (e_red try_red_product,DEFAULTcast)
-      else (e_red red_product,DEFAULTcast)
+  | Red -> (e_red red_product, DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl ((w,f),o) ->
     let am = match w, simplIsCbn () with
@@ -332,7 +330,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
           error_illegal_clause ()
         else
           CbvNative (Some (occs,c))
-    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
+    | Red | Hnf | Cbv _ | Lazy _ | Cbn _
     | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
         error_at_in_occurrences_not_supported ()
     | Unfold [] | Pattern [] ->

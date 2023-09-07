@@ -1001,7 +1001,7 @@ let reduce redexp cl =
     if is_local_flag env flags then LocalHypConv else StableHypConv
   | Unfold flags ->
     if is_local_unfold env flags then LocalHypConv else StableHypConv
-  | Red _ | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
+  | Red | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   in
   let redexp = Redexpr.eval_red_expr env redexp in
@@ -1270,8 +1270,7 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   let rec aux ccl =
     match lookup_hypothesis_as_renamed env (Tacmach.project gl) ccl h with
       | None when red ->
-        let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
-        let (_, c) = redfun env (Proofview.Goal.sigma gl) ccl in
+        let c = Tacred.try_red_product env (Proofview.Goal.sigma gl) ccl in
         aux c
       | x -> x
   in

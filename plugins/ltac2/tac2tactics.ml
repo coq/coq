@@ -286,7 +286,7 @@ let eval_fun red c =
   end
 
 let eval_red c =
-  eval_fun (Red false) c
+  eval_fun Red c
 
 let eval_hnf c =
   eval_fun Hnf c

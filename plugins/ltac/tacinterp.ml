@@ -757,7 +757,7 @@ let interp_red_expr ist env sigma = function
     sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvNative o ->
     sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
-  | (Red _ |  Hnf | ExtraRedExpr _ as r) -> sigma , r
+  | (Red |  Hnf | ExtraRedExpr _ as r) -> sigma , r
 
 let interp_may_eval f ist env sigma = function
   | ConstrEval (r,c) ->

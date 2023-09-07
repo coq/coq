@@ -66,4 +66,4 @@ let map_red_expr_gen f g h = function
   | CbvVm occs_o -> CbvVm (Option.map (map_occs (Util.map_union g h)) occs_o)
   | CbvNative occs_o -> CbvNative (Option.map (map_occs (Util.map_union g h)) occs_o)
   | Cbn flags -> Cbn (map_flags g flags)
-  | ExtraRedExpr _ | Red _ | Hnf as x -> x
+  | ExtraRedExpr _ | Red | Hnf as x -> x
