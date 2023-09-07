@@ -302,7 +302,7 @@ and intern_library_deps ~intern libs dir m =
 and intern_mandatory_library ~intern caller libs (dir,d) =
   let digest, libs = intern_library ~intern libs dir in
   let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    let from = library_full_filename dir in
+    let from = library_full_filename caller in
     user_err
       (str "Compiled library " ++ DirPath.print caller ++
        str " (in file " ++ str from ++
