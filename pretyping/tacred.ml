@@ -908,8 +908,8 @@ let try_red_product env sigma c =
   in redrec env c
 
 let red_product env sigma c = match try_red_product env sigma c with
-| Reduced c -> c
-| NotReducible -> user_err Pp.(str "No head constant to reduce.")
+| Reduced c -> Some c
+| NotReducible -> None
 
 (*
 (* This old version of hnf uses betadeltaiota instead of itself (resp
@@ -1158,7 +1158,10 @@ let unfoldn loccname env sigma c =
 
 (* Re-folding constants tactics: refold com in term c *)
 let fold_one_com com env sigma c =
-  let rcom = red_product env sigma com in
+  let rcom = match red_product env sigma com with
+  | None -> user_err Pp.(str "No head constant to reduce.")
+  | Some c -> c
+  in
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
@@ -1360,9 +1363,3 @@ let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
 
 let reduce_to_quantified_ref ?(allow_failure=false) = reduce_to_ref_gen allow_failure true
 let reduce_to_atomic_ref ?(allow_failure=false) = reduce_to_ref_gen allow_failure false
-
-exception Redelimination
-
-let try_red_product env sigma c = match try_red_product env sigma c with
-| Reduced c -> c
-| NotReducible -> raise Redelimination

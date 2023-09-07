@@ -1413,10 +1413,9 @@ module Strategies =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
 (*         let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
         let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
-        let unfolded =
-          try Tacred.try_red_product env sigma c
-          with e when CErrors.noncritical e ->
-            user_err Pp.(str "fold: the term is not unfoldable!")
+        let unfolded = match Tacred.red_product env sigma c with
+        | None -> user_err Pp.(str "fold: the term is not unfoldable!")
+        | Some c -> c
         in
           try
             let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in

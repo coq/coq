@@ -239,8 +239,12 @@ let rec eval_red_expr env = function
   end
 | (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _) as e -> e
 
+let red_product_exn env sigma c = match red_product env sigma c with
+  | None -> user_err Pp.(str "No head constant to reduce.")
+  | Some c -> c
+
 let reduction_of_red_expr_val = function
-  | Red -> (e_red red_product, DEFAULTcast)
+  | Red -> (e_red red_product_exn, DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl ((w,f),o) ->
     let am = match w, simplIsCbn () with

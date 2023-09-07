@@ -1297,8 +1297,10 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       let sigma, typ = pose_all_metas_as_evars env sigma (clenv_type indclause) in
       sigma, term, typ
     with e when noncritical e ->
-    try find_clause (try_red_product env sigma typ)
-    with Redelimination -> raise e in
+    match red_product env sigma typ with
+    | None -> raise e
+    | Some typ -> find_clause typ
+  in
   find_clause typ
 
 let check_expected_type env sigma (elimc,bl) elimt =

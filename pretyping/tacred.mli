@@ -52,13 +52,8 @@ val evaluable_of_global_reference :
 val global_of_evaluable_reference :
   evaluable_global_reference -> GlobRef.t
 
-exception Redelimination
-
-(** Red (raise user error if nothing reducible) *)
-val red_product : reduction_function
-
-(** Red (raise Redelimination if nothing reducible) *)
-val try_red_product : reduction_function
+(** Red (returns None if nothing reducible) *)
+val red_product : env -> evar_map -> constr -> constr option
 
 (** Simpl *)
 val simpl : reduction_function

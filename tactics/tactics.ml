@@ -946,10 +946,14 @@ let change ~check chg c cls =
 let change_concl t =
   change_in_concl ~check:true None (make_change_arg t)
 
+let red_product_exn env sigma c = match red_product env sigma c with
+| None -> user_err Pp.(str "No head constant to reduce.")
+| Some c -> c
+
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let red_in_concl        = reduct_in_concl ~cast:true ~check:false (red_product,DEFAULTcast)
-let red_in_hyp          = reduct_in_hyp ~check:false ~reorder:false red_product
-let red_option          = reduct_option ~check:false (red_product,DEFAULTcast)
+let red_in_concl        = reduct_in_concl ~cast:true ~check:false (red_product_exn,DEFAULTcast)
+let red_in_hyp          = reduct_in_hyp ~check:false ~reorder:false red_product_exn
+let red_option          = reduct_option ~check:false (red_product_exn,DEFAULTcast)
 let hnf_in_concl        = reduct_in_concl ~cast:true ~check:false (hnf_constr,DEFAULTcast)
 let hnf_in_hyp          = reduct_in_hyp ~check:false ~reorder:false hnf_constr
 let hnf_option          = reduct_option ~check:false (hnf_constr,DEFAULTcast)
@@ -1270,12 +1274,13 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   let rec aux ccl =
     match lookup_hypothesis_as_renamed env (Tacmach.project gl) ccl h with
       | None when red ->
-        let c = Tacred.try_red_product env (Proofview.Goal.sigma gl) ccl in
-        aux c
+        begin match red_product env (Proofview.Goal.sigma gl) ccl with
+        | None -> None
+        | Some c -> aux c
+        end
       | x -> x
   in
-  try aux (Proofview.Goal.concl gl)
-  with Redelimination -> None
+  aux (Proofview.Goal.concl gl)
 
 let is_quantified_hypothesis id gl =
   match lookup_hypothesis_as_renamed_gen false (NamedHyp (CAst.make id)) gl with
@@ -1815,17 +1820,15 @@ let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_d
         let exn, info = Exninfo.capture exn in
         Proofview.tclZERO ~info exn
     in
-    let rec try_red_apply thm_ty (exn0, info) =
-      try
+    let rec try_red_apply thm_ty (exn0, info) = match red_product env sigma thm_ty with
+    | Some red_thm ->
         (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product env sigma thm_ty in
         Proofview.tclORELSE
           (try_apply red_thm concl_nprod)
           (fun _ -> try_red_apply red_thm (exn0, info))
-      with Redelimination as exn ->
+    | None ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
-        let exn, info = Exninfo.capture exn in
         let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
