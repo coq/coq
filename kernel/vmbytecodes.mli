@@ -77,7 +77,6 @@ val pp_bytecodes : bytecodes -> Pp.t
 type fv_elem =
   FVnamed of Id.t
 | FVrel of int
-| FVuniv_var of int
 
 type fv = fv_elem array
 

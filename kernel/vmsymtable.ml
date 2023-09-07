@@ -298,8 +298,6 @@ and slot_for_fv env sigma fv envcache table =
         cache_rel envcache i v; v
       | Some v -> v
       end
-  | FVuniv_var _idu ->
-    assert false
 
 and eval_to_patch env sigma (code, fv) envcache table =
   let slots = function

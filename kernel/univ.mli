@@ -411,13 +411,6 @@ val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
 
 val make_abstract_instance : AbstractContext.t -> Instance.t
 
-(** [compact_univ u] remaps local variables in [u] such that their indices become
-     consecutive. It returns the new universe and the mapping.
-     Example: compact_univ [(Var 0, i); (Prop, 0); (Var 2; j))] =
-       [(Var 0,i); (Prop, 0); (Var 1; j)], [0; 2]
-*)
-val compact_univ : Universe.t -> Universe.t * int list
-
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.t
