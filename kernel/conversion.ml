@@ -72,7 +72,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
+  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * usubs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list

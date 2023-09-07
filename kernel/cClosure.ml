@@ -93,8 +93,6 @@ let neutr = function
 | Ntrl -> Ntrl
 | Red | Cstr -> Red
 
-type 'a usubs = 'a subs Univ.puniverses
-
 type evar_repack = Evar.t * constr list -> constr
 
 type fconstr = {
@@ -110,21 +108,23 @@ and fterm =
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr
-  | FFix of fixpoint * fconstr usubs
-  | FCoFix of cofixpoint * fconstr usubs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr usubs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr usubs
-  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
-  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
-  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
-  | FEvar of Evar.t * constr list * fconstr usubs * evar_repack
+  | FFix of fixpoint * usubs
+  | FCoFix of cofixpoint * usubs
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
+  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
+  | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
+  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
+  | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
-  | FCLOS of constr * fconstr usubs
+  | FCLOS of constr * usubs
   | FIrrelevant
   | FLOCKED
+
+and usubs = fconstr subs Univ.puniverses
 
 and finvert = fconstr array
 
@@ -176,7 +176,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -299,7 +299,7 @@ let usubst_sort (_,u) s = match s with
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
-let mk_clos (e:_ usubs) t =
+let mk_clos (e:usubs) t =
   match kind t with
     | Rel i -> clos_rel (fst e) i
     | Var x -> {mark = Red; term = FFlex (VarKey x) }
