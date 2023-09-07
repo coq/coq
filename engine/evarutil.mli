@@ -119,7 +119,7 @@ val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
 (***********************************************************)
 
-val create_clos_infos : env -> evar_map -> CClosure.RedFlags.reds -> CClosure.clos_infos
+val create_clos_infos : env -> evar_map -> RedFlags.reds -> CClosure.clos_infos
 
 (** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
     uninstantiated; [nf_evar] leaves uninstantiated evars as is *)

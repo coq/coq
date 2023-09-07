@@ -42,7 +42,7 @@ and compute_head_var env sigma id = match lookup_named id env with
 | _ -> RigidHead RigidOther
 
 and kind_of_head env sigma t =
-  let rec aux k l t b = match EConstr.kind sigma (Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t) with
+  let rec aux k l t b = match EConstr.kind sigma (Reductionops.clos_whd_flags RedFlags.betaiotazeta env sigma t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->

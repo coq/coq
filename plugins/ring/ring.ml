@@ -76,7 +76,7 @@ let lookup_map map =
 
 let protect_red map env sigma c =
   let tab = create_tab () in
-  let infos = Evarutil.create_clos_infos env sigma all in
+  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
   let map = lookup_map map sigma c in
   let rec eval n c = match EConstr.kind sigma c with
   | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)

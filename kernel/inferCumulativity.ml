@@ -283,7 +283,7 @@ and infer_vect infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let reds = CClosure.RedFlags.red_add_transparent betaiotazeta TransparentState.full in
+  let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta TransparentState.full in
   let infos = (create_clos_infos reds env, create_tab ()) in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 

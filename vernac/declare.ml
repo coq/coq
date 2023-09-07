@@ -2255,7 +2255,7 @@ open Obls_.ProgramDecl
 let reduce c =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  EConstr.Unsafe.to_constr (Reductionops.clos_norm_flags CClosure.betaiota env sigma (EConstr.of_constr c))
+  EConstr.Unsafe.to_constr (Reductionops.clos_norm_flags RedFlags.betaiota env sigma (EConstr.of_constr c))
 
 let explain_no_obligations = function
     Some ident -> str "No obligations for program " ++ Id.print ident

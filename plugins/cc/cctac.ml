@@ -38,10 +38,10 @@ let _False      = lazy (Coqlib.lib_ref "core.False.type")
 let _not        = lazy (Coqlib.lib_ref "core.not.type")
 
 let whd env sigma t =
-  Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t
+  Reductionops.clos_whd_flags RedFlags.betaiotazeta env sigma t
 
 let whd_delta env sigma t =
-  Reductionops.clos_whd_flags CClosure.all env sigma t
+  Reductionops.clos_whd_flags RedFlags.all env sigma t
 
 let whd_in_concl =
   reduct_in_concl ~cast:true ~check:false (Reductionops.whd_all, DEFAULTcast)

@@ -3495,8 +3495,7 @@ end
 let reduce_after_refine =
   (* For backward compatibility reasons, we do not contract let-ins, but we unfold them. *)
   let redfun env t =
-    let open CClosure in
-    let flags = RedFlags.red_add_transparent allnolet TransparentState.empty in
+    let flags = RedFlags.red_add_transparent RedFlags.allnolet TransparentState.empty in
     clos_norm_flags flags env t
   in
   reduct_in_concl ~cast:false ~check:false (redfun,DEFAULTcast)

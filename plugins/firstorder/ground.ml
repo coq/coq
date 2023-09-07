@@ -23,10 +23,7 @@ let get_flags qflag =
     | _ -> accu
   in
   let flags = List.fold_left f TransparentState.full (Coercionops.coercions ()) in
-  { Formula.reds =
-    CClosure.RedFlags.red_add_transparent
-      CClosure.all
-      flags; qflag }
+  { Formula.reds = RedFlags.red_add_transparent RedFlags.all flags; qflag }
 
 let get_id hd = match hd.id with FormulaId id -> id
 

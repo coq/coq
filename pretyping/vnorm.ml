@@ -28,7 +28,7 @@ module NamedDecl = Context.Named.Declaration
 (* Calcul de la forme normal d'un terme    *)
 (*******************************************)
 
-let e_whd_all = Reductionops.clos_whd_flags CClosure.all
+let e_whd_all = Reductionops.clos_whd_flags RedFlags.all
 
 let crazy_type =  mkSet
 
@@ -342,7 +342,7 @@ and nf_predicate env sigma ind mip params v pctx =
 and nf_telescope env sigma len f typ =
   let open CClosure in
   let t = ref (inject typ) in
-  let infos = Evarutil.create_clos_infos env sigma all in
+  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
   let tab = create_tab () in
   let init i =
     let typ, stk = whd_stack infos tab !t [] in

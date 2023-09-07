@@ -1467,7 +1467,7 @@ let solve_constraints env (evars,cstrs) =
   Evd.set_typeclass_evars evars' oldtcs
 
 let nf_zeta =
-  Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags (RedFlags.mkflags [RedFlags.fZETA])
 
 exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
 

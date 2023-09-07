@@ -94,7 +94,7 @@ let decompose_prod env t =
   in
   (name,dom,codom)
 
-let e_whd_all = Reductionops.clos_whd_flags CClosure.all
+let e_whd_all = Reductionops.clos_whd_flags RedFlags.all
 
 let app_type env sigma c =
   let t = e_whd_all env sigma c in
@@ -117,7 +117,7 @@ let construct_of_constr_notnative const env tag (ind,u) allargs =
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
 
 let construct_of_constr const env sigma tag typ =
-  let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
+  let typ = Reductionops.clos_whd_flags RedFlags.all env sigma (EConstr.of_constr typ) in
   let t, l = decompose_app (EConstr.Unsafe.to_constr typ) in
   match Constr.kind t with
   | Ind indu ->

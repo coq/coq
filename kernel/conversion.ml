@@ -374,7 +374,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Control.check_for_interrupt ();
   (* First head reduce both terms *)
-  let ninfos = infos_with_reds infos.cnv_inf betaiotazeta in
+  let ninfos = infos_with_reds infos.cnv_inf RedFlags.betaiotazeta in
   let (hd1, v1 as appr1) = whd_stack ninfos infos.lft_tab (fst st1) (snd st1) in
   let (hd2, v2 as appr2) = whd_stack ninfos infos.rgt_tab (fst st2) (snd st2) in
   let appr1 = (lft1, appr1) and appr2 = (lft2, appr2) in
@@ -444,11 +444,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           else
             eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
         | Some (t1, v1), None ->
-          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+          let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
           eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
         | None, Some (t2, v2) ->
-          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+          let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab t2 v2 in
           eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
         )
@@ -559,7 +559,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
               Conversion check to rigid terms eventually implies full weak-head
               reduction, so instead of repeatedly performing small-step
               unfoldings, we perform reduction with all flags on. *)
-            let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+            let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
             let r1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab def1 v1 in
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
         | None ->
@@ -577,7 +577,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
         | Some (def2, v2) ->
           (** Symmetrical case of above. *)
-          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+          let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let r2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab def2 v2 in
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None ->
@@ -865,7 +865,7 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 
 let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
   NewProfile.profile "Conversion" (fun () ->
-      let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
+      let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
       let infos = create_conv_infos ~univs:graph ~evars reds env in
       let infos = {
         cnv_inf = infos;

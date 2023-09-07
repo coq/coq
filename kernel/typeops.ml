@@ -246,7 +246,7 @@ let rec check_empty_stack = function
 let type_of_apply env func funt argsv argstv =
   let open CClosure in
   let len = Array.length argsv in
-  let infos = create_clos_infos all env in
+  let infos = create_clos_infos RedFlags.all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
     if Int.equal i len then term_of_fconstr typ
