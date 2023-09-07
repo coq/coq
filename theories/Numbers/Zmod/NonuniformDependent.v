@@ -115,7 +115,10 @@ Lemma modM_ok {a b} x : @modM a b x = of_N _ (x mod b)%N.
 Proof. apply of_small_N_ok. Qed.
 
 Lemma to_N_modM {a b} x : to_N (@modM a b x) = (x mod b)%N.
-Proof. apply to_N_of_small_N. Qed.
+Proof. apply to_N_of_N. Qed.
+
+Lemma to_Z_modM {a b} x : to_Z (@modM a b x) = x mod b.
+Proof. apply to_Z_of_N. Qed.
 
 Lemma modM_undivmodM {a b} x y : modM a b (undivmodM x y) = y.
 Proof.
@@ -124,6 +127,10 @@ Proof.
 Qed.
 
 Definition crtM {a b} (x : Zmod a) (y : Zmod b) := of_Z (a*b) (Znumtheory.solvecong a b x y).
+
+Lemma to_Z_crtM {a b} (x : Zmod a) (y : Zmod b) :
+ to_Z (crtM x y) = Znumtheory.solvecong a b x y mod (a*b).
+Proof. apply to_Z_of_Z. Qed.
 
 Lemma modM_crtM {a b : positive} x y (H : Z.gcd a b = 1) : modM a b (crtM x y) = y.
 Proof.
@@ -139,6 +146,37 @@ Lemma crtM_comm {a b} (x : Zmod a) (y : Zmod b) (H : Z.gcd a b = 1) :
 Proof.
   apply to_Z_inj_dep; try lia; cbv [crtM]; rewrite !to_Z_of_Z.
   rewrite Znumtheory.solvecong_comm; f_equal; try lia.
+Qed.
+
+Lemma crtM_inj {a b} (x x' : Zmod a) (y y' : Zmod b) (H : Z.gcd a b = 1) :
+  existT Zmod _ (crtM x y) = existT Zmod _ (crtM x' y') -> x = x' /\ y = y'.
+Proof.
+  intros Hx; pose proof Hx as Hy.
+  rewrite (crtM_comm x), (crtM_comm x') in Hy by trivial.
+  inversion_sigma; erewrite <-Eqdep_dec.eq_rect_eq_dec in * by apply Pos.eq_dec.
+  eapply (f_equal (modM _ _)) in Hx2, Hy2.
+  rewrite !modM_crtM in * by (trivial || rewrite Z.gcd_comm; trivial). auto.
+Qed.
+
+Import Coq.Lists.List Coq.Sorting.Permutation.
+Lemma elements_as_crtM {a b : positive} (H : Z.gcd a b = 1) :
+  Permutation
+    (elements (a*b))
+    (map (uncurry crtM) (list_prod (elements a) (elements b))).
+Proof.
+  eapply NoDup_Permutation.
+  { apply NoDup_elements. }
+  { apply FinFun.Injective_map_NoDup; auto using NoDup_elements, List.NoDup_list_prod.
+    intros [] [] ?; epose proof crtM_inj z z1 z0 z2 H ltac:(f_equal; auto).
+    intuition auto using f_equal2. }
+  split; trivial using in_elements; intros _; cbv [uncurry].
+  eapply in_map_iff, ex_intro, conj; auto using in_prod, in_elements; cbn.
+  (* NOTE: might be nice to factor out: [crtM ?y ?z = x] *)
+  instantiate (1:= modM _ b x).
+  instantiate (1:=modM _ a (eq_rect _ _ x _ (Pos.mul_comm _ _))).
+  apply to_Z_inj. rewrite to_Z_crtM, 2 to_Z_modM, to_Z_eq_rect.
+  symmetry; rewrite <-mod_to_Z at 1. rewrite !Pos2Z.inj_mul.
+  eapply Znumtheory.chinese_remainder_solvecong; rewrite ?Zmod_mod; lia.
 Qed.
 
 Definition concatM {a b} (hi : Zmod (2^a)) (lo : Zmod (2^b)) : Zmod (2^(a+b)).

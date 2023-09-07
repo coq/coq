@@ -542,9 +542,25 @@ Proof. rewrite <-add_opp_r, add_opp_same_r; trivial. Qed.
 Lemma ring_theory m : @ring_theory (Zmod m) zero one add mul sub opp eq.
 Proof. split; auto using eq_sym, add_0_l, add_comm, mul_comm, add_assoc, mul_assoc, mul_add_l, mul_1_l, add_opp_r, add_opp_same_r. Qed.
 
-Lemma mul_1_r {m} a : @mul m a one = a. Proof. rewrite <-mul_comm; apply mul_1_l. Qed.
-Lemma mul_0_l {m} a : @mul m zero a = zero. Proof. r. Qed.
-Lemma mul_0_r {m} a : @mul m a zero = zero. Proof. rewrite <-mul_comm; apply mul_0_l. Qed.
+Section WithRing.
+  Context {m : positive}.
+  Add Ring __Private__Zmod_base_ring : (ring_theory m).
+  Implicit Types a b c : Zmod m.
+  Lemma mul_1_r a : mul a one = a. Proof. ring. Qed.
+  Lemma mul_0_l a : mul zero a = zero. Proof. ring. Qed.
+  Lemma mul_0_r a : mul a zero = zero. Proof. ring. Qed.
+  Lemma opp_opp a : opp (opp a) = a. Proof. ring. Qed.
+  Lemma add_opp_l a b : add (opp a) b = sub b a. Proof. ring. Qed.
+  Lemma add_sub_r a b c : add a (sub b c) = sub (add a b) c. Proof. ring. Qed.
+  Lemma add_sub_l a b c : add (sub a b) c = sub (add a c) b. Proof. ring. Qed.
+  Lemma sub_sub_r a b c : sub a (sub b c) = sub (add a c) b. Proof. ring. Qed.
+  Lemma sub_sub_l a b c : sub (sub a b) c = sub a (add b c). Proof. ring. Qed.
+  Lemma mul_add_r a b c : mul a (add b c) = add (mul a b) (mul a c). Proof. ring. Qed.
+  Lemma mul_sub_l a b c : mul (sub a b) c = sub (mul a c) (mul b c). Proof. ring. Qed.
+  Lemma mul_sub_r a b c : mul a (sub b c) = sub (mul a b) (mul a c). Proof. ring. Qed.
+  Lemma mul_opp_l a b : mul (opp a) b = opp (mul a b). Proof. ring. Qed.
+  Lemma mul_opp_r a b : mul a (opp b) = opp (mul a b). Proof. ring. Qed.
+End WithRing.
 
 (* TODO: high half of signed and unsigned multiplication? *)
 
@@ -871,6 +887,32 @@ Proof.
   destruct (Pos.eq_dec 1 m) as [e|ne].
   { destruct e; auto using hprop_Zmod_1. }
   { apply k; lia. }
+Qed.
+
+Lemma sub_eq_0 {m} a b (H : @sub m a b = zero) : a = b.
+Proof.
+  apply (f_equal to_Z) in H.
+  rewrite to_Z_sub in H. eapply Znumtheory.cong_iff_0 in H.
+  rewrite 2 mod_to_Z in *; auto using to_Z_inj.
+Qed.
+
+Lemma sub_eq_0_iff {m} a b : @sub m a b = zero <-> a = b.
+Proof. split; try apply sub_eq_0. intros; subst; try apply sub_same. Qed.
+
+Lemma add_eq_0 {m} a b (H : @add m a b = zero) : b = opp a.
+Proof.
+  rewrite <-(opp_opp a), add_opp_l in H.
+  apply sub_eq_0 in H; trivial.
+Qed.
+
+Lemma add_eq_0_iff {m} a b : @add m a b = zero <-> b = opp a.
+Proof. split; try apply add_eq_0. intros ->. rewrite add_opp_r, sub_same; auto. Qed.
+
+Lemma factor_equality_of_squares {m} (r s : Zmod m) (H : mul r r = mul s s) :
+  mul (sub r s) (add r s) = zero.
+Proof.
+  repeat rewrite ?mul_add_l, ?mul_add_r, ?mul_sub_l, ?mul_sub_r, ?add_sub_l, ?add_sub_r, ?H, ?sub_same.
+  rewrite sub_sub_l, (mul_comm s r), sub_same; trivial.
 Qed.
 
 Lemma chinese_remainder_solvecong_Zmod

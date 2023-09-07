@@ -134,6 +134,18 @@ Proof.
   all : assumption.
 Qed.
 
+Lemma opp_solvecong_coprime m1 m2 r1 r2 (H : Z.gcd m1 m2  = 1) :
+  - solvecong m1 m2 r1 r2 = solvecong m1 m2 (-r1) (-r2).
+Proof.
+  cbv [solvecong]; destruct extgcd as ((u&v)&g) eqn:E.
+  eapply extgcd_correct in E; case E as [E D]; rewrite <-D in *; clear D.
+  rewrite H, !Z.div_1_r. ring.
+Qed.
+
+Lemma abs_solvecong_coprime m1 m2 r1 r2 (H : Z.gcd m1 m2  = 1) :
+  Z.abs (solvecong m1 m2 r1 r2) = Z.abs (solvecong m1 m2 (-r1) (-r2)).
+Proof. pose proof opp_solvecong_coprime _ _ r1 r2 H; lia. Qed.
+
 End Znumtheory.
 
 Module Bool.
@@ -778,62 +790,55 @@ Module List.
     destruct (Nat.sub len n) eqn:?, (Nat.ltb_spec n len); cbn [nth_error seq]; trivial; lia.
   Qed.
 
-  Section WithF.
-    Context {A B} (f : A -> option B).
-    Fixpoint mapfilter (l : list A) :=
-      match l with
-      | nil => nil
-      | cons a l =>
-          match f a with
-          | Some b => cons b (mapfilter l)
-          | None => mapfilter l
-          end
-      end.
+  Lemma list_prod_as_flat_map {A B} l l' :
+    @list_prod A B l l' = flat_map (fun a => map (pair a) l') l.
+  Proof. revert l'; induction l; intros; cbn; rewrite ?IHl; trivial. Qed.
 
-    Lemma in_mapfilter b l : In b (mapfilter l) <-> exists a, In a l /\ f a = Some b.
-    Proof.
-      revert b; induction l; cbn [mapfilter]; [firstorder idtac|].
-      case f eqn:?; cbn [In];
-      setoid_rewrite IHl; clear IHl; (* save 100ms on firstorder *)
-      time firstorder (subst; eauto; congruence).
-    Qed.
+  Lemma map_const {A B} l b : @map A B (fun _ => b) l = repeat b (length l).
+  Proof. induction l; cbn; rewrite ?IHl, ?H; trivial. Qed.
 
-    Lemma NoDup_mapfilter l (Hf : forall x y, f x = f y -> x <> y -> f x = None) : NoDup l -> NoDup (mapfilter l).
-    Proof.
-      induction 1 as [|x]; cbn [mapfilter]; trivial using NoDup_nil.
-      case f eqn:?; try constructor; trivial.
-      intros (y&?&?)%in_mapfilter.
-      firstorder congruence || (* Tactic failure: no link *)
-      assert (x <> y) as HH by congruence;
-      specialize (Hf x y ltac:(congruence) HH); congruence.
-    Qed.
-  End WithF.
-
-  Lemma mapfilter_Some {A B} (f : A -> B) l :
-    mapfilter (fun x => Some (f x)) l = map f l.
-  Proof. induction l; cbn; congruence. Qed.
-
-  Lemma mapfilter_ext {A B} (f g : A -> option B) l :
-    Forall (fun x => f x = g x) l ->
-    mapfilter f l = mapfilter g l.
+  Lemma fst_list_prod {A B} l l' : map fst (@list_prod A B l l') =
+    flat_map (fun a => repeat a (length l')) l.
   Proof.
-    induction 1; cbn; trivial.
-    rewrite H; destruct g; congruence.
+    revert l'; induction l; intros; trivial. cbn.
+    erewrite map_app, map_map, map_ext, map_const; eauto using f_equal2.
+  Qed.
+  Notation map_fst_list_prod := fst_list_prod.
+
+  Lemma snd_list_prod {A B} l l' : map snd (@list_prod A B l l') =
+    concat (repeat l' (length l)).
+  Proof.
+    revert l'; induction l; intros; trivial. cbn.
+    erewrite map_app, map_map, map_ext, map_id; eauto using f_equal2.
+  Qed.
+  Notation map_snd_list_prod := snd_list_prod.
+
+  Lemma NoDup_list_prod {A B} l l' :
+    NoDup l -> NoDup l' -> NoDup (@list_prod A B l l').
+  Proof.
+  Admitted.
+
+  Lemma concat_repeat_nil A n : @concat A (repeat nil n) = nil.
+  Proof. induction n; trivial. Qed.
+
+  Lemma flat_map_nil_l {A B} l : @flat_map A B (fun _ => nil) l = nil.
+  Proof. rewrite flat_map_concat_map, map_const, concat_repeat_nil; trivial. Qed.
+
+  Lemma seq_mul_r s n c :
+    seq s (n*c) = flat_map (fun i => seq (s + i*c) c) (seq O n).
+  Proof.
+    revert s; induction n; intros; rewrite ?flat_map_nil_l, ?Nat.add_0_r; trivial.
+    cbn [Nat.mul]; rewrite Nat.add_comm, seq_app.
+    rewrite seq_S, flat_map_app, IHn; cbn [flat_map]; rewrite app_nil_r; trivial.
   Qed.
 
-  Lemma mapfilter_map {A B C} (f : A -> B) (g : B -> option C) l :
-    mapfilter g (map f l) = mapfilter (fun x => g (f x)) l.
-  Proof.
-    induction l; cbn [mapfilter map]; trivial.
-    destruct g; congruence.
-  Qed.
+  Lemma seq_0_l_mul_r n c :
+    seq O (n*c) = flat_map (fun i => seq (i*c) c) (seq O n).
+  Proof. apply seq_mul_r. Qed.
 
-  Lemma map_mapfilter {A B C} (f : A -> option B) (g : B -> C) l :
-    map g (mapfilter f l) = mapfilter (fun x => option_map g (f x)) l.
-  Proof.
-    induction l; cbn [mapfilter map]; trivial.
-    destruct f; cbn [option_map map]; congruence.
-  Qed.
+  Lemma filter_flat_map {A B} l f g :
+    filter f (@flat_map A B g l) = flat_map (fun a => filter f (g a)) l.
+  Proof. rewrite !flat_map_concat_map, <-concat_filter_map, map_map; auto. Qed.
 End List.
 
 Require Permutation.
