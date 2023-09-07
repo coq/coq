@@ -167,7 +167,7 @@ Fixpoint to_Z_rec (n:nat) (i:int) :=
 
 Definition to_Z := to_Z_rec size.
 
-Fixpoint of_pos_rec (n:nat) (p:positive) :=
+Fixpoint of_pos_rec (n:nat) (p:positive) {struct p} :=
   match n, p with
   | O, _ => 0
   | S n, xH => 1
@@ -1632,7 +1632,7 @@ Lemma of_pos_rec_spec (k: nat) :
   ∀ p, φ(of_pos_rec k p) = Zpos p mod 2 ^ Z.of_nat k.
 Proof.
   elim k; clear k.
-  { intros _ p; simpl; rewrite to_Z_0, Zmod_1_r; reflexivity. }
+  { intros _ [p|p| ]; simpl; rewrite to_Z_0, Zmod_1_r; reflexivity. }
   intros n ih hn.
   assert (n <= size)%nat as hn' by lia.
   specialize (ih hn').
