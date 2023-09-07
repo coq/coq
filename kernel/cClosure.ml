@@ -89,9 +89,8 @@ type mode = Conversion | Reduction
 *)
 type red_state = Ntrl | Cstr | Red
 
-let neutr = function
-| Ntrl -> Ntrl
-| Red | Cstr -> Red
+let neutr = function Ntrl -> Ntrl | Red | Cstr -> Red
+let is_red = function Red -> true | Ntrl | Cstr -> false
 
 type evar_repack = Evar.t * constr list -> constr
 
@@ -255,8 +254,7 @@ let compact_stack head stk =
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =
   let share = info.i_cache.i_share in
-  if share && begin match m.mark with Red -> true  | Ntrl | Cstr -> false end
-  then
+  if share && is_red m.mark then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
     Zupdate(m)::s'
@@ -589,11 +587,11 @@ let strip_update_shift_app_red head stk =
   strip_rec [] head 0 stk
 
 let strip_update_shift_app head stack =
-  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
+  assert (not (is_red head.mark));
   strip_update_shift_app_red head stack
 
 let get_nth_arg head n stk =
-  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
+  assert (not (is_red head.mark));
   let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) n s
