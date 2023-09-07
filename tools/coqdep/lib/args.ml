@@ -35,6 +35,10 @@ let make () =
   }
 
 
+let warn_unknown_option =
+  CWarnings.create ~name:"unknown-option"
+    Pp.(fun opt -> str "Unknown option \"" ++ str opt ++ str "\".")
+
 let usage () =
   let open Printf in
   eprintf " usage: coqdep [options] <filename>+\n";
@@ -52,6 +56,7 @@ let usage () =
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
   eprintf "  -m META : resolve plugins names using the META file\n";
+  eprintf "  -w (w1,..,wn) : configure display of warnings\n";
   exit 1
 
 let parse st args =
@@ -74,9 +79,13 @@ let parse st args =
     | "-coqlib" :: [] -> usage ()
     | "-dyndep" :: dyndep :: ll -> parse { st with dyndep } ll
     | "-m" :: m :: ll -> parse { st with meta_files = st.meta_files @ [m]} ll
+    | "-w" :: w :: ll ->
+      let w = if w = "none" then w else CWarnings.get_flags() ^ "," ^ w in
+      CWarnings.set_flags w;
+      parse st ll
     | ("-h"|"--help"|"-help") :: _ -> usage ()
     | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
-      Warning.give "unknown option %s" opt;
+      warn_unknown_option opt;
       parse st ll
     | f :: ll -> parse { st with files = f :: st.files } ll
     | [] -> st

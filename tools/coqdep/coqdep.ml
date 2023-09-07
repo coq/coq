@@ -11,8 +11,14 @@
 (** The basic parts of coqdep are in [Common]. *)
 open Coqdeplib
 
+let warn_home_dir =
+  let category = CWarnings.CoreCategories.filesystem in
+  CWarnings.create ~name:"cannot-locate-home-dir" ~category Pp.str
+
 let coqdep () =
   let open Common in
+
+  ignore (Feedback.(add_feeder (console_feedback_listener Format.err_formatter)));
 
   (* Initialize coqdep, add files to dependency computation *)
   if Array.length Sys.argv < 2 then Args.usage ();
@@ -42,11 +48,11 @@ let coqdep () =
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
     Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) stdlib ["Coq"];
     Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) plugins ["Coq"];
-    if Sys.file_exists user_contrib
-    then Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
-    List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [])
-      (Envars.xdg_dirs ~warn:(fun x -> Warning.give "%s" x));
-    List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s []) Envars.coqpath;
+    if Sys.file_exists user_contrib then
+      Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
+    let add_dir s = Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [] in
+    List.iter add_dir (Envars.xdg_dirs ~warn:warn_home_dir);
+    List.iter add_dir Envars.coqpath
   end;
   if args.Args.sort then
     sort st

@@ -44,18 +44,25 @@ let addQueue q v = q := v :: !q
 type what = Library | External
 let str_of_what = function Library -> "library" | External -> "external file"
 
-let warning_module_notfound ?(what=Library) from f s =
-  let what = str_of_what what in
-  match from with
-  | None ->
-    Warning.give "in file %s, %s %s is required and has not been found in the loadpath!"
-      f what (String.concat "." s)
-  | Some pth ->
-    Warning.give "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
-      f what (String.concat "." s) (String.concat "." pth)
+let warning_module_notfound =
+  let warn (what, from, f, s) =
+    let open Pp in
+    str "in file " ++ str f ++ str ", " ++
+    str (str_of_what what) ++ spc () ++ str (String.concat "." s) ++ str " is required" ++
+    pr_opt (fun pth -> str "from root " ++ str (String.concat "." pth)) from ++
+    str " and has not been found in the loadpath!"
+  in
+  CWarnings.create ~name:"module-not-found"
+    ~category:CWarnings.CoreCategories.filesystem warn
 
-let warning_declare f s =
-  Warning.give "in file %s, declared ML module %s has not been found!" f s
+let warning_declare =
+  let warn (f, s) =
+    let open Pp in
+    str "in file " ++ str f ++ str ", declared ML module " ++ str s ++
+    str " has not been found!"
+  in
+  CWarnings.create ~name:"declared-module-not-found"
+    ~category:CWarnings.CoreCategories.filesystem warn
 
 let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in function
   | f2::fl ->
@@ -180,7 +187,7 @@ let rec find_dependencies st basename =
                     add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
                 if verbose && not (Loadpath.is_in_coqlib st ?from str) then
-                  warning_module_notfound from f str
+                  warning_module_notfound (Library, from, f, str)
             end
           in
           List.iter decl strl
@@ -205,7 +212,7 @@ let rec find_dependencies st basename =
                 | None ->
                   match Loadpath.search_mlpack_known st s with
                   | Some mldir -> declare ".cmo" (pick_mldir mldir) s
-                  | None -> warning_declare f str
+                  | None -> warning_declare (f,str)
               end
           in
           List.iter decl sl
@@ -235,7 +242,7 @@ let rec find_dependencies st basename =
           begin match safe_assoc st ~what:External (Some from) verbose f [str] with
           | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
           | Some [] -> assert false
-          | None -> warning_module_notfound ~what:External (Some from) f [str]
+          | None -> warning_module_notfound (External, Some from, f, [str])
           end
       done;
       List.rev !dependencies
@@ -326,12 +333,15 @@ let sort st =
   in
   List.iter (fun (name, _) -> loop name) !vAccu
 
+let warn_project_file =
+  let category = CWarnings.CoreCategories.filesystem in
+  CWarnings.create ~name:"project-file" ~category Pp.str
+
 let treat_coqproject st f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
-  let warning_fn x = Warning.give "%s" x in
   let project =
-    try read_project_file ~warning_fn f
+    try read_project_file ~warning_fn:warn_project_file f
     with
     | Parsing_error msg -> Error.cannot_parse_project_file f msg
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
