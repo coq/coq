@@ -8,30 +8,42 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This file is deprecated since 8.19, use list Coq.Init.Byte.byte. *)
+Local Set Warnings "-deprecated".
+
 Require Import Ascii Basics Bvector String Vector.
 Export VectorNotations.
 Open Scope program_scope.
 Open Scope string_scope.
 
+Require Import Coq.Init.Byte.
+
+#[deprecated(since="8.19", note="Use list Coq.Init.Byte.byte.")]
 Definition ByteVector := Vector.t ascii.
 
+#[deprecated(since="8.19", note="Use @nil Coq.Init.Byte.byte.")]
 Definition ByteNil : ByteVector 0 := Vector.nil ascii.
 
+#[deprecated(since="8.19", note="Use Coq.Strings.String.list_byte_of_string.")]
 Definition little_endian_to_string {n : nat} (v : ByteVector n) : string :=
   fold_right String v "".
 
+#[deprecated(since="8.19", note="Use Coq.Strings.String.list_byte_of_string.")]
 Definition to_string {n : nat} : ByteVector n -> string :=
   little_endian_to_string ∘ rev.
 
+#[deprecated(since="8.19", note="Use Coq.Strings.String.list_byte_of_string_of_list_byte.")]
 Fixpoint little_endian_of_string (s : string) : ByteVector (length s) :=
   match s with
   | "" => ByteNil
   | String b s' => b :: little_endian_of_string s'
   end.
 
+#[deprecated(since="8.19", note="Use Coq.Strings.String.list_byte_of_string_of_list_byte.")]
 Definition of_string (s : string) : ByteVector (length s) :=
   rev (little_endian_of_string s).
 
+#[deprecated(since="8.19", note="Use Coq.Init.Byte.to_bits or Byte.to_N.")]
 Fixpoint to_Bvector {n : nat} (v : ByteVector n) : Bvector (n * 8) :=
   match v with
   | [] => []
@@ -39,6 +51,7 @@ Fixpoint to_Bvector {n : nat} (v : ByteVector n) : Bvector (n * 8) :=
     b0::b1::b2::b3::b4::b5::b6::b7::to_Bvector v'
   end.
 
+#[deprecated(since="8.19", note="Use Coq.Init.Byte.of_bits or Byte.of_N.")]
 Fixpoint of_Bvector {n : nat} : Bvector (n * 8) -> ByteVector n :=
   match n with
   | 0 => fun _ => []
