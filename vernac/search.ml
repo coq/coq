@@ -24,7 +24,7 @@ module NamedDecl = Context.Named.Declaration
 type filter_function =
   GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> bool
 type display_function =
-  GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
+  GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> unit
 
 (* This option restricts the output of [SearchPattern ...], etc.
 to the names of the symbols matching the
@@ -58,10 +58,10 @@ module SearchBlacklist =
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-let iter_constructors indsp u fn env nconstr =
+let iter_constructors indsp u fn env sigma nconstr =
   for i = 1 to nconstr do
     let typ = Inductiveops.type_of_constructor env ((indsp, i), u) in
-    fn (GlobRef.ConstructRef (indsp, i)) None env typ
+    fn (GlobRef.ConstructRef (indsp, i)) None env sigma typ
   done
 
 (* FIXME: this is a Libobject hack that should be replaced with a proper
@@ -73,8 +73,8 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
 | exception Not_found -> ()
 
 (* General search over declarations *)
-let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit) =
-  List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env (NamedDecl.get_type d))
+let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> unit) =
+  List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env sigma (NamedDecl.get_type d))
     (Environ.named_context env);
   let iter_obj prefix lobj = match lobj with
     | AtomicObject o ->
@@ -85,7 +85,7 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
           let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
           let kind = Declare.Internal.Constant.kind obj in
-          fn gr (Some kind) env typ
+          fn gr (Some kind) env sigma typ
         end @@
         DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
           let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
@@ -96,9 +96,9 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
             let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
             let i = (ind, u) in
             let typ = Inductiveops.type_of_inductive env i in
-            let () = fn (GlobRef.IndRef ind) None env typ in
+            let () = fn (GlobRef.IndRef ind) None env sigma typ in
             let len = Array.length mip.mind_user_lc in
-            iter_constructors ind u fn env len
+            iter_constructors ind u fn env sigma len
           in
           Array.iteri iter_packet mib.mind_packets
         end @@
@@ -121,7 +121,7 @@ module ConstrPriority = struct
 
   (* The priority is memoised here. Because of the very localised use
      of this module, it is not worth it making a convenient interface. *)
-  type t = GlobRef.t * Decls.logical_kind option * Environ.env * Constr.t * priority
+  type t = GlobRef.t * Decls.logical_kind option * Environ.env * Evd.evar_map * Constr.t * priority
   and priority = int
 
   module ConstrSet = CSet.Make(Constr)
@@ -146,7 +146,7 @@ module ConstrPriority = struct
   let priority gref t : priority =
     -(3*(num_symbols t) + size t)
 
-  let compare (_,_,_,_,p1) (_,_,_,_,p2) =
+  let compare (_,_,_,_,_,p1) (_,_,_,_,_,p2) =
     Stdlib.compare p1 p2
 end
 
@@ -155,16 +155,16 @@ module PriorityQueue = Heap.Functional(ConstrPriority)
 let rec iter_priority_queue q fn =
   (* Tail-rec! *)
   match PriorityQueue.maximum q with
-  | (gref,kind,env,t,_) ->
-    fn gref kind env t;
+  | (gref,kind,env,sigma,t,_) ->
+    fn gref kind env sigma t;
     iter_priority_queue (PriorityQueue.remove q) fn
   | exception Heap.EmptyHeap -> ()
 
 let prioritize_search seq fn =
   let acc = ref PriorityQueue.empty in
-  let iter gref kind env t =
+  let iter gref kind env sigma t =
     let p = ConstrPriority.priority gref t in
-    acc := PriorityQueue.add (gref,kind,env,t,p) !acc
+    acc := PriorityQueue.add (gref,kind,env,sigma,t,p) !acc
   in
   let () = seq iter in
   iter_priority_queue !acc fn
@@ -229,15 +229,15 @@ let search_filter query gr kind env sigma typ = match query with
 (** SearchPattern *)
 
 let search_pattern env sigma pat mods pr_search =
-  let filter ref kind env typ =
+  let filter ref kind env sigma typ =
     module_filter mods ref kind env sigma typ &&
     pattern_filter pat ref env sigma (EConstr.of_constr typ) &&
     blacklist_filter ref kind env sigma typ
   in
-  let iter ref kind env typ =
-    if filter ref kind env typ then pr_search ref kind env typ
+  let iter ref kind env sigma typ =
+    if filter ref kind env sigma typ then pr_search ref kind env sigma typ
   in
-  generic_search env iter
+  generic_search env sigma iter
 
 (** SearchRewrite *)
 
@@ -252,21 +252,21 @@ let rewrite_pat2 pat =
 let search_rewrite env sigma pat mods pr_search =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
-  let filter ref kind env typ =
+  let filter ref kind env sigma typ =
     module_filter mods ref kind env sigma typ &&
     (pattern_filter pat1 ref env sigma (EConstr.of_constr typ) ||
        pattern_filter pat2 ref env sigma (EConstr.of_constr typ)) &&
     blacklist_filter ref kind env sigma typ
   in
-  let iter ref kind env typ =
-    if filter ref kind env typ then pr_search ref kind env typ
+  let iter ref kind env sigma typ =
+    if filter ref kind env sigma typ then pr_search ref kind env sigma typ
   in
-  generic_search env iter
+  generic_search env sigma iter
 
 (** Search *)
 
 let search env sigma items mods pr_search =
-  let filter ref kind env typ =
+  let filter ref kind env sigma typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
     module_filter mods ref kind env sigma typ &&
       let rec aux = function
@@ -275,10 +275,10 @@ let search env sigma items mods pr_search =
       and aux' (b,s) = eqb b (aux s) in
       List.for_all aux' items && blacklist_filter ref kind env sigma typ
   in
-  let iter ref kind env typ =
-    if filter ref kind env typ then pr_search ref kind env typ
+  let iter ref kind env sigma typ =
+    if filter ref kind env sigma typ then pr_search ref kind env sigma typ
   in
-  generic_search env iter
+  generic_search env sigma iter
 
 type search_constraint =
   | Name_Pattern of Str.regexp
@@ -311,7 +311,7 @@ let interface_search env sigma =
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
-  let filter_function ref env constr =
+  let filter_function ref env sigma constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
     let path = Libnames.dirpath (Nametab.path_of_global ref) in
     let toggle x b = if x then b else not b in
@@ -336,7 +336,7 @@ let interface_search env sigma =
     (blacklist || blacklist_filter ref kind env sigma constr)
   in
   let ans = ref [] in
-  let print_function ref env constr =
+  let print_function ref env sigma constr =
     let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
     let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in
@@ -359,8 +359,8 @@ let interface_search env sigma =
     } in
     ans := answer :: !ans;
   in
-  let iter ref kind env typ =
-    if filter_function ref env typ then print_function ref env typ
+  let iter ref kind env sigma typ =
+    if filter_function ref env sigma typ then print_function ref env sigma typ
   in
-  let () = generic_search env iter in
+  let () = generic_search env sigma iter in
   !ans

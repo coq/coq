@@ -102,3 +102,12 @@ Require Import List.
 Module Wish13349.
 Search partition "1" inside List.
 End Wish13349.
+
+Reset Initial.
+
+Module Bug17963.
+Goal exists y, Some y = Some y :> option nat -> True.
+eexists. intro H.
+Search Some eq.
+Abort.
+End Bug17963.
