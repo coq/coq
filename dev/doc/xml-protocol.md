@@ -238,7 +238,16 @@ processing of proofs.
 <call val="Goal"><unit/></call>
 ```
 #### *Returns*
-* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))); it represents a "focus stack" ([see code for reference](https://github.com/coq/coq/blob/trunk/engine/proofview.ml#L113)). Each time a proof is focused, it will add a new pair of lists-of-goals. The first pair is the most nested set of background goals, the last pair is the top level set of background goals. The first list in the pair is in reverse order. Each time you focus the goal (e.g. using `Focus` or a bullet), a new pair will be prefixed to the list.
+* If there is a goal, `shelvedGoals` and `abandonedGoals` have the same structure
+  as the first set of (current/foreground) goals. `backgroundGoals` contains a
+  list of pairs of lists of goals (list ((list Goal)*(list Goal))); it represents
+  a "focus stack"
+  ([see code for reference](https://github.com/coq/coq/blob/trunk/engine/proofview.ml#L113)).
+  Each time a proof is focused, it will add a new pair of lists-of-goals. The
+  first pair is the most nested set of background goals, the last pair is the
+  top level set of background goals. The first list in the pair is in reverse
+  order. Each time you focus the goal (e.g. using `Focus` or a bullet), a new
+  pair will be prefixed to the list.
 ```html
 <value val="good">
   <option val="some">
@@ -326,6 +335,28 @@ many there are.
 * The same as [Goal](#command-goal).
 
 -------------------------------
+
+### <a name="command-subgoals">**Subgoals()**</a>
+Returns filtered information on goals.  Passing "short" omits hypotheses
+in the returned goals.  The boolean values control whether various types of goals are
+included in the return value.
+
+```html
+<call val="Subgoals">
+  <goal_flags>
+    <string>full</string>  <!-- "full" or "short" -->
+    <bool val="true"/>     <!-- foreground goals -->
+    <bool val="true"/>     <!-- background goals -->
+    <bool val="false"/>    <!-- shelved goals -->
+    <bool val="false"/>    <!-- given_up goals -->
+  </goal_flags>
+</call>
+```
+#### *Returns*
+The reply format is the same as for the Goal message.
+
+-------------------------------
+
 
 ### <a name="command-status">**Status(force: bool)**</a>
 Returns information about the current proofs. CoqIDE typically sends this
@@ -951,8 +982,6 @@ The response contains an identifying tag and a `<ppdoc>`.
 Currently these tags are used:
 
 * **output** - ordinary output for display in the Messages panel
-* **goal** - the current goal for the debugger, for display in the Messages panel
-  or elsewhere
 * **prompt** - output for display in the Messages panel prompting the user to
   enter a debug command, allowing CoqIDE to display it without
   appending a newline.  It also signals that coqidetop is waiting to receive

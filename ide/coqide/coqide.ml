@@ -171,7 +171,7 @@ let db_cmd sn cmd =
       (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
       (fun () -> Minilib.log "Coq busy, discarding db_cmd")
 
-let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
+let forward_db_goals_n_stack = ref ((fun _ -> failwith "forward_db_goals_n_stack")
                      : session -> unit -> unit)
 let forward_db_vars = ref ((fun _ -> failwith "forward_db_vars")
                      : session -> int -> unit)
@@ -190,7 +190,7 @@ let create_session f =
   sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
   Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
-  (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
+  (sn.messages#route 0)#set_forward_db_goals_n_stack (!forward_db_goals_n_stack sn);
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
   sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
   sn.debugger#set_forward_db_vars (!forward_db_vars sn);
@@ -732,12 +732,12 @@ let find_next_occurrence ~backward sn =
     |None -> ()
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
-let send_to_coq_aux f sn =
-  let info () = Minilib.log "Coq busy, discarding query" in
+let send_to_coq_aux name f sn =
+  let info () = Minilib.log ("Coq busy, discarding " ^ name) in
   let f = Coq.seq (f sn) (update_status sn) in
   ignore @@ Coq.try_grab sn.coqtop f info
 
-let send_to_coq f = on_current_term (send_to_coq_aux f)
+let send_to_coq name f = on_current_term (send_to_coq_aux name f)
 
 let db_continue opt sn =
   Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_continue opt
@@ -818,31 +818,31 @@ let maybe_update_breakpoints () =
 module Nav = struct
   let forward_one_sid ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOver) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_coq "forward one" (fun sn -> sn.coqops#process_next_phrase)
   let forward_one x = forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.Continue) then
-      send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+      send_to_coq "continue" (fun sn -> sn.coqops#process_until_end_or_error)
   let continue_rev ?sid _ = maybe_update_breakpoints ();
     ignore @@ resume_debugger ?sid Interface.ContinueRev
   let step_in ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepIn) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_coq "step in" (fun sn -> sn.coqops#process_next_phrase)
   let step_in_rev ?sid _ = maybe_update_breakpoints ();
     ignore @@ resume_debugger ?sid Interface.StepInRev
   let step_out ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOut) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_coq "step out" (fun sn -> sn.coqops#process_next_phrase)
   let step_out_rev ?sid _ = maybe_update_breakpoints ();
     ignore @@ resume_debugger ?sid Interface.StepOutRev
   let backward_one_sid ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOverRev) then  (* right?? *)
-      send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+      send_to_coq "back one" (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
   let backward_one x = backward_one_sid x
   let run_to_cursor _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#go_to_insert)
+    send_to_coq "run to cursor" (fun sn -> sn.coqops#go_to_insert)
   let run_to_end _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+    send_to_coq "run to end" (fun sn -> sn.coqops#process_until_end_or_error)
   let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
   let restart _ =
@@ -867,7 +867,7 @@ module Nav = struct
     end
   let show_debugger _ =
     on_current_term (fun sn -> sn.debugger#show ())
-  let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
+  let join_document _ = send_to_coq "join" (fun sn -> sn.coqops#join_document)
 end
 
 let f9       = GtkData.AccelGroup.parse "F9"
@@ -903,7 +903,7 @@ let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 let printopts_callback opts v =
   let b = v#get_active in
   let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
-  send_to_coq (fun sn -> sn.coqops#show_goals)
+  send_to_coq "show_goals" (fun sn -> sn.coqops#show_goals)
 
 (** Templates menu *)
 
@@ -1077,7 +1077,7 @@ let highlight_code sn loc =
 
 let _ = forward_highlight_code := highlight_code
 
-let db_stack sn _ =
+let db_goals_n_stack sn _ =
   Coq.add_do_when_ready sn.coqtop (fun _ ->
     ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
       ~next:(function
@@ -1090,7 +1090,7 @@ let db_stack sn _ =
       (fun () -> Minilib.log "Coq busy, discarding db_stack")
   )
 
-let _ = forward_db_stack := db_stack
+let _ = forward_db_goals_n_stack := db_goals_n_stack
 
 let db_vars sn line =
   Coq.add_do_when_ready sn.coqtop (fun _ ->
@@ -1522,7 +1522,7 @@ let build_ui () =
         | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
         | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
         | _ -> assert false);
-        send_to_coq (fun sn -> sn.coqops#show_goals)
+        send_to_coq "set diffs" (fun sn -> sn.coqops#show_goals)
         end
       [
         radio "Unset diff" 0 ~label:"_Don't show diffs";

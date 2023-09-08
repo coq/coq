@@ -471,8 +471,9 @@ end = struct
             Pp.string_of_ppcmds goal ^ "]" in
       String.concat " " (List.map pr_goal g.fg_goals)
   let pr_goal_flags (g : goal_flags) =
-    Printf.sprintf "{ fg := %s; bg := %s; shelved := %s; given_up := %s }"
-      (pr_bool g.gf_fg) (pr_bool g.gf_bg) (pr_bool g.gf_shelved) (pr_bool g.gf_given_up)
+    Printf.sprintf "{ mode = %s; fg := %s; bg := %s; shelved := %s; given_up := %s }"
+      (pr_string g.gf_mode) (pr_bool g.gf_fg) (pr_bool g.gf_bg) (pr_bool g.gf_shelved)
+      (pr_bool g.gf_given_up)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
     let path =

@@ -625,7 +625,7 @@ let map_goal g (osigma, map) = match GoalMap.find_opt g map with
    match_goals to get a map between old and new evar names, then use this
    to create the map from new goal ids to old goal ids.
 *)
-let make_goal_map op np =
+let make_goal_map_i op np =
   let open Evar.Set in
   let ogs = Proof.all_goals op in
   let ngs = Proof.all_goals np in
@@ -662,7 +662,7 @@ let make_goal_map op np =
       Evar.Set.fold fold add_gs ng_to_og
 
 let make_goal_map op np =
-  let map = make_goal_map op np in
+  let map = make_goal_map_i op np in
   ((Proof.data op).Proof.sigma, map)
 
 let notify_proof_diff_failure msg =
