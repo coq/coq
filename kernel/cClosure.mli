@@ -14,13 +14,7 @@ open Environ
 open Esubst
 open RedFlags
 
-(***********************************************************************)
-type table_key = Constant.t Univ.puniverses tableKey
-
-module KeyTable : Hashtbl.S with type key = table_key
-
-(***********************************************************************
-  s Lazy reduction. *)
+(** Lazy reduction. *)
 
 (** [fconstr] is the type of frozen constr *)
 
@@ -33,6 +27,8 @@ type finvert
 type evar_repack
 
 type usubs = fconstr subs Univ.puniverses
+
+type table_key = Constant.t Univ.puniverses tableKey
 
 type fterm =
   | FRel of int

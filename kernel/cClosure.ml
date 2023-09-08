@@ -38,21 +38,11 @@ module RelDecl = Context.Rel.Declaration
 
 type table_key = Constant.t Univ.puniverses tableKey
 
-let eq_pconstant_key (c,u) (c',u') =
-  eq_constant_key c c' && Univ.Instance.equal u u'
-
-module IdKeyHash =
-struct
-  open Hashset.Combine
+module KeyTable = Hashtbl.Make(struct
   type t = table_key
-  let equal = Names.eq_table_key eq_pconstant_key
-  let hash = function
-  | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
-  | VarKey id -> combinesmall 2 (Id.hash id)
-  | RelKey i -> combinesmall 3 (Int.hash i)
-end
-
-module KeyTable = Hashtbl.Make(IdKeyHash)
+  let equal = Names.eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+  let hash = Names.hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
+end)
 
 open Context.Named.Declaration
 
