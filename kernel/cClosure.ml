@@ -1565,29 +1565,14 @@ let whd_stack infos tab m stk = match m.mark with
   in
   k
 
-let create_conv_infos ?univs ?(evars=default_evar_handler) flgs env =
-  let univs = Option.default (universes env) univs in
-  let share = (Environ.typing_flags env).Declarations.share_reduction in
-  let cache = {
-    i_env = env;
-    i_sigma = evars;
-    i_share = share;
-    i_univs = univs;
-    i_mode = Conversion;
-  } in
-  { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
+let create_infos i_mode ?univs ?(evars=default_evar_handler) i_flags i_env =
+  let i_univs = Option.default (Environ.universes i_env) univs in
+  let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
+  let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in
+  {i_flags; i_relevances = Range.empty; i_cache}
 
-let create_clos_infos ?univs ?(evars=default_evar_handler) flgs env =
-  let univs = Option.default (universes env) univs in
-  let share = (Environ.typing_flags env).Declarations.share_reduction in
-  let cache = {
-    i_env = env;
-    i_sigma = evars;
-    i_share = share;
-    i_univs = univs;
-    i_mode = Reduction;
-  } in
-  { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
+let create_conv_infos = create_infos Conversion
+let create_clos_infos = create_infos Reduction
 
 let create_tab () = KeyTable.create 17
 
