@@ -2462,13 +2462,6 @@ let rec check_name_unicity env ok seen = let open CAst in function
      check_name_unicity env ok seen l
 | [] -> ()
 
-let fresh_wild ids =
-  let rec aux s =
-    if Id.Set.exists (fun id -> String.is_prefix s (Id.to_string id)) ids
-    then aux (s ^ "'")
-    else Id.of_string s in
-  aux "_H"
-
 let make_naming ?loc avoid l = function
   | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
   | IntroAnonymous -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
@@ -2478,7 +2471,7 @@ let rec make_naming_action avoid l = function
   (* In theory, we could use a tmp id like "wild_id" for all actions
      but we prefer to avoid it to avoid this kind of "ugly" names *)
   | IntroWildcard ->
-    NamingBasedOn (fresh_wild (Id.Set.union avoid (explicit_all_intro_names l)), Id.Set.empty)
+    NamingBasedOn (Id.of_string "_H", Id.Set.union avoid (explicit_all_intro_names l))
   | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
   | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
     NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
