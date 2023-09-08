@@ -1,0 +1,3 @@
+File "./output/bug_11347.v", line 5, characters 7-29:
+The command has indeed failed with message:
+Tactic failure: setoid rewrite failed: Nothing to rewrite.
