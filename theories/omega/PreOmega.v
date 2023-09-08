@@ -122,6 +122,7 @@ Module Z.
            | [ H : ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
            | [ H : ?A -> ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
            | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
+           | [ H : 0 <= ?x < _ |- _ ] => destruct H
            end.
   Ltac div_mod_to_equations := div_mod_to_equations'; euclidean_division_equations_cleanup.
   Ltac quot_rem_to_equations := quot_rem_to_equations'; euclidean_division_equations_cleanup.
