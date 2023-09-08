@@ -80,6 +80,8 @@ Definition to_Zmod {m : positive} (a : Zstar m) : Zmod m.
   abstract (intros; apply to_N_range).
 Defined.
 
+Notation of_Zmod := of_Zmod.
+
 Lemma to_N_to_Zmod {m : positive} (a : Zstar m) : Zmod.to_N (to_Zmod a) = to_N a.
 Proof. trivial. Qed.
 
@@ -254,31 +256,27 @@ Proof.
     auto using coprime_invmod, to_Zmod_range; lia.
 Qed.
 
-  (*
-Lemma to_Z_inv {m} x : to_Z (@inv m x) = invmod x m mod m.
-Proof. apply to_Z_of_coprime_Z. Qed.
-   *)
-
 Definition div {m} (x y : Zstar m) : Zstar m := mul x (inv y).
 
-Lemma to_Zmod_div {m} x y : to_Zmod (@div m x y) = Zmod.div x y.
-Proof. Qed.
+Lemma to_Zmod_div {m} x y : to_Zmod (@div m x y) = Zmod.ndiv x y.
+Proof. cbv [div ndiv]. rewrite to_Zmod_mul, to_Zmod_inv; trivial. Qed.
 
 (*
 Lemma to_Z_div {m} x y : to_Z (@div m x y) = x * invmod y m mod m.
-Proof. cbv [div]. rewrite to_Z_mul, to_Z_inv, Zmult_mod_idemp_r; trivial. Qed.
- *)
-
-Lemma mul_inv_l {m} x y : mul (@inv m y) x = div x y.
-Proof. apply to_Z_inj. cbv [div inv]. rewrite mul_comm; trivial. Qed.
+Proof. rewrite to_Zmod_div, to_Z_ndiv; trivial. Qed.
+*)
 
 Lemma mul_inv_r {m} x y : mul x (@inv m y) = div x y.
-Proof. rewrite mul_comm, mul_inv_l; trivial. Qed.
+Proof. apply to_Zmod_inj. trivial. Qed.
+
+Lemma mul_inv_l {m} x y : mul (@inv m y) x = div x y.
+Proof. rewrite mul_comm, mul_inv_r; trivial. Qed.
 
 Lemma div_same {m} (a : Zstar m) : div a a = one.
 Proof.
-  apply wlog_eq_Zstar_3; intros; apply to_Z_inj.
-  rewrite to_Z_div, Z.mul_comm, invmod_coprime, to_Z_1; try lia. apply to_Z_range.
+  pose proof to_Zmod_range a; apply wlog_eq_Zstar_3; intros.
+  apply to_Zmod_inj, to_Z_inj.
+  rewrite to_Zmod_div, Base.to_Z_ndiv, Z.mul_comm, invmod_coprime, to_Zmod_1, to_Z_1; try lia.
 Qed.
 
 Lemma mul_inv_same_l {m} x : mul (@inv m x) x = one.
@@ -312,28 +310,28 @@ Lemma to_Zmod_elements_prime (m : positive) (H : prime m) :
   List.map to_Zmod (elements m) = List.tl (Zmod.elements m).
 Proof.
   cbv [elements Zmod.elements]; rewrite List.tl_map.
+  erewrite List.map_map, List.map_ext_in, List.map_id; cycle 1.
+  { intros ? [? ?%Z.eqb_eq]%List.filter_In. auto using to_Zmod_of_Zmod. }
   replace (Pos.to_nat m) with (S (Pos.to_nat m-1)) by lia;
-    progress cbn [List.seq List.tl List.map List.mapfilter].
-  rewrite (proj2 (of_Zmod_option_None _)); cycle 1.
-  { rewrite @Zmod.to_N_0, N.gcd_0_l; pose proof prime_ge_2 m H; lia. }
-  erewrite List.mapfilter_map, List.map_mapfilter, List.mapfilter_ext, List.mapfilter_Some; trivial.
-  apply List.Forall_forall; intros i ?%List.in_seq.
-  destruct of_Zmod_option eqn:Hx.
-  { eapply of_Zmod_option_Some in Hx; rewrite Hx; trivial. } exfalso.
-  eapply of_Zmod_option_None_prime in Hx; trivial.
-  eapply (f_equal Zmod.to_Z) in Hx; progress cbn in Hx.
-  rewrite Zmod.to_Z_of_nat, Z.mod_small in Hx; lia.
+    progress cbn [List.seq List.tl List.map List.filter].
+  rewrite to_Z_of_nat; progress simpl Z.gcd; destruct (Z.eqb_spec m 1);
+    [pose proof prime_ge_2 m H; lia|].
+  apply List.forallb_filter_id, List.forallb_forall.
+  intros ? (i&?&?%List.in_seq)%List.in_map_iff; subst.
+  apply Z.eqb_eq, Zgcd_1_rel_prime, rel_prime_le_prime; trivial.
+  rewrite to_Z_of_nat, Z.mod_small; lia.
 Qed.
 
 Lemma TODO_positive_elements_coprime {a b} : exists l, elements (a*b) = l.
 Proof.
   eexists.
-  cbv [elements Zmod.elements]; rewrite List.mapfilter_map, Pos2Nat.inj_mul.
-  rewrite List.seq_mul_r, List.mapfilter_flat_map; cbn [Nat.add].
-  erewrite List.flat_map_ext; cycle -1; intros. {
-  erewrite List.mapfilter_ext; cycle -1; intros. {
-  eapply List.Forall_forall; intros i ?%List.in_seq.
-  cbv [of_Zmod_option].
+  cbv [elements Zmod.elements].
+  rewrite Pos2Nat.inj_mul, List.seq_mul_r.
+  rewrite List.flat_map_concat_map, List.concat_map, List.map_map, <-List.flat_map_concat_map; cbn [Nat.add].
+  rewrite List.filter_flat_map.
+  erewrite List.flat_map_ext; cycle -1. { intros k.
+  erewrite List.map_ext_in; cycle -1. {
+  intros i ?%List.in_seq.
 Abort.
 
 Lemma length_elements_prime (m : positive) (H : prime m) : length (elements m) = N.to_nat (Pos.pred_N m).
@@ -389,7 +387,8 @@ Proof. case n; trivial. Qed.
 Lemma to_Z_pow_Z_nonneg {m} x z (Hz : 0 <= z) : @to_Z m (pow_Z x z) = x^z mod m.
 Proof.
   cbv [pow_Z to_Z]; case (Z.ltb_spec z 0) as []; try lia.
-  rewrite to_N_pow_N, N2Z.inj_mod, N2Z.inj_pow; f_equal; f_equal; lia.
+  rewrite to_Zmod_pow_N, Zmod.to_N_pow_N.
+  rewrite N2Z.inj_mod, N2Z.inj_pow; f_equal; f_equal; lia.
 Qed.
 
 Lemma pow_Z_opp_r {m} a (z : Z) : @pow_Z m a (-z) = inv (pow_Z a z).
@@ -403,7 +402,8 @@ Lemma to_Z_pow_Z_neg {m} x z (Hz : z <= 0) :
   @to_Z m (pow_Z x z) = invmod (to_Z x^(-z)) m mod m.
 Proof.
   replace z with (--z) at 1 by lia; rewrite pow_Z_opp_r by trivial.
-  pose proof to_Z_range (pow_Z x (-z)); rewrite to_Z_inv, to_Z_pow_Z_nonneg in * by lia.
+  pose proof to_Zmod_range (pow_Z x (-z)).
+  rewrite to_Zmod_inv, to_Z_inv, to_Z_pow_Z_nonneg in * by lia.
   rewrite invmod_mod_l; try lia.
   rewrite ?Z.gcd_mod, ?(Z.gcd_comm m) in *; trivial; subst; try lia.
 Qed.

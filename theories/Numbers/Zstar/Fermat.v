@@ -59,11 +59,9 @@ Proof.
     trivial; pose proof prime_ge_2 m H; lia.
 Qed.
 
-Definition opp {m} (a : Zstar m) : Zstar m.
-  refine (of_coprime_Z m (- to_Z a) (fun _ => _)).
-  abstract (rewrite Z.gcd_opp_l; apply Zstar.to_Z_range).
-Defined.
+Definition opp {m} (a : Zstar m) : Zstar m := of_Zmod (Zmod.opp a).
 
+(*
 Lemma to_N_one {m} : to_N (@one m) = (1 mod m)%N.
 Proof.
   cbv [to_Z one]; rewrite to_N_of_small_coprime_N.
@@ -75,13 +73,6 @@ Proof. cbv [to_Z]. rewrite to_N_one, N2Z.inj_mod; trivial. Qed.
 
 Lemma to_Z_opp {m} (a : Zstar m) : to_Z (opp a) = Z.opp (to_Z a) mod m.
 Proof. cbv [opp] in *; rewrite to_Z_of_coprime_Z; trivial. Qed.
-
-Lemma opp_1_neq_1 {m : positive} (Hm : 3 <= m) : @opp m one <> one.
-Proof.
-  intros H%(f_equal to_Z); rewrite to_Z_opp in *.
-  cbv [to_Z one] in *; rewrite to_N_of_small_coprime_N in *.
-  destruct (Pos.eqb_spec m 1); [lia|rewrite (Z.mod_div_eq (-1)) in H; lia].
-Qed.
 
 Lemma opp_to_Zmod {m} a : Zmod.opp (@to_Zmod m a) = to_Zmod (opp a).
 Proof.
@@ -100,13 +91,17 @@ Admitted.
 
 Lemma mul_opp_r {m} a b : @mul m a (opp b) = opp (mul a b).
 Admitted.
+*)
 
-Definition eqb {m} (a b : Zstar m) := N.eqb (to_N a) (to_N b).
+Lemma opp_1_neq_1 {m : positive} (Hm : 3 <= m) : @opp m one <> one.
+Admitted.
+
+Definition eqb {m} (a b : Zstar m) := Zmod.eqb (to_Zmod a) (to_Zmod b).
 
 Lemma eqb_spec {m} a b : BoolSpec (a = b) (a <> b) (@eqb m a b).
 Proof.
-  cbv [eqb]. case (N.eqb_spec (to_N a) (to_N b));
-    constructor; auto using to_N_inj; congruence.
+  cbv [eqb]. case (Zmod.eqb_spec (to_Zmod a) (to_Zmod b));
+    constructor; auto using to_Zmod_inj; congruence.
 Qed.
 
 Definition sqrt_option {m} (a : Zstar m) :=
@@ -159,7 +154,8 @@ Proof.
   destruct (Zmod.eqb_spec (Zmod.sub r s) zero);
     [eapply sub_eq_0, to_Zmod_inj in H0; auto|].
   destruct (Zmod.eqb_spec (Zmod.add r s) zero).
-    { eapply add_eq_0 in H1. rewrite opp_to_Zmod in H1. auto using to_Zmod_inj. }
+    { eapply add_eq_0 in H1.
+      (* rewrite opp_to_Zmod in H1. auto using to_Zmod_inj. } *)
 Admitted.
 
 Lemma sqrt_unique {m} (r a : Zstar m) (H : mul r r = a) :

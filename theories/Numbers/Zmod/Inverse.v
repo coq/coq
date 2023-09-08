@@ -33,7 +33,7 @@ Proof.
     ( ltac:(intuition eauto using Zstar.in_elements)
     : forall (m : positive) (x : Zstar m), List.In x (Zstar.elements m) <-> True).
   firstorder subst; trivial using Zstar.coprime_to_Zmod.
-  unshelve (eexists; rewrite Zstar.to_Zmod_of_coprime_Zmod); eauto.
+  unshelve (eexists; rewrite Zstar.to_Zmod_of_Zmod); eauto.
 Qed.
 
 Lemma NoDup_invertibles {m} : List.NoDup (invertibles m).
@@ -52,9 +52,9 @@ Qed.
 Lemma mul_inv_same_l_coprime {m} (x : Zmod m) (H : Z.gcd x m = 1) :
   mul (inv x) x = one.
 Proof.
-  pose proof Zstar.mul_inv_same_l (Zstar.of_coprime_Zmod x ltac:(trivial)) as E.
+  pose proof Zstar.mul_inv_same_l (Zstar.of_Zmod x) as E.
   apply (f_equal Zstar.to_Zmod) in E.
-  rewrite Zstar.to_Zmod_mul, Zstar.to_Zmod_inv, Zstar.to_Zmod_of_coprime_Zmod, Zstar.to_Zmod_1 in E; exact E.
+  rewrite Zstar.to_Zmod_mul, Zstar.to_Zmod_inv, Zstar.to_Zmod_of_Zmod, Zstar.to_Zmod_1 in E by trivial; exact E.
 Qed.
 
 Lemma mul_inv_same_r_coprime {m} (x : Zmod m) (H : Z.gcd x m = 1) :
@@ -83,9 +83,9 @@ Qed.
 
 Lemma inv_inv {m} (x : Zmod m) (H : Z.gcd x m = 1): inv (inv x) = x.
 Proof.
-  pose proof Zstar.inv_inv (Zstar.of_coprime_Zmod x ltac:(trivial)) as E.
+  pose proof Zstar.inv_inv (Zstar.of_Zmod x) as E.
   apply (f_equal Zstar.to_Zmod) in E.
-  rewrite 2Zstar.to_Zmod_inv, Zstar.to_Zmod_of_coprime_Zmod in E; exact E.
+  rewrite 2Zstar.to_Zmod_inv, Zstar.to_Zmod_of_Zmod in E by trivial; exact E.
 Qed.
 
 Lemma inv_inv_prime {m} (x : Zmod m) (Hm : prime m): inv (inv x) = x.
