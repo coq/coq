@@ -15,24 +15,36 @@ Local Open Scope N_scope.
 Local Open Scope program_scope.
 
 (** This file is mostly obsolete, see directly [BinNat] now. *)
+Local Set Warnings "-deprecated".
 
 (** Compatibility names for some bitwise operations *)
 
+#[deprecated(since="8.19", note="Use Pos.lxor.")]
 Notation Pxor := Pos.lxor (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor.")]
 Notation Nxor := N.lxor (only parsing).
+#[deprecated(since="8.19", note="Use Pos.testbit_nat.")]
 Notation Pbit := Pos.testbit_nat (only parsing).
+#[deprecated(since="8.19", note="Use N.testbit_nat.")]
 Notation Nbit := N.testbit_nat (only parsing).
 
+#[deprecated(since="8.19", note="Use N.lxor_eq.")]
 Notation Nxor_eq := N.lxor_eq (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor_comm.")]
 Notation Nxor_comm := N.lxor_comm (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor_assoc.")]
 Notation Nxor_assoc := N.lxor_assoc (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor_0_l.")]
 Notation Nxor_neutral_left := N.lxor_0_l (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor_0_r.")]
 Notation Nxor_neutral_right := N.lxor_0_r (only parsing).
+#[deprecated(since="8.19", note="Use N.lxor_nilpotent.")]
 Notation Nxor_nilpotent := N.lxor_nilpotent (only parsing).
 
 (** Equivalence of bit-testing functions,
     either with index in [N] or in [nat]. *)
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Ptestbit_Pbit :
  forall p n, Pos.testbit p (N.of_nat n) = Pos.testbit_nat p n.
 Proof.
@@ -40,6 +52,7 @@ Proof.
   rewrite <- IH; f_equal; rewrite (pred_Sn n) at 2; now rewrite Nat2N.inj_pred.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ntestbit_Nbit : forall a n, N.testbit a (N.of_nat n) = N.testbit_nat a n.
 Proof.
   intro a; destruct a.
@@ -47,12 +60,14 @@ Proof.
   - apply Ptestbit_Pbit.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pbit_Ptestbit :
  forall p n, Pos.testbit_nat p (N.to_nat n) = Pos.testbit p n.
 Proof.
  intros; now rewrite <- Ptestbit_Pbit, N2Nat.id.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit_Ntestbit :
  forall a n, N.testbit_nat a (N.to_nat n) = N.testbit a n.
 Proof.
@@ -63,18 +78,21 @@ Qed.
 
 (** Equivalence of shifts, index in [N] or [nat] *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftr_nat_S : forall a n,
  N.shiftr_nat a (S n) = N.div2 (N.shiftr_nat a n).
 Proof.
  reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftl_nat_S : forall a n,
  N.shiftl_nat a (S n) = N.double (N.shiftl_nat a n).
 Proof.
  reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftr_nat_equiv :
  forall a n, N.shiftr_nat a (N.to_nat n) = N.shiftr a n.
 Proof.
@@ -84,12 +102,14 @@ Proof.
   - symmetry. apply Pos2Nat.inj_iter.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftr_equiv_nat :
  forall a n, N.shiftr a (N.of_nat n) = N.shiftr_nat a n.
 Proof.
  intros. now rewrite <- Nshiftr_nat_equiv, Nat2N.id.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftl_nat_equiv :
  forall a n, N.shiftl_nat a (N.to_nat n) = N.shiftl a n.
 Proof.
@@ -98,6 +118,7 @@ Proof.
  - rewrite <- Pos2Nat.inj_iter. symmetry. now apply Pos.iter_swap_gen.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftl_equiv_nat :
  forall a n, N.shiftl a (N.of_nat n) = N.shiftl_nat a n.
 Proof.
@@ -106,6 +127,7 @@ Qed.
 
 (** Correctness proofs for shifts, nat version *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftr_nat_spec : forall a n m,
   N.testbit_nat (N.shiftr_nat a n) m = N.testbit_nat a (m+n).
 Proof.
@@ -115,6 +137,7 @@ Proof.
    destruct (N.shiftr_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftl_nat_spec_high : forall a n m, (n<=m)%nat ->
   N.testbit_nat (N.shiftl_nat a n) m = N.testbit_nat a (m-n).
 Proof.
@@ -127,6 +150,7 @@ Proof.
      destruct (N.shiftl_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nshiftl_nat_spec_low : forall a n m, (m<n)%nat ->
  N.testbit_nat (N.shiftl_nat a n) m = false.
 Proof.
@@ -142,13 +166,16 @@ Qed.
 
 (** A left shift for positive numbers (used in BigN) *)
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pshiftl_nat_0 : forall p, Pos.shiftl_nat p 0 = p.
 Proof. reflexivity. Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pshiftl_nat_S :
  forall p n, Pos.shiftl_nat p (S n) = xO (Pos.shiftl_nat p n).
 Proof. reflexivity. Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pshiftl_nat_N :
  forall p n, Npos (Pos.shiftl_nat p n) = N.shiftl_nat (Npos p) n.
 Proof.
@@ -156,6 +183,7 @@ Proof.
  intros p n; induction n as [|n IHn]; simpl; auto. now rewrite <- IHn.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pshiftl_nat_plus : forall n m p,
   Pos.shiftl_nat p (m + n) = Pos.shiftl_nat (Pos.shiftl_nat p n) m.
 Proof.
@@ -166,48 +194,56 @@ Qed.
 
 (** Semantics of bitwise operations with respect to [N.testbit_nat] *)
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pxor_semantics p p' n :
  N.testbit_nat (Pos.lxor p p') n = xorb (Pos.testbit_nat p n) (Pos.testbit_nat p' n).
 Proof.
  rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_lxor_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nxor_semantics a a' n :
  N.testbit_nat (N.lxor a a') n = xorb (N.testbit_nat a n) (N.testbit_nat a' n).
 Proof.
  rewrite <- !Ntestbit_Nbit. apply N.lxor_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Por_semantics p p' n :
  Pos.testbit_nat (Pos.lor p p') n = (Pos.testbit_nat p n) || (Pos.testbit_nat p' n).
 Proof.
  rewrite <- !Ptestbit_Pbit. apply N.pos_lor_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nor_semantics a a' n :
  N.testbit_nat (N.lor a a') n = (N.testbit_nat a n) || (N.testbit_nat a' n).
 Proof.
  rewrite <- !Ntestbit_Nbit. apply N.lor_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pand_semantics p p' n :
  N.testbit_nat (Pos.land p p') n = (Pos.testbit_nat p n) && (Pos.testbit_nat p' n).
 Proof.
  rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_land_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nand_semantics a a' n :
  N.testbit_nat (N.land a a') n = (N.testbit_nat a n) && (N.testbit_nat a' n).
 Proof.
  rewrite <- !Ntestbit_Nbit. apply N.land_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pdiff_semantics p p' n :
  N.testbit_nat (Pos.ldiff p p') n = (Pos.testbit_nat p n) && negb (Pos.testbit_nat p' n).
 Proof.
  rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_ldiff_spec.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndiff_semantics a a' n :
  N.testbit_nat (N.ldiff a a') n = (N.testbit_nat a n) && negb (N.testbit_nat a' n).
 Proof.
@@ -216,6 +252,7 @@ Qed.
 
 (** Equality over functional streams of bits *)
 
+#[deprecated(since="8.19", note="Use Coq.Classes.Morphisms.pointwise_relation.")]
 Definition eqf (f g:nat -> bool) := forall n:nat, f n = g n.
 
 #[global]
@@ -227,12 +264,14 @@ Local Infix "==" := eqf (at level 70, no associativity).
 
 Local Notation Step H := (fun n => H (S n)).
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pbit_faithful_0 : forall p, ~(Pos.testbit_nat p == (fun _ => false)).
 Proof.
  intros p; induction p as [p IHp|p IHp| ]; intros H; try discriminate (H O).
   apply (IHp (Step H)).
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinPos instead.")]
 Lemma Pbit_faithful : forall p p', Pos.testbit_nat p == Pos.testbit_nat p' -> p = p'.
 Proof.
  intros p; induction p as [p IHp|p IHp| ]; intros [p'|p'|] H; trivial;
@@ -243,6 +282,7 @@ Proof.
  - symmetry in H. destruct (Pbit_faithful_0 _ (Step H)).
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit_faithful : forall n n', N.testbit_nat n == N.testbit_nat n' -> n = n'.
 Proof.
  intros [|p] [|p'] H; trivial.
@@ -251,6 +291,7 @@ Proof.
  - f_equal. apply Pbit_faithful, H.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit_faithful_iff : forall n n', N.testbit_nat n == N.testbit_nat n' <-> n = n'.
 Proof.
   split.
@@ -263,28 +304,35 @@ Local Close Scope N_scope.
 (** Checking whether a number is odd, i.e.
    if its lower bit is set. *)
 
+#[deprecated(since="8.19", note="Use N.odd.")]
 Notation Nbit0 := N.odd (only parsing).
 
+#[deprecated(since="8.19", note="Use N.odd n = true.")]
 Definition Nodd (n:N) := N.odd n = true.
+#[deprecated(since="8.19", note="Use N.odd n = false.")]
 Definition Neven (n:N) := N.odd n = false.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit0_correct : forall n:N, N.testbit_nat n 0 = N.odd n.
 Proof.
   intros n; destruct n as [|p]; trivial.
   destruct p; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndouble_bit0 : forall n:N, N.odd (N.double n) = false.
 Proof.
   intros n; destruct n; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndouble_plus_one_bit0 :
  forall n:N, N.odd (N.succ_double n) = true.
 Proof.
   intros n; destruct n; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndiv2_double :
  forall n:N, Neven n -> N.double (N.div2 n) = n.
 Proof.
@@ -296,6 +344,7 @@ Proof.
     + intro H. discriminate H.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndiv2_double_plus_one :
  forall n:N, Nodd n -> N.succ_double (N.div2 n) = n.
 Proof.
@@ -307,6 +356,7 @@ Proof.
     + intro. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Ndiv2_correct :
  forall (a:N) (n:nat), N.testbit_nat (N.div2 a) n = N.testbit_nat a (S n).
 Proof.
@@ -314,6 +364,7 @@ Proof.
   destruct p; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nxor_bit0 :
  forall a a':N, N.odd (N.lxor a a') = xorb (N.odd a) (N.odd a').
 Proof.
@@ -321,6 +372,7 @@ Proof.
   rewrite Nbit0_correct, Nbit0_correct. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nxor_div2 :
  forall a a':N, N.div2 (N.lxor a a') = N.lxor (N.div2 a) (N.div2 a').
 Proof.
@@ -330,6 +382,7 @@ Proof.
   reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nneg_bit0 :
  forall a a':N,
    N.odd (N.lxor a a') = true -> N.odd a = negb (N.odd a').
@@ -340,12 +393,14 @@ Proof.
   reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nneg_bit0_1 :
  forall a a':N, N.lxor a a' = Npos 1 -> N.odd a = negb (N.odd a').
 Proof.
   intros a a' H. apply Nneg_bit0. rewrite H. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nneg_bit0_2 :
  forall (a a':N) (p:positive),
    N.lxor a a' = Npos (xI p) -> N.odd a = negb (N.odd a').
@@ -353,6 +408,7 @@ Proof.
   intros a a' p H. apply Nneg_bit0. rewrite H. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nsame_bit0 :
  forall (a a':N) (p:positive),
    N.lxor a a' = Npos (xO p) -> N.odd a = N.odd a'.
@@ -365,18 +421,21 @@ Qed.
 
 (** a lexicographic order on bits, starting from the lowest bit *)
 
+#[deprecated(since="8.19", note="Adopt the implementation if needed.")]
 Fixpoint Nless_aux (a a':N) (p:positive) : bool :=
   match p with
   | xO p' => Nless_aux (N.div2 a) (N.div2 a') p'
   | _ => andb (negb (N.odd a)) (N.odd a')
   end.
 
+#[deprecated(since="8.19", note="Adopt the implementation if needed.")]
 Definition Nless (a a':N) :=
   match N.lxor a a' with
   | N0 => false
   | Npos p => Nless_aux a a' p
   end.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit0_less :
  forall a a',
    N.odd a = false -> N.odd a' = true -> Nless a a' = true.
@@ -392,6 +451,7 @@ Proof.
     rewrite (Nxor_bit0 a a'), H, H0 in H2. discriminate H2.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit0_gt :
  forall a a',
    N.odd a = true -> N.odd a' = false -> Nless a a' = false.
@@ -407,11 +467,13 @@ Proof.
     rewrite (Nxor_bit0 a a'), H, H0 in H2. discriminate H2.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_not_refl : forall a, Nless a a = false.
 Proof.
   intro a. unfold Nless. rewrite (N.lxor_nilpotent a). reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_def_1 :
  forall a a', Nless (N.double a) (N.double a') = Nless a a'.
 Proof.
@@ -424,6 +486,7 @@ Proof.
     + trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_def_2 :
  forall a a',
    Nless (N.succ_double a) (N.succ_double a') = Nless a a'.
@@ -437,6 +500,7 @@ Proof.
     + trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_def_3 :
  forall a a', Nless (N.double a) (N.succ_double a') = true.
 Proof.
@@ -445,6 +509,7 @@ Proof.
   - apply Ndouble_plus_one_bit0.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_def_4 :
  forall a a', Nless (N.succ_double a) (N.double a') = false.
 Proof.
@@ -453,6 +518,7 @@ Proof.
   - apply Ndouble_bit0.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_z : forall a, Nless a N0 = false.
 Proof.
   intros a; induction a as [|p].
@@ -460,6 +526,7 @@ Proof.
   - unfold Nless. rewrite (N.lxor_0_r (Npos p)). induction p; trivial.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N0_less_1 :
  forall a, Nless N0 a = true -> {p : positive | a = Npos p}.
 Proof.
@@ -468,6 +535,7 @@ Proof.
   - intros. exists p. reflexivity.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N0_less_2 : forall a, Nless N0 a = false -> a = N0.
 Proof.
   intros a; induction a as [|p]; intro H.
@@ -475,6 +543,7 @@ Proof.
   - exfalso. induction p as [|p IHp|]; discriminate || simpl; auto using IHp.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_trans :
  forall a a' a'',
    Nless a a' = true -> Nless a' a'' = true -> Nless a a'' = true.
@@ -505,6 +574,7 @@ Proof.
         rewrite (Nless_def_2 a a''). exact (IHa _ _ H H0).
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nless_total :
  forall a a', {Nless a a' = true} + {Nless a' a = true} + {a = a'}.
 Proof.
@@ -530,10 +600,12 @@ Qed.
 
 (** Number of digits in a number *)
 
+#[deprecated(since="8.19", note="Use N.size_nat.")]
 Notation Nsize := N.size_nat (only parsing).
 
 (** conversions between N and bit vectors. *)
 
+#[deprecated(since="8.19", note="Use Pos.testbit.")]
 Fixpoint P2Bv (p:positive) : Bvector (Pos.size_nat p) :=
  match p return Bvector (Pos.size_nat p) with
    | xH => Bvect_true 1%nat
@@ -541,12 +613,14 @@ Fixpoint P2Bv (p:positive) : Bvector (Pos.size_nat p) :=
    | xI p => Bcons true (Pos.size_nat p) (P2Bv p)
  end.
 
+#[deprecated(since="8.19", note="Use N.testbit.")]
 Definition N2Bv (n:N) : Bvector (N.size_nat n) :=
   match n as n0 return Bvector (N.size_nat n0) with
     | N0 => Bnil
     | Npos p => P2Bv p
   end.
 
+#[deprecated(since="8.19", note="Use Pos.testbit.")]
 Fixpoint P2Bv_sized (m : nat) (p : positive) : Bvector m :=
   match m with
   | O => []
@@ -558,15 +632,18 @@ Fixpoint P2Bv_sized (m : nat) (p : positive) : Bvector m :=
     end
   end.
 
+#[deprecated(since="8.19", note="Use N.tesbit.")]
 Definition N2Bv_sized (m : nat) (n : N) : Bvector m :=
   match n with
   | N0     => Bvect_false m
   | Npos p => P2Bv_sized  m p
   end.
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Definition N2ByteV_sized (m : nat) : N -> ByteVector m :=
   of_Bvector ∘ N2Bv_sized (m * 8).
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
     | Vector.nil _ => N0
@@ -576,9 +653,11 @@ Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
 
 Arguments Bv2N {n} bv, n bv.
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Definition ByteV2N {n : nat} : ByteVector n -> N :=
   Bv2N ∘ to_Bvector.
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Lemma Bv2N_N2Bv : forall n, Bv2N _ (N2Bv n) = n.
 Proof.
 intro n; destruct n as [|p].
@@ -590,6 +669,7 @@ Qed.
   bit vector has some zeros on its right, they will disappear during
   the return [Bv2N] translation: *)
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Lemma Bv2N_Nsize : forall n (bv:Bvector n), N.size_nat (Bv2N n bv) <= n.
 Proof.
 intros n bv; induction bv as [|h n bv]; intros.
@@ -603,6 +683,7 @@ Qed.
 (** In the previous lemma, we can only replace the inequality by
   an equality whenever the highest bit is non-null. *)
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Lemma Bv2N_Nsize_1 : forall n (bv:Bvector (S n)),
   Bsign _ bv = true <->
   N.size_nat (Bv2N _ bv) = (S n).
@@ -613,6 +694,7 @@ apply Vector.rectS ; intros a ; simpl.
     simpl ; intuition ; try discriminate.
 Qed.
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Lemma Bv2N_upper_bound (n : nat) (bv : Bvector n) :
     (Bv2N bv < N.shiftl_nat 1 n)%N.
 Proof with simpl; auto.
@@ -623,6 +705,7 @@ Proof with simpl; auto.
     + apply N.double_lt_mono...
 Qed.
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Corollary ByteV2N_upper_bound (n : nat) (v : ByteVector n) :
   (ByteV2N v < N.shiftl_nat 1 (n * 8))%N.
 Proof.
@@ -633,6 +716,7 @@ Qed.
 (** To state nonetheless a second result about composition of
  conversions, we define a conversion on a given number of bits : *)
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Fixpoint N2Bv_gen_deprecated (n:nat)(a:N) : Bvector n :=
  match n return Bvector n with
    | 0 => Bnil
@@ -649,6 +733,7 @@ Notation N2Bv_gen := N2Bv_gen_deprecated (only parsing).
 
 (** The first [N2Bv] is then a special case of [N2Bv_gen] *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_N2Bv_gen (a:N) : N2Bv a = N2Bv_gen_deprecated (N.size_nat a) a.
 Proof.
 destruct a as [|p]; simpl.
@@ -659,6 +744,7 @@ Qed.
 (** In fact, if [k] is large enough, [N2Bv_gen k a] contains all digits of
    [a] plus some zeros. *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_N2Bv_gen_above : forall (a:N)(k:nat),
   N2Bv_gen_deprecated (N.size_nat a + k) a
   = Vector.append (N2Bv a) (Bvect_false k).
@@ -670,6 +756,7 @@ Qed.
 
 (** Here comes now the second composition result. *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_Bv2N : forall n (bv:Bvector n),
   N2Bv_gen_deprecated n (Bv2N n bv) = bv.
 Proof.
@@ -685,6 +772,7 @@ Qed.
 
 (** accessing some precise bits. *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit0_Blow : forall n, forall (bv:Bvector (S n)),
   N.odd (Bv2N _ bv) = Blow _ bv.
 Proof.
@@ -696,8 +784,10 @@ destruct (Bv2N n t); simpl;
  destruct h; auto.
 Qed.
 
+#[deprecated(since="8.19", note="Use Vector.nth_order bool.")]
 Notation Bnth := (@Vector.nth_order bool).
 
+#[deprecated(since="8.19", note="Consider N.testbit instead.")]
 Lemma Bnth_Nbit : forall n (bv:Bvector n) p (H:p<n),
   Bnth bv H = N.testbit_nat (Bv2N _ bv) p.
 Proof.
@@ -709,6 +799,7 @@ intros n bv; induction bv as [|h n bv IHbv]; intros p H.
     simpl in * ; destruct (Bv2N n bv); destruct h; simpl in *; auto.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit_Nsize : forall n p, N.size_nat n <= p -> N.testbit_nat n p = false.
 Proof.
 intro n; destruct n as [|n].
@@ -718,6 +809,7 @@ intro n; destruct n as [|n].
   + inversion H.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nbit_Bth: forall n p (H:p < N.size_nat n),
   N.testbit_nat n p = Bnth (N2Bv n) H.
 Proof.
@@ -729,6 +821,7 @@ Qed.
 
 (** Binary bitwise operations are the same in the two worlds. *)
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nxor_BVxor : forall n (bv bv' : Bvector n),
   Bv2N _ (BVxor _ bv bv') = N.lxor (Bv2N _ bv) (Bv2N _ bv').
 Proof.
@@ -739,6 +832,7 @@ apply Vector.rect2.
   destruct a, b, (Bv2N n v1), (Bv2N n v2); simpl in *; rewrite H ; now simpl.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma Nand_BVand : forall n (bv bv' : Bvector n),
   Bv2N _ (BVand _ bv bv') = N.land (Bv2N _ bv) (Bv2N _ bv').
 Proof.
@@ -748,6 +842,7 @@ destruct a, b, (Bv2N n v1), (Bv2N n v2);
  simpl; auto.
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_sized_Nsize (n : N) :
   N2Bv_sized (N.size_nat n) n = N2Bv n.
 Proof with simpl; auto.
@@ -756,6 +851,7 @@ Proof with simpl; auto.
   all: rewrite IHp...
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_sized_Bv2N (n : nat) (v : Bvector n) :
   N2Bv_sized n (Bv2N n v) = v.
 Proof with simpl; auto.
@@ -766,6 +862,7 @@ Proof with simpl; auto.
   rewrite <- IHv...
 Qed.
 
+#[deprecated(since="8.19", note="Consider BinNat instead.")]
 Lemma N2Bv_N2Bv_sized_above (a : N) (k : nat) :
   N2Bv_sized (N.size_nat a + k) a = N2Bv a ++ Bvect_false k.
 Proof with auto.
