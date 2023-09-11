@@ -74,6 +74,7 @@ let get_history n =
 let save_goals () =
   let open Proofview in
   let open Notations in
+  (* todo: Goal.goals is not entirely trivial (perf impact?) *)
   Proofview.Goal.goals >>= fun gl ->
   Monad.List.map (fun x -> x) gl >>= fun gls ->
   cur_goals := gls;
@@ -473,31 +474,19 @@ let db_fmt_goals () =
 
 let isTerminal () = (hook ()).isTerminal
 
-(* for displaying goals when stopped in debugger (only sigma and goals) *)
-let debug_proof = ref None
-
 let db_pr_goals =  (* todo: drop the "db_" prefix *)
   let open Proofview in
   let open Notations in
   Goal.goals >>= fun gl ->
   Monad.List.map (fun x -> x) gl >>= fun gls ->
-  let sigma =  match gls with
-    | hd :: tl -> Goal.sigma hd
-    | [] -> Evd.empty
-  in
-  let goals = List.map (fun gl -> Goal.goal gl) gls in
-  debug_proof := Some (sigma, goals);
-  let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
-      Pp.seq (List.map db_fmt_goal gls) in
-    Proofview.tclLIFT (
-      if isTerminal () then output pg
-      else Proofview.NonLogical.make (fun () -> ()))
 
-(*
-let db_pr_goals () =
-  let gs = db_fmt_goals () in
-  Proofview.tclLIFT (goals gs)   (* TODO: MAYBE DROP THIS LINE? *)
-*)
+  Proofview.tclLIFT (
+    if isTerminal () then
+      let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
+        Pp.seq (List.map db_fmt_goal gls) in
+      output pg
+    else
+      Proofview.NonLogical.make (fun () -> ()))
 
 let read () =
   let rec l () =
@@ -516,11 +505,14 @@ let read () =
         ((hook)()).submit_answer (Vars (get_vars framenum));
         l ()
       | Subgoals flags ->
-        begin
-          match !debug_proof with
-          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !debug_proof))
-          | None -> failwith "no proof in debugger"
-        end;
+          let open Proofview in
+          let gls = (get_history !hist_index).goals in
+          let sigma =  match gls with
+            | hd :: tl -> Goal.sigma hd
+            | [] -> Evd.empty
+          in
+          let goals = List.map (fun gl -> Goal.goal gl) gls in  (* "compatibility: avoid" *)
+          (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags (Some (sigma, goals))));
         l ()
       (* should Skip reset hist_index to 0? *)
       | StepIn | StepOver | StepOut | Continue -> hist_loop (-1) (* forwards *)
@@ -532,7 +524,6 @@ let read () =
     let do_stop () =
       let msg = tag "message.prompt"
             @@ fnl () ++ str (Printf.sprintf "History (%d) > "(-(!hist_index))) in
-(*      (hook()).submit_answer (Goal (db_fmt_goals ())); *)
       (hook()).submit_answer (Prompt msg);
       l ()
     in
