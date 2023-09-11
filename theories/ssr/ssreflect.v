@@ -111,8 +111,6 @@ Reserved Notation "'if' c 'return' R 'then' vT 'else' vF" (at level 200,
 Reserved Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" (at level 200,
   c, R, vT, vF at level 200, x name).
 
-Reserved Notation "x : T" (at level 100, right associativity,
-  format "'[hv' x '/ '  :  T ']'").
 Reserved Notation "T : 'Type'" (at level 100, format "T  :  'Type'").
 Reserved Notation "P : 'Prop'" (at level 100, format "P  :  'Prop'").
 
@@ -183,14 +181,6 @@ Open Scope boolean_if_scope.
 Declare Scope form_scope.
 Delimit Scope form_scope with FORM.
 Open Scope form_scope.
-
-(**
- Allow overloading of the cast (x : T) syntax, put whitespace around the
- ":" symbol to avoid lexical clashes (and for consistency with the parsing
- precedence of the notation, which binds less tightly than application),
- and put printing boxes that print the type of a long definition on a
- separate line rather than force-fit it at the right margin.                 **)
-Notation "x : T" := (CoqCast x T) : core_scope.
 
 (**
  Allow the casual use of notations like nat * nat for explicit Type
