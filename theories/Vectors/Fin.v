@@ -11,7 +11,20 @@
 Require Import PeanoNat.
 Require Arith_base.
 
-(** [fin n] is a convenient way to represent \[1 .. n\]
+(** N.B.: This file defines a dependently-type programming view of
+bounded integers. Another popular approach is to bundle integers with
+a proof of boundedness, thus inheriting integer arithmetic rather than
+redefining it on the bounded type. See
+https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v
+for a similar discussion on bounded lists.
+
+An alternative implementation can be found for instance in
+https://github.com/math-comp/math-comp/blob/master/mathcomp/ssreflect/fintype.v
+One can read more about this type in section 7.4 of this book:
+https://zenodo.org/record/4282710#.X_q4aGso-yU . *)
+Attributes warn(cats="stdlib vector", note="Alternatives to Fin.t are available, see <https://github.com/coq/coq/blob/master/theories/Vectors/Fin.v>.").
+
+(** [fin n] is a way to represent \[1 .. n\]
 
 [fin n] can be seen as a n-uplet of unit. [F1] is the first element of
 the n-uplet. If [f] is the k-th element of the (n-1)-uplet, [FS f] is the

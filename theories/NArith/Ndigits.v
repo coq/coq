@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+#[local] Set Warnings "-stdlib-vector".
 Require Import Bool Morphisms Setoid Bvector BinPos BinNat PeanoNat Pnat Nnat
         Basics ByteVector.
 

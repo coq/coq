@@ -13,6 +13,7 @@
 (** Main result : for functions [f:A->A] with finite [A],
     f injective <-> f bijective <-> f surjective. *)
 
+#[local] Set Warnings "-stdlib-vector".
 Require Import List PeanoNat Compare_dec EqNat Decidable ListDec. Require Fin.
 Set Implicit Arguments.
 
