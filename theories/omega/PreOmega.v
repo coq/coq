@@ -158,10 +158,61 @@ Module Z.
     repeat euclidean_division_equations_find_duplicate_quotients_step.
   Ltac div_mod_to_equations := div_mod_to_equations'; euclidean_division_equations_cleanup.
   Ltac quot_rem_to_equations := quot_rem_to_equations'; euclidean_division_equations_cleanup.
-  Ltac to_euclidean_division_equations :=
+  Module euclidean_division_equations_flags.
+    #[local] Set Primitive Projections.
+    Record t :=
+      { find_duplicate_quotients : bool }.
+    Ltac default_find_duplicate_quotients := constr:(true).
+    Ltac default :=
+      let find_duplicate_quotients_value := default_find_duplicate_quotients in
+      constr:({| find_duplicate_quotients := find_duplicate_quotients_value
+              |}).
+    Module Import DefaultHelpers.
+      Ltac try_unify_args x y :=
+        tryif first [ has_evar x | has_evar y ]
+        then (tryif unify x y
+               then idtac
+               else (lazymatch x with
+                     | ?f ?x
+                       => lazymatch y with
+                          | ?g ?y
+                            => try_unify_args f g; try_unify_args x y
+                          | ?y => fail 0 "Z.euclidean_division_equations_flags: try_unify_args: cannot unify application" x "with non-application" y
+                          end
+                     | ?x
+                       => (tryif has_evar x
+                            then fail 0 "Z.euclidean_division_equations_flags: try_unify_args: cannot unify evar-containing non-application" x "with" y
+                            else (tryif has_evar y
+                                   then fail 0 "Z.euclidean_division_equations_flags: try_unify_args: cannot unify non-application" x "with evar-containing" y
+                                   else fail 100 "Z.euclidean_division_equations_flags: try_unify_args: Impossible inconsistent state of has_evar in try_unify_args" x y))
+                     end))
+        else idtac.
+    End DefaultHelpers.
+
+    Ltac flags_with orig_flags proj value :=
+      let flags := open_constr:(match True return t with _ => ltac:(econstructor) end) in
+      let __unif := constr:(eq_refl : proj flags = value) in
+      let __force := lazymatch goal with _ => try_unify_args flags orig_flags end in
+      flags.
+
+    Ltac default_with proj value := flags_with default proj value.
+
+    Ltac guard_with proj flags tac :=
+      lazymatch (eval cbv in (proj flags)) with
+      | true => tac
+      | false => idtac
+      | ?v => let ctrue := constr:(true) in
+              let cfalse := constr:(false) in
+              fail 0 "Invalid flag value for" proj "in" flags "(got" v "expected" ctrue "or" cfalse ")"
+      end.
+  End euclidean_division_equations_flags.
+  Import euclidean_division_equations_flags (find_duplicate_quotients).
+  Ltac to_euclidean_division_equations_with flags :=
     div_mod_to_equations'; quot_rem_to_equations';
     euclidean_division_equations_cleanup;
-    euclidean_division_equations_find_duplicate_quotients.
+    euclidean_division_equations_flags.guard_with find_duplicate_quotients flags euclidean_division_equations_find_duplicate_quotients.
+  Ltac to_euclidean_division_equations :=
+    to_euclidean_division_equations_with euclidean_division_equations_flags.default.
 End Z.
 
 Require Import ZifyClasses ZifyInst.
