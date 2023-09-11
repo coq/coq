@@ -18,6 +18,9 @@
 
 Require Import List Multiset PermutSetoid Relations Sorting.
 
+#[local]
+Set Warnings "-deprecated".
+
 Section defs.
 
   (** * Trees and heap trees *)
@@ -51,17 +54,20 @@ Section defs.
   (** [a] is lower than a Tree [T] if [T] is a Leaf
       or [T] is a Node holding [b>a] *)
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Definition leA_Tree (a:A) (t:Tree) :=
     match t with
       | Tree_Leaf => True
       | Tree_Node b T1 T2 => leA a b
     end.
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma leA_Tree_Leaf : forall a:A, leA_Tree a Tree_Leaf.
   Proof.
     simpl; auto with datatypes.
   Qed.
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma leA_Tree_Node :
     forall (a b:A) (G D:Tree), leA a b -> leA_Tree a (Tree_Node b G D).
   Proof.
@@ -79,6 +85,7 @@ Section defs.
         leA_Tree a T2 ->
         is_heap T1 -> is_heap T2 -> is_heap (Tree_Node a T1 T2).
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma invert_heap :
     forall (a:A) (T1 T2:Tree),
       is_heap (Tree_Node a T1 T2) ->
@@ -88,6 +95,7 @@ Section defs.
   Qed.
 
   (* This lemma ought to be generated automatically by the Inversion tools *)
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma is_heap_rect :
     forall P:Tree -> Type,
       P Tree_Leaf ->
@@ -105,6 +113,7 @@ Section defs.
   Qed.
 
   (* This lemma ought to be generated automatically by the Inversion tools *)
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma is_heap_rec :
     forall P:Tree -> Set,
       P Tree_Leaf ->
@@ -121,6 +130,7 @@ Section defs.
     apply X; auto with datatypes.
   Qed.
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma low_trans :
     forall (T:Tree) (a b:A), leA a b -> leA_Tree b T -> leA_Tree a T.
   Proof.
@@ -146,6 +156,7 @@ Section defs.
   Instance: Proper (@meq A ++> @meq _ ++> @meq _) (@munion A).
   Proof. intros x y H x' y' H'. now apply meq_congr. Qed.
   
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma merge :
     forall l1:list A, Sorted leA l1 ->
     forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
@@ -187,6 +198,7 @@ Section defs.
       in not used. Actually, we could just take as postulate:
       [Parameter SingletonBag : A->multiset].  *)
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Fixpoint contents (t:Tree) : multiset A :=
     match t with
       | Tree_Leaf => emptyBag
@@ -196,6 +208,7 @@ Section defs.
 
 
   (** equivalence of two trees is equality of corresponding multisets *)
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Definition equiv_Tree (t1 t2:Tree) := meq (contents t1) (contents t2).
 
 
@@ -213,6 +226,7 @@ Section defs.
       insert_spec a T.
 
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma insert : forall T:Tree, is_heap T -> forall a:A, insert_spec a T.
   Proof.
     simple induction 1; intros.
@@ -243,6 +257,7 @@ Section defs.
       is_heap T ->
       meq (list_contents _ eqA_dec l) (contents T) -> build_heap l.
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma list_to_heap : forall l:list A, build_heap l.
   Proof.
     simple induction l.
@@ -268,6 +283,7 @@ Section defs.
       (forall a:A, leA_Tree a T -> HdRel leA a l) ->
       meq (contents T) (list_contents _ eqA_dec l) -> flat_spec T.
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Lemma heap_to_list : forall T:Tree, is_heap T -> flat_spec T.
   Proof.
     intros T h; elim h; intros.
@@ -289,6 +305,7 @@ Section defs.
 
   (** * Specification of treesort *)
 
+  #[deprecated(since="8.3", note="Use mergesort.v")]
   Theorem treesort :
     forall l:list A,
     {m : list A | Sorted leA m & permutation _ eqA_dec l m}.
