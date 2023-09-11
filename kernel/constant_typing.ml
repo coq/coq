@@ -168,6 +168,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_universes = univs;
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
+    const_no_native = false;
     const_typing_flags = Environ.typing_flags env;
   }
 
@@ -192,6 +193,7 @@ let infer_parameter ~sec_univs env entry =
     const_universes = univs;
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
+    const_no_native = false;
     const_typing_flags = Environ.typing_flags env;
   }
 
@@ -219,6 +221,7 @@ let infer_definition ~sec_univs env entry =
     const_universes = univs;
     const_relevance = Relevanceops.relevance_of_term env j.uj_val;
     const_inline_code = entry.const_entry_inline_code;
+    const_no_native = entry.const_entry_no_native;
     const_typing_flags = Environ.typing_flags env;
   }
 
@@ -245,6 +248,7 @@ let infer_opaque ~sec_univs env entry =
     const_universes = univs;
     const_relevance = Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
+    const_no_native = false;
     const_typing_flags = Environ.typing_flags env;
   }, context
 

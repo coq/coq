@@ -79,6 +79,7 @@ module Info = struct
   type t =
     { poly : bool
     ; inline : bool
+    ; no_native : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
     ; scope : Locality.definition_scope
@@ -90,10 +91,10 @@ module Info = struct
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
-  let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
+  let make ?(poly=false) ?(inline=false) ?(no_native=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?deprecation () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; deprecation }
+    { poly; inline; no_native; kind; udecl; scope; hook; typing_flags; clearbody; deprecation }
 
 end
 
@@ -109,6 +110,7 @@ type 'a pproof_entry = {
   proof_entry_universes   : UState.named_universes_entry;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
+  proof_entry_no_native : bool;
 }
 
 type proof_entry = Evd.side_effects Opaques.const_entry_body pproof_entry
@@ -130,7 +132,7 @@ let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
+let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?(no_native=false) ?types
     ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
@@ -138,7 +140,9 @@ let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
-    proof_entry_inline_code = inline}
+    proof_entry_inline_code = inline;
+    proof_entry_no_native = no_native;
+  }
 
 let definition_entry =
   definition_entry_core ?eff:None ?univsbody:None
@@ -263,7 +267,7 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
+let pure_definition_entry ?(opaque=false) ?(inline=false) ?(no_native=false) ?types
     ?(univs=default_named_univ_entry) body =
   { proof_entry_body = ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
@@ -271,7 +275,9 @@ let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
-    proof_entry_inline_code = inline}
+    proof_entry_inline_code = inline;
+    proof_entry_no_native = no_native;
+  }
 
 let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
   { proof_entry_body = body
@@ -281,6 +287,7 @@ let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
   ; proof_entry_opaque = opaque
   ; proof_entry_feedback = feedback_id
   ; proof_entry_inline_code = false
+  ; proof_entry_no_native = false;
   }
 
 let extract_monomorphic = function
@@ -304,6 +311,7 @@ let cast_proof_entry e =
     const_entry_type = e.proof_entry_type;
     const_entry_universes = univ_entry;
     const_entry_inline_code = e.proof_entry_inline_code;
+    const_entry_no_native = e.proof_entry_no_native;
   },
   ctx
 
@@ -533,6 +541,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = UState.univ_entry ~poly UState.empty;
             proof_entry_opaque = true;
+            proof_entry_no_native = false;
             proof_entry_inline_code = de.proof_entry_inline_code;
           }
           in
@@ -786,7 +795,7 @@ let check_evars_are_solved env sigma t =
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
 let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
-  let { Info.poly; udecl; inline; _ } = info in
+  let { Info.poly; udecl; inline; no_native; _ } = info in
   let env = Global.env () in
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, Option.map nf typ)
@@ -794,7 +803,7 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
   Option.iter (check_evars_are_solved env sigma) types;
   check_evars_are_solved env sigma body;
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let entry = definition_entry ~opaque ?using ~inline ~no_native ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
@@ -1810,13 +1819,16 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
   let { using; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
+  let { Proof_info.info = { Info.udecl; no_native } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
   let elist, uctx = prepare_proof ?warn_incomplete ~unsafe_typ ps in
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
     | Vernacexpr.Transparent -> false in
+  let () = if opaque && no_native
+    then CErrors.user_err Pp.(str "Cannot use #[native_compile=no] with opaque definitions.")
+  in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
@@ -1830,7 +1842,7 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
       then make_univs_private_poly ~poly ~uctx ~udecl t b
       else make_univs ~poly ~uctx ~udecl t b
     in
-    definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+    definition_entry_core ~opaque ~no_native ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
   { name; entries; uctx; pinfo }

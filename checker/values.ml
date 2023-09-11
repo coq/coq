@@ -262,6 +262,7 @@ let v_cb = v_tuple "constant_body"
     Any;
     v_univs;
     v_bool;
+    v_bool;
     v_typing_flags|]
 
 let v_nested = v_sum "nested" 0

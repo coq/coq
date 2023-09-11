@@ -115,7 +115,7 @@ let definition_using env evd ~body ~types ~using =
   let terms = Option.List.cons types [body] in
   Option.map (fun using -> Proof_using.definition_using env evd ~fixnames:[] ~using ~terms) using
 
-let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?deprecation udecl bl red_option c ctypopt =
+let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?no_native ?using ?deprecation udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
@@ -127,7 +127,7 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using
   let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?no_native ?typing_flags ?deprecation () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()

@@ -361,6 +361,12 @@ let rec parse_args (args : string list) accu =
     let args_msg = String.concat " " args in
     CErrors.user_err Pp.(str "parse args error, too many arguments: " ++ str args_msg)
 
+let () = CErrors.register_handler @@ function
+  | Nativelambda.NativeSkippedConst c ->
+    Some Pp.(str "Cannot native compile reference to constant " ++ Constant.print c
+             ++ str ":" ++ spc() ++ str "it was declared with #[native_compile=no].")
+  | _ -> None
+
 let () =
   let _ = Feedback.add_feeder fb_handler in
   try

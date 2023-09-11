@@ -28,10 +28,14 @@ and translate_field mp env acc (l,x) =
   match x with
   | SFBconst cb ->
      let con = Constant.make2 mp l in
+     let skip = cb.const_no_native in
      (debug_native_compiler (fun () ->
-        let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
-        Pp.str msg));
-     compile_constant_field env con acc cb
+          let msg = Printf.sprintf "%s constant %s..."
+              (if skip then "Skipping" else "Compiling")
+              (Constant.to_string con) in
+          Pp.str msg));
+     if skip then []
+     else compile_constant_field env con acc cb
   | SFBmind mb ->
      (debug_native_compiler (fun () ->
         let id = mb.mind_packets.(0).mind_typename in

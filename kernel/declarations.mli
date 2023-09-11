@@ -112,6 +112,7 @@ type 'opaque pconstant_body = {
     const_body_code : Vmemitcodes.body_code option;
     const_universes : universes;
     const_inline_code : bool;
+    const_no_native : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
                                            type-checking. *)

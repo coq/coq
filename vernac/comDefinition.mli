@@ -33,6 +33,7 @@ val do_definition
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
+  -> ?no_native:bool
   -> ?using:Vernacexpr.section_subset_expr
   -> ?deprecation:Deprecation.t
   -> universe_decl_expr option

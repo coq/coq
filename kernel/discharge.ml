@@ -81,6 +81,7 @@ let cook_constant env info cb =
     const_universes = univs;
     const_relevance = cb.const_relevance;
     const_inline_code = cb.const_inline_code;
+    const_no_native = cb.const_no_native;
     const_typing_flags = cb.const_typing_flags;
   }
 

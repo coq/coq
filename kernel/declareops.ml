@@ -123,6 +123,7 @@ let subst_const_body subst cb =
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
+        const_no_native = cb.const_no_native;
         const_typing_flags = cb.const_typing_flags }
 
 (** {7 Hash-consing of constants } *)

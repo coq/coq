@@ -18,3 +18,5 @@ type lambda = Nativevalues.t Genlambda.lambda
 val is_lazy : constr -> bool
 
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda
+
+exception NativeSkippedConst of Names.Constant.t

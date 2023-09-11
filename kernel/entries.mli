@@ -73,6 +73,7 @@ type definition_entry = {
   const_entry_type : types option;
   const_entry_universes : universes_entry;
   const_entry_inline_code : bool;
+  const_entry_no_native : bool;
 }
 
 type section_def_entry = {

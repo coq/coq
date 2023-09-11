@@ -59,15 +59,19 @@ let is_lazy t =
   | App _ | LetIn _ | Case _ | Proj _ -> true
   | _ -> false
 
+exception NativeSkippedConst of Names.Constant.t
+
 module Val =
 struct
   open Declarations
   type value = Nativevalues.t
   let as_value = as_value
   let check_inductive _ _ = ()
-  let get_constant knu cb = match cb.const_body with
-  | Def body -> if is_lazy body then mkLapp Lforce [|Lconst knu|] else Lconst knu
-  | Undef _ | OpaqueDef _ | Primitive _ -> assert false
+  let get_constant knu cb =
+    let () = if cb.const_no_native then raise (NativeSkippedConst (fst knu)) in
+    match cb.const_body with
+    | Def body -> if is_lazy body then mkLapp Lforce [|Lconst knu|] else Lconst knu
+    | Undef _ | OpaqueDef _ | Primitive _ -> assert false
 end
 
 module Lambda = Genlambda.Make(Val)

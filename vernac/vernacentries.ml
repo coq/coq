@@ -60,6 +60,7 @@ module DefAttributes = struct
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
+    no_native : bool;
     reversible : bool;
     clearbody: bool option;
   }
@@ -69,22 +70,26 @@ module DefAttributes = struct
 
   let clearbody = bool_attribute ~name:"clearbody"
 
+  let native = bool_attribute ~name:"native_compile"
+
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, deprecated), polymorphic), program),
+    let ((((((((locality, deprecated), polymorphic), program),
          canonical_instance), typing_flags), using),
-         reversible), clearbody =
+         native), reversible), clearbody =
       parse (locality ++ deprecation ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
+             native ++ reversible ++ clearbody)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
+    let no_native = not (Option.default true native) in
     let reversible = Option.default true reversible in
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; reversible; clearbody }
+    { polymorphic; program; locality; deprecated; canonical_instance;
+      typing_flags; using; no_native; reversible; clearbody }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -614,7 +619,7 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~deprecation ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~no_native ~poly ~scope ?clearbody ~kind ~deprecation ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -623,7 +628,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~d
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ?hook ~poly ~no_native ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
   begin
     match mut_analysis with
     | RecLemmas.NonMutual thm ->
@@ -678,7 +683,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let typing_flags = atts.typing_flags in
   let deprecation = atts.deprecated in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
+  start_lemma_com ~no_native:atts.no_native ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
     ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
@@ -702,7 +707,8 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using
+        ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
+        ~no_native:atts.no_native ?using:atts.using
         ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
     pm
 
@@ -713,6 +719,7 @@ let vernac_start_proof ~atts kind l =
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_lemma_com
+    ~no_native:atts.no_native
     ~typing_flags:atts.typing_flags
     ~program_mode:atts.program
     ~poly:atts.polymorphic

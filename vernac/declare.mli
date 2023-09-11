@@ -102,6 +102,7 @@ module Info : sig
   val make
     : ?poly:bool
     -> ?inline : bool
+    -> ?no_native : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
@@ -354,6 +355,7 @@ val definition_entry
   :  ?opaque:bool
   -> ?using:Names.Id.Set.t
   -> ?inline:bool
+  -> ?no_native:bool
   -> ?types:Constr.types
   -> ?univs:UState.named_universes_entry
   -> Constr.constr

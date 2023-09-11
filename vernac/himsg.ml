@@ -1611,6 +1611,9 @@ let rec vernac_interp_error_handler = function
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
+  | Nativelambda.NativeSkippedConst c ->
+    str "Cannot native compile reference to constant " ++ pr_global (ConstRef c)
+    ++ str ":" ++ spc() ++ str "it was declared with #[native_compile=no]."
   | _ ->
     raise Unhandled
 

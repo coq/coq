@@ -758,7 +758,9 @@ let constant_entry_of_side_effect eff =
     const_entry_secctx = Some (Context.Named.to_vars cb.const_hyps);
     const_entry_type = Some cb.const_type;
     const_entry_universes = univs;
-    const_entry_inline_code = cb.const_inline_code }
+    const_entry_inline_code = cb.const_inline_code;
+    const_entry_no_native = cb.const_no_native;
+  }
 
 let export_eff eff =
   (eff.seff_constant, eff.seff_body)
