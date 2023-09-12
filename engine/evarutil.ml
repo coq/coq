@@ -640,10 +640,11 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
    goal ([advance] is used to figure if a side effect has modified the
    goal) it terminates quickly. *)
 let rec advance sigma evk =
-  let EvarInfo evi = Evd.find sigma evk in
-  match Evd.evar_body evi with
-  | Evar_empty -> Some evk
-  | Evar_defined v ->
+  match Evd.find_defined sigma evk with
+  | None -> Some evk
+  | Some evi ->
+    match Evd.evar_body evi with
+    | Evar_defined v ->
       match is_aliased_evar sigma evk with
       | Some evk -> advance sigma evk
       | None -> None

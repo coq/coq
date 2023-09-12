@@ -846,6 +846,8 @@ let undefine sigma e concl =
   } in
   add (remove sigma e) e evi
 
+let find_defined d e = EvMap.find_opt e d.defn_evars
+
 let find_undefined d e = EvMap.find e d.undf_evars
 
 let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars

@@ -207,6 +207,8 @@ val add : evar_map -> Evar.t -> 'a evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
     Precondition: ev must not preexist in [sigma]. *)
 
+val find_defined : evar_map -> Evar.t -> defined evar_info option
+
 val find : evar_map -> Evar.t -> any_evar_info
 (** Recover the data associated to an evar. *)
 
