@@ -70,13 +70,16 @@ let get_history n =
   | None -> failwith "get_history entry is None"
 
 let save_goals () =
-  let open Proofview in
-  let open Notations in
-  (* todo: Goal.goals is not entirely trivial (perf impact?) *)
-  Proofview.Goal.goals >>= fun gl ->
-  Monad.List.map (fun x -> x) gl >>= fun gls ->
-  cur_goals := gls;
-  Proofview.tclLIFT (Proofview.NonLogical.return ())
+  if !debug then begin
+    let open Proofview in
+    let open Notations in
+    (* todo: Goal.goals is not entirely trivial (perf impact?) *)
+    Proofview.Goal.goals >>= fun gl ->
+    Monad.List.map (fun x -> x) gl >>= fun gls ->
+    cur_goals := gls;
+    Proofview.tclLIFT (Proofview.NonLogical.return ())
+  end else
+    Proofview.tclLIFT (Proofview.NonLogical.return ())
 
 let history_default = 10
 let history_buf_size = ref history_default
@@ -207,29 +210,36 @@ let prev_chunks : chunk list ref = ref []
 (* TODO: shouldn't be printing messages during compile, need to check if debug enabled *)
 
 let pop_chunk () =
-  stack_chunks := List.tl !stack_chunks
+  if !debug then
+    stack_chunks := List.tl !stack_chunks
 (*  if test then Printf.eprintf "pop_chunk: num chunks = %d\n%!" (List.length !stack_chunks) *)
 
 let new_stop_point () =
-  prev_top_chunk := !top_chunk;
-  prev_chunks := !stack_chunks
+  if !debug then begin
+    prev_top_chunk := !top_chunk;
+    prev_chunks := !stack_chunks
+  end
 (*  if test then Printf.eprintf "new_stop_point: num chunks = %d\n%!" (List.length !stack_chunks) *)
 
 let set_top_chunk chunk =
-  top_chunk := chunk
+  if !debug then
+    top_chunk := chunk
 
 let save_chunk chunk loc =
-  top_chunk := chunk;
-  cur_loc := loc;
-  append_history { stack_chunks=(!stack_chunks); top_chunk=(!top_chunk); cur_loc=(!cur_loc);
-      goals=(!cur_goals) }
+  if !debug then begin
+    top_chunk := chunk;
+    cur_loc := loc;
+    append_history { stack_chunks=(!stack_chunks); top_chunk=(!top_chunk); cur_loc=(!cur_loc);
+        goals=(!cur_goals) }
+  end
 (*  let (locs,_,_)= chunk in *)
 (*  if test then Printf.eprintf "save_chunk: chunk size = %d loc = %s\n%!" (List.length locs) *)
 (*    (print_loc "" loc); *)
 (*  if test then Printf.eprintf "mem used by buf = %d\n%!" (Obj.reachable_words (Obj.magic history)) *)
 
 let push_top_chunk () =
-  stack_chunks := !top_chunk :: !stack_chunks
+  if !debug then
+    stack_chunks := !top_chunk :: !stack_chunks
 (*
    if test then
      let (locs,_,_)= !top_chunk in
@@ -383,36 +393,38 @@ let wrap = Proofview.NonLogical.make
    Improving this would require some tweaks in tacinterp which
    are out of scope for the current refactoring. *)
 let init () =
-  if Sys.os_type = "Unix" then
-    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
-      (fun _ -> break := true));
-  stack_chunks := [];
-  prev_chunks := [];
-  top_chunk := empty_chunk;
-  prev_top_chunk := empty_chunk;
-  cur_loc := None;
-  reset_history !history_buf_size;
-  let open DebugHook in
-  match Intf.get () with
-  | Some intf ->
-    if Intf.(intf.isTerminal) then
-      action := Action.StepIn
-    else begin
-      break := false;
-      breakpoints := BPSet.empty;
-      (hook ()).Intf.submit_answer (Answer.Init);
-      while
-        let cmd = (hook ()).Intf.read_cmd true in
-        let open DebugHook.Action in
-        match cmd with
-        | UpdBpts updates -> upd_bpts updates; true
-        | Configd -> action := Action.Continue; false
-        | _ -> failwith "Action type not allowed"
-      do () done
-    end
-  | None -> ()
-    (* CErrors.user_err
-     *   (Pp.str "Your user interface does not support the Ltac debugger.") *)
+  if !debug then begin
+    if Sys.os_type = "Unix" then
+      Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
+        (fun _ -> break := true));
+    stack_chunks := [];
+    prev_chunks := [];
+    top_chunk := empty_chunk;
+    prev_top_chunk := empty_chunk;
+    cur_loc := None;
+    reset_history !history_buf_size;
+    let open DebugHook in
+    match Intf.get () with
+    | Some intf ->
+      if Intf.(intf.isTerminal) then
+        action := Action.StepIn
+      else begin
+        break := false;
+        breakpoints := BPSet.empty;
+        (hook ()).Intf.submit_answer (Answer.Init);
+        while
+          let cmd = (hook ()).Intf.read_cmd true in
+          let open DebugHook.Action in
+          match cmd with
+          | UpdBpts updates -> upd_bpts updates; true
+          | Configd -> action := Action.Continue; false
+          | _ -> failwith "Action type not allowed"
+        do () done
+      end
+    | None -> ()
+      (* CErrors.user_err
+       *   (Pp.str "Your user interface does not support the Ltac debugger.") *)
+  end
 
 open DebugHook.Intf
 open DebugHook.Answer

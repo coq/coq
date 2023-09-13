@@ -1984,7 +1984,7 @@ let eval_tactic t =
     eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
-  Proofview.tclLIFT (db_initialize false) <*>
+  Proofview.tclLIFT (db_initialize false) <*>   (* todo: does a little debug code *)
   eval_tactic_ist ist t
 
 (** FFI *)
