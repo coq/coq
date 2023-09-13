@@ -35,18 +35,7 @@ open Esubst
 open RedFlags
 
 module RelDecl = Context.Rel.Declaration
-
-type table_key = Constant.t Univ.puniverses tableKey
-
-module KeyTable = Hashtbl.Make(struct
-  type t = table_key
-  let equal = Names.eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
-  let hash = Names.hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
-end)
-
-open Context.Named.Declaration
-
-exception Irrelevant
+module NamedDecl = Context.Named.Declaration
 
 type mode = Conversion | Reduction
 (* In conversion mode we can introduce FIrrelevant terms.
@@ -81,6 +70,8 @@ type red_state = Ntrl | Cstr | Red
 
 let neutr = function Ntrl -> Ntrl | Red | Cstr -> Red
 let is_red = function Red -> true | Ntrl | Cstr -> false
+
+type table_key = Constant.t Univ.puniverses tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
@@ -142,17 +133,15 @@ type clos_infos = {
   i_relevances : Sorts.relevance Range.t;
   i_cache : infos_cache }
 
-type clos_tab = (fconstr, Empty.t) constant_def KeyTable.t
-
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env
 let info_univs info = info.i_cache.i_univs
 
 let push_relevance infos r =
-  { infos with i_relevances = Range.cons r.Context.binder_relevance infos.i_relevances }
+  { infos with i_relevances = Range.cons r.binder_relevance infos.i_relevances }
 
 let push_relevances infos nas =
-  { infos with i_relevances = Array.fold_left (fun l x -> Range.cons x.Context.binder_relevance l)
+  { infos with i_relevances = Array.fold_left (fun l x -> Range.cons x.binder_relevance l)
                    infos.i_relevances nas }
 
 let set_info_relevances info r = { info with i_relevances = r }
@@ -309,6 +298,98 @@ let inject c = injectu c Univ.Instance.empty
 
 let mk_irrelevant = { mark = Cstr; term = FIrrelevant }
 
+let is_irrelevant info r = match info.i_cache.i_mode with
+| Reduction -> false
+| Conversion -> match r with
+  | Sorts.Irrelevant -> true
+  | Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
+  | Sorts.Relevant -> false
+
+(************************************************************************)
+
+type table_val = (fconstr, Empty.t) constant_def
+
+module Table : sig
+  type t
+  val create : unit -> t
+  val lookup : clos_infos -> t -> table_key -> table_val
+end = struct
+  module Table = Hashtbl.Make(struct
+    type t = table_key
+    let equal = eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+    let hash = hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
+  end)
+
+  type t = table_val Table.t
+
+  let create () = Table.create 17
+
+  exception Irrelevant
+
+  let shortcut_irrelevant info r =
+    if is_irrelevant info r then raise Irrelevant
+
+  let assoc_defined d =
+    match d with
+    | NamedDecl.LocalDef (_, c, _) -> inject c
+    | NamedDecl.LocalAssum (_, _) -> raise Not_found
+
+  let constant_value_in u = function
+    | Def b -> injectu b u
+    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+    | Undef _ -> raise (NotEvaluableConst NoBody)
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+
+  let value_of info ref =
+    try
+      let env = info.i_cache.i_env in
+      match ref with
+      | RelKey n ->
+        let i = n - 1 in
+        let d =
+          try Range.get env.env_rel_context.env_rel_map i
+          with Invalid_argument _ -> raise Not_found
+        in
+        shortcut_irrelevant info (RelDecl.get_relevance d);
+        let body =
+          match d with
+          | RelDecl.LocalAssum _ -> raise Not_found
+          | RelDecl.LocalDef (_, t, _) -> lift n t
+        in
+        Def (inject body)
+      | VarKey id ->
+        let def = Environ.lookup_named id env in
+        shortcut_irrelevant info
+          (binder_relevance (NamedDecl.get_annot def));
+        let ts = RedFlags.red_transparent info.i_flags in
+        if TransparentState.is_transparent_variable ts id then
+          Def (assoc_defined def)
+        else
+          raise Not_found
+      | ConstKey (cst,u) ->
+        let cb = lookup_constant cst env in
+        shortcut_irrelevant info (cb.const_relevance);
+        let ts = RedFlags.red_transparent info.i_flags in
+        if TransparentState.is_transparent_constant ts cst then
+          Def (constant_value_in u cb.const_body)
+        else
+          raise Not_found
+    with
+    | Irrelevant -> Def mk_irrelevant
+    | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
+    | Not_found (* List.assoc *)
+    | NotEvaluableConst _ (* Const *) -> Undef None
+
+  let lookup info tab ref =
+    try Table.find tab ref with Not_found ->
+    let v = value_of info ref in
+    Table.add tab ref v; v
+end
+
+type clos_tab = Table.t
+
+let create_tab = Table.create
+
 (************************************************************************)
 
 (** Hand-unrolling of the map function to bypass the call to the generic array
@@ -321,68 +402,6 @@ let mk_clos_vect env v = match v with
 | [|v0; v1; v2; v3|] ->
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
-
-let is_irrelevant info r = match info.i_cache.i_mode, r with
-| Conversion, Sorts.Irrelevant -> true
-| Conversion, Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
-| (Conversion | Reduction), (Sorts.Relevant | Sorts.Irrelevant | Sorts.RelevanceVar _) -> false
-
-let shortcut_irrelevant info r =
-  if is_irrelevant info r then raise Irrelevant
-
-let assoc_defined = function
-| LocalDef (_, c, _) -> inject c
-| LocalAssum (_, _) -> raise Not_found
-
-let constant_value_in u = function
-| Def b -> injectu b u
-| OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-| Undef _ -> raise (NotEvaluableConst NoBody)
-| Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
-
-let ref_value_cache info flags tab ref =
-  let env = info.i_cache.i_env in
-  try
-    KeyTable.find tab ref
-  with Not_found ->
-    let v =
-      try
-        let body =
-          match ref with
-          | RelKey n ->
-            let open! Context.Rel.Declaration in
-            let i = n - 1 in
-            let d =
-              try Range.get env.env_rel_context.env_rel_map i
-              with Invalid_argument _ -> raise Not_found
-            in
-            (* First check for irrelevance *)
-            let () = shortcut_irrelevant info (get_relevance d) in
-            let body = match d with
-              | LocalAssum _ -> raise Not_found
-              | LocalDef (_, t, _) -> lift n t
-            in
-            inject body
-          | VarKey id ->
-            let def = Environ.lookup_named id env in
-            let () = shortcut_irrelevant info (binder_relevance (get_annot def)) in
-            if TransparentState.is_transparent_variable flags id then assoc_defined def
-            else raise Not_found
-          | ConstKey (cst,u) ->
-            let cb = lookup_constant cst env in
-            let () = shortcut_irrelevant info (cb.const_relevance) in
-            if TransparentState.is_transparent_constant flags cst then constant_value_in u cb.const_body
-            else raise Not_found
-        in
-        Def body
-      with
-      | Irrelevant -> Def mk_irrelevant
-      | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
-      | Not_found (* List.assoc *)
-      | NotEvaluableConst _ (* Const *)
-        -> Undef None
-    in
-    KeyTable.add tab ref v; v
 
 let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
@@ -1285,7 +1304,7 @@ let rec knr info tab m stk =
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info (RedFlags.red_transparent info.i_flags) tab fl with
+      (match Table.lookup info tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
@@ -1392,7 +1411,7 @@ and case_inversion info tab ci u params indices v =
     (* indtyping enforces 1 ctor with no letins in the context *)
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
-    let tab = if info.i_cache.i_mode == Conversion then tab else KeyTable.create 17 in
+    let tab = if info.i_cache.i_mode == Conversion then tab else Table.create () in
     let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
@@ -1574,16 +1593,13 @@ let create_infos i_mode ?univs ?(evars=default_evar_handler) i_flags i_env =
 let create_conv_infos = create_infos Conversion
 let create_clos_infos = create_infos Reduction
 
-let create_tab () = KeyTable.create 17
-
 let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_ref_with_args infos tab fl v =
-  let flags = RedFlags.red_transparent (info_flags infos) in
-  match ref_value_cache infos flags tab fl with
+  match Table.lookup infos tab fl with
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
