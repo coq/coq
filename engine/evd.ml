@@ -489,7 +489,8 @@ end
 type evar_flags =
   { obligation_evars : Evar.Set.t;
     aliased_evars : Evar.t Evar.Map.t;
-    typeclass_evars : Evar.Set.t }
+    typeclass_evars : Evar.Set.t;
+  }
 
 type side_effect_role =
 | Schema of inductive * string
@@ -642,6 +643,7 @@ type evar_map = {
   defn_evars : defined evar_info EvMap.t;
   undf_evars : undefined evar_info EvMap.t;
   evar_names : EvNames.t;
+  candidate_evars : Evar.Set.t; (* The subset of undefined evars with a non-empty candidate list. *)
   (** Universes *)
   universes  : UState.t;
   (** Conversion problems *)
@@ -751,7 +753,11 @@ let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_i
       { flags with typeclass_evars = Evar.Set.add e flags.typeclass_evars }
     else d.evar_flags
   in
-  { d with undf_evars = EvMap.add e i d.undf_evars; evar_names; evar_flags }
+  let candidate_evars = match i.evar_candidates with
+  | Undefined None -> Evar.Set.remove e d.candidate_evars
+  | Undefined (Some _) -> Evar.Set.add e d.candidate_evars
+  in
+  { d with undf_evars = EvMap.add e i d.undf_evars; evar_names; evar_flags; candidate_evars }
 | Evar_defined _ ->
   let evar_names = EvNames.remove_name_defined e d.evar_names in
   { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
@@ -801,7 +807,7 @@ let inherit_evar_flags evar_flags evk evk' =
       Evar.Set.add evk' obligation_evars
     else evar_flags.obligation_evars
   in
-  { obligation_evars; aliased_evars; typeclass_evars }
+  { obligation_evars; aliased_evars; typeclass_evars;  }
 
 (** Removal: in all other cases of definition *)
 
@@ -826,8 +832,9 @@ let remove d e =
   let defn_evars = EvMap.remove e d.defn_evars in
   let future_goals = FutureGoals.remove e d.future_goals in
   let evar_flags = remove_evar_flags e d.evar_flags in
+  let candidate_evars = Evar.Set.remove e d.candidate_evars in
   { d with undf_evars; defn_evars; future_goals;
-           evar_flags }
+           evar_flags; candidate_evars }
 
 let undefine sigma e concl =
   let EvarInfo evi = find sigma e in
@@ -974,6 +981,7 @@ let empty = {
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
   evar_flags = empty_evar_flags;
+  candidate_evars = Evar.Set.empty;
   metas      = Metamap.empty;
   effects    = empty_side_effects;
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
@@ -1012,6 +1020,9 @@ let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
 let get_aliased_evars evd = evd.evar_flags.aliased_evars
+
+let max_undefined_with_candidates evd =
+  try Some (Evar.Set.max_elt evd.candidate_evars) with Not_found -> None
 
 let is_aliased_evar evd evk =
   try Some (Evar.Map.find evk evd.evar_flags.aliased_evars)
@@ -1371,7 +1382,8 @@ let define_gen evk body evd evar_flags =
   | _ -> Evar.Set.add evk evd.last_mods
   in
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
-  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags }
+  let candidate_evars = Evar.Set.remove evk evd.candidate_evars in
+  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags; candidate_evars }
 
 (** By default, the obligation and evar tag of the evar is removed *)
 let define evk body evd =
@@ -1405,8 +1417,13 @@ let restrict evk filter ?candidates ?src evd =
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let candidate_evars = Evar.Set.remove evk evd.candidate_evars in
+  let candidate_evars = match candidates with
+  | None -> candidate_evars
+  | Some _ -> Evar.Set.add evk' candidate_evars
+  in
   let evd = { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names; evar_flags }
+    defn_evars; last_mods; evar_names; evar_flags; candidate_evars }
   in
   (* Mark new evar as future goal, removing previous one,
     circumventing Proofview.advance but making Proof.run_tactic catch these. *)
@@ -1432,6 +1449,7 @@ let set_metas evd metas = {
   conv_pbs = evd.conv_pbs;
   last_mods = evd.last_mods;
   evar_flags = evd.evar_flags;
+  candidate_evars = evd.candidate_evars;
   metas;
   effects = evd.effects;
   evar_names = evd.evar_names;

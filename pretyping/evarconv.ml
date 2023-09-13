@@ -1781,29 +1781,17 @@ let check_problems_are_solved env evd =
   | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
-exception MaxUndefined of (Evar.t * undefined evar_info * EConstr.t list)
-
-let max_undefined_with_candidates evd =
-  let fold evk evi () = match Evd.evar_candidates evi with
-  | None -> ()
-  | Some l -> raise (MaxUndefined (evk, evi, l))
-  in
-  (* [fold_right] traverses the undefined map in decreasing order of
-     indices.  The evar with candidates of maximum index is thus the
-     first evar with candidates found by a [fold_right]
-     traversal. This has a significant impact on performance. *)
-  try
-    let () = Evar.Map.fold_right fold (Evd.undefined_map evd) () in
-    None
-  with MaxUndefined ans ->
-    Some ans
-
 let rec solve_unconstrained_evars_with_candidates flags env evd =
   (* max_undefined is supposed to return the most recent, hence
      possibly most dependent evar *)
-  match max_undefined_with_candidates evd with
+  match Evd.max_undefined_with_candidates evd with
   | None -> evd
-  | Some (evk,ev_info,l) ->
+  | Some evk ->
+      let ev_info = Evd.find_undefined evd evk in
+      let l = match evar_candidates ev_info with
+      | None -> assert false
+      | Some l -> l
+      in
       let rec aux = function
       | [] -> user_err Pp.(str "Unsolvable existential variables.")
       | a::l ->
