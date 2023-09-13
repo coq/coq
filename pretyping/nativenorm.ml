@@ -323,7 +323,7 @@ and nf_atom_type env sigma atom =
         let nas = List.rev_map get_annot realdecls @ [nameR (Id.of_string "c")] in
         expand_arity (mib, mip) (ind, u) params (Array.of_list nas)
       in
-      let p = nf_predicate env sigma ind mip params p pctx in
+      let p, relevance = nf_predicate env sigma ind mip params p pctx in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma mib mip (ind, u) params (pctx, p) in
       (* calcul des branches *)
@@ -336,8 +336,8 @@ and nf_atom_type env sigma atom =
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type (pctx, p) realargs a in
       let p = (get_case_annot pctx, p) in
-      let ci = ans.asw_ci in
-      let iv = if Typeops.should_invert_case env ans.asw_ci then
+      let ci = Inductiveops.make_case_info env ind relevance RegularStyle in
+      let iv = if Typeops.should_invert_case env ci then
           CaseInvert {indices=realargs}
         else NoInvert
       in
@@ -388,7 +388,8 @@ and nf_predicate env sigma ind mip params v pctx =
   let (_, v) = List.fold_right fold pctx (nb_rel env, v) in
   let env = push_rel_context pctx env in
   let body = nf_type env sigma v in
-  body
+  let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
+  body, rel
 
 and nf_evar env sigma evk args =
   let evi = try Evd.find_undefined sigma evk with Not_found -> assert false in
