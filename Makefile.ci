@@ -70,6 +70,7 @@ CI_TARGETS= \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
+    ci-neural_net_interp \
     ci-oddorder \
     ci-paco \
     ci-paramcoq \

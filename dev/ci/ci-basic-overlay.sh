@@ -252,6 +252,11 @@ project reduction_effects "https://github.com/coq-community/reduction-effects" "
 project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20220210"
 
 ########################################################################
+# coq-neural-net-interp
+########################################################################
+project neural_net_interp "https://github.com/JasonGross/neural-net-coq-interp" "tested"
+
+########################################################################
 # aac_tactics
 ########################################################################
 project aac_tactics "https://github.com/coq-community/aac-tactics" "master"

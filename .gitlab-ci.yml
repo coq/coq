@@ -765,6 +765,9 @@ library:ci-analysis:
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
 
+library:ci-neural_net_interp:
+  extends: .ci-template
+
 library:ci-paco:
   extends: .ci-template-flambda
 
