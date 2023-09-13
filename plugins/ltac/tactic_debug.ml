@@ -360,12 +360,13 @@ let debug_prompt lev tac f varmap trace =
 (* for ltac1:(tac) *)
 let entry_stop_check tac =
 (*  Printf.eprintf "entry_stop_check\n%!"; *)
-  let loc = !DebugCommon.cur_loc in  (* todo: necessary? *)
   let can_stop = match CAst.(tac.v) with (* avoid double stop for ltac1:(xx) *)
   | TacArg _ -> false
   | _ -> true
   in
-  if can_stop && (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop ()) then begin
+  if DebugCommon.get_debug () && can_stop &&
+      (DebugCommon.breakpoint_stop !DebugCommon.cur_loc ||
+       DebugCommon.stepping_stop ()) then begin
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN

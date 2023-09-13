@@ -168,7 +168,7 @@ match e with
       interp ist f
   in
   Proofview.tclTHEN
-    (DebugCommon.save_goals ())
+    (DebugCommon.save_goals ())  (* TODO: shouldn't execute if not in debug; restructure code *)
     (step >>= fun f ->
       Proofview.Monad.List.map (fun e -> interp ist0 e) args >>= fun args ->
       Tac2ffi.apply (Tac2ffi.to_closure f) args)
