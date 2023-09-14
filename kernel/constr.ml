@@ -110,7 +110,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * 'constr
+  | Proj      of Projection.t * Sorts.relevance * 'constr
   | Int       of Uint63.t
   | Float     of Float64.t
   | Array     of 'univs * 'constr array * 'constr * 'types
@@ -210,7 +210,7 @@ let mkConst c = of_kind @@ Const (in_punivs c)
 let mkConstU c = of_kind @@ Const c
 
 (* Constructs an applied projection *)
-let mkProj (p,c) = of_kind @@ Proj (p,c)
+let mkProj (p,r,c) = of_kind @@ Proj (p,r,c)
 
 (* Constructs an existential variable *)
 let mkEvar e = of_kind @@ Evar e
@@ -440,7 +440,7 @@ let destCase c = match kind c with
   | _ -> raise DestKO
 
 let destProj c = match kind c with
-  | Proj (p, c) -> (p, c)
+  | Proj (p, r, c) -> (p, r, c)
   | _ -> raise DestKO
 
 let destFix c = match kind c with
@@ -493,7 +493,7 @@ let fold f acc c = match kind c with
   | Lambda (_,t,c) -> f (f acc t) c
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
-  | Proj (_p,c) -> f acc c
+  | Proj (_p,_r,c) -> f acc c
   | Evar (_,l) -> SList.Skip.fold f acc l
   | Case (_,_,pms,(_,p),iv,c,bl) ->
     Array.fold_left (fun acc (_, b) -> f acc b) (f (fold_invert f (f (Array.fold_left f acc pms) p) iv) c) bl
@@ -521,7 +521,7 @@ let iter f c = match kind c with
   | Lambda (_,t,c) -> f t; f c
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
-  | Proj (_p,c) -> f c
+  | Proj (_p,_r,c) -> f c
   | Evar (_,l) -> SList.Skip.iter f l
   | Case (_,_,pms,p,iv,c,bl) ->
     Array.iter f pms; f (snd p); iter_invert f iv; f c; Array.iter (fun (_, b) -> f b) bl
@@ -550,7 +550,7 @@ let iter_with_binders g f n c = match kind c with
     iter_invert (f n) iv;
     f n c;
     Array.Fun1.iter (fun n (ctx, b) -> f (iterate g (Array.length ctx) n) b) n bl
-  | Proj (_p,c) -> f n c
+  | Proj (_p,_r,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
       Array.Fun1.iter f n tl;
       Array.Fun1.iter f (iterate g (Array.length tl) n) bl
@@ -576,7 +576,7 @@ let fold_constr_with_binders g f n acc c =
   | Lambda (_na,t,c) -> f (g  n) (f n acc t) c
   | LetIn (_na,b,t,c) -> f (g  n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (_p,c) -> f n acc c
+  | Proj (_p,_r,c) -> f n acc c
   | Evar (_,l) -> SList.Skip.fold (f n) acc l
   | Case (_,_,pms,p,iv,c,bl) ->
     let fold_ctx n accu (nas, c) =
@@ -659,10 +659,10 @@ let map f c = match kind c with
       let l' = Array.Smart.map f l in
       if b'==b && l'==l then c
       else mkApp (b', l')
-  | Proj (p,t) ->
+  | Proj (p,r,t) ->
       let t' = f t in
       if t' == t then c
-      else mkProj (p, t')
+      else mkProj (p, r, t')
   | Evar (e,l) ->
       let l' = SList.Smart.map f l in
       if l'==l then c
@@ -742,10 +742,10 @@ let fold_map f accu c = match kind c with
       let accu, l' = Array.Smart.fold_left_map f accu l in
       if b'==b && l'==l then accu, c
       else accu, mkApp (b', l')
-  | Proj (p,t) ->
+  | Proj (p,r,t) ->
       let accu, t' = f accu t in
       if t' == t then accu, c
-      else accu, mkProj (p, t')
+      else accu, mkProj (p, r, t')
   | Evar (e,l) ->
       let accu, l' = SList.Smart.fold_left_map f accu l in
       if l'==l then accu, c
@@ -810,10 +810,10 @@ let map_with_binders g f l c0 = match kind c0 with
     let al' = Array.Fun1.Smart.map f l al in
     if c' == c && al' == al then c0
     else mkApp (c', al')
-  | Proj (p, t) ->
+  | Proj (p, r, t) ->
     let t' = f l t in
     if t' == t then c0
-    else mkProj (p, t')
+    else mkProj (p, r, t')
   | Evar (e, al) ->
     let al' = SList.Smart.map (fun c -> f l c) al in
     if al' == al then c0
@@ -909,7 +909,8 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
+  | Proj (p1,r1,c1), Proj (p2,r2,c2) ->
+    Projection.CanOrd.equal p1 p2 && Sorts.relevance_equal r1 r2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
@@ -1064,7 +1065,7 @@ let constr_ord_int f t1 t2 =
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       compare [(Int.compare, ln1, ln2); (Array.compare f, tl1, tl2); (Array.compare f, bl1, bl2)]
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
-    | Proj (p1,c1), Proj (p2,c2) -> compare [(Projection.CanOrd.compare, p1, p2); (f, c1, c2)]
+    | Proj (p1,_r1,c1), Proj (p2,_r2,c2) -> compare [(Projection.CanOrd.compare, p1, p2); (f, c1, c2)]
     | Proj _, _ -> -1 | _, Proj _ -> 1
     | Int i1, Int i2 -> Uint63.compare i1 i2
     | Int _, _ -> -1 | _, Int _ -> 1
@@ -1147,7 +1148,7 @@ let hasheq t1 t2 =
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
-    | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
+    | Proj (p1,r1,c1), Proj(p2,r2,c2) -> p1 == p2 && r1 == r2 && c1 == c2
     | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && SList.equal (==) l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
@@ -1234,8 +1235,8 @@ let rec hash t =
        combinesmall 14 (combine (hash_term_array bl) (hash_term_array tl))
     | Meta n -> combinesmall 15 n
     | Rel n -> combinesmall 16 n
-    | Proj (p,c) ->
-      combinesmall 17 (combine (Projection.CanOrd.hash p) (hash c))
+    | Proj (p,r, c) ->
+      combinesmall 17 (combine3 (Projection.CanOrd.hash p) (Sorts.relevance_hash r) (hash c))
     | Int i -> combinesmall 18 (Uint63.hash i)
     | Float f -> combinesmall 19 (Float64.hash f)
     | Array(u,t,def,ty) ->
@@ -1396,10 +1397,10 @@ let rec hash_term (t : t) =
     (t, combinesmall 15 n)
   | Rel n as t ->
     (t, combinesmall 16 n)
-  | Proj (p,c) ->
+  | Proj (p,r,c) ->
     let c, hc = sh_rec c in
     let p' = Projection.hcons p in
-    (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
+    (Proj (p', r, c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
   | Int i as t ->
     let (h,l) = Uint63.to_int2 i in
     (t, combinesmall 18 (combine h l))
@@ -1529,7 +1530,9 @@ let rec debug_print c =
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
-  | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ str"," ++ debug_print c ++ str")"
+  | Proj (p,_r,c) ->
+    str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++
+    bool (Projection.unfolded p) ++ str"," ++ debug_print c ++ str")"
   | Case (_ci,_u,pms,p,iv,c,bl) ->
     let pr_ctx (nas, c) =
       hov 2 (hov 0 (prvect (fun na -> Name.print na.binder_name ++ spc ()) nas ++ str "|-") ++ spc () ++

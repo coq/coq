@@ -72,7 +72,6 @@ let no_sort_variable () =
 type record_arg_info =
   | NoRelevantArg
   | HasRelevantArg
-  | HasVariableRelevanceArg
 
 type univ_info =
   { ind_squashed : bool
@@ -91,12 +90,9 @@ type univ_info =
 let check_univ_leq ?(is_real_arg=false) env u info =
   let info = if not is_real_arg then info
     else match info.record_arg_info with
-    | HasVariableRelevanceArg -> info
     | NoRelevantArg | HasRelevantArg -> match u with
-      | Sorts.SProp -> info
+      | Sorts.SProp | QSort _ -> info
       | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
-      | QSort _ ->
-        { info with record_arg_info = HasVariableRelevanceArg }
   in
   (* If we would squash (eg Prop, SProp case) we still need to check the type in type flag. *)
   let ind_squashed = not (Environ.type_in_type env) in
@@ -233,7 +229,6 @@ let check_record data =
       (* relevant records must have at least 1 relevant argument,
          and we don't yet support variable relevance projections *)
       && (match info.record_arg_info with
-          | HasVariableRelevanceArg -> false
           | HasRelevantArg -> true
           | NoRelevantArg -> Sorts.is_sprop info.ind_univ)
       && (match splayed_lc with

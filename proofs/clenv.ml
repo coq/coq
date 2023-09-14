@@ -55,13 +55,13 @@ let strip_params env sigma c =
   match EConstr.kind sigma c with
   | App (f, args) ->
     (match EConstr.kind sigma f with
-    | Const (cst,_) ->
-      (match Structures.PrimitiveProjections.find_opt cst with
-       | Some p ->
+    | Const cst ->
+      (match Structures.PrimitiveProjections.find_opt_with_relevance cst with
+       | Some (p,r) ->
          let p = Projection.make p false in
          let npars = Projection.npars p in
          if Array.length args > npars then
-           mkApp (mkProj (p, args.(npars)),
+           mkApp (mkProj (p, r, args.(npars)),
                   Array.sub args (npars+1) (Array.length args - (npars + 1)))
          else c
        | None -> c)
@@ -598,7 +598,7 @@ type proof =
 | RfHole of metavariable
 | RfGround of EConstr.t
 | RfApp of proof * proof list
-| RfProj of Projection.t * proof
+| RfProj of Projection.t * Sorts.relevance * proof
 
 exception NonLinear
 
@@ -619,9 +619,9 @@ let make_proof env sigma c =
     let args = Array.map_to_list (fun c -> make c) args in
     if is_ground f && List.for_all is_ground args then RfGround c
     else RfApp (f, args)
-  | Proj (p, a) ->
+  | Proj (p, r, a) ->
     let a = make a in
-    if is_ground a then RfGround c else RfProj (p, a)
+    if is_ground a then RfGround c else RfProj (p, r, a)
   | _ ->
     if occur_meta sigma c then error_unsupported_deep_meta ()
     else RfGround c
@@ -633,7 +633,7 @@ let rec as_constr = function
 | RfHole mv -> EConstr.mkMeta mv
 | RfGround c -> c
 | RfApp (f, args) -> EConstr.mkApp (as_constr f, Array.map_of_list as_constr args)
-| RfProj (p, c) -> EConstr.mkProj (p, as_constr c)
+| RfProj (p, r, c) -> EConstr.mkProj (p, r, as_constr c)
 
 (* Old style mk_goal primitive *)
 let mk_goal evars hyps concl =
@@ -678,9 +678,9 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
   let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
   let ans = EConstr.applist (applicand, args) in
   (acc'', conclty', sigma, ans)
-| RfProj (p, c) ->
+| RfProj (p, r, c) ->
   let (acc',cty,sigma,c') = mk_refgoals env sigma goalacc None c in
-  let c = EConstr.mkProj (p, c') in
+  let c = EConstr.mkProj (p, r, c') in
   let ty = get_type_of env sigma c in
   (acc',ty,sigma,c)
 
@@ -840,7 +840,11 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
     in
     RealCase (ci, u, params, (pnas, pbody), iv, indarg)
   | Some ps ->
-    let args = Array.map (fun p -> mkProj (Projection.make p true, indarg)) ps in
+    let args = Array.map (fun (p,r) ->
+        let r = UVars.subst_instance_relevance (Unsafe.to_instance u) r in
+        mkProj (Projection.make p true, r, indarg))
+        ps
+    in
     PrimitiveEta args
 
 let case_pf ?(with_evars=false) ~dep (indarg, typ) =

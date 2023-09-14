@@ -76,7 +76,7 @@ and cbv_stack =
   | TOP
   | APP of cbv_value list * cbv_stack
   | CASE of UVars.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
-  | PROJ of Projection.t * cbv_stack
+  | PROJ of Projection.t * Sorts.relevance * cbv_stack
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *)
@@ -148,7 +148,7 @@ let rec stack_concat stk1 stk2 =
       TOP -> stk2
     | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
     | CASE(u,pms,c,b,iv,i,s,stk1') -> CASE(u,pms,c,b,iv,i,s,stack_concat stk1' stk2)
-    | PROJ (p,stk1') -> PROJ (p,stack_concat stk1' stk2)
+    | PROJ (p,r,stk1') -> PROJ (p,r,stack_concat stk1' stk2)
 
 (* merge stacks when there is no shifts in between *)
 let mkSTACK = function
@@ -373,8 +373,8 @@ let rec reify_stack t = function
       reify_stack
         (apply_env env @@ mkCase (ci, u, pms, ty, iv, t,br))
         st
-  | PROJ (p, st) ->
-       reify_stack (mkProj (p, t)) st
+  | PROJ (p, r, st) ->
+       reify_stack (mkProj (p, r, t)) st
 
 and reify_value = function (* reduction under binders *)
   | VAL (n,t) -> lift n t
@@ -467,14 +467,14 @@ let rec norm_head info env t stack =
   | Case (ci,u,pms,p,iv,c,v) -> norm_head info env c (CASE(u,pms,p,v,iv,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
-  | Proj (p, c) ->
+  | Proj (p, r, c) ->
     let p' =
       if red_set info.reds (fCONST (Projection.constant p))
         && red_set info.reds fBETA
       then Projection.unfold p
       else p
     in
-      norm_head info env c (PROJ (p', stack))
+      norm_head info env c (PROJ (p', r, stack))
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
@@ -622,7 +622,7 @@ and cbv_stack_value info env = function
         cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor in a Projection -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
+    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,_,stk)))
         when red_set info.reds fMATCH && Projection.unfolded p ->
       let arg = List.nth args (Projection.npars p + Projection.arg p) in
         cbv_stack_value info env (strip_appl arg stk)
@@ -716,8 +716,8 @@ let rec apply_stack info t = function
         (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, map_ctx ty, iv, t,
                     Array.map map_ctx br))
         st
-  | PROJ (p, st) ->
-       apply_stack info (mkProj (p, t)) st
+  | PROJ (p, r, st) ->
+       apply_stack info (mkProj (p, r, t)) st
 
 (* performs the reduction on a constr, and returns a constr *)
 and cbv_norm_term info env t =

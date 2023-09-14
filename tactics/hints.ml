@@ -50,7 +50,7 @@ let rec head_bound sigma t = match EConstr.kind sigma t with
 | Const (c, _) -> GlobRef.ConstRef c
 | Construct (c, _) -> GlobRef.ConstructRef c
 | Var id -> GlobRef.VarRef id
-| Proj (p, _) -> GlobRef.ConstRef (Projection.constant p)
+| Proj (p, _, _) -> GlobRef.ConstRef (Projection.constant p)
 | Cast (c, _, _) -> head_bound sigma c
 | Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _
 | CoFix _ | Int _ | Float _ | Array _ -> raise Bound
@@ -70,7 +70,7 @@ let decompose_app_bound sigma t =
     | Ind (i,u) -> IndRef i, args
     | Construct (c,u) -> ConstructRef c, args
     | Var id -> VarRef id, args
-    | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
+    | Proj (p, _, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
 
 (** Compute the set of section variables that remain in the named context.

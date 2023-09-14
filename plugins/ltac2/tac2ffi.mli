@@ -218,6 +218,7 @@ val val_inductive : inductive Val.tag
 val val_constant : Constant.t Val.tag
 val val_constructor : constructor Val.tag
 val val_projection : Projection.t Val.tag
+val val_qvar : Sorts.QVar.t Val.tag
 val val_case : Constr.case_info Val.tag
 val val_binder : (Name.t Context.binder_annot * types) Val.tag
 val val_univ : Univ.Level.t Val.tag

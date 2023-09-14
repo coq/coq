@@ -276,7 +276,7 @@ let iter_constr_LR sigma f c = match EConstr.kind sigma c with
     f v; Array.iter f pms; f p; iter_invert f iv; Array.iter (fun (_, c) -> f c) b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
-  | Proj(_,a) -> f a
+  | Proj(_,_,a) -> f a
   | Array(_u,t,def,ty) -> Array.iter f t; f def; f ty
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _
      | Int _ | Float _) -> ()
@@ -337,7 +337,7 @@ let isRigid sigma c = match EConstr.kind sigma c with
     | Float _ | Array _) -> true
   | (Rel _ | Var _ | Meta _ | Evar (_, _) | Cast (_, _, _) | LetIn (_, _, _, _)
     | App (_, _) | Const (_, _) | Ind ((_, _), _) | Construct (((_, _), _), _)
-    | Proj (_, _)) -> false
+    | Proj _) -> false
 
 
 let hole_var = mkVar (Id.of_string "_")
@@ -394,7 +394,7 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env t dir p { tpat
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
       let a1, a2 = List.chop np a in KpatProj p, (applistc f a1), a2
-    | Proj (p,arg) -> KpatProj (Projection.constant p), f, a
+    | Proj (p,_,arg) -> KpatProj (Projection.constant p), f, a
     | Var _ | Ind _ | Construct _ -> KpatFixed, f, a
     | Evar (k, _) ->
       if rigid k then KpatEvar k, f, a else
@@ -443,7 +443,7 @@ let nb_cs_proj_args env ise pc f u =
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (Sorts.family (ESorts.kind ise s)))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
-  | Proj (c',_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Proj (c',_,_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -489,7 +489,7 @@ let filter_upat env sigma i0 f n u fpats =
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
 let eq_prim_proj env sigma c t = match EConstr.kind sigma t with
-  | Proj(p,_) -> Environ.QConstant.equal env (Projection.constant p) c
+  | Proj(p,_,_) -> Environ.QConstant.equal env (Projection.constant p) c
   | _ -> false
 
 let filter_upat_FO env sigma i0 f n u fpats =

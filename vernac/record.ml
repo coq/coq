@@ -393,14 +393,9 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
       (* [ccl] is defined in context [params;x:rp] *)
       (* [ccl'] is defined in context [params;x:rp;x:rp] *)
       if primitive then
-        let proj_relevant = match rci with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
         let p = Projection.Repr.make indsp
-            ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
-        mkProj (Projection.make p true, mkRel 1), Some p
+            ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
+        mkProj (Projection.make p true, rci, mkRel 1), Some (p,rci)
       else
         let ccl' = liftn 1 2 ccl in
         let p = mkLambda (x, lift 1 rp, ccl') in
@@ -426,9 +421,9 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   Declare.definition_message fid;
   let term = match p_opt with
-    | Some p ->
+    | Some (p,r) ->
       let _ = DeclareInd.declare_primitive_projection p kn in
-      mkProj (Projection.make p false,mkRel 1)
+      mkProj (Projection.make p false, r, mkRel 1)
     | None ->
       let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
       match decl with

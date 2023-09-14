@@ -1126,9 +1126,9 @@ struct
           match names, l with
           | na :: names, (LocalAssum (na', t) :: l) ->
             let t = EConstr.of_constr t in
-            let proj = Projection.make ps.(cs.cs_nargs - k) true in
+            let proj = Projection.make (fst ps.(cs.cs_nargs - k)) true in
             LocalDef ({na' with binder_name = na},
-                      lift (cs.cs_nargs - n) (mkProj (proj, cj.uj_val)), t)
+                      lift (cs.cs_nargs - n) (mkProj (proj, na'.binder_relevance, cj.uj_val)), t)
             :: aux (n+1) (k + 1) names l
           | na :: names, (decl :: l) ->
             set_name na decl :: aux (n+1) k names l

@@ -317,11 +317,11 @@ let rec extract_type env sg db j c args =
     | Ind ((kn,i),u) ->
         let s = (extract_ind env kn).ind_packets.(i).ip_sign in
         extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
-    | Proj (p,t) ->
+    | Proj (p,r,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
        if Projection.unfolded p then Tunknown
        else
-         extract_type env sg db j (EConstr.mkProj (Projection.unfold p, t)) args
+         extract_type env sg db j (EConstr.mkProj (Projection.unfold p, r, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Evar _ | Meta _ -> Taxiom (* only possible during Show Extraction *)
     | Var v ->
@@ -651,7 +651,7 @@ let rec extract_term env sg mle mlt c args =
         extract_cst_app env sg mle mlt kn args
     | Construct (cp,_) ->
         extract_cons_app env sg mle mlt cp args
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
         extract_term env sg mle mlt term args
     | Rel n ->
@@ -1027,6 +1027,15 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
 
+let relevance_of_projection_repr mib p =
+  let _mind,i = Names.Projection.Repr.inductive p in
+  match mib.mind_record with
+  | NotRecord | FakeRecord ->
+    CErrors.anomaly ~label:"relevance_of_projection" Pp.(str "not a projection")
+  | PrimRecord infos ->
+    let _,_,rs,_ = infos.(i) in
+    rs.(Names.Projection.Repr.arg p)
+
 (** Because of automatic unboxing the easy way [mk_def c] on the
    constant body of primitive projections doesn't work. We pretend
    that they are implemented by matches until someone figures out how
@@ -1050,7 +1059,7 @@ let fake_match_projection env p =
     ci_npar = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
-    ci_relevance = Declareops.relevance_of_projection_repr mib p;
+    ci_relevance = relevance_of_projection_repr mib p;
     ci_pp_info;
   }
   in
@@ -1067,13 +1076,8 @@ let fake_match_projection env p =
       let ty = Vars.substl subst (liftn 1 j ty) in
       if arg != proj_arg then
         let lab = match na.binder_name with Name id -> Label.of_id id | Anonymous -> assert false in
-        let proj_relevant = match na.binder_relevance with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
-        fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
+        fold (arg+1) (j+1) (mkProj (Projection.make kn false, na.binder_relevance, mkRel 1)::subst) rem
       else
         let p = ([|x|], liftn 1 2 ty) in
         let branch =

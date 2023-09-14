@@ -566,14 +566,15 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct l
   ci, rslty
 
 let type_of_projection env p c ct =
-  let pty = lookup_projection p env in
+  let pr, pty = lookup_projection p env in
   let (ind,u), args =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct)
   in
   assert(Ind.CanOrd.equal (Projection.inductive p) ind);
+  let pr = UVars.subst_instance_relevance u pr in
   let ty = Vars.subst_instance_constr u pty in
-  substl (c :: CList.rev args) ty
+  pr, substl (c :: CList.rev args) ty
 
 
 (* Fixpoints. *)
@@ -657,10 +658,12 @@ let rec execute env cstr =
     | Const c ->
       cstr, type_of_constant env c
 
-    | Proj (p, c) ->
+    | Proj (p, r, c) ->
       let c', ct = execute env c in
-      let cstr = if c == c' then cstr else mkProj (p,c') in
-      cstr, type_of_projection env p c' ct
+      let r', ty = type_of_projection env p c' ct in
+      assert (Sorts.relevance_equal r r');
+      let cstr = if c == c' then cstr else mkProj (p,r,c') in
+      cstr, ty
 
     (* Lambda calculus operators *)
     | App (f,args) ->
@@ -913,7 +916,8 @@ let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
 let judge_of_constant env cst = make_judge (mkConstU cst) (type_of_constant env cst)
 
 let judge_of_projection env p cj =
-  make_judge (mkProj (p,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
+  let r, ty = type_of_projection env p cj.uj_val cj.uj_type in
+  make_judge (mkProj (p,r,cj.uj_val)) ty
 
 let dest_judgev v =
   Array.map j_val v, Array.map j_type v

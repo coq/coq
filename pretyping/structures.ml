@@ -171,7 +171,7 @@ let rec of_constr env t =
   | Rel n -> Default_cs, Some n, []
   | Lambda (_, _, b) -> let patt, _, _ = of_constr env b in patt, None, []
   | Prod (_,_,_) -> Prod_cs, None, [t]
-  | Proj (p, c) -> Proj_cs (Names.Projection.repr p), None, [c]
+  | Proj (p, _, c) -> Proj_cs (Names.Projection.repr p), None, [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
   | _ -> Const_cs (fst @@ destRef t) , None, []
 
@@ -381,7 +381,7 @@ let rec decompose_projection sigma c args =
      (* Check if there is some canonical projection attached to this structure *)
      let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in
      get_nth n args
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
      let _ = GlobRef.Map.find (GlobRef.ConstRef (Names.Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
@@ -436,5 +436,11 @@ let mem c = Cmap_env.mem c !prim_table
 
 let find_opt c =
   try Some (Cmap_env.find c !prim_table) with Not_found -> None
+
+let find_opt_with_relevance (c,u) =
+  find_opt c |>
+  Option.map (fun p ->
+      let u = EConstr.Unsafe.to_instance u in
+      p, Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
 
 end

@@ -762,8 +762,10 @@ let build_beq_scheme env handle kn =
                   match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
                   | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
                   | Some eqA ->
-                     let proj = Projection.make projs.(nb_cstr_args-ndx) true in
-                     (ndx-1,env_lift',mkApp (eqA, [|mkProj (proj,mkRel 2);mkProj (proj,mkRel 1)|])::l)
+                     let proj, relevance = projs.(nb_cstr_args-ndx) in
+                     let proj = Projection.make proj true in
+                     (ndx-1,env_lift',mkApp (eqA, [|mkProj (proj, relevance, mkRel 2);
+                                                    mkProj (proj, relevance, mkRel 1)|])::l)
                 else
                   raise InternalDependencies)
                         constrs.(0).cs_args (nb_cstr_args,env_lift_recparams_fix_nonrecparams_tomatch,[])

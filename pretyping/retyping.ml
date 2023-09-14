@@ -179,7 +179,7 @@ let retype ?(polyprop=true) sigma =
     | App(f,args) ->
         strip_outer_cast sigma
           (subst_type env sigma (type_of env f) (Array.to_list args))
-    | Proj (p,c) ->
+    | Proj (p,_,c) ->
        let ty = type_of env c in
        EConstr.of_constr (try
            Inductiveops.type_of_projection_knowing_arg env sigma p c ty
@@ -347,11 +347,13 @@ let relevance_of_term env sigma c =
         let u = EInstance.kind sigma u in
         Relevanceops.relevance_of_constant env (c,u)
       | Ind _ -> Sorts.Relevant
-      | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
+      | Construct (c,u) ->
+        let u = Unsafe.to_instance u in
+        Relevanceops.relevance_of_constructor env (c,u)
       | Case (ci, _, _, _, _, _, _) -> ci.ci_relevance
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
-      | Proj (p, _) -> Relevanceops.relevance_of_projection env p
+      | Proj (p, r, _) -> r
       | Int _ | Float _ | Array _ -> Sorts.Relevant
       | Meta _ | Evar _ -> Sorts.Relevant
 

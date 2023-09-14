@@ -599,8 +599,9 @@ let lookup_projection p env =
   match mib.mind_record with
   | NotRecord | FakeRecord -> anomaly ~label:"lookup_projection" Pp.(str "not a projection")
   | PrimRecord infos ->
-    let _,_,_,typs = infos.(i) in
-    typs.(Projection.arg p)
+    let _,_,rs,typs = infos.(i) in
+    let arg = Projection.arg p in
+    rs.(arg), typs.(arg)
 
 let get_projection env ind ~proj_arg =
   let mib = lookup_mind (fst ind) env in

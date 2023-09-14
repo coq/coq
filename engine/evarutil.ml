@@ -138,7 +138,7 @@ let head_evar sigma c =
     | Case (_, _, _, _, _, c, _) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
-    | Proj (p, c)    -> hrec c
+    | Proj (_, _, c)    -> hrec c
     | _              -> raise NoHeadEvar
   in
   hrec c

@@ -320,9 +320,10 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let ty = Vars.subst_instance_constr (EConstr.Unsafe.to_instance u) tys.(p) in
       substl (c :: List.rev_map EConstr.Unsafe.to_constr pars) ty
     in
-    let p = Declareops.inductive_make_projection ind mib ~proj_arg:p in
+    let p, r = Declareops.inductive_make_projection ind mib ~proj_arg:p in
     let p = Projection.make p true in
-    nf_stk env sigma (mkProj (p, c)) ty stk
+    let r = UVars.subst_instance_relevance (EConstr.Unsafe.to_instance u) r in
+    nf_stk env sigma (mkProj (p, r, c)) ty stk
 
 and nf_predicate env sigma ind mip params v pctx =
   (* TODO: we should expose some variant of Vm.mkrel_vstack *)

@@ -83,7 +83,7 @@ let rec decompose_term env sigma t =
         let u = EInstance.kind sigma u in
         let canon_const = Constant.make1 (Constant.canonical c) in
           ATerm.mkSymb (Constr.mkConstU (canon_const,u))
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
         let canon_mind kn = MutInd.make1 (MutInd.canonical kn) in
         let p' = Projection.map canon_mind p in
         let c = Retyping.expand_projection env sigma p' c [] in

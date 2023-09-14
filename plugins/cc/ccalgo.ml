@@ -510,10 +510,10 @@ let rec canonize_name c =
           mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
           mkApp (func ct,Array.Smart.map func l)
-      | Proj(p,c) ->
+      | Proj(p,r,c) ->
         let p' = Projection.map (fun kn ->
           MutInd.make1 (MutInd.canonical kn)) p in
-          (mkProj (p', func c))
+          (mkProj (p', r, func c))
       | _ -> c
 
 (* rebuild a term from a pattern and a substitution *)

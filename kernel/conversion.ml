@@ -52,7 +52,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
-    | (Zproj _p1::s1, Zproj _p2::s2) ->
+    | (Zproj _::s1, Zproj _::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
     | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
@@ -102,7 +102,7 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (map_lift l a) pstk)
-            | (Zproj p, (l,pstk)) ->
+            | (Zproj (p,_), (l,pstk)) ->
                 (l, Zlproj (p,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
@@ -339,7 +339,7 @@ let rec compare_under e1 c1 e2 c2 =
     Int.equal len (Array.length l2)
     && compare_under e1 c1 e2 c2
     && Array.equal_norefl (fun c1 c2 -> compare_under e1 c1 e2 c2) l1 l2
-  | Proj (p1,c1), Proj (p2,c2) ->
+  | Proj (p1,_,c1), Proj (p2,_,c2) ->
     Projection.CanOrd.equal p1 p2 && compare_under e1 c1 e2 c2
   | Evar _, Evar _ -> false
   | Const (c1,u1), Const (c2,u2) ->
@@ -456,15 +456,15 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
         )
 
-    | (FProj (p1,c1), FProj (p2, c2)) ->
+    | (FProj (p1,r1,c1), FProj (p2, r2, c2)) ->
       (* Projections: prefer unfolding to first-order unification,
          which will happen naturally if the terms c1, c2 are not in constructor
          form *)
-      (match unfold_projection infos.cnv_inf p1 with
+      (match unfold_projection infos.cnv_inf p1 r1 with
       | Some s1 ->
         eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
       | None ->
-        match unfold_projection infos.cnv_inf p2 with
+        match unfold_projection infos.cnv_inf p2 r2 with
         | Some s2 ->
           eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
         | None ->
@@ -477,8 +477,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           else (* Two projections in WHNF: unfold *)
             raise NotConvertible)
 
-    | (FProj (p1,c1), t2) ->
-      begin match unfold_projection infos.cnv_inf p1 with
+    | (FProj (p1,r1,c1), t2) ->
+      begin match unfold_projection infos.cnv_inf p1 r1 with
        | Some s1 ->
          eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
        | None ->
@@ -493,8 +493,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          end
       end
 
-    | (t1, FProj (p2,c2)) ->
-      begin match unfold_projection infos.cnv_inf p2 with
+    | (t1, FProj (p2,r2,c2)) ->
+      begin match unfold_projection infos.cnv_inf p2 r2 with
        | Some s2 ->
          eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
        | None ->
@@ -568,10 +568,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
         | None ->
           (match c2 with
-           | FConstruct ((ind2,_j2),_u2) ->
+           | FConstruct ((ind2,_j2),u2) ->
              (try
                 let v2, v1 =
-                  eta_expand_ind_stack (info_env infos.cnv_inf) ind2 hd2 v2 (snd appr1)
+                  eta_expand_ind_stack (info_env infos.cnv_inf) (ind2,u2) hd2 v2 (snd appr1)
                 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
               with Not_found -> raise NotConvertible)
            | _ -> raise NotConvertible)
@@ -586,9 +586,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None ->
           match c1 with
-          | FConstruct ((ind1,_j1),_u1) ->
+          | FConstruct ((ind1,_j1),u1) ->
             (try let v1, v2 =
-                   eta_expand_ind_stack (info_env infos.cnv_inf) ind1 hd1 v1 (snd appr2)
+                   eta_expand_ind_stack (info_env infos.cnv_inf) (ind1,u1) hd1 v1 (snd appr2)
                in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
              with Not_found -> raise NotConvertible)
           | _ -> raise NotConvertible
@@ -630,17 +630,17 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       else raise NotConvertible
 
     (* Eta expansion of records *)
-    | (FConstruct ((ind1,_j1),_u1), _) ->
+    | (FConstruct ((ind1,_j1),u1), _) ->
       (try
          let v1, v2 =
-            eta_expand_ind_stack (info_env infos.cnv_inf) ind1 hd1 v1 (snd appr2)
+            eta_expand_ind_stack (info_env infos.cnv_inf) (ind1,u1) hd1 v1 (snd appr2)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
-    | (_, FConstruct ((ind2,_j2),_u2)) ->
+    | (_, FConstruct ((ind2,_j2),u2)) ->
       (try
          let v2, v1 =
-            eta_expand_ind_stack (info_env infos.cnv_inf) ind2 hd2 v2 (snd appr1)
+            eta_expand_ind_stack (info_env infos.cnv_inf) (ind2,u2) hd2 v2 (snd appr1)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 

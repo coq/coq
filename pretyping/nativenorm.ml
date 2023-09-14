@@ -185,8 +185,8 @@ let branch_of_switch lvl ans bs =
   Array.init (Array.length tbl) branch
 
 let get_proj env (ind, proj_arg) =
-  let p = Environ.get_projection env ind ~proj_arg in
-  Projection.make p true
+  let p, r = Environ.get_projection env ind ~proj_arg in
+  Projection.make p true, r
 
 let rec nf_val env sigma v typ =
   match kind_of_value v with
@@ -294,9 +294,11 @@ and nf_atom env sigma atom =
   | Asort s -> mkSort s
   | Avar id -> mkVar id
   | Aproj (p, c) ->
-      let c = nf_accu env sigma c in
-      let p = get_proj env p in
-      mkProj(p, c)
+      let c, cty = nf_accu_type env sigma c in
+      let p, r = get_proj env p in
+      let (_, u), _ = find_rectype_a env sigma (EConstr.of_constr cty) in
+      let r = UVars.subst_instance_relevance u r in
+      mkProj(p, r, c)
   | _ -> fst (nf_atom_type env sigma atom)
 
 and nf_atom_type env sigma atom =
@@ -372,7 +374,7 @@ and nf_atom_type env sigma atom =
   | Aproj(p,c) ->
       let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
-      let p = get_proj env p in
+      let p, _ = get_proj env p in
       let uj = Typeops.judge_of_projection env p cj in
       uj.uj_val, uj.uj_type
 

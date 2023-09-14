@@ -87,7 +87,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of Projection.t * fconstr
+  | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
   | FCoFix of cofixpoint * usubs
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
@@ -157,7 +157,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of Projection.Repr.t
+  | Zproj of Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
@@ -477,8 +477,8 @@ let rec to_constr (lfts, usubst as ulfts) v =
     | FApp (f,ve) ->
         mkApp (to_constr ulfts f,
                Array.Fun1.map to_constr ulfts ve)
-    | FProj (p,c) ->
-        mkProj (p,to_constr ulfts c)
+    | FProj (p,r,c) ->
+        mkProj (p,usubst_relevance ulfts r,to_constr ulfts c)
 
     | FLambda (len, tys, f, e) ->
       if is_subs_id (fst e) && is_lift_id lfts then
@@ -577,9 +577,9 @@ let rec zip m stk =
         let t = FCaseT(ci, u, pms, p, m, br, e) in
         let mark = (neutr m.mark) in
         zip {mark; term=t} s
-    | Zproj p :: s ->
+    | Zproj (p,r) :: s ->
         let mark = (neutr m.mark) in
-        zip {mark; term=FProj(Projection.make p true,m)} s
+        zip {mark; term=FProj(Projection.make p true,r,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -839,7 +839,7 @@ let get_branch infos depth ci u pms (ind, c) br e args =
     @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
-let eta_expand_ind_stack env ind m s (f, s') =
+let eta_expand_ind_stack env (ind,u) m s (f, s') =
   let open Declarations in
   let mib = lookup_mind (fst ind) env in
   (* disallow eta-exp for non-primitive records *)
@@ -853,9 +853,9 @@ let eta_expand_ind_stack env ind m s (f, s') =
     let (depth, args, _s) = strip_update_shift_app m s in
     (** Try to drop the params, might fail on partially applied constructors. *)
     let argss = try_drop_parameters depth pars args in
-    let hstack = Array.map (fun p ->
+    let hstack = Array.map (fun (p,r) ->
         { mark = Red; (* right can't be a constructor though *)
-          term = FProj (Projection.make p true, right) })
+          term = FProj (Projection.make p true, UVars.subst_instance_relevance u r, right) })
         projs
     in
     argss, [Zapp hstack]
@@ -899,10 +899,10 @@ let contract_fix_vect fix =
   in
   (on_fst (fun env -> mk_subs env 0) env, thisbody)
 
-let unfold_projection info p =
+let unfold_projection info p r =
   if red_projection info.i_flags p
   then
-    Some (Zproj (Projection.repr p))
+    Some (Zproj (Projection.repr p, r))
   else None
 
 (************************************************************************)
@@ -1229,10 +1229,6 @@ let is_irrelevant_constructor infos (ind,_) = match infos.i_cache.i_mode with
 | Conversion -> Indset_env.mem ind infos.i_cache.i_env.irr_inds
 | Reduction -> false
 
-let is_irrelevant_projection infos p = match infos.i_cache.i_mode with
-| Conversion -> not @@ Projection.Repr.relevant @@ Projection.repr p
-| Reduction -> false
-
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
    atom or a subterm that may produce a redex (abstraction,
@@ -1257,11 +1253,11 @@ let rec knh info m stk =
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
-    | FProj (p,c) ->
-      if is_irrelevant_projection info p then
+    | FProj (p,r,c) ->
+      if is_irrelevant info r then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-      (match unfold_projection info p with
+      (match unfold_projection info p r with
        | None -> (m, stk)
        | Some s -> knh info c (s :: zupdate info m stk))
 
@@ -1293,7 +1289,12 @@ and knht info e t stk =
         knh info { mark = Cstr; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel (fst e) n) stk
-    | Proj (p, c) -> knh info { mark = Red; term = FProj (p, mk_clos e c) } stk
+    | Proj (p, r, c) ->
+      let r = usubst_relevance e r in
+      if is_irrelevant info r then
+        (mk_irrelevant, skip_irrelevant_stack info stk)
+      else
+        knh info { mark = Red; term = FProj (p, r, mk_clos e c) } stk
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
     | CoFix cfx ->
       { mark = Cstr; term = FCoFix (cfx,e) }, stk
@@ -1359,7 +1360,7 @@ let rec knr info tab m stk =
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info tab fxe fxbd stk'
-        | (depth, args, Zproj p::s) when use_match ->
+        | (depth, args, Zproj (p,_)::s) when use_match ->
             let rargs = drop_parameters depth (Projection.Repr.npars p) args in
             let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
             kni info tab rarg s
@@ -1554,8 +1555,8 @@ and norm_head info tab m =
           mkFix (n, (na, ftys, fbds))
       | FEvar(ev, args, env, repack) ->
           repack (ev, List.map (fun a -> klt info tab env a) args)
-      | FProj (p,c) ->
-        mkProj (p, kl info tab c)
+      | FProj (p,r,c) ->
+        mkProj (p, r, kl info tab c)
       | FArray (u, a, ty) ->
         let a, def = Parray.to_array a in
         let a = Array.map (kl info tab) a in
@@ -1582,8 +1583,8 @@ and zip_term info tab m stk = match stk with
     let t = mkCase(ci, u, Array.map (fun c -> klt info tab e c) pms, zip_ctx p,
       NoInvert, m, Array.map zip_ctx br) in
     zip_term info tab t s
-| Zproj p::s ->
-    let t = mkProj (Projection.make p true, m) in
+| Zproj (p,r)::s ->
+    let t = mkProj (Projection.make p true, r, m) in
     zip_term info tab t s
 | Zfix(fx,par)::s ->
     let h = mkApp(zip_term info tab (kl info tab fx) par,[|m|]) in

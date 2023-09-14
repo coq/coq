@@ -854,7 +854,7 @@ and detype_r d flags avoid env sigma t =
       mkapp (detype d flags avoid env sigma f)
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
-    | Proj (p,c) ->
+    | Proj (p,_,c) ->
       if Projection.unfolded p && print_unfolded_primproj_asmatch () then
         let c = detype d flags avoid env sigma c in
         let id = Label.to_id @@ Projection.label p in

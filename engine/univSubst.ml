@@ -237,6 +237,11 @@ let nf_evars_and_universes_opt_subst fevar fqual funiv c =
       let rc' = aux_rec rc in
       if rc' == rc then c
       else mkCoFix (i, rc')
+    | Proj (p, r, v) ->
+      let r' = frel r in
+      let v' = aux v in
+      if r' == r && v' == v then  c
+      else mkProj (p, r', v')
     | _ -> Constr.map aux c
   and aux_rec ((nas, tys, bds) as rc) =
     let nas' = Array.Smart.map (fun na -> nf_binder_annot frel na) nas in

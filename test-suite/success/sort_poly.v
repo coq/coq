@@ -136,8 +136,13 @@ Module Inductives.
   Definition R5f1_sprop (A:SProp) (r:R5 A) : A := let (f) := r in f.
   Fail Definition R5f1_prop (A:Prop) (r:R5 A) : A := let (f) := r in f.
 
-  (* TODO projection with variable relevance *)
-  Fail Record R6@{s| |} (A:Type@{s|Set}) := { R6f1 : A; R6f2 : nat }.
+  Record R6@{s| |} (A:Type@{s|Set}) := { R6f1 : A; R6f2 : nat }.
+  Check fun (A:SProp) (x y : R6 A) =>
+          eq_refl : Conversion.box _ x.(R6f1 _) = Conversion.box _ y.(R6f1 _).
+  Fail Check fun (A:Prop) (x y : R6 A) =>
+          eq_refl : Conversion.box _ x.(R6f1 _) = Conversion.box _ y.(R6f1 _).
+  Fail Check fun (A:SProp) (x y : R6 A) =>
+          eq_refl : Conversion.box _ x.(R6f2 _) = Conversion.box _ y.(R6f2 _).
 
   #[projections(primitive=no)] Record R7@{s| |} (A:Type@{s|Set}) := { R7f1 : A; R7f2 : nat }.
   Check R7@{SProp|} : SProp -> Set.

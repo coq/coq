@@ -39,7 +39,7 @@ type fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of Projection.t * fconstr
+  | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
   | FCoFix of cofixpoint * usubs
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
@@ -64,7 +64,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of Projection.Repr.t
+  | Zproj of Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
@@ -127,7 +127,7 @@ val create_tab : unit -> clos_tab
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
 val info_univs : clos_infos -> UGraph.t
-val unfold_projection : clos_infos -> Projection.t -> stack_member option
+val unfold_projection : clos_infos -> Projection.t -> Sorts.relevance -> stack_member option
 
 val push_relevance : clos_infos -> 'b Context.binder_annot -> clos_infos
 val push_relevances : clos_infos -> 'b Context.binder_annot array -> clos_infos
@@ -168,7 +168,7 @@ val eta_expand_stack : clos_infos -> Name.t Context.binder_annot -> stack -> sta
     @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
-val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
+val eta_expand_ind_stack : env -> pinductive -> fconstr -> stack ->
    (fconstr * stack) -> stack * stack
 
 (** Conversion auxiliary functions to do step by step normalisation *)

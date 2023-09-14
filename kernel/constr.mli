@@ -132,7 +132,7 @@ val map_puniverses : ('a -> 'b) -> 'a UVars.puniverses -> 'b UVars.puniverses
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
-val mkProj : (Projection.t * constr) -> constr
+val mkProj : (Projection.t * Sorts.relevance * constr) -> constr
 
 (** Inductive types *)
 
@@ -281,7 +281,8 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
      The names in the [brs] are the names of the variables bound in the respective branch. *)
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * 'constr
+  | Proj      of Projection.t * Sorts.relevance * 'constr
+  (** The relevance is the relevance of the whole term *)
   | Int       of Uint63.t
   | Float     of Float64.t
   | Array     of 'univs * 'constr array * 'constr * 'types
@@ -391,7 +392,7 @@ where [info] is pretty-printing information *)
 val destCase : constr -> case
 
 (** Destructs a projection *)
-val destProj : constr -> Projection.t * constr
+val destProj : constr -> Projection.t * Sorts.relevance * constr
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
    [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}

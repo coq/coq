@@ -209,7 +209,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       | None -> raise e
       | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
     end
-  | FProj (_,c) ->
+  | FProj (_,_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
   | FLambda _ ->

@@ -330,15 +330,16 @@ let judge_of_variable env id =
   Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
 
 let judge_of_projection env sigma p cj =
-  let pty = lookup_projection p env in
+  let pr, pty = lookup_projection p env in
   let (ind,u), args =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
   let u = EInstance.kind sigma u in
+  let pr = UVars.subst_instance_relevance u pr in
   let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
-  {uj_val = EConstr.mkProj (p,cj.uj_val);
+  {uj_val = EConstr.mkProj (p,pr,cj.uj_val);
    uj_type = ty}
 
 let judge_of_abstraction env sigma name var j =
@@ -529,7 +530,7 @@ let rec execute env sigma cstr =
         | QSort _ as s -> sigma, judge_of_sort s
       end
 
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
       let sigma, cj = execute env sigma c in
       sigma, judge_of_projection env sigma p cj
 
@@ -759,8 +760,8 @@ let rec recheck_against env sigma good c =
       then assume_unchanged_type sigma
       else maybe_changed (judge_of_case env sigma case ci pj iv cj lfj)
 
-    | Proj (gp, gc),
-      Proj (p, c) ->
+    | Proj (gp, _, gc),
+      Proj (p, _, c) ->
       if not (QProjection.equal env gp p) then default ()
       else
         let sigma, changed, c = recheck_against env sigma gc c in

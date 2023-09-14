@@ -214,7 +214,7 @@ let expand_constr cache modlist top_abst_subst c =
            with
             | Not_found -> Constr.map_with_binders succ substrec k c)
 
-      | Proj (p, c') ->
+      | Proj (p, r, c') ->
           let ind = Names.Projection.inductive p in
           let p' =
             try
@@ -222,7 +222,7 @@ let expand_constr cache modlist top_abst_subst c =
               discharge_proj exp p
             with Not_found -> p in
           let c'' = substrec k c' in
-          if p == p' && c' == c'' then c else mkProj (p', c'')
+          if p == p' && c' == c'' then c else mkProj (p', r, c'')
 
       | Var id ->
           (try

@@ -63,12 +63,14 @@ let apply_coercion_args env sigma isproj bo ty arg arg_ty nparams =
       with Evarconv.UnableToUnify _ -> raise NoCoercion in
     sigma, params @ [arg], subst1 arg c2 in
   let bo, args =
-    match isproj with None -> bo, args | Some p ->
+    match isproj with
+    | None -> bo, args
+    | Some (p,r) ->
       let npars = Projection.Repr.npars p in
       let p = Projection.make p false in
       let args = List.skipn npars args in
       let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-      mkProj (p, hd), tl in
+      mkProj (p, r, hd), tl in
   sigma, applist (bo, args), params, typ
 
 (* appliquer le chemin de coercions de patterns p *)
@@ -359,6 +361,7 @@ type coercion_trace =
   | IdCoe
   | PrimProjCoe of {
       proj : Projection.Repr.t;
+      relevance : Sorts.relevance;
       args : econstr list;
       previous : coercion_trace;
     }
@@ -376,11 +379,11 @@ let empty_coercion_trace = IdCoe
 let rec reapply_coercions sigma trace c = match trace with
   | IdCoe -> c
   | ReplaceCoe c -> c
-  | PrimProjCoe { proj; args; previous } ->
+  | PrimProjCoe { proj; relevance; args; previous } ->
     let c = reapply_coercions sigma previous c in
     let args = args@[c] in
     let head, args = match args with [] -> assert false | hd :: tl -> hd, tl in
-    applist (mkProj (Projection.make proj false, head), args)
+    applist (mkProj (Projection.make proj false, relevance, head), args)
   | Coe {head; args; previous} ->
     let c = reapply_coercions sigma previous c in
     let args = args@[c] in
@@ -405,6 +408,7 @@ let apply_coercion env sigma p h hty =
          let isproj = i.coe_is_projection in
          let sigma, c = Evd.fresh_global env sigma i.coe_value in
          let u = instance_of_global_constr sigma c in
+         let isproj = Option.map (fun p -> p, Relevanceops.relevance_of_projection_repr env (p,u)) isproj in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
          let sigma, j', args, jty =
            apply_coercion_args env sigma isproj c typ j jty i.coe_param in
@@ -412,9 +416,9 @@ let apply_coercion env sigma p h hty =
            if isid then trace
            else match isproj with
            | None -> Coe {head=c;args;previous=trace}
-           | Some proj ->
-              let args = List.skipn (Projection.Repr.npars proj) args in
-              PrimProjCoe {proj; args; previous=trace } in
+           | Some (proj,relevance) ->
+             let args = List.skipn (Projection.Repr.npars proj) args in
+             PrimProjCoe {proj; args; relevance; previous=trace } in
          (if isid then j else j'), jty, trace, sigma)
       (h, hty, IdCoe, sigma) p
   in sigma, j, jty, trace
@@ -471,7 +475,7 @@ type delayed_app_body = {
   mutable head : constr;
   mutable rev_args : constr list;
   args_len : int;
-  proj : Projection.Repr.t option
+  proj : (Projection.Repr.t * Sorts.relevance) option
 }
 
 let force_app_body ({head;rev_args} as body) =
@@ -489,11 +493,11 @@ let push_arg {head;rev_args;args_len;proj} arg =
       args_len=args_len+1;
       proj=None;
     }
-  | Some p ->
+  | Some (p,r) ->
     let npars = Projection.Repr.npars p in
     if Int.equal args_len npars then
       {
-        head = mkProj (Projection.make p false, arg);
+        head = mkProj (Projection.make p false, r, arg);
         rev_args=[];
         args_len=0;
         proj=None;
@@ -508,8 +512,8 @@ let push_arg {head;rev_args;args_len;proj} arg =
 
 let start_app_body sigma head =
   let proj = match EConstr.kind sigma head with
-    | Const (p,_) ->
-      Structures.PrimitiveProjections.find_opt p
+    | Const (p,u) ->
+      Structures.PrimitiveProjections.find_opt_with_relevance (p,u)
     | _ -> None
   in
   {head; rev_args=[]; args_len=0; proj}

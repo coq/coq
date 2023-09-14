@@ -73,7 +73,7 @@ and kind_of_head env sigma t =
   | LetIn _ -> assert false
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b
-  | Proj (p,c) -> RigidHead RigidOther
+  | Proj (p,_,c) -> RigidHead RigidOther
 
   | Case (_,_,_,_,_,c,_) -> aux k [] c true
   | Int _ | Float _ | Array _ -> ConstructorHead

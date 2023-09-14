@@ -63,7 +63,7 @@ module Stack : sig
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t
+  | Proj of Projection.t * Sorts.relevance
   | Fix of EConstr.fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
   and t = member list

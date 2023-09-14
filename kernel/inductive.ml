@@ -966,7 +966,7 @@ let rec subterm_specif renv stack t =
       (* Metas and evars are considered OK *)
     | (Meta _|Evar _) -> Dead_code
 
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
       let subt = subterm_specif renv stack c in
       (match subt with
        | Subterm (_, _s, wf) ->
@@ -1286,7 +1286,7 @@ let check_one_fix renv recpos trees def =
         | Ind _ | Construct _ ->
             check_rec_call_state renv NoNeedReduce stack rs (fun () -> None)
 
-        | Proj (p, c) ->
+        | Proj (p, _, c) ->
             begin
               let needreduce', rs = check_rec_call renv rs c in
               check_rec_call_state renv needreduce' stack rs (fun () ->

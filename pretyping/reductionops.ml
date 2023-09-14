@@ -188,7 +188,7 @@ sig
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t
+  | Proj of Projection.t * Sorts.relevance
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
@@ -241,7 +241,7 @@ struct
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t
+  | Proj of Projection.t * Sorts.relevance
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
@@ -257,7 +257,7 @@ struct
        str "ZCase(" ++
          prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
-    | Proj p  ->
+    | Proj (p,_)  ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
     | Fix (f,args) ->
        str "ZFix(" ++ Constr.debug_print_fix pr_c f
@@ -294,7 +294,7 @@ struct
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case _ :: s1, Case _::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
-      | (Proj (p)::s1, Proj(p2)::s2) ->
+      | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
       | (Fix(_,a1)::s1, Fix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -315,7 +315,7 @@ struct
       | Case ((_,_,pms1,(_, t1),_,a1)) :: q1, Case ((_,_,pms2, (_, t2),_,a2)) :: q2 ->
         let f' o (_, t1) (_, t2) = f o t1 t2 in
         aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
-      | Proj (p1) :: q1, Proj (p2) :: q2 ->
+      | Proj (p1,_) :: q1, Proj (p2,_) :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1) :: q1, Fix ((_,(_,a2,b2)),s2) :: q2 ->
         let o' = aux (Array.fold_left2 f (Array.fold_left2 f o b1 b2) a1 a2) (List.rev s1) (List.rev s2) in
@@ -402,7 +402,7 @@ struct
     | f, (Case (ci,u,pms,rt,iv,br)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
-  | f, (Proj (p)::s) -> zip (mkProj (p,f),s)
+  | f, (Proj (p,r)::s) -> zip (mkProj (p,r,f),s)
   | f, (Primitive (p,c,args,kargs)::s) ->
       zip (mkConstU c, args @ append_app [|f|] s)
   in
@@ -731,8 +731,8 @@ let whd_state_gen flags env sigma =
           whrec (a,Stack.Primitive(p,const,before,kargs)::after)
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
-    | Proj (p, c) when RedFlags.red_projection flags p ->
-      let stack' = (c, Stack.Proj (p) :: stack) in
+    | Proj (p, r, c) when RedFlags.red_projection flags p ->
+      let stack' = (c, Stack.Proj (p,r) :: stack) in
       whrec stack'
 
     | LetIn (_,b,_,c) when RedFlags.red_set flags RedFlags.fZETA ->
@@ -764,7 +764,7 @@ let whd_state_gen flags env sigma =
         |args, (Stack.Case case::s') when use_match ->
           let r = apply_branch env sigma cstr args case in
           whrec (r, s')
-        |args, (Stack.Proj (p)::s') when use_match ->
+        |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
@@ -828,8 +828,8 @@ let local_whd_state_gen flags env sigma =
         whrec (apply_subst [a] sigma c m)
       | _ -> s)
 
-    | Proj (p,c) when RedFlags.red_projection flags p ->
-      (whrec (c, Stack.Proj (p) :: stack))
+    | Proj (p,r,c) when RedFlags.red_projection flags p ->
+      (whrec (c, Stack.Proj (p,r) :: stack))
 
     | Case (ci,u,pms,p,iv,d,lf) ->
       whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
@@ -853,7 +853,7 @@ let local_whd_state_gen flags env sigma =
         |args, (Stack.Case case :: s') when use_match ->
           let r = apply_branch env sigma cstr args case in
           whrec (r, s')
-        |args, (Stack.Proj (p) :: s') when use_match ->
+        |args, (Stack.Proj (p,_) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x,args) in
@@ -1458,7 +1458,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
         | Some (t_o, args) when isConstruct sigma t_o -> whrec (t_o, Stack.append_app args stack')
         | (Some _ | None) -> s
         end
-      |args, (Stack.Proj p :: stack'') ->
+      |args, (Stack.Proj (p,_) :: stack'') ->
         begin match whd_opt (t, args) with
         | Some (t_o, args) when isConstruct sigma t_o ->
           whrec (args.(Projection.npars p + Projection.arg p), stack'')

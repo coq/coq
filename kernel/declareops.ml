@@ -303,44 +303,26 @@ let inductive_make_projection ind mib ~proj_arg =
   | NotRecord | FakeRecord ->
     CErrors.anomaly Pp.(str "inductive_make_projection: not a primitive record.")
   | PrimRecord infos ->
-    let _, labs, relevances, _ = infos.(snd ind) in
-    let proj_relevant = match relevances.(proj_arg) with
-    | Sorts.Irrelevant -> false
-    | Sorts.Relevant -> true
-    | Sorts.RelevanceVar _ -> assert false
-    in
+    let _, labs, rs, _ = infos.(snd ind) in
     if proj_arg < 0 || Array.length labs <= proj_arg
     then CErrors.anomaly Pp.(str "inductive_make_projection: invalid proj_arg.");
-    Names.Projection.Repr.make ind
-      ~proj_relevant
+    let p = Names.Projection.Repr.make ind
       ~proj_npars:mib.mind_nparams
       ~proj_arg
       labs.(proj_arg)
+    in
+    p, rs.(proj_arg)
 
 let inductive_make_projections ind mib =
   match mib.mind_record with
   | NotRecord | FakeRecord -> None
   | PrimRecord infos ->
     let _, labs, relevances, _ = infos.(snd ind) in
-    let projs = Array.mapi (fun proj_arg lab ->
-        let proj_relevant = match relevances.(proj_arg) with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        Names.Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg lab)
-        labs
+    let projs = Array.map2_i (fun proj_arg lab r ->
+        Names.Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab, r)
+        labs relevances
     in
     Some projs
-
-let relevance_of_projection_repr mib p =
-  let _mind,i = Names.Projection.Repr.inductive p in
-  match mib.mind_record with
-  | NotRecord | FakeRecord ->
-    CErrors.anomaly ~label:"relevance_of_projection" Pp.(str "not a projection")
-  | PrimRecord infos ->
-    let _,_,rs,_ = infos.(i) in
-    rs.(Names.Projection.Repr.arg p)
 
 (** {6 Hash-consing of inductive declarations } *)
 

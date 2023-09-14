@@ -2219,7 +2219,7 @@ let compile_deps env sigma prefix init t =
       let const_updates = Cmap_env.add c upd const_updates in
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),_u) -> compile_mind_deps env prefix init mind
-  | Proj (p,c) ->
+  | Proj (p,_,c) ->
     let init = compile_mind_deps env prefix init (Projection.mind p) in
     aux env lvl init c
   | Case (ci, _u, _pms, _p, _iv, _c, _ac) ->

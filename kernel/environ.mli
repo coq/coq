@@ -244,12 +244,12 @@ val is_primitive_type : env -> Constant.t -> bool
 (** {6 Primitive projections} *)
 
 (** Checks that the number of parameters is correct. *)
-val lookup_projection : Names.Projection.t -> env -> types
+val lookup_projection : Names.Projection.t -> env -> Sorts.relevance * types
 
 (** Anomaly when not a primitive record or invalid proj_arg. *)
-val get_projection : env -> inductive -> proj_arg:int -> Names.Projection.Repr.t
+val get_projection : env -> inductive -> proj_arg:int -> Names.Projection.Repr.t * Sorts.relevance
 
-val get_projections : env -> inductive -> Names.Projection.Repr.t array option
+val get_projections : env -> inductive -> (Names.Projection.Repr.t * Sorts.relevance) array option
 
 (** {5 Inductive types } *)
 val lookup_mind_key : MutInd.t -> env -> mind_key

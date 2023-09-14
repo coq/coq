@@ -17,6 +17,26 @@ Ltac2 @ external type : constr -> constr := "coq-core.plugins.ltac2" "constr_typ
 Ltac2 @ external equal : constr -> constr -> bool := "coq-core.plugins.ltac2" "constr_equal".
 (** Strict syntactic equality: only up to α-conversion and evar expansion *)
 
+Module Binder.
+
+Ltac2 Type relevance_var.
+Ltac2 Type relevance := [ Relevant | Irrelevant | RelevanceVar (relevance_var) ].
+
+Ltac2 @ external make : ident option -> constr -> binder := "coq-core.plugins.ltac2" "constr_binder_make".
+(** Create a binder given the name and the type of the bound variable.
+    Fails if the type is not a type in the current goal. *)
+
+Ltac2 @ external unsafe_make : ident option -> relevance -> constr -> binder := "coq-core.plugins.ltac2" "constr_binder_unsafe_make".
+(** Create a binder given the name and the type and relevance of the bound variable. *)
+
+Ltac2 @ external name : binder -> ident option := "coq-core.plugins.ltac2" "constr_binder_name".
+(** Retrieve the name of a binder. *)
+
+Ltac2 @ external type : binder -> constr := "coq-core.plugins.ltac2" "constr_binder_type".
+(** Retrieve the type of a binder. *)
+
+End Binder.
+
 Module Unsafe.
 
 (** Low-level access to kernel terms. Use with care! *)
@@ -45,7 +65,7 @@ Ltac2 Type kind := [
 | Case (case, constr, case_invert, constr, constr array)
 | Fix (int array, int, binder array, constr array)
 | CoFix (int, binder array, constr array)
-| Proj (projection, constr)
+| Proj (projection, Binder.relevance, constr)
 | Uint63 (uint63)
 | Float (float)
 | Array (instance, constr array, constr, constr)
@@ -104,25 +124,6 @@ Module Case.
 End Case.
 
 End Unsafe.
-
-Module Binder.
-
-Ltac2 Type relevance := [ Relevant | Irrelevant ].
-
-Ltac2 @ external make : ident option -> constr -> binder := "coq-core.plugins.ltac2" "constr_binder_make".
-(** Create a binder given the name and the type of the bound variable.
-    Fails if the type is not a type in the current goal. *)
-
-Ltac2 @ external unsafe_make : ident option -> relevance -> constr -> binder := "coq-core.plugins.ltac2" "constr_binder_unsafe_make".
-(** Create a binder given the name and the type and relevance of the bound variable. *)
-
-Ltac2 @ external name : binder -> ident option := "coq-core.plugins.ltac2" "constr_binder_name".
-(** Retrieve the name of a binder. *)
-
-Ltac2 @ external type : binder -> constr := "coq-core.plugins.ltac2" "constr_binder_type".
-(** Retrieve the type of a binder. *)
-
-End Binder.
 
 Module Cast.
 
@@ -183,7 +184,7 @@ Ltac2 is_constructor(c: constr) :=
 
 Ltac2 is_proj(c: constr) :=
   match Unsafe.kind c with
-  | Unsafe.Proj _ _ => true
+  | Unsafe.Proj _ _ _ => true
   | _ => false
   end.
 

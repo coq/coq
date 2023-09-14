@@ -1720,9 +1720,9 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
       | Some proj ->
           let args = Context.Rel.instance mkRel 0 sign in
           let proj =
-            match Structures.PrimitiveProjections.find_opt proj with
-            | Some proj ->
-              mkProj (Projection.make proj false, mkApp (c, args))
+            match Structures.PrimitiveProjections.find_opt_with_relevance (proj,u) with
+            | Some (proj,r) ->
+              mkProj (Projection.make proj false, r, mkApp (c, args))
             | None ->
               mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
                 [|mkApp (c, args)|])

@@ -298,7 +298,7 @@ let map_constr_relevance f c =
   match kind c with
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
-  | Const _ | Ind _ | Construct _ | Proj _
+  | Const _ | Ind _ | Construct _
   | Int _ | Float _ | Array _ -> c
 
   | Prod (na,x,y) ->
@@ -328,6 +328,10 @@ let map_constr_relevance f c =
     let data' = map_rec_declaration_relevance f data in
     if data' == data then c else mkCoFix data'
 
+  | Proj (p, r, v) ->
+    let r' = f r in
+    if r' == r then c else mkProj (p, r', v)
+
 let fold_annot_relevance f acc na =
   f acc na.Context.binder_relevance
 
@@ -341,7 +345,7 @@ let fold_constr_relevance f acc c =
   match kind c with
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
-  | Const _ | Ind _ | Construct _ | Proj _
+  | Const _ | Ind _ | Construct _
   | Int _ | Float _ | Array _ -> acc
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
@@ -352,6 +356,8 @@ let fold_constr_relevance f acc c =
     let acc = fold_case_under_context_relevance f acc ret in
     let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
     acc
+
+  | Proj (_, r, _) -> f acc r
 
   | Fix (_,data)
   | CoFix (_,data) ->
