@@ -19,7 +19,7 @@ let error_corrupted file s =
 let open_trapping_failure name =
   try open_out_bin name
   with e when CErrors.noncritical e ->
-    CErrors.user_err (str "Can't open " ++ str name ++ str ".")
+    CErrors.user_err (str "Can't open " ++ str name ++ spc() ++ str "(" ++ CErrors.print e ++ str ").")
 
 (*
 
