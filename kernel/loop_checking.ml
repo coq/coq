@@ -935,15 +935,13 @@ type 'a result = Loop | Model of 'a * model
 
 let canonical_cardinal m = m.canonical
 
-let _can_all_premises_in m w prem =
+let can_all_premises_in m w prem =
   Premises.for_all (fun (l, _) -> CanSet.mem (repr m l).canon w) prem
-let _ise = ClausesOf.is_empty
-let _ise' = ClausesBackward.is_empty
+
 (* Partition the clauses according to the presence of w in the premises, and only w in the conclusions *)
 let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t =
-  CanSet.fold (fun idx (_bwd, fwd) (allw, conclw, conclnw) ->
-    (* let bwdw, bwdnw = ClausesOf.partition (fun (_k, prems) -> can_all_premises_in model w prems) bwd in *)
-    let bwdw, bwdnw = ClausesOf.empty, ClausesOf.empty in
+  CanSet.fold (fun idx (bwd, fwd) (allw, conclw, conclnw) ->
+    let bwdw, bwdnw = ClausesOf.partition (fun (_k, prems) -> can_all_premises_in model w prems) bwd in
     let fwdw, fwdnw = ClausesBackward.partition (fun concl _clsinfo -> CanSet.mem (repr model concl).canon w) fwd in
     let allw =
       if ClausesOf.is_empty bwdw && ClausesBackward.is_empty fwdw then allw
