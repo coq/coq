@@ -23,7 +23,9 @@ val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> '
 val is_profiling : unit -> bool
 
 type settings =
-  { file : string
+  { output : Format.formatter
   }
 
-val init : settings option -> unit
+val init : settings -> unit
+
+val finish : unit -> unit

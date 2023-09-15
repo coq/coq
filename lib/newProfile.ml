@@ -8,13 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type settings =
-  { file : string
-  }
-
 type accu =
   | No
-  | File of out_channel
+  | Format of { ch : Format.formatter }
 
 let accu = ref No
 
@@ -24,7 +20,7 @@ let is_profiling () = !accu <> No
 
 let f fmt = match !accu with
   | No -> assert false
-  | File ch -> Printf.fprintf ch fmt
+  | Format { ch } -> Format.fprintf ch fmt
 
 module MiniJson = struct
   type t =[
@@ -38,22 +34,22 @@ module MiniJson = struct
     | `String s ->
       let s = String.split_on_char '"' s in
       let s = String.concat "\\\"" s in
-      Printf.fprintf ch "\"%s\"" s
-    | `Intlit s -> Printf.fprintf ch "%s" s
+      Format.fprintf ch "\"%s\"" s
+    | `Intlit s -> Format.fprintf ch "%s" s
     | `Assoc elts ->
-      Printf.fprintf ch "{ %a }" prrecord elts
+      Format.fprintf ch "{ %a }" prrecord elts
     | `List elts ->
-      Printf.fprintf ch "[\n%a\n]" prarray elts
+      Format.fprintf ch "[\n%a\n]" prarray elts
 
   and prrecord ch = function
     | [] -> ()
-    | [(x,v)] -> Printf.fprintf ch "\"%s\": %a" x pr v
-    | (x,v) :: l -> Printf.fprintf ch "\"%s\": %a, %a" x pr v prrecord l
+    | [(x,v)] -> Format.fprintf ch "\"%s\": %a" x pr v
+    | (x,v) :: l -> Format.fprintf ch "\"%s\": %a, %a" x pr v prrecord l
 
   and prarray ch = function
     | [] -> ()
     | [x] -> pr ch x
-    | x :: l -> Printf.fprintf ch "%a,\n%a" pr x prarray l
+    | x :: l -> Format.fprintf ch "%a,\n%a" pr x prarray l
 
 
   let pids = string_of_int pid
@@ -75,7 +71,7 @@ let gettimeopt = function
   | None -> gettime()
 
 let prtime t =
-  Printf.sprintf "%.0f" (t *. 1E6)
+  Format.sprintf "%.0f" (t *. 1E6)
 
 let global_start = gettime()
 let global_start_stat = Gc.quick_stat()
@@ -119,7 +115,7 @@ let leave ?time name ?(args=[]) ?last () =
   let sum, dur = leave_sums ~time name () in
   let sum = List.map (fun (name, (t, cnt)) ->
       name, `String
-        (Printf.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
+        (Format.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
       (CString.Map.bindings sum)
   in
   let args = ("subtimes", `Assoc sum) :: args in
@@ -131,7 +127,7 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
      in the same span vs how much survived it *)
   let major = mend.major_words -. mstart.major_words in
   let minor = mend.minor_words -. mstart.minor_words in
-  let pp tdiff = `String (Printf.sprintf "%.3G w" tdiff) in
+  let pp tdiff = `String (Format.sprintf "%.3G w" tdiff) in
   [("major",pp major); ("minor", pp minor)]
 
 (* NB: "process" and "init" are unconditional because they don't go
@@ -175,27 +171,24 @@ let profile name ?args f () =
     v
   end
 
-let init opts =
+type settings =
+  { output : Format.formatter
+  }
+
+let init { output } =
   let () = assert (not (is_profiling())) in
-  match opts with
-  | None ->
-    accu := No
-  | Some { file } ->
-    let ch = open_out file in
-    accu := File ch;
-    f "{ \"traceEvents\": [\n";
-    enter ~time:global_start "process" ();
-    enter ~time:global_start "init" ();
-    leave "init" ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat())) ()
+  accu := Format { ch = output };
+  f "{ \"traceEvents\": [\n";
+  enter ~time:global_start "process" ();
+  enter ~time:global_start "init" ();
+  leave "init" ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat())) ()
 
 let finish () = match !accu with
   | No -> ()
-  | File ch ->
+  | Format { ch } ->
     leave "process"
       ~last:""
       ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat()))
       ();
-    Printf.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
-    close_out ch
-
-let () = at_exit finish
+    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
+    accu := No
