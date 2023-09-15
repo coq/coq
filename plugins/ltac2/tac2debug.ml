@@ -224,7 +224,7 @@ let stop_stuff (ist : environment) loc =
   DebugCommon.save_chunk chunk loc;
   let stop = DebugCommon.get_debug () && (not_internal loc) &&
 (*    (Bool.not (starts_with "Ltac2." fname)) && *)
-    (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop ())
+    (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop loc)
   in
   if stop then
     DebugCommon.new_stop_point ();
