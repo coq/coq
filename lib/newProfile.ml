@@ -8,20 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type accu =
-  | No
-  | Format of { ch : Format.formatter }
-
-let accu = ref No
-
-let pid = Unix.getpid()
-
-let is_profiling () = !accu <> No
-
-let f fmt = match !accu with
-  | No -> assert false
-  | Format { ch } -> Format.fprintf ch fmt
-
 module MiniJson = struct
   type t =[
     | `Intlit of string
@@ -52,6 +38,8 @@ module MiniJson = struct
     | x :: l -> Format.fprintf ch "%a,\n%a" pr x prarray l
 
 
+  let pid = Unix.getpid()
+
   let pids = string_of_int pid
   let base = [("pid", `Intlit pids); ("tid", `Intlit pids)]
 
@@ -63,6 +51,19 @@ module MiniJson = struct
     in
     `Assoc l
 end
+
+type accu = {
+  ch : Format.formatter;
+  mutable sums : (float * (float * int) CString.Map.t) list;
+}
+
+let accu = ref None
+
+let is_profiling () = Option.has_some !accu
+
+let f fmt = match !accu with
+  | None -> assert false
+  | Some { ch } -> Format.fprintf ch fmt
 
 let gettime = Unix.gettimeofday
 
@@ -79,11 +80,10 @@ let global_start_stat = Gc.quick_stat()
 let duration ~time name ph ?args ?(last=",") () =
   f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
 
-let sums = ref []
-
 let enter_sums ?time () =
+  let accu = Option.get !accu in
   let time = gettimeopt time in
-  sums := (time, CString.Map.empty) :: !sums
+  accu.sums <- (time, CString.Map.empty) :: accu.sums
 
 let enter ?time name ?args () =
   let time = gettimeopt time in
@@ -91,24 +91,25 @@ let enter ?time name ?args () =
   duration ~time name "B" ?args ()
 
 let leave_sums ?time name () =
+  let accu = Option.get !accu in
   let time = gettimeopt time in
-  match !sums with
-    | [] -> assert false
-    | [start,sum] -> sums := []; sum, time -. start
-    | (start, sum) :: (start', next) :: rest ->
-      let dur = time -. start in
-      let next = CString.Map.update name (function
-          | None -> Some (dur, 1)
-          | Some (dur', cnt) -> Some (dur +. dur', cnt+1))
-          next
-      in
-      let next = CString.Map.union (fun name' (l,cnt) (r,cnt') ->
-          if String.equal name name' then Some (r,cnt+cnt')
-          else Some (l +. r, cnt+cnt'))
-          sum next
-      in
-      sums := (start', next) :: rest;
-      sum, dur
+  match accu.sums with
+  | [] -> assert false
+  | [start,sum] -> accu.sums <- []; sum, time -. start
+  | (start, sum) :: (start', next) :: rest ->
+    let dur = time -. start in
+    let next = CString.Map.update name (function
+        | None -> Some (dur, 1)
+        | Some (dur', cnt) -> Some (dur +. dur', cnt+1))
+        next
+    in
+    let next = CString.Map.union (fun name' (l,cnt) (r,cnt') ->
+        if String.equal name name' then Some (r,cnt+cnt')
+        else Some (l +. r, cnt+cnt'))
+        sum next
+    in
+   accu. sums <- (start', next) :: rest;
+    sum, dur
 
 let leave ?time name ?(args=[]) ?last () =
   let time = gettimeopt time in
@@ -177,18 +178,27 @@ type settings =
 
 let init { output } =
   let () = assert (not (is_profiling())) in
-  accu := Format { ch = output };
+  accu := Some { ch = output; sums = [] };
   f "{ \"traceEvents\": [\n";
   enter ~time:global_start "process" ();
   enter ~time:global_start "init" ();
   leave "init" ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat())) ()
 
+let pause () =
+  let v = !accu in
+  accu := None;
+  v
+
+let resume v =
+  assert (not (is_profiling()));
+  accu := Some v
+
 let finish () = match !accu with
-  | No -> ()
-  | Format { ch } ->
+  | None -> assert false
+  | Some { ch } ->
     leave "process"
       ~last:""
       ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat()))
       ();
     Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
-    accu := No
+    accu := None
