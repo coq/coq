@@ -17,9 +17,7 @@ module G = Loop_checking.Make(struct
 
     let equal = Level.equal
     let compare = Level.compare
-
-    let keep_canonical = Level.is_set
-
+    let is_source = Level.is_set
     let pr = Level.raw_pr
   end) [@@inlined] (* without inline, +1% ish on HoTT, compcert. See jenkins 594 vs 596 *)
 (* Do not include G to make it easier to control universe specific

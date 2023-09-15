@@ -21,7 +21,7 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
-  val keep_canonical : t -> bool
+  val is_source : t -> bool
 
   val pr : t -> Pp.t
 end

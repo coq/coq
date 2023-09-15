@@ -8,7 +8,9 @@ let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" 
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
 let _debug_loop_checking_loop, debug_loop = CDebug.create_full ~name:"loop-checking-loop" ()
 let _debug_loop_checking_check_model, debug_check_model = CDebug.create_full ~name:"loop-checking-check-model" ()
-let _debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" ()
+let debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" ()
+
+let _ = CDebug.set_flag debug_loop_checking_check true
 
 module type Point = sig
   type t
@@ -18,8 +20,7 @@ module type Point = sig
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
-
-  val keep_canonical : t -> bool
+  val is_source : t -> bool
   val pr : t -> Pp.t
 end
 
@@ -1238,11 +1239,11 @@ let _to_clause_info m (k, prems : pclause_info) : clause_info =
 let enforce_eq_can model canu canv : canonical_node * t =
   assert (canonical_value model canu = canonical_value model canv);
   assert (canu != canv);
-  (* v := u or u := v, depending on Point.keep_canonical (e.g. for Set) *)
+  (* v := u or u := v, depending on Point.is_source (for Set) *)
   debug_check_invariants model;
   let model0 = model in
   let can, other, model =
-    if Point.keep_canonical (Index.repr canu.canon model.table) then
+    if Point.is_source (Index.repr canu.canon model.table) then
       canu, canv, enter_equiv model canv.canon canu.canon
     else
       canv, canu, enter_equiv model canu.canon canv.canon
@@ -1545,6 +1546,7 @@ let check_clause_singleton_alt model prem concl k =
   if PSet.is_empty modified then false else begin *)
   (* We have a model where only the premise is true, check if the conclusion follows *)
   debug Pp.(fun () -> str"Launching loop-checking to check for entailment");
+  if (Point.is_source (Index.repr concl.canon model.table)) && k == 0 then true else
   match check ~early_stop:(concl, k) model cls with
   | exception FoundImplication ->
     debug Pp.(fun () -> str"loop-checking found the implication early");
@@ -1628,7 +1630,7 @@ let check_lt (m : t) u v =
   (* check_clause m prems concl k *)
 
 let check_leq (m : t) u vp =
-  debug_check Pp.(fun () -> str"checking : " ++ Point.pr u ++ str " ≤ " ++ Point.pr vp);
+  (* debug_check Pp.(fun () -> str"checking : " ++ Point.pr u ++ str " ≤ " ++ Point.pr vp); *)
   let canu = repr_node m u in
   let canv = repr_node m vp in
   canu == canv ||
