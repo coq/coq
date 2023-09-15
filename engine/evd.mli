@@ -328,6 +328,9 @@ val get_aliased_evars : evar_map -> Evar.t Evar.Map.t
 val is_aliased_evar : evar_map -> Evar.t -> Evar.t option
 (** Tell if an evar has been aliased to another evar, and if yes, which *)
 
+val max_undefined_with_candidates : evar_map -> Evar.t option
+(** If any, the evar with highest id with a non-empty list of candidates. *)
+
 val set_typeclass_evars : evar_map -> Evar.Set.t -> evar_map
 (** Mark the given set of evars as available for resolution.
 
