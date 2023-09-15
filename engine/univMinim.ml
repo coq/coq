@@ -195,11 +195,6 @@ let enforce_uppers upper lbound cstrs =
         | None -> raise UpperBoundedAlg)
     cstrs upper
 
-let lift_lower d lower =
-  match d with
-  | Le | Eq -> lower
-  | Lt -> Level.Map.map (fun _ -> Lt) lower
-
 let minimize_univ_variables ctx us left right cstrs =  
   let left, lbounds =
     Level.Map.fold (fun r lower (left, lbounds as acc)  ->
