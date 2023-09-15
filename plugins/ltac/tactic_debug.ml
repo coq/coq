@@ -319,7 +319,8 @@ let debug_prompt lev tac f varmap trace =
 (*        dump_varmaps "at debug_prompt" varmaps;*)
         Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))  (* call prompt -> read msg *)
       in
-      if DebugCommon.breakpoint_stop CAst.(tac.loc) then (* here *)
+      let loc = CAst.(tac.loc) in
+      if DebugCommon.breakpoint_stop loc then
         (* todo: skip := 0 *)
         stop_here ()
       else if s > 0 then
@@ -336,7 +337,7 @@ let debug_prompt lev tac f varmap trace =
           if Option.has_some idtac_breakpt then
             Proofview.tclLIFT(runprint >> return (DebugOn (lev+1)))
           else begin
-            if DebugCommon.stepping_stop () then
+            if DebugCommon.stepping_stop loc then
               stop_here ()
             else
               Proofview.tclLIFT (Comm.clear_queue () >>
@@ -369,9 +370,10 @@ let entry_stop_check tac =
   | TacArg _ -> false
   | _ -> true
   in
+  let loc = !DebugCommon.cur_loc in
   if DebugCommon.get_debug () && can_stop &&
-      (DebugCommon.breakpoint_stop !DebugCommon.cur_loc ||
-       DebugCommon.stepping_stop ()) then begin
+      (DebugCommon.breakpoint_stop loc ||
+       DebugCommon.stepping_stop loc) then begin
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN

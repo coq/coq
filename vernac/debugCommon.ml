@@ -228,7 +228,7 @@ let set_top_chunk chunk =
     top_chunk := chunk
 
 let save_chunk chunk loc =
-  if !debug then begin
+  if !debug && loc <> None then begin
     top_chunk := chunk;
     cur_loc := loc;
     append_history { stack_chunks=(!stack_chunks); top_chunk=(!top_chunk); cur_loc=(!cur_loc);
@@ -252,38 +252,41 @@ let push_top_chunk () =
 
 let action = ref DebugHook.Action.StepOver
 
-let stepping_stop () =
-  let locs_info () =
-    (* performance impact? *)
-    let st =      concat_map (fun (locs,_,_) -> locs)  (!top_chunk :: !stack_chunks) in
-    let st_prev = concat_map (fun (locs,_,_) -> locs)  (!prev_top_chunk :: !prev_chunks) in
-    let l_cur, l_prev = List.length st, List.length st_prev in
-    st, st_prev, l_cur, l_prev
-  in
+let stepping_stop loc =
+  if loc = None then false
+  else begin
+    let locs_info () =
+      (* performance impact? *)
+      let hentry = get_history !hist_index in
+      let st =      concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+      let st_prev = concat_map (fun (locs,_,_) -> locs)  (!prev_top_chunk :: !prev_chunks) in
+      let l_cur, l_prev = List.length st, List.length st_prev in
+      st, st_prev, l_cur, l_prev
+    in
 
-  let open DebugHook.Action in
-  match !action with
-  | ContinueRev
-  | Continue -> false
-  | StepInRev
-  | StepIn   -> true
-  | StepOverRev
-  | StepOver -> let st, st_prev, l_cur, l_prev = locs_info () in
-                if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
-                else if l_prev = 0 (*&& l_cur > 0*) then false
-                else
-                  let peq = List.nth st (l_cur - l_prev) == (List.hd st_prev) in
-                  (l_cur > l_prev && (not peq)) ||  (* stepped out *)
-                  (l_cur = l_prev && peq)  (* stepped over *)
-  | StepOutRev
-  | StepOut  -> let st, st_prev, l_cur, l_prev = locs_info () in
-                if l_cur < l_prev then true
-                else if l_prev = 0 then false
-                else
-                  List.nth st (l_cur - l_prev) != (List.hd st_prev)
-  | Skip | RunCnt _ | RunBreakpoint _ -> false (* handled elsewhere *)
-  | _ -> failwith "action op"
-
+    let open DebugHook.Action in
+    match !action with
+    | ContinueRev
+    | Continue -> false
+    | StepInRev
+    | StepIn   -> true
+    | StepOverRev
+    | StepOver -> let st, st_prev, l_cur, l_prev = locs_info () in
+                  if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
+                  else if l_prev = 0 (*&& l_cur > 0*) then false
+                  else
+                    let peq = List.nth st (l_cur - l_prev) == (List.hd st_prev) in
+                    (l_cur > l_prev && (not peq)) ||  (* stepped out *)
+                    (l_cur = l_prev && peq)  (* stepped over *)
+    | StepOutRev
+    | StepOut  -> let st, st_prev, l_cur, l_prev = locs_info () in
+                  if l_cur < l_prev then true
+                  else if l_prev = 0 then false
+                  else
+                    List.nth st (l_cur - l_prev) != (List.hd st_prev)
+    | Skip | RunCnt _ | RunBreakpoint _ -> false (* handled elsewhere *)
+    | _ -> failwith ("action op: " ^ (DebugHook.Action.to_string !action))
+  end
 
 open Pp (* for str *)
 
@@ -334,6 +337,9 @@ let cvt_loc loc =
   | None -> None (* nothing to highlight, e.g. not in a .v file *)
 
  let format_frame text loc =
+  let items = String.split_on_char '.' text in
+  let ilen = List.length items in
+  let routine = List.nth items (ilen-1) in
   try
     let open Loc in
       match loc with
@@ -341,23 +347,13 @@ let cvt_loc loc =
         let dplen = String.length dp in
         let lastdot = String.rindex dp '.' in
         let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
-        let module_name = String.sub dp 0 lastdot in
-        let routine =
-          try
-            (* try text as a kername *)
-            assert (CString.is_prefix dp text);
-            let knlen = String.length text in
-            let lastdot = String.rindex text '.' in
-            String.sub text (lastdot+1) (knlen - (lastdot + 1))
-          with _ -> text
-        in
-        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name
+        let path = String.sub dp 0 lastdot in
+        Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file path
       | Some { fname=ToplevelInput; line_nb } ->
-        let items = String.split_on_char '.' text in
-        if List.length items > 1 then
-          Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items)
+        if ilen > 1 then
+          Printf.sprintf "%s:%d, %s" routine line_nb (List.hd items)
         else
-          Printf.sprintf "%s:%d" (List.hd items) line_nb
+          Printf.sprintf "%s:%d" routine line_nb
       | _ -> text
   with _ -> text
 
@@ -550,7 +546,8 @@ let read () =
       hist_index := !hist_index + incr;  (* assert >= 0? *)
 (*      Printf.eprintf "hist_index set to %d\n%!" !hist_index; *)
       let hentry = get_history !hist_index in
-      if breakpoint_stop hentry.cur_loc || stepping_stop () then begin
+      let loc = hentry.cur_loc in
+      if breakpoint_stop loc || stepping_stop loc then begin
         (* stop in history *)
         prev_top_chunk := hentry.top_chunk;
         prev_chunks := hentry.stack_chunks;

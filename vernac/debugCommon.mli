@@ -18,7 +18,7 @@ val upd_bpts : ((string * int) * bool) list -> unit
 
 val breakpoint_stop : Loc.t option -> bool
 
-val stepping_stop : unit -> bool
+val stepping_stop : Loc.t option -> bool
 
 val action : DebugHook.Action.t ref
 
