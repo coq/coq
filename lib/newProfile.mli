@@ -9,11 +9,13 @@
 (************************************************************************)
 
 module MiniJson : sig
-  type t =
-    | String of string
-    | Int of string (* string not int so that we can have large ints *)
-    | Record of (string * t) list
-    | Array of t list
+  (** Subtype of Yojson.Safe.t *)
+  type t = [
+    | `Intlit of string
+    | `String of string
+    | `Assoc of (string * t) list
+    | `List of t list
+  ]
 end
 
 val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> unit -> 'a

@@ -27,21 +27,22 @@ let f fmt = match !accu with
   | File ch -> Printf.fprintf ch fmt
 
 module MiniJson = struct
-  type t =
-    | String of string
-    | Int of string (* string not int so that we can have large ints *)
-    | Record of (string * t) list
-    | Array of t list
+  type t =[
+    | `Intlit of string
+    | `String of string
+    | `Assoc of (string * t) list
+    | `List of t list
+  ]
 
-  let rec pr ch = function
-    | String s ->
+  let rec pr ch : t -> _ = function
+    | `String s ->
       let s = String.split_on_char '"' s in
       let s = String.concat "\\\"" s in
       Printf.fprintf ch "\"%s\"" s
-    | Int s -> Printf.fprintf ch "%s" s
-    | Record elts ->
+    | `Intlit s -> Printf.fprintf ch "%s" s
+    | `Assoc elts ->
       Printf.fprintf ch "{ %a }" prrecord elts
-    | Array elts ->
+    | `List elts ->
       Printf.fprintf ch "[\n%a\n]" prarray elts
 
   and prrecord ch = function
@@ -56,15 +57,15 @@ module MiniJson = struct
 
 
   let pids = string_of_int pid
-  let base = [("pid", Int pids); ("tid", Int pids)]
+  let base = [("pid", `Intlit pids); ("tid", `Intlit pids)]
 
   let duration ~name ~ph ~ts ?args () =
-    let l = ("name", String name) :: ("ph", String ph) :: ("ts", Int ts) :: base in
+    let l = ("name", `String name) :: ("ph", `String ph) :: ("ts", `Intlit ts) :: base in
     let l = match args with
       | None -> l
-      | Some args -> ("args", Record args) :: l
+      | Some args -> ("args", `Assoc args) :: l
     in
-    Record l
+    `Assoc l
 end
 
 let gettime = Unix.gettimeofday
@@ -117,11 +118,11 @@ let leave ?time name ?(args=[]) ?last () =
   let time = gettimeopt time in
   let sum, dur = leave_sums ~time name () in
   let sum = List.map (fun (name, (t, cnt)) ->
-      name, MiniJson.String
+      name, `String
         (Printf.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
       (CString.Map.bindings sum)
   in
-  let args = ("subtimes", MiniJson.Record sum) :: args in
+  let args = ("subtimes", `Assoc sum) :: args in
   duration ~time name "E" ~args ?last ()
 
 let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
@@ -130,7 +131,7 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
      in the same span vs how much survived it *)
   let major = mend.major_words -. mstart.major_words in
   let minor = mend.minor_words -. mstart.minor_words in
-  let pp tdiff = MiniJson.String (Printf.sprintf "%.3G w" tdiff) in
+  let pp tdiff = `String (Printf.sprintf "%.3G w" tdiff) in
   [("major",pp major); ("minor", pp minor)]
 
 (* NB: "process" and "init" are unconditional because they don't go
