@@ -614,6 +614,7 @@ END
 
 let () =
   let open Vernacextend in
+  let open Vernactypes in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintConstr", TyNonTerminal(ty_constr, TyNil)) in
   let cmd_fn c ?loc:_ ~atts () = vtdefault (fun () -> in_current_context econstr_display c) in
@@ -623,6 +624,7 @@ let () =
 
 let () =
   let open Vernacextend in
+  let open Vernactypes in
   let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
   let cmd_sig = TyTerminal("PrintPureConstr", TyNonTerminal(ty_constr, TyNil)) in
   let cmd_fn c ?loc:_ ~atts () = vtdefault (fun () -> in_current_context print_pure_econstr c) in

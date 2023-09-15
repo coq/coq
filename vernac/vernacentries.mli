@@ -20,7 +20,7 @@ val translate_vernac
   : ?loc:Loc.t
   -> atts:Attributes.vernac_flags
   -> Synterp.vernac_entry
-  -> Vernacextend.typed_vernac
+  -> Vernactypes.typed_vernac
 
 (** Vernacular require command, used by the command line *)
 val vernac_require

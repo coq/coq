@@ -1368,7 +1368,7 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   | _ -> assert false
 
 let vernac_end_segment lid =
-  Vernacextend.TypedVernac {
+  Vernactypes.TypedVernac {
     inprog = Use; outprog = Pop; inproof = UseOpt; outproof = No;
     run = (fun ~pm ~proof ->
         let () = vernac_end_segment ~pm ~proof lid in
@@ -1376,9 +1376,9 @@ let vernac_end_segment lid =
   }
 
 let vernac_begin_segment ~interactive f =
-  let inproof = Vernacextend.InProof.(if interactive then Reject else Ignore) in
-  let outprog = Vernacextend.OutProg.(if interactive then Push else No) in
-  Vernacextend.TypedVernac {
+  let inproof = Vernactypes.InProof.(if interactive then Reject else Ignore) in
+  let outprog = Vernactypes.OutProg.(if interactive then Push else No) in
+  Vernactypes.TypedVernac {
     inprog = Ignore; outprog; inproof; outproof = No;
     run = (fun ~pm ~proof ->
         let () = f () in
@@ -2213,7 +2213,7 @@ let vernac_validate_proof ~pstate =
     str "No issues found."
   else prlist_with_sep fnl snd (Evar.Map.bindings evar_issues)
 
-let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v with
+let translate_vernac_synterp ?loc ~atts v = let open Vernactypes in match v with
   | EVernacNotation { local; decl } ->
     vtdefault(fun () -> Metasyntax.add_notation_interpretation ~local (Global.env()) decl)
 
@@ -2273,7 +2273,7 @@ let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v wit
   (* Extensions *)
   | EVernacExtend f -> f
 
-let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
+let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _

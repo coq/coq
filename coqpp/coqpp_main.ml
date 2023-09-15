@@ -410,11 +410,11 @@ let pr_end_wrapper fmt = function
 let print_body_state state fmt r =
   let state = match r.vernac_state with Some _ as s -> s | None -> state in
   match state with
-  | None -> fprintf fmt "Vernacextend.vtdefault (fun () -> %a)" print_code r.vernac_body
+  | None -> fprintf fmt "Vernactypes.vtdefault (fun () -> %a)" print_code r.vernac_body
   | Some "CUSTOM" -> print_code fmt r.vernac_body
   | Some state ->
     let state, wrap = understand_state state in
-    fprintf fmt "Vernacextend.%s (%a (%a)%a)" state pr_begin_wrapper wrap
+    fprintf fmt "Vernactypes.%s (%a (%a)%a)" state pr_begin_wrapper wrap
       print_code r.vernac_body pr_end_wrapper wrap
 
 let print_body_fun state fmt r =

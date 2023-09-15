@@ -13,9 +13,9 @@ open Synterp
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
-let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; outproof; run })
+let interp_typed_vernac (Vernactypes.TypedVernac { inprog; outprog; inproof; outproof; run })
     ~pm ~stack =
-  let open Vernacextend in
+  let open Vernactypes in
   let module LStack = Vernacstate.LemmaStack in
   let proof = Option.map LStack.get_top stack in
   let pm', proof' = run

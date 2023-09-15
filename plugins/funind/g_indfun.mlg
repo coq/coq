@@ -211,11 +211,11 @@ VERNAC COMMAND EXTEND Function STATE CUSTOM
     -> {
     let warn = "-unused-pattern-matching-variable,-non-recursive" in
     if is_interactive recsl then
-      Vernacextend.vtopenproof (fun () ->
+      Vernactypes.vtopenproof (fun () ->
           CWarnings.with_warn warn
             Gen_principle.do_generate_principle_interactive (List.map snd recsl))
     else
-      Vernacextend.vtdefault (fun () ->
+      Vernactypes.vtdefault (fun () ->
           CWarnings.with_warn warn
             Gen_principle.do_generate_principle (List.map snd recsl))
   }
