@@ -50,6 +50,8 @@ let cur_goals = ref [] (* current goals *)
    0 = current Ltac* state *)
 let hist_index = ref 0
 
+let in_history () = !hist_index <> 0
+
 let mod_len n =
   let len = (Array.length !history) in
   let rv = n mod len in
@@ -284,8 +286,8 @@ let stepping_stop loc =
                   else if l_prev = 0 then false
                   else
                     List.nth st (l_cur - l_prev) != (List.hd st_prev)
-    | Skip | RunCnt _ | RunBreakpoint _ -> false (* handled elsewhere *)
-    | _ -> failwith ("action op: " ^ (DebugHook.Action.to_string !action))
+    | Skip | RunCnt _ | RunBreakpoint _ -> false (* not detected here *)
+    | _ -> failwith ("invalid stepping action: " ^ (DebugHook.Action.to_string !action))
   end
 
 open Pp (* for str *)

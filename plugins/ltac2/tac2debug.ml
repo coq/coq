@@ -139,27 +139,19 @@ let rec read_loop () =
   DebugCommon.action := DebugCommon.read ();
   let open DebugHook.Action in
   match !DebugCommon.action with
-  | Continue
-  | ContinueRev
-  | StepIn
-  | StepInRev
-  | StepOver
-  | StepOverRev
-  | StepOut
-  | StepOutRev -> ()
-  | Skip -> failwith "Skip not in Ltac2"
+  | Continue | StepIn | StepOver | StepOut -> ()
   | Interrupt -> raise Sys.Break
-  | Help -> failwith "Help not in Ltac2"
-  | UpdBpts updates -> failwith "UpdBpts"  (* handled in init() loop *)
-  | Configd -> failwith "Configd" (* handled in init() loop *)
-  | GetStack -> failwith "GetStack" (* handled in read() loop *)
-  | GetVars _ -> failwith "GetVars" (* handled in read() loop *)
-  | Subgoals _ -> failwith "Subgoals" (* handled in read() loop *)
-  | RunCnt num -> failwith "RunCnt not in Ltac2"
-  | RunBreakpoint s -> failwith "RunBreakpoint not in Ltac2"
-  | Command _ -> failwith "Command"  (* not possible *)
   | Failed -> read_loop ()
-  | Ignore -> failwith "Ignore" (* not possible *)
+
+  | Skip | Help | RunCnt _ | RunBreakpoint _ ->
+    Feedback.msg_info Pp.(str ("command ignored in Ltac2: " ^ (DebugHook.Action.to_string !DebugCommon.action)));
+    read_loop ()
+
+  | Configd (* handled in init() loop *)
+  | ContinueRev | StepInRev | StepOverRev | StepOutRev
+  | UpdBpts _ | GetStack | GetVars _ | Subgoals _ (* handled in read() loop *)
+  | Command _ | Ignore -> (* not possible *)
+    failwith ("ltac2 invalid action: " ^ (DebugHook.Action.to_string !DebugCommon.action))
 
 [@@@ocaml.warning "-32"]
 let rec dump_expr ?(indent=0) e =

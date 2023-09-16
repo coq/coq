@@ -1290,6 +1290,7 @@ let () =
 
 let () =
   define "ltac1_run" (ltac1 @-> tac unit) @@ begin fun v ->
+  (* for Ltac.run ... construct *)
   let open Ltac_plugin in
   DebugCommon.push_top_chunk ();
   (* todo: what about wrapping ltac1_ref above and ltac1_apply below? *)

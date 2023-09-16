@@ -76,3 +76,5 @@ val push_top_chunk : unit -> unit
 val cur_loc : Loc.t option ref
 
 val print_loc : string -> Loc.t option -> string
+
+val in_history : unit -> bool
