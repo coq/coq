@@ -219,6 +219,12 @@ let print_run_ctr print =
 
 (* Prints the prompt *)
 let rec prompt level =
+  let not_in_history () =
+    if DebugCommon.in_history () then begin
+      Feedback.msg_info Pp.(str "Command invalid while in history");
+      false
+    end else true
+  in
   let runnoprint = print_run_ctr false in
     let open Proofview.NonLogical in
     let nl = if Stdlib.(!batch) then "\n" else "" in
@@ -227,32 +233,31 @@ let rec prompt level =
                    @@ fnl () ++ str (Printf.sprintf "TcDebug (%d) > %s" level nl)) >>
     if Stdlib.(!batch) && Comm.isTerminal () then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise (Sys.Break, Exninfo.null) in
-    Comm.read >>= fun inst ->  (* read call *)
+    Comm.read >>= fun action ->  (* read call *)
     let open DebugHook.Action in
-    match inst with
-    | Continue
-    | StepIn
-    | StepOver
-    | StepOut -> return (DebugOn (level+1))
-    | ContinueRev -> failwith "ContinueRev"  (* handled in read() loop *)
-    | StepInRev -> failwith "StepInRev"  (* handled in read() loop *)
-    | StepOverRev -> failwith "StepOverRev"  (* handled in read() loop *)
-    | StepOutRev -> failwith "StepOutRev"  (* handled in read() loop *)
-    | Skip -> return DebugOff
+    match action with
+    | Continue | StepIn | StepOver | StepOut -> return (DebugOn (level+1))
+    | Skip ->
+      if not_in_history () then return DebugOff
+      else prompt level
     | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
     | Help -> help () >> prompt level
-    | UpdBpts updates -> failwith "UpdBpts" (* handled in init() loop *)
-    | Configd -> failwith "Configd" (* handled in init() loop *)
-    | GetStack -> failwith "GetStack" (* handled in read() loop *)
-    | GetVars _ -> failwith "GetVars" (* handled in read() loop *)
-    | Subgoals _ -> failwith "Subgoals" (* handled in read() loop *)
-    | RunCnt num -> (skip:=num) >> (skipped:=0) >>
-        runnoprint >> return (DebugOn (level+1))
-    | RunBreakpoint s -> (idtac_breakpt:=(Some s)) >> (* todo: look in Continue? *)
-        runnoprint >> return (DebugOn (level+1))
-    | Command _ -> failwith "Command"  (* not possible *)
+    | RunCnt num ->
+      if not_in_history () then
+        (skip:=num) >> (skipped:=0) >> runnoprint >> return (DebugOn (level+1))
+      else prompt level
+    | RunBreakpoint s ->
+      if not_in_history () then
+        (idtac_breakpt:=(Some s)) >> runnoprint >> return (DebugOn (level+1))
+      else
+        prompt level
     | Failed -> prompt level
-    | Ignore -> failwith "Ignore" (* not possible *) (* FAILING HERE *)
+
+    | Configd (* handled in init() loop *)
+    | ContinueRev | StepInRev | StepOverRev | StepOutRev
+    | UpdBpts _ | GetStack | GetVars _ | Subgoals _ (* handled in read() loop *)
+    | Command _  | Ignore -> (* not possible *)
+      failwith ("ltac1 invalid action: " ^ (DebugHook.Action.to_string action))
 
 [@@@ocaml.warning "-32"]
 open Tacexpr

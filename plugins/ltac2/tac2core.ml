@@ -1311,6 +1311,7 @@ let () = define1 "ltac1_ref" (list ident) begin fun ids ->
 end
 
 let () = define1 "ltac1_run" ltac1 begin fun v ->
+  (* for Ltac.run ... construct *)
   let open Ltac_plugin in
   DebugCommon.push_top_chunk ();
   (* todo: what about wrapping ltac1_ref above and ltac1_apply below? *)
