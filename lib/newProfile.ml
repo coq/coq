@@ -76,6 +76,7 @@ let prtime t =
 
 let global_start = gettime()
 let global_start_stat = Gc.quick_stat()
+let global_start_count = Ok Int64.zero
 
 let duration ~time name ph ?args ?(last=",") () =
   f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
@@ -131,6 +132,11 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
   let pp tdiff = `String (Format.sprintf "%.3G w" tdiff) in
   [("major",pp major); ("minor", pp minor)]
 
+let make_instr_diff ~istart ~iend =
+  match System.instructions_between ~c_start:istart ~c_end:iend with
+  | Ok count -> [("instr", `Intlit (Int64.to_string count))]
+  | Error _ -> []
+
 (* NB: "process" and "init" are unconditional because they don't go
    through [profile] and I'm too lazy to make them conditional *)
 let components =
@@ -147,16 +153,25 @@ let profile name ?args f () =
     let args = Option.map (fun f -> f()) args in
     enter name ?args ();
     let mstart = Gc.quick_stat () in
+    let istart = Instr.read_counter () in
     let v = try f ()
       with e ->
         let e = Exninfo.capture e in
+        let iend = Instr.read_counter () in
         let mend = Gc.quick_stat () in
-        let args = make_mem_diff ~mstart ~mend in
+        let args =
+          make_instr_diff ~istart ~iend @
+          make_mem_diff ~mstart ~mend
+        in
         leave name ~args ();
         Exninfo.iraise e
     in
+    let iend = Instr.read_counter () in
     let mend = Gc.quick_stat () in
-    let args = make_mem_diff ~mstart ~mend in
+    let args =
+      make_instr_diff ~istart ~iend @
+      make_mem_diff ~mstart ~mend
+    in
     leave name ~args ();
     v
   end
@@ -182,7 +197,13 @@ let init { output } =
   f "{ \"traceEvents\": [\n";
   enter ~time:global_start "process" ();
   enter ~time:global_start "init" ();
-  leave "init" ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat())) ()
+  let iend = Instr.read_counter () in
+  let mend = Gc.quick_stat () in
+  let args =
+    make_instr_diff ~istart:global_start_count ~iend @
+    make_mem_diff ~mstart:global_start_stat ~mend
+  in
+  leave "init" ~args ()
 
 let pause () =
   let v = !accu in
@@ -196,9 +217,12 @@ let resume v =
 let finish () = match !accu with
   | None -> assert false
   | Some { ch } ->
-    leave "process"
-      ~last:""
-      ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat()))
-      ();
+    let iend = Instr.read_counter () in
+    let mend = Gc.quick_stat () in
+    let args =
+      make_instr_diff ~istart:global_start_count ~iend @
+      make_mem_diff ~mstart:global_start_stat ~mend
+    in
+    leave "process" ~last:"" ~args ();
     Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
     accu := None
