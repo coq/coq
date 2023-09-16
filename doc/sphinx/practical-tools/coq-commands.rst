@@ -168,6 +168,17 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
 
 .. todo how about COQLIB, COQCORELIB, DOCDIR
 
+.. _COQ_PROFILE_COMPONENTS:
+
+Specifies which components produce events when using the
+:ref:`profiling` system. It is a comma separated list of
+component names.
+
+If the variable is not set, all components produce events.
+
+Component names are internally defined, but `command` which corresponds to
+the interpretation of one command is particularly notable.
+
 .. _command-line-options:
 
 Command line options
@@ -432,7 +443,45 @@ and ``coqtop``, unless stated otherwise:
 :-list-tags: Print the highlight tags known by Coq as well as their
   currently associated color and exit.
 :-h, --help: Print a short usage and exit.
+:-time: Output timing information for each command to standard output.
+:-time-file *file*: Output timing information for each command to the given file.
+:-profile *file*: Output :ref:`profiling` information to the given file.
 
+.. _profiling:
+
+Profiling
+---------
+
+Use the `coqc` command line argument `-profile` or the environment
+variable `PROFILE` in `coq_makefile`, to generate profiling information in
+`Google trace format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit>`.
+
+The output gives the duration and event counts for the execution of
+components of Coq (for instance `process` for the whole file,
+`command` for each command, `pretyping` for elaboration).
+
+Environment variable :ref:`COQ_PROFILE_COMPONENTS <COQ_PROFILE_COMPONENTS>` can be used to filter
+which components produce events. This may be needed to reduce the
+size of the generated file.
+
+The generated file can be visualized with
+<https://ui.perfetto.dev> (which can directly load the `.gz`
+compressed file produced by `coq_makefile`) or processed using any
+JSON-capable system.
+
+Events are annotated with additional information in the `args` field
+(either on the beginning `B` or end `E` event):
+
+- `major` and `minor` indicate how many major and minor words were allocated during the event.
+
+- `subtimes` indicates how much time was spent in sub-components and
+  how many times each subcomponent was profiled during the event
+  (including subcomponents which do not appear in
+  `COQ_PROFILE_COMPONENTS`).
+
+- for the `command` event, `cmd` displays the precise location of the
+  command and a compressed representation of it (like the `-time` header),
+  and `line` is the start line of the command.
 
 .. _compiled-interfaces:
 

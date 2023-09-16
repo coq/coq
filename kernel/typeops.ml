@@ -853,6 +853,9 @@ and execute_array env cs =
   let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
   cs, tys
 
+let execute env c =
+  NewProfile.profile "Typeops.infer" (fun () -> execute env c) ()
+
 (* Derived functions *)
 
 let check_wellformed_universes env c =
@@ -860,6 +863,9 @@ let check_wellformed_universes env c =
   try UGraph.check_declared_universes (universes env) univs
   with UGraph.UndeclaredLevel u ->
     error_undeclared_universe env u
+
+let check_wellformed_universes env c =
+  NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
 let infer env constr =
   let () = check_wellformed_universes env constr in

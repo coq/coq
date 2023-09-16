@@ -66,6 +66,7 @@ type coqargs_config = {
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
   time        : time_config option;
+  profile : string option;
   print_emacs : bool;
 }
 
@@ -121,6 +122,7 @@ let default_config = {
   native_output_dir = ".coq-native";
   native_include_dirs = [];
   time         = None;
+  profile = None;
   print_emacs  = false;
 
   (* Quiet / verbosity options should be here *)
@@ -408,6 +410,7 @@ let parse_args ~usage ~init arglist : t * string list =
       oval
     |"-time" -> { oval with config = { oval.config with time = Some ToFeedback }}
     |"-time-file" -> { oval with config = { oval.config with time = Some (ToFile (next())) }}
+    | "-profile" -> { oval with config = { oval.config with profile = Some (next()) } }
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Lib.Import)
     |"-where" -> set_query oval PrintWhere

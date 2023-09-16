@@ -143,9 +143,17 @@ let init_load_paths opts =
   let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
   Findlib.init ~env_ocamlpath ()
 
+let init_profile ~file =
+  let ch = open_out file in
+  NewProfile.init { output = Format.formatter_of_out_channel ch };
+  at_exit (fun () ->
+      NewProfile.finish ();
+      close_out ch)
+
 let init_runtime opts =
   let open Coqargs in
   Vernacextend.static_linking_done ();
+  Option.iter (fun file -> init_profile ~file) opts.config.profile;
   Lib.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;

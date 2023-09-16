@@ -307,6 +307,14 @@ else
   TIMING_ARG=
 endif
 
+ifneq (,$(PROFILING))
+  PROFILE_ARG=-profile $<.prof.json
+  PROFILE_ZIP=gzip $<.prof.json
+else
+  PROFILE_ARG=
+  PROFILE_ZIP=true
+endif
+
 # Files #######################################################################
 #
 # We here define a bunch of variables about the files being part of the
@@ -810,7 +818,7 @@ define globvorule=
 # take care to $$ variables using $< etc
   $(1).vo $(1).glob &: $(1).v | $(VDFILE)
 	$(SHOW)COQC $(1).v
-	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $$(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $(1).v
+	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $(1).v
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $(1).vo
 	$(HIDE)$(call TIMER,$(1).vo.native) $(COQNATIVE) $(COQLIBS) $(1).vo
@@ -821,7 +829,8 @@ else
 
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $<
+	$(HIDE)$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
 	$(HIDE)$(call TIMER,$@.native) $(COQNATIVE) $(COQLIBS) $@

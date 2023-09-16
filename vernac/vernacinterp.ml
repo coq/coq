@@ -214,8 +214,8 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
 let interp ?(verbosely=true) ~st cmd =
   Vernacstate.unfreeze_full_state st;
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr cmd.CAst.v.expr);
-  let entry = Synterp.synterp_control cmd in
-  let interp = interp_gen ~verbosely ~st ~interp_fn:interp_control entry in
+  let entry = NewProfile.profile "synterp" (fun () -> Synterp.synterp_control cmd) () in
+  let interp = NewProfile.profile "interp" (fun () -> interp_gen ~verbosely ~st ~interp_fn:interp_control entry) () in
   Vernacstate.{ synterp = Vernacstate.Synterp.freeze (); interp }
 
 let interp_entry ?(verbosely=true) ~st entry =
@@ -226,5 +226,7 @@ let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Ve
   let cmd = CAst.make ?loc { control; expr = VernacSynPure (VernacEndProof pe); attrs = [] } in
   let CAst.{ loc; v = entry } = Synterp.synterp_control cmd in
   let control = entry.control in
-  interp_gen ~verbosely:false ~st
-    ~interp_fn:(interp_qed_delayed_control ~proof ~control) e
+  NewProfile.profile "interp-delayed-qed" (fun () ->
+      interp_gen ~verbosely:false ~st
+        ~interp_fn:(interp_qed_delayed_control ~proof ~control) e)
+    ()
