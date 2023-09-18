@@ -17,7 +17,11 @@
 - FloatLemmas: prove a few results involving Z.frexp and Z.ldexp
 
 For a brief overview of the Floats library,
-see {{https://coq.inria.fr/distrib/current/refman/language/coq-library.html#floats-library}} *)
+see {{https://coq.inria.fr/distrib/current/refman/language/coq-library.html#floats-library}}
+
+N.B.: This library only offers a bit-level specification of floating-point
+arithmetic. For a more complete set of theorems, including links with real
+arithmetic, see the Flocq library {{https://flocq.gitlabpages.inria.fr/}} *)
 
 Require Export FloatClass.
 Require Export PrimFloat.

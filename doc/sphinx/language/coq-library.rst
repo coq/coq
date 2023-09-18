@@ -989,6 +989,15 @@ Notation    Interpretation  Precedence  Associativity
 Floats library
 ~~~~~~~~~~~~~~
 
+The standard library has a small ``Floats`` module for accessing
+processor floating-point operations through the Coq kernel.
+However, while this module supports computation and has a bit-level
+specification, it doesn't include elaborate theorems, such as a link
+to real arithmetic or various error bounds. To do proofs by
+reflection, use ``Floats`` in conjunction with the complementary
+`Flocq <https://flocq.gitlabpages.inria.fr/>`_ library, which provides
+many such theorems.
+
 The library of primitive floating-point arithmetic can be loaded by
 requiring module ``Floats``:
 
