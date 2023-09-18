@@ -67,6 +67,9 @@ val compile_constant_field : env -> Constant.t ->
 val compile_mind_field : ModPath.t -> Label.t ->
   global list -> mutual_inductive_body -> global list
 
+val compile_rewrite_rules : env -> Label.t ->
+  global list -> rewrite_rules_body -> global list
+
 val mk_conv_code : env -> Genlambda.evars -> string -> constr -> constr -> linkable_code
 val mk_norm_code : env -> Genlambda.evars -> string -> constr -> linkable_code
 

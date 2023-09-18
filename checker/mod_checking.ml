@@ -81,6 +81,77 @@ let check_constant_declaration env opac kn cb opacify =
   let opac = check_constant_declaration env opac kn cb opacify in
   Environ.add_constant kn cb env, opac
 
+let check_instance_mask udecl umask =
+  let b = match udecl, umask with
+    | _, None -> true
+    | Monomorphic, Some umask -> Array.is_empty umask
+    | Polymorphic uctx, Some umask -> Array.length umask = snd @@ UVars.AbstractContext.size uctx
+  in
+  if b then () else CErrors.anomaly Pp.(str "Bad univ mask length.")
+
+let rec get_holes_profiles env nargs ndecls el =
+  List.concat_map (get_holes_profiles_elim env nargs ndecls) el
+
+and get_holes_profiles_elim env nargs ndecls = function
+  | PEApp args -> List.concat_map (get_holes_profiles_parg env nargs ndecls) (Array.to_list args)
+  | PECase (ind, u, ret, brs) ->
+      let mib, mip = Inductive.lookup_mind_specif env ind in
+      let () = check_instance_mask mib.mind_universes u in
+      get_holes_profiles_parg env (nargs + mip.mind_nrealargs +1) (ndecls + mip.mind_nrealdecls) ret @
+      (Array.map3 (fun nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b)) mip.mind_consnrealargs mip.mind_consnrealdecls brs |> Array.to_list |> List.concat)
+  | PEProj proj ->
+      let () = lookup_projection proj env |> ignore in []
+
+and get_holes_profiles_parg env nargs ndecls = function
+  | EHoleIgnored -> []
+  | EHole -> [nargs]
+  | ERigid (h, el) -> get_holes_profiles_head env nargs ndecls h @ get_holes_profiles env nargs ndecls el
+
+and get_holes_profiles_head env nargs ndecls = function
+  | PHRel n -> if n <= ndecls then [] else Type_errors.error_unbound_rel env n
+  | PHSymbol (c, u) -> let () = let cb = lookup_constant c env in check_instance_mask cb.const_universes u in []
+  | PHConstr (c, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in check_instance_mask mib.mind_universes u in []
+  | PHInd (ind, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env ind in check_instance_mask mib.mind_universes u in []
+  | PHInt _  | PHFloat _ -> []
+  | PHSort InSProp -> if Environ.sprop_allowed env then [] else Type_errors.error_disallowed_sprop env
+  | PHSort _ -> []
+  | PHLambda (tys, bod) | PHProd (tys, bod) ->
+      let holes_tys = Array.mapi (fun i' -> get_holes_profiles_parg env (nargs + i') (ndecls + i')) tys |> Array.to_list |> List.concat in
+      let holes_bod = get_holes_profiles_parg env (nargs + Array.length tys) (ndecls + Array.length tys) bod in
+      holes_tys @ holes_bod
+
+let check_rhs env holes_profile rhs =
+  let rec check i c = match Constr.kind c with
+    | App (f, args) when Constr.isRel f ->
+        let n = Constr.destRel f in
+        if n <= i then () else
+          if n - i > Array.length holes_profile then CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site");
+          let d = holes_profile.(n-i-1) in
+          if Array.length args >= d then () else CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site")
+    | Rel n when n > i ->
+        if n - i > Array.length holes_profile then CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site");
+        let d = holes_profile.(n-i-1) in
+        if d = 0 then () else CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site")
+    | _ -> Constr.iter_with_binders succ check i c
+  in
+  check 0 rhs
+
+let check_rewrite_rule env lab i (symb, rule) =
+  Flags.if_verbose Feedback.msg_notice (str "  checking rule:" ++ Label.print lab ++ str"#" ++ Pp.int i);
+  let { lhs_pat; rhs } = rule in
+  let symb_cb = Environ.lookup_constant symb env in
+  let () =
+    match symb_cb.const_body with Symbol _ -> ()
+    | _ -> ignore @@ invalid_arg "Rule defined on non-symbol"
+  in
+  let () = check_instance_mask symb_cb.const_universes (fst lhs_pat) in
+  let holes_profile = get_holes_profiles env 0 0 (snd lhs_pat) in
+  let () = check_rhs env (Array.of_list holes_profile) rhs in
+  ()
+
+let check_rewrite_rules_body env lab rrb =
+  List.iteri (check_rewrite_rule env lab) rrb.rewrules_rules
+
 (** {6 Checking modules } *)
 
 (** We currently ignore the [mod_type_alg] and [typ_expr_alg] fields.
@@ -185,7 +256,8 @@ and check_structure_field env opac mp lab res opacify = function
       check_module_type env mty;
       add_modtype mty env, opac
   | SFBrules rrb ->
-      Modops.error_rules_not_supported "Mod_checking.check_structure_field" lab
+      check_rewrite_rules_body env lab rrb;
+      Environ.add_rewrite_rules rrb.rewrules_rules env, opac
 
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
