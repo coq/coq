@@ -157,6 +157,3 @@ Section Integers_sect.
   Qed.
 
 End Integers_sect.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Export Gt Lt Le.

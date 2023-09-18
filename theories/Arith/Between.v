@@ -210,6 +210,3 @@ Section Between.
   Qed.
 
 End Between.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Lt.

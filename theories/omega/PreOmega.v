@@ -137,4 +137,3 @@ Ltac Zify.zify_internal_to_euclidean_division_equations ::= Z.to_euclidean_divis
 Ltac zify := Zify.zify.
 
 (* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max Min.

@@ -152,12 +152,11 @@ Function nat_equal_bool (n m : nat) {struct n} : bool :=
   end.
 
 
-Require Export Div2.
 Require Import Nat.
-Functional Scheme div2_ind := Induction for div2 Sort Prop.
-Lemma div2_inf : forall n : nat, div2 n <= n.
+Functional Scheme div2_ind := Induction for Nat.div2 Sort Prop.
+Lemma div2_inf : forall n : nat, Nat.div2 n <= n.
 intros n.
- functional induction div2 n.
+ functional induction Nat.div2 n.
 auto.
 auto.
 

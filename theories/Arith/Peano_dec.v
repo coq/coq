@@ -60,6 +60,3 @@ destruct le_mn1 as [|? le_mn1]; intros le_mn2; destruct le_mn2 as [|? le_mn2].
   * now apply IHn0.
   * now rewrite H.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Lt.

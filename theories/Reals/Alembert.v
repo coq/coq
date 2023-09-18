@@ -630,6 +630,3 @@ Proof.
       unfold Rdist in H5.
       unfold Rdiv; unfold Rdiv in H5; apply H5; assumption.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

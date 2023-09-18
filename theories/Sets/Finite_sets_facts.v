@@ -234,6 +234,3 @@ Section Finite_sets_facts.
   Qed.
 
 End Finite_sets_facts.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Export Gt Lt.

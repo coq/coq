@@ -54,6 +54,3 @@ Proof.
     simpl; rewrite <- Nat.add_assoc, <- Heq, Nat.add_comm, Nat.sub_add; trivial.
   - exists m; exists 0; simpl; auto.
 Defined.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Mult.

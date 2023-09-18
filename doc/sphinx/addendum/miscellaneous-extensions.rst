@@ -29,7 +29,7 @@ it provides the following command:
   .. coqtop:: all
 
      Require Coq.derive.Derive.
-     Require Import Coq.Numbers.Natural.Peano.NPeano.
+     Require Import PeanoNat.
 
      Section P.
 

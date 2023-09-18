@@ -322,10 +322,9 @@ Extraction test24.
 
 (** Coq term non strongly-normalizable after extraction *)
 
-Require Import Gt.
 Definition loop (Ax:Acc gt 0) :=
   (fix F (a:nat) (b:Acc gt a) {struct b} : nat :=
-     F (S a) (Acc_inv b (S a) (gt_Sn_n a))) 0 Ax.
+     F (S a) (Acc_inv b (S a) (Nat.lt_succ_diag_r a))) 0 Ax.
 Extraction loop.
 (* let loop _ =
   let rec f a =
@@ -684,5 +683,5 @@ Require Import Euclid ExtrOcamlNatBigInt.
 Definition test n m (H:m>0) :=
   let (q,r,_,_) := eucl_dev m H n in
   Nat.compare n (q*m+r).
-Recursive Extraction   test fact pred minus max min Div2.div2.
-Extraction TestCompile test fact pred minus max min Div2.div2.
+Recursive Extraction   test fact pred minus max min Nat.div2.
+Extraction TestCompile test fact pred minus max min Nat.div2.

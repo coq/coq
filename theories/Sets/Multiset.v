@@ -192,6 +192,3 @@ Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right
   munion_empty_left: datatypes.
 #[global]
 Hint Immediate meq_sym: datatypes.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Plus.

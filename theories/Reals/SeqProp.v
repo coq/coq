@@ -1201,6 +1201,3 @@ Proof.
           intro; elim (fact_neq_0 _ H3).
   - apply H1; assumption.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

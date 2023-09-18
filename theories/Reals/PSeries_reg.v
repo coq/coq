@@ -609,6 +609,3 @@ replace ((g (x + h) - g x) / h) with (rho (x + h)).
   + case hn0; replace h with (x + h - x) by ring; rewrite abs; ring.
   + replace (x + h - x) with h by ring; reflexivity.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max Even.

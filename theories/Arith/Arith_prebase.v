@@ -313,19 +313,3 @@ Hint Resolve Nat.min_l Nat.min_r Nat.le_min_l Nat.le_min_r: arith.
 Hint Constructors Nat.Even_alt: arith.
 #[global]
 Hint Constructors Nat.Odd_alt: arith.
-
-
-(* Register *)
-#[local]
-Definition lt_n_Sm_le := (fun n m => (proj1 (Nat.lt_succ_r n m))).
-Register lt_n_Sm_le as num.nat.lt_n_Sm_le.
-#[local]
-Definition le_lt_n_Sm := (fun n m => (proj2 (Nat.lt_succ_r n m))).
-Register le_lt_n_Sm as num.nat.le_lt_n_Sm.
-#[local]
-Definition lt_S_n := (fun n m => (proj2 (Nat.succ_lt_mono n m))).
-Register lt_S_n as num.nat.lt_S_n.
-Register Nat.le_lt_trans as num.nat.le_lt_trans.
-#[local]
-Definition pred_of_minus := (fun n => eq_sym (Nat.sub_1_r n)).
-Register pred_of_minus as num.nat.pred_of_minus.

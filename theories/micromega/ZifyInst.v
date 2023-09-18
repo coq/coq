@@ -637,4 +637,3 @@ Instance SatPowNonneg : Saturate Z.pow :=
 Add Zify Saturate SatPowNonneg.
 
 (* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max Min.

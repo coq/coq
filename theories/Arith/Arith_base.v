@@ -10,13 +10,6 @@
 
 Require Export Arith_prebase.
 
-Require Export Le.
-Require Export Lt.
-Require Export Plus.
-Require Export Gt.
-Require Export Minus.
-Require Export Mult.
-
 Require Export Factorial.
 Require Export Between.
 Require Export Peano_dec.

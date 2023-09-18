@@ -3163,6 +3163,3 @@ apply Riemann_integrable_scal; assumption.
 Qed.
 
 Arguments Riemann_integrable_Ropp [f a b] _ eps.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

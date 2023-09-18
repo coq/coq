@@ -271,6 +271,3 @@ Qed.
 Unset Implicit Arguments.
 
 Notation iter_nat n A f x := (nat_rect (fun _ => A) x (fun _ => f) n) (only parsing).
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Lt.

@@ -201,6 +201,3 @@ End Image.
 
 #[global]
 Hint Resolve Im_def image_empty finite_image: sets.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Export Gt Lt Le.

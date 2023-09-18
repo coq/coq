@@ -56,5 +56,3 @@ Proof.
 Qed.
 
 Require Export Wf_nat.
-
-Require Export Min Max.

@@ -12,7 +12,7 @@
 
 Require Coq.extraction.Extraction.
 
-Require Import Arith Even Div2 EqNat Euclid.
+Require Import Arith EqNat Euclid.
 Require Import ExtrOcamlBasic.
 
 (** NB: The extracted code depends on [zarith] package. *)

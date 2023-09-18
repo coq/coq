@@ -347,6 +347,3 @@ Proof.
         apply Hrecn; unfold ge; apply Nat.le_0_l.
       * simpl; ring.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

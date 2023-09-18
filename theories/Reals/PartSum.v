@@ -619,6 +619,3 @@ Proof.
            apply Rplus_le_compat_l; apply Hrecn0.
         -- apply Rplus_le_compat_l; apply H1.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

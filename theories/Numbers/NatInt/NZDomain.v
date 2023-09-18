@@ -379,6 +379,3 @@ Proof.
 Qed.
 
 End NZOfNatOps.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Plus Minus.
