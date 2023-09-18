@@ -574,6 +574,10 @@ cofix_definition: [
 | ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
+rewrite_rule: [
+| OPT [ univ_decl "|-" ] term "==>" term
+]
+
 scheme_kind: [
 | scheme_type "for" reference "Sort" sort_family
 ]
@@ -889,6 +893,7 @@ command: [
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
 | [ "Definition" | "Example" ] ident_decl def_body
+| [ "Symbol" | "Symbols" ] [ LIST1 ( "(" assumpt ")" ) | assumpt ]
 | "Let" ident_decl def_body
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "Inductive" record_definition LIST0 ( "with" record_definition )
@@ -905,6 +910,7 @@ command: [
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
+| "Rewrite" [ "Rule" | "Rules" ] ident ":=" rewrite_rule LIST0 ( "with" rewrite_rule )
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" record_definition LIST0 ( "with" record_definition )
 | "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
@@ -1038,7 +1044,7 @@ search_item: [
 
 logical_kind: [
 | [ thm_token | assumption_token ]
-| [ "Definition" | "Example" | "Context" | "Primitive" ]
+| [ "Definition" | "Example" | "Context" | "Primitive" | "Symbol" ]
 | [ "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
 | [ "Field" | "Method" ]
 ]

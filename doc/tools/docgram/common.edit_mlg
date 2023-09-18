@@ -568,6 +568,9 @@ gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
+| DELETE "Symbols" assum_list
+| REPLACE "Symbol" assum_list
+| WITH [ "Symbol" | "Symbols" ] assum_list
 | REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "Inductive" record_definition LIST0 ( "with" record_definition )
@@ -591,6 +594,9 @@ gallina: [
 | DELETE "Scheme" "Boolean" "Equality" "for" smart_global
 | DELETE "Scheme" "Equality" "for" smart_global
 | "Scheme" OPT "Boolean" "Equality" "for" smart_global
+| DELETE "Rewrite" "Rules" identref ":=" LIST1 rewrite_rule SEP "with"
+| REPLACE "Rewrite" "Rule" identref ":=" LIST1 rewrite_rule SEP "with"
+| WITH "Rewrite" [ "Rule" | "Rules" ]  identref ":=" rewrite_rule LIST0 ( "with" rewrite_rule )
 ]
 
 SPLICE: [
@@ -1943,8 +1949,9 @@ logical_kind: [
 | DELETE "Example"
 | DELETE "Context"
 | DELETE "Primitive"
+| DELETE "Symbol"
 (* SubClass was deleted from def_token *)
-| [ "Definition" | "Example" | "Context" | "Primitive" ]
+| [ "Definition" | "Example" | "Context" | "Primitive" | "Symbol" ]
 | DELETE "Coercion"
 | DELETE "Instance"
 | DELETE "Scheme"

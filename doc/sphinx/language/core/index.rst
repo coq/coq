@@ -48,3 +48,4 @@ will have to check their output.
    primitive
    ../../addendum/universe-polymorphism
    ../../addendum/sprop
+   ../../addendum/rewrite-rules
