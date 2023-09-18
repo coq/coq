@@ -78,7 +78,7 @@ let global_start = gettime()
 let global_start_stat = Gc.quick_stat()
 
 let duration ~time name ph ?args ?(last=",") () =
-  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
+  f "%a%s\n%!" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
 
 let enter_sums ?time () =
   let accu = Option.get !accu in
@@ -200,5 +200,5 @@ let finish () = match !accu with
       ~last:""
       ~args:(make_mem_diff ~mstart:global_start_stat ~mend:(Gc.quick_stat()))
       ();
-    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
+    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }\n%!";
     accu := None
