@@ -853,6 +853,9 @@ and whd_simpl_stack allowed_reds env sigma =
         | NotReducible -> s'
         end
 
+      | Const (cst, _) when is_symbol env cst ->
+          whd_const cst env sigma (applist s'), []
+
       | _ ->
         match match_eval_ref env sigma x stack with
         | Some (ref, u) ->

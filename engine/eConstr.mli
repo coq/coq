@@ -283,6 +283,11 @@ val decompose_lambda : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) li
 (** Pops lambda abstractions and letins until there are no more, skipping casts. *)
 val decompose_lambda_decls : Evd.evar_map -> t -> rel_context * t
 
+(** Pops [n] lambda abstractions, skipping casts.
+
+    @raise UserError if the term doesn't have enough lambdas. *)
+val decompose_lambda_n : Evd.evar_map -> int -> t -> (Name.t Context.binder_annot * t) list * t
+
 (** Pops [n] lambda abstractions, and pop letins only if needed to
    expose enough lambdas, skipping casts.
 
@@ -302,6 +307,7 @@ val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
 val to_lambda : Evd.evar_map -> int -> t -> t
 
 val decompose_prod : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
+val decompose_prod_n : Evd.evar_map -> int -> t -> (Name.t Context.binder_annot * t) list * t
 val decompose_prod_decls : Evd.evar_map -> t -> rel_context * t
 val decompose_prod_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
