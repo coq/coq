@@ -326,6 +326,17 @@ let map2 f l1 l2 = match l1, l2 with
     cast c
   | _ -> invalid_arg "List.map2"
 
+(* remove when requiring OCaml >= 5.1.0 *)
+let rec concat_map_loop f p = function
+  | [] -> ()
+  | x :: l -> concat_map_loop f (copy p (f x)) l
+
+(* remove when requiring OCaml >= 5.1.0 *)
+let concat_map f l =
+  let dummy = { head = Obj.magic 0; tail = [] } in
+  concat_map_loop f dummy l;
+  dummy.tail
+
 (** Like OCaml [List.mapi] but tail-recursive *)
 
 let rec map_i_loop f i p = function

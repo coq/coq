@@ -408,6 +408,7 @@ type nonrec synpure_vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
+  | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
@@ -416,6 +417,7 @@ type nonrec synpure_vernac_expr =
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
   | VernacConstraint of univ_constraint_expr list
+  | VernacAddRewRule of lident * (universe_decl_expr option * constr_expr * constr_expr) list
 
   (* Gallina extensions *)
   | VernacCanonical of qualid or_by_notation

@@ -180,6 +180,7 @@ let string_of_logical_kind = let open Decls in function
     | IsDefinition k -> string_of_definition_object_kind k
     | IsProof k -> string_of_theorem_kind k
     | IsPrimitive -> "Primitive"
+    | IsSymbol -> "Symbol"
 
 let pr_notation_entry = function
   | InConstrEntry -> keyword "constr"
@@ -524,6 +525,14 @@ let pr_statement head (idpl,(bl,c)) =
      (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
      str":" ++ pr_spc_lconstr c)
 
+let pr_rew_rule (ubinders, lhs, rhs) =
+  let binders = match ubinders with None -> mt()
+  | _ ->
+    pr_universe_decl ubinders ++ spc() ++ str"|-"
+  in
+  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
+  binders ++ pr_pure_lconstr lhs ++ str"==>" ++ pr_pure_lconstr rhs
+
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)
@@ -860,6 +869,13 @@ let pr_synpure_vernac_expr v =
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
+  | VernacSymbol l ->
+    let n = List.length (List.flatten (List.map fst (List.map snd l))) in
+    let pr_params (c, (xl, t)) =
+      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+              str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
+    let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
+    return (hov 2 (keyword (if (n > 1) then "Symbols" else "Symbol") ++ spc() ++ assumptions))
   | VernacInductive (f,l) ->
     let pr_constructor ((attr,coe,ins),(id,c)) =
       hov 2 (pr_vernac_attributes attr ++ pr_lident id ++ pr_oc coe ins ++
@@ -1257,6 +1273,14 @@ let pr_synpure_vernac_expr v =
     return (Goal_select.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
   | VernacEndSubproof ->
     return (str "}")
+
+  | VernacAddRewRule (id, l) ->
+    return (
+      hov 0 (keyword (if List.length l > 1 then "Rewrite Rules" else "Rewrite Rule") ++ spc () ++
+            pr_lident id ++ str ":=" ++
+            prlist_with_sep (fun _ -> fnl () ++ keyword "with"
+                                      ++ spc ()) pr_rew_rule l)
+    )
 
 let pr_synterp_vernac_expr v =
   let return = tag_vernac v in

@@ -112,6 +112,10 @@ val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val map_left : ('a -> 'b) -> 'a list -> 'b list
 (** As [map] but ensures the left-to-right order of evaluation. *)
 
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** Like OCaml [List.conxat_mapi] but tail-recursive. Alternatively,
+    the composition of [concat] and [map] *)
+
 val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 (** Like OCaml [List.mapi] but tail-recursive. Alternatively, like
     [map] but with an index *)
