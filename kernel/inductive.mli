@@ -104,6 +104,13 @@ val inductive_params : mind_specif -> int
 val expand_arity : mind_specif -> pinductive -> constr array ->
   Name.t Context.binder_annot array -> rel_context
 
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_branch_contexts : mind_specif -> UVars.Instance.t -> constr array ->
+  (Name.t Context.binder_annot array * 'a) array -> rel_context array
+
 type ('constr,'types) pexpanded_case =
   (case_info * ('constr * Sorts.relevance) * 'constr pcase_invert * 'constr * 'constr array)
 

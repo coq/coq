@@ -128,6 +128,11 @@ val map4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list ->
   'd list -> 'e list
 (** Like [map] but for 4 lists. *)
 
+val map_until : ('a -> 'b option) -> 'a list -> 'b list * 'a list
+(** [map_until f l] applies f to the elements of l until one returns None,
+    then returns the list of elements where f was applied
+    and the tail where f was not applied *)
+
 val map_of_array : ('a -> 'b) -> 'a array -> 'b list
 (** [map_of_array f a] behaves as [List.map f (Array.to_list a)] *)
 

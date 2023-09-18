@@ -384,6 +384,26 @@ let map4 f l1 l2 l3 l4 = match l1, l2, l3, l4 with
     cast c
   | _ -> invalid_arg "List.map4"
 
+let rec map_until_loop f p = function
+  | [] -> []
+  | x :: l as l' ->
+    match f x with
+    | None -> l'
+    | Some fx ->
+      let c = { head = fx; tail = [] } in
+      p.tail <- cast c;
+      map_until_loop f c l
+
+let map_until f = function
+  | [] -> [], []
+  | x :: l as l' ->
+    match f x with
+    | None -> [], l'
+    | Some fx ->
+    let c = { head = fx; tail = [] } in
+    let l = map_until_loop f c l in
+    cast c, l
+
 let rec map_of_array_loop f p a i l =
   if Int.equal i l then ()
   else
