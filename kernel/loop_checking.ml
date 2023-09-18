@@ -8,9 +8,9 @@ let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" 
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
 let _debug_loop_checking_loop, debug_loop = CDebug.create_full ~name:"loop-checking-loop" ()
 let _debug_loop_checking_check_model, debug_check_model = CDebug.create_full ~name:"loop-checking-check-model" ()
-let debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" ()
+let _debug_loop_checking_check, _debug_check = CDebug.create_full ~name:"loop-checking-check" ()
 
-let _ = CDebug.set_flag debug_loop_checking_check true
+(* let _ = CDebug.set_flag debug_loop_checking_check true *)
 
 module type Point = sig
   type t
@@ -979,7 +979,7 @@ let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clau
    it finds that the given atom is true *)
 
 (* model is a model for the clauses outside cls *)
-let check ?early_stop model (cls : CanSet.t) =
+let _check_debug ?early_stop model (cls : CanSet.t) =
   let cV = canonical_cardinal model in
   debug_check_invariants model;
   let rec inner_loop cardW w premconclw conclw m =
@@ -1008,7 +1008,6 @@ let check ?early_stop model (cls : CanSet.t) =
           Model (wr, mr))
       in inner_loop_partition w premconclw m
   and loop cV w cls m =
-    Control.check_for_interrupt ();
     debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m cls ++ str" with bound " ++ int cV);
     match check_clauses_with_premises ?early_stop w cls m with
     | None -> Model (cls, m)
@@ -1039,12 +1038,43 @@ let check ?early_stop model (cls : CanSet.t) =
           | Some (w, (wcls, mcls)) -> loop cV w wcls mcls))
   in loop cV PSet.empty cls model
 
-(* let check m w = *)
-  (* debug Pp.(fun () -> str"Calling loop-checking"); *)
-  (* check m w *)
-  (* debug Pp.(fun () -> str"Loop-checking terminated"); *)
-  (* with Stack_overflow -> *)
-    (* CErrors.anomaly (Pp.str "check raised a stack overflow") *)
+
+let check ?early_stop model (cls : CanSet.t) =
+  let cV = canonical_cardinal model in
+  let rec inner_loop cardW w premconclw conclw m =
+    (* Should consider only clauses with conclusions in w *)
+    (* Partition the clauses acscording to the presence of w in the premises *)
+    (* Warning: m is not necessarily a model for w *)
+    let rec inner_loop_partition w cls m =
+      match loop cardW w cls m with
+      | Loop -> Loop
+      | Model (wr, mr) ->
+        (* This is only necessary when clauses do have multiple premises,
+           otherwise each clause is either in premconclw and already considered
+           or in conclw but then the premise cannot be updated and this is useless work *)
+        (match check_clauses_with_premises ?early_stop w conclw mr with
+        | Some (wconcl, (clsconcl, mconcl)) ->
+          inner_loop_partition wconcl clsconcl mconcl
+        | None -> Model (wr, mr))
+      in inner_loop_partition w premconclw m
+  and loop cV w cls m =
+    match check_clauses_with_premises ?early_stop w cls m with
+    | None -> Model (cls, m)
+    | Some (w, (cls, m)) ->
+      let cardW = (PSet.cardinal w) in
+      if Int.equal cardW cV
+      then Loop
+      else
+        let (premconclw, conclw, premw) = partition_clauses_fwd m cls in
+        (match inner_loop cardW PSet.empty premconclw conclw m with
+        | Loop -> Loop
+        | Model (wc, mc) ->
+          (* wc is a subset of w *)
+          (match check_clauses_with_premises w premw mc with
+          | None -> Model (wc, mc)
+          | Some (w, (wcls, mcls)) -> loop cV w wcls mcls))
+  in loop cV PSet.empty cls model
+
 
 let entry_value m e =
   match e with
@@ -1535,7 +1565,7 @@ let _check_clause_singleton m prem concl k =
    We generate the minimal model starting from the premises. I.e. we make the premises true.
    Then we check that the conclusion holds in this minimal model.  *)
 
-let check_clause_singleton_alt model prem concl k =
+let _check_clause_singleton_alt_debug model prem concl k =
   (* premise -> concl + k ? *)
   debug Pp.(fun () -> str"Checking entailment: " ++ pr_index_point model prem.canon ++
     str " -> " ++ pr_index_point model concl.canon ++ str"+" ++ int k);
@@ -1566,6 +1596,23 @@ let check_clause_singleton_alt model prem concl k =
       debug Pp.(fun () -> str"Conclusion has value " ++ int value ++
         str" in the minimal model, expecting conclusion + " ++ int k ++ str " to hold");
       k <= value
+
+
+let check_clause_singleton_alt model prem concl k =
+  (* premise -> concl + k ? *)
+  if (Point.is_source (Index.repr concl.canon model.table)) && k == 0 then true else
+  let values = PMap.singleton prem.canon 0 in
+  let model = { model with values } in
+  let cls = CanSet.singleton prem.canon (prem.clauses_bwd, prem.clauses_fwd) in
+  (* We have a model where only the premise is true, check if the conclusion follows *)
+  match check ~early_stop:(concl, k) model cls with
+  | exception FoundImplication -> true
+  | Loop -> false
+  | Model (_updates, model') ->
+    match canonical_value model' concl with
+    | None -> false
+    | Some value -> k <= value
+
 
 let check_clause_singleton model prem concl k =
   check_clause_singleton_alt model prem concl k
@@ -1760,11 +1807,7 @@ let infer_clause_extension cl m =
       | None ->
         debug Pp.(fun () -> str"Enforcing clauses " ++ pr_can_clause m cl ++ str" resulted in a loop");
         None
-      | Some _ as x ->
-        (* let (_, (conclcan, _)) = cl in *)
-        (* debug Pp.(fun () -> str"Backward clauses of concl " ++ pr_clauses_of model conclcan.canon conclcan.clauses_bwd); *)
-        (* assert (check_clause model cl); *)
-        x
+      | Some _ as x -> x
     end
 
 let infer_extension x k y m =
