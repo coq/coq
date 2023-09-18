@@ -244,7 +244,7 @@ let v_primitive =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]|]
+    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]; [|v_bool|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags"
@@ -341,6 +341,9 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
+let v_rewrule = Any
+let v_rrb = v_tuple "rewrite_rules_body" [| List (v_tuple "cst+rule" [|v_cst; v_rewrule|]) |]
+
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
@@ -352,6 +355,7 @@ let rec v_sfb =
   Sum ("struct_field_body",0,
   [|[|v_cb|];       (* SFBconst *)
     [|v_ind_pack|]; (* SFBmind *)
+    [|v_rrb|];      (* SFBrules *)
     [|v_module|];   (* SFBmodule *)
     [|v_modtype|]   (* SFBmodtype *)
   |])

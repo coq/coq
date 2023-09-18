@@ -102,12 +102,19 @@ type primitive_entry = {
   prim_entry_content : CPrimitives.op_or_type;
 }
 
+type symbol_entry = {
+  symb_entry_type : types;
+  symb_entry_unfold_fix: bool;
+  symb_entry_universes : universes_entry;
+}
+
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 
 type constant_entry =
   | DefinitionEntry : definition_entry -> constant_entry
   | ParameterEntry : parameter_entry -> constant_entry
   | PrimitiveEntry : primitive_entry -> constant_entry
+  | SymbolEntry : symbol_entry -> constant_entry
 
 (** {6 Modules } *)
 

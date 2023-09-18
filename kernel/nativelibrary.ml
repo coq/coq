@@ -54,6 +54,7 @@ and translate_field mp env acc (l,x) =
         in
         Pp.str msg));
      translate_mod mp env mdtyp.mod_type acc
+  | SFBrules _ -> error_rules_not_supported "Nativelibrary.translate_field" l
 
 let dump_library mp env mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");

@@ -125,6 +125,11 @@ val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 val repr_certificate : opaque_certificate ->
   Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
 
+(** {5 Rewrite rules} *)
+
+(** Add a rewrite rule corresponding to the equality witnessed by the constant. *)
+val add_rewrite_rules : Label.t -> Declarations.rewrite_rules_body -> safe_environment -> safe_environment
+
 (** {5 Inductive blocks} *)
 
 (** Adding an inductive type *)

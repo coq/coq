@@ -34,6 +34,7 @@ type namedobject =
   | Constant of constant_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
+  | Rules
 
 type namedmodule =
   | Module of module_body
@@ -76,6 +77,7 @@ let make_labmap mp list =
   let add_one (l,e) map =
    match e with
     | SFBconst cb -> { map with objs = Label.Map.add l (Constant cb) map.objs }
+    | SFBrules _ -> { map with objs = Label.Map.add l Rules map.objs }
     | SFBmind mib -> { map with objs = add_mib_nameobjects mp l mib map.objs }
     | SFBmodule mb -> { map with mods = Label.Map.add l (Module mb) map.mods }
     | SFBmodtype mtb -> { map with mods = Label.Map.add l (Modtype mtb) map.mods }
@@ -231,7 +233,7 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
     check_conv err cst poly CUMUL env t1 t2
   in
   match info1 with
-    | IndType _ | IndConstr _ -> error DefinitionFieldExpected
+    | IndType _ | IndConstr _ | Rules -> error DefinitionFieldExpected
     | Constant cb1 ->
       let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
       let cb1 = Declareops.subst_const_body subst1 cb1 in
@@ -255,10 +257,10 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
       *)
       (match cb2.const_body with
        | Undef _ | OpaqueDef _ -> cst
-       | Primitive _ -> error NotConvertibleBodyField
+       | Primitive _ | Symbol _ -> error NotConvertibleBodyField
        | Def c2 ->
          (match cb1.const_body with
-          | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
+          | Primitive _ | Undef _ | OpaqueDef _ | Symbol _ -> error NotConvertibleBodyField
           | Def c1 ->
             (* NB: cb1 might have been strengthened and appear as transparent.
                Anyway [check_conv] will handle that afterwards. *)
@@ -294,6 +296,7 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
                 (add_module_type mtb1.mod_mp mtb1 env)
             in
             check_modtypes (cst, ustate) (Submodule l :: trace) env mtb1 mtb2 subst1 subst2 true
+        | SFBrules _ -> error_rules_not_supported "Subtyping.check_signatures" l
   in
     List.fold_left check_one_body cst sig2
 

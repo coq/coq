@@ -322,7 +322,7 @@ let rec extract_type env sg db j c args =
            | (Info, Default) ->
                (* Not an ML type, for example [(c:forall X, X->X) Type nat] *)
                (match (lookup_constant kn env).const_body with
-                 | Undef _  | OpaqueDef _ | Primitive _ -> Tunknown (* Brutal approx ... *)
+                 | Undef _  | OpaqueDef _ | Primitive _ | Symbol _ -> Tunknown (* Brutal approx ... *)
                   | Def lbody ->
                       (* We try to reduce. *)
                       let newc = applistc (get_body lbody) args in
@@ -563,7 +563,7 @@ and mlt_env env r = let open GlobRef in match r with
   | ConstRef kn ->
      let cb = Environ.lookup_constant kn env in
      match cb.const_body with
-     | Undef _ | OpaqueDef _ | Primitive _ -> None
+     | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> None
      | Def l_body ->
         match lookup_typedef kn cb with
         | Some _ as o -> o
@@ -1136,7 +1136,7 @@ let extract_constant env kn cb =
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
-          | Primitive _ | Undef _ -> warn_info (); mk_typ_ax ()
+          | Primitive _ | Symbol _ | Undef _ -> warn_info (); mk_typ_ax ()
           | Def c ->
              (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_typ (get_body c)
@@ -1149,7 +1149,7 @@ let extract_constant env kn cb =
             else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
-          | Primitive _ | Undef _ -> warn_info (); mk_ax ()
+          | Primitive _ | Symbol _ | Undef _ -> warn_info (); mk_ax ()
           | Def c ->
              (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_def (get_body c)
@@ -1176,7 +1176,7 @@ let extract_constant_spec env kn cb =
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
         (match cb.const_body with
-          | Undef _ | OpaqueDef _ | Primitive _ -> Stype (r, vl, None)
+          | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> Stype (r, vl, None)
           | Def body ->
               let db = db_from_sign s in
               let body = get_body body in

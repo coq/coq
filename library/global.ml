@@ -99,6 +99,7 @@ let export_private_constants cd = globalize (Safe_typing.export_private_constant
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags (i2l id) d)
 let add_private_constant id u d = globalize (Safe_typing.add_private_constant (i2l id) u d)
 let fill_opaque c = globalize0 (Safe_typing.fill_opaque c)
+let add_rewrite_rules id c = globalize0 (Safe_typing.add_rewrite_rules (i2l id) c)
 let add_mind ?typing_flags id mie = globalize (Safe_typing.add_mind ?typing_flags (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
@@ -149,7 +150,7 @@ let force_proof access o = match access.access_proof o with
 let body_of_constant_body access env cb =
   let open Declarations in
   match cb.const_body with
-  | Undef _ | Primitive _ ->
+  | Undef _ | Primitive _ | Symbol _ ->
      None
   | Def c ->
     let u = match cb.const_universes with

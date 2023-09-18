@@ -1415,6 +1415,7 @@ let is_opaque_constant c =
   | Declarations.Undef _ -> Opaque
   | Declarations.Def _ -> Transparent
   | Declarations.Primitive _ -> Opaque
+  | Declarations.Symbol _ -> Opaque
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =

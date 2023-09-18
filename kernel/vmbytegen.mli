@@ -22,7 +22,7 @@ val compile :
 (** init, fun, fv *)
 
 val compile_constant_body : fail_on_error:bool ->
-  env -> universes -> (Constr.t, 'opaque) constant_def ->
+  env -> universes -> (Constr.t, 'opaque, 'symb) constant_def ->
   body_code option
 
 (** Shortcut of the previous function used during module strengthening *)

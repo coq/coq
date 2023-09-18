@@ -76,7 +76,7 @@ let constant_is_polymorphic cb =
 
 
 let constant_has_body cb = match cb.const_body with
-  | Undef _ | Primitive _ -> false
+  | Undef _ | Primitive _ | Symbol _ -> false
   | Def _ | OpaqueDef _ -> true
 
 let constant_polymorphic_context cb =
@@ -84,7 +84,7 @@ let constant_polymorphic_context cb =
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
-  | Undef _ | Def _ | Primitive _ -> false
+  | Undef _ | Def _ | Primitive _ | Symbol _ -> false
 
 (** {7 Constant substitutions } *)
 
@@ -100,7 +100,7 @@ let subst_const_type subst arity =
 (** No need here to check for physical equality after substitution,
     at least for Def due to the delayed substitution [subst_constr_subst]. *)
 let subst_const_def subst def = match def with
-  | Undef _ | Primitive _ -> def
+  | Undef _ | Primitive _ | Symbol _ -> def
   | Def c -> Def (subst_mps subst c)
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque subst o)
 
@@ -139,6 +139,7 @@ let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 let hcons_const_def = function
   | Undef inl -> Undef inl
   | Primitive p -> Primitive p
+  | Symbol r -> Symbol r
   | Def l_constr ->
     Def (Constr.hcons l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
@@ -389,6 +390,7 @@ let rec hcons_structure_field_body sb = match sb with
 | SFBmodtype mb ->
   let mb' = hcons_module_type mb in
   if mb == mb' then sb else SFBmodtype mb'
+| SFBrules _ -> assert false (* TODO? *)
 
 and hcons_structure_body sb =
   (** FIXME *)

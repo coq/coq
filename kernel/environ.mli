@@ -79,6 +79,7 @@ type env = private {
     In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
   irr_inds : Sorts.relevance Indmap_env.t
 (** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
+  symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
 }
@@ -202,6 +203,8 @@ val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool
 
+val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
+
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
 val polymorphic_pconstant : pconstant -> env -> bool
@@ -218,6 +221,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of Instance.t * CPrimitives.t
+  | HasRules of bool * rewrite_rule list
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
@@ -235,6 +239,7 @@ val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
 
+val is_symbol : env -> Constant.t -> bool
 val is_primitive : env -> Constant.t -> bool
 val get_primitive : env -> Constant.t -> CPrimitives.t option
 

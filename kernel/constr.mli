@@ -260,7 +260,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Const     of (Constant.t * 'univs)
   (** Gallina-variable that was introduced by Vernacular-command that
      extends the global environment (i.e. [Parameter], or [Axiom], or
-     [Definition], or [Theorem] etc.) *)
+     [Definition], or [Theorem], or [Symbol] etc.) *)
   | Ind       of (inductive * 'univs)
   (** A name of an inductive type defined by [Variant], [Inductive] or
      [Record] Vernacular-commands. *)

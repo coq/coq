@@ -1231,7 +1231,7 @@ let get_funs_constant mp =
         in
         let body = EConstr.Unsafe.to_constr body in
         body
-      | Undef _ | OpaqueDef _ | Primitive _ ->
+      | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ ->
         CErrors.user_err Pp.(str "Cannot define a principle over an axiom ")
     in
     let f = find_constant_body const in
@@ -2060,7 +2060,7 @@ let make_graph (f_ref : GlobRef.t) =
     | _ -> CErrors.user_err Pp.(str "Not a function reference")
   in
   match c_body.Declarations.const_body with
-  | Undef _ | Primitive _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
+  | Undef _ | Primitive _ | Symbol _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
   | Def body ->
     let env = Global.env () in
     let extern_body, extern_type =

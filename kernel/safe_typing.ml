@@ -373,7 +373,7 @@ let side_effects_of_private_constants l =
 let lift_constant c =
   let body = match c.const_body with
   | OpaqueDef _ -> Undef None
-  | Def _ | Undef _ | Primitive _ as body -> body
+  | Def _ | Undef _ | Primitive _ | Symbol _ as body -> body
   in
   { c with const_body = body }
 
@@ -554,6 +554,7 @@ let add_retroknowledge pttc senv =
 type generic_name =
   | C of Constant.t
   | I of MutInd.t
+  | R
   | M (** name already known, cf the mod_mp field *)
   | MT (** name already known, cf the mod_mp field *)
 
@@ -562,7 +563,7 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmind mib ->
       let l = labels_of_mib mib in
       check_objlabels l senv; (Label.Set.empty,l)
-    | SFBconst _ ->
+    | SFBconst _ | SFBrules _ ->
       check_objlabel l senv; (Label.Set.empty, Label.Set.singleton l)
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
@@ -572,6 +573,7 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
     | SFBmodtype mtb, MT -> Environ.add_modtype mtb senv.env
     | SFBmodule mb, M -> Modops.add_module mb senv.env
+    | SFBrules r, R -> Environ.add_rewrite_rules r.rewrules_rules senv.env
     | _ -> assert false
   in
   let sections = match senv.sections with
@@ -838,7 +840,7 @@ let export_private_constants eff senv =
     let body = Constr.hcons body in
     let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
     senv, (kn, { c with const_body = OpaqueDef o }, Some opaque)
-  | Def _ | Undef _ | Primitive _ as body ->
+  | Def _ | Undef _ | Primitive _ | Symbol _ as body ->
     senv, (kn, { c with const_body = body }, None)
   in
   let senv, bodies = List.fold_left_map map senv exported in
@@ -961,7 +963,7 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
        and depending of the opaque status of the latter, this proof term will be
        either inlined or reexported. *)
     { cb with const_body = Undef None }
-  | Undef _ | Primitive _ -> assert false
+  | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let senv = add_constant_aux senv (kn, dcb) in
   let eff =
@@ -975,6 +977,14 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
     SideEffects.add eff empty_private_constants
   in
   (kn, eff), senv
+
+(** Rewrite rules *)
+
+let add_rewrite_rules l rules senv =
+  if Option.has_some senv.sections
+  then CErrors.user_err Pp.(str "Adding rewrite rules not supported in sections.");
+  (* TODO: Hashconsing? *)
+  add_field (l, SFBrules rules) R senv
 
 (** Insertion of inductive types *)
 
@@ -1245,6 +1255,7 @@ let add_include me is_module inl senv =
         C (Mod_subst.constant_of_delta_kn resolver (KerName.make mp_sup l))
       | SFBmind _ ->
         I (Mod_subst.mind_of_delta_kn resolver (KerName.make mp_sup l))
+      | SFBrules _ -> R
       | SFBmodule _ -> M
       | SFBmodtype _ -> MT
     in

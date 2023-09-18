@@ -199,7 +199,7 @@ let get_constant_body kn =
   let cb = lookup_constant kn in
   let access = Library.indirect_accessor in
   match cb.const_body with
-  | Undef _ | Primitive _ -> None
+  | Undef _ | Primitive _ | Symbol _ -> None
   | Def c -> Some c
   | OpaqueDef o ->
     match Global.force_proof access o with

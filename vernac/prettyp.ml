@@ -160,7 +160,7 @@ let opacity env =
   | GlobRef.ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       (match cb.const_body with
-        | Undef _ | Primitive _ -> None
+        | Undef _ | Primitive _ | Symbol _ -> None
         | OpaqueDef _ -> Some FullyOpaque
         | Def _ -> Some
           (TransparentMaybeOpacified
@@ -666,6 +666,9 @@ let print_full_pure_atomic env sigma mp lobj =
           pr_lconstr_env env sigma c
         | Primitive _ ->
           str "Primitive " ++
+          print_basename con ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ
+        | Symbol _ ->
+          str "Symbol " ++
           print_basename con ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ)
       ++ str "." ++ fnl () ++ fnl ()
     end @@

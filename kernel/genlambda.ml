@@ -710,7 +710,7 @@ and lambda_of_app cache env sigma f args =
         else
           let t = Val.get_constant (kn, u) cb in
           mkLapp t (lambda_of_args cache env sigma 0 args)
-      | OpaqueDef _ | Undef _ ->
+      | OpaqueDef _ | Undef _ | Symbol _ ->
           mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       end
   | Construct ((ind,_ as c),_) ->

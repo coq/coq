@@ -69,6 +69,7 @@ type module_typing_error =
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
   | IncludeRestrictedFunctor of ModPath.t
+  | UnsupportedRewriteRules of string * Label.t
 
 exception ModuleTypingError of module_typing_error
 
@@ -110,6 +111,9 @@ let error_no_such_label_sub l l1 =
 
 let error_include_restricted_functor mp =
   raise (ModuleTypingError (IncludeRestrictedFunctor mp))
+
+let error_rules_not_supported funname id =
+  raise (ModuleTypingError (UnsupportedRewriteRules (funname, id)))
 
 (** {6 Operations on functors } *)
 
@@ -194,6 +198,7 @@ let rec subst_structure subst do_delta sign =
     | SFBmodtype mtb ->
       let mtb' = subst_modtype subst do_delta mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
+    | SFBrules _ -> error_rules_not_supported "Modops.subst_structure" l
   in
   List.Smart.map subst_field sign
 
@@ -296,6 +301,7 @@ let rec add_structure mp sign resolver linkinfo env =
       Environ.add_mind_key mind (mib,ref linkinfo) env
     | SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
     | SFBmodtype mtb -> Environ.add_modtype mtb env
+    | SFBrules r -> Environ.add_rewrite_rules r.rewrules_rules env
   in
   List.fold_left add_field env sign
 
@@ -365,6 +371,7 @@ and strengthen_signature mp_from struc mp_to reso = match struc with
   | (_l,SFBmodtype _mty as item) :: rest ->
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
+  | (l, SFBrules _) :: _rest -> error_rules_not_supported "Modops.strengthen_signature" l
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
@@ -460,6 +467,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
         add_mp_delta_resolver mp_to' mp_to' reso', item'
+    | (l, SFBrules _) -> error_rules_not_supported "Modops.strengthen_and_subst_structure" l
   in
   List.Smart.fold_left_map strengthen_and_subst_field empty_delta_resolver struc
 
@@ -580,7 +588,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
         let constant = lookup_constant con env in
         let l = make_inline delta r in
         match constant.const_body with
-        | Undef _ | OpaqueDef _ | Primitive _ -> l
+        | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> l
         | Def constr ->
           let ctx = Declareops.constant_polymorphic_context constant in
           let constr = {UVars.univ_abstracted_value=constr; univ_abstracted_binder=ctx} in

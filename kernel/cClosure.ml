@@ -334,7 +334,7 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 
 (************************************************************************)
 
-type table_val = (fconstr, Empty.t) constant_def
+type table_val = (fconstr, Empty.t, bool * rewrite_rule list) constant_def
 
 module Table : sig
   type t
@@ -366,6 +366,8 @@ end = struct
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+    | Symbol _ -> assert false
+    (*  Should already be dealt with *)
 
   let value_of info ref =
     try
@@ -396,6 +398,11 @@ end = struct
       | ConstKey (cst,u) ->
         let cb = lookup_constant cst env in
         shortcut_irrelevant info (UVars.subst_instance_relevance u cb.const_relevance);
+        match Cmap_env.find_opt cst env.symb_pats with
+        | Some r ->
+          let b = match [@ocaml.warning "-4"] cb.const_body with Symbol b -> b | _ -> assert false in
+          raise (NotEvaluableConst (HasRules (b, r)))
+        | None -> ();
         let ts = RedFlags.red_transparent info.i_flags in
         if TransparentState.is_transparent_constant ts cst then
           Def (constant_value_in u cb.const_body)
@@ -404,6 +411,7 @@ end = struct
     with
     | Irrelevant -> Def mk_irrelevant
     | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
+    | NotEvaluableConst (HasRules (b, r)) -> Symbol (b, r)
     | Not_found (* List.assoc *)
     | NotEvaluableConst _ (* Const *) -> Undef None
 
@@ -1362,6 +1370,8 @@ let rec knr info tab m stk =
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
+        | Symbol _ ->
+            (m, stk)
         | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
   | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
@@ -1664,4 +1674,4 @@ let unfold_ref_with_args infos tab fl v =
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
-  | Undef _ | OpaqueDef _ | Primitive _ -> None
+  | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> None

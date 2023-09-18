@@ -55,6 +55,7 @@ val add_constant :
 val fill_opaque : Safe_typing.opaque_certificate -> unit
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
+val add_rewrite_rules : Id.t -> rewrite_rules_body -> unit
 val add_mind :
   ?typing_flags:typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t

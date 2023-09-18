@@ -81,7 +81,7 @@ let lookup_polymorphism env base kind fqid =
     | [id] ->
       let test (lab,obj) =
         match Id.equal (Label.to_id lab) id, obj with
-        | false, _ | _, (SFBmodule _ | SFBmodtype _) -> None
+        | false, _ | _, (SFBrules _ | SFBmodule _ | SFBmodtype _) -> None
         | true, SFBmind mind -> Some (Declareops.inductive_is_polymorphic mind)
         | true, SFBconst const -> Some (Declareops.constant_is_polymorphic const)
       in
@@ -93,7 +93,7 @@ let lookup_polymorphism env base kind fqid =
       in
       let test (lab,obj) =
         match Id.equal (Label.to_id lab) id, obj with
-        | false, _ | _, (SFBconst _ | SFBmind _) -> None
+        | false, _ | _, (SFBrules _ | SFBconst _ | SFBmind _) -> None
         | true, SFBmodule body -> Some (next body.mod_type)
         | true, SFBmodtype body ->  (* XXX is this valid? If not error later *)
           Some (next body.mod_type)

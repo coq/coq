@@ -442,7 +442,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
     | OpaqueDef o ->
       let (_, _, _, i) = Opaqueproof.repr o in
       Opaques.declare_defined_opaque ?feedback_id i body
-    | Def _ | Undef _ | Primitive _ -> assert false
+    | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = register_constant kn kind local ?user_warns in
   kn

@@ -67,6 +67,7 @@ let cook_constant env info cb =
   | OpaqueDef o ->
     OpaqueDef (Opaqueproof.discharge_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
+  | Symbol _ -> CErrors.anomaly (Pp.str "Symbols cannot be cooked")
   in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
   let typ = abstract_as_type cache cb.const_type in

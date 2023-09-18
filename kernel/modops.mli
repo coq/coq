@@ -133,6 +133,7 @@ type module_typing_error =
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
   | IncludeRestrictedFunctor of ModPath.t
+  | UnsupportedRewriteRules of string * Label.t
 
 exception ModuleTypingError of module_typing_error
 
@@ -157,3 +158,5 @@ val error_generative_module_expected : Label.t -> 'a
 val error_no_such_label_sub : Label.t->string->'a
 
 val error_include_restricted_functor : ModPath.t -> 'a
+
+val error_rules_not_supported : string -> Label.t -> 'a
