@@ -239,11 +239,11 @@ let rec prompt level =
     let open DebugHook.Action in
     match action with
     | Continue | StepIn | StepOver | StepOut -> return (DebugOn (level+1))
+    | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
+    | Help -> help () >> prompt level
     | Skip ->
       if not_in_history () then return DebugOff
       else prompt level
-    | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
-    | Help -> help () >> prompt level
     | RunCnt num ->
       if not_in_history () then
         (skip:=num) >> (skipped:=0) >> runnoprint >> return (DebugOn (level+1))
@@ -325,10 +325,12 @@ let debug_prompt lev tac f varmap trace =
         Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))  (* call prompt -> read msg *)
       in
       let loc = CAst.(tac.loc) in
-      if DebugCommon.breakpoint_stop loc then
-        (* todo: skip := 0 *)
+      if DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop loc then
         stop_here ()
-      else if s > 0 then
+      else if s = 1 then begin
+        Proofview.tclLIFT ((skip := 0) >> runprint) >=
+        (fun () -> stop_here ())
+      end else if s > 0 then
         Proofview.tclLIFT ((skip := s-1) >>
           runprint >>
           !skip >>= fun new_skip ->
@@ -341,13 +343,9 @@ let debug_prompt lev tac f varmap trace =
         Proofview.tclLIFT !idtac_breakpt >= fun idtac_breakpt ->
           if Option.has_some idtac_breakpt then
             Proofview.tclLIFT(runprint >> return (DebugOn (lev+1)))
-          else begin
-            if DebugCommon.stepping_stop loc then
-              stop_here ()
-            else
-              Proofview.tclLIFT (Comm.clear_queue () >>
-              return (DebugOn (lev+1)))
-          end
+          else
+            Proofview.tclLIFT (Comm.clear_queue () >>
+            return (DebugOn (lev+1)))
     in
   let newlevel =
     Proofview.tclTHEN
