@@ -43,6 +43,7 @@
     field of real numbers.
  *)
 
+Require Import RelationClasses.
 Require Export Raxioms.
 Require Import Rpow_def.
 Require Import ZArith.
@@ -63,10 +64,14 @@ Proof. now intros r; right. Qed.
 #[global]
 Hint Immediate Rle_refl: rorders.
 
+#[export] Instance Rle_Reflexive : Reflexive Rle | 10 := Rle_refl.
+
 Lemma Rge_refl : forall r, r >= r.
 Proof. now intros r; right. Qed.
 #[global]
 Hint Immediate Rge_refl: rorders.
+
+#[export] Instance Rge_Reflexive : Reflexive Rge | 10 := Rge_refl.
 
 Lemma Req_le : forall r1 r2, r1 = r2 -> r1 <= r2.
 Proof. now intros r1 r2 H; right. Qed.
@@ -85,8 +90,12 @@ Proof. intros r H; now apply (Rlt_asym r r). Qed.
 #[global]
 Hint Resolve Rlt_irrefl: real.
 
+#[export] Instance Rlt_Irreflexive : Irreflexive Rlt | 10 := Rlt_irrefl.
+
 Lemma Rgt_irrefl : forall r, ~ r > r.
 Proof. exact Rlt_irrefl. Qed.
+
+#[export] Instance Rgt_Irreflexive : Irreflexive Rgt | 10 := Rgt_irrefl.
 
 Lemma Rlt_not_eq : forall r1 r2, r1 < r2 -> r1 <> r2.
 Proof. now intros r1 r2 H H0; apply (Rlt_irrefl r1); rewrite H0 at 2. Qed.
@@ -272,8 +281,12 @@ Hint Immediate Req_ge_sym: real.
 
 (** Remark: [Rlt_asym] is in [Raxioms.v] *)
 
+#[export] Instance Rlt_Asymmetric : Asymmetric Rlt | 10 := Rlt_asym.
+
 Lemma Rgt_asym : forall r1 r2, r1 > r2 -> ~ r2 > r1.
 Proof. now intros r1 r2; apply Rlt_asym. Qed.
+
+#[export] Instance Rgt_Asymmetric : Asymmetric Rgt | 10 := Rgt_asym.
 
 (** *** Antisymmetry *)
 
@@ -285,8 +298,12 @@ Qed.
 #[global]
 Hint Resolve Rle_antisym: real.
 
+#[export] Instance Rle_Antisymmetric : Antisymmetric R eq Rle | 10 := Rle_antisym.
+
 Lemma Rge_antisym : forall r1 r2, r1 >= r2 -> r2 >= r1 -> r1 = r2.
 Proof. now intros r1 r2 H1%Rge_le H2%Rge_le; apply Rle_antisym. Qed.
+
+#[export] Instance Rge_Antisymmetric : Antisymmetric R eq Rge | 10 := Rge_antisym.
 
 Lemma Rle_le_eq : forall r1 r2, r1 <= r2 /\ r2 <= r1 <-> r1 = r2.
 Proof.
@@ -315,6 +332,7 @@ Proof. now intros r1 r2 r3 r4 -> Hgt <-. Qed.
 (** *** Transitivity *)
 
 (** Remark: [Rlt_trans] is in Raxioms *)
+#[export] Instance Rlt_Transitive : Transitive Rlt | 10 := Rlt_trans.
 
 Lemma Rle_trans : forall r1 r2 r3, r1 <= r2 -> r2 <= r3 -> r1 <= r3.
 Proof.
@@ -324,14 +342,20 @@ Proof.
   - now left.
 Qed.
 
+#[export] Instance Rle_Transitive : Transitive Rle | 10 := Rle_trans.
+
 Lemma Rge_trans : forall r1 r2 r3, r1 >= r2 -> r2 >= r3 -> r1 >= r3.
 Proof.
   intros r1 r2 r3 H1%Rge_le H2%Rge_le.
   now apply Rle_ge, (Rle_trans _ r2).
 Qed.
 
+#[export] Instance Rge_Transitive : Transitive Rge | 10 := Rge_trans.
+
 Lemma Rgt_trans : forall r1 r2 r3, r1 > r2 -> r2 > r3 -> r1 > r3.
 Proof. now intros r1 r2 r3 H H'; apply (Rlt_trans _ r2). Qed.
+
+#[export] Instance Rgt_Transitive : Transitive Rgt | 10 := Rgt_trans.
 
 Lemma Rle_lt_trans : forall r1 r2 r3, r1 <= r2 -> r2 < r3 -> r1 < r3.
 Proof. now intros r1 r2 r3 [Hlt | ->]; try easy; apply (Rlt_trans _ r2). Qed.
@@ -1960,7 +1984,6 @@ Proof.
   intros r H; apply Rlt_le_trans with (1 := Rlt_0_1).
   rewrite <-(Rplus_0_l 1) at 1.
   apply Rplus_le_compat; try easy.
-  exact (Rle_refl 1).
 Qed.
 #[global]
 Hint Resolve Rle_lt_0_plus_1: real.
@@ -1983,7 +2006,6 @@ Proof.
   replace 2 with (1 + 1) by reflexivity.
   rewrite <-(Rplus_0_l 1) at 1.
   apply Rplus_lt_le_compat; try easy.
-  exact (Rle_refl 1).
 Qed.
 
 Lemma Rplus_diag : forall r, r + r = 2 * r.
