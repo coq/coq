@@ -600,6 +600,7 @@ type inv_rel_key = int (** index in the [rel_context] part of environment
                           of de Bruijn indice *)
 
 val eq_table_key : ('a -> 'a -> bool) -> 'a tableKey -> 'a tableKey -> bool
+val hash_table_key : ('a -> int) -> 'a tableKey -> int
 val eq_constant_key : Constant.t -> Constant.t -> bool
 
 (** equalities on constant and inductive names (for the checker) *)

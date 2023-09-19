@@ -386,9 +386,9 @@ let autounfolds ids csts gl cls =
   let ids = List.filter (fun id -> List.mem id hyps && Tacred.is_evaluable env (EvalVarRef id)) ids in
   let csts = List.filter (fun cst -> Tacred.is_evaluable env (EvalConstRef cst)) csts in
   let flags =
-    List.fold_left (fun flags cst -> CClosure.RedFlags.(red_add flags (fCONST cst)))
-      (List.fold_left (fun flags id -> CClosure.RedFlags.(red_add flags (fVAR id)))
-         (CClosure.RedFlags.red_add_transparent CClosure.all TransparentState.empty) ids) csts
+    List.fold_left (fun flags cst -> RedFlags.(red_add flags (fCONST cst)))
+      (List.fold_left (fun flags id -> RedFlags.(red_add flags (fVAR id)))
+         (RedFlags.red_add_transparent RedFlags.all TransparentState.empty) ids) csts
   in reduct_option ~check:false (Reductionops.clos_norm_flags flags, DEFAULTcast) cls
 
 let cons a l = a :: l

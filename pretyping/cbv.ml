@@ -12,7 +12,6 @@ open Util
 open Names
 open Constr
 open Vars
-open CClosure
 open Esubst
 
 (**** Call by value reduction ****)
@@ -156,6 +155,12 @@ let mkSTACK = function
     v, TOP -> v
   | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
   | v,stk -> STACK(0,v,stk)
+
+module KeyTable = Hashtbl.Make(struct
+  type t = Constant.t Univ.puniverses tableKey
+  let equal = Names.eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+  let hash = Names.hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
+end)
 
 type cbv_infos = {
   env : Environ.env;

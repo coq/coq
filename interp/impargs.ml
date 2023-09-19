@@ -23,7 +23,7 @@ open Constrexpr
 
 let whd_prod env sigma typ =
   let open CClosure in
-  let infos = Evarutil.create_clos_infos env sigma CClosure.all in
+  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
   let tab = create_tab () in
   let typ = inject (EConstr.Unsafe.to_constr typ) in
   let typ, stk = whd_stack infos tab typ [] in
@@ -210,7 +210,7 @@ let is_reversible_pattern sigma bound depth f l =
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc =
   let rec frec rig (env,depth as ed) c =
-    let hd = if strict then Reductionops.clos_whd_flags CClosure.all env sigma c else c in
+    let hd = if strict then Reductionops.clos_whd_flags RedFlags.all env sigma c else c in
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->

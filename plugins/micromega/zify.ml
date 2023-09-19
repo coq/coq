@@ -73,7 +73,7 @@ let gl_pr_constr e =
   let evd = Evd.from_env genv in
   pr_constr genv evd e
 
-let whd = Reductionops.clos_whd_flags CClosure.all
+let whd = Reductionops.clos_whd_flags RedFlags.all
 let is_convertible env evd t1 t2 = Reductionops.(is_conv env evd t1 t2)
 
 (** [get_type_of] performs beta reduction ;

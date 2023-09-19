@@ -577,11 +577,11 @@ let whd_state_gen ?csts flags env sigma =
       ((EConstr.of_kind c0, stack),cst_l)
     in
     match c0 with
-    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
+    | Rel n when RedFlags.red_set flags RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
-    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
+    | Var id when RedFlags.red_set flags (RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
         whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
@@ -594,7 +594,7 @@ let whd_state_gen ?csts flags env sigma =
     | Const (c,u as const) ->
       Reductionops.reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,fst (Stack.strip_app stack)))));
-      if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
+      if RedFlags.red_set flags (RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
        match constant_value_in env (c, u') with
        | body ->
@@ -664,7 +664,7 @@ let whd_state_gen ?csts flags env sigma =
           whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
-    | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
+    | Proj (p, c) when RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
        match ReductionBehaviour.get (GlobRef.ConstRef (Projection.constant p)) with
          | None ->
@@ -720,7 +720,7 @@ let whd_state_gen ?csts flags env sigma =
                      whrec Cst_stack.empty (arg,cst_l::s')
            end)
 
-    | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
+    | LetIn (_,b,_,c) when RedFlags.red_set flags RedFlags.fZETA ->
       let (cst_l, p) = apply_subst [b] sigma cst_l c stack in
       whrec cst_l p
     | Cast (c,_,_) -> whrec cst_l (c, stack)
@@ -730,7 +730,7 @@ let whd_state_gen ?csts flags env sigma =
         (f, Stack.append_app cl stack)
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
-      | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
+      | Some _ when RedFlags.red_set flags RedFlags.fBETA ->
         let (cst_l, p) = apply_subst [] sigma cst_l x stack in
         whrec cst_l p
       | _ -> fold ())
@@ -745,8 +745,8 @@ let whd_state_gen ?csts flags env sigma =
         whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
     | Construct (cstr ,u) ->
-      let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
-      let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
+      let use_match = RedFlags.red_set flags RedFlags.fMATCH in
+      let use_fix = RedFlags.red_set flags RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
         |args, (Stack.Case(case,_)::s') when use_match ->
@@ -796,7 +796,7 @@ let whd_state_gen ?csts flags env sigma =
       else fold ()
 
     | CoFix cofix ->
-      if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
+      if RedFlags.red_set flags RedFlags.fCOFIX then
         match Stack.strip_app stack with
         |args, ((Stack.Case _ |Stack.Proj _)::s') ->
           reduce_and_refold_cofix whrec env sigma cst_l cofix stack
@@ -841,7 +841,7 @@ let whd_cbn flags env sigma t =
 
 let norm_cbn flags env sigma t =
   let push_rel_check_zeta d env =
-    let open CClosure.RedFlags in
+    let open RedFlags in
     let d = match d with
       | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
       | d -> d in

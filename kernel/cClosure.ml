@@ -32,160 +32,10 @@ open Context
 open Environ
 open Vars
 open Esubst
-
-module RelDecl = Context.Rel.Declaration
-
-let all_opaque = TransparentState.empty
-
-module type RedFlagsSig = sig
-  type reds
-  type red_kind
-  val fBETA : red_kind
-  val fDELTA : red_kind
-  val fMATCH : red_kind
-  val fFIX : red_kind
-  val fCOFIX : red_kind
-  val fZETA : red_kind
-  val fCONST : Constant.t -> red_kind
-  val fVAR : Id.t -> red_kind
-  val no_red : reds
-  val red_add : reds -> red_kind -> reds
-  val red_sub : reds -> red_kind -> reds
-  val red_add_transparent : reds -> TransparentState.t -> reds
-  val red_transparent : reds -> TransparentState.t
-  val mkflags : red_kind list -> reds
-  val mkfullflags : red_kind list -> reds
-  val red_set : reds -> red_kind -> bool
-  val red_projection : reds -> Projection.t -> bool
-end
-
-module RedFlags : RedFlagsSig = struct
-
-  (* [r_const=(true,cl)] means all constants but those in [cl] *)
-  (* [r_const=(false,cl)] means only those in [cl] *)
-  (* [r_delta=true] just mean [r_const=(true,[])] *)
-
-  open TransparentState
-
-  type reds = {
-    r_beta : bool;
-    r_delta : bool;
-    r_const : TransparentState.t;
-    r_zeta : bool;
-    r_match : bool;
-    r_fix : bool;
-    r_cofix : bool }
-
-  type red_kind = BETA | DELTA | MATCH | FIX
-              | COFIX | ZETA
-              | CONST of Constant.t | VAR of Id.t
-  let fBETA = BETA
-  let fDELTA = DELTA
-  let fMATCH = MATCH
-  let fFIX = FIX
-  let fCOFIX = COFIX
-  let fZETA = ZETA
-  let fCONST kn  = CONST kn
-  let fVAR id  = VAR id
-  let no_red = {
-    r_beta = false;
-    r_delta = false;
-    r_const = all_opaque;
-    r_zeta = false;
-    r_match = false;
-    r_fix = false;
-    r_cofix = false }
-
-  let red_add red = function
-    | BETA -> { red with r_beta = true }
-    | DELTA -> { red with r_delta = true }
-    | CONST kn ->
-      let r = red.r_const in
-      { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
-    | MATCH -> { red with r_match = true }
-    | FIX -> { red with r_fix = true }
-    | COFIX -> { red with r_cofix = true }
-    | ZETA -> { red with r_zeta = true }
-    | VAR id ->
-      let r = red.r_const in
-      { red with r_const = { r with tr_var = Id.Pred.add id r.tr_var } }
-
-  let red_sub red = function
-    | BETA -> { red with r_beta = false }
-    | DELTA -> { red with r_delta = false }
-    | CONST kn ->
-      let r = red.r_const in
-      { red with r_const = { r with tr_cst = Cpred.remove kn r.tr_cst } }
-    | MATCH -> { red with r_match = false }
-    | FIX -> { red with r_fix = false }
-    | COFIX -> { red with r_cofix = false }
-    | ZETA -> { red with r_zeta = false }
-    | VAR id ->
-      let r = red.r_const in
-      { red with r_const = { r with tr_var = Id.Pred.remove id r.tr_var } }
-
-  let red_transparent red = red.r_const
-
-  let red_add_transparent red tr =
-    { red with r_const = tr }
-
-  let mkflags = List.fold_left red_add no_red
-
-  let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
-
-  let red_set red = function
-    | BETA -> red.r_beta
-    | CONST kn ->
-      is_transparent_constant red.r_const kn
-    | VAR id -> (* En attendant d'avoir des kn pour les Var *)
-      is_transparent_variable red.r_const id
-    | ZETA -> red.r_zeta
-    | MATCH -> red.r_match
-    | FIX -> red.r_fix
-    | COFIX -> red.r_cofix
-    | DELTA -> (* Used for Rel/Var defined in context *)
-      red.r_delta
-
-  let red_projection red p =
-    if Projection.unfolded p then true
-    else red_set red (fCONST (Projection.constant p))
-
-end
-
 open RedFlags
 
-let all = mkfullflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
-let allnolet = mkfullflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
-let beta = mkflags [fBETA]
-let betadeltazeta = mkfullflags [fBETA;fDELTA;fZETA]
-let betaiota = mkflags [fBETA;fMATCH;fFIX;fCOFIX]
-let betaiotazeta = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
-let betazeta = mkflags [fBETA;fZETA]
-let delta = mkfullflags [fDELTA]
-let zeta = mkflags [fZETA]
-let nored = no_red
-
-type table_key = Constant.t Univ.puniverses tableKey
-
-let eq_pconstant_key (c,u) (c',u') =
-  eq_constant_key c c' && Univ.Instance.equal u u'
-
-module IdKeyHash =
-struct
-  open Hashset.Combine
-  type t = table_key
-  let equal = Names.eq_table_key eq_pconstant_key
-  let hash = function
-  | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
-  | VarKey id -> combinesmall 2 (Id.hash id)
-  | RelKey i -> combinesmall 3 (Int.hash i)
-end
-
-module KeyTable = Hashtbl.Make(IdKeyHash)
-
-open Context.Named.Declaration
-
-exception Irrelevant
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 type mode = Conversion | Reduction
 (* In conversion mode we can introduce FIrrelevant terms.
@@ -218,11 +68,10 @@ type mode = Conversion | Reduction
 *)
 type red_state = Ntrl | Cstr | Red
 
-let neutr = function
-| Ntrl -> Ntrl
-| Red | Cstr -> Red
+let neutr = function Ntrl -> Ntrl | Red | Cstr -> Red
+let is_red = function Red -> true | Ntrl | Cstr -> false
 
-type 'a usubs = 'a subs Univ.puniverses
+type table_key = Constant.t Univ.puniverses tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
@@ -239,21 +88,23 @@ and fterm =
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr
-  | FFix of fixpoint * fconstr usubs
-  | FCoFix of cofixpoint * fconstr usubs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr usubs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr usubs
-  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
-  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
-  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
-  | FEvar of Evar.t * constr list * fconstr usubs * evar_repack
+  | FFix of fixpoint * usubs
+  | FCoFix of cofixpoint * usubs
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
+  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
+  | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
+  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
+  | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
-  | FCLOS of constr * fconstr usubs
+  | FCLOS of constr * usubs
   | FIrrelevant
   | FLOCKED
+
+and usubs = fconstr subs Univ.puniverses
 
 and finvert = fconstr array
 
@@ -282,17 +133,15 @@ type clos_infos = {
   i_relevances : Sorts.relevance Range.t;
   i_cache : infos_cache }
 
-type clos_tab = (fconstr, Empty.t) constant_def KeyTable.t
-
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env
 let info_univs info = info.i_cache.i_univs
 
 let push_relevance infos r =
-  { infos with i_relevances = Range.cons r.Context.binder_relevance infos.i_relevances }
+  { infos with i_relevances = Range.cons r.binder_relevance infos.i_relevances }
 
 let push_relevances infos nas =
-  { infos with i_relevances = Array.fold_left (fun l x -> Range.cons x.Context.binder_relevance l)
+  { infos with i_relevances = Array.fold_left (fun l x -> Range.cons x.binder_relevance l)
                    infos.i_relevances nas }
 
 let set_info_relevances info r = { info with i_relevances = r }
@@ -305,7 +154,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -384,8 +233,7 @@ let compact_stack head stk =
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =
   let share = info.i_cache.i_share in
-  if share && begin match m.mark with Red -> true  | Ntrl | Cstr -> false end
-  then
+  if share && is_red m.mark then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
     Zupdate(m)::s'
@@ -428,7 +276,7 @@ let usubst_sort (_,u) s = match s with
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
-let mk_clos (e:_ usubs) t =
+let mk_clos (e:usubs) t =
   match kind t with
     | Rel i -> clos_rel (fst e) i
     | Var x -> {mark = Red; term = FFlex (VarKey x) }
@@ -450,6 +298,98 @@ let inject c = injectu c Univ.Instance.empty
 
 let mk_irrelevant = { mark = Cstr; term = FIrrelevant }
 
+let is_irrelevant info r = match info.i_cache.i_mode with
+| Reduction -> false
+| Conversion -> match r with
+  | Sorts.Irrelevant -> true
+  | Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
+  | Sorts.Relevant -> false
+
+(************************************************************************)
+
+type table_val = (fconstr, Empty.t) constant_def
+
+module Table : sig
+  type t
+  val create : unit -> t
+  val lookup : clos_infos -> t -> table_key -> table_val
+end = struct
+  module Table = Hashtbl.Make(struct
+    type t = table_key
+    let equal = eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+    let hash = hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
+  end)
+
+  type t = table_val Table.t
+
+  let create () = Table.create 17
+
+  exception Irrelevant
+
+  let shortcut_irrelevant info r =
+    if is_irrelevant info r then raise Irrelevant
+
+  let assoc_defined d =
+    match d with
+    | NamedDecl.LocalDef (_, c, _) -> inject c
+    | NamedDecl.LocalAssum (_, _) -> raise Not_found
+
+  let constant_value_in u = function
+    | Def b -> injectu b u
+    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+    | Undef _ -> raise (NotEvaluableConst NoBody)
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+
+  let value_of info ref =
+    try
+      let env = info.i_cache.i_env in
+      match ref with
+      | RelKey n ->
+        let i = n - 1 in
+        let d =
+          try Range.get env.env_rel_context.env_rel_map i
+          with Invalid_argument _ -> raise Not_found
+        in
+        shortcut_irrelevant info (RelDecl.get_relevance d);
+        let body =
+          match d with
+          | RelDecl.LocalAssum _ -> raise Not_found
+          | RelDecl.LocalDef (_, t, _) -> lift n t
+        in
+        Def (inject body)
+      | VarKey id ->
+        let def = Environ.lookup_named id env in
+        shortcut_irrelevant info
+          (binder_relevance (NamedDecl.get_annot def));
+        let ts = RedFlags.red_transparent info.i_flags in
+        if TransparentState.is_transparent_variable ts id then
+          Def (assoc_defined def)
+        else
+          raise Not_found
+      | ConstKey (cst,u) ->
+        let cb = lookup_constant cst env in
+        shortcut_irrelevant info (cb.const_relevance);
+        let ts = RedFlags.red_transparent info.i_flags in
+        if TransparentState.is_transparent_constant ts cst then
+          Def (constant_value_in u cb.const_body)
+        else
+          raise Not_found
+    with
+    | Irrelevant -> Def mk_irrelevant
+    | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
+    | Not_found (* List.assoc *)
+    | NotEvaluableConst _ (* Const *) -> Undef None
+
+  let lookup info tab ref =
+    try Table.find tab ref with Not_found ->
+    let v = value_of info ref in
+    Table.add tab ref v; v
+end
+
+type clos_tab = Table.t
+
+let create_tab = Table.create
+
 (************************************************************************)
 
 (** Hand-unrolling of the map function to bypass the call to the generic array
@@ -462,68 +402,6 @@ let mk_clos_vect env v = match v with
 | [|v0; v1; v2; v3|] ->
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
-
-let is_irrelevant info r = match info.i_cache.i_mode, r with
-| Conversion, Sorts.Irrelevant -> true
-| Conversion, Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
-| (Conversion | Reduction), (Sorts.Relevant | Sorts.Irrelevant | Sorts.RelevanceVar _) -> false
-
-let shortcut_irrelevant info r =
-  if is_irrelevant info r then raise Irrelevant
-
-let assoc_defined = function
-| LocalDef (_, c, _) -> inject c
-| LocalAssum (_, _) -> raise Not_found
-
-let constant_value_in u = function
-| Def b -> injectu b u
-| OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-| Undef _ -> raise (NotEvaluableConst NoBody)
-| Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
-
-let ref_value_cache info flags tab ref =
-  let env = info.i_cache.i_env in
-  try
-    KeyTable.find tab ref
-  with Not_found ->
-    let v =
-      try
-        let body =
-          match ref with
-          | RelKey n ->
-            let open! Context.Rel.Declaration in
-            let i = n - 1 in
-            let d =
-              try Range.get env.env_rel_context.env_rel_map i
-              with Invalid_argument _ -> raise Not_found
-            in
-            (* First check for irrelevance *)
-            let () = shortcut_irrelevant info (get_relevance d) in
-            let body = match d with
-              | LocalAssum _ -> raise Not_found
-              | LocalDef (_, t, _) -> lift n t
-            in
-            inject body
-          | VarKey id ->
-            let def = Environ.lookup_named id env in
-            let () = shortcut_irrelevant info (binder_relevance (get_annot def)) in
-            if TransparentState.is_transparent_variable flags id then assoc_defined def
-            else raise Not_found
-          | ConstKey (cst,u) ->
-            let cb = lookup_constant cst env in
-            let () = shortcut_irrelevant info (cb.const_relevance) in
-            if TransparentState.is_transparent_constant flags cst then constant_value_in u cb.const_body
-            else raise Not_found
-        in
-        Def body
-      with
-      | Irrelevant -> Def mk_irrelevant
-      | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
-      | Not_found (* List.assoc *)
-      | NotEvaluableConst _ (* Const *)
-        -> Undef None
-    in
-    KeyTable.add tab ref v; v
 
 let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
@@ -718,11 +596,11 @@ let strip_update_shift_app_red head stk =
   strip_rec [] head 0 stk
 
 let strip_update_shift_app head stack =
-  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
+  assert (not (is_red head.mark));
   strip_update_shift_app_red head stack
 
 let get_nth_arg head n stk =
-  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
+  assert (not (is_red head.mark));
   let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) n s
@@ -1426,7 +1304,7 @@ let rec knr info tab m stk =
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info (RedFlags.red_transparent info.i_flags) tab fl with
+      (match Table.lookup info tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
@@ -1533,7 +1411,7 @@ and case_inversion info tab ci u params indices v =
     (* indtyping enforces 1 ctor with no letins in the context *)
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
-    let tab = if info.i_cache.i_mode == Conversion then tab else KeyTable.create 17 in
+    let tab = if info.i_cache.i_mode == Conversion then tab else Table.create () in
     let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
@@ -1706,31 +1584,14 @@ let whd_stack infos tab m stk = match m.mark with
   in
   k
 
-let create_conv_infos ?univs ?(evars=default_evar_handler) flgs env =
-  let univs = Option.default (universes env) univs in
-  let share = (Environ.typing_flags env).Declarations.share_reduction in
-  let cache = {
-    i_env = env;
-    i_sigma = evars;
-    i_share = share;
-    i_univs = univs;
-    i_mode = Conversion;
-  } in
-  { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
+let create_infos i_mode ?univs ?(evars=default_evar_handler) i_flags i_env =
+  let i_univs = Option.default (Environ.universes i_env) univs in
+  let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
+  let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in
+  {i_flags; i_relevances = Range.empty; i_cache}
 
-let create_clos_infos ?univs ?(evars=default_evar_handler) flgs env =
-  let univs = Option.default (universes env) univs in
-  let share = (Environ.typing_flags env).Declarations.share_reduction in
-  let cache = {
-    i_env = env;
-    i_sigma = evars;
-    i_share = share;
-    i_univs = univs;
-    i_mode = Reduction;
-  } in
-  { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
-
-let create_tab () = KeyTable.create 17
+let create_conv_infos = create_infos Conversion
+let create_clos_infos = create_infos Reduction
 
 let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 
@@ -1738,8 +1599,7 @@ let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_ref_with_args infos tab fl v =
-  let flags = RedFlags.red_transparent (info_flags infos) in
-  match ref_value_cache infos flags tab fl with
+  match Table.lookup infos tab fl with
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in

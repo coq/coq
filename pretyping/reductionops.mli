@@ -128,8 +128,8 @@ type stack_reduction_function =
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
-val clos_norm_flags : CClosure.RedFlags.reds -> reduction_function
-val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
+val clos_norm_flags : RedFlags.reds -> reduction_function
+val clos_whd_flags : RedFlags.reds -> reduction_function
 
 (** Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : reduction_function
@@ -171,7 +171,7 @@ val whd_zeta : reduction_function
 
 val shrink_eta : evar_map -> constr -> constr
 
-val whd_stack_gen : CClosure.RedFlags.reds -> stack_reduction_function
+val whd_stack_gen : RedFlags.reds -> stack_reduction_function
 
 (** Various reduction functions *)
 

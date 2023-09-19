@@ -14,7 +14,7 @@ open EConstr
 
 type flags = {
   qflag : bool;
-  reds : CClosure.RedFlags.reds;
+  reds : RedFlags.reds;
 }
 
 val (=?) : ('a -> 'a -> int) -> ('b -> 'b -> int) ->

@@ -92,10 +92,10 @@ let l_E_Or = gen_constant "plugins.rtauto.E_Or"
 let l_D_Or = gen_constant "plugins.rtauto.D_Or"
 
 let special_whd env sigma c =
-  Reductionops.clos_whd_flags CClosure.all env sigma c
+  Reductionops.clos_whd_flags RedFlags.all env sigma c
 
 let special_nf env sigma c =
-  Reductionops.clos_norm_flags CClosure.betaiotazeta env sigma c
+  Reductionops.clos_norm_flags RedFlags.betaiotazeta env sigma c
 
 type atom_env=
     {mutable next:int;

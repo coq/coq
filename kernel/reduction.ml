@@ -29,10 +29,10 @@ let whd_all env t =
       | Ind _ | Construct _ | Evar _ | Meta _ | Int _ | Float _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos all env) (create_tab ()) (inject t)
+         whd_val (create_clos_infos RedFlags.all env) (create_tab ()) (inject t)
       end
     | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos all env) (create_tab ()) (inject t)
+        whd_val (create_clos_infos RedFlags.all env) (create_tab ()) (inject t)
 
 let whd_allnolet env t =
   match kind t with
@@ -43,10 +43,10 @@ let whd_allnolet env t =
       | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ | Int _ | Float _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
+         whd_val (create_clos_infos RedFlags.allnolet env) (create_tab ()) (inject t)
       end
     | Rel _ | Cast _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
+        whd_val (create_clos_infos RedFlags.allnolet env) (create_tab ()) (inject t)
 
 (* Application with on-the-fly reduction *)
 

@@ -1224,7 +1224,7 @@ let get_funs_constant mp =
       | Def body ->
         let body =
           Tacred.cbv_norm_flags
-            (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
+            (RedFlags.mkflags [RedFlags.fZETA])
             env
             (Evd.from_env env)
             (EConstr.of_constr body)

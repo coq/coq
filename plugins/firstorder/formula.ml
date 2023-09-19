@@ -20,7 +20,7 @@ module RelDecl = Context.Rel.Declaration
 
 type flags = {
   qflag : bool;
-  reds : CClosure.RedFlags.reds;
+  reds : RedFlags.reds;
 }
 
 let (=?) f g i1 i2 j1 j2=

@@ -275,7 +275,7 @@ let unfoldintac occ rdx t (kt,_) =
   let body env t c =
     Tacred.unfoldn [AllOccurrences, get_evalref env sigma t] env sigma0 c in
   let easy = occ = None && rdx = None in
-  let red_flags = if easy then CClosure.betaiotazeta else CClosure.betaiota in
+  let red_flags = if easy then RedFlags.betaiotazeta else RedFlags.betaiota in
   let beta env = Reductionops.clos_norm_flags red_flags env sigma0 in
   let unfold, conclude = match classify_pattern rdx with
   | None ->
@@ -385,7 +385,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   Proofview.Goal.enter begin fun gl ->
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
   let env = pf_env gl in
-  let beta = Reductionops.clos_norm_flags CClosure.beta env sigma in
+  let beta = Reductionops.clos_norm_flags RedFlags.beta env sigma in
   let sigma, new_rdx = map_redex env sigma ~before:rdx ~after:new_rdx in
   let sigma, p = (* The resulting goal *)
     Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
@@ -563,7 +563,7 @@ let rwprocess_rule env dir rule =
     let rec loop d sigma r t0 rs red =
       let t =
         if red = 1 then Tacred.hnf_constr env sigma t0
-        else Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t0 in
+        else Reductionops.clos_whd_flags RedFlags.betaiotazeta env sigma t0 in
       debug_ssr (fun () -> Pp.(str"rewrule="++pr_econstr_pat env sigma t));
       match EConstr.kind sigma t with
       | Prod (_, xt, at) ->
@@ -571,7 +571,7 @@ let rwprocess_rule env dir rule =
         let (sigma, x) = Evarutil.new_evar env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
       | App (pr, a) when is_ind_ref env sigma pr coq_prod.Coqlib.typ ->
-        let r0 = Reductionops.clos_whd_flags CClosure.all env sigma r in
+        let r0 = Reductionops.clos_whd_flags RedFlags.all env sigma r in
         let sigma, pL, pR = match EConstr.kind sigma r0 with
         | App (c, ra) when is_construct_ref env sigma c coq_prod.Coqlib.intro ->
           (sigma, ra.(2), ra.(3))
@@ -763,7 +763,7 @@ let unfoldtac occ ko t kt =
   let concl = Evarutil.nf_evar sigma concl in
   let cl, c = fill_occ_term env sigma concl occ (fst (strip_unfold_term env t kt)) in
   let cl' = EConstr.Vars.subst1 (Tacred.unfoldn [OnlyOccurrences [1], get_evalref env sigma c] env sigma c) cl in
-  let f = if ko = None then CClosure.betaiotazeta else CClosure.betaiota in
+  let f = if ko = None then RedFlags.betaiotazeta else RedFlags.betaiota in
   convert_concl ~check:true (Reductionops.clos_norm_flags f env sigma cl')
   end
 

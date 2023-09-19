@@ -18,7 +18,6 @@ open Genredexpr
 open Pattern
 open Reductionops
 open Tacred
-open CClosure
 open RedFlags
 open Libobject
 
@@ -134,7 +133,7 @@ type red_expr =
     (constr, evaluable_global_reference, constr_pattern) red_expr_gen
 
 type red_expr_val =
-  (constr, evaluable_global_reference, constr_pattern, CClosure.RedFlags.reds) red_expr_gen0
+  (constr, evaluable_global_reference, constr_pattern, RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
   | EvalVarRef id -> fVAR id
@@ -233,7 +232,7 @@ let rec eval_red_expr env = function
   let () =
     if not (simplIsCbn () || List.is_empty f.rConst) then
       warn_simpl_unfolding_modifiers () in
-  let f = if simplIsCbn () then make_flag env f else CClosure.all (* dummy *) in
+  let f = if simplIsCbn () then make_flag env f else RedFlags.all (* dummy *) in
   Simpl (f, o)
 | Cbv f -> Cbv (make_flag env f)
 | Cbn f -> Cbn (make_flag env f)
