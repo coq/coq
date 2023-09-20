@@ -29,35 +29,11 @@ environment for semi-interactive development of machine-checked proofs.
 
 [![latest packaged version(s)][repology-badge]][repology-link]
 
-[![Arch package][arch-badge]][arch-link]
-[![Chocolatey package][chocolatey-badge]][chocolatey-link]
-[![Conda package][conda-badge]][conda-link]
-[![Homebrew package][homebrew-badge]][homebrew-link]
-[![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
-
 [![Docker Hub package][dockerhub-badge]][dockerhub-link]
 [![latest dockerized version][coqorg-badge]][coqorg-link]
 
 [repology-badge]: https://repology.org/badge/latest-versions/coq.svg
 [repology-link]: https://repology.org/metapackage/coq/versions
-
-[arch-badge]: https://repology.org/badge/version-for-repo/arch/coq.svg
-[arch-link]: https://www.archlinux.org/packages/community/x86_64/coq/
-
-[chocolatey-badge]: https://repology.org/badge/version-for-repo/chocolatey/coq.svg
-[chocolatey-link]: https://chocolatey.org/packages/Coq
-
-[conda-badge]: https://img.shields.io/conda/vn/conda-forge/coq.svg?label="Conda%20package"
-[conda-link]: https://github.com/conda-forge/coq-feedstock
-
-[homebrew-badge]: https://repology.org/badge/version-for-repo/homebrew/coq.svg
-[homebrew-link]: https://formulae.brew.sh/formula/coq
-
-[macports-badge]: https://repology.org/badge/version-for-repo/macports/coq.svg
-[macports-link]: https://www.macports.org/ports.php?by=name&substr=coq
-
-[nixpkgs-badge]: https://repology.org/badge/version-for-repo/nix_unstable/coq.svg
-[nixpkgs-link]: https://nixos.org/nixos/packages.html#coq
 
 [dockerhub-badge]: https://img.shields.io/badge/images%20on-Docker%20Hub-blue.svg
 [dockerhub-link]: https://hub.docker.com/r/coqorg/coq#supported-tags "Supported tags on Docker Hub"
