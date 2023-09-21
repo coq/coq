@@ -171,7 +171,7 @@ let save_top_chunk tac varmap trace =
 let goal_com tac =
   DebugCommon.new_stop_point ();
   Proofview.tclTHEN
-    (DebugCommon.db_pr_goals)
+    (DebugCommon.db_pr_goals_t)
     (if Comm.isTerminal () then
       Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac))
     else
@@ -367,6 +367,7 @@ let debug_prompt lev tac f varmap trace =
     end
 
 (* for ltac1:(tac) *)
+(* todo: apparently not needed *)
 let entry_stop_check tac =
 (*  Printf.eprintf "entry_stop_check\n%!"; *)
   let can_stop = match CAst.(tac.v) with (* avoid double stop for ltac1:(xx) *)
@@ -380,7 +381,7 @@ let entry_stop_check tac =
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN
-        (DebugCommon.db_pr_goals)
+        (DebugCommon.db_pr_goals_t)
         (Proofview.tclLIFT (Proofview.NonLogical.return ()))
     in
     Proofview.tclTHEN (goal_com ()) (Proofview.tclIGNORE (Proofview.tclLIFT (prompt 0)))

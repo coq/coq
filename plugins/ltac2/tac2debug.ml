@@ -144,7 +144,7 @@ let rec read_loop () =
   | Failed -> read_loop ()
 
   | Skip | Help | RunCnt _ | RunBreakpoint _ ->
-    Feedback.msg_info Pp.(str ("command ignored in Ltac2: " ^ (DebugHook.Action.to_string !DebugCommon.action)));
+    Feedback.msg_info Pp.(str "Not available in Ltac2");
     read_loop ()
 
   | Configd (* handled in init() loop *)
@@ -228,7 +228,7 @@ let rec dump_expr2 ?(indent=0) ?(p="D") e =
   | GTacOpn _ -> print "GTacOpn"
   | GTacWth _ -> print "GTacWth"
   | GTacFullMatch _ -> print "GTacFullMatch"
-  | GTacExt (tag,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
+  | GTacExt (tag,_,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
   | GTacPrm ml -> print (Printf.sprintf "GTacPrm %s. %s\n%!" ml.mltac_plugin ml.mltac_tactic)
   | GTacAls  _ -> print "GTacAls"
 

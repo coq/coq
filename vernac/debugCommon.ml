@@ -46,7 +46,7 @@ let hist_count = ref 0 (* number of valid entries *)
 
 let cur_goals = ref [] (* current goals *)
 
-(* selects history entry to display; # of steps back in history,
+(* selects history entry to display; # of steps back in history (0..n),
    0 = current Ltac* state *)
 let hist_index = ref 0
 
@@ -484,19 +484,13 @@ let db_fmt_goals () =
 
 let isTerminal () = (hook ()).isTerminal
 
-let db_pr_goals =  (* todo: drop the "db_" prefix *)
-  let open Proofview in
-  let open Notations in
-  Goal.goals >>= fun gl ->
-  Monad.List.map (fun x -> x) gl >>= fun gls ->
+let db_pr_goals () =  (* todo: drop the "db_" prefix *)
+  if isTerminal () then
+    (hook ()).submit_answer (Output (db_fmt_goals ()))
 
-  Proofview.tclLIFT (
-    if isTerminal () then
-      let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
-        Pp.seq (List.map db_fmt_goal gls) in
-      output pg
-    else
-      Proofview.NonLogical.make (fun () -> ()))
+let db_pr_goals_t = (* todo: try to get rid of this version *)
+(*  Printf.eprintf "db_pr_goals_t\n%!"; *)
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> db_pr_goals ()))
 
 let read () =
   let rec l () =
