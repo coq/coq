@@ -1398,7 +1398,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
   let arg, tpe = obj.ml_intern self ist arg in
   let e = match arg with
-  | GlbVal arg -> GTacExt (tag, arg)
+  | GlbVal arg -> GTacExt (tag, loc, arg)
   | GlbTacexpr e -> e
   in
   check (e, tpe)
@@ -1809,10 +1809,10 @@ let rec subst_expr subst e = match e with
   let e' = subst_expr subst e in
   let r' = subst_expr subst r in
   if kn' == kn && e' == e && r' == r then e0 else GTacSet (kn', e', p, r')
-| GTacExt (tag, arg) ->
+| GTacExt (tag, loc, arg) ->
   let tpe = interp_ml_object tag in
   let arg' = tpe.ml_subst subst arg in
-  if arg' == arg then e else GTacExt (tag, arg')
+  if arg' == arg then e else GTacExt (tag, loc, arg')
 | GTacOpn (kn, el) as e0 ->
   let kn' = subst_kn subst kn in
   let el' = List.Smart.map (fun e -> subst_expr subst e) el in

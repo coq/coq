@@ -177,7 +177,8 @@ type glb_tacexpr =
 | GTacOpn of ltac_constructor * glb_tacexpr list
 | GTacWth of glb_tacexpr open_match
 | GTacFullMatch of glb_tacexpr * (glb_pat * glb_tacexpr) list
-| GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
+(* todo: * Loc.t option at the end gives a syntax error :-( *)
+| GTacExt : (_, 'a) Tac2dyn.Arg.tag * Loc.t option * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name
 | GTacAls of glb_tacexpr * Loc.t option
 
