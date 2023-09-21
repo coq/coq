@@ -525,7 +525,6 @@ val add_definition :
   -> ?obl_hook: OblState.t Hook.g
   -> ?term:Constr.t
   -> uctx:UState.t
-  -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
   -> RetrieveObl.obligation_info
@@ -541,7 +540,6 @@ val add_mutual_definitions :
   -> info:Info.t
   -> ?obl_hook: OblState.t Hook.g
   -> uctx:UState.t
-  -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
   -> ntns:Metasyntax.notation_interpretation_decl list

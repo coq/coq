@@ -1312,7 +1312,13 @@ let dependencies obls n =
     obls;
   !res
 
-let update_program_decl_on_defined ~pm prg obls num obl ~uctx rem ~auto =
+type obligation_resolver =
+     pm:State.t
+  -> Id.t
+  -> Int.Set.t
+  -> State.t * progress
+
+let update_program_decl_on_defined ~pm prg obls num obl ~uctx rem ~(auto:obligation_resolver) =
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
   let prg = {prg with prg_uctx = uctx} in
@@ -1321,19 +1327,12 @@ let update_program_decl_on_defined ~pm prg obls num obl ~uctx rem ~auto =
     if pred rem > 0 then
       let deps = dependencies obls num in
       if not (Int.Set.is_empty deps) then
-        let pm, _progress = auto ~pm (Some prg.prg_cinfo.CInfo.name) deps None in
+        let pm, _progress = auto ~pm prg.prg_cinfo.CInfo.name deps in
         pm
       else pm
     else pm
   in
   pm
-
-type obligation_resolver =
-     pm:State.t
-  -> Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
-  -> State.t * progress
 
 type obl_check_final = AllFinal | SpecificFinal of Id.t
 
@@ -2407,11 +2406,11 @@ let solve_prg_obligations ~pm prg ?oblset tac =
   in
   update_obls ~pm prg obls' !rem
 
-let auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
+let auto_solve_obligations ~pm ?oblset n : State.t * progress =
   Flags.if_verbose Feedback.msg_info
     (str "Solving obligations automatically...");
-  let prg = get_unique_prog ~pm n in
-  solve_prg_obligations ~pm prg ?oblset tac
+  let prg = get_unique_prog ~pm (Some n) in
+  solve_prg_obligations ~pm prg ?oblset None
 
 let solve_obligation ?check_final prg num tac =
   let user_num = succ num in
@@ -2428,7 +2427,7 @@ let solve_obligation ?check_final prg num tac =
   let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx (Internal.get_uctx prg) in
   let evd = Evd.update_sigma_univs (Global.universes ()) evd in
-  let auto ~pm n oblset tac = auto_solve_obligations ~pm n ~oblset tac in
+  let auto ~pm n oblset = auto_solve_obligations ~pm n ~oblset in
   let proof_ending =
     let name = Internal.get_name prg in
     Proof_ending.End_obligation {name; num; auto; check_final}
@@ -2518,7 +2517,7 @@ let msg_generating_obl name obls =
        str (String.plural len " obligation"))
 
 let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
-    ?tactic ?(reduce = reduce) ?(opaque = false) obls =
+    ?(reduce = reduce) ?(opaque = false) obls =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let prg =
     ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None ?obl_hook obls
@@ -2532,7 +2531,7 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
   else
     let () = Flags.if_verbose (msg_generating_obl name) obls in
     let pm = State.add pm name prg in
-    let pm, res = auto_solve_obligations ~pm (Some name) tactic in
+    let pm, res = auto_solve_obligations ~pm name in
     match res with
     | Remain rem ->
       Flags.if_verbose (show_obligations ~pm ~msg:false) (Some name);
@@ -2540,7 +2539,7 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
     | _ -> pm, res
 
 let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
-    ?tactic ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
+    ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let deps = List.map (fun (ci,_,_) -> CInfo.get_name ci) l in
   let pm =
@@ -2558,7 +2557,7 @@ let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
       (fun (pm, finished) x ->
         if finished then (pm, finished)
         else
-          let pm, res = auto_solve_obligations ~pm (Some x) tactic in
+          let pm, res = auto_solve_obligations ~pm x in
           match res with
           | Defined _ ->
             (* If one definition is turned into a constant,
