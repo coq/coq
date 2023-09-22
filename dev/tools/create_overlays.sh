@@ -73,7 +73,7 @@ do
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
 
     echo "overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH $PR_NUMBER" >> $OVERLAY_FILE
-    echo "" >> $OVERLAY_FILE
+    if [ $# -gt 0 ]; then echo "" >> $OVERLAY_FILE; fi
 done
 
 # Copy to overlays folder.
