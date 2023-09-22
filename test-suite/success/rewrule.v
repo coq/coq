@@ -1,3 +1,5 @@
+Set Allow Rewrite Rules.
+
 Symbol pplus : nat -> nat -> nat.
 Notation "a ++ b" := (pplus a b).
 
@@ -383,3 +385,41 @@ Definition test_subst_context :=
   match raise (n = n) in (_ = a) return (n = a) with
   | eq_refl => raise _
   end.
+
+Symbol Devil : bool -> bool.
+
+Rewrite Rule devil :=
+  Devil ?b ==> false
+with
+  Devil true ==> true.
+
+Lemma Devil_false b : Devil b = false.
+Proof. reflexivity. Defined.
+
+Lemma Devil_true : Devil true = true.
+Proof. reflexivity. Defined.
+
+Lemma ministry_of_truth : true = false.
+Proof.
+  transitivity (Devil true).
+  - symmetry;exact Devil_true.
+  - apply Devil_false.
+Defined.
+
+Definition successor_of_nothing : nat :=
+  match ministry_of_truth in eq _ b return if b then bool else nat with
+    eq_refl => false
+  end.
+
+Eval vm_compute in pred successor_of_nothing.
+
+Definition ignore {A} (x:A) := tt.
+
+Definition beginning_of_the_world : ignore (pred successor_of_nothing) = tt.
+Proof. lazy;reflexivity. Qed.
+
+Lemma end_of_the_world : tt = tt.
+Proof.
+  vm_compute.
+  exact beginning_of_the_world.
+Defined. (* no more segfault *)

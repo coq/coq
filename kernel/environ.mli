@@ -82,7 +82,12 @@ type env = private {
   symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
+  rewrite_rules_allowed : bool;
+  (** Allow rewrite rules (breaks e.g. SR) *)
 }
+
+type rewrule_not_allowed = Symb | Rule
+exception RewriteRulesNotAllowed of rewrule_not_allowed
 
 val oracle : env -> Conv_oracle.oracle
 val set_oracle : env -> Conv_oracle.oracle -> env
@@ -373,6 +378,8 @@ val set_impredicative_set : bool -> env -> env
 val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
+val allow_rewrite_rules : env -> env
+val rewrite_rules_allowed : env -> bool
 
 val same_flags : typing_flags -> typing_flags -> bool
 

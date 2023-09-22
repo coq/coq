@@ -87,7 +87,10 @@ type env = {
   symb_pats: rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
+  rewrite_rules_allowed: bool;
 }
+type rewrule_not_allowed = Symb | Rule
+exception RewriteRulesNotAllowed of rewrule_not_allowed
 
 let empty_named_context_val = {
   env_named_ctx = [];
@@ -118,6 +121,7 @@ let empty_env = {
   symb_pats = Cmap_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
+  rewrite_rules_allowed = false;
 }
 
 
@@ -221,6 +225,7 @@ let lookup_constant kn env =
 let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
 let add_rewrite_rules l env =
+  if not env.rewrite_rules_allowed then raise (RewriteRulesNotAllowed Rule);
   let add c r = function
     | None -> anomaly Pp.(str "Trying to add a rule to non-symbol " ++ Constant.print c ++ str".")
     | Some rs -> Some (r::rs)
@@ -538,6 +543,19 @@ let set_allow_sprop b env =
 
 let sprop_allowed env = env.env_typing_flags.sprop_allowed
 
+let allow_rewrite_rules env =
+  (* We need to be safe with reduction machines *)
+  let flags = typing_flags env in
+  let env = set_typing_flags
+    { flags with
+      enable_VM = false;
+      enable_native_compiler = false }
+    env
+  in
+  { env with rewrite_rules_allowed = true }
+
+let rewrite_rules_allowed env = env.rewrite_rules_allowed
+
 (* Global constants *)
 
 let no_link_info = NotLinked
@@ -554,7 +572,11 @@ let add_constant_key kn cb linkinfo env =
     else env.irr_constants
   in
   let symb_pats =
-    match cb.const_body with Symbol _ -> Cmap_env.add kn [] env.symb_pats | _ -> env.symb_pats
+    match cb.const_body with
+    | Symbol _ ->
+      if not env.rewrite_rules_allowed then raise (RewriteRulesNotAllowed Symb);
+      Cmap_env.add kn [] env.symb_pats
+    | _ -> env.symb_pats
   in
   { env with irr_constants; symb_pats; env_globals = new_globals }
 

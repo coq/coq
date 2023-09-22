@@ -1570,6 +1570,15 @@ let explain_prim_token_notation_error kind env sigma = function
      pr_constr_env env sigma c ++
      strbrk (" while parsing a "^kind^" notation."))
 
+(* Rewrite rules errors *)
+
+let error_not_allowed_rewrite_rules symb_or_rule =
+  str (match symb_or_rule with Rule -> "Rewrite rule" | Symb -> "Symbol") ++ spc () ++
+  str "declaration requires enabling the flag" ++ spc () ++
+  strbrk "\"Allow Rewrite Rules\"" ++
+  str "."
+
+
 (** Registration of generic errors
     Nota: explain_exn does NOT end with a newline anymore!
 *)
@@ -1637,6 +1646,8 @@ let rec vernac_interp_error_handler = function
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
+  | Environ.RewriteRulesNotAllowed symb_or_rule ->
+    error_not_allowed_rewrite_rules symb_or_rule
   | _ ->
     raise Unhandled
 

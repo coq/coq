@@ -12,6 +12,7 @@ open Declarations
 open Environ
 
 let import senv opac clib univs digest =
+  let senv = Safe_typing.check_flags_for_library clib senv in
   let mb = Safe_typing.module_of_library clib in
   let env = Safe_typing.env_of_safe_env senv in
   let env = push_context_set ~strict:true (Safe_typing.univs_of_library clib) env in

@@ -115,11 +115,16 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
+type permanent_flags = {
+  rewrite_rules_allowed : bool;
+}
+
 type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
   comp_deps : library_info array;
+  comp_flags : permanent_flags;
 }
 
 type reimport = compiled_library * Univ.ContextSet.t * vodigest
@@ -271,6 +276,10 @@ let set_native_compiler b senv =
   set_typing_flags { flags with enable_native_compiler = b } senv
 
 let set_allow_sprop b senv = { senv with env = Environ.set_allow_sprop b senv.env }
+
+let set_rewrite_rules_allowed b senv =
+  if b then { senv with env = Environ.allow_rewrite_rules senv.env }
+  else senv
 
 (* Temporary sets custom typing flags *)
 let with_typing_flags ?typing_flags senv ~f =
@@ -483,6 +492,12 @@ let check_required current_libs needed =
   in
   Array.iter check needed
 
+(** When loading a library, the current flags should match
+    those needed for the library *)
+
+let check_flags_for_library lib senv =
+  let { rewrite_rules_allowed } = lib.comp_flags in
+  set_rewrite_rules_allowed rewrite_rules_allowed senv
 
 (** {6 Insertion of section variables} *)
 
@@ -1190,6 +1205,7 @@ let end_module l restype senv =
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
+  let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb senv'.env in
   let newresolver =
@@ -1214,6 +1230,7 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
+  let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
   let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
   let mtb = build_mtb mp auto_tb senv.modresolver in
@@ -1320,17 +1337,22 @@ let export ~output_native_objects senv dir =
       Nativelibrary.dump_library mp senv.env str
     else [], Nativevalues.empty_symbols
   in
+  let permanent_flags = {
+    rewrite_rules_allowed = Environ.rewrite_rules_allowed senv.env;
+  } in
   let lib = {
     comp_name = dir;
     comp_mod = mb;
     comp_univs = senv.univ;
     comp_deps = Array.of_list (DPmap.bindings senv.required);
+    comp_flags = permanent_flags
   } in
   mp, lib, (ast, symbols)
 
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the [lib.comp_univs] field (but morally should be) *)
 let import lib cst vodigest senv =
+  let senv = check_flags_for_library lib senv in
   check_required senv.required lib.comp_deps;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err
@@ -1387,6 +1409,7 @@ let close_section senv =
      by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
         rev_reimport; rev_revstruct = revstruct } = revert in
+  let env = if Environ.rewrite_rules_allowed env0 then Environ.allow_rewrite_rules env else env in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))

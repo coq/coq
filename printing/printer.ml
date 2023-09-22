@@ -1069,6 +1069,7 @@ module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env sigma s =
   if ContextObjectMap.is_empty s &&
+       not (rewrite_rules_allowed env) &&
        not (is_impredicative_set env) then
     str "Closed under the global context"
   else
@@ -1144,6 +1145,11 @@ let pr_assumptionset env sigma s =
       if is_impredicative_set env then
         [str "Set is impredicative"]
       else []
+    in
+    let theory =
+      if rewrite_rules_allowed env then
+        str "Rewrite rules are allowed (subject reduction might be broken)" :: theory
+      else theory
     in
     let theory =
       if type_in_type env then

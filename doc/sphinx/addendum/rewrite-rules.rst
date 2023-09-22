@@ -13,6 +13,20 @@ User-defined rewrite rules
    compilation currently do not understand rewrite rules.
 
 
+The use of rewrite rules is guarded behind a flag, which can be enabled
+either by passing ``-allow-rewrite-rules`` to the
+Coq program or by turning the :flag:`Allow Rewrite Rules` flag on.
+
+.. flag:: Allow Rewrite Rules
+
+   This :term:`flag` enables the use of rewrite rules.
+   It is disabled by default and cannot be disabled once enabled.
+   The command-line flag ``-allow-rewrite-rules`` enables rewrite rules at
+   startup.
+
+   .. exn:: Rewrite rule declaration requires enabling the flag "Allow Rewrite Rules".
+      :undocumented:
+
 Declaring symbols
 -----------------
 
@@ -25,6 +39,7 @@ Rewrite rules operate on symbols, which are their own kind of constants.
 
    .. coqtop:: all
 
+      Set Allow Rewrite Rules.
       Symbol pplus : nat -> nat -> nat.
       Notation "a ++ b" := (pplus a b).
 

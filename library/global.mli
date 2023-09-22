@@ -38,6 +38,8 @@ val set_check_universes : bool -> unit
 val typing_flags : unit -> typing_flags
 val set_allow_sprop : bool -> unit
 val sprop_allowed : unit -> bool
+val set_rewrite_rules_allowed : bool -> unit
+val rewrite_rules_allowed : unit -> bool
 
 (** Variables, Local definitions, constants, inductive types *)
 

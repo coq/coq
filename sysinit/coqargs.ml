@@ -406,6 +406,8 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->
       add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
+    |"-allow-rewrite-rules" ->
+      add_set_option oval Vernacentries.allow_rewrite_rules_name (OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}

@@ -1557,6 +1557,22 @@ let vernac_generalizable ~local =
   let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
+let allow_rewrite_rules_name = ["Allow"; "Rewrite"; "Rules"]
+
+let set_rewrite_rules_allowed b =
+  let env = Global.env () in
+  if not b && env.rewrite_rules_allowed then CErrors.user_err
+    Pp.(str "This option does not allow the \"Unset\" command.");
+  Global.set_rewrite_rules_allowed b
+
+let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = allow_rewrite_rules_name;
+      optread  = (fun () -> Global.rewrite_rules_allowed());
+      optwrite = set_rewrite_rules_allowed }
+
 let allow_sprop_opt_name = ["Allow";"StrictProp"]
 
 let () =

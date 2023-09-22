@@ -160,6 +160,7 @@ val add_constraints :
 (* val next_universe : int safe_transformer *)
 
 (** Setting the type theory flavor *)
+val set_rewrite_rules_allowed : bool -> safe_transformer0
 val set_impredicative_set : bool -> safe_transformer0
 val set_indices_matter : bool -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
@@ -234,6 +235,7 @@ type compiled_library
 
 val module_of_library : compiled_library -> Declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
+val check_flags_for_library : compiled_library -> safe_transformer0
 
 val start_library : DirPath.t -> ModPath.t safe_transformer
 
