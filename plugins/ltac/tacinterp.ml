@@ -1199,6 +1199,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacComplete tac -> Tacticals.tclCOMPLETE (interp_tactic ist tac)
   | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
+
   (* For extensions *)
   | TacAlias (s,l) ->
       let alias = Tacenv.interp_alias s in

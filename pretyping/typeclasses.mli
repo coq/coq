@@ -140,3 +140,5 @@ val error_unresolvable : env -> evar_map -> Evar.Set.t -> 'a
     it is up to the plugin to do so. *)
 val set_solve_all_instances : (env -> evar_map -> evar_filter -> bool -> bool -> evar_map) -> unit
 val set_solve_one_instance : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) -> unit
+
+val get_typeclasses_unique_solutions : unit -> bool

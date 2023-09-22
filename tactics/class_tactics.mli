@@ -55,6 +55,8 @@ val is_ground : constr -> unit Proofview.tactic
 
 val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
+val resolve_tc : constr -> unit Proofview.tactic
+
 module Search : sig
   val eauto_tac :
     Hints.hint_mode array list GlobRef.Map.t * TransparentState.t
