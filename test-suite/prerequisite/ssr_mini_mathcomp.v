@@ -67,6 +67,7 @@ Lemma eqP T : Equality.axiom (@eq_op T).
 Proof. by case: T => ? []. Qed.
 Arguments eqP {T x y}.
 
+Declare Scope eq_scope.
 Delimit Scope eq_scope with EQ.
 Open Scope eq_scope.
 
@@ -91,7 +92,7 @@ Notation eqxx := eq_refl.
 Lemma eq_sym (T : eqType) (x y : T) : (x == y) = (y == x).
 Proof. exact/eqP/eqP. Qed.
 
-#[global] Hint Resolve eq_refl eq_sym.
+#[global] Hint Resolve eq_refl eq_sym : core.
 
 
 Definition eqb b := addb (~~ b).
@@ -395,6 +396,10 @@ Fixpoint odd n := if n is n'.+1 then ~~ odd n' else false.
 
 Lemma oddb (b : bool) : odd b = b. Proof. by case: b. Qed.
 
+Declare Scope nat_rec_scope.
+
+Set Warnings "-notation-overridden".
+
 Definition subn_rec := minus.
 Notation "m - n" := (subn_rec m n) : nat_rec_scope.
 
@@ -422,7 +427,7 @@ Lemma leq0n n : 0 <= n.                 Proof. by []. Qed.
 Lemma ltn0Sn n : 0 < n.+1.              Proof. by []. Qed.
 Lemma ltn0 n : n < 0 = false.           Proof. by []. Qed.
 Lemma leqnn n : n <= n.                 Proof. by elim: n. Qed.
-#[global] Hint Resolve leqnn.
+#[global] Hint Resolve leqnn : core.
 Lemma leqnSn n : n <= n.+1.             Proof. by elim: n. Qed.
 
 Lemma leq_trans n m p : m <= n -> n <= p -> m <= p.
@@ -431,10 +436,10 @@ Lemma leq_ltn_trans n m p : m <= n -> n < p -> m < p.
 Admitted.
 Lemma leqW m n : m <= n -> m <= n.+1.
 Admitted.
-#[global] Hint Resolve leqnSn.
+#[global] Hint Resolve leqnSn : core.
 Lemma ltnW m n : m < n -> m <= n.
 Proof. exact: leq_trans. Qed.
-#[global] Hint Resolve ltnW.
+#[global] Hint Resolve ltnW : core.
 
 Definition addn_rec := plus.
 Notation "m + n" := (addn_rec m n) : nat_rec_scope.
@@ -507,6 +512,7 @@ Proof. by move=> m n p q; rewrite -!mulnA (mulnCA n). Qed.
 
 (* seq ------------------------------------------------------------- *)
 
+Declare Scope seq_scope.
 Delimit Scope seq_scope with SEQ.
 Open Scope seq_scope.
 
@@ -1283,6 +1289,7 @@ Canonical addn_addoid := AddLaw mulnDl mulnDr.
 Canonical cat_monoid T := Law (@catA T) (@cat0s T) (@cats0 T).
 
 End PervasiveMonoids.
+Declare Scope big_scope.
 Delimit Scope big_scope with BIG.
 Open Scope big_scope.
 
@@ -1323,7 +1330,7 @@ Admitted.
 Lemma mem_index_enum T i : i \in index_enum T.
 Admitted.
 
-#[global] Hint Resolve mem_index_enum.
+#[global] Hint Resolve mem_index_enum : core.
 
 (*
 Lemma filter_index_enum T P : filter P (index_enum T) = enum P.
