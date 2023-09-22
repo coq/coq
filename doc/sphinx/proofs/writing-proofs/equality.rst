@@ -248,8 +248,8 @@ Rewriting with Leibniz and setoid equality
    as a subgoal. (Note the generated equality is reversed with respect
    to the order of the two terms in the tactic syntax; see
    issue `#13480 <https://github.com/coq/coq/issues/13480>`_.)
-   This equality is automatically solved if it occurs among
-   the hypotheses, or if its symmetric form occurs.
+   When :n:`by @ltac_expr3` is not present, this equality is automatically solved
+   if it occurs among the hypotheses, or if its symmetric form occurs.
 
    The second form, with `->` or no arrow, replaces :n:`@one_term__from`
    with :n:`@term__to` using

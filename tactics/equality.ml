@@ -620,11 +620,6 @@ let replace_core clause l2r eq =
    gl : goal *)
 
 let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
-  let try_prove_eq =
-    match try_prove_eq_opt with
-      | None -> Proofview.tclUNIT ()
-      | Some tac ->  tclCOMPLETE tac
-  in
   Proofview.Goal.enter begin fun gl ->
   let get_type_of = pf_apply get_type_of gl in
   let t1 = get_type_of c1
@@ -648,13 +643,17 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
     Tacticals.pf_constr_of_global sym >>= fun sym ->
     Tacticals.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
+    let solve_tac = match try_prove_eq_opt with
+      | None ->
+        tclFIRST
+          [ assumption;
+            tclTHEN (apply sym) assumption;
+            Proofview.tclUNIT () ]
+      | Some tac -> tclCOMPLETE tac
+    in
     tclTHENLAST
       (replace_core clause l2r eq)
-      (tclFIRST
-         [assumption;
-          tclTHEN (apply sym) assumption;
-          try_prove_eq
-         ])
+      solve_tac
   end
 
 let replace c1 c2 =
