@@ -805,7 +805,8 @@ library:ci-deriving:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - plugin:ci-elpi_hb
+  - library:ci-mathcomp
 
 library:ci-mathcomp_word:
   extends: .ci-template-flambda

@@ -113,7 +113,7 @@ ci-mathcomp: ci-elpi_hb
 
 ci-coqprime: ci-bignums
 ci-coquelicot: ci-mathcomp
-ci-deriving: ci-mathcomp_1
+ci-deriving: ci-mathcomp
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
