@@ -29,21 +29,21 @@ Cannot interpret this number as a value of type positive
 File "./output/PosSyntax.v", line 15, characters 11-15:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type positive
-1%positive : positive
+1%positive
      : positive
-2%positive : positive
+2%positive
      : positive
-255%positive : positive
+255%positive
      : positive
-255%positive : positive
+255%positive
      : positive
-1%positive : positive
+1%positive
      : positive
-2%positive : positive
+2%positive
      : positive
-255%positive : positive
+255%positive
      : positive
-255%positive : positive
+255%positive
      : positive
 0x2a
      : positive
@@ -55,13 +55,13 @@ Cannot interpret this number as a value of type positive
 File "./output/PosSyntax.v", line 30, characters 11-15:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type positive
-0x1 : positive
+0x1
      : positive
-0x2 : positive
+0x2
      : positive
-0xff : positive
+0xff
      : positive
-0xff : positive
+0xff
      : positive
 File "./output/PosSyntax.v", line 35, characters 11-14:
 The command has indeed failed with message:
@@ -69,13 +69,13 @@ Cannot interpret this number as a value of type positive
 File "./output/PosSyntax.v", line 36, characters 11-15:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type positive
-0x1 : positive
+0x1
      : positive
-0x2 : positive
+0x2
      : positive
-0xff : positive
+0xff
      : positive
-0xff : positive
+0xff
      : positive
 File "./output/PosSyntax.v", line 41, characters 11-14:
 The command has indeed failed with message:
@@ -83,13 +83,13 @@ Cannot interpret this number as a value of type positive
 File "./output/PosSyntax.v", line 42, characters 11-15:
 The command has indeed failed with message:
 Cannot interpret this number as a value of type positive
-0x1 : positive
+0x1
      : positive
-0x2 : positive
+0x2
      : positive
-0xff : positive
+0xff
      : positive
-0xff : positive
+0xff
      : positive
 (1 + Pos.of_nat 11)%positive
      : positive

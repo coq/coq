@@ -12,30 +12,30 @@ Check (fun x : positive => (- Zpos (xO x) + 0)%Z).
 Check (Z.of_nat 0 + 1)%Z.
 Check (0 + Z.of_nat (0 + 0))%Z.
 Check (Z.of_nat 0 = 0%Z).
-Check 0x0%Z : Z.
-Check 0x00%Z : Z.
-Check 0x01%Z : Z.
-Check 0x02%Z : Z.
-Check 0xff%Z : Z.
-Check 0xFF%Z : Z.
-Check (-0x0)%Z : Z.
-Check (-0x00)%Z : Z.
-Check (-0x01)%Z : Z.
-Check (-0x02)%Z : Z.
-Check (-0xff)%Z : Z.
-Check (-0xFF)%Z : Z.
-Check 0x0%xZ : Z.
-Check 0x00%xZ : Z.
-Check 0x01%xZ : Z.
-Check 0x02%xZ : Z.
-Check 0xff%xZ : Z.
-Check 0xFF%xZ : Z.
-Check (-0x0)%xZ%Z : Z.
-Check (-0x00)%xZ%Z : Z.
-Check (-0x01)%xZ : Z.
-Check (-0x02)%xZ : Z.
-Check (-0xff)%xZ : Z.
-Check (-0xFF)%xZ : Z.
+Check 0x0%Z.
+Check 0x00%Z.
+Check 0x01%Z.
+Check 0x02%Z.
+Check 0xff%Z.
+Check 0xFF%Z.
+Check (-0x0)%Z.
+Check (-0x00)%Z.
+Check (-0x01)%Z.
+Check (-0x02)%Z.
+Check (-0xff)%Z.
+Check (-0xFF)%Z.
+Check 0x0%xZ.
+Check 0x00%xZ.
+Check 0x01%xZ.
+Check 0x02%xZ.
+Check 0xff%xZ.
+Check 0xFF%xZ.
+Check (-0x0)%xZ%Z.
+Check (-0x00)%xZ%Z.
+Check (-0x01)%xZ.
+Check (-0x02)%xZ.
+Check (-0xff)%xZ.
+Check (-0xFF)%xZ.
 
 (* Check hexadecimal printing *)
 Open Scope hex_Z_scope.
@@ -45,36 +45,36 @@ Check 0%Z.
 Check 42%xZ.
 Check (-42)%xZ.
 Check 0%xZ.
-Check 0x0%Z : Z.
-Check 0x00%Z : Z.
-Check 0x01%Z : Z.
-Check 0x02%Z : Z.
-Check 0xff%Z : Z.
-Check 0xFF%Z : Z.
-Check (-0x0)%Z : Z.
-Check (-0x00)%Z : Z.
-Check (-0x01)%Z : Z.
-Check (-0x02)%Z : Z.
-Check (-0xff)%Z : Z.
-Check (-0xFF)%Z : Z.
-Check 0x0 : Z.
-Check 0x00 : Z.
-Check 0x01 : Z.
-Check 0x02 : Z.
-Check 0xff : Z.
-Check 0xFF : Z.
-Check 0x0%xZ : Z.
-Check 0x00%xZ : Z.
-Check 0x01%xZ : Z.
-Check 0x02%xZ : Z.
-Check 0xff%xZ : Z.
-Check 0xFF%xZ : Z.
-Check (-0x0)%xZ%Z : Z.
-Check (-0x00)%xZ%Z : Z.
-Check (-0x01)%xZ : Z.
-Check (-0x02)%xZ : Z.
-Check (-0xff)%xZ : Z.
-Check (-0xFF)%xZ : Z.
+Check 0x0%Z.
+Check 0x00%Z.
+Check 0x01%Z.
+Check 0x02%Z.
+Check 0xff%Z.
+Check 0xFF%Z.
+Check (-0x0)%Z.
+Check (-0x00)%Z.
+Check (-0x01)%Z.
+Check (-0x02)%Z.
+Check (-0xff)%Z.
+Check (-0xFF)%Z.
+Check 0x0.
+Check 0x00.
+Check 0x01.
+Check 0x02.
+Check 0xff.
+Check 0xFF.
+Check 0x0%xZ.
+Check 0x00%xZ.
+Check 0x01%xZ.
+Check 0x02%xZ.
+Check 0xff%xZ.
+Check 0xFF%xZ.
+Check (-0x0)%xZ%Z.
+Check (-0x00)%xZ%Z.
+Check (-0x01)%xZ.
+Check (-0x02)%xZ.
+Check (-0xff)%xZ.
+Check (-0xFF)%xZ.
 Close Scope hex_Z_scope.
 
 (* Submitted by Pierre Casteran *)

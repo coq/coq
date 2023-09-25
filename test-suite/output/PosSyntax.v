@@ -10,40 +10,40 @@ Check (fun x : positive => (xO x + 1)%positive).
 Check (Pos.of_nat 0 + 1)%positive.
 Check (1 + Pos.of_nat (0 + 0))%positive.
 Check (Pos.of_nat 1 = 1%positive).
-Fail Check 0%positive : positive.
-Fail Check 0x0%positive : positive.
-Fail Check 0x00%positive : positive.
-Check 0x01%positive : positive.
-Check 0x02%positive : positive.
-Check 0xff%positive : positive.
-Check 0xFF%positive : positive.
-Check 0x01%xpositive : positive.
-Check 0x02%xpositive : positive.
-Check 0xff%xpositive : positive.
-Check 0xFF%xpositive : positive.
+Fail Check 0%positive.
+Fail Check 0x0%positive.
+Fail Check 0x00%positive.
+Check 0x01%positive.
+Check 0x02%positive.
+Check 0xff%positive.
+Check 0xFF%positive.
+Check 0x01%xpositive.
+Check 0x02%xpositive.
+Check 0xff%xpositive.
+Check 0xFF%xpositive.
 
 (* Check hexadecimal printing *)
 Open Scope hex_positive_scope.
 Check 42%positive.
 Check 1%positive.
-Fail Check 0x0%positive : positive.
-Fail Check 0x00%positive : positive.
-Check 0x01%positive : positive.
-Check 0x02%positive : positive.
-Check 0xff%positive : positive.
-Check 0xFF%positive : positive.
-Fail Check 0x0 : positive.
-Fail Check 0x00 : positive.
-Check 0x01 : positive.
-Check 0x02 : positive.
-Check 0xff : positive.
-Check 0xFF : positive.
-Fail Check 0x0%xpositive : positive.
-Fail Check 0x00%xpositive : positive.
-Check 0x01%xpositive : positive.
-Check 0x02%xpositive : positive.
-Check 0xff%xpositive : positive.
-Check 0xFF%xpositive : positive.
+Fail Check 0x0%positive.
+Fail Check 0x00%positive.
+Check 0x01%positive.
+Check 0x02%positive.
+Check 0xff%positive.
+Check 0xFF%positive.
+Fail Check 0x0.
+Fail Check 0x00.
+Check 0x01.
+Check 0x02.
+Check 0xff.
+Check 0xFF.
+Fail Check 0x0%xpositive.
+Fail Check 0x00%xpositive.
+Check 0x01%xpositive.
+Check 0x02%xpositive.
+Check 0xff%xpositive.
+Check 0xFF%xpositive.
 Close Scope hex_positive_scope.
 
 Require Import Arith.
