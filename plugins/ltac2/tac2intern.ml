@@ -115,8 +115,9 @@ let is_pure_constructor kn =
   | GTydDef _ -> assert false (** Type definitions have no constructors *)
 
 let rec is_value = function
-| GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
+| GTacAtm (AtmInt _) | GTacVar _ | GTacFun _ -> true
 | GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
+| GTacRef kn -> not (Tac2env.interp_global kn).gdata_mutable
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el

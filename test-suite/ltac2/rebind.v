@@ -32,10 +32,10 @@ Ltac2 assert_eq n m :=
   | false => Control.throw Assertion_failure end.
 
 Ltac2 mutable x := O.
-Ltac2 y := x.
-Ltac2 Eval (assert_eq y O).
+Ltac2 y () := x.
+Ltac2 Eval (assert_eq (y()) O).
 Ltac2 Set x := (S O).
-Ltac2 Eval (assert_eq y (S O)).
+Ltac2 Eval (assert_eq (y()) (S O)).
 
 Ltac2 mutable quw := fun (n : nat) => O.
 Ltac2 Set quw := fun n =>

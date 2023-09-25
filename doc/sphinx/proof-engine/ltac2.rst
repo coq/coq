@@ -320,10 +320,10 @@ Ltac2 Definitions
       .. coqtop:: all
 
          Ltac2 mutable x := true.
-         Ltac2 y := x.
-         Ltac2 Eval y.
+         Ltac2 y () := x.
+         Ltac2 Eval y ().
          Ltac2 Set x := false.
-         Ltac2 Eval y.
+         Ltac2 Eval y ().
 
    .. example:: Interaction with recursive calls
 
@@ -336,9 +336,11 @@ Ltac2 Definitions
          Ltac2 Eval (f false).
 
       In the definition, the `f` in the body is resolved statically
-      because the definition is marked recursive. In the first re-definition,
-      the `f` in the body is resolved dynamically. This is witnessed by
-      the second re-definition.
+      because the definition is marked recursive. It is equivalent to
+      `Ltac2 mutable f x := let rec g b := if b then 0 else g true in g x`
+      (alpha renaming the internal `f` to `g` to make the behavior clearer).
+      In the first re-definition, the `f` in the body is resolved dynamically.
+      This is witnessed by the second re-definition.
 
 Printing Ltac2 tactics
 ~~~~~~~~~~~~~~~~~~~~~~
