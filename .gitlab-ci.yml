@@ -799,6 +799,8 @@ library:ci-vst:
   needs:
   - build:edge+flambda
   - library:ci-flocq
+  - library:ci-menhir
+  - library:ci-compcert
   timeout: 2h
 
 library:ci-deriving:

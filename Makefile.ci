@@ -157,7 +157,7 @@ ci-equations_test: ci-equations
 
 ci-metacoq: ci-equations
 
-ci-vst: ci-flocq
+ci-vst: ci-compcert
 
 ci-compcert: ci-menhir ci-flocq
 
