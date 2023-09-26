@@ -48,6 +48,7 @@ let with_delayed_uconstr ist c tac =
     expand_evars = true;
     program_mode = false;
     polymorphic = false;
+    unify_patvars = true;
  } in
   let c = Tacinterp.type_uconstr ~flags ist c in
   Tacticals.tclDELAYEDWITHHOLES false c tac
@@ -84,6 +85,7 @@ let constr_flags () = Pretyping.{
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  unify_patvars = true;
 }
 
 let refine_tac ist ~simple ~with_classes c =

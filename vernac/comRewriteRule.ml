@@ -213,7 +213,7 @@ let interp_rule (udecl, lhs, rhs) =
   let rhs_loc = rhs.CAst.loc in
 
   let lhs = Constrintern.(intern_gen WithoutTypeConstraint ~pattern_mode:true env evd lhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with expand_evars = false; solve_unification_constraints = false } in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false; expand_evars = false; solve_unification_constraints = false } in
   let evd, lhs = Pretyping.understand_tcc ~flags env evd lhs in
   (* let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in *)
   (* let patvars, lhs = Constrintern.intern_constr_pattern env evd lhs in *)
@@ -248,23 +248,14 @@ let interp_rule (udecl, lhs, rhs) =
       Pp.(str "Not all universe level variables appear in the lhs")
   end;
 
-  let rec find_last_alias evd evk =
-    if Evd.is_undefined evd evk then evk else
-      match Evd.is_aliased_evar evd evk with
-      | Some evk -> find_last_alias evd evk
-      | None ->
-        CErrors.user_err ?loc:lhs_loc
-          Pp.(str "A variable (#" ++ Evar.print evk ++ str") got unified with a term.")
-  in
   let update_invtbl evd evk n invtbl =
     let Evd.EvarInfo evi = Evd.find evd evk in
     let vars = Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.instance EConstr.mkVar in
-    let evk = find_last_alias evd evk in
     Evar.Map.add evk (n, vars) invtbl
   in
 
   let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
-  let flags = Pretyping.no_classes_no_fail_inference_flags in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false } in
   let evd, rhs = Pretyping.understand_tcc ~flags env evd (* ~expected_type:(OfType typ) *) rhs in
   let invtbl = Evar.Map.fold (update_invtbl evd) invtbl Evar.Map.empty in
 

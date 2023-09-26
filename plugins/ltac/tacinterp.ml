@@ -623,6 +623,7 @@ let constr_flags () = {
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  unify_patvars = true;
 }
 
 (* Interprets a constr; expects evars to be solved *)
@@ -642,6 +643,7 @@ let open_constr_use_classes_flags () = {
   expand_evars = false;
   program_mode = false;
   polymorphic = false;
+  unify_patvars = true;
 }
 
 let open_constr_no_classes_flags () = {
@@ -652,6 +654,7 @@ let open_constr_no_classes_flags () = {
   expand_evars = false;
   program_mode = false;
   polymorphic = false;
+  unify_patvars = true;
 }
 
 let pure_open_constr_flags = {
@@ -662,6 +665,7 @@ let pure_open_constr_flags = {
   expand_evars = false;
   program_mode = false;
   polymorphic = false;
+  unify_patvars = true;
 }
 
 (* Interprets an open constr *)

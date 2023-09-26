@@ -175,6 +175,7 @@ let interp_refine env sigma ist ~concl rc =
     expand_evars = true;
     program_mode = false;
     polymorphic = false;
+    unify_patvars = true;
   }
   in
   let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
