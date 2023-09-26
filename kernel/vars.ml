@@ -492,14 +492,17 @@ let subst_instance_context s ctx =
         RelDecl.map_constr (subst_instance_constr s) d)
       ctx
 
-let add_universes_of_instance (qs,us) u =
-  let qs', us' = UVars.Instance.levels u in
-  let qs = Sorts.Quality.(Set.fold (fun q qs -> match q with
+let add_qvars_and_univs_of_instance (qs,us) u =
+  let qs', us' = UVars.Instance.to_array u in
+  let qs = Array.fold_left (fun qs q ->
+      let open Sorts.Quality in
+      match q with
       | QVar q -> Sorts.QVar.Set.add q qs
       | QConstant _ -> qs)
-      qs' qs)
+      qs qs'
   in
-  qs, Univ.Level.Set.union us us'
+  let us = Array.fold_left (fun acc x -> Univ.Level.Set.add x acc) us us' in
+  qs, us
 
 let add_relevance (qs,us as v) = let open Sorts in function
   | Irrelevant | Relevant -> v
@@ -510,23 +513,23 @@ let sort_and_universes_of_constr c =
   let rec aux s c =
     let s = fold_constr_relevance add_relevance s c in
     match kind c with
-    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_universes_of_instance s u
+    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_qvars_and_univs_of_instance s u
     | Sort (Sorts.Type u) ->
       Util.on_snd (Level.Set.union (Universe.levels u)) s
     | Sort (Sorts.QSort (q,u)) ->
       let qs, us = s in
       Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
     | Array (u,_,_,_) ->
-      let s = add_universes_of_instance s u in
+      let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
     | Case (_, u, _, _, _,_ ,_) ->
-      let s = add_universes_of_instance s u in
+      let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
     | _ -> Constr.fold aux s c
   in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
 
 let sort_and_universes_of_constr c =
-  NewProfile.profile "universes_of_constr" (fun () ->
+  NewProfile.profile "sort_and_universes_of_constr" (fun () ->
       sort_and_universes_of_constr c)
     ()
 
