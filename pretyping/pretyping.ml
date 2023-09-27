@@ -646,10 +646,13 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
     let id = NamedDecl.get_id decl in
     let b = Option.map (replace_vars sigma subst) (NamedDecl.get_value decl) in
     let t = replace_vars sigma subst (NamedDecl.get_type decl) in
+    let uflags = default_flags_of TransparentState.full in
+    let uflags = if flags.unify_patvars then uflags else { uflags with allowed_evars = allow_all_but_patvars sigma } in
     let check_body sigma id c =
       match b, c with
-      | Some b, Some c ->
-         if not (is_conv !!env sigma b c) then
+      | Some b, Some c -> begin
+         try (Evarconv.unify_delay ~flags:uflags !!env sigma b c)
+         with UnableToUnify (sigma, _) ->
            user_err ?loc  (str "Cannot interpret " ++
              pr_existential_key !!env sigma evk ++
              strbrk " in current context: binding for " ++ Id.print id ++
@@ -658,14 +661,16 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
              strbrk " and " ++
              quote (Termops.Internal.print_constr_env !!env sigma c) ++
              str ").")
+         end
       | Some b, None ->
            user_err ?loc  (str "Cannot interpret " ++
              pr_existential_key !!env sigma evk ++
              strbrk " in current context: " ++ Id.print id ++
              strbrk " should be bound to a local definition.")
-      | None, _ -> () in
+      | None, _ -> sigma in
     let check_type sigma id t' =
-      if not (is_conv !!env sigma t t') then
+      try (Evarconv.unify_delay ~flags:uflags !!env sigma t t')
+      with UnableToUnify (sigma, _) ->
         user_err ?loc  (str "Cannot interpret " ++
           pr_existential_key !!env sigma evk ++
           strbrk " in current context: binding for " ++ Id.print id ++
@@ -674,19 +679,19 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
       try
         let c = snd (List.find (fun (CAst.{v=id'},c) -> Id.equal id id') update) in
         let sigma, c = eval_pretyper self ~flags (mk_tycon t) env sigma c in
-        check_body sigma id (Some c.uj_val);
+        let sigma = check_body sigma id (Some c.uj_val) in
         sigma, c.uj_val, List.remove_first (fun (CAst.{v=id'},_) -> Id.equal id id') update
       with Not_found ->
       try
         let (n,b',t') = lookup_rel_id id (rel_context !!env) in
-        check_type sigma id (lift n t');
-        check_body sigma id (Option.map (lift n) b');
+        let sigma = check_type sigma id (lift n t') in
+        let sigma = check_body sigma id (Option.map (lift n) b') in
         sigma, mkRel n, update
       with Not_found ->
       try
         let decl = lookup_named id !!env in
-        check_type sigma id (NamedDecl.get_type decl);
-        check_body sigma id (NamedDecl.get_value decl);
+        let sigma = check_type sigma id (NamedDecl.get_type decl) in
+        let sigma = check_body sigma id (NamedDecl.get_value decl) in
         sigma, mkVar id, update
       with Not_found ->
         user_err ?loc  (str "Cannot interpret " ++
@@ -728,8 +733,9 @@ struct
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
   let pretype_patvar self kind ?loc ~flags tycon env sigma =
+    let id = match kind with Evar_kinds.FirstOrderPatVar id | Evar_kinds.SecondOrderPatVar id -> id in
     let k = Evar_kinds.MatchingVar kind in
-    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
+    let sigma, uj_val, uj_type = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
     sigma, { uj_val; uj_type }
 
   let pretype_hole self k ?loc ~flags tycon env sigma =

@@ -20,7 +20,7 @@ Eval simpl in fun n n' => 2 + n ++ 3 + n'.
 #[unfold_fix] Symbol raise : forall P: Type, P.
 
 Rewrite Rules raise_rew :=
-  raise (forall (x : ?A), ?P) ==> fun (x : ?A) => raise ?P
+  raise (forall (x : ?A), ?P) ==> fun x => raise ?P
 
 with
   raise (?A * ?B) ==> (raise ?A, raise ?B)
@@ -183,7 +183,7 @@ Symbol id2 : forall A, A -> A.
 Axioms (aa ee : nat).
 Inductive annoying := C (a := aa) (b : unit) (c := (a, b)) (d : True) (e := ee).
 
-Rewrite Rule raise_rew'' := match raise _ with C a b c d e => id2 _ ?P end ==> ?P@{a := aa; b := raise _; c := (aa, raise unit); d := raise _; e := ee}.
+Rewrite Rule raise_rew'' := match raise _ with C a b c d e => id2 _ ?P end ==> ?P@{a := _; b := raise _; c := _; d := raise _; e := _}.
 
 Eval lazy in match raise _ with C a b c d e => id2 _ (a, b, c, d, e) end.
 Eval cbv in match raise _ with C a b c d e => id2 _ (a, b, c, d, e) end.

@@ -67,7 +67,7 @@ open Util
 open Constr
 open Declarations
 
-type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * Evd.evar_map
+type state = (int * int Evar.Map.t) * (int * int Int.Map.t)
 
 let update_invtbl ~loc env evd evk (curvar, tbl) =
   succ curvar, tbl |> Evar.Map.update evk @@ function
@@ -93,7 +93,7 @@ let update_invtblu1 ~loc evd lvl (curvaru, tbl) =
             ++ str" but used here for hole " ++ int curvaru
             ++ str".")
 
-let update_invtblu ~loc (state, stateu, evd : state) u : state * _ =
+let update_invtblu ~loc evd (state, stateu : state) u : state * _ =
   let u = u |> UVars.Instance.to_array |> snd in
   let stateu, mask = Array.fold_left_map (fun stateu lvl ->
       match Univ.Level.var_index lvl with
@@ -102,7 +102,7 @@ let update_invtblu ~loc (state, stateu, evd : state) u : state * _ =
     ) stateu u
   in
   let mask = if Array.exists Fun.id mask then Some mask else None in
-  (state, stateu, evd), mask
+  (state, stateu), mask
 
 let safe_sort_pattern_of_sort ~loc s =
   let open Sorts in
@@ -120,7 +120,7 @@ let rec safe_pattern_of_constr ~loc env depth state t = Constr.kind t |> functio
       let state, pargs = Array.fold_left_map (safe_arg_pattern_of_constr ~loc env depth) state args in
       state, (head, elims @ [PEApp pargs])
   | Case (ci, u, _, (ret, _), _, c, brs) ->
-      let state, mask = update_invtblu ~loc state u in
+      let state, mask = update_invtblu ~loc (snd env) state u in
       let state, (head, elims) = safe_pattern_of_constr ~loc env depth state c in
       let state, pret = safe_deep_pattern_of_constr ~loc env depth state ret in
       let state, pbrs = Array.fold_left_map (safe_deep_pattern_of_constr ~loc env depth) state brs in
@@ -133,8 +133,8 @@ let rec safe_pattern_of_constr ~loc env depth state t = Constr.kind t |> functio
       state, (head, [])
 
 and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> function
-  | Const (c, u) when Environ.is_symbol env c ->
-    let state, mask = update_invtblu ~loc state u in
+  | Const (c, u) when Environ.is_symbol (fst env) c ->
+    let state, mask = update_invtblu ~loc (snd env) state u in
     state, PHSymbol (c, mask)
   | Rel i ->
     assert (i <= depth);
@@ -143,10 +143,10 @@ and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> functi
     let ps = safe_sort_pattern_of_sort ~loc s in
     state, PHSort ps
   | Ind (ind, u) ->
-    let state, mask = update_invtblu ~loc state u in
+    let state, mask = update_invtblu ~loc (snd env) state u in
     state, PHInd (ind, mask)
   | Construct (c, u) ->
-    let state, mask = update_invtblu ~loc state u in
+    let state, mask = update_invtblu ~loc (snd env) state u in
     state, PHConstr (c, mask)
   | Int i -> state, PHInt i
   | Float f -> state, PHFloat f
@@ -163,27 +163,22 @@ and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> functi
     let state, pbod = safe_arg_pattern_of_constr ~loc env (depth + Array.length tys) state b in
     state, PHProd (ptys, pbod)
   | _ ->
-    let (_, _, evd) = state in
-    CErrors.user_err ?loc Pp.(str "Subterm not recognised as pattern: " ++ Printer.safe_pr_lconstr_env env evd t)
+    CErrors.user_err ?loc Pp.(str "Subterm not recognised as pattern: " ++ Printer.safe_pr_lconstr_env (fst env) (snd env) t)
 
-and safe_arg_pattern_of_constr ~loc env depth (st, stateu, evd as state) t = Constr.kind t |> function
+and safe_arg_pattern_of_constr ~loc (env, evd as envevd) depth (st, stateu as state) t = Constr.kind t |> function
   | Evar (evk, inst) ->
     let EvarInfo evi = Evd.find evd evk in
     (match snd (Evd.evar_source evi) with
     | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
       let st = update_invtbl ~loc env evd evk st in
-      (match Evd.evar_key id evd with exception Not_found -> () | _ ->
-        CErrors.user_err ?loc Pp.(str "Pattern name " ++ Id.print id ++ str" already in use.")
-      );
-      let evd = Evd.rename evk id evd in
-      (st, stateu, evd), EHole
+      (st, stateu), EHole
     | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named hole are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
     | _ ->
       if Option.is_empty @@ Evd.evar_ident evk evd then state, EHoleIgnored else
         CErrors.user_err ?loc Pp.(str "Named evar in unsupported context: " ++ Printer.safe_pr_lconstr_env env evd t)
     )
   | _ ->
-    let state, p = safe_pattern_of_constr ~loc env depth state t in
+    let state, p = safe_pattern_of_constr ~loc envevd depth state t in
     state, ERigid p
 
 and safe_deep_pattern_of_constr ~loc env depth state p = safe_arg_pattern_of_constr ~loc env (depth + Array.length (fst p)) state (snd p)
@@ -234,8 +229,8 @@ let interp_rule (udecl, lhs, rhs) =
 
   let lhs = Vars.subst_univs_level_constr usubst (EConstr.Unsafe.to_constr lhs) in
 
-  let ((nvars', invtbl), (nvarus', invtblu), evd), (head_pat, elims) =
-    safe_pattern_of_constr ~loc:lhs_loc env 0 ((1, Evar.Map.empty), (0, Int.Map.empty), evd) lhs
+  let ((nvars', invtbl), (nvarus', invtblu)), (head_pat, elims) =
+    safe_pattern_of_constr ~loc:lhs_loc (env, evd) 0 ((1, Evar.Map.empty), (0, Int.Map.empty)) lhs
   in
   let _inv_tbl_dbg = Evar.Map.bindings invtbl in
   let head_symbol, head_umask = match head_pat with PHSymbol (symb, mask) -> symb, mask | _ ->
