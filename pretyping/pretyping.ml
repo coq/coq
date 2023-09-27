@@ -207,34 +207,49 @@ type pretype_flags = {
    [sigma'] into those already in [sigma] or deriving from an evar in
    [sigma] by restriction, and the evars properly created in [sigma'] *)
 
-type frozen =
-| FrozenId of undefined evar_info Evar.Map.t
-  (** No pending evars. We do not put a set here not to reallocate like crazy,
-      but the actual data of the map is not used, only keys matter. All
-      functions operating on this type must have the same behaviour on
-      [FrozenId map] and [FrozenProgress (Evar.Map.domain map, Evar.Set.empty)] *)
-| FrozenProgress of (Evar.Set.t * Evar.Set.t) Lazy.t
-  (** Proper partition of the evar map as described above. *)
+type frozen_and_pending =
+  Frz :
+    'a Evar.Map.t
+    (* Undefined from [sigma']. This is used only as a set,
+       guaranteed by the existential type 'a, but we do not use
+       Evar.Set to avoid reallocating. *)
+    * Evar.Set.t Lazy.t option
+    (* Undefined evars in [sigma'] which are neither in [sigma] or aliases thereof.
+       [None] means empty.*)
+    -> frozen_and_pending
 
 let frozen_and_pending_holes (sigma, sigma') =
   let undefined0 = Option.cata Evd.undefined_map Evar.Map.empty sigma in
-  (* Fast path when the undefined evars where not modified *)
-  if undefined0 == Evd.undefined_map sigma' then
-    FrozenId undefined0
-  else
-    let data = lazy begin
-    let add_derivative_of evk evi acc =
-      match advance sigma' evk with None -> acc | Some evk' -> Evar.Set.add evk' acc in
-    let frozen = Evar.Map.fold add_derivative_of undefined0 Evar.Set.empty in
-    let fold evk _ accu = if not (Evar.Set.mem evk frozen) then Evar.Set.add evk accu else accu in
-    let pending = Evd.fold_undefined fold sigma' Evar.Set.empty in
-    (frozen, pending)
-    end in
-    FrozenProgress data
+  let pending =
+    if undefined0 == Evd.undefined_map sigma'
+    then None
+    else
+      Some (lazy begin
+        let pending, aliases =
+          Evar.Map.symmetric_diff_fold (fun ev v v' (pending,aliases as acc) -> match v, v' with
+              | None, None -> assert false
+              | Some _, None ->
+                (* ev got defined in sigma', but is it an alias? *)
+                begin match advance sigma' ev with
+                | None -> acc
+                | Some ev -> pending, Evar.Set.add ev aliases
+                end
+              | None, Some _ ->
+                (* ev is new in sigma' *)
+                Evar.Set.add ev pending, aliases
+              | Some _, Some _ -> (* ev is still undefined in sigma' *) acc)
+            undefined0
+            (Evd.undefined_map sigma')
+            (Evar.Set.empty, Evar.Set.empty)
+        in
+        Evar.Set.diff pending aliases;
+      end)
+  in
+  Frz (Evd.undefined_map sigma', pending)
 
 let filter_frozen frozen = match frozen with
-  | FrozenId map -> fun evk -> Evar.Map.mem evk map
-  | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
+  | Frz (undf, None) -> fun evk -> Evar.Map.mem evk undf
+  | Frz (undf, Some (lazy pending)) -> fun evk -> not (Evar.Set.mem evk pending) && Evar.Map.mem evk undf
 
 let typeclasses_filter ~program_mode frozen =
   if program_mode
@@ -252,8 +267,8 @@ let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
   sigma
 
 let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen with
-| FrozenId _ -> sigma
-| FrozenProgress (lazy (_, pending)) ->
+| Frz (_, None) -> sigma
+| Frz (_, Some (lazy pending)) ->
   Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
@@ -280,8 +295,8 @@ let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
   end
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
-| FrozenId _ -> ()
-| FrozenProgress (lazy (_, pending)) ->
+| Frz (_, None) -> ()
+| Frz (_, Some (lazy pending)) ->
   Evar.Set.iter
     (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
