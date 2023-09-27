@@ -1590,6 +1590,9 @@ Binding types or coercion classes to notation scopes
    then :g:`a` of type :g:`t` in :g:`f t a` is not recognized as an argument to
    be interpreted in scope ``scope``.
 
+   In explicit :ref:`casts <type-cast>` :n:`@term : @coercion_class`, the :n:`term`
+   is interpreted in the :token:`scope_name` associated with :n:`@coercion_class`.
+
    This command supports the :attr:`local`, :attr:`global`,
    :attr:`add_top` and :attr:`add_bottom` attributes.
 
@@ -1651,6 +1654,14 @@ Binding types or coercion classes to notation scopes
       .. coqtop:: all
 
          About f.
+
+      Bindings are also used in casts.
+
+      .. coqtop:: all
+
+         Close Scope F_scope.
+         Check #.
+         Check # : bool.
 
       .. note:: Such stacks of scopes can be handy to share notations
          between multiple types. For instance, the scope ``T_scope``
