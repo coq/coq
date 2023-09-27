@@ -213,17 +213,18 @@ type frozen_and_pending =
     (* Undefined from [sigma']. This is used only as a set,
        guaranteed by the existential type 'a, but we do not use
        Evar.Set to avoid reallocating. *)
-    * Evar.Set.t Lazy.t
-    (* Undefined evars in [sigma'] which are neither in [sigma] or aliases thereof. *)
+    * Evar.Set.t Lazy.t option
+    (* Undefined evars in [sigma'] which are neither in [sigma] or aliases thereof.
+       [None] means empty.*)
     -> frozen_and_pending
 
 let frozen_and_pending_holes (sigma, sigma') =
   let undefined0 = Option.cata Evd.undefined_map Evar.Map.empty sigma in
   let pending =
     if undefined0 == Evd.undefined_map sigma'
-    then Lazy.from_val Evar.Set.empty
+    then None
     else
-      lazy begin
+      Some (lazy begin
         let pending, aliases =
           Evar.Map.symmetric_diff_fold (fun ev v v' (pending,aliases as acc) -> match v, v' with
               | None, None -> assert false
@@ -242,12 +243,13 @@ let frozen_and_pending_holes (sigma, sigma') =
             (Evar.Set.empty, Evar.Set.empty)
         in
         Evar.Set.diff pending aliases;
-      end
+      end)
   in
   Frz (Evd.undefined_map sigma', pending)
 
 let filter_frozen frozen = match frozen with
-  | Frz (undf, lazy pending) -> fun evk -> not (Evar.Set.mem evk pending) && Evar.Map.mem evk undf
+  | Frz (undf, None) -> fun evk -> Evar.Map.mem evk undf
+  | Frz (undf, Some (lazy pending)) -> fun evk -> not (Evar.Set.mem evk pending) && Evar.Map.mem evk undf
 
 let typeclasses_filter ~program_mode frozen =
   if program_mode
@@ -265,7 +267,8 @@ let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
   sigma
 
 let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen with
-| Frz (_, lazy pending) ->
+| Frz (_, None) -> sigma
+| Frz (_, Some (lazy pending)) ->
   Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
@@ -292,7 +295,8 @@ let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
   end
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
-| Frz (_, lazy pending) ->
+| Frz (_, None) -> ()
+| Frz (_, Some (lazy pending)) ->
   Evar.Set.iter
     (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
