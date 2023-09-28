@@ -813,29 +813,7 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 .. insertprodn rewstrategy rewstrategy
 
 .. prodn::
-   rewstrategy ::= @one_term
-   | <- @one_term
-   | fail
-   | id
-   | refl
-   | progress @rewstrategy
-   | try @rewstrategy
-   | @rewstrategy ; @rewstrategy
-   | choice {+ @rewstrategy }
-   | repeat @rewstrategy
-   | any @rewstrategy
-   | subterm @rewstrategy
-   | subterms @rewstrategy
-   | innermost @rewstrategy
-   | outermost @rewstrategy
-   | bottomup @rewstrategy
-   | topdown @rewstrategy
-   | hints @ident
-   | terms {* @one_term }
-   | eval @red_expr
-   | fold @one_term
-   | ( @rewstrategy )
-   | old_hints @ident
+   rewstrategy ::= @rewstrategy3
 
 :n:`@one_term`
    lemma, left to right

@@ -2266,30 +2266,42 @@ glob_constr_with_bindings: [
 | constr_with_bindings
 ]
 
-rewstrategy: [
+rewstrategy0: [
 | glob
-| "<-" constr
-| "subterms" rewstrategy
-| "subterm" rewstrategy
-| "innermost" rewstrategy
-| "outermost" rewstrategy
-| "bottomup" rewstrategy
-| "topdown" rewstrategy
 | "id"
 | "fail"
 | "refl"
-| "progress" rewstrategy
-| "try" rewstrategy
-| "any" rewstrategy
-| "repeat" rewstrategy
-| rewstrategy ";" rewstrategy
 | "(" rewstrategy ")"
-| "choice" LIST1 rewstrategy
+]
+
+rewstrategy1: [
+| rewstrategy0
+| "<-" constr
+| "subterms" rewstrategy1
+| "subterm" rewstrategy1
+| "innermost" rewstrategy1
+| "outermost" rewstrategy1
+| "bottomup" rewstrategy1
+| "topdown" rewstrategy1
+| "progress" rewstrategy1
+| "try" rewstrategy1
+| "any" rewstrategy1
+| "repeat" rewstrategy1
+| "choice" LIST1 rewstrategy0
 | "old_hints" preident
 | "hints" preident
 | "terms" LIST0 constr
 | "eval" red_expr
 | "fold" constr
+]
+
+rewstrategy2: [
+| rewstrategy1
+| rewstrategy2 ";" rewstrategy2
+]
+
+rewstrategy: [
+| rewstrategy3
 ]
 
 int_or_var: [

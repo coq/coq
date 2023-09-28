@@ -90,7 +90,8 @@ let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
 
 }
 
-ARGUMENT EXTEND rewstrategy
+(* rewstrategy0 holds rewrite strategies that don't have to be parenthesized as arguments to choice *)
+ARGUMENT EXTEND rewstrategy0
     PRINTED BY { pr_strategy }
 
     INTERPRETED BY { interp_strategy }
@@ -101,28 +102,71 @@ ARGUMENT EXTEND rewstrategy
     GLOB_PRINTED BY { pr_glob_strategy env sigma }
 
   | [ glob(c) ] -> { StratConstr (c, true) }
-  | [ "<-" constr(c) ] -> { StratConstr (c, false) }
-  | [ "subterms" rewstrategy(h) ] -> { StratUnary (Subterms, h) }
-  | [ "subterm" rewstrategy(h) ] -> { StratUnary (Subterm, h) }
-  | [ "innermost" rewstrategy(h) ] -> { StratUnary(Innermost, h) }
-  | [ "outermost" rewstrategy(h) ] -> { StratUnary(Outermost, h) }
-  | [ "bottomup" rewstrategy(h) ] -> { StratUnary(Bottomup, h) }
-  | [ "topdown" rewstrategy(h) ] -> { StratUnary(Topdown, h) }
   | [ "id" ] -> { StratId }
   | [ "fail" ] -> { StratFail }
   | [ "refl" ] -> { StratRefl }
-  | [ "progress" rewstrategy(h) ] -> { StratUnary (Progress, h) }
-  | [ "try" rewstrategy(h) ] -> { StratUnary (Try, h) }
-  | [ "any" rewstrategy(h) ] -> { StratUnary (Any, h) }
-  | [ "repeat" rewstrategy(h) ] -> { StratUnary (Repeat, h) }
-  | [ rewstrategy(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
   | [ "(" rewstrategy(h) ")" ] -> { h }
-  | [ "choice" ne_rewstrategy_list(h) ] -> { StratNAry (Choice, h) }
+END
+
+(* rewstrategy1 holds choice and operators like choice which take arguments but bind more tightly than ; *)
+(* rewstrategy1 is morally right associative *)
+ARGUMENT EXTEND rewstrategy1
+    PRINTED BY { pr_strategy }
+
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { glob_strategy }
+    SUBSTITUTED BY { subst_strategy }
+
+    RAW_PRINTED BY { pr_raw_strategy env sigma }
+    GLOB_PRINTED BY { pr_glob_strategy env sigma }
+
+  | [ rewstrategy0(h) ] -> { h }
+  | [ "<-" constr(c) ] -> { StratConstr (c, false) }
+  | [ "subterms" rewstrategy1(h) ] -> { StratUnary (Subterms, h) }
+  | [ "subterm" rewstrategy1(h) ] -> { StratUnary (Subterm, h) }
+  | [ "innermost" rewstrategy1(h) ] -> { StratUnary(Innermost, h) }
+  | [ "outermost" rewstrategy1(h) ] -> { StratUnary(Outermost, h) }
+  | [ "bottomup" rewstrategy1(h) ] -> { StratUnary(Bottomup, h) }
+  | [ "topdown" rewstrategy1(h) ] -> { StratUnary(Topdown, h) }
+  | [ "progress" rewstrategy1(h) ] -> { StratUnary (Progress, h) }
+  | [ "try" rewstrategy1(h) ] -> { StratUnary (Try, h) }
+  | [ "any" rewstrategy1(h) ] -> { StratUnary (Any, h) }
+  | [ "repeat" rewstrategy1(h) ] -> { StratUnary (Repeat, h) }
+  | [ "choice" ne_rewstrategy0_list(h) ] -> { StratNAry (Choice, h) }
   | [ "old_hints" preident(h) ] -> { StratHints (true, h) }
   | [ "hints" preident(h) ] -> { StratHints (false, h) }
   | [ "terms" constr_list(h) ] -> { StratTerms h }
   | [ "eval" red_expr(r) ] -> { StratEval r }
   | [ "fold" constr(c) ] -> { StratFold c }
+END
+
+(* rewstrategy2 holds ; and operations that commute with ; *)
+ARGUMENT EXTEND rewstrategy2
+    PRINTED BY { pr_strategy }
+
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { glob_strategy }
+    SUBSTITUTED BY { subst_strategy }
+
+    RAW_PRINTED BY { pr_raw_strategy env sigma }
+    GLOB_PRINTED BY { pr_glob_strategy env sigma }
+
+  | [ rewstrategy1(h) ] -> { h }
+  | [ rewstrategy2(h) ";" rewstrategy2(h') ] -> { StratBinary (Compose, h, h') }
+END
+
+(* rewstrategy holds just the single entry with the loosest-binding rewstrategy *)
+ARGUMENT EXTEND rewstrategy
+    PRINTED BY { pr_strategy }
+
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { glob_strategy }
+    SUBSTITUTED BY { subst_strategy }
+
+    RAW_PRINTED BY { pr_raw_strategy env sigma }
+    GLOB_PRINTED BY { pr_glob_strategy env sigma }
+
+  | [ rewstrategy3(h) ] -> { h }
 END
 
 (* By default the strategy for "rewrite_db" is top-down *)

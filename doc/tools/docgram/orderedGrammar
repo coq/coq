@@ -393,6 +393,40 @@ implicit_binders: [
 | "[" LIST1 name OPT ( ":" type ) "]"
 ]
 
+rewstrategy0: [
+| one_term
+| "id"
+| "fail"
+| "refl"
+| "(" rewstrategy ")"
+]
+
+rewstrategy1: [
+| rewstrategy0
+| "<-" one_term
+| "subterms" rewstrategy1
+| "subterm" rewstrategy1
+| "innermost" rewstrategy1
+| "outermost" rewstrategy1
+| "bottomup" rewstrategy1
+| "topdown" rewstrategy1
+| "progress" rewstrategy1
+| "try" rewstrategy1
+| "any" rewstrategy1
+| "repeat" rewstrategy1
+| "choice" LIST1 rewstrategy0
+| "old_hints" ident
+| "hints" ident
+| "terms" LIST0 one_term
+| "eval" red_expr
+| "fold" one_term
+]
+
+rewstrategy2: [
+| rewstrategy1
+| rewstrategy2 ";" rewstrategy2
+]
+
 generalizing_binder: [
 | "`(" LIST1 typeclass_constraint SEP "," ")"
 | "`{" LIST1 typeclass_constraint SEP "," "}"
@@ -2116,29 +2150,7 @@ rewrite_occs: [
 ]
 
 rewstrategy: [
-| one_term
-| "<-" one_term
-| "fail"
-| "id"
-| "refl"
-| "progress" rewstrategy
-| "try" rewstrategy
-| rewstrategy ";" rewstrategy
-| "choice" LIST1 rewstrategy
-| "repeat" rewstrategy
-| "any" rewstrategy
-| "subterm" rewstrategy
-| "subterms" rewstrategy
-| "innermost" rewstrategy
-| "outermost" rewstrategy
-| "bottomup" rewstrategy
-| "topdown" rewstrategy
-| "hints" ident
-| "terms" LIST0 one_term
-| "eval" red_expr
-| "fold" one_term
-| "(" rewstrategy ")"
-| "old_hints" ident
+| rewstrategy3
 ]
 
 l3_tactic: [
