@@ -1158,6 +1158,18 @@ let () =
     return ((mind, n), i + 1)
   else throw err_notfound
 
+let () =
+  define "constructor_inductive"
+    (repr_ext val_constructor @-> ret (repr_ext val_inductive))
+  @@ fun (ind, _) -> ind
+
+let () =
+  define "constructor_index"
+    (repr_ext val_constructor @-> ret int)
+  @@ fun (_, i) ->
+  (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
+  i-1
+
 (** Ltac1 in Ltac2 *)
 
 let ltac1 = Tac2ffi.repr_ext Value.val_ltac1
