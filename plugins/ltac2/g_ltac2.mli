@@ -22,8 +22,6 @@ val test_dollar_ident : unit Pcoq.Entry.t
 
 val test_ltac1_env : unit Pcoq.Entry.t
 
-val test_ident_with_or_lpar_or_rbrac : unit Pcoq.Entry.t
-
 val test_array_opening : unit Pcoq.Entry.t
 
 val test_array_closing : unit Pcoq.Entry.t

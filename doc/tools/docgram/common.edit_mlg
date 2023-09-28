@@ -161,7 +161,7 @@ DELETE: [
 | test_array_opening
 | test_array_closing
 | test_variance_ident
-| test_ident_with_or_lpar_or_rbrac
+| test_qualid_with_or_lpar_or_rbrac
 | test_leftsquarebracket_equal
 
 (* unused *)
