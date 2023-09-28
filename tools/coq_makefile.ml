@@ -373,6 +373,21 @@ let chop_prefix p f =
   let len_f = String.length f in
   String.sub f len_p (len_f - len_p)
 
+type extra_opts = {
+  only_destination : string option;
+  only_sources : bool;
+}
+
+let empty_extra = {
+  only_destination = None;
+  only_sources = false;
+}
+
+let parse_extra f r opts = match f, r with
+  | "-destination-of", tgt :: r -> Some (r, { opts with only_destination = Some tgt })
+  | "-sources-of", r -> Some (r, { opts with only_sources = true })
+  | _ -> None
+
 let destination_of { ml_includes; q_includes; r_includes; } file =
   let file_dir = CUnix.canonical_path_name (Filename.dirname file) in
   let includes = q_includes @ r_includes in
@@ -413,18 +428,9 @@ let () =
     let prog = List.hd args in
     prog, List.tl args in
 
-  let only_destination, args = match args with
-    | "-destination-of" :: tgt :: rest -> Some tgt, rest
-    | _ -> None, args in
-
-  (* -sources-of and -destination-of must be the first parameter *)
-  let only_sources, args = match args with
-    | "-sources-of" :: rest -> true, rest
-    | _ -> false, args in
-
-  let project =
+  let { extra_data = { only_destination; only_sources } } as project =
     let warning_fn x = Format.eprintf "%s@\n%!" x in
-    try cmdline_args_to_project ~warning_fn ~curdir:Filename.current_dir_name args
+    try cmdline_args_to_project ~warning_fn ~curdir:Filename.current_dir_name ~parse_extra empty_extra args
     with Parsing_error s -> prerr_endline s; usage_coq_makefile () in
 
   if only_destination <> None then begin
