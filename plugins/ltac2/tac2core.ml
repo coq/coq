@@ -917,16 +917,32 @@ let () =
 let () =
   define "throw" (exn @-> tac valexpr) @@ fun (e, info) -> throw ~info e
 
+let () =
+  define "throw_bt" (exn @-> exninfo @-> tac valexpr) @@ fun (e,_) info ->
+    Proofview.tclLIFT (Proofview.NonLogical.raise (e, info))
+
+let () =
+  define "clear_err_info" (err @-> ret err) @@ fun (e,_) -> (e, Exninfo.null)
+
 (** Control *)
 
 (** exn -> 'a *)
 let () =
   define "zero" (exn @-> tac valexpr) @@ fun (e, info) -> fail ~info e
 
+let () =
+  define "zero_bt" (exn @-> exninfo @-> tac valexpr) @@ fun (e,_) info ->
+    Proofview.tclZERO ~info e
+
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () =
   define "plus" (closure @-> closure @-> tac valexpr) @@ fun x k ->
   Proofview.tclOR (thaw x) (fun e -> Tac2ffi.apply k [Tac2ffi.of_exn e])
+
+let () =
+  define "plus_bt" (closure @-> closure @-> tac valexpr) @@ fun run handle ->
+    Proofview.tclOR (thaw run)
+      (fun e -> Tac2ffi.apply handle [Tac2ffi.of_exn e; of_exninfo (snd e)])
 
 (** (unit -> 'a) -> 'a *)
 let () =
@@ -1054,6 +1070,14 @@ let () =
 let () =
   define "time" (option string @-> closure @-> tac valexpr) @@ fun s f ->
   Proofview.tclTIME s (thaw f)
+
+let () =
+  define "timeout" (int @-> closure @-> tac valexpr) @@ fun i f ->
+    Proofview.tclTIMEOUT i (thaw f)
+
+let () =
+  define "timeoutf" (float @-> closure @-> tac valexpr) @@ fun f64 f ->
+    Proofview.tclTIMEOUTF (Float64.to_float f64) (thaw f)
 
 let () =
   define "check_interrupt" (unit @-> tac unit) @@ fun _ ->

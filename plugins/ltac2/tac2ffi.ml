@@ -93,6 +93,7 @@ let map_repr f g r = {
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"
+let val_exninfo = Val.create "exninfo"
 let val_constr = Val.create "constr"
 let val_ident = Val.create "ident"
 let val_pattern = Val.create "pattern"
@@ -266,15 +267,28 @@ let internal_err =
   in
   KerName.make coq_prefix (Label.of_id (Id.of_string "Internal"))
 
+let of_exninfo = of_ext val_exninfo
+let to_exninfo = to_ext val_exninfo
+
+let exninfo = {
+  r_of = of_exninfo;
+  r_to = to_exninfo;
+  r_id = false;
+}
+
+let of_err e = of_ext val_exn e
+let to_err e = to_ext val_exn e
+let err = repr_ext val_exn
+
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
 | LtacError (kn, c) -> ValOpn (kn, c)
-| _ -> ValOpn (internal_err, [|of_ext val_exn c|])
+| _ -> ValOpn (internal_err, [|of_err c|])
 
 let to_exn c = match c with
 | ValOpn (kn, c) ->
   if Names.KerName.equal kn internal_err then
-    to_ext val_exn c.(0)
+    to_err c.(0)
   else
     (LtacError (kn, c), Exninfo.null)
 | _ -> assert false

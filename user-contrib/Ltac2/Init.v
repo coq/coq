@@ -88,3 +88,6 @@ Ltac2 Type exn ::= [ Assertion_failure ].
 
 Ltac2 Type exn ::= [ Division_by_zero ].
 (** Int division by zero or modulus by zero *)
+
+Ltac2 Type exninfo.
+(** Information attached to an exception (e.g., backtrace). *)
