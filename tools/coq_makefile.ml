@@ -15,17 +15,18 @@ open Printf
 
 let (>) f g = fun x -> g (f x)
 
-let usage_coq_makefile () =
-  output_string stderr "Usage summary:\
+let usage_coq_makefile ~ok =
+  let out = if ok then stdout else stderr in
+  output_string out "Usage summary:\
 \n\
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
 \n  ... [-arg opt] ... [-docroot path] [-f file] [-o file]\
 \n  ... [-generate-meta-for-package project-name]\
-\n  [-h] [--help]\
+\n  [-h] [--help] [-v] [--version]\
 \n";
-  output_string stderr "\
+  output_string out "\
 \nFull list of options:\
 \n\
 \n[file.v]: Coq file to be compiled\
@@ -48,8 +49,11 @@ let usage_coq_makefile () =
 \n	Output file outside the current directory is forbidden.\
 \n[-generate-meta-for-package project-name]: generate META.project-name.\
 \n[-h]: print this usage summary\
-\n[--help]: equivalent to [-h]\n";
-  exit 1
+\n[--help]: equivalent to [-h]\
+\n[-v]: print version information\
+\n[--version]: equivalent to [-v]\
+\n";
+  exit (if ok then 0 else 1)
 
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
@@ -386,6 +390,8 @@ let empty_extra = {
 let parse_extra f r opts = match f, r with
   | "-destination-of", tgt :: r -> Some (r, { opts with only_destination = Some tgt })
   | "-sources-of", r -> Some (r, { opts with only_sources = true })
+  | ("-h"|"--help"), _ -> usage_coq_makefile ~ok:true
+  | ("-v"|"--version"), _ -> Boot.Usage.version (); exit 0
   | _ -> None
 
 let destination_of { ml_includes; q_includes; r_includes; } file =
@@ -431,7 +437,7 @@ let () =
   let { extra_data = { only_destination; only_sources } } as project =
     let warning_fn x = Format.eprintf "%s@\n%!" x in
     try cmdline_args_to_project ~warning_fn ~curdir:Filename.current_dir_name ~parse_extra empty_extra args
-    with Parsing_error s -> prerr_endline s; usage_coq_makefile () in
+    with Parsing_error s -> prerr_endline s; usage_coq_makefile ~ok:false in
 
   if only_destination <> None then begin
     destination_of project (Option.get only_destination);
