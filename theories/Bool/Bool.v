@@ -739,7 +739,17 @@ Qed.
 
 Notation bool_3 := eq_true_negb_classical (only parsing). (* Compatibility *)
 
+Lemma eq_true_negb_classical_iff : forall b:bool, negb b <> true <-> b = true.
+Proof.
+  destr_bool; intuition.
+Qed.
+
 Lemma eq_true_not_negb : forall b:bool, b <> true -> negb b = true.
+Proof.
+  destr_bool; intuition.
+Qed.
+
+Lemma eq_true_not_negb_iff : forall b:bool, b <> true <-> negb b = true.
 Proof.
   destr_bool; intuition.
 Qed.
