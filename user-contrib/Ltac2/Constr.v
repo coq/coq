@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
+Require Ltac2.Ind.
 
 Ltac2 @ external type : constr -> constr := "coq-core.plugins.ltac2" "constr_type".
 (** Return the type of a term *)
@@ -88,7 +89,8 @@ Ltac2 occurn (n : int) (c : constr) : bool := occur_between n 1 c.
 Ltac2 @ external case : inductive -> case := "coq-core.plugins.ltac2" "constr_case".
 (** Generate the case information for a given inductive type. *)
 
-Ltac2 @ external constructor : inductive -> int -> constructor := "coq-core.plugins.ltac2" "constr_constructor".
+Ltac2 constructor (ind : inductive) (i : int) : constructor :=
+  Ind.get_constructor (Ind.data ind) i.
 (** Generate the i-th constructor for a given inductive type. Indexing starts
     at 0. Panics if there is no such constructor. *)
 

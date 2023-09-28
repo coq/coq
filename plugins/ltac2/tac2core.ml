@@ -685,17 +685,6 @@ let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
 let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)
 
 let () =
-  define "constr_constructor" (repr_ext val_inductive @-> int @-> tac valexpr) @@ fun (ind, i) k ->
-  Proofview.tclENV >>= fun env ->
-  try
-    let open Declarations in
-    let ans = Environ.lookup_mind ind env in
-    let _ = ans.mind_packets.(i).mind_consnames.(k) in
-    return (Value.of_ext val_constructor ((ind, i), (k + 1)))
-  with e when CErrors.noncritical e ->
-    throw err_notfound
-
-let () =
   define "constr_in_context" (ident @-> constr @-> closure @-> tac constr) @@ fun id t c ->
   Proofview.Goal.goals >>= function
   | [gl] ->
