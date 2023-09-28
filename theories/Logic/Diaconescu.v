@@ -42,10 +42,12 @@
    [[Carlström04]] Jesper Carlström, EM + Ext_ + AC_int is equivalent
    to AC_ext, Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
 *)
-Require ClassicalFacts ChoiceFacts.
+Require PropExtensionalityFacts ChoiceFacts.
 
 (**********************************************************************)
 (** * Pred. Ext. + Rel. Axiom of Choice -> Excluded-Middle       *)
+
+Import PropExtensionalityFacts.
 
 Section PredExt_RelChoice_imp_EM.
 
