@@ -246,3 +246,7 @@ Ltac2 equal p a b :=
   if Int.equal lena lenb
   then for_all2_aux p a b 0 lena
   else false.
+
+Ltac2 rev (ar : 'a array) : 'a array :=
+  let len := length ar in
+  init len (fun i => get ar (Int.sub (Int.sub len i) 1)).
