@@ -319,6 +319,10 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     let hintl =
       CList.map
         (fun (db, m, tacs) ->
+           let allowed_evars = match m with
+             | NoMode -> allowed_evars
+             | WithMode evars -> evars
+           in
           let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
           m, List.map (fun x -> tac_of_hint (flags, x)) tacs)
         hintl

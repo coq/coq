@@ -105,7 +105,7 @@ val glob_hints_path :
 
 type mode_match =
   | NoMode
-  | WithMode of hint_mode array
+  | WithMode of Evarsolve.AllowedEvars.t
 
 type 'a with_mode =
   | ModeMatch of mode_match * 'a

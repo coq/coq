@@ -532,7 +532,7 @@ type hint_db_name = string
 
 type mode_match =
   | NoMode
-  | WithMode of hint_mode array
+  | WithMode of Evarsolve.AllowedEvars.t
 
 type 'a with_mode =
   | ModeMatch of mode_match * 'a
@@ -603,26 +603,44 @@ struct
       (* Warn about no longer typable hint? *)
       None
 
-  let head_evar sigma c =
+  let has_head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
-      | Evar (evk,_)   -> evk
+      | Evar (evk,_)   -> true
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
-      | _              -> raise Evarutil.NoHeadEvar
+      | _              -> false
     in
     hrec c
 
   let match_mode sigma m arg =
     match m with
     | ModeInput -> not (occur_existential sigma arg)
-    | ModeNoHeadEvar ->
-       (try ignore(head_evar sigma arg); false
-                 with Evarutil.NoHeadEvar -> true)
+    | ModeNoHeadEvar -> not (has_head_evar sigma arg)
     | ModeOutput -> true
 
   let matches_mode sigma args mode =
-    if Array.length mode == Array.length args &&
-        Array.for_all2 (match_mode sigma) mode args then Some mode
+    if Array.length mode == Array.length args then
+      (* we don't need to compute evar sets if there's no ModeInput *)
+      if Array.exists (fun m -> m = ModeInput) mode then
+        let exception Mismatch in
+        begin try
+          let in_input, in_output = Array.fold_left2 (fun (in_input,in_output) m arg ->
+              match m with
+              | ModeInput -> (Evar.Set.union in_input (Evd.evars_of_term sigma arg), in_output)
+              | ModeNoHeadEvar | ModeOutput ->
+                if m = ModeNoHeadEvar && has_head_evar sigma arg then raise Mismatch
+                else (in_input, Evar.Set.union (Evd.evars_of_term sigma arg) in_output))
+              (Evar.Set.empty, Evar.Set.empty)
+              mode
+              args
+          in
+          let forbid = Evar.Set.diff in_input in_output in
+          Some (Evarsolve.AllowedEvars.except forbid)
+        with Mismatch -> None
+        end
+      else if Array.for_all2 (match_mode sigma) mode args
+      then Some Evarsolve.AllowedEvars.all
+      else None
     else None
 
   let matches_modes sigma args modes =

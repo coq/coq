@@ -98,6 +98,7 @@ Admitted.
 (* To avoid looping class resolution *)
 #[export] Hint Mode IsEquiv - - + : typeclass_instances.
 
-Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
-           (P Q : Type) {Q_inO : inO_internal Q}
-: IsEquiv (fun f : O P -> P => compose f (O_unit P)) := _.
+(* doesn't work with + meaning "make evars rigid" instead of "skip if evars present" *)
+(* Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse} *)
+(*            (P Q : Type) {Q_inO : inO_internal Q} *)
+(* : IsEquiv (fun f : O P -> P => compose f (O_unit P)) := _. *)

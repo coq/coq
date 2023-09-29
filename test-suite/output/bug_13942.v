@@ -98,15 +98,15 @@ Module Minimized'.
 
   (** Fail because Union has now mode +, so (M _) is not enough to trigger
       i' and fi'. So we get a general type error
-    *)
-  Fail Definition test := (fi fu).
+   *)
+  Definition test := (fi fu).
 
   (** Here we get the precise missing Insert instance when A is chosen: *)
 
   Fail Definition test' : A := (fi fu).
 
   (** Of course the unambiguous querry works *)
-  Definition test : B := (fi fu).
+  Definition test'' : B := (fi fu).
 
   End OrderOne.
 
