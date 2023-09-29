@@ -77,6 +77,7 @@ type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.m
 
 type control_entry =
   | ControlTime of { synterp_duration: System.duration }
+  | ControlInstructions of { synterp_instructions: System.instruction_count }
   | ControlRedirect of string
   | ControlTimeout of { remaining : float }
   | ControlFail of { st : Vernacstate.Synterp.t }
@@ -416,6 +417,14 @@ let rec synterp_control_flag ~loc (f : control_flag list)
       ControlTime { synterp_duration } :: ctrl, v
     | Error(exn, synterp_duration) as e ->
       Feedback.msg_notice @@ System.fmt_transaction_result e;
+      Exninfo.iraise exn
+    end
+  | ControlInstructions :: l ->
+    begin match System.count_instructions (synterp_control_flag ~loc l fn) expr with
+    | Ok((ctrl,v), synterp_instructions) ->
+      ControlInstructions { synterp_instructions } :: ctrl, v
+    | Error(exn, synterp_instructions) as e ->
+      Feedback.msg_notice @@ System.fmt_instructions_result e;
       Exninfo.iraise exn
     end
   | ControlRedirect s :: l ->

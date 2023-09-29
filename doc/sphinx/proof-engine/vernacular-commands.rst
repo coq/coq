@@ -860,6 +860,14 @@ Quitting and debugging
    time needed to execute it.
 
 
+.. cmd:: Instructions @sentence
+
+   Executes :n:`@sentence` and displays the number of CPU instructions needed
+   to execute it. This command is currently only supported on Linux systems,
+   but does not fail on unsupported sustems, where it instead prints an error
+   message in the place of the instruction count.
+
+
 .. cmd:: Redirect @string @sentence
 
    Executes :n:`@sentence`, redirecting its
