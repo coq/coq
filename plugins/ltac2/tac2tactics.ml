@@ -183,6 +183,11 @@ let rewrite ev rw cl by =
   let by = Option.map (fun tac -> Tacticals.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
 
+let setoid_rewrite orient c occs id =
+  let c = c >>= fun c -> return (mk_with_bindings c) in
+  let occs = mk_occurrences (fun i -> i) occs in
+  Rewrite.cl_rewrite_clause (delayed_of_tactic c) (Option.default true orient) occs id
+
 let symmetry cl =
   let cl = mk_clause cl in
   Tactics.intros_symmetry cl

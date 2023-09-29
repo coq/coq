@@ -46,6 +46,9 @@ val change : Pattern.constr_pattern option -> (constr array, constr) Tac2ffi.fun
 val rewrite :
   evars_flag -> rewriting list -> clause -> unit thunk option -> unit tactic
 
+val setoid_rewrite :
+  bool option -> constr_with_bindings tactic -> occurrences -> Id.t option -> unit tactic
+
 val symmetry : clause -> unit tactic
 
 val forward : bool -> unit tactic option option ->

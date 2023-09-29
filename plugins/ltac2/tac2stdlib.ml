@@ -397,6 +397,14 @@ let () =
     (bool @-> list rewriting @-> clause @-> option (thunk unit) @-> tac unit)
     Tac2tactics.rewrite
 
+let to_helper v = uthaw constr_with_bindings v
+let helper = make_to_repr to_helper
+
+let () =
+  define "tac_setoid_rewrite"
+    (option bool @-> helper @-> occurrences @-> option ident @-> tac unit)
+    Tac2tactics.setoid_rewrite
+
 let () =
   define "tac_inversion"
     (inversion_kind @-> destruction_arg @-> option intro_pattern @->
