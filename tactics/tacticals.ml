@@ -16,6 +16,9 @@ open Constr
 open EConstr
 open Declarations
 open Tactypes
+open Proofview
+open Proofview.Notations
+open Tacmach
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -29,8 +32,10 @@ exception FailError of int * Pp.t Lazy.t
 let catch_failerror (e, info) =
   match e with
   | FailError (lvl,s) when lvl > 0 ->
-    Exninfo.iraise (FailError (lvl - 1, s), info)
-  | e -> Control.check_for_interrupt ()
+    tclZERO ~info (FailError (lvl - 1, s))
+  | e ->
+    Control.check_for_interrupt ();
+    tclUNIT ()
 
 (************************************************************************)
 (* Elimination Tacticals                                                *)
@@ -127,10 +132,6 @@ let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
   let lrecargs = Declareops.dest_subterms mip.mind_recargs in
   Array.map2 analrec lc lrecargs
 
-open Proofview
-open Proofview.Notations
-open Tacmach
-
 let tclIDTAC = tclUNIT ()
 
 let tclTHEN t1 t2 =
@@ -160,14 +161,6 @@ let tclZEROMSG ?info ?loc msg =
   in
   let err = UserError msg in
   tclZERO ~info err
-
-let catch_failerror e =
-  try
-    catch_failerror e;
-    tclUNIT ()
-  with e when CErrors.noncritical e ->
-    let _, info = Exninfo.capture e in
-    tclZERO ~info e
 
 (* spiwack: I chose to give the Ltac + the same semantics as
     [Proofview.tclOR], however, for consistency with the or-else
