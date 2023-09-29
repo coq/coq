@@ -3122,6 +3122,10 @@ ltac2_orient: [
 |      (* ltac2 plugin *)
 ]
 
+q_orient: [
+| ltac2_orient      (* ltac2 plugin *)
+]
+
 G_LTAC2_rewriter: [
 | "!" G_LTAC2_constr_with_bindings      (* ltac2 plugin *)
 | [ "?" | LEFTQMARK ] G_LTAC2_constr_with_bindings      (* ltac2 plugin *)
@@ -3132,7 +3136,7 @@ G_LTAC2_rewriter: [
 ]
 
 G_LTAC2_oriented_rewriter: [
-| ltac2_orient G_LTAC2_rewriter      (* ltac2 plugin *)
+| q_orient G_LTAC2_rewriter      (* ltac2 plugin *)
 ]
 
 q_rewriting: [

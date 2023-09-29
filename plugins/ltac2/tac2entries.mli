@@ -86,6 +86,7 @@ val q_intropatterns : intro_pattern list CAst.t Pcoq.Entry.t
 val q_destruction_arg : destruction_arg Pcoq.Entry.t
 val q_induction_clause : induction_clause Pcoq.Entry.t
 val q_conversion : conversion Pcoq.Entry.t
+val q_orient : orientation Pcoq.Entry.t
 val q_rewriting : rewriting Pcoq.Entry.t
 val q_clause : clause Pcoq.Entry.t
 val q_dispatch : dispatch Pcoq.Entry.t

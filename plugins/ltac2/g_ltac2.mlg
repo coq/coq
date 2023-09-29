@@ -494,7 +494,7 @@ open Tac2entries.Pltac
 
 GRAMMAR EXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_conversion q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
+          q_conversion q_orient q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
           q_goal_matching q_hintdb q_move_location q_pose q_assert;
   anti:
@@ -717,6 +717,9 @@ GRAMMAR EXTEND Gram
       | -> { CAst.make ~loc None }
     ]]
   ;
+  q_orient:
+    [ [ ori = ltac2_orient -> { ori } ] ]
+  ;
   rewriter:
     [ [ "!"; c = constr_with_bindings ->
         { (CAst.make ~loc @@ QRepeatPlus,c) }
@@ -733,7 +736,7 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   oriented_rewriter:
-    [ [ b = ltac2_orient; r = rewriter ->
+    [ [ b = q_orient; r = rewriter ->
       { let (m, c) = r in
         CAst.make ~loc @@ {
         rew_orient = b;
