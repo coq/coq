@@ -1,3 +1,4 @@
+Require Import Coq.Setoids.Setoid.
 Require Import Ltac2.Ltac2.
 
 Axiom f: nat -> nat.
@@ -65,4 +66,32 @@ Proof.
   intros.
   assert (a = a) by exact eq_refl;
   assumption.
+Qed.
+
+Goal forall x, (forall (y : unit), y = x) -> forall (x: unit), x = x.
+Proof.
+  intros x H y.
+  rewrite -> H at 1 2.
+  reflexivity.
+Qed.
+
+Goal forall x, (forall (y : unit), x = y) -> forall (x: unit), x = x.
+Proof.
+  intros x H y.
+  rewrite <- H at 1 2.
+  reflexivity.
+Qed.
+
+Goal forall x, (forall (y : unit), y = x) -> forall (x: unit), x = x.
+Proof.
+  intros x H y.
+  setoid_rewrite H.
+  reflexivity.
+Qed.
+
+Goal forall x, (forall (y : unit), x = y) -> forall (x: unit), x = x.
+Proof.
+  intros x H y.
+  setoid_rewrite <- H.
+  reflexivity.
 Qed.
