@@ -810,18 +810,14 @@ on the programmable rewriting strategies with generic traversals by Visser et al
 the Stratego transformation language :cite:`Visser01`. Rewriting strategies
 are applied using the :tacn:`rewrite_strat` tactic`.
 
-.. insertprodn rewstrategy rewstrategy
+.. insertprodn rewstrategy rewstrategy0
 
 .. prodn::
-   rewstrategy ::= @one_term
-   | <- @one_term
-   | fail
-   | id
-   | refl
+   rewstrategy ::= <- @one_term
    | progress @rewstrategy
    | try @rewstrategy
+   | choice {+ @rewstrategy0 }
    | repeat @rewstrategy
-   | choice {+ {| @rewstrategy | {+; @rewstrategy } } }
    | any @rewstrategy
    | subterm @rewstrategy
    | subterms @rewstrategy
@@ -833,8 +829,13 @@ are applied using the :tacn:`rewrite_strat` tactic`.
    | terms {* @one_term }
    | eval @red_expr
    | fold @one_term
-   | ( {| @rewstrategy | {+; @rewstrategy } } )
+   | @rewstrategy0
    | old_hints @ident
+   rewstrategy0 ::= @one_term
+   | fail
+   | id
+   | refl
+   | ( {| @rewstrategy | {+; @rewstrategy } } )
 
 :n:`@one_term`
    lemma, left to right
@@ -860,7 +861,7 @@ are applied using the :tacn:`rewrite_strat` tactic`.
 :n:`@rewstrategy ; @rewstrategy`
    composition
 
-:n:`choice {+ {+; @rewstrategy } }`
+:n:`choice {+ @rewstrategy0 }`
    first successful strategy
 
 :n:`repeat @rewstrategy`

@@ -1698,15 +1698,17 @@ let pr_ustrategy = function
 
 let paren p = str "(" ++ p ++ str ")"
 
-let rec pr_strategy_atom inseq prc prr = function
+let rec pr_strategy0 prc prr = function
 | StratId -> str "id"
 | StratFail -> str "fail"
 | StratRefl -> str "refl"
+| str -> paren (pr_strategy prc prr str)
+
+and pr_strategy1 prc prr = function
 | StratUnary (s, str) ->
-  pr_ustrategy s ++ spc () ++ pr_strategy_atom inseq prc prr str
+  pr_ustrategy s ++ spc () ++ pr_strategy1 prc prr str
 | StratNAry (Choice, strs) ->
-  let p = str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy prc prr str)) strs in
-  if inseq then paren p else p
+  str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr str)) strs
 | StratConstr (c, true) -> prc c
 | StratConstr (c, false) -> str "<-" ++ spc () ++ prc c
 | StratTerms cl -> str "terms" ++ spc () ++ pr_sequence prc cl
@@ -1715,18 +1717,12 @@ let rec pr_strategy_atom inseq prc prr = function
   str cmd ++ spc () ++ str id
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
-| StratBinary (Compose, _, _) as str ->
-  paren (pr_strategy prc prr str)
-
-and pr_strategy_left prc prr = function
-| StratBinary (Compose, str1, str2) ->
-  pr_strategy_left prc prr str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy_atom true prc prr str2)
-| str -> hov 0 (pr_strategy_atom true prc prr str)
+| str -> pr_strategy0 prc prr str
 
 and pr_strategy prc prr = function
 | StratBinary (Compose, str1, str2) ->
-  pr_strategy_left prc prr str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy_atom false prc prr str2)
-| str -> hov 0 (pr_strategy_atom false prc prr str)
+  pr_strategy prc prr str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy1 prc prr str2)
+| str -> hov 0 (pr_strategy1 prc prr str)
 
 let rec strategy_of_ast = function
   | StratId -> Strategies.id

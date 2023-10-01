@@ -105,32 +105,36 @@ GRAMMAR EXTEND Gram
   GLOBAL: rewstrategy;
   rewstrategy:
     [ LEFTA
-      [ h = SELF; ";"; h' = rewstrategy_atom -> { StratBinary (Compose, h, h') }
-      | h = rewstrategy_atom -> { h } ] ]
+      [ h = SELF; ";"; h' = rewstrategy1 -> { StratBinary (Compose, h, h') }
+      | h = rewstrategy1 -> { h } ] ]
   ;
-  rewstrategy_atom:
+  rewstrategy1:
     [ RIGHTA
-      [ c = glob -> { StratConstr (c, true) }
-      | "<-"; c = constr -> { StratConstr (c, false) }
+      [ "<-"; c = constr -> { StratConstr (c, false) }
       | IDENT "subterms"; h = SELF -> { StratUnary (Subterms, h) }
       | IDENT "subterm"; h = SELF -> { StratUnary (Subterm, h) }
       | IDENT "innermost"; h = SELF -> { StratUnary(Innermost, h) }
       | IDENT "outermost"; h = SELF -> { StratUnary(Outermost, h) }
       | IDENT "bottomup"; h = SELF -> { StratUnary(Bottomup, h) }
       | IDENT "topdown"; h = SELF -> { StratUnary(Topdown, h) }
-      | IDENT "id" -> { StratId }
-      | IDENT "fail" -> { StratFail }
-      | IDENT "refl" -> { StratRefl }
       | IDENT "progress"; h = SELF -> { StratUnary (Progress, h) }
       | IDENT "try"; h = SELF -> { StratUnary (Try, h) }
       | IDENT "any"; h = SELF -> { StratUnary (Any, h) }
       | IDENT "repeat"; h = SELF -> { StratUnary (Repeat, h) }
-      | IDENT "choice"; h = LIST1 rewstrategy -> { StratNAry (Choice, h) }
+      | IDENT "choice"; h = LIST1 rewstrategy0 -> { StratNAry (Choice, h) }
       | IDENT "old_hints"; h = preident -> { StratHints (true, h) }
       | IDENT "hints"; h = preident -> { StratHints (false, h) }
       | IDENT "terms"; h = LIST0 constr -> { StratTerms h }
       | IDENT "eval"; r = red_expr -> { StratEval r }
       | IDENT "fold"; c = constr -> { StratFold c }
+      | h = rewstrategy0 -> { h } ] ]
+  ;
+  rewstrategy0:
+    [ NONA
+      [ c = glob -> { StratConstr (c, true) }
+      | IDENT "id" -> { StratId }
+      | IDENT "fail" -> { StratFail }
+      | IDENT "refl" -> { StratRefl }
       | "("; h = rewstrategy; ")" -> { h } ] ]
   ;
 END
