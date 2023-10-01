@@ -774,10 +774,10 @@ Strategies for rewriting
 Usage
 ~~~~~
 
-.. tacn:: rewrite_strat @rewstrategy {? in @ident }
+.. tacn:: rewrite_strat {| @rewstrategy | {+; @rewstrategy } } {? in @ident }
    :name: rewrite_strat
 
-   Rewrite using :n:`@rewstrategy` in the conclusion or in the hypothesis :n:`@ident`.
+   Rewrite using the specified :n:`@rewstrategy`s in the conclusion or in the hypothesis :n:`@ident`.
 
    .. exn:: Nothing to rewrite.
 
@@ -808,34 +808,32 @@ combined to create custom rewriting procedures. Its set of strategies is based
 on the programmable rewriting strategies with generic traversals by Visser et al.
 :cite:`Luttik97specificationof` :cite:`Visser98`, which formed the core of
 the Stratego transformation language :cite:`Visser01`. Rewriting strategies
-are applied using the tactic :n:`rewrite_strat @rewstrategy`.
+are applied using the :tacn:`rewrite_strat` tactic`.
 
-.. insertprodn rewstrategy rewstrategy0
+.. insertprodn rewstrategy rewstrategy
 
 .. prodn::
-   rewstrategy ::= @rewstrategy ; @rewstrategy_atom
-   | @rewstrategy_atom
-   rewstrategy_atom ::= @one_term
+   rewstrategy ::= @one_term
    | <- @one_term
    | fail
    | id
    | refl
-   | progress @rewstrategy_atom
-   | try @rewstrategy_atom
-   | choice {+ @rewstrategy }
-   | repeat @rewstrategy_atom
-   | any @rewstrategy_atom
-   | subterm @rewstrategy_atom
-   | subterms @rewstrategy_atom
-   | innermost @rewstrategy_atom
-   | outermost @rewstrategy_atom
-   | bottomup @rewstrategy_atom
-   | topdown @rewstrategy_atom
+   | progress @rewstrategy
+   | try @rewstrategy
+   | repeat @rewstrategy
+   | choice {+ {| @rewstrategy | {+; @rewstrategy } } }
+   | any @rewstrategy
+   | subterm @rewstrategy
+   | subterms @rewstrategy
+   | innermost @rewstrategy
+   | outermost @rewstrategy
+   | bottomup @rewstrategy
+   | topdown @rewstrategy
    | hints @ident
    | terms {* @one_term }
    | eval @red_expr
    | fold @one_term
-   | ( @rewstrategy )
+   | ( {| @rewstrategy | {+; @rewstrategy } } )
    | old_hints @ident
 
 :n:`@one_term`
@@ -862,7 +860,7 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 :n:`@rewstrategy ; @rewstrategy`
    composition
 
-:n:`choice {+ @rewstrategy }`
+:n:`choice {+ {+; @rewstrategy } }`
    first successful strategy
 
 :n:`repeat @rewstrategy`
@@ -936,7 +934,7 @@ succeeds, making progress using a reflexivity proof of rewriting.
 ``progress`` tests progress of the argument :n:`@rewstrategy` and
 fails if no progress was made, while ``try`` always succeeds, catching
 failures. ``choice`` uses the first successful strategy in the list of
-@rewstrategy. One can iterate a strategy at least 1 time using
+:n:`@rewstrategy`s. One can iterate a strategy at least 1 time using
 ``repeat`` and at least 0 times using ``any``.
 
 The ``subterm`` and ``subterms`` strategies apply their argument :n:`@rewstrategy` to

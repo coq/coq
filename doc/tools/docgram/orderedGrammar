@@ -1484,7 +1484,7 @@ simple_tactic: [
 | "eintros" LIST0 intropattern
 | "decide" "equality"
 | "compare" one_term one_term
-| "rewrite_strat" rewstrategy OPT ( "in" ident )
+| "rewrite_strat" [ rewstrategy | LIST1 rewstrategy SEP ";" ] OPT ( "in" ident )
 | "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
 | "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
 | "simple" "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
@@ -2129,32 +2129,27 @@ rewrite_occs: [
 ]
 
 rewstrategy: [
-| rewstrategy0 ";" rewstrategy0
-| rewstrategy0
-]
-
-rewstrategy0: [
 | one_term
 | "<-" one_term
 | "fail"
 | "id"
 | "refl"
-| "progress" rewstrategy0
-| "try" rewstrategy0
-| "choice" LIST1 rewstrategy
-| "repeat" rewstrategy0
-| "any" rewstrategy0
-| "subterm" rewstrategy0
-| "subterms" rewstrategy0
-| "innermost" rewstrategy0
-| "outermost" rewstrategy0
-| "bottomup" rewstrategy0
-| "topdown" rewstrategy0
+| "progress" rewstrategy
+| "try" rewstrategy
+| "repeat" rewstrategy
+| "choice" LIST1 [ rewstrategy | LIST1 rewstrategy SEP ";" ]
+| "any" rewstrategy
+| "subterm" rewstrategy
+| "subterms" rewstrategy
+| "innermost" rewstrategy
+| "outermost" rewstrategy
+| "bottomup" rewstrategy
+| "topdown" rewstrategy
 | "hints" ident
 | "terms" LIST0 one_term
 | "eval" red_expr
 | "fold" one_term
-| "(" rewstrategy ")"
+| "(" [ rewstrategy | LIST1 rewstrategy SEP ";" ] ")"
 | "old_hints" ident
 ]
 
