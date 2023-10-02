@@ -7154,7 +7154,7 @@ Other changes in 8.10+beta1
     by Jasper Hugunin, review by Pierre-Marie Pédrot and Hugo Herbelin).
 
 - The `quote plugin
-  <https://coq.inria.fr/distrib/V8.9.0/refman/proof-engine/detailed-tactic-examples.html#quote>`_
+  <https://coq.github.io/doc/v8.9/refman/proof-engine/detailed-tactic-examples.html#quote>`_
   was removed. If some users are interested in maintaining this plugin
   externally, the Coq development team can provide assistance for
   extracting the plugin and setting up a new repository
