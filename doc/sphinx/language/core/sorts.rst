@@ -71,31 +71,30 @@ Formally, we call :math:`\Sort` the set of sorts which is defined by:
 Their properties, such as :math:`\Prop:\Type(1)`, :math:`\Set:\Type(1)`, and
 :math:`\Type(i):\Type(i+1)`, are described in :ref:`subtyping-rules`.
 
-The user does not have to mention explicitly the index :math:`i` when
-referring to the universe :math:`\Type(i)`. One only writes `Type`. The system
-itself generates for each instance of `Type` a new index for the
+**Algebraic universes** In practice, the Type hierarchy is
+implemented using algebraic universes,
+which appear in the syntax :n:`Type@{@universe}`.
+An :gdef:`algebraic universe` :math:`u` is either a variable,
+a successor of an algebraic universe (an expression :math:`u+1`),
+an upper bound of algebraic universes (an expression :math:`\max(u_1 ,...,u_n )`),
+or the base universe :math:`\Set`.
+
+A graph of constraints between the universe variables is maintained
+globally. To ensure the existence of a mapping of the universes to the
+positive integers, the graph of constraints must remain acyclic.
+Typing expressions that violate the acyclicity of the graph of
+constraints results in a :exn:`Universe inconsistency` error.
+
+The user does not have to mention explicitly the universe :math:`u` when
+referring to the universe `Type@{u}`. One only writes `Type`. The system
+itself generates for each instance of `Type` a new variable for the
 universe and checks that the constraints between these indexes can be
 solved. From the user point of view we consequently have :math:`\Type:\Type`. We
 shall make precise in the typing rules the constraints between the
 indices.
 
-
-.. _Implementation-issues:
-
-**Implementation issues** In practice, the Type hierarchy is
-implemented using algebraic universes.
-An :gdef:`algebraic universe` :math:`u` is either a variable (a qualified
-identifier with a number) or a successor of an algebraic universe (an
-expression :math:`u+1`), or an upper bound of algebraic universes (an
-expression :math:`\max(u_1 ,...,u_n )`), or the base universe (the expression
-:math:`0`) which corresponds, in the arity of template polymorphic inductive
-types (see Section
-:ref:`well-formed-inductive-definitions`),
-to the predicative sort :math:`\Set`. A graph of
-constraints between the universe variables is maintained globally. To
-ensure the existence of a mapping of the universes to the positive
-integers, the graph of constraints must remain acyclic. Typing
-expressions that violate the acyclicity of the graph of constraints
-results in a :exn:`Universe inconsistency` error.
+The syntax :n:`Type@{@qualid | @universe}` is used with
+:ref:`polymorphicuniverses` when quantifying over all sorts including
+:math:`\Prop` and :math:`\SProp`.
 
 .. seealso:: :ref:`printing-universes`, :ref:`explicit-universes`.

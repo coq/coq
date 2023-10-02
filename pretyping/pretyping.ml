@@ -157,8 +157,8 @@ let glob_level ?loc evd : glob_level -> _ = function
     match level_name evd s with
     | None ->
       user_err ?loc
-        (str "Universe instances cannot contain non-Set small levels, polymorphic" ++
-        str " universe instances must be greater or equal to Set.");
+        (str "Universe instances cannot contain non-Set small levels," ++ spc() ++
+         str "polymorphic universe instances must be greater or equal to Set.");
     | Some r -> r
 
 let glob_qvar ?loc evd : glob_qvar -> _ = function
