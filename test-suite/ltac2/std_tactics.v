@@ -92,15 +92,15 @@ Proof.
 Qed.
 
 Axiom x : unit.
-Axiom H : forall {y : unit}, y = x.
+Axiom H : forall y : unit, y = x.
 Goal forall y : unit, y = y.
 Proof.
   assert (H2 : tt = x).
-  { setoid_rewrite (H (y := tt)).
+  { setoid_rewrite H with (y := tt).
     reflexivity. }
-  setoid_rewrite (H (y := tt)) at 1 in H2.
+  setoid_rewrite H with (y := tt) at 1 in H2.
   intros y.
-  setoid_rewrite (H (y := y)) at 1.
-  setoid_rewrite (H (y := y)) at 1.
+  setoid_rewrite H with (y := y) at 1.
+  setoid_rewrite H with (y := y) at 1.
   reflexivity.
 Qed.
