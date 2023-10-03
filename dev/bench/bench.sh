@@ -588,13 +588,24 @@ $skipped_packages"
         zulip_edit "Benching continues..."
     fi
 
-    # Generate HTML report for LAST run
-
     # N.B. Not all packages end in .dev, e.g., coq-lambda-rust uses .dev.timestamp.
     # So we use a wildcard to catch such packages.  This will have to be updated if
     # ever there is a package that uses some different naming scheme.
     new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package.dev*/
     old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package.dev*/
+
+    # Generate per-file comparison
+    for iteration in $(seq $num_of_iterations); do
+        # opam logs prefix the printing with "- " so remove that
+        # remove the base path for nicer printing and so the script can identify common files
+        "$program_path"/../../tools/make-both-time-files.py \
+            <(sed -e 's/^- //' -e "s:$old_base_path::" "$log_dir/$coq_opam_package.OLD.opam_install.$iteration.stdout.log") \
+            <(sed -e 's/^- //' -e "s:$new_base_path::" "$log_dir/$coq_opam_package.NEW.opam_install.$iteration.stdout.log") \
+            > "$log_dir/$coq_opam_package.BOTH.perfile_timings.$iteration.log"
+    done
+
+    # Generate HTML report for LAST run
+
     for vo in $(cd $new_base_path/; find . -name '*.vo'); do
         if [ -e $old_base_path/$vo ]; then
           echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
