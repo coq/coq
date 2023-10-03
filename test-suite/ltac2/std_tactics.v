@@ -82,16 +82,25 @@ Proof.
   reflexivity.
 Qed.
 
-Goal forall x, (forall (y : unit), y = x) -> forall (x: unit), x = x.
+Goal forall x, (forall y : unit, y = x) -> forall y : unit, y = y.
 Proof.
   intros x H y.
+  setoid_rewrite H at 1 2.
+  setoid_rewrite <- (H y) at 1 2.
   setoid_rewrite H.
   reflexivity.
 Qed.
 
-Goal forall x, (forall (y : unit), x = y) -> forall (x: unit), x = x.
+Axiom x : unit.
+Axiom H : forall {y : unit}, y = x.
+Goal forall y : unit, y = y.
 Proof.
-  intros x H y.
-  setoid_rewrite <- H.
+  assert (H2 : tt = x).
+  { setoid_rewrite (H (y := tt)).
+    reflexivity. }
+  setoid_rewrite (H (y := tt)) at 1 in H2.
+  intros y.
+  setoid_rewrite (H (y := y)) at 1.
+  setoid_rewrite (H (y := y)) at 1.
   reflexivity.
 Qed.
