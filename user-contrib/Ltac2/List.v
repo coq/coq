@@ -507,7 +507,7 @@ Ltac2 init (len : int) (f : int -> 'a) :=
   Control.assert_valid_argument "List.init" (Int.ge len 0);
   map f (seq 0 1 len).
 
-Ltac2 repeat (x : 'a) (n : 'int) :=
+Ltac2 repeat (x : 'a) (n : int) :=
   init n (fun _ => x).
 
 Ltac2 assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
@@ -558,7 +558,7 @@ Ltac2 enumerate (ls : 'a list) :=
   combine (seq 0 1 (length ls)) ls.
 
 (* from Rocq stdlib *)
-Ltac2 rec merge (cmp : 'a -> 'a -> int) (l1 : 'a list) (l2 : 'b list) :=
+Ltac2 rec merge (cmp : 'a -> 'a -> int) (l1 : 'a list) (l2 : 'a list) :=
   let rec merge_aux l2 :=
       match l1 with
       | [] => l2
