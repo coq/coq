@@ -216,7 +216,6 @@ and subst_tactic subst = CAst.map (function
       TacOrelse (subst_tactic subst tac1,subst_tactic subst tac2)
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
-  | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg a -> TacArg (subst_tacarg subst a)
   | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
 

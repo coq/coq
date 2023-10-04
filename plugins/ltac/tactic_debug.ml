@@ -355,7 +355,6 @@ let tac_loc tac =
   | TacThens _ -> "TacThens"
   | TacThens3parts _ -> "TacThens3parts"
   | TacFirst _ -> "TacFirst"
-  | TacComplete _ -> "TacComplete"
   | TacSolve _ -> "TacSolve"
   | TacTry _ -> "TacTry"
   | TacOr _ -> "TacOr"

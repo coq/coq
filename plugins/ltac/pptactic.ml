@@ -643,7 +643,6 @@ let pr_goal_selector ~toplevel s =
   let lorelse = 2
   let llet = 5
   let lfun = 5
-  let lcomplete = 1
   let labstract = 3
   let lmatch = 1
   let latom = 0
@@ -1027,8 +1026,6 @@ let pr_goal_selector ~toplevel s =
               keyword "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacSolve tl ->
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
-            | TacComplete t ->
-              pr_tac (LevelLe lcomplete) t, lcomplete
             | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, ltactical
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
