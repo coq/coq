@@ -1802,16 +1802,16 @@ ltac2_conversion: [
 | term "with" term      (* ltac2 plugin *)
 ]
 
-q_orient: [
-| OPT [ "->" | "<-" ]
-]
-
 q_rewriting: [
 | ltac2_oriented_rewriter      (* ltac2 plugin *)
 ]
 
 ltac2_oriented_rewriter: [
 | OPT q_orient ltac2_rewriter      (* ltac2 plugin *)
+]
+
+q_orient: [
+| OPT [ "->" | "<-" ]
 ]
 
 ltac2_rewriter: [
