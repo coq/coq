@@ -1047,30 +1047,6 @@ let () =
   define "check_interrupt" (unit @-> tac unit) @@ fun _ ->
   Proofview.tclCHECKINTERRUPT
 
-(** Fresh *)
-
-let () =
-  let ty = repr_ext val_free in
-  define "fresh_free_union" (ty @-> ty @-> ret ty) Id.Set.union
-
-let () =
-  define "fresh_free_of_ids" (list ident @-> ret (repr_ext val_free)) @@ fun ids ->
-  List.fold_right Id.Set.add ids Id.Set.empty
-
-let () =
-  define "fresh_free_of_constr" (constr @-> tac (repr_ext val_free)) @@ fun c ->
-  Proofview.tclEVARMAP >>= fun sigma ->
-  let rec fold accu c =
-    match EConstr.kind sigma c with
-    | Constr.Var id -> Id.Set.add id accu
-    | _ -> EConstr.fold sigma fold accu c
-  in
-  return (fold Id.Set.empty c)
-
-let () =
-  define "fresh_fresh" (repr_ext val_free @-> ident @-> ret ident) @@ fun avoid id ->
-  Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid)
-
 (** Env *)
 
 let () =
@@ -1231,6 +1207,14 @@ module MapTagDyn = Dyn.Make()
 
 type ('a,'set,'map) map_tag = ('a * 'set * 'map) MapTagDyn.tag
 
+let map_tag_eq (type a b c a' b' c') (t1:(a,b,c) map_tag) (t2:(a',b',c') map_tag)
+  : (a*b*c,a'*b'*c') Util.eq option
+  = MapTagDyn.eq t1 t2
+
+let assert_map_tag_eq t1 t2 = match map_tag_eq t1 t2 with
+  | Some v -> v
+  | None -> assert false
+
 type any_map_tag = Any : _ map_tag -> any_map_tag
 type tagged_set = TaggedSet : (_,'set,_) map_tag * 'set -> tagged_set
 type tagged_map = TaggedMap : (_,_,'map) map_tag * 'map -> tagged_map
@@ -1241,6 +1225,14 @@ let map_tag_repr = Value.repr_ext map_tag_ext
 let set_ext : tagged_set Tac2dyn.Val.tag = Tac2dyn.Val.create "fset"
 let set_repr = Value.repr_ext set_ext
 let tag_set tag s = Value.repr_of set_repr (TaggedSet (tag,s))
+let untag_set_aux (type a a' s s' m m') (tag:(a,s,m) map_tag) (tag':(a',s',m') map_tag) (x:s') : s =
+  let Refl = assert_map_tag_eq tag tag' in
+  x
+let untag_set (type s) (tag:(_,s,_) map_tag) v : s =
+  let TaggedSet (tag',s) = Value.repr_to set_repr v in
+  untag_set_aux tag tag' s
+let tag_set_repr tag =
+  make_repr (tag_set tag) (untag_set tag)
 
 let map_ext : tagged_map Tac2dyn.Val.tag = Tac2dyn.Val.create "fmap"
 let map_repr = Value.repr_ext map_ext
@@ -1274,14 +1266,6 @@ let get_map (type t s m) (tag:(t,s,m) map_tag)
   : (module MapType with type S.elt = t and type S.t = s and type valmap = m) =
   let Map v = MapMap.find tag !maps in
   v
-
-let map_tag_eq (type a b c a' b' c') (t1:(a,b,c) map_tag) (t2:(a',b',c') map_tag)
-  : (a*b*c,a'*b'*c') Util.eq option
-  = MapTagDyn.eq t1 t2
-
-let assert_map_tag_eq t1 t2 = match map_tag_eq t1 t2 with
-  | Some v -> v
-  | None -> assert false
 
 let ident_map_tag : _ map_tag = register_map ~tag_name:"fmap_ident_tag" (module struct
     module S = Id.Set
@@ -1474,6 +1458,22 @@ let () =
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_set tag (V.M.domain m)
+
+(** Fresh *)
+
+let () =
+  define "fresh_free_of_constr" (constr @-> tac (tag_set_repr ident_map_tag)) @@ fun c ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let rec fold accu c =
+    match EConstr.kind sigma c with
+    | Constr.Var id -> Id.Set.add id accu
+    | _ -> EConstr.fold sigma fold accu c
+  in
+  return (fold Id.Set.empty c)
+
+let () =
+  define "fresh_fresh" (tag_set_repr ident_map_tag @-> ident @-> ret ident) @@ fun avoid id ->
+  Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid)
 
 (** ML types *)
 

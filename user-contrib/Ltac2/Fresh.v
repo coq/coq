@@ -11,15 +11,17 @@
 Require Import Ltac2.Init.
 Require Ltac2.Control.
 Require Ltac2.List.
+Require Ltac2.FSet.
 
 Module Free.
 
-Ltac2 Type t.
+Ltac2 Type t := ident FSet.t.
 (** Type of sets of free variables *)
 
-Ltac2 @ external union : t -> t -> t := "coq-core.plugins.ltac2" "fresh_free_union".
+Ltac2 union : t -> t -> t := FSet.union.
 
-Ltac2 @ external of_ids : ident list -> t := "coq-core.plugins.ltac2" "fresh_free_of_ids".
+Ltac2 of_ids (x:ident list) : t :=
+  List.fold_left (fun acc x => FSet.add x acc) x (FSet.empty FSet.Tags.ident_tag).
 
 Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2" "fresh_free_of_constr".
 
