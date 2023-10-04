@@ -644,6 +644,16 @@ du -ha "$working_dir" > "$working_dir/files.listing"
 #
 # The next script processes all these files and prints results in a table.
 
+# Generate per-file comparison for everything at once
+new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/
+old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/
+for iteration in $(seq $num_of_iterations); do
+    "$program_path"/../../tools/make-both-time-files.py \
+        <(sed -e 's/^- //' -e "s:$old_base_path::" "$log_dir/"*".OLD.opam_install.$iteration.stdout.log") \
+        <(sed -e 's/^- //' -e "s:$new_base_path::" "$log_dir/"*".NEW.opam_install.$iteration.stdout.log") \
+        > "$log_dir/ALL.BOTH.perfile_timings.$iteration.log"
+done
+
 # timings data
 timings=$working_dir/timings
 mkdir -p $timings
