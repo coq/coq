@@ -1811,7 +1811,7 @@ q_rewriting: [
 ]
 
 ltac2_oriented_rewriter: [
-| q_orient ltac2_rewriter      (* ltac2 plugin *)
+| OPT q_orient ltac2_rewriter      (* ltac2 plugin *)
 ]
 
 ltac2_rewriter: [

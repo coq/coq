@@ -3116,14 +3116,10 @@ q_conversion: [
 | G_LTAC2_conversion      (* ltac2 plugin *)
 ]
 
-ltac2_orient: [
+q_orient: [
 | "->"      (* ltac2 plugin *)
 | "<-"      (* ltac2 plugin *)
 |      (* ltac2 plugin *)
-]
-
-q_orient: [
-| ltac2_orient      (* ltac2 plugin *)
 ]
 
 G_LTAC2_rewriter: [

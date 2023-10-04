@@ -1666,7 +1666,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. prodn::
    q_orient ::= {? {| -> | <- } }
    q_rewriting ::= @ltac2_oriented_rewriter
-   ltac2_oriented_rewriter ::= @q_orient @ltac2_rewriter
+   ltac2_oriented_rewriter ::= {? @q_orient } @ltac2_rewriter
    ltac2_rewriter ::= {? @natural } {? {| ? | ! } } @ltac2_constr_with_bindings
 
 .. insertprodn ltac2_for_each_goal ltac2_goal_tactics
