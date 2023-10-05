@@ -22,8 +22,11 @@ exception Elimconst
 val debug_RAKAM : CDebug.t
 
 module CredNative : Primred.RedNative with
-  type elem = EConstr.t and type args = EConstr.t array and type evd = Evd.evar_map
-  and type uinstance = EInstance.t
+  type elem = EConstr.t and
+  type args = EConstr.t array and
+  type evd = Evd.evar_map and
+  type lazy_info = Environ.env * Evd.evar_map * RedFlags.reds and
+  type uinstance = EInstance.t
 
 (** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig

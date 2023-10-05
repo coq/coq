@@ -251,7 +251,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos RedFlags.all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ
+    if Int.equal i len then term_of_fconstr ~info:infos ~tab typ
     else
       let typ, stk = whd_stack infos tab typ [] in
       (** The return stack is known to be empty *)
@@ -260,7 +260,7 @@ let type_of_apply env func funt argsv argstv =
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
         let argt = argstv.(i) in
-        let c1 = term_of_fconstr c1 in
+        let c1 = term_of_fconstr ~info:infos ~tab c1 in
         begin match conv_leq env argt c1 with
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | exception NotConvertible ->
@@ -313,6 +313,13 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
       Constr.mkProd(Context.anonR, ty , ty)
     | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
     end
+  | CPrimitives.PT_blocked ->
+    begin match UVars.Instance.to_array u with
+    | [||], [|u|] ->
+      let ty = Constr.mkType (Univ.Universe.make u) in
+      Constr.mkProd(Context.anonR, ty , ty)
+    | _ -> anomaly Pp.(str"universe instance for blocked type should have length 1")
+    end
 
 let type_of_int env =
   match env.retroknowledge.Retroknowledge.retro_int63 with
@@ -329,6 +336,12 @@ let type_of_array env u =
   match env.retroknowledge.Retroknowledge.retro_array with
   | Some c -> mkConstU (c,u)
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
+
+let type_of_blocked env u =
+  assert (UVars.Instance.length u = (0,1));
+  match env.retroknowledge.Retroknowledge.retro_blocked with
+  | Some c -> mkConstU (c,u)
+  | None -> CErrors.user_err Pp.(str"The type blocked terms must be registered before this construction can be typechecked.")
 
 (* Type of product *)
 
@@ -960,6 +973,7 @@ let type_of_prim env u t =
   let int_ty () = type_of_int env in
   let float_ty () = type_of_float env in
   let array_ty u a = mkApp(type_of_array env u, [|a|]) in
+  let blocked_ty u a = mkApp(type_of_blocked env u, [|a|]) in
   let bool_ty () =
     match env.retroknowledge.Retroknowledge.retro_bool with
     | Some ((ind,_),_) -> UM.mkInd ind
@@ -995,6 +1009,7 @@ let type_of_prim env u t =
     | PT_int63 -> int_ty t
     | PT_float64 -> float_ty t
     | PT_array -> array_ty (fst t) (tr_type (snd t))
+    | PT_blocked -> blocked_ty (fst t) (tr_type (snd t))
   in
   let tr_ind (tr_type : ind_or_type -> constr) (type t) (i : t prim_ind) (a : t) = match i, a with
     | PIT_bool, () -> bool_ty ()
@@ -1007,13 +1022,20 @@ let type_of_prim env u t =
   let rec tr_type n = function
     | PITT_ind (i, a) -> tr_ind (tr_type n) i a
     | PITT_type (ty,t) -> tr_prim_type (tr_type n) ty t
-    | PITT_param i -> Constr.mkRel (n+i)
+    | PITT_param (i, xs) ->
+        let h = Constr.mkRel (n+i) in
+        if xs = [] then h else
+        let xs = Array.of_list (List.map (fun i -> Constr.mkRel (n+i)) xs) in
+        Constr.mkApp (h, xs)
+    | PITT_prod (x, a, b) ->
+        let a = tr_type n a in
+        let b = tr_type n b in
+        Constr.mkProd (x, a, b)
   in
   let rec nary_op n ret_ty = function
     | [] -> tr_type n ret_ty
-    | arg_ty :: r ->
-        Constr.mkProd (Context.nameR (Id.of_string "x"),
-                       tr_type n arg_ty, nary_op (n + 1) ret_ty r)
+    | (x, arg_ty) :: r ->
+        Constr.mkProd (x, tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
   assert (UVars.AbstractContext.size (univs t) = UVars.Instance.length u);

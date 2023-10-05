@@ -351,7 +351,7 @@ and nf_telescope env sigma len f typ =
     match fterm_of typ with
     | FProd (na, dom, codom, e) ->
       let arg = f i in
-      let dom = term_of_fconstr dom in
+      let dom = term_of_fconstr ~info:infos ~tab dom in
       let arg = nf_val env sigma arg dom in
       let () = t := mk_clos (CClosure.usubs_cons (inject arg) e) codom in
       arg
@@ -364,7 +364,9 @@ and nf_args env sigma vargs ?from:(f=0) t =
   let len = nargs vargs - f in
   let fargs i = arg vargs (f + i) in
   let typ, args = nf_telescope env sigma len fargs t in
-  CClosure.term_of_fconstr typ, args
+  let info = Evarutil.create_clos_infos env sigma RedFlags.all in
+  let tab = CClosure.create_tab () in
+  CClosure.term_of_fconstr ~info ~tab typ, args
 
 and nf_bargs env sigma b ofs t =
   let len = bsize b - ofs in

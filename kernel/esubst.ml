@@ -260,6 +260,24 @@ let rec lift_subst mk e s = match s with
   let rem = lift_subst mk e rem in
   Cons (h, t, rem)
 
+let rec subs_of_lift (l : lift) : 'a subs =
+  match l with
+  | ELID -> Nil (0, 0)
+  | ELSHFT (l, n) -> subs_shft (n, (subs_of_lift l))
+  | ELLFT (n, l) -> subs_liftn n (subs_of_lift l)
+
+let rec map_subst (f : 'a -> 'b) (s : 'a subs) : 'b subs =
+  match s with
+  | Nil (n, m) -> Nil (n, m)
+  | Cons (n, t, s) -> Cons (n, tree_map f t, map_subst f s)
+and tree_map (f : 'a -> 'b) (t : 'a tree) : 'b tree =
+  match t with
+  | Leaf (n, Arg (a)) -> Leaf (n, Arg (f a))
+  | Leaf (n, Var (k)) -> Leaf (n, Var (k))
+  | Node (i, av, l, r, j) ->
+    let av = match av with | Arg (a) -> Arg (f a) | Var (k) -> Var (k) in
+    Node (i, av, tree_map f l, tree_map f r, j)
+
 module Internal =
 struct
 

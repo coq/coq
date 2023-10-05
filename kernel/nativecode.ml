@@ -1088,7 +1088,7 @@ let extract_prim env ml_of l =
   let cond = ref [] in
   let type_args p =
     let params, args_ty, _ = CPrimitives.types p in
-    List.length params, Array.of_list args_ty in
+    List.length params, Array.of_list (List.map snd args_ty) in
   let rec aux l =
     match l with
     | Lprim (kn, p, args) ->
@@ -1173,6 +1173,7 @@ let compile_prim env decl cond paux =
           | CPrimitives.PT_float64 -> Is_float
           | CPrimitives.PT_array -> Is_parray
           | CPrimitives.PT_int63 -> assert false
+          | CPrimitives.PT_blocked -> assert false (* FIXME? *)
           in
            List.fold_left
              (fun ml (_, c) -> app_prim MLand [| ml; app_prim check [|c|]|])

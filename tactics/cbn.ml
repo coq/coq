@@ -132,6 +132,7 @@ sig
     -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
+  val split_n_app : int -> 'a t -> ('a t * 'a t) option
   val will_expose_iota : 'a t -> bool
   val list_of_app_stack : constr t -> constr list option
   val args_size : 'a t -> int
@@ -139,7 +140,6 @@ sig
   val nth : 'a t -> int -> 'a
   val best_state : Evd.evar_map -> constr * constr t -> Cst_stack.t -> constr * constr t
   val zip : ?refold:bool -> Evd.evar_map -> constr * constr t -> constr
-  val check_native_args : CPrimitives.t -> 'a t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> 'a t -> CPrimitives.args_red * ('a t * 'a * 'a t) option
 end =
 struct
@@ -296,6 +296,21 @@ struct
       | s -> None
     in aux n [] s
 
+  let split_n_app n s =
+    let rec aux n out s =
+      match s with
+      | _ when n = 0 -> Some (CList.rev out, s)
+      | App (i,a,j) as e :: s ->
+         let nb = j  - i + 1 in
+         if n >= nb then
+           aux (n - nb) (e::out) s
+         else
+           let p = i+n in
+           let out = CList.rev (App (i,a,p-1) :: out) in
+           Some (out, if j >= p then App(p,a,j)::s else s)
+      | s -> None
+    in aux n [] s
+
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,l) | Case (_,l) |
@@ -379,12 +394,6 @@ struct
       zip (mkConstU c, args @ append_app [|f|] s)
   in
   zip s
-
-  (* Check if there is enough arguments on [stk] w.r.t. arity of [op] *)
-  let check_native_args op stk =
-    let nargs = CPrimitives.arity op in
-    let rargs = args_size stk in
-    nargs <= rargs
 
   let get_next_primitive_args kargs stk =
     let rec nargs = function
@@ -663,12 +672,41 @@ let whd_state_gen ?csts flags env sigma =
                 end
               end
         end
-       | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
-          let kargs = CPrimitives.kind p in
-          let (kargs,o) = Stack.get_next_primitive_args kargs stack in
-          (* Should not fail thanks to [check_native_args] *)
-          let (before,a,after) = Option.get o in
-          whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
+       | exception NotEvaluableConst (IsPrimitive (u,p)) ->
+          begin
+            let p_arity = CPrimitives.arity p in
+            let n_args = Stack.args_size stack in
+            (* Make sure we have enough arguments for the primitive. *)
+            if p_arity > n_args then fold () else
+            (* How many leading arguments need not be evaluated? *)
+            let (nb_no_eval, kargs) =
+              let rec nb_leading_no_eval_args n kargs =
+                let open CPrimitives in
+                match kargs with
+                | (Kparam | Karg) :: s -> nb_leading_no_eval_args (n + 1) s
+                | Kwhnf :: _ | [] -> (n, kargs)
+              in
+              nb_leading_no_eval_args 0 (CPrimitives.kind p)
+            in
+            match kargs with
+            | _ :: kargs ->
+              (* Some arguments need to be evaluated. *)
+              let (before, a, after) =
+                (* Should not fail since we have enough arguments. *)
+                Option.get (Stack.strip_n_app nb_no_eval stack)
+              in
+              whrec Cst_stack.empty (a, Stack.Primitive(p,const,before,kargs,cst_l) :: after)
+            | [] ->
+              (* The arguments of the primitive need not be evaluated. *)
+              let (args, stack) =
+                Option.get (Stack.split_n_app nb_no_eval stack)
+              in
+              let args = Option.get (Stack.list_of_app_stack args) in
+              let args = Array.of_list args in
+              match CredNative.red_prim env sigma (env, sigma, flags) p (snd const) args with
+              | CredNative.Result t -> whrec cst_l (t, stack)
+              | _ -> ((mkApp (mkConstU const, args), stack), cst_l)
+          end
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
     | Proj (p, r, c) when RedFlags.red_projection flags p ->
@@ -828,9 +866,9 @@ let whd_state_gen ?csts flags env sigma =
            in
            let s = extra_args @ s in
            let args = Array.of_list (Option.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
-             begin match CredNative.red_prim env sigma p u args with
-               | Some t -> whrec cst_l' (t,s)
-               | None -> ((mkApp (mkConstU kn, args), s), cst_l)
+             begin match CredNative.red_prim env sigma (env, sigma, flags) p u args with
+               | CredNative.Result t -> whrec cst_l' (t,s)
+               | _ -> ((mkApp (mkConstU kn, args), s), cst_l)
              end
        | _ -> fold ()
       end

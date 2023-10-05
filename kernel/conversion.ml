@@ -17,6 +17,8 @@
 (* Equal inductive types by Jacek Chrzaszcz as part of the module
    system, Aug 2002 *)
 
+[@@@ocaml.warning "-48"]
+
 open CErrors
 open Util
 open Names
@@ -54,15 +56,19 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _::s1, Zproj _::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
+    | (ZcaseT(_c1,_,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-    | Zprimitive(op1,_,rargs1, _kargs1)::s1, Zprimitive(op2,_,rargs2, _kargs2)::s2 ->
+    | Zprimitive(op1,_,_,rargs1, _kargs1)::s1, Zprimitive(op2,_,_,rargs2, _kargs2)::s2 ->
         bal=0 && op1=op2 && List.length rargs1=List.length rargs2 &&
         compare_rec 0 s1 s2
+    | Zunblock (_,_,_,f1) :: s1, Zunblock (_,_,_,f2) :: s2 ->
+        f1 == f2 && compare_rec 0 s1 s2
+    | Zrun (_,_,_,_,_,f1) :: s1, Zrun (_,_,_,_,_,f2) :: s2 ->
+        f1 == f2 && compare_rec 0 s1 s2
     | [], _ :: _
-    | (Zproj _ | ZcaseT _ | Zfix _ | Zprimitive _) :: _, _ -> false
+    | (Zproj _ | ZcaseT _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _, _ -> false
   in
   compare_rec 0 stk1 stk2
 
@@ -75,6 +81,8 @@ type lft_constr_stack_elt =
   | Zlcase of case_info * lift * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
+  | Zlunblock of lift * constr * constr * usubs
+  | Zlrun of lift * constr * constr * constr * constr * usubs
 and lft_constr_stack = lft_constr_stack_elt list
 
 let rec zlapp v = function
@@ -102,16 +110,21 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (map_lift l a) pstk)
-            | (Zproj (p,_), (l,pstk)) ->
+            | (Zproj (p,_,_), (l,pstk)) ->
                 (l, Zlproj (p,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(ci,u,pms,p,br,e),(l,pstk)) ->
+            | (ZcaseT(ci,u,pms,p,br,e,_),(l,pstk)) ->
                 (l,Zlcase(ci,l,u,pms,p,br,e)::pstk)
-            | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
+            | (Zprimitive(op,c,_,rargs,kargs),(l,pstk)) ->
                 (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
-                            List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
+                            List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk)
+            | (Zunblock(h,ty,e,_),(l,pstk)) ->
+                (l,(Zlunblock(l,h,ty,e)::pstk))
+            | (Zrun(h,ty1,ty2,k,e,_),(l,pstk)) ->
+                (l,(Zlrun(l,h,ty1,ty2,k,e)::pstk))
+          )
   in
   snd (pure_rec lfts stk)
 
@@ -539,6 +552,28 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let x1 = usubst_binder e x1 in
         ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
 
+
+    | (FEta (_n1,h1,args1,k1,e1), FEta (_n2,h2,args2,k2,e2)) ->
+        if not (is_empty_stack v1 && is_empty_stack v2) then
+          anomaly (Pp.str "conversion was given ill-typed terms (FEta).");
+        let t1 = mk_clos e1 (mkApp(h1,mk_eta_args args1 k1)) in
+        let t2 = mk_clos e2 (mkApp(h2,mk_eta_args args2 k2)) in
+        ccnv CONV l2r infos lft1 lft2 t1 t2 cuniv
+
+    | (FEta _, FLambda _) ->
+        if not (is_empty_stack v1 && is_empty_stack v2) then
+          anomaly (Pp.str "conversion was given ill-typed terms (FEta,FLambda).");
+        let t1 = eta_reduce hd1 in
+        let (_,_,t2) = destFLambda mk_clos hd2 in
+        ccnv CONV l2r infos lft1 (el_lift lft2) t1 t2 cuniv
+
+    | (FLambda _, FEta _) ->
+        if not (is_empty_stack v1 && is_empty_stack v2) then
+          anomaly (Pp.str "conversion was given ill-typed terms (FEta,FLambda).");
+        let (_,_,t1) = destFLambda mk_clos hd1 in
+        let t2 = eta_reduce hd2 in
+        ccnv CONV l2r infos (el_lift lft1) lft2 t1 t2 cuniv
+
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
         let () = match v1 with
@@ -728,6 +763,17 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
+    | FPrimitive (op1, (_, u1), _, args1), FPrimitive (op2, (_, u2), _, args2) ->
+      if op1 <> op2 then raise NotConvertible;
+      let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+      convert_stacks l2r infos lft1 lft2 (Zapp args1 :: v1) (Zapp args2 :: v2) cuniv
+
+    | FBlock (_,_,t1,e1), FBlock (_,_,t2,e2) ->
+      let m1 = mk_clos e1 t1 in
+      let m2 = mk_clos e2 t2 in
+      convert_stacks l2r infos lft1 lft2 (Zapp [|m1|] :: v1) (Zapp [|m2|] :: v2) cuniv
+
+
     | (FRel n1, FIrrelevant) ->
       let n1 = reloc_rel n1 (el_stack lft1 v1) in
       let r1 = Range.get (info_relevances infos.cnv_inf) (n1 - 1) in
@@ -750,10 +796,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
      | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
        | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
-       | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
+       | (FLOCKED,_) | (_,FLOCKED) | (FLAZY _, _) | (_, FLAZY _)) -> assert false
 
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
-       | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant), _ -> raise NotConvertible
+       | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant
+       | FPrimitive _ | FBlock _ | FEta _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
@@ -799,7 +846,21 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
                 let fk (_,a1) (_,a2) cu = f a1 a2 cu in
                 List.fold_right2 fk kargs1 kargs2 cu2
-            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
+            | (Zlunblock(l1,h1,ty1,e1), Zlunblock(l2,h2,ty2,e2)) ->
+              let u1 = snd (destConst h1) in
+              let u2 = snd (destConst h2) in
+              let cu = convert_instances ~flex:false u1 u2 cu1 in
+              f (l1, mk_clos e1 ty1) (l2, mk_clos e2 ty2) cu
+            | (Zlrun(l1,h1,ty11,ty12,k1,e1), Zlrun(l2,h2,ty21,ty22,k2,e2)) ->
+              let u1 = snd (destConst h1) in
+              let u2 = snd (destConst h2) in
+              let cu = convert_instances ~flex:false u1 u2 cu1 in
+              let cu = f (l1, mk_clos e1 ty11) (l2, mk_clos e2 ty21) cu in
+              let cu = f (l1, mk_clos e1 ty12) (l2, mk_clos e2 ty22) cu in
+              f (l1, mk_clos e1 k1) (l2, mk_clos e2 k2) cu
+
+            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _ | Zlunblock _ | Zlrun _), _) ->
+              assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv

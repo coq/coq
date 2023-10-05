@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+[@@@ocaml.warning "-48"]
+
 open Conversion
 open Declarations
 open Constr
@@ -188,7 +190,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
-  | FFlex Names.(RelKey _ | VarKey _ as fl) ->
+  | FFlex (Names.(RelKey _ | VarKey _ as fl)) ->
     (* We could try to lazily unfold but then we have to analyse the
        universes in the bodies, not worth coding at least for now. *)
     begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
@@ -259,8 +261,11 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = infer p variances in
     Array.fold_right infer br variances
 
+  | FPrimitive _ -> assert false (* TODO *)
+  | FBlock _ -> assert false (* TODO *)
+
   (* Removed by whnf *)
-  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
+  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ | FEta _ | FLAZY _ -> assert false
   | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
 
 and infer_stack infos variances (stk:CClosure.stack) =
@@ -274,7 +279,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
       | Zfix (fx,a) ->
         let variances = infer_fterm CONV infos variances fx [] in
         infer_stack infos variances a
-      | ZcaseT (ci,u,pms,p,br,e) ->
+      | ZcaseT (ci,u,pms,p,br,e,_) -> (* TODO forward mode to mk_clos? *)
         let dummy = mkProp in
         let case = (ci, u, pms, p, NoInvert, dummy, br) in
         let (_, (p, _), _, _, br) = Inductive.expand_case (info_env (fst infos)) case in
@@ -282,10 +287,12 @@ and infer_stack infos variances (stk:CClosure.stack) =
         infer_vect infos variances (Array.map (mk_clos e) br)
       | Zshift _ -> variances
       | Zupdate _ -> variances
-      | Zprimitive (_,_,rargs,kargs) ->
+      | Zprimitive (_,_,_,rargs,kargs) ->
         let variances = List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances rargs in
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm CONV infos variances c []) variances kargs in
         variances
+      | Zunblock _ -> assert false
+      | Zrun _ -> assert false
     in
     infer_stack infos variances stk
 
