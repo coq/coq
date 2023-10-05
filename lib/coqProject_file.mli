@@ -16,7 +16,7 @@ type 'a sourced = { thing : 'a; source : arg_source }
 
 type meta_file = Absent | Present of string | Generate of string
 
-type project = {
+type 'a project = {
   project_file  : string option;
   makefile : string option;
   native_compiler : native_compiler option;
@@ -33,6 +33,8 @@ type project = {
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;
   defs : (string * string) sourced list;
+
+  extra_data : 'a;
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
@@ -41,21 +43,24 @@ and native_compiler =
 | NativeNo
 | NativeOndemand
 
-val cmdline_args_to_project : warning_fn:(string -> unit) -> curdir:string -> string list -> project
+val cmdline_args_to_project
+  : warning_fn:(string -> unit) -> curdir:string
+  -> parse_extra:(string -> string list -> 'a -> (string list * 'a) option)
+  -> 'a -> string list -> 'a project
 
 exception UnableToOpenProjectFile of string
 
-val read_project_file : warning_fn:(string -> unit) -> string -> project
+val read_project_file : warning_fn:(string -> unit) -> string -> unit project
 (** [read_project_file warning_fn file] parses [file] as a Coq project;
     use [warning_fn] for deprecate options;
     raise [Parsing_error] on illegal options or arguments;
     raise [UnableToOpenProjectFile msg] if the file could not be opened;
     fails on some illegal non-project-file options *)
 
-val coqtop_args_from_project : project -> string list
+val coqtop_args_from_project : _ project -> string list
 val find_project_file : from:string -> projfile_name:string -> string option
 
-val all_files : project -> string sourced list
+val all_files : _ project -> string sourced list
 val files_by_suffix : string sourced list -> string list -> string sourced list
 
 val map_sourced_list : ('a -> 'b) -> 'a sourced list -> 'b list

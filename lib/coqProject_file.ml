@@ -19,7 +19,7 @@ type 'a sourced = { thing : 'a; source : arg_source }
 
 type meta_file = Absent | Present of string | Generate of string
 
-type project = {
+type 'a project = {
   project_file  : string option;
   makefile : string option;
   native_compiler : native_compiler option;
@@ -34,6 +34,8 @@ type project = {
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;
   defs : (string * string) sourced list;
+
+  extra_data : 'a;
 }
 and logic_path = string
 and path = { path : string; canonical_path : string }
@@ -43,7 +45,7 @@ and native_compiler =
 | NativeOndemand
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile native_compiler = {
+let mk_project project_file makefile native_compiler extra_data = {
   project_file;
   makefile;
   native_compiler;
@@ -57,6 +59,8 @@ let mk_project project_file makefile native_compiler = {
   q_includes = [];
   extra_args = [];
   defs = [];
+
+  extra_data;
 }
 
 (********************* utils ********************************************)
@@ -205,7 +209,7 @@ let expand_paths project =
       (List.sort (fun a b -> String.compare a.thing b.thing) !exp) @ rv)
     [] project.files
 
-let process_cmd_line ~warning_fn orig_dir proj args =
+let process_cmd_line ~warning_fn orig_dir parse_extra proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
@@ -269,6 +273,10 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
     aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
+  | f :: r when CString.is_prefix "-" f -> begin match parse_extra f r proj.extra_data with
+      | None -> raise (Parsing_error ("Unknown option " ^ f))
+      | Some (r,extra_data) -> aux { proj with extra_data } r
+    end
   | f :: r ->
       let abs_f = CUnix.correct_path f orig_dir in
       let ext = Filename.extension abs_f in
@@ -318,12 +326,12 @@ let process_cmd_line ~warning_fn orig_dir proj args =
 
  (******************************* API ************************************)
 
-let cmdline_args_to_project ~warning_fn ~curdir args =
-  process_cmd_line ~warning_fn curdir (mk_project None None None) args
+let cmdline_args_to_project ~warning_fn ~curdir ~parse_extra extra args =
+  process_cmd_line ~warning_fn curdir parse_extra (mk_project None None None extra) args
 
 let read_project_file ~warning_fn f =
-  process_cmd_line ~warning_fn (Filename.dirname f)
-    (mk_project (Some f) None None) (parse f)
+  process_cmd_line ~warning_fn (Filename.dirname f) (fun _ _ () -> None)
+    (mk_project (Some f) None None ()) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in
