@@ -1472,7 +1472,7 @@ simple_tactic: [
 | "not_evar" one_term
 | "is_ground" one_term
 | "autoapply" one_term "with" ident
-| "rewrite_strat" [ rewstrategy | LIST1 rewstrategy SEP ";" ] OPT ( "in" ident )
+| "rewrite_strat" rewstrategy OPT ( "in" ident )
 | "rewrite_db" ident OPT ( "in" ident )
 | "substitute" OPT [ "->" | "<-" ] one_term_with_bindings
 | "setoid_rewrite" OPT [ "->" | "<-" ] one_term_with_bindings OPT ( "at" rewrite_occs ) OPT ( "in" ident )
@@ -2129,18 +2129,22 @@ rewrite_occs: [
 ]
 
 rewstrategy: [
+| LIST1 rewstrategy1 SEP ";"
+]
+
+rewstrategy1: [
 | "<-" one_term
-| "progress" rewstrategy
-| "try" rewstrategy
+| "progress" rewstrategy1
+| "try" rewstrategy1
 | "choice" LIST1 rewstrategy0
-| "repeat" rewstrategy
-| "any" rewstrategy
-| "subterm" rewstrategy
-| "subterms" rewstrategy
-| "innermost" rewstrategy
-| "outermost" rewstrategy
-| "bottomup" rewstrategy
-| "topdown" rewstrategy
+| "repeat" rewstrategy1
+| "any" rewstrategy1
+| "subterm" rewstrategy1
+| "subterms" rewstrategy1
+| "innermost" rewstrategy1
+| "outermost" rewstrategy1
+| "bottomup" rewstrategy1
+| "topdown" rewstrategy1
 | "hints" ident
 | "terms" LIST0 one_term
 | "eval" red_expr
@@ -2154,7 +2158,7 @@ rewstrategy0: [
 | "fail"
 | "id"
 | "refl"
-| "(" [ rewstrategy | LIST1 rewstrategy SEP ";" ] ")"
+| "(" rewstrategy ")"
 ]
 
 l3_tactic: [

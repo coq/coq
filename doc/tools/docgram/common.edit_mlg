@@ -2243,6 +2243,7 @@ as_or_and_ipat: [
 ]
 
 rewstrategy: [
+| DELETE rewstrategy1
 | DELETE rewstrategy ";" rewstrategy1
 | LIST1 rewstrategy1 SEP ";"
 ]
@@ -2437,7 +2438,6 @@ SPLICE: [
 | enable_notation_flags
 | opt_scope
 | lident
-| rewstrategy
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2487,7 +2487,6 @@ RENAME: [
 | field_body field_spec
 | field_def field_val
 | bindings_with_parameters alias_definition
-| rewstrategy1 rewstrategy
 ]
 
 bullet: [
