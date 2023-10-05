@@ -71,45 +71,7 @@ type conv_or_red = Conversion | Reduction
 (* let neutr = function ntrl -> ntrl | red | cstr -> red *)
 (* let is_red = function red -> true | ntrl | cstr -> false *)
 
-module [@ocaml.warning "-32"] RedState : sig
-  type [@ocaml.immediate] t
-  type [@ocaml.immediate] mode
-  type [@ocaml.immediate] red_state
-
-
-  val ntrl : red_state
-  val cstr : red_state
-  val red  : red_state
-
-  val normal_whnf : mode
-  val normal_full : mode
-  val full        : mode
-  val identity    : mode
-
-  val neutr : t -> t
-
-  val mk : red_state -> mode -> t
-  val red_state : t -> red_state
-  val mode : t -> mode
-
-  val is_red : t -> bool
-  val is_cstr : t -> bool
-  val is_ntrl : t -> bool
-  val set_red : t -> t
-  val set_cstr : t -> t
-  val set_ntrl : t -> t
-  val neutr : t -> t
-  val is_normal_whnf : t -> bool
-  val is_normal_full : t -> bool
-  val is_full : t -> bool
-  val is_identity : t -> bool
-  val set_normal_whnf : t -> t
-  val set_normal_full : t -> t
-  val set_full : t -> t
-  val set_identity : t -> t
-  val copy_red : t -> t -> t
-  val copy_mode : t -> t -> t
-end = struct
+module [@ocaml.warning "-32"] RedState = struct
   type t = int
   type red_state = int
   type mode = int
@@ -140,6 +102,7 @@ end = struct
 
   let neutr (i : t) = if is_ntrl i then i else set_red i
 
+  let is_normal      (i : t) = (i land 0b1000) == 0
   let is_normal_whnf (i : t) = (i land 0b1100) == normal_whnf
   let is_normal_full (i : t) = (i land 0b1100) == normal_full
   let is_full        (i : t) = (i land 0b1100) == full
@@ -181,14 +144,14 @@ let red_transparent =
   in
   let red_transparent mode flags =
     match mode with
-    | _ when mode == normal_full || mode == normal_whnf -> red_transparent flags
+    | _ when is_normal mode -> red_transparent flags
     | _ when mode == identity -> id_ts
     | _ -> assert (mode == full); TransparentState.full
   in red_transparent
 
 let [@ocaml.inline always] red_set mode flags f =
   match mode with
-  | _ when mode == normal_full || mode == normal_whnf -> red_set flags f
+  | _ when is_normal mode -> red_set flags f
   | _ when mode == identity -> f==fDELTA
   | _ -> assert (mode == full); true
 
@@ -579,7 +542,7 @@ end = struct
 
   let tab_of mode (tab_def, tab_full, tab_id) =
     match mode with
-    | _ when mode == normal_full || mode == normal_whnf -> tab_def
+    | _ when is_normal mode -> tab_def
     | _ when mode == identity -> tab_id
     | _ -> assert (mode == full); tab_full
 
@@ -994,7 +957,8 @@ let strip_update_shift_app_red head stk =
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) (depth+k) s
     | (Zapp args :: s) ->
-        strip_rec (Zapp args :: rstk) {h with term=FApp(h,args)} depth s
+        strip_rec (Zapp args :: rstk)
+          {mark=h.mark;term=FApp(h,args)} depth s
     | Zupdate(m)::s ->
       (** The stack contains [Zupdate] marks only if in sharing mode *)
         let () = update m h.mark h.term in
@@ -1692,48 +1656,53 @@ let rec knh info tab m stk =
        FArray _|FPrimitive _ |FBlock _) -> (m, stk)
 
 and knht_app ~mode ~lexical info tab e h args stk =
-  let default () =
+  if not (red_set mode info.i_flags RedFlags.fDELTA) then
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
     knht ~mode info tab e h stk
-  in
-  let partial _op n =
-    ({ mark = RedState.mk cstr mode; term = FEta(n, h, args, 0, e) }, stk)
-  in
-  if not (red_set mode info.i_flags RedFlags.fDELTA) then default () else
-  match Constr.destConst h with
-  | exception DestKO -> default ()
-  | (c, _u) ->
-  if not (TransparentState.is_transparent_constant (red_transparent mode info.i_flags) c) then default () else
-  let nargs = Array.length args in
-  if Constant.UserOrd.equal c block_constant then
-    match[@ocaml.warning "-4"] args with
-    | [|ty; t|] ->
-      let mode = if lexical then identity else normal_whnf in
-      knh info tab { mark = RedState.mk cstr mode; term = FBlock (h, ty, t, e) } stk
-    | _ -> partial CPrimitives.Block (2-nargs)
-  else if Constant.UserOrd.equal c unblock_constant then
-    if nargs >= 2 then
-      let ty = args.(0) in
-      let t = args.(1) in
-      let args = Array.sub args 2 (nargs - 2) in
-      let mode_full = if lexical then full else normal_whnf  in
-      let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
-      knht ~mode:mode_full info tab e t (Zunblock (h, ty, e, mode) :: stk)
+  else
+  match [@ocaml.warning "-4"] Constr.kind h with
+  | Const (c, _u) ->
+    if not (TransparentState.is_transparent_constant (red_transparent mode info.i_flags) c) then
+      let stk = append_stack (mk_clos_vect ~mode e args) stk in
+      knht ~mode info tab e h stk
     else
-      partial CPrimitives.Unblock (2-nargs)
-  else if Constant.UserOrd.equal c run_constant then
-    if nargs >= 4 then
-      let ty1 = args.(0) in
-      let ty2 = args.(1) in
-      let t = args.(2) in
-      let k = args.(3) in
-      let args = Array.sub args 4 (nargs - 4) in
-      let mode_full = if lexical then full else normal_whnf  in
-      let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
-      knht ~mode:mode_full info tab e t (Zrun (h, ty1, ty2, k, e, mode) :: stk)
+    let nargs = Array.length args in
+    if Constant.UserOrd.equal c block_constant then
+      match[@ocaml.warning "-4"] args with
+      | [|ty; t|] ->
+        let mode = if lexical then identity else normal_whnf in
+        knh info tab { mark = RedState.mk cstr mode; term = FBlock (h, ty, t, e) } stk
+      | _ ->
+        ({ mark = RedState.mk cstr mode; term = FEta((2-nargs), h, args, 0, e) }, stk)
+    else if Constant.UserOrd.equal c unblock_constant then
+      if nargs >= 2 then
+        let ty = args.(0) in
+        let t = args.(1) in
+        let args = Array.sub args 2 (nargs - 2) in
+        let mode_full = if lexical then full else normal_whnf  in
+        let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
+        knht ~mode:mode_full info tab e t (Zunblock (h, ty, e, mode) :: stk)
+      else
+        ({ mark = RedState.mk cstr mode; term = FEta((2-nargs), h, args, 0, e) }, stk)
+    else if Constant.UserOrd.equal c run_constant then
+      if nargs >= 4 then
+        let ty1 = args.(0) in
+        let ty2 = args.(1) in
+        let t = args.(2) in
+        let k = args.(3) in
+        let args = Array.sub args 4 (nargs - 4) in
+        let mode_full = if lexical then full else normal_whnf  in
+        let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
+        knht ~mode:mode_full info tab e t (Zrun (h, ty1, ty2, k, e, mode) :: stk)
+      else
+        ({ mark = RedState.mk cstr mode; term = FEta((4-nargs), h, args, 0, e) }, stk)
     else
-      partial CPrimitives.Run (4-nargs)
-  else default ()
+      let stk = append_stack (mk_clos_vect ~mode e args) stk in
+      knht ~mode info tab e h stk
+  | _ ->
+    let stk = append_stack (mk_clos_vect ~mode e args) stk in
+    knht ~mode info tab e h stk
+
 
 (* The same for pure terms *)
 and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
@@ -1831,20 +1800,18 @@ let rec knr info tab m stk =
             (m, stk)
         | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
   | FConstruct c ->
-     let use_match mode = red_set mode info.i_flags fMATCH in
-     let use_fix mode = red_set mode info.i_flags fFIX in
-     if use_match mode || use_fix mode then
+     if red_set mode info.i_flags fMATCH || red_set mode info.i_flags fFIX then
       (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-        | (depth, args, ZcaseT(ci,_,pms,_,br,e,mode)::s) when use_match mode ->
+        | (depth, args, ZcaseT(ci,_,pms,_,br,e,mode)::s) when red_set mode info.i_flags fMATCH ->
             assert (ci.ci_npar>=0);
             let (br, e) = get_branch ~mode info depth ci pms c br e args in
             knit ~mode info tab e br s
-        | (_, cargs, Zfix(fx,par)::s) when use_fix (RedState.mode fx.mark) ->
+        | (_, cargs, Zfix(fx,par)::s) when red_set (RedState.mode fx.mark) info.i_flags fFIX ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect ~mode:(RedState.mode fx.mark) fx.term in
             knit ~mode:(RedState.mode fx.mark) info tab fxe fxbd stk'
-        | (depth, args, Zproj (p,_,mode)::s) when use_match mode ->
+        | (depth, args, Zproj (p,_,mode)::s) when red_set mode info.i_flags fMATCH ->
             let rargs = drop_parameters depth (Projection.Repr.npars p) args in
             let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
             kni info tab rarg s

@@ -73,7 +73,6 @@ module [@ocaml.warning "-32"] RedState : sig
   type [@ocaml.immediate] mode
   type [@ocaml.immediate] red_state
 
-
   val ntrl : red_state
   val cstr : red_state
   val red  : red_state
@@ -82,30 +81,6 @@ module [@ocaml.warning "-32"] RedState : sig
   val normal_full : mode
   val full        : mode
   val identity    : mode
-
-  val neutr : t -> t
-
-  val mk : red_state -> mode -> t
-  val red_state : t -> red_state
-  val mode : t -> mode
-
-  val is_red : t -> bool
-  val is_cstr : t -> bool
-  val is_ntrl : t -> bool
-  val set_red : t -> t
-  val set_cstr : t -> t
-  val set_ntrl : t -> t
-  val neutr : t -> t
-  val is_normal_whnf : t -> bool
-  val is_normal_full : t -> bool
-  val is_full : t -> bool
-  val is_identity : t -> bool
-  val set_normal_whnf : t -> t
-  val set_normal_full : t -> t
-  val set_full : t -> t
-  val set_identity : t -> t
-  val copy_red : t -> t -> t
-  val copy_mode : t -> t -> t
 end
 
 open RedState
