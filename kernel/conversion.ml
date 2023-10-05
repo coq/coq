@@ -345,8 +345,7 @@ let rec compare_under e1 c1 e2 c2 =
   | Construct (c1,u1), Construct (c2,u2) ->
     Construct.CanOrd.equal c1 c2 && eq_universes e1 e2 u1 u2
   | Case _, Case _ | Fix _, Fix _ | CoFix _, CoFix _ -> false (* todo some other time *)
-  | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
-    eq_universes e1 e2 u1 u2 &&
+  | Array(_,t1,def1,ty1), Array(_,t2,def2,ty2) ->
     Array.equal_norefl (fun c1 c2 -> compare_under e1 c1 e2 c2) t1 t2
     && compare_under e1 def1 e2 def2
     && compare_under e1 ty1 e2 ty2
@@ -709,7 +708,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
-      let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+      let cuniv = convert_instances_cumul CONV [|Univ.Variance.Irrelevant|] u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
