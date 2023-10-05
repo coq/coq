@@ -1041,7 +1041,7 @@ module Search = struct
     in
     let nongoals' =
       Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
-          | Some ev' -> Evar.Set.add ev acc
+          | Some ev -> Evar.Set.add ev acc
           | None -> acc) (Evar.Set.union goals nongoals) (Evd.get_typeclass_evars evm')
     in
     (* FIXME: the need to merge metas seems to come from this being called
