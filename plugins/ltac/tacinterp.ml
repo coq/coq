@@ -1410,7 +1410,7 @@ and tactic_of_value ist vle =
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       let (stack, _) = trace in
       Profile_ltac.do_profile stack (catch_error_tac_loc loc stack tac)
-  | VFun (appl,_,loc,vmap,vars,_) ->
+  | VFun (appl,(stack,_),loc,vmap,vars,_) ->
      let tactic_nm =
        match appl with
          UnnamedAppl -> "An unnamed user-defined tactic"
@@ -1425,6 +1425,7 @@ and tactic_of_value ist vle =
        List.map (fun (arg,_) -> Names.Id.to_string arg) (Names.Id.Map.bindings vmap) in
      let numgiven = List.length givenargs in
      let info = Exninfo.reify () in
+     catch_error_tac stack @@
      Tacticals.tclZEROMSG ~info
        Pp.(str tactic_nm ++ str " was not fully applied:" ++ spc() ++
            str "There is a missing argument for variable" ++ spc() ++ Name.print (List.hd vars) ++
