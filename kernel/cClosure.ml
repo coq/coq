@@ -315,6 +315,235 @@ type stack_member =
 
 and stack = stack_member list
 
+module Debug = struct
+  type 'a pp = Format.formatter -> 'a -> unit
+
+  let pp_table_key : table_key pp = fun ff k ->
+    let open Names in
+    match k with
+    | ConstKey (c, _) -> Format.pp_print_string ff (Constant.to_string c)
+    | VarKey i -> Format.fprintf ff "\"var:%s\"" (Id.to_string i)
+    | RelKey i -> Format.fprintf ff "\"rel:%i\"" i
+
+  let pp_name : Names.Name.t pp = fun ff n ->
+    match n with
+    | Names.Name.Anonymous -> Format.fprintf ff "_"
+    | Names.Name.Name id -> Format.pp_print_string ff (Id.to_string id)
+
+  let pp_list : 'a pp -> 'a list pp = fun pp ff l ->
+    let pp_sep ff () = Format.pp_print_string ff "; " in
+    Format.pp_print_string ff "[";
+    Format.pp_print_list ~pp_sep pp ff l;
+    Format.pp_print_string ff "]"
+
+  let pp_array : 'a pp -> 'a array pp = fun pp ff ar ->
+    let pp_sep ff () = Format.pp_print_string ff "; " in
+    Format.pp_print_string ff "[|";
+    Format.pp_print_list ~pp_sep pp ff (Array.to_list ar);
+    Format.pp_print_string ff "|]"
+
+  let pp_slist : 'a pp -> 'a SList.t pp = fun pp ff sl ->
+    let pp ff o =
+      match o with
+      | None -> Format.fprintf ff "None"
+      | Some e -> Format.fprintf ff "Some(%a)" pp e
+    in
+    pp_list pp ff (SList.to_list sl)
+
+  let pp_flags : RedFlags.reds pp = fun ff reds ->
+    let pp_flag f repr =
+      if RedFlags.red_set reds f then Format.pp_print_string ff repr
+    in
+    pp_flag RedFlags.fBETA "β";
+    pp_flag RedFlags.fDELTA "δ";
+    pp_flag RedFlags.fZETA "ζ";
+    pp_flag RedFlags.fMATCH "M";
+    pp_flag RedFlags.fFIX "F";
+    pp_flag RedFlags.fCOFIX "C"
+
+  let rec pp_constr : constr pp = fun ff c ->
+    let out fmt = Format.fprintf ff fmt in
+    let pp = pp_constr in
+    match kind c with
+    | Rel n ->
+        out "Rel(%i)" n
+    | Meta n ->
+        out "Meta(%i)" n
+    | Var id ->
+        out "Var(%s)" (Id.to_string id)
+    | Sort _ ->
+        out "Sort(_)"
+    | Cast (c,_, t) ->
+        out "Cast(%a, _, %a)" pp c pp t
+    | Prod (na,t,c) ->
+        out "Prod(%a, %a, %a)" pp_name na.binder_name pp t pp c
+    | Lambda (na,t,c) ->
+        out "Lambda(%a, %a, %a)" pp_name na.binder_name pp t pp c
+    | LetIn (na,b,t,c) ->
+        out "LetIn(%a, %a, %a, %a)" pp_name na.binder_name pp b pp t pp c
+    | App (c,l) ->
+        out "App(%a, [|%a|])" pp c (pp_array pp) l
+    | Evar (e,l) ->
+        out "Evar(%i, [%a])" (Evar.repr e) (pp_slist pp) l
+    | Const (c,_) ->
+        out "Const(%s, _)" (Constant.to_string c)
+    | Ind ((sp,i),_) ->
+        out "Ind((%s, %i), _)" (MutInd.to_string sp) i
+    | Construct (((sp,i),j),_) ->
+        out "Construct(((%s, %i), %i), _)" (MutInd.to_string sp) i j
+    | Proj (p,_,c) ->
+        out "Proj(%s, %a)" (Constant.to_string (Projection.constant p)) pp c
+    | Case (_,_,_,_,_,_,_) ->
+        out "Case(_, _, _, _, _, _, _)"
+    | Fix _ ->
+        out "Fix(_)"
+    | CoFix _ ->
+        out "CoFix(_)"
+    | Int i ->
+        out "Int(%s)" (Uint63.to_string i)
+    | Float f ->
+        out "Float(%s)" (Float64.to_string f)
+    | Array(_,t,def,ty) ->
+        out "Array(_, [|%a|], %a, %a)" (pp_array pp) t pp def pp ty
+
+  let pp_mark : red_state pp = fun ff m ->
+    Format.pp_print_string ff
+      (match m with _ when m == ntrl -> "ntrl" | _ when m == cstr -> "cstr" | _ -> assert (m == red); "red")
+
+  let pp_mode : mode pp = fun ff m ->
+    Format.pp_print_string ff (
+      match m with
+      | _ when m == normal_full -> "normal_full"
+      | _ when m == normal_whnf -> "normal_whnf"
+      | _ when m == identity -> "identity"
+      | _ -> assert (m == full); "full"
+    )
+
+  let rec pp_fterm : fterm pp = fun ff term ->
+    let out fmt = Format.fprintf ff fmt in
+    let pp = pp_fconstr in
+    match term with
+    | FRel i ->
+        out "FRel(%i)" i
+    | FAtom c ->
+        out "FAtom(%a)" pp_constr c
+    | FFlex k ->
+        out "FFlex(%a)" pp_table_key k
+    | FInd i ->
+        out "FInd((%s,%i))" ((Names.MutInd.debug_to_string (fst (fst i)))) (snd (fst i))
+    | FConstruct (((i,n),m),_) ->
+        out "FConstruct(%s,%i,%i)" (Names.MutInd.to_string i) n m
+    | FApp (h, args) ->
+        out "FApp(%a, %a)" pp h (pp_array pp) args
+    | FProj (p, _, c) ->
+        out "FProj(%s, %a)" (Constant.to_string (Projection.constant p)) pp c
+    | FFix (_, u) ->
+        out "FFix(_, %a)" pp_usubs u
+    | FCoFix (_, _) ->
+        out "FCoFix(_, _)"
+    | FCaseT (_, _, xs, _, t, bs, u) ->
+        out "FCaseT(_, _, %a, _, %a, %a, %a)"
+          (pp_array pp_constr) xs pp t
+          (pp_array (fun ff (_, c) -> pp_constr ff c)) bs pp_usubs u
+    | FCaseInvert (_, _, _, _, _, _, _, _) ->
+        out "FCaseInvert(_, _, _, _, _, _, _, _)"
+    | FLambda (_, nas, b, u) ->
+        out "FLambda(_, %a, %a, %a)"
+          (pp_list (fun ff (b, ty) -> Format.fprintf ff "(%a, %a)" pp_name
+            (Context.binder_name b) pp_constr ty)) nas pp_constr b pp_usubs u
+    | FProd (_, _, b, u) ->
+        out "FProd(_, _, %a, %a)" pp_constr b pp_usubs u
+    | FLetIn (_, a, b, c, u) ->
+        out "FLetIn(_, %a, %a, %a, %a)" pp a pp b pp_constr c pp_usubs u
+    | FEvar (_, _, _, _) ->
+        out "FEvar(_, _, _, _)"
+    | FInt i ->
+        out "FInt(%s)" (Uint63.to_string i)
+    | FFloat f ->
+        out "FFloat(%s)" (Float64.to_string f)
+    | FArray (_, _, _) ->
+        out "FArray(_, _, _)"
+    | FLIFT (i, c) ->
+        out "FLIFT(%i, %a)" i pp c
+    | FCLOS (c, u) ->
+        out "FCLOS(%a, %a)" pp_constr c pp_usubs u
+    | FEta (n, h, args, m, u) ->
+        out "FEta(%i, %a, %a, %i, %a)" n pp_constr h
+          (pp_array pp_constr) args m pp_usubs u
+    | FIrrelevant ->
+        out "FIrrelevant"
+    | FLOCKED ->
+        out "FLOCKED"
+    | FPrimitive (p, _, c, args) ->
+        out "FPrimitive(%s, _, %a, %a)" (CPrimitives.to_string p) pp c
+          (pp_array pp) args
+    | FBlock (c, ty, t, u) ->
+        out "FBlock(%a, %a, %a, %a)" pp_constr c pp_constr ty pp_constr t
+          pp_usubs u
+    | FLAZY m ->
+        if Lazy.is_val m then
+          out "FLAZY(%a)" pp (Lazy.force m)
+        else
+          out "FLAZY(<thunk>)"
+
+  and pp_usubs : usubs pp = fun ff u ->
+    let (ls, i) = Esubst.Internal.repr (fst u) in
+    let pp_elt ff v =
+      let open Esubst.Internal in
+      match v with
+      | REL i -> Format.fprintf ff "REL(%i)" i
+      | VAL (i, c) -> Format.fprintf ff "VAL(%i, %a)" i pp_fconstr c
+    in
+    Format.fprintf ff "(%a, %i)" (pp_list pp_elt) ls i
+
+  and pp_fconstr : fconstr pp = fun ff {mark; term} ->
+    Format.fprintf ff "{mark=%a; mode=%a; term=%a}"
+      pp_mark (RedState.red_state mark) pp_mode (RedState.mode mark) pp_fterm term
+
+  let pp_info : clos_infos pp = fun ff info ->
+    Format.fprintf ff "{i_flags=%a; _}" pp_flags (info_flags info)
+
+  let rec pp_stack : stack pp = fun ff s ->
+    let pp_member ff m =
+      let out fmt = Format.fprintf ff fmt in
+      match m with
+      | Zapp args ->
+          out "Zapp(%a)" (pp_array pp_fconstr) args
+      | ZcaseT (_,_,_,_,_,_,m) ->
+          out "ZcaseT(_, _, _, _, _, _, %a)" pp_mode m
+      | Zproj (_,_,m) ->
+          out "Zproj(_, %a)" pp_mode m
+      | Zfix (_, s) ->
+          out "Zfix(_, %a)" pp_stack s
+      | Zprimitive (op,_,_,_,_) ->
+          out "Zprimitive (%s, _, _, _, _)" (CPrimitives.to_string op)
+      | Zshift i ->
+          out "Zshift(%i)" i
+      | Zupdate _ ->
+          out "Zupdate(_)"
+      | Zunblock (_,_,_,f) ->
+          out "Zunblock (_, _, _, %a)" pp_mode f
+      | Zrun (_,_,_,_,_,f) ->
+          out "Zrun (_, _, _, _, _, %a)" pp_mode f
+    in
+    pp_list pp_member ff s
+
+  let debug_on : unit -> bool =
+    let (flag, _) = CDebug.create_full ~name:"lazy" () in
+    fun () -> CDebug.get_flag flag
+
+  let indentation = ref 0
+
+  let indent () = incr indentation
+  let dedent () = decr indentation
+
+  let line fmt =
+    let rec mk n = if n == 0 then [] else "⠀"::(mk (n-1)) in (* non breaking space *)
+    Format.eprintf "%s" (String.concat "" (mk !indentation));
+    Format.eprintf (fmt ^^ "\n%!")
+end
+
+open Debug
 
 let empty_stack = []
 let append_stack v s =
@@ -698,12 +927,26 @@ let rec subst_constr ~mode info tab (subst,usubst as e) c =
     let nargs = Array.length args in
     begin match [@ocaml.warning "-4"] Constr.kind h with
     | Const(kn, _) when nargs == 2 && Constant.UserOrd.equal kn block_constant ->
+      if debug_on () then Debug.line "subst_constr: (Block,subs)";
+      Debug.indent ();
       let e = tcsu_to_usubs e in
+      Debug.dedent ();
+      if debug_on () then Debug.line "subst_constr: (Block,klt)";
+      Debug.indent ();
       let res = !klt_ref ~mode info tab e c in
+      Debug.dedent ();
+      if debug_on () then Debug.line "subst_constr: (Block,res) %a" pp_constr res;
       res
     | Const(kn, _) when nargs >= 2 && Constant.UserOrd.equal kn unblock_constant ->
+      if debug_on () then Debug.line "subst_constr: (Unblock,subs)";
+      Debug.indent ();
       let e = tcsu_to_usubs e in
+      Debug.dedent ();
+      if debug_on () then Debug.line "subst_constr: (Unblock,klt)";
+      Debug.indent ();
       let res = !klt_ref ~mode info tab e c in
+      Debug.dedent ();
+      if debug_on () then Debug.line "subst_constr: (Unblock,res) %a" pp_constr res;
       res
     | _ -> Constr.map_with_binders usubs_lift subst_constr e c
     end
@@ -748,6 +991,7 @@ let eta_reduce m =
 (* The inverse of mk_clos: move back to constr *)
 (* XXX should there be universes in lfts???? *)
 let rec to_constr ~(info:clos_infos) ~(tab:clos_tab) ((lfts, usubst) as ulfts) v =
+  if debug_on () then Debug.line "to_constr: (%a) _ _ (%a)" pp_info info pp_fconstr v;
   let to_constr = to_constr ~info ~tab in
   let subst_constr = subst_constr ~mode:(RedState.mode v.mark) info tab in
   let comp_subs = comp_subs ~info ~tab in
@@ -918,6 +1162,7 @@ let rec fstrong unfreeze_fun lfts v =
 *)
 
 let zip m stk =
+  if debug_on () then Debug.line "zip: in %a %a" pp_fconstr m pp_stack stk;
   let rec zip m stk =
   match stk with
     | [] -> m
@@ -959,9 +1204,12 @@ let zip m stk =
       let m = { m with mark=RedState.set_ntrl m.mark } in
       zip {mark=RedState.mk ntrl mode; term=FApp (op, [|ty1; ty2; m; k|])} s
   in
-  zip m stk
+  let m = zip m stk in
+  if debug_on () then Debug.line "zip: out %a" pp_fconstr m;
+  m
 
 let fapp_stack (m,stk) =
+  if debug_on () then Debug.line "fapp_stack: %a %a" pp_fconstr m pp_stack stk;
   zip m stk
 
 let term_of_process ~info ~tab c stk = term_of_fconstr ~info ~tab (zip c stk)
@@ -1657,12 +1905,15 @@ let is_irrelevant_constructor infos ((ind,_),u) =
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
 let rec knh info tab m stk =
+  if debug_on () then Debug.line "knh: %a _ (%a) (%a)" pp_info info pp_fconstr m pp_stack stk;
   match m.term with
     | FLIFT(k,a) -> knh info tab a (zshift k stk)
     | FCLOS(t,e) -> knht ~mode:(RedState.mode m.mark) info tab e t (zupdate info m stk)
     | FLOCKED -> assert false
     | FLAZY (l) ->
+      Debug.indent ();
       let (lazy m1) = l in
+      Debug.dedent ();
       knh info tab m1 (zupdate info m stk)
     | FApp(a,b) -> knh info tab a (append_stack b (zupdate info m stk))
     | FCaseT(ci,u,pms,(_,r as p),t,br,e) ->
@@ -1692,6 +1943,7 @@ let rec knh info tab m stk =
        FArray _|FPrimitive _ |FBlock _) -> (m, stk)
 
 and knht_app ~mode ~lexical info tab e h args stk =
+  if debug_on () then Debug.line "knht_app: %a lexical:%b %a _ (%a) %a %a (%a)" pp_mode mode lexical pp_info info pp_constr h (pp_array pp_constr) args pp_usubs e pp_stack stk;
   let default () =
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
     knht ~mode info tab e h stk
@@ -1737,6 +1989,7 @@ and knht_app ~mode ~lexical info tab e h args stk =
 
 (* The same for pure terms *)
 and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
+  if debug_on () then Debug.line "knht: %a %a _ (%a) %a (%a)" pp_mode mode pp_info info pp_constr t pp_usubs e pp_stack stk;
   match kind t with
     | App(h,args) -> knht_app ~mode ~lexical:true info tab e h args stk
     | Case(ci,u,pms,(_,r as p),NoInvert,t,br) ->
@@ -1796,6 +2049,7 @@ let set_conv f = conv := f
 
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr info tab m stk =
+  if debug_on () then Debug.line "knr: %a _ (%a) (%a)" pp_info info pp_fconstr m pp_stack stk;
   let mode = RedState.mode m.mark in
   match m.term with
   | FEta(n,h,args,k,e) ->
@@ -1987,6 +2241,7 @@ let is_val v = match v.term with
 | FIrrelevant | FLOCKED -> assert false
 
 let rec kl info tab m =
+  if debug_on () then Debug.line "kl: %a _ (%a)" pp_info info pp_fconstr m;
   let share = info.i_cache.i_share in
   if is_val m then term_of_fconstr ~info ~tab m
   else
@@ -1995,6 +2250,7 @@ let rec kl info tab m =
     zip_term info tab (norm_head info tab nm) s
 
 and klt ~mode info tab (e : usubs) t =
+  if debug_on () then Debug.line "klt: %a %a _ (%a) %a" pp_mode mode pp_info info pp_constr t pp_usubs e;
   match kind t with
 | Rel i ->
   begin match Esubst.expand_rel i (fst e) with
@@ -2046,6 +2302,7 @@ and klt ~mode info tab (e : usubs) t =
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
 and norm_head info tab m =
+  if debug_on () then Debug.line "norm_head: %a _ (%a)" pp_info info pp_fconstr m;
   if is_val m then term_of_fconstr ~info ~tab m else
     let mode = RedState.mode m.mark in
     match [@ocaml.warning "-4"] m.term with
@@ -2105,6 +2362,7 @@ and norm_head info tab m =
       | FPrimitive (_, _, _, _) -> assert false (* All other primitives should be fully reduced *)
 
 and zip_term info tab m stk =
+  if debug_on () then Debug.line "zip_term: %a _ (%a) %a" pp_info info pp_constr m pp_stack stk;
   match stk with
 | [] -> m
 | Zapp args :: s ->
@@ -2150,15 +2408,28 @@ and zip_term info tab m stk =
 
 (* Initialization and then normalization *)
 
+let whd_val_counter = ref 0
 (* weak reduction *)
 let whd_val info tab v =
-  term_of_fconstr ~info ~tab (kh info tab v [])
+  let count = !whd_val_counter in incr whd_val_counter;
+  if debug_on () then Debug.line "whd_val: in {%i} %a _ (%a)" count pp_info info pp_fconstr v;
+  Debug.indent ();
+  let res = term_of_fconstr ~info ~tab (kh info tab v []) in
+  Debug.dedent ();
+  if debug_on () then Debug.line "whd_val: out {%i} %a _ (%a)" count pp_info info pp_constr res;
+  res
 
 (* strong reduction *)
 let norm_val info tab v =
+  if debug_on () then Debug.line "norm_val: %a _ (%a)" pp_info info pp_fconstr v;
   kl info tab v
 let norm_term ?(mode=normal_full) info tab e t =
-  klt ~mode info tab e t
+  if debug_on () then Debug.line "norm_term: in %a %a _ (%a) %a" pp_mode mode pp_info info pp_constr t pp_usubs e;
+  Debug.indent ();
+  let res = klt ~mode info tab e t in
+  Debug.dedent ();
+  if debug_on () then Debug.line "norm_term: out %a)" pp_constr res;
+  res
 
 let rec set_mode ~mode (m : fconstr) =
   let set_mode = set_mode ~mode in
@@ -2208,19 +2479,27 @@ let rec set_mode ~mode (m : fconstr) =
 let eval_lazy ~mode info tab m =
   (* TODO: [mode] is ignored, only mode of [t] counts *)
   let m = set_mode ~mode m in
+  Debug.indent ();
   let t = kl info tab m in
+  Debug.dedent ();
   mk_clos ~mode (Esubst.subs_id 0, UVars.Instance.empty) t
 let _ = eval_lazy_ref := eval_lazy
 
 let _ = klt_ref := klt
 let _ = kl_ref := kl
 
+let whd_stack_counter = ref (-1)
 let whd_stack infos tab m stk =
+  let c = incr whd_stack_counter; !whd_stack_counter in
+  if debug_on () then Debug.line "whd_stack: {%i} %a _ (%a) (%a)" c pp_info infos pp_fconstr m pp_stack stk;
+  Debug.indent ();
   match m.mark with
 | _ when RedState.is_ntrl m.mark ->
   (** No need to perform [kni] nor to unlock updates because
       every head subterm of [m] is [ntrl] *)
   let k = knh infos tab m stk in
+  Debug.dedent ();
+  if debug_on () then Debug.line "whd_stack: {%i} output (NTRL): (%a) @@ (%a)" c pp_fconstr (fst k) pp_stack (snd k);
   k
 | _ ->
   let k = kni infos tab m stk in
@@ -2230,6 +2509,8 @@ let whd_stack infos tab m stk =
       let (m', stk') = k in
       if not (m == m' && stk == stk') then ignore (zip m' stk')
   in
+  Debug.dedent ();
+  if debug_on () then Debug.line "whd_stack: {%i} output: (%a) @@ (%a)" c pp_fconstr (fst k) pp_stack (snd k);
   k
 
 let create_infos i_mode ?univs ?evars i_flags i_env =
@@ -2248,6 +2529,7 @@ let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_ref_with_args infos tab fl v =
+  if debug_on () then Debug.line "unfold_ref_with_args: %a _ (%a) %a" pp_info infos pp_table_key fl pp_stack v;
   match Table.lookup ~mode:normal_whnf infos tab fl with (* TODO mode *)
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
@@ -2265,8 +2547,10 @@ let unfold_ref_with_args infos tab fl v =
         let args = mk_eta_args [||] (List.length rargs) in
         let h = mkConstU c in
         let e = usubs_consv (Array.rev_of_list rargs) (Esubst.subs_id 0, UVars.Instance.empty) in
+        Debug.indent ();
         let (m,stk) = knht_app ~mode ~lexical:true infos tab e h args v in
         let res = knr infos tab m stk in
+        Debug.dedent ();
         Some (res)
       | _ ->
       let m = {mark = RedState.mk cstr normal_whnf; term = FFlex fl } in (* TODO mode *)
@@ -2292,3 +2576,11 @@ let inject = inject ~mode:normal_whnf
 let unfold_projection = unfold_projection ~mode:normal_whnf
 let mk_clos = mk_clos ~mode:normal_whnf
 let mk_clos_vect = mk_clos_vect ~mode:normal_whnf
+
+let term_of_fconstr ~info ~tab m =
+  if debug_on () then Debug.line "term_of_fconstr: (in) %a _ %a" pp_info info pp_fconstr m;
+  Debug.indent ();
+  let res = term_of_fconstr ~info ~tab m in
+  Debug.dedent ();
+  if debug_on () then Debug.line "term_of_fconstr: (out) %a _ %a" pp_info info pp_constr res;
+  res
