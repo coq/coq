@@ -112,6 +112,9 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Float     of Float64.t
   | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
+  | PBlock    of 'univs * 'types * 'constr
+  | PUnblock  of 'types * 'constr
+  | PRun      of 'types * 'types * 'constr * 'constr
 
 (* constr is the fixpoint of the previous type. *)
 type t = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unboxed]
@@ -461,6 +464,10 @@ let mkInt i = of_kind @@ Int i
 (* Constructs an array *)
 let mkArray (u,t,def,ty) = of_kind @@ Array (u,t,def,ty)
 
+let mkPBlock (u,ty,t) = of_kind @@ PBlock (u,ty,t)
+let mkPUnblock (ty,t) = of_kind @@ PUnblock (ty,t)
+let mkPRun (ty,k,b,cont) = of_kind @@ PRun (ty,k,b,cont)
+
 (* Constructs a primitive float number *)
 let mkFloat f = of_kind @@ Float f
 
@@ -504,6 +511,10 @@ let fold f acc c = match kind c with
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
   | Array(_u,t,def,ty) ->
     f (f (Array.fold_left f acc t) def) ty
+  | PBlock (_u,ty,t) -> f (f acc ty) t
+  | PUnblock (ty,t) -> f (f acc ty) t
+  | PRun (ty,k,b,cont) ->
+    f (f (f (f acc ty) k) b) cont
 
 (* [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -529,6 +540,9 @@ let iter f c = match kind c with
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | Array(_u,t,def,ty) -> Array.iter f t; f def; f ty
+  | PBlock (_u,ty,t) -> f ty; f t
+  | PUnblock (ty,t) -> f ty; f t
+  | PRun (ty,k,b,cont) -> f ty; f k; f b; f cont
 
 (* [iter_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -560,6 +574,9 @@ let iter_with_binders g f n c = match kind c with
       Array.Fun1.iter f (iterate g (Array.length tl) n) bl
   | Array(_u,t,def,ty) ->
     Array.iter (f n) t; f n def; f n ty
+  | PBlock (_u,ty,t) -> f n ty; f n t
+  | PUnblock (ty,t) -> f n ty; f n t
+  | PRun (ty,k,b,cont) -> f n ty; f n k; f n b; f n cont
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -594,6 +611,10 @@ let fold_constr_with_binders g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) ->
     f n (f n (Array.fold_left (f n) acc t) def) ty
+  | PBlock (_u,ty,t) -> f n (f n acc ty) t
+  | PUnblock (ty,t) -> f n (f n acc ty) t
+  | PRun (ty,k,b,cont) ->
+    f n (f n (f n (f n acc ty) k) b) cont
 
 (* [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -694,6 +715,23 @@ let map f c = match kind c with
     let ty' = f ty in
     if def'==def && t==t' && ty==ty' then c
     else mkArray(u,t',def',ty')
+  | PBlock (u,ty,t) ->
+    let ty' = f ty in
+    let t' = f t in
+    if ty' == ty && t' == t then c
+    else mkPBlock (u,ty',t')
+  | PUnblock (ty,t) ->
+    let ty' = f ty in
+    let t' = f t in
+    if ty' == ty && t' == t then c
+    else mkPUnblock (ty',t')
+  | PRun (ty,k,b,cont) ->
+    let ty' = f ty in
+    let k' = f k in
+    let b' = f b in
+    let cont' = f cont in
+    if ty' == ty && k' == k && b' == b && cont' == cont then c
+    else mkPRun (ty',k',b',cont')
 
 (* Like {!map} but with an accumulator. *)
 
@@ -779,6 +817,23 @@ let fold_map f accu c = match kind c with
     let accu, ty' = f accu ty in
     if def'==def && t==t' && ty==ty' then accu, c
     else accu, mkArray(u,t',def',ty')
+  | PBlock (u,ty,t) ->
+    let accu, ty' = f accu ty in
+    let accu, t' = f accu t in
+    if ty' == ty && t' == t then accu, c
+    else accu, mkPBlock (u,ty',t')
+  | PUnblock (ty,t) ->
+    let accu, ty' = f accu ty in
+    let accu, t' = f accu t in
+    if ty' == ty && t' == t then accu, c
+    else accu, mkPUnblock (ty',t')
+  | PRun (ty,k,b,cont) ->
+    let accu, ty' = f accu ty in
+    let accu, k' = f accu k in
+    let accu, b' = f accu b in
+    let accu, cont' = f accu cont in
+    if ty' == ty && k' == k && b' == b && cont' == cont then accu, c
+    else accu, mkPRun (ty',k',b',cont')
 
 (* [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -848,6 +903,23 @@ let map_with_binders g f l c0 = match kind c0 with
     let ty' = f l ty in
     if def'==def && t==t' && ty==ty' then c0
     else mkArray(u,t',def',ty')
+  | PBlock (u,ty,t) ->
+    let ty' = f l ty in
+    let t' = f l t in
+    if ty' == ty && t' == t then c0
+    else mkPBlock (u,ty',t')
+  | PUnblock (ty,t) ->
+    let ty' = f l ty in
+    let t' = f l t in
+    if ty' == ty && t' == t then c0
+    else mkPUnblock (ty',t')
+  | PRun (ty,k,b,cont) ->
+    let ty' = f l ty in
+    let k' = f l k in
+    let b' = f l b in
+    let cont' = f l cont in
+    if ty' == ty && k' == k && b' == b && cont' == cont then c0
+    else mkPRun (ty',k',b',cont')
 
 (*********************)
 (*      Lifting      *)
@@ -940,9 +1012,16 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     leq_universes None u1 u2 &&
     Array.equal_norefl (eq 0) t1 t2 &&
     eq 0 def1 def2 && eq 0 ty1 ty2
+  | PBlock (u1,ty1,t1), PBlock (u2,ty2,t2) ->
+    leq_universes None u1 u2 && eq 0 ty1 ty2 && eq 0 t1 t2
+  | PUnblock (ty1,t1), PUnblock (ty2,t2) ->
+    eq 0 ty1 ty2 && eq 0 t1 t2
+  | PRun (ty1,k1,b1,cont1), PRun (ty2,k2,b2,cont2) ->
+    eq 0 ty1 ty2 && eq 0 k1 k2 && eq 0 b1 b2 && eq 0 cont1 cont2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
+    | CoFix _ | Int _ | Float _ | String _ | Array _ | PBlock _ | PUnblock _
+    | PRun _), _ -> false
 
 (* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
    compare the immediate subterms of [c1] of [c2] if needed, [u] to
@@ -1092,9 +1171,16 @@ let hasheq_kind t1 t2 =
     | String s1, String s2 -> Pstring.equal s1 s2
     | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
       u1 == u2 && def1 == def2 && ty1 == ty2 && array_eqeq t1 t2
+    | PBlock (u1,ty1,t1), PBlock (u2,ty2,t2) ->
+      u1 == u2 && ty1 == ty2 && t1 == t2
+    | PUnblock (ty1,t1), PUnblock (ty2,t2) ->
+      ty1 == ty2 && t1 == t2
+    | PRun (ty1,k1,b1,cont1), PRun (ty2,k2,b2,cont2) ->
+      ty1 == ty2 && k1 == k2 && b1 == b2 && cont1 == cont2
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
       | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
-      | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
+      | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _ | PBlock _
+      | PUnblock _ | PRun _), _ -> false
 
 let hasheq t1 t2 = hasheq_kind (kind t1) (kind t2)
 
@@ -1294,6 +1380,21 @@ let rec hash_term (t : t) : int * (constr,constr,_,_,_) kind_of_term =
     let hty, ty = sh_rec ty in
     let h = combine4 hu ht hdef hty in
     (combinesmall 21 h, Array(u,t,def,ty))
+  | PBlock (u,ty,b) ->
+    let hu, u = Instance.hcons u in
+    let hty, ty = sh_rec ty in
+    let hb, b = sh_rec b in
+    (combinesmall 22 (combine3 hu hty hb), PBlock (u,ty,b))
+  | PUnblock (ty,b) ->
+    let hty, ty = sh_rec ty in
+    let hb, b = sh_rec b in
+    (combinesmall 23 (combine hty hb), PUnblock (ty,b))
+  | PRun (ty,k,b,cont) ->
+    let hty, ty = sh_rec ty in
+    let hk, k = sh_rec k in
+    let hb, b = sh_rec b in
+    let hcont, cont = sh_rec cont in
+    (combinesmall 24 (combine4 hty hk hb hcont), PRun (ty,k,b,cont))
 
 and sh_invert civ iv = match civ, iv with
   | NoInvert, NoInvert -> 0, NoInvert
@@ -1447,6 +1548,11 @@ let rec debug_print c =
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
       ++ str")@{" ++ UVars.Instance.pr Sorts.raw_printer u ++ str"}"
+  | PBlock(u,ty,t) -> str"PBlock(" ++ debug_print ty ++ str", " ++ debug_print t
+      ++ str")@{" ++ UVars.Instance.pr Sorts.raw_printer u ++ str"}"
+  | PUnblock(ty,t) -> str"PUnblock(" ++ debug_print ty ++ str", " ++ debug_print t ++ str")"
+  | PRun(ty,k,b,cont) -> str"PRun(" ++ debug_print ty ++ str", " ++ debug_print k ++ str", "
+      ++ debug_print b ++ str", " ++ debug_print cont ++ str")"
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()

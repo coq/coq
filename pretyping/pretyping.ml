@@ -622,6 +622,9 @@ type pretyper = {
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_block : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_unblock : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_run : pretyper -> glob_instance option * glob_constr * glob_constr * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
 
@@ -671,6 +674,12 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_string self s ?loc ~flags tycon env sigma
   | GArray (u,t,def,ty) ->
     self.pretype_array self (u,t,def,ty) ?loc ~flags tycon env sigma
+  | GPBlock (u,ty,c) ->
+    self.pretype_block self (u,ty,c) ?loc ~flags tycon env sigma
+  | GPUnblock (u,ty,c) ->
+    self.pretype_unblock self (u,ty,c) ?loc ~flags tycon env sigma
+  | GPRun (u,ty,kty,b,k) ->
+    self.pretype_run self (u,ty,kty,b,k) ?loc ~flags tycon env sigma
 
 let eval_type_pretyper self ~flags tycon env sigma t =
   self.pretype_type self t ~flags tycon env sigma
@@ -1605,6 +1614,58 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         in
         discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
 
+  let check_leq_sort_with_quality sigma s1 s2 =
+    let sigma = Evd.set_leq_sort sigma s1 s2 in
+    let q1 = Sorts.quality (ESorts.kind sigma s1) in
+    let q2 = Sorts.quality (ESorts.kind sigma s2) in
+    Evd.add_constraints sigma (UnivProblem.Set.singleton (UnivProblem.QLeq (q1, q2)))
+
+  let force_instance_length_error ?loc actual expect =
+    user_err ?loc Pp.(str "Wrong number of universes for Force primitive: got " ++
+                      int actual ++ str ", expected " ++ int expect ++ str ".")
+
+  let explicit_force_instance ?loc sigma actual_sorts (qs,us) =
+    let actual = List.length qs + List.length us in
+    let expect = 2 * Array.length actual_sorts in
+    if not (Int.equal actual expect) then force_instance_length_error ?loc actual expect;
+    let qs = Array.of_list qs in
+    let us = Array.of_list us in
+    let sigma, qs = Array.fold_left_map (glob_quality ?loc) sigma qs in
+    let sigma, us = Array.fold_left_map (glob_level ?loc) sigma us in
+    let sigma = Array.fold_left2 (fun sigma s (q,u) ->
+        let expected = ESorts.make (Sorts.make q (Univ.Universe.make u)) in
+        check_leq_sort_with_quality sigma s expected)
+        sigma actual_sorts (Array.map2 (fun q u -> q,u) qs us)
+    in
+    sigma, UVars.Instance.of_array (qs, us)
+
+  let implicit_force_instance ?loc env sigma actual_sorts =
+    let fold sigma s =
+      let s = ESorts.kind sigma s in
+      let q = match Sorts.quality s with
+        | Sorts.Quality.QVar _ as q when not (QGraph.mem q (Environ.qualities !!env)) -> Sorts.Quality.qtype
+        | q -> q
+      in
+      let u = Sorts.univ_of_sort s in
+      if Univ.Universe.is_type0 u then sigma, (q, Univ.Level.set)
+      else match Univ.Universe.level u with
+      | Some u -> sigma, (q, u)
+      | None ->
+        let sigma, u = new_univ_level_variable ?loc UState.univ_flexible sigma in
+        let expected = ESorts.make (Sorts.make q (Univ.Universe.make u)) in
+        let sigma = check_leq_sort_with_quality sigma (ESorts.make s) expected in
+        sigma, (q, u)
+    in
+    let sigma, qls = Array.fold_left_map fold sigma actual_sorts in
+    let qs = Array.map fst qls in
+    let us = Array.map snd qls in
+    let u = UVars.Instance.of_array (qs, us) in
+    sigma, EInstance.kind sigma (Evd.normalize_universe_instance sigma (EInstance.make u))
+
+  let force_instance ?loc env sigma actual_sorts = function
+    | Some u -> explicit_force_instance ?loc sigma actual_sorts u
+    | None -> implicit_force_instance ?loc env sigma actual_sorts
+
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~flags tycon env sigma ->
     let array_kn = match (Environ.retroknowledge !!env).Retroknowledge.retro_array with
@@ -1647,6 +1708,138 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     } in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
+  let blocked_type env = match (Environ.retroknowledge !!env).Retroknowledge.retro_blocked with
+    | Some c -> c
+    | None -> CErrors.user_err Pp.(str "The type blocked terms must be registered before this construction can be typechecked.")
+
+  let dest_blocked_type ?loc env sigma ty =
+    let blocked_kn = blocked_type env in
+    match EConstr.kind sigma (whd_all !!env sigma ty) with
+    | App (hd, [|arg|]) ->
+      begin match EConstr.kind sigma hd with
+      | Const (c,u) when Constant.UserOrd.equal c blocked_kn ->
+        EInstance.kind sigma u, arg
+      | _ -> user_err ?loc Pp.(str "Expected a blocked term.")
+      end
+    | _ -> user_err ?loc Pp.(str "Expected a blocked term.")
+
+  let is_type_hole c = match DAst.get c with
+    | GHole _ -> true
+    | _ -> false
+
+  let force_sort_of env sigma ty =
+    if UnivGen.QualityOrSet.is_set (Retyping.get_sort_quality_or_set_of env sigma ty)
+    then ESorts.make Sorts.set
+    else Retyping.get_sort_of env sigma ty
+
+  let pretype_block self (u,ty,c) =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, tyj, cj =
+      if is_type_hole ty then
+        let sigma, cj = eval_pretyper self ~flags empty_tycon env sigma c in
+        let sigma, tyj = eval_type_pretyper self ~flags (mk_valcon cj.uj_type) env sigma ty in
+        sigma, tyj, cj
+      else
+        let sigma, tyj = eval_type_pretyper self ~flags empty_valcon env sigma ty in
+        let sigma, cj = eval_pretyper self ~flags (mk_tycon tyj.utj_val) env sigma c in
+        sigma, tyj, cj
+    in
+    let ty = nf_evar sigma tyj.utj_val in
+    let sigma = check_actual_type !!env sigma cj ty in
+    let s = force_sort_of !!env sigma ty in
+    let sigma, u = force_instance ?loc env sigma [|s|] u in
+    let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env u) in
+    let j = {
+      uj_val = EConstr.mkPBlock(EInstance.make u, ty, cj.uj_val);
+      uj_type = EConstr.mkApp(blocked,[|ty|])
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
+  let pretype_unblock self (u,ty,b) =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, bj = eval_pretyper self ~flags empty_tycon env sigma b in
+    let _u0, bty = dest_blocked_type ?loc env sigma bj.uj_type in
+    let sigma, tyj =
+      if is_type_hole ty then eval_type_pretyper self ~flags (mk_valcon bty) env sigma ty
+      else eval_type_pretyper self ~flags empty_valcon env sigma ty
+    in
+    let sigma =
+      try Evarconv.unify_leq_delay !!env sigma tyj.utj_val bty
+      with Evarconv.UnableToUnify (sigma,e) -> error_actual_type ?loc !!env sigma bj tyj.utj_val e
+    in
+    let ty = nf_evar sigma tyj.utj_val in
+    let sigma = match u with
+      | None -> sigma
+      | Some _ ->
+        let s = force_sort_of !!env sigma ty in
+        let sigma, u = force_instance ?loc env sigma [|s|] u in
+        let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env u) in
+        check_actual_type !!env sigma bj (EConstr.mkApp(blocked,[|ty|]))
+    in
+    let j = {
+      uj_val = EConstr.mkPUnblock(ty, bj.uj_val);
+      uj_type = ty
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
+  let pretype_run self (u,ty,kty,b,k) =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, bj = eval_pretyper self ~flags empty_tycon env sigma b in
+    let _u0, bty = dest_blocked_type ?loc env sigma bj.uj_type in
+    let sigma, tyj =
+      if is_type_hole ty then eval_type_pretyper self ~flags (mk_valcon bty) env sigma ty
+      else eval_type_pretyper self ~flags empty_valcon env sigma ty
+    in
+    let sigma =
+      try Evarconv.unify_leq_delay !!env sigma tyj.utj_val bty
+      with Evarconv.UnableToUnify (sigma,e) -> error_actual_type ?loc !!env sigma bj tyj.utj_val e
+    in
+    let ty = nf_evar sigma tyj.utj_val in
+    let unblocked = EConstr.mkPUnblock(bty, bj.uj_val) in
+    let sigma, kty, kj =
+      if is_type_hole kty then
+        let r = ESorts.relevance_of_sort (force_sort_of !!env sigma ty) in
+        let _var, env' =
+          push_rel sigma (LocalAssum (Context.make_annot Anonymous r, ty)) env
+        in
+        let sigma, dep_kty = new_type_evar env' sigma ~src:(loc,Evar_kinds.InternalHole) in
+        let sigma, kj = eval_pretyper self ~flags (mk_tycon (EConstr.mkProd (EConstr.anonR, ty, dep_kty))) env sigma k in
+        let res_ty = nf_evar sigma (EConstr.Vars.subst1 unblocked dep_kty) in
+        let sigma, ktyj = eval_type_pretyper self ~flags (mk_valcon res_ty) env sigma kty in
+        sigma, nf_evar sigma ktyj.utj_val, kj
+      else
+        let sigma, ktyj = eval_type_pretyper self ~flags empty_valcon env sigma kty in
+        let kty = nf_evar sigma ktyj.utj_val in
+        let sigma, kj = eval_pretyper self ~flags (mk_tycon (EConstr.mkProd (EConstr.anonR, ty, EConstr.Vars.lift 1 kty))) env sigma k in
+        sigma, kty, kj
+    in
+    let sty = force_sort_of !!env sigma ty in
+    let sk = force_sort_of !!env sigma kty in
+    let sigma =
+      let qsty = Sorts.quality (ESorts.kind sigma sty) in
+      let qsk = Sorts.quality (ESorts.kind sigma sk) in
+      if Sorts.Quality.equal qsty Sorts.Quality.qtype || Sorts.Quality.equal qsty Sorts.Quality.qprop then sigma
+      else
+        try Evd.set_elim_to sigma qsty qsk
+        with QGraph.EliminationError _ | UGraph.UniverseInconsistency _ ->
+          user_err ?loc Pp.(str "This run eliminates into an invalid sort.")
+    in
+    let sigma = match u with
+      | None -> sigma
+      | Some _ ->
+        let sigma, u = force_instance ?loc env sigma [|sty; sk|] u in
+        let qsu, usu = UVars.Instance.to_array u in
+        let uty = UVars.Instance.of_array ([|qsu.(0)|], [|usu.(0)|]) in
+        let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env uty) in
+        check_actual_type !!env sigma bj (EConstr.mkApp(blocked,[|ty|]))
+    in
+    let sigma = check_actual_type !!env sigma kj (EConstr.mkProd (EConstr.anonR, ty, EConstr.Vars.lift 1 kty)) in
+    let j = {
+      uj_val = EConstr.mkPRun(ty, kty, bj.uj_val, kj.uj_val);
+      uj_type = kty
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
 end
 
 (* [pretype tycon env sigma lvar lmeta cstr] attempts to type [cstr] *)
@@ -1677,6 +1870,9 @@ let default_pretyper =
     pretype_float = pretype_float;
     pretype_string = pretype_string;
     pretype_array = pretype_array;
+    pretype_block = pretype_block;
+    pretype_unblock = pretype_unblock;
+    pretype_run = pretype_run;
     pretype_type = pretype_type;
   }
 

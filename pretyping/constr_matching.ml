@@ -614,6 +614,24 @@ let sub_match ?(closed=true) env sigma pat c =
     in
     let sub = (env,def) :: (env,ty) :: subargs env t in
     try_aux sub next_mk_ctx next
+  | PBlock (u,ty,t) ->
+    let next_mk_ctx = function
+    | [ty; t] -> mk_ctx (mkPBlock (u, ty, t))
+    | _ -> assert false
+    in
+    try_aux [(env,ty); (env,t)] next_mk_ctx next
+  | PUnblock (ty,t) ->
+    let next_mk_ctx = function
+    | [ty; t] -> mk_ctx (mkPUnblock (ty, t))
+    | _ -> assert false
+    in
+    try_aux [(env,ty); (env,t)] next_mk_ctx next
+  | PRun (ty,k,b,cont) ->
+    let next_mk_ctx = function
+    | [ty; k; b; cont] -> mk_ctx (mkPRun (ty, k, b, cont))
+    | _ -> assert false
+    in
+    try_aux [(env,ty); (env,k); (env,b); (env,cont)] next_mk_ctx next
   | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _|String _ ->
     next ()
   in

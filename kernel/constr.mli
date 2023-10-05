@@ -76,6 +76,15 @@ val mkInt : Uint63.t -> constr
 (** Constructs an array *)
 val mkArray : UVars.Instance.t * constr array * constr * types -> constr
 
+(** Constructs a blocked value. *)
+val mkPBlock : UVars.Instance.t * types * constr -> constr
+
+(** Constructs an unblock elimination. *)
+val mkPUnblock : types * constr -> constr
+
+(** Constructs a run elimination. *)
+val mkPRun : types * types * constr * constr -> constr
+
 (** Constructs a machine float number *)
 val mkFloat : Float64.t -> constr
 
@@ -289,6 +298,9 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Float     of Float64.t
   | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
+  | PBlock    of 'univs * 'types * 'constr
+  | PUnblock  of 'types * 'constr
+  | PRun      of 'types * 'types * 'constr * 'constr
   (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
       [u] is a universe containing [t]. *)
 

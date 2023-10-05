@@ -586,6 +586,24 @@ let () =
       Tac2ffi.of_constr def;
       Tac2ffi.of_constr ty;
     |]
+  | PBlock (u, ty, t) ->
+    v_blk 21 [|
+      of_instance u;
+      Tac2ffi.of_constr ty;
+      Tac2ffi.of_constr t;
+    |]
+  | PUnblock (ty, t) ->
+    v_blk 22 [|
+      Tac2ffi.of_constr ty;
+      Tac2ffi.of_constr t;
+    |]
+  | PRun (ty, k, b, cont) ->
+    v_blk 23 [|
+      Tac2ffi.of_constr ty;
+      Tac2ffi.of_constr k;
+      Tac2ffi.of_constr b;
+      Tac2ffi.of_constr cont;
+    |]
 
 let () =
   define "constr_make" (valexpr @-> eret constr) @@ fun knd env sigma ->
@@ -677,6 +695,21 @@ let () =
     let ty = Tac2ffi.to_constr ty in
     let u = to_instance u in
     EConstr.mkArray(u,t,def,ty)
+  | (21, [|u;ty;t|]) ->
+    let u = to_instance u in
+    let ty = Tac2ffi.to_constr ty in
+    let t = Tac2ffi.to_constr t in
+    EConstr.mkPBlock(u,ty,t)
+  | (22, [|ty;t|]) ->
+    let ty = Tac2ffi.to_constr ty in
+    let t = Tac2ffi.to_constr t in
+    EConstr.mkPUnblock(ty,t)
+  | (23, [|ty;k;b;cont|]) ->
+    let ty = Tac2ffi.to_constr ty in
+    let k = Tac2ffi.to_constr k in
+    let b = Tac2ffi.to_constr b in
+    let cont = Tac2ffi.to_constr cont in
+    EConstr.mkPRun(ty,k,b,cont)
   | _ -> assert false
 
 let () =

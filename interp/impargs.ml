@@ -29,8 +29,8 @@ let whd_prod env sigma typ =
   let typ, stk = whd_stack infos tab typ [] in
   match fterm_of typ with
   | FProd (na, c1, c2, e) ->
-    let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
-    let c2 = EConstr.of_constr @@ term_of_fconstr (mk_clos (CClosure.usubs_lift e) c2) in
+    let c1 = EConstr.of_constr @@ term_of_fconstr ~info:infos ~tab c1 in
+    let c2 = EConstr.of_constr @@ term_of_fconstr ~info:infos ~tab (mk_clos (CClosure.usubs_lift e) c2) in
     Some (EConstr.of_binder_annot na, c1, c2)
   | _ -> None
 
@@ -232,7 +232,7 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
 
 let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
-  | Ind _ | Const _ | Var _ | Sort _ -> true
+  | Ind _ | Const _ | Var _ | Sort _ | PBlock _ | PUnblock _ | PRun _ -> true
   | Case (_,_,_,_,_,f,_) -> is_rigid_head sigma f
   | Proj _ -> true
   | App (f,args) ->

@@ -29,6 +29,9 @@ type key =
   | KFloat
   | KString
   | KArray
+  | KPBlock
+  | KPUnblock
+  | KPRun
 
 module KeyOrdered = struct
   type t = key
@@ -48,6 +51,9 @@ module KeyOrdered = struct
     | KFloat -> 9
     | KString -> 10
     | KArray -> 11
+    | KPBlock -> 12
+    | KPUnblock -> 13
+    | KPRun -> 14
 
   let compare gr1 gr2 =
     match gr1, gr2 with
@@ -148,6 +154,9 @@ let constr_key env kind c =
       | Float _ -> KFloat
       | String _ -> KString
       | Array _ -> KArray
+      | PBlock _ -> KPBlock
+      | PUnblock _ -> KPUnblock
+      | PRun _ -> KPRun
     in Some (aux c)
   with Not_found -> None
 
@@ -167,6 +176,9 @@ let pr_key pr_global = function
   | KFloat -> str"Float"
   | KString -> str"String"
   | KArray -> str"Array"
+  | KPBlock -> str"PBlock"
+  | KPUnblock -> str"PUnblock"
+  | KPRun -> str"PRun"
 
 let pr_keyset pr_global v =
   prlist_with_sep spc (pr_key pr_global) (Keyset.elements v)

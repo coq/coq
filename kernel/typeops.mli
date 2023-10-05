@@ -77,6 +77,9 @@ val type_of_int : env -> types
 val type_of_float : env -> types
 val type_of_string : env -> types
 val type_of_array : env -> UVars.Instance.t -> types
+val type_of_blocked : env -> UVars.Instance.t -> types
+
+
 val type_of_prim_type : env -> UVars.Instance.t -> 'a CPrimitives.prim_type -> types
 val type_of_prim : env -> UVars.Instance.t -> CPrimitives.t -> types
 val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> types

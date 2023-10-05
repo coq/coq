@@ -164,6 +164,9 @@ Ltac2 Type kind := [
   | String (pstring)
   | Array (instance, constr array, constr, constr)
    (** [Array u vals def t] is the primitive array literal [[|vals | def : t|]@{u}]. *)
+  | PBlock (instance, constr, constr)
+  | PUnblock (constr, constr)
+  | PRun (constr, constr, constr, constr)
 ].
 
 Ltac2 @ external kind : constr -> kind := "rocq-runtime.plugins.ltac2" "constr_kind".
@@ -271,6 +274,12 @@ Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
       Array.iter f bl
   | Array _u t def ty =>
       f ty; Array.iter f t; f def
+  | PBlock _u ty t =>
+      f ty; f t
+  | PUnblock ty t =>
+      f ty; f t
+  | PRun ty k b cont =>
+      f ty; f k; f b; f cont
   end.
 
 (** [iter_with_binders g f n c] iterates [f n] on the immediate
@@ -306,6 +315,12 @@ Ltac2 iter_with_binders (g : 'a -> binder -> 'a) (f : 'a -> constr -> unit) (n :
       f n ty;
       Array.iter (f n) t;
       f n def
+  | PBlock _u ty t =>
+      f n ty; f n t
+  | PUnblock ty t =>
+      f n ty; f n t
+  | PRun ty k b cont =>
+      f n ty; f n k; f n b; f n cont
   end.
 
 Local Ltac2 binder_map (f : constr -> constr) (b : binder) : binder :=
@@ -370,6 +385,20 @@ Ltac2 map (f : constr -> constr) (c : constr) : constr :=
       with t := Array.map f t
       with def := f def in
       make (Array u t def ty)
+  | PBlock u ty t =>
+      let ty := f ty
+      with t := f t in
+      make (PBlock u ty t)
+  | PUnblock ty t =>
+      let ty := f ty
+      with t := f t in
+      make (PUnblock ty t)
+  | PRun ty k b cont =>
+      let ty := f ty
+      with k := f k
+      with b := f b
+      with cont := f cont in
+      make (PRun ty k b cont)
   end.
 
 (** [map_with_binders g f n c] maps [f n] on the immediate subterms of [c];
@@ -428,6 +457,20 @@ Ltac2 map_with_binders (lift : 'a -> binder -> 'a) (f : 'a -> constr -> constr) 
       with t := Array.map (f n) t
       with def := f n def in
       make (Array u t def ty)
+  | PBlock u ty t =>
+      let ty := f n ty
+      with t := f n t in
+      make (PBlock u ty t)
+  | PUnblock ty t =>
+      let ty := f n ty
+      with t := f n t in
+      make (PUnblock ty t)
+  | PRun ty k b cont =>
+      let ty := f n ty
+      with k := f n k
+      with b := f n b
+      with cont := f n cont in
+      make (PRun ty k b cont)
   end.
 
 End Unsafe.

@@ -767,6 +767,15 @@ let rec lambda_of_constr cache env sigma c =
     let def = lambda_of_constr cache env sigma def in
     mknode @@ Lparray (lambda_of_args cache env sigma 0 t, def)
 
+  | PBlock (_u,_ty,t) ->
+    lambda_of_constr cache env sigma t
+
+  | PUnblock (_ty,t) ->
+    lambda_of_constr cache env sigma t
+
+  | PRun (_ty,_k,b,cont) ->
+    mkLapp (lambda_of_constr cache env sigma cont) [|lambda_of_constr cache env sigma b|]
+
 and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (kn, u as c) ->

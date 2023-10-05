@@ -116,6 +116,17 @@ let change_vars =
             , Array.map (change_vars mapping) t
             , change_vars mapping def
             , change_vars mapping ty )
+        | GPBlock (u, ty, c) ->
+          GPBlock (u, change_vars mapping ty, change_vars mapping c)
+        | GPUnblock (u, ty, c) ->
+          GPUnblock (u, change_vars mapping ty, change_vars mapping c)
+        | GPRun (u, ty, k, b, cont) ->
+          GPRun
+            ( u
+            , change_vars mapping ty
+            , change_vars mapping k
+            , change_vars mapping b
+            , change_vars mapping cont )
         | GSort _ | GHole _ | GGenarg _ | GInt _ | GString _ as x -> x)
       rt
   and change_vars_br mapping ({CAst.loc; v = idl, patl, res} as br) =
@@ -297,6 +308,17 @@ let rec alpha_rt excluded rt =
         , Array.map (alpha_rt excluded) t
         , alpha_rt excluded def
         , alpha_rt excluded ty )
+    | GPBlock (u, ty, c) ->
+      GPBlock (u, alpha_rt excluded ty, alpha_rt excluded c)
+    | GPUnblock (u, ty, c) ->
+      GPUnblock (u, alpha_rt excluded ty, alpha_rt excluded c)
+    | GPRun (u, ty, k, b, cont) ->
+      GPRun
+        ( u
+        , alpha_rt excluded ty
+        , alpha_rt excluded k
+        , alpha_rt excluded b
+        , alpha_rt excluded cont )
   in
   new_rt
 
@@ -349,7 +371,11 @@ let is_free_in id =
           is_free_in b || is_free_in t
         | GInt _ | GFloat _ | GString _ -> false
         | GArray (_u, t, def, ty) ->
-          Array.exists is_free_in t || is_free_in def || is_free_in ty)
+          Array.exists is_free_in t || is_free_in def || is_free_in ty
+        | GPBlock (_u, ty, c) | GPUnblock (_u, ty, c) ->
+          is_free_in ty || is_free_in c
+        | GPRun (_u, ty, k, b, cont) ->
+          is_free_in ty || is_free_in k || is_free_in b || is_free_in cont)
       x
   and is_free_in_br {CAst.v = ids, _, rt} =
     (not (Id.List.mem id ids)) && is_free_in rt
@@ -432,6 +458,17 @@ let replace_var_by_term x_id term =
             , Array.map replace_var_by_pattern t
             , replace_var_by_pattern def
             , replace_var_by_pattern ty )
+        | GPBlock (u, ty, c) ->
+          GPBlock (u, replace_var_by_pattern ty, replace_var_by_pattern c)
+        | GPUnblock (u, ty, c) ->
+          GPUnblock (u, replace_var_by_pattern ty, replace_var_by_pattern c)
+        | GPRun (u, ty, k, b, cont) ->
+          GPRun
+            ( u
+            , replace_var_by_pattern ty
+            , replace_var_by_pattern k
+            , replace_var_by_pattern b
+            , replace_var_by_pattern cont )
         | GCast (b, k, c) ->
           GCast (replace_var_by_pattern b, k, replace_var_by_pattern c))
       x
@@ -541,7 +578,18 @@ let expand_as =
           , List.map (expand_as_br map) brl )
       | GArray (u, t, def, ty) ->
         GArray
-          (u, Array.map (expand_as map) t, expand_as map def, expand_as map ty))
+          (u, Array.map (expand_as map) t, expand_as map def, expand_as map ty)
+      | GPBlock (u, ty, c) ->
+        GPBlock (u, expand_as map ty, expand_as map c)
+      | GPUnblock (u, ty, c) ->
+        GPUnblock (u, expand_as map ty, expand_as map c)
+      | GPRun (u, ty, k, b, cont) ->
+        GPRun
+          ( u
+          , expand_as map ty
+          , expand_as map k
+          , expand_as map b
+          , expand_as map cont ))
   and expand_as_br map {CAst.loc; v = idl, cpl, rt} =
     CAst.make ?loc (idl, cpl, expand_as (List.fold_left add_as map cpl) rt)
   in

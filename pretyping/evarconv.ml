@@ -118,18 +118,16 @@ let eval_flexible_term ts env evd c sk =
           | (args, appl) ->
             let args_red = CPrimitives.kind op in
             assert (List.length args_red <= List.length args);
+            let flags = RedFlags.red_add_transparent RedFlags.all ts in
             let args =
               let open CPrimitives in
               let red arg = function
                 | Kparam | Karg -> arg
-                | Kwhnf ->
-                  let flags = RedFlags.all in
-                  let flags = RedFlags.red_add_transparent flags ts in
-                  Reductionops.clos_whd_flags flags env evd arg
+                | Kwhnf -> Reductionops.clos_whd_flags flags env evd arg
               in
               List.map2 red args args_red
             in
-            begin match CredNative.(red_prim env evd op u @@ Array.of_list args) with
+            begin match CredNative.red_prim env evd (env, evd, flags) op u (Array.of_list args) with
               | Some v -> Some (v, rest_sk)
               | None -> None
               end
@@ -180,7 +178,8 @@ let flex_kind_of_term flags env evd c sk =
        else Rigid
     | Evar ev ->
        if is_evar_allowed flags evd (fst ev) then Flexible ev else Rigid
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | String _ | Array _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | String _ | Array _
+    | PBlock _ | PUnblock _ | PRun _ -> Rigid
     | Construct _ | CoFix _ (* Incorrect: should check only app in sk *) -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied (should check it?) *)
@@ -265,6 +264,10 @@ let occur_rigidly flags env evd (evk,_) t =
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
+    | PBlock (_,ty,t) ->
+      let ty' = aux ty and t' = aux t in
+      Normal (rigid_normal_occ ty' || rigid_normal_occ t')
+    | PUnblock _ | PRun _ -> Reducible
     | Meta _ | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _ -> Reducible
   in
     match aux t with
@@ -1196,7 +1199,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              only if necessary) or the second argument is potentially
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match EConstr.kind i hd with
-            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|String _|Array _) ->
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|String _|Array _|PBlock _|PUnblock _|PRun _) ->
               Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> Stack.not_purely_applicative args
@@ -1332,6 +1335,21 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
+        | PBlock (_,ty1,t1), PBlock (_,ty2,t2)
+        | PUnblock (ty1,t1), PUnblock (ty2,t2) ->
+          ise_and evd
+            [(fun i -> evar_conv_x flags env i CONV ty1 ty2);
+             (fun i -> evar_conv_x flags env i CONV t1 t2);
+             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+
+        | PRun (ty1,k1,b1,cont1), PRun (ty2,k2,b2,cont2) ->
+          ise_and evd
+            [(fun i -> evar_conv_x flags env i CONV ty1 ty2);
+             (fun i -> evar_conv_x flags env i CONV k1 k2);
+             (fun i -> evar_conv_x flags env i CONV b1 b2);
+             (fun i -> evar_conv_x flags env i CONV cont1 cont2);
+             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+
         | Const _, Const _
         | Ind _, Ind _
         | Construct _, Construct _
@@ -1415,9 +1433,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           | None -> UnifFailure (evd,NotSameHead)
           end
 
-        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | String _ | Array _ | Evar _ | Lambda _), _ ->
+        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | String _ | Array _ | Evar _ | Lambda _ | PBlock _ | PUnblock _ | PRun _), _ ->
           UnifFailure (evd,NotSameHead)
-        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Array _ | Evar _ | Lambda _) ->
+        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | String _ | Array _ | Evar _ | Lambda _ | PBlock _ | PUnblock _ | PRun _) ->
           UnifFailure (evd,NotSameHead)
         | Case _, _ -> UnifFailure (evd,NotSameHead)
         | Proj _, _ -> UnifFailure (evd,NotSameHead)

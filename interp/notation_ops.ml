@@ -707,6 +707,8 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GGenarg arg -> forgetful := { !forgetful with forget_ltac = true }; NGenarg arg
   | GRef (r,u) -> NRef (r,u)
   | GArray (_u,t,def,ty) -> NArray (Array.map aux t, aux def, aux ty)
+  | GPBlock _ | GPUnblock _ | GPRun _ ->
+      user_err Pp.(str "Force primitives not allowed in notations.")
   | GEvar _ | GPatVar _ ->
       user_err Pp.(str "Existential variables not allowed in notations.")
   ) x
@@ -1629,7 +1631,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GProj _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _
-     | GCast _ | GInt _ | GFloat _ | GString _ | GArray _), _ -> raise No_match
+     | GCast _ | GInt _ | GFloat _ | GString _ | GArray _ | GPBlock _ | GPUnblock _ | GPRun _), _ -> raise No_match
 
 and match_in_type u alp metas sigma t = function
   | None -> sigma

@@ -277,7 +277,10 @@ let v_case_return = v_tuple_c ("case_return", [|v_tuple_c ("case_return'", [|v_a
     [|v_uint63|]; (* v_int *)
     [|v_float64|]; (* Float *)
     [|v_string|]; (* v_string *)
-    [|v_instance;v_array v_constr;v_constr;v_constr|] (* v_array *)
+    [|v_instance;v_array v_constr;v_constr;v_constr|]; (* v_array *)
+    [|v_instance;v_constr;v_constr|]; (* PBlock *)
+    [|v_constr;v_constr|]; (* PUnblock *)
+    [|v_constr;v_constr;v_constr;v_constr|] (* PRun *)
   |]))
 
 let v_rdecl = v_sum "rel_declaration" 0
@@ -367,7 +370,7 @@ let v_template_universes =
   |]
 
 let v_primitive =
-  v_enum "primitive" 63 (* Number of constructors of the CPrimitives.t type *)
+  v_enum "primitive" 62 (* Number of constructors of the CPrimitives.t type *)
 
 let v_cst_def =
   v_sum "constant_def" 0

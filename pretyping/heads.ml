@@ -76,7 +76,8 @@ and kind_of_head env sigma t =
   | Proj (p,_,c) -> RigidHead RigidOther
 
   | Case (_,_,_,_,_,c,_) -> aux k [] c true
-  | Int _ | Float _ | String _ | Array _ -> ConstructorHead
+  | Int _ | Float _ | String _ | Array _ | PBlock _ -> ConstructorHead
+  | PUnblock _ | PRun _ -> RigidHead RigidOther
   | Fix ((i,j),_) ->
       let n = i.(j) in
       try aux k [] (List.nth l n) true

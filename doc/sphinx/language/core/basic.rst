@@ -265,6 +265,9 @@ rest of the Rocq Prover manual: :term:`terms <term>` and :term:`types
         | @term99
         term99 ::= @term10
         term10 ::= @term_application
+        | __block {? @univ_annot } @term1 @term1
+        | __unblock {? @univ_annot } @term1 @term1
+        | __run {? @univ_annot } @term1 @term1 @term1 @term1
         | @term_forall_or_fun
         | @term_let
         | @term_fix

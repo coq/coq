@@ -182,6 +182,9 @@ val mkInt : Uint63.t -> t
 val mkFloat : Float64.t -> t
 val mkString : Pstring.t -> t
 val mkArray : EInstance.t * t array * t * t -> t
+val mkPBlock : EInstance.t * t * t -> t
+val mkPUnblock : t * t -> t
+val mkPRun : t * t * t * t -> t
 
 module UnsafeMonomorphic : sig
   val mkConst : Constant.t -> t

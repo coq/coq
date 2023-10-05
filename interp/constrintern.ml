@@ -2189,6 +2189,9 @@ module Interner = struct
   ; prim : t -> prim_token fn
   ; delimiters : t -> (delimiter_depth * string * constr_expr) fn
   ; array : t -> (instance_expr option * constr_expr array * constr_expr * constr_expr) fn
+  ; block : t -> (instance_expr option * constr_expr * constr_expr) fn
+  ; unblock : t -> (instance_expr option * constr_expr * constr_expr) fn
+  ; run : t -> (instance_expr option * constr_expr * constr_expr * constr_expr * constr_expr) fn
   }
 
   let eval (self : t) genv env lvar ?loc = function
@@ -2242,6 +2245,12 @@ module Interner = struct
       self.delimiters self genv env lvar ?loc (depth, key, e)
     | CArray (u,t,def,ty) ->
       self.array self genv env lvar ?loc (u,t,def,ty)
+    | CBlock (u,ty,c) ->
+      self.block self genv env lvar ?loc (u,ty,c)
+    | CUnblock (u,ty,c) ->
+      self.unblock self genv env lvar ?loc (u,ty,c)
+    | CRun (u,ty,k,b,cont) ->
+      self.run self genv env lvar ?loc (u,ty,k,b,cont)
 
 end
 
@@ -2853,6 +2862,18 @@ let array self genv env lvar ?loc (u,t,def,ty) =
   let intern env = intern self genv env lvar in
   DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
 
+let block self genv env lvar ?loc (u,ty,c) =
+  let intern env = intern self genv env lvar in
+  DAst.make ?loc @@ GPBlock (intern_instance ~local_univs:env.local_univs u, intern env ty, intern env c)
+
+let unblock self genv env lvar ?loc (u,ty,c) =
+  let intern env = intern self genv env lvar in
+  DAst.make ?loc @@ GPUnblock (intern_instance ~local_univs:env.local_univs u, intern env ty, intern env c)
+
+let run self genv env lvar ?loc (u,ty,k,b,cont) =
+  let intern env = intern self genv env lvar in
+  DAst.make ?loc @@ GPRun (intern_instance ~local_univs:env.local_univs u, intern env ty, intern env k, intern env b, intern env cont)
+
 let default : Interner.t =
   { ref
   ; fix
@@ -2879,6 +2900,9 @@ let default : Interner.t =
   ; prim
   ; delimiters
   ; array
+  ; block
+  ; unblock
+  ; run
   }
 
 let internalize ?(self=default) genv env lvar c =

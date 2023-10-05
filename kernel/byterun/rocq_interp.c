@@ -2033,6 +2033,26 @@ value rocq_interprete
         Next;
       }
 
+      Instruct(RUN) {
+        print_instr("RUN");
+        caml_failwith("Coq VM: RUN not implemented");
+      }
+
+      Instruct(BLOCK) {
+        print_instr("BLOCK");
+        caml_failwith("Coq VM: BLOCK not implemented");
+      }
+
+      Instruct(UNBLOCK) {
+        print_instr("UNBLOCK");
+        caml_failwith("Coq VM: UNBLOCK not implemented");
+      }
+
+      Instruct(BLOCKEDIND) {
+        print_instr("BLOCKEDIND");
+        caml_failwith("Coq VM: BLOCKEDIND not implemented");
+      }
+
 /* Debugging and machine control */
 
       Instruct(STOP){

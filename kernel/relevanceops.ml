@@ -64,6 +64,7 @@ let rec relevance_of_term_extra env extra lft c =
   | Proj (_, r, _) -> r
   | Int _ | Float _ | String _ -> Sorts.Relevant
   | Array _ -> Sorts.Relevant
+  | PBlock _ | PUnblock _ | PRun _ -> Sorts.Relevant
 
   | Meta _ | Evar _ -> Sorts.Relevant (* let's assume metas and evars are relevant for now *)
 

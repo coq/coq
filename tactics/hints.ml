@@ -49,7 +49,7 @@ let rec head_bound env sigma t = match EConstr.kind sigma t with
 | Proj (p, _, _) -> GlobRef.ConstRef (Environ.projection_repr_constant env (Projection.repr p))
 | Cast (c, _, _) -> head_bound env sigma c
 | Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _
-| CoFix _ | Int _ | Float _ | String _ | Array _ -> raise Bound
+| CoFix _ | Int _ | Float _ | String _ | Array _ | PBlock _ | PUnblock _ | PRun _ -> raise Bound
 
 let head_constr sigma c =
   try head_bound sigma c

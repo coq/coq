@@ -206,6 +206,9 @@ type pretyper = {
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_block : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_unblock : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_run : pretyper -> glob_instance option * glob_constr * glob_constr * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
 (** Type of pretyping algorithms in open-recursion style. A typical way to

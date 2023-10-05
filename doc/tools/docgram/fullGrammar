@@ -101,6 +101,9 @@ term90: [
 term10: [
 | term10 LIST1 arg
 | "@" global univ_annot LIST0 term9
+| "__block" univ_annot term9 term9
+| "__unblock" univ_annot term9 term9
+| "__run" univ_annot term9 term9 term9 term9
 | "@" pattern_ident LIST1 identref
 | "forall" open_binders "," term200
 | "fun" open_binders "=>" term200

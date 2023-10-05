@@ -257,6 +257,17 @@ let check_not_nested env sigma forbidden e =
       Array.iter check_not_nested t;
       check_not_nested def;
       check_not_nested ty
+    | PBlock (_, ty, c) ->
+      check_not_nested ty;
+      check_not_nested c
+    | PUnblock (ty, c) ->
+      check_not_nested ty;
+      check_not_nested c
+    | PRun (ty, k, b, cont) ->
+      check_not_nested ty;
+      check_not_nested k;
+      check_not_nested b;
+      check_not_nested cont
     | Proj (p, _, c) -> check_not_nested c
     | Const _ -> ()
     | Ind _ -> ()
@@ -443,7 +454,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
           match EConstr.kind sigma f with
           | App _ -> assert false (* f is coming from a decompose_app *)
           | Const _ | Construct _ | Rel _ | Evar _ | Meta _ | Ind _ | Sort _
-          | Prod _ | Var _ ->
+          | Prod _ | Var _ | PBlock _ | PUnblock _ | PRun _ ->
             let new_infos = {expr_info with info = (f, args)} in
             let new_continuation_tac =
               jinfo.apP (f, args) expr_info continuation_tac
@@ -467,7 +478,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
               ++ Pp.str "." ) )
       | Cast (t, _, _) -> travel jinfo continuation_tac {expr_info with info = t}
       | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-       |Int _ | Float _ | String _ ->
+       |Int _ | Float _ | String _ | PBlock _ | PUnblock _ | PRun _ ->
         let new_continuation_tac = jinfo.otherS () expr_info continuation_tac in
         new_continuation_tac expr_info)
 

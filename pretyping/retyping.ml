@@ -279,6 +279,11 @@ let retype ?metas ?(polyprop=true) sigma =
     | Array(u, _, _, ty) ->
       let arr = EConstr.of_constr @@ Typeops.type_of_array env (EInstance.kind sigma u) in
       mkApp(arr, [|ty|])
+    | PBlock (u, ty, _) ->
+      let blocked = EConstr.of_constr @@ Typeops.type_of_blocked env (EInstance.kind sigma u) in
+      mkApp (blocked, [|ty|])
+    | PUnblock (ty, _) -> ty
+    | PRun (_ty, k, _b, _cont) -> k
 
   and sort_of env t : ESorts.t =
     match EConstr.kind sigma t with
@@ -458,7 +463,7 @@ let relevance_of_term env sigma c =
       | Evar (evk, _) ->
           let evi = Evd.find_undefined sigma evk in
           Evd.evar_relevance evi
-      | Int _ | Float _ | String _ | Array _ -> ERelevance.relevant
+      | Int _ | Float _ | String _ | Array _ | PBlock _ | PUnblock _ | PRun _ -> ERelevance.relevant
       | Meta _ -> ERelevance.relevant
     in
     aux Range.empty c

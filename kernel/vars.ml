@@ -293,7 +293,7 @@ let map_constr_relevance f c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | String _ | Array _ -> c
+  | Int _ | Float _ | String _ | Array _ | PBlock _ | PUnblock _ | PRun _ -> c
 
   | Prod (na,x,y) ->
     let na' = map_annot_relevance f na in
@@ -340,7 +340,7 @@ let fold_kind_relevance f acc c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | String _ | Array _ -> acc
+  | Int _ | Float _ | String _ | Array _ | PBlock _ | PUnblock _ | PRun _ -> acc
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
@@ -406,6 +406,25 @@ let subst_univs_level_constr subst c =
         if u == u' && elems == elems' && def == def' && ty == ty' then t
         else (changed := true; mkArray (u',elems',def',ty'))
 
+      | PBlock (u,ty,b) ->
+        let u' = f u in
+        let ty' = aux ty in
+        let b' = aux b in
+        if u == u' && ty == ty' && b == b' then t
+        else (changed := true; mkPBlock (u',ty',b'))
+      | PUnblock (ty,b) ->
+        let ty' = aux ty in
+        let b' = aux b in
+        if ty == ty' && b == b' then t
+        else (changed := true; mkPUnblock (ty',b'))
+      | PRun (ty,k,b,cont) ->
+        let ty' = aux ty in
+        let k' = aux k in
+        let b' = aux b in
+        let cont' = aux cont in
+        if ty == ty' && k == k' && b == b' && cont == cont' then t
+        else (changed := true; mkPRun (ty',k',b',cont'))
+
       | _ -> Constr.map aux t
     in
     let c' = aux c in
@@ -460,6 +479,25 @@ let subst_instance_constr subst c =
         let ty' = aux ty in
         if u == u' && elems == elems' && def == def' && ty == ty' then t
         else mkArray (u',elems',def',ty')
+
+      | PBlock (u,ty,b) ->
+        let u' = f u in
+        let ty' = aux ty in
+        let b' = aux b in
+        if u == u' && ty == ty' && b == b' then t
+        else mkPBlock (u',ty',b')
+      | PUnblock (ty,b) ->
+        let ty' = aux ty in
+        let b' = aux b in
+        if ty == ty' && b == b' then t
+        else mkPUnblock (ty',b')
+      | PRun (ty,k,b,cont) ->
+        let ty' = aux ty in
+        let k' = aux k in
+        let b' = aux b in
+        let cont' = aux cont in
+        if ty == ty' && k == k' && b == b' && cont == cont' then t
+        else mkPRun (ty',k',b',cont')
 
       | _ -> Constr.map aux t
     in
@@ -523,6 +561,9 @@ let visit_kind_univs visit acc c =
   | Const (_, u) | Ind (_, u) | Construct (_,u) -> visit.visit_instance acc u
   | Sort s -> visit.visit_sort acc s
   | Array (u,_,_,_) ->
+    let acc = visit.visit_instance acc u in
+    acc
+  | PBlock (u,_,_) ->
     let acc = visit.visit_instance acc u in
     acc
   | Case (_, u, _, _, _,_ ,_) ->

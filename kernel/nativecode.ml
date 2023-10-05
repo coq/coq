@@ -52,6 +52,7 @@ let rec is_lazy env t =
   | Array (_, t, d, _) -> Array.exists (fun t -> is_lazy env t) t || is_lazy env d
   | Cast (c, _, _) | Prod (_, c, _) -> is_lazy env c
   | Const (c, _) -> get_const_lazy env c
+  | PBlock _ | PUnblock _ | PRun _ -> true
   | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _ | Int _
   | Float _ | String _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
     false
@@ -1175,7 +1176,7 @@ let extract_prim env ml_of l =
   let cond = ref [] in
   let type_args p =
     let params, args_ty, _ = CPrimitives.types p in
-    List.length params, Array.of_list args_ty in
+    List.length params, Array.of_list (List.map snd args_ty) in
   let rec aux l =
     match node l with
     | Lprim (kn, p, args) ->
@@ -1277,7 +1278,8 @@ let compile_prim env decl cond paux =
           | CPrimitives.PT_float64 -> Is_float
           | CPrimitives.PT_array -> Is_parray
           | CPrimitives.PT_int63 -> assert false
-          | CPrimitives.PT_string -> Is_string
+          | CPrimitives.PT_string -> Is_string (* FIXME? *)
+          | CPrimitives.PT_blocked -> assert false (* FIXME? *)
           in
            List.fold_left
              (fun ml (_, c) -> app_prim MLand [| ml; app_prim check [|c|]|])

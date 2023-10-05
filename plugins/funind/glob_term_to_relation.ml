@@ -558,7 +558,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       in
       build_entry_lc env sigma funnames avoid
         (mkGLetIn (new_n, v, t, mkGApp (new_b, args)))
-    | GCases _ | GIf _ | GLetTuple _ | GProj _ ->
+    | GCases _ | GIf _ | GLetTuple _ | GProj _ | GPBlock _ | GPUnblock _ | GPRun _ ->
       (* we have [(match e1, ...., en with ..... end) t1 tn]
          we first compute the result from the case and
          then combine each of them with each of args one
@@ -693,6 +693,45 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let br = CAst.make ([], [case_pats.(0)], e) in
     let match_expr = mkGCases (None, [(b, (Anonymous, None))], [br]) in
     build_entry_lc env sigma funnames avoid match_expr
+  | GPBlock (u, ty, c) ->
+    let ty_res = build_entry_lc env sigma funnames avoid ty in
+    let c_res = build_entry_lc env sigma funnames ty_res.to_avoid c in
+    combine_results
+      (fun ty c ->
+        { context = ty.context @ c.context
+        ; value = DAst.make ?loc:rt.loc @@ GPBlock (u, ty.value, c.value) })
+      ty_res c_res
+  | GPUnblock (u, ty, c) ->
+    let ty_res = build_entry_lc env sigma funnames avoid ty in
+    let c_res = build_entry_lc env sigma funnames ty_res.to_avoid c in
+    combine_results
+      (fun ty c ->
+        { context = ty.context @ c.context
+        ; value = DAst.make ?loc:rt.loc @@ GPUnblock (u, ty.value, c.value) })
+      ty_res c_res
+  | GPRun (u, ty, k, b, cont) ->
+    let ty_res = build_entry_lc env sigma funnames avoid ty in
+    let k_res = build_entry_lc env sigma funnames ty_res.to_avoid k in
+    let b_res = build_entry_lc env sigma funnames k_res.to_avoid b in
+    let cont_res = build_entry_lc env sigma funnames b_res.to_avoid cont in
+    let tyk_res =
+      combine_results
+        (fun ty k -> { context = ty.context @ k.context; value = (ty.value, k.value) })
+        ty_res k_res
+    in
+    let tykb_res =
+      combine_results
+        (fun tyk b ->
+          let ty, k = tyk.value in
+          { context = tyk.context @ b.context; value = (ty, k, b.value) })
+        tyk_res b_res
+    in
+    combine_results
+      (fun tykb cont ->
+        let ty, k, b = tykb.value in
+        { context = tykb.context @ cont.context
+        ; value = DAst.make ?loc:rt.loc @@ GPRun (u, ty, k, b, cont.value) })
+      tykb_res cont_res
   | GRec _ -> user_err Pp.(str "Not handled GRec")
   | GCast (b, _, _) -> build_entry_lc env sigma funnames avoid b
   | GArray _ -> user_err Pp.(str "Not handled GArray")
@@ -1232,6 +1271,14 @@ let rec compute_cst_params relnames params gt =
       | GSort _ -> params
       | GHole _ -> params
       | GGenarg _ -> params
+      | GPBlock (_, ty, c) | GPUnblock (_, ty, c) ->
+        let params = compute_cst_params relnames params ty in
+        compute_cst_params relnames params c
+      | GPRun (_, ty, k, b, cont) ->
+        let params = compute_cst_params relnames params ty in
+        let params = compute_cst_params relnames params k in
+        let params = compute_cst_params relnames params b in
+        compute_cst_params relnames params cont
       | GIf _ | GRec _ | GCast _ | GArray _ ->
         CErrors.user_err (str "Unhandled case."))
     gt

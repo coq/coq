@@ -217,7 +217,7 @@ let kind c =
   | String s -> TString s
   | Array (_, t, u, v) -> TArray (t, u, v)
   | Rel _ | Meta _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
-  | Proj _ | Case _ | Fix _ | CoFix _ -> TOther
+  | Proj _ | Case _ | Fix _ | CoFix _ | PBlock _ | PUnblock _ | PRun _ -> TOther
 
 let make env sigma c =
   let flags = Environ.typing_flags env in

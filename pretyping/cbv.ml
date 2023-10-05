@@ -239,6 +239,9 @@ let cofixp_reducible flgs _ stk =
 
 let debug_cbv = CDebug.create ~name:"Cbv" ()
 
+let cbv_stack_value_ref =
+  ref (fun (_ : cbv_infos) (_ : cbv_value subs) (_ : cbv_value * cbv_stack) -> assert false)
+
 (* Reduction of primitives *)
 
 open Primred
@@ -249,9 +252,13 @@ module VNativeEntries =
     type elem = cbv_value
     type args = cbv_value array
     type evd = unit
+    type lazy_info = cbv_infos
     type uinstance = UVars.Instance.t
 
     let get = Array.get
+    let set arr i e =
+      let arr = Array.copy arr in
+      Array.set arr i e; arr
 
     let get_int () e =
       match e with
@@ -281,6 +288,15 @@ module VNativeEntries =
       match e with
       | ARRAY(_u,t,_ty) -> t
       | _ -> raise Primred.NativeDestKO
+
+    let get_blocked _env () e =
+      match e with
+      | VAL (_, t) ->
+        begin match kind t with
+        | PBlock (_, _, t) -> Some (VAL (0, t))
+        | _ -> None
+        end
+      | _ -> None
 
     let mkInt env i = VAL(0, mkInt i)
 
@@ -386,6 +402,22 @@ module VNativeEntries =
 
     let mkArray env u t ty =
       ARRAY (u,t,ty)
+
+    let current_info = ref None
+
+    let eval_full_lazy lazy_info t =
+      current_info := Some lazy_info;
+      t
+
+    let eval_id_lazy lazy_info t =
+      current_info := Some lazy_info;
+      t
+
+    let mkApp t args =
+      match !current_info with
+      | None -> STACK (0, t, APP (Array.to_list args, TOP))
+      | Some info -> !cbv_stack_value_ref info (subs_id 0) (t, APP (Array.to_list args, TOP))
+
   end
 
 module VredNative = RedNative(VNativeEntries)
@@ -583,6 +615,9 @@ let rec norm_head info env t stack =
       (cbv_stack_term info TOP env def) in
     (ARRAY (u,t,ty), stack)
 
+  | PBlock _ | PUnblock _ | PRun _ ->
+    (VAL (0, apply_env env t), stack)
+
   (* neutral cases *)
   | (Sort _ | Meta _ | Ind _ | Int _ | Float _ | String _) -> (VAL(0, t), stack)
   | Prod (na,t,u) -> (PROD(na,t,u,env), stack)
@@ -698,12 +733,12 @@ and cbv_stack_value info env = function
     begin match List.chop nargs appl with
     | (args, appl) ->
       let stk = if List.is_empty appl then stk else stack_app appl stk in
-      begin match VredNative.red_prim info.env () op u (Array.of_list args) with
+      begin match VredNative.red_prim info.env () info op u (Array.of_list args) with
       | Some (CONSTRUCT (c, args)) ->
         (* args must be moved to the stack to allow future reductions *)
         cbv_stack_value info env (CONSTRUCT(c, []), stack_app args stk)
       | Some v ->  cbv_stack_value info env (v,stk)
-      | None -> mkSTACK(PRIMITIVE(op,c, args), stk)
+      | _ -> mkSTACK(PRIMITIVE(op,c, args), stk)
       end
     | exception Failure _ ->
       (* partial application *)
@@ -897,8 +932,7 @@ and cbv_apply_rules info env u r stk =
       rhs', stk
     with PatternFailure -> cbv_apply_rules info env u rs stk
 
-
-
+let _ = cbv_stack_value_ref := cbv_stack_value
 
 (* When we are sure t will never produce a redex with its stack, we
  * normalize (even under binders) the applied terms and we build the

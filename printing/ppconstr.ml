@@ -819,6 +819,23 @@ let pr ~flags pr sep lev_after inherited a =
     return (fun lev_after ->pr_prim_token p) (prec_of_prim_token p)
   | CDelimiters (depth,sc,a) ->
     return (fun lev_after -> pr_delimiters depth sc (pr mt (Some ldelim) (LevelLe ldelim) a)) ldelim
+  | CBlock (u,ty,c) ->
+    return (fun lev_after ->
+        hov 2 (keyword "__block" ++ pr_universe_instance u ++ spc () ++
+               pr mt no_after (LevelLt lapp) ty ++ spc () ++
+               pr mt lev_after (LevelLt lapp) c)) lapp
+  | CUnblock (u,ty,c) ->
+    return (fun lev_after ->
+        hov 2 (keyword "__unblock" ++ pr_universe_instance u ++ spc () ++
+               pr mt no_after (LevelLt lapp) ty ++ spc () ++
+               pr mt lev_after (LevelLt lapp) c)) lapp
+  | CRun (u,ty,kty,b,k) ->
+    return (fun lev_after ->
+        hov 2 (keyword "__run" ++ pr_universe_instance u ++ spc () ++
+               pr mt no_after (LevelLt lapp) ty ++ spc () ++
+               pr mt no_after (LevelLt lapp) kty ++ spc () ++
+               pr mt no_after (LevelLt lapp) b ++ spc () ++
+               pr mt lev_after (LevelLt lapp) k)) lapp
   | CArray(u, t,def,ty) ->
     return (fun lev_after ->
         hov 0 (str "[| " ++ prvect_with_sep (fun () -> str "; ") (pr mt no_after ltop) t ++

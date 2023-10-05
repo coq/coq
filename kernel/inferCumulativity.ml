@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+[@@@ocaml.warning "-48"]
+
 open Conversion
 open Declarations
 open Constr
@@ -189,7 +191,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
   | FString _ -> infer_stack infos variances stk
-  | FFlex Names.(RelKey _ | VarKey _ as fl) ->
+  | FFlex (Names.(RelKey _ | VarKey _ as fl)) ->
     (* We could try to lazily unfold but then we have to analyse the
        universes in the bodies, not worth coding at least for now. *)
     begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
@@ -244,12 +246,9 @@ let rec infer_fterm cv_pb infos variances hd stk =
       infer_vect infos variances (Array.map (mk_clos le) cl)
     in
     infer_stack infos variances stk
-  | FArray (u,elemsdef,ty) ->
+  | FArray (u,_elemsdef,ty) ->
     let variances = infer_generic_instance_eq variances (instance_univs u) in
     let variances = infer_fterm CONV infos variances ty [] in
-    let elems, def = Parray.to_array elemsdef in
-    let variances = infer_fterm CONV infos variances def [] in
-    let variances = infer_vect infos variances elems in
     infer_stack infos variances stk
 
   | FCaseInvert (ci, u, pms, p, iv, _, br, e) ->
@@ -267,8 +266,28 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = Array.fold_right infer br variances in
     infer_stack infos variances stk
 
+  | FBlock (_, ty, t, e) ->
+    let variances = infer_fterm CONV infos variances (mk_clos e ty) [] in
+    let variances = infer_fterm CONV infos variances (mk_clos e t) [] in
+    infer_stack infos variances stk
+  | FUnblock (ty, m, e) ->
+    let variances = infer_fterm CONV infos variances (mk_clos e ty) [] in
+    let variances = infer_fterm CONV infos variances m [] in
+    infer_stack infos variances stk
+  | FRun (ty1, ty2, m, k, e) ->
+    let variances = infer_fterm CONV infos variances (mk_clos e ty1) [] in
+    let variances = infer_fterm CONV infos variances (mk_clos e ty2) [] in
+    let variances = infer_fterm CONV infos variances m [] in
+    let variances = infer_fterm CONV infos variances (mk_clos e k) [] in
+    infer_stack infos variances stk
+  | FApp (h, args) -> infer_fterm cv_pb infos variances h (append_stack args stk)
+  | FLetIn (_, v, _, bd, e) ->
+    infer_fterm cv_pb infos variances (mk_clos (usubs_cons v e) bd) stk
+  | FLIFT (k, m) -> infer_fterm cv_pb infos variances (lift_fconstr k m) stk
+  | FCLOS (t, e) -> infer_fterm cv_pb infos variances (mk_clos e t) stk
+
   (* Removed by whnf *)
-  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
+  | FLOCKED | FCaseT _ -> assert false
   | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
 
 and infer_stack infos variances (stk:CClosure.stack) =
@@ -276,13 +295,18 @@ and infer_stack infos variances (stk:CClosure.stack) =
   | [] -> variances
   | z :: stk ->
     let open CClosure in
+    let no_delta_infos (info, tab) =
+      let reds = RedFlags.red_sub (info_flags info) RedFlags.fDELTA in
+      let reds = RedFlags.red_add_transparent reds TransparentState.empty in
+      (infos_with_reds info reds, tab)
+    in
     let variances = match z with
-      | Zapp v -> infer_vect infos variances v
+      | Zapp v -> infer_vect (no_delta_infos infos) variances v
       | Zproj _ -> variances
       | Zfix (fx,a) ->
         let variances = infer_fterm CONV infos variances fx [] in
         infer_stack infos variances a
-      | ZcaseT (ci,u,pms,p,br,e) ->
+      | ZcaseT (ci,u,pms,p,br,e,_) -> (* TODO forward mode to mk_clos? *)
         let dummy = mkProp in
         let case = (ci, u, pms, p, NoInvert, dummy, br) in
         let (_, (p, _), _, _, br) = Inductive.expand_case (info_env (fst infos)) case in
@@ -294,6 +318,12 @@ and infer_stack infos variances (stk:CClosure.stack) =
         let variances = List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances rargs in
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm CONV infos variances c []) variances kargs in
         variances
+      | Zunblock (ty, e, _) ->
+        infer_fterm CONV infos variances (mk_clos e ty) []
+      | Zrun (ty1, ty2, k, e, _) ->
+        let variances = infer_fterm CONV infos variances (mk_clos e ty1) [] in
+        let variances = infer_fterm CONV infos variances (mk_clos e ty2) [] in
+        infer_fterm CONV infos variances (mk_clos e k) []
     in
     infer_stack infos variances stk
 

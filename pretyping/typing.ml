@@ -320,6 +320,12 @@ let check_actual_type env sigma cj t =
   try Evarconv.unify_leq_delay env sigma cj.uj_type t
   with Evarconv.UnableToUnify (sigma,e) -> error_actual_type env sigma cj t e
 
+let check_leq_sort sigma s1 s2 =
+  let sigma = Evd.set_leq_sort sigma s1 s2 in
+  let q1 = Sorts.quality (ESorts.kind sigma s1) in
+  let q2 = Sorts.quality (ESorts.kind sigma s2) in
+  Evd.add_constraints sigma (UnivProblem.Set.singleton (UnivProblem.QLeq (q1, q2)))
+
 let judge_of_cast env sigma cj k tj =
   let expected_type = tj.utj_val in
   let sigma = check_actual_type env sigma cj expected_type in
@@ -453,6 +459,20 @@ let type_of_string env = EConstr.of_constr (Typeops.type_of_string env)
 
 let judge_of_string env v =
   { uj_val = mkString v; uj_type = type_of_string env }
+
+let blocked_type env = match (Environ.retroknowledge env).Retroknowledge.retro_blocked with
+  | Some c -> c
+  | None -> CErrors.user_err Pp.(str "The type blocked terms must be registered before this construction can be typechecked.")
+
+let dest_blocked_type env sigma ty =
+  let blocked_kn = blocked_type env in
+  match EConstr.kind sigma (whd_all env sigma ty) with
+  | App (hd, [|arg|]) ->
+    begin match EConstr.kind sigma hd with
+    | Const (c,u) when Names.Constant.UserOrd.equal c blocked_kn -> EInstance.kind sigma u, arg
+    | _ -> user_err Pp.(str "Expected a blocked term.")
+    end
+  | _ -> user_err Pp.(str "Expected a blocked term.")
 
 let judge_of_array env sigma u tj defj tyj =
   let ulev = match UVars.Instance.to_array u with
@@ -655,6 +675,56 @@ let rec execute env sigma cstr =
       let sigma, defj = execute env sigma def in
       let sigma, tj = execute_array env sigma t in
       judge_of_array env sigma (EInstance.kind sigma u) tj defj tyj
+
+    | PBlock (u,ty,t) ->
+      let u = EInstance.kind sigma u in
+      let q, ulev = match UVars.Instance.to_array u with
+        | [|q|], [|u|] -> q, u
+        | _ -> assert false
+      in
+      let sigma, tyj = execute env sigma ty in
+      let sigma, tyj = type_judgment env sigma tyj in
+      let expected_sort = ESorts.make (Sorts.make q (Univ.Universe.make ulev)) in
+      let sigma = check_leq_sort sigma tyj.utj_type expected_sort in
+      let sigma, tj = execute env sigma t in
+      let sigma = check_actual_type env sigma tj ty in
+      let blocked = EConstr.of_constr (Typeops.type_of_blocked env u) in
+      sigma, make_judge (mkPBlock (EInstance.make u, ty, t)) (mkApp (blocked, [|ty|]))
+
+    | PUnblock (ty,b) ->
+      let sigma, tyj = execute env sigma ty in
+      let sigma, tyj = type_judgment env sigma tyj in
+      let sigma, bj = execute env sigma b in
+      let u, _ = dest_blocked_type env sigma bj.uj_type in
+      let blocked = EConstr.of_constr (Typeops.type_of_blocked env u) in
+      let sigma = check_actual_type env sigma bj (mkApp (blocked, [|ty|])) in
+      sigma, make_judge (mkPUnblock (ty, b)) ty
+
+    | PRun (ty,k,b,cont) ->
+      let sigma, tyj = execute env sigma ty in
+      let sigma, tyj = type_judgment env sigma tyj in
+      let ty_sort = tyj.utj_type in
+      let sigma, kj = execute env sigma k in
+      let sigma, kj = type_judgment env sigma kj in
+      let k_sort = kj.utj_type in
+      let sigma, bj = execute env sigma b in
+      let blocked_u, _ = dest_blocked_type env sigma bj.uj_type in
+      let blocked = EConstr.of_constr (Typeops.type_of_blocked env blocked_u) in
+      let sigma = check_actual_type env sigma bj (mkApp (blocked, [|ty|])) in
+      let sigma, contj = execute env sigma cont in
+      let sigma = check_actual_type env sigma contj (mkProd (anonR, ty, EConstr.Vars.lift 1 k)) in
+      let sigma =
+        let qsty = Sorts.quality (ESorts.kind sigma ty_sort) in
+        let qsk = Sorts.quality (ESorts.kind sigma k_sort) in
+        if Sorts.Quality.equal qsty Sorts.Quality.qtype ||
+           Sorts.Quality.equal qsty Sorts.Quality.qprop
+        then sigma
+        else
+          try Evd.set_elim_to sigma qsty qsk
+          with QGraph.EliminationError _ | UGraph.UniverseInconsistency _ ->
+            user_err Pp.(str "This run eliminates into an invalid sort.")
+      in
+      sigma, make_judge (mkPRun (ty, k, b, cont)) k
 
 and execute_recdef env sigma (names,lar,vdef) =
   let sigma, larj = execute_array env sigma lar in
@@ -928,7 +998,7 @@ let rec recheck_against env sigma good c =
         let sigma, tj = type_judgment env sigma tj in
         maybe_changed (judge_of_cast env sigma cj k tj)
 
-    | _, (Case _ | App _ | Lambda _ | Prod _ | Cast _ | Proj _) -> default ()
+    | _, (Case _ | App _ | Lambda _ | Prod _ | Cast _ | Proj _ | PBlock _ | PUnblock _ | PRun _) -> default ()
 
 let recheck_against env sigma a b =
   let sigma, _, j = recheck_against env sigma a b in
