@@ -663,7 +663,6 @@ and intern_tactic_seq onlytac ist tac =
       ist.ltacvars, CAst.make ?loc (TacOrelse (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2))
   | TacFirst l -> ist.ltacvars, CAst.make ?loc (TacFirst (List.map (intern_pure_tactic ist) l))
   | TacSolve l -> ist.ltacvars, CAst.make ?loc (TacSolve (List.map (intern_pure_tactic ist) l))
-  | TacComplete tac -> ist.ltacvars, CAst.make ?loc (TacComplete (intern_pure_tactic ist tac))
   | TacArg a -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
   | TacSelect (sel, tac) ->
       ist.ltacvars, CAst.make ?loc (TacSelect (sel, intern_pure_tactic ist tac))

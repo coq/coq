@@ -195,7 +195,6 @@ and 'a gen_tactic_expr_r =
       'a gen_tactic_expr *
       'a gen_tactic_expr array
   | TacFirst of 'a gen_tactic_expr list
-  | TacComplete of 'a gen_tactic_expr
   | TacSolve of 'a gen_tactic_expr list
   | TacTry of 'a gen_tactic_expr
   | TacOr of

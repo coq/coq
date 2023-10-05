@@ -1196,7 +1196,6 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       Tacticals.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacFirst l -> Tacticals.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.tclSOLVE (List.map (interp_tactic ist) l)
-  | TacComplete tac -> Tacticals.tclCOMPLETE (interp_tactic ist tac)
   | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
 
