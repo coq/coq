@@ -131,7 +131,7 @@ GRAMMAR EXTEND Gram
   ;
   rewstrategy0:
     [ NONA
-      [ c = glob -> { StratConstr (c, true) }
+      [ c = constr -> { StratConstr (c, true) }
       | IDENT "id" -> { StratId }
       | IDENT "fail" -> { StratFail }
       | IDENT "refl" -> { StratRefl }

@@ -2303,7 +2303,7 @@ rewstrategy1: [
 ]
 
 rewstrategy0: [
-| glob
+| constr
 | "id"
 | "fail"
 | "refl"
