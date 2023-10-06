@@ -113,7 +113,7 @@ The command has indeed failed with message:
 Unknown interpretation for notation "$".
 w 3 true = tt
      : Prop
-File "./output/Arguments.v", line 56, characters 0-26:
+File "./output/Arguments.v", line 56, characters 0-28:
 The command has indeed failed with message:
 Extra arguments: _, _.
 volatilematch : nat -> nat

@@ -30,16 +30,16 @@ Declare ML Module "cc_plugin:coq-core.plugins.cc".
 Declare ML Module "firstorder_plugin:coq-core.plugins.firstorder".
 
 (* Parsing / printing of hexadecimal numbers *)
-Arguments Nat.of_hex_uint d%hex_uint_scope.
-Arguments Nat.of_hex_int d%hex_int_scope.
+Arguments Nat.of_hex_uint d%_hex_uint_scope.
+Arguments Nat.of_hex_int d%_hex_int_scope.
 Number Notation Number.uint Number.uint_of_uint Number.uint_of_uint
   : hex_uint_scope.
 Number Notation Number.int Number.int_of_int Number.int_of_int
   : hex_int_scope.
 
 (* Parsing / printing of decimal numbers *)
-Arguments Nat.of_uint d%dec_uint_scope.
-Arguments Nat.of_int d%dec_int_scope.
+Arguments Nat.of_uint d%_dec_uint_scope.
+Arguments Nat.of_int d%_dec_int_scope.
 Number Notation Number.uint Number.uint_of_uint Number.uint_of_uint
   : dec_uint_scope.
 Number Notation Number.int Number.int_of_int Number.int_of_int

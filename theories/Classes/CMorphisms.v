@@ -104,8 +104,8 @@ Module ProperNotations.
 
 End ProperNotations.
 
-Arguments Proper {A}%type R%signatureT m.
-Arguments respectful {A B}%type (R R')%signatureT _ _.
+Arguments Proper {A}%_type R%_signatureT m.
+Arguments respectful {A B}%_type (R R')%_signatureT _ _.
 
 Export ProperNotations.
 
@@ -213,8 +213,8 @@ Section Relations.
   Proof. reduce. firstorder. Qed.
 End Relations.
 Global Typeclasses Opaque respectful pointwise_relation forall_relation.
-Arguments forall_relation {A P}%type sig%signatureT _ _.
-Arguments pointwise_relation A%type {B}%type R%signatureT _ _.
+Arguments forall_relation {A P}%_type sig%_signatureT _ _.
+Arguments pointwise_relation A%_type {B}%_type R%_signatureT _ _.
   
 #[global]
 Hint Unfold Reflexive : core.

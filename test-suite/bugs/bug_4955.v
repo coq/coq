@@ -29,9 +29,9 @@ Record Functor (C D : PreCategory) :=
   { object_of :> C -> D;
     morphism_of : forall s d, morphism C s d -> morphism D (object_of s)
 (object_of d) }.
-Arguments object_of {C%category D%category} f%functor c%object : rename, simpl
+Arguments object_of {C%_category D%_category} f%_functor c%_object : rename, simpl
 nomatch.
-Arguments morphism_of [C%category] [D%category] f%functor [s%object d%object]
+Arguments morphism_of [C%_category] [D%_category] f%_functor [s%_object d%_object]
 m%morphism : rename, simpl nomatch.
 Section path_functor.
   Variable C : PreCategory.

@@ -24,10 +24,10 @@ Module FirstComment.
   Bind Scope object_scope with Object.
   Bind Scope morphism_scope with Morphism.
 
-  Arguments Object {obj%type} C%category / : rename.
-  Arguments Morphism {obj%type} !C%category s d : rename. (* , simpl nomatch. *)
-  Arguments Identity {obj%type} [!C%category] x%object : rename.
-  Arguments Compose {obj%type} [!C%category s%object d%object d'%object] m1%morphism m2%morphism : rename.
+  Arguments Object {obj%_type} C%_category / : rename.
+  Arguments Morphism {obj%_type} !C%_category s d : rename. (* , simpl nomatch. *)
+  Arguments Identity {obj%_type} [!C%_category] x%_object : rename.
+  Arguments Compose {obj%_type} [!C%_category s%_object d%_object d'%_object] m1%_morphism m2%_morphism : rename.
 
   Bind Scope category_scope with Category.
 
@@ -179,8 +179,8 @@ Module SecondComment.
         Compose : forall s d d', Morphism d d' -> Morphism s d -> Morphism s d'
       }.
 
-  Arguments Identity {obj%type} [!C] x : rename.
-  Arguments Compose {obj%type} [!C s d d'] m1 m2 : rename.
+  Arguments Identity {obj%_type} [!C] x : rename.
+  Arguments Compose {obj%_type} [!C s d d'] m1 m2 : rename.
 
   Record > Category' :=
     {
@@ -201,7 +201,7 @@ Module SecondComment.
       }.
   End Functor.
 
-  Arguments MorphismOf {objC%type} [C] {objD%type} [D] F [s d] m : rename, simpl nomatch.
+  Arguments MorphismOf {objC%_type} [C] {objD%_type} [D] F [s d] m : rename, simpl nomatch.
 
   Section FunctorComposition.
     Context `(C : @Category objC).

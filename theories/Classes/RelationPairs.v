@@ -26,16 +26,16 @@ Arguments pair {A B}.
 Local Notation Fst := (@fst _ _).
 Local Notation Snd := (@snd _ _).
 
-Arguments relation_conjunction A%type (R R')%signature _ _.
-Arguments relation_equivalence A%type (_ _)%signature.
-Arguments subrelation A%type (R R')%signature.
-Arguments Reflexive A%type R%signature.
-Arguments Irreflexive A%type R%signature.
-Arguments Symmetric A%type R%signature.
-Arguments Transitive A%type R%signature.
-Arguments PER A%type R%signature.
-Arguments Equivalence A%type R%signature.
-Arguments StrictOrder A%type R%signature.
+Arguments relation_conjunction A%_type (R R')%_signature _ _.
+Arguments relation_equivalence A%_type (_ _)%_signature.
+Arguments subrelation A%_type (R R')%_signature.
+Arguments Reflexive A%_type R%_signature.
+Arguments Irreflexive A%_type R%_signature.
+Arguments Symmetric A%_type R%_signature.
+Arguments Transitive A%_type R%_signature.
+Arguments PER A%_type R%_signature.
+Arguments Equivalence A%_type R%_signature.
+Arguments StrictOrder A%_type R%_signature.
 
 Generalizable Variables A B RA RB Ri Ro f.
 

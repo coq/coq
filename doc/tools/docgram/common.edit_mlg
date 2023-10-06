@@ -325,6 +325,8 @@ scope: [
 scope_delimiter: [
 | REPLACE "%" IDENT
 | WITH "%" scope
+| REPLACE "%_" IDENT
+| WITH "%_" scope
 ]
 
 sort: [

@@ -67,7 +67,7 @@ Notation "p ^E" := (Einverse p%eq) (at level 3, format "p '^E'") : eq_scope.
 
 Definition Etransport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) : P y :=
   match p with eq_refl => u end.
-Arguments Etransport {A}%type_scope P {x y} p%eq_scope u : simpl nomatch.
+Arguments Etransport {A}%_type_scope P {x y} p%_eq_scope u : simpl nomatch.
 
 Notation "p E# x"
   := (Etransport _ p x) (right associativity, at level 65, only parsing) : eq_scope.
@@ -78,7 +78,7 @@ Notation "f == g" := (forall x, f x = g x) (at level 70, no associativity) : typ
 
 Definition Eap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
   := match p with eq_refl => eq_refl end.
-Global Arguments Eap {A B}%type_scope f {x y} p%eq_scope.
+Global Arguments Eap {A B}%_type_scope f {x y} p%_eq_scope.
 
 
 Definition Econcat_Vp {A} {x y : A} (p : x = y)

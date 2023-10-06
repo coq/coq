@@ -1224,6 +1224,7 @@ args_modifier: [
 
 scope_delimiter: [
 | "%" IDENT
+| "%_" IDENT
 ]
 
 argument_spec: [

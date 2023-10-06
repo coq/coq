@@ -22,7 +22,7 @@ Record Functor (C D : PreCategory) :=
     FCompositionOf : forall s d d' (m1 : C.(Morphism) s d) (m2: C.(Morphism) d d'),
                        MorphismOf _ _ (m2 o m1) = (MorphismOf _ _ m2) o (MorphismOf _ _ m1) }.
 Bind Scope functor_scope with Functor.
-Arguments MorphismOf [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments MorphismOf [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 Definition ComposeFunctors C D E
            (G : Functor D E) (F : Functor C D) : Functor C E
   := Build_Functor C E (fun c => G (F c)) admit admit.

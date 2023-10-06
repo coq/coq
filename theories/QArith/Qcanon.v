@@ -21,7 +21,7 @@ Record Qc : Set := Qcmake { this :> Q ; canon : Qred this = this }.
 Declare Scope Qc_scope.
 Delimit Scope Qc_scope with Qc.
 Bind Scope Qc_scope with Qc.
-Arguments Qcmake this%Q _.
+Arguments Qcmake this%_Q _.
 Open Scope Qc_scope.
 
 (** An alternative statement of [Qred q = q] via [Z.gcd] *)
@@ -83,7 +83,7 @@ Proof.
 Qed.
 
 Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
-Arguments Q2Qc q%Q.
+Arguments Q2Qc q%_Q.
 
 Lemma Q2Qc_eq_iff (q q' : Q) : Q2Qc q = Q2Qc q' <-> q == q'.
 Proof.

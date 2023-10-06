@@ -2068,7 +2068,7 @@ Number notations
 
          .. note::
             In case of multiple implicit options (for instance
-            :g:`Arguments eq_refl {A}%type_scope {x}, [_] _`), an
+            :g:`Arguments eq_refl {A}%_type_scope {x}, [_] _`), an
             argument is considered implicit when it is implicit in any of the
             options.
 

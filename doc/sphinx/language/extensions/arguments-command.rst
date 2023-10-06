@@ -11,10 +11,10 @@ Setting properties of a function's arguments
       arg_specs ::= @argument_spec
       | /
       | &
-      | ( {+ @argument_spec } ) {* % @scope }
-      | [ {+ @argument_spec } ] {* % @scope }
-      | %{ {+ @argument_spec } %} {* % @scope }
-      argument_spec ::= {? ! } @name {* % @scope }
+      | ( {+ @argument_spec } ) {* {| % @scope | %_ @scope } }
+      | [ {+ @argument_spec } ] {* {| % @scope | %_ @scope } }
+      | %{ {+ @argument_spec } %} {* {| % @scope | %_ @scope } }
+      argument_spec ::= {? ! } @name {* {| % @scope | %_ @scope } }
       implicits_alt ::= @name
       | [ {+ @name } ]
       | %{ {+ @name } %}
@@ -65,25 +65,25 @@ Setting properties of a function's arguments
          .. exn:: The & modifier may only occur once.
             :undocumented:
 
-      :n:`( {+ @argument_spec } ) {* % @scope }`
+      :n:`( {+ @argument_spec } ) {* %_ @scope }`
          :n:`(@name__1 @name__2 ...){* %@scope }` is shorthand for
          :n:`@name__1{* %@scope } @name__2{* %@scope } ...`
 
-      :n:`[ {+ @argument_spec } ] {* % @scope }`
+      :n:`[ {+ @argument_spec } ] {* %_ @scope }`
          declares the enclosed names as implicit, non-maximally inserted.
-         :n:`[@name__1 @name__2 ... ]{* %@scope }` is equivalent to
-         :n:`[@name__1]{* %@scope } [@name__2]{* %@scope } ...`
+         :n:`[@name__1 @name__2 ... ]{* %_@scope }` is equivalent to
+         :n:`[@name__1]{* %_@scope } [@name__2]{* %_@scope } ...`
 
-      :n:`%{ {+ @argument_spec } %} {* % @scope }`
+      :n:`%{ {+ @argument_spec } %} {* %_ @scope }`
          declares the enclosed names as implicit, maximally inserted.
-         :n:`%{@name__1 @name__2 ... %}{* %@scope }` is equivalent to
-         :n:`%{@name__1%}{* %@scope } %{@name__2%}{* %@scope } ...`
+         :n:`%{@name__1 @name__2 ... %}{* %_@scope }` is equivalent to
+         :n:`%{@name__1%}{* %_@scope } %{@name__2%}{* %_@scope } ...`
 
       `!`
          the function will be unfolded only if all the arguments marked with `!`
          evaluate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
-      :n:`@name {* % @scope }`
+      :n:`@name {* %_ @scope }`
          a *formal parameter* of the function :n:`@reference` (i.e.
          the parameter name used in the function definition).  Unless `rename` is specified,
          the list of :n:`@name`\s must be a prefix of the formal parameters, including all implicit
@@ -94,6 +94,10 @@ Setting properties of a function's arguments
          :token:`scope` can be either scope names or their delimiting
          keys. When multiple scopes are present, notations are interpreted in the
          leftmost scope containing them. See :ref:`binding_to_scope`.
+
+         .. deprecated:: 8.19
+            The :n:`% @scope` syntax is deprecated in favor of the currently equivalent :n:`%_ @scope`.
+            It will be reused in future versions with the same semantics as in terms.
 
          .. exn:: To rename arguments the 'rename' flag must be specified.
             :undocumented:
@@ -292,7 +296,7 @@ Binding arguments to scopes
 
       .. coqdoc::
 
-         Arguments plus_fct (f1 f2)%F x%R%F.
+         Arguments plus_fct (f1 f2)%_F x%_R%_F.
 
    When interpreting a term, if some of the arguments of :token:`reference` are built
    from a notation, then this notation is interpreted in the scope stack
@@ -320,7 +324,7 @@ Binding arguments to scopes
       Bind Scope bool_scope with bool.
       Notation "# x #" := (g x) (at level 40).
       Check # @@ #.
-      Arguments g _%mybool_scope.
+      Arguments g _%_mybool_scope.
       Check # @@ #.
       Delimit Scope mybool_scope with mybool.
       Check # @@%mybool #.

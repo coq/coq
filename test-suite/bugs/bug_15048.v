@@ -116,8 +116,8 @@ Record PreCategory :=
     }.
 
 Bind Scope category_scope with PreCategory.
-Arguments identity {!C%category} / x%object : rename.
-Arguments compose {!C%category} / {s d d'}%object (m1 m2)%morphism : rename.
+Arguments identity {!C%_category} / x%_object : rename.
+Arguments compose {!C%_category} / {s d d'}%_object (m1 m2)%_morphism : rename.
 
 Infix "o" := compose : morphism_scope.
 

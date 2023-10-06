@@ -10,7 +10,7 @@ Number Notation unit to_unit of_unit : A.
 Number Notation unit to_unit of_unit' : B.
 Definition f x : unit := x.
 Check f tt.
-Arguments f x%A.
+Arguments f x%_A.
 Check f tt.
 Check tt.
 Open Scope A.

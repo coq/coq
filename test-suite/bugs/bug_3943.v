@@ -24,8 +24,8 @@ Record PreCategory := Build_PreCategory' {
                   morphism d d'
                   -> morphism s d
                   -> morphism s d' }.
-Arguments identity {!C%category} / x%object : rename.
-Arguments compose {!C%category} / {s d d'}%object (m1 m2)%morphism : rename.
+Arguments identity {!C%_category} / x%_object : rename.
+Arguments compose {!C%_category} / {s d d'}%_object (m1 m2)%_morphism : rename.
 
 Class IsIsomorphism {C : PreCategory} {s d} (m : morphism C s d) := {
     morphism_inverse : morphism C d s;

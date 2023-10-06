@@ -57,6 +57,16 @@ let warn_arguments_assert =
         strbrk "to clear implicit arguments, add ': clear implicits'. " ++
         strbrk "If you want to clear notation scopes, add ': clear scopes'")
 
+let warn_scope_delimiter_depth =
+  CWarnings.create ~name:"argument-scope-delimiter" ~category:Deprecation.Version.v8_19
+    Pp.(fun () ->
+        strbrk "The '%' scope delimiter in 'Arguments' commands is deprecated, " ++
+        strbrk "use '%_' instead (available since 8.19). The '%' syntax will be " ++
+        strbrk "reused in a future version with the same semantics as in terms, " ++
+        strbrk "that is adding scope to the stack for all subterms. " ++
+        strbrk "Code can be adapted with a script like: " ++
+        strbrk "for f in $(find . -name '*.v'); do sed '/Arguments/ s/%/%_/g' -i $f ; done")
+
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
@@ -265,7 +275,9 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   end;
 
   if scopes_specified || clear_scopes_flag then begin
-    let scopes = List.map (List.map (fun {loc;v=k} ->
+    if List.exists (fun {v=d,_} -> d = Constrexpr.DelimUnboundedScope) (List.flatten scopes) then
+      warn_scope_delimiter_depth ();
+    let scopes = List.map (List.map (fun {loc;v=_d,k} ->
         try ignore (Notation.find_scope k); k
         with CErrors.UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes

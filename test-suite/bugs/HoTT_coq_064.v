@@ -71,7 +71,7 @@ Module Export Core.
                         (m3 o m2) o m1 = m3 o (m2 o m1)
     }.
   Bind Scope category_scope with PreCategory.
-  Arguments compose [!C%category s%object d%object d'%object] m1%morphism m2%morphism : rename.
+  Arguments compose [!C%_category s%_object d%_object d'%_object] m1%_morphism m2%_morphism : rename.
 
   Infix "o" := compose : morphism_scope.
 

@@ -235,10 +235,16 @@ let pr_search_where = function
   | InConcl, true -> str "headconcl:"
   | InConcl, false -> str "concl:"
 
+let pr_delimiter_depth = function
+  | DelimOnlyTmpScope -> str "%_"
+  | DelimUnboundedScope -> str "%"
+
+let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc
+
 let pr_search_item = function
   | SearchSubPattern (where,p) ->
     pr_search_where where ++ pr_constr_pattern_expr p
-  | SearchString (where,s,sc) -> pr_search_where where ++ qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+  | SearchString (where,s,sc) -> pr_search_where where ++ qs s ++ pr_opt pr_scope_delimiter sc
   | SearchKind kind -> str "is:" ++ str (string_of_logical_kind kind)
 
 let rec pr_search_request = function
@@ -1043,7 +1049,7 @@ let pr_synpure_vernac_expr v =
       hov 2 (
         keyword "Arguments" ++ spc() ++
         pr_smart_global q ++
-        let pr_s = prlist (fun {v=s} -> str "%" ++ str s) in
+        let pr_s = prlist (fun {v=s} -> pr_scope_delimiter s) in
         let pr_if b x = if b then x else str "" in
         let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
         let pr_br imp force x =
@@ -1060,7 +1066,9 @@ let pr_synpure_vernac_expr v =
           else
             let rec fold extra = function
               | RealArg arg :: tl when
-                  List.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
+                  List.equal
+                    (fun a b -> let da, a = a.CAst.v in let db, b = b.CAst.v in
+                     da = db && String.equal a b) arg.notation_scope s
                   && arg.implicit_status = imp ->
                 fold ((arg.name,arg.recarg_like) :: extra) tl
               | args -> List.rev extra, args

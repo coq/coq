@@ -35,7 +35,7 @@ Record PreCategory :=
   }.
 Bind Scope category_scope with PreCategory.
 
-Arguments Compose [!C%category s%object d%object d'%object] m1%morphism m2%morphism : rename.
+Arguments Compose [!C%_category s%_object d%_object d'%_object] m1%_morphism m2%_morphism : rename.
 
 Infix "o" := Compose : morphism_scope.
 Local Open Scope morphism_scope.
@@ -50,7 +50,7 @@ Record Functor (C D : PreCategory) :=
 
 Bind Scope functor_scope with Functor.
 
-Arguments MorphismOf [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments MorphismOf [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 
 Definition ComposeFunctors C D E
            (G : Functor D E) (F : Functor C D) : Functor C E

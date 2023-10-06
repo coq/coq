@@ -77,7 +77,7 @@ Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) 
   match p with idpath => u end.
 
 (** See above for the meaning of [simpl nomatch]. *)
-Arguments transport {A} P {x y} p%path_scope u : simpl nomatch.
+Arguments transport {A} P {x y} p%_path_scope u : simpl nomatch.
 
 
 

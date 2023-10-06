@@ -83,7 +83,7 @@ Delimit Scope foo_scope with F.
 Notation "@@" := nat (only parsing) : foo_scope.
 Notation "@@" := (fun x => x) (only parsing).
 
-Arguments pf {D1%F C1%type} f [D2 C2] g x : simpl never.
+Arguments pf {D1%_F C1%_type} f [D2 C2] g x : simpl never.
 
 Lemma foo x : @pf @@ nat @@ nat nat @@ x = pf @@ @@ x.
 Abort.
@@ -91,7 +91,7 @@ Abort.
 Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
 
 (* fcomp is unfolded if applied to 6 args *)
-Arguments fcomp {A B C}%type f g x /.
+Arguments fcomp {A B C}%_type f g x /.
 
 Notation "f \o g" := (fcomp f g) (at level 50).
 

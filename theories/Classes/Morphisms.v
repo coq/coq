@@ -182,8 +182,8 @@ Module ProperNotations.
 
 End ProperNotations.
 
-Arguments Proper {A}%type R%signature m.
-Arguments respectful {A B}%type (R R')%signature _ _.
+Arguments Proper {A}%_type R%_signature m.
+Arguments respectful {A B}%_type (R R')%_signature _ _.
 
 Export ProperNotations.
 
@@ -284,8 +284,8 @@ Section Relations.
 End Relations.
 
 Global Typeclasses Opaque respectful pointwise_relation forall_relation.
-Arguments forall_relation {A P}%type sig%signature _ _.
-Arguments pointwise_relation A%type {B}%type R%signature _ _.
+Arguments forall_relation {A P}%_type sig%_signature _ _.
+Arguments pointwise_relation A%_type {B}%_type R%_signature _ _.
   
 #[global]
 Hint Unfold Reflexive : core.

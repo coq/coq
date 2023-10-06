@@ -194,8 +194,8 @@ Record PreCategory :=
 
 Bind Scope category_scope with PreCategory.
 
-Arguments identity [!C%category] x%object : rename.
-Arguments compose [!C%category s%object d%object d'%object] m1%morphism m2%morphism : rename.
+Arguments identity [!C%_category] x%_object : rename.
+Arguments compose [!C%_category s%_object d%_object d'%_object] m1%_morphism m2%_morphism : rename.
 
 Definition Build_PreCategory
            object morphism compose identity
@@ -323,7 +323,7 @@ Section Functor.
 End Functor.
 Bind Scope functor_scope with Functor.
 
-Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 Module Export FunctorCoreNotations.
 
   Notation "F '_1' m" := (morphism_of F m) (at level 10, no associativity) : morphism_scope.

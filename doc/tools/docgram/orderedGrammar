@@ -650,13 +650,13 @@ arg_specs: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" LIST0 ( "%" scope )
-| "[" LIST1 argument_spec "]" LIST0 ( "%" scope )
-| "{" LIST1 argument_spec "}" LIST0 ( "%" scope )
+| "(" LIST1 argument_spec ")" LIST0 [ "%" scope | "%_" scope ]
+| "[" LIST1 argument_spec "]" LIST0 [ "%" scope | "%_" scope ]
+| "{" LIST1 argument_spec "}" LIST0 [ "%" scope | "%_" scope ]
 ]
 
 argument_spec: [
-| OPT "!" name LIST0 ( "%" scope )
+| OPT "!" name LIST0 [ "%" scope | "%_" scope ]
 ]
 
 implicits_alt: [

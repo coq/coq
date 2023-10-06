@@ -12,7 +12,7 @@ Module success.
   Delimit Scope hom_scope with hom.
   Bind Scope hom_scope with hom.
   Arguments hom : clear implicits.
-  Arguments comp _ _ _ _ _%hom _%hom : clear implicits.
+  Arguments comp _ _ _ _ _%_hom _%_hom : clear implicits.
 
   Notation "f 'o' g" := (comp _ _ _ _ f g) (at level 40, left associativity) : hom_scope.
 
@@ -23,7 +23,7 @@ Module success.
   Delimit Scope functor_scope with functor.
   Bind Scope functor_scope with functor.
 
-  Arguments hom_of _ _ _%functor _ _ _%hom.
+  Arguments hom_of _ _ _%_functor _ _ _%_hom.
 
   Notation "F '_1' m" := (hom_of F _ _ m) (at level 10, no associativity) : hom_scope.
 
@@ -45,7 +45,7 @@ Module failure.
   Delimit Scope hom_scope with hom.
   Bind Scope hom_scope with hom.
   Arguments hom : clear implicits.
-  Arguments comp _ _ _ _ _%hom _%hom : clear implicits.
+  Arguments comp _ _ _ _ _%_hom _%_hom : clear implicits.
 
   Notation "f 'o' g" := (comp _ _ _ _ f g) (at level 40, left associativity) : hom_scope.
 
@@ -56,7 +56,7 @@ Module failure.
   Delimit Scope functor_scope with functor.
   Bind Scope functor_scope with functor.
 
-  Arguments hom_of _ _ _%functor _ _ _%hom.
+  Arguments hom_of _ _ _%_functor _ _ _%_hom.
 
   Notation "F '_1' m" := (hom_of F _ _ m) (at level 10, no associativity) : hom_scope.
   Notation "F '_2' m" := (hom_of F%functor _ _ m) (at level 10, no associativity) : hom_scope.

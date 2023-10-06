@@ -5,7 +5,7 @@ Inductive stmt : Type := Sskip: stmt | Scall : nat -> stmt.
 Bind Scope Cminor with stmt.
 
 (* extra argument is ok because of possible coercion to funclass *)
-Arguments Scall _ _%Cminor : extra scopes.
+Arguments Scall _ _%_Cminor : extra scopes.
 
 (* extra argument is ok because of possible coercion to funclass *)
 Fixpoint f (c: stmt) : Prop := match c with Scall _ => False | _ => False end.

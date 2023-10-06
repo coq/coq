@@ -25,7 +25,7 @@ Delimit Scope hex_Q_scope with xQ.
 Declare Scope Q_scope.
 Delimit Scope Q_scope with Q.
 Bind Scope Q_scope with Q.
-Arguments Qmake _%Z _%positive.
+Arguments Qmake _%_Z _%_positive.
 
 Register Q as rat.Q.type.
 Register Qmake as rat.Q.Qmake.
@@ -38,7 +38,7 @@ Ltac simpl_mult := rewrite ?Pos2Z.inj_mul.
 Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
-Arguments inject_Z x%Z.
+Arguments inject_Z x%_Z.
 
 Notation QDen p := (Zpos (Qden p)).
 

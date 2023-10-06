@@ -185,8 +185,8 @@ Module Export Category.
 
           identity_identity : forall x, identity x o identity x = identity x
         }.
-    Arguments identity {!C%category} / x%object : rename.
-    Arguments compose {!C%category} / {s d d'}%object (m1 m2)%morphism : rename.
+    Arguments identity {!C%_category} / x%_object : rename.
+    Arguments compose {!C%_category} / {s d d'}%_object (m1 m2)%_morphism : rename.
 
     Definition Build_PreCategory
                object morphism compose identity
@@ -233,7 +233,7 @@ Module Export Core.
                                 = identity (object_of x)
       }.
   End Functor.
-  Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+  Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 
 End Core.
 Module Export Morphisms.
