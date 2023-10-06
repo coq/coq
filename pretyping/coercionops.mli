@@ -61,6 +61,8 @@ val class_nparams : cl_typ -> int
     its universe instance and its arguments *)
 val find_class_type : env -> evar_map -> types -> cl_typ * EInstance.t * constr list
 
+val find_class_glob_type : 'a Glob_term.glob_constr_g -> cl_typ
+
 (** raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> types -> types * cl_typ
 

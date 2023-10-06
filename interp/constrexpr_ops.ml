@@ -684,3 +684,6 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CArray _ ->
     CErrors.user_err ?loc
                       (str "Arrays in patterns not supported.")) c
+
+let isCSort a =
+  match a.CAst.v with Constrexpr.CSort _ -> true | _ -> false

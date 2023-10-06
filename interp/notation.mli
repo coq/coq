@@ -308,6 +308,7 @@ val declare_ref_arguments_scope : GlobRef.t -> unit
 
 val compute_arguments_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name list list
 val compute_type_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name list
+val compute_glob_type_scope : 'a Glob_term.glob_constr_g -> scope_name list
 
 (** Get the current scopes bound to Sortclass *)
 val current_type_scope_names : unit -> scope_name list

@@ -1841,6 +1841,9 @@ let compute_type_scope env sigma t =
 let current_type_scope_names () =
    find_scope_class_opt !scope_class_map (Some CL_SORT)
 
+let compute_glob_type_scope t =
+  find_scope_class_opt !scope_class_map (try Some (find_class_glob_type t) with Not_found -> None)
+
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
 

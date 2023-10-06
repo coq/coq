@@ -57,6 +57,9 @@ to type check that :n:`@term10` has type :n:`@type` (see :tacn:`native_compute`)
 :n:`@type` without leaving a trace in the produced value.
 This is a :gdef:`volatile cast`.
 
+If a scope is :ref:`bound <LocalInterpretationRulesForNotations>` to
+:n:`@type` then :n:`@term10` is interpreted in that scope.
+
 .. _gallina-definitions:
 
 Top-level definitions

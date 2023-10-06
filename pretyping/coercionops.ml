@@ -176,6 +176,17 @@ let find_class_type env sigma t =
     | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found
 
+let class_of_global_reference = function
+  | GlobRef.VarRef id -> CL_SECVAR id
+  | GlobRef.ConstRef kn -> CL_CONST kn
+  | GlobRef.IndRef ind -> CL_IND ind
+  | GlobRef.ConstructRef _ -> raise Not_found
+
+let find_class_glob_type c = match DAst.get c with
+  | Glob_term.GRef (ref,_) -> class_of_global_reference ref
+  | Glob_term.GProd _ -> CL_FUN
+  | Glob_term.GSort _ -> CL_SORT
+  |  _ -> raise Not_found
 
 let subst_cl_typ env subst ct = match ct with
     CL_SORT

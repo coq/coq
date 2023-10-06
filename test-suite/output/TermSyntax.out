@@ -1,0 +1,11 @@
+nat * nat : Type
+     : Type
+0 * 0 : nat
+     : nat
+0 * 0 : Z
+     : Z
+File "./output/TermSyntax.v", line 11, characters 16-21:
+The command has indeed failed with message:
+Unknown interpretation for notation "{ _ ; _ }".
+λ '(exist _ x _), x
+     : b → bool

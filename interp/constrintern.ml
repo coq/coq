@@ -594,11 +594,11 @@ let intern_letin_binder intern ntnvars env (({loc;v=na} as locna),def,ty) =
    (na,term,ty))
 
 let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;loc} as pv) =
-  let p,t = match p with
-  | CPatCast (p, t) -> (p, Some t)
-  | _ -> (pv, None) in
+  let p,t,tmp_scope = match p with
+  | CPatCast (p, t) -> (p, Some t, (* Redone later, not nice: *) Notation.compute_glob_type_scope (intern (set_type_scope env) t))
+  | _ -> (pv, None, []) in
   let il,disjpat =
-    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (env_for_pattern (reset_tmp_scope env)) p in
+    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (env_for_pattern {env with tmp_scope}) p in
     let substl,disjpat = List.split subst_disjpat in
     if not (List.for_all (fun subst -> Id.Map.equal Id.equal subst Id.Map.empty) substl) then
       user_err ?loc (str "Unsupported nested \"as\" clause.");
@@ -2390,8 +2390,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GSort (intern_sort ~local_univs:env.local_univs s)
     | CCast (c1, k, c2) ->
+        let c2 = intern_type (slide_binders env) c2 in
+        let sc = Notation.compute_glob_type_scope c2 in
+        let env' = {env with tmp_scope = sc @ env.tmp_scope} in
+        let c1 = intern env' c1 in
         DAst.make ?loc @@
-        GCast (intern env c1, k, intern_type (slide_binders env) c2)
+        GCast (c1, k, c2)
     | CArray(u,t,def,ty) ->
       DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
     )
