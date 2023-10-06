@@ -550,6 +550,7 @@ and comp_subs (el,u) (s,u') =
       | Some l -> l
       | None ->
         let l = lazy (to_constr (el,u) c) in
+        Cache.trim Cache.cache;
         Cache.add elem l Cache.cache;
         l
     ) el s, u'
