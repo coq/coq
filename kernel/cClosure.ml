@@ -241,7 +241,13 @@ type clos_infos = {
   i_flags : reds;
   i_relevances : Sorts.relevance Range.t;
   i_cache : infos_cache;
+  i_hasdelta : bool;
 }
+
+let [@ocaml.inline always] red_set_delta mode info =
+  match mode with
+  | _ when is_normal mode -> info.i_hasdelta
+  | _ -> true
 
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env
@@ -1663,7 +1669,7 @@ let rec knh info m stk =
        FArray _|FPrimitive _ |FBlock _) -> (m, stk)
 
 and knht_app ~mode ~lexical info e h args stk =
-  if not (red_set mode info.i_flags RedFlags.fDELTA) then
+  if not ((red_set_delta[@ocaml.inlined always]) mode info) then
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
     knht ~mode info e h stk
   else
@@ -2211,7 +2217,8 @@ let create_infos i_mode ?univs ?evars i_flags i_env =
   let i_univs = Option.default (Environ.universes i_env) univs in
   let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
   let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in
-  {i_flags; i_relevances = Range.empty; i_cache}
+  let i_hasdelta = RedFlags.red_set i_flags fDELTA in
+  {i_flags; i_relevances = Range.empty; i_cache; i_hasdelta}
 
 let create_conv_infos = create_infos Conversion
 let create_clos_infos = create_infos Reduction
