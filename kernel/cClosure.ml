@@ -1677,7 +1677,7 @@ and knht_app ~mode ~lexical info e h args stk =
   | Const (c, _u) ->
     if not (TransparentState.is_transparent_constant (red_transparent mode info.i_flags) c) then
       let stk = append_stack (mk_clos_vect ~mode e args) stk in
-      knht ~mode info e h stk
+      (mk_clos ~mode e h, stk)
     else
     let nargs = Array.length args in
     if Constant.UserOrd.equal c block_constant then
@@ -1711,7 +1711,7 @@ and knht_app ~mode ~lexical info e h args stk =
         ({ mark = RedState.mk cstr mode; term = FEta((4-nargs), h, args, 0, e) }, stk)
     else
       let stk = append_stack (mk_clos_vect ~mode e args) stk in
-      knht ~mode info e h stk
+      (mk_clos ~mode e h, stk)
   | _ ->
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
     knht ~mode info e h stk
