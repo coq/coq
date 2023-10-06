@@ -1627,27 +1627,27 @@ let is_irrelevant_constructor infos ((ind,_),u) =
    atom or a subterm that may produce a redex (abstraction,
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
-let rec knh info tab m stk =
+let rec knh info m stk =
   match m.term with
-    | FLIFT(k,a) -> knh info tab a (zshift k stk)
-    | FCLOS(t,e) -> knht ~mode:(RedState.mode m.mark) info tab e t (zupdate info m stk)
+    | FLIFT(k,a) -> knh info a (zshift k stk)
+    | FCLOS(t,e) -> knht ~mode:(RedState.mode m.mark) info e t (zupdate info m stk)
     | FLOCKED -> assert false
     | FLAZY (l) ->
       let (lazy m1) = l in
-      knh info tab m1 (zupdate info m stk)
-    | FApp(a,b) -> knh info tab a (append_stack b (zupdate info m stk))
+      knh info m1 (zupdate info m stk)
+    | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
     | FCaseT(ci,u,pms,(_,r as p),t,br,e) ->
       let r' = usubst_relevance e r in
       if is_irrelevant info r' then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info tab t (ZcaseT(ci,u,pms,p,br,e,RedState.mode m.mark)::zupdate info m stk)
+        knh info t (ZcaseT(ci,u,pms,p,br,e,RedState.mode m.mark)::zupdate info m stk)
     | FFix (((ri, n), (lna, _, _)), e) ->
       if is_irrelevant info (usubst_relevance e (lna.(n)).binder_relevance) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         (match get_nth_arg m ri.(n) stk with
-             (Some(pars,arg),stk') -> knh info tab arg (Zfix(m,pars)::stk')
+             (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FProj (p,r,c) ->
       if is_irrelevant info r then
@@ -1655,30 +1655,30 @@ let rec knh info tab m stk =
       else
       (match unfold_projection ~mode:(RedState.mode m.mark) info p r with
        | None -> (m, stk)
-       | Some s -> knh info tab c (s :: zupdate info m stk))
+       | Some s -> knh info c (s :: zupdate info m stk))
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
        FCoFix _|FLambda _|FEta _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|
        FArray _|FPrimitive _ |FBlock _) -> (m, stk)
 
-and knht_app ~mode ~lexical info tab e h args stk =
+and knht_app ~mode ~lexical info e h args stk =
   if not (red_set mode info.i_flags RedFlags.fDELTA) then
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
-    knht ~mode info tab e h stk
+    knht ~mode info e h stk
   else
   match [@ocaml.warning "-4"] Constr.kind h with
   | Const (c, _u) ->
     if not (TransparentState.is_transparent_constant (red_transparent mode info.i_flags) c) then
       let stk = append_stack (mk_clos_vect ~mode e args) stk in
-      knht ~mode info tab e h stk
+      knht ~mode info e h stk
     else
     let nargs = Array.length args in
     if Constant.UserOrd.equal c block_constant then
       match[@ocaml.warning "-4"] args with
       | [|ty; t|] ->
         let mode = if lexical then identity else normal_whnf in
-        knh info tab { mark = RedState.mk cstr mode; term = FBlock (h, ty, t, e) } stk
+        knh info { mark = RedState.mk cstr mode; term = FBlock (h, ty, t, e) } stk
       | _ ->
         ({ mark = RedState.mk cstr mode; term = FEta((2-nargs), h, args, 0, e) }, stk)
     else if Constant.UserOrd.equal c unblock_constant then
@@ -1688,7 +1688,7 @@ and knht_app ~mode ~lexical info tab e h args stk =
         let args = Array.sub args 2 (nargs - 2) in
         let mode_full = if lexical then full else normal_whnf  in
         let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
-        knht ~mode:mode_full info tab e t (Zunblock (h, ty, e, mode) :: stk)
+        knht ~mode:mode_full info e t (Zunblock (h, ty, e, mode) :: stk)
       else
         ({ mark = RedState.mk cstr mode; term = FEta((2-nargs), h, args, 0, e) }, stk)
     else if Constant.UserOrd.equal c run_constant then
@@ -1700,26 +1700,26 @@ and knht_app ~mode ~lexical info tab e h args stk =
         let args = Array.sub args 4 (nargs - 4) in
         let mode_full = if lexical then full else normal_whnf  in
         let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
-        knht ~mode:mode_full info tab e t (Zrun (h, ty1, ty2, k, e, mode) :: stk)
+        knht ~mode:mode_full info e t (Zrun (h, ty1, ty2, k, e, mode) :: stk)
       else
         ({ mark = RedState.mk cstr mode; term = FEta((4-nargs), h, args, 0, e) }, stk)
     else
       let stk = append_stack (mk_clos_vect ~mode e args) stk in
-      knht ~mode info tab e h stk
+      knht ~mode info e h stk
   | _ ->
     let stk = append_stack (mk_clos_vect ~mode e args) stk in
-    knht ~mode info tab e h stk
+    knht ~mode info e h stk
 
 
 (* The same for pure terms *)
-and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
+and knht ~mode info (e : usubs) t stk : fconstr * stack =
   match kind t with
-    | App(h,args) -> knht_app ~mode ~lexical:true info tab e h args stk
+    | App(h,args) -> knht_app ~mode ~lexical:true info e h args stk
     | Case(ci,u,pms,(_,r as p),NoInvert,t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knht ~mode info tab e t (ZcaseT(ci, u, pms, p, br, e, mode)::stk)
+        knht ~mode info e t (ZcaseT(ci, u, pms, p, br, e, mode)::stk)
     | Case(ci,u,pms,(_,r as p),CaseInvert{indices},t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
@@ -1730,15 +1730,15 @@ and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
       if is_irrelevant info (usubst_relevance e (lna.(n)).binder_relevance) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info tab { mark = RedState.mk cstr mode; term = FFix (fx, e) } stk
-    | Cast(a,_,_) -> knht ~mode info tab e a stk
-    | Rel n -> knh info tab (clos_rel ~mode e n) stk
+        knh info { mark = RedState.mk cstr mode; term = FFix (fx, e) } stk
+    | Cast(a,_,_) -> knht ~mode info e a stk
+    | Rel n -> knh info (clos_rel ~mode e n) stk
     | Proj (p, r, c) ->
       let r = usubst_relevance e r in
       if is_irrelevant info r then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info tab { mark = RedState.mk red mode; term = FProj (p, r, mk_clos ~mode e c) } stk
+        knh info { mark = RedState.mk red mode; term = FProj (p, r, mk_clos ~mode e c) } stk
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos ~mode e t, stk)
     | CoFix cfx -> ({ mark = RedState.mk cstr mode; term = FCoFix (cfx,e) }, stk)
     | Lambda _ -> ({ mark = RedState.mk cstr mode; term = mk_lambda e t }, stk)
@@ -1748,7 +1748,7 @@ and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
       ({ mark = RedState.mk red mode; term = FLetIn (usubst_binder e n, mk_clos ~mode e b, mk_clos ~mode e t, c, e) }, stk)
     | Evar ev ->
       begin match info.i_cache.i_sigma.evar_expand ev with
-      | EvarDefined c -> knht ~mode info tab e c stk
+      | EvarDefined c -> knht ~mode info e c stk
       | EvarUndefined (evk, args) ->
         assert (UVars.Instance.is_empty (snd e));
         if info.i_cache.i_sigma.evar_irrelevant ev then
@@ -1762,7 +1762,7 @@ and knht ~mode info tab (e : usubs) t stk : fconstr * stack =
       let ty = mk_clos ~mode e ty in
       let t = Parray.init (Uint63.of_int len) (fun i -> mk_clos ~mode e t.(i)) (mk_clos ~mode e def) in
       let term = FArray (u,t,ty) in
-      knh info tab { mark = RedState.mk cstr mode; term } stk
+      knh info { mark = RedState.mk cstr mode; term } stk
 
 (************************************************************************)
 
@@ -1906,14 +1906,14 @@ let rec knr info tab m stk =
 
 (* Computes the weak head normal form of a term *)
 and kni info tab m stk =
-  let (hm,s) = knh info tab m stk in
+  let (hm,s) = knh info m stk in
   knr info tab hm s
 and knit ~mode info tab (e : usubs) t stk =
-  let (ht,s) = knht ~mode info tab e t stk in
+  let (ht,s) = knht ~mode info e t stk in
   knr info tab ht s
 
 and knit_nonlexical_app ~mode info tab (e : usubs) h args stk =
-  let (ht,s) = knht_app ~mode ~lexical:false info tab e h args stk in
+  let (ht,s) = knht_app ~mode ~lexical:false info e h args stk in
   knr info tab ht s
 
 and case_inversion ~mode info tab ci u params indices v =
@@ -2194,7 +2194,7 @@ let whd_stack infos tab m stk =
 | _ when RedState.is_ntrl m.mark ->
   (** No need to perform [kni] nor to unlock updates because
       every head subterm of [m] is [ntrl] *)
-  let k = knh infos tab m stk in
+  let k = knh infos m stk in
   k
 | _ ->
   let k = kni infos tab m stk in
@@ -2239,7 +2239,7 @@ let unfold_ref_with_args infos tab fl v =
         let args = mk_eta_args [||] (List.length rargs) in
         let h = mkConstU c in
         let e = usubs_consv (Array.rev_of_list rargs) (Esubst.subs_id 0, UVars.Instance.empty) in
-        let (m,stk) = knht_app ~mode ~lexical:true infos tab e h args v in
+        let (m,stk) = knht_app ~mode ~lexical:true infos e h args v in
         let res = knr infos tab m stk in
         Some (res)
       | _ ->
