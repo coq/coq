@@ -392,6 +392,22 @@ let create_tab = Table.create
 
 (************************************************************************)
 
+module Cache = struct
+  module C = Lru.M.Make
+    (struct
+      type t = Esubst.lift * Univ.Instance.t * fconstr
+      let equal (l1,u1,f1) (l2,u2,f2) =
+        f1 == f2 && l1 = l2 && Univ.Instance.equal u1 u2
+      let hash (l,_u,f) = Hashtbl.hash f lxor Hashtbl.hash l
+    end)
+    (struct
+      type t = Constr.t Lazy.t
+      let weight _ = 1
+    end)
+  include C
+  let cache : C.t = C.create 1024
+end
+
 (** Hand-unrolling of the map function to bypass the call to the generic array
     allocation *)
 let mk_clos_vect env v = match v with
@@ -528,7 +544,15 @@ and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
             Array.map f_ctx ve)
 
 and comp_subs (el,u) (s,u') =
-  Esubst.lift_subst (fun el c -> lazy (to_constr (el,u) c)) el s, u'
+  Esubst.lift_subst (fun el c ->
+      let elem = (el,u,c) in
+      match Cache.find elem Cache.cache with
+      | Some l -> l
+      | None ->
+        let l = lazy (to_constr (el,u) c) in
+        Cache.add elem l Cache.cache;
+        l
+    ) el s, u'
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
