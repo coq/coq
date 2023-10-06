@@ -1720,7 +1720,7 @@ and knht_app ~mode ~lexical info e h args stk =
 (* The same for pure terms *)
 and knht ~mode info (e : usubs) t stk : fconstr * stack =
   match kind t with
-    | App(h,args) -> knht_app ~mode ~lexical:true info e h args stk
+    | App(h,args) -> (knht_app[@ocaml.unrolled 1]) ~mode ~lexical:true info e h args stk
     | Case(ci,u,pms,(_,r as p),NoInvert,t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
