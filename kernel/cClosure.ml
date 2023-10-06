@@ -633,11 +633,18 @@ let mk_clos_vect ~mode env v =
 let klt_ref = ref (fun ~mode:_ _ _ _ _ -> assert false)
 let kl_ref = ref (fun _ _ _ -> assert false)
 
-type tcs = ((Esubst.lift * UVars.Instance.t) * fconstr * Constr.t Lazy.t) Esubst.subs
+type tcs = (RedState.mode * Constr.t Lazy.t) Esubst.subs
 type tcsu = tcs * UVars.Instance.t
 
+let _ =
+  ignore(subs_subs);
+  ignore(el_fconstr)
+
 let tcsu_to_usubs (t : tcsu) : usubs =
-  let f (elu, m, _) = mk_red (FLAZY (lazy (el_fconstr elu m))) in
+  let f (mode, v) =
+    let m = lazy (mk_clos ~mode ((Esubst.subs_id 0, UVars.Instance.empty)) (Lazy.force v)) in
+    mk_red (FLAZY m)
+  in
   Esubst.map_subst f (fst t), snd t
 
 (* let to_usubs ~mode : Constr.t lazy_t Esubst.subs * Univ.Instance.t -> usubs = fun (e, u) -> *)
@@ -673,7 +680,7 @@ let rec subst_constr ~mode info tab (subst,usubst as e) c =
 
   | Rel i ->
     begin match Esubst.expand_rel i subst with
-    | Inl (k, (_, _, lazy v)) -> Vars.lift k v
+    | Inl (k, (_, lazy v)) -> Vars.lift k v
     | Inr (m, _) -> mkRel m
     end
   | Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
@@ -860,9 +867,8 @@ and to_constr_case ~(info:clos_infos) ~(tab:clos_tab) ~mode (lfts,_ as ulfts) ci
 
 and comp_subs ~(info:clos_infos) ~(tab:clos_tab) (el,u) (s,u') =
   Esubst.lift_subst (fun el c ->
-      let elu = (el,u) in
-      let t = lazy (to_constr ~info ~tab elu c) in
-      (elu,c,t)
+      let t = lazy (to_constr ~info ~tab (el,u) c) in
+      (RedState.mode c.mark,t)
     ) el s, u'
 
 (* This function defines the correspondence between constr and
