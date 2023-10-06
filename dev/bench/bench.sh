@@ -312,7 +312,7 @@ git clone -q --depth 1 -b "$old_coq_opam_archive_git_branch" "$old_coq_opam_arch
 new_coq_opam_archive_dir="$working_dir/new_coq_opam_archive"
 git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_archive_git_uri" "$new_coq_opam_archive_dir"
 
-initial_opam_packages="num ocamlfind dune"
+initial_opam_packages="num ocamlfind dune lru"
 
 # Create an opam root and install Coq
 # $1 = root_name {ex: NEW / OLD}
