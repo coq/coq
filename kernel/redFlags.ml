@@ -15,102 +15,55 @@ let all_opaque = TransparentState.empty
 
 open TransparentState
 
-type reds = {
-  r_beta : bool;
-  r_delta : bool;
-  r_const : TransparentState.t;
-  r_zeta : bool;
-  r_match : bool;
-  r_fix : bool;
-  r_cofix : bool;
-}
+type reds = { flags : int; ts : TransparentState.t }
 
 type red_kind =
-  | BETA | DELTA | MATCH | FIX | COFIX | ZETA
+  | FLAG of int
   | CONST of Constant.t
   | PROJ of Projection.Repr.t
   | VAR of Id.t
 
-let fBETA = BETA
-let fDELTA = DELTA
-let fMATCH = MATCH
-let fFIX = FIX
-let fCOFIX = COFIX
-let fZETA = ZETA
-let fCONST kn = CONST kn
+let fBETA  = FLAG 0b000001
+let fDELTA = FLAG 0b000010
+let fMATCH = FLAG 0b000100
+let fFIX   = FLAG 0b001000
+let fCOFIX = FLAG 0b010000
+let fZETA  = FLAG 0b100000
+let fCONST kn  = CONST kn
 let fPROJ p = PROJ p
 let fVAR id  = VAR id
 
-let no_red = {
-  r_beta = false;
-  r_delta = false;
-  r_const = all_opaque;
-  r_zeta = false;
-  r_match = false;
-  r_fix = false;
-  r_cofix = false;
-}
+let no_red = {flags = 0; ts = all_opaque}
 
-let red_add red = function
-  | BETA -> { red with r_beta = true }
-  | DELTA -> { red with r_delta = true }
-  | CONST kn ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
-  | PROJ p ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_prj = PRpred.add p r.tr_prj } }
-  | MATCH -> { red with r_match = true }
-  | FIX -> { red with r_fix = true }
-  | COFIX -> { red with r_cofix = true }
-  | ZETA -> { red with r_zeta = true }
-  | VAR id ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_var = Id.Pred.add id r.tr_var } }
+let red_add ({flags; ts} as red) = function
+  | FLAG f -> {red with flags = flags lor f}
+  | CONST kn -> {red with ts = {ts with tr_cst = Cpred.add kn ts.tr_cst}}
+  | PROJ p -> {red with ts = {ts with tr_prj = PRpred.add p ts.tr_prj}}
+  | VAR id -> {red with ts = {ts with tr_var = Id.Pred.add id ts.tr_var}}
 
-let red_sub red = function
-  | BETA -> { red with r_beta = false }
-  | DELTA -> { red with r_delta = false }
-  | CONST kn ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_cst = Cpred.remove kn r.tr_cst } }
-  | PROJ p ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_prj = PRpred.remove p r.tr_prj } }
-  | MATCH -> { red with r_match = false }
-  | FIX -> { red with r_fix = false }
-  | COFIX -> { red with r_cofix = false }
-  | ZETA -> { red with r_zeta = false }
-  | VAR id ->
-    let r = red.r_const in
-    { red with r_const = { r with tr_var = Id.Pred.remove id r.tr_var } }
+let red_sub ({flags; ts} as red) = function
+  | FLAG f -> {red with flags = flags land (0b111111 lxor f)}
+  | CONST kn -> {red with ts = {ts with tr_cst = Cpred.remove kn ts.tr_cst}}
+  | PROJ p -> {red with ts = {ts with tr_prj = PRpred.remove p ts.tr_prj}}
+  | VAR id -> { red with ts = {ts with tr_var = Id.Pred.remove id ts.tr_var}}
 
 let red_sub_list = List.fold_left red_sub
 let red_add_list = List.fold_left red_add
 
-let red_transparent red = red.r_const
+let red_transparent red = red.ts
 
-let red_add_transparent red tr =
-  { red with r_const = tr }
+let red_add_transparent red ts = { red with ts }
 
 let mkflags = List.fold_left red_add no_red
 
-let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
+let mkfullflags = List.fold_left red_add { no_red with ts = TransparentState.full }
+
 
 let red_set red = function
-  | BETA -> red.r_beta
-  | CONST kn ->
-    is_transparent_constant red.r_const kn
-  | PROJ p ->
-    is_transparent_projection red.r_const p
-  | VAR id ->
-    is_transparent_variable red.r_const id
-  | ZETA -> red.r_zeta
-  | MATCH -> red.r_match
-  | FIX -> red.r_fix
-  | COFIX -> red.r_cofix
-  | DELTA -> (* Used for Rel/Var defined in context *)
-    red.r_delta
+  | FLAG f -> red.flags land f != 0
+  | CONST kn -> is_transparent_constant red.ts kn
+  | PROJ p -> is_transparent_projection red.ts p
+  | VAR id -> is_transparent_variable red.ts id
 
 let red_projection red p =
   if Projection.unfolded p then true

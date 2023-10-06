@@ -140,7 +140,9 @@ let red_transparent =
       let l = List.map make_force_constant [(* "run"; *) "block"; "unblock"] in
       List.fold_right Cpred.add l Cpred.empty
     in
-    TransparentState.{tr_var = Names.Id.Pred.empty; tr_cst}
+    let tr_var = Names.Id.Pred.empty in
+    let tr_prj = Names.PRpred.empty in
+    TransparentState.{tr_var; tr_cst; tr_prj}
   in
   let red_transparent mode flags =
     match mode with
