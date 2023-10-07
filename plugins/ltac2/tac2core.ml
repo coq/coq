@@ -685,17 +685,6 @@ let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
 let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)
 
 let () =
-  define "constr_constructor" (repr_ext val_inductive @-> int @-> tac valexpr) @@ fun (ind, i) k ->
-  Proofview.tclENV >>= fun env ->
-  try
-    let open Declarations in
-    let ans = Environ.lookup_mind ind env in
-    let _ = ans.mind_packets.(i).mind_consnames.(k) in
-    return (Value.of_ext val_constructor ((ind, i), (k + 1)))
-  with e when CErrors.noncritical e ->
-    throw err_notfound
-
-let () =
   define "constr_in_context" (ident @-> constr @-> closure @-> tac constr) @@ fun id t c ->
   Proofview.Goal.goals >>= function
   | [gl] ->
@@ -1157,6 +1146,18 @@ let () =
        reasons, but Ltac2 uses 0-indexing instead. *)
     return ((mind, n), i + 1)
   else throw err_notfound
+
+let () =
+  define "constructor_inductive"
+    (repr_ext val_constructor @-> ret (repr_ext val_inductive))
+  @@ fun (ind, _) -> ind
+
+let () =
+  define "constructor_index"
+    (repr_ext val_constructor @-> ret int)
+  @@ fun (_, i) ->
+  (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
+  i-1
 
 (** Ltac1 in Ltac2 *)
 
