@@ -291,24 +291,22 @@ Proof.
   - (* Z *)
     reflexivity.
   - (* unary *)
-    simpl. rewrite IHa. reflexivity. (* FIXME should use lazy *)
+    simpl. fold interpret_R. rewrite IHa. reflexivity. (* FIXME should use lazy *)
   - (* binary *)
-    simpl. rewrite IHa, IHb. reflexivity. (* FIXME should use lazy *)
-  - (* pow *) simpl; rewrite IHa; reflexivity. (* FIXME should use lazy *)
+    simpl. fold interpret_R. rewrite IHa, IHb. reflexivity. (* FIXME should use lazy *)
+  - (* pow *) simpl; fold interpret_R. rewrite IHa; reflexivity. (* FIXME should use lazy *)
 Qed.
 
 (** The interpretation of a term before and after simplification is equal in ℝ *)
-
 Lemma simplify_R_correct: forall (e : Expr_R),
   interpret_R e = interpret_R (simplify_R e).
 Proof.
   intros e; induction e as [q|r|z|f a IHa|f a IHa b IHb|a IHa b].
   - (* Q *) reflexivity.
   - (* R *) reflexivity.
-  - (* Z *) lazy; unfold Q2R; f_equal; cbn; ltac1:(lra).
+  - (* Z *) lazy. f_equal; (progress (unfold Q2R)); f_equal; cbn; ltac1:(lra).
   - (* unary *) cbn.
-    destruct (simplify_R a); rewrite IHa; try reflexivity.
-    cbn.
+    destruct (simplify_R a); fold interpret_R; rewrite IHa; cbn; try reflexivity.
     destruct f; cbn; lazy [block unblock].
     + rewrite Qreals.Q2R_opp; reflexivity.
     + destruct (Z.eqb_spec (Qnum q) 0) as [Heq|Hneq]; cbn; lazy [block unblock].
@@ -318,8 +316,8 @@ Proof.
         unfold Qeq; cbn.
         ltac1:(lia).
   - (* binary *) cbn.
-    destruct (simplify_R a) as [qa| | | | |]; rewrite IHa;
-    destruct (simplify_R b) as [qb| | | | |]; rewrite IHb; try reflexivity.
+    destruct (simplify_R a) as [qa| | | | |]; fold interpret_R; rewrite IHa;
+    destruct (simplify_R b) as [qb| | | | |]; fold interpret_R; rewrite IHb; cbn; try reflexivity.
     cbn; lazy [block unblock].
     destruct f; cbn; lazy [block unblock].
     + rewrite Qreals.Q2R_plus; reflexivity.
@@ -334,7 +332,7 @@ Proof.
     + rewrite Q2R_max; reflexivity.
     + rewrite Q2R_min; reflexivity.
   - (* Pow *) cbn.
-    destruct (simplify_R a); rewrite IHa; try reflexivity.
+    destruct (simplify_R a); fold interpret_R; rewrite IHa; try reflexivity.
     destruct b; cbn; lazy [block unblock]; try reflexivity.
     f_equal.
     apply Q2R_pow.
