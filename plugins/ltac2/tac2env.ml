@@ -207,10 +207,10 @@ let locate_extended_all_ltac qid =
 
 let path_of_ltac kn = RfMap.find kn (!nametab).tab_ltac_rev
 
-let shortest_qualid_of_ltac kn =
+let shortest_qualid_of_ltac avoid kn =
   let tab = !nametab in
   let sp = RfMap.find kn tab.tab_ltac_rev in
-  RfTab.shortest_qualid Id.Set.empty sp tab.tab_ltac
+  RfTab.shortest_qualid avoid sp tab.tab_ltac
 
 let push_constructor vis sp kn =
   let tab = !nametab in

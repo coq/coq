@@ -285,13 +285,13 @@ let deprecated_ltac2_alias =
   Deprecation.create_warning
     ~object_name:"Ltac2 alias"
     ~warning_name_if_no_since:"deprecated-ltac2-alias"
-    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacAlias kn)))
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacAlias kn)))
 
 let deprecated_ltac2_def =
   Deprecation.create_warning
     ~object_name:"Ltac2 definition"
     ~warning_name_if_no_since:"deprecated-ltac2-definition"
-    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn)))
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacConstant kn)))
 
 let check_deprecated_ltac2 ?loc qid def =
   if is_user_name qid then match def with

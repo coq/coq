@@ -973,9 +973,9 @@ let () = Goptions.declare_bool_option {
 }
 
 let pr_frame = function
-| FrAnon e -> str "Call {" ++ pr_glbexpr e ++ str "}"
+| FrAnon e -> str "Call {" ++ pr_glbexpr ~avoid:Id.Set.empty e ++ str "}"
 | FrLtac kn ->
-  str "Call " ++ pr_tacref kn
+  str "Call " ++ pr_tacref Id.Set.empty kn
 | FrPrim ml ->
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
@@ -1015,7 +1015,11 @@ let print_constant ~print_def qid ?info data =
   let e = data.Tac2env.gdata_expr in
   let (_, t) = data.Tac2env.gdata_type in
   let name = int_name () in
-  let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e) else mt() in
+  let def = if print_def then
+      fnl () ++ hov 2
+        (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr ~avoid:Id.Set.empty e)
+    else mt()
+  in
   let info = match info with
     | None -> mt()
     | Some info -> fnl() ++ fnl() ++ hov 2 (str "Compiled as" ++ spc() ++ str info.Tac2env.source)
@@ -1049,7 +1053,7 @@ let locate_all_object qid =
 
 let shortest_qualid_of_object = function
   | Constructor kn -> Tac2env.shortest_qualid_of_constructor kn
-  | TacRef kn -> Tac2env.shortest_qualid_of_ltac kn
+  | TacRef kn -> Tac2env.shortest_qualid_of_ltac Id.Set.empty kn
 
 let path_of_object = function
   | Constructor kn -> Tac2env.path_of_constructor kn
@@ -1107,7 +1111,7 @@ let print_signatures () =
   let entries = List.sort sort entries in
   let map (kn, entry) =
     let qid =
-      try Some (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+      try Some (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacConstant kn))
       with Not_found -> None
     in
     match qid with

@@ -2022,7 +2022,7 @@ let () =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "
     in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
   let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2in1 pr_raw pr_glb pr_top
@@ -2035,7 +2035,13 @@ let () =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "
     in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+    (* FIXME avoid set
+       eg "Ltac2 bla foo := constr:(ltac2:(foo X.foo))"
+       gets incorrectly printed as "fun foo => constr:(ltac2:(foo foo))"
+       NB: can't pass through evar map store as the evar map we get is a dummy,
+       see Ppconstr.pr_genarg
+    *)
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
   let pr_top e = Util.Empty.abort e in
   Genprint.register_print0 wit_ltac2_constr pr_raw pr_glb pr_top

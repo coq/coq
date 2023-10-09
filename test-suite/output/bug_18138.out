@@ -1,0 +1,4 @@
+Ltac2 bar : 'a -> unit
+      bar := fun foo => M.foo
+Ltac2 baz : (unit -> 'a) -> constr
+      baz := fun foo => constr:(ltac2:(foo foo))

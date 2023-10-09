@@ -10,8 +10,9 @@
 
 open Tac2expr
 open Tac2ffi
+open Names
 
-val pr_tacref : ltac_constant -> Pp.t
+val pr_tacref : Id.Set.t -> ltac_constant -> Pp.t
 (** Prints the shortest name for the constant. Also works for
     constants not in the nametab (because they're local to another
     module). *)
@@ -34,8 +35,8 @@ val pr_glbtype : ('a -> string) -> 'a glb_typexpr -> Pp.t
 val pr_constructor : ltac_constructor -> Pp.t
 val pr_internal_constructor : type_constant -> int -> bool -> Pp.t
 val pr_projection : ltac_projection -> Pp.t
-val pr_glbexpr_gen : exp_level -> glb_tacexpr -> Pp.t
-val pr_glbexpr : glb_tacexpr -> Pp.t
+val pr_glbexpr_gen : exp_level -> avoid:Id.Set.t -> glb_tacexpr -> Pp.t
+val pr_glbexpr : avoid:Id.Set.t -> glb_tacexpr -> Pp.t
 val pr_partial_pat : PartialPat.t -> Pp.t
 
 (** Utility function *)

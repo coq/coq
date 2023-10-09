@@ -15,8 +15,8 @@ open Tac2expr
 open Tac2env
 open Tac2ffi
 
-let pr_tacref kn =
-  try Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+let pr_tacref avoid kn =
+  try Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac avoid (TacConstant kn))
   with Not_found when KNmap.mem kn (Tac2env.globals()) ->
     str (ModPath.to_string (KerName.modpath kn))
     ++ str"." ++ Label.print (KerName.label kn)
@@ -274,47 +274,58 @@ let rec partial_pat_of_glb_pat pat =
 
 let pr_glb_pat pat = pr_partial_pat (partial_pat_of_glb_pat pat)
 
-let pr_glbexpr_gen lvl c =
-  let rec pr_glbexpr lvl = function
+let rec avoid_glb_pat avoid = function
+  | GPatVar x -> Termops.add_vname avoid x
+  | GPatAtm _ -> avoid
+  | GPatRef (_, pats) -> List.fold_left avoid_glb_pat avoid pats
+  | GPatOr [] -> assert false
+  | GPatOr (p::_) -> avoid_glb_pat avoid p
+  | GPatAs (p,x) -> avoid_glb_pat (Id.Set.add x avoid) p
+
+let pr_glbexpr_gen lvl ~avoid c =
+  let rec pr_glbexpr lvl avoid = function
   | GTacAtm atm -> pr_atom atm
   | GTacVar id -> Id.print id
-  | GTacRef gr -> pr_tacref gr
+  | GTacRef gr -> pr_tacref avoid gr
   | GTacFun (nas, c) ->
+    let avoid = List.fold_left Termops.add_vname avoid nas in
     let nas = pr_sequence pr_name nas in
     let paren = match lvl with
     | E0 | E1 | E2 | E3 | E4 -> paren
     | E5 -> fun x -> x
     in
     paren (hov 0 (hov 2 (str "fun" ++ spc () ++ nas) ++ spc () ++ str "=>" ++ spc () ++
-      pr_glbexpr E5 c))
+      pr_glbexpr E5 avoid c))
   | GTacApp (c, cl) ->
     let paren = match lvl with
     | E0 -> paren
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x
     in
-    paren (hov 2 (pr_glbexpr E1 c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
-  | GTacLet (mut, bnd, e) ->
+    paren (hov 2 (pr_glbexpr E1 avoid c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
+  | GTacLet (isrec, bnd, e) ->
     let paren = match lvl with
     | E0 | E1 | E2 | E3 | E4 -> paren
     | E5 -> fun x -> x
     in
-    let mut = if mut then str "rec" ++ spc () else mt () in
+    let mut = if isrec then str "rec" ++ spc () else mt () in
+    let avoidbnd = List.fold_left (fun avoid (na,_) -> Termops.add_vname avoid na) avoid bnd in
     let pr_bnd (na, e) =
-      pr_name na ++ spc () ++ str ":=" ++ spc () ++ hov 2 (pr_glbexpr E5 e) ++ spc ()
+      let avoid = if isrec then avoidbnd else avoid in
+      pr_name na ++ spc () ++ str ":=" ++ spc () ++ hov 2 (pr_glbexpr E5 avoid e) ++ spc ()
     in
     let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_bnd bnd in
-    paren (hv 0 (hov 2 (str "let" ++ spc () ++ mut ++ bnd ++ str "in") ++ spc () ++ pr_glbexpr E5 e))
+    paren (hv 0 (hov 2 (str "let" ++ spc () ++ mut ++ bnd ++ str "in") ++ spc () ++ pr_glbexpr E5 avoidbnd e))
   | GTacCst (Tuple 0, _, _) -> str "()"
   | GTacCst (Tuple _, _, cl) ->
     let paren = match lvl with
     | E0 | E1 -> paren
     | E2 | E3 | E4 | E5 -> fun x -> x
     in
-    paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
+    paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1 avoid) cl)
   | GTacCst (Other tpe, n, cl) ->
-    pr_applied_constructor lvl tpe n cl
+    pr_applied_constructor lvl avoid tpe n cl
   | GTacCse (e, info, cst_br, ncst_br) ->
-    let e = pr_glbexpr E5 e in
+    let e = pr_glbexpr E5 avoid e in
     let br = match info with
     | Other kn ->
       let def = match Tac2env.interp_type kn with
@@ -325,49 +336,54 @@ let pr_glbexpr_gen lvl c =
       let pr_branch (cstr, vars, p) =
         let cstr = change_kn_label kn cstr in
         let cstr = pr_constructor cstr in
+        let avoid = List.fold_left Termops.add_vname avoid vars in
         let vars = match vars with
         | [] -> mt ()
         | _ -> spc () ++ pr_sequence pr_name vars
         in
         hov 4 (str "|" ++ spc () ++ hov 0 (cstr ++ vars ++ spc () ++ str "=>") ++ spc () ++
-          hov 2 (pr_glbexpr E5 p)) ++ spc ()
+          hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
       in
       prlist pr_branch br
     | Tuple n ->
       let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
-      let p = pr_glbexpr E5 p in
+      let avoid = Array.fold_left Termops.add_vname avoid vars in
+      let p = pr_glbexpr E5 avoid p in
       let vars = prvect_with_sep (fun () -> str "," ++ spc ()) pr_name vars in
       hov 4 (str "|" ++ spc () ++ hov 0 (paren vars ++ spc () ++ str "=>") ++ spc () ++ p)
     in
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ br ++ spc () ++ str "end")
   | GTacWth wth ->
-    let e = pr_glbexpr E5 wth.opn_match in
-    let pr_pattern c self vars p =
+    let e = pr_glbexpr E5 avoid wth.opn_match in
+    let pr_pattern c self vars avoid p =
+      let avoid = Termops.add_vname avoid self in
       let self = match self with
       | Anonymous -> mt ()
       | Name id -> spc () ++ str "as" ++ spc () ++ Id.print id
       in
       hov 4 (str "|" ++ spc () ++ hov 0 (c ++ vars ++ self ++ spc () ++ str "=>") ++ spc () ++
-        hov 2 (pr_glbexpr E5 p)) ++ spc ()
+        hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
     in
     let pr_branch (cstr, (self, vars, p)) =
       let cstr = pr_constructor cstr in
+      let avoid = Array.fold_left Termops.add_vname avoid vars in
       let vars = match Array.to_list vars with
       | [] -> mt ()
       | vars -> spc () ++ pr_sequence pr_name vars
       in
-      pr_pattern cstr self vars p
+      pr_pattern cstr self vars avoid p
     in
     let br = prlist pr_branch (KNmap.bindings wth.opn_branch) in
     let (def_as, def_p) = wth.opn_default in
-    let def = pr_pattern (str "_") def_as (mt ()) def_p in
+    let def = pr_pattern (str "_") def_as (mt ()) avoid def_p in
     let br = br ++ def in
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ br ++ str "end")
   | GTacFullMatch (e, brs) ->
-    let e = pr_glbexpr E5 e in
+    let e = pr_glbexpr E5 avoid e in
     let pr_one_branch (pat,br) =
+      let avoid = avoid_glb_pat avoid pat in
       hov 4 (str "|" ++ spc() ++ hov 0 (pr_glb_pat pat ++ spc() ++ str "=>") ++ spc() ++
-             hov 2 (pr_glbexpr E5 br))
+             hov 2 (pr_glbexpr E5 avoid br))
     in
     let brs = prlist_with_sep spc pr_one_branch brs in
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ brs ++ spc() ++ str "end")
@@ -379,7 +395,7 @@ let pr_glbexpr_gen lvl c =
     let (proj, _, _) = List.nth def n in
     let proj = change_kn_label kn proj in
     let proj = pr_projection proj in
-    let e = pr_glbexpr E0 e in
+    let e = pr_glbexpr E0 avoid e in
     hov 0 (e ++ str "." ++ paren proj)
   | GTacSet (kn, e, n, r) ->
     let def = match Tac2env.interp_type kn with
@@ -389,8 +405,8 @@ let pr_glbexpr_gen lvl c =
     let (proj, _, _) = List.nth def n in
     let proj = change_kn_label kn proj in
     let proj = pr_projection proj in
-    let e = pr_glbexpr E0 e in
-    let r = pr_glbexpr E1 r in
+    let e = pr_glbexpr E0 avoid e in
+    let r = pr_glbexpr E1 avoid r in
     hov 0 (e ++ str "." ++ paren proj ++ spc () ++ str ":=" ++ spc () ++ r)
   | GTacOpn (kn, cl) ->
     let paren = match lvl with
@@ -398,16 +414,16 @@ let pr_glbexpr_gen lvl c =
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x
     in
     let c = pr_constructor kn in
-    paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
+    paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
   | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
     let env = Global.env() in
     let sigma = Evd.from_env env in
-    hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
+    hov 0 (tpe.ml_print env sigma arg)
   | GTacPrm prm ->
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
       qstring prm.mltac_tactic)
-  and pr_applied_constructor lvl tpe n cl =
+  and pr_applied_constructor lvl avoid tpe n cl =
     let factorized =
       if KerName.equal tpe t_list then
         let rec factorize accu = function
@@ -425,12 +441,12 @@ let pr_glbexpr_gen lvl c =
       | GTacVar id' -> Id.equal id id'
       | _ -> false
     in
-    pr_factorized_constructor isid pr_glbexpr lvl tpe factorized
+    pr_factorized_constructor isid (fun lvl -> pr_glbexpr lvl avoid) lvl tpe factorized
   in
-  hov 0 (pr_glbexpr lvl c)
+  hov 0 (pr_glbexpr lvl avoid c)
 
-let pr_glbexpr c =
-  pr_glbexpr_gen E5 c
+let pr_glbexpr ~avoid c =
+  pr_glbexpr_gen E5 ~avoid c
 
 
 (** Toplevel printers *)
@@ -645,8 +661,8 @@ let parse_format (s : string) : format list =
 
 
 let pr_profile_frame = let open Pp in function
-  | FrAnon e -> str "<fun " ++ pr_glbexpr e ++ str ">"
-  | FrLtac kn -> pr_tacref kn
+  | FrAnon e -> str "<fun " ++ pr_glbexpr ~avoid:Id.Set.empty e ++ str ">"
+  | FrLtac kn -> pr_tacref Id.Set.empty kn
   | FrPrim ml -> str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
   | FrExtn (tag,_) -> str "<extn:" ++ str (Tac2dyn.Arg.repr tag) ++ str ">"
 
