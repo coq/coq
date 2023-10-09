@@ -286,6 +286,7 @@ type ('a, 'b) ml_object = {
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
+  ml_raw_print : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
 }
 
 module MLTypeObj =

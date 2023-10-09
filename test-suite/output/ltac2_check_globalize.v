@@ -37,3 +37,10 @@ Fail Ltac2 Check
   let accu := { contents := [] } in
   complicated_typing (fun x => accu.(contents) := x :: accu.(contents));
   accu.(contents).
+
+Ltac2 Globalize lazy_match! goal with
+  | [h: _ |- _] => (* lots of code... *) Std.clear h (* more code... *)
+  | [|- _] => (* lots of code... *) ()
+  end.
+
+Ltac2 Globalize constr:(ltac2:(foo)).

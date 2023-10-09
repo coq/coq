@@ -1,11 +1,10 @@
 ()
 () : unit
 fun x => x : 'a -> 'a
-File "./output/ltac2_check_globalize.v", line 11, characters 22-27:
-The command has indeed failed with message:
-Incorrect tuple.
+() ()
+(1, 2) 3
 let x := () in x ()
-File "./output/ltac2_check_globalize.v", line 15, characters 32-33:
+File "./output/ltac2_check_globalize.v", line 20, characters 32-33:
 The command has indeed failed with message:
 This expression has type unit. It is not a function and cannot be applied.
 let x := fun x => x in let _ := x 1 in let _ := x "" in ()
@@ -14,7 +13,18 @@ let accu := { contents := []} in
 (let x := fun x => accu.(contents) := (x :: accu.(contents)) in
  let _ := x 1 in let _ := x "" in ());
 accu.(contents)
-File "./output/ltac2_check_globalize.v", line 31, characters 0-144:
+File "./output/ltac2_check_globalize.v", line 36, characters 0-144:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
+let m :=
+  [(([(None, (Pattern.MatchPattern, pat:(_)))],
+     (Pattern.MatchPattern, pat:(_))),
+    (fun h =>
+     let h := Array.get h 0 in
+     fun _ => fun _ => fun _ => fun _ => Std.clear h));
+    (([], (Pattern.MatchPattern, pat:(_))),
+     (fun _ => fun _ => fun _ => fun _ => fun _ => ()))] : _
+    Pattern.goal_matching in
+Pattern.lazy_goal_match0 false m
+constr:(ltac2:(()))

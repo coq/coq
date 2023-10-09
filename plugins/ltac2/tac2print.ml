@@ -694,7 +694,11 @@ let pr_rawexpr_gen lvl ~avoid c =
   | CTacSet (e1,p,e2) ->
     hov 0 (pr_rawexpr E0 avoid e1 ++ str "." ++ paren (pr_relid pr_projection p)
            ++ spc() ++ str ":=" ++ spc() ++ pr_rawexpr E1 avoid e2)
-  | CTacExt _ -> CErrors.anomaly ?loc Pp.(str "Genarg produced by globalization.")
+  | CTacExt (tag,arg) ->
+    let obj = interp_ml_object tag in
+    let env = Global.env() in
+    let sigma = Evd.from_env env in
+    obj.ml_raw_print env sigma arg
   in
   hov 0 (pr_rawexpr lvl avoid c)
 
