@@ -1062,7 +1062,7 @@ open Stdarg
 
 }
 
-VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS QUERY
 | [ "Print" "Ltac2" reference(tac) ] -> { Tac2entries.print_ltac2 tac }
 END
 
