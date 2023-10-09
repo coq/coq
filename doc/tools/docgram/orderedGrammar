@@ -960,6 +960,8 @@ command: [
 | "Print" "Ltac2" qualid      (* ltac2 plugin *)
 | "Locate" "Ltac2" qualid      (* ltac2 plugin *)
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
+| "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)
+| "Ltac2" "Globalize" ltac2_expr      (* ltac2 plugin *)
 | "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )

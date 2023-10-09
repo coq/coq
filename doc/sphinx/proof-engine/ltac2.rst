@@ -350,6 +350,14 @@ Printing Ltac2 tactics
    :cmd:`Print` can print defined Ltac2 tactics and can avoid printing
    other objects by using `Print Ltac2`.
 
+.. cmd:: Ltac2 Globalize @ltac2_expr
+
+   Prints the result of resolving notations in the given expression.
+
+.. cmd:: Ltac2 Check @ltac2_expr
+
+   Typechecks the given expression and prints the result.
+
 .. cmd:: Print Ltac2 Signatures
 
    This command displays a list of all defined tactics in scope with their types.
