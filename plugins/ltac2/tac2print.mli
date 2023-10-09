@@ -39,8 +39,12 @@ val pr_glbexpr_gen : exp_level -> avoid:Id.Set.t -> glb_tacexpr -> Pp.t
 val pr_glbexpr : avoid:Id.Set.t -> glb_tacexpr -> Pp.t
 val pr_partial_pat : PartialPat.t -> Pp.t
 
+val pr_rawexpr_gen : exp_level -> avoid:Id.Set.t -> raw_tacexpr -> Pp.t
+
 (** Utility function *)
 val partial_pat_of_glb_pat : glb_pat -> PartialPat.t
+
+val ids_of_pattern : Id.Set.t -> raw_patexpr -> Id.Set.t
 
 (** {5 Printing values}*)
 

@@ -1124,6 +1124,20 @@ let print_signatures () =
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
 
+let typecheck_expr e =
+  let e, (_,t) = Tac2intern.intern ~strict:false [] e in
+  let name = int_name() in
+  let pp =
+    pr_glbexpr_gen E5 ~avoid:Id.Set.empty e ++ spc() ++
+    str ":" ++ spc() ++ pr_glbtype name t
+  in
+  Feedback.msg_notice pp
+
+let globalize_expr e =
+  let avoid = Id.Set.empty in
+  let e = Tac2intern.globalize avoid e in
+  Feedback.msg_notice (Tac2print.pr_rawexpr_gen E5 ~avoid e)
+
 (** Calling tactics *)
 
 let ltac2_interp e =

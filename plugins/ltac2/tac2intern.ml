@@ -217,15 +217,6 @@ let add_name accu = function
 | Name id -> Id.Set.add id accu
 | Anonymous -> accu
 
-let rec ids_of_pattern accu {v=pat} = match pat with
-| CPatVar Anonymous | CPatAtm _ -> accu
-| CPatVar (Name id) -> Id.Set.add id accu
-| CPatAs (p,id) -> ids_of_pattern (Id.Set.add id.v accu) p
-| CPatRef (_, pl) | CPatOr pl ->
-  List.fold_left ids_of_pattern accu pl
-| CPatCnv (pat, _) -> ids_of_pattern accu pat
-| CPatRecord pats -> List.fold_left (fun accu (_,pat) -> ids_of_pattern accu pat) accu pats
-
 let loc_of_relid = function
 | RelId {loc} -> loc
 | AbsKn _ -> None

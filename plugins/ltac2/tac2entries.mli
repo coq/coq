@@ -58,6 +58,10 @@ val print_ltac2 : Libnames.qualid -> unit
 val print_signatures : unit -> unit
 (** Print types of all definitions in scope. *)
 
+val typecheck_expr : raw_tacexpr -> unit
+
+val globalize_expr : raw_tacexpr -> unit
+
 (** {5 Eval loop} *)
 
 (** Evaluate a tactic expression in the current environment *)
