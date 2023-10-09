@@ -1685,21 +1685,22 @@ let rec knh info m stk =
        FArray _|FPrimitive _ |FBlock _) -> (m, stk)
 
 and knht_app ~mode ~lexical info e h args stk =
-  if not (red_set mode info fDELTA) then
-    let stk = append_stack (mk_clos_vect ~mode e args) stk in
-    knht ~mode info e h stk
-  else
+  let check_enabled c =
+    (red_set mode info fDELTA) &&
+    (TransparentState.is_transparent_constant (red_transparent mode info) c)
+  in
   match [@ocaml.warning "-4"] Constr.kind h with
   | Const (c, _u) ->
-    if not (TransparentState.is_transparent_constant (red_transparent mode info) c) then
-      let stk = append_stack (mk_clos_vect ~mode e args) stk in
-      (mk_clos ~mode e h, stk)
-    else
     let nargs = Array.length args in
     if Constant.UserOrd.equal c block_constant then
       match[@ocaml.warning "-4"] args with
       | [|ty; t|] ->
-        let mode = if lexical then identity else normal_whnf in
+        let mode =
+          if check_enabled c then
+            if lexical then identity else normal_whnf
+          else
+            mode
+        in
         knh info { mark = RedState.mk cstr mode; term = FBlock (h, ty, t, e) } stk
       | _ ->
         ({ mark = RedState.mk cstr mode; term = FEta((2-nargs), h, args, 0, e) }, stk)
@@ -1708,7 +1709,12 @@ and knht_app ~mode ~lexical info e h args stk =
         let ty = args.(0) in
         let t = args.(1) in
         let args = Array.sub args 2 (nargs - 2) in
-        let mode_full = if lexical then full else normal_whnf  in
+        let mode_full =
+          if check_enabled c then
+            if lexical then full else normal_whnf
+          else
+            mode
+        in
         let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
         knht ~mode:mode_full info e t (Zunblock (h, ty, e, mode) :: stk)
       else
@@ -1720,7 +1726,12 @@ and knht_app ~mode ~lexical info e h args stk =
         let t = args.(2) in
         let k = args.(3) in
         let args = Array.sub args 4 (nargs - 4) in
-        let mode_full = if lexical then full else normal_whnf  in
+        let mode_full =
+          if check_enabled c then
+            if lexical then full else normal_whnf
+          else
+            mode
+        in
         let stk = (append_stack (mk_clos_vect ~mode e args) stk) in
         knht ~mode:mode_full info e t (Zrun (h, ty1, ty2, k, e, mode) :: stk)
       else
