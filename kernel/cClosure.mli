@@ -59,6 +59,10 @@ type fterm =
     (* operator, constr def, primitive as an fconstr, full array of suitably evaluated arguments *)
   | FBlock of constr * constr * constr * usubs
     (* @block as a constr, its type as a constr, the contents of the block *)
+  | FUnblock of constr * constr * fconstr * usubs
+  (* [{term=Funblock(op, ty, m, e);mode=mode}] is a representation of [Zunblock(op,ty,e,mode)] zipped with [m] *)
+  | FRun of constr * constr * constr * fconstr * constr * usubs
+  (* [{term=FRun(op, ty1, ty2, m, cnt, e);mode=mode}] is a representation of [Zrun(op,ty1,ty2,cnt,e,mode)] zipped with [m] *)
   | FEta of int * constr * constr array * int * usubs
   (* [FEta (n, h, args, m, e)], represents [FCLOS (mkApp (h, Array.append args [|#1 ... #m|]), e)]. *)
   | FLAZY of fconstr Lazy.t

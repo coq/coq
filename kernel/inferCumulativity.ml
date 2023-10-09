@@ -265,7 +265,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FBlock _ -> assert false (* TODO *)
 
   (* Removed by whnf *)
-  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ | FEta _ | FLAZY _ -> assert false
+  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ | FEta _
+  | FUnblock _ | FRun _ | FLAZY _ -> assert false
   | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
 
 and infer_stack infos variances (stk:CClosure.stack) =
