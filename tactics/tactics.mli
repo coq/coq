@@ -31,6 +31,8 @@ val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
+exception NotConvertible
+
 val introduction    : Id.t -> unit Proofview.tactic
 val convert_concl   : cast:bool -> check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : check:bool -> reorder:bool -> named_declaration -> unit Proofview.tactic
