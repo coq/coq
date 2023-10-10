@@ -257,20 +257,18 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   let nprods = List.length prods in
   let allowed_evars =
     let all = Evarsolve.AllowedEvars.all in
-    try
-      match hdc with
-      | Some (hd,_) when only_classes ->
-        begin match Typeclasses.class_info hd with
-        | Some cl ->
-          if cl.cl_strict then
-            let undefined = lazy (Evarutil.undefined_evars_of_term sigma concl) in
-            let allowed evk = not (Evar.Set.mem evk (Lazy.force undefined)) in
-            Evarsolve.AllowedEvars.from_pred allowed
-          else all
-        | None -> all
-        end
-      | _ -> all
-    with e when CErrors.noncritical e -> all
+    match hdc with
+    | Some (hd,_) when only_classes ->
+      begin match Typeclasses.class_info hd with
+      | Some cl ->
+        if cl.cl_strict then
+          let undefined = lazy (Evarutil.undefined_evars_of_term sigma concl) in
+          let allowed evk = not (Evar.Set.mem evk (Lazy.force undefined)) in
+          Evarsolve.AllowedEvars.from_pred allowed
+        else all
+      | None -> all
+      end
+    | _ -> all
   in
   let tac_of_hint =
     fun (flags, h) ->
