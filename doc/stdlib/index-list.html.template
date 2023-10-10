@@ -271,9 +271,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
     theories/Numbers/Cyclic/Abstract/CarryType.v
     theories/Numbers/Cyclic/Abstract/DoubleType.v
-    theories/Numbers/Cyclic/Int31/Cyclic31.v
-    theories/Numbers/Cyclic/Int31/Ring31.v
-    theories/Numbers/Cyclic/Int31/Int31.v
     theories/Numbers/Cyclic/Int63/Cyclic63.v
     theories/Numbers/Cyclic/Int63/PrimInt63.v
     theories/Numbers/Cyclic/Int63/Uint63.v
