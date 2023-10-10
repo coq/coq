@@ -105,6 +105,12 @@ struct
 
   let lk_ident_list = lk_list lk_ident
 
+  let lk_field n kwstate strm = match LStream.peek_nth kwstate n strm with
+    | Tok.FIELD _ -> Some (n+1)
+    | _ -> None
+
+  let lk_qualid = lk_ident >> lk_list lk_field
+
 end
 
 (** Grammar extensions *)

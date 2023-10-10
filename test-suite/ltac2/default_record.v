@@ -16,3 +16,13 @@ Fail Ltac2 foobar () := { { a := (); b := () } with aa := () }.
 
 Ltac2 varvar v := { v with aa := () }.
 Print varvar.
+
+(* From #17764 *)
+Module Point.
+  Ltac2 Type t := { x : int ; y : int }.
+
+  Ltac2 origin : t := { x := 0; y := 0; }.
+
+End Point.
+
+Ltac2 Eval { Point.origin with Point.y := 1; }.

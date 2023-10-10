@@ -1242,8 +1242,8 @@ let rec intern_rec env tycon {loc;v=e} =
       in
       let def = intern_rec_with_constraint env def (GTypRef (Other kn, Array.to_list deftparam)) in
       let var = match def with
-        | GTacVar var -> var
-        | _ -> fresh_var (bound_vars env)
+        | GTacVar _ | GTacRef _ -> None
+        | _ -> Some (fresh_var (bound_vars env))
       in
       Some (var, def), args
   in
@@ -1251,14 +1251,15 @@ let rec intern_rec env tycon {loc;v=e} =
       | PresentField (arg,argty) -> intern_rec_with_constraint env arg argty
       | MissingField i -> match def with
         | None -> assert false
-        | Some (var, _) -> GTacPrj (kn, GTacVar var, i))
+        | Some (None, def) -> GTacPrj (kn, def, i)
+        | Some (Some var, _) -> GTacPrj (kn, GTacVar var, i))
       args
   in
   let e = GTacCst (Other kn, 0, args) in
   let e = match def with
     | None -> e
-    | Some (var, GTacVar var') when Id.equal var var' -> e
-    | Some (var, def) ->
+    | Some (None, _) -> e
+    | Some (Some var, def) ->
       GTacLet (false, [Name var, def], e)
   in
   check (e,  GTypRef (Other kn, tparam))
