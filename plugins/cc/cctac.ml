@@ -440,7 +440,7 @@ let cc_tactic depth additional_terms b =
     match sol with
       None -> Tacticals.tclFAIL (str (if b then "simple congruence failed" else "congruence failed"))
     | Some reason ->
-      debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
+      Proofview.tclORELSE (debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
       match reason with
         Discrimination (i,ipac,j,jpac) ->
         let p=build_proof (Tacmach.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
@@ -483,7 +483,14 @@ let cc_tactic depth additional_terms b =
         | HeqG id ->
           convert_to_goal_tac id ta tb p
         | HeqnH (ida,idb) ->
-          convert_to_hyp_tac ida ta idb tb p
+          convert_to_hyp_tac ida ta idb tb p)
+      begin function (e, info) -> match e with
+        | Tactics.NotConvertible ->
+          Tacticals.tclFAIL
+            (str (if b then "simple congruence failed" else "congruence failed") ++
+             str " (cannot build a well-typed proof)")
+        | e -> Proofview.tclZERO ~info e
+      end
   end
 
 let id t = mkLambda (make_annot Anonymous Sorts.Relevant, t, mkRel 1)
