@@ -68,9 +68,6 @@ val dependent_start
     to be considered (this does not require that all evars have been solved). *)
 val is_done : t -> bool
 
-(* Like is_done, but this time it really means done (i.e. nothing left to do) *)
-val is_complete : t -> bool
-
 (* Returns the list of partial proofs to initial goals. *)
 val partial_proof : t -> EConstr.constr list
 

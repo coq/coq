@@ -1694,12 +1694,26 @@ let { Goptions.get = private_poly_univs } =
     ~value:true
     ()
 
+let warn_remaining_shelved_goals =
+  CWarnings.create ~name:"remaining-shelved-goals" ~category:CWarnings.CoreCategories.tactics
+    (fun () -> Pp.str"The proof has remaining shelved goals")
+
+let warn_remaining_unresolved_evars =
+  CWarnings.create ~name:"remaining-unresolved-evars" ~category:CWarnings.CoreCategories.tactics
+    (fun () -> Pp.str"The proof has unresolved variables")
+
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 (* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
-let prepare_proof ~unsafe_typ { proof } =
+let prepare_proof ?(warn_incomplete=true) ~unsafe_typ { proof } =
   let Proof.{name=pid;entry;poly} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
+  let () = if warn_incomplete then begin
+    if Evd.has_shelved evd
+    then warn_remaining_shelved_goals ()
+    else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
+  end
+  in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
   let to_constr_body c =
@@ -1765,13 +1779,13 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
   let utyp = UState.check_univ_decl ~poly uctx udecl in
   utyp, Univ.ContextSet.empty
 
-let close_proof ~opaque ~keep_body_ucst_separate ps =
+let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
-  let elist, uctx = prepare_proof ~unsafe_typ ps in
+  let elist, uctx = prepare_proof ?warn_incomplete ~unsafe_typ ps in
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
     | Vernacexpr.Transparent -> false in
@@ -1859,46 +1873,35 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
 
-let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign ~poly (typ : EConstr.t) tac =
-  let evd = Evd.from_ctx uctx in
+let build_constant_by_tactic ~name ?warn_incomplete ?(opaque=Vernacexpr.Transparent) ~sigma ~sign ~poly (typ : EConstr.t) tac =
   let typ_ = EConstr.Unsafe.to_constr typ in
   let cinfo = [CInfo.make ~name ~typ:typ_ ()] in
   let info = Info.make ~poly () in
   let pinfo = Proof_info.make ~cinfo ~info () in
-  let pf = start_proof_core ~name ~typ ~pinfo ~sign evd in
+  let pf = start_proof_core ~name ~typ ~pinfo ~sign sigma in
   let pf, status = by tac pf in
-  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
+  let { entries; uctx } = close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate:false pf in
+  let { Proof.sigma } = Proof.data pf.proof in
+  let sigma = Evd.set_universe_context sigma uctx in
   match entries with
   | [entry] ->
     let entry = Internal.pmap_entry_body ~f:Future.force entry in
-    entry, status, uctx
+    entry, status, sigma
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
 
 let build_by_tactic env ~uctx ~poly ~typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = Environ.(val_of_named_context (named_context env)) in
-  let ce, status, uctx = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
+  let sigma = Evd.from_ctx uctx in
+  let ce, status, sigma = build_constant_by_tactic ~name ~sigma ~sign ~poly typ tac in
+  let uctx = Evd.evar_universe_context sigma in
   let cb, uctx = inline_private_constants ~uctx env ce in
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
-  (* EJGA: flush_and_check_evars is only used in abstract, could we
-     use a different API? *)
-  let concl =
-    try Evarutil.flush_and_check_evars sigma concl
-    with Evarutil.Uninstantiated_evar _ ->
-      CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.")
-  in
-  let sigma, concl =
-    (* FIXME: should be done only if the tactic succeeds *)
-    let sigma = Evd.minimize_universes sigma in
-    sigma, Evarutil.nf_evars_universes sigma concl
-  in
-  let concl = EConstr.of_constr concl in
-  let uctx = Evd.evar_universe_context sigma in
-  let (const, safe, uctx) =
-    try build_constant_by_tactic ~name ~opaque:Vernacexpr.Transparent ~poly ~uctx ~sign:secsign concl solve_tac
+  let (const, safe, sigma') =
+    try build_constant_by_tactic ~warn_incomplete:false ~name ~opaque:Vernacexpr.Transparent ~poly ~sigma ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -1907,7 +1910,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     let (_, info) = Exninfo.capture src in
     Exninfo.iraise (e, info)
   in
-  let sigma = Evd.set_universe_context sigma uctx in
+  let sigma = Evd.drop_new_defined ~original:sigma sigma' in
   let body, effs = const.proof_entry_body in
   (* We drop the side-effects from the entry, they already exist in the ambient environment *)
   let const = Internal.pmap_entry_body const ~f:(fun _ -> body, ()) in

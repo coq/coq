@@ -312,7 +312,7 @@ module Proof : sig
       instead *)
   type proof_object
 
-  val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val close_proof : ?warn_incomplete:bool -> opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
   val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
   (** Special cases for delayed proofs, in this case we must provide the

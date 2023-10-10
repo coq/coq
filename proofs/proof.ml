@@ -150,18 +150,9 @@ let is_done p =
   Proofview.finished (unroll_focus p.proofview p.focus_stack)
 
 (* spiwack: for compatibility with <= 8.2 proof engine *)
-let has_unresolved_evar p =
-  Evd.has_undefined (Proofview.return p.proofview)
-let has_shelved_goals p =
-  let (_goals,sigma) = Proofview.proofview p.proofview in
-  Evd.has_shelved sigma
 let has_given_up_goals p =
   let (_goals,sigma) = Proofview.proofview p.proofview in
   Evd.has_given_up sigma
-
-let is_complete p =
-  is_done p && not (has_unresolved_evar p) &&
-  not (has_shelved_goals p) && not (has_given_up_goals p)
 
 (* Returns the list of partial proofs to initial goals *)
 let partial_proof p = Proofview.partial_proof p.entry p.proofview
@@ -332,22 +323,12 @@ let _ = CErrors.register_handler begin function
     | _ -> None
   end
 
-let warn_remaining_shelved_goals =
-  CWarnings.create ~name:"remaining-shelved-goals" ~category:CWarnings.CoreCategories.tactics
-    (fun () -> Pp.str"The proof has remaining shelved goals")
-
-let warn_remaining_unresolved_evars =
-  CWarnings.create ~name:"remaining-unresolved-evars" ~category:CWarnings.CoreCategories.tactics
-    (fun () -> Pp.str"The proof has unresolved variables")
-
 let return ?pid (p : t) =
   if not (is_done p) then
     raise (OpenProof(pid, UnfinishedProof))
   else if has_given_up_goals p then
     raise (OpenProof(pid, HasGivenUpGoals))
   else begin
-    if has_shelved_goals p then warn_remaining_shelved_goals ()
-    else if has_unresolved_evar p then warn_remaining_unresolved_evars ();
     let p = unfocus end_of_stack_kind p () in
     Proofview.return p.proofview
   end
