@@ -54,9 +54,9 @@ let protect_pattern_in_binder bl c ctypopt =
     let loc = Loc.merge_opt c.CAst.loc t.CAst.loc in
     let c = CAst.make ?loc @@ Constrexpr.CCast (c, Some Constr.DEFAULTcast, t) in
     let loc = match List.hd bl with
-      | Constrexpr.CLocalAssum (a::_,_,_) | Constrexpr.CLocalDef (a,_,_) -> a.CAst.loc
+      | Constrexpr.CLocalAssum (a::_,_,_,_) | Constrexpr.CLocalDef (a,_,_,_) -> a.CAst.loc
       | Constrexpr.CLocalPattern {CAst.loc} -> loc
-      | Constrexpr.CLocalAssum ([],_,_) -> assert false in
+      | Constrexpr.CLocalAssum ([],_,_,_) -> assert false in
     let apply_under_binders f env evd c =
       let rec aux env evd c =
         let open Constr in

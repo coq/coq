@@ -124,10 +124,10 @@ let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
 let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=UnivRigid})
 let mkRProp =  DAst.make @@ GSort (UNamed (None, [GProp, 0]))
-let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
+let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, None, Explicit, rt1, rt2)
 let mkRConstruct c = DAst.make @@ GRef (GlobRef.ConstructRef c,None)
 let mkRInd mind = DAst.make @@ GRef (GlobRef.IndRef mind,None)
-let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
+let mkRLambda n s t = DAst.make @@ GLambda (n, None, Explicit, s, t)
 
 let rec mkRnat n =
   if n <= 0 then DAst.make @@ GRef (Coqlib.lib_ref "num.nat.O", None) else
@@ -717,9 +717,9 @@ let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None)) :: mkCHoles ?loc (n - 1)
 let mkCHole loc = CAst.make ?loc @@ CHole (None)
 let mkCLambda ?loc name ty t =  CAst.make ?loc @@
-   CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
+   CLambdaN ([CLocalAssum([CAst.make ?loc name], None, Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
-   CProdN ([CLocalAssum([CAst.make Anonymous], Default Explicit, ty)], t)
+   CProdN ([CLocalAssum([CAst.make Anonymous], None, Default Explicit, ty)], t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
 
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
@@ -730,14 +730,14 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let ty = match ty with
    | a, (t, None) ->
     let rec force_type ty = DAst.(map (function
-     | GProd (x, k, s, t) -> incr n_binders; GProd (x, k, s, force_type t)
-     | GLetIn (x, v, oty, t) -> incr n_binders; GLetIn (x, v, oty, force_type t)
+     | GProd (x, r, k, s, t) -> incr n_binders; GProd (x, r, k, s, force_type t)
+     | GLetIn (x, r, v, oty, t) -> incr n_binders; GLetIn (x, r, v, oty, force_type t)
      | _ -> DAst.get (mkRCast ty mkRType))) ty in
      a, (force_type t, None)
    | _, (_, Some ty) ->
     let rec force_type ty = CAst.(map (function
      | CProdN (abs, t) ->
-       n_binders := !n_binders + List.length (List.flatten (List.map (function CLocalAssum (nal,_,_) -> nal | CLocalDef (na,_,_) -> [na] | CLocalPattern _ -> (* We count a 'pat for 1; TO BE CHECKED *) [CAst.make Name.Anonymous]) abs));
+       n_binders := !n_binders + List.length (List.flatten (List.map (function CLocalAssum (nal,_,_,_) -> nal | CLocalDef (na,_,_,_) -> [na] | CLocalPattern _ -> (* We count a 'pat for 1; TO BE CHECKED *) [CAst.make Name.Anonymous]) abs));
        CProdN (abs, force_type t)
      | CLetIn (n, v, oty, t) -> incr n_binders; CLetIn (n, v, oty, force_type t)
      | _ -> (mkCCast ty (mkCType None)).v)) ty in

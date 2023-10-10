@@ -21,9 +21,9 @@ open Names
 let mkGRef ref = DAst.make @@ GRef (ref, None)
 let mkGVar id = DAst.make @@ GVar id
 let mkGApp (rt, rtl) = DAst.make @@ GApp (rt, rtl)
-let mkGLambda (n, t, b) = DAst.make @@ GLambda (n, Explicit, t, b)
-let mkGProd (n, t, b) = DAst.make @@ GProd (n, Explicit, t, b)
-let mkGLetIn (n, b, t, c) = DAst.make @@ GLetIn (n, b, t, c)
+let mkGLambda (n, t, b) = DAst.make @@ GLambda (n, None, Explicit, t, b)
+let mkGProd (n, t, b) = DAst.make @@ GProd (n, None, Explicit, t, b)
+let mkGLetIn (n, b, t, c) = DAst.make @@ GLetIn (n, None, b, t, c)
 let mkGCases (rto, l, brl) = DAst.make @@ GCases (RegularStyle, rto, l, brl)
 
 let mkGHole () =
@@ -66,21 +66,22 @@ let change_vars =
           GApp (change_vars mapping rt', List.map (change_vars mapping) rtl)
         | GProj (f, rtl, rt) ->
           GProj (f, List.map (change_vars mapping) rtl, change_vars mapping rt)
-        | GLambda (name, k, t, b) ->
+        | GLambda (name, r, k, t, b) ->
           GLambda
             ( name
-            , k
+            , r, k
             , change_vars mapping t
             , change_vars (remove_name_from_mapping mapping name) b )
-        | GProd (name, k, t, b) ->
+        | GProd (name, r, k, t, b) ->
           GProd
             ( name
-            , k
+            , r, k
             , change_vars mapping t
             , change_vars (remove_name_from_mapping mapping name) b )
-        | GLetIn (name, def, typ, b) ->
+        | GLetIn (name, r, def, typ, b) ->
           GLetIn
             ( name
+            , r
             , change_vars mapping def
             , Option.map (change_vars mapping) typ
             , change_vars (remove_name_from_mapping mapping name) b )
@@ -190,24 +191,24 @@ let rec alpha_rt excluded rt =
     @@
     match DAst.get rt with
     | (GRef _ | GVar _ | GEvar _ | GPatVar _) as rt -> rt
-    | GLambda (Anonymous, k, t, b) ->
+    | GLambda (Anonymous, r, k, t, b) ->
       let new_id =
         Namegen.next_ident_away (Id.of_string "_x") (Id.Set.of_list excluded)
       in
       let new_excluded = new_id :: excluded in
       let new_t = alpha_rt new_excluded t in
       let new_b = alpha_rt new_excluded b in
-      GLambda (Name new_id, k, new_t, new_b)
-    | GProd (Anonymous, k, t, b) ->
+      GLambda (Name new_id, r, k, new_t, new_b)
+    | GProd (Anonymous, r, k, t, b) ->
       let new_t = alpha_rt excluded t in
       let new_b = alpha_rt excluded b in
-      GProd (Anonymous, k, new_t, new_b)
-    | GLetIn (Anonymous, b, t, c) ->
+      GProd (Anonymous, r, k, new_t, new_b)
+    | GLetIn (Anonymous, r, b, t, c) ->
       let new_b = alpha_rt excluded b in
       let new_t = Option.map (alpha_rt excluded) t in
       let new_c = alpha_rt excluded c in
-      GLetIn (Anonymous, new_b, new_t, new_c)
-    | GLambda (Name id, k, t, b) ->
+      GLetIn (Anonymous, r, new_b, new_t, new_c)
+    | GLambda (Name id, r, k, t, b) ->
       let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
       let t, b =
         if Id.equal new_id id then (t, b)
@@ -218,8 +219,8 @@ let rec alpha_rt excluded rt =
       let new_excluded = new_id :: excluded in
       let new_t = alpha_rt new_excluded t in
       let new_b = alpha_rt new_excluded b in
-      GLambda (Name new_id, k, new_t, new_b)
-    | GProd (Name id, k, t, b) ->
+      GLambda (Name new_id, r, k, new_t, new_b)
+    | GProd (Name id, r, k, t, b) ->
       let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
       let new_excluded = new_id :: excluded in
       let t, b =
@@ -230,8 +231,8 @@ let rec alpha_rt excluded rt =
       in
       let new_t = alpha_rt new_excluded t in
       let new_b = alpha_rt new_excluded b in
-      GProd (Name new_id, k, new_t, new_b)
-    | GLetIn (Name id, b, t, c) ->
+      GProd (Name new_id, r, k, new_t, new_b)
+    | GLetIn (Name id, r, b, t, c) ->
       let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
       let c =
         if Id.equal new_id id then c
@@ -241,7 +242,7 @@ let rec alpha_rt excluded rt =
       let new_b = alpha_rt new_excluded b in
       let new_t = Option.map (alpha_rt new_excluded) t in
       let new_c = alpha_rt new_excluded c in
-      GLetIn (Name new_id, new_b, new_t, new_c)
+      GLetIn (Name new_id, r, new_b, new_t, new_c)
     | GLetTuple (nal, (na, rto), t, b) ->
       let rev_new_nal, new_excluded, mapping =
         List.fold_left
@@ -316,12 +317,12 @@ let is_free_in id =
       (fun ?loc -> function GRef _ -> false | GVar id' -> Id.compare id' id == 0
         | GEvar _ -> false | GPatVar _ -> false
         | GApp (rt, rtl) | GProj (_, rtl, rt) -> List.exists is_free_in (rt :: rtl)
-        | GLambda (n, _, t, b) | GProd (n, _, t, b) ->
+        | GLambda (n, _, _, t, b) | GProd (n, _, _, t, b) ->
           let check_in_b =
             match n with Name id' -> not (Id.equal id' id) | _ -> true
           in
           is_free_in t || (check_in_b && is_free_in b)
-        | GLetIn (n, b, t, c) ->
+        | GLetIn (n, _, b, t, c) ->
           let check_in_c =
             match n with Name id' -> not (Id.equal id' id) | _ -> true
           in
@@ -383,16 +384,17 @@ let replace_var_by_term x_id term =
           GApp (replace_var_by_pattern rt', List.map replace_var_by_pattern rtl)
         | GProj (f, rtl, rt) ->
           GProj (f, List.map replace_var_by_pattern rtl, replace_var_by_pattern rt)
-        | GLambda (Name id, _, _, _) as rt when Id.compare id x_id == 0 -> rt
-        | GLambda (name, k, t, b) ->
-          GLambda (name, k, replace_var_by_pattern t, replace_var_by_pattern b)
-        | GProd (Name id, _, _, _) as rt when Id.compare id x_id == 0 -> rt
-        | GProd (name, k, t, b) ->
-          GProd (name, k, replace_var_by_pattern t, replace_var_by_pattern b)
-        | GLetIn (Name id, _, _, _) as rt when Id.compare id x_id == 0 -> rt
-        | GLetIn (name, def, typ, b) ->
+        | GLambda (Name id, _, _, _, _) as rt when Id.compare id x_id == 0 -> rt
+        | GLambda (name, r, k, t, b) ->
+          GLambda (name, r, k, replace_var_by_pattern t, replace_var_by_pattern b)
+        | GProd (Name id, _, _, _, _) as rt when Id.compare id x_id == 0 -> rt
+        | GProd (name, r, k, t, b) ->
+          GProd (name, r, k, replace_var_by_pattern t, replace_var_by_pattern b)
+        | GLetIn (Name id, _, _, _, _) as rt when Id.compare id x_id == 0 -> rt
+        | GLetIn (name, r, def, typ, b) ->
           GLetIn
             ( name
+            , r
             , replace_var_by_pattern def
             , Option.map replace_var_by_pattern typ
             , replace_var_by_pattern b )
@@ -510,12 +512,12 @@ let expand_as =
         try DAst.get (Id.Map.find id map) with Not_found -> rt )
       | GApp (f, args) -> GApp (expand_as map f, List.map (expand_as map) args)
       | GProj (f, args, c) -> GProj (f, List.map (expand_as map) args, expand_as map c)
-      | GLambda (na, k, t, b) ->
-        GLambda (na, k, expand_as map t, expand_as map b)
-      | GProd (na, k, t, b) -> GProd (na, k, expand_as map t, expand_as map b)
-      | GLetIn (na, v, typ, b) ->
+      | GLambda (na, r, k, t, b) ->
+        GLambda (na, r, k, expand_as map t, expand_as map b)
+      | GProd (na, r, k, t, b) -> GProd (na, r, k, expand_as map t, expand_as map b)
+      | GLetIn (na, r, v, typ, b) ->
         GLetIn
-          (na, expand_as map v, Option.map (expand_as map) typ, expand_as map b)
+          (na, r, expand_as map v, Option.map (expand_as map) typ, expand_as map b)
       | GLetTuple (nal, (na, po), v, b) ->
         GLetTuple
           ( nal

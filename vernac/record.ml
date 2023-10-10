@@ -95,9 +95,9 @@ let error_parameters_must_be_named bk {CAst.loc; v=name} =
   | _ -> ()
 
 let check_parameters_must_be_named = function
-  | CLocalDef (b, _, _) ->
+  | CLocalDef (b, _, _, _) ->
     error_parameters_must_be_named default_binder_kind b
-  | CLocalAssum (ls, bk, _ce) ->
+  | CLocalAssum (ls, _, bk, _ce) ->
     List.iter (error_parameters_must_be_named bk) ls
   | CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed in record parameters")

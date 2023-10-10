@@ -490,7 +490,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
           DAst.make
           @@
           match DAst.get t with
-          | GLambda (na, _, nat, b) -> GLetIn (na, u, None, aux b l)
+          | GLambda (na, _, _, nat, b) -> GLetIn (na, None, u, None, aux b l)
           | _ -> GApp (t, l) )
       in
       build_entry_lc env sigma funnames avoid (aux f args)
@@ -536,7 +536,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
             args_res.result }
     | GApp _ ->
       assert false (* we have collected all the app in [glob_decompose_app] *)
-    | GLetIn (n, v, t, b) ->
+    | GLetIn (n, _, v, t, b) ->
       (* if we have [(let x := v in b) t1 ... tn] ,
          we discard our work and compute the list of constructor for
          [let x = v in (b t1 ... tn)] up to alpha conversion
@@ -590,7 +590,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
               let c, params = List.sep_last args_res.value in
               {args_res with value = DAst.make (GProj (f, params, c))})
             args_res.result }
-  | GLambda (n, _, t, b) ->
+  | GLambda (n, _, _, t, b) ->
     (* we first compute the list of constructor
        corresponding to the body of the function,
        then the one corresponding to the type
@@ -605,7 +605,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let new_env = raw_push_named (new_n, None, t) env in
     let b_res = build_entry_lc new_env sigma funnames avoid b in
     combine_results (combine_lam new_n) t_res b_res
-  | GProd (n, _, t, b) ->
+  | GProd (n, _, _, t, b) ->
     (* we first compute the list of constructor
        corresponding to the body of the function,
        then the one corresponding to the type
@@ -617,7 +617,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     if List.length t_res.result = 1 && List.length b_res.result = 1 then
       combine_results (combine_prod2 n) t_res b_res
     else combine_results (combine_prod n) t_res b_res
-  | GLetIn (n, v, typ, b) ->
+  | GLetIn (n, _, v, typ, b) ->
     (* we first compute the list of constructor
        corresponding to the body of the function,
        then the one corresponding to the value [t]
@@ -906,7 +906,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
   let open Context.Rel.Declaration in
   let open CAst in
   match DAst.get rt with
-  | GProd (n, k, t, b) -> (
+  | GProd (n, _, k, t, b) -> (
     let not_free_in_t id = not (is_free_in id t) in
     let new_crossed_types = t :: crossed_types in
     match DAst.get t with
@@ -1103,7 +1103,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         (new_b, Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude))
       | _ -> (mkGProd (n, t, new_b), Id.Set.filter not_free_in_t id_to_exclude)
       ) )
-  | GLambda (n, k, t, b) -> (
+  | GLambda (n, _, k, t, b) -> (
     let not_free_in_t id = not (is_free_in id t) in
     let new_crossed_types = t :: crossed_types in
     observe (str "computing new type for lambda : " ++ pr_glob_constr_env env rt);
@@ -1121,12 +1121,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
       if Id.Set.mem id id_to_exclude && depth >= nb_args then
         (new_b, Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude))
       else
-        ( DAst.make @@ GProd (n, k, t, new_b)
+        ( DAst.make @@ GProd (n, None, k, t, new_b)
         , Id.Set.filter not_free_in_t id_to_exclude )
     | _ -> anomaly (Pp.str "Should not have an anonymous function here.")
     (* We have renamed all the anonymous functions during alpha_renaming phase *)
     )
-  | GLetIn (n, v, t, b) -> (
+  | GLetIn (n, _, v, t, b) -> (
     let t =
       match t with
       | None -> v
@@ -1150,7 +1150,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args ->
       (new_b, Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude))
     | _ ->
-      ( DAst.make @@ GLetIn (n, t, None, new_b)
+      ( DAst.make @@ GLetIn (n, None, t, None, new_b)
       , (* HOPING IT WOULD WORK *)
         Id.Set.filter not_free_in_t id_to_exclude ) )
   | GLetTuple (nal, (na, rto), t, b) ->
@@ -1201,10 +1201,10 @@ let rec compute_cst_params relnames params gt =
         | _ -> List.fold_left (compute_cst_params relnames) params (f :: args) )
       | GProj (f, args, c) ->
         List.fold_left (compute_cst_params relnames) params (args @ [c])
-      | GLambda (_, _, t, b) | GProd (_, _, t, b) | GLetTuple (_, _, t, b) ->
+      | GLambda (_, _, _, t, b) | GProd (_, _, _, t, b) | GLetTuple (_, _, t, b) ->
         let t_params = compute_cst_params relnames params t in
         compute_cst_params relnames t_params b
-      | GLetIn (_, v, t, b) ->
+      | GLetIn (_, _, v, t, b) ->
         let v_params = compute_cst_params relnames params v in
         let t_params =
           Option.fold_left (compute_cst_params relnames) v_params t
@@ -1271,7 +1271,7 @@ let rec rebuild_return_type rt =
     CAst.make ?loc
     @@ Constrexpr.CProdN
          ( [ Constrexpr.CLocalAssum
-               ([CAst.make Anonymous], Constrexpr.Default Explicit, rt) ]
+               ([CAst.make Anonymous], None, Constrexpr.Default Explicit, rt) ]
          , CAst.make @@ Constrexpr.CSort (UAnonymous {rigid=UnivRigid}) )
 
 let do_build_inductive evd (funconstants : pconstant list)
@@ -1350,6 +1350,7 @@ let do_build_inductive evd (funconstants : pconstant list)
             @@ Constrexpr.CProdN
                  ( [ Constrexpr.CLocalAssum
                        ( [CAst.make n]
+                       , None
                        , Constrexpr_ops.default_binder_kind
                        , with_full_print
                            Constrextern.(extern_glob_constr empty_extern_env)
@@ -1439,6 +1440,7 @@ let do_build_inductive evd (funconstants : pconstant list)
           @@ Constrexpr.CProdN
                ( [ Constrexpr.CLocalAssum
                      ( [CAst.make n]
+                     , None
                      , Constrexpr_ops.default_binder_kind
                      , with_full_print
                          Constrextern.(extern_glob_constr empty_extern_env)
@@ -1465,6 +1467,7 @@ let do_build_inductive evd (funconstants : pconstant list)
         | Some typ ->
           Constrexpr.CLocalDef
             ( CAst.make n
+            , None
             , Constrextern.(extern_glob_constr empty_extern_env) t
             , Some
                 (with_full_print
@@ -1473,6 +1476,7 @@ let do_build_inductive evd (funconstants : pconstant list)
         | None ->
           Constrexpr.CLocalAssum
             ( [CAst.make n]
+            , None
             , Constrexpr_ops.default_binder_kind
             , Constrextern.(extern_glob_constr empty_extern_env) t ))
       rels_params

@@ -263,9 +263,9 @@ let mkGHole = DAst.make @@
         Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
   })
 let mkGProd id c1 c2 = DAst.make @@
-  GProd (Name (Id.of_string id), Explicit, c1, c2)
+  GProd (Name (Id.of_string id), None, Explicit, c1, c2)
 let mkGArrow c1 c2 = DAst.make @@
-  GProd (Anonymous, Explicit, c1, c2)
+  GProd (Anonymous, None, Explicit, c1, c2)
 let mkGVar id = DAst.make @@ GVar (Id.of_string id)
 let mkGPatVar id = DAst.make @@ GPatVar(Evar_kinds.FirstOrderPatVar (Id.of_string id))
 let mkGRef r = DAst.make @@ GRef (Lazy.force r, None)

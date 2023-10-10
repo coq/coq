@@ -341,6 +341,58 @@ let { Goptions.get = print_match_paramunivs } =
     ~value:false
     ()
 
+let { Goptions.get = print_relevances } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing";"Relevance";"Marks"]
+    ~value:false
+    ()
+
+(** univ and sort detyping *)
+
+let detype_level_name sigma l =
+  if Univ.Level.is_set l then GSet else
+    match UState.id_of_level (Evd.evar_universe_context sigma) l with
+    | Some id -> GLocalUniv (CAst.make id)
+    | None -> GUniv l
+
+let detype_level sigma l =
+  UNamed (detype_level_name sigma l)
+
+let detype_qvar sigma q =
+  match UState.id_of_qvar (Evd.evar_universe_context sigma) q with
+  | Some id -> GLocalQVar (CAst.make (Name id))
+  | None -> GQVar q
+
+let detype_quality sigma q =
+  let open Sorts.Quality in
+  match q with
+  | QConstant q -> GQConstant q
+  | QVar q -> GQualVar (detype_qvar sigma q)
+
+let detype_universe sigma u =
+  List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
+
+let detype_sort sigma = function
+  | SProp -> UNamed (None, [GSProp,0])
+  | Prop -> UNamed (None, [GProp,0])
+  | Set -> UNamed (None, [GSet,0])
+  | Type u ->
+      (if !print_universes
+       then UNamed (None, detype_universe sigma u)
+       else UAnonymous {rigid=UnivRigid})
+  | QSort (q, u) ->
+    if !print_universes then
+      let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
+      UNamed (q, detype_universe sigma u)
+    else UAnonymous {rigid=UnivRigid}
+
+let detype_relevance_info sigma na =
+  if not (print_relevances ()) then None
+  else match Evarutil.nf_relevance sigma na.binder_relevance with
+    | Relevant -> Some GRelevant
+    | Irrelevant -> Some GIrrelevant
+    | RelevanceVar q -> Some (GRelevanceVar (detype_qvar sigma q))
+
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -554,8 +606,8 @@ let extract_nondep_branches b l =
   let rec strip l r =
     match DAst.get r, l with
       | r', [] -> r
-      | GLambda (_,_,_,t), false::l -> strip l t
-      | GLetIn (_,_,_,t), true::l -> strip l t
+      | GLambda (_,_,_,_,t), false::l -> strip l t
+      | GLetIn (_,_,_,_,t), true::l -> strip l t
       (* FIXME: do we need adjustment? *)
       | _,_ -> assert false in
   strip l b
@@ -564,8 +616,8 @@ let it_destRLambda_or_LetIn_names l c =
   let rec aux l nal c =
     match DAst.get c, l with
       | _, [] -> (List.rev nal,c)
-      | GLambda (na,_,_,c), false::l -> aux l (na::nal) c
-      | GLetIn (na,_,_,c), true::l -> aux l (na::nal) c
+      | GLambda (na,_,_,_,c), false::l -> aux l (na::nal) c
+      | GLetIn (na,_,_,_,c), true::l -> aux l (na::nal) c
       | _, true::l -> (* let-expansion *) aux l (Anonymous :: nal) c
       | _, false::l ->
           (* eta-expansion *)
@@ -612,7 +664,7 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
       let p = detype p in
       let nl,typ = it_destRLambda_or_LetIn_names ci.ci_pp_info.ind_tags p in
       let n,typ = match DAst.get typ with
-        | GLambda (x,_,t,c) -> x, c
+        | GLambda (x,_,_,t,c) -> x, c
         | _ -> Anonymous, typ in
       let aliastyp =
         if List.for_all (Name.equal Anonymous) nl then None
@@ -671,7 +723,7 @@ let rec share_names detype flags n l avoid env sigma c t =
         let t' = detype flags avoid env sigma t in
         let id, avoid = next_name_away flags na.binder_name avoid in
         let env = add_name (set_name (Name id) decl) env in
-        share_names detype flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
+        share_names detype flags (n-1) ((Name id,detype_relevance_info sigma na, Explicit,None,t')::l) avoid env sigma c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
         let decl = LocalDef (na,b,t') in
@@ -679,7 +731,7 @@ let rec share_names detype flags n l avoid env sigma c t =
         let b' = detype flags avoid env sigma b in
         let id, avoid = next_name_away flags na.binder_name avoid in
         let env = add_name (set_name (Name id) decl) env in
-        share_names detype flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
+        share_names detype flags n ((Name id,detype_relevance_info sigma na, Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
         share_names detype flags n l avoid env sigma c (subst1 b t)
@@ -690,7 +742,7 @@ let rec share_names detype flags n l avoid env sigma c t =
         let id, avoid = next_name_away flags na'.binder_name avoid in
         let env = add_name (set_name (Name id) decl) env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-        share_names detype flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
+        share_names detype flags (n-1) ((Name id,detype_relevance_info sigma na',Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
         if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
@@ -714,7 +766,7 @@ let rec share_pattern_names detype n l avoid env sigma c t =
         let id = Namegen.next_name_away na avoid in
         let avoid = Id.Set.add id avoid in
         let env = Name id :: env in
-        share_pattern_names detype (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
+        share_pattern_names detype (n-1) ((Name id,None,Explicit,None,t')::l) avoid env sigma c c'
     | _ ->
         if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
         let c = detype avoid env sigma c in
@@ -752,43 +804,6 @@ let detype_cofix detype flags avoid env sigma n (names,tys,bodies) =
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
-
-let detype_level_name sigma l =
-  if Univ.Level.is_set l then GSet else
-    match UState.id_of_level (Evd.evar_universe_context sigma) l with
-    | Some id -> GLocalUniv (CAst.make id)
-    | None -> GUniv l
-
-let detype_level sigma l =
-  UNamed (detype_level_name sigma l)
-
-let detype_qvar sigma q =
-  match UState.id_of_qvar (Evd.evar_universe_context sigma) q with
-  | Some id -> GLocalQVar (CAst.make (Name id))
-  | None -> GQVar q
-
-let detype_quality sigma q =
-  let open Sorts.Quality in
-  match q with
-  | QConstant q -> GQConstant q
-  | QVar q -> GQualVar (detype_qvar sigma q)
-
-let detype_universe sigma u =
-  List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
-
-let detype_sort sigma = function
-  | SProp -> UNamed (None, [GSProp,0])
-  | Prop -> UNamed (None, [GProp,0])
-  | Set -> UNamed (None, [GSet,0])
-  | Type u ->
-      (if !print_universes
-       then UNamed (None, detype_universe sigma u)
-       else UAnonymous {rigid=UnivRigid})
-  | QSort (q, u) ->
-    if !print_universes then
-      let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
-      UNamed (q, detype_universe sigma u)
-    else UAnonymous {rigid=UnivRigid}
 
 type binder_kind = BProd | BLambda | BLetIn
 
@@ -1014,13 +1029,14 @@ and detype_binder d flags bk avoid env sigma decl c =
   let na = get_name decl in
   let body = get_value decl in
   let ty = get_type decl in
+  let rinfo = detype_relevance_info sigma (get_annot decl) in
   let na',avoid' = match bk with
   | BLetIn -> compute_name sigma ~let_in:true ~pattern:false flags avoid env na c
   | _ -> compute_name sigma ~let_in:false ~pattern:false flags avoid env na c in
   let r =  detype d flags avoid' (add_name (set_name na' decl) env) sigma c in
   match bk with
-  | BProd   -> GProd (na',Explicit,detype d (nongoal flags) avoid env sigma ty, r)
-  | BLambda -> GLambda (na',Explicit,detype d (nongoal flags) avoid env sigma ty, r)
+  | BProd   -> GProd (na',rinfo,Explicit,detype d (nongoal flags) avoid env sigma ty, r)
+  | BLambda -> GLambda (na',rinfo,Explicit,detype d (nongoal flags) avoid env sigma ty, r)
   | BLetIn ->
       let c = detype d { flg_isgoal = false } avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
@@ -1033,7 +1049,7 @@ and detype_binder d flags bk avoid env sigma decl c =
           with Retyping.RetypeError _ -> InType
       in
       let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d (nongoal flags) avoid env sigma ty) in
-      GLetIn (na', c, t, r)
+      GLetIn (na', rinfo, c, t, r)
 
 let detype_rel_context d flags where avoid env sigma sign =
   let where = Option.map (fun c -> EConstr.it_mkLambda_or_LetIn c sign) where in
@@ -1042,6 +1058,7 @@ let detype_rel_context d flags where avoid env sigma sign =
   | decl::rest ->
       let na = get_name decl in
       let t = get_type decl in
+      let r = detype_relevance_info sigma (get_annot decl) in
       let na',avoid' =
         match where with
         | None -> na,avoid
@@ -1054,7 +1071,7 @@ let detype_rel_context d flags where avoid env sigma sign =
       in
       let b' = Option.map (detype d flags avoid env sigma) b in
       let t' = detype d flags avoid env sigma t in
-      (na',Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
+      (na',r,Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
 let detype d ?(isgoal=false) avoid env sigma t =
@@ -1099,15 +1116,15 @@ let detype_closed_glob ?isgoal avoid env sigma t =
         with Not_found ->
          GVar id
         end
-    | GLambda (id,k,t,c) ->
+    | GLambda (id,r,k,t,c) ->
         let id = convert_name cl id in
-        GLambda(id,k,detype_closed_glob cl t, detype_closed_glob cl c)
-    | GProd (id,k,t,c) ->
+        GLambda(id,r,k,detype_closed_glob cl t, detype_closed_glob cl c)
+    | GProd (id,r,k,t,c) ->
         let id = convert_name cl id in
-        GProd(id,k,detype_closed_glob cl t, detype_closed_glob cl c)
-    | GLetIn (id,b,t,e) ->
+        GProd(id,r,k,detype_closed_glob cl t, detype_closed_glob cl c)
+    | GLetIn (id,r,b,t,e) ->
         let id = convert_name cl id in
-        GLetIn(id,detype_closed_glob cl b, Option.map (detype_closed_glob cl) t, detype_closed_glob cl e)
+        GLetIn(id,r,detype_closed_glob cl b, Option.map (detype_closed_glob cl) t, detype_closed_glob cl e)
     | GLetTuple (ids,(n,r),b,e) ->
         let ids = List.map (convert_name cl) ids in
         let n = convert_name cl n in
@@ -1170,22 +1187,22 @@ let rec subst_glob_constr env subst = DAst.map (function
         if ref' == ref && rl' == rl && r' == r then raw else
           GProj((destConstRef ref',u),rl',r')
 
-  | GLambda (n,bk,r1,r2) as raw ->
+  | GLambda (n,r,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 and r2' = subst_glob_constr env subst r2 in
         if r1' == r1 && r2' == r2 then raw else
-          GLambda (n,bk,r1',r2')
+          GLambda (n,r,bk,r1',r2')
 
-  | GProd (n,bk,r1,r2) as raw ->
+  | GProd (n,r,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 and r2' = subst_glob_constr env subst r2 in
         if r1' == r1 && r2' == r2 then raw else
-          GProd (n,bk,r1',r2')
+          GProd (n,r,bk,r1',r2')
 
-  | GLetIn (n,r1,t,r2) as raw ->
+  | GLetIn (n,r,r1,t,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 in
       let r2' = subst_glob_constr env subst r2 in
       let t' = Option.Smart.map (subst_glob_constr env subst) t in
         if r1' == r1 && t == t' && r2' == r2 then raw else
-          GLetIn (n,r1',t',r2')
+          GLetIn (n,r,r1',t',r2')
 
   | GCases (sty,rtno,rl,branches) as raw ->
     let open CAst in
@@ -1229,10 +1246,10 @@ let rec subst_glob_constr env subst = DAst.map (function
       let ra1' = Array.Smart.map (subst_glob_constr env subst) ra1
       and ra2' = Array.Smart.map (subst_glob_constr env subst) ra2 in
       let bl' = Array.Smart.map
-        (List.Smart.map (fun (na,k,obd,ty as dcl) ->
+        (List.Smart.map (fun (na,r,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr env subst ty in
           let obd' = Option.Smart.map (subst_glob_constr env subst) obd in
-          if ty'==ty && obd'==obd then dcl else (na,k,obd',ty')))
+          if ty'==ty && obd'==obd then dcl else (na,r,k,obd',ty')))
         bl in
         if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
           GRec (fix,ida,bl',ra1',ra2')

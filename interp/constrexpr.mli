@@ -30,6 +30,12 @@ type quality_expr =
   | CQConstant of Sorts.Quality.constant
   | CQualVar of qvar_expr
 
+type relevance_expr =
+  | CRelevant | CIrrelevant
+  | CRelevanceVar of qvar_expr
+
+type relevance_info_expr = relevance_expr option
+
 type sort_expr = (qvar_expr option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
 
 type instance_expr = quality_expr list * univ_level_expr list
@@ -176,11 +182,12 @@ and branch_expr =
   (cases_pattern_expr list list * constr_expr) CAst.t
 
 and fix_expr =
-    lident * recursion_order_expr option *
-      local_binder_expr list * constr_expr * constr_expr
+  lident * relevance_info_expr
+  * recursion_order_expr option *
+  local_binder_expr list * constr_expr * constr_expr
 
 and cofix_expr =
-    lident * local_binder_expr list * constr_expr * constr_expr
+    lident * relevance_info_expr * local_binder_expr list * constr_expr * constr_expr
 
 and recursion_order_expr_r =
   | CStructRec of lident
@@ -190,8 +197,8 @@ and recursion_order_expr = recursion_order_expr_r CAst.t
 
 (* Anonymous defs allowed ?? *)
 and local_binder_expr =
-  | CLocalAssum   of lname list * binder_kind * constr_expr
-  | CLocalDef     of lname * constr_expr * constr_expr option
+  | CLocalAssum   of lname list * relevance_info_expr * binder_kind * constr_expr
+  | CLocalDef     of lname * relevance_info_expr * constr_expr * constr_expr option
   | CLocalPattern of cases_pattern_expr
 
 and constr_notation_substitution =

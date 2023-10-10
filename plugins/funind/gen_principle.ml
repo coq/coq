@@ -22,9 +22,9 @@ let observe_tac s =
 *)
 let rec abstract_glob_constr c = function
   | [] -> c
-  | Constrexpr.CLocalDef (x, b, t) :: bl ->
+  | Constrexpr.CLocalDef (x, _, b, t) :: bl ->
     Constrexpr_ops.mkLetInC (x, b, t, abstract_glob_constr c bl)
-  | Constrexpr.CLocalAssum (idl, k, t) :: bl ->
+  | Constrexpr.CLocalAssum (idl, _, k, t) :: bl ->
     List.fold_right
       (fun x b -> Constrexpr_ops.mkLambdaC ([x], k, t, b))
       idl
@@ -89,10 +89,10 @@ let is_rec names =
     | GRec _ -> CErrors.user_err (Pp.str "GRec not handled")
     | GIf (b, _, lhs, rhs) ->
       lookup names b || lookup names lhs || lookup names rhs
-    | GProd (na, _, t, b) | GLambda (na, _, t, b) ->
+    | GProd (na, _, _, t, b) | GLambda (na, _, _, t, b) ->
       lookup names t
       || lookup (Nameops.Name.fold_right Id.Set.remove na names) b
-    | GLetIn (na, b, t, c) ->
+    | GLetIn (na, _, b, t, c) ->
       lookup names b
       || Option.cata (lookup names) true t
       || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
@@ -119,9 +119,9 @@ let rec rebuild_bl aux bl typ =
   let open Constrexpr in
   match (bl, typ) with
   | [], _ -> (List.rev aux, typ)
-  | CLocalAssum (nal, bk, _) :: bl', typ -> rebuild_nal aux bk bl' nal typ
-  | CLocalDef (na, _, _) :: bl', {CAst.v = CLetIn (_, nat, ty, typ')} ->
-    rebuild_bl (Constrexpr.CLocalDef (na, nat, ty) :: aux) bl' typ'
+  | CLocalAssum (nal, _, bk, _) :: bl', typ -> rebuild_nal aux bk bl' nal typ
+  | CLocalDef (na, _, _, _) :: bl', {CAst.v = CLetIn (_, nat, ty, typ')} ->
+    rebuild_bl (Constrexpr.CLocalDef (na, None, nat, ty) :: aux) bl' typ'
   | _ -> assert false
 
 and rebuild_nal aux bk bl' nal typ =
@@ -130,19 +130,19 @@ and rebuild_nal aux bk bl' nal typ =
   | _, {CAst.v = CProdN ([], typ)} -> rebuild_nal aux bk bl' nal typ
   | [], _ -> rebuild_bl aux bl' typ
   | ( na :: nal
-    , {CAst.v = CProdN (CLocalAssum (na' :: nal', bk', nal't) :: rest, typ')} )
+    , {CAst.v = CProdN (CLocalAssum (na' :: nal', _, bk', nal't) :: rest, typ')} )
     ->
     if Name.equal na.CAst.v na'.CAst.v || Name.is_anonymous na'.CAst.v then
-      let assum = CLocalAssum ([na], bk, nal't) in
+      let assum = CLocalAssum ([na], None, bk, nal't) in
       let new_rest =
-        if nal' = [] then rest else CLocalAssum (nal', bk', nal't) :: rest
+        if nal' = [] then rest else CLocalAssum (nal', None, bk', nal't) :: rest
       in
       rebuild_nal (assum :: aux) bk bl' nal
         (CAst.make @@ CProdN (new_rest, typ'))
     else
-      let assum = CLocalAssum ([na'], bk, nal't) in
+      let assum = CLocalAssum ([na'], None, bk, nal't) in
       let new_rest =
-        if nal' = [] then rest else CLocalAssum (nal', bk', nal't) :: rest
+        if nal' = [] then rest else CLocalAssum (nal', None, bk', nal't) :: rest
       in
       rebuild_nal (assum :: aux) bk bl' (na :: nal)
         (CAst.make @@ CProdN (new_rest, typ'))
@@ -184,7 +184,7 @@ let rec local_binders_length = function
   (* Assume that no `{ ... } contexts occur *)
   | [] -> 0
   | Constrexpr.CLocalDef _ :: bl -> 1 + local_binders_length bl
-  | Constrexpr.CLocalAssum (idl, _, _) :: bl ->
+  | Constrexpr.CLocalAssum (idl, _, _, _) :: bl ->
     List.length idl + local_binders_length bl
   | Constrexpr.CLocalPattern _ :: bl -> assert false
 
@@ -1682,14 +1682,14 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt
     match wf_arg with
     | None -> (
       match args with
-      | [Constrexpr.CLocalAssum ([{CAst.v = Name x}], _k, t)] -> (t, x)
+      | [Constrexpr.CLocalAssum ([{CAst.v = Name x}], _, _k, t)] -> (t, x)
       | _ -> CErrors.user_err (Pp.str "Recursive argument must be specified") )
     | Some wf_args -> (
       try
         match
           List.find
             (function
-              | Constrexpr.CLocalAssum (l, _k, t) ->
+              | Constrexpr.CLocalAssum (l, _, _k, t) ->
                 List.exists
                   (function
                     | {CAst.v = Name id} -> Id.equal id wf_args | _ -> false)
@@ -1697,7 +1697,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt
               | _ -> false)
             args
         with
-        | Constrexpr.CLocalAssum (_, _k, t) -> (t, wf_args)
+        | Constrexpr.CLocalAssum (_, _, _k, t) -> (t, wf_args)
         | _ -> assert false
       with Not_found -> assert false )
   in
@@ -1916,14 +1916,14 @@ let rec chop_n_arrow n t =
         let new_n =
           let rec aux (n : int) = function
             | [] -> n
-            | CLocalAssum (nal, k, t'') :: nal_ta' ->
+            | CLocalAssum (nal, _, k, t'') :: nal_ta' ->
               let nal_l = List.length nal in
               if n >= nal_l then aux (n - nal_l) nal_ta'
               else
                 let new_t' =
                   CAst.make
                   @@ Constrexpr.CProdN
-                       ( CLocalAssum (snd (List.chop n nal), k, t'') :: nal_ta'
+                       ( CLocalAssum (snd (List.chop n nal), None, k, t'') :: nal_ta'
                        , t' )
                 in
                 raise (Stop new_t')
@@ -1948,11 +1948,11 @@ let rec add_args id new_args =
       CProdN
         ( List.map
             (function
-              | CLocalAssum (nal, k, b2) ->
-                CLocalAssum (nal, k, add_args id new_args b2)
-              | CLocalDef (na, b1, t) ->
+              | CLocalAssum (nal, r, k, b2) ->
+                CLocalAssum (nal, r, k, add_args id new_args b2)
+              | CLocalDef (na, r, b1, t) ->
                 CLocalDef
-                  ( na
+                  ( na, r
                   , add_args id new_args b1
                   , Option.map (add_args id new_args) t )
               | CLocalPattern _ ->
@@ -1963,11 +1963,11 @@ let rec add_args id new_args =
       CLambdaN
         ( List.map
             (function
-              | CLocalAssum (nal, k, b2) ->
-                CLocalAssum (nal, k, add_args id new_args b2)
-              | CLocalDef (na, b1, t) ->
+              | CLocalAssum (nal, r, k, b2) ->
+                CLocalAssum (nal, r, k, add_args id new_args b2)
+              | CLocalDef (na, r, b1, t) ->
                 CLocalDef
-                  ( na
+                  ( na, r
                   , add_args id new_args b1
                   , Option.map (add_args id new_args) t )
               | CLocalPattern _ ->
@@ -2034,7 +2034,7 @@ let rec get_args b t :
     * Constrexpr.constr_expr =
   let open Constrexpr in
   match b.CAst.v with
-  | Constrexpr.CLambdaN ((CLocalAssum (nal, k, ta) as d) :: rest, b') ->
+  | Constrexpr.CLambdaN ((CLocalAssum (nal, _, k, ta) as d) :: rest, b') ->
     let n = List.length nal in
     let nal_tas, b'', t'' =
       get_args
@@ -2077,7 +2077,7 @@ let make_graph (f_ref : GlobRef.t) =
       | Constrexpr.CFix (l_id, fixexprl) ->
         let l =
           List.map
-            (fun (id, recexp, bl, t, b) ->
+            (fun (id, _, recexp, bl, t, b) ->
               let {CAst.loc; v = rec_id} =
                 match Option.get recexp with
                 | {CAst.v = CStructRec id} -> id
@@ -2088,8 +2088,8 @@ let make_graph (f_ref : GlobRef.t) =
                 List.flatten
                   (List.map
                      (function
-                       | Constrexpr.CLocalDef (na, _, _) -> []
-                       | Constrexpr.CLocalAssum (nal, _, _) ->
+                       | Constrexpr.CLocalDef (na, _, _, _) -> []
+                       | Constrexpr.CLocalAssum (nal, _, _, _) ->
                          List.map
                            (fun {CAst.loc; v = n} ->
                              CAst.make ?loc

@@ -27,6 +27,10 @@ type glob_qvar =
   | GQVar of Sorts.QVar.t
   | GRawQVar of Sorts.QVar.t (* hack for funind *)
 
+type glob_relevance =
+  | GRelevant | GIrrelevant
+  | GRelevanceVar of glob_qvar
+
 type glob_quality =
   | GQConstant of Sorts.Quality.constant
   | GQualVar of glob_qvar
@@ -76,6 +80,8 @@ type cases_pattern = [ `any ] cases_pattern_g
 
 type binding_kind = Explicit | MaxImplicit | NonMaxImplicit
 
+type relevance_info = glob_relevance option
+
 type glob_evar_kind = Evar_kinds.glob_evar_kind =
   | GImplicitArg of GlobRef.t * (int * Id.t option) * bool (** Force inference *)
   | GBinderType of Name.t
@@ -96,9 +102,9 @@ type 'a glob_constr_r =
   | GEvar   of existential_name CAst.t * (lident * 'a glob_constr_g) list
   | GPatVar of Evar_kinds.matching_var_kind (** Used for patterns only *)
   | GApp    of 'a glob_constr_g * 'a glob_constr_g list
-  | GLambda of Name.t * binding_kind *  'a glob_constr_g * 'a glob_constr_g
-  | GProd   of Name.t * binding_kind * 'a glob_constr_g * 'a glob_constr_g
-  | GLetIn  of Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
+  | GLambda of Name.t * relevance_info * binding_kind *  'a glob_constr_g * 'a glob_constr_g
+  | GProd   of Name.t * relevance_info * binding_kind * 'a glob_constr_g * 'a glob_constr_g
+  | GLetIn  of Name.t * relevance_info * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
   | GCases  of Constr.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
       (** [GCases(style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
   | GLetTuple of Name.t list * (Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
@@ -115,7 +121,7 @@ type 'a glob_constr_r =
   | GArray of glob_instance option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 
-and 'a glob_decl_g = Name.t * binding_kind * 'a glob_constr_g option * 'a glob_constr_g
+and 'a glob_decl_g = Name.t * relevance_info * binding_kind * 'a glob_constr_g option * 'a glob_constr_g
 
 and 'a predicate_pattern_g =
     Name.t * (inductive * Name.t list) CAst.t option
@@ -150,8 +156,8 @@ type disjunctive_cases_clauses = [ `any ] disjunctive_cases_clauses_g
 type cases_pattern_disjunction = [ `any ] cases_pattern_disjunction_g
 
 type 'a extended_glob_local_binder_r =
-  | GLocalAssum   of Name.t * binding_kind * 'a glob_constr_g
-  | GLocalDef     of Name.t * 'a glob_constr_g * 'a glob_constr_g option
+  | GLocalAssum   of Name.t * relevance_info * binding_kind * 'a glob_constr_g
+  | GLocalDef     of Name.t * relevance_info * 'a glob_constr_g * 'a glob_constr_g option
   | GLocalPattern of ('a cases_pattern_disjunction_g * Id.t list) * Id.t * binding_kind * 'a glob_constr_g
 and 'a extended_glob_local_binder_g = ('a extended_glob_local_binder_r, 'a) DAst.t
 

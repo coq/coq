@@ -41,9 +41,9 @@ let chop_rlambda_n =
     if n == 0 then (List.rev acc, rt)
     else
       match DAst.get rt with
-      | Glob_term.GLambda (name, k, t, b) ->
+      | Glob_term.GLambda (name, _, k, t, b) ->
         chop_lambda_n ((name, t, None) :: acc) (n - 1) b
-      | Glob_term.GLetIn (name, v, t, b) ->
+      | Glob_term.GLetIn (name, _, v, t, b) ->
         chop_lambda_n ((name, v, t) :: acc) (n - 1) b
       | _ ->
         CErrors.user_err
@@ -56,7 +56,7 @@ let chop_rprod_n =
     if n == 0 then (List.rev acc, rt)
     else
       match DAst.get rt with
-      | Glob_term.GProd (name, k, t, b) ->
+      | Glob_term.GProd (name, _, k, t, b) ->
         chop_prod_n ((name, t) :: acc) (n - 1) b
       | _ ->
         CErrors.user_err

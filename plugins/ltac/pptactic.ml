@@ -361,7 +361,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       match ty.CAst.v with
           Constrexpr.CProdN(bll,a) ->
             let bll = List.map (function
-            | CLocalAssum (nal,_,t) -> nal,t
+            | CLocalAssum (nal,_,_,t) -> nal,t
             | _ -> user_err Pp.(str "Cannot translate fix tactic: not only products")) bll in
             let nb = List.fold_left (fun i (nal,t) -> i + List.length nal) 0 bll in
             if nb >= n then (List.rev (bll@acc)), a
@@ -1080,7 +1080,7 @@ let pr_goal_selector ~toplevel s =
     let rec strip_ty acc n ty =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
         match DAst.get ty with
-            Glob_term.GProd(na,Glob_term.Explicit,a,b) ->
+            Glob_term.GProd(na,_,Glob_term.Explicit,a,b) ->
               strip_ty (([CAst.make na],(a,None))::acc) (n-1) b
           | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
