@@ -240,7 +240,7 @@ let v_template_universes =
   v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
 
 let v_primitive =
-  v_enum "primitive" 55 (* Number of constructors of the CPrimitives.t type *)
+  v_enum "primitive" 58 (* Number of constructors of the CPrimitives.t type *)
 
 let v_cst_def =
   v_sum "constant_def" 0
@@ -329,7 +329,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
 let v_prim_ind = v_enum "prim_ind" 6
 (* Number of "Register ... as kernel.ind_..." in PrimInt63.v and PrimFloat.v *)
 
-let v_prim_type = v_enum "prim_type" 3
+let v_prim_type = v_enum "prim_type" 4
 (* Number of constructors of prim_type in "kernel/cPrimitives.ml" *)
 
 let v_retro_action =
