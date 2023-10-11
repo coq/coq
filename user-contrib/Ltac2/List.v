@@ -86,6 +86,18 @@ Ltac2 tl (ls : 'a list) :=
   | x :: xs => xs
   end.
 
+Ltac2 dest (xs : 'a list) : 'a * 'a list :=
+  match xs with
+  | x :: xs => (x, xs)
+  | [] => Control.throw_invalid_argument "List.dest: list empty"
+  end.
+
+Ltac2 is_empty (xs : 'a list) : bool :=
+  match xs with
+  | _ :: _ => false
+  | _ => true
+  end.
+
 Ltac2 rec last_opt (ls : 'a list) :=
   match ls with
   | [] => None
@@ -210,6 +222,14 @@ Ltac2 rec fold_left (f : 'a -> 'b -> 'a) (xs : 'b list) (a : 'a) :=
   | [] => a
   | x :: xs => fold_left f xs (f a x)
   end.
+
+Ltac2 fold_lefti (f : int -> 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=
+  let rec go i a xs :=
+    match xs with
+    | [] => a
+    | x :: xs => go (Int.add i 1) (f i a x) xs
+    end
+  in go 0 a xs.
 
 Ltac2 rec iter2 (f : 'a -> 'b -> unit) (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
@@ -599,3 +619,38 @@ Ltac2 sort_uniq (cmp : 'a -> 'a -> int) (l : 'a list) :=
            end
       end in
   uniq (sort cmp l).
+
+Ltac2 inclusive_range (lb : int) (ub : int) : int list :=
+  let rec go lb ub :=
+    if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub
+  in
+  go lb ub.
+
+Ltac2 range (lb : int) (ub : int) : int list :=
+  inclusive_range lb (Int.sub ub 1).
+
+(** [concat_rev [x1; ..; xN-1; xN]] computes [rev xN ++ rev xN-1 ++ .. x1].
+    Note that [x1] is not reversed and appears in its original order.
+    [concat_rev] is faster than [concat] and should be preferred over [concat]
+    when the order of items does not matter. *)
+Ltac2 concat_rev (ls : 'a list list) : 'a list :=
+  let rec go ls acc :=
+    match ls with
+    | [] => acc
+    | l :: ls => go ls (rev_append l acc)
+    end
+  in
+  match ls with
+  | [] => []
+  | l :: ls => go ls l
+  end.
+
+Ltac2 rec map_filter (f : 'a -> 'b option) (l : 'a list) : 'b list :=
+  match l with
+  | [] => []
+  | x :: l =>
+    match f x with
+    | Some y => y :: map_filter f l
+    | None => map_filter f l
+    end
+  end.
