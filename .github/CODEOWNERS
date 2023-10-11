@@ -124,6 +124,7 @@
 ########## Standard library and plugins ##########
 
 /theories/         @coq/stdlib-maintainers
+/doc/stdlib/       @coq/stdlib-maintainers
 
 /theories/Classes/ @coq/typeclasses-maintainers
 
