@@ -1557,7 +1557,7 @@ let find_proof evd t l =
     - hyps' is obtained from hyps'
     taclist and hyps are threaded to avoid adding duplicates
  *)
-let sat_constr env evd (sub,taclist, hyps) c d =
+let sat_constr env evd hyps (sub, taclist, prfs) c d =
   match EConstr.kind evd c with
   | App (c, args) ->
      if Array.length args = 2 then
@@ -1580,11 +1580,11 @@ let sat_constr env evd (sub,taclist, hyps) c d =
        in
        let rtrm = Tacred.cbv_beta env evd trm in
        let typ  = Retyping.get_type_of env evd rtrm in
-       match find_hyp evd typ hyps with
-       | None -> (Nameops.Subscript.succ sub, (Tactics.pose_proof (Names.Name n) rtrm :: taclist) , (n,typ)::hyps)
-       | Some _ -> (sub, taclist, hyps)
-     else (sub,taclist,hyps)
-  | _ -> (sub,taclist,hyps)
+       match find_hyp evd typ prfs with
+       | None -> (Nameops.Subscript.succ sub, (Tactics.pose_proof (Names.Name n) rtrm :: taclist) , (n,typ)::prfs)
+       | Some _ -> (sub, taclist, prfs)
+     else (sub,taclist,prfs)
+  | _ -> (sub,taclist,prfs)
 
 
 let get_all_sat env evd c =
@@ -1622,5 +1622,5 @@ let saturate =
       sat concl;
       List.iter (fun (_, t) -> sat t) hyps;
       let s0 = fresh_subscript env in
-      let (_,tacs,_) = CstrTable.HConstr.fold (fun c d acc -> sat_constr env evd acc c d) table (s0,[],hyps) in
+      let (_,tacs,_) = CstrTable.HConstr.fold (fun c d acc -> sat_constr env evd hyps acc c d) table (s0,[],[]) in
       Tacticals.tclTHENLIST tacs)
