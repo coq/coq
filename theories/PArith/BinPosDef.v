@@ -29,9 +29,9 @@ Require Export BinNums.
 Local Notation "1" := xH.
 
 Notation "p ~ 1" := (xI p)
- (at level 7, left associativity, format "p '~' '1'") : positive_scope.
+ (at level 1, left associativity, format "p '~' '1'") : positive_scope.
 Notation "p ~ 0" := (xO p)
- (at level 7, left associativity, format "p '~' '0'") : positive_scope.
+ (at level 1, left associativity, format "p '~' '0'") : positive_scope.
 
 Local Open Scope positive_scope.
 
