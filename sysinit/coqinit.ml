@@ -51,7 +51,7 @@ let gc_set : Gc.control -> unit =
 
 let set_gc_policy () =
   gc_set { (Gc.get ()) with
-           Gc.allocation_policy = 0 (* next-fit *)
+           Gc.allocation_policy = 2 (* best-fit *)
          ; Gc.minor_heap_size = 32*1024*1024 (* 32Mwords x 8 bytes/word = 256Mb *)
          ; Gc.space_overhead = 120
          }
