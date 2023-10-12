@@ -7,7 +7,7 @@ export PATH=$COQBIN:$PATH
 
 cd misc
 
-rm -f vio_checking{,bad}.{vo,vio}
+rm -f vio_checking{,_bad}.{vo,vio}
 
 coqc -vio vio_checking.v
 coqc -vio vio_checking_bad.v
