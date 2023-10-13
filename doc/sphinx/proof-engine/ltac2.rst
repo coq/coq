@@ -272,6 +272,10 @@ lowercase letter.
 
 :n:`'@term` is equivalent to :n:`open_constr:(@term)`.
 
+Use :n:`@ltac2_expr0 .( @qualid )` to access record fields and
+:n:`@ltac2_expr0 .( @qualid ) := @ltac2_expr5` to modify
+mutable record fields.
+
 Record expressions and patterns support "punning": in
 :n:`@tac2rec_fieldexpr` and :n:`@tac2rec_fieldpat`, omitting the
 optional part is equivalent to using :n:`:= @ident` where the
@@ -426,9 +430,9 @@ Standard IO
 The Ltac2 language features non-backtracking IO, notably mutable data and
 printing operations.
 
-Mutable fields of records can be modified using the set syntax. Likewise,
-built-in types like `string` and `array` feature imperative assignment. See
-modules `String` and `Array` respectively.
+Mutable fields of records and built-in types like `string` and `array`
+feature imperative assignment. See modules `String` and `Array`
+respectively.
 
 A few printing primitives are provided in the `Message` module for
 displaying information to the user.
