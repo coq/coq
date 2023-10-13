@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Control Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std.
+Require Ltac2.Control Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std Ltac2.Constr.
 
 (** Constr matching *)
 
@@ -460,6 +460,8 @@ Ltac2 Notation "erewrite"
 
 (** coretactics *)
 
+(** Provided for backwards compat *)
+#[deprecated(since="8.19")]
 Ltac2 exact0 ev c :=
   Control.enter (fun _ =>
     match ev with
@@ -471,8 +473,20 @@ Ltac2 exact0 ev c :=
     end
   ).
 
-Ltac2 Notation "exact" c(thunk(open_constr)) := exact0 false c.
-Ltac2 Notation "eexact" c(thunk(open_constr)) := exact0 true c.
+Ltac2 exact1 ev c :=
+  Control.enter (fun () =>
+    let c :=
+      Constr.Pretype.pretype
+        (if ev then Constr.Pretype.Flags.open_constr_flags else Constr.Pretype.Flags.constr_flags)
+        (Constr.Pretype.expected_oftype (Control.goal()))
+        c
+    in
+    Control.refine (fun _ => c)).
+
+Ltac2 Notation "exact" c(preterm) := exact1 false c.
+
+Ltac2 Notation "eexact" c(preterm) := exact1 true c.
+(** Like [refine] but new evars are shelved instead of becoming subgoals. *)
 
 Ltac2 Notation "intro" id(opt(ident)) mv(opt(move_location)) := Std.intro id mv.
 Ltac2 Notation intro := intro.

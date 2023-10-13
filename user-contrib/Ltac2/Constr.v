@@ -140,7 +140,35 @@ Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "co
     focused goal [Γ, id : c ⊢ ?X] and returns [fun (id : c) => t] where [t] is
     the proof built by the tactic. *)
 
-Ltac2 @ external pretype : preterm -> constr := "coq-core.plugins.ltac2" "constr_pretype".
+Module Pretype.
+  Module Flags.
+    Ltac2 Type t.
+
+    Ltac2 @ external constr_flags : t := "coq-core.plugins.ltac2" "constr_flags".
+    (** Does not allow new unsolved evars. *)
+
+    Ltac2 @ external open_constr_flags : t := "coq-core.plugins.ltac2" "open_constr_flags".
+    (** Allows new unsolved evars. *)
+  End Flags.
+
+  Ltac2 Type expected_type.
+
+  Ltac2 @ external expected_istype : expected_type
+    := "coq-core.plugins.ltac2" "expected_istype".
+
+  Ltac2 @ external expected_oftype : constr -> expected_type
+    := "coq-core.plugins.ltac2" "expected_oftype".
+
+  Ltac2 @ external expected_without_type_constraint : expected_type
+    := "coq-core.plugins.ltac2" "expected_without_type_constraint".
+
+  Ltac2 @ external pretype : Flags.t -> expected_type -> preterm -> constr
+    := "coq-core.plugins.ltac2" "constr_pretype".
+  (** Pretype the provided preterm. Assumes the goal to be focussed. *)
+End Pretype.
+
+Ltac2 pretype (c : preterm) : constr :=
+  Pretype.pretype Pretype.Flags.constr_flags Pretype.expected_without_type_constraint c.
 (** Pretype the provided preterm. Assumes the goal to be focussed. *)
 
 
