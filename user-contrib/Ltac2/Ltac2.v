@@ -24,6 +24,7 @@ Require Ltac2.Fresh.
 Require Ltac2.Ident.
 Require Ltac2.Ind.
 Require Ltac2.Int.
+Require Ltac2.Lazy.
 Require Ltac2.List.
 Require Ltac2.Ltac1.
 Require Ltac2.Message.
@@ -32,6 +33,8 @@ Require Ltac2.Option.
 Require Ltac2.Pattern.
 Require Ltac2.Printf.
 Require Ltac2.Proj.
+Require Ltac2.RedFlags.
+Require Ltac2.Ref.
 Require Ltac2.Std.
 Require Ltac2.String.
 Require Ltac2.Uint63.
