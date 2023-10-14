@@ -18,7 +18,6 @@
 Require Export ArithRing.
 
 Require Import Rdefinitions Raxioms RIneq.
-Require Export Rpow_def.
 Require Export R_Ifp.
 Require Export Rbasic_fun.
 Require Export R_sqr.

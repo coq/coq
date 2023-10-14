@@ -20,12 +20,12 @@
 (*********************************************************)
 
 Require Export ZArith_base.
-Require Import ClassicalDedekindReals.
-Require Import ConstructiveCauchyReals.
-Require Import ConstructiveCauchyRealsMult.
-Require Import ConstructiveRcomplete.
-Require Import ConstructiveLUB.
-Require Export Rdefinitions.
+From Coq.Reals Require Import ClassicalDedekindReals.
+From Coq.Reals Require Import ConstructiveCauchyReals.
+From Coq.Reals Require Import ConstructiveCauchyRealsMult.
+From Coq.Reals Require Import ConstructiveRcomplete.
+From Coq.Reals Require Import ConstructiveLUB.
+From Coq Require Export Rdefinitions.
 Local Open Scope R_scope.
 
 (*********************************************************)
@@ -441,17 +441,25 @@ Qed.
 (**********)
 Definition is_upper_bound (E:R -> Prop) (m:R) := forall x:R, E x -> x <= m.
 
-(**********)
-Definition bound (E:R -> Prop) :=  exists m : R, is_upper_bound E m.
+Definition is_lower_bound (E : R -> Prop) (m : R) :=
+  forall x, E x -> m <= x.
 
+(**********)
+Definition bounded_from_above (E:R -> Prop) :=  exists m : R, is_upper_bound E m.
+
+(* begin hide *)
+Notation bound := bounded_from_above (only parsing).
+(* end hide *)
 (**********)
 Definition is_lub (E:R -> Prop) (m:R) :=
   is_upper_bound E m /\ (forall b:R, is_upper_bound E b -> m <= b).
 
+Definition is_glb (E : R -> Prop) (m : R) :=
+  is_lower_bound E m /\ (forall b, is_lower_bound E b -> b <= m).
 (**********)
 Lemma completeness :
     forall E:R -> Prop,
-      bound E -> (exists x : R, E x) -> { m:R | is_lub E m }.
+      bounded_from_above E -> (exists x : R, E x) -> { m:R | is_lub E m }.
 Proof.
   intros. pose (fun x:CReal => E (Rabst x)) as Er.
   assert (forall x y : CReal, CRealEq x y -> Er x <-> Er y)

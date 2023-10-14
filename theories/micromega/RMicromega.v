@@ -17,7 +17,7 @@
 Require Import OrderedRing.
 Require Import QMicromega RingMicromega.
 Require Import Refl.
-Require Import Sumbool Raxioms Rfunctions RIneq Rpow_def.
+Require Import Sumbool Raxioms Rfunctions RIneq.
 Require Import QArith.
 Require Import Qfield.
 Require Import Qreals.

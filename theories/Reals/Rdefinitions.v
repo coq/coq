@@ -16,10 +16,10 @@
 
 Require Export ZArith_base.
 Require Import QArith_base.
-Require Import ConstructiveCauchyReals.
-Require Import ConstructiveCauchyRealsMult.
-Require Import ConstructiveRcomplete.
-Require Import ClassicalDedekindReals.
+From Coq.Reals Require Import ConstructiveCauchyReals.
+From Coq.Reals Require Import ConstructiveCauchyRealsMult.
+From Coq.Reals Require Import ConstructiveRcomplete.
+From Coq.Reals Require Import ClassicalDedekindReals.
 
 
 (* Declare primitive number notations for Scope R_scope *)
@@ -387,3 +387,10 @@ Number Notation R of_number to_number (via IR
   mapping [IZR => IRZ, Q2R => IRQ, Rmult => IRmult, Rdiv => IRdiv,
            Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
   : R_scope.
+
+(* NEW, moved here to kill one file *)
+Fixpoint pow (r:R) (n:nat) : R :=
+  match n with
+    | O => 1
+    | S n => Rmult r (pow r n)
+  end.

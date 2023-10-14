@@ -12,7 +12,6 @@ Require Import Nnat.
 Require Import ArithRing.
 Require Export Ring Field.
 Require Import Rdefinitions.
-Require Import Rpow_def.
 Require Import Raxioms.
 
 Local Open Scope R_scope.

@@ -44,10 +44,10 @@
  *)
 
 Require Import RelationClasses.
-Require Export Raxioms.
-Require Import Rpow_def.
+From Coq Require Export Raxioms.
 Require Import ZArith.
 Require Export ZArithRing.
+(* NOTE : Imho, Realfield should require RIneq, not the other way *)
 Require Export RealField.
 
 Local Open Scope Z_scope.
@@ -369,6 +369,10 @@ Proof. now intros r1 r2 r3 H1%Rge_le H2%Rgt_lt; apply (Rlt_le_trans _ r2). Qed.
 Lemma Rgt_ge_trans : forall r1 r2 r3, r1 > r2 -> r2 >= r3 -> r1 > r3.
 Proof. now intros r1 r2 r3 H1%Rgt_lt H2%Rge_le; apply (Rle_lt_trans _ r2). Qed.
 
+(* NEW, using r3 <= r2 as a replacement for r2 >= r3 *)
+Lemma Rgt_le_trans : forall r1 r2 r3, r1 > r2 -> r3 <= r2 -> r1 > r3.
+Proof. now intros r1 r2 r3 H1 H2; apply (Rle_lt_trans _ r2). Qed.
+
 (** *** (Classical) decidability with sumbool types *)
 
 Lemma Rlt_dec : forall r1 r2, {r1 < r2} + {~ r1 < r2}.
@@ -575,6 +579,64 @@ Proof. now intros r r1; rewrite <-(Rplus_0_r r) at 2; apply Rplus_eq_reg_l. Qed.
 Lemma Rplus_0_l_uniq : forall r r1, r1 + r = r -> r1 = 0.
 Proof. now intros r r1; rewrite Rplus_comm; apply Rplus_0_r_uniq. Qed.
 
+(** *** Permutations of terms in additions *)
+
+(* NOTE: additions of 3 numbers appear often enough that these are handy *)
+
+(** These 5 = 3! - 1 lemmas allow the user to permute operands in a
+    (left-associative) sum of 3 reals.
+    The naming pattern is Rplus_3perm_ijk where:
+    - the leftmost operand moves to position i
+    - the middle operand moves to position j
+    - the rightmost operand moves to position k
+    and {i, j, k} = {l, m, r} (l for left, m for middle, r for right). *)
+
+(* TODO : Check rewrite rules naming policy in PVS *)
+Lemma Rplus_3perm_lrm :
+  forall r1 r2 r3, r1 + r2 + r3 = r1 + r3 + r2.
+Proof.
+  now intros r1 r2 r3; rewrite Rplus_assoc, (Rplus_comm r2), <-Rplus_assoc.
+Qed.
+
+Lemma Rplus_3perm_rml :
+  forall r1 r2 r3, r1 + r2 + r3 = r3 + r2 + r1.
+Proof.
+  now intros r1 r2 r3; rewrite (Rplus_comm _ r3), (Rplus_comm r1), Rplus_assoc.
+Qed.
+
+Lemma Rplus_3perm_mlr :
+  forall r1 r2 r3, r1 + r2 + r3 = r2 + r1 + r3.
+Proof. now intros r1 r2; rewrite (Rplus_comm r1 r2). Qed.
+
+Lemma Rplus_3perm_rlm :
+  forall r1 r2 r3, r1 + r2 + r3 = r2 + r3 + r1.
+Proof. now intros r1 r2 r3; rewrite Rplus_assoc, (Rplus_comm r1). Qed.
+
+Lemma Rplus_3perm_mrl :
+  forall r1 r2 r3, r1 + r2 + r3 = r3 + r1 + r2.
+Proof. now intros r1 r2 r3; rewrite (Rplus_comm _ r3), <-Rplus_assoc. Qed.
+
+(** The following 2 lemmas perform cyclic permutations in sums of 4 terms.
+    Together with the previous lemmas about sums of 3 terms, it should be
+    enough. For instance, to derive r1 + r2 + r3 + r4 = r1 + r3 + r4 + r2, it
+    is enough to write [rewrite 2Rplus_4shift_r, Rplus_3perm_mrl.]
+*)
+
+Lemma Rplus_4shift_r :
+  forall r1 r2 r3 r4, r1 + r2 + r3 + r4 = r4 + r1 + r2 + r3.
+Proof. now intros r1 r2 r3 r4; rewrite (Rplus_comm _ r4), <-2Rplus_assoc. Qed.
+
+Lemma Rplus_4shift_l :
+  forall r1 r2 r3 r4, r1 + r2 + r3 + r4 = r2 + r3 + r4 + r1.
+Proof.
+  now intros r1 r2 r3 r4; rewrite 2Rplus_assoc, (Rplus_comm r1), <-Rplus_assoc.
+Qed.
+
+(*
+Lemma example_from_doc (r1 r2 r3 r4 : R) : r1 + r2 + r3 + r4 = r1 + r3 + r4 + r2.
+Proof. now rewrite 2Rplus_4shift_r, (Rplus_3perm_mrl r3). Qed.
+*)
+
 (*********************************************************)
 (** ** Opposite                                          *)
 (*********************************************************)
@@ -744,6 +806,61 @@ Lemma Rmult_integral_contrapositive_currified :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> r1 * r2 <> 0.
 Proof. now intros r1 r2 H1 H2; apply Rmult_integral_contrapositive. Qed.
 
+Definition Rmult_neq_0_neq_0 (r1 r2 : R) :=
+  (Rmult_integral_contrapositive_currified r1 r2).
+
+(** These 5 = 3! - 1 lemmas allow the user to permute operands in a
+    (left-associative) product of 3 reals.
+    The naming pattern is Rmult_3perm_ijk where:
+    - the leftmost operand moves to position i
+    - the middle operand moves to position j
+    - the rightmost operand moves to position k
+    and {i, j, k} = {l, m, r} (l for left, m for middle, r for right). *)
+
+Lemma Rmult_3perm_lrm :
+  forall r1 r2 r3, r1 * r2 * r3 = r1 * r3 * r2.
+Proof.
+  now intros r1 r2 r3; rewrite Rmult_assoc, (Rmult_comm r2), <-Rmult_assoc.
+Qed.
+
+Lemma Rmult_3perm_rml :
+  forall r1 r2 r3, r1 * r2 * r3 = r3 * r2 * r1.
+Proof.
+  now intros r1 r2 r3; rewrite (Rmult_comm _ r3), (Rmult_comm r1), Rmult_assoc.
+Qed.
+
+Lemma Rmult_3perm_mlr :
+  forall r1 r2 r3, r1 * r2 * r3 = r2 * r1 * r3.
+Proof. now intros r1 r2; rewrite (Rmult_comm r1 r2). Qed.
+
+Lemma Rmult_3perm_rlm :
+  forall r1 r2 r3, r1 * r2 * r3 = r2 * r3 * r1.
+Proof. now intros r1 r2 r3; rewrite Rmult_assoc, (Rmult_comm r1). Qed.
+
+Lemma Rmult_3perm_mrl :
+  forall r1 r2 r3, r1 * r2 * r3 = r3 * r1 * r2.
+Proof. now intros r1 r2 r3; rewrite (Rmult_comm _ r3), <-Rmult_assoc. Qed.
+
+(** The following 2 lemmas perform cyclic permutations in products of 4 terms.
+    Together with the previous lemmas about products of 3 terms, it should be
+    enough. For instance, to derive r1 * r2 * r3 * r4 = r1 * r3 * r4 * r2, it
+    is enough to write [rewrite 2Rmult_4shift_r, Rmult_3perm_mrl.]
+*)
+
+Lemma Rmult_4shift_r :
+  forall r1 r2 r3 r4, r1 * r2 * r3 * r4 = r4 * r1 * r2 * r3.
+Proof. now intros r1 r2 r3 r4; rewrite (Rmult_comm _ r4), <-2Rmult_assoc. Qed.
+
+Lemma Rmult_4shift_l :
+  forall r1 r2 r3 r4, r1 * r2 * r3 * r4 = r2 * r3 * r4 * r1.
+Proof.
+  now intros r1 r2 r3 r4; rewrite 2Rmult_assoc, (Rmult_comm r1), <-Rmult_assoc.
+Qed.
+
+(*
+Lemma example_from_doc (r1 r2 r3 r4 : R) : r1 * r2 * r3 * r4 = r1 * r3 * r4 * r2.
+Proof. now rewrite 2Rmult_4shift_r, (Rmult_3perm_mrl r3). Qed.
+*)
 (*********************************************************)
 (** ** Opposite and multiplication                       *)
 (*********************************************************)
@@ -779,6 +896,9 @@ Proof. now intros r1 r2; symmetry; apply Ropp_mult_distr_r. Qed.
 
 Lemma Rminus_def : forall r1 r2, r1 - r2 = r1 + - r2.
 Proof. now unfold Rminus. Qed.
+
+Lemma Rminus_def_comm : forall r1 r2, r1 - r2 = - r2 + r1.
+Proof. now intros r1 r2; rewrite Rminus_def, Rplus_comm. Qed.
 
 Lemma Rminus_eq_compat_l : forall r r1 r2, r1 = r2 -> r - r1 = r - r2.
 Proof.
@@ -837,7 +957,6 @@ Proof. now intros r1 r2; symmetry;apply Rminus_diag_uniq. Qed.
 #[global]
 Hint Immediate Rminus_diag_uniq_sym: real.
 
-
 Lemma Rplus_minus : forall r1 r2, r1 + (r2 - r1) = r2.
 Proof.
   unfold Rminus; intros r1 r2.
@@ -845,6 +964,9 @@ Proof.
 Qed.
 #[global]
 Hint Resolve Rplus_minus: real.
+
+Lemma Rminus_opp_r : forall r1 r2, r1 - (- r2) = r1 + r2.
+Proof. now intros r1 r2; unfold Rminus; rewrite Ropp_involutive. Qed.
 
 Lemma Rminus_eq_contra : forall r1 r2, r1 <> r2 -> r1 - r2 <> 0.
 Proof. now intros r1 r2 H H0%Rminus_diag_uniq. Qed.
@@ -914,6 +1036,62 @@ Proof. now intros r r1 r2; rewrite (Rplus_comm r), Rminus_plus_r_r. Qed.
 Lemma Rminus_plus_l_l : forall r r1 r2, (r + r1) - (r + r2) = r1 - r2.
 Proof. now intros r r1 r2; rewrite (Rplus_comm _ r1), Rminus_plus_r_l. Qed.
 
+Lemma Rminus_minus_distr : forall r1 r2 r3, r1 - (r2 - r3) = r1 - r2 + r3.
+Proof.
+  intros r1 r2 r3; unfold Rminus at 2.
+  now rewrite Rminus_plus_distr, Rminus_opp_r.
+Qed.
+
+Lemma Rminus_plus_r : forall r1 r2, r1 - r2 + r2 = r1.
+Proof. now intros r1 r2; rewrite <-Rplus_minus_swap, Rplus_minus_r. Qed.
+
+Lemma Rminus_plus_l : forall r1 r2, r1 - r1 + r2 = r2.
+Proof. now intros r1 r2; rewrite <-Rplus_minus_swap, Rplus_minus_l. Qed.
+
+Lemma Rminus_minus_opp_m : forall r1 r2, r1 - r2 - r1 = - r2.
+Proof. now intros r1 r2; rewrite (Rminus_def _ r2), Rplus_minus_l. Qed.
+
+Lemma Rminus_minus_opp_r : forall r1 r2, r1 - r1 - r2 = - r2.
+Proof. now intros r1 r2; rewrite (Rminus_def _ r2), Rminus_plus_l. Qed.
+
+Lemma Req_minus_chsd_rr : forall r r1 r2, r1 - r = r2 <-> r1 = r2 + r.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rminus_eq_reg_r r); rewrite Rplus_minus_r.
+  - now apply (Rplus_eq_reg_r r); rewrite Rminus_plus_r.
+Qed.
+
+Lemma Req_minus_chsd_rl : forall r r1 r2, r1 - r = r2 <-> r1 = r + r2.
+Proof. now intros r r1 r2; rewrite (Rplus_comm r); apply Req_minus_chsd_rr. Qed.
+
+Lemma Req_minus_chsd_lr : forall r r1 r2, r - r1 = r2 <-> - r1 = r2 - r.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rplus_eq_reg_r r); rewrite Rminus_plus_r, <-Rminus_def_comm.
+  - now apply (Rminus_eq_reg_r r); rewrite Rminus_minus_opp_m.
+Qed.
+
+Lemma Req_minus_chsd_ll : forall r r1 r2, r - r1 = r2 <-> - r1 = - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Req_minus_chsd_lr.
+Qed.
+
+Lemma Req_plus_chsd_rr : forall r r1 r2, r1 + r = r2 <-> r1 = r2 - r.
+Proof.
+  now intros r r1 r2; split; intros H%eq_sym; apply eq_sym, Req_minus_chsd_rr.
+Qed.
+
+Lemma Req_plus_chsd_rl : forall r r1 r2, r1 + r = r2 <-> r1 = - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Req_plus_chsd_rr.
+Qed.
+
+Lemma Req_plus_chsd_lr : forall r r1 r2, r + r1 = r2 <-> r1 = r2 - r.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Req_plus_chsd_rr. Qed.
+
+Lemma Req_plus_chsd_ll : forall r r1 r2, r + r1 = r2 <-> r1 = - r + r2.
+Proof. intros r r1 r2; rewrite Rplus_comm; apply Req_plus_chsd_rl. Qed.
+
 (*********************************************************)
 (** ** Inverse                                           *)
 (*********************************************************)
@@ -954,11 +1132,11 @@ Hint Resolve Rinv_neq_0_compat: real.
 
 Lemma Rinv_inv r : / / r = r.
 Proof.
-destruct (Req_dec r 0) as [-> | H].
-- now rewrite Rinv_0, Rinv_0.
-- symmetry; apply Rmult_inv_r_uniq.
-  * now apply Rinv_neq_0_compat.
-  * now rewrite Rinv_l.
+  destruct (Req_dec r 0) as [-> | H].
+  - now rewrite Rinv_0, Rinv_0.
+  - symmetry; apply Rmult_inv_r_uniq.
+    * now apply Rinv_neq_0_compat.
+    * now rewrite Rinv_l.
 Qed.
 #[global]
 Hint Resolve Rinv_inv: real.
@@ -968,14 +1146,14 @@ Proof. now intros r1 r2 H%Rinv_eq_compat; rewrite !Rinv_inv in H. Qed.
 
 Lemma Rinv_mult r1 r2 : / (r1 * r2) = / r1 * / r2.
 Proof.
-destruct (Req_dec r1 0) as [-> | H1].
-- now rewrite Rinv_0, 2!Rmult_0_l, Rinv_0.
-- destruct (Req_dec r2 0) as [-> | H2].
-  + now rewrite Rinv_0, 2!Rmult_0_r, Rinv_0.
-  + symmetry; apply Rmult_inv_r_uniq.
-    { now apply Rmult_integral_contrapositive_currified. }
-    rewrite (Rmult_comm r1), Rmult_assoc, <-(Rmult_assoc r1).
-    now rewrite Rinv_r, Rmult_1_l, Rinv_r.
+  destruct (Req_dec r1 0) as [-> | H1].
+  - now rewrite Rinv_0, 2!Rmult_0_l, Rinv_0.
+  - destruct (Req_dec r2 0) as [-> | H2].
+    + now rewrite Rinv_0, 2!Rmult_0_r, Rinv_0.
+    + symmetry; apply Rmult_inv_r_uniq.
+      { now apply Rmult_integral_contrapositive_currified. }
+      rewrite (Rmult_comm r1), Rmult_assoc, <-(Rmult_assoc r1).
+      now rewrite Rinv_r, Rmult_1_l, Rinv_r.
 Qed.
 
 Lemma Rinv_opp r : / - r = - / r.
@@ -998,6 +1176,14 @@ Proof. now intros r1 r2 r1n0; rewrite (Rmult_comm r1), Rmult_inv_r_id_l. Qed.
 #[global]
 Hint Resolve Rmult_inv_m_id_r Rmult_inv_r_id_l Rmult_inv_r_id_m: real.
 
+Lemma Rmult_inv_m_id_l : forall r1 r2, r2 <> 0 -> r1 * / r2 * r2 = r1.
+Proof. now intros r1 r2 r2n0; rewrite Rmult_assoc, (Rinv_l), Rmult_1_r. Qed.
+
+Lemma Rmult_inv_l_id_r : forall r1 r2, r1 <> 0 -> / r1 * r1 * r2 = r2.
+Proof. now intros r1 r2 r1n0; rewrite Rinv_l, Rmult_1_l. Qed.
+
+Lemma Rmult_inv_l_id_m : forall r1 r2, r1 <> 0 -> / r1 * r2 * r1 = r2.
+Proof. now intros r1 r2 r1n0; rewrite (Rmult_comm (/ r1)), Rmult_inv_m_id_l. Qed.
 
 (*********************************************************)
 (** ** Square function                                   *)
@@ -1119,6 +1305,14 @@ Lemma Rplus_ge_gt_compat :
   forall r1 r2 r3 r4, r1 >= r2 -> r3 > r4 -> r1 + r3 > r2 + r4.
 Proof. now intros r1 r2 r3 r4 H%Rge_le H'; apply Rplus_le_lt_compat. Qed.
 
+Lemma Rplus_le_gt_compat :
+  forall r1 r2 r3 r4, r2 <= r1 -> r3 > r4 -> r1 + r3 > r2 + r4.
+Proof. now intros r1 r2 r3 r4 H%Rle_ge; apply Rplus_ge_gt_compat. Qed.
+
+Lemma Rplus_gt_le_compat :
+  forall r1 r2 r3 r4, r1 > r2 -> r4 <= r3 -> r1 + r3 > r2 + r4.
+Proof. now intros r1 r2 r3 r4 H H'%Rle_ge; apply Rplus_gt_ge_compat. Qed.
+
 Lemma Rplus_lt_0_compat : forall r1 r2, 0 < r1 -> 0 < r2 -> 0 < r1 + r2.
 Proof.
   now intros r1 r2 I I'; rewrite <-(Rplus_0_r 0); apply Rplus_lt_compat.
@@ -1197,6 +1391,7 @@ Proof. now intros r r1 r2 H%Rge_le; apply Rle_ge, (Rplus_le_reg_l r). Qed.
 Lemma Rplus_ge_reg_r : forall r r1 r2, r1 + r >= r2 + r -> r1 >= r2.
 Proof. now intros r r1 r2 H%Rge_le; apply Rle_ge, (Rplus_le_reg_r r). Qed.
 
+(* TODO: pos should be nneg *)
 Lemma Rplus_le_reg_pos_r :
   forall r1 r2 r3, 0 <= r2 -> r1 + r2 <= r3 -> r1 <= r3.
 Proof.
@@ -1205,6 +1400,7 @@ Proof.
   now rewrite <-(Rplus_0_r r1) at 1; apply Rplus_le_compat_l.
 Qed.
 
+(* TODO: pos should be nneg *)
 Lemma Rplus_lt_reg_pos_r : forall r1 r2 r3, 0 <= r2 -> r1 + r2 < r3 -> r1 < r3.
 Proof.
   intros r1 r2 r3 H H'.
@@ -1212,6 +1408,7 @@ Proof.
   now rewrite <-(Rplus_0_r r1) at 1; apply Rplus_le_compat_l.
 Qed.
 
+(* TODO: neg should be npos *)
 Lemma Rplus_ge_reg_neg_r :
   forall r1 r2 r3, 0 >= r2 -> r1 + r2 >= r3 -> r1 >= r3.
 Proof.
@@ -1220,6 +1417,7 @@ Proof.
   now rewrite <-(Rplus_0_r r1) at 1; apply Rplus_ge_compat_l.
 Qed.
 
+(* TODO: neg should be npos, 0 >= r2 is weird *)
 Lemma Rplus_gt_reg_neg_r : forall r1 r2 r3, 0 >= r2 -> r1 + r2 > r3 -> r1 > r3.
 Proof.
   intros r1 r2 r3 H H'.
@@ -1242,10 +1440,15 @@ Proof.
   now intros r1 r2 H; rewrite <-(Rplus_0_r r1) at 2; apply Rplus_gt_compat_l.
 Qed.
 
+(* TODO: change? keep? replace with Rplus_0_le_ge ? *)
 Lemma Rplus_nneg_ge : forall r1 r2, r2 >= 0 -> r1 + r2 >= r1.
 Proof.
   now intros r1 r2 H; rewrite <-(Rplus_0_r r1) at 2; apply Rplus_ge_compat_l.
 Qed.
+
+(* TODO: name? keep? replace Rplus_nneg_ge? *)
+Lemma Rplus_0_le_ge : forall r1 r2, 0 <= r2 -> r1 <= r1 + r2.
+Proof. now intros r1 r2 H%Rle_ge; apply Rge_le, Rplus_nneg_ge. Qed.
 
 Lemma Rplus_neg_lt : forall r1 r2, r2 < 0 -> r1 + r2 < r1.
 Proof.
@@ -1267,9 +1470,12 @@ Proof.
   now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_lt_compat.
 Qed.
 
-Lemma Rplus_nneg_nneg : forall r1 r2, r1 >= 0 -> r2 >= 0 -> r1 + r2 >= 0.
+(* CHANGED since PR 17036: r nneg is now 0 <= r
+   Rationale : <= and >= are not convertible, it's better for the user to have
+   mostly <= in lemmas. *)
+Lemma Rplus_nneg_nneg : forall r1 r2, 0 <= r1 -> 0 <= r2 -> 0 <= r1 + r2.
 Proof.
-  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_ge_compat.
+  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_le_compat.
 Qed.
 
 Lemma Rplus_npos_npos : forall r1 r2, r1 <= 0 -> r2 <= 0 -> r1 + r2 <= 0.
@@ -1277,14 +1483,16 @@ Proof.
   now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_le_compat.
 Qed.
 
-Lemma Rplus_pos_nneg : forall r1 r2, r1 > 0 -> r2 >= 0 -> r1 + r2 > 0.
+(* CHANGED since PR 17036: r nneg is now 0 <= r *)
+Lemma Rplus_pos_nneg : forall r1 r2, r1 > 0 -> 0 <= r2 -> r1 + r2 > 0.
 Proof.
-  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_gt_ge_compat.
+  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_lt_le_compat.
 Qed.
 
-Lemma Rplus_nneg_pos : forall r1 r2, r1 >= 0 -> r2 > 0 -> r1 + r2 > 0.
+(* CHANGED since PR 17036: r nneg is now 0 <= r *)
+Lemma Rplus_nneg_pos : forall r1 r2, 0 <= r1 -> r2 > 0 -> r1 + r2 > 0.
 Proof.
-  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_ge_gt_compat.
+  now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_le_gt_compat.
 Qed.
 
 Lemma Rplus_neg_npos : forall r1 r2, r1 < 0 -> r2 <= 0 -> r1 + r2 < 0.
@@ -1297,8 +1505,17 @@ Proof.
   now intros r1 r2 H1 H2; rewrite <-(Rplus_0_l 0); apply Rplus_le_lt_compat.
 Qed.
 
+Lemma Rle_plus_nneg : forall r1 r2, 0 <= r2 -> r1 <= r1 + r2.
+Proof. now intros r1 r2 H; apply Rge_le, Rplus_nneg_ge, Rle_ge. Qed.
+
+Lemma Rle_plus_npos : forall r1 r2, r2 <= 0 -> r1 + r2 <= r1.
+Proof.
+  now intros r1 r2 H2; rewrite <-(Rplus_0_r r1) at 2; apply Rplus_le_compat;
+    [apply Rle_refl |].
+Qed.
+
 (*********************************************************)
-(** ** Order and opposite                                *)
+(** ** Order, opposite, subtraction                      *)
 (*********************************************************)
 
 (** *** Contravariant compatibility *)
@@ -1401,6 +1618,310 @@ Proof. now intros r H; rewrite <-Ropp_0; apply Ropp_lt_contravar. Qed.
 
 Lemma Ropp_neg : forall r, r < 0 -> - r > 0.
 Proof. now intros r H; rewrite <-Ropp_0; apply Ropp_lt_contravar. Qed.
+
+Lemma Ropp_npos : forall r, r <= 0 -> 0 <= - r.
+Proof. now intros r H; rewrite <-Ropp_0; apply Ropp_le_contravar. Qed.
+
+Lemma Ropp_nneg : forall r, 0 <= r -> - r <= 0.
+Proof. now intros r H; rewrite <-Ropp_0; apply Ropp_le_contravar. Qed.
+
+(** *** Order and subtraction                            *)
+
+Lemma Rlt_minus : forall r1 r2, r1 < r2 -> r1 - r2 < 0.
+Proof.
+  unfold Rminus; intros r1 r2 H%(Rplus_lt_compat_r (-r2)).
+  now rewrite Rplus_opp_r in H.
+Qed.
+#[global]
+Hint Resolve Rlt_minus: real.
+
+Lemma Rgt_minus : forall r1 r2, r1 > r2 -> r1 - r2 > 0.
+Proof.
+  unfold Rminus; intros r1 r2 H%(Rplus_lt_compat_r (-r2)).
+  now rewrite Rplus_opp_r in H.
+Qed.
+
+Lemma Rle_minus : forall r1 r2, r1 <= r2 -> r1 - r2 <= 0.
+Proof.
+  unfold Rminus; intros r1 r2 H%(Rplus_le_compat_r (-r2)).
+  now rewrite Rplus_opp_r in H.
+Qed.
+
+Lemma Rge_minus : forall r1 r2, r1 >= r2 -> r1 - r2 >= 0.
+Proof.
+  unfold Rminus; intros r1 r2 H%(Rplus_ge_compat_r (-r2)).
+  now rewrite Rplus_opp_r in H.
+Qed.
+
+Lemma Rminus_lt : forall r1 r2, r1 - r2 < 0 -> r1 < r2.
+Proof.
+  unfold Rminus; intros r1 r2 H.
+  now apply (Rplus_lt_reg_r (-r2)); rewrite Rplus_opp_r.
+Qed.
+
+Lemma Rminus_gt : forall r1 r2, r1 - r2 > 0 -> r1 > r2.
+Proof.
+  unfold Rminus; intros r1 r2 H.
+  now apply (Rplus_lt_reg_r (-r2)); rewrite Rplus_opp_r.
+Qed.
+
+Lemma Rlt_minus_0 : forall r1 r2, r1 - r2 < 0 <-> r1 < r2.
+Proof.
+  intros r1 r2; split.
+  - now apply Rminus_lt.
+  - now apply Rlt_minus.
+Qed.
+
+Lemma Rlt_0_minus : forall r1 r2, 0 < r2 - r1 <-> r1 < r2.
+Proof.
+  intros r1 r2; split.
+  - now apply Rminus_gt.
+  - now apply Rgt_minus.
+Qed.
+
+Lemma Rminus_le : forall r1 r2, r1 - r2 <= 0 -> r1 <= r2.
+Proof.
+  unfold Rminus; intros r1 r2 H.
+  now apply (Rplus_le_reg_r (-r2)); rewrite Rplus_opp_r.
+Qed.
+
+Lemma Rminus_ge : forall r1 r2, r1 - r2 >= 0 -> r1 >= r2.
+Proof.
+  unfold Rminus; intros r1 r2 H.
+  now apply (Rplus_ge_reg_r (-r2)); rewrite Rplus_opp_r.
+Qed.
+
+Lemma Rgt_minus_pos : forall r1 r2, 0 < r2 -> r1 > r1 - r2.
+Proof.
+  intros r1 r2 H%Ropp_lt_contravar; rewrite Ropp_0 in H.
+  now rewrite <-(Rplus_0_r r1) at 1; apply (Rplus_lt_compat_l r1).
+Qed.
+
+Lemma Rminus_le_compat_r : forall r r1 r2, r1 <= r2 -> r1 - r <= r2 - r.
+Proof. now unfold Rminus; intros r r1 r2; apply Rplus_le_compat_r. Qed.
+
+Lemma Rminus_le_reg_r : forall r r1 r2, r1 - r <= r2 - r -> r1 <= r2.
+Proof. now unfold Rminus; intros r r1 r2; apply Rplus_le_reg_r. Qed.
+
+Lemma Rminus_lt_compat_r : forall r r1 r2, r1 < r2 -> r1 - r < r2 - r.
+Proof. now unfold Rminus; intros r r1 r2; apply Rplus_lt_compat_r. Qed.
+
+Lemma Rminus_lt_reg_r : forall r r1 r2, r1 - r < r2 - r -> r1 < r2.
+Proof. now unfold Rminus; intros r r1 r2; apply Rplus_lt_reg_r. Qed.
+
+(* NOTE: in Z this is sub_le_lt_mono, mono is not in Reals, not sure it's even a
+   good name, and compat ... it's not really compat. *)
+(* NEW : name? *)
+Lemma Rminus_le_lt_mono :
+  forall r1 r2 r3 r4, r1 <= r2 -> r3 < r4 -> r1 - r4 < r2 - r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H2%Ropp_lt_contravar; rewrite 2Rminus_def.
+  now apply Rplus_le_lt_compat.
+Qed.
+
+(* NEW : name? *)
+Lemma Rminus_lt_le_mono :
+  forall r1 r2 r3 r4, r1 < r2 -> r3 <= r4 -> r1 - r4 < r2 - r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H2%Ropp_le_contravar; rewrite 2Rminus_def.
+  now apply Rplus_lt_le_compat.
+Qed.
+
+(* NEW : name? *)
+Lemma Rminus_lt_lt_mono :
+  forall r1 r2 r3 r4, r1 < r2 -> r3 < r4 -> r1 - r4 < r2 - r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H2%Ropp_lt_contravar; rewrite 2Rminus_def.
+  now apply Rplus_lt_compat.
+Qed.
+
+(* NEW : name? *)
+Lemma Rminus_le_le_mono :
+  forall r1 r2 r3 r4, r1 <= r2 -> r3 <= r4 -> r1 - r4 <= r2 - r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H2%Ropp_le_contravar; rewrite 2Rminus_def.
+  now apply Rplus_le_compat.
+Qed.
+
+(* NEW : name? *)
+Lemma Rle_minus_le : forall r1 r2, 0 <= r2 - r1 <-> r1 <= r2.
+Proof.
+  now intros r1 r2; split; intros H; apply Rge_le;
+    [apply Rminus_ge | apply Rge_minus]; apply Rle_ge.
+Qed.
+
+Lemma Rlt_minus_chsd_rr : forall r r1 r2, r1 - r < r2 <-> r1 < r2 + r.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rminus_lt_reg_r r); rewrite Rplus_minus_r.
+  - now apply (Rplus_lt_reg_r r); rewrite Rminus_plus_r.
+Qed.
+
+Lemma Rlt_minus_chsd_rl : forall r r1 r2, r1 - r < r2 <-> r1 < r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rlt_minus_chsd_rr. Qed.
+
+Lemma Rlt_minus_chsd_ll : forall r r1 r2, r - r1 < r2 <-> - r1 < - r + r2.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rplus_lt_reg_l r);
+      rewrite <-Rplus_assoc, <-2Rminus_def, Rminus_plus_l.
+  - now apply (Rplus_lt_compat_l r) in H;
+      rewrite <-Rplus_assoc, <-2Rminus_def, Rminus_plus_l in H.
+Qed.
+
+Lemma Rlt_minus_chsd_lr : forall r r1 r2, r - r1 < r2 <-> - r1 < r2 - r.
+Proof.
+  now intros r r1 r2; rewrite (Rminus_def_comm r2); apply Rlt_minus_chsd_ll.
+Qed.
+
+Lemma Rgt_minus_chsd_rr : forall r r1 r2, r1 - r > r2 <-> r1 > r2 + r.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rminus_lt_reg_r r); rewrite Rplus_minus_r.
+  - now apply (Rplus_lt_reg_r r); rewrite Rminus_plus_r.
+Qed.
+
+Lemma Rgt_minus_chsd_rl : forall r r1 r2, r1 - r > r2 <-> r1 > r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rgt_minus_chsd_rr. Qed.
+
+Lemma Rgt_minus_chsd_ll : forall r r1 r2, r - r1 > r2 <-> - r1 > - r + r2.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rplus_gt_reg_l r);
+      rewrite <-Rplus_assoc, <-2Rminus_def, Rminus_plus_l.
+  - now apply (Rplus_gt_compat_l r) in H;
+      rewrite <-Rplus_assoc, <-2Rminus_def, Rminus_plus_l in H.
+Qed.
+
+Lemma Rgt_minus_chsd_lr : forall r r1 r2, r - r1 > r2 <-> - r1 > r2 - r.
+Proof.
+  now intros r r1 r2; rewrite (Rminus_def_comm r2); apply Rgt_minus_chsd_ll.
+Qed.
+
+Lemma Rlt_plus_chsd_lr : forall r r1 r2, r + r1 < r2 <-> r1 < r2 - r.
+Proof. now intros r r1 r2; split; apply Rgt_minus_chsd_rl. Qed.
+
+Lemma Rlt_plus_chsd_ll : forall r r1 r2, r + r1 < r2 <-> r1 < - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Rlt_plus_chsd_lr.
+Qed.
+
+Lemma Rlt_plus_chsd_rr : forall r r1 r2, r1 + r < r2 <-> r1 < r2 - r.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rlt_plus_chsd_lr. Qed.
+
+Lemma Rlt_plus_chsd_rl : forall r r1 r2, r1 + r < r2 <-> r1 < - r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rlt_plus_chsd_ll. Qed.
+
+Lemma Rgt_plus_chsd_lr : forall r r1 r2, r + r1 > r2 <-> r1 > r2 - r.
+Proof. now intros r r1 r2; split; apply Rlt_minus_chsd_rl. Qed.
+
+Lemma Rgt_plus_chsd_ll : forall r r1 r2, r + r1 > r2 <-> r1 > - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Rgt_plus_chsd_lr.
+Qed.
+
+Lemma Rgt_plus_chsd_rr : forall r r1 r2, r1 + r > r2 <-> r1 > r2 - r.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rgt_plus_chsd_lr. Qed.
+
+Lemma Rgt_plus_chsd_rl : forall r r1 r2, r1 + r > r2 <-> r1 > - r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rgt_plus_chsd_ll. Qed.
+
+Lemma Rle_minus_chsd_rr : forall r r1 r2, r1 - r <= r2 <-> r1 <= r2 + r.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rminus_le_reg_r r); rewrite Rplus_minus_r.
+  - now apply (Rplus_le_reg_r r); rewrite Rminus_plus_r.
+Qed.
+
+Lemma Rle_minus_chsd_rl : forall r r1 r2, r1 - r <= r2 <-> r1 <= r + r2.
+Proof. now intros r r1 r2; rewrite <-Rplus_comm; apply Rle_minus_chsd_rr. Qed.
+
+Lemma Rle_minus_chsd_ll : forall r r1 r2, r - r1 <= r2 <-> - r1 <= - r + r2.
+Proof.
+  intros r r1 r2; split; intros H.
+  - now apply (Rplus_le_reg_l r); rewrite <-Rplus_assoc, <-2Rminus_def,
+      Rminus_plus_l.
+  - now apply (Rplus_le_compat_l r) in H; rewrite <-Rplus_assoc, <-2Rminus_def,
+      Rminus_plus_l in H.
+Qed.
+
+Lemma Rle_minus_chsd_lr : forall r r1 r2, r - r1 <= r2 <-> - r1 <= r2 - r.
+Proof.
+  now intros r r1 r2; rewrite (Rminus_def_comm r2); apply Rle_minus_chsd_ll.
+Qed.
+
+(* NEW : name?*)
+Lemma Rge_minus_chsd_rr : forall r r1 r2, r1 - r >= r2 <-> r1 >= r2 + r.
+Proof.
+  intros r r1 r2; split; intros H%Rge_le.
+  - now apply Rle_ge, (Rminus_le_reg_r r); rewrite Rplus_minus_r.
+  - now apply Rle_ge, (Rplus_le_reg_r r); rewrite Rminus_plus_r.
+Qed.
+
+(* NEW : name?*)
+Lemma Rge_minus_chsd_rl : forall r r1 r2, r1 - r >= r2 <-> r1 >= r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rge_minus_chsd_rr. Qed.
+
+(* NEW : name?*)
+Lemma Rge_minus_chsd_ll : forall r r1 r2, r - r1 >= r2 <-> - r1 >= - r + r2.
+Proof.
+  intros r r1 r2; split; intros H%Rge_le.
+  - now apply Rle_ge, (Rplus_le_reg_l r); rewrite <-Rplus_assoc, <-2Rminus_def,
+      Rminus_plus_l.
+  - now apply Rle_ge; apply (Rplus_le_compat_l r) in H;
+      rewrite <-Rplus_assoc, <-2Rminus_def, Rminus_plus_l in H.
+Qed.
+
+(* NEW : name?*)
+Lemma Rge_minus_chsd_lr : forall r r1 r2, r - r1 >= r2 <-> - r1 >= r2 - r.
+Proof.
+  now intros r r1 r2; rewrite (Rminus_def_comm r2); apply Rge_minus_chsd_ll.
+Qed.
+
+Lemma Rle_plus_chsd_lr : forall r r1 r2, r + r1 <= r2 <-> r1 <= r2 - r.
+Proof.
+  now intros r r1 r2; split; intros H%Rle_ge; apply Rge_le, Rge_minus_chsd_rl.
+Qed.
+
+Lemma Rle_plus_chsd_ll : forall r r1 r2, r + r1 <= r2 <-> r1 <= - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Rle_plus_chsd_lr.
+Qed.
+
+Lemma Rle_plus_chsd_rr : forall r r1 r2, r1 + r <= r2 <-> r1 <= r2 - r.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rle_plus_chsd_lr. Qed.
+
+Lemma Rle_plus_chsd_rl : forall r r1 r2, r1 + r <= r2 <-> r1 <= - r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rle_plus_chsd_ll. Qed.
+
+Lemma Rge_plus_chsd_lr : forall r r1 r2, r + r1 >= r2 <-> r1 >= r2 - r.
+Proof.
+  now intros r r1 r2; split; intros H%Rge_le; apply Rle_ge, Rle_minus_chsd_rl.
+Qed.
+
+Lemma Rge_plus_chsd_ll : forall r r1 r2, r + r1 >= r2 <-> r1 >= - r + r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rminus_def_comm; apply Rge_plus_chsd_lr.
+Qed.
+
+Lemma Rge_plus_chsd_rr : forall r r1 r2, r1 + r >= r2 <-> r1 >= r2 - r.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rge_plus_chsd_lr. Qed.
+
+Lemma Rge_plus_chsd_rl : forall r r1 r2, r1 + r >= r2 <-> r1 >= - r + r2.
+Proof. now intros r r1 r2; rewrite Rplus_comm; apply Rge_plus_chsd_ll. Qed.
+
+(* NEW : name? *)
+Lemma Rminus_lt_swap : forall r r1 r2, r1 - r < r2 -> r1 - r2 < r.
+Proof.
+  intros r r1 r2 H.
+  now apply Rlt_minus_chsd_rr; rewrite Rplus_comm; apply Rlt_minus_chsd_rr.
+Qed.
+
+Lemma Rminus_le_swap : forall r r1 r2, r1 - r <= r2 -> r1 - r2 <= r.
+Proof.
+  intros r r1 r2 H.
+  now apply Rle_minus_chsd_rr; rewrite Rplus_comm; apply Rle_minus_chsd_rr.
+Qed.
 
 (*********************************************************)
 (** ** Order and multiplication                          *)
@@ -1527,6 +2048,63 @@ Proof.
   now apply Ropp_lt_cancel; rewrite 2Ropp_mult_distr_l; apply Rmult_lt_compat_l.
 Qed.
 
+Lemma Rmult_lt_gt_compat_neg_r :
+  forall r r1 r2, r < 0 -> r1 < r2 -> r1 * r > r2 * r.
+Proof.
+  intros r r1 r2 H H'; rewrite 2(Rmult_comm _ r).
+  now apply Rmult_lt_gt_compat_neg_l.
+Qed.
+
+(* TODO: think about name *)
+Lemma Rmult_le_compat_neg_r :
+  forall r r1 r2, r <= 0 -> r1 <= r2 -> r2 * r <= r1 * r.
+Proof.
+  intros r r1 r2 H H'.
+  now rewrite 2(Rmult_comm _ r); apply Rmult_le_compat_neg_l.
+Qed.
+
+(* TODO: keep? name? Is it optimal?*)
+Lemma Rmult_le_contravar_npos :
+  forall r1 r2 r3 r4, r1 <= 0 -> r4 <= 0 -> r1 <= r2 -> r3 <= r4 ->
+    r2 * r4 <= r1 * r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H4 H12 H34.
+  apply (Rle_trans _ (r1 * r4)).
+  - now apply Rmult_le_compat_neg_r.
+  - now apply Rmult_le_compat_neg_l.
+Qed.
+
+(* NEW, name? *)
+Lemma Rmult_lt_compat_neg_r :
+  forall r r1 r2, r < 0 -> r1 < r2 -> r2 * r < r1 * r.
+Proof. now apply Rmult_lt_gt_compat_neg_r. Qed.
+
+(* NEW, name? *)
+Lemma Rmult_lt_compat_neg_l :
+  forall r r1 r2, r < 0 -> r1 < r2 -> r * r2 < r * r1.
+Proof. now apply Rmult_lt_gt_compat_neg_l. Qed.
+
+Lemma Rmult_lt_contravar_neg :
+  forall r1 r2 r3 r4, r1 < 0 -> r4 < 0 -> r1 < r2 -> r3 < r4 ->
+    r2 * r4 < r1 * r3.
+Proof.
+  intros r1 r2 r3 r4 H1 H4 H12 H34.
+  apply (Rlt_trans _ (r1 * r4)).
+  - now apply Rmult_lt_compat_neg_r.
+  - now apply Rmult_lt_compat_neg_l.
+Qed.
+
+(* NEW, name? *)
+Lemma Rmult_npos_lt_contravar :
+  forall r1 r2 r3 r4 : R,
+     r2 <= 0 -> r4 <= 0 -> r1 < r2 -> r3 < r4 -> r1 * r3 > r2 * r4.
+Proof.
+  intros r1 r2 r3 r4 H1 H4 H12 H34.
+  apply (Rle_lt_trans _ (r2 * r3)).
+  - now apply Rmult_le_compat_neg_l; [| left].
+  - now apply Rmult_lt_compat_neg_r; [apply (Rlt_le_trans _ r4) |].
+Qed.
+
 (** *** Sign of multiplication *)
 
 Lemma Rmult_lt_0_compat : forall r1 r2, 0 < r1 -> 0 < r2 -> 0 < r1 * r2.
@@ -1585,6 +2163,20 @@ Proof.
   - now left; split; [| assumption]; rewrite Ropp_involutive, Ropp_0 in H1.
 Qed.
 
+Lemma Rmult_nneg_nneg :
+  forall r1 r2, 0 <= r1 -> 0 <= r2 -> 0 <= r1 * r2.
+Proof.
+  now intros r1 r2 H1 H2; rewrite <-(Rmult_0_l 0); apply Rmult_le_compat;
+    [apply Rle_refl | apply Rle_refl | assumption.. ].
+Qed.
+
+Lemma Rmult_npos_npos :
+  forall r1 r2, r1 <= 0 -> r2 <= 0 -> 0 <= r1 * r2.
+Proof.
+  intros r1 r2 H1 H2; rewrite <-(Rmult_0_r r1) at 1;
+    now apply Rmult_le_compat_neg_l.
+Qed.
+
 (** *** Order and square function *)
 
 Lemma Rle_0_sqr : forall r, 0 <= Rsqr r.
@@ -1629,12 +2221,10 @@ Proof. left; exact Rlt_0_1. Qed.
 
 Lemma Rinv_0_lt_compat : forall r, 0 < r -> 0 < / r.
 Proof.
-  intros r Hr.
-  destruct (Rlt_or_le 0 (/ r)) as [Hlt | Hle]; try easy.
-  exfalso; apply (Rle_not_lt 0 1); try apply Rlt_0_1.
-  rewrite <-(Rinv_l r), <-(Rmult_0_r (/ r)); cycle 1.
-  { now apply not_eq_sym, Rlt_not_eq. }
-  now apply Rlt_le in Hr; apply Rmult_le_compat_neg_l.
+  intros r Hr%Rlt_gt; apply Rgt_not_eq in Hr as Hr'.
+  destruct (Rlt_or_le 0 (/ r)) as [Hlt | Hle%(Rmult_le_compat_l r)];
+    [easy | exfalso; apply Rle_not_lt with (2 := Rlt_0_1) | now left].
+  now rewrite Rinv_r, Rmult_0_r in Hle.
 Qed.
 #[global]
 Hint Resolve Rinv_0_lt_compat: real.
@@ -1647,13 +2237,28 @@ Qed.
 #[global]
 Hint Resolve Rinv_lt_0_compat: real.
 
+Lemma Rinv_pos : forall r, r > 0 -> / r > 0.
+Proof. now intros r; apply Rinv_0_lt_compat. Qed.
+
+Lemma Rinv_neg : forall r, r < 0 -> / r < 0.
+Proof. now intros r; apply Rinv_lt_0_compat. Qed.
+
+Lemma Rinv_nneg : forall r, 0 <= r -> 0 <= / r.
+Proof.
+  now intros r [J | <-]; [left; apply Rinv_pos | right; rewrite Rinv_0].
+Qed.
+
+Lemma Rinv_npos : forall r, r <= 0 -> / r <= 0.
+Proof.
+  now intros r [J | ->]; [left; apply Rinv_neg | right; rewrite Rinv_0].
+Qed.
+
 (** *** Cancellation in inequalities of products *)
 
 Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
-  intros r r1 r2 Hr I%(Rmult_lt_compat_l (/ r)); try now apply Rinv_0_lt_compat.
-  rewrite <-2(Rmult_assoc (/ r)), Rinv_l, 2Rmult_1_l in I; try easy.
-    now apply not_eq_sym, Rlt_not_eq.
+  intros r r1 r2 Hr%Rlt_gt I%(Rmult_lt_compat_l (/ r)); [| now apply Rinv_pos].
+  now rewrite <-2Rmult_assoc, 2Rmult_inv_l_id_r in I by now apply Rgt_not_eq.
 Qed.
 
 Lemma Rmult_lt_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r < r2 * r -> r1 < r2.
@@ -1681,27 +2286,73 @@ Proof.
   now apply (Rmult_le_reg_l r).
 Qed.
 
+Lemma Rmult_ge_reg_l : forall r r1 r2, 0 < r -> r * r1 >= r * r2 -> r1 >= r2.
+Proof.
+  intros r r1 r2 Hr [I | E].
+  - now left; apply (Rmult_gt_reg_l r).
+  - now apply Rlt_not_eq, not_eq_sym in Hr; right; apply (Rmult_eq_reg_l r).
+Qed.
+
+Lemma Rmult_ge_reg_r : forall r r1 r2, 0 < r -> r1 * r >= r2 * r -> r1 >= r2.
+Proof.
+  intros r r1 r2 Hr I; rewrite 2(Rmult_comm _ r) in I.
+  now apply (Rmult_ge_reg_l r).
+Qed.
+
+Lemma Rmult_lt_reg_neg_l : forall r r1 r2, r < 0 -> r * r1 < r * r2 -> r2 < r1.
+Proof.
+  intros r r1 r2 H%Ropp_neg H'%Ropp_lt_contravar.
+  now rewrite 2Ropp_mult_distr_l in H'; apply (Rmult_lt_reg_l (-r)).
+Qed.
+
+Lemma Rmult_lt_reg_neg_r : forall r r1 r2, r < 0 -> r1 * r < r2 * r -> r2 < r1.
+Proof.
+  intros r r1 r2 H H'; rewrite 2(Rmult_comm _ r) in H'.
+  now apply (Rmult_lt_reg_neg_l r).
+Qed.
+
+Lemma Rmult_le_reg_neg_l :
+  forall r r1 r2, r < 0 -> r * r1 <= r * r2 -> r2 <= r1.
+Proof.
+  intros r r1 r2 H%Ropp_neg H'%Ropp_le_contravar.
+  now rewrite 2Ropp_mult_distr_l in H'; apply (Rmult_le_reg_l (-r)).
+Qed.
+
+Lemma Rmult_le_reg_neg_r :
+  forall r r1 r2, r < 0 -> r1 * r <= r2 * r -> r2 <= r1.
+Proof.
+  intros r r1 r2 H H'; rewrite 2(Rmult_comm _ r) in H'.
+  now apply (Rmult_le_reg_neg_l r).
+Qed.
+
+Lemma Rmult_ge_reg_neg_l :
+  forall r r1 r2, r < 0 -> r * r1 >= r * r2 -> r1 <= r2.
+Proof.
+  intros r r1 r2 H%Ropp_neg H'%Ropp_ge_contravar.
+  now rewrite 2Ropp_mult_distr_l in H'; apply (Rmult_le_reg_l (-r)), Rge_le.
+Qed.
+
+Lemma Rmult_ge_reg_neg_r :
+  forall r r1 r2, r < 0 -> r1 * r >= r2 * r -> r1 <= r2.
+Proof.
+  intros r r1 r2 H H'; rewrite 2(Rmult_comm _ r) in H'.
+  now apply (Rmult_ge_reg_neg_l r).
+Qed.
 (** *** Order and inverse *)
 
 Lemma Rinv_0_lt_contravar : forall r1 r2, 0 < r1 -> r1 < r2 -> / r2 < / r1.
 Proof.
-  intros r1 r2 H1 I.
-  assert (H2 : 0 < r2) by now apply (Rlt_trans _ r1).
-  apply (Rmult_lt_reg_l r2); try easy.
-  rewrite Rinv_r by now apply Rgt_not_eq.
-  apply (Rmult_lt_reg_r r1); try easy.
-  rewrite Rmult_assoc, Rinv_l by now apply Rgt_not_eq.
-  now rewrite Rmult_1_r, Rmult_1_l.
+  intros r1 r2 H1 I. apply Rlt_trans with (2 := I) in H1 as H2.
+  apply (Rmult_lt_reg_l r2), (Rmult_lt_reg_r r1); [assumption.. |].
+  now rewrite Rmult_inv_m_id_r, Rmult_inv_m_id_l; [| apply Rgt_not_eq..].
 Qed.
 #[global]
 Hint Resolve Rinv_0_lt_contravar: real.
 
 Lemma Rinv_lt_0_contravar : forall r1 r2, r2 < 0 -> r1 < r2 -> / r2 < / r1.
 Proof.
-  intros r1 r2 H2%Ropp_lt_contravar I%Ropp_lt_contravar.
-  apply Ropp_lt_cancel.
-  rewrite Ropp_0 in H2.
-  now rewrite <-2(Rinv_opp); apply Rinv_0_lt_contravar.
+  intros r1 r2 H2%Ropp_neg I%Ropp_lt_contravar.
+  now apply Ropp_lt_cancel; rewrite <-2(Rinv_opp); apply Rinv_0_lt_contravar.
 Qed.
 #[global]
 Hint Resolve Rinv_lt_0_contravar: real.
@@ -1710,9 +2361,7 @@ Hint Resolve Rinv_lt_0_contravar: real.
    external libs (the stdlib can already be compiled without it) *)
 Lemma Rinv_1_lt_contravar : forall r1 r2, 1 <= r1 -> r1 < r2 -> / r2 < / r1.
 Proof.
-  intros r1 r2 H1 I.
-  apply Rlt_le_trans with (1 := Rlt_0_1) in H1.
-  now apply Rinv_0_lt_contravar.
+  now intros r1 r2 H1%(Rlt_le_trans _ _ _ Rlt_0_1); apply Rinv_0_lt_contravar.
 Qed.
 #[global]
 Hint Resolve Rinv_1_lt_contravar: real.
@@ -1733,86 +2382,40 @@ Proof.
   - now apply Rle_refl.
 Qed.
 
-(** *** Sign of inverse *)
-
-Lemma Rinv_pos : forall r, r > 0 -> / r > 0.
-Proof. now intros r; apply Rinv_0_lt_compat. Qed.
-
-Lemma Rinv_neg : forall r, r < 0 -> / r < 0.
-Proof. now intros r; apply Rinv_lt_0_compat. Qed.
-
-(*********************************************************)
-(** ** Order and subtraction                            *)
-(*********************************************************)
-
-Lemma Rlt_minus : forall r1 r2, r1 < r2 -> r1 - r2 < 0.
+(* NEW, name? *)
+Lemma Rinv_pos_lt_cancel :
+  forall r1 r2, r2 > 0 -> / r2 < / r1 -> r1 < r2.
 Proof.
-  unfold Rminus; intros r1 r2 H%(Rplus_lt_compat_r (-r2)).
-  now rewrite Rplus_opp_r in H.
-Qed.
-#[global]
-Hint Resolve Rlt_minus: real.
-
-Lemma Rgt_minus : forall r1 r2, r1 > r2 -> r1 - r2 > 0.
-Proof.
-  unfold Rminus; intros r1 r2 H%(Rplus_lt_compat_r (-r2)).
-  now rewrite Rplus_opp_r in H.
+  intros r1 r2; destruct (Rgt_or_le r1 0) as [I | J].
+  - now intros H%Rinv_0_lt_compat H'%Rinv_0_lt_contravar; try easy;
+      rewrite 2Rinv_inv in H'.
+  - now intros H _; apply Rle_lt_trans with (1 := J).
 Qed.
 
-Lemma Rle_minus : forall r1 r2, r1 <= r2 -> r1 - r2 <= 0.
+(* NEW, name? *)
+Lemma Rinv_neg_lt_cancel :
+  forall r1 r2, r1 < 0 -> / r2 < / r1 -> r1 < r2.
 Proof.
-  unfold Rminus; intros r1 r2 H%(Rplus_le_compat_r (-r2)).
-  now rewrite Rplus_opp_r in H.
+  intros r1 r2; destruct (Rgt_or_le 0 r2) as [I | J].
+  - now intros H%Rinv_lt_0_compat H'%Rinv_lt_0_contravar; try easy;
+      rewrite 2Rinv_inv in H'.
+  - now intros H _; apply Rlt_le_trans with (2 := J).
 Qed.
 
-Lemma Rge_minus : forall r1 r2, r1 >= r2 -> r1 - r2 >= 0.
+(* NEW, name? *)
+Lemma Rinv_pos_le_cancel :
+  forall r1 r2, r2 > 0 -> / r2 <= / r1 -> r1 <= r2.
 Proof.
-  unfold Rminus; intros r1 r2 H%(Rplus_ge_compat_r (-r2)).
-  now rewrite Rplus_opp_r in H.
+  now intros r1 r2 H [I | E];
+     [left; apply Rinv_pos_lt_cancel | right; apply Rinv_eq_reg].
 Qed.
 
-Lemma Rminus_lt : forall r1 r2, r1 - r2 < 0 -> r1 < r2.
+(* NEW, name? *)
+Lemma Rinv_neg_le_cancel :
+  forall r1 r2, r1 < 0 -> / r2 <= / r1 -> r1 <= r2.
 Proof.
-  unfold Rminus; intros r1 r2 H.
-  now apply (Rplus_lt_reg_r (-r2)); rewrite Rplus_opp_r.
-Qed.
-
-Lemma Rminus_gt : forall r1 r2, r1 - r2 > 0 -> r1 > r2.
-Proof.
-  unfold Rminus; intros r1 r2 H.
-  now apply (Rplus_lt_reg_r (-r2)); rewrite Rplus_opp_r.
-Qed.
-
-Lemma Rlt_minus_0 : forall r1 r2, r1 - r2 < 0 <-> r1 < r2.
-Proof.
-  intros r1 r2; split.
-  - now apply Rminus_lt.
-  - now apply Rlt_minus.
-Qed.
-
-Lemma Rlt_0_minus : forall r1 r2, 0 < r2 - r1 <-> r1 < r2.
-Proof.
-  intros r1 r2; split.
-  - now apply Rminus_gt.
-  - now apply Rgt_minus.
-Qed.
-
-Lemma Rminus_le : forall r1 r2, r1 - r2 <= 0 -> r1 <= r2.
-Proof.
-  unfold Rminus; intros r1 r2 H.
-  now apply (Rplus_le_reg_r (-r2)); rewrite Rplus_opp_r.
-Qed.
-
-Lemma Rminus_ge : forall r1 r2, r1 - r2 >= 0 -> r1 >= r2.
-Proof.
-  unfold Rminus; intros r1 r2 H.
-  now apply (Rplus_ge_reg_r (-r2)); rewrite Rplus_opp_r.
-Qed.
-
-Lemma Rgt_minus_pos : forall r1 r2, 0 < r2 -> r1 > r1 - r2.
-Proof.
-  intros r1 r2 H%Ropp_lt_contravar; rewrite Ropp_0 in H.
-  now rewrite <-(Rplus_0_r r1) at 1; apply (Rplus_lt_compat_l r1).
+  now intros r1 r2 H [I | E];
+     [left; apply Rinv_neg_lt_cancel | right; apply Rinv_eq_reg].
 Qed.
 
 (*********************************************************)
@@ -1821,6 +2424,10 @@ Qed.
 
 Lemma Rdiv_def : forall r1 r2, r1 / r2 = r1 * / r2.
 Proof. now unfold Rdiv. Qed.
+
+(* NEW, name? *)
+Lemma Rdiv_def_comm : forall r1 r2, r1 / r2 = / r2 * r1.
+Proof. now intros r1 r2; rewrite Rdiv_def, Rmult_comm. Qed.
 
 Lemma Rdiv_eq_compat_l : forall r r1 r2, r1 = r2 -> r / r1 = r / r2.
 Proof.
@@ -1864,6 +2471,14 @@ Proof.
   now unfold Rdiv; intros r1 r2 H; rewrite Rmult_assoc, Rinv_r, Rmult_1_r.
 Qed.
 
+Lemma Rmult_div :
+  forall r1 r2 r3 r4, (r1 / r2) * (r3 / r4) = (r1 * r3) / (r2 * r4).
+Proof.
+  intros r1 r2 r3 r4; unfold Rdiv.
+  rewrite Rmult_assoc, <-(Rmult_assoc (/ r2)), (Rmult_comm (/ r2)).
+  now rewrite Rinv_mult, !Rmult_assoc.
+Qed.
+
 Lemma Rmult_div_r : forall r1 r2, r1 <> 0 -> r1 * r2 / r1 = r2.
 Proof. now intros r1 r2 H; rewrite Rmult_comm, Rmult_div_l. Qed.
 
@@ -1876,12 +2491,19 @@ Proof.
   now rewrite Rmult_assoc, (Rmult_comm r2), <-Rmult_assoc.
 Qed.
 
+Lemma Rdiv_mult_id_l : forall r1 r2, r2 <> 0 -> r1 / r2 * r2 = r1.
+Proof.
+  now intros r1 r2 H; rewrite Rdiv_def, Rmult_assoc, Rmult_inv_l, Rmult_1_r.
+Qed.
+
+Lemma Rdiv_mult_id_r : forall r1 r2, r1 <> 0 -> r1 / r1 * r2 = r2.
+Proof. now intros r1 r2 H; rewrite Rdiv_def, Rmult_inv_r, Rmult_1_l. Qed.
+
 Lemma Rdiv_diag_uniq : forall r1 r2, r1 / r2 = 1 -> r1 = r2.
 Proof.
   intros r1 r2; destruct (Req_dec r2 0) as [-> | Hn0].
-  - now intros H; rewrite Rdiv_0_r in H; exfalso; apply R1_neq_R0; symmetry.
-  - intros H%(Rmult_eq_compat_r r2).
-    now rewrite <-Rmult_div_swap, Rmult_div_l, Rmult_1_l in H.
+  - now rewrite Rdiv_0_r; intros H%eq_sym%R1_neq_R0.
+  - now intros H%(Rmult_eq_compat_r r2); rewrite Rdiv_mult_id_l, Rmult_1_l in H.
 Qed.
 
 Lemma Rdiv_mult_distr : forall r1 r2 r3, r1 / (r2 * r3) = r1 / r2 / r3.
@@ -1897,27 +2519,34 @@ Qed.
 
 Lemma Rdiv_mult_l_r :
   forall r r1 r2, r <> 0 -> (r * r1) / (r2 * r) = r1 / r2.
-Proof.
-  now intros r r1 r2; rewrite (Rmult_comm r); apply Rdiv_mult_r_r.
-Qed.
+Proof. now intros r r1 r2; rewrite (Rmult_comm r); apply Rdiv_mult_r_r. Qed.
 
 Lemma Rdiv_mult_l_l :
   forall r r1 r2, r <> 0 -> (r * r1) / (r * r2) = r1 / r2.
-Proof.
-  now intros r r1 r2; rewrite (Rmult_comm _ r2); apply Rdiv_mult_l_r.
-Qed.
+Proof. now intros r r1 r2; rewrite (Rmult_comm _ r2); apply Rdiv_mult_l_r. Qed.
 
 Lemma Rdiv_mult_r_l :
   forall r r1 r2, r <> 0 -> (r1 * r) / (r * r2) = r1 / r2.
-Proof.
-  now intros r r1 r2; rewrite (Rmult_comm r1); apply Rdiv_mult_l_l.
-Qed.
+Proof. now intros r r1 r2; rewrite (Rmult_comm r1); apply Rdiv_mult_l_l. Qed.
 
 Lemma Ropp_div_distr_l : forall r1 r2, - (r1 / r2) = - r1 / r2.
 Proof. unfold Rdiv; intros r1 r2; now apply Ropp_mult_distr_l. Qed.
 
 Lemma Ropp_div_distr_r : forall r1 r2, r1 / - r2 = - (r1 / r2).
 Proof. now unfold Rdiv; intros r1 r2; rewrite Ropp_mult_distr_r, Rinv_opp. Qed.
+
+Lemma Rdiv_opp_l : forall r1 r2, - r1 / r2 = - (r1 / r2).
+Proof. now intros r1 r2; rewrite Ropp_div_distr_l. Qed.
+
+Lemma Rdiv_opp_r : forall x y, x / - y = - (x / y).
+Proof. now intros r1 r2; rewrite Ropp_div_distr_r. Qed.
+
+Lemma Rdiv_opp_opp : forall r1 r2, - r1 / - r2 = r1 / r2.
+Proof. now intros r1 r2; rewrite Rdiv_opp_l, Rdiv_opp_r, Ropp_involutive. Qed.
+
+Lemma Rdiv_minus_minus_sym :
+  forall r1 r2 r3 r4, (r1 - r2) / (r3 - r4) = (r2 - r1) / (r4 - r3).
+Proof. now intros r1 r2 r3 r4; rewrite <-Rdiv_opp_opp, 2Ropp_minus_distr. Qed.
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
 Lemma Rdiv_plus_distr : forall a b c, (a + b) / c = a / c + b / c.
@@ -1932,7 +2561,15 @@ Qed.
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
 Lemma Rinv_div x y : / (x / y) = y / x.
-Proof. now unfold Rdiv; rewrite Rinv_mult, Rinv_inv; apply Rmult_comm. Qed.
+Proof. now rewrite !Rdiv_def, Rinv_mult, Rinv_inv; apply Rmult_comm. Qed.
+
+Lemma Rdiv_div_inv_m : forall r1 r2, r1 <> 0 -> r1 / r2 / r1 = / r2.
+Proof. now intros r1 r2 H1; rewrite (Rdiv_def _ r2), Rmult_div_r. Qed.
+
+Lemma Rdiv_div_inv_r : forall r1 r2, r1 <> 0 -> r1 / r1 / r2 = / r2.
+Proof. now intros r1 r2 H1; rewrite 2Rdiv_def, Rmult_inv_m_id_r. Qed.
+
+(** *** Division and inequalities *)
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
 Lemma Rdiv_lt_0_compat : forall a b, 0 < a -> 0 < b -> 0 < a / b.
@@ -1941,12 +2578,139 @@ Proof.
   now apply (Rmult_lt_0_compat r1 (/ r2) r1_pos), Rinv_0_lt_compat.
 Qed.
 
-Lemma Rdiv_opp_l : forall r1 r2, - r1 / r2 = - (r1 / r2).
-Proof. now intros r1 r2; rewrite Ropp_div_distr_l. Qed.
+Lemma Rdiv_lt_compat_r : forall r r1 r2, r > 0 -> r1 < r2 -> r1 / r < r2 / r.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_lt_compat_r.
+Qed.
 
-(* NOTE: keeping inconsistent variable names for backward compatibility. *)
-Lemma Rdiv_opp_r : forall x y, x / - y = - (x / y).
-Proof. now intros r1 r2; rewrite Ropp_div_distr_r. Qed.
+Lemma Rdiv_lt_reg_r : forall r r1 r2, r > 0 -> r1 / r < r2 / r -> r1 < r2.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_lt_reg_r.
+Qed.
+
+Lemma Rdiv_lt_reg_neg_r : forall r r1 r2, r < 0 -> r1 / r < r2 / r -> r1 > r2.
+Proof.
+  now intros r r1 r2 H%Rinv_neg; rewrite 2Rdiv_def; apply Rmult_lt_reg_neg_r.
+Qed.
+
+Lemma Rdiv_lt_contravar_r : forall r r1 r2, r < 0 -> r1 < r2 -> r1 / r > r2 / r.
+Proof.
+  intros r r1 r2 H%Rinv_neg H'; rewrite 2Rdiv_def.
+  now apply Rmult_lt_gt_compat_neg_r.
+Qed.
+
+Lemma Rdiv_gt_compat_r : forall r r1 r2, r > 0 -> r1 > r2 -> r1 / r > r2 / r.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_gt_compat_r.
+Qed.
+
+Lemma Rdiv_gt_reg_r : forall r r1 r2, r > 0 -> r1 / r > r2 / r -> r1 > r2.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_gt_reg_r.
+Qed.
+
+Lemma Rdiv_gt_reg_neg_r : forall r r1 r2, r < 0 -> r1 / r > r2 / r -> r1 < r2.
+Proof.
+  now intros r r1 r2 H%Rinv_neg; rewrite 2Rdiv_def; apply Rmult_lt_reg_neg_r.
+Qed.
+
+Lemma Rdiv_gt_contravar_r : forall r r1 r2, r < 0 -> r1 > r2 -> r1 / r < r2 / r.
+Proof.
+  intros r r1 r2 H%Rinv_neg H'; rewrite 2Rdiv_def.
+  now apply Rmult_lt_gt_compat_neg_r.
+Qed.
+
+Lemma Rdiv_le_compat_r : forall r r1 r2, 0 <= r -> r1 <= r2 -> r1 / r <= r2 / r.
+Proof.
+  now intros r r1 r2 H%Rinv_nneg; rewrite 2Rdiv_def; apply Rmult_le_compat_r.
+Qed.
+
+Lemma Rdiv_le_reg_r : forall r r1 r2, r > 0 -> r1 / r <= r2 / r -> r1 <= r2.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_le_reg_r.
+Qed.
+
+Lemma Rdiv_ge_compat_r : forall r r1 r2, 0 <= r -> r1 >= r2 -> r1 / r >= r2 / r.
+Proof.
+  now intros r r1 r2 H%Rinv_nneg%Rle_ge; rewrite 2Rdiv_def; apply Rmult_ge_compat_r.
+Qed.
+
+Lemma Rdiv_ge_reg_r : forall r r1 r2, r > 0 -> r1 / r >= r2 / r -> r1 >= r2.
+Proof.
+  now intros r r1 r2 H%Rinv_pos; rewrite 2Rdiv_def; apply Rmult_ge_reg_r.
+Qed.
+
+Lemma Rdiv_le_reg_neg_r : forall r r1 r2, r < 0 -> r1 / r <= r2 / r -> r2 <= r1.
+Proof.
+  now intros r r1 r2 H%Rinv_neg; rewrite 2Rdiv_def; apply Rmult_le_reg_neg_r.
+Qed.
+
+Lemma Rdiv_ge_reg_neg_r : forall r r1 r2, r < 0 -> r1 / r >= r2 / r -> r1 <= r2.
+Proof.
+  now intros r r1 r2 H%Rinv_neg; rewrite 2Rdiv_def; apply Rmult_ge_reg_neg_r.
+Qed.
+
+Lemma Rdiv_le_contravar_r : forall r r1 r2, r <= 0 -> r1 <= r2 -> r2 / r <= r1 / r.
+Proof.
+  intros r r1 r2 H%Rinv_npos H'; rewrite 2Rdiv_def.
+  now apply Rmult_le_compat_neg_r.
+Qed.
+
+Lemma Rdiv_nneg_le_contravar_l :
+  forall r r1 r2, 0 <= r -> 0 < r1 <= r2 -> r / r2 <= r / r1.
+Proof.
+  intros r r1 r2 Hr [H1 H2]; rewrite 2Rdiv_def.
+  now apply Rmult_le_compat_l, Rinv_le_contravar.
+Qed.
+
+Lemma Rdiv_pos_lt_compat_l :
+  forall r r1 r2, r < 0 -> 0 < r1 < r2 -> r / r1 < r / r2.
+Proof.
+  intros r r1 r2 Hr [H1 H2]; rewrite 2Rdiv_def.
+  now apply Rmult_lt_compat_neg_l, Rinv_0_lt_contravar.
+Qed.
+
+Lemma Rdiv_neg_lt_contravar_l :
+  forall r r1 r2, r > 0 -> r1 < r2 < 0 -> r / r1 > r / r2.
+Proof.
+  intros r r1 r2 Hr [H1 H2]; rewrite 2Rdiv_def.
+  now apply Rmult_lt_compat_l, Rinv_lt_0_contravar.
+Qed.
+
+Lemma Rdiv_neg_lt_compat_l :
+  forall r r1 r2, r < 0 -> r1 < r2 < 0 -> r / r1 < r / r2.
+Proof.
+  intros r r1 r2 Hr [H1 H2]; rewrite 2Rdiv_def.
+  now apply Rmult_lt_compat_neg_l, Rinv_lt_0_contravar.
+Qed.
+
+Lemma Rdiv_pos_pos_lt_cancel :
+  forall r r1 r2, r > 0 -> r2 > 0 -> r / r2 < r / r1 -> r1 < r2.
+Proof.
+  intros r r1 r2 Hr H2 H; apply Rinv_pos_lt_cancel; [assumption |].
+  now apply (Rmult_lt_reg_l r); [assumption |]; rewrite <-2Rdiv_def.
+Qed.
+
+Lemma Rdiv_pos_neg_lt_cancel :
+  forall r r1 r2, r > 0 -> r1 < 0 -> r / r2 < r / r1 -> r1 < r2.
+Proof.
+  intros r r1 r2 Hr H2 H; apply Rinv_neg_lt_cancel; [assumption |].
+  now apply (Rmult_lt_reg_l r); [assumption |]; rewrite <-2Rdiv_def.
+Qed.
+
+Lemma Rdiv_neg_pos_lt_cancel :
+  forall r r1 r2, r < 0 -> r2 > 0 -> r / r1 < r / r2 -> r1 < r2.
+Proof.
+  intros r r1 r2 Hr H2 H; apply Rinv_pos_lt_cancel; [assumption |].
+  now rewrite 2Rdiv_def in H; apply (Rmult_lt_reg_neg_l r).
+Qed.
+
+Lemma Rdiv_neg_neg_lt_cancel :
+  forall r r1 r2, r < 0 -> r1 < 0 -> r / r1 < r / r2 -> r1 < r2.
+Proof.
+  intros r r1 r2 Hr H2 H; apply Rinv_neg_lt_cancel; [assumption |].
+  now rewrite 2Rdiv_def in H; apply (Rmult_lt_reg_neg_l r).
+Qed.
 
 (** *** Sign of division *)
 
@@ -1970,6 +2734,386 @@ Proof.
   - now right; rewrite Rinv_inv in J.
 Qed.
 
+Lemma Rdiv_nneg_nneg : forall r1 r2, 0 <= r1 -> 0 <= r2 -> 0 <= r1 / r2.
+Proof. now intros r1 r2 H1 H2%Rinv_nneg; apply Rmult_nneg_nneg. Qed.
+
+Lemma Rdiv_npos_npos : forall r1 r2, r1 <= 0 -> r2 <= 0 -> 0 <= r1 / r2.
+Proof. now intros r1 r2 H1 H2%Rinv_npos; apply Rmult_npos_npos. Qed.
+
+(** *** "Change side" lemmas for multiplication and division *)
+
+Lemma Req_div_chsd_rr : forall r r1 r2, r <> 0 -> r1 / r = r2 <-> r1 = r2 * r.
+Proof.
+  intros r r1 r2 Hr; split; intros H.
+  - now apply (Rdiv_eq_reg_r r); [| exact Hr]; rewrite Rmult_div_l.
+  - now apply (Rmult_eq_reg_r r); [| exact Hr]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Req_div_chsd_rl : forall r r1 r2, r <> 0 -> r1 / r = r2 <-> r1 = r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Req_div_chsd_rr. Qed.
+
+Lemma Req_div_chsd_lr : forall r r1 r2, r <> 0 -> r / r1 = r2 <-> / r1 = r2 / r.
+Proof.
+  intros r r1 r2 Hr; split; intros H.
+  - apply (Rmult_eq_reg_r r); [| exact Hr]; rewrite <-Rdiv_def_comm.
+    now rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_eq_reg_r r); [| exact Hr]; rewrite Rdiv_div_inv_m.
+Qed.
+
+Lemma Req_div_chsd_ll : forall r r1 r2, r <> 0 -> r / r1 = r2 -> / r1 = / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Req_div_chsd_lr. Qed.
+
+Lemma Req_mult_chsd_rr : forall r r1 r2, r <> 0 -> r1 * r = r2 <-> r1 = r2 / r.
+Proof.
+  now intros r r1 r2 Hr; split; intros H%eq_sym; apply eq_sym, Req_div_chsd_rr.
+Qed.
+
+Lemma Req_mult_chsd_rl :
+  forall r r1 r2, r <> 0 -> r1 * r = r2 <-> r1 = / r * r2.
+Proof.
+  now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Req_mult_chsd_rr.
+Qed.
+
+Lemma Req_mult_chsd_lr : forall r r1 r2, r <> 0 -> r * r1 = r2 <-> r1 = r2 / r.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Req_mult_chsd_rr. Qed.
+
+Lemma Req_mult_chsd_ll :
+  forall r r1 r2, r <> 0 -> r * r1 = r2 <-> r1 = / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Req_mult_chsd_lr. Qed.
+
+Lemma Rle_mult_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 * r <= r2 <-> r1 <= r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_le_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_le_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rle_mult_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 * r <= r2 <-> r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rle_mult_chsd_rr. Qed.
+
+Lemma Rle_mult_chsd_ll :
+  forall r r1 r2, r > 0 -> r * r1 <= r2 <-> r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rle_mult_chsd_rl. Qed.
+
+Lemma Rle_mult_chsd_lr :
+  forall r r1 r2, r > 0 -> r * r1 <= r2 <-> r1 <= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rle_mult_chsd_ll. Qed.
+
+Lemma Rle_div_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 / r <= r2 <-> r1 <= r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_le_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_le_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rle_div_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 / r <= r2 <-> r1 <= r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rle_div_chsd_rr. Qed.
+
+Lemma Rle_div_chsd_lr :
+  forall r r1 r2, r > 0 -> r / r1 <= r2 <-> / r1 <= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rle_mult_chsd_lr. Qed.
+
+Lemma Rle_div_chsd_ll :
+  forall r r1 r2, r > 0 -> r / r1 <= r2 <-> / r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rle_mult_chsd_ll. Qed.
+
+Lemma Rlt_mult_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 * r < r2 <-> r1 < r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_lt_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_lt_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rlt_mult_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 * r < r2 <-> r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rlt_mult_chsd_rr. Qed.
+
+Lemma Rlt_mult_chsd_ll :
+  forall r r1 r2, r > 0 -> r * r1 < r2 <-> r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rlt_mult_chsd_rl. Qed.
+
+Lemma Rlt_mult_chsd_lr :
+  forall r r1 r2, r > 0 -> r * r1 < r2 <-> r1 < r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rlt_mult_chsd_ll. Qed.
+
+Lemma Rlt_div_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 / r < r2 <-> r1 < r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_lt_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_lt_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rlt_div_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 / r < r2 <-> r1 < r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rlt_div_chsd_rr. Qed.
+
+Lemma Rlt_div_chsd_lr :
+  forall r r1 r2, r > 0 -> r / r1 < r2 <-> / r1 < r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rlt_mult_chsd_lr. Qed.
+
+Lemma Rlt_div_chsd_ll :
+  forall r r1 r2, r > 0 -> r / r1 < r2 <-> / r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rlt_mult_chsd_ll. Qed.
+
+Lemma Rge_mult_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 * r >= r2 <-> r1 >= r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_ge_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_ge_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rge_mult_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 * r >= r2 <-> r1 >= / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rge_mult_chsd_rr. Qed.
+
+Lemma Rge_mult_chsd_ll :
+  forall r r1 r2, r > 0 -> r * r1 >= r2 <-> r1 >= / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rge_mult_chsd_rl. Qed.
+
+Lemma Rge_mult_chsd_lr :
+  forall r r1 r2, r > 0 -> r * r1 >= r2 <-> r1 >= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rge_mult_chsd_ll. Qed.
+
+Lemma Rge_div_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 / r >= r2 <-> r1 >= r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_ge_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_ge_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rge_div_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 / r >= r2 <-> r1 >= r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rge_div_chsd_rr. Qed.
+
+Lemma Rge_div_chsd_lr :
+  forall r r1 r2, r > 0 -> r / r1 >= r2 <-> / r1 >= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rge_mult_chsd_lr. Qed.
+
+Lemma Rge_div_chsd_ll :
+  forall r r1 r2, r > 0 -> r / r1 >= r2 <-> / r1 >= / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rge_mult_chsd_ll. Qed.
+
+Lemma Rgt_mult_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 * r > r2 <-> r1 > r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_gt_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_gt_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rgt_mult_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 * r > r2 <-> r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rgt_mult_chsd_rr. Qed.
+
+Lemma Rgt_mult_chsd_ll :
+  forall r r1 r2, r > 0 -> r * r1 > r2 <-> r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rgt_mult_chsd_rl. Qed.
+
+Lemma Rgt_mult_chsd_lr :
+  forall r r1 r2, r > 0 -> r * r1 > r2 <-> r1 > r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rgt_mult_chsd_ll. Qed.
+
+Lemma Rgt_div_chsd_rr :
+  forall r r1 r2, r > 0 -> r1 / r > r2 <-> r1 > r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_gt_reg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_gt_reg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rgt_div_chsd_rl :
+  forall r r1 r2, r > 0 -> r1 / r > r2 <-> r1 > r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rgt_div_chsd_rr. Qed.
+
+Lemma Rgt_div_chsd_lr :
+  forall r r1 r2, r > 0 -> r / r1 > r2 <-> / r1 > r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rgt_mult_chsd_lr. Qed.
+
+Lemma Rgt_div_chsd_ll :
+  forall r r1 r2, r > 0 -> r / r1 > r2 <-> / r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rgt_mult_chsd_ll. Qed.
+
+Lemma Rle_mult_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 * r <= r2 <-> r2 / r <= r1.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_le_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_le_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rle_mult_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 * r <= r2 <-> / r * r2 <= r1.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rle_mult_neg_chsd_rr. Qed.
+
+Lemma Rle_mult_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r * r1 <= r2 <-> / r * r2 <= r1.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rle_mult_neg_chsd_rl. Qed.
+
+Lemma Rle_mult_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r * r1 <= r2 <-> r2 / r <= r1.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rle_mult_neg_chsd_ll. Qed.
+
+Lemma Rle_div_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 / r <= r2 <-> r2 * r <= r1.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_le_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_le_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rle_div_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 / r <= r2 <-> r * r2 <= r1.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rle_div_neg_chsd_rr. Qed.
+
+Lemma Rle_div_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r / r1 <= r2 <-> r2 / r <= / r1.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rle_mult_neg_chsd_lr. Qed.
+
+Lemma Rle_div_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r / r1 <= r2 <-> / r * r2 <= / r1.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rle_mult_neg_chsd_ll. Qed.
+
+Lemma Rlt_mult_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 * r < r2 <-> r1 > r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_lt_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_lt_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rlt_mult_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 * r < r2 <-> r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rlt_mult_neg_chsd_rr. Qed.
+
+Lemma Rlt_mult_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r * r1 < r2 <-> r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rlt_mult_neg_chsd_rl. Qed.
+
+Lemma Rlt_mult_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r * r1 < r2 <-> r1 > r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rlt_mult_neg_chsd_ll. Qed.
+
+Lemma Rlt_div_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 / r < r2 <-> r1 > r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rgt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_lt_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_lt_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rlt_div_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 / r < r2 <-> r1 > r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rlt_div_neg_chsd_rr. Qed.
+
+Lemma Rlt_div_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r / r1 < r2 <-> / r1 > r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rlt_mult_neg_chsd_lr. Qed.
+
+Lemma Rlt_div_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r / r1 < r2 <-> / r1 > / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rlt_mult_neg_chsd_ll. Qed.
+
+Lemma Rge_mult_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 * r >= r2 <-> r1 <= r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rlt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_ge_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - apply Rle_ge, (Rdiv_ge_reg_neg_r r); [exact Hr |].
+    now rewrite Rmult_div_l by exact Hr'; apply Rle_ge.
+Qed.
+
+Lemma Rge_mult_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 * r >= r2 <-> r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rge_mult_neg_chsd_rr. Qed.
+
+Lemma Rge_mult_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r * r1 >= r2 <-> r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rge_mult_neg_chsd_rl. Qed.
+
+Lemma Rge_mult_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r * r1 >= r2 <-> r1 <= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rge_mult_neg_chsd_ll. Qed.
+
+Lemma Rge_div_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 / r >= r2 <-> r1 <= r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rlt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_ge_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - apply Rle_ge, (Rmult_ge_reg_neg_r r); [exact Hr |].
+    now rewrite Rdiv_mult_id_l by exact Hr'; apply Rle_ge.
+Qed.
+
+Lemma Rge_div_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 / r >= r2 <-> r1 <= r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rge_div_neg_chsd_rr. Qed.
+
+Lemma Rge_div_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r / r1 >= r2 <-> / r1 <= r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rge_mult_neg_chsd_lr. Qed.
+
+Lemma Rge_div_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r / r1 >= r2 <-> / r1 <= / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rge_mult_neg_chsd_ll. Qed.
+
+Lemma Rgt_mult_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 * r > r2 <-> r1 < r2 / r.
+Proof.
+  intros r r1 r2 Hr; apply Rlt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rmult_lt_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+  - now apply (Rdiv_lt_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+Qed.
+
+Lemma Rgt_mult_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 * r > r2 <-> r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite <-Rdiv_def_comm; apply Rgt_mult_neg_chsd_rr. Qed.
+
+Lemma Rgt_mult_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r * r1 > r2 <-> r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rgt_mult_neg_chsd_rl. Qed.
+
+Lemma Rgt_mult_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r * r1 > r2 <-> r1 < r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def_comm; apply Rgt_mult_neg_chsd_ll. Qed.
+
+Lemma Rgt_div_neg_chsd_rr :
+  forall r r1 r2, r < 0 -> r1 / r > r2 <-> r1 < r2 * r.
+Proof.
+  intros r r1 r2 Hr; apply Rlt_not_eq in Hr as Hr'; split; intros H.
+  - now apply (Rdiv_lt_reg_neg_r r); [exact Hr |]; rewrite Rmult_div_l.
+  - now apply (Rmult_lt_reg_neg_r r); [exact Hr |]; rewrite Rdiv_mult_id_l.
+Qed.
+
+Lemma Rgt_div_neg_chsd_rl :
+  forall r r1 r2, r < 0 -> r1 / r > r2 <-> r1 < r * r2.
+Proof. now intros r r1 r2; rewrite Rmult_comm; apply Rgt_div_neg_chsd_rr. Qed.
+
+Lemma Rgt_div_neg_chsd_lr :
+  forall r r1 r2, r < 0 -> r / r1 > r2 <-> / r1 < r2 / r.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rgt_mult_neg_chsd_lr. Qed.
+
+Lemma Rgt_div_neg_chsd_ll :
+  forall r r1 r2, r < 0 -> r / r1 > r2 <-> / r1 < / r * r2.
+Proof. now intros r r1 r2; rewrite Rdiv_def; apply Rgt_mult_neg_chsd_ll. Qed.
+
+Lemma Rdiv_pos_lt_swap : forall r r1 r2,
+  r > 0 -> r2 > 0 -> r1 / r < r2 -> r1 / r2 < r.
+Proof. now intros r r1 r2 H1 H2 I; apply Rlt_div_chsd_rr, Rlt_div_chsd_rl. Qed.
+
+Lemma Rdiv_pos_nneg_le_swap : forall r r1 r2,
+  0 < r -> 0 <= r2 -> r1 / r <= r2 -> r1 / r2 <= r.
+Proof.
+  intros r r1 r2 H1 [H2 | <-] I; [| now rewrite Rdiv_0_r; left].
+  now apply Rle_div_chsd_rr, Rle_div_chsd_rl.
+Qed.
+
 (*********************************************************)
 (** ** Miscellaneous                                     *)
 (*********************************************************)
@@ -1983,7 +3127,7 @@ Lemma Rle_lt_0_plus_1 : forall r, 0 <= r -> 0 < r + 1.
 Proof.
   intros r H; apply Rlt_le_trans with (1 := Rlt_0_1).
   rewrite <-(Rplus_0_l 1) at 1.
-  apply Rplus_le_compat; try easy.
+  now apply Rplus_le_compat_r.
 Qed.
 #[global]
 Hint Resolve Rle_lt_0_plus_1: real.
@@ -2005,7 +3149,7 @@ Proof.
   apply (Rlt_trans _ 1); try easy.
   replace 2 with (1 + 1) by reflexivity.
   rewrite <-(Rplus_0_l 1) at 1.
-  apply Rplus_lt_le_compat; try easy.
+  now apply Rplus_lt_compat_r.
 Qed.
 
 Lemma Rplus_diag : forall r, r + r = 2 * r.
@@ -2059,10 +3203,10 @@ Proof.
   now apply H, Rgt_minus.
 Qed.
 
-(** Remark : a sigma-type version, called [completeness] is in [Raxioms.v] *)
+(** Remark: a sigma-type version, called [completeness] is in [Raxioms.v] *)
 Lemma upper_bound_thm :
   forall E : R -> Prop,
-    bound E -> (exists x : R, E x) ->  exists m : R, is_lub E m.
+    bounded_from_above E -> (exists x : R, E x) ->  exists m : R, is_lub E m.
 Proof.
   intros E E_bnd E_inhab.
   destruct (completeness E E_bnd E_inhab) as [x xlub].
@@ -2235,7 +3379,7 @@ Hint Resolve not_1_INR: real.
 (** ** Injection from [positive] to [R]                  *)
 (*********************************************************)
 
-(* NOTES:
+(** NOTES:
    - IPR is defined in Rdefinitions, using an auxiliary recursive function
      IPR_2.
    - positive is the type of positive integers represented in binary. Its 3
@@ -2278,7 +3422,7 @@ Lemma IPR_xO : forall p : positive, IPR (p~0) = 2 * IPR p.
 Proof.
   intros p.
   apply (Rmult_eq_reg_l 2); cycle 1.
-  { apply not_eq_sym, Rlt_not_eq, Rlt_0_2. }
+    apply not_eq_sym, Rlt_not_eq, Rlt_0_2.
   now rewrite 2IPR_IPR_2, IPR_2_xO.
 Qed.
 
@@ -2286,7 +3430,7 @@ Lemma IPR_xI : forall p : positive, IPR (p~1) = 2 * IPR p + 1.
 Proof.
   intros p.
   apply (Rmult_eq_reg_l 2); cycle 1.
-  { apply not_eq_sym, Rlt_not_eq, Rlt_0_2. }
+    apply not_eq_sym, Rlt_not_eq, Rlt_0_2.
   now rewrite 2IPR_IPR_2, IPR_2_xI, Rmult_plus_distr_l, Rmult_1_r.
 Qed.
 
@@ -2529,6 +3673,12 @@ Proof.
   - reflexivity.
   - now rewrite Ropp_involutive.
 Qed.
+
+Lemma Rmult_m1_l : forall r, (- 1) * r = - r.
+Proof. now intros r; rewrite IZR_NEG, <-Ropp_mult_distr_l, Rmult_1_l. Qed.
+
+Lemma Rmult_m1_r : forall r, r * (- 1) = - r.
+Proof. now intros r; rewrite Rmult_comm, Rmult_m1_l. Qed.
 
 Definition Ropp_Ropp_IZR := opp_IZR.
 

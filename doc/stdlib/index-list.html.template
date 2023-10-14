@@ -589,7 +589,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rcomplete.v
     theories/Reals/RiemannInt.v
     theories/Reals/RiemannInt_SF.v
-    theories/Reals/Rpow_def.v
     theories/Reals/Rpower.v
     theories/Reals/Rprod.v
     theories/Reals/Rsqrt_def.v
