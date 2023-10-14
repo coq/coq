@@ -26,6 +26,9 @@ Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit
 Ltac2 @ external enter : (unit -> unit) -> unit := "coq-core.plugins.ltac2" "enter".
 Ltac2 @ external case : (unit -> 'a) -> ('a * (exn -> 'a)) result := "coq-core.plugins.ltac2" "case".
 
+Ltac2 once_plus (run : unit -> 'a) (handle : exn -> 'a) : 'a :=
+  once (fun () => plus run handle).
+
 (** Proof state manipulation *)
 
 Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "focus".
@@ -108,3 +111,47 @@ Ltac2 assert_false b :=
 
 Ltac2 backtrack_tactic_failure (msg : string) :=
   Control.zero (Tactic_failure (Some (Message.of_string msg))).
+
+(** Backtraces. *)
+
+(** [throw_bt info e] is similar to [throw e], but raises [e] with the
+    backtrace represented by [info]. *)
+Ltac2 @ external throw_bt : exn -> exninfo -> 'a :=
+  "coq-core.plugins.ltac2" "throw_bt".
+
+(** [zero_bt info e] is similar to [zero e], but raises [e] with the
+    backtrace represented by [info]. *)
+Ltac2 @ external zero_bt : exn -> exninfo -> 'a :=
+  "coq-core.plugins.ltac2" "zero_bt".
+
+(** [plus_bt run handle] is similar to [plus run handle] (up to the type
+    missmatch for [handle]), but it calls [handle] with an extra argument
+    representing the backtrace at the point of the exception. The [handle]
+    function can thus decide to re-attach that backtrace when using the
+    [throw_bt] or [zero_bt] functions. *)
+Ltac2 @ external plus_bt : (unit -> 'a) -> (exn -> exninfo -> 'a) -> 'a :=
+  "coq-core.plugins.ltac2" "plus_bt".
+
+(** [once_plus_bt run handle] is a non-backtracking variant of [once_plus]
+    that has backtrace support similar to that of [plus_bt]. *)
+Ltac2 once_plus_bt (run : unit -> 'a) (handle : exn -> exninfo -> 'a) : 'a :=
+  once (fun _ => plus_bt run handle).
+
+Ltac2 @ external clear_err_info : err -> err :=
+  "coq-core.plugins.ltac2" "clear_err_info".
+
+Ltac2 clear_exn_info (e : exn) : exn :=
+  match e with
+  | Init.Internal err => Init.Internal (clear_err_info err)
+  | e => e
+  end.
+
+(** Timeout. *)
+
+(** [timeout t thunk] calls [thunk ()] with a timeout of [t] seconds. *)
+Ltac2 @ external timeout : int -> (unit -> 'a) -> 'a :=
+  "coq-core.plugins.ltac2" "timeout".
+
+(** [timeoutf t thunk] calls [thunk ()] with a timeout of [t] seconds. *)
+Ltac2 @ external timeoutf : float -> (unit -> 'a) -> 'a :=
+  "coq-core.plugins.ltac2" "timeoutf".

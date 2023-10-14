@@ -115,9 +115,17 @@ val of_cast : Constr.cast_kind -> valexpr
 val to_cast : valexpr -> Constr.cast_kind
 val cast : Constr.cast_kind repr
 
+val of_err : Exninfo.iexn -> valexpr
+val to_err : valexpr -> Exninfo.iexn
+val err : Exninfo.iexn repr
+
 val of_exn : Exninfo.iexn -> valexpr
 val to_exn : valexpr -> Exninfo.iexn
 val exn : Exninfo.iexn repr
+
+val of_exninfo : Exninfo.info -> valexpr
+val to_exninfo : valexpr -> Exninfo.info
+val exninfo : Exninfo.info repr
 
 val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
@@ -221,6 +229,7 @@ val val_ltac1 : Geninterp.Val.t Val.tag
 val val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag
 val val_transparent_state : TransparentState.t Val.tag
 
+val val_exninfo : Exninfo.info Tac2dyn.Val.tag
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 (** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
     should be put into a value with tag [val_exn]. *)
