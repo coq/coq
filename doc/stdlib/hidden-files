@@ -1,14 +1,3 @@
-theories/Arith/Arith_prebase.v
-theories/Arith/Le.v
-theories/Arith/Lt.v
-theories/Arith/Plus.v
-theories/Arith/Minus.v
-theories/Arith/Mult.v
-theories/Arith/Gt.v
-theories/Arith/Min.v
-theories/Arith/Max.v
-theories/Arith/Div2.v
-theories/Arith/Even.v
 theories/btauto/Algebra.v
 theories/btauto/Btauto.v
 theories/btauto/Reflect.v
@@ -71,7 +60,6 @@ theories/micromega/ZifyPow.v
 theories/micromega/Zify.v
 theories/nsatz/NsatzTactic.v
 theories/nsatz/Nsatz.v
-theories/Numbers/Natural/Peano/NPeano.v
 theories/omega/OmegaLemmas.v
 theories/omega/PreOmega.v
 theories/quote/Quote.v
