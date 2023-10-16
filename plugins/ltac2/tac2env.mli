@@ -113,6 +113,7 @@ val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
 val locate_extended_all_type : qualid -> type_constant list
 val shortest_qualid_of_type : ?loc:Loc.t -> type_constant -> qualid
+val path_of_type : type_constant -> full_path
 
 val push_projection : visibility -> full_path -> ltac_projection -> unit
 val locate_projection : qualid -> ltac_projection

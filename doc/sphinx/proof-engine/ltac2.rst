@@ -350,6 +350,10 @@ Printing Ltac2 tactics
    :cmd:`Print` can print defined Ltac2 tactics and can avoid printing
    other objects by using `Print Ltac2`.
 
+.. cmd:: Print Ltac2 Type @qualid
+
+   Prints the definitions of ltac2 types.
+
 .. cmd:: Ltac2 Globalize @ltac2_expr
 
    Prints the result of resolving notations in the given expression.

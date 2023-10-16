@@ -958,6 +958,7 @@ command: [
 | "Ltac2" "Notation" [ string | ident      (* ltac2 plugin *) ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* ltac2 plugin *)
 | "Print" "Ltac2" qualid      (* ltac2 plugin *)
+| "Print" "Ltac2" "Type" qualid      (* ltac2 plugin *)
 | "Locate" "Ltac2" qualid      (* ltac2 plugin *)
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)

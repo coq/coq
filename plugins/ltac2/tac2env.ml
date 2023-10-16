@@ -247,6 +247,8 @@ let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
 
+let path_of_type kn = KNmap.find kn (!nametab).tab_type_rev
+
 let shortest_qualid_of_type ?loc kn =
   let tab = !nametab in
   let sp = KNmap.find kn tab.tab_type_rev in

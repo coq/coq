@@ -34,3 +34,35 @@ Print Ltac2 Out_of_bounds.
 Ltac2 Notation nota := () ().
 
 Print nota.
+
+(* types *)
+
+Print constr.
+
+Ltac2 Type constr := constr.
+
+Print constr.
+
+Ltac2 Type ('a,'b) thing := 'b option.
+
+Print Ltac2 Type thing.
+
+Ltac2 Type empty := [].
+
+Print empty.
+
+Print Ltac2 Type option.
+
+Print Ltac2 Type bool.
+
+Print triple.
+
+Print ref.
+
+Ltac2 Type ('a,'b,'c) trirecord := { cproj : 'c; mutable bproj : 'b; aproj : 'a }.
+
+Print trirecord.
+
+Ltac2 Type extensible := [ .. ].
+
+Print extensible.
