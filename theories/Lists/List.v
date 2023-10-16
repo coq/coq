@@ -2479,6 +2479,20 @@ Section ReDun.
     + now constructor.
   Qed.
 
+  Lemma NoDup_app (l1 l2 : list A):
+    NoDup l1 -> NoDup l2 -> (forall a, In a l1 -> ~ In a l2) ->
+    NoDup (l1 ++ l2).
+  Proof.
+    intros H1 H2 H. induction l1 as [|a l1 IHl1]; [assumption|].
+    apply NoDup_cons_iff in H1 as [].
+    cbn. constructor.
+    - intros H3%in_app_or. destruct H3.
+      + contradiction.
+      + apply (H a); [apply in_eq|assumption].
+    - apply IHl1; [assumption|].
+      intros. apply H, in_cons. assumption.
+  Qed.
+
   Lemma NoDup_app_remove_l l l' : NoDup (l++l') -> NoDup l'.
   Proof.
   induction l as [|a l IHl]; intro H.
@@ -3163,6 +3177,28 @@ Proof.
   apply not_iff_compat, in_flat_map_Exists.
 Qed.
 
+(** A stronger version of FinFun.Injective_map_NoDup *)
+
+Definition InjectiveOn [A B] (P: A -> Prop) (f: A->B) :=
+  forall x y: A, P x -> P y -> f x = f y -> x = y.
+
+Lemma InjectiveOn_map_NoDup [A B] (P: A->Prop) (f: A->B) (l: list A) :
+ InjectiveOn P f -> Forall P l -> NoDup l -> NoDup (map f l).
+Proof.
+ intros HInj Pl Hl.
+ induction Hl as [|x l H1 H2 IH]; [constructor|].
+ cbn. constructor.
+ - intros Hf. apply H1.
+   apply in_map_iff in Hf as [y [Heq Hy]].
+   enough (x = y) as H.
+   + rewrite H. assumption.
+   + apply HInj.
+     * apply Forall_inv in Pl. assumption.
+     * apply Forall_inv_tail in Pl. rewrite Forall_forall in Pl.
+       apply Pl. assumption.
+     * symmetry. assumption.
+ - apply IH. apply Forall_inv_tail in Pl. assumption.
+Qed.
 
 Section Forall2.
 
@@ -3309,6 +3345,37 @@ Section ForallPairs.
     destruct (ForallOrdPairs_In Hl _ _ Hx Hy); subst; intuition.
   Qed.
 End ForallPairs.
+
+Lemma ForallOrdPairs_NoDup [A] (l: list A):
+  ForallOrdPairs (fun a b => a <> b) l <-> NoDup l.
+Proof.
+  split; intro H.
+  - induction H as [|a l H1 H2]; constructor.
+    + rewrite Forall_forall in H1. intro E.
+      contradiction (H1 a E). reflexivity.
+    + assumption.
+  - induction H; constructor.
+    + apply Forall_forall.
+      intros y Hy ->. contradiction.
+    + assumption.
+Qed.
+
+Lemma NoDup_concat [A] (L: list (list A)):
+  Forall (@NoDup A) L ->
+  ForallOrdPairs (fun l1 l2 => forall a, In a l1 -> ~ In a l2) L ->
+  NoDup (concat L).
+Proof.
+  intros H1 H2. induction L as [|l1 L IHL]; [constructor|].
+  cbn. apply NoDup_app.
+  - apply Forall_inv in H1. assumption.
+  - apply IHL.
+    + apply Forall_inv_tail in H1. assumption.
+    + inversion H2. assumption.
+  - intros a aInl1 ainL%in_concat. destruct ainL as [l2 [l2inL ainL2]].
+    inversion H2 as [|l L' H3].
+    rewrite Forall_forall in H3.
+    apply (H3 _ l2inL _ aInl1). assumption.
+Qed.
 
 Section Repeat.
 
