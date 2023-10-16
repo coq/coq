@@ -89,6 +89,9 @@ let define_constructor kn t =
 
 let interp_constructor kn = KNmap.find kn ltac_state.contents.ltac_constructors
 
+let find_all_constructors_in_type kn =
+  KNmap.filter (fun _ data -> KerName.equal kn data.cdata_type) (!ltac_state).ltac_constructors
+
 let define_projection kn t =
   let state = !ltac_state in
   ltac_state := { state with ltac_projections = KNmap.add kn t state.ltac_projections }

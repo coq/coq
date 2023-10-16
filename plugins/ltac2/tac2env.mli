@@ -62,6 +62,9 @@ type constructor_data = {
 val define_constructor : ltac_constructor -> constructor_data -> unit
 val interp_constructor : ltac_constructor -> constructor_data
 
+val find_all_constructors_in_type : type_constant -> constructor_data KNmap.t
+(** Useful for printing info about currently defined constructors of open types. *)
+
 (** {5 Toplevel definition of projections} *)
 
 type projection_data = {

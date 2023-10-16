@@ -1056,7 +1056,19 @@ let print_type ~print_def qid kn =
                  ++ spc() ++ str ": " ++ pr_glbtype name t) ++ str ";"
         in
         hv 2 (str "{ " ++ prlist_with_sep spc pr_field fields ++ str " }")
-      | GTydOpn -> str "[ .. ]"
+      | GTydOpn ->
+        let ctors = KNmap.bindings (Tac2env.find_all_constructors_in_type kn) in
+        if CList.is_empty ctors then str "[ .. ]"
+        else
+          let pr_ctor (ckn, cdata) =
+            let argtys = cdata.Tac2env.cdata_args in
+            hov 0
+              (Tac2print.pr_constructor ckn ++ if CList.is_empty argtys then mt()
+               else spc() ++surround (prlist_with_sep pr_comma (pr_glbtype name) argtys))
+          in
+          hov 0 (str "[ .." ++ spc() ++ str "| "
+                 ++ prlist_with_sep (fun () -> spc() ++ str "| ") pr_ctor ctors
+                   ++ str " ]")
   in
   hov 2 (ty ++ def)
 

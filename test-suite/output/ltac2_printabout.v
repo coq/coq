@@ -66,3 +66,8 @@ Print trirecord.
 Ltac2 Type extensible := [ .. ].
 
 Print extensible.
+
+Ltac2 Type extensible ::= [ Thing (string) ].
+Ltac2 Type extensible ::= [ OtherThing (bool) ].
+
+Print extensible.
