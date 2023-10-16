@@ -494,11 +494,12 @@ let () =
     ("constr.keyword", make_tag ~fg:"dark green" ());
     ("constr.notation", make_tag ());
     ("constr.path", make_tag ());
-    ("constr.reference", make_tag ~fg:"navy"());
+    ("constr.reference", make_tag ~fg:"navy" ());
     ("constr.type", make_tag ~fg:"#008080" ());
     ("constr.variable", make_tag ());
     ("message.debug", make_tag ());
     ("message.error", make_tag ());
+    ("message.red", make_tag ~fg:"red" ());
     ("message.warning", make_tag ());
     ("message.prompt", make_tag ~fg:"green" ());
     ("module.definition", make_tag ~fg:"orange red" ~bold:true ());
