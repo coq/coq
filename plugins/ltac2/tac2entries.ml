@@ -1035,6 +1035,13 @@ let print_tacref ~print_def qid = function
     print_constant ~print_def qid data ?info
   | TacAlias kn -> str "Alias to ..."
 
+let print_constructor qid kn =
+  let cdata = Tac2env.interp_constructor kn in
+  let name = int_name () in
+  let ty = GTypRef (Other cdata.cdata_type, List.init cdata.cdata_prms (fun i -> GTypVar i)) in
+  let ty = List.fold_right (fun arg ty -> GTypArrow (arg,ty)) cdata.cdata_args ty in
+  pr_qualid qid ++ spc() ++ str ": " ++ Tac2print.pr_glbtype name ty
+
 let locatable_ltac2 = "Ltac2"
 
 type ltac2_object =
@@ -1060,7 +1067,7 @@ let path_of_object = function
   | TacRef kn -> Tac2env.path_of_ltac kn
 
 let print_object ~print_def qid = function
-  | Constructor _ -> str "Ltac2 Constructor" ++ spc() ++ pr_qualid qid
+  | Constructor kn -> str "Ltac2 constructor" ++ spc() ++ print_constructor qid kn
   | TacRef kn -> str "Ltac2 " ++ print_tacref ~print_def qid kn
 
 let () =
@@ -1096,8 +1103,7 @@ let print_ltac2 qid =
       try Tac2env.locate_constructor qid
       with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown constructor " ++ pr_qualid qid)
     in
-    let _ = Tac2env.interp_constructor kn in
-    Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
+    Feedback.msg_notice (print_constructor qid kn)
   else
     let kn =
       try Tac2env.locate_ltac qid

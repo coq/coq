@@ -3,3 +3,11 @@ Ltac2 type : constr -> constr
       type := @external "coq-core.plugins.ltac2" "constr_type"
 Ltac2 ltac2_printabout.type
 Ltac2 type : constr -> constr
+None : 'a option
+Some : 'a -> 'a option
+Ltac2 constructor Err : exn -> 'a result
+Inl : 'a -> ('a, 'b) either
+Inr : 'b -> ('a, 'b) either
+Triple : 'c -> 'b -> 'a -> ('a, 'b, 'c) triple
+Not_found : exn
+Out_of_bounds : message option -> exn
