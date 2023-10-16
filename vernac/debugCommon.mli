@@ -57,6 +57,8 @@ val empty_chunk : chunk
 
 val read : unit -> DebugHook.Action.t
 
+val show_exn_in_debugger : Exninfo.iexn -> unit
+
 val format_stack : string option list -> Loc.t option list -> db_stack_rty
 
 val db_pr_goals_t : unit Proofview.tactic
