@@ -2006,8 +2006,9 @@ value  coq_interprete_ml(value tcode, value a, value t, value g, value e, value 
   // Registering the other arguments w.r.t. the OCaml GC is done by coq_interprete
   CAMLparam1(tcode);
   print_instr("coq_interprete");
-  CAMLreturn (coq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea)));
+  value res = coq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea));
   print_instr("end coq_interprete");
+  CAMLreturn(res);
 }
 
 value coq_interprete_byte(value* argv, int argn){
