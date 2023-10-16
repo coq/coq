@@ -399,6 +399,7 @@ let init () =
     prev_chunks := [];
     top_chunk := empty_chunk;
     prev_top_chunk := empty_chunk;
+    cur_goals := [];
     cur_loc := None;
     reset_history !history_buf_size;
     let open DebugHook in
@@ -443,12 +444,13 @@ let clear_queue () = wrap (fun () -> Queue.clear out_queue)
 
 let print g = (hook ()).submit_answer (Output (str g))
 
-let get_full_stack () =
-  let hist = get_history !hist_index in
-  hist.top_chunk :: hist.stack_chunks
+let get_all_chunks () =
+  if !hist_count = 0 then [] else
+    let hist = get_history !hist_index in
+    hist.top_chunk :: hist.stack_chunks
 
 let fmt_stack () =
-  let full = get_full_stack () in
+  let full = get_all_chunks () in
   let cur_loc = (get_history !hist_index).cur_loc in
   let common = List.concat_map (fun (_, fmt_stackL, _) -> fmt_stackL ()) full in
   let locs = cur_loc :: List.concat_map (fun (locs, _, _) -> locs) full in
@@ -466,7 +468,7 @@ let get_vars framenum =
       else
         get_vars framenum
   in
-  get_chunk (get_full_stack ()) framenum
+  get_chunk (get_all_chunks ()) framenum
 
 let db_fmt_goal gl =
   let env = Proofview.Goal.env gl in
@@ -556,3 +558,23 @@ let read () =
   in
   l ();
   !action
+
+(* compare to CErrors.noncritical *)
+let is_showable_exn = function
+  | Sys.Break -> false
+  | _ -> true
+
+let show_exn_in_debugger exn =
+  let exn0, info = exn in
+  let stack_len = 1 + (List.fold_left (fun len (locs, _, _) -> List.length locs + len) 
+    0 (get_all_chunks ())) in 
+  if not (isTerminal ()) && is_showable_exn exn0 &&
+    (stack_len > 1) &&  (* don't stop in "tac1; tac2." *) 
+    !hist_count > 0 (* skip single tactic, e.g. "fail." *) then begin
+    let open Pp in
+
+    (hook ()).submit_answer (Output (tag "message.red" @@ (CErrors.iprint exn) ++ fnl () ++
+      str "Step forward to exit the debugger"));
+    (hook ()).submit_answer (Prompt (tag "message.prompt" @@ fnl () ++ str "TcDebug > "));
+    ignore @@ read()
+  end

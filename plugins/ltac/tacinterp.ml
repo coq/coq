@@ -1976,6 +1976,7 @@ let default_ist () =
 
 let eval_tactic t =
   if get_debug () <> DebugOff then
+    (* todo: when debug is on, this is executed for every top level tactic.  Not efficient *)
     Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
     Proofview.tclLIFT (db_initialize true) <*>
     eval_tactic_ist (default_ist ()) t
