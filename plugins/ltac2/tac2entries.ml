@@ -1033,7 +1033,10 @@ let print_tacref ~print_def qid = function
     let data = Tac2env.interp_global kn in
     let info = Option.map fst (Tac2env.get_compiled_global kn) in
     print_constant ~print_def qid data ?info
-  | TacAlias kn -> str "Alias to ..."
+  | TacAlias kn ->
+    let { Tac2env.alias_body = body } = Tac2env.interp_alias kn in
+    str "Notation" ++ spc() ++ pr_qualid qid ++ str " :=" ++ spc()
+    ++ Tac2print.pr_rawexpr_gen E5 ~avoid:Id.Set.empty body
 
 let print_constructor qid kn =
   let cdata = Tac2env.interp_constructor kn in

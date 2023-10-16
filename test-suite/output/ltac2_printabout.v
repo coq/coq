@@ -28,3 +28,9 @@ Print Ltac2 Triple.
 
 Print Ltac2 Not_found.
 Print Ltac2 Out_of_bounds.
+
+(* alias *)
+
+Ltac2 Notation nota := () ().
+
+Print nota.

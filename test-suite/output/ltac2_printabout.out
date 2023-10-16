@@ -11,3 +11,4 @@ Inr : 'b -> ('a, 'b) either
 Triple : 'c -> 'b -> 'a -> ('a, 'b, 'c) triple
 Not_found : exn
 Out_of_bounds : message option -> exn
+Ltac2 Notation nota := () ()
