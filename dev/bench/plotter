@@ -60,6 +60,8 @@ os.makedirs(cachedir, exist_ok=True)
 print ('Downloading job logs.')
 
 m = pycurl.CurlMulti()
+m.setopt(pycurl.M_MAX_HOST_CONNECTIONS, 8)
+
 files=[]
 
 for _, job in benches:
