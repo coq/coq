@@ -135,7 +135,7 @@ val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.UGlobal.t
 
-val locate_extended_nowarn : qualid -> Globnames.extended_global_reference * Deprecation.t option
+val locate_extended_nowarn : qualid -> Globnames.extended_global_reference
 
 (** Remove the binding to an abbreviation *)
 

@@ -80,7 +80,7 @@ let is_imported_ref = let open GlobRef in function
       let mp = Constant.modpath kn in is_imported_modpath mp
 
 let locate id =
-  match fst (Nametab.locate_extended_nowarn (qualid_of_ident id)) with
+  match Nametab.locate_extended_nowarn (qualid_of_ident id) with
   | TrueGlobal r -> r
   | Abbrev _ -> raise Not_found
 
