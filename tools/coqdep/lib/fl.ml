@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open File_util
+
 module Error = struct
 
   exception CannotFindMeta of string * string
@@ -85,48 +87,6 @@ let rec find_plugin meta_file plugin_name path p { Fl_metascanner.pkg_defs ; pkg
     in
     let path = path @ [find_plugin_field "directory" "." c.Fl_metascanner.pkg_defs] in
     find_plugin meta_file plugin_name path ps c
-
-(** [to_relative_path path] takes as input a file path [path], and constructs
-    an equivalent relative path from the current working directory. If [path]
-    is already relative, then it is returned immediately. *)
-let to_relative_path : string -> string = fun full_path ->
-  if Filename.is_relative full_path then full_path else
-  let cwd  = String.split_on_char '/' (Sys.getcwd ()) in
-  let path = String.split_on_char '/' full_path in
-  let rec remove_common_prefix l1 l2 =
-    match (l1, l2) with
-    | (x1 :: l1, x2 :: l2) when x1 = x2 -> remove_common_prefix l1 l2
-    | (_       , _       )              -> (l1, String.concat "/" l2)
-  in
-  let (cwd, path) = remove_common_prefix cwd path in
-  let add_parent path _ = Filename.concat Filename.parent_dir_name path in
-  List.fold_left add_parent path cwd
-
-(** [normalize_path path] takes as input a file path [path], and returns an
-    equivalent path that: (1) does not contain the current directory member
-    ["."] unless the path is to the current directory (in which case ["."]
-    is returned, or ["./"] if [path] has a trailing ["/"]), (2) only uses
-    parent directory members [".."] for a prefix of the path, and (3), has
-    a trailing ["/"] only if and only if [path] does.
-
-    For example, paths ["dir1/dir2/file.v"], ["."], ["dir1/dir2/dir3/"] and
-    ["../../dir/file.v"] are possible return values, but ["./file.v"] and
-    ["dir1/../dir2"] are not. *)
-let normalize_path : string -> string = fun path ->
-  let re_delim = if Sys.win32 then "[/\\]" else "/" in
-  let path = Str.split_delim  (Str.regexp re_delim) path in
-  let rec normalize acc path =
-    match (path, acc) with
-    | ([]          , _          ) -> List.rev acc
-    | ("."  :: path, _          ) -> normalize acc path
-    | (".." :: path, []         ) -> normalize (".." :: []) path
-    | (".." :: path, ".." :: _  ) -> normalize (".." :: acc) path
-    | (".." :: path, _    :: acc) -> normalize acc path
-    | (dir  :: path, _          ) -> normalize (dir :: acc) path
-  in
-  match normalize [] path with
-  | []   -> "."
-  | path -> String.concat "/" path
 
 let findlib_resolve ~meta_files ~file ~package ~plugin_name =
   let (meta_file, meta) =
