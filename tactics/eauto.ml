@@ -34,7 +34,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   if occur_existential sigma t1 || occur_existential sigma t2 then
     Tacticals.tclTHENLIST
       [Proofview.Unsafe.tclEVARS sigma;
-       Clenv.unify ~flags t1;
+       Clenv.unify ~flags ~cv_pb:CUMUL t1;
        exact_no_check c]
   else exact_check c
   end
@@ -52,7 +52,7 @@ let e_assumption =
         let id = NamedDecl.get_id decl in
         let t = NamedDecl.get_type decl in
         if not_ground || occur_existential sigma t then
-          Clenv.unify ~flags:eauto_unif_flags t <*> exact_no_check (mkVar id)
+          Clenv.unify ~cv_pb:CUMUL ~flags:eauto_unif_flags t <*> exact_no_check (mkVar id)
         else
           exact_check (mkVar id)
       in

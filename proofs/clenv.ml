@@ -953,13 +953,13 @@ let fail_quick_unif_flags = {
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
-let unify ?(flags=fail_quick_unif_flags) m =
+let unify ?(flags=fail_quick_unif_flags) ~cv_pb m =
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.pf_env gl in
     let n = Tacmach.pf_concl gl in
     let evd = clear_metas (Tacmach.project gl) in
     try
-      let evd' = w_unify env evd CONV ~flags m n in
+      let evd' = w_unify env evd cv_pb ~flags m n in
         Proofview.Unsafe.tclEVARSADVANCE evd'
     with e when CErrors.noncritical e ->
       let info = Exninfo.reify () in
