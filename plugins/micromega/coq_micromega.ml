@@ -1595,20 +1595,16 @@ let find_witness p polys1 =
   *)
 
 let witness_list prover l =
-  let rec xwitness_list l =
-    match l with
-    | [] -> Prf []
-    | e :: l -> (
-      match xwitness_list l with
-      | Model (m, e) -> Model (m, e)
+  let rec xwitness_list stack l =
+    match stack with
+    | [] -> Prf l
+    | e :: stack ->
+      match find_witness prover e with
+      | Model m -> (Model (m, e))
       | Unknown -> Unknown
-      | Prf l -> (
-        match find_witness prover e with
-        | Model m -> Model (m, e)
-        | Unknown -> Unknown
-        | Prf w -> Prf (w :: l) ) )
+      | Prf w -> xwitness_list stack (w :: l)
   in
-  xwitness_list l
+  xwitness_list (List.rev l) []
 
 (*  let t1 = System.get_time () in
   let res = witness_list p g in
