@@ -154,6 +154,15 @@ Ltac2 Notation intros := intros.
 Ltac2 Notation "eintros" p(intropatterns) := intros0 true p.
 Ltac2 Notation eintros := eintros.
 
+Ltac2 case0 ev bnd :=
+  enter_h ev Std.case bnd.
+
+Ltac2 Notation "case" bnd(thunk(with_bindings)) := case0 false bnd.
+Ltac2 Notation case := case.
+
+Ltac2 Notation "ecase" bnd(thunk(with_bindings)) := case0 true bnd.
+Ltac2 Notation ecase := ecase.
+
 Ltac2 split0 ev bnd :=
   enter_h ev Std.split bnd.
 
@@ -484,9 +493,17 @@ Ltac2 Notation "revert" ids(list1(ident)) := Std.revert ids.
 
 Ltac2 Notation assumption := Std.assumption ().
 
+Ltac2 Notation "transitivity" c(constr) := Std.transitivity c.
 Ltac2 Notation etransitivity := Std.etransitivity ().
 
+Ltac2 Notation "cut" c(constr) := Std.cut c.
+
+Ltac2 Notation "rename" ids(list1(seq(ident, "into", ident), ",")) := Std.rename ids.
+
 Ltac2 Notation admit := Std.admit ().
+
+Ltac2 Notation "fix" id(opt(ident)) := Std.fix_ id.
+Ltac2 Notation "cofix" id(opt(ident)) := Std.cofix_ id.
 
 Ltac2 clear0 ids := match ids with
 | [] => Std.keep []
@@ -497,7 +514,13 @@ Ltac2 Notation "clear" ids(list0(ident)) := clear0 ids.
 Ltac2 Notation "clear" "-" ids(list1(ident)) := Std.keep ids.
 Ltac2 Notation clear := clear.
 
+Ltac2 Notation "clearbody" ids(list1(ident)) := Std.clearbody ids.
+
 Ltac2 Notation refine := Control.refine.
+
+Ltac2 Notation exact_no_check := Std.exact_no_check.
+Ltac2 Notation vm_cast_no_check := Std.vm_cast_no_check.
+Ltac2 Notation native_cast_no_check := Std.native_cast_no_check.
 
 (** extratactics *)
 
@@ -526,6 +549,12 @@ Ltac2 Notation "injection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropat
 
 Ltac2 Notation "einjection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropatterns))):=
   Std.injection true ipat arg.
+
+Ltac2 contradiction0 c :=
+  enter_h false (fun _ c => Std.contradiction c) c.
+
+Ltac2 Notation "contradiction" arg(thunk(opt(seq(constr, with_bindings)))) := contradiction0 arg.
+Ltac2 Notation contradiction := contradiction.
 
 (** Auto *)
 
