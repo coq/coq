@@ -265,7 +265,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
   in
   let using =
     let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
-    Option.map (fun using -> Proof_using.definition_using env sigma ~using ~terms) using
+    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
@@ -293,10 +293,11 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation 
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
+  let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
     let terms = [def; typ] in
-    let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
+    let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
     let deps = collect_evars_of_term evd def typ in
@@ -306,7 +307,6 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation 
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
     (cinfo, def, evars)
   in
-  let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in
   let fixdefs = List.map out_def fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in

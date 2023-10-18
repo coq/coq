@@ -834,6 +834,22 @@ let explain_bad_variance env sigma ~lev ~expected ~actual =
   str": expected " ++ Univ.Variance.pr expected ++
   str " but cannot be less restrictive than " ++ Univ.Variance.pr actual ++ str "."
 
+let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
+  let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in
+  let n = List.length l in
+  let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_vars) in
+  let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_vars) in
+  let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
+  Pp.(prlist str
+        ["The following section "; (String.plural n "variable"); " ";
+         (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
+      missing_vars ++ str "." ++ fnl () ++ fnl () ++
+      str "You can either update your proof to not depend on " ++ missing_vars ++
+      str ", or you can update your Proof line from" ++ fnl () ++
+      str "Proof using " ++ declared_vars ++ fnl () ++
+      str "to" ++ fnl () ++
+      str "Proof using " ++ inferred_vars)
+
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
@@ -881,6 +897,8 @@ let explain_type_error env sigma err =
   | BadCaseRelevance (rlv, case) -> explain_bad_case_relevance env sigma rlv case
   | BadInvert -> explain_bad_invert env
   | BadVariance {lev;expected;actual} -> explain_bad_variance env sigma ~lev ~expected ~actual
+  | UndeclaredUsedVariables {declared_vars;inferred_vars} ->
+      explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars
 
 let pr_position (cl,pos) =
   let clpos = match cl with

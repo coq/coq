@@ -263,7 +263,7 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
         let env = Global.env() in
         let evd = Evd.from_env env in
         let terms = [EConstr.of_constr typ] in
-        let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
+        let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
         let args = List.map Context.Rel.Declaration.get_name ctx in
         Declare.CInfo.make ~name ~typ ~args ~impargs ?using ()
       ) fixnames fixtypes fiximps

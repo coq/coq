@@ -14,7 +14,6 @@
 (* This module provides the main entry points for type-checking basic
    declarations *)
 
-open CErrors
 open Util
 open Names
 open Constr
@@ -28,62 +27,39 @@ module NamedDecl = Context.Named.Declaration
 (* Checks the section variables for the body.
    Returns the closure of the union with the variables in the type.
 *)
-let check_section_variables env declared_set typ body =
+let check_section_variables env declared_vars body typ =
+  let env_ids = ids_of_named_context_val (named_context_val env) in
+  Id.Set.iter (fun id -> if not (Id.Set.mem id env_ids) then Type_errors.error_unbound_var env id) declared_vars;
   let tyvars = global_vars_set env typ in
-  let declared_set = Environ.really_needed env (Id.Set.union declared_set tyvars) in
+  let declared_vars = Environ.really_needed env (Id.Set.union declared_vars tyvars) in
   let () = match body with
   | None -> ()
   | Some body ->
     let ids_def = global_vars_set env body in
-    let inferred_set = Environ.really_needed env (Id.Set.union declared_set ids_def) in
-    if not (Id.Set.subset inferred_set declared_set) then
-      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
-      let n = List.length l in
-      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
-      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
-      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-      user_err Pp.(prlist str
-                     ["The following section "; (String.plural n "variable"); " ";
-                      (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-                   missing_vars ++ str "." ++ fnl () ++ fnl () ++
-                   str "You can either update your proof to not depend on " ++ missing_vars ++
-                   str ", or you can update your Proof line from" ++ fnl () ++
-                   str "Proof using " ++ declared_vars ++ fnl () ++
-                   str "to" ++ fnl () ++
-                   str "Proof using " ++ inferred_vars)
+    let inferred_vars = Environ.really_needed env (Id.Set.union declared_vars ids_def) in
+    if not (Id.Set.subset inferred_vars declared_vars) then
+      Type_errors.error_undeclared_used_variables env ~declared_vars ~inferred_vars
   in
-  declared_set
+  declared_vars
 
-let used_section_variables env hyps def typ =
+let compute_section_variables env body typ =
+  if List.is_empty (named_context env) then
+    (* Empty section context: optimization *)
+    Id.Set.empty
+  else
+    let ids =
+      Option.fold_right
+        (fun c -> Id.Set.union (global_vars_set env c))
+        body (global_vars_set env typ) in
+    Environ.really_needed env ids
+
+let used_section_variables env declared_hyps body typ =
   let hyps =
-    if List.is_empty (named_context env) then
-      (* Empty section context *)
-      let () = match hyps with
-        | None -> ()
-        | Some ids -> assert (Id.Set.is_empty ids)
-      in
-      Id.Set.empty
-    else match hyps with
-      | None ->
-        (* No declared section vars, and non-empty section context:
-             we must look at the body NOW, if any *)
-        let ids_typ = global_vars_set env typ in
-        let ids_def = match def with
-          | Undef _ | Primitive _ -> Id.Set.empty
-          | Def cs -> global_vars_set env cs
-          | OpaqueDef _ ->
-            (* Opaque definitions always come with their section variables *)
-            assert false
-        in
-        Environ.really_needed env (Id.Set.union ids_typ ids_def)
-      | Some declared ->
-        let body = match def with
-          | Undef _ -> None
-          | Primitive _ -> assert false (* not allowed in sections *)
-          | OpaqueDef _ -> None (* checked in check_delayed *)
-          | Def cs -> Some cs
-        in
-        check_section_variables env declared typ body in
+    match declared_hyps with
+    | None -> compute_section_variables env body typ
+    | Some declared -> check_section_variables env declared body typ
+  in
+  (* Order the variables *)
   List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env)
 
 (* Insertion of constants and parameters in environment. *)
@@ -204,7 +180,7 @@ let infer_parameter ~sec_univs env entry =
   let r = Typeops.assumption_of_judgment env j in
   let typ = Vars.subst_univs_level_constr usubst j.uj_val in
   let undef = Undef entry.parameter_entry_inline_code in
-  let hyps = used_section_variables env entry.parameter_entry_secctx undef typ in
+  let hyps = used_section_variables env entry.parameter_entry_secctx None typ in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs undef in
   {
     const_hyps = hyps;
@@ -229,8 +205,9 @@ let infer_definition ~sec_univs env entry =
       let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
       Vars.subst_univs_level_constr usubst tj.utj_val
   in
-  let def = Def (Vars.subst_univs_level_constr usubst j.uj_val) in
-  let hyps = used_section_variables env entry.const_entry_secctx def typ in
+  let body = Vars.subst_univs_level_constr usubst j.uj_val in
+  let def = Def body in
+  let hyps = used_section_variables env entry.const_entry_secctx (Some body) typ in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
   {
     const_hyps = hyps;
@@ -256,7 +233,7 @@ let infer_opaque ~sec_univs env entry =
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, univs) in
   let def = OpaqueDef () in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
-  let hyps = used_section_variables env (Some entry.opaque_entry_secctx) def typ in
+  let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
   {
     const_hyps = hyps;
@@ -293,7 +270,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let declared =
     Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
   in
-  let declared' = check_section_variables env declared tyj.utj_val (Some body) in
+  let declared' = check_section_variables env declared (Some body) tyj.utj_val in
   let () = assert (Id.Set.equal declared declared') in
   (* Note: non-trivial usubst only in polymorphic case *)
   let def = Vars.subst_univs_level_constr usubst j.uj_val in

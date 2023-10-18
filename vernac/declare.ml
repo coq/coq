@@ -1479,13 +1479,13 @@ module Proof_info = struct
     ; info : Info.t
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; compute_guard : lemma_possible_guards
+    ; compute_guard : lemma_possible_guards option (* None = not recursive *)
     (** thms and compute guard are specific only to
        start_lemma_with_initialization + regular terminator, so we
        could make this per-proof kind *)
     }
 
-  let make ~cinfo ~info ?(compute_guard=[]) ?(proof_ending=Proof_ending.Regular) () =
+  let make ~cinfo ~info ?compute_guard ?(proof_ending=Proof_ending.Regular) () =
     { cinfo
     ; info
     ; compute_guard
@@ -1646,6 +1646,11 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
 
 let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
+let get_recnames pf =
+  if Option.has_some pf.pinfo.Proof_info.compute_guard then
+    List.map (fun c -> c.CInfo.name) pf.pinfo.Proof_info.cinfo
+  else
+    []
 
 let set_used_variables ps ~using =
   let open Context.Named.Declaration in
@@ -2011,7 +2016,7 @@ end = struct
        but not clear it is the right thing to do.
     *)
     let pe, ubind =
-      if i > 0 && not (CList.is_empty compute_guard)
+      if i > 0 && Option.has_some compute_guard
       then
         let typ = UState.nf_universes uctx typ in
         Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
@@ -2020,7 +2025,7 @@ end = struct
     (* We when compute_guard was [] in the previous step we should not
        substitute the body *)
     let pe = match compute_guard with
-      | [] -> pe
+      | None -> pe
       | _ ->
         Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
@@ -2029,10 +2034,10 @@ end = struct
 
   let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
-    | [] ->
+    | None ->
       (* Not a recursive statement *)
       entry
-    | possible_indexes ->
+    | Some possible_indexes ->
       (* Try all combinations... not optimal *)
       let env = Global.env() in
       let typing_flags = pinfo.Proof_info.info.Info.typing_flags in

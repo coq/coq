@@ -275,6 +275,9 @@ module Proof : sig
 
   val get_open_goals : t -> int
 
+  (** Gets the set of mutual theorem names being currently built, if any *)
+  val get_recnames : t -> Id.t list
+
   (** Helpers to obtain proof state when in an interactive proof *)
 
   (** [get_goal_context n] returns the context of the [n]th subgoal of

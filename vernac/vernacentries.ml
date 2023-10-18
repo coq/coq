@@ -573,15 +573,10 @@ let program_inference_hook env sigma ev =
 let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   let env = Global.env () in
   let sigma, _ = Declare.Proof.get_current_context pstate in
+  let fixnames = Declare.Proof.get_recnames pstate in
   let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
   let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
-  let using = Proof_using.definition_using env sigma ~using ~terms in
-  let vars = Environ.named_context env in
-  Names.Id.Set.iter (fun id ->
-      if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
-        user_err
-          (str "Unknown variable: " ++ Id.print id ++ str "."))
-    using;
+  let using = Proof_using.definition_using env sigma ~fixnames ~using ~terms in
   let _, pstate = Declare.Proof.set_used_variables pstate ~using in
   pstate
 
