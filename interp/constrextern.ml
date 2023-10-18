@@ -249,24 +249,34 @@ let add_cpatt_for_params ind l =
     Util.List.addn  (Inductiveops.inductive_nparamdecls (Global.env()) ind) (DAst.make @@ PatVar Anonymous) l
 
 let drop_implicits_in_patt cst nb_expl args =
-  let impl_st = (implicits_of_global cst) in
+  let impl_st = implicits_of_global cst in
   let impl_data = extract_impargs_data impl_st in
   let rec impls_fit l = function
-    |[],t -> Some (List.rev_append l t)
-    |_,[] -> None
-    |h::t, { CAst.v = CPatAtom None }::tt when is_status_implicit h -> impls_fit l (t,tt)
-    |h::_,_ when is_status_implicit h -> None
-    |_::t,hh::tt -> impls_fit (hh::l) (t,tt)
-  in let rec aux = function
-    |[] -> None
-    |(_,imps)::t -> match impls_fit [] (imps,args) with
-        |None -> aux t
-        |x -> x
-     in
-     if Int.equal nb_expl 0 then aux impl_data
-     else
-       let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
-       impls_fit [] (imps,args)
+    | [], t -> Some (List.rev_append l t)
+    | _, [] -> None
+    | h::t, { CAst.v = CPatAtom None }::tt when is_status_implicit h -> impls_fit l (t,tt)
+    | h::_, _ when is_status_implicit h -> None
+    | _::t, hh::tt -> impls_fit (hh::l) (t,tt)
+  in
+  let try_impls_fit (imps,args) =
+    if not !Constrintern.parsing_explicit &&
+       ((!Flags.raw_print || !print_implicits) &&
+        List.exists is_status_implicit imps)
+       (* Note: !print_implicits_explicit_args=true not supported for patterns *)
+    then None
+    else impls_fit [] (imps,args)
+  in
+  let rec select = function
+    | [] -> None
+    | (_,imps)::imps_list ->
+      match try_impls_fit (imps,args) with
+        | None -> select imps_list
+        | x -> x
+  in
+  if Int.equal nb_expl 0 then select impl_data
+  else
+    let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
+    try_impls_fit (imps,args)
 
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
@@ -310,16 +320,13 @@ let make_pat_notation ?loc (inscope,ntn) (terms,termlists,binders as subst) args
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
     destPatPrim terms []
 
-let mkPat ?loc qid l = CAst.make ?loc @@
-  (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if List.is_empty l then CPatAtom (Some qid) else CPatCstr (qid,None,l)
-
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (GlobRef.ConstructRef c)) in
   let nb_params = Inductiveops.inductive_nparams (Global.env()) ind in
   List.exists (fun (_,impls) ->
     (List.length impls >= nb_params) &&
       let params,args = Util.List.chop nb_params impls in
+      not !Flags.raw_print && not !print_implicits &&
       (List.for_all is_status_implicit params)&&(List.for_all (fun x -> not (is_status_implicit x)) args)
   ) impl_st
 
@@ -445,8 +452,8 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
               else
                 if no_implicit then l2 else
                   match drop_implicits_in_patt gr nb_to_drop l2 with
-                  |Some true_args -> true_args
-                  |None -> raise No_match
+                  | Some true_args -> true_args
+                  | None -> raise No_match
             in
             insert_pat_coercion coercion
               (insert_pat_delimiters ?loc
@@ -469,12 +476,12 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
         else
           if no_implicit then l2 else
             match drop_implicits_in_patt gr nb_to_drop l2 with
-            |Some true_args -> true_args
-            |None -> raise No_match
+            | Some true_args -> true_args
+            | None -> raise No_match
       in
       assert (List.is_empty termlists);
       assert (List.is_empty binders);
-      insert_pat_coercion ?loc coercion (mkPat ?loc qid (List.rev_append l1 l2'))
+      insert_pat_coercion ?loc coercion (CAst.make ?loc @@ CPatCstr (qid,None,List.rev_append l1 l2'))
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
@@ -518,8 +525,8 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
       let c = extern_reference vars (GlobRef.IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
       match drop_implicits_in_patt (GlobRef.IndRef ind) 0 args with
-           |Some true_args -> CAst.make @@ CPatCstr (c, None, true_args)
-           |None           -> CAst.make @@ CPatCstr (c, Some args, [])
+      | Some true_args -> CAst.make @@ CPatCstr (c, None, true_args)
+      | None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
 let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope ((constr_some_level,None),([],[])) vars p
