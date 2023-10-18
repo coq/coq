@@ -312,10 +312,6 @@ let make_pat_notation ?loc (inscope,ntn) (terms,termlists,binders as subst) args
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
     destPatPrim terms []
 
-let mkPat ?loc qid l = CAst.make ?loc @@
-  (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if List.is_empty l then CPatAtom (Some qid) else CPatCstr (qid,None,l)
-
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (GlobRef.ConstructRef c)) in
   let nb_params = Inductiveops.inductive_nparams (Global.env()) ind in
@@ -476,7 +472,7 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
       in
       assert (List.is_empty termlists);
       assert (List.is_empty binders);
-      insert_pat_coercion ?loc coercion (mkPat ?loc qid (List.rev_append l1 l2'))
+      insert_pat_coercion ?loc coercion (CAst.make ?loc @@ CPatCstr (qid,None,List.rev_append l1 l2'))
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
