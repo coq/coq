@@ -258,17 +258,25 @@ let drop_implicits_in_patt cst nb_expl args =
     | h::_, _ when is_status_implicit h -> None
     | _::t, hh::tt -> impls_fit (hh::l) (t,tt)
   in
+  let try_impls_fit (imps,args) =
+    if not !Constrintern.parsing_explicit &&
+       ((!Flags.raw_print || !print_implicits) &&
+        List.exists is_status_implicit imps)
+       (* Note: !print_implicits_explicit_args=true not supported for patterns *)
+    then None
+    else impls_fit [] (imps,args)
+  in
   let rec select = function
     | [] -> None
     | (_,imps)::imps_list ->
-      match impls_fit [] (imps,args) with
+      match try_impls_fit (imps,args) with
         | None -> select imps_list
         | x -> x
   in
   if Int.equal nb_expl 0 then select impl_data
   else
     let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
-    impls_fit [] (imps,args)
+    try_impls_fit (imps,args)
 
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
@@ -318,6 +326,7 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
   List.exists (fun (_,impls) ->
     (List.length impls >= nb_params) &&
       let params,args = Util.List.chop nb_params impls in
+      not !Flags.raw_print && not !print_implicits &&
       (List.for_all is_status_implicit params)&&(List.for_all (fun x -> not (is_status_implicit x)) args)
   ) impl_st
 
