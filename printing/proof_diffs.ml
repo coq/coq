@@ -510,6 +510,7 @@ let match_goals ot nt =
       constr_expr ogname b2 b22
     | CHole _, CHole _ -> ()
     | CGenarg _, CGenarg _ -> ()
+    | CGenargGlob _, CGenarg _ -> ()
     | CPatVar _, CPatVar _ -> ()
     | CEvar (n,l), CEvar (n2,l2) ->
       let oevar = if ogname = "" then Id.to_string n.CAst.v else ogname in
@@ -556,9 +557,15 @@ let to_constr pf =
   let x = Constrextern.extern_constr env sigma t in  (* todo: right options?? *)
   x.v
 
-let has_fg_goals pf =
-  let Proof.{goals} = Proof.data pf in
-  goals <> []
+(* variant for debugger *)
+let to_constr2 env sigma goals pf =
+  let open CAst in
+  let pprf = Proof.partial_proof pf in
+  (* pprf generally has only one element, but it may have more in the derive plugin *)
+  let t = List.hd pprf in  (* todo: reasonable? correct? *)
+  let env = Evd.evar_filtered_env env (Evd.find_undefined sigma (List.hd goals)) in
+  let x = Constrextern.extern_constr env sigma t in  (* todo: right options?? *)
+  x.v
 
 
 module GoalMap = Evar.Map
@@ -595,6 +602,28 @@ let db_goal_map op np ng_to_og =
 
 type goal_map = Evd.evar_map * Evar.t Evar.Map.t
 
+type goal_map_args = {
+  oall_goals: Evar.Set.t;
+  nall_goals: Evar.Set.t;
+  osigma:     Evd.evar_map;
+  nsigma:     Evd.evar_map;
+  oto_constr: unit -> Constrexpr.constr_expr_r;
+  nto_constr: unit -> Constrexpr.constr_expr_r;
+  nhas_fg_goals: bool;
+}
+
+(* for use while not in the Ltac debugger *)
+let default_goal_map_args oldp newp =
+  {
+    oall_goals=Proof.all_goals oldp;
+    nall_goals=Proof.all_goals newp;
+    osigma=(Proof.data oldp).sigma;
+    nsigma=(Proof.data newp).sigma;
+    oto_constr=(fun () -> to_constr oldp);
+    nto_constr=(fun () -> to_constr newp);
+    nhas_fg_goals = (Proof.data newp).goals <> [];
+  }
+
 let map_goal g (osigma, map) = match GoalMap.find_opt g map with
 | None -> None
 | Some g -> Some (make_goal (Global.env ()) osigma g)
@@ -616,7 +645,7 @@ let map_goal g (osigma, map) = match GoalMap.find_opt g map with
  - if there are no foreground goals in the new proof, the proofs are
    considered the same for diffs
  - if there are removals but no additions, then there are no new goals
-   that aren't the same as their associated old goals.  For the both of
+   that aren't the same as their associated old goals.  For both of
    these cases, the map is empty because there are no new goals that differ
    from their old goals
  - if there is only one removal, then any added goals should be mapped to
@@ -625,10 +654,10 @@ let map_goal g (osigma, map) = match GoalMap.find_opt g map with
    match_goals to get a map between old and new evar names, then use this
    to create the map from new goal ids to old goal ids.
 *)
-let make_goal_map_i op np =
+let make_goal_map_i goal_map_args =
   let open Evar.Set in
-  let ogs = Proof.all_goals op in
-  let ngs = Proof.all_goals np in
+  let ogs = goal_map_args.oall_goals in
+  let ngs = goal_map_args.nall_goals in
   let rem_gs = diff ogs ngs in
   let add_gs = diff ngs ogs in
 
@@ -642,18 +671,16 @@ let make_goal_map_i op np =
     Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
   | elts ->
     if Evar.Set.is_empty add_gs || (* only removals *)
-        not (has_fg_goals np) (* only background goals *) then ng_to_og
+        not goal_map_args.nhas_fg_goals (* only background goals *) then ng_to_og
     else
       (* >= 2 removals, >= 1 addition, need to match *)
-      let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
+      let nevar_to_oevar = match_goals (goal_map_args.oto_constr ()) (goal_map_args.nto_constr ()) in
 
-      let Proof.{sigma=osigma} = Proof.data op in
-      let fold accu og = CString.Map.add (goal_to_evar og osigma) og accu in
+      let fold accu og = CString.Map.add (goal_to_evar og goal_map_args.osigma) og accu in
       let oevar_to_og = List.fold_left fold CString.Map.empty elts in
 
-      let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
-        let nevar = goal_to_evar ng nsigma in
+        let nevar = goal_to_evar ng goal_map_args.nsigma in
         let oevar = CString.Map.find nevar nevar_to_oevar in
         let og = CString.Map.find oevar oevar_to_og in
         og
@@ -661,9 +688,9 @@ let make_goal_map_i op np =
       let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
       Evar.Set.fold fold add_gs ng_to_og
 
-let make_goal_map op np =
-  let map = make_goal_map_i op np in
-  ((Proof.data op).Proof.sigma, map)
+let make_goal_map goal_map_args =
+  let map = make_goal_map_i goal_map_args in
+  (goal_map_args.osigma, map)
 
 let notify_proof_diff_failure msg =
   Feedback.msg_notice Pp.(str "Unable to compute diffs: " ++ str msg)

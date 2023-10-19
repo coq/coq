@@ -59,13 +59,28 @@ val diff_concl : ?og_s:goal -> goal -> Pp.t
 
 type goal_map
 
+type goal_map_args = {
+  oall_goals: Evar.Set.t;
+  nall_goals: Evar.Set.t;
+  osigma: Evd.evar_map;
+  nsigma: Evd.evar_map;
+  oto_constr: unit -> Constrexpr.constr_expr_r;
+  nto_constr: unit -> Constrexpr.constr_expr_r;
+  nhas_fg_goals: bool;
+}
+
+val default_goal_map_args : Proof.t -> Proof.t -> goal_map_args
+
+val to_constr2 : Environ.env -> Evd.evar_map -> Evar.t list -> Proof.t
+    -> Constrexpr.constr_expr_r
+
 (** Generates a map from [np] to [op] that maps changed goals to their prior
 forms.  The map doesn't include entries for unchanged goals; unchanged goals
 will have the same goal id in both versions.
 
 [op] and [np] must be from the same proof document and [op] must be for a state
 before [np]. *)
-val make_goal_map : Proof.t -> Proof.t -> goal_map
+val make_goal_map : goal_map_args -> goal_map
 
 val map_goal : Evar.t -> goal_map -> goal option
 

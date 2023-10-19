@@ -106,5 +106,3 @@ module Intf : sig
   val set : t -> unit
   val get : unit -> t option
 end
-
-val fwd_db_subgoals : (goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty) ref

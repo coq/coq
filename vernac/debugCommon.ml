@@ -82,6 +82,42 @@ let save_goals () =
     Proofview.tclLIFT (Proofview.NonLogical.return ())
   end else
     Proofview.tclLIFT (Proofview.NonLogical.return ())
+  [@@ocaml.warning "-3"]
+
+(* Find the closest prior history entry whose top of stack is the same function call as
+   the current entry (or prior to entering that function) AND
+   in which the goals differ from the current entry.
+   Assume that only "goals" and its sigma can change while in the debugger *)
+let get_prev_goalts () =
+  let hentry = get_history !hist_index in
+  let add gs set =
+    List.fold_left (fun s g -> Evar.Set.add (Proofview.Goal.goal g) s) set gs in
+  let curr = add hentry.goals Evar.Set.empty in
+  let cur_st = List.concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+  let l_cur = List.length cur_st in
+  let eq l1 l2 = List.fold_left2 (fun eq l1 l2 -> eq && (l1==l2)) true l1 l2 in
+  let rec loop i =
+    if i >= !hist_count then None
+    else begin
+      let prev_hentry = (get_history i) in
+      let prev_st = List.concat_map (fun (locs,_,_) -> locs)  (prev_hentry.top_chunk :: prev_hentry.stack_chunks) in
+      let l_prev = List.length prev_st in
+      if l_prev > l_cur then
+        loop (i+1)
+      else if l_prev < l_cur || eq prev_st cur_st then begin
+        let prev_goals = (get_history i).goals in
+        let prev = add prev_goals Evar.Set.empty in
+        if Evar.Set.equal curr prev then
+          loop (i+1)
+        else
+          Some prev_goals
+      end else
+        loop (i+1)
+    end
+  in
+  if l_cur > 0 then
+    loop (!hist_index + 1)
+  else None
 
 let history_default = 10
 let history_buf_size = ref history_default
@@ -495,6 +531,65 @@ let db_pr_goals_t = (* todo: try to get rid of this version *)
 (*  Printf.eprintf "db_pr_goals_t\n%!"; *)
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> db_pr_goals ()))
 
+let goalt_to_evd goals =
+  let open Proofview in
+  let sigma = match goals with
+    | hd :: tl -> Goal.sigma hd
+    | [] -> Evd.empty
+  in
+  let goals = List.map (fun gl -> Goal.goal gl) goals in (* "compatibility: avoid" *)
+  (sigma, goals)
+
+type export_goals_args = {
+  sigma:    Evd.evar_map;
+  goals:    Evar.t list;
+  bgsigma:  Evd.evar_map;
+  stack:    (Evar.t list * Evar.t list) list;
+  show_diffs: bool;
+}
+
+let fwd_db_subgoals = (ref ((fun x y -> failwith "fwd_db_subgoals")
+                  : goal_flags -> export_goals_args option ->
+                    Proof_diffs.goal_map_args option ->
+                    subgoals_rty))
+
+(* get arguments for printing goals, either current or from history
+   and set up to show diffs *)
+let args_to_print_goals () =
+  let ngoalts = (get_history !hist_index).goals in
+  let nsigma, nall_goals = goalt_to_evd ngoalts in
+  let pf = Vernacstate.Declare.give_me_the_proof () in  (* todo what if no proof? *)
+  let p = Proof.data pf in
+  let osigma, oall_goals = match get_prev_goalts () with
+  | Some ogoalts -> goalt_to_evd ogoalts
+  | None -> nsigma (* not used *), []
+  in
+  let export_goals_args = Some {
+    sigma=nsigma;
+    goals=nall_goals;
+    bgsigma=p.sigma;
+    stack=p.stack;
+    show_diffs=(oall_goals <> []);
+  } in
+  let goal_map_args =
+    match ngoalts with
+    | [] -> None
+    | goalt :: _ ->
+      let nhas_fg_goals = true(* ??? *) in
+      let env = Proofview.Goal.env goalt in
+      Some Proof_diffs.{
+        oall_goals=(Evar.Set.of_list oall_goals);
+        nall_goals=(Evar.Set.of_list nall_goals);
+        osigma;
+        nsigma;
+        oto_constr= (fun () -> Proof_diffs.to_constr2 env osigma oall_goals pf);
+        nto_constr= (fun () -> Proof_diffs.to_constr2 env nsigma nall_goals pf);
+        nhas_fg_goals
+      }
+  in
+  export_goals_args, goal_map_args
+  [@@ocaml.warning "-3"]
+
 let read () =
   let rec l () =
     let cmd = (hook ()).read_cmd true in
@@ -506,22 +601,15 @@ let read () =
       | Ignore -> l ()
       | UpdBpts updates -> upd_bpts updates; l ()
       | GetStack ->
-        ((hook)()).submit_answer (Stack (fmt_stack ()));
+        (hook ()).submit_answer (Stack (fmt_stack ()));
         l ()
       | GetVars framenum ->
-        ((hook)()).submit_answer (Vars (get_vars framenum));
+        (hook ()).submit_answer (Vars (get_vars framenum));
         l ()
       | Subgoals flags ->
-          let open Proofview in
-          let gls = (get_history !hist_index).goals in
-          let sigma =  match gls with
-            | hd :: tl -> Goal.sigma hd
-            | [] -> Evd.empty
-          in
-          let goals = List.map (fun gl -> Goal.goal gl) gls in  (* "compatibility: avoid" *)
-          (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags (Some (sigma, goals))));
+        let export_goals_args, goal_map_args = args_to_print_goals () in
+        (hook ()).submit_answer (Subgoals (!fwd_db_subgoals flags export_goals_args goal_map_args));
         l ()
-      (* should Skip reset hist_index to 0? *)
       | StepIn | StepOver | StepOut | Continue -> hist_loop (-1) (* forwards *)
       | StepInRev | StepOverRev | StepOutRev | ContinueRev -> hist_loop 1 (* backwards *)
       | _ -> ()
@@ -531,7 +619,7 @@ let read () =
     let do_stop () =
       let msg = tag "message.prompt"
             @@ fnl () ++ str (Printf.sprintf "History (%d) > "(-(!hist_index))) in
-      (hook()).submit_answer (Prompt msg);
+      (hook ()).submit_answer (Prompt msg);
       l ()
     in
 
