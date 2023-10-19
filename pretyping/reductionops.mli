@@ -31,10 +31,10 @@ module ReductionBehaviour : sig
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
-  val set : local:bool -> GlobRef.t -> t -> unit
-  val get : GlobRef.t -> t option
-  val all_tagged : t -> GlobRef.Set.t
-  val print : GlobRef.t -> Pp.t
+  val set : local:bool -> Constant.t -> t -> unit
+  val get : Constant.t -> t option
+  val all_tagged : t -> Cset.t
+  val print : Constant.t -> Pp.t
 end
 
 (** {6 Support for reduction effects } *)
