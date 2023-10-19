@@ -3177,29 +3177,6 @@ Proof.
   apply not_iff_compat, in_flat_map_Exists.
 Qed.
 
-(** A stronger version of FinFun.Injective_map_NoDup *)
-
-Definition InjectiveOn [A B] (P: A -> Prop) (f: A->B) :=
-  forall x y: A, P x -> P y -> f x = f y -> x = y.
-
-Lemma InjectiveOn_map_NoDup [A B] (P: A->Prop) (f: A->B) (l: list A) :
- InjectiveOn P f -> Forall P l -> NoDup l -> NoDup (map f l).
-Proof.
- intros HInj Pl Hl.
- induction Hl as [|x l H1 H2 IH]; [constructor|].
- cbn. constructor.
- - intros Hf. apply H1.
-   apply in_map_iff in Hf as [y [Heq Hy]].
-   enough (x = y) as H.
-   + rewrite H. assumption.
-   + apply HInj.
-     * apply Forall_inv in Pl. assumption.
-     * apply Forall_inv_tail in Pl. rewrite Forall_forall in Pl.
-       apply Pl. assumption.
-     * symmetry. assumption.
- - apply IH. apply Forall_inv_tail in Pl. assumption.
-Qed.
-
 Section Forall2.
 
   (** [Forall2]: stating that elements of two lists are pairwise related. *)
@@ -3358,6 +3335,18 @@ Proof.
     + apply Forall_forall.
       intros y Hy ->. contradiction.
     + assumption.
+Qed.
+
+Lemma ForallPairs_inj_map_NoDup [A B] (f: A->B) (l: list A) :
+  ForallPairs (fun x y => f x = f y -> x = y) l -> NoDup l -> NoDup (map f l).
+Proof.
+  intros Hinj Hl.
+  induction Hl as [|x ?? _ IH]; cbn; constructor.
+  - intros [y [??]]%in_map_iff.
+    destruct (Hinj y x); cbn; auto.
+  - apply IH.
+    intros x' y' Hx' Hy'.
+    now apply Hinj; right.
 Qed.
 
 Lemma NoDup_concat [A] (L: list (list A)):
