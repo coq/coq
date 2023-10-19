@@ -508,7 +508,7 @@ let push_app sigma (hd, stk as p) = match EConstr.kind sigma hd with
 
 let recargs = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
-  | EvalConst c -> ReductionBehaviour.get (GlobRef.ConstRef c)
+  | EvalConst c -> ReductionBehaviour.get c
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum && bodynum < Array.length recindices);
@@ -568,10 +568,7 @@ let whd_nothing_for_iota env sigma s =
 let make_simpl_reds env =
   let open RedFlags in
   let open ReductionBehaviour in
-  let red_sub_const x reds =
-    match x with
-    | GlobRef.ConstRef c -> red_sub reds (fCONST c)
-    | _ -> reds in
+  let red_sub_const c reds = red_sub reds (fCONST c) in
   let simpl_never = all_tagged NeverUnfold in
   let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
   let reds = no_red in
@@ -579,7 +576,7 @@ let make_simpl_reds env =
   let reds = red_add reds fDELTA in
   let reds = red_add reds fZETA in
   let reds = red_add reds fBETA in
-  GlobRef.Set.fold red_sub_const simpl_never reds
+  Cset.fold red_sub_const simpl_never reds
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
@@ -684,7 +681,6 @@ and reduce_params allowed_reds env sigma stack l =
    a reducible iota/fix/cofix redex (the "simpl" tactic) *)
 
 and whd_simpl_stack allowed_reds env sigma =
-  let open ReductionBehaviour in
   let rec redrec s =
     let s' = push_app sigma s in
     let (x, stack) = s' in
@@ -711,7 +707,7 @@ and whd_simpl_stack allowed_reds env sigma =
            let unf = Projection.unfolded p in
            if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
              let npars = Projection.npars p in
-             match unf, get (GlobRef.ConstRef (Projection.constant p)) with
+             match unf, ReductionBehaviour.get (Projection.constant p) with
               | false, Some NeverUnfold -> NotReducible
               | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
                 when not (List.is_empty recargs) ->

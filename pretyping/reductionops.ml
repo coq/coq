@@ -71,7 +71,6 @@ let set_reduction_effect x funkey =
 
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = struct
-  open Globnames
   open Names
   open Libobject
 
@@ -107,25 +106,25 @@ module ReductionBehaviour = struct
   have the NeverUnfold flag.  Therefore, the table has a distinct subpart
   that is this set. *)
   let table =
-    Summary.ref ((GlobRef.Set.empty, GlobRef.Map.empty) :
-                   GlobRef.Set.t * t GlobRef.Map.t) ~name:"reductionbehaviour"
+    Summary.ref ((Cset.empty, Cmap.empty)) ~name:"reductionbehaviour"
 
   let load _ (_,(r, b)) =
     table := (match b with
-                | NeverUnfold -> GlobRef.Set.add r (fst !table), GlobRef.Map.remove r (snd !table)
-                | _ -> GlobRef.Set.remove r (fst !table), GlobRef.Map.add r b (snd !table))
+                | NeverUnfold -> Cset.add r (fst !table), Cmap.remove r (snd !table)
+                | _ -> Cset.remove r (fst !table), Cmap.add r b (snd !table))
 
   let cache o = load 1 o
 
   let classify (local,_) = if local then Dispose else Substitute
 
   let subst (subst, (local, (r,o) as orig)) =
-    let r' = subst_global_reference subst r in if r==r' then orig
+    let r' = subst_constant subst r in if r==r' then orig
     else (local,(r',o))
 
   let discharge = function
     | false, (gr, b) ->
       let b =
+        let gr = GlobRef.ConstRef gr in
         if Lib.is_in_section gr then
           let vars = Lib.section_instance gr in
           let extra = Array.length vars in
@@ -135,10 +134,6 @@ module ReductionBehaviour = struct
       Some (false, (gr, b))
     | true, _ -> None
 
-  let rebuild = function
-    | req, (GlobRef.ConstRef c, _ as x) -> req, x
-    | _ -> assert false
-
   let inRedBehaviour = declare_object {
       (default_object "REDUCTIONBEHAVIOUR") with
       load_function = load;
@@ -146,32 +141,31 @@ module ReductionBehaviour = struct
       classify_function = classify;
       subst_function = subst;
       discharge_function = discharge;
-      rebuild_function = rebuild;
     }
 
   let set ~local r b =
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
   let get r =
-    if GlobRef.Set.mem r (fst !table) then
+    if Cset.mem r (fst !table) then
       Some NeverUnfold
     else
-      GlobRef.Map.find_opt r (snd !table)
+      Cmap.find_opt r (snd !table)
 
   let all_tagged t =
     match t with
       NeverUnfold -> fst !table
     | _ ->
-       GlobRef.Map.fold
+       Cmap.fold
          (fun a u s ->
            if equal t u then
-             GlobRef.Set.add a s
+             Cset.add a s
            else
-             s) (snd !table) GlobRef.Set.empty
+             s) (snd !table) Cset.empty
 
   let print ref =
     let open Pp in
-    let pr_global = Nametab.pr_global_env Id.Set.empty in
+    let pr_global c = Nametab.pr_global_env Id.Set.empty (ConstRef c) in
     match get ref with
     | None -> mt ()
     | Some b ->

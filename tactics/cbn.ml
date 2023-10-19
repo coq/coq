@@ -601,7 +601,7 @@ let whd_state_gen ?csts flags env sigma =
          begin
           let body = EConstr.of_constr body in
           (* Looks for ReductionBehaviour *)
-            match ReductionBehaviour.get (GlobRef.ConstRef c) with
+            match ReductionBehaviour.get c with
             | None -> whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
             | Some behavior ->
               begin match behavior with
@@ -666,7 +666,7 @@ let whd_state_gen ?csts flags env sigma =
       else fold ()
     | Proj (p, c) when RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
-       match ReductionBehaviour.get (GlobRef.ConstRef (Projection.constant p)) with
+       match ReductionBehaviour.get (Projection.constant p) with
          | None ->
            let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
            let stack'', csts = whrec Cst_stack.empty stack' in
