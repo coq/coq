@@ -906,10 +906,6 @@ let local_whd_state_gen flags env sigma =
   in
   whrec
 
-let raw_whd_state_gen flags env =
-  let f sigma s = whd_state_gen flags env sigma s in
-  f
-
 let stack_red_of_state_red f =
   let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
@@ -935,14 +931,14 @@ let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_const_state c e = raw_whd_state_gen RedFlags.(mkflags [fCONST c]) e
+let whd_const_state c e = whd_state_gen RedFlags.(mkflags [fCONST c]) e
 let whd_const c = red_of_state_red (whd_const_state c)
 
-let whd_delta_state e = raw_whd_state_gen RedFlags.delta e
+let whd_delta_state e = whd_state_gen RedFlags.delta e
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
 let whd_delta = red_of_state_red whd_delta_state
 
-let whd_betadeltazeta_state = raw_whd_state_gen RedFlags.betadeltazeta
+let whd_betadeltazeta_state = whd_state_gen RedFlags.betadeltazeta
 let whd_betadeltazeta_stack = stack_red_of_state_red whd_betadeltazeta_state
 let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
 
@@ -956,11 +952,11 @@ let whd_betaiotazeta_state = local_whd_state_gen RedFlags.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_all_state = raw_whd_state_gen RedFlags.all
+let whd_all_state = whd_state_gen RedFlags.all
 let whd_all_stack = stack_red_of_state_red whd_all_state
 let whd_all = red_of_state_red whd_all_state
 
-let whd_allnolet_state = raw_whd_state_gen RedFlags.allnolet
+let whd_allnolet_state = whd_state_gen RedFlags.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
 let whd_allnolet = red_of_state_red whd_allnolet_state
 
