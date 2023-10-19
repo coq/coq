@@ -54,42 +54,52 @@ module Make(Ord: OrderedType) =
 
     type elt = Ord.t
 
-    (* (false, s) represents a set which is equal to the set s
-       (true, s)  represents a set which is equal to the complement of set s *)
-    type t = bool * EltSet.t
+    type t =
+      | Just of EltSet.t
+      | AllExcept of EltSet.t
 
-    let is_finite (b,_) = not b
+    let is_finite = function
+      | Just _ -> true
+      | AllExcept _ -> false
 
-    let elements (b,s) = (b, EltSet.elements s)
+    let elements = function
+      | Just s -> (false, EltSet.elements s)
+      | AllExcept s -> (true, EltSet.elements s)
 
-    let empty = (false,EltSet.empty)
-    let full = (true,EltSet.empty)
+    let empty = Just EltSet.empty
+    let full = AllExcept EltSet.empty
 
     (* assumes the set is infinite *)
-    let is_empty (b,s) = not b && EltSet.is_empty s
-    let is_full (b,s) = b && EltSet.is_empty s
+    let is_empty = function
+      | Just s -> EltSet.is_empty s
+      | AllExcept _ -> false
+    let is_full = function
+      | Just _ -> false
+      | AllExcept s -> EltSet.is_empty s
 
-    let mem x (b,s) =
-      if b then not (EltSet.mem x s) else EltSet.mem x s
+    let mem x = function
+      | Just s -> EltSet.mem x s
+      | AllExcept s -> not (EltSet.mem x s)
 
-    let singleton x = (false,EltSet.singleton x)
+    let singleton x = Just (EltSet.singleton x)
 
-    let add x (b,s) =
-      if b then (b,EltSet.remove x s)
-      else (b,EltSet.add x s)
+    let add x = function
+      | Just s -> Just (EltSet.add x s)
+      | AllExcept s -> AllExcept (EltSet.remove x s)
 
-    let remove x (b,s) =
-      if b then (b,EltSet.add x s)
-      else (b,EltSet.remove x s)
+    let remove x = function
+      | Just s -> Just (EltSet.remove x s)
+      | AllExcept s -> AllExcept (EltSet.add x s)
 
-    let complement (b,s) = (not b, s)
+    let complement = function
+      | Just s -> AllExcept s
+      | AllExcept s -> Just s
 
     let union s1 s2 =
       match (s1,s2) with
-          ((false,p1),(false,p2)) -> (false,EltSet.union p1 p2)
-        | ((true,n1),(true,n2)) -> (true,EltSet.inter n1 n2)
-        | ((false,p1),(true,n2)) -> (true,EltSet.diff n2 p1)
-        | ((true,n1),(false,p2)) -> (true,EltSet.diff n1 p2)
+      | Just p1, Just p2 -> Just (EltSet.union p1 p2)
+      | AllExcept n1, AllExcept n2 -> AllExcept (EltSet.inter n1 n2)
+      | Just p, AllExcept n | AllExcept n, Just p -> AllExcept (EltSet.diff n p)
 
     let inter s1 s2 =
       complement (union (complement s1) (complement s2))
@@ -99,13 +109,14 @@ module Make(Ord: OrderedType) =
     (* assumes the set is infinite *)
     let subset s1 s2 =
       match (s1,s2) with
-          ((false,p1),(false,p2)) -> EltSet.subset p1 p2
-        | ((true,n1),(true,n2)) -> EltSet.subset n2 n1
-        | ((false,p1),(true,n2)) -> EltSet.is_empty (EltSet.inter p1 n2)
-        | ((true,_),(false,_)) -> false
+      | Just p1, Just p2 -> EltSet.subset p1 p2
+      | AllExcept n1, AllExcept n2 -> EltSet.subset n2 n1
+      | Just p1, AllExcept n2 -> EltSet.is_empty (EltSet.inter p1 n2)
+      | AllExcept _, Just _ -> false
 
     (* assumes the set is infinite *)
-    let equal (b1,s1) (b2,s2) =
-      b1=b2 && EltSet.equal s1 s2
+    let equal x y = match x,y with
+      | Just s1, Just s2 | AllExcept s1, AllExcept s2 -> EltSet.equal s1 s2
+      | Just _, AllExcept _ | AllExcept _, Just _ -> false
 
   end

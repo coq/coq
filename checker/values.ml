@@ -68,7 +68,7 @@ let v_map vk vd =
 let v_hset v = v_map Int (v_set v)
 let v_hmap vk vd = v_map Int (v_map vk vd)
 
-let v_pred v = v_pair v_bool (v_set v)
+let v_pred v = v_sum "predicate" 0 [|[|v_set v|];[|v_set v|]|]
 
 (** kernel/names *)
 
