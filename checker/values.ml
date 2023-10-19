@@ -68,6 +68,7 @@ let v_map vk vd =
 let v_hset v = v_map Int (v_set v)
 let v_hmap vk vd = v_map Int (v_map vk vd)
 
+let v_pred_gen vset = v_pair v_bool vset
 let v_pred v = v_pair v_bool (v_set v)
 
 (** kernel/names *)
@@ -223,7 +224,7 @@ let v_oracle =
     v_map v_id v_conv_level;
     v_hmap v_cst v_conv_level;
     v_pred v_id;
-    v_pred v_cst;
+    v_pred_gen (v_hset v_cst);
   |]
 
 let v_template_arity =

@@ -85,5 +85,7 @@ module type S =
        finite, but we don't know how to list its elements) *)
   end
 
+module Make_gen (S : CSig.SetS) : (S with type elt = S.elt and type fset = S.t)
+
 (** The [Make] functor constructs an implementation for any [OrderedType]. *)
 module Make (Ord : OrderedType) : (S with type elt = Ord.t)

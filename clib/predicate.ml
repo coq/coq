@@ -48,11 +48,10 @@ module type S =
     val is_finite : t -> bool
   end
 
-module Make(Ord: OrderedType) =
+module Make_gen(EltSet:CSig.SetS) =
   struct
-    module EltSet = Set.Make(Ord)
 
-    type elt = Ord.t
+    type elt = EltSet.elt
 
     (* (false, s) represents a set which is equal to the set s
        (true, s)  represents a set which is equal to the complement of set s *)
@@ -109,3 +108,5 @@ module Make(Ord: OrderedType) =
       b1=b2 && EltSet.equal s1 s2
 
   end
+
+module Make(Ord:OrderedType) = Make_gen(Set.Make(Ord))

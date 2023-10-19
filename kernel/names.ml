@@ -604,8 +604,8 @@ module Cmap_env = HMap.Make(Constant.UserOrd)
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "user form" of the constant. *)
 
-module Cpred = Predicate.Make(Constant.CanOrd)
 module Cset = Cmap.Set
+module Cpred = Predicate.Make_gen(Cset)
 module Cset_env = Cmap_env.Set
 
 (** {6 Names of mutual inductive types } *)
