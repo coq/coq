@@ -567,16 +567,19 @@ let whd_nothing_for_iota env sigma s =
   excluding symbols that have the NeverUnfold flag. *)
 let make_simpl_reds env =
   let open RedFlags in
-  let open ReductionBehaviour in
-  let red_sub_const c reds = red_sub reds (fCONST c) in
-  let simpl_never = all_tagged NeverUnfold in
-  let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let simpl_never = ReductionBehaviour.(all_tagged NeverUnfold) in
+  let ts = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let ts = {
+    TransparentState.tr_var = ts.tr_var;
+    tr_cst = Cpred.diff ts.tr_cst (Cpred.of_fset simpl_never);
+  }
+  in
   let reds = no_red in
-  let reds = red_add_transparent reds transparent_state in
+  let reds = red_add_transparent reds ts in
   let reds = red_add reds fDELTA in
   let reds = red_add reds fZETA in
   let reds = red_add reds fBETA in
-  Cset.fold red_sub_const simpl_never reds
+  reds
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;

@@ -25,6 +25,9 @@ module type S =
     type elt
     (** The type of the elements in the set. *)
 
+    type fset
+    (** The type of finite sets. *)
+
     type t
     (** The type of sets. *)
 
@@ -49,6 +52,9 @@ module type S =
     val add: elt -> t -> t
     (** [add x s] returns a set containing all elements of [s],
         plus [x]. If [x] was already in [s], then [s] is returned unchanged. *)
+
+    val of_fset : fset -> t
+    (** Produces the set corresponding to the given fset. *)
 
     val remove: elt -> t -> t
         (** [remove x s] returns a set containing all elements of [s],
@@ -88,4 +94,4 @@ module type S =
 module Make_gen (S : CSig.SetS) : (S with type elt = S.elt and type fset = S.t)
 
 (** The [Make] functor constructs an implementation for any [OrderedType]. *)
-module Make (Ord : OrderedType) : (S with type elt = Ord.t)
+module Make (Ord : OrderedType) : (S with type elt = Ord.t and type fset = Set.Make(Ord).t)

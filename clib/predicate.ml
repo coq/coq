@@ -29,6 +29,7 @@ module type OrderedType =
 module type S =
   sig
     type elt
+    type fset
     type t
     val empty: t
     val full: t
@@ -37,6 +38,7 @@ module type S =
     val mem: elt -> t -> bool
     val singleton: elt -> t
     val add: elt -> t -> t
+    val of_fset : fset -> t
     val remove: elt -> t -> t
     val union: t -> t -> t
     val inter: t -> t -> t
@@ -50,6 +52,7 @@ module type S =
 
 module Make_gen(EltSet:CSig.SetS) =
   struct
+    type fset = EltSet.t
 
     type elt = EltSet.elt
 
@@ -72,6 +75,8 @@ module Make_gen(EltSet:CSig.SetS) =
       if b then not (EltSet.mem x s) else EltSet.mem x s
 
     let singleton x = (false,EltSet.singleton x)
+
+    let of_fset x = (false, x)
 
     let add x (b,s) =
       if b then (b,EltSet.remove x s)
