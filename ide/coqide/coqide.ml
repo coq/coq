@@ -1526,7 +1526,11 @@ let build_ui () =
         | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
         | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
         | _ -> assert false);
-        send_to_coq "set diffs" (fun sn -> sn.coqops#show_goals true)
+          let sn = find_db_sn () in
+          Coq.add_do_when_ready sn.coqtop (fun _ ->
+            ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+              (fun () -> Minilib.log "Coq busy, discarding show_goals")
+          )
         end
       [
         radio "Unset diff" 0 ~label:"_Don't show diffs";

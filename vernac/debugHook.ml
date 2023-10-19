@@ -121,6 +121,3 @@ module Intf = struct
   let get () = !ltac_debug_ref
 
 end
-
-let fwd_db_subgoals = (ref ((fun x y -> failwith "fwd_db_subgoals")
-                  : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))

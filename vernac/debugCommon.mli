@@ -82,3 +82,14 @@ val cur_loc : Loc.t option ref
 val print_loc : string -> Loc.t option -> string
 
 val in_history : unit -> bool
+
+type export_goals_args = {
+  sigma:    Evd.evar_map;
+  goals:    Evar.t list;
+  bgsigma:  Evd.evar_map;
+  stack:    (Evar.t list * Evar.t list) list;
+  show_diffs: bool;
+}
+
+val fwd_db_subgoals : (goal_flags -> export_goals_args option ->
+                      Proof_diffs.goal_map_args option -> subgoals_rty) ref

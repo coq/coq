@@ -218,26 +218,26 @@ let process_goal short sigma g =
   in
   DebuggerTypes.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
 
-let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
+let process_goal_diffs ~short diff_goal_map nsigma ng =
   let env = Global.env () in
   let name = sugg_name env nsigma ng in
-  let og_s = match oldp, diff_goal_map with
-  | Some oldp, Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
-  | None, _ | _, None -> None
+  let og_s = match diff_goal_map with
+  | Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
+  | None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ~short ?og_s (Proof_diffs.make_goal env nsigma ng) in
   DebuggerTypes.{ goal_hyp = hyps_pp_list; goal_ccl = concl_pp;
     goal_id = Proof.goal_uid ng; goal_name = name }
 
-let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
+let export_pre_goals (export_goals_args : DebugCommon.export_goals_args) flags process0 =
   let open DebuggerTypes in
+  let sigma = export_goals_args.sigma in
   let process x = List.map (process0 sigma) x in
-  let fg_goals = if flags.gf_fg then process goals else [] in
+  let fg_goals = if flags.gf_fg then process export_goals_args.goals else [] in
   let bg_goals =
     if flags.gf_bg then
-      let Proof.{sigma; stack} = bg_proof in
-      let process x = List.map (process0 sigma) x in
-      List.(map (fun (lg,rg) -> process lg, process rg)) stack
+      let process x = List.map (process0 export_goals_args.bgsigma) x in
+      List.(map (fun (lg,rg) -> process lg, process rg)) export_goals_args.stack
     else []
   in
   let shelved_goals =
@@ -250,16 +250,27 @@ let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
   in
   { fg_goals; bg_goals; shelved_goals; given_up_goals }
 
-(* if in the debugger, bg goals must come from "p"; Ltac doesn't change bg goals *)
-let get_proof_data debug_proof =
-  let p = Proof.data (Vernacstate.Declare.give_me_the_proof ()) in
-  let open Proof in
-  match debug_proof with
-  | Some (sigma, goals) -> { p with sigma; goals }, p
-  | None -> p, p
-  [@@ocaml.warning "-3"]
+let set_ex_args newp export_goals_args =
+    let Proof.{ sigma; goals; stack} = Proof.data newp in
+    Option.default DebugCommon.{
+      sigma;
+      goals;
+      bgsigma=sigma;
+      stack;
+      show_diffs=true;
+    } export_goals_args
 
-let db_subgoals flags debug_proof =
+let set_map_args doc newp goal_map_args =
+  match goal_map_args with
+  | Some _ -> goal_map_args (* in debugger *)
+  | None ->
+    let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+    match oldp with
+    | Some oldp ->
+      Some (Proof_diffs.default_goal_map_args oldp newp)
+    | None -> None
+
+let db_subgoals flags export_goals_args goal_map_args =
   let doc = get_doc () in
   if not !DebuggerTypes.read_in_debug then
     ignore @@ Stm.finish ~doc;
@@ -268,28 +279,26 @@ let db_subgoals flags debug_proof =
   | _ -> false
   in
   try
-    let proof_data, bg_proof_data = get_proof_data debug_proof in
-    (* todo: get correct data for diffs in the debugger *)
-    if Proof_diffs.show_diffs () && not !DebuggerTypes.read_in_debug then begin
-      let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      (try
-        let diff_goal_map = match oldp with
-        | None -> None
-        | Some oldp ->
-          (* todo: refactor diffs to avoid the extra call to give_me_the_proof? *)
-          let newp = Vernacstate.Declare.give_me_the_proof () in
-          Some (Proof_diffs.make_goal_map oldp newp)
+    let newp = Vernacstate.Declare.give_me_the_proof () in
+    let export_goals_args = set_ex_args newp export_goals_args in
+    let without_diffs () = Some (export_pre_goals export_goals_args flags (process_goal short)) in
+    if Proof_diffs.show_diffs () && export_goals_args.show_diffs then begin
+      let goal_map_args = set_map_args doc newp goal_map_args in
+      try
+        let diff_goal_map = match goal_map_args with
+          | Some goal_map_args -> Some (Proof_diffs.make_goal_map goal_map_args)
+          | None -> None
         in
-        Some (export_pre_goals flags proof_data bg_proof_data (process_goal_diffs ~short diff_goal_map oldp))
-       with Pp_diff.Diff_Failure msg ->
-         Proof_diffs.notify_proof_diff_failure msg;
-         Some (export_pre_goals flags proof_data bg_proof_data (process_goal short)))
+        Some (export_pre_goals export_goals_args flags (process_goal_diffs ~short diff_goal_map))
+      with Pp_diff.Diff_Failure msg ->
+        Proof_diffs.notify_proof_diff_failure msg;
+        without_diffs ()
     end else
-      Some (export_pre_goals flags proof_data bg_proof_data (process_goal short))
+      without_diffs ()
   with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"]
 
-let _ = DebugHook.fwd_db_subgoals := db_subgoals
+let _ = DebugCommon.fwd_db_subgoals := db_subgoals
 
 let debug_cmd = ref DebugHook.Action.Ignore
 
@@ -300,7 +309,7 @@ let subgoals flags =
     None (* return value passed through DebugHook.Answer *)
   end else begin
     ignore @@ Stm.finish ~doc;
-    db_subgoals flags None
+    db_subgoals flags None None
   end
 
 let goals () =
@@ -313,7 +322,8 @@ let evars () =
     let doc = get_doc () in
     if not !DebuggerTypes.read_in_debug then
       ignore @@ Stm.finish ~doc;
-    let Proof.{ sigma }, _ = get_proof_data None in
+    (* todo: if in debugger, use sigma from debugger *)
+    let Proof.{ sigma } = Proof.data (Vernacstate.Declare.give_me_the_proof ()) in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
