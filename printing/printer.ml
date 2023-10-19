@@ -972,7 +972,8 @@ let pr_open_subgoals ?(quiet=false) ?diffs proof =
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
      let diffs = match diffs with
        | Some (Some op) ->
-         Some (try Some (Proof_diffs.make_goal_map op proof)
+         let goal_map_args = Proof_diffs.default_goal_map_args op proof in
+         Some (try Some (Proof_diffs.make_goal_map goal_map_args)
          with Pp_diff.Diff_Failure msg ->
            Proof_diffs.notify_proof_diff_failure msg;
            None)

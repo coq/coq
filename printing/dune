@@ -3,4 +3,4 @@
  (synopsis "Coq's Term Pretty Printing Library")
  (public_name coq-core.printing)
  (wrapped false)
- (libraries parsing proofs))
+ (libraries parsing proofs coq-core.debugger))
