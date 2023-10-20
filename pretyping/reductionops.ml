@@ -77,21 +77,6 @@ module ReductionBehaviour = struct
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
-  let equal t1 t2 =
-    match t1, t2 with
-      NeverUnfold, NeverUnfold -> true
-    | (UnfoldWhen {recargs = r1; nargs = n1}),
-      (UnfoldWhen {recargs = r2; nargs = n2}) ->
-       List.length r1 = List.length r2 &&
-         List.for_all2 Int.equal r1 r2 &&
-           Option.equal Int.equal n1 n2
-    | UnfoldWhenNoMatch {recargs = r1; nargs = n1},
-      UnfoldWhenNoMatch {recargs = r2; nargs = n2} ->
-       List.length r1 = List.length r2 &&
-         List.for_all2 Int.equal r1 r2 &&
-           Option.equal Int.equal n1 n2
-    | _, _ -> false
-
   let more_args_when k { recargs; nargs } =
     { nargs = Option.map ((+) k) nargs;
       recargs = List.map ((+) k) recargs;
@@ -106,12 +91,12 @@ module ReductionBehaviour = struct
   have the NeverUnfold flag.  Therefore, the table has a distinct subpart
   that is this set. *)
   let table =
-    Summary.ref ((Cset.empty, Cmap.empty)) ~name:"reductionbehaviour"
+    Summary.ref ((Cpred.empty, Cmap.empty)) ~name:"reductionbehaviour"
 
   let load _ (_,(r, b)) =
     table := (match b with
-                | NeverUnfold -> Cset.add r (fst !table), Cmap.remove r (snd !table)
-                | _ -> Cset.remove r (fst !table), Cmap.add r b (snd !table))
+                | NeverUnfold -> Cpred.add r (fst !table), Cmap.remove r (snd !table)
+                | _ -> Cpred.remove r (fst !table), Cmap.add r b (snd !table))
 
   let cache o = load 1 o
 
@@ -147,21 +132,12 @@ module ReductionBehaviour = struct
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
   let get r =
-    if Cset.mem r (fst !table) then
+    if Cpred.mem r (fst !table) then
       Some NeverUnfold
     else
       Cmap.find_opt r (snd !table)
 
-  let all_tagged t =
-    match t with
-      NeverUnfold -> fst !table
-    | _ ->
-       Cmap.fold
-         (fun a u s ->
-           if equal t u then
-             Cset.add a s
-           else
-             s) (snd !table) Cset.empty
+  let all_never_unfold () = fst !table
 
   let print ref =
     let open Pp in

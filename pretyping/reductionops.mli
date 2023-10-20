@@ -33,7 +33,7 @@ module ReductionBehaviour : sig
 
   val set : local:bool -> Constant.t -> t -> unit
   val get : Constant.t -> t option
-  val all_tagged : t -> Cset.t
+  val all_never_unfold : unit -> Cpred.t
   val print : Constant.t -> Pp.t
 end
 
