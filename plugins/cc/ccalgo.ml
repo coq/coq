@@ -124,7 +124,7 @@ let family_eq f1 f2 = match f1, f2 with
 
 
 type 'a term =
-    Symb of constr
+    Symb of constr * (* Hash: *) int
   | Product of Sorts.t * Sorts.t
   | Eps of Id.t
   | Appli of 'a * 'a
@@ -156,7 +156,7 @@ struct
 
   let rec term_equal t1 t2 =
     match t1, t2 with
-      | Symb c1, Symb c2 -> eq_constr_nounivs c1 c2
+      | Symb (c1,_), Symb (c2,_) -> eq_constr_nounivs c1 c2
       | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
       | Eps i1, Eps i2 -> Id.equal i1 i2
       | Appli (t1', u1'), Appli (t2', u2') -> term_equal t1'.term t2'.term && term_equal u1'.term u2'.term
@@ -171,7 +171,7 @@ struct
 
   let hash_term t =
     match t with
-    | Symb c -> combine 1 (Constr.hash c)
+    | Symb (_,hash_c) -> combine 1 hash_c
     | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
     | Eps i -> combine 3 (Id.hash i)
     | Appli (t1', t2') -> combine3 4 (t1'.hash) (t2'.hash)
@@ -190,7 +190,7 @@ struct
              mkLambda(make_annot _B_ Sorts.Relevant,mkSort(s2),_body_))
 
   let rec constr_of_term = function
-      Symb s -> s
+      Symb (s,_) -> s
     | Product(s1,s2) -> cc_product s1 s2
     | Eps id -> mkVar id
     | Constructor cinfo -> mkConstructU cinfo.ci_constr
@@ -207,7 +207,15 @@ struct
     constr = lazy (constr_of_term t);
     hash = hash_term t }
 
-  let mkSymb s = make (Symb s)
+  let rec drop_univ c =
+    match kind c with
+    | Const (c,_u) -> mkConstU (c,Univ.Instance.empty)
+    | Ind (c,_u) -> mkIndU (c,Univ.Instance.empty)
+    | Construct (c,_u) -> mkConstructU (c,Univ.Instance.empty)
+    | Sort (Type _u) -> mkSort (type1)
+    | _ -> Constr.map drop_univ c
+
+  let mkSymb s = make (Symb (s, Constr.hash (drop_univ s)))
 
   let mkProduct (s1, s2) = make (Product (s1, s2))
 

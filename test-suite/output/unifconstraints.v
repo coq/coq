@@ -27,3 +27,13 @@ Unset Printing Existential Instances.
    improve though and succeed) *)
 
 Fail Check fun (P : _ -> Type) (x:nat) (h:P x) => exist _ x (h : P x).
+
+(* A test about universe level unification in congruence *)
+
+Set Universe Polymorphism.
+Section S.
+Polymorphic Universes i j.
+Goal Type@{i} -> (Type@{j} : Type@{i}).
+Fail congruence.
+Abort.
+End S.

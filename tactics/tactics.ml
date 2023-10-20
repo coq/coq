@@ -331,13 +331,11 @@ let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     match Tacmach.pf_apply (Reductionops.infer_conv ~pb) gl x y with
     | Some sigma -> Proofview.Unsafe.tclEVARS sigma
-    | None ->
-      let info = Exninfo.reify () in
-      Tacticals.tclFAIL ~info (str "Not convertible")
+    | None -> error NotConvertible
     | exception e when CErrors.noncritical e ->
       let _, info = Exninfo.capture e in
       (* FIXME: Sometimes an anomaly is raised from conversion *)
-      Tacticals.tclFAIL ~info (str "Not convertible")
+      error ?loc:(Loc.get_loc info) NotConvertible
 end
 
 let convert x y = convert_gen Conversion.CONV x y

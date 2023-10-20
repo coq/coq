@@ -68,3 +68,6 @@ h : P x
 Unable to unify "P x" with "?P x"
 (unable to find a well-typed instantiation for "?P": cannot ensure that
 "nat -> Type" is a subtype of "nat -> Prop").
+File "./output/unifconstraints.v", line 37, characters 5-15:
+The command has indeed failed with message:
+Tactic failure: congruence failed (cannot build a well-typed proof).

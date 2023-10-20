@@ -152,6 +152,3 @@ let build_proof env sigma uf=
   function
   | `Prove (i,j) -> equal_proof env sigma uf i j
   | `Discr (i,ci,j,cj)-> ind_proof env sigma uf i ci j cj
-
-
-
