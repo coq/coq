@@ -565,7 +565,9 @@ let whd_nothing_for_iota env sigma s =
 
 (* The reductions that should be performed as part of the simpl tactic,
   excluding symbols that have the NeverUnfold flag. *)
-let make_simpl_reds env =
+let make_simpl_reds =
+  let make_simpls_cache = ref None in
+  fun env ->
   let open RedFlags in
   let open ReductionBehaviour in
   let red_sub_const x reds =
@@ -574,12 +576,22 @@ let make_simpl_reds env =
     | _ -> reds in
   let simpl_never = all_tagged NeverUnfold in
   let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
-  let reds = no_red in
-  let reds = red_add_transparent reds transparent_state in
-  let reds = red_add reds fDELTA in
-  let reds = red_add reds fZETA in
-  let reds = red_add reds fBETA in
-  GlobRef.Set.fold red_sub_const simpl_never reds
+  match !make_simpls_cache with
+  | Some (never', ts', v) when
+      simpl_never == never'
+      (* get_transp_state produces a fresh value so transparent_state == ts' is never true *)
+      && transparent_state.tr_cst == ts'.TransparentState.tr_cst
+      && transparent_state.tr_var == ts'.TransparentState.tr_var
+    -> v
+  | _ ->
+    let reds = no_red in
+    let reds = red_add_transparent reds transparent_state in
+    let reds = red_add reds fDELTA in
+    let reds = red_add reds fZETA in
+    let reds = red_add reds fBETA in
+    let reds = GlobRef.Set.fold red_sub_const simpl_never reds in
+    make_simpls_cache := Some (simpl_never, transparent_state, reds);
+    reds
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
