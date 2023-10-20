@@ -47,7 +47,7 @@ val rewrite :
   evars_flag -> rewriting list -> clause -> unit thunk option -> unit tactic
 
 val setoid_rewrite :
-  bool option -> constr_with_bindings tactic -> occurrences -> Id.t option -> unit tactic
+  orientation -> constr_with_bindings tactic -> occurrences -> Id.t option -> unit tactic
 
 val symmetry : clause -> unit tactic
 

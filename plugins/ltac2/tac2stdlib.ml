@@ -402,7 +402,7 @@ let helper = make_to_repr to_helper
 
 let () =
   define "tac_setoid_rewrite"
-    (option bool @-> helper @-> occurrences @-> option ident @-> tac unit)
+    (bool @-> helper @-> occurrences @-> option ident @-> tac unit)
     Tac2tactics.setoid_rewrite
 
 let () =

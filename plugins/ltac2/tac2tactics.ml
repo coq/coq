@@ -186,7 +186,7 @@ let rewrite ev rw cl by =
 let setoid_rewrite orient c occs id =
   let c = c >>= fun c -> return (mk_with_bindings c) in
   let occs = mk_occurrences (fun i -> i) occs in
-  Rewrite.cl_rewrite_clause (delayed_of_tactic c) (Option.default true orient) occs id
+  Rewrite.cl_rewrite_clause (delayed_of_tactic c) orient occs id
 
 let symmetry cl =
   let cl = mk_clause cl in
