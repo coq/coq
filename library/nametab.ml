@@ -596,12 +596,12 @@ let is_deprecated_xref xref = Globnames.ExtRefMap.find_opt xref !the_globdeprtab
 
 let locate_extended_nowarn qid =
   let xref = ExtRefTab.locate qid !the_ccitab in
-  let depr = is_deprecated_xref xref in
-  xref, depr
+  xref
 
 (* This should be used when abbreviations are allowed *)
 let locate_extended qid =
-  let xref, depr = locate_extended_nowarn qid in
+  let xref = locate_extended_nowarn qid in
+  let depr = is_deprecated_xref xref in
   let () = depr |> Option.iter (fun depr ->
       warn_deprecated_xref ?loc:qid.loc depr xref)
   in

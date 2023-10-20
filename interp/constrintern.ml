@@ -1336,12 +1336,12 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
 
 let intern_qualid_for_pattern test_global intern_not qid pats =
   match Nametab.locate_extended_nowarn qid with
-  | TrueGlobal g, depr ->
+  | TrueGlobal g as xref ->
     test_global g;
-    depr |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (TrueGlobal g));
+    Nametab.is_deprecated_xref xref |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (TrueGlobal g));
     dump_extended_global qid.loc (TrueGlobal g);
     (g, false, Some [], pats)
-  | Abbrev kn, depr ->
+  | Abbrev kn as xref ->
     let filter (vars,a) =
       match a with
       | NRef (g,_) ->
@@ -1365,7 +1365,8 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
       | _ -> None in
     match Abbreviation.search_filtered_abbreviation filter kn with
     | Some (g, pats1, pats2) ->
-      depr |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (Abbrev kn));
+      Nametab.is_deprecated_xref xref
+      |> Option.iter (fun depr -> Nametab.warn_deprecated_xref ?loc:qid.loc depr (Abbrev kn));
       dump_extended_global qid.loc (Abbrev kn);
       (g, true, pats1, pats2)
     | None -> raise Not_found
