@@ -38,6 +38,8 @@ struct
   let is_empty = Int.Map.is_empty
 
   let mem x s =
+    if Int.Map.is_empty s then false
+    else
     let h = M.hash x in
     try
       let m = Int.Map.find h s in
@@ -233,6 +235,8 @@ struct
   let is_empty = Int.Map.is_empty
 
   let mem k s =
+    if Int.Map.is_empty s then false
+    else
     let h = M.hash k in
     try
       let m = Int.Map.find h s in
