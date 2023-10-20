@@ -579,6 +579,7 @@ object(self)
   method private debug_prompt ~tag msg =
     match tag with
     | "prompt" ->
+      proof#select_first_goal ();
       messages#default_route#debug_prompt msg
     | "init" -> forward_init_db ()
     | _ ->
