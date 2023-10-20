@@ -29,6 +29,8 @@ class type proof_view =
     method refresh : force:bool -> unit
     method clear : unit -> unit
     method set_goals : goals -> unit
+    method incr_sel_goal_num : int -> unit
+    method select_first_goal : unit -> unit
     method set_debug_goal : Pp.t -> unit
   end
 
@@ -59,9 +61,12 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
                      hover_cb start stop; false
                  | _ -> false))
 
+let sel_goal_num = ref 0
+
+(* todo: hints are dead code? (None is passed to mode_tactics) *)
 let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
-  | DebuggerTypes.{ goal_hyp = hyps; goal_ccl = cur_goal; goal_name = cur_name } :: rem_goals ->
+  | _ ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -73,9 +78,11 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           Tags.Proof.highlight;
         proof#buffer#apply_tag ~start:sel_start ~stop:sel_stop Tags.Proof.highlight
       in
-      let goals_cnt = List.length rem_goals + 1 in
+      let fg_cnt = List.length goals in
+      let goal_cnt = fg_cnt +
+        (if Coq.PrintOpt.printing_unfocused () then List.length unfoc_goals else 0) in
       let head_str = Printf.sprintf
-        "%d goal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
+        "%d goal%s\n" fg_cnt (if 1 < fg_cnt then "s" else "")
       in
       let goal_str ?(shownum=false) index total name =
         let annot =
@@ -84,57 +91,67 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           | None -> if shownum then Printf.sprintf "(%d/%d)" index total else "" in
         Printf.sprintf "______________________________________%s\n" annot
       in
-      (* Insert current goal and its hypotheses *)
-      let hyps_hints, goal_hints = match hints with
-      | None -> [], []
-      | Some (hl, h) -> (hl, h)
-      in
       let width = Ideutils.textview_width proof in
-      let rec insert_hyp hints hs = match hs with
-      | [] -> ()
-      | hyp :: hs ->
-        let tags, rem_hints = match hints with
-        | [] -> [], []
-        | hint :: hints ->
-          let tag = proof#buffer#create_tag [] in
-          let () = hook_tag_cb tag hint sel_cb on_hover in
-          [tag], hints
+
+      let insert_w_hyps ~shownum hyps cur_goal cur_name i =
+        (* todo: print a space if i > 1? *)
+        let hyps_hints, goal_hints = match hints with
+        | None -> [], []
+        | Some (hl, h) -> (hl, h)
         in
-        let () = insert_xml ~tags proof#buffer (Richpp.richpp_of_pp ~width hyp) in
-        proof#buffer#insert "\n";
-        insert_hyp rem_hints hs
-      in
-      let () = proof#buffer#insert head_str in
-      let () = insert_hyp hyps_hints hyps in
-      let () =
+        let rec insert_hyp hints hs = match hs with
+        | [] -> ()
+        | hyp :: hs ->
+          let tags, rem_hints = match hints with
+          | [] -> [], []
+          | hint :: hints ->
+            let tag = proof#buffer#create_tag [] in
+            hook_tag_cb tag hint sel_cb on_hover;
+            [tag], hints
+          in
+          insert_xml ~tags proof#buffer (Richpp.richpp_of_pp ~width hyp);
+          proof#buffer#insert "\n";
+          insert_hyp rem_hints hs
+        in
+        insert_hyp hyps_hints hyps;
         let _ = if goal_hints <> [] then
           let tag = proof#buffer#create_tag [] in
           let () = hook_tag_cb tag goal_hints sel_cb on_hover in
           [tag]
           else []
         in
-        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt cur_name);
+        proof#buffer#insert (goal_str ~shownum i goal_cnt cur_name);
         insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp ~width cur_goal);
         proof#buffer#insert "\n"
       in
-      (* Insert remaining goals (no hypotheses) *)
-      let fold_goal ?(shownum=false) i _ DebuggerTypes.{ goal_ccl = g; goal_name = name } =
-        proof#buffer#insert (goal_str ~shownum i goals_cnt name);
+
+      let insert_wo_hyps ~shownum i _ DebuggerTypes.{ goal_ccl = g; goal_name = name } =
+        proof#buffer#insert (goal_str ~shownum i goal_cnt name);
         insert_xml proof#buffer (Richpp.richpp_of_pp ~width g);
         proof#buffer#insert "\n"
       in
-      let () = Util.List.fold_left_i (fold_goal ~shownum:true) 2 () rem_goals in
+
+      let print_goal ~shownum i g =
+        if i = !sel_goal_num then
+          let DebuggerTypes.{ goal_hyp = hyps; goal_ccl = cur_goal; goal_name = cur_name } = g in
+          insert_w_hyps ~shownum hyps cur_goal cur_name (i+1);
+        else
+          insert_wo_hyps ~shownum (i+1) () g
+      in
+
+      proof#buffer#insert head_str;
+      if !sel_goal_num >= goal_cnt then sel_goal_num := 0;
+      List.iteri (print_goal ~shownum:true) goals;
+
       (* show unfocused goal if option set *)
       (* Insert remaining goals (no hypotheses) *)
-      if Coq.PrintOpt.printing_unfocused () then
-        begin
-          ignore(proof#buffer#place_cursor ~where:(proof#buffer#end_iter));
-          if unfoc_goals<>[] then
-            begin
-              proof#buffer#insert "\nUnfocused Goals:\n";
-              Util.List.fold_left_i (fold_goal ~shownum:false) 0 () unfoc_goals
-            end
-        end;
+      if Coq.PrintOpt.printing_unfocused () then begin
+        ignore(proof#buffer#place_cursor ~where:(proof#buffer#end_iter)); (* why? *)
+        if unfoc_goals <> [] then begin
+          proof#buffer#insert "\nUnfocused Goals:\n";
+          List.iteri (fun i g -> print_goal ~shownum:false (i+fg_cnt) g) unfoc_goals
+        end
+      end;
       ignore(proof#buffer#place_cursor
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle
                          (Some Tags.Proof.goal)));
@@ -223,7 +240,7 @@ let proof_view () =
 
     method set_goals gls = goals <- gls; debug_goal <- None
 
-    method set_debug_goal msg =
+    method set_debug_goal msg = (* todo: still needed?  Seems unreachable *)
       (* Appearance is a bit different from the regular goals display.
          That's probably a feature rather than a bug--it will remind the user
          they're in the debugger. *)
@@ -232,6 +249,23 @@ let proof_view () =
       let tags = [] in
       let width = Ideutils.textview_width view in
       Ideutils.insert_xml buffer ~tags (Richpp.richpp_of_pp ~width msg);
+
+    method incr_sel_goal_num incr =
+      let fg, bg = match goals with
+      | NoGoals -> [], []
+      | FocusGoals { fg; bg } -> fg, bg
+      | NoFocusGoals { bg; shelved; given_up } -> [], bg
+      in
+      let numgoals = List.length fg +
+         (if Coq.PrintOpt.printing_unfocused () then List.length bg else 0) in
+      let new_sel = !sel_goal_num + incr in
+      sel_goal_num :=
+        if new_sel < 0 then numgoals - 1
+        else if new_sel >= numgoals then 0
+        else new_sel;
+      self#refresh ~force:true
+
+    method select_first_goal () = sel_goal_num := 0
 
     method refresh ~force =
       (* We need to block updates here due to the following race:

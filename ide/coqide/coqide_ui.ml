@@ -103,6 +103,8 @@ let init () =
 \n    <menuitem action='Reset' />\
 \n    <menuitem action='Previous' />\
 \n    <menuitem action='Next' />\
+\n    <menuitem action='Next Goal' />\
+\n    <menuitem action='Previous Goal' />\
 \n  </menu>\
 \n  <menu action='Templates'>\
 \n    <menuitem action='Lemma' />\
