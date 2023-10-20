@@ -48,6 +48,7 @@ val pf_hnf_constr : Proofview.Goal.t -> constr -> types
 val pf_hnf_type_of : Proofview.Goal.t -> constr -> types
 
 val pf_compute : Proofview.Goal.t -> constr -> constr
+val pf_whd_compute : Proofview.Goal.t -> constr -> constr
 
 val pf_nf_evar : Proofview.Goal.t -> constr -> constr
 

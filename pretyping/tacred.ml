@@ -1185,8 +1185,10 @@ let cbv_norm_flags flags ~strong env sigma t =
 let cbv_beta = cbv_norm_flags RedFlags.beta ~strong:true
 let cbv_betaiota = cbv_norm_flags RedFlags.betaiota ~strong:true
 let cbv_betadeltaiota env sigma = cbv_norm_flags RedFlags.all env sigma ~strong:true
+let whd_cbv_betadeltaiota env sigma = cbv_norm_flags RedFlags.all env sigma ~strong:false
 
-let compute env sigma t = cbv_betadeltaiota env sigma t
+let whd_compute = whd_cbv_betadeltaiota
+let compute = cbv_betadeltaiota
 
 (* Pattern *)
 
