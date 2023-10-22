@@ -20,6 +20,7 @@ module GlobalSafeEnv : sig
   val safe_env : unit -> Safe_typing.safe_environment
   val set_safe_env : Safe_typing.safe_environment -> unit
   val is_joined_environment : unit -> bool
+  val is_curmod_library : unit -> bool
   val global_env_summary_tag : Safe_typing.safe_environment Summary.Dyn.tag
 
 end = struct
@@ -29,6 +30,9 @@ let global_env, global_env_summary_tag =
 
 let is_joined_environment () =
   Safe_typing.is_joined_environment !global_env
+
+let is_curmod_library () =
+  Safe_typing.is_curmod_library !global_env
 
 let assert_not_synterp () =
   if !Flags.in_synterp_phase then
@@ -45,6 +49,7 @@ let global_env_summary_tag = GlobalSafeEnv.global_env_summary_tag
 
 let safe_env = GlobalSafeEnv.safe_env
 let is_joined_environment = GlobalSafeEnv.is_joined_environment
+let is_curmod_library = GlobalSafeEnv.is_curmod_library
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
 

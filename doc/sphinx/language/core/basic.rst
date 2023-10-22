@@ -391,8 +391,9 @@ Settings
 --------
 
 There are several mechanisms for changing the behavior of Coq.  The
-:term:`attribute` mechanism is used to modify the behavior of a single
-:term:`sentence`.  The :term:`flag`, :term:`option` and :term:`table`
+:term:`attribute` mechanism is used to modify the default behavior of a
+:term:`sentence` or to attach information to Coq objects.
+The :term:`flag`, :term:`option` and :term:`table`
 mechanisms are used to modify the behavior of Coq more globally in a
 document or project.
 
@@ -401,11 +402,13 @@ document or project.
 Attributes
 ~~~~~~~~~~
 
-An :gdef:`attribute` modifies the behavior of a single sentence.
+An :gdef:`attribute` is used to modify the default behavior of a
+sentence or to attach information to a Coq object.
 Syntactically, most commands and tactics can be decorated with
 attributes (cf. :n:`@sentence`), but attributes not supported by the
 command or tactic will trigger :warn:`This command does not support
-this attribute`.
+this attribute`. There is also a command :cmd:`Attributes` to
+assign attributes to a whole document.
 
 .. insertprodn attributes legacy_attr
 
@@ -414,7 +417,7 @@ this attribute`.
    attribute ::= @ident {? @attr_value }
    attr_value ::= = @string
    | = @ident
-   | ( {*, @attribute } )
+   | ( {+, @attribute } )
    legacy_attr ::= {| Local | Global }
    | {| Polymorphic | Monomorphic }
    | {| Cumulative | NonCumulative }
@@ -498,6 +501,18 @@ The following attribute is supported by every command:
    :name: warning
 
    Alias of :attr:`warnings`.
+
+Document-level attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. cmd:: Attributes {+, @attribute }
+   :name: Attributes
+
+   Associates attributes with the
+   document. When compiled with ``coqc`` (see Section
+   :ref:`thecoqcommands`), the attributes are associated with the
+   compiled file and may have an effect when the file is loaded with
+   :cmd:`Require`. Supported attributes include :attr:`deprecated`.
 
 .. _flags-options-tables:
 

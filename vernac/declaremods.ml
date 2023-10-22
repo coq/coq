@@ -1579,12 +1579,12 @@ let end_library_hook () =
 
 let end_library ~output_native_objects dir =
   end_library_hook();
-  let prefix, lib_stack, lib_stack_syntax = Lib.end_compilation dir in
+  let prefix, info, lib_stack, lib_stack_syntax = Lib.end_compilation dir in
   let mp,cenv,ast = Global.export ~output_native_objects dir in
   assert (ModPath.equal mp (MPfile dir));
   let {Lib.Interp.substobjs = substitute; keepobjs = keep; anticipateobjs = _; } = lib_stack in
   let {Lib.Synterp.substobjs = substitute_syntax; keepobjs = keep_syntax; anticipateobjs = _; } = lib_stack_syntax in
-  cenv,(substitute,keep),(substitute_syntax,keep_syntax),ast
+  cenv,(substitute,keep),(substitute_syntax,keep_syntax),ast,info
 
 (** {6 Iterators} *)
 

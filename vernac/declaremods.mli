@@ -155,7 +155,7 @@ val start_library : library_name -> unit
 
 val end_library :
   output_native_objects:bool -> library_name ->
-  Safe_typing.compiled_library * library_objects * library_objects * Nativelib.native_library
+  Safe_typing.compiled_library * library_objects * library_objects * Nativelib.native_library * Library_info.t list
 
 (** append a function to be executed at end_library *)
 val append_end_library_hook : (unit -> unit) -> unit

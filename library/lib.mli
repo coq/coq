@@ -139,6 +139,8 @@ module type StagedLibS = sig
   (** Keep only the libobject structure, not the objects themselves *)
   val drop_objects : frozen -> frozen
 
+  val declare_info : Library_info.t list -> unit
+
 end
 
 (** We provide two instances of [StagedLibS], corresponding to the Synterp and
@@ -153,7 +155,7 @@ val start_compilation : DirPath.t -> ModPath.t -> unit
 
 (** Finalize the compilation of a library and return respectively the library
     prefix, the regular objects, and the syntax-related objects. *)
-val end_compilation : DirPath.t -> Nametab.object_prefix * Interp.classified_objects * Synterp.classified_objects
+val end_compilation : DirPath.t -> Nametab.object_prefix * Library_info.t list * Interp.classified_objects * Synterp.classified_objects
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

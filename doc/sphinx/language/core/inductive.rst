@@ -30,7 +30,7 @@ Inductive types
 
    .. prodn::
       inductive_definition ::= @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
-      constructor ::= {* #[ {*, @attribute } ] } @ident {* @binder } {? @of_type_inst }
+      constructor ::= {* #[ {+, @attribute } ] } @ident {* @binder } {? @of_type_inst }
 
    Defines one or more
    inductive types and its constructors.  Coq generates

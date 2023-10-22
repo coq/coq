@@ -6,11 +6,11 @@ to library and plugin authors.  A tutorial for writing Coq plugins is
 available in the Coq repository in `doc/plugin_tutorial
 <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 
-Deprecating library objects or tactics
---------------------------------------
+Deprecating library objects, tactics or library files
+-----------------------------------------------------
 
 You may use the following :term:`attribute` to deprecate a notation,
-tactic, definition, axiom or theorem.  When renaming a definition or theorem, you can introduce a
+tactic, definition, axiom, theorem or file.  When renaming a definition or theorem, you can introduce a
 deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 (see :ref:`the example below <compatibility-alias>`).
 
@@ -25,7 +25,8 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    This attribute is supported by the following commands: :cmd:`Ltac`,
    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`, :cmd:`Ltac2`,
-   :cmd:`Ltac2 Notation`, :cmd:`Ltac2 external`.
+   :cmd:`Ltac2 Notation`, :cmd:`Ltac2 external`. To attach it to a
+   compiled library file, use :cmd:`Attributes`.
 
    It can trigger the following warnings:
 

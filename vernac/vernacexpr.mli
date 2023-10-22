@@ -474,6 +474,7 @@ type nonrec synpure_vernac_expr =
   | VernacRegister of qualid * register_kind
   | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
+  | VernacAttributes of Attributes.vernac_flags
 
   (* Proof management *)
   | VernacAbort
