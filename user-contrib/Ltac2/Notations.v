@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Control Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std.
+Require Ltac2.Control Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std.
 
 (** Constr matching *)
 
@@ -450,7 +450,7 @@ Ltac2 Notation "setoid_rewrite"
   c(thunk(seq(open_constr, with_bindings)))
   occs(occurrences)
   id(opt(seq("in", ident))) :=
-  Std.setoid_rewrite ori c occs id.
+  Std.setoid_rewrite (Option.default Std.LTR ori) c occs id.
 
 Ltac2 Notation "erewrite"
   rw(list1(rewriting, ","))
