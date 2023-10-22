@@ -263,6 +263,8 @@ let set_ex_args newp export_goals_args =
 let set_map_args doc newp goal_map_args =
   match goal_map_args with
   | Some _ -> goal_map_args (* in debugger *)
+  (* todo: bg, shelved and given_up are not reliable while in the debugger.
+     Would be great if that could be fixed. *)
   | None ->
     let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
     match oldp with
@@ -688,7 +690,6 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
     in
     print_xml xml_oc xml in
 
-  (* XXX: no need to have a ref here *)
   let ltac_debug_parse read_in_debug =
     DebuggerTypes.read_in_debug := read_in_debug;
     let raw_cmd =

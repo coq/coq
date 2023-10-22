@@ -581,7 +581,7 @@ type 'a query = 'a Interface.value task
 let eval_call ?(db=false) call handle k =
   (* Send messages to coqtop and prepare the decoding of the answer *)
   let in_db = if db then "db " else "" in
-  Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call ^ "\n");
+  Minilib.log (Printf.sprintf "Start %seval_call %s\n" in_db (Xmlprotocol.pr_call call));
   if db then begin
     assert (handle.alive && handle.db_waiting_for = None);
     handle.db_waiting_for <- Some (mk_ccb (call,k))

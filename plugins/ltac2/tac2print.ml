@@ -414,7 +414,7 @@ let pr_glbexpr_gen lvl ~avoid c =
     in
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
-  | GTacExt (tag, _, arg) ->
+  | GTacExt (tag, arg, _) ->
     let tpe = interp_ml_object tag in
     let env = Global.env() in
     let sigma = Evd.from_env env in

@@ -580,8 +580,9 @@ let match_goals ot nt =
   !nevar_to_oevar
 
 let get_proof_context (p : Proof.t) =
-  let Proof.{goals; sigma} = Proof.data p in
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma (List.hd goals)) in
+  let Proof.{sigma} = Proof.data p in
+  let agoal = Evar.Set.choose (Proof.all_goals p) in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma agoal) in
   sigma, env
 
 let to_constr pf =

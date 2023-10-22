@@ -58,6 +58,5 @@ type varmap = Geninterp.Val.t Names.Id.Map.t
 
 val fmt_stack1 : ltac_stack -> unit -> string list
 val fmt_vars1 : varmap list -> int -> DebuggerTypes.db_vars_rty
-(* todo: make terminology consistent! eg use fname, *)
 
 val entry_stop_check : glob_tactic_expr -> unit Proofview.tactic

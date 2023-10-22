@@ -16,9 +16,7 @@ val get_debug : unit -> bool
 
 val upd_bpts : ((string * int) * bool) list -> unit
 
-val breakpoint_stop : Loc.t option -> bool
-
-val stepping_stop : Loc.t option -> bool
+val stop_in_debugger : Loc.t option -> bool
 
 val action : DebugHook.Action.t ref
 
@@ -50,20 +48,23 @@ val isTerminal : unit -> bool
     fmt_stack adjusts for this.
 *)
 
-type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> db_vars_rty
-type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f  (* todo: record? *)
+type chunk = {
+  locs : Loc.t option list;
+  stack_f : unit -> string list;
+  vars_f : int -> db_vars_rty;
+}
+
 val empty_chunk : chunk
 
 val read : unit -> DebugHook.Action.t
 
-val show_exn_in_debugger : Exninfo.iexn -> unit
+val show_exn_in_debugger : Exninfo.iexn -> Loc.t option -> unit
 
 val format_stack : string option list -> Loc.t option list -> db_stack_rty
 
-val db_pr_goals_t : unit Proofview.tactic
+val pr_goals_t : unit Proofview.tactic
 
-val db_pr_goals : unit -> unit
+val pr_goals : unit -> unit
 
 val pop_chunk : unit -> unit
 
@@ -82,6 +83,8 @@ val cur_loc : Loc.t option ref
 val print_loc : string -> Loc.t option -> string
 
 val in_history : unit -> bool
+
+val set_in_ltac : bool -> unit
 
 type export_goals_args = {
   sigma:    Evd.evar_map;

@@ -11,10 +11,11 @@
 open Pp
 open Names
 open Tac2expr
+open Tac2ffi
 
 type environment = Tac2env.environment
 
-type varmap = Tac2ffi.valexpr Names.Id.Map.t
+type varmap = valexpr Names.Id.Map.t
 
 let fmt_stack2 chunk () =
   let chunk = Option.default [] chunk in
@@ -64,48 +65,68 @@ let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = 
 *)
 
 let _ =
-  DebugPP.add Tac2ffi.val_constant @@ fun env sigma c ->
+  DebugPP.add val_constant @@ fun env sigma c ->
   Printer.pr_constant env c
 
 let _ =
-  DebugPP.add Tac2ffi.val_constr @@ fun env sigma c ->
+  DebugPP.add val_constr @@ fun env sigma c ->
   Printer.pr_econstr_env env sigma c
 
 let _ =
-  DebugPP.add Tac2ffi.val_constructor @@ fun env sigma c ->
+  DebugPP.add val_constructor @@ fun env sigma c ->
   Printer.pr_constructor env c
 
 let _ =
-  DebugPP.add Tac2ffi.val_evar @@ fun env sigma c ->
+  DebugPP.add val_evar @@ fun env sigma c ->
   Evar.print c
 
 let _ =
-  DebugPP.add Tac2ffi.val_ident @@ fun env sigma c ->
+  DebugPP.add val_ident @@ fun env sigma c ->
   Names.Id.print c
 
 let _ =
-  DebugPP.add Tac2ffi.val_inductive @@ fun env sigma c ->
+  DebugPP.add val_inductive @@ fun env sigma c ->
   Printer.pr_inductive env c
 
 let _ =
-  DebugPP.add Tac2ffi.val_pattern @@ fun env sigma c ->
+  DebugPP.add val_pattern @@ fun env sigma c ->
   Printer.pr_constr_pattern_env env sigma c
 
 let _ =
-  DebugPP.add Tac2ffi.val_pp @@ fun env sigma c ->
+  DebugPP.add val_pp @@ fun env sigma c ->
   c
 
 
-let rec fmt_var : Tac2ffi.valexpr -> string -> (string * Pp.t) = fun v name ->
+let rec fmt_var v name =
+  let cname = function
+    | ValInt _ -> "ValInt"
+    | ValStr _ -> "ValStr"
+    | ValBlk _ -> "ValBlk"
+    | ValCls _ -> "ValCls"
+    | ValOpn _ -> "ValOpn"
+    | ValExt _ -> "ValExt"
+  in
   let str s = Pp.str s in
   let with_type name t = Printf.sprintf "%s : %s" name t in
   let pr_arr arr =
-    (* todo: way to format better? *)
+    (* todo: doesn't handle [], [1] or [ [| |]; [| |] ] cases correctly *)
     let lst = Array.to_list arr in
     let open Pp in
     let pr = (fun i -> let (_,v) = fmt_var i "" in v) in
-    str "[| " ++ hv 0 (prlist_with_sep (fun () -> str ";" ++ spc()) pr lst) ++ str " |]"
+    let is_list = Array.length arr = 2 && (cname arr.(0) <> (cname arr.(1))) in
+    let ldelim, rdelim, lst = if is_list then
+      let rec conv rv arr =
+        match arr.(1) with
+        | ValBlk (_,arr2) -> conv (arr.(0) :: rv) arr2
+        | _ -> List.rev (arr.(0) :: rv)
+      in
+      "[ ", " ]", conv [] arr
+    else
+      "[| ", " |]", lst
+    in
+    str ldelim ++ hv 0 (prlist_with_sep (fun () -> str ";" ++ spc()) pr lst) ++ str rdelim
   in
+(*  Printf.eprintf "name = %s val type %s\n%!" name (cname v); *)
   match v with
   | ValInt i -> name, str (string_of_int i)  (* a simple int or index of a defined type, e.g. "true" (= 0) *)
   | ValStr bs -> name, str (Printf.sprintf "%S" (Bytes.to_string bs)) (* Ocaml escapes, not Coq :-( *)
@@ -115,7 +136,7 @@ let rec fmt_var : Tac2ffi.valexpr -> string -> (string * Pp.t) = fun v name ->
   | ValExt (tag, v) ->
     let tag_name = Tac2dyn.Val.repr tag in
     let id_type = with_type name tag_name in
-    let env = Global.env () in  (* TODO: correct? see Proofview.mli tclENV tclEVARMAP *)
+    let env = Global.env () in
     let sigma = Evd.from_env env in
     try
       let pp_fun = DebugPP.find tag in
@@ -126,7 +147,7 @@ let rec fmt_var : Tac2ffi.valexpr -> string -> (string * Pp.t) = fun v name ->
     | _ ->
       id_type, str "(exception)" (* just in case *)
 
-let fmt_vars2 : varmap list -> int -> DebuggerTypes.db_vars_rty = fun varmaps framenum ->
+let fmt_vars2 varmaps framenum =
   let varmap = List.nth varmaps framenum in
   let open Names in
   List.map (fun b -> let (id, v) = b in fmt_var v (Id.to_string id)) (Id.Map.bindings varmap)
@@ -170,15 +191,18 @@ let rec dump_expr ?(indent=0) e =
   | CTacAtm _ -> printloc "CTacAtm" e
   | CTacRef _ -> printloc "CTacRef" e
   | CTacCst _ -> printloc "CTacCst" e
-  | CTacFun _ -> printloc "CTacFun" e
-  | CTacApp (f, args) -> printloc "CTacApp" e;
+  | CTacFun (_, f) -> printloc "CTacFun" e;
     dump_expr ~indent f
+  | CTacApp (f, args) -> printloc "CTacApp" e;
+    dump_expr ~indent f;
+    List.iter (fun i -> dump_expr ~indent i) args;
 (*| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t*)
   | CTacSyn (el, kn) -> printloc "CTacSyn" e;
     Printf.eprintf "%s> %s\n%!" (String.make indent ' ') (Names.KerName.to_string kn);
     List.iter (fun i -> let (_, e) = i in dump_expr ~indent e) el
   | CTacLet (isrec, lc, e) -> printloc "CTacLet" e;
-    dump_expr ~indent e;  (* rhs only *)
+    List.iter (fun (p,te) -> dump_expr ~indent te) lc;
+    dump_expr ~indent:(indent-2) e;
   | CTacCnv _ -> printloc "CTacCnv" e
   | CTacSeq (e1, e2) ->
     printloc "CTacSeq" e;
@@ -192,14 +216,18 @@ let rec dump_expr ?(indent=0) e =
   | CTacExt _ -> printloc "CTacExt" e
 
 (* for call from g_ltac2.mlg *)
-let dump_info loc e =
+let dump_Cexpr loc e =
   try ignore @@ Sys.getenv "TEST";
-    Printf.eprintf "loc = %s\n%!" (Pp.string_of_ppcmds (Loc.pr loc));
+    let loc = match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Printf.eprintf "loc = %s\n%!" loc;
     dump_expr e;
   Printf.eprintf "\n%!"
   with Not_found -> ()
 
-let rec dump_expr2 ?(indent=0) ?(p="D") e =
+let rec dump_Gexpr ?(indent=0) ?(p="D") e =
   let printloc loc =
     let loc = match loc with
     | None -> "None"
@@ -207,32 +235,74 @@ let rec dump_expr2 ?(indent=0) ?(p="D") e =
     in
     Printf.eprintf "loc =  %s\n%!" loc
   in
-  let print s = Printf.eprintf "%s\n" s in
-  Printf.eprintf "%s %s" p (String.make indent ' ');
+  let print ?(indent=indent) s = Printf.eprintf "%s %s%s\n" p (String.make indent ' ') s in
   let indent = indent + 2 in
   match e with
-  | GTacAtm _ -> print "GTacAtm"
-  | GTacVar _ -> print "GTacVar"
-  | GTacRef kn -> print (Printf.sprintf "GTacRef %s\n%!" (Names.KerName.to_string kn));
+  | GTacAtm at ->
+    let s = match at with
+      | AtmInt i -> string_of_int i
+      | AtmStr s -> Printf.sprintf "\"%s\"" s
+    in
+    print (Printf.sprintf "GTacAtm %s%!" s)
+  | GTacVar id -> print (Printf.sprintf "GTacVar %s" (Names.Id.to_string id))
+  | GTacRef kn -> print (Printf.sprintf "GTacRef %s" (Names.KerName.to_string kn))
   | GTacFun (_, e) -> print "GTacFun";
-    dump_expr2 ~indent ~p e
+    dump_Gexpr ~indent ~p e
   | GTacApp (e, el, loc) -> print (Printf.sprintf "GTacApp el len = %d" (List.length el));
     printloc loc;
-    dump_expr2 ~indent ~p e
-  | GTacLet (_, _, e) -> print "GTacLet";
-    dump_expr2 ~indent ~p e
-  | GTacCst (_,n,_) -> print (Printf.sprintf "GTacCst %d" n)
-  | GTacCse _ -> print "GTacCse"
+    dump_Gexpr ~indent ~p e
+  | GTacLet (isrec, lc, e) -> print "GTacLet";
+    List.iter (fun (p,te) ->
+        (match p with
+        | Name nm -> print ~indent (Printf.sprintf "let name = %s" (Id.to_string nm))  (* vars to be assigned *)
+        | Anonymous -> print ~indent (Printf.sprintf "Anonymous"));
+        dump_Gexpr ~indent te
+      ) lc;
+    dump_Gexpr ~indent:(indent-2) ~p e
+  | GTacCst (ci,n,el) ->
+    let s = match ci with
+    | Other kn -> Names.KerName.to_string kn
+    | Tuple n -> string_of_int n
+    in
+    print (Printf.sprintf "GTacCst %s %d" s n);
+    List.iter (fun e -> dump_Gexpr ~indent ~p e) el
+  | GTacCse (e, ci, a1, a2) -> print (Printf.sprintf "GTacCse %d %d" (Array.length a1)  (Array.length a2));
+    Array.iter (fun (a3, e2) ->
+        Array.iter (fun n ->
+            match n with
+            | Name nm -> print (Printf.sprintf "case name = %s" (Id.to_string nm))  (* vars to be assigned *)
+            | Anonymous -> print (Printf.sprintf "Anonymous");
+          ) a3;
+        dump_Gexpr ~indent ~p e2
+      ) a2;
+    Printf.eprintf "\n%!"
   | GTacPrj _ -> print "GTacPrj"
   | GTacSet _ -> print "GTacSet"
   | GTacOpn _ -> print "GTacOpn"
   | GTacWth _ -> print "GTacWth"
   | GTacFullMatch _ -> print "GTacFullMatch"
   | GTacExt (tag,_,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
-  | GTacPrm ml -> print (Printf.sprintf "GTacPrm %s. %s\n%!" ml.mltac_plugin ml.mltac_tactic)
-  | GTacAls  _ -> print "GTacAls"
+  | GTacPrm ml -> print (Printf.sprintf "GTacPrm %s. %s%!" ml.mltac_plugin ml.mltac_tactic)
+  | GTacAls (e,_) -> print "GTacAls";
+    dump_Gexpr ~indent ~p e
 
-let push_locs item (ist : environment) =   (* ick *)
+let dump_Gexpr ?(indent=0) ?(p="D") e =
+  dump_Gexpr ~indent ~p e;
+  Printf.eprintf "%!"
+
+let test = (try let _ = Sys.getenv("TEST") in true with _ -> false)
+
+(* Tac2typing_env.TVar.t Tac2expr.glb_typexpr option    *)
+let rec dump_type ?(indent=0) env t =
+  Printf.eprintf "%s" (String.make indent ' ');
+  let indent = indent + 2 in
+  if false then dump_type ~indent env t;
+  Printf.eprintf "type name is %s\n%!" (Pp.string_of_ppcmds (Tac2typing_env.pr_glbtype env t));
+  match t with
+  | GTypVar t1 -> ()
+  | _ -> ()
+
+let push_locs item (ist : environment) =
   match ist.stack with
   | Some s -> item :: ist.locs
   | None -> ist.locs
@@ -242,7 +312,8 @@ let push_stack item (ist : environment) =
   | Some s -> Some (item :: s)
   | None -> None
 
-let stop_stuff (ist : environment) loc =
+(* todo: if desired, filter out stops in the Ltac2 libraries *)
+let maybe_stop (ist : environment) loc =
   (* todo: replace with String.starts_with when OCaml 4.13 is required *)
   let starts_with p s =
     let plen = String.length p in
@@ -258,11 +329,13 @@ let stop_stuff (ist : environment) loc =
     if false then Printf.eprintf "loc = %s\n%!" fname;
     true || Bool.not (starts_with "user-contrib/Ltac2/" fname)
   in
-  let chunk = (ist.locs, fmt_stack2 ist.stack, fmt_vars2 (ist.env_ist :: ist.varmaps)) in
+  let chunk = DebugCommon.{ locs = ist.locs;
+                            stack_f = (fmt_stack2 ist.stack);
+                            vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) } in
   DebugCommon.save_chunk chunk loc;
   let stop = DebugCommon.get_debug () && (not_internal loc) &&
 (*    (Bool.not (starts_with "Ltac2." fname)) && *)
-    (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop loc)
+    (DebugCommon.stop_in_debugger loc)
   in
   if stop then
     DebugCommon.new_stop_point ();

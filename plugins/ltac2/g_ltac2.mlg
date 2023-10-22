@@ -235,7 +235,7 @@ GRAMMAR EXTEND Gram
   ;
   array_literal:
   [ [ test_array_opening; "["; "|"; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; test_array_closing; "|"; "]" ->
-      { Tac2quote.array_of_list (Tac2quote.of_list ~loc (fun x -> x) a) } ] ]
+      { Tac2quote.array_of_list ~loc (Tac2quote.of_list ~loc (fun x -> x) a) } ] ]
   ;
   list_literal:
   [ [ "["; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; "]" ->

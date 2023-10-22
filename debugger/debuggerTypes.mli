@@ -51,4 +51,4 @@ type goals_rty = goals option
 type db_stack_rty = (string * (string * int list) option) list
 type db_vars_rty = (string * Pp.t) list
 
-val read_in_debug : bool ref (* true=msg read in debug false=read at top level *)
+val read_in_debug : bool ref (* true=msg read in debug; false=read at top level *)

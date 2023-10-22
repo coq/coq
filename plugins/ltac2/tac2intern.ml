@@ -1104,7 +1104,17 @@ let rec intern_rec env tycon {loc;v=e} =
     in
     let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
     let a,b = intern_rec env tycon e.alias_body in
-    (GTacAls (a, loc), b)
+    match a with
+    | GTacApp _ -> (GTacAls (a, loc), b)
+    | GTacRef _ -> a,b
+    | _ ->
+      let pr_opt loc = match loc with
+        | Some loc -> Loc.pr loc
+        | None -> Pp.str "None"
+      in
+      Printf.eprintf "Tac2intern GTacAls PROBLEM %s\n%!" (Pp.string_of_ppcmds (pr_opt loc));
+      Tac2debug.dump_Gexpr a;
+      a,b
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -1309,7 +1319,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
   let arg, tpe = obj.ml_intern self ist arg in
   let e = match arg with
-  | GlbVal arg -> GTacExt (tag, loc, arg)
+  | GlbVal arg -> GTacExt (tag, arg, loc)
   | GlbTacexpr e -> e
   in
   check (e, tpe)
@@ -1771,10 +1781,10 @@ let rec subst_expr subst e = match e with
   let e' = subst_expr subst e in
   let r' = subst_expr subst r in
   if kn' == kn && e' == e && r' == r then e0 else GTacSet (kn', e', p, r')
-| GTacExt (tag, loc, arg) ->
+| GTacExt (tag, arg, loc) ->
   let tpe = interp_ml_object tag in
   let arg' = tpe.ml_subst subst arg in
-  if arg' == arg then e else GTacExt (tag, loc, arg')
+  if arg' == arg then e else GTacExt (tag, arg', loc)
 | GTacOpn (kn, el) as e0 ->
   let kn' = subst_kn subst kn in
   let el' = List.Smart.map (fun e -> subst_expr subst e) el in

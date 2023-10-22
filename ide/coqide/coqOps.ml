@@ -492,11 +492,14 @@ object(self)
     Coq.bind call begin function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
-      proof#set_goals goals;
+      let in_debugger = Coq.is_stopped_in_debugger _ct in
+      proof#set_goals goals in_debugger;
       proof#refresh ~force:true;
       let op = forward_get_other_proof () in
-      op#set_goals goals;
-      op#refresh ~force:true;
+      if op != proof then begin
+        op#set_goals goals in_debugger;
+        op#refresh ~force:true
+      end;
       Coq.return ()
     end
 

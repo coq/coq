@@ -1097,10 +1097,15 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
     (* Delayed evaluation *)
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], tac)))
   in
+  (* avoid extra stop in "tac1; tac2" *)
+  let can_stop = match tac2 with
+  | TacThen _ -> false
+  | _ -> true
+  in
   let open Ftactic in
   Control.check_for_interrupt ();
   match curr_debug ist with
-  | DebugOn lev ->
+  | DebugOn lev when can_stop ->
         let eval v =
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
           value_interp ist >>= fun v -> return (name_vfun appl v)

@@ -28,7 +28,7 @@ class type proof_view =
     method buffer : GText.buffer
     method refresh : force:bool -> unit
     method clear : unit -> unit
-    method set_goals : goals -> unit
+    method set_goals : goals -> bool -> unit
     method incr_sel_goal_num : int -> unit
     method select_first_goal : unit -> unit
   end
@@ -81,7 +81,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       let goal_cnt = fg_cnt +
         (if Coq.PrintOpt.printing_unfocused () then List.length unfoc_goals else 0) in
       let head_str = Printf.sprintf
-        "%d goal%s\n" fg_cnt (if 1 < fg_cnt then "s" else "")
+        "%d %s\n" fg_cnt (if 1 = fg_cnt then "goal" else "goals")
       in
       let goal_str ?(shownum=false) index total name =
         let annot =
@@ -93,7 +93,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       let width = Ideutils.textview_width proof in
 
       let insert_w_hyps ~shownum hyps cur_goal cur_name i =
-        (* todo: print a space if i > 1? *)
+        (* todo: print a blank line if i > 1? *)
         let hyps_hints, goal_hints = match hints with
         | None -> [], []
         | Some (hl, h) -> (hl, h)
@@ -156,6 +156,8 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
                          (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark `INSERT)
 
+let in_debugger = ref false
+
 let display mode (view : #GText.view_skel) goals hints =
   let () = view#buffer#set_text "" in
   let width = Ideutils.textview_width view in
@@ -164,6 +166,8 @@ let display mode (view : #GText.view_skel) goals hints =
     (* No proof in progress *)
   | FocusGoals { fg; bg } ->
     mode view fg ~unfoc_goals:bg hints
+  (* bg, shelved and given_up are not reliable while in the debugger *)
+  | NoFocusGoals _ when !in_debugger -> ()
   | NoFocusGoals { bg; shelved; given_up } ->
     begin match (bg, shelved, given_up) with
     | [], [], [] ->
@@ -236,7 +240,7 @@ let proof_view () =
 
     method clear () = buffer#set_text ""
 
-    method set_goals gls = goals <- gls
+    method set_goals gls in_debug = goals <- gls; in_debugger := in_debug
 
     method incr_sel_goal_num incr =
       let fg, bg = match goals with

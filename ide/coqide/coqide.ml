@@ -877,7 +877,7 @@ let ctl_shft_f10 = GtkData.AccelGroup.parse "<Ctrl><Shift>F10"
 (* handle certain function keys from detached Messages panel
    functions are directed to the specified session or the
    current session, not the Messages session (debatable) *)
-(* todo: Hardcoding keystrokes here does work with remapped key bindings.
+(* todo: Hardcoding keystrokes here does not work with remapped key bindings.
    Instead should forward the current keystroke for "continue" even it's not f9 *)
 let forward_keystroke key sid =
   if      key = f9 then (Nav.continue ~sid (); true)

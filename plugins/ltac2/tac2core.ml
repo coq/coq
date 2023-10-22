@@ -1293,7 +1293,7 @@ let () =
   (* for Ltac.run ... construct *)
   let open Ltac_plugin in
   DebugCommon.push_top_chunk ();
-  (* todo: what about wrapping ltac1_ref above and ltac1_apply below? *)
+  (* todo: what about wrapping functions ltac1_ref above and ltac1_apply below? *)
   let wrap (e, info) = Proofview.tclUNIT () >>=
       fun () -> DebugCommon.pop_chunk (); Proofview.tclZERO ~info e in
   Proofview.tclOR
@@ -1809,11 +1809,7 @@ let () =
       let wrap (e, info) = set_bt info >>= fun info ->
           DebugCommon.pop_chunk ();
           Proofview.tclZERO ~info e in
-(*
-      Proofview.tclTHEN
-        (Ltac_plugin.Tactic_debug.entry_stop_check tac)
-*)
-        (Proofview.tclOR tac2 wrap >>= fun () -> DebugCommon.pop_chunk (); return v_unit)
+        Proofview.tclOR tac2 wrap >>= fun () -> DebugCommon.pop_chunk (); return v_unit
     in
     let len = List.length ids in
     if Int.equal len 0 then
@@ -2016,7 +2012,7 @@ let () =
   let subs avoid globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, None, (avoid, c)) in
+      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c), None) in
       let rem = Id.Set.remove id rem in
       rem, (Name id, c) :: accu
     in
@@ -2031,7 +2027,7 @@ let () =
             (Glob_term.GVar
                (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
         in
-        let c = GTacExt (Tac2quote.wit_preterm, None, (Id.Set.empty, c)) in
+        let c = GTacExt (Tac2quote.wit_preterm, (Id.Set.empty, c), None) in
         (Name id, c) :: bnd)
         rem bnd
     in

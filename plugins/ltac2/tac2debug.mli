@@ -12,7 +12,7 @@ type environment = Tac2env.environment
 
 type varmap = Tac2ffi.valexpr Names.Id.Map.t
 
-val stop_stuff : environment -> Loc.t option -> bool
+val maybe_stop : environment -> Loc.t option -> bool
 
 val push_locs : Loc.t option -> environment -> Loc.t option list
 
@@ -26,4 +26,6 @@ val fmt_stack2 : (string * Loc.t option) list option -> unit ->
 
 val fmt_vars2 : varmap list -> int -> DebuggerTypes.db_vars_rty
 
-val dump_expr2 : ?indent:int -> ?p:string -> Tac2expr.glb_tacexpr -> unit
+val dump_Cexpr : Loc.t option -> Tac2expr.raw_tacexpr -> unit
+
+val dump_Gexpr : ?indent:int -> ?p:string -> Tac2expr.glb_tacexpr -> unit

@@ -164,14 +164,16 @@ let save_top_chunk tac varmap trace =
   | Some trace -> trace
   | None -> { locs=[]; stack=[]; varmaps=[]}
   in
-  let chunk = (locs, fmt_stack1 stack, fmt_vars1 (varmap :: varmaps)) in  (* todo: tac? *)
+  let chunk = DebugCommon.{ locs;
+                            stack_f = (fmt_stack1 stack);
+                            vars_f = (fmt_vars1 (varmap :: varmaps)) } in
   DebugCommon.save_chunk chunk CAst.(tac.loc)
 
 (* Prints the goal and the command to be executed *)
 let goal_com tac =
   DebugCommon.new_stop_point ();
   Proofview.tclTHEN
-    (DebugCommon.db_pr_goals_t)
+    (DebugCommon.pr_goals_t)
     (if Comm.isTerminal () then
       Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac))
     else
@@ -325,7 +327,7 @@ let debug_prompt lev tac f varmap trace =
         Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))  (* call prompt -> read msg *)
       in
       let loc = CAst.(tac.loc) in
-      if DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop loc then
+      if DebugCommon.stop_in_debugger loc then
         stop_here ()
       else if s = 1 then begin
         Proofview.tclLIFT ((skip := 0) >> runprint) >=
@@ -367,21 +369,18 @@ let debug_prompt lev tac f varmap trace =
     end
 
 (* for ltac1:(tac) *)
-(* todo: apparently not needed *)
+(* todo: needed? *)
 let entry_stop_check tac =
-(*  Printf.eprintf "entry_stop_check\n%!"; *)
   let can_stop = match CAst.(tac.v) with (* avoid double stop for ltac1:(xx) *)
   | TacArg _ -> false
   | _ -> true
   in
   let loc = !DebugCommon.cur_loc in
-  if DebugCommon.get_debug () && can_stop &&
-      (DebugCommon.breakpoint_stop loc ||
-       DebugCommon.stepping_stop loc) then begin
+  if DebugCommon.get_debug () && can_stop && (DebugCommon.stop_in_debugger loc) then begin
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN
-        (DebugCommon.db_pr_goals_t)
+        (DebugCommon.pr_goals_t)
         (Proofview.tclLIFT (Proofview.NonLogical.return ()))
     in
     Proofview.tclTHEN (goal_com ()) (Proofview.tclIGNORE (Proofview.tclLIFT (prompt 0)))
