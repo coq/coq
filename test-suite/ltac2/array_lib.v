@@ -152,7 +152,7 @@ Goal True.
 
   (* test fold_right *)
   let a := init 4 (fun i => (Int.add 10 i)) in
-  check_eq_int (of_list (fold_right (fun a b => b::a) [] a)) [10;11;12;13].
+  check_eq_int (of_list (fold_right (fun a b => a::b) a [])) [10;11;12;13].
 
   (* test exist *)
   let a := init 4 (fun i => (Int.add 10 i)) in
