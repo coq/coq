@@ -244,6 +244,18 @@ let parse_ind_args si args relmax =
          | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
+let check_sort_poly sigma gr u =
+  let u = EConstr.EInstance.kind sigma u in
+  let qs, _ = UVars.Instance.to_array u in
+  if Array.exists (function
+      | Sorts.Quality.QConstant (QSProp|QProp) -> true
+      | QConstant QType | QVar _ -> false)
+      qs
+  then CErrors.user_err
+      Pp.(str "Cannot extract nontrivial sort polymorphism" ++ spc()
+          ++ str "(instantiation of " ++ Nametab.pr_global_env Id.Set.empty gr
+          ++ spc() ++ str "using Prop or SProp).")
+
 (*S Extraction of a type. *)
 
 (* [extract_type env db c args] is used to produce an ML type from the
@@ -300,6 +312,7 @@ let rec extract_type env sg db j c args =
                if Int.equal n' 0 then Tunknown else Tvar n')
     | Const (kn,u) ->
         let r = GlobRef.ConstRef kn in
+        let () = check_sort_poly sg r u in
         let typ = type_of env sg (EConstr.mkConstU (kn,u)) in
         (match flag_of_type env sg typ with
            | (Logic,_) -> assert false (* Cf. logical cases above *)
@@ -314,7 +327,8 @@ let rec extract_type env sg db j c args =
                       (* We try to reduce. *)
                       let newc = applistc (get_body lbody) args in
                       extract_type env sg db j newc []))
-    | Ind ((kn,i),u) ->
+    | Ind ((kn,i) as ind,u) ->
+        let () = check_sort_poly sg (IndRef ind) u in
         let s = (extract_ind env kn).ind_packets.(i).ip_sign in
         extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
     | Proj (p,r,t) ->
@@ -647,9 +661,11 @@ let rec extract_term env sg mle mlt c args =
         with NotDefault d ->
           let mle' = Mlenv.push_std_type mle (Tdummy d) in
           ast_pop (extract_term env' sg mle' mlt c2 args'))
-    | Const (kn,_) ->
+    | Const (kn,u) ->
+        let () = check_sort_poly sg (ConstRef kn) u in
         extract_cst_app env sg mle mlt kn args
-    | Construct (cp,_) ->
+    | Construct (cp,u) ->
+        let () = check_sort_poly sg (ConstructRef cp) u in
         extract_cons_app env sg mle mlt cp args
     | Proj (p, _, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
