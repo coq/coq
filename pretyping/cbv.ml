@@ -25,14 +25,13 @@ open Esubst
  *  STACK(k,v,stk) represents an irreductible value [v] in the stack [stk].
  *          [k] is a delayed shift to be applied to both the value and
  *          the stack.
- *  CBN(t,S) is the term [S]t. It is used to delay evaluation. For
- *          instance products are evaluated only when actually needed
- *          (CBN strategy).
  *  LAMBDA(n,a,b,S) is the term [S]([x:a]b) where [a] is a list of bindings and
  *          [n] is the length of [a]. the environment [S] is propagated
  *          only when the abstraction is applied, and then we use the rule
  *                  ([S]([x:a]b) c) --> [S.c]b
  *          This corresponds to the usual strategy of weak reduction
+ *  PROD(na,t,u,S) is the term [S](forall na:t, u).
+ *  LETIN(na,b,t,S) is the term [S](let na:= b : t in.c).
  *  FIX(op,bd,S,args) is the fixpoint (Fix or Cofix) of bodies bd under
  *          the bindings S, and then applied to args. Here again,
  *          weak reduction.
@@ -46,8 +45,9 @@ open Esubst
 type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack
-  | CBN of constr * cbv_value subs
-  | LAMBDA of int * (Name.t Context.binder_annot * constr) list * constr * cbv_value subs
+  | LAMBDA of int * (Name.t Context.binder_annot * types) list * constr * cbv_value subs
+  | PROD of Name.t Context.binder_annot * types * types * cbv_value subs
+  | LETIN of Name.t Context.binder_annot * cbv_value * types * constr * cbv_value subs
   | FIX of fixpoint * cbv_value subs * cbv_value array
   | COFIX of cofixpoint * cbv_value subs * cbv_value array
   | CONSTRUCT of constructor UVars.puniverses * cbv_value array
@@ -87,7 +87,8 @@ and cbv_stack =
 let rec shift_value n = function
   | VAL (k,t) -> VAL (k+n,t)
   | STACK(k,v,stk) -> STACK(k+n,v,stk)
-  | CBN (t,s) -> CBN(t,subs_shft(n,s))
+  | PROD (na,t,u,s) -> PROD(na,t,u,subs_shft(n,s))
+  | LETIN (na,b,t,c,s) -> LETIN(na,shift_value n b,t,c,subs_shft(n,s))
   | LAMBDA (nlams,ctxt,b,s) -> LAMBDA (nlams,ctxt,b,subs_shft (n,s))
   | FIX (fix,s,args) ->
       FIX (fix,subs_shft (n,s), Array.map (shift_value n) args)
@@ -189,7 +190,7 @@ let strip_appl head stack =
     | COFIX (cofix,env,app) -> (COFIX(cofix,env,[||]), stack_vect_app app stack)
     | CONSTRUCT (c,app) -> (CONSTRUCT(c,[||]), stack_vect_app app stack)
     | PRIMITIVE(op,c,app) -> (PRIMITIVE(op,c,[||]), stack_vect_app app stack)
-    | VAL _ | STACK _ | CBN _ | LAMBDA _ | ARRAY _ -> (head, stack)
+    | LETIN _ | VAL _ | STACK _ | PROD _ | LAMBDA _ | ARRAY _ -> (head, stack)
 
 
 (* Tests if fixpoint reduction is possible. *)
@@ -383,8 +384,10 @@ and reify_value = function (* reduction under binders *)
       reify_stack (reify_value v) stk
   | STACK (n,v,stk) ->
       lift n (reify_stack (reify_value v) stk)
-  | CBN(t,env) ->
-    apply_env env t
+  | PROD(na,t,u,env) ->
+    apply_env env (mkProd (na,t,u))
+  | LETIN(na,b,t,c,env) ->
+    apply_env env (mkLetIn (na,reify_value b,t,c))
   | LAMBDA (k,ctxt,b,env) ->
     apply_env env @@
     List.fold_left (fun c (n,t) ->
@@ -494,7 +497,7 @@ let rec norm_head info env t stack =
       (fst sp) (lazy (reify_stack t (strip_app stack)));
     norm_head_ref 0 info env stack (ConstKey sp) t
 
-  | LetIn (_, b, _, c) ->
+  | LetIn (na, b, u, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow bindings but leave let's in place *)
       if red_set info.reds fZETA then
@@ -504,7 +507,8 @@ let rec norm_head info env t stack =
         let env' = subs_cons (cbv_stack_term info TOP env b) env in
         norm_head info env' c stack
       else
-        (CBN(t,env), stack) (* Should we consider a commutative cut ? *)
+        (* Note: we may also consider a commutative cut! *)
+        LETIN(na,cbv_stack_term info TOP env b,u,c,env), stack
 
   | Evar ((e, _) as ev) ->
       (match Evd.existential_opt_value0 info.sigma ev with
@@ -534,7 +538,7 @@ let rec norm_head info env t stack =
 
   (* neutral cases *)
   | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
-  | Prod _ -> (CBN(t,env), stack)
+  | Prod (na,t,u) -> (PROD(na,t,u,env), stack)
 
 and norm_head_ref k info env stack normt t =
   if red_set_ref info.reds normt then
@@ -734,8 +738,11 @@ and cbv_norm_value info = function
       apply_stack info (cbv_norm_value info v) stk
   | STACK (n,v,stk) ->
       lift n (apply_stack info (cbv_norm_value info v) stk)
-  | CBN(t,env) ->
-      Constr.map_with_binders subs_lift (cbv_norm_term info) env t
+  | PROD(na,t,u,env) ->
+      mkProd (na,cbv_norm_term info env t,cbv_norm_term info (subs_lift env) u)
+  | LETIN (na,b,t,c,env) ->
+      let aux = if info.strong then cbv_norm_term info else apply_env in
+      mkLetIn (na,cbv_norm_value info b,aux env t,aux (subs_lift env) c)
   | LAMBDA (n,ctxt,b,env) ->
       let nctxt =
         List.map_i (fun i (x,ty) ->
