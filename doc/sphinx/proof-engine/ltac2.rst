@@ -669,7 +669,7 @@ of the corresponding term expression.
 
    .. coqdoc::
 
-      let x := '0 in constr:(1 + ltac2:(exact x))
+      let x := '0 in constr:(1 + ltac2:(exact $x))
 
 Beware that the typing environment of antiquotations is **not**
 expanded by the Coq binders from the term.
@@ -678,7 +678,7 @@ expanded by the Coq binders from the term.
 
      The following Ltac2 expression will **not** type check::
 
-     `constr:(fun x : nat => ltac2:(exact x))`
+     `constr:(fun x : nat => ltac2:(exact $x))`
      `(* Error: Unbound variable 'x' *)`
 
 There is a simple reason for that, which is that the following expression would
