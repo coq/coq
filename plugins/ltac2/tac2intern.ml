@@ -1156,7 +1156,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let (f, ft) = intern_rec env None f in
   let fold t arg =
     let dom, codom = tycon_app ?loc env ~ft t in
-    let (arg, argt) = intern_rec env (Some dom) arg in
+    let arg = intern_rec_with_constraint env arg dom in
     (codom, arg)
   in
   let (t, args) = CList.fold_left_map fold ft args in
@@ -1196,7 +1196,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let e = intern_rec_with_constraint env e (GTypRef (Other t_bool, [])) in
   let (e1, t1) = intern_rec env tycon e1 in
   let t = Option.default t1 tycon in
-  let (e2, t2) = intern_rec env (Some t) e2 in
+  let e2 = intern_rec_with_constraint env e2 t in
   (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t)
 | CTacCse (e, pl) ->
   let e,brs,rt = intern_case env loc e tycon pl in
@@ -1356,7 +1356,7 @@ and intern_let_rec env el tycon e =
   let (env, el) = List.fold_left_map map env el in
   let map (na, tc, e) =
     let loc_e = e.loc in
-    let (e, t) = intern_rec env (Some tc) e in
+    let e = intern_rec_with_constraint env e tc in
     let () =
       if not (is_rec_rhs e) then
         user_err ?loc:loc_e (str "This kind of expression is not allowed as \
