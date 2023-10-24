@@ -17,7 +17,6 @@ open Nativevalues
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
 
-type mllambda
 type global
 
 val debug_native_compiler : CDebug.t
