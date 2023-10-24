@@ -1320,22 +1320,23 @@ and intern_rec_with_constraint env e exp =
 
 and intern_let env loc ids el tycon e =
   let avoid = Id.Set.union ids (bound_vars env) in
-  let fold (pat, t, e) (avoid, accu) =
+  let fold avoid (pat, t, e) =
     let nas, exp = expand_pattern avoid [pat, t] in
     let na = match nas with [x] -> x | _ -> assert false in
     let avoid = List.fold_left add_name avoid nas in
-    (avoid, (na, exp, t, e) :: accu)
+    (avoid, (na, exp, t, e))
   in
-  let (_, el) = List.fold_right fold el (avoid, []) in
-  let fold (na, exp, tc, e) (body, el, p) =
+  let (_, el) = List.fold_left_map fold avoid el in
+  let fold body (na, exp, tc, e) =
     let tc = Option.map (intern_type env) tc in
     let (e, t) = intern_rec env tc e in
     let t = if is_value e then abstract_var env t else monomorphic t in
-    (exp body, (na, e) :: el, (na, t) :: p)
+    (exp body, (na, e, t))
   in
-  let (e, el, p) = List.fold_right fold el (e, [], []) in
-  let env = List.fold_left (fun accu (na, t) -> push_name na t accu) env p in
+  let (e, elp) = List.fold_left_map fold e el in
+  let env = List.fold_left (fun accu (na, _, t) -> push_name na t accu) env elp in
   let (e, t) = intern_rec env tycon e in
+  let el = List.map (fun (na, e, _) -> na, e) elp in
   (GTacLet (false, el, e), t)
 
 and intern_let_rec env el tycon e =
@@ -1353,7 +1354,7 @@ and intern_let_rec env el tycon e =
     (env, (na, t, e))
   in
   let (env, el) = List.fold_left_map map env el in
-  let fold (na, tc, e) (el, tl) =
+  let map (na, tc, e) =
     let loc_e = e.loc in
     let (e, t) = intern_rec env (Some tc) e in
     let () =
@@ -1361,9 +1362,9 @@ and intern_let_rec env el tycon e =
         user_err ?loc:loc_e (str "This kind of expression is not allowed as \
           right-hand side of a recursive binding")
     in
-    ((na, e) :: el, t :: tl)
+    (na, e)
   in
-  let (el, tl) = List.fold_right fold el ([], []) in
+  let el = List.map map el in
   let (e, t) = intern_rec env tycon e in
   (GTacLet (true, el, e), t)
 
