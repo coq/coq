@@ -1,0 +1,12 @@
+File "./output/bug_15687.v", line 7, characters 11-16:
+The command has indeed failed with message:
+This expression has type int -> 'a but an expression was expected of type 
+int
+File "./output/bug_15687.v", line 10, characters 11-16:
+The command has indeed failed with message:
+This expression has type int -> bool but an expression was expected of type
+int
+File "./output/bug_15687.v", line 18, characters 55-65:
+The command has indeed failed with message:
+This expression should not be a function, the expected type is 
+int.

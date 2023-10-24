@@ -1046,21 +1046,18 @@ let check ?loc env tycon (e,t as et) =
     e,tycon
 
 let tycon_fun_body ?loc env tycon dom =
-  match tycon with
-  | None -> None
-  | Some tycon ->
-    match kind env tycon with
-    | GTypVar _ ->
-      let codom = GTypVar (fresh_id env) in
-      let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
-      Some codom
-    | GTypArrow (dom',codom) ->
-      let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
-      Some codom
-    | GTypRef _ ->
-      CErrors.user_err ?loc
-        Pp.(str "This expression should not be a function, the expected type is" ++ spc() ++
-            pr_glbtype env tycon ++ str ".")
+  match kind env tycon with
+  | GTypVar _ ->
+    let codom = GTypVar (fresh_id env) in
+    let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
+    codom
+  | GTypArrow (dom',codom) ->
+    let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
+    codom
+  | GTypRef _ ->
+    CErrors.user_err ?loc
+      Pp.(str "This expression should not be a function, the expected type is" ++ spc() ++
+          pr_glbtype env tycon ++ str ".")
 
 let tycon_app ?loc env ~ft t =
   match kind env t with
@@ -1122,7 +1119,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let tl = List.map map bnd in
   let (nas, exp) = expand_pattern (bound_vars env) bnd in
   let env, tycon = List.fold_left2 (fun (env,tycon) na t ->
-      let tycon = tycon_fun_body ?loc env tycon t in
+      let tycon = Option.map (fun tycon -> tycon_fun_body ?loc env tycon t) tycon in
       let env = push_name na (monomorphic t) env in
       env, tycon) (env,tycon) nas tl
   in
@@ -1354,6 +1351,40 @@ and intern_let_rec env el tycon e =
     (env, (na, t, e))
   in
   let (env, el) = List.fold_left_map map env el in
+  (* Get easily accessible type information about the recursive bindings before they are used.
+     Typically "let rec foo (x:int) : bool := ... in ..."
+     gets desugared to "let rec foo := fun (x:int) => ... : bool in ..."
+     and we want to have "foo : int -> bool" before we see any uses of foo.
+
+     This produces nicer type errors but is otherwise semantically equivalent. *)
+  let map (na, t, e) = match e.v with
+    | CTacCnv (e',t') ->
+      let t' = intern_type env t' in
+      let () = unify ?loc:e.loc env t' t in
+      na, t', e'
+    | CTacFun (bnd,e') ->
+      let bnd = List.map extract_pattern_type bnd in
+      let map (_, t) = match t with
+        | None -> GTypVar (fresh_id env)
+        | Some t -> intern_type env t
+      in
+      let tl = List.map map bnd in
+      let nas, exp = expand_pattern (bound_vars env) bnd in
+      let t = List.fold_left2 (fun t na tna -> tycon_fun_body ?loc:e.loc env t tna) t nas tl in
+      let e', t' = match e'.v with
+        | CTacCnv (e',t') ->
+          let t' = intern_type env t' in
+          let () = unify ?loc:e'.loc env t' t in
+          e', t'
+        | _ -> e', t
+      in
+      let t' = List.fold_right (fun tna t' -> GTypArrow (tna, t')) tl t' in
+      let pats = List.map (fun na -> CAst.make (CPatVar na)) nas in
+      let e' = exp e' in
+      (na, t', CAst.make ?loc:e.loc (CTacFun (pats, e')))
+    | _ -> (na, t, e)
+  in
+  let el = List.map map el in
   let map (na, tc, e) =
     let loc_e = e.loc in
     let e = intern_rec_with_constraint env e tc in
