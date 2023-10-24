@@ -1177,7 +1177,7 @@ let rec intern_rec env tycon {loc;v=e} =
         times in this matching")
   in
   let ids = List.fold_left fold Id.Set.empty el in
-  if is_rec then intern_let_rec env loc el tycon e
+  if is_rec then intern_let_rec env el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
@@ -1338,7 +1338,7 @@ and intern_let env loc ids el tycon e =
   let (e, t) = intern_rec env tycon e in
   (GTacLet (false, el, e), t)
 
-and intern_let_rec env loc el tycon e =
+and intern_let_rec env el tycon e =
   let map env (pat, t, e) =
     let na = match pat.v with
     | CPatVar na -> na
@@ -1350,10 +1350,10 @@ and intern_let_rec env loc el tycon e =
       | Some t -> intern_type env t
     in
     let env = push_name na (monomorphic t) env in
-    (env, (loc, na, t, e))
+    (env, (na, t, e))
   in
   let (env, el) = List.fold_left_map map env el in
-  let fold (loc, na, tc, e) (el, tl) =
+  let fold (na, tc, e) (el, tl) =
     let loc_e = e.loc in
     let (e, t) = intern_rec env (Some tc) e in
     let () =
