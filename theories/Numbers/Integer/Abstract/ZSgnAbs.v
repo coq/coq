@@ -143,10 +143,13 @@ Proof.
  intros n. destruct_max n; rewrite ? opp_involutive; auto with relations.
 Qed.
 
-Lemma abs_involutive : forall n, abs (abs n) == abs n.
+Lemma abs_idemp : forall n, abs (abs n) == abs n.
 Proof.
  intros. apply abs_eq. apply abs_nonneg.
 Qed.
+
+#[deprecated(since="8.19", note="Use abs_idemp")]
+Notation abs_involutive := abs_idemp.
 
 Lemma abs_spec : forall n,
   (0 <= n /\ abs n == n) \/ (n < 0 /\ abs n == -n).
