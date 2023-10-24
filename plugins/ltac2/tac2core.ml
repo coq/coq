@@ -153,6 +153,10 @@ let of_result f = function
 | Inl c -> v_blk 0 [|f c|]
 | Inr e -> v_blk 1 [|Tac2ffi.of_exn e|]
 
+let inductive = repr_ext val_inductive
+
+let projection = repr_ext val_projection
+
 (** Stdlib exceptions *)
 
 let err_notfocussed =
@@ -675,7 +679,7 @@ let () =
   return (EConstr.Vars.noccur_between sigma n m c)
 
 let () =
-  define "constr_case" (repr_ext val_inductive @-> tac valexpr) @@ fun ind ->
+  define "constr_case" (inductive @-> tac valexpr) @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   try
     let ans = Inductiveops.make_case_info env ind Sorts.Relevant Constr.RegularStyle in
@@ -797,8 +801,7 @@ let () =
   let ty = repr_ext val_constructor in
   define "constructor_equal" (ty @-> ty @-> ret bool) Construct.UserOrd.equal
 let () =
-  let ty = repr_ext val_projection in
-  define "projection_equal" (ty @-> ty @-> ret bool) Projection.UserOrd.equal
+  define "projection_equal" (projection @-> projection @-> ret bool) Projection.UserOrd.equal
 
 (** Patterns *)
 
@@ -1150,12 +1153,11 @@ let () =
 (** Ind *)
 
 let () =
-  let ty = repr_ext val_inductive in
-  define "ind_equal" (ty @-> ty @-> ret bool) Ind.UserOrd.equal
+  define "ind_equal" (inductive @-> inductive @-> ret bool) Ind.UserOrd.equal
 
 let () =
   define "ind_data"
-    (repr_ext val_inductive @-> tac (repr_ext val_ind_data))
+    (inductive @-> tac (repr_ext val_ind_data))
     @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   if Environ.mem_mind (fst ind) env then
@@ -1163,8 +1165,8 @@ let () =
   else
     throw err_notfound
 
-let () = define "ind_repr" (repr_ext val_ind_data @-> ret (repr_ext val_inductive)) fst
-let () = define "ind_index" (repr_ext val_inductive @-> ret int) snd
+let () = define "ind_repr" (repr_ext val_ind_data @-> ret inductive) fst
+let () = define "ind_index" (inductive @-> ret int) snd
 
 let () =
   define "ind_nblocks" (repr_ext val_ind_data @-> ret int) @@ fun (_, mib) ->
@@ -1196,7 +1198,7 @@ let () =
 
 let () =
   define "constructor_inductive"
-    (repr_ext val_constructor @-> ret (repr_ext val_inductive))
+    (repr_ext val_constructor @-> ret inductive)
   @@ fun (ind, _) -> ind
 
 let () =
@@ -1205,6 +1207,35 @@ let () =
   @@ fun (_, i) ->
   (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
   i-1
+
+let () =
+  define "ind_get_projections" (repr_ext val_ind_data @-> ret (option (array projection)))
+  @@ fun (ind,mib) ->
+  Declareops.inductive_make_projections ind mib
+  |> Option.map (Array.map (fun p -> Projection.make p false))
+
+(** Proj *)
+
+let () =
+  define "projection_ind" (projection @-> ret inductive) Projection.inductive
+
+let () =
+  define "projection_index" (projection @-> ret int) Projection.arg
+
+let () =
+  define "projection_unfolded" (projection @-> ret bool) Projection.unfolded
+
+let () =
+  define "projection_set_unfolded" (projection @-> bool @-> ret projection) @@ fun p b ->
+  Projection.make (Projection.repr p) b
+
+let () =
+  define "projection_of_constant" (constant @-> ret (option projection)) @@ fun c ->
+  Structures.PrimitiveProjections.find_opt c |> Option.map (fun p -> Projection.make p false)
+
+let () =
+  define "projection_to_constant" (projection @-> ret (option constant)) @@ fun p ->
+  Some (Projection.constant p)
 
 (** Ltac1 in Ltac2 *)
 
@@ -1358,7 +1389,7 @@ let string_map_tag : _ map_tag = register_map ~tag_name:"fmap_string_tag" (modul
 let inductive_map_tag : _ map_tag = register_map ~tag_name:"fmap_inductive_tag" (module struct
     module S = Indset_env
     module M = Indmap_env
-    let repr = Tac2ffi.(repr_ext val_inductive)
+    let repr = inductive
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
