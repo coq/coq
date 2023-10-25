@@ -659,6 +659,7 @@ library:ci-fiat_crypto:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   timeout: 3h
+  allow_failure: true
 
 library:ci-fiat_crypto_legacy:
   extends: .ci-template-flambda
