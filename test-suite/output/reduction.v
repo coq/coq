@@ -11,3 +11,17 @@ Eval simpl in (fix plus (n m : nat) {struct n} : nat :=
 
 Eval hnf in match (plus (S n) O) with S n => n | _ => O end.
 
+Eval simpl head in 2 + 2.
+Eval cbn head in 2 + 2.
+Eval lazy head in 2 + 2.
+
+Eval lazy head delta in 2 + 2.
+
+Eval simpl head in 2 + (2 + 2).
+
+Eval simpl head in (2 + 2) + 2.
+
+Axiom ignore : forall {T}, T -> unit.
+Eval simpl head in ignore (fun x => 1 + x).
+Eval cbn head in ignore (fun x => 1 + x).
+Eval lazy head in ignore (fun x => 1 + x).

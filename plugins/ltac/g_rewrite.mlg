@@ -66,8 +66,8 @@ END
 
 {
 
-type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
-type glob_strategy = (glob_constr_and_expr, Tacexpr.glob_red_expr) strategy_ast
+type raw_strategy = (constr_expr, Genredexpr.raw_red_expr) strategy_ast
+type glob_strategy = (glob_constr_and_expr, Genredexpr.glob_red_expr) strategy_ast
 
 let interp_strategy ist env sigma s =
   let interp_redexpr r = fun env sigma -> Tacinterp.interp_red_expr ist env sigma r in

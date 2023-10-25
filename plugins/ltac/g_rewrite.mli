@@ -28,11 +28,11 @@ val glob_constr_with_bindings :
   constr_expr_with_bindings Pcoq.Entry.t
 
 type raw_strategy =
-    (Constrexpr.constr_expr, Tacexpr.raw_red_expr)
+    (Constrexpr.constr_expr, Genredexpr.raw_red_expr)
     Rewrite.strategy_ast
 
 type glob_strategy =
-    (Genintern.glob_constr_and_expr, Tacexpr.glob_red_expr)
+    (Genintern.glob_constr_and_expr, Genredexpr.glob_red_expr)
     Rewrite.strategy_ast
 
 val wit_rewstrategy :

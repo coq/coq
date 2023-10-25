@@ -2,3 +2,30 @@
      : nat
      = n + 0
      : nat
+     = S (1 + 2)
+     : nat
+     = S (1 + 2)
+     : nat
+     = S
+         ((fix add (n m : nat) {struct n} : nat :=
+             match n with
+             | 0 => m
+             | S p => S (add p m)
+             end) 1 2)
+     : nat
+     = (fix add (n m : nat) {struct n} : nat :=
+          match n with
+          | 0 => m
+          | S p => S (add p m)
+          end) 2 2
+     : nat
+     = S (1 + (2 + 2))
+     : nat
+     = S (1 + 2 + 2)
+     : nat
+     = ignore (fun x : nat => 1 + x)
+     : unit
+     = ignore (fun x : nat => 1 + x)
+     : unit
+     = ignore (fun x : nat => 1 + x)
+     : unit

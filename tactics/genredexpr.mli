@@ -20,10 +20,15 @@ type 'a red_atom =
   | FZeta
   | FConst of 'a list
   | FDeltaBut of 'a list
+  | FHead
 
 (** This list of atoms is immediately converted to a [glob_red_flag] *)
 
+type strength = Norm | Head
+(* someday we may add NotUnderBinders *)
+
 type 'a glob_red_flag = {
+  rStrength : strength;
   rBeta : bool;
   rMatch : bool;
   rFix : bool;
@@ -67,3 +72,9 @@ type r_cst = Libnames.qualid or_by_notation
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
 
 type 'a and_short_name = 'a * Names.lident option
+
+type g_trm = Genintern.glob_constr_and_expr
+type g_pat = Genintern.glob_constr_pattern_and_expr
+type g_cst = Tacred.evaluable_global_reference and_short_name Locus.or_var
+
+type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen

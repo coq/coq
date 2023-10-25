@@ -351,11 +351,6 @@ type t_dispatch =  <
 type atomic_tactic_expr =
     t_dispatch gen_atomic_tactic_expr
 
-(** Misc *)
-
-type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
-type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen
-
 (** Traces *)
 
 type ltac_call_kind =
