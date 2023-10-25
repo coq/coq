@@ -493,9 +493,9 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    .. prodn::
       reductions ::= {+ @reduction }
       | {? head } @delta_reductions
-      reduction ::= beta
+      reduction ::= head
+      | beta
       | delta {? @delta_reductions }
-      | head
       | match
       | fix
       | cofix
@@ -508,8 +508,8 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    then only the named reductions are applied.  The reductions include:
 
    `head`
-     Do only head reduction, without going under binders.  Only
-     supported by :tacn:`simpl`, :tacn:`cbn` and :tacn:`lazy`.
+     Do only head reduction, without going under binders.
+     Supported by :tacn:`simpl`, :tacn:`cbv`, :tacn:`cbn` and :tacn:`lazy`.
      If this is the only specified reduction, all other reductions are applied.
 
    `beta`

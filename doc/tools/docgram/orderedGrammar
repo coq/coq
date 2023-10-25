@@ -506,9 +506,9 @@ reductions: [
 ]
 
 reduction: [
+| "head"
 | "beta"
 | "delta" OPT delta_reductions
-| "head"
 | "match"
 | "fix"
 | "cofix"
