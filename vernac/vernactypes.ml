@@ -83,7 +83,7 @@ let vtdefault f =
                     (), ()) }
 
 let vtnoproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = No;
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Reject; outproof = No;
                 run = (fun ~pm:() ~proof:() ->
                     let () = f () in
                     (), ())
