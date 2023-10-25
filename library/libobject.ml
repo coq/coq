@@ -73,9 +73,9 @@ type ('a,'b) object_declaration = {
   rebuild_function : 'a -> 'a;
 }
 
-let default_object s = {
+let default_object ?(stage=Summary.Stage.Interp) s = {
   object_name = s;
-  object_stage = Summary.Stage.Interp;
+  object_stage = stage;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
@@ -219,20 +219,20 @@ let object_stage (Dyn.Dyn (tag, v)) =
 
 let dump = Dyn.dump
 
-let local_object_nodischarge s ~cache =
-  { (default_object s) with
+let local_object_nodischarge ?stage s ~cache =
+  { (default_object ?stage s) with
     cache_function = cache;
     classify_function = (fun _ -> Dispose);
   }
 
-let local_object s ~cache ~discharge =
-  { (local_object_nodischarge s ~cache) with
+let local_object ?stage s ~cache ~discharge =
+  { (local_object_nodischarge ?stage s ~cache) with
     discharge_function = discharge;
   }
 
-let global_object_nodischarge ?cat s ~cache ~subst =
+let global_object_nodischarge ?cat ?stage s ~cache ~subst =
   let import i o = if Int.equal i 1 then cache o in
-  { (default_object s) with
+  { (default_object ?stage s) with
     cache_function = cache;
     open_function = simple_open ?cat import;
     subst_function = (match subst with
@@ -245,12 +245,12 @@ let global_object_nodischarge ?cat s ~cache ~subst =
       if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
-let global_object ?cat s ~cache ~subst ~discharge =
+let global_object ?cat ?stage s ~cache ~subst ~discharge =
   { (global_object_nodischarge ?cat s ~cache ~subst) with
     discharge_function = discharge }
 
-let superglobal_object_nodischarge s ~cache ~subst =
-  { (default_object s) with
+let superglobal_object_nodischarge ?stage s ~cache ~subst =
+  { (default_object ?stage s) with
     load_function = (fun _ x -> cache x);
     cache_function = cache;
     subst_function = (match subst with
@@ -263,6 +263,6 @@ let superglobal_object_nodischarge s ~cache ~subst =
       if Option.has_some subst then (fun _ -> Substitute) else (fun _ -> Keep);
   }
 
-let superglobal_object s ~cache ~subst ~discharge =
-  { (superglobal_object_nodischarge s ~cache ~subst) with
+let superglobal_object ?stage s ~cache ~subst ~discharge =
+  { (superglobal_object_nodischarge ?stage s ~cache ~subst) with
     discharge_function = discharge }

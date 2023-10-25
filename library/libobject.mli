@@ -123,7 +123,7 @@ val filter_or :  open_filter -> open_filter -> open_filter
 
 *)
 
-val default_object : string -> ('a,'b) object_declaration
+val default_object : ?stage:Summary.Stage.t -> string -> ('a,'b) object_declaration
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -202,33 +202,33 @@ We recommend to avoid declaring superglobal objects and using the nodischarge
 variants.
 *)
 
-val local_object : string ->
+val local_object : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   discharge:('a -> 'a option) ->
   ('a,'a) object_declaration
 
-val local_object_nodischarge : string ->
+val local_object_nodischarge : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   ('a,'a) object_declaration
 
-val global_object : ?cat:category -> string ->
+val global_object : ?cat:category -> ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
   ('a,'a) object_declaration
 
-val global_object_nodischarge : ?cat:category -> string ->
+val global_object_nodischarge : ?cat:category -> ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   ('a,'a) object_declaration
 
-val superglobal_object : string ->
+val superglobal_object : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
   ('a,'a) object_declaration
 
-val superglobal_object_nodischarge : string ->
+val superglobal_object_nodischarge : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   ('a,'a) object_declaration
