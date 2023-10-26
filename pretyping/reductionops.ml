@@ -71,27 +71,11 @@ let set_reduction_effect x funkey =
 
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = struct
-  open Globnames
   open Names
   open Libobject
 
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
-
-  let equal t1 t2 =
-    match t1, t2 with
-      NeverUnfold, NeverUnfold -> true
-    | (UnfoldWhen {recargs = r1; nargs = n1}),
-      (UnfoldWhen {recargs = r2; nargs = n2}) ->
-       List.length r1 = List.length r2 &&
-         List.for_all2 Int.equal r1 r2 &&
-           Option.equal Int.equal n1 n2
-    | UnfoldWhenNoMatch {recargs = r1; nargs = n1},
-      UnfoldWhenNoMatch {recargs = r2; nargs = n2} ->
-       List.length r1 = List.length r2 &&
-         List.for_all2 Int.equal r1 r2 &&
-           Option.equal Int.equal n1 n2
-    | _, _ -> false
 
   let more_args_when k { recargs; nargs } =
     { nargs = Option.map ((+) k) nargs;
@@ -107,25 +91,25 @@ module ReductionBehaviour = struct
   have the NeverUnfold flag.  Therefore, the table has a distinct subpart
   that is this set. *)
   let table =
-    Summary.ref ((GlobRef.Set.empty, GlobRef.Map.empty) :
-                   GlobRef.Set.t * t GlobRef.Map.t) ~name:"reductionbehaviour"
+    Summary.ref ((Cpred.empty, Cmap.empty)) ~name:"reductionbehaviour"
 
   let load _ (_,(r, b)) =
     table := (match b with
-                | NeverUnfold -> GlobRef.Set.add r (fst !table), GlobRef.Map.remove r (snd !table)
-                | _ -> GlobRef.Set.remove r (fst !table), GlobRef.Map.add r b (snd !table))
+                | NeverUnfold -> Cpred.add r (fst !table), Cmap.remove r (snd !table)
+                | _ -> Cpred.remove r (fst !table), Cmap.add r b (snd !table))
 
   let cache o = load 1 o
 
   let classify (local,_) = if local then Dispose else Substitute
 
   let subst (subst, (local, (r,o) as orig)) =
-    let r' = subst_global_reference subst r in if r==r' then orig
+    let r' = subst_constant subst r in if r==r' then orig
     else (local,(r',o))
 
   let discharge = function
     | false, (gr, b) ->
       let b =
+        let gr = GlobRef.ConstRef gr in
         if Lib.is_in_section gr then
           let vars = Lib.section_instance gr in
           let extra = Array.length vars in
@@ -135,10 +119,6 @@ module ReductionBehaviour = struct
       Some (false, (gr, b))
     | true, _ -> None
 
-  let rebuild = function
-    | req, (GlobRef.ConstRef c, _ as x) -> req, x
-    | _ -> assert false
-
   let inRedBehaviour = declare_object {
       (default_object "REDUCTIONBEHAVIOUR") with
       load_function = load;
@@ -146,32 +126,22 @@ module ReductionBehaviour = struct
       classify_function = classify;
       subst_function = subst;
       discharge_function = discharge;
-      rebuild_function = rebuild;
     }
 
   let set ~local r b =
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
   let get r =
-    if GlobRef.Set.mem r (fst !table) then
+    if Cpred.mem r (fst !table) then
       Some NeverUnfold
     else
-      GlobRef.Map.find_opt r (snd !table)
+      Cmap.find_opt r (snd !table)
 
-  let all_tagged t =
-    match t with
-      NeverUnfold -> fst !table
-    | _ ->
-       GlobRef.Map.fold
-         (fun a u s ->
-           if equal t u then
-             GlobRef.Set.add a s
-           else
-             s) (snd !table) GlobRef.Set.empty
+  let all_never_unfold () = fst !table
 
   let print ref =
     let open Pp in
-    let pr_global = Nametab.pr_global_env Id.Set.empty in
+    let pr_global c = Nametab.pr_global_env Id.Set.empty (ConstRef c) in
     match get ref with
     | None -> mt ()
     | Some b ->
@@ -906,10 +876,6 @@ let local_whd_state_gen flags env sigma =
   in
   whrec
 
-let raw_whd_state_gen flags env =
-  let f sigma s = whd_state_gen flags env sigma s in
-  f
-
 let stack_red_of_state_red f =
   let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
@@ -935,14 +901,14 @@ let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_const_state c e = raw_whd_state_gen RedFlags.(mkflags [fCONST c]) e
+let whd_const_state c e = whd_state_gen RedFlags.(mkflags [fCONST c]) e
 let whd_const c = red_of_state_red (whd_const_state c)
 
-let whd_delta_state e = raw_whd_state_gen RedFlags.delta e
+let whd_delta_state e = whd_state_gen RedFlags.delta e
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
 let whd_delta = red_of_state_red whd_delta_state
 
-let whd_betadeltazeta_state = raw_whd_state_gen RedFlags.betadeltazeta
+let whd_betadeltazeta_state = whd_state_gen RedFlags.betadeltazeta
 let whd_betadeltazeta_stack = stack_red_of_state_red whd_betadeltazeta_state
 let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
 
@@ -956,11 +922,11 @@ let whd_betaiotazeta_state = local_whd_state_gen RedFlags.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_all_state = raw_whd_state_gen RedFlags.all
+let whd_all_state = whd_state_gen RedFlags.all
 let whd_all_stack = stack_red_of_state_red whd_all_state
 let whd_all = red_of_state_red whd_all_state
 
-let whd_allnolet_state = raw_whd_state_gen RedFlags.allnolet
+let whd_allnolet_state = whd_state_gen RedFlags.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
 let whd_allnolet = red_of_state_red whd_allnolet_state
 

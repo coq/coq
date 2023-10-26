@@ -281,9 +281,9 @@ let vernac_arguments ~section_local reference args more_implicits flags =
 
   if red_modifiers_specified then begin
     match sr with
-    | GlobRef.ConstRef _ ->
+    | GlobRef.ConstRef c ->
       Reductionops.ReductionBehaviour.set
-        ~local:section_local sr (Option.get red_behavior)
+        ~local:section_local c (Option.get red_behavior)
 
     | _ ->
       CErrors.user_err

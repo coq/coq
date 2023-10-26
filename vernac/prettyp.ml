@@ -300,12 +300,15 @@ let rec insert_fake_args volatile bidi impls =
 let print_arguments ref =
   let qid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
   let flags, recargs, nargs_for_red =
-    let open Reductionops.ReductionBehaviour in
-    match get ref with
-    | None -> [], [], None
-    | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
-    | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
-    | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+    match ref with
+    | ConstRef ref ->
+      begin match Reductionops.ReductionBehaviour.get ref with
+      | None -> [], [], None
+      | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
+      | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
+      | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+      end
+    | _ -> [], [], None
   in
   let names, not_renamed =
     try Arguments_renaming.arguments_names ref, false
@@ -954,7 +957,10 @@ let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref ->
-    let rb = Reductionops.ReductionBehaviour.print ref in
+    let rb = match ref with
+      | ConstRef ref -> Reductionops.ReductionBehaviour.print ref
+      | _ -> mt()
+    in
     Dumpglob.add_glob ?loc ref;
       pr_infos_list
        (print_ref false ref udecl :: blankline ::
