@@ -615,7 +615,6 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	  echo $(call log_intro,$<); \
 	  export BIN=$(BIN); \
 	  export coqc="eval $(coqc)"; \
-	  export coqtop="eval $(coqc)"; \
 	  export coqdep="eval $(coqdep)"; \
 	  "$<" 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
