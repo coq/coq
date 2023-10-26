@@ -144,7 +144,7 @@ INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
-  coqdoc ssr $(wildcard primitive/*) ltac2
+  coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
@@ -329,7 +329,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
@@ -369,55 +369,6 @@ $(addsuffix .log,$(wildcard bugs-nocoqchk/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-
-$(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
-	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
-	    $$opts 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (should be accepted)"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
-	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent $(call get_coqchk_prog_args,"$<") -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
-	  if [ $$R != 0 ]; then \
-	    echo $(log_failure); \
-	    echo "    $<...could not be checked (Error!)" ; \
-	    $(FAIL); \
-	  fi; \
-	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
-
-$(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
-	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (should be rejected)"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
-	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent $(call get_coqchk_prog_args,"$<") -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
-	  if [ $$R != 0 ]; then \
-	    echo $(log_failure); \
-	    echo "    $<...could not be checked (Error!)" ; \
-	    $(FAIL); \
-	  fi; \
-	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -714,25 +665,6 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	  $(coqc) -vio -R vio vio $* 2>&1 && \
 	  $(coqc) -R vio vio -vio2vo $*.vio 2>&1 && \
 	  $(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
-	  if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error!"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-
-# coqchk
-
-coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
-
-%.chk.log:%.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  $(coqc) -R coqchk coqchk $* 2>&1 && \
-	  $(coqchk) -R coqchk coqchk -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
