@@ -107,13 +107,14 @@ let define ~poly name sigma c types =
 let declare_beq_scheme_gen ?locmap names kn =
   ignore (define_mutual_scheme ?locmap beq_scheme_kind names kn)
 
+let debug = CDebug.create ~name:"indschemes" ()
+
 let alarm what internal msg =
-  let debug = false in
   match internal with
   | UserAutomaticRequest ->
-    (if debug then
-      Feedback.msg_debug
-        (hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
+    debug Pp.(fun () ->
+        hov 0 msg ++ fnl () ++ what ++ str " not defined.");
+    None
   | UserIndividualRequest -> Some msg
 
 let try_declare_scheme ?locmap what f internal names kn =
