@@ -157,7 +157,7 @@ let e_give_exact flags h =
   let sigma, c = Hints.fresh_hint env sigma h in
   let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
   Proofview.Unsafe.tclEVARS sigma <*>
-  Clenv.unify ~flags t1 <*> exact_no_check c
+  Clenv.unify ~flags ~cv_pb:CUMUL t1 <*> exact_no_check c
   end
 
 let unify_resolve ~with_evars flags h diff = match diff with
