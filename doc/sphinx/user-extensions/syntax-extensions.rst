@@ -1491,6 +1491,10 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
 
    Use commands such as :cmd:`Notation` to add notations to the scope.
 
+.. exn:: Scope names should not start with an underscore.
+
+   Scope names starting with an underscore would make the :g:`%_` syntax ambiguous.
+
 Global interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1565,6 +1569,10 @@ interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
 .. cmd:: Undelimit Scope @scope_name
 
    Removes the delimiting keys associated with a scope.
+
+.. exn:: Scope delimiters should not start with an underscore.
+
+   Scope delimiters starting with an underscore would make the :g:`%_` syntax ambiguous.
 
 The arguments of an :ref:`abbreviation <Abbreviations>` can be interpreted
 in a scope stack locally extended with a given scope by using the modifier

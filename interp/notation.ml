@@ -121,6 +121,12 @@ let init_scope_map () =
 (**********************************************************************)
 (* Operations on scopes *)
 
+let warn_scope_start_ =
+  CWarnings.create
+    ~name:"scope-underscore-start" ~category:CWarnings.CoreCategories.syntax
+    ~default:CWarnings.AsError
+    (fun () -> strbrk "Scope names should not start with an underscore.")
+
 let warn_undeclared_scope =
   CWarnings.create ~name:"undeclared-scope" ~category:Deprecation.Version.v8_10
                    (fun (scope) ->
@@ -128,6 +134,7 @@ let warn_undeclared_scope =
                     ++ str "\"Declare Scope " ++ str scope ++ str ".\".")
 
 let declare_scope scope =
+  if scope <> "" && scope.[0] = '_' then warn_scope_start_ ();
   try let _ = String.Map.find scope !scope_map in ()
   with Not_found ->
     scope_map := String.Map.add scope empty_scope !scope_map
@@ -208,6 +215,13 @@ let make_current_scopes (tmp_scopes,scopes) =
 (**********************************************************************)
 (* Delimiters *)
 
+let warn_scope_delimiter_start_ =
+  CWarnings.create
+    ~name:"scope-delimiter-underscore-start"
+    ~category:CWarnings.CoreCategories.syntax
+    ~default:CWarnings.AsError
+    (fun () -> strbrk "Scope delimiters should not start with an underscore.")
+
 let warn_overwriting_key = CWarnings.create ~name:"overwriting-delimiting-key" ~category:CWarnings.CoreCategories.parsing
     Pp.(fun (oldkey,scope) -> str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope)
 
@@ -215,6 +229,7 @@ let warn_hiding_key =  CWarnings.create ~name:"hiding-delimiting-key" ~category:
     Pp.(fun (key,oldscope) -> str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope)
 
 let declare_delimiters scope key =
+  if key <> "" && key.[0] = '_' then warn_scope_delimiter_start_ ();
   let sc = find_scope scope in
   let newsc = { sc with delimiters = Some key } in
   begin match sc.delimiters with
