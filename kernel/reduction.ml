@@ -96,7 +96,7 @@ let hnf_prod_applist_decls env n c l =
 
 (* Dealing with arities *)
 
-let hnf_decompose_prod env =
+let whd_decompose_prod env =
   let rec decrec env m c =
     let t = whd_all env c in
     match kind t with
@@ -107,7 +107,7 @@ let hnf_decompose_prod env =
   in
   decrec env Context.Rel.empty
 
-let hnf_decompose_lambda env =
+let whd_decompose_lambda env =
   let rec decrec env m c =
     let t = whd_all env c in
     match kind t with
@@ -119,7 +119,7 @@ let hnf_decompose_lambda env =
   decrec env Context.Rel.empty
 
 (* The same but preserving lets in the context, not internal ones. *)
-let hnf_decompose_prod_decls env =
+let whd_decompose_prod_decls env =
   let rec prodec_rec env l ty =
     let rty = whd_allnolet env ty in
     match kind rty with
@@ -130,13 +130,13 @@ let hnf_decompose_prod_decls env =
         let d = LocalDef (x,b,t) in
         prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | _               ->
-      let rty' = whd_all env rty in
+        let rty' = whd_all env rty in
         if Constr.equal rty' rty then l, rty
         else prodec_rec env l rty'
   in
   prodec_rec env Context.Rel.empty
 
-let hnf_decompose_lambda_decls env =
+let whd_decompose_lambda_decls env =
   let rec lamec_rec env l ty =
     let rty = whd_allnolet env ty in
     match kind rty with
@@ -146,11 +146,14 @@ let hnf_decompose_lambda_decls env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
         lamec_rec (push_rel d env) (Context.Rel.add d l) c
-    | _               -> l,rty
+    | _               ->
+        let rty' = whd_all env rty in
+        if Constr.equal rty' rty then l, rty
+        else lamec_rec env l rty'
   in
   lamec_rec env Context.Rel.empty
 
-let hnf_decompose_lambda_n_decls env n =
+let whd_decompose_lambda_n_assum env n =
   let rec lamec_rec env n l c =
     if Int.equal n 0 then l,c
     else
@@ -162,14 +165,17 @@ let hnf_decompose_lambda_n_decls env n =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
         lamec_rec (push_rel d env) n (Context.Rel.add d l) c
-    | _ -> anomaly (Pp.str "dest_lam_n_assum: not enough abstractions")
+    | _               ->
+        let c' = whd_all env c in
+        if Constr.equal c' c then anomaly (Pp.str "whd_decompose_lambda_n_assum: not enough abstractions")
+        else lamec_rec env n l c'
   in
   lamec_rec env n Context.Rel.empty
 
 exception NotArity
 
 let dest_arity env c =
-  let l, c = hnf_decompose_prod_decls env c in
+  let l, c = whd_decompose_prod_decls env c in
   match kind c with
     | Sort s -> l,s
     | _ -> raise NotArity
@@ -181,8 +187,8 @@ let is_arity env c =
   with NotArity -> false
 
 let eta_expand env t ty =
-  let ctxt, _codom = hnf_decompose_prod env ty in
-  let ctxt',t = hnf_decompose_lambda env t in
+  let ctxt, _codom = whd_decompose_prod env ty in
+  let ctxt',t = whd_decompose_lambda env t in
   let d = Context.Rel.nhyps ctxt - Context.Rel.nhyps ctxt' in
   let eta_args = List.rev_map mkRel (List.interval 1 d) in
   let t = Term.applistc (Vars.lift d t) eta_args in
@@ -191,7 +197,15 @@ let eta_expand env t ty =
 
 (* Deprecated *)
 
-let dest_prod       = hnf_decompose_prod
-let dest_prod_assum = hnf_decompose_prod_decls
-let dest_lam        = hnf_decompose_lambda
-let dest_lam_assum  = hnf_decompose_lambda_decls
+let dest_prod       = whd_decompose_prod
+let dest_prod_assum = whd_decompose_prod_decls
+let dest_lam        = whd_decompose_lambda
+let dest_lam_assum  = whd_decompose_lambda_decls
+
+(* Re-deprecated in 8.19 *)
+
+let hnf_decompose_prod           = whd_decompose_prod
+let hnf_decompose_prod_decls     = whd_decompose_prod_decls
+let hnf_decompose_lambda         = whd_decompose_lambda
+let hnf_decompose_lambda_decls   = whd_decompose_lambda_decls
+let hnf_decompose_lambda_n_decls = whd_decompose_lambda_n_assum

@@ -18,7 +18,7 @@ open Environ
 (* Polymorphic arities utils *)
 
 let check_kind env ar u =
-  match Constr.kind (snd (hnf_decompose_prod env ar)) with
+  match Constr.kind (snd (whd_decompose_prod env ar)) with
   | Sort (Type u') when Univ.Universe.equal u' (Univ.Universe.make u) -> ()
   | _ -> failwith "not the correct sort"
 

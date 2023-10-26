@@ -137,13 +137,13 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
       user_err ?loc:(constr_loc r)
         (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
     in
-    try
-      let ctx, ar = Reductionops.hnf_decompose_prod_n_decls env sigma 2 relty in
-      match ctx, EConstr.kind sigma ar with
-      | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
+    let ctx, ar =
+      try Reductionops.whd_decompose_prod_n env sigma 2 relty
+      with Invalid_argument _ -> error () in
+    match ctx, EConstr.kind sigma ar with
+      | [(_,t); (_,u)], Sort s
         when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
       | _, _ -> error ()
-    with e when CErrors.noncritical e -> error ()
   in
   let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
   let sigma, wf_rel, wf_rel_fun, measure_fn =

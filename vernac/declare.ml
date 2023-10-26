@@ -1227,10 +1227,10 @@ let declare_mutual_definition ~pm l =
     let sigma = Evd.from_ctx x.prg_uctx in
     let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
     let term =
-      snd (Reductionops.hnf_decompose_lambda_n_assum env sigma len (EConstr.of_constr subs))
+      snd (Reductionops.whd_decompose_lambda_n env sigma len (EConstr.of_constr subs))
     in
     let typ =
-      snd (Reductionops.hnf_decompose_prod_n_decls env sigma len (EConstr.of_constr typ))
+      snd (Reductionops.whd_decompose_prod_n env sigma len (EConstr.of_constr typ))
     in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in

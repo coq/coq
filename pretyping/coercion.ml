@@ -148,10 +148,10 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
       Evarconv.UnableToUnify _ -> coerce' env sigma x y
   and coerce' env sigma x y : evar_map * (evar_map -> EConstr.constr -> evar_map * EConstr.constr) option =
     let subco sigma = subset_inferred env sigma x y in
-    let hnf_decompose_prod c =
-      match Reductionops.hnf_decompose_prod_n_decls env sigma 1 c with
-      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, t), c
-      | _ -> raise NoSubtacCoercion
+    let whd_decompose_prod c =
+      match Reductionops.whd_decompose_prod_n env sigma 1 c with
+      | ([(na, t)], c) -> (na, t), c
+      | _ -> raise NoSubtacCoercion (* should not happen: there are arguments to consume *)
     in
     let coerce_application sigma typ typ' c c' l l' =
       let len = Array.length l in
@@ -160,13 +160,13 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
           let hdx = l.(i) and hdy = l'.(i) in
           try
             let sigma = unify_leq_delay env sigma hdx hdy in
-            let (n, eqT), restT = hnf_decompose_prod typ in
-            let (n', eqT'), restT' = hnf_decompose_prod typ' in
+            let (n, eqT), restT = whd_decompose_prod typ in
+            let (n', eqT'), restT' = whd_decompose_prod typ' in
             aux sigma (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
           with UnableToUnify _ as exn ->
             let _, info = Exninfo.capture exn in
-            let (n, eqT), restT = hnf_decompose_prod typ in
-            let (n', eqT'), restT' = hnf_decompose_prod typ' in
+            let (n, eqT), restT = whd_decompose_prod typ in
+            let (n', eqT'), restT' = whd_decompose_prod typ' in
             let sigma =
               try
                 unify_leq_delay env sigma eqT eqT'

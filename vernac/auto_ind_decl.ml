@@ -271,11 +271,11 @@ let push_rec_env_lift recdef env_lift =
   }
 
 let dest_lam_assum_expand env c =
-  let ctx, c = Reduction.hnf_decompose_lambda_decls env c in
+  let ctx, c = Reduction.whd_decompose_lambda_decls env c in
   if List.is_empty ctx then ctx, c
   else
     let t = EConstr.Unsafe.to_constr (Retyping.get_type_of (Environ.push_rel_context ctx env) (Evd.from_env env) (EConstr.of_constr c)) in
-    let ctx', _ = Reduction.hnf_decompose_prod_decls env t in
+    let ctx', _ = Reduction.whd_decompose_prod_decls env t in
     ctx'@ctx, mkApp (lift (Context.Rel.length ctx') c, Context.Rel.instance mkRel 0 ctx')
 
 let pred_context env ci params u nas =
@@ -404,7 +404,7 @@ let build_beq_scheme env handle kn =
   *)
 
   let rec translate_type_eq env_lift na c t =
-    let ctx, t = Reduction.hnf_decompose_prod_decls env t in
+    let ctx, t = Reduction.whd_decompose_prod_decls env t in
     let env_lift', ctx_eq = translate_context_eq env_lift ctx in
     let inst = Array.map (translate_term env_lift') (Context.Rel.instance mkRel 0 ctx) in
     let env_lift'' = shiftn_env_lift (Context.Rel.length ctx_eq) env_lift in

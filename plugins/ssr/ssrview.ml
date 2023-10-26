@@ -237,14 +237,14 @@ let guess_max_implicits ist glob =
   Proofview.tclORELSE
     (interp_glob ist (mkGApp glob (mkGHoles 6)) >>= fun (env,sigma,term) ->
      let term_ty = Retyping.get_type_of env sigma term in
-     let ctx, _ = Reductionops.hnf_decompose_prod env sigma term_ty in
+     let ctx, _ = Reductionops.whd_decompose_prod env sigma term_ty in
      tclUNIT (List.length ctx + 6))
   (fun _ -> tclUNIT 5)
 
 let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   interp_glob ist glob >>= fun (env, sigma, term as ot) ->
   let term_ty = Retyping.get_type_of env sigma term in
-  let ctx, i = Reductionops.hnf_decompose_prod env sigma term_ty in
+  let ctx, i = Reductionops.whd_decompose_prod env sigma term_ty in
   let rel_ctx =
     List.map (fun (a,b) -> Context.Rel.Declaration.LocalAssum(a,b)) ctx in
   if not (Ssrcommon.isAppInd (EConstr.push_rel_context rel_ctx env) sigma i)

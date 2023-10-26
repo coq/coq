@@ -287,17 +287,18 @@ let decompose_prod_n_decls n =
   prodec_rec Context.Rel.empty n
 
 (** Given a positive integer n, decompose a lambda term [fun
-   (x1:T1)..(xn:Tn) => T] into the pair of the abstracted
-   context [(xn,None,Tn);...;(x1,None,T1)] and of the inner body [T]. *)
+   (x1:T1)..(xn:Tn) => T] (possibly with let-ins before xn) into the pair of the
+   abstracted context [(xn,None,Tn);...;(x1,None,T1)] and of the inner body [T]. *)
 let decompose_lambda_n_assum n =
   if n < 0 then
-    anomaly (str  "decompose_lambda_n_assum: integer parameter must be positive.");
+    anomaly (str "decompose_lambda_n_assum: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
       match kind c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)    -> lamdec_rec l n c
       | _c -> anomaly (str "decompose_lambda_n_assum: not enough abstractions.")
   in

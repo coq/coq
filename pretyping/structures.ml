@@ -217,7 +217,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
         mkVar id, Option.get (Environ.named_body id env)
     | GlobRef.ConstructRef _ | GlobRef.IndRef _ -> assert false
   in
-  let sign,t = Reduction.hnf_decompose_lambda env c in
+  let sign,t = Reduction.whd_decompose_lambda env c in
   let o_TABS = List.rev_map Context.Rel.Declaration.get_type sign in
   let args = snd (decompose_app_list t) in
   let { Structure.nparams = p; projections = lpj } =
@@ -289,7 +289,7 @@ let make env sigma ref =
     | GlobRef.IndRef _ | GlobRef.ConstructRef _ ->
         error_not_structure ref (str "Expected an instance of a record or structure")
   in
-  let body = snd (hnf_decompose_lambda env sigma (EConstr.of_constr vc)) in
+  let body = snd (whd_decompose_lambda env sigma (EConstr.of_constr vc)) in
   let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind body with
     | App (f,args) -> f,args

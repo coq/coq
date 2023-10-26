@@ -1312,38 +1312,61 @@ let hnf_lam_appvect env sigma t nl =
 let hnf_lam_applist env sigma t nl =
   List.fold_left (fun acc t -> hnf_lam_app env sigma acc t) t nl
 
-let hnf_decompose_prod env sigma =
-  let rec decrec env m c =
+let whd_decompose_prod env sigma =
+  let rec decrec env hyps c =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Prod (n,a,c0) ->
-         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
-      | _ -> m,t
+         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::hyps) c0
+      | _ -> hyps, t
   in
   decrec env []
 
-let hnf_decompose_lambda env sigma =
-  let rec decrec env m c =
+let whd_decompose_lambda env sigma =
+  let rec decrec env hyps c =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Lambda (n,a,c0) ->
-         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
-      | _ -> m,t
+         decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::hyps) c0
+      | _ -> hyps, t
   in
   decrec env []
 
-let hnf_decompose_prod_decls env sigma =
+let whd_decompose_prod_n env sigma n =
+  let rec decrec env m hyps c = if Int.equal m 0 then (hyps,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Prod (n,a,c0) ->
+         decrec (push_rel (LocalAssum (n,a)) env) (m-1) ((n,a)::hyps) c0
+      | _ -> invalid_arg "whd_decompose_prod_n"
+  in
+  decrec env n []
+
+let whd_decompose_lambda_n env sigma n =
+  let rec decrec env m hyps c = if Int.equal m 0 then (hyps,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Lambda (n,a,c0) ->
+         decrec (push_rel (LocalAssum (n,a)) env) (m-1) ((n,a)::hyps) c0
+      | _ -> invalid_arg "whd_decompose_lambda_n"
+  in
+  decrec env n []
+
+let whd_decompose_prod_decls env sigma =
   let rec prodec_rec env l c =
     let t = whd_allnolet env sigma c in
     match EConstr.kind sigma t with
     | Prod (x,t,c)  ->
-        prodec_rec (push_rel (LocalAssum (x,t)) env)
-          (Context.Rel.add (LocalAssum (x,t)) l) c
+        let d = LocalAssum (x,t) in
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
-        prodec_rec (push_rel (LocalDef (x,b,t)) env)
-          (Context.Rel.add (LocalDef (x,b,t)) l) c
-    | Cast (c,_,_)    -> prodec_rec env l c
+        (* note: there is a compromise in situations such as
+           "let x := forall y, P in x": expose the let-in and stop looking
+            for products or ignore the let and find a new product *)
+        let d = LocalDef (x,b,t) in
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | _               ->
+      (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+         "(let x:=fun y => u in x) v", ...
+         ideally, shouldn't we move instead the let-ins outside the redexes? *)
       let t' = whd_all env sigma t in
         if EConstr.eq_constr sigma t t' then l,t
         else prodec_rec env l t'
@@ -1351,55 +1374,97 @@ let hnf_decompose_prod_decls env sigma =
   prodec_rec env Context.Rel.empty
 
 let splay_arity env sigma c =
-  let l, c = hnf_decompose_prod env sigma c in
+  let l, c = whd_decompose_prod env sigma c in
   match EConstr.kind sigma c with
     | Sort s -> l,s
     | _ -> raise Reduction.NotArity
 
-let sort_of_arity env sigma c = snd (splay_arity env sigma c)
+let dest_arity env sigma c =
+  let l, c = whd_decompose_prod_decls env sigma c in
+  match EConstr.kind sigma c with
+    | Sort s -> l,s
+    | _ -> raise Reduction.NotArity
 
+let sort_of_arity env sigma c = snd (dest_arity env sigma c)
+
+(* deprecated (wrong behavior)  *)
 let hnf_decompose_prod_n_decls env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Prod (n,a,c0) ->
           decrec (push_rel (LocalAssum (n,a)) env)
             (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
-      | _                      -> invalid_arg "hnf_decompose_prod_n_decls"
+      | _                      -> invalid_arg "whd_decompose_prod_n_decls"
   in
   decrec env n Context.Rel.empty
 
+(* deprecated (wrong behavior) *)
 let hnf_decompose_lambda_n_assum env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Lambda (n,a,c0) ->
           decrec (push_rel (LocalAssum (n,a)) env)
             (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
-      | _                      -> invalid_arg "hnf_decompose_lambda_n_assum"
+      | _                      -> invalid_arg "whd_decompose_lambda_n_assum"
   in
   decrec env n Context.Rel.empty
 
-let dest_prod_assum env sigma =
-  let rec prodec_rec env l ty =
-    let rty = whd_allnolet env sigma ty in
-    match EConstr.kind sigma rty with
-    | Prod (x,t,c)  ->
-        let d = LocalAssum (x,t) in
-        prodec_rec (push_rel d env) (Context.Rel.add d l) c
-    | LetIn (x,b,t,c) ->
-        let d = LocalDef (x,b,t) in
-        prodec_rec (push_rel d env) (Context.Rel.add d l) c
-    | _               ->
-      let rty' = whd_all env sigma rty in
-      if EConstr.eq_constr sigma rty' rty then l, rty
-      else prodec_rec env l rty'
+let whd_decompose_prod_n_assum env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_allnolet env sigma c) with
+      | Prod (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) m (Context.Rel.add d ctx) c
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "whd_decompose_prod_n_assum"
+        else decrec env m ctx c'
   in
-  prodec_rec env Context.Rel.empty
+  decrec env n Context.Rel.empty
 
-let dest_arity env sigma c =
-  let l, c = dest_prod_assum env sigma c in
-  match EConstr.kind sigma c with
-    | Sort s -> l,s
-    | _ -> raise Reduction.NotArity
+let whd_decompose_prod_n_decls env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
+      | Prod (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "whd_decompose_prod_n_decls"
+        else decrec env m ctx c'
+  in
+  decrec env n Context.Rel.empty
+
+let whd_decompose_lambda_n_assum env sigma n =
+  let rec decrec env m ctx c = if Int.equal m 0 then (ctx,c) else
+    match EConstr.kind sigma (whd_allnolet env sigma c) with
+      | Lambda (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (m-1) (Context.Rel.add d ctx) c0
+      | LetIn (x,b,t,c) ->
+          let d = LocalDef (x,b,t) in
+          decrec (push_rel d env) m (Context.Rel.add d ctx) c
+      | _ ->
+        (* deal with situations of the form "(let x:=t in fun y => u) v", or even
+           "(let x:=fun y => u in x) v", ...
+           ideally, shouldn't we move instead the let-ins outside the redexes? *)
+        let c' = whd_all env sigma c in
+        if EConstr.eq_constr sigma c c' then invalid_arg "whd_decompose_lambda_n_assum"
+        else decrec env m ctx c'
+  in
+  decrec env n Context.Rel.empty
 
 let is_sort env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
@@ -1518,8 +1583,12 @@ let inferred_universes = Infer.inferred_universes
 
 (* Deprecated *)
 
-let splay_prod = hnf_decompose_prod
-let splay_lam = hnf_decompose_lambda
-let splay_prod_assum = hnf_decompose_prod_decls
+let splay_prod = whd_decompose_prod
+let splay_lam = whd_decompose_lambda
+let splay_prod_assum = whd_decompose_prod_decls
 let splay_prod_n = hnf_decompose_prod_n_decls
 let splay_lam_n = hnf_decompose_lambda_n_assum
+
+let hnf_decompose_prod = whd_decompose_prod
+let hnf_decompose_lambda = whd_decompose_lambda
+let hnf_decompose_prod_decls = whd_decompose_prod_decls

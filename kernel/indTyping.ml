@@ -129,7 +129,7 @@ let check_constructor_univs env_ar_par info (args,_) =
 
 let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
-  let splayed_lc = Array.map (Reduction.hnf_decompose_prod_decls env_ar_par) lc in
+  let splayed_lc = Array.map (Reduction.whd_decompose_prod_decls env_ar_par) lc in
   let univ_info = match Array.length lc with
     (* Empty type: all OK *)
     | 0 -> univ_info

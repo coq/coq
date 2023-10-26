@@ -61,7 +61,7 @@ let print_ref reduce ref udecl =
   let sigma = Evd.from_ctx (UState.of_names bl) in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.hnf_decompose_prod_decls env sigma (EConstr.of_constr typ)
+      let ctx,ccl = Reductionops.whd_decompose_prod_decls env sigma (EConstr.of_constr typ)
       in EConstr.to_constr sigma (EConstr.it_mkProd_or_LetIn ccl ctx)
     else typ in
   let typ = Arguments_renaming.rename_type typ ref in

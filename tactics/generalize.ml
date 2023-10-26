@@ -25,7 +25,6 @@ open Locus
 open Proofview.Notations
 open Context.Named.Declaration
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (*********************************************)
@@ -427,9 +426,9 @@ let abstract_args gl generalize_vars dep id defined f args =
     *)
   let aux (sigma, prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
     let name, ty_relevance, ty, arity =
-      let rel, c = Reductionops.hnf_decompose_prod_n_decls env sigma 1 prod in
-      let decl = List.hd rel in
-      RelDecl.get_name decl, RelDecl.get_relevance decl, RelDecl.get_type decl, c
+      let rel, c = Reductionops.whd_decompose_prod_n env sigma 1 prod in
+      let ({binder_name=na;binder_relevance=r},t) = List.hd rel in
+      na, r, t, c
     in
     let argty = Retyping.get_type_of env sigma arg in
     let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
