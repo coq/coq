@@ -1819,7 +1819,7 @@ module_type_body).
 
 1. tables
 [Summaries] - the only change is the special treatment of the
-global environmet.
+global environment.
 
 2. objects 
 [Libobject] declares persistent objects, given with methods:
