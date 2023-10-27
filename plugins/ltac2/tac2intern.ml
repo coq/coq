@@ -1046,21 +1046,18 @@ let check ?loc env tycon (e,t as et) =
     e,tycon
 
 let tycon_fun_body ?loc env tycon dom =
-  match tycon with
-  | None -> None
-  | Some tycon ->
-    match kind env tycon with
-    | GTypVar _ ->
-      let codom = GTypVar (fresh_id env) in
-      let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
-      Some codom
-    | GTypArrow (dom',codom) ->
-      let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
-      Some codom
-    | GTypRef _ ->
-      CErrors.user_err ?loc
-        Pp.(str "This expression should not be a function, the expected type is" ++ spc() ++
-            pr_glbtype env tycon ++ str ".")
+  match kind env tycon with
+  | GTypVar _ ->
+    let codom = GTypVar (fresh_id env) in
+    let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
+    codom
+  | GTypArrow (dom',codom) ->
+    let () = unify ?loc env (GTypArrow (dom,codom)) tycon in
+    codom
+  | GTypRef _ ->
+    CErrors.user_err ?loc
+      Pp.(str "This expression should not be a function, the expected type is" ++ spc() ++
+          pr_glbtype env tycon ++ str ".")
 
 let tycon_app ?loc env ~ft t =
   match kind env t with
@@ -1122,7 +1119,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let tl = List.map map bnd in
   let (nas, exp) = expand_pattern (bound_vars env) bnd in
   let env, tycon = List.fold_left2 (fun (env,tycon) na t ->
-      let tycon = tycon_fun_body ?loc env tycon t in
+      let tycon = Option.map (fun tycon -> tycon_fun_body ?loc env tycon t) tycon in
       let env = push_name na (monomorphic t) env in
       env, tycon) (env,tycon) nas tl
   in
@@ -1156,7 +1153,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let (f, ft) = intern_rec env None f in
   let fold t arg =
     let dom, codom = tycon_app ?loc env ~ft t in
-    let (arg, argt) = intern_rec env (Some dom) arg in
+    let arg = intern_rec_with_constraint env arg dom in
     (codom, arg)
   in
   let (t, args) = CList.fold_left_map fold ft args in
@@ -1177,7 +1174,7 @@ let rec intern_rec env tycon {loc;v=e} =
         times in this matching")
   in
   let ids = List.fold_left fold Id.Set.empty el in
-  if is_rec then intern_let_rec env loc ids el tycon e
+  if is_rec then intern_let_rec env el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
@@ -1196,7 +1193,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let e = intern_rec_with_constraint env e (GTypRef (Other t_bool, [])) in
   let (e1, t1) = intern_rec env tycon e1 in
   let t = Option.default t1 tycon in
-  let (e2, t2) = intern_rec env (Some t) e2 in
+  let e2 = intern_rec_with_constraint env e2 t in
   (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t)
 | CTacCse (e, pl) ->
   let e,brs,rt = intern_case env loc e tycon pl in
@@ -1320,25 +1317,26 @@ and intern_rec_with_constraint env e exp =
 
 and intern_let env loc ids el tycon e =
   let avoid = Id.Set.union ids (bound_vars env) in
-  let fold (pat, t, e) (avoid, accu) =
+  let fold avoid (pat, t, e) =
     let nas, exp = expand_pattern avoid [pat, t] in
     let na = match nas with [x] -> x | _ -> assert false in
     let avoid = List.fold_left add_name avoid nas in
-    (avoid, (na, exp, t, e) :: accu)
+    (avoid, (na, exp, t, e))
   in
-  let (_, el) = List.fold_right fold el (avoid, []) in
-  let fold (na, exp, tc, e) (body, el, p) =
+  let (_, el) = List.fold_left_map fold avoid el in
+  let fold body (na, exp, tc, e) =
     let tc = Option.map (intern_type env) tc in
     let (e, t) = intern_rec env tc e in
     let t = if is_value e then abstract_var env t else monomorphic t in
-    (exp body, (na, e) :: el, (na, t) :: p)
+    (exp body, (na, e, t))
   in
-  let (e, el, p) = List.fold_right fold el (e, [], []) in
-  let env = List.fold_left (fun accu (na, t) -> push_name na t accu) env p in
+  let (e, elp) = List.fold_left_map fold e el in
+  let env = List.fold_left (fun accu (na, _, t) -> push_name na t accu) env elp in
   let (e, t) = intern_rec env tycon e in
+  let el = List.map (fun (na, e, _) -> na, e) elp in
   (GTacLet (false, el, e), t)
 
-and intern_let_rec env loc ids el tycon e =
+and intern_let_rec env el tycon e =
   let map env (pat, t, e) =
     let na = match pat.v with
     | CPatVar na -> na
@@ -1350,20 +1348,54 @@ and intern_let_rec env loc ids el tycon e =
       | Some t -> intern_type env t
     in
     let env = push_name na (monomorphic t) env in
-    (env, (loc, na, t, e))
+    (env, (na, t, e))
   in
   let (env, el) = List.fold_left_map map env el in
-  let fold (loc, na, tc, e) (el, tl) =
+  (* Get easily accessible type information about the recursive bindings before they are used.
+     Typically "let rec foo (x:int) : bool := ... in ..."
+     gets desugared to "let rec foo := fun (x:int) => ... : bool in ..."
+     and we want to have "foo : int -> bool" before we see any uses of foo.
+
+     This produces nicer type errors but is otherwise semantically equivalent. *)
+  let map (na, t, e) = match e.v with
+    | CTacCnv (e',t') ->
+      let t' = intern_type env t' in
+      let () = unify ?loc:e.loc env t' t in
+      na, t', e'
+    | CTacFun (bnd,e') ->
+      let bnd = List.map extract_pattern_type bnd in
+      let map (_, t) = match t with
+        | None -> GTypVar (fresh_id env)
+        | Some t -> intern_type env t
+      in
+      let tl = List.map map bnd in
+      let nas, exp = expand_pattern (bound_vars env) bnd in
+      let t = List.fold_left2 (fun t na tna -> tycon_fun_body ?loc:e.loc env t tna) t nas tl in
+      let e', t' = match e'.v with
+        | CTacCnv (e',t') ->
+          let t' = intern_type env t' in
+          let () = unify ?loc:e'.loc env t' t in
+          e', t'
+        | _ -> e', t
+      in
+      let t' = List.fold_right (fun tna t' -> GTypArrow (tna, t')) tl t' in
+      let pats = List.map (fun na -> CAst.make (CPatVar na)) nas in
+      let e' = exp e' in
+      (na, t', CAst.make ?loc:e.loc (CTacFun (pats, e')))
+    | _ -> (na, t, e)
+  in
+  let el = List.map map el in
+  let map (na, tc, e) =
     let loc_e = e.loc in
-    let (e, t) = intern_rec env (Some tc) e in
+    let e = intern_rec_with_constraint env e tc in
     let () =
       if not (is_rec_rhs e) then
         user_err ?loc:loc_e (str "This kind of expression is not allowed as \
           right-hand side of a recursive binding")
     in
-    ((na, e) :: el, t :: tl)
+    (na, e)
   in
-  let (el, tl) = List.fold_right fold el ([], []) in
+  let el = List.map map el in
   let (e, t) = intern_rec env tycon e in
   (GTacLet (true, el, e), t)
 
