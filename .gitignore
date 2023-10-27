@@ -96,6 +96,7 @@ test-suite/Datatypes.ml
 test-suite/Datatypes.mli
 test-suite/bug_10796.ml
 test-suite/bug_10796.mli
+test-suite/**/*.time
 
 # documentation
 

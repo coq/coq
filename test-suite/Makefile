@@ -109,19 +109,23 @@ TIMEFMT?="$(1) (real: %e, user: %U, sys: %S, mem: %M ko)"
 
 ifneq (,$(TIMED))
 ifeq (0,$(shell command time -f "" true >/dev/null 2>/dev/null; echo $$?))
-STDTIME?=command time --quiet -f $(TIMEFMT) -o /dev/fd/3
+STDTIME?=command time --quiet -f $(TIMEFMT) -o $(2)
 else
 ifeq (0,$(shell gtime --quiet -f "" true >/dev/null 2>/dev/null; echo $$?))
-STDTIME?=gtime -f $(TIMEFMT)
+STDTIME?=gtime -f $(TIMEFMT) -o $(2)
 else
 STDTIME?=command time
 endif
 endif
 else
-STDTIME?=command time -f $(TIMEFMT)
+STDTIME?=command time -f $(TIMEFMT) -o $(2)
 endif
 
-WITH_TIMER=$(if $(TIMED), $(call STDTIME,$(1)) $(2), $(2))
+# args: 1=name of target, 2=command to time,
+# 3=file to write time data to (optional, default $(1).time)
+WITH_TIMER=$(if $(TIMED), $(call STDTIME,$(1),$(if $(3),$(3),$(1).time)) $(2), $(2))
+
+REPORT_TIMER=$(if $(TIMED),$(foreach f,$(1),cat $(f).time 2>/dev/null || true;),:)
 
 # read out an emacs config and look for coq-prog-args; if such exists, return it
 get_coq_prog_args_helper = sed -n s'/^.*$(1):[[:space:]]*(\([^)]*\)).*/\1/p' $(2)
@@ -211,9 +215,9 @@ run: $(SUBSYSTEMS)
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f misc/universes/all_stdlib.v
-	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
+	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob> <**/*.time>'
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' \
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' -o -name '*.time' \
 	  \) -exec rm -f {} +
 	$(SHOW) 'RM        <**/*.cmx> <**/*.cmi> <**/*.o> <**/*.test>'
 	$(HIDE)find unit-tests \( \
@@ -335,7 +339,8 @@ unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
 	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package coq-core.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
-	$(HIDE)$(call WITH_TIMER,$@,./$<.test) 3>&1
+	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 #######################################################################
 # Other generic tests
@@ -354,7 +359,8 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	    echo $(log_success); \
 	    echo "    $<...correctly prepared" ; \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -370,7 +376,8 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v mic
 	    echo "    $<...Error! (should be accepted)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  $(call WITH_TIMER,$(patsubst %.v.log,%.chk.log,$@),\
@@ -383,7 +390,8 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v mic
 	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
+	$(HIDE)$(call REPORT_TIMER,$(patsubst %.v.log,%.chk.log,$@))
 
 # coqchk shouldn't be run on the result for various reasons (not yet fixed bug, using -vos, etc)
 $(addsuffix .log,$(wildcard bugs-nocoqchk/*.v)): %.v.log: %.v
@@ -399,7 +407,8 @@ $(addsuffix .log,$(wildcard bugs-nocoqchk/*.v)): %.v.log: %.v
 	    echo "    $<...Error! (bug seems to be opened, please check)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -426,7 +435,8 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -449,7 +459,8 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 output-coqchk: $(addsuffix .log,$(wildcard output-coqchk/*.v))
 $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
@@ -465,7 +476,8 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    echo "    $<...Error! (should be accepted)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  echo $(call log_intro,$<); \
@@ -483,7 +495,8 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
+	$(HIDE)$(call REPORT_TIMER,$(patsubst %.v.log,%.chk.log,$@))
 
 .PHONY: approve-output
 approve-output: output output-coqtop output-coqchk
@@ -546,7 +559,8 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  fi; \
 	  rm $$tmpoutput; \
 	  rm $$tmpexpected; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -561,7 +575,8 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    echo "    $<...Error! (should be accepted)"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 # Complexity test. Expects a line "(* Expected time < XXX.YYs *)" in
 # the .v file with exactly two digits after the dot. The reference for
@@ -605,7 +620,8 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	      fi; \
 	    fi; \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 endif
 
 # Ideal-features tests
@@ -622,7 +638,8 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 	      echo "    $<...Good news! (wish seems to be granted, please check)"; \
 	      $(FAIL); \
           fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 # Additional dependencies for module tests
 COMMON_MODULE_DEPENDENCIES := modules/plik.v modules/Nat.v
@@ -659,7 +676,8 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	    echo "    $<...Error!"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 # IDE : some tests of backtracking for coqtop -ideslave
 
@@ -682,7 +700,8 @@ ide/fake_ide.exe : ide/fake_ide.ml
 	    echo "    $<...Error!"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 # vio compilation
 
@@ -702,7 +721,8 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	    echo "    $<...Error!"; \
 	    $(FAIL); \
 	  fi; \
-	} 3>&1 > "$@"
+	} > "$@"
+	$(HIDE)$(call REPORT_TIMER,$*.vio $*.vo $*.chk)
 
 # coqwc : test output
 
@@ -735,7 +755,7 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	  export COQBIN=$(BIN);\
 	  export COQPREFIX=$(COQPREFIX);\
 	  cd coq-makefile/$* && \
-	  $(call WITH_TIMER,$@,bash run.sh 2>&1); \
+	  $(call WITH_TIMER,$@,bash run.sh 2>&1,../../$@.time); \
 	if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -744,7 +764,8 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	    echo "    $<...Error!"; \
 	    $(FAIL); \
 	  fi; \
-	) 3>&1 > "$@"
+	) > "$@"
+	$(HIDE)$(call REPORT_TIMER,$@)
 
 # coqdoc
 
