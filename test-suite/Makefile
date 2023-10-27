@@ -196,8 +196,15 @@ all:
 	@echo ""
 	@false
 else
+ifeq ($(TIMED),)
 all: run
 	$(MAKE) report
+else
+all:
+	$(MAKE) run | tee time-of-build.log
+	python ../tools/make-one-time-file.py time-of-build.log
+	$(MAKE) report
+endif
 endif
 endif
 
