@@ -96,10 +96,9 @@ GRAMMAR EXTEND Gram
   ;
   ltac_expr:
     [ "5" RIGHTA
-      [ te = binder_tactic -> { te } ]
+      [ ]
     | "4" LEFTA
-      [ ta0 = ltac_expr; ";"; ta1 = binder_tactic -> { CAst.make ~loc (TacThen (ta0, ta1)) }
-      | ta0 = ltac_expr; ";"; ta1 = ltac_expr -> { CAst.make ~loc (TacThen (ta0,ta1)) }
+      [ ta0 = ltac_expr; ";"; ta1 = ltac_expr -> { CAst.make ~loc (TacThen (ta0,ta1)) }
       | ta0 = ltac_expr; ";"; l = tactic_then_locality; tg = for_each_goal; "]" -> {
           let (first,tail) = tg in
           match l , tail with
@@ -124,15 +123,14 @@ GRAMMAR EXTEND Gram
       | IDENT "only"; sel = selector; ":"; ta = ltac_expr -> { CAst.make ~loc (TacSelect (sel, ta)) } ]
 (*End of To do*)
     | "2" RIGHTA
-      [ ta0 = ltac_expr; "+"; ta1 = binder_tactic -> { CAst.make ~loc (TacOr (ta0,ta1)) }
-      | ta0 = ltac_expr; "+"; ta1 = ltac_expr -> { CAst.make ~loc (TacOr (ta0,ta1)) }
+      [ ta0 = ltac_expr; "+"; ta1 = ltac_expr -> { CAst.make ~loc (TacOr (ta0,ta1)) }
       | IDENT "tryif" ; ta = ltac_expr ;
               "then" ; tat = ltac_expr ;
               "else" ; tae = ltac_expr -> { CAst.make ~loc (TacIfThenCatch (ta,tat,tae)) }
-      | ta0 = ltac_expr; "||"; ta1 = binder_tactic -> { CAst.make ~loc (TacOrelse (ta0,ta1)) }
       | ta0 = ltac_expr; "||"; ta1 = ltac_expr -> { CAst.make ~loc (TacOrelse (ta0,ta1)) } ]
     | "1" RIGHTA
-      [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
+      [ te = binder_tactic -> { te }
+      | b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
           { CAst.make ~loc (TacMatchGoal (b,false,mrl)) }
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
@@ -163,7 +161,7 @@ GRAMMAR EXTEND Gram
   failkw:
   [ [ IDENT "fail" -> { TacLocal } | IDENT "gfail" -> { TacGlobal } ] ]
   ;
-  (* binder_tactic: level 5 of ltac_expr *)
+  (* binder_tactic: level 1 of ltac_expr *)
   binder_tactic:
     [ RIGHTA
       [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac_expr LEVEL "5" ->
