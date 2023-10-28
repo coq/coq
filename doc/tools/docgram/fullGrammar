@@ -67,7 +67,6 @@ constr: [
 ]
 
 term200: [
-| binder_constr
 | term100
 ]
 
@@ -91,6 +90,7 @@ term10: [
 | term9 LIST1 arg
 | "@" global univ_annot LIST0 term9
 | "@" pattern_ident LIST1 identref
+| binder_constr
 | term9
 ]
 

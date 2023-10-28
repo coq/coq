@@ -143,8 +143,7 @@ GRAMMAR EXTEND Gram
       | "@"; f=global; i = univ_annot -> { CAst.make ~loc @@ CAppExpl((f,i),[]) } ] ]
   ;
   term:
-    [ "200" RIGHTA
-      [ c = binder_constr -> { c } ]
+    [ "200" RIGHTA [ ]
     | "100" RIGHTA
       [ c1 = term; "<:"; c2 = term LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, Some VMcast, c2) }
@@ -162,7 +161,8 @@ GRAMMAR EXTEND Gram
       | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
-          CAst.make ~loc @@ CApp(CAst.make ?loc:locid @@ CPatVar id,args) } ]
+          CAst.make ~loc @@ CApp(CAst.make ?loc:locid @@ CPatVar id,args) }
+      | c = binder_constr -> { c } ]
     | "9"
       [ ".."; c = term LEVEL "0"; ".." ->
         { CAst.make ~loc @@ CAppExpl ((qualid_of_ident ~loc ldots_var, None),[c]) } ]

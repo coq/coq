@@ -34,7 +34,7 @@ open Pcoq
 let constr_level = string_of_int
 
 let default_levels =
-  [200,Gramlib.Gramext.RightA,false;
+  [200,Gramlib.Gramext.RightA,true;
    100,Gramlib.Gramext.RightA,false;
    99,Gramlib.Gramext.RightA,true;
    90,Gramlib.Gramext.RightA,true;

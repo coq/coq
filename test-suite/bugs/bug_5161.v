@@ -12,7 +12,7 @@ Definition FORALL {T : Type} (f : T → Prop) : Prop := ∀ x, f x.
 
 Notation "∀ x .. y , P" :=
   (FORALL (λ x, .. (FORALL (λ y, P)) ..)%I)
-  (at level 200, x binder, y binder, right associativity) : uPred_scope.
+  (at level 10, x binder, y binder, P at level 200) : uPred_scope.
 Infix "∧" := and : uPred_scope.
 
 (* The next command fails with

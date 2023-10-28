@@ -30,7 +30,7 @@ Entry lconstr is
 
 Entry term is
 [ "200" RIGHTA
-  [ binder_constr ]
+  [  ]
 | "100" RIGHTA
   [ SELF; "<:"; term LEVEL "200"
   | SELF; "<<:"; term LEVEL "200"
@@ -43,7 +43,8 @@ Entry term is
 | "10" LEFTA
   [ SELF; LIST1 arg
   | "@"; global; univ_annot; LIST0 NEXT
-  | "@"; pattern_ident; LIST1 identref ]
+  | "@"; pattern_ident; LIST1 identref
+  | binder_constr ]
 | "9" LEFTA
   [ ".."; term LEVEL "0"; ".." ]
 | "8" LEFTA
