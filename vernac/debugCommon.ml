@@ -84,6 +84,9 @@ let save_goals () =
     Proofview.tclLIFT (Proofview.NonLogical.return ())
   [@@ocaml.warning "-3"]
 
+(* todo: replace with List.concat_map when OCaml version is >= 4.10 *)
+let concat_map f l = List.concat (List.map f l)
+
 (* Find the closest prior history entry whose top of stack is the same function call as
    the current entry (or prior to entering that function) AND
    in which the goals differ from the current entry.
@@ -93,14 +96,14 @@ let get_prev_goalts () =
   let add gs set =
     List.fold_left (fun s g -> Evar.Set.add (Proofview.Goal.goal g) s) set gs in
   let curr = add hentry.goals Evar.Set.empty in
-  let cur_st = List.concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+  let cur_st = concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
   let l_cur = List.length cur_st in
   let eq l1 l2 = List.fold_left2 (fun eq l1 l2 -> eq && (l1==l2)) true l1 l2 in
   let rec loop i =
     if i >= !hist_count then None
     else begin
       let prev_hentry = (get_history i) in
-      let prev_st = List.concat_map (fun (locs,_,_) -> locs)  (prev_hentry.top_chunk :: prev_hentry.stack_chunks) in
+      let prev_st = concat_map (fun (locs,_,_) -> locs)  (prev_hentry.top_chunk :: prev_hentry.stack_chunks) in
       let l_prev = List.length prev_st in
       if l_prev > l_cur then
         loop (i+1)
@@ -294,8 +297,8 @@ let stepping_stop loc =
     let locs_info () =
       (* performance impact? *)
       let hentry = get_history !hist_index in
-      let st =      List.concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
-      let st_prev = List.concat_map (fun (locs,_,_) -> locs)  (!prev_top_chunk :: !prev_chunks) in
+      let st =      concat_map (fun (locs,_,_) -> locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+      let st_prev = concat_map (fun (locs,_,_) -> locs)  (!prev_top_chunk :: !prev_chunks) in
       let l_cur, l_prev = List.length st, List.length st_prev in
       st, st_prev, l_cur, l_prev
     in
@@ -488,8 +491,8 @@ let get_all_chunks () =
 let fmt_stack () =
   let full = get_all_chunks () in
   let cur_loc = (get_history !hist_index).cur_loc in
-  let common = List.concat_map (fun (_, fmt_stackL, _) -> fmt_stackL ()) full in
-  let locs = cur_loc :: List.concat_map (fun (locs, _, _) -> locs) full in
+  let common = concat_map (fun (_, fmt_stackL, _) -> fmt_stackL ()) full in
+  let locs = cur_loc :: concat_map (fun (locs, _, _) -> locs) full in
   let common = List.map (fun i -> Some i) common in
   format_stack (common @ [None]) locs
 
