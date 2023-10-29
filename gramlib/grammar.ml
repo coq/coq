@@ -193,19 +193,6 @@ type 'a ty_entry = {
   etag : 'a DMap.onetag;
 }
 
-and 'a ty_desc =
-| Dlevels of 'a ty_level list
-| Dparser of (L.keyword_state -> 'a parser_t)
-
-and 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
-
-and ('trecs, 'trecp, 'a) ty_rec_level = {
-  assoc : g_assoc;
-  lname : string option;
-  lsuffix : ('a, 'trecs, 'a -> Loc.t -> 'a) ty_tree;
-  lprefix : ('a, 'trecp, Loc.t -> 'a) ty_tree;
-}
-
 and ('self, 'trec, 'a) ty_symbol =
 | Stoken : 'c pattern -> ('self, norec, 'c) ty_symbol
 | Stokens : ty_pattern list -> ('self, norec, unit) ty_symbol
@@ -234,6 +221,19 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   node : ('self, 'trec, 'a) ty_symbol;
   son : ('self, 'trecs, 'a -> 'r) ty_tree;
   brother : ('self, 'trecb, 'r) ty_tree;
+}
+
+type 'a ty_desc =
+| Dlevels of 'a ty_level list
+| Dparser of (L.keyword_state -> 'a parser_t)
+
+and 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
+
+and ('trecs, 'trecp, 'a) ty_rec_level = {
+  assoc : g_assoc;
+  lname : string option;
+  lsuffix : ('a, 'trecs, 'a -> Loc.t -> 'a) ty_tree;
+  lprefix : ('a, 'trecp, Loc.t -> 'a) ty_tree;
 }
 
 (** The closures are built by partially applying the parsing functions
