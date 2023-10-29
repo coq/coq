@@ -1238,6 +1238,15 @@ and parser_cont : type s tr tr' a r.
     (* Recover from a success on [s] with result [a] followed by a
         failure on [son] in a rule of the form [a = s; son] *)
     try
+      (* Discard the rule if what has been consumed before failing is
+         the empty sequence (due to some OPT or LIST0); example:
+         « OPT "!"; ident » fails to see an ident and the OPT was resolved
+         into the empty sequence, with application e.g. to being able to
+         safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
+      skip_if_empty bp (fun (strm__ : _ LStream.t) -> raise Stream.Failure)
+        strm__
+    with Stream.Failure ->
+    try
       (* Try to replay the son with the top occurrence of NEXT (by
          default at level nlevn) and trailing SELF (by default at alevn)
          replaced with self at top level;
@@ -1252,15 +1261,6 @@ and parser_cont : type s tr tr' a r.
         raise Stream.Failure
     with
       Stream.Failure ->
-      try
-        (* Discard the rule if what has been consumed before failing is
-           the empty sequence (due to some OPT or LIST0); example:
-           « OPT "!"; ident » fails to see an ident and the OPT was resolved
-           into the empty sequence, with application e.g. to being able to
-           safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
-        skip_if_empty bp (fun (strm__ : _ LStream.t) -> raise Stream.Failure)
-          strm__
-      with Stream.Failure ->
         (* In case of success on just SELF, NEXT or an explicit call to
            a subentry followed by a failure on the rest (son), retry
            parsing as if this entry had been called at its toplevel;
