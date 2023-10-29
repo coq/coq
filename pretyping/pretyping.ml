@@ -813,7 +813,7 @@ struct
             Array.to_list (Array.mapi
                              (fun i annot -> match annot with
                              | Some n -> [n]
-                             | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
+                             | None -> List.interval 0 (Context.Rel.nhyps ctxtv.(i) - 1))
            vn)
           in
           let fixdecls = (names,ftys,fdefs) in
