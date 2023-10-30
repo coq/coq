@@ -2367,13 +2367,17 @@ let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not
       Some (on_parsing,on_printing,ntn,sc,ref)
   | _ -> None
 
-let error_ambiguous_notation ?loc _ntn =
-  user_err ?loc (str "Ambiguous notation.")
+type notation_as_reference_error =
+  | AmbiguousNotationAsReference of notation_key
+  | NotationNotReference of notation_key
+
+exception NotationAsReferenceError of notation_as_reference_error
+
+let error_ambiguous_notation ?loc ntn =
+  Loc.raise ?loc (NotationAsReferenceError (AmbiguousNotationAsReference ntn))
 
 let error_notation_not_reference ?loc ntn =
-  user_err ?loc
-   (str "Unable to interpret " ++ quote (str ntn) ++
-    str " as a reference.")
+  Loc.raise ?loc (NotationAsReferenceError (NotationNotReference ntn))
 
 let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let scopes = match sc with

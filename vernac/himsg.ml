@@ -1587,3 +1587,15 @@ let rec vernac_interp_error_handler = function
     raise Unhandled
 
 let _ = CErrors.register_handler (wrap_unhandled vernac_interp_error_handler)
+
+(* Locating errors *)
+
+let explain_notation_not_reference = function
+  | Notation.AmbiguousNotationAsReference _ ->
+    str "Ambiguous notation."
+  | Notation.NotationNotReference ntn ->
+    str "Unable to interpret " ++ quote (str ntn) ++ str " as a reference."
+
+let _ = CErrors.register_handler (function
+    | Notation.NotationAsReferenceError e -> Some (explain_notation_not_reference e)
+    | _ -> None)
