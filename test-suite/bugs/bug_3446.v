@@ -33,8 +33,8 @@ Set Universe Polymorphism.
 Arguments projT1 {_ _} _.
 Notation "( x ; y )" := (existT _ x y).
 Notation pr1 := projT1.
-Notation "x .1" := (projT1 x) (at level 3).
-Notation "x .2" := (projT2 x) (at level 3).
+Notation "x .1" := (projT1 x).
+Notation "x .2" := (projT2 x).
 Definition compose {A B C : Type} (g : B -> C) (f : A -> B) := fun x => g (f x).
 Notation "g 'o' f" := (compose g f) (at level 40, left associativity).
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.

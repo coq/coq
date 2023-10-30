@@ -13,7 +13,7 @@ Open Scope fibration_scope.
 
 Notation pr1 := projT1.
 
-Notation "x .1" := (pr1 x) (at level 3, format "x '.1'") : fibration_scope.
+Notation "x .1" := (pr1 x) : fibration_scope.
 
 Definition compose {A B C : Type} (g : B -> C) (f : A -> B) :=
   fun x => g (f x).

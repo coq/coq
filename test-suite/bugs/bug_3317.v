@@ -9,8 +9,8 @@ Module A.
   Arguments existT {A} _ _ _.
   Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) : P y :=
     match p with idpath => u end.
-  Notation "x .1" := (projT1 x) (at level 3).
-  Notation "x .2" := (projT2 x) (at level 3).
+  Notation "x .1" := (projT1 x).
+  Notation "x .2" := (projT2 x).
   Notation "( x ; y )" := (existT _ x y).
   Set Printing All.
   Definition path_sigma_uncurried {A : Type} (P : A -> Type) (u v : sigT P)
@@ -64,8 +64,8 @@ Module B.
   Arguments existT {A} _ _ _.
   Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) : P y :=
     match p with idpath => u end.
-  Notation "x .1" := (projT1 x) (at level 3).
-  Notation "x .2" := (projT2 x) (at level 3).
+  Notation "x .1" := (projT1 x).
+  Notation "x .2" := (projT2 x).
   Notation "( x ; y )" := (existT _ x y).
   Set Printing All.
 

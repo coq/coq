@@ -114,6 +114,11 @@ Notation "'if' c 'is' p 'then' u 'else' v" :=
 
 End IfNotations.
 
+(** Notations for first and second projections *)
+
+Reserved Notation "p .1" (at level 1, left associativity, format "p .1").
+Reserved Notation "p .2" (at level 1, left associativity, format "p .2").
+
 (** Scopes *)
 
 Declare Scope core_scope.

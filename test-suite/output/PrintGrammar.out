@@ -97,7 +97,9 @@ Entry term is
 | "8" LEFTA
   [  ]
 | "1" LEFTA
-  [ SELF; ".("; "@"; global; univ_annot; LIST0 (term LEVEL "9"); ")"
+  [ SELF; ".2"
+  | SELF; ".1"
+  | SELF; ".("; "@"; global; univ_annot; LIST0 (term LEVEL "9"); ")"
   | SELF; ".("; global; univ_annot; LIST0 arg; ")"
   | SELF; "%"; IDENT
   | SELF; "%_"; IDENT ]
