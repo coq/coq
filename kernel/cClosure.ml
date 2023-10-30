@@ -869,7 +869,19 @@ let rec to_constr ~(info:clos_infos) ~(tab:clos_tab) ((lfts, usubst) as ulfts) v
         let t = !klt_ref ~mode:identity info tab e t in
         Constr.mkApp (op, [|ty; t|])
 
-    | FUnblock _ | FRun _ -> assert false
+    | FUnblock (op, ty, m, e) ->
+      let m = to_constr ulfts m in
+      let subs = comp_subs ulfts e in
+      let ty = subst_constr subs ty in
+      Constr.mkApp (op, [|ty; m|])
+
+    | FRun (op, ty1, ty2, m, k, e) ->
+      let m = to_constr ulfts m in
+      let subs = comp_subs ulfts e in
+      let ty1 = subst_constr subs ty1 in
+      let ty2 = subst_constr subs ty2 in
+      let k = subst_constr subs k in
+      Constr.mkApp (op, [|ty1; ty2; m; k|])
 
     | FLAZY (lazy m) -> to_constr ulfts m
 
