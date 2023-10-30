@@ -223,18 +223,18 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   brother : ('self, 'trecb, 'r) ty_tree;
 }
 
-type 'a ty_desc =
-| Dlevels of 'a ty_level list
-| Dparser of (L.keyword_state -> 'a parser_t)
-
-and 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
-
-and ('trecs, 'trecp, 'a) ty_rec_level = {
+type ('trecs, 'trecp, 'a) ty_rec_level = {
   assoc : g_assoc;
   lname : string option;
   lsuffix : ('a, 'trecs, 'a -> Loc.t -> 'a) ty_tree;
   lprefix : ('a, 'trecp, Loc.t -> 'a) ty_tree;
 }
+
+type 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
+
+type 'a ty_desc =
+| Dlevels of 'a ty_level list
+| Dparser of (L.keyword_state -> 'a parser_t)
 
 (** The closures are built by partially applying the parsing functions
     to [edesc] but without depending on the state (so when we update
