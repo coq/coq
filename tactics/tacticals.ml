@@ -117,9 +117,9 @@ let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
     | RelDecl.LocalAssum _ :: c, recarg::rest ->
         let rest = analrec c rest in
         begin match Declareops.dest_recarg recarg with
-        | Norec | Nested _  -> true :: rest
-        | Mrec (_,j)  ->
-            if rec_flag && Int.equal j k then true :: true :: rest
+        | Norec | Mrec (RecArgPrim _)  -> true :: rest
+        | Mrec (RecArgInd ind) ->
+            if rec_flag && Names.Ind.CanOrd.equal ity ind then true :: true :: rest
             else true :: rest
         end
     | RelDecl.LocalDef _ :: c, rest -> false :: analrec c rest

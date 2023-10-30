@@ -157,47 +157,43 @@ let hcons_const_body cb =
   }
 
 (** {6 Inductive types } *)
-let eq_nested_type t1 t2 = match t1, t2 with
-| NestedInd ind1, NestedInd ind2 -> Names.Ind.CanOrd.equal ind1 ind2
-| NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
-| NestedPrimitive _, _ -> false
+
+let eq_recarg_type t1 t2 = match t1, t2 with
+| RecArgInd ind1, RecArgInd ind2 -> Names.Ind.CanOrd.equal ind1 ind2
+| RecArgPrim c1, RecArgPrim c2 -> Names.Constant.CanOrd.equal c1 c2
+| (RecArgInd _ | RecArgPrim _), _ -> false
 
 let eq_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> true
 | Norec, _ -> false
-| Mrec i1, Mrec i2 -> Names.Ind.CanOrd.equal i1 i2
+| Mrec t1, Mrec t2 -> eq_recarg_type t1 t2
 | Mrec _, _ -> false
-| Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
-| Nested _, _ -> false
+
+let pr_recarg_type = let open Pp in function
+  | RecArgInd (mind,i) ->
+     str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+  | RecArgPrim c ->
+     str "Prim[" ++ Names.Constant.print c ++ str "]"
 
 let pr_recarg = let open Pp in function
-  | Declarations.Norec -> Pp.str "Norec"
-  | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.(Nested (NestedInd (mind,i))) ->
-     str "Nested[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.(Nested (NestedPrimitive c)) ->
-     str "Nested[" ++ Names.Constant.print c ++ str "]"
+  | Declarations.Norec -> str "Norec"
+  | Declarations.Mrec t -> pr_recarg_type t
 
 let pr_wf_paths x = Rtree.pr_tree pr_recarg x
 
-let subst_nested_type subst ty = match ty with
-| NestedInd (kn,i) ->
+let subst_recarg_type subst ty = match ty with
+| RecArgInd (kn,i) ->
   let kn' = subst_mind subst kn in
-  if kn==kn' then ty else NestedInd (kn',i)
-| NestedPrimitive c ->
+  if kn==kn' then ty else RecArgInd (kn',i)
+| RecArgPrim c ->
   let c',_ = subst_con subst c in
-  if c==c' then ty else NestedPrimitive c'
+  if c==c' then ty else RecArgPrim c'
 
 let subst_recarg subst r = match r with
   | Norec -> r
-  | Mrec (kn,i) ->
-    let kn' = subst_mind subst kn in
-    if kn==kn' then r else Mrec (kn',i)
-  | Nested ty ->
-    let ty' = subst_nested_type subst ty in
-    if ty==ty' then r else Nested ty'
+  | Mrec ty ->
+    let ty' = subst_recarg_type subst ty in
+    if ty==ty' then r else Mrec ty'
 
 let mk_norec = Rtree.mk_node Norec [||]
 

@@ -58,7 +58,7 @@ val ind_of_ind_type : inductive_type -> inductive
 val relevance_of_inductive_type : env -> inductive_type -> Sorts.relevance
 
 val mkAppliedInd : inductive_type -> EConstr.constr
-val mis_is_recursive_subset : int list -> wf_paths -> bool
+val mis_is_recursive_subset : inductive list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :

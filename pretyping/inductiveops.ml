@@ -107,13 +107,13 @@ let mis_is_recursive_subset listind rarg =
     List.exists
       (fun ra ->
         match dest_recarg ra with
-          | Mrec (_,i) -> Int.List.mem i listind
-          | _ -> false) rvec
+          | Mrec (RecArgInd ind) -> List.exists (Names.Ind.CanOrd.equal ind) listind
+          | Mrec (RecArgPrim _) | Norec -> false) rvec
   in
   Array.exists one_is_rec (dest_subterms rarg)
 
-let mis_is_recursive (ind,mib,mip) =
-  mis_is_recursive_subset (List.interval 0 (mib.mind_ntypes - 1))
+let mis_is_recursive ((ind,_),mib,mip) =
+  mis_is_recursive_subset (List.init mib.mind_ntypes (fun i -> (ind,i)))
     mip.mind_recargs
 
 let mis_nf_constructor_type ((_,j),u) (mib,mip) =
