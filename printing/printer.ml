@@ -281,6 +281,13 @@ let pr_pconstructor = pr_puniverses pr_constructor
 let pr_evaluable_reference ref =
   pr_global (Tacred.global_of_evaluable_reference ref)
 
+let pr_notation_interpretation_env env sigma c =
+  Constrextern.without_symbols (pr_glob_constr_env env sigma) c
+
+let pr_notation_interpretation c =
+  let env = Global.env () in
+  pr_notation_interpretation_env env (Evd.from_env env) c
+
 (*let pr_glob_constr t =
   pr_lconstr (Constrextern.extern_glob_constr Id.Set.empty t)*)
 

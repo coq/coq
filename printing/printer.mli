@@ -158,6 +158,8 @@ val pr_pconstant : env -> evar_map -> pconstant -> Pp.t
 val pr_pinductive : env -> evar_map -> pinductive -> Pp.t
 val pr_pconstructor : env -> evar_map -> pconstructor -> Pp.t
 
+val pr_notation_interpretation_env : env -> evar_map -> glob_constr -> Pp.t
+val pr_notation_interpretation : glob_constr -> Pp.t
 
 (** Contexts *)
 
