@@ -2099,10 +2099,6 @@ let pr_scope_classes sc =
     hov 0 (str "Bound to class" ++ opt_s ++
       spc() ++ prlist_with_sep spc pr_scope_class l)
 
-let pr_notation_info prglob ntn c =
-  str (String.quote_coq_string ntn) ++ str " :=" ++ brk (1,2) ++
-  prglob (Notation_ops.glob_constr_of_notation_constr c)
-
 let pr_notation_status on_parsing on_printing =
   let disabled b = if b then [] else ["disabled"] in
   let l = match on_parsing, on_printing with
@@ -2121,7 +2117,7 @@ let pr_non_empty spc pp =
   if pp = mt () then mt () else spc ++ pp
 
 let pr_notation_data prglob (on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) }) =
-  hov 0 (pr_notation_info prglob df r ++ pr_non_empty (brk(1,2)) (pr_notation_status on_parsing on_printing))
+  hov 0 (Notation_ops.pr_notation_info prglob df r ++ pr_non_empty (brk(1,2)) (pr_notation_status on_parsing on_printing))
 
 let extract_notation_data (main,extra) =
   let main = match main with
@@ -2414,7 +2410,7 @@ let locate_notation prglob ntn scope =
         (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) })) ->
           hov 0 (
             str "Notation" ++ brk (1,2) ++
-            pr_notation_info prglob df r ++
+            Notation_ops.pr_notation_info prglob df r ++
             (if String.equal sc default_scope then mt ()
              else (brk (1,2) ++ str ": " ++ str sc)) ++
             (if Option.equal String.equal (Some sc) scope

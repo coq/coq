@@ -470,6 +470,10 @@ let glob_constr_of_notation_constr ?loc x =
     glob_constr_of_notation_constr_with_binders ?loc (fun () id t -> ((),None,id,Explicit,t)) aux () x
   in aux () x
 
+let pr_notation_info prglob ntn c =
+  str (String.quote_coq_string ntn) ++ str " :=" ++ brk (1,2) ++
+  prglob (glob_constr_of_notation_constr c)
+
 (******************************************************************************)
 (* Translating a glob_constr into a notation, interpreting recursive patterns *)
 
