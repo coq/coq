@@ -1580,14 +1580,8 @@ type ('option, 'a, 'prf, 'model) prover =
   *)
 
 let find_witness p polys1 =
-  try
   let polys1 = List.map fst polys1 in
   p.prover (p.get_option (), polys1)
-  with e ->
-    begin
-    Printf.printf "find_witness %s" (Printexc.to_string e);
-    raise e
-  end
 
 (**
   * Given a prover and a CNF, find a proof for each of the clauses.
