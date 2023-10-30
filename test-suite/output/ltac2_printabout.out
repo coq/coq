@@ -3,3 +3,24 @@ Ltac2 type : constr -> constr
       type := @external "coq-core.plugins.ltac2" "constr_type"
 Ltac2 ltac2_printabout.type
 Ltac2 type : constr -> constr
+None : 'a option
+Some : 'a -> 'a option
+Ltac2 constructor Err : exn -> 'a result
+Inl : 'a -> ('a, 'b) either
+Inr : 'b -> ('a, 'b) either
+Triple : 'c -> 'b -> 'a -> ('a, 'b, 'c) triple
+Not_found : exn
+Out_of_bounds : message option -> exn
+Ltac2 Notation nota := () ()
+Ltac2 Type constr
+Ltac2 Type constr := Init.constr
+('a, 'b) thing := 'b option
+Ltac2 Type empty := [ ]
+'a option := [ None | Some ('a) ]
+bool := [ true | false ]
+Ltac2 Type ('a, 'b, 'c) triple := [ Triple ('c, 'b, 'a) ]
+Ltac2 Type 'a ref := { mutable contents : 'a; }
+Ltac2 Type
+('a, 'b, 'c) trirecord := { cproj : 'c; mutable bproj : 'b; aproj : 'a; }
+Ltac2 Type extensible := [ .. ]
+Ltac2 Type extensible := [ .. | OtherThing (bool) | Thing (string) ]

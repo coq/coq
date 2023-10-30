@@ -55,8 +55,15 @@ val print_located_tactic : Libnames.qualid -> unit
 val print_ltac2 : Libnames.qualid -> unit
 (** Display the definition of a tactic. *)
 
+val print_ltac2_type : Libnames.qualid -> unit
+(** Display the definition of a type. *)
+
 val print_signatures : unit -> unit
 (** Print types of all definitions in scope. *)
+
+val typecheck_expr : raw_tacexpr -> unit
+
+val globalize_expr : raw_tacexpr -> unit
 
 (** {5 Eval loop} *)
 

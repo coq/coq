@@ -973,9 +973,9 @@ let () = Goptions.declare_bool_option {
 }
 
 let pr_frame = function
-| FrAnon e -> str "Call {" ++ pr_glbexpr e ++ str "}"
+| FrAnon e -> str "Call {" ++ pr_glbexpr ~avoid:Id.Set.empty e ++ str "}"
 | FrLtac kn ->
-  str "Call " ++ pr_tacref kn
+  str "Call " ++ pr_tacref Id.Set.empty kn
 | FrPrim ml ->
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
@@ -1015,7 +1015,11 @@ let print_constant ~print_def qid ?info data =
   let e = data.Tac2env.gdata_expr in
   let (_, t) = data.Tac2env.gdata_type in
   let name = int_name () in
-  let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e) else mt() in
+  let def = if print_def then
+      fnl () ++ hov 2
+        (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr ~avoid:Id.Set.empty e)
+    else mt()
+  in
   let info = match info with
     | None -> mt()
     | Some info -> fnl() ++ fnl() ++ hov 2 (str "Compiled as" ++ spc() ++ str info.Tac2env.source)
@@ -1024,39 +1028,100 @@ let print_constant ~print_def qid ?info data =
     hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ def ++ info
   )
 
+let print_type ~print_def qid kn =
+  let nparams, data = Tac2env.interp_type kn in
+  let name = int_name () in
+  let params = List.init nparams (fun i -> GTypVar i) in
+  let ty = match params with
+    | [] -> pr_qualid qid
+    | [t] -> pr_glbtype name t ++ spc() ++ pr_qualid qid
+    | _ -> surround (prlist_with_sep pr_comma (pr_glbtype name) params) ++ spc() ++ pr_qualid qid
+  in
+  let def = if not print_def || (match data with GTydDef None -> true | _ -> false)
+    then mt()
+    else spc() ++ str ":= " ++ match data with
+      | GTydDef None -> assert false
+      | GTydDef (Some t) -> pr_glbtype name t
+      | GTydAlg { galg_constructors = [] } -> str "[ ]"
+      | GTydAlg { galg_constructors = ctors } ->
+        let pr_ctor (id, argtys) =
+          hov 0
+            (Id.print id ++ if CList.is_empty argtys then mt()
+             else spc() ++surround (prlist_with_sep pr_comma (pr_glbtype name) argtys))
+        in
+        hv 0 (str "[ " ++ prlist_with_sep (fun () -> spc() ++ str "| ") pr_ctor ctors ++ str " ]")
+      | GTydRec fields ->
+        let pr_field (id, ismut, t) =
+          hov 0 ((if ismut then str "mutable " else mt()) ++ Id.print id
+                 ++ spc() ++ str ": " ++ pr_glbtype name t) ++ str ";"
+        in
+        hv 2 (str "{ " ++ prlist_with_sep spc pr_field fields ++ str " }")
+      | GTydOpn ->
+        let ctors = KNmap.bindings (Tac2env.find_all_constructors_in_type kn) in
+        if CList.is_empty ctors then str "[ .. ]"
+        else
+          let pr_ctor (ckn, cdata) =
+            let argtys = cdata.Tac2env.cdata_args in
+            hov 0
+              (Tac2print.pr_constructor ckn ++ if CList.is_empty argtys then mt()
+               else spc() ++surround (prlist_with_sep pr_comma (pr_glbtype name) argtys))
+          in
+          hov 0 (str "[ .." ++ spc() ++ str "| "
+                 ++ prlist_with_sep (fun () -> spc() ++ str "| ") pr_ctor ctors
+                   ++ str " ]")
+  in
+  hov 2 (ty ++ def)
+
 let print_tacref ~print_def qid = function
   | TacConstant kn ->
     let data = Tac2env.interp_global kn in
     let info = Option.map fst (Tac2env.get_compiled_global kn) in
     print_constant ~print_def qid data ?info
-  | TacAlias kn -> str "Alias to ..."
+  | TacAlias kn ->
+    let { Tac2env.alias_body = body } = Tac2env.interp_alias kn in
+    str "Notation" ++ spc() ++ pr_qualid qid ++ str " :=" ++ spc()
+    ++ Tac2print.pr_rawexpr_gen E5 ~avoid:Id.Set.empty body
+
+let print_constructor qid kn =
+  let cdata = Tac2env.interp_constructor kn in
+  let name = int_name () in
+  let ty = GTypRef (Other cdata.cdata_type, List.init cdata.cdata_prms (fun i -> GTypVar i)) in
+  let ty = List.fold_right (fun arg ty -> GTypArrow (arg,ty)) cdata.cdata_args ty in
+  pr_qualid qid ++ spc() ++ str ": " ++ Tac2print.pr_glbtype name ty
 
 let locatable_ltac2 = "Ltac2"
 
 type ltac2_object =
+  | Type of type_constant
   | Constructor of ltac_constructor
   | TacRef of tacref
 
 let locate_object qid =
+  try Type (Tac2env.locate_type qid)
+  with Not_found ->
   try Constructor (Tac2env.locate_constructor qid)
   with Not_found ->
-    TacRef (Tac2env.locate_ltac qid)
+  TacRef (Tac2env.locate_ltac qid)
 
 let locate_all_object qid =
   let open Tac2env in
-  (List.map (fun x -> Constructor x) (locate_extended_all_constructor qid))
-   @ (List.map (fun x -> TacRef x) (locate_extended_all_ltac qid))
+  (List.map (fun x -> Type x) (locate_extended_all_type qid))
+  @ (List.map (fun x -> Constructor x) (locate_extended_all_constructor qid))
+  @ (List.map (fun x -> TacRef x) (locate_extended_all_ltac qid))
 
 let shortest_qualid_of_object = function
+  | Type kn -> Tac2env.shortest_qualid_of_type kn
   | Constructor kn -> Tac2env.shortest_qualid_of_constructor kn
-  | TacRef kn -> Tac2env.shortest_qualid_of_ltac kn
+  | TacRef kn -> Tac2env.shortest_qualid_of_ltac Id.Set.empty kn
 
 let path_of_object = function
+  | Type kn -> Tac2env.path_of_type kn
   | Constructor kn -> Tac2env.path_of_constructor kn
   | TacRef kn -> Tac2env.path_of_ltac kn
 
 let print_object ~print_def qid = function
-  | Constructor _ -> str "Ltac2 Constructor" ++ spc() ++ pr_qualid qid
+  | Type kn -> str "Ltac2 Type" ++ spc() ++ print_type ~print_def qid kn
+  | Constructor kn -> str "Ltac2 constructor" ++ spc() ++ print_constructor qid kn
   | TacRef kn -> str "Ltac2 " ++ print_tacref ~print_def qid kn
 
 let () =
@@ -1066,6 +1131,7 @@ let () =
   let shortest_qualid (_,kn) = shortest_qualid_of_object kn in
   let name (_,kn) =
     let hdr = match kn with
+      | Type _ -> str "Ltac2 Type"
       | TacRef (TacConstant _) -> str "Ltac2"
       | TacRef (TacAlias _) -> str "Ltac2 Notation"
       | Constructor _ -> str "Ltac2 Constructor"
@@ -1092,8 +1158,7 @@ let print_ltac2 qid =
       try Tac2env.locate_constructor qid
       with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown constructor " ++ pr_qualid qid)
     in
-    let _ = Tac2env.interp_constructor kn in
-    Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
+    Feedback.msg_notice (print_constructor qid kn)
   else
     let kn =
       try Tac2env.locate_ltac qid
@@ -1101,13 +1166,19 @@ let print_ltac2 qid =
     in
     Feedback.msg_notice (print_tacref ~print_def:true qid kn)
 
+let print_ltac2_type qid =
+  match Tac2env.locate_type qid with
+  | exception Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown Ltac2 type " ++ pr_qualid qid)
+  | kn ->
+    Feedback.msg_notice (print_type ~print_def:true qid kn)
+
 let print_signatures () =
   let entries = KNmap.bindings (Tac2env.globals ()) in
   let sort (kn1, _) (kn2, _) = KerName.compare kn1 kn2 in
   let entries = List.sort sort entries in
   let map (kn, entry) =
     let qid =
-      try Some (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+      try Some (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacConstant kn))
       with Not_found -> None
     in
     match qid with
@@ -1119,6 +1190,20 @@ let print_signatures () =
     hov 2 (print_constant ~print_def:false qid data)
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
+
+let typecheck_expr e =
+  let e, (_,t) = Tac2intern.intern ~strict:false [] e in
+  let name = int_name() in
+  let pp =
+    pr_glbexpr_gen E5 ~avoid:Id.Set.empty e ++ spc() ++
+    str ":" ++ spc() ++ pr_glbtype name t
+  in
+  Feedback.msg_notice pp
+
+let globalize_expr e =
+  let avoid = Id.Set.empty in
+  let e = Tac2intern.debug_globalize_allow_ext avoid e in
+  Feedback.msg_notice (Tac2print.pr_rawexpr_gen E5 ~avoid e)
 
 (** Calling tactics *)
 

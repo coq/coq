@@ -217,15 +217,6 @@ let add_name accu = function
 | Name id -> Id.Set.add id accu
 | Anonymous -> accu
 
-let rec ids_of_pattern accu {v=pat} = match pat with
-| CPatVar Anonymous | CPatAtm _ -> accu
-| CPatVar (Name id) -> Id.Set.add id accu
-| CPatAs (p,id) -> ids_of_pattern (Id.Set.add id.v accu) p
-| CPatRef (_, pl) | CPatOr pl ->
-  List.fold_left ids_of_pattern accu pl
-| CPatCnv (pat, _) -> ids_of_pattern accu pat
-| CPatRecord pats -> List.fold_left (fun accu (_,pat) -> ids_of_pattern accu pat) accu pats
-
 let loc_of_relid = function
 | RelId {loc} -> loc
 | AbsKn _ -> None
@@ -285,13 +276,13 @@ let deprecated_ltac2_alias =
   Deprecation.create_warning
     ~object_name:"Ltac2 alias"
     ~warning_name_if_no_since:"deprecated-ltac2-alias"
-    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacAlias kn)))
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacAlias kn)))
 
 let deprecated_ltac2_def =
   Deprecation.create_warning
     ~object_name:"Ltac2 definition"
     ~warning_name_if_no_since:"deprecated-ltac2-definition"
-    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn)))
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacConstant kn)))
 
 let check_deprecated_ltac2 ?loc qid def =
   if is_user_name qid then match def with
@@ -1178,7 +1169,8 @@ let rec intern_rec env tycon {loc;v=e} =
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
-  intern_rec env tycon @@ CAst.make ?loc @@ CTacLet(false, el, body)
+  let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
+  intern_rec env tycon v
 | CTacCnv (e, tc) ->
   let tc = intern_type env tc in
   let e = intern_rec_with_constraint env e tc in
@@ -1553,110 +1545,126 @@ let get_projection0 var = match var with
   kn
 | AbsKn kn -> kn
 
-let rec globalize ids ({loc;v=er} as e) = match er with
-| CTacAtm _ -> e
-| CTacRef ref ->
-  let mem id = Id.Set.mem id ids in
-  begin match get_variable0 mem ref with
-  | ArgVar _ -> e
-  | ArgArg kn ->
-    let () = check_deprecated_ltac2 ?loc ref kn in
-    CAst.make ?loc @@ CTacRef (AbsKn kn)
-  end
-| CTacCst qid ->
-  let knc = get_constructor () qid in
-  CAst.make ?loc @@ CTacCst (AbsKn knc)
-| CTacFun (bnd, e) ->
-  let fold (pats, accu) pat =
-    let accu = ids_of_pattern accu pat in
-    let pat = globalize_pattern ids pat in
-    (pat :: pats, accu)
-  in
-  let bnd, ids = List.fold_left fold ([], ids) bnd in
-  let bnd = List.rev bnd in
-  let e = globalize ids e in
-  CAst.make ?loc @@ CTacFun (bnd, e)
-| CTacApp (e, el) ->
-  let e = globalize ids e in
-  let el = List.map (fun e -> globalize ids e) el in
-  CAst.make ?loc @@ CTacApp (e, el)
-| CTacLet (isrec, bnd, e) ->
-  let fold accu (pat, _) = ids_of_pattern accu pat in
-  let ext = List.fold_left fold Id.Set.empty bnd in
-  let eids = Id.Set.union ext ids in
-  let e = globalize eids e in
-  let map (qid, e) =
-    let ids = if isrec then eids else ids in
-    let qid = globalize_pattern ids qid in
-    (qid, globalize ids e)
-  in
-  let bnd = List.map map bnd in
-  CAst.make ?loc @@ CTacLet (isrec, bnd, e)
-| CTacSyn (el, kn) ->
-  let body = Tac2env.interp_notation kn in
-  globalize ids @@ CAst.make ?loc @@ CTacLet(false, el, body)
-| CTacCnv (e, t) ->
-  let e = globalize ids e in
-  CAst.make ?loc @@ CTacCnv (e, t)
-| CTacSeq (e1, e2) ->
-  let e1 = globalize ids e1 in
-  let e2 = globalize ids e2 in
-  CAst.make ?loc @@ CTacSeq (e1, e2)
-| CTacIft (e, e1, e2) ->
-  let e = globalize ids e in
-  let e1 = globalize ids e1 in
-  let e2 = globalize ids e2 in
-  CAst.make ?loc @@ CTacIft (e, e1, e2)
-| CTacCse (e, bl) ->
-  let e = globalize ids e in
-  let bl = List.map (fun b -> globalize_case ids b) bl in
-  CAst.make ?loc @@ CTacCse (e, bl)
-| CTacRec (def, r) ->
-  let def = Option.map (globalize ids) def in
-  let map (p, e) =
-    let p = get_projection0 p in
-    let e = globalize ids e in
-    (AbsKn p, e)
-  in
-  CAst.make ?loc @@ CTacRec (def, List.map map r)
-| CTacPrj (e, p) ->
-  let e = globalize ids e in
-  let p = get_projection0 p in
-  CAst.make ?loc @@ CTacPrj (e, AbsKn p)
-| CTacSet (e, p, e') ->
-  let e = globalize ids e in
-  let p = get_projection0 p in
-  let e' = globalize ids e' in
-  CAst.make ?loc @@ CTacSet (e, AbsKn p, e')
-| CTacExt (tag, arg) ->
-  let arg = str (Tac2dyn.Arg.repr tag) in
-  CErrors.user_err ?loc (str "Cannot globalize generic arguments of type" ++ spc () ++ arg)
+type raw_ext = RawExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_ext
 
-and globalize_case ids (p, e) =
-  (globalize_pattern ids p, globalize ids e)
+let globalize_gen ~tacext ids tac =
+  let rec globalize ids ({loc;v=er} as e) = match er with
+    | CTacAtm _ -> e
+    | CTacRef ref ->
+      let mem id = Id.Set.mem id ids in
+      begin match get_variable0 mem ref with
+      | ArgVar _ -> e
+      | ArgArg kn ->
+        let () = check_deprecated_ltac2 ?loc ref kn in
+        CAst.make ?loc @@ CTacRef (AbsKn kn)
+      end
+    | CTacCst qid ->
+      let knc = get_constructor () qid in
+      CAst.make ?loc @@ CTacCst (AbsKn knc)
+    | CTacFun (bnd, e) ->
+      let fold (pats, accu) pat =
+        let accu = ids_of_pattern accu pat in
+        let pat = globalize_pattern ids pat in
+        (pat :: pats, accu)
+      in
+      let bnd, ids = List.fold_left fold ([], ids) bnd in
+      let bnd = List.rev bnd in
+      let e = globalize ids e in
+      CAst.make ?loc @@ CTacFun (bnd, e)
+    | CTacApp (e, el) ->
+      let e = globalize ids e in
+      let el = List.map (fun e -> globalize ids e) el in
+      CAst.make ?loc @@ CTacApp (e, el)
+    | CTacLet (isrec, bnd, e) ->
+      let fold accu (pat, _) = ids_of_pattern accu pat in
+      let ext = List.fold_left fold Id.Set.empty bnd in
+      let eids = Id.Set.union ext ids in
+      let e = globalize eids e in
+      let map (qid, e) =
+        let ids = if isrec then eids else ids in
+        let qid = globalize_pattern ids qid in
+        (qid, globalize ids e)
+      in
+      let bnd = List.map map bnd in
+      CAst.make ?loc @@ CTacLet (isrec, bnd, e)
+    | CTacSyn (el, kn) ->
+      let body = Tac2env.interp_notation kn in
+      let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
+      globalize ids v
+    | CTacCnv (e, t) ->
+      let e = globalize ids e in
+      CAst.make ?loc @@ CTacCnv (e, t)
+    | CTacSeq (e1, e2) ->
+      let e1 = globalize ids e1 in
+      let e2 = globalize ids e2 in
+      CAst.make ?loc @@ CTacSeq (e1, e2)
+    | CTacIft (e, e1, e2) ->
+      let e = globalize ids e in
+      let e1 = globalize ids e1 in
+      let e2 = globalize ids e2 in
+      CAst.make ?loc @@ CTacIft (e, e1, e2)
+    | CTacCse (e, bl) ->
+      let e = globalize ids e in
+      let bl = List.map (fun b -> globalize_case ids b) bl in
+      CAst.make ?loc @@ CTacCse (e, bl)
+    | CTacRec (def, r) ->
+      let def = Option.map (globalize ids) def in
+      let map (p, e) =
+        let p = get_projection0 p in
+        let e = globalize ids e in
+        (AbsKn p, e)
+      in
+      CAst.make ?loc @@ CTacRec (def, List.map map r)
+    | CTacPrj (e, p) ->
+      let e = globalize ids e in
+      let p = get_projection0 p in
+      CAst.make ?loc @@ CTacPrj (e, AbsKn p)
+    | CTacSet (e, p, e') ->
+      let e = globalize ids e in
+      let p = get_projection0 p in
+      let e' = globalize ids e' in
+      CAst.make ?loc @@ CTacSet (e, AbsKn p, e')
+    | CTacExt (tag, arg) -> tacext ?loc (RawExt (tag, arg))
 
-and globalize_pattern ids ({loc;v=pr} as p) = match pr with
-| CPatVar _ | CPatAtm _ -> p
-| CPatRef (cst, pl) ->
-  let knc = get_constructor () cst in
-  let cst = AbsKn knc in
-  let pl = List.map (fun p -> globalize_pattern ids p) pl in
-  CAst.make ?loc @@ CPatRef (cst, pl)
-| CPatCnv (pat, ty) ->
-  let pat = globalize_pattern ids pat in
-  CAst.make ?loc @@ CPatCnv (pat, ty)
-| CPatOr pl ->
-  let pl = List.map (fun p -> globalize_pattern ids p) pl in
-  CAst.make ?loc @@ CPatOr pl
-| CPatAs (p,x) ->
-  CAst.make ?loc @@ CPatAs (globalize_pattern ids p, x)
-| CPatRecord pats ->
-  let map (p, e) =
-    let p = get_projection0 p in
-    let e = globalize_pattern ids e in
-    (AbsKn p, e)
+  and globalize_case ids (p, e) =
+    (globalize_pattern ids p, globalize ids e)
+
+  and globalize_pattern ids ({loc;v=pr} as p) = match pr with
+    | CPatVar _ | CPatAtm _ -> p
+    | CPatRef (cst, pl) ->
+      let knc = get_constructor () cst in
+      let cst = AbsKn knc in
+      let pl = List.map (fun p -> globalize_pattern ids p) pl in
+      CAst.make ?loc @@ CPatRef (cst, pl)
+    | CPatCnv (pat, ty) ->
+      let pat = globalize_pattern ids pat in
+      CAst.make ?loc @@ CPatCnv (pat, ty)
+    | CPatOr pl ->
+      let pl = List.map (fun p -> globalize_pattern ids p) pl in
+      CAst.make ?loc @@ CPatOr pl
+    | CPatAs (p,x) ->
+      CAst.make ?loc @@ CPatAs (globalize_pattern ids p, x)
+    | CPatRecord pats ->
+      let map (p, e) =
+        let p = get_projection0 p in
+        let e = globalize_pattern ids e in
+        (AbsKn p, e)
+      in
+      CAst.make ?loc @@ CPatRecord (List.map map pats)
+
   in
-  CAst.make ?loc @@ CPatRecord (List.map map pats)
+  globalize ids tac
+
+let globalize ids tac =
+  let tacext ?loc (RawExt (tag,_)) =
+    let arg = str (Tac2dyn.Arg.repr tag) in
+    CErrors.user_err ?loc (str "Cannot globalize generic arguments of type" ++ spc () ++ arg)
+  in
+  globalize_gen ~tacext ids tac
+
+let debug_globalize_allow_ext ids tac =
+  let tacext ?loc (RawExt (tag,arg)) = CAst.make ?loc @@ CTacExt (tag,arg) in
+  globalize_gen ~tacext ids tac
 
 (** Kernel substitution *)
 
@@ -1872,9 +1880,6 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   let bnd' = List.Smart.map map bnd in
   let e' = subst_rawexpr subst e in
   if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacLet (isrec, bnd', e')
-| CTacSyn (el, kn) ->
-  let body = Tac2env.interp_notation kn in
-  subst_rawexpr subst @@ CAst.make ?loc @@ CTacLet(false, el, body)
 | CTacCnv (e, c) ->
   let e' = subst_rawexpr subst e in
   let c' = subst_rawtype subst c in
@@ -1915,7 +1920,7 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
     let e' = subst_rawexpr subst e in
     let r' = subst_rawexpr subst r in
     if prj' == prj && e' == e && r' == r then t else CAst.make ?loc @@ CTacSet (e', prj', r')
-| CTacExt _ -> assert false (** Should not be generated by globalization *)
+| CTacSyn _ | CTacExt _ -> assert false (** Should not be generated by globalization *)
 
 (** Registering *)
 

@@ -1563,12 +1563,14 @@ let () =
   let intern = intern_constr in
   let interp ist c = interp_constr constr_flags ist c in
   let print env sigma c = str "constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
+  let raw_print env sigma c = str "constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_constr obj
 
@@ -1576,12 +1578,14 @@ let () =
   let intern = intern_constr in
   let interp ist c = interp_constr open_constr_no_classes_flags ist c in
   let print env sigma c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
+  let raw_print env sigma c = str "open_constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_open_constr obj
 
@@ -1593,6 +1597,7 @@ let () =
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
     ml_print = print;
+    ml_raw_print = print;
   } in
   define_ml_object Tac2quote.wit_ident obj
 
@@ -1610,12 +1615,14 @@ let () =
     Patternops.subst_pattern env sigma subst c
   in
   let print env sigma pat = str "pat:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
+  let raw_print env sigma pat = str "pat:(" ++ Ppconstr.pr_constr_pattern_expr env sigma pat ++ str ")" in
   let interp _ c = return (Tac2ffi.of_pattern c) in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
     ml_subst = subst;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_pattern obj
 
@@ -1650,11 +1657,13 @@ let () =
     in
     str "preterm:(" ++ ppids ++ Printer.pr_lglob_constr_env env sigma c ++ str ")"
   in
+  let raw_print env sigma c = str "preterm:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
     ml_subst = subst;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_preterm obj
 
@@ -1677,11 +1686,16 @@ let () =
   | GlobRef.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
+  let raw_print _ _ r = match r.CAst.v with
+    | Tac2qexpr.QReference qid -> str "reference:(" ++ Libnames.pr_qualid qid ++ str ")"
+    | Tac2qexpr.QHypothesis id -> str "reference:(&" ++ Id.print id ++ str ")"
+  in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_reference obj
 
@@ -1727,11 +1741,19 @@ let () =
     in
     str "ltac1:(" ++ ids ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
+  let raw_print env sigma (ids, tac) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else pr_sequence (fun id -> Id.print id.CAst.v) ids ++ spc () ++ str "|-" ++ spc ()
+    in
+    str "ltac1:(" ++ ids ++ Ltac_plugin.Pptactic.pr_raw_tactic env sigma tac ++ str ")"
+  in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_ltac1 obj
 
@@ -1776,11 +1798,19 @@ let () =
     in
     str "ltac1val:(" ++ ids++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
+  let raw_print env sigma (ids, tac) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else pr_sequence (fun id -> Id.print id.CAst.v) ids ++ spc () ++ str "|-" ++ spc ()
+    in
+    str "ltac1val:(" ++ ids ++ Ltac_plugin.Pptactic.pr_raw_tactic env sigma tac ++ str ")"
+  in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_raw_print = raw_print;
   } in
   define_ml_object Tac2quote.wit_ltac1val obj
 
@@ -2022,20 +2052,30 @@ let () =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "
     in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
   let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2in1 pr_raw pr_glb pr_top
 
 let () =
-  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
+  let pr_raw e = Genprint.PrinterBasic (fun _env _sigma ->
+      let avoid = Id.Set.empty in
+      (* FIXME avoid set, same as pr_glb *)
+      let e = Tac2intern.debug_globalize_allow_ext avoid e in
+      Tac2print.pr_rawexpr_gen ~avoid E5 e) in
   let pr_glb (ids, e) =
     let ids =
       let ids = Id.Set.elements ids in
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "
     in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+    (* FIXME avoid set
+       eg "Ltac2 bla foo := constr:(ltac2:(foo X.foo))"
+       gets incorrectly printed as "fun foo => constr:(ltac2:(foo foo))"
+       NB: can't pass through evar map store as the evar map we get is a dummy,
+       see Ppconstr.pr_genarg
+    *)
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
   let pr_top e = Util.Empty.abort e in
   Genprint.register_print0 wit_ltac2_constr pr_raw pr_glb pr_top

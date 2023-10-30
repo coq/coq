@@ -62,6 +62,9 @@ type constructor_data = {
 val define_constructor : ltac_constructor -> constructor_data -> unit
 val interp_constructor : ltac_constructor -> constructor_data
 
+val find_all_constructors_in_type : type_constant -> constructor_data KNmap.t
+(** Useful for printing info about currently defined constructors of open types. *)
+
 (** {5 Toplevel definition of projections} *)
 
 type projection_data = {
@@ -100,7 +103,7 @@ val interp_notation : ltac_notation -> raw_tacexpr
 val push_ltac : visibility -> full_path -> tacref -> unit
 val locate_ltac : qualid -> tacref
 val locate_extended_all_ltac : qualid -> tacref list
-val shortest_qualid_of_ltac : tacref -> qualid
+val shortest_qualid_of_ltac : Id.Set.t -> tacref -> qualid
 val path_of_ltac : tacref -> full_path
 
 val push_constructor : visibility -> full_path -> ltac_constructor -> unit
@@ -113,6 +116,7 @@ val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
 val locate_extended_all_type : qualid -> type_constant list
 val shortest_qualid_of_type : ?loc:Loc.t -> type_constant -> qualid
+val path_of_type : type_constant -> full_path
 
 val push_projection : visibility -> full_path -> ltac_projection -> unit
 val locate_projection : qualid -> ltac_projection
@@ -144,6 +148,7 @@ type ('a, 'b) ml_object = {
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
+  ml_raw_print : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
 }
 
 val define_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object -> unit

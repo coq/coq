@@ -1062,15 +1062,11 @@ open Stdarg
 
 }
 
-VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Ltac2Printers CLASSIFIED AS QUERY
 | [ "Print" "Ltac2" reference(tac) ] -> { Tac2entries.print_ltac2 tac }
-END
-
-VERNAC COMMAND EXTEND Ltac2Locate CLASSIFIED AS QUERY
-| [ "Locate" "Ltac2" reference(r) ] ->
-  { Tac2entries.print_located_tactic r }
-END
-
-VERNAC COMMAND EXTEND Ltac2PrintSigs CLASSIFIED AS QUERY
+| [ "Print" "Ltac2" "Type" reference(tac) ] -> { Tac2entries.print_ltac2_type tac }
+| [ "Locate" "Ltac2" reference(r) ] -> { Tac2entries.print_located_tactic r }
 | [ "Print" "Ltac2" "Signatures" ] -> { Tac2entries.print_signatures () }
+| [ "Ltac2" "Check" ltac2_expr(e) ] -> { Tac2entries.typecheck_expr e }
+| [ "Ltac2" "Globalize" ltac2_expr(e) ] -> { Tac2entries.globalize_expr e }
 END

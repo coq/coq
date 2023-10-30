@@ -89,6 +89,9 @@ let define_constructor kn t =
 
 let interp_constructor kn = KNmap.find kn ltac_state.contents.ltac_constructors
 
+let find_all_constructors_in_type kn =
+  KNmap.filter (fun _ data -> KerName.equal kn data.cdata_type) (!ltac_state).ltac_constructors
+
 let define_projection kn t =
   let state = !ltac_state in
   ltac_state := { state with ltac_projections = KNmap.add kn t state.ltac_projections }
@@ -207,10 +210,10 @@ let locate_extended_all_ltac qid =
 
 let path_of_ltac kn = RfMap.find kn (!nametab).tab_ltac_rev
 
-let shortest_qualid_of_ltac kn =
+let shortest_qualid_of_ltac avoid kn =
   let tab = !nametab in
   let sp = RfMap.find kn tab.tab_ltac_rev in
-  RfTab.shortest_qualid Id.Set.empty sp tab.tab_ltac
+  RfTab.shortest_qualid avoid sp tab.tab_ltac
 
 let push_constructor vis sp kn =
   let tab = !nametab in
@@ -246,6 +249,8 @@ let locate_type qid =
 let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
+
+let path_of_type kn = KNmap.find kn (!nametab).tab_type_rev
 
 let shortest_qualid_of_type ?loc kn =
   let tab = !nametab in
@@ -286,6 +291,7 @@ type ('a, 'b) ml_object = {
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
+  ml_raw_print : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
 }
 
 module MLTypeObj =

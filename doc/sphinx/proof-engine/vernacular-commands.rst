@@ -434,10 +434,11 @@ Requests to the environment
 
 .. cmd:: Locate Ltac @qualid
 
-   Like :cmd:`Locate`, but limits the search to tactics
+   Like :cmd:`Locate`, but limits the search to Ltac tactics
 
 .. cmd:: Locate Ltac2 @qualid
-   :undocumented:
+
+   Like :cmd:`Locate`, but limits the search to Ltac2 tactics.
 
 .. cmd:: Locate Library @qualid
 

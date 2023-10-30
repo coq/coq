@@ -43,6 +43,10 @@ val globalize : Id.Set.t -> raw_tacexpr -> raw_tacexpr
 (** Replaces all qualified identifiers by their corresponding kernel name. The
     set represents bound variables in the context. *)
 
+val debug_globalize_allow_ext : Id.Set.t -> raw_tacexpr -> raw_tacexpr
+(** Variant of globalize which can accept CTacExt using the provided function.
+    Intended for debugging. *)
+
 (** Errors *)
 
 val error_nargs_mismatch : ?loc:Loc.t -> ltac_constructor -> int -> int -> 'a
