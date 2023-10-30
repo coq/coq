@@ -1590,7 +1590,7 @@ let declare_entry_coercion ntn entry_level entry_relative_level' =
         if included { notation_entry = entry''; notation_level = lev'' } entry_relative_level' &&
            not (included entry_level
                   { notation_subentry = entry'''; notation_relative_level = sublev'''; notation_position = None })
-        then ((entry,entry'''),((lev,sublev'''),path@[ntn]))::l else l) paths l)
+        then ((entry,entry'''),((lev,sublev'''),ntn::path))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=
     List.fold_right (fun (pair,path) ->
