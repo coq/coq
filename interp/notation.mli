@@ -285,7 +285,7 @@ val interpret_notation_string : string -> string
 
 type notation_as_reference_error =
   | AmbiguousNotationAsReference of notation_key
-  | NotationNotReference of notation_key
+  | NotationNotReference of Environ.env * Evd.evar_map * notation_key * (notation_key * notation_constr) list
 
 exception NotationAsReferenceError of notation_as_reference_error
 

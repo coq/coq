@@ -2369,15 +2369,17 @@ let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not
 
 type notation_as_reference_error =
   | AmbiguousNotationAsReference of notation_key
-  | NotationNotReference of notation_key
+  | NotationNotReference of Environ.env * Evd.evar_map * notation_key * (notation_key * notation_constr) list
 
 exception NotationAsReferenceError of notation_as_reference_error
 
 let error_ambiguous_notation ?loc ntn =
   Loc.raise ?loc (NotationAsReferenceError (AmbiguousNotationAsReference ntn))
 
-let error_notation_not_reference ?loc ntn =
-  Loc.raise ?loc (NotationAsReferenceError (NotationNotReference ntn))
+let error_notation_not_reference ?loc ntn ntns =
+  let ntns = List.map (fun (_,_,(_,_,{ not_interp  = (_, r); not_location = (_, df) })) -> df, r) ntns in
+  let env = Global.env () in let sigma = Evd.from_env env in
+  Loc.raise ?loc (NotationAsReferenceError (NotationNotReference (env, sigma, ntn, ntns)))
 
 let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let scopes = match sc with
@@ -2389,7 +2391,7 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let refs = List.map (global_reference_of_notation ~head test) ntns in
   match Option.List.flatten refs with
   | [Some true,_ (* why not if the only one? *),_,_,ref] -> ref
-  | [] -> error_notation_not_reference ?loc ntn
+  | [] -> error_notation_not_reference ?loc ntn ntns
   | refs ->
       let f (on_parsing,_,ntn,sc,ref) =
         let def = find_default ntn !scope_stack in
@@ -2399,7 +2401,7 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
       in
       match List.filter f refs with
       | [_,_,_,_,ref] -> ref
-      | [] -> error_notation_not_reference ?loc ntn
+      | [] -> error_notation_not_reference ?loc ntn ntns
       | _ -> error_ambiguous_notation ?loc ntn
 
 let locate_notation prglob ntn scope =

@@ -1,0 +1,7 @@
+File "./output/smartlocate.v", line 1, characters 11-15:
+The command has indeed failed with message:
+Unable to unambiguously interpret "<>" as a reference. Found:
+Notation "x <> y" := (not (eq x y))
+File "./output/smartlocate.v", line 2, characters 11-26:
+The command has indeed failed with message:
+Unable to interpret "'nonexistent'" as a reference.
