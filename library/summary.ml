@@ -216,14 +216,4 @@ let ref ?(stage=Stage.Interp) ?(local=false) ~name x =
     in
     r
 
-module Local = struct
-
-type 'a local_ref = 'a ref
-
-let ref ?stage ~name x = ref ?stage ~name ~local:true x
-let (!) = (!)
-let (:=) = (:=)
-
-end
-
 let dump = Dyn.dump

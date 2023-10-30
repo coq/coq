@@ -67,15 +67,6 @@ val declare_summary_tag : string -> ?make_marshallable:('a -> 'a) -> 'a summary_
 val ref : ?stage:Stage.t -> ?local:bool -> name:string -> 'a -> 'a ref
 val ref_tag : ?stage:Stage.t -> name:string -> 'a -> 'a ref * 'a Dyn.tag
 
-module Local : sig
-
-  type 'a local_ref = 'a ref
-  val ref : ?stage:Stage.t -> name:string -> 'a -> 'a local_ref
-  val (:=) : 'a local_ref -> 'a -> unit
-  val (!) : 'a local_ref -> 'a
-
-end [@@ocaml.deprecated "Use [Summary.ref ~local:true]"]
-
 (** Special summary for ML modules.  This summary entry is special
     because its unfreeze may load ML code and hence add summary
     entries.  Thus is has to be recognizable, and handled properly.
