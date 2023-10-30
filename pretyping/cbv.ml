@@ -371,7 +371,7 @@ let rec reify_stack t = function
       reify_stack (mkApp(t,Array.map_of_list reify_value args)) st
   | CASE (u,pms,ty,br,iv,ci,env,st) ->
       reify_stack
-        (mkCase (ci, u, pms, ty, iv, t,br))
+        (apply_env env @@ mkCase (ci, u, pms, ty, iv, t,br))
         st
   | PROJ (p, st) ->
        reify_stack (mkProj (p, t)) st
