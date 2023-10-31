@@ -531,7 +531,15 @@ module Search = struct
     else
       tclUNIT ()
 
-  let _ = CErrors.register_handler begin function
+  let pr_internal_exception ie =
+    match fst ie with
+    | ReachedLimit -> str "Proof-search reached its limit."
+    | NoApplicableHint -> str "Proof-search failed."
+    | StuckGoal | NonStuckFailure -> str "Proof-search got stuck."
+    | e -> CErrors.iprint ie
+
+  (* XXX Is this handler needed for something? *)
+  let () = CErrors.register_handler begin function
     | NonStuckFailure -> Some (str "NonStuckFailure")
     | NoApplicableHint -> Some (str "NoApplicableHint")
     | _ -> None
@@ -584,12 +592,12 @@ module Search = struct
             in
             cycle 1 (* Puts the first goal last *) <*>
             fixpoint progress tacs ((glid, ev, status, tac) :: stuck) fk (* Launches the search on the rest of the goals *)
-          | Fail (e, info) ->
+          | Fail ie ->
             let () = ppdebug 1 (fun () ->
                 str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
-                ++ CErrors.iprint (e, info))
+                ++ pr_internal_exception ie)
             in
-            fk (e, info)
+            fk ie
           | Next (res, fk') ->
             let () = ppdebug 1 (fun () ->
                 str "Goal " ++ int glid ++ str" has a success, continuing resolution")
@@ -717,14 +725,7 @@ module Search = struct
                  str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
                else mt ())
             in
-            let msg =
-              match fst ie with
-              | ReachedLimit -> str "Proof-search reached its limit."
-              | NoApplicableHint -> str "Proof-search failed."
-              | StuckGoal | NonStuckFailure -> str "Proof-search got stuck."
-              | e -> CErrors.iprint ie
-            in
-            (header ++ str " failed with: " ++ msg))
+            (header ++ str " failed with: " ++ pr_internal_exception ie))
       in
       let tac_of gls i j = Goal.enter begin fun gl' ->
         let sigma' = Goal.sigma gl' in
