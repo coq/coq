@@ -17,6 +17,7 @@
 #install_printer  (* constant *) ppcon;;
 #install_printer  (* projection *) ppproj;;
 #install_printer  (* projection *) ppprojrepr;;
+#install_printer  (* recarg *)  pprecargs;;
 #install_printer  (* recarg Rtree.t *)  ppwf_paths;;
 #install_printer  (* constr *)  print_pure_constr;;
 #install_printer  (* patch *) ppripos;;

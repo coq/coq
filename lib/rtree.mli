@@ -77,8 +77,8 @@ val incl : ('a -> 'a -> bool) -> ('a -> 'a -> 'a option) -> 'a -> 'a t -> 'a t -
 (** See also [Smart.map] *)
 val map : ('a -> 'b) -> 'a t -> 'b t
 
-(** A rather simple minded pretty-printer *)
-val pp_tree : ('a -> Pp.t) -> 'a t -> Pp.t
+(** A rather simple-minded pretty-printer *)
+val pr_alternating_tree : (bool -> 'a -> Pp.t option) -> 'a t -> Pp.t
 
 module Smart :
 sig

@@ -34,7 +34,7 @@ val ppqualid : Libnames.qualid -> unit
 
 val ppscheme : 'a Ind_tables.scheme_kind -> unit
 
-val prrecarg : Declarations.recarg -> Pp.t
+val pprecarg : Declarations.recarg -> Pp.t
 val ppwf_paths : Declarations.recarg Rtree.t -> unit
 
 val pr_evar : Evar.t -> Pp.t

@@ -171,16 +171,18 @@ let eq_recarg r1 r2 = match r1, r2 with
 | Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
 | Nested _, _ -> false
 
-let pp_recarg = let open Pp in function
-  | Declarations.Norec -> str "Norec"
+let pr_recarg_internal b = let open Pp in function
+  | Declarations.Norec -> if b then Some (Pp.str "Norec") else None
   | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+     Some (str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]")
   | Declarations.(Nested (NestedInd (mind,i))) ->
-     str "Nested[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+     Some (str "Nested[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]")
   | Declarations.(Nested (NestedPrimitive c)) ->
-     str "Nested[" ++ Names.Constant.print c ++ str "]"
+     Some (str "Nested[" ++ Names.Constant.print c ++ str "]")
 
-let pp_wf_paths x = Rtree.pp_tree pp_recarg x
+let pr_wf_paths x = Rtree.pr_alternating_tree pr_recarg_internal x
+
+let pr_recarg x = match pr_recarg_internal false x with None -> Pp.str "Norec" | Some p -> p
 
 let subst_nested_type subst ty = match ty with
 | NestedInd (kn,i) ->

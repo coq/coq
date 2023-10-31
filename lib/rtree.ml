@@ -195,17 +195,22 @@ let is_infinite cmp t =
 (* Pretty-print a tree (not so pretty) *)
 open Pp
 
-let rec pp_tree prl t =
-  match t with
-      Param (i,j) -> str"#"++int i++str","++int j
-    | Node(lab,[||]) -> hov 2 (str"("++prl lab++str")")
+let pr_alternating_tree prl t =
+  let rec aux b = function
+    | Param (i,j) -> str"#"++int i++str":"++int j
     | Node(lab,v) ->
-        hov 2 (str"("++prl lab++str","++brk(1,0)++
-               prvect_with_sep pr_comma (pp_tree prl) v++str")")
+      let p' = prvect_with_sep pr_comma (aux (not b)) v in
+      let paren p = if b then str"["++hv 0 p'++str"]" else str"("++hv 0 p'++str")" in
+      hov 0
+          (match prl b lab with
+          | None -> paren (mt())
+          | Some p -> if Array.length v = 0 then p else (p++str","++spc()++paren p'))
     | Rec(i,v) ->
         if Int.equal (Array.length v) 0 then str"Rec{}"
         else if Int.equal (Array.length v) 1 then
-          hov 2 (str"Rec{"++pp_tree prl v.(0)++str"}")
+          hv 2 (str"Rec{"++aux b v.(0)++str"}")
         else
-          hov 2 (str"Rec{"++int i++str","++brk(1,0)++
-                 prvect_with_sep pr_comma (pp_tree prl) v++str"}")
+          hv 2 (str"Rec{"++int i++str","++brk(1,0)++
+                 prvect_with_sep pr_comma (aux b) v++str"}")
+  in
+  aux true t
