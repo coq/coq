@@ -46,8 +46,8 @@ val is_opaque : 'a pconstant_body -> bool
 
 val eq_recarg : recarg -> recarg -> bool
 
-val pp_recarg : recarg -> Pp.t
-val pp_wf_paths : wf_paths -> Pp.t
+val pr_recarg : recarg -> Pp.t
+val pr_wf_paths : wf_paths -> Pp.t
 
 val subst_recarg : substitution -> recarg -> recarg
 
