@@ -3,5 +3,5 @@
  (synopsis "Instruction count using Linux perf.")
  (public_name coq-core.perf)
  (wrapped false)
- (foreign_stubs (language c) (names coq_perf))
+ (foreign_stubs (language c) (names perf))
  (enabled_if (= %{system} linux)))
