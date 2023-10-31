@@ -6,4 +6,6 @@
  (modules_without_implementation xml_datatype)
  (libraries
   coq-core.boot coq-core.clib coq-core.config
-  (select instr.ml from (!perf -> instr.noperf.ml) (perf -> instr.perf.ml))))
+  (select instr.ml from
+   (!coqperf -> instr.noperf.ml)
+   (coqperf -> instr.perf.ml))))

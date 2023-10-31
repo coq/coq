@@ -1,5 +1,5 @@
 (library
- (name perf)
+ (name coqperf)
  (synopsis "Instruction count using Linux perf.")
  (public_name coq-core.perf)
  (wrapped false)
