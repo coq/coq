@@ -212,7 +212,8 @@ let message_view sid : message_view =
       end else if key_ev = return then begin
         let ins = buffer#get_iter_at_mark `INSERT in
         let cmd = buffer#get_text ~start:eoo ~stop:ins () in
-        add_msg (Fb (Feedback.Notice, Pp.str cmd));
+        (* save cmd but don't print a second time *)
+        msgs := (Fb (Feedback.Notice, Pp.str cmd), 0) :: !msgs;
         buffer#insert "\n";
         buffer#move_mark `INSERT ~where:buffer#end_iter;
         view#scroll_to_mark `INSERT; (* scroll to insertion point *)

@@ -457,6 +457,7 @@ let goal_com tac varmap trace =
 let skipped = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
 let skip = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
 let idtac_breakpt = Proofview.NonLogical.run (Proofview.NonLogical.ref None)
+let idtac_bpt_stop = ref false
 
 let batch = ref false
 
@@ -477,7 +478,10 @@ let db_initialize is_tac =
       (fun _ -> set_break true));
   let open Proofview.NonLogical in
   let x = (skip:=0) >> (skipped:=0) >> (idtac_breakpt:=None) in
-  if is_tac then make Comm.init >> x else x
+  if is_tac then begin
+    idtac_bpt_stop.contents <- false;
+    make Comm.init >> x
+  end else x
 
 (* Prints the run counter *)
 let print_run_ctr print =
@@ -613,13 +617,19 @@ let debug_prompt lev tac f varmap trace =
       else if get_break () then begin
         set_break false;
         stop_here ()
+      end else if s = 1 then begin
+        Proofview.tclLIFT ((skip := 0) >> runprint) >=
+        (fun () -> stop_here ())
       end else if s > 0 then
         Proofview.tclLIFT ((skip := s-1) >>
           runprint >>
           !skip >>= fun new_skip ->
           (if new_skip = 0 then skipped := 0 else return ()) >>
           return (DebugOn (lev+1)))
-      else (* todo: move this block before skip logic? *)
+      else if idtac_bpt_stop.contents then begin
+        idtac_bpt_stop.contents <- false;
+        stop_here ()
+      end else
         Proofview.tclLIFT !idtac_breakpt >= fun idtac_breakpt ->
           if Option.has_some idtac_breakpt then
             Proofview.tclLIFT(runprint >> return (DebugOn (lev+1)))
@@ -640,6 +650,7 @@ let debug_prompt lev tac f varmap trace =
                             else if l_prev = 0 then false
                             else
                               StdList.nth st (l_cur - l_prev) != (StdList.hd st_prev)
+              | Skip | RunCnt _ | RunBreakpoint _ -> false (* handled elsewhere *)
               | _ -> failwith "action op"
             in
             if stop then begin
@@ -689,9 +700,10 @@ let db_breakpoint debug s =
   !idtac_breakpt >>= fun opt_breakpoint ->
   match debug with
   | DebugOn lev when not (CList.is_empty s) && is_breakpoint opt_breakpoint s ->
-      idtac_breakpt:=None
+    idtac_bpt_stop.contents <- true;
+    idtac_breakpt:=None
   | _ ->
-      return ()
+    return ()
 
 (** Extracting traces *)
 
