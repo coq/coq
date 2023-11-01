@@ -5,9 +5,6 @@ set -e
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-WITH_SUBMODULES=1
-git_download fiat_crypto
-
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 # We need a larger stack size to not overflow ocamlopt+flambda when
@@ -20,6 +17,7 @@ stacksize=32768
 # version of other developments
 make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1)
 
+export COQEXTRAFLAGS='-native-compiler no' # following bedrock2
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
   ulimit -s $stacksize
   make "${make_args[@]}" pre-standalone-extracted printlite lite ||

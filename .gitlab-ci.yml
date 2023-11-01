@@ -656,6 +656,7 @@ library:ci-fiat_crypto:
   needs:
   - build:edge+flambda
   - library:ci-coqprime
+  - library:ci-bedrock2
   - plugin:ci-bignums
   - plugin:ci-rewriter
   timeout: 3h

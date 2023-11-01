@@ -122,7 +122,7 @@ ci-coq_library_undecidability: ci-metacoq
 
 ci-mtac2: ci-unicoq
 
-ci-fiat_crypto: ci-coqprime ci-rewriter
+ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-fourcolor: ci-mathcomp
