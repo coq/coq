@@ -507,7 +507,9 @@ let should_invert_case env ci =
 let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
   (* Check that the type of the scrutinee is <= the expected argument type *)
-  let () = Array.iter2 (fun p1 p2 -> Conversion.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
+  let () = try Array.iter2 (fun p1 p2 -> Conversion.conv ~l2r:true env p1 p2) (Array.of_list params) pms
+    with NotConvertible -> raise Type_errors.(TypeError (env,IllFormedCaseParams))
+  in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
   let cst = match mib.mind_variance with
