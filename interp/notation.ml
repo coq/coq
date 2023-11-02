@@ -425,6 +425,50 @@ type ('target, 'warning) prim_token_notation_obj =
 type number_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
 type string_notation_obj = (string_target_kind, unit) prim_token_notation_obj
 
+type 'a token_kind =
+| TVar of Id.t * 'a list
+| TSort of Sorts.t
+| TConst of Constant.t * 'a list
+| TInd of inductive * 'a list
+| TConstruct of constructor * 'a list
+| TInt of Uint63.t
+| TFloat of Float64.t
+| TArray of 'a array * 'a * 'a
+| TOther
+
+module TokenValue :
+sig
+  type t
+  val kind : t -> t token_kind
+  val make : Environ.env -> Evd.evar_map -> EConstr.unsafe_judgment -> t
+  val repr : t -> Constr.t
+end =
+struct
+
+type t = Constr.t (* Guaranteed to be in strong normal form *)
+
+let kind c =
+  let hd, args = decompose_app_list c in
+  match Constr.kind hd with
+  | Var id -> TVar (id, args)
+  | Sort s -> TSort s
+  | Const (c, _) -> TConst (c, args)
+  | Ind (ind, _) -> TInd (ind, args)
+  | Construct (c, _) -> TConstruct (c, args)
+  | Int i -> TInt i
+  | Float f -> TFloat f
+  | Array (_, t, u, v) -> TArray (t, u, v)
+  | Rel _ | Meta _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
+  | Proj _ | Case _ | Fix _ | CoFix _ -> TOther
+
+let make env sigma c =
+  let c' = Tacred.compute env sigma c.Environ.uj_val in
+  EConstr.Unsafe.to_constr @@ c'
+
+let repr c = c
+
+end
+
 module PrimTokenNotation = struct
 (** * Code shared between Number notation and String notation *)
 (** Reduction
@@ -447,9 +491,8 @@ module PrimTokenNotation = struct
 
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
-  let sigma, _ = Typing.type_of env sigma c in
-  let c' = Tacred.compute env sigma c in
-  EConstr.Unsafe.to_constr c'
+  let sigma, t = Typing.type_of env sigma c in
+  TokenValue.make env sigma { Environ.uj_val = c; Environ.uj_type = t }
 
 let eval_constr_app env sigma c1 c2 =
   eval_constr env sigma (mkApp (c1,[| c2 |]))
@@ -595,6 +638,42 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=UnivRigid}))
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
+let mkGApp ?loc hd args = match args with
+| [] -> hd
+| _ :: _ -> mkGApp ?loc hd args
+
+let rec glob_of_token token_kind ?loc env sigma c = match TokenValue.kind c with
+  | TConstruct (c, l) ->
+    let ce = DAst.make ?loc (Glob_term.GRef (GlobRef.ConstructRef c, None)) in
+    let cel = List.map (glob_of_token token_kind ?loc env sigma) l in
+    mkGApp ?loc ce cel
+  | TConst (c, l) ->
+    let ce = DAst.make ?loc (Glob_term.GRef (GlobRef.ConstRef c, None)) in
+    let cel = List.map (glob_of_token token_kind ?loc env sigma) l in
+    mkGApp ?loc ce cel
+  | TInd (ind, l) ->
+    let ce = DAst.make ?loc (Glob_term.GRef (GlobRef.IndRef ind, None)) in
+    let cel = List.map (glob_of_token token_kind ?loc env sigma) l in
+    mkGApp ?loc ce cel
+  | TVar (id, l) ->
+    let ce = DAst.make ?loc (Glob_term.GRef (GlobRef.VarRef id, None)) in
+    let cel = List.map (glob_of_token token_kind ?loc env sigma) l in
+    mkGApp ?loc ce cel
+  | TInt i -> DAst.make ?loc (Glob_term.GInt i)
+  | TFloat f -> DAst.make ?loc (Glob_term.GFloat f)
+  | TArray (t,def,ty) ->
+    let def' = glob_of_token token_kind ?loc env sigma def
+    and t' = Array.map (glob_of_token token_kind ?loc env sigma) t
+    and ty' = glob_of_token token_kind ?loc env sigma ty in
+    DAst.make ?loc (Glob_term.GArray (None,t',def',ty'))
+  | TSort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSProp, 0])))
+  | TSort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
+  | TSort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
+  | TSort (Sorts.Type _ | Sorts.QSort _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=UnivRigid}))
+  | TOther ->
+    let c = TokenValue.repr c in
+    Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
+
 let no_such_prim_token uninterpreted_token_kind ?loc ty =
   CErrors.user_err ?loc
    (str ("Cannot interpret this "^uninterpreted_token_kind^" as a value of type ") ++
@@ -629,15 +708,22 @@ let glob_of_constr token_kind ty ?loc env sigma to_post c =
   match to_post with [||] -> g | _ ->
     postprocess token_kind ?loc ty to_post to_post.(0) g
 
+let glob_of_token token_kind ty ?loc env sigma to_post c =
+  let g = glob_of_token token_kind ?loc env sigma c in
+  match to_post with [||] -> g | _ ->
+    postprocess token_kind ?loc ty to_post to_post.(0) g
+
 let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma to_post c =
-  match Constr.kind c with
-  | App (_Some, [| _; c |]) -> glob_of_constr token_kind ty ?loc env sigma to_post c
-  | App (_None, [| _ |]) -> no_such_prim_token uninterpreted_token_kind ?loc ty
-  | x -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
+  match TokenValue.kind c with
+  | TConstruct (_Some, [_; c]) -> glob_of_token token_kind ty ?loc env sigma to_post c
+  | TConstruct (_None, [_]) -> no_such_prim_token uninterpreted_token_kind ?loc ty
+  | x ->
+    let c = TokenValue.repr c in
+    Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
 
 let uninterp_option c =
-  match Constr.kind c with
-  | App (_Some, [| _; x |]) -> x
+  match TokenValue.kind c with
+  | TConstruct (_Some, [_; x]) -> x
   | _ -> raise NotAValidPrimToken
 
 let uninterp to_raw o n =
@@ -750,14 +836,11 @@ let coqint_of_rawnum esig inds n =
 
 let rawnum_of_coquint cl c =
   let rec of_uint_loop c buf =
-    match Constr.kind c with
-    | Construct ((_,1), _) (* Nil *) -> ()
-    | App (c, [|a|]) ->
-       (match Constr.kind c with
-        | Construct ((_,n), _) (* D0 to Df *) ->
-           let () = Buffer.add_char buf (char_of_digit n) in
-           of_uint_loop a buf
-        | _ -> raise NotAValidPrimToken)
+    match TokenValue.kind c with
+    | TConstruct ((_, 1), _) (* Nil *) -> ()
+    | TConstruct ((_, n), [a]) (* D0 to Df *) ->
+      let () = Buffer.add_char buf (char_of_digit n) in
+      of_uint_loop a buf
     | _ -> raise NotAValidPrimToken
   in
   let buf = Buffer.create 64 in
@@ -770,12 +853,9 @@ let rawnum_of_coquint cl c =
   else NumTok.UnsignedNat.of_string (Buffer.contents buf)
 
 let rawnum_of_coqint cl c =
-  match Constr.kind c with
-  | App (c,[|c'|]) ->
-     (match Constr.kind c with
-      | Construct ((_,1), _) (* Pos *) -> (SPlus,rawnum_of_coquint cl c')
-      | Construct ((_,2), _) (* Neg *) -> (SMinus,rawnum_of_coquint cl c')
-      | _ -> raise NotAValidPrimToken)
+  match TokenValue.kind c with
+  | TConstruct ((_, 1), [c']) (* Pos *) -> (SPlus, rawnum_of_coquint cl c')
+  | TConstruct ((_, 2), [c']) (* Neg *) -> (SMinus, rawnum_of_coquint cl c')
   | _ -> raise NotAValidPrimToken
 
 let rawnum_of_coqnumber cl c =
@@ -784,17 +864,14 @@ let rawnum_of_coqnumber cl c =
     let f = try Some (rawnum_of_coquint cl f) with NotAValidPrimToken -> None in
     let e = match e with None -> None | Some e -> Some (rawnum_of_coqint CDec e) in
     NumTok.Signed.of_int_frac_and_exponent n f e in
-  match Constr.kind c with
-  | App (_,[|i; f|]) -> of_ife i f None
-  | App (_,[|i; f; e|]) -> of_ife i f (Some e)
+  match TokenValue.kind c with
+  | TConstruct (_, [i; f]) -> of_ife i f None
+  | TConstruct (_, [i; f; e]) -> of_ife i f (Some e)
   | _ -> raise NotAValidPrimToken
 
-let destDecHex c = match Constr.kind c with
-  | App (c,[|c'|]) ->
-     (match Constr.kind c with
-      | Construct ((_,1), _) (* (UInt|Int|)Decimal *) -> CDec, c'
-      | Construct ((_,2), _) (* (UInt|Int|)Hexadecimal *) -> CHex, c'
-      | _ -> raise NotAValidPrimToken)
+let destDecHex c = match TokenValue.kind c with
+  | TConstruct ((_, 1), [c']) (* (UInt|Int|)Decimal *) -> CDec, c'
+  | TConstruct ((_, 2), [c']) (* (UInt|Int|)Hexadecimal *) -> CHex, c'
   | _ -> raise NotAValidPrimToken
 
 let rawnum_of_coqnumber c =
@@ -826,19 +903,11 @@ let rec pos_of_bigint esig posty n =
   | (q, _) ->
       mkConstruct esig (posty, 3) (* xH *)
 
-let rec bigint_of_pos c = match Constr.kind c with
-  | Construct ((_, 3), _) -> (* xH *) Z.one
-  | App (c, [| d |]) ->
-      begin match Constr.kind c with
-      | Construct ((_, n), _) ->
-          begin match n with
-          | 1 -> (* xI *) Z.add Z.one (Z.mul z_two (bigint_of_pos d))
-          | 2 -> (* xO *) Z.mul z_two (bigint_of_pos d)
-          | n -> assert false (* no other constructor of type positive *)
-          end
-      | x -> raise NotAValidPrimToken
-      end
-  | x -> raise NotAValidPrimToken
+let rec bigint_of_pos c = match TokenValue.kind c with
+| TConstruct ((_, 3), []) -> (* xH *) Z.one
+| TConstruct ((_, 1), [d]) -> (* xI *) Z.add Z.one (Z.mul z_two (bigint_of_pos d))
+| TConstruct ((_, 2), [d]) -> (* xO *) Z.mul z_two (bigint_of_pos d)
+| x -> raise NotAValidPrimToken
 
 (** Now, [Z] from/to bigint *)
 
@@ -853,19 +922,11 @@ let z_of_bigint esig { z_ty; pos_ty } n =
     let c = mkConstruct esig (z_ty, s) in
     mkApp (c, [| pos_of_bigint esig pos_ty n |])
 
-let bigint_of_z z = match Constr.kind z with
-  | Construct ((_, 1), _) -> (* Z0 *) Z.zero
-  | App (c, [| d |]) ->
-      begin match Constr.kind c with
-      | Construct ((_, n), _) ->
-          begin match n with
-          | 2 -> (* Zpos *) bigint_of_pos d
-          | 3 -> (* Zneg *) Z.neg (bigint_of_pos d)
-          | n -> assert false (* no other constructor of type Z *)
-          end
-      | _ -> raise NotAValidPrimToken
-      end
-  | _ -> raise NotAValidPrimToken
+let bigint_of_z z = match TokenValue.kind z with
+| TConstruct ((_, 1), []) -> (* Z0 *) Z.zero
+| TConstruct ((_, 2), [d]) -> (* Zpos *) bigint_of_pos d
+| TConstruct ((_, 3), [d]) -> (* Zneg *) Z.neg (bigint_of_pos d)
+| _ -> raise NotAValidPrimToken
 
 (** Now, [Int63] from/to bigint *)
 
@@ -941,19 +1002,14 @@ let interp_float64 ?loc n =
     warn_inexact_float ?loc (sn, f);
   mkFloat f
 
-let bigint_of_int63 c =
-  match Constr.kind c with
-  | Int i -> Z.of_int64 (Uint63.to_int64 i)
-  | _ -> raise NotAValidPrimToken
+let bigint_of_int63 c = match TokenValue.kind c with
+| TInt i -> Z.of_int64 (Uint63.to_int64 i)
+| _ -> raise NotAValidPrimToken
 
-let bigint_of_coqpos_neg_int63 c =
-  match Constr.kind c with
-  | App (c,[|c'|]) ->
-     (match Constr.kind c with
-      | Construct ((_,1), _) (* Pos *) -> bigint_of_int63 c'
-      | Construct ((_,2), _) (* Neg *) -> Z.neg (bigint_of_int63 c')
-      | _ -> raise NotAValidPrimToken)
-  | _ -> raise NotAValidPrimToken
+let bigint_of_coqpos_neg_int63 c = match TokenValue.kind c with
+| TConstruct ((_, 1), [c']) (* Pos *) -> bigint_of_int63 c'
+| TConstruct ((_, 2), [c']) (* Neg *) -> Z.neg (bigint_of_int63 c')
+| _ -> raise NotAValidPrimToken
 
 let { Goptions.get = get_printing_float } =
   Goptions.declare_bool_option_and_ref
@@ -961,12 +1017,11 @@ let { Goptions.get = get_printing_float } =
     ~value:true
     ()
 
-let uninterp_float64 c =
-  match Constr.kind c with
-  | Float f when not (Float64.is_infinity f || Float64.is_neg_infinity f
-                      || Float64.is_nan f) && get_printing_float () ->
-     NumTok.Signed.of_string (Float64.to_string f)
-  | _ -> raise NotAValidPrimToken
+let uninterp_float64 c = match TokenValue.kind c with
+| TFloat f when not (Float64.is_infinity f || Float64.is_neg_infinity f
+                    || Float64.is_nan f) && get_printing_float () ->
+  NumTok.Signed.of_string (Float64.to_string f)
+| _ -> raise NotAValidPrimToken
 
 let interp o ?loc n =
   begin match o.warning, n with
@@ -1002,7 +1057,7 @@ let interp o ?loc n =
   | _ ->
      let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
-     | Direct -> glob_of_constr "number" o.ty_name ?loc env sigma o.to_post res
+     | Direct -> glob_of_token "number" o.ty_name ?loc env sigma o.to_post res
      | Option -> interp_option "number" "number" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
@@ -1060,10 +1115,9 @@ let make_ascii_string n =
   if n>=32 && n<=126 then String.make 1 (char_of_int n)
   else Printf.sprintf "%03d" n
 
-let char_code_of_coqbyte c =
-  match Constr.kind c with
-  | Construct ((_,c), _) -> c - 1
-  | _ -> raise NotAValidPrimToken
+let char_code_of_coqbyte c = match TokenValue.kind c with
+| TConstruct ((_,c), []) -> c - 1
+| _ -> raise NotAValidPrimToken
 
 let string_of_coqbyte c = make_ascii_string (char_code_of_coqbyte c)
 
@@ -1082,9 +1136,9 @@ let coqlist_byte_of_string esig byte_ty list_ty str =
 (* N.B. We rely on the fact that [nil] is the first constructor and [cons] is the second constructor, for [list] *)
 let string_of_coqlist_byte c =
   let rec of_coqlist_byte_loop c buf =
-    match Constr.kind c with
-    | App (_nil, [|_ty|]) -> ()
-    | App (_cons, [|_ty;b;c|]) ->
+    match TokenValue.kind c with
+    | TConstruct (_nil, [_ty]) -> ()
+    | TConstruct (_cons, [_ty;b;c]) ->
       let () = Buffer.add_char buf (Char.chr (char_code_of_coqbyte b)) in
       of_coqlist_byte_loop c buf
     | _ -> raise NotAValidPrimToken
@@ -1108,7 +1162,7 @@ let interp o ?loc n =
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   let res = eval_constr_app env sigma to_ty c in
   match snd o.to_kind with
-  | Direct -> glob_of_constr "string" o.ty_name ?loc env sigma o.to_post res
+  | Direct -> glob_of_token "string" o.ty_name ?loc env sigma o.to_post res
   | Option -> interp_option "string" "string" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
