@@ -13,14 +13,16 @@ Section S.
   Variable a : A.
 
   Let foo : A.
-  Proof. exact a. Qed.
+  Proof. (* Default Proof Using silently ignored *)
+    exact a.
+  Qed.
 
   Definition bar := foo.
 
   Variable b : A.
 
   Let foo' : A.
-  Proof using a b.
+  Fail Proof using a b.
     exact b.
   Qed.
 

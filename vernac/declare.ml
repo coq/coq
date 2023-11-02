@@ -1664,6 +1664,8 @@ let get_recnames pf =
   else
     []
 
+let definition_scope ps = ps.pinfo.info.scope
+
 let set_used_variables ps ~using =
   let open Context.Named.Declaration in
   let env = Global.env () in
