@@ -43,3 +43,8 @@ Ltac2 @ external get_block : data -> int -> data := "coq-core.plugins.ltac2" "in
 Ltac2 @ external get_constructor : data -> int -> constructor := "coq-core.plugins.ltac2" "ind_get_constructor".
 (** Returns the nth constructor of the inductive type. Index must range between
     [0] and [nconstructors data - 1], otherwise the function panics. *)
+
+Ltac2 @ external get_projections : data -> projection array option
+  := "coq-core.plugins.ltac2" "ind_get_projections".
+(** Returns the list of projections for a primitive record,
+    or [None] if the inductive is not a primitive record. *)
