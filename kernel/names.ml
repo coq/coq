@@ -368,14 +368,19 @@ module KerName = struct
   type t = {
     modpath : ModPath.t;
     knlabel : Label.t;
-    mutable refhash : int;
+    refhash : int;
     (** Lazily computed hash. If unset, it is set to negative values. *)
   }
 
   type kernel_name = t
 
   let make modpath knlabel =
-    { modpath; knlabel; refhash = -1; }
+    let open Hashset.Combine in
+    let refhash = combine (ModPath.hash modpath) (Label.hash knlabel) in
+    (* Truncate for backwards compatibility w.r.t. ordering *)
+    let refhash = refhash land 0x3FFFFFFF in
+    { modpath; knlabel; refhash; }
+
   let repr kn = (kn.modpath, kn.knlabel)
 
   let modpath kn = kn.modpath
@@ -408,18 +413,7 @@ module KerName = struct
       Label.equal kn1.knlabel kn2.knlabel &&
       ModPath.equal kn1.modpath kn2.modpath
 
-  open Hashset.Combine
-
-  let hash kn =
-    let h = kn.refhash in
-    if h < 0 then
-      let { modpath = mp; knlabel = lbl; _ } = kn in
-      let h = combine (ModPath.hash mp) (Label.hash lbl) in
-      (* Ensure positivity on all platforms. *)
-      let h = h land 0x3FFFFFFF in
-      let () = kn.refhash <- h in
-      h
-    else h
+  let hash kn = kn.refhash
 
   module Self_Hashcons = struct
     type t = kernel_name
