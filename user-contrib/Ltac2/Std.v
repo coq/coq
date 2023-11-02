@@ -181,6 +181,8 @@ Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -
 
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "coq-core.plugins.ltac2" "tac_rewrite".
 
+Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) -> occurrences -> ident option -> unit := "coq-core.plugins.ltac2" "tac_setoid_rewrite".
+
 Ltac2 @ external reflexivity : unit -> unit := "coq-core.plugins.ltac2" "tac_reflexivity".
 
 Ltac2 @ external assumption : unit -> unit := "coq-core.plugins.ltac2" "tac_assumption".

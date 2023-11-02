@@ -105,8 +105,10 @@ type multi_r =
 
 type multi = multi_r CAst.t
 
+type orientation = bool option CAst.t
+
 type rewriting_r = {
-  rew_orient : bool option CAst.t;
+  rew_orient : orientation;
   rew_repeat : multi;
   rew_equatn : constr_with_bindings;
 }

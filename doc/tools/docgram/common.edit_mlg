@@ -1970,14 +1970,10 @@ rec_flag: [
 | OPTINREF
 ]
 
-ltac2_orient: [ | DELETENT ]
-
-ltac2_orient: [
-| orient
-]
-
-SPLICE: [
-| ltac2_orient
+q_orient: [
+| DELETE "<-"
+| REPLACE "->"
+| WITH OPT ["->" | "<-"]
 ]
 
 (* todo: should

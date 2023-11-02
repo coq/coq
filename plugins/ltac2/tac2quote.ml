@@ -313,15 +313,15 @@ let of_repeat {loc;v=r} = match r with
 | QRepeatStar -> std_constructor ?loc "RepeatStar" []
 | QRepeatPlus -> std_constructor ?loc "RepeatPlus" []
 
-let of_orient loc b =
-  if b then std_constructor ?loc "LTR" []
-  else std_constructor ?loc "RTL" []
+let of_orient {loc;v=b} =
+  let helper b =
+    if b then std_constructor ?loc "LTR" []
+    else std_constructor ?loc "RTL" []
+  in
+  of_option ?loc helper b
 
 let of_rewriting {loc;v=rew} =
-  let orient =
-    let {loc;v=orient} = rew.rew_orient in
-    of_option ?loc (fun b -> of_orient loc b) orient
-  in
+  let orient = of_orient rew.rew_orient in
   let repeat = of_repeat rew.rew_repeat in
   let equatn = thunk (of_constr_with_bindings rew.rew_equatn) in
   CAst.make ?loc @@ CTacRec (None, [

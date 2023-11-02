@@ -399,6 +399,11 @@ let () =
     Tac2tactics.rewrite
 
 let () =
+  define "tac_setoid_rewrite"
+    (bool @-> uthaw constr_with_bindings @--> occurrences @-> option ident @-> tac unit)
+    Tac2tactics.setoid_rewrite
+
+let () =
   define "tac_inversion"
     (inversion_kind @-> destruction_arg @-> option intro_pattern @->
       option (list ident) @-> tac unit)

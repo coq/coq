@@ -84,8 +84,10 @@ type multi = Equality.multi =
 | RepeatStar
 | RepeatPlus
 
+type orientation = bool
+
 type rewriting =
-  bool option *
+  orientation option *
   multi *
   constr_with_bindings tactic
 

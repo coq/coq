@@ -1532,6 +1532,10 @@ Other nonterminals that have syntactic classes are listed here.
         - :token:`ltac2_conversion`
         -
 
+      * - :n:`orient`
+        - :token:`q_orient`
+        - :n:`{? {| -> | <- } }`
+
       * - :n:`rewriting`
         - :token:`ltac2_oriented_rewriter`
         - :token:`oriented_rewriter`
@@ -1673,10 +1677,12 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ltac2_conversion ::= @term
    | @term with @term
 
-.. insertprodn ltac2_oriented_rewriter ltac2_rewriter
+.. insertprodn q_rewriting ltac2_rewriter
 
 .. prodn::
-   ltac2_oriented_rewriter ::= {? {| -> | <- } } @ltac2_rewriter
+   q_rewriting ::= @ltac2_oriented_rewriter
+   ltac2_oriented_rewriter ::= {? @q_orient } @ltac2_rewriter
+   q_orient ::= {? {| -> | <- } }
    ltac2_rewriter ::= {? @natural } {? {| ? | ! } } @ltac2_constr_with_bindings
 
 .. insertprodn ltac2_for_each_goal ltac2_goal_tactics

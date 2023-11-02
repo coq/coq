@@ -3120,7 +3120,7 @@ q_conversion: [
 | G_LTAC2_conversion      (* ltac2 plugin *)
 ]
 
-ltac2_orient: [
+q_orient: [
 | "->"      (* ltac2 plugin *)
 | "<-"      (* ltac2 plugin *)
 |      (* ltac2 plugin *)
@@ -3136,7 +3136,7 @@ G_LTAC2_rewriter: [
 ]
 
 G_LTAC2_oriented_rewriter: [
-| ltac2_orient G_LTAC2_rewriter      (* ltac2 plugin *)
+| q_orient G_LTAC2_rewriter      (* ltac2 plugin *)
 ]
 
 q_rewriting: [
