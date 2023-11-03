@@ -873,6 +873,7 @@ let rec to_constr ~(info:clos_infos) ~(tab:clos_tab) ((lfts, usubst) as ulfts) v
       let m = to_constr ulfts m in
       let subs = comp_subs ulfts e in
       let ty = subst_constr subs ty in
+      let op = subst_instance_constr (snd e) op in
       Constr.mkApp (op, [|ty; m|])
 
     | FRun (op, ty1, ty2, m, k, e) ->
@@ -881,6 +882,7 @@ let rec to_constr ~(info:clos_infos) ~(tab:clos_tab) ((lfts, usubst) as ulfts) v
       let ty1 = subst_constr subs ty1 in
       let ty2 = subst_constr subs ty2 in
       let k = subst_constr subs k in
+      let op = subst_instance_constr (snd e) op in
       Constr.mkApp (op, [|ty1; ty2; m; k|])
 
     | FLAZY (lazy m) -> to_constr ulfts m
@@ -2163,6 +2165,7 @@ and zip_term info tab m stk =
     zip_term info tab h s
 | Zunblock (op, ty, e, mode)::s ->
     let ty = klt ~mode info tab e ty in
+    let op = subst_instance_constr (snd e) op in
     let h = Constr.mkApp (op, [|ty; m|]) in
     zip_term info tab h s
 | Zrun (op, ty1, ty2, k, e, mode)::s ->
@@ -2170,6 +2173,7 @@ and zip_term info tab m stk =
     let ty2 = klt ~mode info tab e ty2 in
     let k = klt ~mode info tab e k in
     let m = term_of_fconstr ~info ~tab (mk_clos ~mode:normal_whnf e m) in (* TODO mode? see [Zunblock] above *)
+    let op = subst_instance_constr (snd e) op in
     let h = Constr.mkApp (op, [|ty1; ty2; m; k|]) in
     zip_term info tab h s
 
