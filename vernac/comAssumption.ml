@@ -102,7 +102,7 @@ let interp_assumption ~program_mode env sigma impl_env bl c =
 
 let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
 let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
-let empty_univ_entry ~poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
+let empty_univ_entry poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
 (* When declarations are monomorphic (which is always the case in
    sections, even when universes are treated as polymorphic variables)
@@ -112,8 +112,24 @@ let empty_univ_entry ~poly = if poly then empty_poly_univ_entry else empty_mono_
 let clear_univs scope univ =
   match scope, univ with
   | Locality.Global _, (UState.Polymorphic_entry _, _ as univs) -> univs
-  | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry ~poly:false
-  | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry ~poly:true
+  | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry false
+  | _, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
+
+let context_subst subst (name,b,t,impl) =
+  name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
+
+let declare_context ~try_global_assum_as_instance ~scope univs ctx =
+  let fn i subst d =
+    let (name,b,t,impl) = context_subst subst d in
+    let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
+    let univs = if i = 0 then univs else clear_univs scope univs in
+    let refu = match scope with
+      | Locality.Discharge -> declare_local NoCoercion ~try_assum_as_instance:true ~kind b t univs [] impl name
+      | Locality.Global local -> declare_global NoCoercion ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs [] Declaremods.NoInline name in
+    Constr.mkRef refu :: subst
+  in
+  let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
+  ()
 
 let declare_assumptions ~scope ~kind ?user_warns univs nl l =
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
@@ -204,22 +220,6 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let sigma = Evd.restrict_universe_context sigma uvars in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   declare_assumptions ~scope ~kind ?user_warns univs nl l
-
-let context_subst subst (name,b,t,impl) =
-  name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
-
-let declare_context ~try_global_assum_as_instance ~scope univs ctx =
-  let fn i subst d =
-    let (name,b,t,impl) = context_subst subst d in
-    let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
-    let univs = if i = 0 then univs else clear_univs scope univs in
-    let refu = match scope with
-      | Locality.Discharge -> declare_local NoCoercion ~try_assum_as_instance:true ~kind b t univs [] impl name
-      | Locality.Global local -> declare_global NoCoercion ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs [] Declaremods.NoInline name in
-    Constr.mkRef refu :: subst
-  in
-  let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
-  ()
 
 let interp_context env sigma l =
   let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
