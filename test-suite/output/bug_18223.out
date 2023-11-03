@@ -1,0 +1,4 @@
+fun a b : A => < {| b a |} >
+     : A -> A -> A
+fun a b : A => < {| b a |} >
+     : A -> A -> A
