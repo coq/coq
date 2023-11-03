@@ -208,7 +208,6 @@ NOTINRSTS: [
 | l1_tactic
 | l3_tactic
 | l2_tactic
-| binder_tactic
 | value_tactic
 | ltac2_entry
 | q_intropatterns
@@ -1376,7 +1375,6 @@ simple_tactic: [
 | "solve" ident
 | "idtac" LIST0 [ ident | string | natural ]
 | [ "fail" | "gfail" ] OPT nat_or_var LIST0 [ ident | string | natural ]
-| "fun" LIST1 name "=>" ltac_expr
 | "eval" red_expr "in" term
 | "context" ident "[" term "]"
 | "type" "of" term
@@ -1385,10 +1383,10 @@ simple_tactic: [
 | "numgoals"
 | "fun" LIST1 name "=>" ltac_expr
 | "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr
-| ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
+| ltac_expr3 ";" ltac_expr3
 | ltac_expr3 ";" "[" for_each_goal "]"
-| ltac_expr1 "+" [ ltac_expr2 | binder_tactic ]
-| ltac_expr1 "||" [ ltac_expr2 | binder_tactic ]
+| ltac_expr1 "+" ltac_expr2
+| ltac_expr1 "||" ltac_expr2
 | "[>" for_each_goal "]"
 | toplevel_selector ":" ltac_expr
 | ltac2_match_key ltac2_expr "with" ltac2_match_list "end"
@@ -2159,9 +2157,6 @@ l2_tactic: [
 l1_tactic: [
 ]
 
-binder_tactic: [
-]
-
 value_tactic: [
 ]
 
@@ -2170,11 +2165,11 @@ syn_value: [
 ]
 
 ltac_expr: [
-| [ ltac_expr4 | binder_tactic ]
+| ltac_expr4
 ]
 
 ltac_expr4: [
-| ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
+| ltac_expr3 ";" ltac_expr3
 | ltac_expr3 ";" "[" for_each_goal "]"
 | ltac_expr3
 ]
@@ -2185,13 +2180,15 @@ ltac_expr3: [
 ]
 
 ltac_expr2: [
-| ltac_expr1 "+" [ ltac_expr2 | binder_tactic ]
-| ltac_expr1 "||" [ ltac_expr2 | binder_tactic ]
+| ltac_expr1 "+" ltac_expr2
+| ltac_expr1 "||" ltac_expr2
 | l2_tactic
 | ltac_expr1
 ]
 
 ltac_expr1: [
+| "fun" LIST1 name "=>" ltac_expr
+| "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr
 | tactic_value
 | qualid LIST1 tactic_arg
 | l1_tactic

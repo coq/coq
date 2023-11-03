@@ -2029,12 +2029,10 @@ tactic_then_locality: [
 ]
 
 ltac_expr5: [
-| binder_tactic
 | ltac_expr4
 ]
 
 ltac_expr4: [
-| ltac_expr3 ";" binder_tactic
 | ltac_expr3 ";" ltac_expr3
 | ltac_expr3 ";" tactic_then_locality for_each_goal "]"
 | ltac_expr3
@@ -2056,15 +2054,14 @@ ltac_expr3: [
 ]
 
 ltac_expr2: [
-| ltac_expr1 "+" binder_tactic
 | ltac_expr1 "+" ltac_expr2
 | "tryif" ltac_expr5 "then" ltac_expr5 "else" ltac_expr2
-| ltac_expr1 "||" binder_tactic
 | ltac_expr1 "||" ltac_expr2
 | ltac_expr1
 ]
 
 ltac_expr1: [
+| binder_tactic
 | match_key "goal" "with" match_context_list "end"
 | match_key "reverse" "goal" "with" match_context_list "end"
 | match_key ltac_expr5 "with" match_list "end"

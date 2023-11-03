@@ -823,20 +823,13 @@ DELETE: [
 | tactic_then_locality
 ]
 
-ltac_expr5: [
-(* make these look consistent with use of binder_tactic in other ltac_expr* *)
-| DELETE binder_tactic
-| DELETE ltac_expr4
-| [ ltac_expr4 | binder_tactic ]
-]
-
 ltac_constructs: [
 (* repeated in main ltac grammar - need to create a COPY edit *)
-| ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
+| ltac_expr3 ";" [ ltac_expr3 ]
 | ltac_expr3 ";" "[" for_each_goal "]"
 
-| ltac_expr1 "+" [ ltac_expr2 | binder_tactic ]
-| ltac_expr1 "||" [ ltac_expr2 | binder_tactic ]
+| ltac_expr1 "+" [ ltac_expr2 ]
+| ltac_expr1 "||" [ ltac_expr2 ]
 
 (* | qualid LIST0 tactic_value  add later due renaming tactic_value *)
 
@@ -847,9 +840,6 @@ ltac_constructs: [
 ltac_expr4: [
 | REPLACE ltac_expr3 ";" for_each_goal "]"
 | WITH ltac_expr3 ";" "[" for_each_goal "]"
-| REPLACE ltac_expr3 ";" binder_tactic
-| WITH ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
-| DELETE ltac_expr3 ";" ltac_expr3
 ]
 
 l3_tactic: [ ]
@@ -867,12 +857,6 @@ ltac_expr3: [
 l2_tactic: [ ]
 
 ltac_expr2: [
-| REPLACE ltac_expr1 "+" binder_tactic
-| WITH ltac_expr1 "+"  [ ltac_expr2 | binder_tactic ]
-| DELETE ltac_expr1 "+" ltac_expr2
-| REPLACE ltac_expr1 "||" binder_tactic
-| WITH ltac_expr1 "||" [ ltac_expr2 | binder_tactic ]
-| DELETE ltac_expr1 "||" ltac_expr2
 | MOVETO ltac_builtins "tryif" ltac_expr5 "then" ltac_expr5 "else" ltac_expr2
 | l2_tactic
 | DELETE ltac_builtins
@@ -891,6 +875,7 @@ ltac_expr1: [
 | l1_tactic
 | DELETE simple_tactic
 | MOVEALLBUT ltac_builtins
+| binder_tactic
 | l1_tactic
 | tactic_value
 | reference LIST1 tactic_arg
@@ -1440,7 +1425,6 @@ explicit_subentry: [
 binder_tactic: [
 | REPLACE "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
 | WITH "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr5
-| MOVEALLBUT ltac_builtins
 ]
 
 field_body: [
@@ -1904,6 +1888,7 @@ ltac2_constructs: [
 ]
 
 simple_tactic: [
+| binder_tactic
 | ltac_builtins
 | ltac_constructs
 | ltac2_constructs
@@ -2505,6 +2490,7 @@ SPLICE: [
 | vernac_control
 | vernac_toplevel
 | command_entry
+| binder_tactic
 | ltac_builtins
 | ltac_constructs
 | ltac2_constructs
@@ -2529,7 +2515,6 @@ NOTINRSTS: [
 | l1_tactic
 | l2_tactic
 | l3_tactic
-| binder_tactic
 | value_tactic
 | ltac2_entry
 (* ltac2 syntactic classes *)

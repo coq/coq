@@ -68,17 +68,19 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
 .. insertprodn ltac_expr tactic_atom
 
 .. prodn::
-   ltac_expr ::= {| @ltac_expr4 | @binder_tactic }
-   ltac_expr4 ::= @ltac_expr3 ; {| @ltac_expr3 | @binder_tactic }
+   ltac_expr ::= @ltac_expr4
+   ltac_expr4 ::= @ltac_expr3 ; @ltac_expr3
    | @ltac_expr3 ; [ @for_each_goal ]
    | @ltac_expr3
    ltac_expr3 ::= @l3_tactic
    | @ltac_expr2
-   ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
-   | @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
+   ltac_expr2 ::= @ltac_expr1 + @ltac_expr2
+   | @ltac_expr1 %|| @ltac_expr2
    | @l2_tactic
    | @ltac_expr1
-   ltac_expr1 ::= @tactic_value
+   ltac_expr1 ::= fun {+ @name } => @ltac_expr
+   | let {? rec } @let_clause {* with @let_clause } in @ltac_expr
+   | @tactic_value
    | @qualid {+ @tactic_arg }
    | @l1_tactic
    | @ltac_expr0
@@ -132,7 +134,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    The difference is only relevant in some compound tactics where
    extra parentheses may be needed.  For example, parentheses are required in
    :n:`idtac + (once idtac)` because :tacn:`once` is an :token:`l3_tactic`, which the
-   production :n:`@ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }` doesn't
+   production :n:`@ltac_expr2 ::= @ltac_expr1 + @ltac_expr2` doesn't
    accept after the `+`.
 
 .. note::
@@ -520,7 +522,7 @@ Sequence: ;
 
 A sequence is an expression of the following form:
 
-.. tacn:: @ltac_expr3__1 ; {| @ltac_expr3__2 | @binder_tactic }
+.. tacn:: @ltac_expr3__1 ; @ltac_expr3__2
    :name: ltac-seq
 
    .. todo: can't use "… ; …" as the name because of the semicolon
@@ -625,7 +627,7 @@ Branching with backtracking: +
 
 We can branch with backtracking with the following structure:
 
-.. tacn:: @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
+.. tacn:: @ltac_expr1 + @ltac_expr2
    :name: + (backtracking branching)
 
    Evaluates and applies :n:`@ltac_expr1` to each focused goal independently.  If it fails
@@ -799,7 +801,7 @@ First tactic to make progress: ||
 Yet another way of branching without backtracking is the following
 structure:
 
-.. tacn:: @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
+.. tacn:: @ltac_expr1 %|| @ltac_expr2
    :name: || (first tactic making progress)
 
    :n:`@ltac_expr1 || @ltac_expr2` is
