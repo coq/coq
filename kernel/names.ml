@@ -800,18 +800,22 @@ struct
       { proj_ind : inductive;
         proj_npars : int;
         proj_arg : int;
-        proj_name : Label.t; }
+        proj_name : Constant.t;
+        (** The only relevant data is the label, the rest is canonically derived
+            from proj_ind. *)
+      }
 
     let make proj_ind ~proj_npars ~proj_arg proj_name =
+      let proj_name = KerPair.change_label (fst proj_ind) proj_name in
       {proj_ind;proj_npars;proj_arg;proj_name}
 
     let inductive c = c.proj_ind
 
     let mind c = fst c.proj_ind
 
-    let constant c = KerPair.change_label (mind c) c.proj_name
+    let constant c = c.proj_name
 
-    let label c = c.proj_name
+    let label c = Constant.label c.proj_name
 
     let npars c = c.proj_npars
 
@@ -827,7 +831,7 @@ struct
         let c = Int.compare a.proj_npars b.proj_npars in
         if c <> 0 then c
         else
-          Label.compare a.proj_name b.proj_name
+          Label.compare (Constant.label a.proj_name) (Constant.label b.proj_name)
 
     module SyntacticOrd = struct
       type nonrec t = t
@@ -874,7 +878,7 @@ struct
 
     module Self_Hashcons = struct
       type nonrec t = t
-      type u = (inductive -> inductive) * (Id.t -> Id.t)
+      type u = (inductive -> inductive) * (Constant.t -> Constant.t)
       let hashcons (hind,hid) p =
         { proj_ind = hind p.proj_ind;
           proj_npars = p.proj_npars;
@@ -885,7 +889,7 @@ struct
       let hash = hash
     end
     module HashRepr = Hashcons.Make(Self_Hashcons)
-    let hcons = Hashcons.simple_hcons HashRepr.generate HashRepr.hcons (hcons_ind,Id.hcons)
+    let hcons = Hashcons.simple_hcons HashRepr.generate HashRepr.hcons (hcons_ind,Constant.hcons)
 
     let map_npars f p =
       let npars = p.proj_npars in
