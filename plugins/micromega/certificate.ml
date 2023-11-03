@@ -916,24 +916,33 @@ let normalise = tr_sys "normalise" normalise
     When there are several variables, we hope to eliminate all the variables.
     A necessary condition is to take the variable with the smallest coefficient *)
 
+let try_pivot qx wp wp' =
+  match WithProof.simple_pivot qx wp wp' with
+  | None -> None
+  | Some wp2 ->
+    match WithProof.cutting_plane wp2 with
+    | Some wp2 -> Some wp2
+    | None -> None
+
 let fourier_small (sys : WithProof.t list) =
-  let gen_pivot acc (q, x) wp l =
-    List.fold_left
-      (fun acc (s, wp') ->
-        match WithProof.simple_pivot (q, x) wp wp' with
-        | None -> acc
-        | Some wp2 -> (
-          match WithProof.cutting_plane wp2 with
-          | Some wp2 -> (s, wp2) :: acc
-          | _ -> acc ))
-      acc l
+  let module WPset = Set.Make(WithProof) in
+  let gen_pivot acc qx wp l =
+    let fold acc wp' =
+      match try_pivot qx wp wp' with
+      | None -> acc
+      | Some wp2 -> WPset.add wp2 acc
+    in
+    let acc = WPset.fold (fun wp acc -> fold acc wp) acc acc in
+    List.fold_left (fun acc (_,wp') -> fold acc wp') acc l
   in
   let rec all_pivots acc l =
     match l with
     | [] -> acc
-    | ((_, qx), wp) :: l' -> all_pivots (gen_pivot acc qx wp (acc @ l')) l'
+    | ((_, qx), wp) :: l' -> all_pivots (gen_pivot acc qx wp l') l'
   in
-  List.rev_map snd (all_pivots [] (WithProof.sort sys))
+  let sys = WithProof.sort sys in
+  let res = all_pivots WPset.empty sys in
+  WPset.elements res
 
 let fourier_small = tr_sys "fourier_small" fourier_small
 
