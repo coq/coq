@@ -170,8 +170,8 @@ let parsing_explicit = ref false
 
 let empty_internalization_env = Id.Map.empty
 
-let compute_internalization_data env sigma id ty typ impl =
-  let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
+let compute_internalization_data env sigma ?silent id ty typ impl =
+  let impl = compute_implicits_with_manual env sigma ?silent typ (is_implicit_args()) impl in
   (ty, impl, compute_arguments_scope env sigma typ, var_uid id)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
@@ -181,6 +181,9 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty 
 
 let extend_internalization_data (r, impls, scopes, uid) impl scope =
   (r, impls@[impl], scopes@[scope], uid)
+
+let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
+  let (_, impls, _, _) = Id.Map.find id int_env in impls
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -2861,7 +2864,7 @@ let impl_of_binder_kind na = function
 let push_auto_implicit env sigma t int_env id =
   let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
   let imps = List.map (fun imp -> CAst.make (Option.map (fun imp -> (pi1 imp.impl_pos,imp.impl_max)) imp)) imps in
-  let imps = compute_internalization_data env sigma id ty t imps in (* add automatic implicit arguments to manual ones *)
+  let imps = compute_internalization_data env sigma ~silent:false id ty t imps in (* add automatic implicit arguments to manual ones *)
   { int_env with impls = Id.Map.add id imps int_env.impls }
 
 let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalization_env) ?(share=false) ~autoimp env sigma make_decl push_decl bl =

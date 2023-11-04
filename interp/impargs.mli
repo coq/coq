@@ -98,7 +98,7 @@ val positions_of_implicits : implicits_list -> int list
 
 type manual_implicits = (Name.t * bool) option CAst.t list
 
-val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
+val compute_implicits_with_manual : env -> Evd.evar_map -> ?silent:bool -> types -> bool ->
   manual_implicits -> implicit_status list
 
 val compute_implicits_names : env -> Evd.evar_map -> types -> implicit_position list
