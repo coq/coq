@@ -32,6 +32,9 @@ End C.
 (* Universe polymorphism *)
 Module D.
   Set Universe Polymorphism.
+  Inductive unit := tt.
+  Scheme Equality for unit.
+
   Inductive prod (A B:Type) := pair : A -> B -> prod A B.
   Scheme Equality for prod.
 
