@@ -570,7 +570,7 @@ let program_inference_hook env sigma ev =
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
-let vernac_set_used_variables ~pstate using : Declare.Proof.t =
+let vernac_set_used_variables pstate using : Declare.Proof.t =
   let env = Global.env () in
   let sigma, _ = Declare.Proof.get_current_context pstate in
   let fixnames = Declare.Proof.get_recnames pstate in
@@ -583,7 +583,7 @@ let vernac_set_used_variables ~pstate using : Declare.Proof.t =
 let vernac_set_used_variables_opt ?using pstate =
   match using with
   | None -> pstate
-  | Some expr -> vernac_set_used_variables ~pstate expr
+  | Some expr -> vernac_set_used_variables pstate expr
 
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
@@ -1491,7 +1491,7 @@ let vernac_existing_class id =
 let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
-let vernac_set_end_tac ~pstate tac =
+let vernac_set_end_tac pstate tac =
   let env = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
@@ -2208,6 +2208,25 @@ let vernac_validate_proof ~pstate =
     str "No issues found."
   else prlist_with_sep fnl snd (Evar.Map.bindings evar_issues)
 
+let vernac_proof pstate tac using =
+  let is_let = match Declare.Proof.definition_scope pstate with
+    | Discharge -> true
+    | Global _ -> false
+  in
+  let using = if not is_let then Option.append using (Proof_using.get_default_proof_using ())
+    else
+      let () = if Option.has_some using
+        then CErrors.user_err Pp.(str "Let does not support Proof using.")
+      in
+      None
+  in
+  let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
+  let usings = if Option.is_empty using then "using:no" else "using:yes" in
+  Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
+  let pstate = Option.fold_left vernac_set_end_tac pstate tac in
+  let pstate = Option.fold_left vernac_set_used_variables pstate using in
+  pstate
+
 let translate_vernac_synterp ?loc ~atts v = let open Vernactypes in match v with
   | EVernacNotation { local; decl } ->
     vtdefault(fun () -> Metasyntax.add_notation_interpretation ~local (Global.env()) decl)
@@ -2535,12 +2554,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacProof (tac, using) ->
     vtmodifyproof(fun ~pstate ->
     unsupported_attributes atts;
-    let using = Option.append using (Proof_using.get_default_proof_using ()) in
-    let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
-    let usings = if Option.is_empty using then "using:no" else "using:yes" in
-    Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
-    let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
-    Option.cata (vernac_set_used_variables ~pstate) pstate using)
+    vernac_proof pstate tac using)
 
   | VernacEndProof pe ->
     unsupported_attributes atts;
