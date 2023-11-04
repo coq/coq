@@ -233,7 +233,7 @@ let compute_fix_reversibility sigma labs args fix =
     labs;
   typed_reversible_args, nlam, nargs
 
-let check_fix_reversibility env sigma ref u labs args refs ((lv,i),_ as fix) =
+let check_fix_reversibility env sigma ref u labs args minarg refs ((lv,i),_ as fix) =
   let li, nlam, nargs = compute_fix_reversibility sigma labs args (mkFix fix) in
   let k = lv.(i) in
   let refolding_data = {
@@ -247,13 +247,13 @@ let check_fix_reversibility env sigma ref u labs args refs ((lv,i),_ as fix) =
       EliminationFix (n-p+1,(li,n))
 *)
       EliminationFix {
-        trigger_min_args = nlam;
+        trigger_min_args = max minarg nlam;
         refolding_target = ref;
         refolding_data;
         }
   else
     EliminationFix {
-        trigger_min_args = nlam - nargs + k + 1;
+        trigger_min_args = max minarg (nlam - nargs + k + 1);
         refolding_target = ref;
         refolding_data;
         }
@@ -305,42 +305,49 @@ let deactivate_delta allowed_reds =
   (* Act both on Delta and transparent state as not all reduction functions work the same *)
   RedFlags.(red_add_transparent (red_sub allowed_reds fDELTA) TransparentState.empty)
 
-(* [compute_consteval] expands and refolds an arbitrary long sequence
-   of reversible constants for unary fixpoints but consider the last
-   constant before revealing a Fix if the latter is mutually defined *)
+(* [compute_consteval] stepwise expands an arbitrary long sequence of
+    reversible constants, eventually refolding to the initial constant
+    for unary fixpoints and to the last constant encapsulating the Fix
+    for mutual fixpoints *)
 
 let compute_consteval allowed_reds env sigma ref u =
   let allowed_reds_no_delta = deactivate_delta allowed_reds in
-  let rec srec env n labs lastref lastu onlyproj c =
-    let c',l = whd_stack_gen allowed_reds_no_delta env sigma c in
+  let rec srec env all_abs lastref lastu onlyproj c =
+    let c', args = whd_stack_gen allowed_reds_no_delta env sigma c in
+    (* We now know that the initial [ref] evaluates to [fun all_abs => c' args] *)
+    (* and that the last visited name in the evaluation is [lastref] *)
     match EConstr.kind sigma c' with
-      | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
+      | Lambda (id,t,g) when not onlyproj ->
+          assert (List.is_empty args);
           let open Context.Rel.Declaration in
-          srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) lastref lastu onlyproj g
+          srec (push_rel (LocalAssum (id,t)) env) (t::all_abs) lastref lastu onlyproj g
       | Fix ((lv,i),(names,_,_) as fix) when not onlyproj ->
+          let n_all_abs = List.length all_abs in
           let nbfix = Array.length lv in
           (if nbfix = 1 then
+            (* Try to refold to [ref] *)
             let names = [|Some (ref,u)|] in
-            try check_fix_reversibility env sigma ref u labs l names fix
+            try check_fix_reversibility env sigma ref u all_abs args n_all_abs names fix
             with Elimconst -> NotAnElimination
           else
-            let labs, l, names = invert_names allowed_reds env sigma lastref lastu names i in
-            try check_fix_reversibility env sigma lastref lastu labs l names fix
+            (* Try to refold to [lastref] *)
+            let last_labs, last_args, names = invert_names allowed_reds env sigma lastref lastu names i in
+            try check_fix_reversibility env sigma lastref lastu last_labs last_args n_all_abs names fix
             with Elimconst -> NotAnElimination)
-      | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
-      | Case (_,_,_,_,_,d,_) -> srec env n labs lastref lastu true d
-      | Proj (p, d) when isRel sigma d -> EliminationProj n
+      | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases (List.length all_abs)
+      | Case (_,_,_,_,_,d,_) -> srec env all_abs lastref lastu true d
+      | Proj (p, d) when isRel sigma d -> EliminationProj (List.length all_abs)
       | _ when isTransparentEvalRef env sigma (RedFlags.red_transparent allowed_reds) c' ->
-          (* Forget all \'s and args and do as if we had started with c' *)
+          (* Continue stepwise unfolding from [c' args] *)
           let ref, u = destEvalRefU sigma c' in
           (match reference_opt_value env sigma ref u with
             | None -> NotAnElimination (* e.g. if a rel *)
-            | Some c -> srec env n labs ref u onlyproj (applist (c,l)))
+            | Some c -> srec env all_abs ref u onlyproj (applist (c, args)))
       | _ -> NotAnElimination
   in
   match reference_opt_value env sigma ref u with
     | None -> NotAnElimination
-    | Some c -> srec env 0 [] ref u false c
+    | Some c -> srec env [] ref u false c
 
 let reference_eval allowed_reds env sigma ref u =
   match ref with
