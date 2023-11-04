@@ -177,7 +177,21 @@ axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 axbar' is not universe polymorphic
 Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
-File "./output/UnivBinders.v", line 155, characters 19-26:
+*** [ axfoo@{i u u0} : Type@{u} -> Type@{i} ]
+(* i u u0 |=  *)
+
+Arguments axfoo _%type_scope
+*** [ axbar@{i u u0} : Type@{u0} -> Type@{i} ]
+(* i u u0 |=  *)
+
+Arguments axbar _%type_scope
+*** [ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
+
+Arguments axfoo' _%type_scope
+*** [ axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
+
+Arguments axbar' _%type_scope
+File "./output/UnivBinders.v", line 157, characters 19-26:
 The command has indeed failed with message:
 When declaring multiple assumptions in one command, only the first name is
 allowed to mention a universe binder (which will be shared by the whole
