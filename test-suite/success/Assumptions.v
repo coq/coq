@@ -27,3 +27,15 @@ Context (c':={|f':=tt|}). Fail Definition a0' := _ : C'.                      (*
 Definition d':={|g:=tt|}. Fail Definition b0' := _ : D.                       (* Not instance *)
 
 End Instances.
+
+(* Type factorization *)
+
+Module TypeSharing. (* How to observe it? *)
+
+Section S. Context (A B : Type). End S. (* Distinct universes *)
+Section T. Variables A B : Type. End T. (* Same universe *)
+
+Section S. Fail Context (a b : _) (e : a = 0). End S. (* not shared *)
+Section S. Variables (a b : _) (e : a = 0). End S. (* shared *)
+
+End TypeSharing.
