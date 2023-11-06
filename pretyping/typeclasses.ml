@@ -76,7 +76,8 @@ type instance = {
   is_impl: GlobRef.t;
 }
 
-type instances = (instance GlobRef.Map.t) GlobRef.Map.t
+type instances_of_classes = (instance GlobRef.Map.t) GlobRef.Map.t
+type instances = instance GlobRef.Map.t
 
 let instance_impl is = is.is_impl
 
@@ -87,7 +88,11 @@ let hint_priority is = is.is_info.hint_priority
  *)
 
 let classes : typeclasses ref = Summary.ref GlobRef.Map.empty ~name:"classes"
-let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
+let instances_of_classes : instances_of_classes ref = Summary.ref GlobRef.Map.empty ~name:"instances_of_classes"
+let all_instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"all_instances"
+
+let get_instance_from_gref (g : GlobRef.t) : instance =
+  GlobRef.Map.get g !all_instances
 
 let typeclass_univ_instance (cl, u) =
   assert (Univ.AbstractContext.size cl.cl_univs == Univ.Instance.length u);
@@ -166,20 +171,24 @@ let load_class cl =
  * interface functions
  *)
 
+let add_instance (inst : instance) insts =
+  instances_of_classes := GlobRef.Map.add inst.is_class insts !instances_of_classes;
+  all_instances := GlobRef.Map.add inst.is_impl inst !all_instances
+
 let load_instance inst =
   let insts =
-    try GlobRef.Map.find inst.is_class !instances
+    try GlobRef.Map.find inst.is_class !instances_of_classes
     with Not_found -> GlobRef.Map.empty in
   let insts = GlobRef.Map.add inst.is_impl inst insts in
-  instances := GlobRef.Map.add inst.is_class insts !instances
+  add_instance inst insts
 
 let remove_instance inst =
+  all_instances := GlobRef.Map.remove inst.is_impl !all_instances;
   let insts =
-    try GlobRef.Map.find inst.is_class !instances
+    try GlobRef.Map.find inst.is_class !instances_of_classes
     with Not_found -> assert false in
   let insts = GlobRef.Map.remove inst.is_impl insts in
-  instances := GlobRef.Map.add inst.is_class insts !instances
-
+  instances_of_classes := GlobRef.Map.add inst.is_class insts !instances_of_classes
 
 let instance_constructor (cl,u) args =
   let lenpars = List.count is_local_assum cl.cl_context in
@@ -204,12 +213,17 @@ let typeclasses () = GlobRef.Map.fold (fun _ l c -> l :: c) !classes []
 let cmap_elements c = GlobRef.Map.fold (fun k v acc -> v :: acc) c []
 
 let instances_of c =
-  try cmap_elements (GlobRef.Map.find c.cl_impl !instances) with Not_found -> []
+  try cmap_elements (GlobRef.Map.find c.cl_impl !instances_of_classes) with Not_found -> []
 
 let all_instances () =
   GlobRef.Map.fold (fun k v acc ->
     GlobRef.Map.fold (fun k v acc -> v :: acc) v acc)
-    !instances []
+    !instances_of_classes []
+  (* In the implementation above, instances are returned grouped by their implemented
+     type class, if this pseudo-order is not important, the following line of code
+     could be used *)
+    (* GlobRef.Map.bindings !all_instances |> List.map snd *)
+
 
 let instances r =
   Option.map instances_of (class_info r)

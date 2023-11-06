@@ -71,6 +71,8 @@ val instances_exn : env -> evar_map -> GlobRef.t -> instance list
 
 val typeclasses : unit -> typeclass list
 val all_instances : unit -> instance list
+val get_instance_from_gref : GlobRef.t -> instance
+(** Returns the implementation of the instance from its gref *)
 
 val load_class : typeclass -> unit
 
