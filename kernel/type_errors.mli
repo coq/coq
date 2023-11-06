@@ -62,6 +62,7 @@ type ('constr, 'types) ptype_error =
   | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
+  | IllFormedCaseParams
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
   | ActualType of ('constr, 'types) punsafe_judgment * 'types

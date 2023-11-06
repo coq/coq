@@ -290,6 +290,9 @@ let explain_number_branches env sigma cj expn =
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches."
 
+let explain_ill_formed_case_params env sigma =
+  str "Ill formed case parameters (bugged tactic?)."
+
 let explain_ill_formed_branch env sigma c ci actty expty =
   let simp t = Reductionops.nf_betaiota env sigma t in
   let env = make_all_name_different env sigma in
@@ -870,6 +873,7 @@ let explain_type_error env sigma err =
   | CaseOnPrivateInd ind -> explain_case_on_private_ind env sigma ind
   | NumberBranches (cj, n) ->
       explain_number_branches env sigma cj n
+  | IllFormedCaseParams -> explain_ill_formed_case_params env sigma
   | IllFormedBranch (c, i, actty, expty) ->
       explain_ill_formed_branch env sigma c i actty expty
   | Generalization (nvar, c) ->

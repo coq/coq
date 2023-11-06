@@ -60,6 +60,7 @@ type ('constr, 'types) ptype_error =
   | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
+  | IllFormedCaseParams
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
   | ActualType of ('constr, 'types) punsafe_judgment * 'types
@@ -197,7 +198,7 @@ let map_pguard_error f = function
 | CoFixGuardError e -> CoFixGuardError (map_pcofix_guard_error f e)
 
 let map_ptype_error f = function
-| UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _
+| UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _ | IllFormedCaseParams
 | UndeclaredUniverse _ | DisallowedSProp | UnsatisfiedConstraints _
 | ReferenceVariables _ | BadInvert | BadVariance _ | UndeclaredUsedVariables _ as e -> e
 | NotAType j -> NotAType (on_judgment f j)

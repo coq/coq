@@ -263,6 +263,7 @@ let explain_exn = function
       | WrongCaseInfo _ -> str"WrongCaseInfo"
       | NumberBranches _ -> str"NumberBranches"
       | IllFormedBranch _ -> str"IllFormedBranch"
+      | IllFormedCaseParams -> str "IllFormedCaseParams"
       | Generalization _ -> str"Generalization"
       | ActualType _ -> str"ActualType"
       | IncorrectPrimitive _ -> str"IncorrectPrimitive"
