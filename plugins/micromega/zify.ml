@@ -133,7 +133,7 @@ end
 
 let get_projections_from_constant (evd, i) =
   match EConstr.kind evd (whd (Global.env ()) evd i) with
-  | App (c, a) -> Some a
+  | App (c, a) -> a
   | _ ->
     raise
       (CErrors.user_err
@@ -414,12 +414,8 @@ module EInj = struct
 end
 
 let get_inj evd c =
-  match get_projections_from_constant (evd, c) with
-  | None ->
-    let env = Global.env () in
-    let t = string_of_ppcmds (pr_constr env evd c) in
-    failwith ("Cannot register term " ^ t)
-  | Some a -> EInj.mk_elt evd c a
+  let a = get_projections_from_constant (evd, c) in
+  EInj.mk_elt evd c a
 
 let rec decomp_type evd ty =
   match EConstr.kind_of_type evd ty with
@@ -615,12 +611,8 @@ module MakeTable (E : Elt) : S = struct
      *)
 
   let make_elt (evd, i) =
-    match get_projections_from_constant (evd, i) with
-    | None ->
-      let env = Global.env () in
-      let t = string_of_ppcmds (pr_constr env evd i) in
-      failwith ("Cannot register term " ^ t)
-    | Some a -> E.mk_elt evd i a
+    let a = get_projections_from_constant (evd, i) in
+    E.mk_elt evd i a
 
   let safe_ref evd c =
     try
