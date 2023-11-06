@@ -13,7 +13,7 @@ open Names
 open Constr
 open Term
 open Declarations
-open Univ
+open UVars
 open Cooking
 
 module NamedDecl = Context.Named.Declaration
@@ -21,15 +21,16 @@ module RelDecl = Context.Rel.Declaration
 
 let lift_univs info univ_hyps = function
   | Monomorphic ->
-    assert (Univ.Instance.is_empty univ_hyps);
+    assert (UVars.Instance.is_empty univ_hyps);
     info, univ_hyps, Monomorphic
   | Polymorphic auctx ->
-    let info, n, auctx = lift_poly_univs info auctx in
+    let info, (qn, un), auctx = lift_poly_univs info auctx in
     let univ_hyps =
-      let open Univ.Instance in
-      let us = to_array univ_hyps in
-      let us = Array.sub us 0 (Array.length us - n) in
-      of_array us
+      let open UVars.Instance in
+      let qs, us = to_array univ_hyps in
+      let qs = Array.sub qs 0 (Array.length qs - qn) in
+      let us = Array.sub us 0 (Array.length us - un) in
+      of_array (qs,us)
     in
     info, univ_hyps, Polymorphic auctx
 
@@ -174,9 +175,10 @@ let cook_inductive info mib =
     | None, None -> None, None
     | None, Some _ | Some _, None -> assert false
     | Some variance, Some sec_variance ->
+      (* no variance for qualities *)
+      let ulen  = snd (AbstractContext.size (universe_context_of_cooking_info info)) in
       let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - AbstractContext.size (universe_context_of_cooking_info info))
-          sec_variance
+        Array.chop (Array.length sec_variance - ulen) sec_variance
       in
       Some (Array.append newvariance variance), Some sec_variance
   in

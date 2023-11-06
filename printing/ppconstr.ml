@@ -193,9 +193,18 @@ let tag_var = tag Tag.variable
       | [x] -> pr_univ_expr x
       | l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
 
+  let pr_qvar_expr = function
+    | CQAnon _ -> tag_type (str "_")
+    | CQVar qid -> tag_type (pr_qualid qid)
+    | CRawQVar q -> (* TODO names *) tag_type (Sorts.QVar.raw_pr q)
+
+  let pr_quality_expr q = match q with
+    | CQConstant q -> tag_type (Sorts.Quality.Constants.pr q)
+    | CQualVar q -> pr_qvar_expr q
+
   let pr_quality_univ (q, l) = match q with
   | None -> pr_univ l
-  | Some q -> str "(* " ++ Sorts.QVar.pr q ++ str " *)" ++ spc () ++ pr_univ l
+  | Some q ->  pr_qvar_expr q ++ spc() ++ str "|" ++ spc () ++ pr_univ l
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -233,8 +242,13 @@ let tag_var = tag Tag.variable
   let pr_qualid = pr_qualid
   let pr_patvar = pr_id
 
+  let pr_inside_universe_instance (ql,ul) =
+    (if List.is_empty ql then mt()
+     else prlist_with_sep spc pr_quality_expr ql ++ strbrk " | ")
+    ++ prlist_with_sep spc pr_univ_level_expr ul
+
   let pr_universe_instance l =
-    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_univ_level_expr)) l
+    pr_opt_no_spc (pr_univ_annot pr_inside_universe_instance) l
 
   let pr_reference qid =
     if qualid_is_ident qid then tag_var (pr_id @@ qualid_basename qid)

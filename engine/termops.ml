@@ -296,6 +296,9 @@ let has_no_evar sigma =
   with Exit -> false
 
 let pr_evd_level sigma = UState.pr_uctx_level (Evd.evar_universe_context sigma)
+
+let pr_evd_qvar sigma = UState.pr_uctx_qvar (Evd.evar_universe_context sigma)
+
 let reference_of_level sigma l = UState.qualid_of_level (Evd.evar_universe_context sigma) l
 
 let pr_evar_universe_context ctx =
@@ -639,10 +642,10 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
       let a' = f l a in
         if app' == app && a' == a then c
         else mkApp (app', [| a' |])
-  | Proj (p,b) ->
+  | Proj (p,r,b) ->
     let b' = f l b in
       if b' == b then c
-      else mkProj (p, b')
+      else mkProj (p, r, b')
   | Evar ev ->
     let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
     if ev' == ev then c else mkEvar ev'
@@ -706,9 +709,9 @@ let map_constr_with_full_binders env sigma g f l cstr =
       let c' = f l c in
       let al' = Array.map (f l) al in
       if c==c' && Array.for_all2 (==) al al' then cstr else mkApp (c', al')
-  | Proj (p,c) ->
+  | Proj (p,r,c) ->
       let c' = f l c in
-        if c' == c then cstr else mkProj (p, c')
+        if c' == c then cstr else mkProj (p, r, c')
   | Evar ev ->
     let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
     if ev' == ev then cstr else mkEvar ev'
@@ -762,7 +765,7 @@ let fold_constr_with_full_binders env sigma g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (_,c) -> f n acc c
+  | Proj (_,_,c) -> f n acc c
   | Evar ev ->
     let args = Evd.expand_existential sigma ev in
     List.fold_left (fun c -> f n c) acc args
@@ -1327,7 +1330,7 @@ let global_app_of_constr sigma c =
   | Ind (i, u) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
   | Var id -> (VarRef id, EConstr.EInstance.empty), None
-  | Proj (p, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
+  | Proj (p, _, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
   | _ -> raise Not_found
 
 let prod_applist sigma c l =

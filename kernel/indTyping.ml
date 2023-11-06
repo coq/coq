@@ -11,6 +11,7 @@
 open Util
 open Names
 open Univ
+open UVars
 open Term
 open Constr
 open Declarations
@@ -64,25 +65,91 @@ let mind_check_names mie =
 (************************** Type checking *******************************)
 (************************************************************************)
 
-type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
-                   ind_template : bool;
-                   ind_univ : Sorts.t;
-                   missing : Sorts.t list; (* missing u <= ind_univ constraints *)
-                 }
 
 let no_sort_variable () =
-  CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
+  CErrors.user_err (Pp.str "Sort variables not yet supported for the inductive's sort.")
 
+type record_arg_info =
+  | NoRelevantArg
+  | HasRelevantArg
+
+type univ_info =
+  { ind_squashed : bool
+  ; record_arg_info : record_arg_info
+  ; ind_template : bool
+  ; ind_univ : Sorts.t
+  ; missing : Sorts.t list (* missing u <= ind_univ constraints *)
+  }
+
+(* TODO squash depending on the instance
+   (so eg in the "QSort(q, _), Prop" case, "@{q:=Prop|}" is not squashed
+    but "@{q:=Type|}" does need squashing)
+   Cases which will be modified are annotated with "imprecise".
+
+   This code can probably be simplified but I can't quite see how right now. *)
 let check_univ_leq ?(is_real_arg=false) env u info =
-  let ind_univ = info.ind_univ in
-  let info = if not info.ind_has_relevant_arg && is_real_arg && not (Sorts.is_sprop u)
-    then {info with ind_has_relevant_arg=true}
-    else info
+  let info = if not is_real_arg then info
+    else match info.record_arg_info with
+    | NoRelevantArg | HasRelevantArg -> match u with
+      | Sorts.SProp | QSort _ -> info
+      | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
   in
-  (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
-  if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ then info
-  else if is_impredicative_sort env ind_univ then { info with ind_squashed = true }
-  else {info with missing = u :: info.missing}
+  (* If we would squash (eg Prop, SProp case) we still need to check the type in type flag. *)
+  let ind_squashed = not (Environ.type_in_type env) in
+  match u, info.ind_univ with
+  | SProp, (SProp | Prop | Set | QSort _ | Type _) ->
+    (* Inductive types provide explicit lifting from SProp to other universes,
+       so allow SProp <= any. *)
+    info
+
+  | Prop, SProp -> { info with ind_squashed }
+  | Prop, QSort _ -> { info with ind_squashed } (* imprecise *)
+  | Prop, (Prop | Set | Type _) -> info
+
+  | Set, (SProp | Prop) -> { info with ind_squashed }
+  | Set, QSort (_, indu) ->
+    if UGraph.check_leq (universes env) Universe.type0 indu
+    then { info with ind_squashed } (* imprecise *)
+    else { info with missing = u :: info.missing }
+  | Set, Set -> info
+  | Set, Type indu ->
+    if UGraph.check_leq (universes env) Universe.type0 indu
+    then info
+    else { info with missing = u :: info.missing }
+
+  | QSort _, (SProp | Prop) -> { info with ind_squashed } (* imprecise *)
+  | QSort (cq, uu), QSort (indq, indu) ->
+    if UGraph.check_leq (universes env) uu indu
+    then begin if Sorts.QVar.equal cq indq then info
+      else { info with ind_squashed } (* imprecise *)
+    end
+    else { info with missing = u :: info.missing }
+  | QSort (_, uu), Set ->
+    if UGraph.check_leq (universes env) uu Universe.type0
+    then info
+    else if is_impredicative_set env
+    then { info with ind_squashed } (* imprecise *)
+    else { info with missing = u :: info.missing }
+  | QSort (_,uu), Type indu ->
+    if UGraph.check_leq (universes env) uu indu
+    then info
+    else { info with missing = u :: info.missing }
+
+  | Type _, (SProp | Prop) -> { info with ind_squashed }
+  | Type uu, Set ->
+    if UGraph.check_leq (universes env) uu Universe.type0
+    then info
+    else if is_impredicative_set env
+    then { info with ind_squashed }
+    else { info with missing = u :: info.missing }
+  | Type uu, QSort (_, indu) ->
+    if UGraph.check_leq (universes env) uu indu
+    then { info with ind_squashed } (* imprecise *)
+    else { info with missing = u :: info.missing }
+  | Type uu, Type indu ->
+    if UGraph.check_leq (universes env) uu indu
+    then info
+    else { info with missing = u :: info.missing }
 
 let check_context_univs ~ctor env info ctx =
   let check_one d (info,env) =
@@ -107,7 +174,7 @@ let check_arity ~template env_params env_ar ind =
   let indices, ind_sort = Reduction.dest_arity env_params arity in
   let univ_info = {
     ind_squashed=false;
-    ind_has_relevant_arg=false;
+    record_arg_info=NoRelevantArg;
     ind_template = template;
     ind_univ=ind_sort;
     missing=[];
@@ -159,9 +226,11 @@ let check_record data =
   List.for_all (fun (_,(_,splayed_lc),info) ->
       (* records must have all projections definable -> equivalent to not being squashed *)
       not info.ind_squashed
-      (* relevant records must have at least 1 relevant argument *)
-      && (Sorts.is_sprop info.ind_univ
-          || info.ind_has_relevant_arg)
+      (* relevant records must have at least 1 relevant argument,
+         and we don't yet support variable relevance projections *)
+      && (match info.record_arg_info with
+          | HasRelevantArg -> true
+          | NoRelevantArg -> Sorts.is_sprop info.ind_univ)
       && (match splayed_lc with
           (* records must have 1 constructor with at least 1 argument, and no anonymous fields *)
           | [|ctx,_|] ->
@@ -183,7 +252,7 @@ let check_record data =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let allowed_sorts {ind_squashed;ind_univ;ind_template=_;ind_has_relevant_arg=_;missing=_} =
+let allowed_sorts {ind_squashed;ind_univ;ind_template=_;record_arg_info=_;missing=_} =
   if not ind_squashed then InType
   else Sorts.family ind_univ
 
@@ -259,9 +328,9 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       splayed_lc
   in
   let ind_univ = match univ_info.ind_univ with
-  | Prop | SProp | Set -> univ_info.ind_univ
-  | Type u -> Sorts.sort_of_univ (Univ.subst_univs_level_universe usubst u)
-  | QSort _ -> no_sort_variable ()
+    | QSort _ -> no_sort_variable ()
+    | _ ->
+      UVars.subst_sort_level_sort usubst univ_info.ind_univ
   in
 
   let arity =
@@ -340,11 +409,14 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
       | Monomorphic_ind_entry | Template_ind_entry _ ->
         CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
       | Polymorphic_ind_entry uctx ->
-        let univs = Instance.to_array @@ UContext.instance uctx in
+        (* no variance for qualities *)
+        let _qualities, univs = Instance.to_array @@ UContext.instance uctx in
         let univs = Array.map2 (fun a b -> a,b) univs variances in
         let univs = match sec_univs with
           | None -> univs
           | Some sec_univs ->
+            (* no variance for qualities *)
+            let _, sec_univs = UVars.Instance.to_array sec_univs in
             let sec_univs = Array.map (fun u -> u, None) sec_univs in
             Array.append sec_univs univs
         in
@@ -361,10 +433,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with
   | Monomorphic_ind_entry | Template_ind_entry _ ->
-    Univ.empty_level_subst, Monomorphic
+    UVars.empty_sort_subst, Monomorphic
   | Polymorphic_ind_entry uctx ->
-    let (inst, auctx) = Univ.abstract_universes uctx in
-    let inst = Univ.make_instance_subst inst in
+    let (inst, auctx) = UVars.abstract_universes uctx in
+    let inst = UVars.make_instance_subst inst in
     (inst, Polymorphic auctx)
   in
   let params = Vars.subst_univs_level_context usubst params in

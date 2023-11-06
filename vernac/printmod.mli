@@ -12,7 +12,6 @@ open Names
 
 val pr_mutual_inductive_body : Environ.env ->
   MutInd.t -> Declarations.mutual_inductive_body ->
-  UnivNames.univ_name_list option -> Pp.t
-
+  UnivNames.full_name_list option -> Pp.t
 val print_module : with_body:bool -> ModPath.t -> Pp.t
 val print_modtype : ModPath.t -> Pp.t

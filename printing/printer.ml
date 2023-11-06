@@ -177,41 +177,66 @@ let safe_gen f env sigma c =
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
 
+let q_ident = Id.of_string "α"
+
 let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
   let open Univ in
-  let orig = Univ.AbstractContext.names orig in
-  let orig = Array.to_list orig in
-  let udecl = match names with
+  let qorig, uorig = UVars.AbstractContext.names orig in
+  let qorig, uorig as orig = Array.to_list qorig, Array.to_list uorig in
+  let qdecl, udecl = match names with
   | None -> orig
-  | Some udecl ->
+  | Some (qdecl,udecl) ->
     try
-      List.map2 (fun orig {CAst.v = na} ->
-          match na with
-          | Anonymous -> orig
-          | Name id -> Name id) orig udecl
+      let qs =
+        List.map2 (fun orig {CAst.v = na} ->
+            match na with
+            | Anonymous -> orig
+            | Name id -> Name id) qorig qdecl
+      in
+      let us =
+        List.map2 (fun orig {CAst.v = na} ->
+            match na with
+            | Anonymous -> orig
+            | Name id -> Name id) uorig udecl
+      in
+      qs, us
     with Invalid_argument _ ->
       let open UnivGen in
       raise (UniverseLengthMismatch {
-          actual = List.length orig;
-          expect = List.length udecl;
+          actual = List.length qorig, List.length uorig;
+          expect = List.length qdecl, List.length udecl;
         })
   in
-  let fold_named i (ubind,revubind as o) = function
-    | Name id -> let ui = Level.var i in
-      Id.Map.add id ui ubind, Level.Map.add ui id revubind
+  let fold_qnamed i ((qbind,ubind),(revqbind,revubind) as o) = function
+    | Name id -> let ui = Sorts.QVar.make_var i in
+      (Id.Map.add id ui qbind, ubind), (Sorts.QVar.Map.add ui id revqbind, revubind)
     | Anonymous -> o
   in
-  let names = List.fold_left_i fold_named 0 (UnivNames.empty_binders,Level.Map.empty) udecl in
-  let fold_anons i (u_ident, (ubind, revubind) as o) = function
+  let fold_unamed i ((qbind,ubind),(revqbind,revubind) as o) = function
+    | Name id -> let ui = Level.var i in
+      (qbind, Id.Map.add id ui ubind), (revqbind, Level.Map.add ui id revubind)
+    | Anonymous -> o
+  in
+  let names = List.fold_left_i fold_qnamed 0 UnivNames.(empty_binders,empty_rev_binders) qdecl in
+  let names = List.fold_left_i fold_unamed 0 names udecl in
+  let fold_qanons i (u_ident, ((qbind,ubind), (revqbind,revubind)) as o) = function
+    | Name _ -> o
+    | Anonymous ->
+      let ui = Sorts.QVar.make_var i in
+      let id = Namegen.next_ident_away_from u_ident (fun id -> Id.Map.mem id qbind) in
+      (id, ((Id.Map.add id ui qbind, ubind), (Sorts.QVar.Map.add ui id revqbind, revubind)))
+  in
+  let fold_uanons i (u_ident, ((qbind,ubind), (revqbind,revubind)) as o) = function
     | Name _ -> o
     | Anonymous ->
       let ui = Level.var i in
       let id = Namegen.next_ident_away_from u_ident (fun id -> Id.Map.mem id ubind) in
-      (id, (Id.Map.add id ui ubind, Level.Map.add ui id revubind))
+      (id, ((qbind,Id.Map.add id ui ubind), (revqbind,Level.Map.add ui id revubind)))
   in
-  let (_, names) = List.fold_left_i fold_anons 0 (u_ident, names) udecl in
+  let (_, names) = List.fold_left_i fold_qanons 0 (q_ident, names) qdecl in
+  let (_, names) = List.fold_left_i fold_uanons 0 (u_ident, names) udecl in
   names
 
 let pr_universe_ctx_set sigma c =
@@ -221,8 +246,12 @@ let pr_universe_ctx_set sigma c =
     mt()
 
 let pr_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c))
+  if !Detyping.print_universes && not (UVars.UContext.is_empty c) then
+    fnl()++
+    pr_in_comment
+      (v 0
+         (UVars.pr_universe_context (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
+            ?variance c))
   else
     mt()
 
@@ -230,9 +259,10 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
-  if !Detyping.print_universes && (not (Univ.AbstractContext.is_empty c) || has_priv) then
+  if !Detyping.print_universes && (not (UVars.AbstractContext.is_empty c) || has_priv) then
+    let prqvar u = Termops.pr_evd_qvar sigma u in
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (Univ.pr_abstract_universe_context prlev ?variance c) in
+    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prqvar prlev ?variance c) in
     let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
@@ -250,6 +280,7 @@ let pr_global = pr_global_env Id.Set.empty
 
 let pr_universe_instance_constraints evd inst csts =
   let open Univ in
+  let prqvar = Termops.pr_evd_qvar evd in
   let prlev = Termops.pr_evd_level evd in
   let pcsts = if Constraints.is_empty csts then mt()
     else str " |= " ++
@@ -257,7 +288,7 @@ let pr_universe_instance_constraints evd inst csts =
            (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
            (Constraints.elements csts)
   in
-  str"@{" ++ Instance.pr prlev inst ++ pcsts ++ str"}"
+  str"@{" ++ UVars.Instance.pr prqvar prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
   pr_universe_instance_constraints evd inst Univ.Constraints.empty

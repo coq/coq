@@ -454,12 +454,7 @@ let compute_projections (_, i as ind) mib =
       | Name id ->
         let r = na.Context.binder_relevance in
         let lab = Label.of_id id in
-        let proj_relevant = match r with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
@@ -468,7 +463,7 @@ let compute_projections (_, i as ind) mib =
         let projty = substl letsubst t in
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
-        let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let fterm = mkProj (Projection.make kn false, r, mkRel 1) in
         (i + 1, j + 1, lab :: labs, r :: rs, projty :: pbs, fterm :: letsubst)
       | Anonymous -> assert false (* checked by indTyping *)
   in
@@ -485,7 +480,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env paramsctxt inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
-  let u = Univ.make_abstract_instance (universes_context univs) in
+  let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
   let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
@@ -542,13 +537,14 @@ let build_inductive env ~sec_univs names prv univs template variance
     | Some variance -> match sec_univs with
       | None -> Some variance, None
       | Some sec_univs ->
-        let nsec = Array.length sec_univs in
-        Some (Array.sub variance nsec (Array.length variance - nsec)),
-        Some (Array.sub variance 0 nsec)
+        (* no variance for qualities *)
+        let _nsecq, nsecu = UVars.Instance.length sec_univs in
+        Some (Array.sub variance nsecu (Array.length variance - nsecu)),
+        Some (Array.sub variance 0 nsecu)
   in
   let univ_hyps = match sec_univs with
-    | None -> Univ.Instance.empty
-    | Some univs -> Univ.Instance.of_array univs
+    | None -> UVars.Instance.empty
+    | Some univs -> univs
   in
   let mib =
       (* Build the mutual inductive *)

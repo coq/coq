@@ -382,12 +382,7 @@ end
 module MPDTab = Make(DirPath')(MPEqual)
 module DirTab = Make(DirPath')(GlobDirRef)
 
-module UnivIdEqual =
-struct
-  type t = Univ.UGlobal.t
-  let equal = Univ.UGlobal.equal
-end
-module UnivTab = Make(FullPath)(UnivIdEqual)
+module UnivTab = Make(FullPath)(Univ.UGlobal)
 type univtab = UnivTab.t
 let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 
@@ -404,14 +399,7 @@ type mprevtab = DirPath.t MPmap.t
 
 type mptrevtab = full_path MPmap.t
 
-module UnivIdOrdered =
-struct
-  type t = Univ.UGlobal.t
-  let hash = Univ.UGlobal.hash
-  let compare = Univ.UGlobal.compare
-end
-
-module UnivIdMap = HMap.Make(UnivIdOrdered)
+module UnivIdMap = HMap.Make(Univ.UGlobal)
 
 type univrevtab = full_path UnivIdMap.t
 let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevtab)
@@ -556,7 +544,7 @@ let shortest_qualid_of_modtype ?loc kn =
 
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
-    UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab
+  UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)

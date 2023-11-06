@@ -179,7 +179,7 @@ let fold_with_full_binders g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (_,c) -> f n acc c
+  | Proj (_,_,c) -> f n acc c
   | Evar _ -> assert false
   | Case (ci, u, pms, p, iv, c, bl) ->
     let mib = lookup_mind (fst ci.ci_ind) in

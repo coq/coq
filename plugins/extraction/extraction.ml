@@ -244,6 +244,18 @@ let parse_ind_args si args relmax =
          | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
+let check_sort_poly sigma gr u =
+  let u = EConstr.EInstance.kind sigma u in
+  let qs, _ = UVars.Instance.to_array u in
+  if Array.exists (function
+      | Sorts.Quality.QConstant (QSProp|QProp) -> true
+      | QConstant QType | QVar _ -> false)
+      qs
+  then CErrors.user_err
+      Pp.(str "Cannot extract nontrivial sort polymorphism" ++ spc()
+          ++ str "(instantiation of " ++ Nametab.pr_global_env Id.Set.empty gr
+          ++ spc() ++ str "using Prop or SProp).")
+
 (*S Extraction of a type. *)
 
 (* [extract_type env db c args] is used to produce an ML type from the
@@ -300,6 +312,7 @@ let rec extract_type env sg db j c args =
                if Int.equal n' 0 then Tunknown else Tvar n')
     | Const (kn,u) ->
         let r = GlobRef.ConstRef kn in
+        let () = check_sort_poly sg r u in
         let typ = type_of env sg (EConstr.mkConstU (kn,u)) in
         (match flag_of_type env sg typ with
            | (Logic,_) -> assert false (* Cf. logical cases above *)
@@ -314,14 +327,15 @@ let rec extract_type env sg db j c args =
                       (* We try to reduce. *)
                       let newc = applistc (get_body lbody) args in
                       extract_type env sg db j newc []))
-    | Ind ((kn,i),u) ->
+    | Ind ((kn,i) as ind,u) ->
+        let () = check_sort_poly sg (IndRef ind) u in
         let s = (extract_ind env kn).ind_packets.(i).ip_sign in
         extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
-    | Proj (p,t) ->
+    | Proj (p,r,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
        if Projection.unfolded p then Tunknown
        else
-         extract_type env sg db j (EConstr.mkProj (Projection.unfold p, t)) args
+         extract_type env sg db j (EConstr.mkProj (Projection.unfold p, r, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Evar _ | Meta _ -> Taxiom (* only possible during Show Extraction *)
     | Var v ->
@@ -647,11 +661,13 @@ let rec extract_term env sg mle mlt c args =
         with NotDefault d ->
           let mle' = Mlenv.push_std_type mle (Tdummy d) in
           ast_pop (extract_term env' sg mle' mlt c2 args'))
-    | Const (kn,_) ->
+    | Const (kn,u) ->
+        let () = check_sort_poly sg (ConstRef kn) u in
         extract_cst_app env sg mle mlt kn args
-    | Construct (cp,_) ->
+    | Construct (cp,u) ->
+        let () = check_sort_poly sg (ConstructRef cp) u in
         extract_cons_app env sg mle mlt cp args
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
         extract_term env sg mle mlt term args
     | Rel n ->
@@ -1027,6 +1043,15 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
 
+let relevance_of_projection_repr mib p =
+  let _mind,i = Names.Projection.Repr.inductive p in
+  match mib.mind_record with
+  | NotRecord | FakeRecord ->
+    CErrors.anomaly ~label:"relevance_of_projection" Pp.(str "not a projection")
+  | PrimRecord infos ->
+    let _,_,rs,_ = infos.(i) in
+    rs.(Names.Projection.Repr.arg p)
+
 (** Because of automatic unboxing the easy way [mk_def c] on the
    constant body of primitive projections doesn't work. We pretend
    that they are implemented by matches until someone figures out how
@@ -1035,7 +1060,7 @@ let fake_match_projection env p =
   let ind = Projection.Repr.inductive p in
   let proj_arg = Projection.Repr.arg p in
   let mib, mip = Inductive.lookup_mind_specif env ind in
-  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let indu = mkIndU (ind,u) in
   let ctx, paramslet =
     let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((fst ind, mib.mind_ntypes - i - 1), u)) in
@@ -1050,7 +1075,7 @@ let fake_match_projection env p =
     ci_npar = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
-    ci_relevance = Declareops.relevance_of_projection_repr mib p;
+    ci_relevance = relevance_of_projection_repr mib p;
     ci_pp_info;
   }
   in
@@ -1067,13 +1092,8 @@ let fake_match_projection env p =
       let ty = Vars.substl subst (liftn 1 j ty) in
       if arg != proj_arg then
         let lab = match na.binder_name with Name id -> Label.of_id id | Anonymous -> assert false in
-        let proj_relevant = match na.binder_relevance with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
-        fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
+        fold (arg+1) (j+1) (mkProj (Projection.make kn false, na.binder_relevance, mkRel 1)::subst) rem
       else
         let p = ([|x|], liftn 1 2 ty) in
         let branch =

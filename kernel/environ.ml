@@ -81,7 +81,8 @@ type env = {
   env_nb_rel        : int;
   env_universes : UGraph.t;
   env_universes_lbound : UGraph.Bound.t;
-  irr_constants : Cset_env.t;
+  env_qualities : Sorts.QVar.Set.t;
+  irr_constants : Sorts.relevance Cmap_env.t;
   irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
@@ -110,7 +111,8 @@ let empty_env = {
   env_nb_rel = 0;
   env_universes = UGraph.initial_universes;
   env_universes_lbound = UGraph.Bound.Set;
-  irr_constants = Cset_env.empty;
+  env_qualities = Sorts.QVar.Set.empty;
+  irr_constants = Cmap_env.empty;
   irr_inds = Indset_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
@@ -375,13 +377,28 @@ let check_constraints c env =
   UGraph.check_constraints c env.env_universes
 
 let add_universes ~lbound ~strict ctx g =
+  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
-            (fun g v -> UGraph.add_universe ~lbound ~strict v g)
-            g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+      (fun g v -> UGraph.add_universe ~lbound ~strict v g)
+      g us
   in
-    UGraph.merge_constraints (Univ.UContext.constraints ctx) g
+  UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+
+let add_qualities qs known =
+  let open Sorts.Quality in
+  Array.fold_left (fun known q ->
+      match q with
+      | QVar q ->
+        let known' = Sorts.QVar.Set.add q known in
+        let () = if known == known' then CErrors.anomaly Pp.(str"multiply bound sort quality") in
+        known'
+      | QConstant _ -> CErrors.anomaly Pp.(str "constant quality in ucontext"))
+    known
+    qs
 
 let push_context ?(strict=false) ctx env =
+  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let env = { env with env_qualities = add_qualities qs env.env_qualities } in
   map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
 
 let add_universes_set ~lbound ~strict ctx g =
@@ -468,8 +485,8 @@ let add_constant_key kn cb linkinfo env =
     { env.env_globals with
       Globals.constants = new_constants }
   in
-  let irr_constants = if cb.const_relevance == Sorts.Irrelevant
-    then Cset_env.add kn env.irr_constants
+  let irr_constants = if cb.const_relevance != Sorts.Relevant
+    then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
   in
   { env with irr_constants; env_globals = new_globals }
@@ -481,20 +498,20 @@ let add_constant kn cb env =
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let csts = Univ.AbstractContext.instantiate u uctx in
+  let csts = UVars.AbstractContext.instantiate u uctx in
   (subst_instance_constr u cb.const_type, csts)
 
 type const_evaluation_result =
   | NoBody
   | Opaque
-  | IsPrimitive of Univ.Instance.t * CPrimitives.t
+  | IsPrimitive of UVars.Instance.t * CPrimitives.t
 
 exception NotEvaluableConst of const_evaluation_result
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
   let uctx = Declareops.constant_polymorphic_context cb in
-  let cst = Univ.AbstractContext.instantiate u uctx in
+  let cst = UVars.AbstractContext.instantiate u uctx in
   let b' = match cb.const_body with
     | Def l_body -> Some (subst_instance_constr u l_body)
     | OpaqueDef _ -> None
@@ -568,7 +585,7 @@ let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)
 
 let polymorphic_pconstant (cst,u) env =
-  if Univ.Instance.is_empty u then false
+  if UVars.Instance.is_empty u then false
   else polymorphic_constant cst env
 
 let type_in_type_constant cst env =
@@ -582,8 +599,9 @@ let lookup_projection p env =
   match mib.mind_record with
   | NotRecord | FakeRecord -> anomaly ~label:"lookup_projection" Pp.(str "not a projection")
   | PrimRecord infos ->
-    let _,_,_,typs = infos.(i) in
-    typs.(Projection.arg p)
+    let _,_,rs,typs = infos.(i) in
+    let arg = Projection.arg p in
+    rs.(arg), typs.(arg)
 
 let get_projection env ind ~proj_arg =
   let mib = lookup_mind (fst ind) env in
@@ -598,7 +616,7 @@ let polymorphic_ind (mind,_i) env =
   Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
-  if Univ.Instance.is_empty u then false
+  if UVars.Instance.is_empty u then false
   else polymorphic_ind ind env
 
 let type_in_type_ind (mind,_i) env =
@@ -616,7 +634,7 @@ let template_polymorphic_variables (mind, _) env =
   | None -> []
 
 let template_polymorphic_pind (ind,u) env =
-  if not (Univ.Instance.is_empty u) then false
+  if not (UVars.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
 
 let add_mind_key kn (mind, _ as mind_key) env =
@@ -656,7 +674,7 @@ let constant_context env c =
 let universes_of_global env r =
   let open GlobRef in
     match r with
-    | VarRef _ -> Univ.AbstractContext.empty
+    | VarRef _ -> UVars.AbstractContext.empty
     | ConstRef c -> constant_context env c
     | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
       let mib = lookup_mind mind env in

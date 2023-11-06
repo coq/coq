@@ -39,8 +39,9 @@ type structured_constant =
   | Const_ind of inductive
   | Const_evar of Evar.t
   | Const_b0 of tag
+  | Const_quality of Sorts.Quality.t
   | Const_univ_level of Univ.Level.t
-  | Const_univ_instance of Univ.Instance.t
+  | Const_univ_instance of UVars.Instance.t
   | Const_val of structured_values
   | Const_uint of Uint63.t
   | Const_float of Float64.t
@@ -145,7 +146,7 @@ external val_of_annot_switch : annot_switch -> values = "%identity"
 (** Destructors *)
 
 val whd_val : values -> kind
-val uni_instance : values -> Univ.Instance.t
+val uni_instance : values -> UVars.Instance.t
 
 (** Arguments *)
 

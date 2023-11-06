@@ -17,12 +17,113 @@ val all_families : family list
 module QVar :
 sig
   type t
-  val make : string -> int -> t
-  val repr : t -> string * int
+
+  val var_index : t -> int option
+
+  val make_var : int -> t
+  val make_unif : string -> int -> t
+
   val equal : t -> t -> bool
   val compare : t -> t -> int
+
+  val hash : t -> int
+
+  val raw_pr : t -> Pp.t
+  (** Using this is incorrect when names are available, typically from an evar map. *)
+
   val to_string : t -> string
-  val pr : t -> Pp.t
+  (** Debug printing *)
+
+  type repr =
+    | Var of int
+    | Unif of string * int
+
+  val repr : t -> repr
+  val of_repr : repr -> t
+
+  module Set : CSig.SetS with type elt = t
+
+  module Map : CMap.ExtS with type key = t and module Set := Set
+end
+
+module Quality : sig
+  type constant = QProp | QSProp | QType
+  type t = QVar of QVar.t | QConstant of constant
+
+  module Constants : sig
+    val equal : constant -> constant -> bool
+    val compare : constant -> constant -> int
+    val pr : constant -> Pp.t
+  end
+
+  val qprop : t
+  val qsprop : t
+  val qtype : t
+
+  val var : int -> t
+  (** [var i] is [QVar (QVar.make_var i)] *)
+
+  val var_index : t -> int option
+
+  val equal : t -> t -> bool
+
+  val compare : t -> t -> int
+
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
+
+  val raw_pr : t -> Pp.t
+
+  val hash : t -> int
+
+  val hcons : t -> t
+
+  (* XXX Inconsistent naming: this one should be subst_fn *)
+  val subst : (QVar.t -> t) -> t -> t
+
+  val subst_fn : t QVar.Map.t -> QVar.t -> t
+
+  module Set : CSig.SetS with type elt = t
+
+  module Map : CMap.ExtS with type key = t and module Set := Set
+
+end
+
+module QConstraint : sig
+  type kind = Equal | Leq
+
+  val pr_kind : kind -> Pp.t
+
+  type t = Quality.t * kind * Quality.t
+
+  val equal : t -> t -> bool
+
+  val compare : t -> t -> int
+
+  val trivial : t -> bool
+
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
+
+  val raw_pr : t -> Pp.t
+end
+
+module QConstraints : sig include CSig.SetS with type elt = QConstraint.t
+
+  val trivial : t -> bool
+
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
+end
+
+val enforce_eq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t
+
+val enforce_leq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t
+
+module QUConstraints : sig
+
+  type t = QConstraints.t * Univ.Constraints.t
+
+  val union : t -> t -> t
+
+  val empty : t
 end
 
 type t = private
@@ -47,6 +148,7 @@ val is_set : t -> bool
 val is_prop : t -> bool
 val is_small : t -> bool
 val family : t -> family
+val quality : t -> Quality.t
 
 val hcons : t -> t
 
@@ -60,14 +162,18 @@ val levels : t -> Univ.Level.Set.t
 
 val super : t -> t
 
-val subst_instance_sort : Univ.Instance.t -> t -> t
+val subst_fn : (QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe.t)
+  -> t -> t
 
 (** On binders: is this variable proof relevant *)
+(* TODO put in submodule or new file *)
 type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t
 
 val relevance_hash : relevance -> int
 
 val relevance_equal : relevance -> relevance -> bool
+
+val relevance_subst_fn : (QVar.t -> Quality.t) -> relevance -> relevance
 
 val relevance_of_sort : t -> relevance
 val relevance_of_sort_family : family -> relevance

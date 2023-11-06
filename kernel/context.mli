@@ -95,6 +95,9 @@ sig
     (** Map the name bound by a given declaration. *)
     val map_name : (Name.t -> Name.t) -> ('c, 't) pt -> ('c, 't) pt
 
+    (** Map the relevance *)
+    val map_relevance : (Sorts.relevance -> Sorts.relevance) -> ('c, 't) pt -> ('c, 't) pt
+
     (** For local assumptions, this function returns the original local assumptions.
         For local definitions, this function maps the value in the local definition. *)
     val map_value : ('c -> 'c) -> ('c, 't) pt -> ('c, 't) pt

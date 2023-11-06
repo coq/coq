@@ -48,7 +48,7 @@ type class_method = {
 (* This module defines type-classes *)
 type typeclass = {
   (* Universe quantification *)
-  cl_univs : Univ.AbstractContext.t;
+  cl_univs : UVars.AbstractContext.t;
 
   (* The class implementation *)
   cl_impl : GlobRef.t;
@@ -90,7 +90,7 @@ let classes : typeclasses ref = Summary.ref GlobRef.Map.empty ~name:"classes"
 let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
 
 let typeclass_univ_instance (cl, u) =
-  assert (Univ.AbstractContext.size cl.cl_univs == Univ.Instance.length u);
+  assert (UVars.eq_sizes (UVars.AbstractContext.size cl.cl_univs) (UVars.Instance.length u));
   let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
     { cl with cl_context = subst_ctx cl.cl_context;
       cl_props = subst_ctx cl.cl_props}
@@ -112,7 +112,7 @@ let global_class_of_constr env sigma c =
 let decompose_class_app env sigma c =
   let hd, args = EConstr.decompose_app_list sigma c in
   match EConstr.kind sigma hd with
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
     let expp = Retyping.expand_projection env sigma p c args in
     EConstr.decompose_app_list sigma expp
   | _ -> hd, args
@@ -140,7 +140,7 @@ let rec is_class_type evd c =
     match EConstr.kind evd c with
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
-    | Proj (p, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
+    | Proj (p, _, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
     | _ -> is_class_constr evd c
 
 let is_class_evar evd evi =
@@ -152,7 +152,7 @@ let rec is_maybe_class_type evd c =
     | Prod (_, _, t) -> is_maybe_class_type evd t
     | Cast (t, _, _) -> is_maybe_class_type evd t
     | Evar _ -> true
-    | Proj (p, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
+    | Proj (p, _, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
     | _ -> is_class_constr evd c
 
 let () = Hook.set Evd.is_maybe_typeclass_hook (fun evd c -> is_maybe_class_type evd (EConstr.of_constr c))

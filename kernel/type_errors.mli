@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Univ
+open UVars
 
 (** Type errors. {% \label{typeerrors} %} *)
 
@@ -72,7 +73,9 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
+  | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
+  | UndeclaredQualities of Sorts.QVar.Set.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadBinderRelevance of Sorts.relevance * ('constr, 'types) Context.Rel.Declaration.pt
@@ -146,7 +149,11 @@ val error_ill_formed_rec_body :
 val error_ill_typed_rec_body  :
   env -> int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'a
 
+val error_unsatisfied_qconstraints : env -> Sorts.QConstraints.t -> 'a
+
 val error_unsatisfied_constraints : env -> Constraints.t -> 'a
+
+val error_undeclared_qualities : env -> Sorts.QVar.Set.t -> 'a
 
 val error_undeclared_universe : env -> Level.t -> 'a
 

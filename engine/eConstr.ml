@@ -41,13 +41,15 @@ module ESorts = struct
 
   let family sigma s = Sorts.family (kind sigma s)
 
+  let quality sigma s = Sorts.quality (kind sigma s)
+
 end
 
 module EInstance = struct
   include Evd.MiniEConstr.EInstance
 
   let equal sigma i1 i2 =
-    Univ.Instance.equal (kind sigma i1) (kind sigma i2)
+    UVars.Instance.equal (kind sigma i1) (kind sigma i2)
 end
 
 include (Evd.MiniEConstr : module type of Evd.MiniEConstr
@@ -97,7 +99,7 @@ let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
 let mkCase (ci, u, pms, c, iv, r, p) = of_kind (Case (ci, u, pms, c, iv, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
-let mkProj (p, c) = of_kind (Proj (p, c))
+let mkProj (p, r, c) = of_kind (Proj (p, r, c))
 let mkArrow t1 r t2 = of_kind (Prod (make_annot Anonymous r, t1, t2))
 let mkArrowR t1 t2 = mkArrow t1 Sorts.Relevant t2
 let mkInt i = of_kind (Int i)
@@ -230,7 +232,7 @@ let destCase sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destProj sigma c = match kind sigma c with
-| Proj (p, c) -> (p, c)
+| Proj (p, r, c) -> (p, r, c)
 | _ -> raise DestKO
 
 let destRef sigma c = let open GlobRef in match kind sigma c with
@@ -498,7 +500,7 @@ let iter_with_full_binders env sigma g f n c =
     let (ci, _, pms, p, iv, c, bl) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
     let f_ctx (ctx, c) = f (List.fold_right g ctx n) c in
     Array.Fun1.iter f n pms; f_ctx p; iter_invert (f n) iv; f n c; Array.iter f_ctx bl
-  | Proj (p,c) -> f n c
+  | Proj (_,_,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
     let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na, lift i t)) n) n lna tl in
@@ -572,31 +574,14 @@ let compare_constr sigma cmp c1 c2 =
   let cmp nargs c1 c2 = cmp c1 c2 in
   compare_gen kind eq_inst eq_sorts (eq_existential cmp) cmp 0 c1 c2
 
-let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
-  let open UnivProblem in
-  if not nargs_ok then enforce_eq_instances_univs false u u' cstrs
-  else
-    let make u = Sorts.sort_of_univ @@ Univ.Universe.make u in
-    CArray.fold_left3
-      (fun cstrs v u u' ->
-         let open Univ.Variance in
-         match v with
-         | Irrelevant -> Set.add (UWeak (u,u')) cstrs
-         | Covariant ->
-           (match cv_pb with
-            | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
-            | Conversion.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
-         | Invariant ->
-           Set.add (UEq (make u, make u')) cstrs)
-      cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
-
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
   match mind.Declarations.mind_variance with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some variances ->
     let num_param_arity = Conversion.inductive_cumulativity_arguments spec in
-    compare_cumulative_instances cv_pb (Int.equal num_param_arity nargs) variances u1 u2 cstrs
+    if not (Int.equal num_param_arity nargs) then enforce_eq_instances_univs false u1 u2 cstrs
+    else compare_cumulative_instances cv_pb  variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
@@ -607,8 +592,11 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
     if not (Int.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
+      let qs1, us1 = UVars.Instance.to_array u1
+      and qs2, us2 = UVars.Instance.to_array u2 in
+      let cstrs = enforce_eq_qualities qs1 qs2 cstrs in
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
-        cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
+        cstrs us1 us2
 
 let eq_universes env sigma cstrs cv_pb refargs l l' =
   if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
@@ -619,7 +607,7 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open UnivProblem in
     match refargs with
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
-      cstrs := compare_cumulative_instances cv_pb true [|Univ.Variance.Irrelevant|] l l' !cstrs;
+      cstrs := compare_cumulative_instances cv_pb [|UVars.Variance.Irrelevant|] l l' !cstrs;
       true
     | None | Some (ConstRef _, _) ->
       cstrs := enforce_eq_instances_univs true l l' !cstrs; true
@@ -681,8 +669,8 @@ let leq_constr_universes env sigma ?nargs m n =
 let compare_head_gen_proj env sigma equ eqs eqev eqc' nargs m n =
   let kind c = kind sigma c in
   match kind m, kind n with
-  | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) ->
+  | Proj (p, _, c), App (f, args)
+  | App (f, args), Proj (p, _, c) ->
       (match kind f with
       | Const (p', u) when Environ.QConstant.equal env (Projection.constant p) p' ->
           let npars = Projection.npars p in
@@ -714,30 +702,77 @@ let eq_constr_universes_proj env sigma m n =
     let res = eq_constr' 0 m n in
     if res then Some !cstrs else None
 
+let add_universes_of_instance sigma (qs,us) u =
+  let u = EInstance.kind sigma u in
+  let qs', us' = UVars.Instance.levels u in
+  let qs = Sorts.Quality.(Set.fold (fun q qs -> match q with
+      | QVar q -> Sorts.QVar.Set.add q qs
+      | QConstant _ -> qs)
+      qs' qs)
+  in
+  qs, Univ.Level.Set.union us us'
+
+let fold_annot_relevance f acc na =
+  f acc na.Context.binder_relevance
+
+let fold_case_under_context_relevance f acc (nas,_) =
+  Array.fold_left (fold_annot_relevance f) acc nas
+
+let fold_rec_declaration_relevance f acc (nas,_,_) =
+  Array.fold_left (fold_annot_relevance f) acc nas
+
+let fold_constr_relevance sigma f acc c =
+  match kind sigma c with
+  | Rel _ | Var _ | Meta _ | Evar _
+  |  Sort _ | Cast _ | App _
+  | Const _ | Ind _ | Construct _ | Proj _
+  | Int _ | Float _ | Array _ -> acc
+
+  | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
+    fold_annot_relevance f acc na
+
+  | Case (ci,_u,_params,ret,_iv,_v,brs) ->
+    let acc = f acc ci.ci_relevance in
+    let acc = fold_case_under_context_relevance f acc ret in
+    let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
+    acc
+
+  | Fix (_,data)
+  | CoFix (_,data) ->
+    fold_rec_declaration_relevance f acc data
+
+let add_relevance sigma (qs,us as v) r =
+  let open Sorts in
+  (* NB this normalizes above_prop to Relevant which makes it disappear *)
+  match UState.nf_relevance (Evd.evar_universe_context sigma) r with
+  | Irrelevant | Relevant -> v
+  | RelevanceVar q -> QVar.Set.add q qs, us
+
 let universes_of_constr sigma c =
   let open Univ in
   let rec aux s c =
+    let s = fold_constr_relevance sigma (add_relevance sigma) s c in
     match kind sigma c with
-    | Const (c, u) ->
-      Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s
-    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
-      Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s
-    | Sort u ->
-      let sort = ESorts.kind sigma u in
-      if Sorts.is_small sort then s
-      else
-        Level.Set.fold Level.Set.add (Sorts.levels sort) s
+    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_universes_of_instance sigma s u
+    | Sort u -> begin match ESorts.kind sigma u with
+        | Type u ->
+          Util.on_snd (Level.Set.fold Level.Set.add (Universe.levels u)) s
+        | QSort (q, u) ->
+          let qs, us = s in
+          Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
+        | SProp | Prop | Set -> s
+      end
     | Evar (k, args) ->
       let concl = Evd.evar_concl (Evd.find_undefined sigma k) in
       fold sigma aux (aux s concl) c
     | Array (u,_,_,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
+      let s = add_universes_of_instance sigma s u in
       fold sigma aux s c
     | Case (_,u,_,_,_,_,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in
+      let s = add_universes_of_instance sigma s u in
       fold sigma aux s c
     | _ -> fold sigma aux s c
-  in aux Level.Set.empty c
+  in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
 
 open Context
 open Environ

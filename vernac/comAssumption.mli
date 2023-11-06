@@ -54,7 +54,7 @@ val declare_axiom
   -> Impargs.manual_implicits
   -> Declaremods.inline
   -> variable CAst.t
-  -> GlobRef.t * Univ.Instance.t
+  -> GlobRef.t * UVars.Instance.t
 
 (** Context command *)
 

@@ -289,7 +289,7 @@ let check_not_nested env sigma forbidden e =
       Array.iter check_not_nested t;
       check_not_nested def;
       check_not_nested ty
-    | Proj (p, c) -> check_not_nested c
+    | Proj (p, _, c) -> check_not_nested c
     | Const _ -> ()
     | Ind _ -> ()
     | Construct _ -> ()

@@ -169,7 +169,7 @@ let pattern_of_constr ~broken env sigma t =
     | Const (sp,u)  -> PRef (GlobRef.ConstRef (Constant.make1 (Constant.canonical sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (GlobRef.IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
       let EvarInfo evi = Evd.find sigma evk in
@@ -265,7 +265,7 @@ let rec subst_pattern env sigma subst pat =
     if ref' == ref then pat else (match t with
         | None -> PRef ref'
         | Some t ->
-          pattern_of_constr env sigma (EConstr.of_constr t.Univ.univ_abstracted_value))
+          pattern_of_constr env sigma (EConstr.of_constr t.UVars.univ_abstracted_value))
   | PVar _
   | PEvar _
   | PRel _

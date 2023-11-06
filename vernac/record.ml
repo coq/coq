@@ -249,7 +249,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     let sigma = Evd.minimize_universes sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
-      let varsc = EConstr.universes_of_constr sigma c in
+      let _, varsc = EConstr.universes_of_constr sigma c in
       let c = EConstr.to_constr sigma c in
       uvars := Univ.Level.Set.union !uvars varsc;
       c
@@ -393,14 +393,9 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
       (* [ccl] is defined in context [params;x:rp] *)
       (* [ccl'] is defined in context [params;x:rp;x:rp] *)
       if primitive then
-        let proj_relevant = match rci with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
         let p = Projection.Repr.make indsp
-            ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
-        mkProj (Projection.make p true, mkRel 1), Some p
+            ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
+        mkProj (Projection.make p true, rci, mkRel 1), Some (p,rci)
       else
         let ccl' = liftn 1 2 ccl in
         let p = mkLambda (x, lift 1 rp, ccl') in
@@ -426,9 +421,9 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   Declare.definition_message fid;
   let term = match p_opt with
-    | Some p ->
+    | Some (p,r) ->
       let _ = DeclareInd.declare_primitive_projection p kn in
-      mkProj (Projection.make p false,mkRel 1)
+      mkProj (Projection.make p false, r, mkRel 1)
     | None ->
       let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
       match decl with
@@ -474,8 +469,8 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match fst univs with
-    | Polymorphic_entry uctx -> Univ.UContext.instance uctx
-    | Monomorphic_entry -> Univ.Instance.empty
+    | Polymorphic_entry uctx -> UVars.UContext.instance uctx
+    | Monomorphic_entry -> UVars.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
   let r = mkIndU (indsp,uinstance) in
@@ -819,7 +814,7 @@ let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj fini
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
 let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
-  Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
+  Option.iter (Global.push_context_set ~strict:true) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj ~indlocs
   in
@@ -862,9 +857,9 @@ let declare_class_constant ~univs paramimpls params data =
   in
   let inst, univs = match univs with
     | UState.Monomorphic_entry _, ubinders ->
-      Univ.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
+      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
     | UState.Polymorphic_entry uctx, _ ->
-      Univ.UContext.instance uctx, univs
+      UVars.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in
@@ -935,14 +930,14 @@ let declare_class ~univs params inds def data =
   let univs, params, fields =
     match fst univs with
     | UState.Polymorphic_entry uctx ->
-      let usubst, auctx = Univ.abstract_universes uctx in
-      let usubst = Univ.make_instance_subst usubst in
+      let usubst, auctx = UVars.abstract_universes uctx in
+      let usubst = UVars.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let params = Context.Rel.map map params in
       auctx, params, fields
     | UState.Monomorphic_entry _ ->
-      Univ.AbstractContext.empty, params, fields
+      UVars.AbstractContext.empty, params, fields
   in
   let map (impl, projs) =
     let k =
@@ -964,7 +959,7 @@ let add_constant_class cst =
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_decls ty in
   let args = Context.Rel.instance Constr.mkRel 0 ctx in
-  let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
+  let t = mkApp (mkConstU (cst, UVars.make_abstract_instance univs), args) in
   let tc =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
@@ -985,7 +980,7 @@ let add_inductive_class ind =
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let univs = Declareops.inductive_polymorphic_context mind in
-    let inst = Univ.make_abstract_instance univs in
+    let inst = UVars.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive ((mind, oneind), inst) in
     let r = oneind.mind_relevance in
       { cl_univs = univs;

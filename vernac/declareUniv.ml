@@ -29,8 +29,8 @@ type universe_source =
 
 type universe_name_decl = {
   udecl_src : universe_source;
-  udecl_named : (Id.t * Univ.UGlobal.t) list;
-  udecl_anon : Univ.UGlobal.t list;
+  udecl_named : (Id.t * UGlobal.t) list;
+  udecl_anon : UGlobal.t list;
 }
 
 let check_exists_universe sp =
@@ -112,9 +112,11 @@ let declare_univ_binders gr (univs, pl) =
   match univs with
   | UState.Polymorphic_entry _ -> ()
   | UState.Monomorphic_entry (levels, _) ->
+    let qs, pl = pl in
+    assert (Id.Map.is_empty qs);
     (* First the explicitly named universes *)
     let named, univs = Id.Map.fold (fun id univ (named,univs) ->
-        let univs = match Univ.Level.name univ with
+        let univs = match Level.name univ with
           | None -> assert false (* having Prop/Set/Var as binders is nonsense *)
           | Some univ -> (id,univ)::univs
         in
@@ -135,12 +137,21 @@ let do_universe ~poly l =
         (Pp.str"Cannot declare polymorphic universes outside sections.")
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
-  let ctx = List.fold_left (fun ctx (_,qid) -> Univ.Level.Set.add (Univ.Level.make qid) ctx)
-      Univ.Level.Set.empty l, Univ.Constraints.empty
-  in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   let () = input_univ_names (src, l, []) in
-  DeclareUctx.declare_universe_context ~poly ctx
+  match poly with
+  | false ->
+    let ctx = List.fold_left (fun ctx (_,qid) -> Level.Set.add (Level.make qid) ctx)
+        Level.Set.empty l, Constraints.empty
+    in
+    Global.push_context_set ~strict:true ctx
+  | true ->
+    let names = CArray.map_of_list (fun (na,_) -> Name na) l in
+    let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
+    let ctx =
+      UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
+    in
+    Global.push_section_context ctx
 
 let do_constraint ~poly l =
   let open Univ in
@@ -150,5 +161,13 @@ let do_constraint ~poly l =
       Constraints.add cst acc)
       Constraints.empty l
   in
-  let uctx = ContextSet.add_constraints constraints ContextSet.empty in
-  DeclareUctx.declare_universe_context ~poly uctx
+  match poly with
+  | false ->
+    let uctx = ContextSet.add_constraints constraints ContextSet.empty in
+    Global.push_context_set ~strict:true uctx
+  | true ->
+    let uctx = UVars.UContext.make
+        ([||],[||])
+        (UVars.Instance.empty,constraints)
+    in
+    Global.push_section_context uctx

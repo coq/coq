@@ -28,7 +28,7 @@ type class_method = {
 
 (** This module defines type-classes *)
 type typeclass = {
-  cl_univs : Univ.AbstractContext.t;
+  cl_univs : UVars.AbstractContext.t;
   (** The toplevel universe quantification in which the typeclass lives. In
       particular, [cl_props] and [cl_context] are quantified over it. *)
 
@@ -89,7 +89,7 @@ val class_info_exn : env -> evar_map -> GlobRef.t -> typeclass
 val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
 (** Get the instantiated typeclass structure for a given universe instance. *)
-val typeclass_univ_instance : typeclass Univ.puniverses -> typeclass
+val typeclass_univ_instance : typeclass UVars.puniverses -> typeclass
 
 (** Just return None if not a class *)
 val class_of_constr : env -> evar_map -> EConstr.constr ->

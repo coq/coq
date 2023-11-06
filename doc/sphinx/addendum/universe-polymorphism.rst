@@ -530,14 +530,15 @@ Explicit Universes
    universe_name ::= @qualid
    | Set
    | Prop
-   univ_annot ::= @%{ {* @universe_level } %}
-   universe_level ::= Set
+   univ_annot ::= @%{ {* @univ_level_or_quality } {? %| {* @univ_level_or_quality } } %}
+   univ_level_or_quality ::= Set
+   | SProp
    | Prop
    | Type
    | _
    | @qualid
-   univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
-   cumul_univ_decl ::= @%{ {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   univ_decl ::= @%{ {? {* @ident } %| } {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   cumul_univ_decl ::= @%{ {? {* @ident } %| } {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
    univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 The syntax has been extended to allow users to explicitly bind names
@@ -738,6 +739,69 @@ underscore or by omitting the annotation to a polymorphic definition.
    .. coqtop:: all
 
       About baz.
+
+.. _sort-polymorphism:
+
+Sort polymorphism
+-----------------
+
+Quantifying over universes does not allow instantiation with `Prop` or `SProp`. For instance
+
+.. coqtop:: in reset
+
+   Polymorphic Definition type@{u} := Type@{u}.
+
+.. coqtop:: all
+
+   Fail Check type@{Prop}.
+
+To be able to instantiate a sort with `Prop` or `SProp`, we must
+quantify over :gdef:`sort qualities`. Definitions which quantify over
+sort qualities are called :gdef:`sort polymorphic`.
+
+All sort quality variables must be explicitly bound.
+
+.. coqtop:: all
+
+   Polymorphic Definition sort@{s | u |} := Type@{s|u}.
+
+To help the parser, both `|` in the :n:`@univ_decl` are required.
+
+Sort quality variables of a sort polymorphic definition may be
+instantiated by the concrete values `SProp`, `Prop` and `Type` or by a
+bound variable.
+
+Instantiating `s` in `Type@{s|u}` with the impredicative `Prop` or
+`SProp` produces `Prop` or `SProp` respectively regardless of the
+instantiation fof `u`.
+
+.. coqtop:: all
+
+   Eval cbv in sort@{Prop|Set}.
+   Eval cbv in sort@{Type|Set}.
+
+When no explicit instantiation is provided or `_` is used, a temporary
+variable is generated. Temporary sort variables are instantiated with
+`Type` if not unified with another quality when universe minimization
+runs (typically at the end of a definition).
+
+:cmd:`Check` and :cmd:`Eval` run minimization so we cannot use them to
+witness these temporary variables.
+
+.. coqtop:: in
+
+   Goal True.
+   Set Printing Universes.
+
+.. coqtop:: all abort
+
+   let c := constr:(sort) in idtac c.
+
+.. note::
+
+   We recommend you do not name explicitly quantified sort variables
+   `α` followed by a number as printing will not distinguish between
+   your bound variables and temporary variables.
 
 .. _universe-polymorphism-in-sections:
 

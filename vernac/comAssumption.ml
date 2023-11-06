@@ -36,8 +36,8 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   ()
 
 let instance_of_univ_entry = function
-  | UState.Polymorphic_entry univs -> Univ.UContext.instance univs
-  | UState.Monomorphic_entry _ -> Univ.Instance.empty
+  | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
+  | UState.Monomorphic_entry _ -> UVars.Instance.empty
 
 let declare_axiom is_coe ~poly ~local ~kind ?deprecation typ (univs, ubinders) imps nl {CAst.v=name} =
   let inl = let open Declaremods in match nl with
@@ -70,7 +70,7 @@ let interp_assumption ~program_mode env sigma impl_env bl c =
   let ty = EConstr.it_mkProd_or_LetIn ty ctx in
   sigma, ty, impls1@impls2
 
-let empty_poly_univ_entry = UState.Polymorphic_entry Univ.UContext.empty, UnivNames.empty_binders
+let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
 let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
 let empty_univ_entry ~poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
@@ -94,7 +94,7 @@ let declare_assumptions ~poly ~scope ~kind ?deprecation univs nl l =
             let refu = match scope with
               | Locality.Discharge ->
                 declare_variable is_coe ~kind typ univs imps Glob_term.Explicit id;
-                GlobRef.VarRef id.CAst.v, Univ.Instance.empty
+                GlobRef.VarRef id.CAst.v, UVars.Instance.empty
               | Locality.Global local ->
                 declare_axiom is_coe ~local ~poly ~kind ?deprecation typ univs imps nl id
             in

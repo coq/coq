@@ -72,7 +72,7 @@ type symbol =
   | SymbMatch of annot_sw
   | SymbInd of inductive
   | SymbEvar of Evar.t
-  | SymbLevel of Univ.Level.t
+  | SymbInstance of UVars.Instance.t
   | SymbProj of (inductive * int)
 
 type symbols = symbol array
@@ -84,9 +84,9 @@ val empty_symbols : symbols
 val mk_accu : atom -> t
 val mk_rel_accu : int -> t
 val mk_rels_accu : int -> int -> t array
-val mk_constant_accu : Constant.t -> Univ.Level.t array -> t
-val mk_ind_accu : inductive -> Univ.Level.t array -> t
-val mk_sort_accu : Sorts.t -> Univ.Level.t array -> t
+val mk_constant_accu : Constant.t -> UVars.Instance.t -> t
+val mk_ind_accu : inductive -> UVars.Instance.t -> t
+val mk_sort_accu : Sorts.t -> UVars.Instance.t -> t
 val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t

@@ -521,12 +521,11 @@ let push_section_context uctx senv =
   let sections = get_section senv.sections in
   let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
-  let ctx = Univ.ContextSet.of_context uctx in
-  (* We check that the universes are fresh. FIXME: This should be done
-     implicitly, but we have to work around the API. *)
-  let () = assert (Univ.Level.Set.for_all (fun u -> not (Univ.Level.Set.mem u (fst senv.univ))) (fst ctx)) in
+  let qualities, ctx = UVars.UContext.to_context_set uctx in
+  assert (Sorts.Quality.Set.is_empty qualities);
+  (* push_context checks freshness *)
   { senv with
-    env = Environ.push_context_set ~strict:false ctx senv.env;
+    env = Environ.push_context ~strict:false uctx senv.env;
     univ = Univ.ContextSet.union ctx senv.univ }
 
 (** {6 Insertion of new declarations to current environment } *)
@@ -606,7 +605,7 @@ type global_declaration =
 type exported_opaque = {
   exp_handle : Opaqueproof.opaque_handle;
   exp_body : Constr.t;
-  exp_univs : int option;
+  exp_univs : (int * int) option;
   (* Minimal amount of data needed to rebuild the private universes. We enforce
      in the API that private constants have no internal constraints. *)
 }
@@ -739,7 +738,7 @@ let constant_entry_of_side_effect eff =
     | Monomorphic ->
       Monomorphic_entry
     | Polymorphic auctx ->
-      Polymorphic_entry (Univ.AbstractContext.repr auctx)
+      Polymorphic_entry (UVars.AbstractContext.repr auctx)
   in
   let p =
     match cb.const_body with
@@ -834,7 +833,7 @@ let export_private_constants eff senv =
     let (_, _, _, h) = Opaqueproof.repr o in
     let univs = match c.const_universes with
     | Monomorphic -> None
-    | Polymorphic auctx -> Some (Univ.AbstractContext.size auctx)
+    | Polymorphic auctx -> Some (UVars.AbstractContext.size auctx)
     in
     let body = Constr.hcons body in
     let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
@@ -1292,6 +1291,8 @@ let start_library dir senv =
 
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
+  (* qualities are in the senv only during sections *)
+  let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =

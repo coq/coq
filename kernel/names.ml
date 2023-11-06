@@ -831,13 +831,12 @@ struct
   module Repr = struct
     type t =
       { proj_ind : inductive;
-        proj_relevant : bool;
         proj_npars : int;
         proj_arg : int;
         proj_name : Label.t; }
 
-    let make proj_ind ~proj_npars ~proj_arg ~proj_relevant proj_name =
-      {proj_ind;proj_npars;proj_arg;proj_relevant;proj_name}
+    let make proj_ind ~proj_npars ~proj_arg proj_name =
+      {proj_ind;proj_npars;proj_arg;proj_name}
 
     let inductive c = c.proj_ind
 
@@ -851,15 +850,8 @@ struct
 
     let arg c = c.proj_arg
 
-    let relevant c = c.proj_relevant
-
     let hash p =
       Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
-
-    let bcomp b1 b2 = match b1, b2 with
-    | true, true | false, false -> 0
-    | true, false -> 1
-    | false, true -> -1
 
     let compare_gen a b =
       let c = Int.compare a.proj_arg b.proj_arg in
@@ -868,9 +860,7 @@ struct
         let c = Int.compare a.proj_npars b.proj_npars in
         if c <> 0 then c
         else
-          let c = Label.compare a.proj_name b.proj_name in
-          if c <> 0 then c
-          else bcomp a.proj_relevant b.proj_relevant
+          Label.compare a.proj_name b.proj_name
 
     module SyntacticOrd = struct
       type nonrec t = t
@@ -920,12 +910,11 @@ struct
       type u = (inductive -> inductive) * (Id.t -> Id.t)
       let hashcons (hind,hid) p =
         { proj_ind = hind p.proj_ind;
-          proj_relevant = p.proj_relevant;
           proj_npars = p.proj_npars;
           proj_arg = p.proj_arg;
           proj_name = hid p.proj_name }
       let eq p p' =
-        p == p' || (p.proj_relevant == p'.proj_relevant && p.proj_ind == p'.proj_ind && p.proj_npars == p'.proj_npars && p.proj_arg == p'.proj_arg && p.proj_name == p'.proj_name)
+        p == p' || (p.proj_ind == p'.proj_ind && p.proj_npars == p'.proj_npars && p.proj_arg == p'.proj_arg && p.proj_name == p'.proj_name)
       let hash = hash
     end
     module HashRepr = Hashcons.Make(Self_Hashcons)

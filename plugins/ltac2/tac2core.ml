@@ -103,11 +103,14 @@ let v_blk = Valexpr.make_block
 let of_relevance = function
   | Sorts.Relevant -> ValInt 0
   | Sorts.Irrelevant -> ValInt 1
-  | Sorts.RelevanceVar q -> ValInt 0 (* FIXME ? *)
+  | Sorts.RelevanceVar q -> ValBlk (0, [|of_ext val_qvar q|])
 
 let to_relevance = function
   | ValInt 0 -> Sorts.Relevant
   | ValInt 1 -> Sorts.Irrelevant
+  | ValBlk (0, [|qvar|]) ->
+    let qvar = to_ext val_qvar qvar in
+    Sorts.RelevanceVar qvar
   | _ -> assert false
 
 let relevance = make_repr of_relevance to_relevance
@@ -119,12 +122,16 @@ let to_binder b =
   Tac2ffi.to_ext Tac2ffi.val_binder b
 
 let of_instance u =
-  let u = Univ.Instance.to_array (EConstr.Unsafe.to_instance u) in
-  Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) u
+  let u = UVars.Instance.to_array (EConstr.Unsafe.to_instance u) in
+  let toqs = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_quality v) in
+  let tous = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) in
+  Tac2ffi.of_pair toqs tous u
 
 let to_instance u =
-  let u = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) u in
-  EConstr.EInstance.make (Univ.Instance.of_array u)
+  let toqs = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_quality v) in
+  let tous = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) in
+  let u = Tac2ffi.to_pair toqs tous u in
+  EConstr.EInstance.make (UVars.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =
   let binders = Array.map2 (fun na t -> (na, t)) nas ts in
@@ -539,9 +546,10 @@ let () =
       nas;
       cs;
     |]
-  | Proj (p, c) ->
+  | Proj (p, r, c) ->
     v_blk 16 [|
       Tac2ffi.of_ext Tac2ffi.val_projection p;
+      of_relevance r;
       Tac2ffi.of_constr c;
     |]
   | Int n ->
@@ -625,10 +633,11 @@ let () =
     let i = Tac2ffi.to_int i in
     let def = to_rec_declaration (nas, cs) in
     EConstr.mkCoFix (i, def)
-  | (16, [|p; c|]) ->
+  | (16, [|p; r; c|]) ->
     let p = Tac2ffi.to_ext Tac2ffi.val_projection p in
+    let r = to_relevance r in
     let c = Tac2ffi.to_constr c in
-    EConstr.mkProj (p, c)
+    EConstr.mkProj (p, r, c)
   | (17, [|n|]) ->
     let n = Tac2ffi.to_uint63 n in
     EConstr.mkInt n
@@ -1212,7 +1221,7 @@ let () =
   define "ind_get_projections" (repr_ext val_ind_data @-> ret (option (array projection)))
   @@ fun (ind,mib) ->
   Declareops.inductive_make_projections ind mib
-  |> Option.map (Array.map (fun p -> Projection.make p false))
+  |> Option.map (Array.map (fun (p,_) -> Projection.make p false))
 
 (** Proj *)
 

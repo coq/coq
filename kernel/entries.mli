@@ -18,14 +18,14 @@ open Constr
 
 type universes_entry =
   | Monomorphic_entry
-  | Polymorphic_entry of Univ.UContext.t
+  | Polymorphic_entry of UVars.UContext.t
 
 type inductive_universes_entry =
   | Monomorphic_ind_entry
-  | Polymorphic_ind_entry of Univ.UContext.t
+  | Polymorphic_ind_entry of UVars.UContext.t
   | Template_ind_entry of Univ.ContextSet.t
 
-type variance_entry = Univ.Variance.t option array
+type variance_entry = UVars.Variance.t option array
 
 type 'a in_universes_entry = 'a * universes_entry
 
@@ -111,7 +111,7 @@ type constant_entry =
 
 (** {6 Modules } *)
 
-type module_struct_entry = (constr * Univ.AbstractContext.t option) Declarations.module_alg_expr
+type module_struct_entry = (constr * UVars.AbstractContext.t option) Declarations.module_alg_expr
 
 type module_params_entry =
   (MBId.t * module_struct_entry * inline) list (** older first *)

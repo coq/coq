@@ -280,7 +280,7 @@ sort: [
 | "SProp"
 | "Type"
 | "Type" "@{" "_" "}"
-| "Type" "@{" universe "}"
+| "Type" "@{" OPT [ qualid "|" ] universe "}"
 ]
 
 universe: [
@@ -299,11 +299,12 @@ universe_name: [
 ]
 
 univ_annot: [
-| "@{" LIST0 universe_level "}"
+| "@{" LIST0 univ_level_or_quality OPT [ "|" LIST0 univ_level_or_quality ] "}"
 ]
 
-universe_level: [
+univ_level_or_quality: [
 | "Set"
+| "SProp"
 | "Prop"
 | "Type"
 | "_"
@@ -311,15 +312,20 @@ universe_level: [
 ]
 
 univ_decl: [
-| "@{" LIST0 ident OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| "@{" OPT [ LIST0 ident "|" ] LIST0 ident OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
 cumul_univ_decl: [
-| "@{" LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| "@{" OPT [ LIST0 ident "|" ] LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
 univ_constraint: [
 | universe_name [ "<" | "=" | "<=" ] universe_name
+]
+
+univ_decl_constraints: [
+| "|" LIST0 univ_constraint SEP "," [ "+" | ] "}"
+| [ "}" | "|}" ]
 ]
 
 term_fix: [

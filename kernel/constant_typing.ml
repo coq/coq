@@ -21,6 +21,7 @@ open Declarations
 open Environ
 open Entries
 open Univ
+open UVars
 
 module NamedDecl = Context.Named.Declaration
 
@@ -95,17 +96,17 @@ let rec unzip ctx j =
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
 
 type typing_context =
-  TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * universe_level_subst * universes
+  TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * UVars.sort_level_subst * universes
 
 let process_universes env = function
   | Entries.Monomorphic_entry ->
-    env, Univ.empty_level_subst, Univ.Instance.empty, Monomorphic
+    env, UVars.empty_sort_subst, UVars.Instance.empty, Monomorphic
   | Entries.Polymorphic_entry uctx ->
     (** [ctx] must contain local universes, such that it has no impact
         on the rest of the graph (up to transitivity). *)
     let env = Environ.push_context ~strict:false uctx env in
-    let inst, auctx = Univ.abstract_universes uctx in
-    let usubst = Univ.make_instance_subst inst in
+    let inst, auctx = UVars.abstract_universes uctx in
+    let usubst = UVars.make_instance_subst inst in
     env, usubst, inst, Polymorphic auctx
 
 let check_primitive_type env op_t u t =
@@ -172,7 +173,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
 
 let make_univ_hyps = function
   | None -> Instance.empty
-  | Some us -> Instance.of_array us
+  | Some us -> us
 
 let infer_parameter ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.parameter_entry_universes in
@@ -189,7 +190,7 @@ let infer_parameter ~sec_univs env entry =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_relevance = r;
+    const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
   }
@@ -254,12 +255,12 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let uctx = ContextSet.union uctx uctx' in
   let env, univs = match univs with
     | Monomorphic ->
-       assert (is_empty_level_subst usubst);
+       assert (UVars.is_empty_sort_subst usubst);
        push_context_set uctx env, Opaqueproof.PrivateMonomorphic uctx
     | Polymorphic _ ->
        assert (Int.equal valid_signatures 0);
        push_subgraph uctx env,
-       let private_univs = on_snd (subst_univs_level_constraints usubst) uctx in
+       let private_univs = on_snd (subst_univs_level_constraints (snd usubst)) uctx in
        Opaqueproof.PrivatePolymorphic private_univs
   in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)

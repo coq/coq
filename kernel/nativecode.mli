@@ -44,7 +44,7 @@ val get_ind : symbols -> int -> inductive
 
 val get_evar : symbols -> int -> Evar.t
 
-val get_level : symbols -> int -> Univ.Level.t
+val get_instance : symbols -> int -> UVars.Instance.t
 
 val get_proj : symbols -> int -> inductive * int
 

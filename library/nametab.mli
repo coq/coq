@@ -110,8 +110,6 @@ val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
 
-module UnivIdMap : CMap.ExtS with type key = Univ.UGlobal.t
-
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
 
 (** Deprecation info *)

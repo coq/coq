@@ -222,7 +222,7 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
         if strict then () else
           iter_with_full_binders env sigma push_lift (frec false) ed c
-    | Proj (p, _) when rig ->
+    | Proj (p, _, _) when rig ->
       if strict then () else
         iter_with_full_binders env sigma push_lift (frec false) ed c
     | Case _ when rig ->
@@ -241,7 +241,7 @@ let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
   | Case (_,_,_,_,_,f,_) -> is_rigid_head sigma f
-  | Proj (p,c) -> true
+  | Proj _ -> true
   | App (f,args) ->
       (match kind sigma f with
         | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))

@@ -43,7 +43,7 @@ val sprop_allowed : unit -> bool
 
 val push_named_assum : (Id.t * Constr.types) -> unit
 val push_named_def   : (Id.t * Entries.section_def_entry) -> unit
-val push_section_context : Univ.UContext.t -> unit
+val push_section_context : UVars.UContext.t -> unit
 
 val export_private_constants :
   Safe_typing.private_constants ->
@@ -124,7 +124,7 @@ type indirect_accessor = {
 val force_proof : indirect_accessor -> Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes
 
 val body_of_constant : indirect_accessor -> Constant.t ->
-  (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
+  (Constr.constr * unit Opaqueproof.delayed_universes * UVars.AbstractContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
@@ -132,7 +132,7 @@ val body_of_constant : indirect_accessor -> Constant.t ->
 
 val body_of_constant_body : indirect_accessor ->
   constant_body ->
-    (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
+    (Constr.constr * unit Opaqueproof.delayed_universes * UVars.AbstractContext.t) option
 (** Same as {!body_of_constant} but on {!constant_body}. *)
 
 (** {6 Compiled libraries } *)

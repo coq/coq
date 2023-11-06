@@ -849,7 +849,7 @@ let extern_float f scopes =
 
 type extern_env = Id.Set.t * UnivNames.universe_binders
 let extern_env env sigma = vars_of_env env, Evd.universe_binders sigma
-let empty_extern_env = Id.Set.empty, Id.Map.empty
+let empty_extern_env = Id.Set.empty, UnivNames.empty_binders
 
 let extern_glob_sort_name uvars = function
   | GSProp -> CSProp
@@ -862,9 +862,19 @@ let extern_glob_sort_name uvars = function
       | None -> CRawType u
     end
 
+let extern_glob_qvar uvars = function
+  | GLocalQVar {v=Anonymous;loc} -> CQAnon loc
+  | GLocalQVar {v=Name id; loc} -> CQVar (qualid_of_ident ?loc id)
+  | GRawQVar q -> CRawQVar q
+  | GQVar q -> CRawQVar q
+
+let extern_glob_quality uvars = function
+  | GQConstant q -> CQConstant q
+  | GQualVar q -> CQualVar (extern_glob_qvar uvars q)
+
 let extern_glob_sort uvars u =
   let map (q, l) =
-    q, List.map (on_fst (extern_glob_sort_name uvars)) l
+    Option.map (extern_glob_qvar uvars) q, List.map (on_fst (extern_glob_sort_name uvars)) l
   in
   map_glob_sort_gen map u
 
@@ -876,8 +886,10 @@ let extern_glob_sort uvars = function
   | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
 
 let extern_instance uvars = function
-  | Some l when !print_universes ->
-    Some (List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) l)
+  | Some (ql,ul) when !print_universes ->
+    let ql = List.map (extern_glob_quality uvars) ql in
+    let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
+    Some (ql,ul)
   | _ -> None
 
 let extern_ref (vars,uvars) ref us =

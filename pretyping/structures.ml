@@ -131,7 +131,7 @@ end
 type obj_typ = {
   o_ORIGIN : GlobRef.t;
   o_DEF : constr;
-  o_CTX : Univ.AbstractContext.t;
+  o_CTX : UVars.AbstractContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
@@ -171,7 +171,7 @@ let rec of_constr env t =
   | Rel n -> Default_cs, Some n, []
   | Lambda (_, _, b) -> let patt, _, _ = of_constr env b in patt, None, []
   | Prod (_,_,_) -> Prod_cs, None, [t]
-  | Proj (p, c) -> Proj_cs (Names.Projection.repr p), None, [c]
+  | Proj (p, _, c) -> Proj_cs (Names.Projection.repr p), None, [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
   | _ -> Const_cs (fst @@ destRef t) , None, []
 
@@ -211,7 +211,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let o_DEF, c =
     match gref with
     | GlobRef.ConstRef con ->
-        let u = Univ.make_abstract_instance o_CTX in
+        let u = UVars.make_abstract_instance o_CTX in
         mkConstU (con, u), Environ.constant_value_in env (con,u)
     | GlobRef.VarRef id ->
         mkVar id, Option.get (Environ.named_body id env)
@@ -278,7 +278,7 @@ let make env sigma ref =
   let vc =
     match ref with
     | GlobRef.ConstRef sp ->
-        let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
+        let u = UVars.make_abstract_instance (Environ.constant_context env sp) in
         begin match Environ.constant_opt_value_in env (sp, u) with
         | Some vc -> vc
         | None -> error_not_structure ref (str "Could not find its value in the global environment") end
@@ -360,7 +360,7 @@ let find env sigma (proj,pat) =
   let bs' = List.map (EConstr.of_constr %> EConstr.Vars.subst_instance_constr u) bs in
   let params = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) params in
   let us = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) us in
-  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
+  let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx' in
   sigma, { body = t'; constant = c'; abstractions_ty = bs'; nparams; params; cvalue_arguments = us; cvalue_abstraction = n }
 
 
@@ -381,7 +381,7 @@ let rec decompose_projection sigma c args =
      (* Check if there is some canonical projection attached to this structure *)
      let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in
      get_nth n args
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
      let _ = GlobRef.Map.find (GlobRef.ConstRef (Names.Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
@@ -436,5 +436,11 @@ let mem c = Cmap_env.mem c !prim_table
 
 let find_opt c =
   try Some (Cmap_env.find c !prim_table) with Not_found -> None
+
+let find_opt_with_relevance (c,u) =
+  find_opt c |>
+  Option.map (fun p ->
+      let u = EConstr.Unsafe.to_instance u in
+      p, Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
 
 end

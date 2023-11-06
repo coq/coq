@@ -231,7 +231,10 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
         let term =
           mkApp (mkRel 2,
                   Array.map
-                  (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
+                    (fun (p,r) ->
+                       let r = UVars.subst_instance_relevance u r in
+                       mkProj (Projection.make p true, r, mkRel 1)) ps)
+        in
         if dep then
           let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
           sigma, mkCast (term, DEFAULTcast, ty), ty

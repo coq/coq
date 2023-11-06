@@ -275,45 +275,137 @@ let smash_rel_context sign =
 (** Universe substitutions *)
 open Constr
 
+let map_annot_relevance f na =
+  let open Context in
+  let r = na.binder_relevance in
+  let r' = f r in
+  if r' == r then na else { na with binder_relevance = r' }
+
+let map_case_info_relevance f ci =
+  let r = ci.ci_relevance in
+  let r' = f r in
+  if r' == r then ci else { ci with ci_relevance = r' }
+
+let map_case_under_context_relevance f (nas,x as v) =
+  let nas' = CArray.Smart.map (map_annot_relevance f) nas in
+  if nas' == nas then v else (nas',x)
+
+let map_rec_declaration_relevance f (i,(nas,x,y) as v) =
+let nas' = CArray.Smart.map (map_annot_relevance f) nas in
+  if nas' == nas then v else (i,(nas',x,y))
+
+let map_constr_relevance f c =
+  match kind c with
+  | Rel _ | Var _ | Meta _ | Evar _
+  |  Sort _ | Cast _ | App _
+  | Const _ | Ind _ | Construct _
+  | Int _ | Float _ | Array _ -> c
+
+  | Prod (na,x,y) ->
+    let na' = map_annot_relevance f na in
+    if na' == na then c else mkProd (na',x,y)
+
+  | Lambda (na,x,y) ->
+    let na' = map_annot_relevance f na in
+    if na' == na then c else mkLambda (na',x,y)
+
+  | LetIn (na,x,y,z) ->
+    let na' = map_annot_relevance f na in
+    if na' == na then c else mkLetIn (na',x,y,z)
+
+  | Case (ci,u,params,ret,iv,v,brs) ->
+    let ci' = map_case_info_relevance f ci in
+    let ret' = map_case_under_context_relevance f ret in
+    let brs' = CArray.Smart.map (map_case_under_context_relevance f) brs in
+    if ci' == ci && ret' == ret && brs' == brs then c
+    else mkCase (ci',u,params,ret',iv,v,brs')
+
+  | Fix data ->
+    let data' = map_rec_declaration_relevance f data in
+    if data' == data then c else mkFix data'
+
+  | CoFix data ->
+    let data' = map_rec_declaration_relevance f data in
+    if data' == data then c else mkCoFix data'
+
+  | Proj (p, r, v) ->
+    let r' = f r in
+    if r' == r then c else mkProj (p, r', v)
+
+let fold_annot_relevance f acc na =
+  f acc na.Context.binder_relevance
+
+let fold_case_under_context_relevance f acc (nas,_) =
+  Array.fold_left (fold_annot_relevance f) acc nas
+
+let fold_rec_declaration_relevance f acc (nas,_,_) =
+  Array.fold_left (fold_annot_relevance f) acc nas
+
+let fold_constr_relevance f acc c =
+  match kind c with
+  | Rel _ | Var _ | Meta _ | Evar _
+  |  Sort _ | Cast _ | App _
+  | Const _ | Ind _ | Construct _
+  | Int _ | Float _ | Array _ -> acc
+
+  | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
+    fold_annot_relevance f acc na
+
+  | Case (ci,_u,_params,ret,_iv,_v,brs) ->
+    let acc = f acc ci.ci_relevance in
+    let acc = fold_case_under_context_relevance f acc ret in
+    let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
+    acc
+
+  | Proj (_, r, _) -> f acc r
+
+  | Fix (_,data)
+  | CoFix (_,data) ->
+    fold_rec_declaration_relevance f acc data
+
 let subst_univs_level_constr subst c =
-  if Univ.is_empty_level_subst subst then c
+  if UVars.is_empty_sort_subst subst then c
   else
-    let f = Univ.subst_univs_level_instance subst in
+    let f = UVars.subst_sort_level_instance subst in
+    (* XXX shouldn't Constr.map return the pointer equal term when unchanged instead? *)
     let changed = ref false in
     let rec aux t =
+      let t' = map_constr_relevance (UVars.subst_sort_level_relevance subst) t in
+      let t = if t' == t then t else (changed := true; t') in
       match kind t with
       | Const (c, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
             else (changed := true; mkConstU (c, u'))
       | Ind (i, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
             else (changed := true; mkIndU (i, u'))
       | Construct (c, u) ->
-        if Univ.Instance.is_empty u then t
+        if UVars.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
             else (changed := true; mkConstructU (c, u'))
-      | Sort (Sorts.Type u) ->
-         let u' = Univ.subst_univs_level_universe subst u in
-           if u' == u then t else
-             (changed := true; mkSort (Sorts.sort_of_univ u'))
+      | Sort s ->
+        let s' = UVars.subst_sort_level_sort subst s in
+        if s' == s then t
+        else
+          (changed := true; mkSort s')
 
       | Case (ci, u, pms, p, CaseInvert {indices}, c, br) ->
-        if Univ.Instance.is_empty u then Constr.map aux t
+        if UVars.Instance.is_empty u then Constr.map aux t
         else
           let u' = f u in
           if u' == u then Constr.map aux t
           else (changed:=true; Constr.map aux (mkCase (ci,u',pms,p,CaseInvert {indices},c,br)))
 
       | Case (ci, u, pms, p, NoInvert, c, br) ->
-        if Univ.Instance.is_empty u then Constr.map aux t
+        if UVars.Instance.is_empty u then Constr.map aux t
         else
           let u' = f u in
           if u' == u then Constr.map aux t
@@ -333,37 +425,42 @@ let subst_univs_level_constr subst c =
     let c' = aux c in
       if !changed then c' else c
 
-let subst_univs_level_context s =
-  Context.Rel.map (subst_univs_level_constr s)
+let subst_univs_level_context s ctx =
+  CList.Smart.map (fun d ->
+      let d = RelDecl.map_relevance (UVars.subst_sort_level_relevance s) d in
+      RelDecl.map_constr (subst_univs_level_constr s) d)
+    ctx
 
 let subst_instance_constr subst c =
-  if Univ.Instance.is_empty subst then c
+  if UVars.Instance.is_empty subst then c
   else
-    let f u = Univ.subst_instance_instance subst u in
+    let f u = UVars.subst_instance_instance subst u in
     let rec aux t =
+      let t = if CArray.is_empty (fst (UVars.Instance.to_array subst)) then t
+        else map_constr_relevance (UVars.subst_instance_relevance subst) t
+      in
       match kind t with
       | Const (c, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
           let u' = f u in
            if u' == u then t
            else (mkConstU (c, u'))
       | Ind (i, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
          let u' = f u in
            if u' == u then t
            else (mkIndU (i, u'))
       | Construct (c, u) ->
-       if Univ.Instance.is_empty u then t
+       if UVars.Instance.is_empty u then t
        else
           let u' = f u in
            if u' == u then t
            else (mkConstructU (c, u'))
-      | Sort (Sorts.Type u) ->
-         let u' = Univ.subst_instance_universe subst u in
-          if u' == u then t else
-            (mkSort (Sorts.sort_of_univ u'))
+      | Sort s ->
+        let s' = UVars.subst_instance_sort subst s in
+        if s' == s then t else mkSort s'
 
       | Case (ci, u, pms, p, iv, c, br) ->
         let u' = f u in
@@ -383,34 +480,57 @@ let subst_instance_constr subst c =
     aux c
 
 let univ_instantiate_constr u c =
-  let open Univ in
-  assert (Int.equal (Instance.length u) (AbstractContext.size c.univ_abstracted_binder));
+  let open UVars in
+  assert (UVars.eq_sizes (Instance.length u) (AbstractContext.size c.univ_abstracted_binder));
   subst_instance_constr u c.univ_abstracted_value
 
 let subst_instance_context s ctx =
-  if Univ.Instance.is_empty s then ctx
-  else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
+  if UVars.Instance.is_empty s then ctx
+  else
+    CList.Smart.map (fun d ->
+        let d = RelDecl.map_relevance (UVars.subst_instance_relevance s) d in
+        RelDecl.map_constr (subst_instance_constr s) d)
+      ctx
 
-let universes_of_constr c =
+let add_qvars_and_univs_of_instance (qs,us) u =
+  let qs', us' = UVars.Instance.to_array u in
+  let qs = Array.fold_left (fun qs q ->
+      let open Sorts.Quality in
+      match q with
+      | QVar q -> Sorts.QVar.Set.add q qs
+      | QConstant _ -> qs)
+      qs qs'
+  in
+  let us = Array.fold_left (fun acc x -> Univ.Level.Set.add x acc) us us' in
+  qs, us
+
+let add_relevance (qs,us as v) = let open Sorts in function
+  | Irrelevant | Relevant -> v
+  | RelevanceVar q -> QVar.Set.add q qs, us
+
+let sort_and_universes_of_constr c =
   let open Univ in
   let rec aux s c =
+    let s = fold_constr_relevance add_relevance s c in
     match kind c with
-    | Const (_c, u) ->
-      Level.Set.fold Level.Set.add (Instance.levels u) s
-    | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
-      Level.Set.fold Level.Set.add (Instance.levels u) s
-    | Sort u when not (Sorts.is_small u) ->
-      Level.Set.fold Level.Set.add (Sorts.levels u) s
+    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_qvars_and_univs_of_instance s u
+    | Sort (Sorts.Type u) ->
+      Util.on_snd (Level.Set.union (Universe.levels u)) s
+    | Sort (Sorts.QSort (q,u)) ->
+      let qs, us = s in
+      Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
     | Array (u,_,_,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
+      let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
     | Case (_, u, _, _, _,_ ,_) ->
-      let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
+      let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
     | _ -> Constr.fold aux s c
-  in aux Level.Set.empty c
+  in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
 
-let universes_of_constr c =
-  NewProfile.profile "universes_of_constr" (fun () ->
-      universes_of_constr c)
+let sort_and_universes_of_constr c =
+  NewProfile.profile "sort_and_universes_of_constr" (fun () ->
+      sort_and_universes_of_constr c)
     ()
+
+let universes_of_constr c = snd (sort_and_universes_of_constr c)

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Univ
+open UVars
 
 (** {6 Graphs of universes. } *)
 type t
@@ -120,7 +121,7 @@ val repr : t -> node Level.Map.t
 
 val pr_universes : (Level.t -> Pp.t) -> node Level.Map.t -> Pp.t
 
-val explain_universe_inconsistency : (Level.t -> Pp.t) ->
+val explain_universe_inconsistency : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) ->
   univ_inconsistency -> Pp.t
 
 (** {6 Debugging} *)

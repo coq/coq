@@ -105,11 +105,10 @@ let interp_hints ~poly h =
       let c, uctx = Constrintern.interp_constr env sigma c in
       let uctx = UState.normalize_variables uctx in
       let c = Evarutil.nf_evar (Evd.from_ctx uctx) c in
-      let diff = UState.context_set uctx in
       let c =
-        if poly then (c, Some diff)
+        if poly then (c, Some (UState.sort_context_set uctx))
         else
-          let () = DeclareUctx.declare_universe_context ~poly:false diff in
+          let () = Global.push_context_set ~strict:true (UState.context_set uctx) in
           (c, None)
       in
       (Hints.hint_constr c) [@ocaml.warning "-3"]

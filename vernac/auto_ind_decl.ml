@@ -285,7 +285,7 @@ let pred_context env ci params u nas =
   let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   let self =
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-    let inst = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+    let inst = UVars.Instance.(abstract_instance (length u)) in
     mkApp (mkIndU (ci.ci_ind, inst), args)
   in
   let realdecls = RelDecl.LocalAssum (Context.anonR, self) :: realdecls in
@@ -762,8 +762,10 @@ let build_beq_scheme env handle kn =
                   match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
                   | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
                   | Some eqA ->
-                     let proj = Projection.make projs.(nb_cstr_args-ndx) true in
-                     (ndx-1,env_lift',mkApp (eqA, [|mkProj (proj,mkRel 2);mkProj (proj,mkRel 1)|])::l)
+                     let proj, relevance = projs.(nb_cstr_args-ndx) in
+                     let proj = Projection.make proj true in
+                     (ndx-1,env_lift',mkApp (eqA, [|mkProj (proj, relevance, mkRel 2);
+                                                    mkProj (proj, relevance, mkRel 1)|])::l)
                 else
                   raise InternalDependencies)
                         constrs.(0).cs_args (nb_cstr_args,env_lift_recparams_fix_nonrecparams_tomatch,[])
@@ -1158,7 +1160,7 @@ let make_bl_scheme env handle mind =
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
-  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+  let uctx = UState.merge_sort_context ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
 
   let ind = (mind,0) in
   let nparrec = mib.mind_nparams_rec in
@@ -1289,7 +1291,7 @@ let make_lb_scheme env handle mind =
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
-  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+  let uctx = UState.merge_sort_context ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
 
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
@@ -1476,7 +1478,7 @@ let make_eq_decidability env handle mind =
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
-  let uctx = UState.merge ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
+  let uctx = UState.merge_sort_context ~sideff:false UState.univ_rigid (UState.from_env env) uctx in
 
   let lnonparrec,lnamesparrec =
     Inductive.inductive_nonrec_rec_paramdecls (mib,u) in

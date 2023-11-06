@@ -110,7 +110,7 @@ let print_fields envpar sigma cstrtypes =
         Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }"
 
 let print_one_inductive env sigma isrecord mib ((_,i) as ind) =
-  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let mip = mib.mind_packets.(i) in
   let paramdecls = Inductive.inductive_paramdecls (mib,u) in
   let env_params, params = Namegen.make_all_rel_context_name_different env (Evd.from_env env) (EConstr.of_rel_context paramdecls) in

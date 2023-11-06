@@ -35,7 +35,7 @@ let finalize ?abort_on_undefined_evars sigma f =
   let sigma = minimize_universes sigma in
   let uvars = ref Univ.Level.Set.empty in
   let v = f (fun c ->
-      let varsc = EConstr.universes_of_constr sigma c in
+      let _, varsc = EConstr.universes_of_constr sigma c in
       let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
       uvars := Univ.Level.Set.union !uvars varsc;
       c)
@@ -67,12 +67,9 @@ let whd_evar = EConstr.whd_evar
 let nf_evar sigma c =
   let lsubst = Evd.universe_subst sigma in
   let evar_value ev = Evd.existential_opt_value0 sigma ev in
-  let level_value l =
-    UnivSubst.level_subst_of (fun l -> UnivFlex.normalize_univ_variable lsubst l) l
-  in
-  let sort_value s = UState.nf_sort (Evd.evar_universe_context sigma) s in
-  let rel_value r = UState.nf_relevance (Evd.evar_universe_context sigma) r in
-  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value (EConstr.Unsafe.to_constr c)
+  let univ_value l = UnivFlex.normalize_univ_variable lsubst l in
+  let qvar_value q = UState.nf_qvar (Evd.evar_universe_context sigma) q in
+  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value (EConstr.Unsafe.to_constr c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
@@ -141,7 +138,7 @@ let head_evar sigma c =
     | Case (_, _, _, _, _, c, _) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
-    | Proj (p, c)    -> hrec c
+    | Proj (_, _, c)    -> hrec c
     | _              -> raise NoHeadEvar
   in
   hrec c
@@ -764,14 +761,20 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   let open UnivProblem in
   let cstrs = Univ.Constraints.empty in
   let soft = Set.empty in
+  let qs, us = UVars.Instance.to_array u
+  and qs', us' = UVars.Instance.to_array u' in
+  let qcstrs = enforce_eq_qualities qs qs' Set.empty in
+  match Evd.add_universe_constraints sigma qcstrs with
+  | exception UGraph.UniverseInconsistency p -> Inr p
+  | sigma ->
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
-      let open Univ.Variance in
+      let open UVars.Variance in
       match v with
       | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Conversion.CUMUL ->
         Univ.Constraints.add (u,Univ.Le,u') cstrs, soft
       | Covariant | Invariant -> Univ.Constraints.add (u,Univ.Eq,u') cstrs, soft)
-      (cstrs,soft) variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+      (cstrs,soft) variances us us'
   in
   match Evd.add_constraints sigma cstrs with
   | sigma ->
@@ -780,11 +783,17 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
 
 let compare_constructor_instances evd u u' =
   let open UnivProblem in
-  let soft =
-    Array.fold_left2 (fun cs u u' -> Set.add (UWeak (u,u')) cs)
-      Set.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
-  in
-  Evd.add_universe_constraints evd soft
+  let qs, us = UVars.Instance.to_array u
+  and qs', us' = UVars.Instance.to_array u' in
+  let qcstrs = enforce_eq_qualities qs qs' Set.empty in
+  match Evd.add_universe_constraints evd qcstrs with
+  | exception UGraph.UniverseInconsistency p -> Inr p
+  | evd ->
+    let soft =
+      Array.fold_left2 (fun cs u u' -> Set.add (UWeak (u,u')) cs)
+        Set.empty us us'
+    in
+    Inl (Evd.add_universe_constraints evd soft)
 
 (** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
     [t] and [u] up to existential variable instantiation and

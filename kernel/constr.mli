@@ -14,9 +14,9 @@
 open Names
 
 (** {6 Simply type aliases } *)
-type pconstant = Constant.t Univ.puniverses
-type pinductive = inductive Univ.puniverses
-type pconstructor = constructor Univ.puniverses
+type pconstant = Constant.t UVars.puniverses
+type pinductive = inductive UVars.puniverses
+type pconstructor = constructor UVars.puniverses
 
 (** {6 Existential variables } *)
 type metavariable = int
@@ -85,7 +85,7 @@ val mkVar : Id.t -> constr
 val mkInt : Uint63.t -> constr
 
 (** Constructs an array *)
-val mkArray : Univ.Instance.t * constr array * constr * types -> constr
+val mkArray : UVars.Instance.t * constr array * constr * types -> constr
 
 (** Constructs a machine float number *)
 val mkFloat : Float64.t -> constr
@@ -126,13 +126,13 @@ val mkLetIn : Name.t Context.binder_annot * constr * types * constr -> constr
     {%latex:$(f~t_1\dots f_n)$%}. *)
 val mkApp : constr * constr array -> constr
 
-val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
+val map_puniverses : ('a -> 'b) -> 'a UVars.puniverses -> 'b UVars.puniverses
 
 (** Constructs a Constant.t *)
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
-val mkProj : (Projection.t * constr) -> constr
+val mkProj : (Projection.t * Sorts.relevance * constr) -> constr
 
 (** Inductive types *)
 
@@ -145,7 +145,7 @@ val mkConstructU : pconstructor -> constr
 val mkConstructUi : pinductive * int -> constr
 
 (** Make a constant, inductive, constructor or variable. *)
-val mkRef : GlobRef.t Univ.puniverses -> constr
+val mkRef : GlobRef.t UVars.puniverses -> constr
 
 module UnsafeMonomorphic : sig
   val mkConst : Constant.t -> constr
@@ -176,7 +176,7 @@ type ('constr, 'types, 'univs) pcase =
 type case_invert = constr pcase_invert
 type case_return = types pcase_return
 type case_branch = constr pcase_branch
-type case = (constr, types, Univ.Instance.t) pcase
+type case = (constr, types, UVars.Instance.t) pcase
 
 val mkCase : case -> constr
 
@@ -281,7 +281,8 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
      The names in the [brs] are the names of the variables bound in the respective branch. *)
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * 'constr
+  | Proj      of Projection.t * Sorts.relevance * 'constr
+  (** The relevance is the relevance of the whole term *)
   | Int       of Uint63.t
   | Float     of Float64.t
   | Array     of 'univs * 'constr array * 'constr * 'types
@@ -292,13 +293,13 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
    least one argument and the function is not itself an applicative
    term *)
 
-val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
-val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
+val kind : constr -> (constr, types, Sorts.t, UVars.Instance.t) kind_of_term
+val of_kind : (constr, types, Sorts.t, UVars.Instance.t) kind_of_term -> constr
 
 val kind_nocast_gen : ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term)
 
-val kind_nocast : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+val kind_nocast : constr -> (constr, types, Sorts.t, UVars.Instance.t) kind_of_term
 
 (** {6 Simple case analysis} *)
 val isRel  : constr -> bool
@@ -372,16 +373,16 @@ val decompose_app_list : constr -> constr * constr list
 val decompose_app : constr -> constr * constr array
 
 (** Destructs a constant *)
-val destConst : constr -> Constant.t Univ.puniverses
+val destConst : constr -> Constant.t UVars.puniverses
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
 
 (** Destructs a (co)inductive type *)
-val destInd : constr -> inductive Univ.puniverses
+val destInd : constr -> inductive UVars.puniverses
 
 (** Destructs a constructor *)
-val destConstruct : constr -> constructor Univ.puniverses
+val destConstruct : constr -> constructor UVars.puniverses
 
 (** Destructs a [match c as x in I args return P with ... |
 Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
@@ -391,7 +392,7 @@ where [info] is pretty-printing information *)
 val destCase : constr -> case
 
 (** Destructs a projection *)
-val destProj : constr -> Projection.t * constr
+val destProj : constr -> Projection.t * Sorts.relevance * constr
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
    [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}
@@ -404,7 +405,7 @@ val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
-val destRef : constr -> GlobRef.t Univ.puniverses
+val destRef : constr -> GlobRef.t UVars.puniverses
 
 (** {6 Equality} *)
 
@@ -571,7 +572,7 @@ type 'univs instance_compare_fn = (GlobRef.t * int) option ->
    compare universe instances, [s] to compare sorts; Cast's, binders
    name and Cases annotations are not taken into account *)
 
-val compare_head_gen : Univ.Instance.t instance_compare_fn ->
+val compare_head_gen : UVars.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (existential -> existential -> bool) ->
   constr constr_compare_fn ->
@@ -607,7 +608,7 @@ val compare_head_gen_with :
     [s] to compare sorts for for subtyping; Cast's, binders name and
     Cases annotations are not taken into account *)
 
-val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
+val compare_head_gen_leq : UVars.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (existential -> existential -> bool) ->
   constr constr_compare_fn ->

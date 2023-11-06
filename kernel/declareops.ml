@@ -56,15 +56,15 @@ let hcons_template_universe ar =
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
-  | Monomorphic -> Univ.AbstractContext.empty
+  | Monomorphic -> UVars.AbstractContext.empty
   | Polymorphic ctx -> ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
-    Univ.empty_level_subst, Monomorphic
+    UVars.empty_sort_subst, Monomorphic
   | Entries.Polymorphic_entry uctx ->
-    let (inst, auctx) = Univ.abstract_universes uctx in
-    let inst = Univ.make_instance_subst inst in
+    let (inst, auctx) = UVars.abstract_universes uctx in
+    let inst = UVars.make_instance_subst inst in
     (inst, Polymorphic auctx)
 
 (** {6 Constants } *)
@@ -106,7 +106,7 @@ let subst_const_def subst def = match def with
 
 let subst_const_body subst cb =
   (* we're outside sections *)
-  assert (List.is_empty cb.const_hyps && Univ.Instance.is_empty cb.const_univ_hyps);
+  assert (List.is_empty cb.const_hyps && UVars.Instance.is_empty cb.const_univ_hyps);
   if is_empty_subst subst then cb
   else
     let body' = subst_const_def subst cb.const_body in
@@ -115,7 +115,7 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
-        const_univ_hyps = Univ.Instance.empty;
+        const_univ_hyps = UVars.Instance.empty;
         const_body = body';
         const_type = type';
         const_body_code =
@@ -147,7 +147,7 @@ let hcons_universes cbu =
   match cbu with
   | Monomorphic -> Monomorphic
   | Polymorphic ctx ->
-    Polymorphic (Univ.hcons_abstract_universe_context ctx)
+    Polymorphic (UVars.hcons_abstract_universe_context ctx)
 
 let hcons_const_body cb =
   { cb with
@@ -268,12 +268,12 @@ let subst_mind_record subst r = match r with
 
 let subst_mind_body subst mib =
   (* we're outside sections *)
-  assert (List.is_empty mib.mind_hyps && Univ.Instance.is_empty mib.mind_univ_hyps);
+  assert (List.is_empty mib.mind_hyps && UVars.Instance.is_empty mib.mind_univ_hyps);
   { mind_record = subst_mind_record subst mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = [];
-    mind_univ_hyps = Univ.Instance.empty;
+    mind_univ_hyps = UVars.Instance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
@@ -303,44 +303,26 @@ let inductive_make_projection ind mib ~proj_arg =
   | NotRecord | FakeRecord ->
     CErrors.anomaly Pp.(str "inductive_make_projection: not a primitive record.")
   | PrimRecord infos ->
-    let _, labs, relevances, _ = infos.(snd ind) in
-    let proj_relevant = match relevances.(proj_arg) with
-    | Sorts.Irrelevant -> false
-    | Sorts.Relevant -> true
-    | Sorts.RelevanceVar _ -> assert false
-    in
+    let _, labs, rs, _ = infos.(snd ind) in
     if proj_arg < 0 || Array.length labs <= proj_arg
     then CErrors.anomaly Pp.(str "inductive_make_projection: invalid proj_arg.");
-    Names.Projection.Repr.make ind
-      ~proj_relevant
+    let p = Names.Projection.Repr.make ind
       ~proj_npars:mib.mind_nparams
       ~proj_arg
       labs.(proj_arg)
+    in
+    p, rs.(proj_arg)
 
 let inductive_make_projections ind mib =
   match mib.mind_record with
   | NotRecord | FakeRecord -> None
   | PrimRecord infos ->
     let _, labs, relevances, _ = infos.(snd ind) in
-    let projs = Array.mapi (fun proj_arg lab ->
-        let proj_relevant = match relevances.(proj_arg) with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        Names.Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg lab)
-        labs
+    let projs = Array.map2_i (fun proj_arg lab r ->
+        Names.Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab, r)
+        labs relevances
     in
     Some projs
-
-let relevance_of_projection_repr mib p =
-  let _mind,i = Names.Projection.Repr.inductive p in
-  match mib.mind_record with
-  | NotRecord | FakeRecord ->
-    CErrors.anomaly ~label:"relevance_of_projection" Pp.(str "not a projection")
-  | PrimRecord infos ->
-    let _,_,rs,_ = infos.(i) in
-    rs.(Names.Projection.Repr.arg p)
 
 (** {6 Hash-consing of inductive declarations } *)
 

@@ -67,7 +67,7 @@ In general, code can be adapted by:
 
 ### Universes
 
-- Type `Univ.UContext` now embeds universe user names, generally
+- Type `UVars.UContext` now embeds universe user names, generally
   resulting in more concise code.
 
 - Renaming `Univ.Constraint` into `Univ.Constraints`

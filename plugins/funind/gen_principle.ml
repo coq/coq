@@ -2124,7 +2124,7 @@ let make_graph (f_ref : GlobRef.t) =
     in
     let mp = Constant.modpath c in
     let pstate =
-      do_generate_principle_aux [(c, Univ.Instance.empty)] error_error false
+      do_generate_principle_aux [(c, UVars.Instance.empty)] error_error false
         false expr_list
     in
     assert (Option.is_empty pstate);
@@ -2225,7 +2225,7 @@ let build_case_scheme fa =
   in
   let ind, sf =
     let ind = (first_fun_kn, funs_indexes) in
-    ((ind, Univ.Instance.empty) (*FIXME*), prop_sort)
+    ((ind, UVars.Instance.empty) (*FIXME*), prop_sort)
   in
   let sigma, scheme =
     Indrec.build_case_analysis_scheme_default env sigma ind sf

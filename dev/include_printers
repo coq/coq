@@ -14,6 +14,7 @@
 #install_printer  (* univ context *) ppaucontext;;
 #install_printer  (* univ context future *) ppuniverse_context_future;;
 #install_printer  (* univ context set *) ppuniverse_context_set;;
+#install_printer  (* qvar set *) ppqvarset;;
 #install_printer  (* univ set *) ppuniverse_set;;
 #install_printer  (* univ instance *) ppuniverse_instance;;
 #install_printer  (* univ subst *) ppuniverse_subst;;

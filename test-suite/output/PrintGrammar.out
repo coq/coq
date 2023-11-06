@@ -145,7 +145,8 @@ Entry term is
 
 Entry univ_annot is
 [ LEFTA
-  [ "@{"; LIST0 universe_level; "}"
+  [ "@{"; LIST0 univ_level_or_quality;
+    OPT [ "|"; LIST0 univ_level_or_quality ]; "}"
   |  ] ]
 
 Entry fix_decls is

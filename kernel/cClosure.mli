@@ -26,10 +26,12 @@ type finvert
 
 type evar_repack
 
-type usubs = fconstr subs Univ.puniverses
+type usubs = fconstr subs UVars.puniverses
 
-type table_key = Constant.t Univ.puniverses tableKey
+type table_key = Constant.t UVars.puniverses tableKey
 
+(** Relevances (eg in binder_annot or case_info) have NOT been substituted
+    when there is a usubs field *)
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
@@ -37,18 +39,18 @@ type fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of Projection.t * fconstr
+  | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
   | FCoFix of cofixpoint * usubs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
+  | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
   | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
-  | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
+  | FArray of UVars.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * usubs
   | FIrrelevant
@@ -61,8 +63,8 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of Projection.Repr.t
+  | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zproj of Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
@@ -81,7 +83,7 @@ val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
 val stack_args_size : stack -> int
 
 val inductive_subst : Declarations.mutual_inductive_body
-  -> Univ.Instance.t
+  -> UVars.Instance.t
   -> fconstr array
   -> usubs
 
@@ -90,7 +92,9 @@ val usubs_liftn : int -> usubs -> usubs
 val usubs_cons : fconstr -> usubs -> usubs
 
 (** identity if the first instance is empty *)
-val usubst_instance : 'a Univ.puniverses -> Univ.Instance.t -> Univ.Instance.t
+val usubst_instance : 'a UVars.puniverses -> UVars.Instance.t -> UVars.Instance.t
+
+val usubst_binder : _ UVars.puniverses -> 'a Context.binder_annot -> 'a Context.binder_annot
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -123,13 +127,15 @@ val create_tab : unit -> clos_tab
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
 val info_univs : clos_infos -> UGraph.t
-val unfold_projection : clos_infos -> Projection.t -> stack_member option
+val unfold_projection : clos_infos -> Projection.t -> Sorts.relevance -> stack_member option
 
 val push_relevance : clos_infos -> 'b Context.binder_annot -> clos_infos
 val push_relevances : clos_infos -> 'b Context.binder_annot array -> clos_infos
 val set_info_relevances : clos_infos -> Sorts.relevance Range.t -> clos_infos
 
 val info_relevances : clos_infos -> Sorts.relevance Range.t
+
+val is_irrelevant : clos_infos -> Sorts.relevance -> bool
 
 val infos_with_reds : clos_infos -> reds -> clos_infos
 
@@ -162,7 +168,7 @@ val eta_expand_stack : clos_infos -> Name.t Context.binder_annot -> stack -> sta
     @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
-val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
+val eta_expand_ind_stack : env -> pinductive -> fconstr -> stack ->
    (fconstr * stack) -> stack * stack
 
 (** Conversion auxiliary functions to do step by step normalisation *)
@@ -199,6 +205,6 @@ val zip : fconstr -> stack -> fconstr
 
 val term_of_process : fconstr -> stack -> constr
 
-val to_constr : lift Univ.puniverses -> fconstr -> constr
+val to_constr : lift UVars.puniverses -> fconstr -> constr
 
 (** End of cbn debug section i*)

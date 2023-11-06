@@ -117,7 +117,10 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let sigma, l = new_univ_level_variable status !evdref in
-    let s' = Sorts.sort_of_univ @@ Univ.Universe.make l in (* FIXME *)
+    let s' = match ESorts.kind sigma s with
+      | QSort (q, _) -> Sorts.qsort q (Univ.Universe.make l)
+      | _ -> Sorts.sort_of_univ @@ Univ.Universe.make l
+    in
     let s' = ESorts.make s' in
     evdref := sigma;
     let evd =
@@ -136,7 +139,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
         | Some l ->
            (match Evd.universe_rigidity !evdref l with
             | UnivRigid ->
-               if not onlyalg then refresh_sort status ~direction s
+              if not onlyalg && (not (Univ.Level.is_set l) || (refreshset && not direction))
+              then refresh_sort status ~direction s
                else t
             | UnivFlexible alg ->
                (if alg then
@@ -306,7 +310,7 @@ let noccur_evar env evd evk c =
        (match decl with
         | LocalAssum _ -> ()
         | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr b)))
-  | Proj (p,c) -> occur_rec true acc c
+  | Proj (p,_,c) -> occur_rec true acc c
   | _ -> iter_with_full_binders env evd (fun rd (k,env) -> (succ k, push_rel rd env))
     (occur_rec check_types) acc c
   in

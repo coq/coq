@@ -60,7 +60,7 @@ let rec mk_clos_but sigma f_map n t =
   | None -> mk_atom t
 
 and tag_arg sigma f_map n tag c = match tag with
-| Eval -> mk_clos (Esubst.subs_id n, Univ.Instance.empty) (EConstr.Unsafe.to_constr c)
+| Eval -> mk_clos (Esubst.subs_id n, UVars.Instance.empty) (EConstr.Unsafe.to_constr c)
 | Prot -> mk_atom c
 | Rec -> mk_clos_but sigma f_map n c
 
@@ -146,7 +146,7 @@ let decl_constant name univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
-  let () = DeclareUctx.declare_universe_context ~poly:false univs in
+  let () = Global.push_context_set ~strict:true univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
   (* UnsafeMonomorphic: we always do poly:false *)

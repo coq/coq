@@ -14,12 +14,11 @@
 
 open Names
 open Univ
-
-type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
+open Sorts
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of Univ.UContext.t
+| Polymorphic_entry of UVars.UContext.t
 
 exception UniversesDiffer
 
@@ -43,10 +42,10 @@ val from_env : ?binders:lident list -> Environ.env -> t
 (** Main entry point at the beginning of a declaration declaring the
     binding names as rigid universes. *)
 
-val of_names : (UnivNames.universe_binders * Id.t Level.Map.t) -> t
+val of_names : (UnivNames.universe_binders * UnivNames.rev_binders) -> t
 (** Main entry point when only names matter, e.g. for printing. *)
 
-val of_context_set : Univ.ContextSet.t -> t
+val of_context_set : UnivGen.sort_context_set -> t
 (** Main entry point when starting from the instance of a global
     reference, e.g. when building a scheme. *)
 
@@ -61,6 +60,8 @@ val union : t -> t -> t
 val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
+
+val sort_context_set : t -> UnivGen.sort_context_set
 
 type universe_opt_subst = UnivFlex.t
 (* Reexport because UnivSubst is private *)
@@ -84,7 +85,7 @@ val is_algebraic : Level.t -> t -> bool
 val constraints : t -> Univ.Constraints.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
-val context : t -> Univ.UContext.t
+val context : t -> UVars.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders
@@ -95,13 +96,22 @@ val univ_entry : poly:bool -> t -> named_universes_entry
 val universe_binders : t -> UnivNames.universe_binders
 (** Return local names of universes. *)
 
-val nf_qvar : t -> Sorts.QVar.t -> quality
+val nf_qvar : t -> QVar.t -> Quality.t
 (** Returns the normal form of the sort variable. *)
+
+val nf_quality : t -> Quality.t -> Quality.t
+
+val nf_instance : t -> UVars.Instance.t -> UVars.Instance.t
+
+val nf_level : t -> Level.t -> Level.t
+(** Must not be allowed to be algebraic *)
+
+val nf_universe : t -> Universe.t -> Universe.t
 
 val nf_sort : t -> Sorts.t -> Sorts.t
 (** Returns the normal form of the sort. *)
 
-val nf_relevance : t -> Sorts.relevance -> Sorts.relevance
+val nf_relevance : t -> relevance -> relevance
 (** Returns the normal form of the relevance. *)
 
 (** {5 Constraints handling} *)
@@ -116,7 +126,15 @@ val add_universe_constraints : t -> UnivProblem.Set.t -> t
   @raise UniversesDiffer when universes differ
 *)
 
+val check_qconstraints : t -> QConstraints.t -> bool
+
+val check_universe_constraints : t -> UnivProblem.Set.t -> bool
+
+val add_quconstraints : t -> QUConstraints.t -> t
+
 (** {5 Names} *)
+
+val quality_of_name : t -> Id.t -> Sorts.QVar.t
 
 val universe_of_name : t -> Id.t -> Univ.Level.t
 (** Retrieve the universe associated to the name. *)
@@ -156,6 +174,9 @@ val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
 val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
+val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> QVar.Set.t -> t
+val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
+
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val demote_global_univs : Environ.env -> t -> t
@@ -168,7 +189,7 @@ val demote_seff_univs : Univ.Level.Set.t -> t -> t
    globally declared by some side effect. You should be using
    emit_side_effects instead. *)
 
-val new_sort_variable : t -> t * Sorts.QVar.t
+val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> t -> t * QVar.t
 (** Declare a new local sort. *)
 
 val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
@@ -197,14 +218,15 @@ val minimize : t -> t
 
 val collapse_sort_variables : t -> t
 
-type ('a, 'b) gen_universe_decl = {
-  univdecl_instance : 'a; (* Declared universes *)
+type ('a, 'b, 'c) gen_universe_decl = {
+  univdecl_qualities : 'a;
+  univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_constraints : 'c; (* Declared constraints *)
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (Level.t list, Univ.Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, Univ.Constraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 
@@ -230,10 +252,13 @@ val update_sigma_univs : t -> UGraph.t -> t
 (** {5 Pretty-printing} *)
 
 val pr_uctx_level : t -> Univ.Level.t -> Pp.t
+val pr_uctx_qvar : t -> Sorts.QVar.t -> Pp.t
 val qualid_of_level : t -> Univ.Level.t -> Libnames.qualid option
 
 (** Only looks in the local names, not in the nametab. *)
 val id_of_level : t -> Univ.Level.t -> Id.t option
+
+val id_of_qvar : t -> Sorts.QVar.t -> Id.t option
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 

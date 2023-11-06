@@ -149,12 +149,52 @@ let level_name sigma = function
     let sigma, u = universe_level_name sigma l in
     Some (sigma, u)
 
-let sort_info ?loc sigma l = match l with
+let glob_level ?loc evd : glob_level -> _ = function
+  | UAnonymous {rigid} ->
+    assert (rigid <> UnivFlexible true);
+    new_univ_level_variable ?loc rigid evd
+  | UNamed s ->
+    match level_name evd s with
+    | None ->
+      user_err ?loc
+        (str "Universe instances cannot contain non-Set small levels," ++ spc() ++
+         str "polymorphic universe instances must be greater or equal to Set.");
+    | Some r -> r
+
+let glob_qvar ?loc evd : glob_qvar -> _ = function
+  | GQVar q -> evd, q
+  | GLocalQVar {v=Anonymous} ->
+    let evd, q = new_quality_variable ?loc evd in
+    evd, q
+  | GRawQVar q ->
+    let evd = Evd.merge_sort_variables ~sideff:true evd (Sorts.QVar.Set.singleton q) in
+    evd, q
+  | GLocalQVar {v=Name id; loc} ->
+    try evd, (Evd.quality_of_name evd id)
+    with Not_found ->
+      if not (is_strict_universe_declarations()) then
+        let evd, q = new_quality_variable ?loc evd in
+        evd, q
+      else user_err ?loc Pp.(str "Undeclared quality: " ++ Id.print id ++ str".")
+
+let glob_quality ?loc evd = let open Sorts.Quality in function
+  | GQConstant q -> evd, QConstant q
+  | GQualVar (GQVar _ | GLocalQVar _ | GRawQVar _ as q) ->
+    let evd, q = glob_qvar ?loc evd q in
+    evd, QVar q
+
+let sort_info ?loc sigma q l = match l with
 | [] -> assert false
-| [GSProp, 0] -> sigma, Sorts.sprop
-| [GProp, 0] -> sigma, Sorts.prop
+| [GSProp, 0] -> assert (Option.is_empty q); sigma, Sorts.sprop
+| [GProp, 0] -> assert (Option.is_empty q); sigma, Sorts.prop
 | (u, n) :: us ->
   let open Pp in
+  let sigma, q = match q with
+    | None -> sigma, None
+    | Some q ->
+      let sigma, q = glob_qvar ?loc sigma q in
+      sigma, Some q
+  in
   let get_level sigma u n = match level_name sigma u with
   | None ->
     user_err ?loc
@@ -176,7 +216,11 @@ let sort_info ?loc sigma l = match l with
   in
   let (sigma, u) = get_level sigma u n in
   let (sigma, u) = List.fold_left fold (sigma, u) us in
-  sigma, Sorts.sort_of_univ u
+  let s = match q with
+    | None -> Sorts.sort_of_univ u
+    | Some q -> Sorts.qsort q u
+  in
+  sigma, s
 
 type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 
@@ -421,27 +465,22 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let glob_level ?loc evd : glob_level -> _ = function
-  | UAnonymous {rigid} ->
-    assert (rigid <> UnivFlexible true);
-    new_univ_level_variable ?loc rigid evd
-  | UNamed s ->
-    match level_name evd s with
-    | None ->
-      user_err ?loc
-        (str "Universe instances cannot contain non-Set small levels, polymorphic" ++
-        str " universe instances must be greater or equal to Set.");
-    | Some r -> r
-
-let instance ?loc evd l =
-  let evd, l' =
+let instance ?loc evd (ql,ul) =
+  let evd, ql' =
+    List.fold_left
+      (fun (evd, quals) l ->
+         let evd, l = glob_quality ?loc evd l in
+         (evd, l :: quals)) (evd, [])
+      ql
+  in
+  let evd, ul' =
     List.fold_left
       (fun (evd, univs) l ->
          let evd, l = glob_level ?loc evd l in
          (evd, l :: univs)) (evd, [])
-      l
+      ul
   in
-  evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
+  evd, Some (UVars.Instance.of_array (Array.rev_of_list ql', Array.rev_of_list ul'))
 
 let pretype_global ?loc rigid env evd gr us =
   let evd, instance =
@@ -458,12 +497,12 @@ let pretype_ref ?loc sigma env ref us =
     (try
        let ty = NamedDecl.get_type (lookup_named id !!env) in
        (match us with
-        | None | Some [] -> ()
-        | Some us ->
+        | None | Some ([],[]) -> ()
+        | Some (qs,us) ->
             let open UnivGen in
             Loc.raise ?loc (UniverseLengthMismatch {
-              actual = List.length us;
-              expect = 0;
+              actual = List.length qs, List.length us;
+              expect = 0, 0;
             }));
        sigma, make_judge (mkVar id) ty
        with Not_found ->
@@ -481,9 +520,7 @@ let sort ?loc evd : glob_sort -> _ = function
     let evd, l = new_univ_level_variable ?loc rigid evd in
     evd, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make l))
   | UNamed (q, l) ->
-    (* No user-facing syntax for qualities *)
-    let () = assert (Option.is_empty q) in
-    let evd, s = sort_info ?loc evd l in
+    let evd, s = sort_info ?loc evd q l in
     evd, ESorts.make s
 
 let judge_of_sort ?loc evd s =
@@ -525,12 +562,12 @@ let mark_obligation_evar sigma k evc =
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
 
 type pretyper = {
-  pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
+  pretype_ref : pretyper -> GlobRef.t * glob_instance option -> unsafe_judgment pretype_fun;
   pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
   pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
-  pretype_proj : pretyper -> (Constant.t * glob_level list option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_proj : pretyper -> (Constant.t * glob_instance option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_prod : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_letin : pretyper -> Name.t * glob_constr * glob_constr option * glob_constr -> unsafe_judgment pretype_fun;
@@ -544,7 +581,7 @@ type pretyper = {
   pretype_cast : pretyper -> glob_constr * cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
-  pretype_array : pretyper -> glob_level list option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
 
@@ -1089,9 +1126,9 @@ struct
           match names, l with
           | na :: names, (LocalAssum (na', t) :: l) ->
             let t = EConstr.of_constr t in
-            let proj = Projection.make ps.(cs.cs_nargs - k) true in
+            let proj = Projection.make (fst ps.(cs.cs_nargs - k)) true in
             LocalDef ({na' with binder_name = na},
-                      lift (cs.cs_nargs - n) (mkProj (proj, cj.uj_val)), t)
+                      lift (cs.cs_nargs - n) (mkProj (proj, na'.binder_relevance, cj.uj_val)), t)
             :: aux (n+1) (k + 1) names l
           | na :: names, (decl :: l) ->
             set_name na decl :: aux (n+1) k names l
@@ -1331,14 +1368,14 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     fun ?loc ~flags tycon env sigma ->
     let sigma, u = match u with
       | None -> sigma, None
-      | Some [u] ->
+      | Some ([],[u]) ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
-      | Some u ->
+      | Some (qs,us) ->
           let open UnivGen in
           Loc.raise ?loc (UniverseLengthMismatch {
-            actual = List.length u;
-            expect = 1;
+            actual = List.length qs, List.length us;
+            expect = 0, 1;
           })
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
@@ -1351,7 +1388,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     let sigma, jdef = eval_pretyper self ~flags (mk_tycon jty.utj_val) env sigma def in
     let pretype_elem = eval_pretyper self ~flags (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in
-    let u = Univ.Instance.of_array [| u |] in
+    let u = UVars.Instance.of_array ([||],[| u |]) in
     let ta = EConstr.of_constr @@ Typeops.type_of_array !!env u in
     let j = {
       uj_val = EConstr.mkArray(EInstance.make u, Array.map (fun j -> j.uj_val) jt, jdef.uj_val, jty.utj_val);

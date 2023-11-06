@@ -186,12 +186,12 @@ val smash_rel_context : rel_context -> rel_context
 
 (** {3 Substitution of universes} *)
 
-open Univ
+open UVars
 
 (** Level substitutions for polymorphism. *)
 
-val subst_univs_level_constr : universe_level_subst -> constr -> constr
-val subst_univs_level_context : Univ.universe_level_subst -> Constr.rel_context -> Constr.rel_context
+val subst_univs_level_constr : sort_level_subst -> constr -> constr
+val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr.rel_context
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
@@ -199,6 +199,11 @@ val subst_instance_context : Instance.t -> Constr.rel_context -> Constr.rel_cont
 
 val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 (** Ignores the constraints carried by [univ_abstracted]. *)
+
+val map_constr_relevance : (Sorts.relevance -> Sorts.relevance) -> Constr.t -> Constr.t
+(** Modifies the relevances in the head node (not in subterms) *)
+
+val sort_and_universes_of_constr : constr -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
 val universes_of_constr : constr -> Univ.Level.Set.t
 

@@ -148,9 +148,9 @@ end
 
 module InterpActions : ModActions
   with type env = Environ.env
-  with type typexpr = Constr.t * Univ.AbstractContext.t option =
+  with type typexpr = Constr.t * UVars.AbstractContext.t option =
 struct
-  type typexpr = Constr.t * Univ.AbstractContext.t option
+  type typexpr = Constr.t * UVars.AbstractContext.t option
   type env = Environ.env
   let stage = Summary.Stage.Interp
   let substobjs_table_name = "MODULE-SUBSTOBJS"
@@ -685,7 +685,7 @@ module SynterpVisitor : StagedModS
 
 module InterpVisitor : StagedModS
   with type env = InterpActions.env
-  with type typexpr = Constr.t * Univ.AbstractContext.t option
+  with type typexpr = Constr.t * UVars.AbstractContext.t option
  = StagedMod(InterpActions)
 
 (** {6 Modules : start, end, declare} *)

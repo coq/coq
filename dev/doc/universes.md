@@ -6,7 +6,7 @@ to the API of Coq. First and foremost, the term language changes, as
 global references now carry a universe level substitution:
 
 ~~~ocaml
-type 'a puniverses = 'a * Univ.Instance.t
+type 'a puniverses = 'a * UVars.Instance.t
 type pconstant = constant puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
@@ -35,7 +35,7 @@ universes etc.. Structures are hashconsed (with a hack to take care
 of the fact that deserialization breaks sharing).
 
   Definitions (constants, inductives) now carry around not only
-constraints but also the universes they introduced (a Univ.UContext.t).
+constraints but also the universes they introduced (a UVars.UContext.t).
 There is another kind of contexts `Univ.ContextSet.t`, the latter has
 a set of universes, while the former has serialized the levels in an
 array, and is used for polymorphic objects. Both have "reified"

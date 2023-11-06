@@ -25,7 +25,7 @@ open Constr
    Equiv gives the canonical name in the given context. *)
 
 type delta_hint =
-  | Inline of int * constr Univ.univ_abstracted option
+  | Inline of int * constr UVars.univ_abstracted option
   | Equiv of KerName.t
 
 (* NB: earlier constructor Prefix_equiv of ModPath.t
@@ -165,7 +165,7 @@ let find_prefix resolve mp =
 
 (** Applying a resolver to a kernel name *)
 
-exception Change_equiv_to_inline of (int * constr Univ.univ_abstracted)
+exception Change_equiv_to_inline of (int * constr UVars.univ_abstracted)
 
 let solve_delta_kn resolve kn =
   try
@@ -344,11 +344,11 @@ let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
       | Const kn -> (try f' kn with No_subst -> c)
-      | Proj (p,t) ->
+      | Proj (p,r,t) ->
           let p' = Projection.map f p in
           let t' = func t in
             if p' == p && t' == t then c
-            else mkProj (p', t')
+            else mkProj (p', r, t')
       | Ind ((kn,i),u) ->
           let kn' = f kn in
           if kn'==kn then c else mkIndU ((kn',i),u)
@@ -490,7 +490,7 @@ let gen_subst_delta_resolver dom subst resolver =
       | Equiv kequ ->
           (try Equiv (subst_kn_delta subst kequ)
            with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
-      | Inline (lev,Some t) -> Inline (lev,Some (Univ.map_univ_abstracted (subst_mps subst) t))
+      | Inline (lev,Some t) -> Inline (lev,Some (UVars.map_univ_abstracted (subst_mps subst) t))
       | Inline (_,None) -> hint
     in
     Deltamap.add_kn kkey' hint' rslv

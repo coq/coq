@@ -189,7 +189,7 @@ and nf_whd env sigma whd typ =
   | Vaccu (Aind ((mi, i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
-       Univ.AbstractContext.size (Declareops.inductive_polymorphic_context mib)
+       UVars.AbstractContext.size (Declareops.inductive_polymorphic_context mib)
      in
      let mk u =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
@@ -200,17 +200,17 @@ and nf_whd env sigma whd typ =
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
-    if Int.equal nb_univs 0 then Univ.Instance.empty
+    if UVars.eq_sizes nb_univs (0,0) then UVars.Instance.empty
     else match stk with
     | Zapp args :: _ ->
       let inst = arg args 0 in
       let inst = uni_instance inst in
-      let () = assert (Int.equal (Univ.Instance.length inst) nb_univs) in
+      let () = assert (UVars.eq_sizes (UVars.Instance.length inst) nb_univs) in
       inst
     | _ -> assert false
   in
   let (t,ty) = mk u in
-  let from = if Int.equal nb_univs 0 then 0 else 1 in
+  let from = if UVars.Instance.is_empty u then 0 else 1 in
   nf_stk ~from env sigma t ty stk
 
 and nf_evar env sigma evk stk =
@@ -245,7 +245,7 @@ and constr_type_of_idkey env sigma (idkey : Vmvalues.id_key) stk =
   | ConstKey cst ->
      let cbody = Environ.lookup_constant cst env in
      let nb_univs =
-       Univ.AbstractContext.size (Declareops.constant_polymorphic_context cbody)
+       UVars.AbstractContext.size (Declareops.constant_polymorphic_context cbody)
      in
      let mk u =
        let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)
@@ -320,9 +320,10 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let ty = Vars.subst_instance_constr (EConstr.Unsafe.to_instance u) tys.(p) in
       substl (c :: List.rev_map EConstr.Unsafe.to_constr pars) ty
     in
-    let p = Declareops.inductive_make_projection ind mib ~proj_arg:p in
+    let p, r = Declareops.inductive_make_projection ind mib ~proj_arg:p in
     let p = Projection.make p true in
-    nf_stk env sigma (mkProj (p, c)) ty stk
+    let r = UVars.subst_instance_relevance (EConstr.Unsafe.to_instance u) r in
+    nf_stk env sigma (mkProj (p, r, c)) ty stk
 
 and nf_predicate env sigma ind mip params v pctx =
   (* TODO: we should expose some variant of Vm.mkrel_vstack *)

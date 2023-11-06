@@ -387,7 +387,7 @@ let declare_constant_core ~name ~typing_flags cd =
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
-        let () = DeclareUctx.declare_universe_context ~poly:false ctx in
+        let () = Global.push_context_set ~strict:true ctx in
         let cd = Entries.DefinitionEntry e in
         ConstantEntry cd, false, ubinders, None
       else
@@ -397,12 +397,12 @@ let declare_constant_core ~name ~typing_flags cd =
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry EffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
-        let () = DeclareUctx.declare_universe_context ~poly:false ctx in
+        let () = Global.push_context_set ~strict:true ctx in
         OpaqueEntry cd, false, ubinders, Some (body, feedback_id)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
-      let () = DeclareUctx.declare_universe_context ~poly:false ctx in
+      let () = Global.push_context_set ~strict:true ctx in
       let e = {
         Entries.parameter_entry_secctx = e.parameter_entry_secctx;
         Entries.parameter_entry_type = e.parameter_entry_type;
@@ -417,7 +417,7 @@ let declare_constant_core ~name ~typing_flags cd =
         let univ_entry, ctx = extract_monomorphic univs in
         Some (typ, univ_entry), ubinders, ctx
       in
-      let () = DeclareUctx.declare_universe_context ~poly:false ctx in
+      let () = Global.push_context_set ~strict:true ctx in
       let e = {
         Entries.prim_entry_type = typ;
         Entries.prim_entry_content = e.prim_entry_content;
@@ -491,32 +491,41 @@ let declare_variable_core ~name ~kind ~typing_flags d =
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
 
-  let impl,opaque,univs = match d with (* Fails if not well-typed *)
+  let impl,opaque = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;impl;univs} ->
-      let poly, uctx = match fst univs with
-        | UState.Monomorphic_entry uctx -> false, uctx
-        | UState.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
+      let () = match fst univs with
+        | UState.Monomorphic_entry uctx -> Global.push_context_set ~strict:true uctx
+        | UState.Polymorphic_entry uctx -> Global.push_section_context uctx
       in
-      let () = DeclareUctx.declare_universe_context ~poly uctx in
       let () = Global.push_named_assum (name,typ) in
-      impl, true, univs
+      impl, true
     | SectionLocalDef { clearbody; entry = de } ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
       let ((body, body_uctx), eff) = Future.force de.proof_entry_body in
       let () = export_side_effects eff in
-      let poly, type_uctx = match fst de.proof_entry_universes with
-        | UState.Monomorphic_entry uctx -> false, uctx
-        | UState.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
-      in
-      let univs = Univ.ContextSet.union body_uctx type_uctx in
       (* We must declare the universe constraints before type-checking the
          term. *)
-      let () = DeclareUctx.declare_universe_context ~poly univs in
+      let () = match fst de.proof_entry_universes with
+        | UState.Monomorphic_entry uctx ->
+          Global.push_context_set ~strict:true (Univ.ContextSet.union uctx body_uctx)
+        | UState.Polymorphic_entry uctx ->
+          Global.push_section_context uctx;
+          let mk_anon_names u =
+            let qs, us = UVars.Instance.to_array u in
+            Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
+          in
+          Global.push_section_context
+            (UVars.UContext.of_context_set mk_anon_names Sorts.QVar.Set.empty body_uctx)
+      in
       let opaque = de.proof_entry_opaque in
       let se = if opaque then
           let cname = Id.of_string (Id.to_string name ^ "_subproof") in
           let cname = Namegen.next_global_ident_away cname Id.Set.empty in
+          let poly = match fst de.proof_entry_universes with
+            | Monomorphic_entry _ -> false
+            | Polymorphic_entry _ -> true
+          in
           let de = {
             proof_entry_body = Future.from_val ((body, Univ.ContextSet.empty), Evd.empty_side_effects);
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
@@ -532,7 +541,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
               (DefinitionEntry de)
           in
           {
-            Entries.secdef_body = Constr.mkConstU (kn, Univ.Instance.empty);
+            Entries.secdef_body = Constr.mkConstU (kn, UVars.Instance.empty);
             secdef_type = None;
           }
         else {
@@ -541,7 +550,7 @@ let declare_variable_core ~name ~kind ~typing_flags d =
       } in
       let () = Global.push_named_def (name, se) in
       (* opaque implies clearbody, so we don't see useless "foo := foo_subproof" in the context *)
-      Glob_term.Explicit, opaque || clearbody, de.proof_entry_universes
+      Glob_term.Explicit, opaque || clearbody
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
@@ -1027,7 +1036,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let body =
       match fst univs with
       | UState.Polymorphic_entry uctx ->
-        Some (DefinedObl (constant, Univ.UContext.instance uctx))
+        Some (DefinedObl (constant, UVars.UContext.instance uctx))
       | UState.Monomorphic_entry _ ->
         Some
           (TermObl
@@ -1445,11 +1454,11 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let uctx' = UState.Internal.reboot (Global.env ()) uctx' in
-      (Univ.Instance.empty, uctx')
+      (UVars.Instance.empty, uctx')
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
       let uctx = UState.context uctx' in
-      (Univ.UContext.instance uctx, uctx')
+      (UVars.UContext.instance uctx, uctx')
   in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
@@ -1955,7 +1964,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
        should be enforced statically. *)
     let (_, body_uctx), _ = const.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (Univ.UContext.instance ctx)
+    EConstr.EInstance.make (UVars.UContext.instance ctx)
   in
   let args = List.map EConstr.of_constr args in
   let lem = EConstr.mkConstU (cst, inst) in

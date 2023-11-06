@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Names
 open Univ
+open UVars
 open Constr
 open Vars
 open Declarations
@@ -59,7 +60,7 @@ let inductive_nonrec_rec_paramdecls (mib,u) =
   Context.Rel.chop_nhyps nnonrecparamdecls paramdecls
 
 let instantiate_inductive_constraints mib u =
-  Univ.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
+  UVars.AbstractContext.instantiate u (Declareops.inductive_polymorphic_context mib)
 
 (************************************************************************)
 
@@ -347,7 +348,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
   let params = Vars.subst_of_rel_context_instance paramdecl params in
   let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   let self =
-    let u = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+    let u = Instance.abstract_instance (Instance.length u) in
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
@@ -440,7 +441,7 @@ let check_case_info env (indsp,u) r ci =
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
-    not (ci.ci_relevance == r) ||
+    not (Sorts.relevance_equal ci.ci_relevance r) ||
     is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
 
@@ -965,7 +966,7 @@ let rec subterm_specif renv stack t =
       (* Metas and evars are considered OK *)
     | (Meta _|Evar _) -> Dead_code
 
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
       let subt = subterm_specif renv stack c in
       (match subt with
        | Subterm (_, _s, wf) ->
@@ -1285,7 +1286,7 @@ let check_one_fix renv recpos trees def =
         | Ind _ | Construct _ ->
             check_rec_call_state renv NoNeedReduce stack rs (fun () -> None)
 
-        | Proj (p, c) ->
+        | Proj (p, _, c) ->
             begin
               let needreduce', rs = check_rec_call renv rs c in
               check_rec_call_state renv needreduce' stack rs (fun () ->

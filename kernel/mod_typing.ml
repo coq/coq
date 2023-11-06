@@ -103,7 +103,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               error_incorrect_with_constraint lab
           in
           (** Terms are compared in a context with De Bruijn universe indices *)
-          let env' = Environ.push_context ~strict:false (Univ.AbstractContext.repr uctx) env in
+          let env' = Environ.push_context ~strict:false (UVars.AbstractContext.repr uctx) env in
           let () = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' wth.w_def in

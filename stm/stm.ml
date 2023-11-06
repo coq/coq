@@ -1723,7 +1723,7 @@ end = struct (* {{{ *)
         let uc = Univ.hcons_universe_context_set uc in
         let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
-        let () = assert (Univ.AbstractContext.is_empty ctx) in
+        let () = assert (UVars.AbstractContext.is_empty ctx) in
         let () = match priv with
         | Opaqueproof.PrivateMonomorphic () -> ()
         | Opaqueproof.PrivatePolymorphic uctx ->

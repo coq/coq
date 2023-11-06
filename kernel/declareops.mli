@@ -10,14 +10,14 @@
 
 open Declarations
 open Mod_subst
-open Univ
+open UVars
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
 val universes_context : universes -> AbstractContext.t
 
-val abstract_universes : Entries.universes_entry -> Univ.universe_level_subst * universes
+val abstract_universes : Entries.universes_entry -> UVars.sort_level_subst * universes
 
 (** {6 Arities} *)
 
@@ -70,12 +70,10 @@ val inductive_is_cumulative : mutual_inductive_body -> bool
 
 (** Anomaly when not a primitive record or invalid proj_arg *)
 val inductive_make_projection : Names.inductive -> mutual_inductive_body -> proj_arg:int ->
-  Names.Projection.Repr.t
+  Names.Projection.Repr.t * Sorts.relevance
 
 val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
-  Names.Projection.Repr.t array option
-
-val relevance_of_projection_repr : mutual_inductive_body -> Names.Projection.Repr.t -> Sorts.relevance
+  (Names.Projection.Repr.t * Sorts.relevance) array option
 
 (** {6 Kernel flags} *)
 

@@ -69,6 +69,7 @@ install_printer Top_printers.ppuni
 install_printer Top_printers.ppesorts
 install_printer Top_printers.ppqvar
 install_printer Top_printers.ppuni_level
+install_printer Top_printers.ppqvarset
 install_printer Top_printers.ppuniverse_set
 install_printer Top_printers.ppuniverse_instance
 install_printer Top_printers.ppuniverse_context

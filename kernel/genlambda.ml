@@ -631,7 +631,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Construct _ ->  lambda_of_app cache env sigma c empty_args
 
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
     let c = lambda_of_constr cache env sigma c in
     Lproj (Projection.repr p, c)
 

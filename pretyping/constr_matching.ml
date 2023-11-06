@@ -335,7 +335,7 @@ let matches_core env sigma allow_bound_rels
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
             match EConstr.kind sigma c2 with
-            | Proj (pr, c) ->
+            | Proj (pr, _, c) ->
               (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
                      sorec ctx env subst p term
                with Retyping.RetypeError _ -> raise PatternMatchingFailure)
@@ -343,15 +343,15 @@ let matches_core env sigma allow_bound_rels
 
       | PApp (c1,arg1), App (c2,arg2) ->
         (match c1, EConstr.kind sigma c2 with
-         | PRef (GlobRef.ConstRef r), Proj (pr,c)
+         | PRef (GlobRef.ConstRef r), Proj (pr,_,c)
            when not (Environ.QConstant.equal env r (Projection.constant pr)) ->
            raise PatternMatchingFailure
-        | PProj (pr1,c1), Proj (pr,c) ->
+        | PProj (pr1,c1), Proj (pr,_,c) ->
           if Environ.QProjection.equal env pr1 pr then
             try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
             with Invalid_argument _ -> raise PatternMatchingFailure
           else raise PatternMatchingFailure
-        | _, Proj (pr,c) ->
+        | _, Proj (pr,_,c) ->
           (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
                  sorec ctx env subst p term
            with Retyping.RetypeError _ -> raise PatternMatchingFailure)
@@ -359,16 +359,16 @@ let matches_core env sigma allow_bound_rels
           try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 
-      | PApp (PRef (GlobRef.ConstRef c1), _), Proj (pr, c2)
+      | PApp (PRef (GlobRef.ConstRef c1), _), Proj (pr, _, c2)
         when not (Environ.QConstant.equal env c1 (Projection.constant pr)) ->
         raise PatternMatchingFailure
 
-      | PApp (c, args), Proj (pr, c2) ->
+      | PApp (c, args), Proj (pr, _, c2) ->
         (try let term = Retyping.expand_projection env sigma pr c2 [] in
                sorec ctx env subst p term
          with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
-      | PProj (p1,c1), Proj (p2,c2) when Environ.QProjection.equal env p1 p2 ->
+      | PProj (p1,c1), Proj (p2,_,c2) when Environ.QProjection.equal env p1 p2 ->
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
@@ -616,7 +616,7 @@ let sub_match ?(closed=true) env sigma pat c =
     let env' = push_rec_types recdefs env in
     let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
-  | Proj (p,c') ->
+  | Proj (p,_,c') ->
     begin match Retyping.expand_projection env sigma p c' [] with
     | term -> aux env term mk_ctx next
     | exception Retyping.RetypeError _ -> next ()

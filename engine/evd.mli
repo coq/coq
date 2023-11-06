@@ -271,6 +271,8 @@ val is_undefined : evar_map -> Evar.t-> bool
 val add_constraints : evar_map -> Univ.Constraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
+val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
+
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
@@ -639,11 +641,13 @@ val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
+val quality_of_name : evar_map -> Id.t -> Sorts.QVar.t
 
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * esorts
+val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
+val new_sort_variable : ?loc:Loc.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
@@ -654,29 +658,32 @@ val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
-val normalize_universe_instance : evar_map -> Univ.Instance.t -> Univ.Instance.t
+val normalize_universe_instance : evar_map -> UVars.Instance.t -> UVars.Instance.t
 
 val set_leq_sort : env -> evar_map -> esorts -> esorts -> evar_map
 val set_eq_sort : env -> evar_map -> esorts -> esorts -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_eq_instances : ?flex:bool ->
-  evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
+  evar_map -> UVars.Instance.t -> UVars.Instance.t -> evar_map
 
 val check_eq : evar_map -> esorts -> esorts -> bool
 val check_leq : evar_map -> esorts -> esorts -> bool
 
 val check_constraints : evar_map -> Univ.Constraints.t -> bool
+val check_qconstraints : evar_map -> Sorts.QConstraints.t -> bool
+val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
+val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and
     constraints of [evm] and orders the universes the same as
     [Univ.ContextSet.to_context]. *)
-val to_universe_context : evar_map -> Univ.UContext.t
+val to_universe_context : evar_map -> UVars.UContext.t
 
 val univ_entry : poly:bool -> evar_map -> UState.named_universes_entry
 
@@ -687,7 +694,13 @@ val set_universe_context : evar_map -> UState.t -> evar_map
 
 val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
 
+val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> UnivGen.sort_context_set -> evar_map
+
+val merge_sort_variables : ?loc:Loc.t -> ?sideff:bool -> evar_map -> Sorts.QVar.Set.t -> evar_map
+
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+
+val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map
 
@@ -712,9 +725,9 @@ val fresh_inductive_instance : ?loc:Loc.t -> ?rigid:rigid
 val fresh_constructor_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> constructor -> evar_map * pconstructor
 val fresh_array_instance : ?loc:Loc.t -> ?rigid:rigid
-  -> env -> evar_map  -> evar_map * Univ.Instance.t
+  -> env -> evar_map  -> evar_map * UVars.Instance.t
 
-val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
+val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:UVars.Instance.t -> env ->
   evar_map -> GlobRef.t -> evar_map * econstr
 
 (********************************************************************)
@@ -752,17 +765,17 @@ module MiniEConstr : sig
 
   module EInstance : sig
     type t
-    val make : Univ.Instance.t -> t
-    val kind : evar_map -> t -> Univ.Instance.t
+    val make : UVars.Instance.t -> t
+    val kind : evar_map -> t -> UVars.Instance.t
     val empty : t
     val is_empty : t -> bool
-    val unsafe_to_instance : t -> Univ.Instance.t
+    val unsafe_to_instance : t -> UVars.Instance.t
   end
 
   type t = econstr
 
   val kind : evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
-  val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
+  val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, UVars.Instance.t) Constr.kind_of_term
 
   val whd_evar : evar_map -> t -> t
 

@@ -50,9 +50,9 @@ type cbv_value =
   | LAM of int * (Name.t Context.binder_annot * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor Univ.puniverses * cbv_value array
+  | CONSTR of constructor UVars.puniverses * cbv_value array
   | PRIMITIVE of CPrimitives.t * pconstant * cbv_value array
-  | ARRAY of Univ.Instance.t * cbv_value Parray.t * cbv_value
+  | ARRAY of UVars.Instance.t * cbv_value Parray.t * cbv_value
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -75,8 +75,8 @@ type cbv_value =
 and cbv_stack =
   | TOP
   | APP of cbv_value list * cbv_stack
-  | CASE of Univ.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
-  | PROJ of Projection.t * cbv_stack
+  | CASE of UVars.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
+  | PROJ of Projection.t * Sorts.relevance * cbv_stack
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *)
@@ -148,7 +148,7 @@ let rec stack_concat stk1 stk2 =
       TOP -> stk2
     | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
     | CASE(u,pms,c,b,iv,i,s,stk1') -> CASE(u,pms,c,b,iv,i,s,stack_concat stk1' stk2)
-    | PROJ (p,stk1') -> PROJ (p,stack_concat stk1' stk2)
+    | PROJ (p,r,stk1') -> PROJ (p,r,stack_concat stk1' stk2)
 
 (* merge stacks when there is no shifts in between *)
 let mkSTACK = function
@@ -157,8 +157,8 @@ let mkSTACK = function
   | v,stk -> STACK(0,v,stk)
 
 module KeyTable = Hashtbl.Make(struct
-  type t = Constant.t Univ.puniverses tableKey
-  let equal = Names.eq_table_key (eq_pair eq_constant_key Univ.Instance.equal)
+  type t = Constant.t UVars.puniverses tableKey
+  let equal = Names.eq_table_key (eq_pair eq_constant_key UVars.Instance.equal)
   let hash = Names.hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
 end)
 
@@ -229,7 +229,7 @@ module VNativeEntries =
     type elem = cbv_value
     type args = cbv_value array
     type evd = unit
-    type uinstance = Univ.Instance.t
+    type uinstance = UVars.Instance.t
 
     let get = Array.get
 
@@ -260,7 +260,7 @@ module VNativeEntries =
 
     let mkBool env b =
       let (ct,cf) = get_bool_constructors env in
-      CONSTR(Univ.in_punivs (if b then ct else cf), [||])
+      CONSTR(UVars.in_punivs (if b then ct else cf), [||])
 
     let int_ty env = VAL(0, UnsafeMonomorphic.mkConst @@ get_int_type env)
 
@@ -268,91 +268,91 @@ module VNativeEntries =
 
     let mkCarry env b e =
       let (c0,c1) = get_carry_constructors env in
-      CONSTR(Univ.in_punivs (if b then c1 else c0), [|int_ty env;e|])
+      CONSTR(UVars.in_punivs (if b then c1 else c0), [|int_ty env;e|])
 
     let mkIntPair env e1 e2 =
       let int_ty = int_ty env in
       let c = get_pair_constructor env in
-      CONSTR(Univ.in_punivs c, [|int_ty;int_ty;e1;e2|])
+      CONSTR(UVars.in_punivs c, [|int_ty;int_ty;e1;e2|])
 
     let mkFloatIntPair env f i =
       let float_ty = float_ty env in
       let int_ty = int_ty env in
       let c = get_pair_constructor env in
-      CONSTR(Univ.in_punivs c, [|float_ty;int_ty;f;i|])
+      CONSTR(UVars.in_punivs c, [|float_ty;int_ty;f;i|])
 
     let mkLt env =
       let (_eq,lt,_gt) = get_cmp_constructors env in
-      CONSTR(Univ.in_punivs lt, [||])
+      CONSTR(UVars.in_punivs lt, [||])
 
     let mkEq env =
       let (eq,_lt,_gt) = get_cmp_constructors env in
-      CONSTR(Univ.in_punivs eq, [||])
+      CONSTR(UVars.in_punivs eq, [||])
 
     let mkGt env =
       let (_eq,_lt,gt) = get_cmp_constructors env in
-      CONSTR(Univ.in_punivs gt, [||])
+      CONSTR(UVars.in_punivs gt, [||])
 
     let mkFLt env =
       let (_eq,lt,_gt,_nc) = get_f_cmp_constructors env in
-      CONSTR(Univ.in_punivs lt, [||])
+      CONSTR(UVars.in_punivs lt, [||])
 
     let mkFEq env =
       let (eq,_lt,_gt,_nc) = get_f_cmp_constructors env in
-      CONSTR(Univ.in_punivs eq, [||])
+      CONSTR(UVars.in_punivs eq, [||])
 
     let mkFGt env =
       let (_eq,_lt,gt,_nc) = get_f_cmp_constructors env in
-      CONSTR(Univ.in_punivs gt, [||])
+      CONSTR(UVars.in_punivs gt, [||])
 
     let mkFNotComparable env =
       let (_eq,_lt,_gt,nc) = get_f_cmp_constructors env in
-      CONSTR(Univ.in_punivs nc, [||])
+      CONSTR(UVars.in_punivs nc, [||])
 
     let mkPNormal env =
       let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs pNormal, [||])
+      CONSTR(UVars.in_punivs pNormal, [||])
 
     let mkNNormal env =
       let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs nNormal, [||])
+      CONSTR(UVars.in_punivs nNormal, [||])
 
     let mkPSubn env =
       let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs pSubn, [||])
+      CONSTR(UVars.in_punivs pSubn, [||])
 
     let mkNSubn env =
       let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs nSubn, [||])
+      CONSTR(UVars.in_punivs nSubn, [||])
 
     let mkPZero env =
       let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs pZero, [||])
+      CONSTR(UVars.in_punivs pZero, [||])
 
     let mkNZero env =
       let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs nZero, [||])
+      CONSTR(UVars.in_punivs nZero, [||])
 
     let mkPInf env =
       let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs pInf, [||])
+      CONSTR(UVars.in_punivs pInf, [||])
 
     let mkNInf env =
       let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs nInf, [||])
+      CONSTR(UVars.in_punivs nInf, [||])
 
     let mkNaN env =
       let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
         get_f_class_constructors env in
-      CONSTR(Univ.in_punivs nan, [||])
+      CONSTR(UVars.in_punivs nan, [||])
 
     let mkArray env u t ty =
       ARRAY (u,t,ty)
@@ -373,8 +373,8 @@ let rec reify_stack t = function
       reify_stack
         (apply_env env @@ mkCase (ci, u, pms, ty, iv, t,br))
         st
-  | PROJ (p, st) ->
-       reify_stack (mkProj (p, t)) st
+  | PROJ (p, r, st) ->
+       reify_stack (mkProj (p, r, t)) st
 
 and reify_value = function (* reduction under binders *)
   | VAL (n,t) -> lift n t
@@ -467,14 +467,14 @@ let rec norm_head info env t stack =
   | Case (ci,u,pms,p,iv,c,v) -> norm_head info env c (CASE(u,pms,p,v,iv,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
-  | Proj (p, c) ->
+  | Proj (p, r, c) ->
     let p' =
       if red_set info.reds (fCONST (Projection.constant p))
         && red_set info.reds fBETA
       then Projection.unfold p
       else p
     in
-      norm_head info env c (PROJ (p', stack))
+      norm_head info env c (PROJ (p', r, stack))
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
@@ -622,7 +622,7 @@ and cbv_stack_value info env = function
         cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor in a Projection -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
+    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,_,stk)))
         when red_set info.reds fMATCH && Projection.unfolded p ->
       let arg = List.nth args (Projection.npars p + Projection.arg p) in
         cbv_stack_value info env (strip_appl arg stk)
@@ -716,8 +716,8 @@ let rec apply_stack info t = function
         (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, map_ctx ty, iv, t,
                     Array.map map_ctx br))
         st
-  | PROJ (p, st) ->
-       apply_stack info (mkProj (p, t)) st
+  | PROJ (p, r, st) ->
+       apply_stack info (mkProj (p, r, t)) st
 
 (* performs the reduction on a constr, and returns a constr *)
 and cbv_norm_term info env t =

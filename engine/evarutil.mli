@@ -170,7 +170,7 @@ val finalize : ?abort_on_undefined_evars:bool -> evar_map ->
     as an evar [e] only if [e] is uninstantiated in [sigma]. Otherwise the
     value of [e] in [sigma] is (recursively) used. *)
 val kind_of_term_upto : evar_map -> Constr.constr ->
-  (Constr.constr, Constr.types, Sorts.t, Univ.Instance.t) kind_of_term
+  (Constr.constr, Constr.types, Sorts.t, UVars.Instance.t) kind_of_term
 
 (** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
     [t] and [u] up to existential variable instantiation and
@@ -189,14 +189,17 @@ val eq_constr_univs_test :
    constraints such that [u1 cv_pb? u2] according to [variance].
    Additionally flexible universes in irrelevant positions are unified
    if possible. Returns [Inr p] when the former is impossible. *)
-val compare_cumulative_instances : Conversion.conv_pb -> Univ.Variance.t array ->
-  Univ.Instance.t -> Univ.Instance.t -> evar_map ->
+val compare_cumulative_instances : Conversion.conv_pb -> UVars.Variance.t array ->
+  UVars.Instance.t -> UVars.Instance.t -> evar_map ->
   (evar_map, UGraph.univ_inconsistency) Util.union
 
 (** We should only compare constructors at convertible types, so this
-   is only an opportunity to unify universes. *)
+    is only an opportunity to unify universes.
+
+    But what about qualities?
+*)
 val compare_constructor_instances : evar_map ->
-  Univ.Instance.t -> Univ.Instance.t -> evar_map
+  UVars.Instance.t -> UVars.Instance.t -> (evar_map, UGraph.univ_inconsistency) Util.union
 
 (** {6 Unification problems} *)
 type unification_pb = conv_pb * env * constr * constr

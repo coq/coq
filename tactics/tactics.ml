@@ -1720,9 +1720,9 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
       | Some proj ->
           let args = Context.Rel.instance mkRel 0 sign in
           let proj =
-            match Structures.PrimitiveProjections.find_opt proj with
-            | Some proj ->
-              mkProj (Projection.make proj false, mkApp (c, args))
+            match Structures.PrimitiveProjections.find_opt_with_relevance (proj,u) with
+            | Some (proj,r) ->
+              mkProj (Projection.make proj false, r, mkApp (c, args))
             | None ->
               mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
                 [|mkApp (c, args)|])
@@ -3345,7 +3345,8 @@ let constr_eq ~strict x y =
       match EConstr.eq_constr_universes env evd x y with
       | Some csts ->
         if strict then
-          if UnivProblem.Set.check (Evd.universes evd) csts then Proofview.tclUNIT ()
+          if UState.check_universe_constraints (Evd.evar_universe_context evd) csts
+          then Proofview.tclUNIT ()
           else
             let info = Exninfo.reify () in
             fail_universes ~info

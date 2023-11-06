@@ -104,14 +104,14 @@ sig
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of Projection.t
+    | Cst_proj of Projection.t * Sorts.relevance
 
   type 'a case_stk =
     case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t
-  | Proj of Projection.t * Cst_stack.t
+  | Proj of Projection.t * Sorts.relevance * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
   | Cst of { const : cst_member;
@@ -162,14 +162,14 @@ struct
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of Projection.t
+    | Cst_proj of Projection.t * Sorts.relevance
 
   type 'a case_stk =
     case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t
-  | Proj of Projection.t * Cst_stack.t
+  | Proj of Projection.t * Sorts.relevance * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
   | Cst of { const : cst_member;
@@ -192,7 +192,7 @@ struct
        str "ZCase(" ++
          prvect_with_sep (pr_bar) (fun (_, b) -> pr_c b) br
        ++ str ")"
-    | Proj (p,cst) ->
+    | Proj (p,_,cst) ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
     | Fix (f,args,cst) ->
        str "ZFix(" ++ Constr.debug_print_fix pr_c f
@@ -213,10 +213,10 @@ struct
     let open Pp in
       match c with
       | Cst_const (c, u) ->
-        if Univ.Instance.is_empty u then Constant.debug_print c
+        if UVars.Instance.is_empty u then Constant.debug_print c
         else str"(" ++ Constant.debug_print c ++ str ", " ++
-          Univ.Instance.pr Univ.Level.raw_pr u ++ str")"
-      | Cst_proj p ->
+          UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str")"
+      | Cst_proj (p,r) ->
         str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
   let empty = []
@@ -241,8 +241,8 @@ struct
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
-        Constant.CanOrd.equal c1 c2 && Univ.Instance.equal u1 u2
-      | Cst_proj p1, Cst_proj p2 -> Projection.Repr.CanOrd.equal (Projection.repr p1) (Projection.repr p2)
+        Constant.CanOrd.equal c1 c2 && UVars.Instance.equal u1 u2
+      | Cst_proj (p1,_), Cst_proj (p2,_) -> Projection.Repr.CanOrd.equal (Projection.repr p1) (Projection.repr p2)
       | _, _ -> false
     in
     let rec equal_rec sk1 sk2 =
@@ -254,7 +254,7 @@ struct
         (f t1 t2) && (equal_rec s1' s2')
       | Case ((ci1,pms1,p1,t1,iv1,a1),_) :: s1, Case ((ci2,pms2,p2,iv2,t2,a2),_) :: s2 ->
         f_case (ci1,pms1,p1,t1,iv1,a1) (ci2,pms2,p2,iv2,t2,a2) && equal_rec s1 s2
-      | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
+      | (Proj (p,_,_)::s1, Proj(p2,_,_)::s2) ->
         Projection.Repr.CanOrd.equal (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
       | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
@@ -299,7 +299,7 @@ struct
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,l) | Case (_,l) |
-                 Proj (_,l) | Cst {cst_l=l}) when Cst_stack.all_volatile l -> true | _ -> false)
+                 Proj (_,_,l) | Cst {cst_l=l}) when Cst_stack.all_volatile l -> true | _ -> false)
       args
 
   let list_of_app_stack s =
@@ -348,9 +348,9 @@ struct
   let constr_of_cst_member f sk =
     match f with
     | Cst_const (c, u) -> mkConstU (c, EInstance.make u), sk
-    | Cst_proj p ->
+    | Cst_proj (p,r) ->
       match decomp sk with
-      | Some (hd, sk) -> mkProj (p, hd), sk
+      | Some (hd, sk) -> mkProj (p, r, hd), sk
       | None -> assert false
 
   let zip ?(refold=false) sigma s =
@@ -372,9 +372,9 @@ struct
     zip (best_state sigma (constr_of_cst_member const (params @ (append_app [|f|] s))) cst_l)
   | f, (Cst {const;params}::s) ->
     zip (constr_of_cst_member const (params @ (append_app [|f|] s)))
-  | f, (Proj (p,cst_l)::s) when refold ->
-    zip (best_state sigma (mkProj (p,f),s) cst_l)
-  | f, (Proj (p,_)::s) -> zip (mkProj (p,f),s)
+  | f, (Proj (p,r,cst_l)::s) when refold ->
+    zip (best_state sigma (mkProj (p,r,f),s) cst_l)
+  | f, (Proj (p,r,_)::s) -> zip (mkProj (p,r,f),s)
   | f, (Primitive (p,c,args,kargs,cst_l)::s) ->
       zip (mkConstU c, args @ append_app [|f|] s)
   in
@@ -450,21 +450,28 @@ let magically_constant_of_fixbody env sigma reference bd = function
         let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
           | Some csts ->
+            let addqs l r (qs,us) = Sorts.QVar.Map.add l r qs, us in
+            let addus l r (qs,us) = qs, Univ.Level.Map.add l r us in
             let subst = Set.fold (fun cst acc ->
-                let l, r = match cst with
-                  | ULub (u, v) | UWeak (u, v) -> u, v
+                match cst with
+                | QEq (a,b) | QLeq (a,b) ->
+                  let a = match a with
+                    | QVar q -> q
+                    | _ -> assert false
+                  in
+                  addqs a b acc
+                  | ULub (u, v) | UWeak (u, v) -> addus u v acc
                   | UEq (u, v) | ULe (u, v) ->
+                    (* XXX add something when qsort? *)
                     let get u = match u with
                     | Sorts.SProp | Sorts.Prop -> assert false
                     | Sorts.Set -> Level.set
                     | Sorts.Type u | Sorts.QSort (_, u) -> Option.get (Universe.level u)
                     in
-                    get u, get v
-                in
-                Univ.Level.Map.add l r acc)
-                csts Univ.Level.Map.empty
+                    addus (get u) (get v) acc)
+                csts UVars.empty_sort_subst
             in
-            let inst = subst_univs_level_instance subst u in
+            let inst = UVars.subst_sort_level_instance subst u in
             mkConstU (cst, EInstance.make inst)
           | None -> bd
         end
@@ -664,11 +671,11 @@ let whd_state_gen ?csts flags env sigma =
           whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
-    | Proj (p, c) when RedFlags.red_projection flags p ->
+    | Proj (p, r, c) when RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
        match ReductionBehaviour.get (Projection.constant p) with
          | None ->
-           let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
+           let stack' = (c, Stack.Proj (p, r, cst_l) :: stack) in
            let stack'', csts = whrec Cst_stack.empty stack' in
            if equal_stacks sigma stack' stack'' then fold ()
            else stack'', csts
@@ -692,12 +699,12 @@ let whd_state_gen ?csts flags env sigma =
                | [] -> (* if nargs has been specified *)
                  (* CAUTION : the constant is NEVER refold
                                   (even when it hides a (co)fix) *)
-                 let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
+                 let stack' = (c, Stack.Proj (p, r, cst_l) :: stack) in
                  whrec Cst_stack.empty(* cst_l *) stack'
                | curr :: remains ->
                  if curr == 0 then (* Try to reduce the record argument *)
                    let cst_l = Stack.Cst
-                       { const=Stack.Cst_proj p;
+                       { const=Stack.Cst_proj (p,r);
                          volatile; curr; remains;
                          params=Stack.empty;
                          cst_l;
@@ -709,7 +716,7 @@ let whd_state_gen ?csts flags env sigma =
                    | None -> fold ()
                    | Some (bef,arg,s') ->
                      let cst_l = Stack.Cst
-                         { const=Stack.Cst_proj p;
+                         { const=Stack.Cst_proj (p,r);
                            curr;
                            remains;
                            volatile;
@@ -752,7 +759,7 @@ let whd_state_gen ?csts flags env sigma =
         |args, (Stack.Case(case,_)::s') when use_match ->
           let r = apply_branch env sigma cstr args case in
           whrec Cst_stack.empty (r, s')
-        |args, (Stack.Proj (p,_)::s') when use_match ->
+        |args, (Stack.Proj (p,_,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
@@ -771,12 +778,12 @@ let whd_state_gen ?csts flags env sigma =
                 let body = EConstr.of_constr body in
                 let cst_l = Cst_stack.add_cst ~volatile (mkConstU const) cst_l in
                 whrec cst_l (body, s' @ (Stack.append_app [|x'|] s'')))
-            | Stack.Cst_proj p ->
+            | Stack.Cst_proj (p,r) ->
               let stack = s' @ (Stack.append_app [|x'|] s'') in
               match Stack.strip_n_app 0 stack with
               | None -> assert false
               | Some (_,arg,s'') ->
-                whrec Cst_stack.empty (arg, Stack.Proj (p,cst_l) :: s''))
+                whrec Cst_stack.empty (arg, Stack.Proj (p,r,cst_l) :: s''))
           | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
             | None -> fold ()
             | Some (bef,arg,s''') ->

@@ -20,16 +20,26 @@ type sort_name_expr =
   | CRawType of Univ.Level.t (** Universes like "foo.1" have no qualid form *)
 
 type univ_level_expr  = sort_name_expr Glob_term.glob_sort_gen
-type sort_expr = (Sorts.QVar.t option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
 
-type instance_expr = univ_level_expr list
+type qvar_expr =
+  | CQVar of qualid
+  | CQAnon of Loc.t option
+  | CRawQVar of Sorts.QVar.t
+
+type quality_expr =
+  | CQConstant of Sorts.Quality.constant
+  | CQualVar of qvar_expr
+
+type sort_expr = (qvar_expr option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
+
+type instance_expr = quality_expr list * univ_level_expr list
 
 (** Constraints don't have anonymous universes *)
 type univ_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_expr
 
-type universe_decl_expr = (lident list, univ_constraint_expr list) UState.gen_universe_decl
+type universe_decl_expr = (lident list, lident list, univ_constraint_expr list) UState.gen_universe_decl
 type cumul_univ_decl_expr =
-  ((lident * Univ.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
+  (lident list, (lident * UVars.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option

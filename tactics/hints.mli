@@ -42,7 +42,7 @@ type 'a hint_ast =
 
 type hint
 
-val hint_as_term : hint -> Univ.ContextSet.t option * constr
+val hint_as_term : hint -> UnivGen.sort_context_set option * constr
 
 type 'a hints_path_atom_gen =
   | PathHints of 'a list
@@ -196,7 +196,7 @@ val add_hints : locality:hint_locality -> hint_db_name list -> hints_entry -> un
 
 val hint_globref : GlobRef.t -> hint_term
 
-val hint_constr : constr * Univ.ContextSet.t option -> hint_term
+val hint_constr : constr * UnivGen.sort_context_set option -> hint_term
 [@ocaml.deprecated "Declare a hint constant instead"]
 
 (** A constr which is Hint'ed will be:

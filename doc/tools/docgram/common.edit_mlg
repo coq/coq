@@ -163,6 +163,7 @@ DELETE: [
 | test_variance_ident
 | test_qualid_with_or_lpar_or_rbrac
 | test_leftsquarebracket_equal
+| test_sort_qvar
 
 (* unused *)
 | constr_comma_sequence'
@@ -324,6 +325,12 @@ scope: [
 scope_delimiter: [
 | REPLACE "%" IDENT
 | WITH "%" scope
+]
+
+sort: [
+| REPLACE "Type" "@{" reference "|" universe "}"
+| WITH "Type" "@{" OPT [ qualid "|" ] universe "}"
+| DELETE "Type" "@{" universe "}"
 ]
 
 term100: [
@@ -624,13 +631,15 @@ inline: [
 ]
 
 univ_decl: [
-| REPLACE "@{" LIST0 identref [ "+" | ]     [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
-| WITH    "@{" LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| REPLACE "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "+" | ] univ_decl_constraints
+| WITH    "@{" OPT [ LIST0 identref "|" ] LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| DELETE "@{" LIST0 identref [ "+" | ] univ_decl_constraints
 ]
 
 cumul_univ_decl: [
-| REPLACE "@{" LIST0 variance_identref [ "+" | ]     [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
-| WITH "@{" LIST0 variance_identref    OPT "+"   OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| REPLACE "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] univ_decl_constraints
+| WITH "@{" OPT [ LIST0 identref "|" ] LIST0 variance_identref    OPT "+"   OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| DELETE "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
 ]
 
 of_type: [

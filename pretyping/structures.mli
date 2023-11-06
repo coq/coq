@@ -160,4 +160,7 @@ val mem : Names.Constant.t -> bool
 
 val find_opt : Names.Constant.t -> Names.Projection.Repr.t option
 
+val find_opt_with_relevance : Names.Constant.t * EConstr.EInstance.t
+  -> (Names.Projection.Repr.t * Sorts.relevance) option
+
 end

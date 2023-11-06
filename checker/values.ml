@@ -94,6 +94,12 @@ let v_level = v_tuple "level" [|Int;v_raw_level|]
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
 let v_univ = List v_expr
 
+let v_qvar = v_sum "qvar" 0 [|[|Int|];[|String;Int|]|]
+
+let v_constant_quality = v_enum "constant_quality" 3
+
+let v_quality = v_sum "quality" 0 [|[|v_qvar|];[|v_constant_quality|]|]
+
 let v_cstrs =
   Annot
     ("Univ.constraints",
@@ -103,16 +109,16 @@ let v_cstrs =
 
 let v_variance = v_enum "variance" 3
 
-let v_instance = Annot ("instance", Array v_level)
-let v_abs_context = v_tuple "abstract_universe_context" [|Array v_name; v_cstrs|]
+let v_instance = Annot ("instance", v_pair (Array v_quality) (Array v_level))
+let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (Array v_name) (Array v_name); v_cstrs|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
 
-let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|]|]
+let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|];[|v_qvar;v_univ(*QSort*)|]|]
 let v_sortfam = v_enum "sorts_family" 4
 
-let v_relevance = v_sum "relevance" 2 [||]
+let v_relevance = v_sum "relevance" 2 [|[|v_qvar|]|]
 let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
@@ -126,7 +132,7 @@ let v_caseinfo =
 
 let v_cast = v_enum "cast_kind" 3
 
-let v_proj_repr = v_tuple "projection_repr" [|v_ind;v_bool;Int;Int;v_id|]
+let v_proj_repr = v_tuple "projection_repr" [|v_ind;Int;Int;v_id|]
 let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 
 let v_uint63 =
@@ -150,7 +156,7 @@ let rec v_constr =
     [|v_caseinfo;v_instance; Array v_constr; v_case_return; v_case_invert; v_constr; Array v_case_branch|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
-    [|v_proj;v_constr|]; (* Proj *)
+    [|v_proj;v_relevance;v_constr|]; (* Proj *)
     [|v_uint63|]; (* Int *)
     [|Float64|]; (* Float *)
     [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)

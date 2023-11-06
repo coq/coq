@@ -19,7 +19,7 @@ open Util
 open Names
 open Term
 open Constr
-open Univ
+open UVars
 open Context
 
 module NamedDecl = Context.Named.Declaration
@@ -38,7 +38,7 @@ module NamedDecl = Context.Named.Declaration
 type abstr_info = {
   abstr_ctx : Constr.named_context;
   (** Context over which to generalize (e.g. x:T,z:V(x)) *)
-  abstr_auctx : Univ.AbstractContext.t;
+  abstr_auctx : UVars.AbstractContext.t;
   (** Universe context over which to generalize *)
   abstr_ausubst : Instance.t;
   (** Universe substitution represented as an instance *)
@@ -57,7 +57,7 @@ type abstr_info = {
 type abstr_inst_info = {
   abstr_rev_inst : Id.t list;
   (** The variables to reapply (excluding "let"s of the context), in reverse order *)
-  abstr_uinst : Univ.Instance.t;
+  abstr_uinst : UVars.Instance.t;
   (** Abstracted universe variables to reapply *)
 }
 
@@ -117,7 +117,7 @@ struct
 end
 
 module RefTable = Hashtbl.Make(RefHash)
-type internal_abstr_inst_info = Univ.Instance.t * int list * int
+type internal_abstr_inst_info = UVars.Instance.t * int list * int
 
 type cooking_cache = {
   cache : internal_abstr_inst_info RefTable.t;
@@ -214,7 +214,7 @@ let expand_constr cache modlist top_abst_subst c =
            with
             | Not_found -> Constr.map_with_binders succ substrec k c)
 
-      | Proj (p, c') ->
+      | Proj (p, r, c') ->
           let ind = Names.Projection.inductive p in
           let p' =
             try
@@ -222,7 +222,7 @@ let expand_constr cache modlist top_abst_subst c =
               discharge_proj exp p
             with Not_found -> p in
           let c'' = substrec k c' in
-          if p == p' && c' == c'' then c else mkProj (p', c'')
+          if p == p' && c' == c'' then c else mkProj (p', r, c'')
 
       | Var id ->
           (try
@@ -348,17 +348,16 @@ let discharge_abstract_universe_context abstr auctx =
       together with the substitution
       [u₀ ↦ Var(0), ... ,uₙ₋₁ ↦ Var(n - 1), Var(0) ↦  Var(n), ..., Var(m - 1) ↦  Var (n + m - 1)].
   *)
-  let open Univ in
   let n = AbstractContext.size abstr.abstr_auctx in
-  if (Int.equal n 0) then
+  if (UVars.eq_sizes n (0,0)) then
     (** Optimization: still need to take the union for the constraints between globals *)
     abstr, n, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
-    let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
+    let suff = UVars.make_abstract_instance auctx in
     let ainst = Instance.append subst suff in
     let substf = make_instance_subst ainst in
-    let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
+    let auctx = UVars.subst_univs_level_abstract_universe_context (snd substf) auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
     { abstr with abstr_ausubst = ainst }, n, auctx'
 
@@ -387,5 +386,5 @@ let lift_private_mono_univs info a =
   a
 
 let lift_private_poly_univs info (inst, cstrs) =
-  let cstrs = Univ.subst_univs_level_constraints (make_instance_subst info.abstr_info.abstr_ausubst) cstrs in
+  let cstrs = Univ.subst_univs_level_constraints (snd (make_instance_subst info.abstr_info.abstr_ausubst)) cstrs in
   (inst, cstrs)

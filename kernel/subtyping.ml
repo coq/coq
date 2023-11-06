@@ -15,7 +15,7 @@
 
 (*i*)
 open Names
-open Univ
+open UVars
 open Util
 open Constr
 open Declarations
@@ -101,7 +101,7 @@ let check_universes error env u1 u2 =
     if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
       error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
     else
-      Environ.push_context ~strict:false (Univ.AbstractContext.repr auctx2) env
+      Environ.push_context ~strict:false (UVars.AbstractContext.repr auctx2) env
   | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
   | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
 

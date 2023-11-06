@@ -16,6 +16,7 @@ open Pp
 open Names
 open Libnames
 open Univ
+open UVars
 open Environ
 open Printer
 open Constr
@@ -256,19 +257,21 @@ let pproof p = pp(Proof.pr_proof p)
 
 let ppuni u = pp(Universe.raw_pr u)
 let ppuni_level u = pp (Level.raw_pr u)
-let ppqvar q = pp (QVar.pr q)
+let ppqvar q = pp (QVar.raw_pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
-let prlev l = UnivNames.pr_with_global_universes l
+let prlev l = UnivNames.pr_level_with_global_universes l
+let prqvar q = Sorts.QVar.raw_pr q
+let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc QVar.raw_pr (QVar.Set.elements l) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
-let ppuniverse_instance l = pp (Instance.pr prlev l)
-let ppuniverse_context l = pp (pr_universe_context prlev l)
+let ppuniverse_instance l = pp (Instance.pr prqvar prlev l)
+let ppuniverse_context l = pp (pr_universe_context prqvar prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
 let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
 let ppuniverse_opt_subst l = pp (UnivFlex.pr Level.raw_pr l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst Level.raw_pr l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
-let ppconstraints c = pp (pr_constraints Level.raw_pr c)
+let ppconstraints c = pp (Constraints.pr Level.raw_pr c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
@@ -280,14 +283,16 @@ let ppnamedcontextval e =
   pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppaucontext auctx =
-  let nas = AbstractContext.names auctx in
-  let prlev l = match Level.var_index l with
+  let qnas, unas = AbstractContext.names auctx in
+  let prgen pr var_index nas l = match var_index l with
     | Some n -> (match nas.(n) with
-        | Anonymous -> prlev l
+        | Anonymous -> pr l
         | Name id -> Id.print id)
-    | None -> prlev l
+    | None -> pr l
   in
-  pp (pr_universe_context prlev (AbstractContext.repr auctx))
+  let prqvar l = prgen prqvar Sorts.QVar.var_index qnas l in
+  let prlev l = prgen prlev Level.var_index unas l in
+  pp (pr_universe_context prqvar prlev (AbstractContext.repr auctx))
 
 
 let ppenv e = pp
@@ -342,7 +347,7 @@ let constr_display csr =
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
-  | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
+  | Proj (p, r, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
   | Case (ci,u,pms,(_,p),iv,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display (Array.map snd bl))^")"
@@ -374,6 +379,9 @@ let constr_display csr =
   and univ_display u =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Universe.raw_pr u ++ fnl ())
 
+  and quality_display q =
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Sorts.Quality.raw_pr q ++ fnl ())
+
   and level_display u =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.raw_pr u ++ fnl ())
 
@@ -386,8 +394,15 @@ let constr_display csr =
     | QSort (q, u) -> univ_display u; Printf.sprintf "QSort(%s, %i)" (Sorts.QVar.to_string q) !cnt
 
   and universes_display l =
+    let qs, us = Instance.to_array l in
+    let qs = Array.fold_right (fun x i ->
+        quality_display x;
+        (string_of_int !cnt)^
+        (if not(i="") then (" "^i) else ""))
+        qs ""
+    in
     Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
-        then (" "^i) else "")) (Instance.to_array l) ""
+        then (" "^i) else "")) us (if qs = "" then "" else (qs^" | "))
 
   and name_display x = match x.binder_name with
     | Name id -> "Name("^(Id.to_string id)^")"
@@ -440,7 +455,7 @@ let print_pure_constr csr =
       sp_con_display c;
       print_string ","; universes_display u;
       print_string ")"
-  | Proj (p,c') -> print_string "Proj(";
+  | Proj (p,_,c') -> print_string "Proj(";
       sp_con_display (Projection.constant p);
       print_string ",";
       box_display c';
@@ -526,7 +541,9 @@ let print_pure_constr csr =
   and box_display c = open_hovbox 1; term_display c; close_box()
 
   and universes_display u =
-    Array.iter (fun u -> print_space (); pp (Level.raw_pr u)) (Instance.to_array u)
+    let qs, us = Instance.to_array u in
+    Array.iter (fun u -> print_space (); pp (Sorts.Quality.raw_pr u)) qs;
+    Array.iter (fun u -> print_space (); pp (Level.raw_pr u)) us
 
   and sort_display = function
     | SProp -> print_string "SProp"
@@ -535,7 +552,7 @@ let print_pure_constr csr =
     | Type u -> open_hbox();
         print_string "Type("; pp (Universe.raw_pr u); print_string ")"; close_box()
     | QSort (q, u) -> open_hbox();
-        print_string "QSort("; pp (QVar.pr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
+        print_string "QSort("; pp (QVar.raw_pr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)

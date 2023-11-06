@@ -141,7 +141,7 @@ type comp_env = {
 
 type glob_env = {
   env : Environ.env;
-  uinst_len : int; (** Size of the toplevel universe instance *)
+  uinst_len : int * int; (** Size of the toplevel universe instance *)
   mutable fun_code : instruction list; (** Code of closures *)
 }
 
@@ -153,7 +153,7 @@ module Config = struct
   let stack_safety_margin = 15
 end
 
-type argument = ArgLambda of lambda | ArgInstance of Univ.Instance.t
+type argument = ArgLambda of lambda | ArgInstance of UVars.Instance.t
 
 let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty; fv_unv = None }
 let push_fv d e = {
@@ -318,6 +318,17 @@ let pos_instance r sz =
     | Some p -> p
     in
     Kenvacc (r.offset + pos)
+
+let is_toplevel_inst env u =
+  UVars.eq_sizes env.uinst_len (UVars.Instance.length u)
+  && let qs, us = UVars.Instance.to_array u in
+  Array.for_all_i (fun i q -> Sorts.Quality.equal q (Sorts.Quality.var i)) 0 qs
+  && Array.for_all_i (fun i l -> Univ.Level.equal l (Univ.Level.var i)) 0 us
+
+let is_closed_inst u =
+  let qs, us = UVars.Instance.to_array u in
+  Array.for_all (fun q -> Option.is_empty (Sorts.Quality.var_index q)) qs
+  && Array.for_all (fun l -> Option.is_empty (Univ.Level.var_index l)) us
 
 (*i  Examination of the continuation *)
 
@@ -546,7 +557,7 @@ let rec compile_lam env cenv lam sz cont =
   | Lconst (kn,u) -> compile_constant env cenv kn u [||] sz cont
 
   | Lind (ind,u) ->
-    if Univ.Instance.is_empty u then
+    if UVars.Instance.is_empty u then
       compile_structured_constant cenv (Const_ind ind) sz cont
     else comp_app compile_structured_constant (compile_instance env) cenv
         (Const_ind ind) [|u|] sz cont
@@ -557,8 +568,11 @@ let rec compile_lam env cenv lam sz cont =
        evaluation) [Var 0,...,Var n] with values of [arg0,...,argn] *)
     let has_var = match s with
     | Sorts.Set | Sorts.Prop | Sorts.SProp -> false
-    | Sorts.Type u | Sorts.QSort (_, u) ->
+    | Sorts.Type u ->
       Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u
+    | Sorts.QSort (q, u) ->
+      Option.has_some (Sorts.QVar.var_index q)
+      || Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u
     in
     let compile_instance cenv () sz cont =
       let () = set_max_stack_size cenv sz in
@@ -799,37 +813,43 @@ let rec compile_lam env cenv lam sz cont =
 
 and compile_get_global env cenv (kn,u) sz cont =
   let () = set_max_stack_size cenv sz in
-  if Univ.Instance.is_empty u then
+  if UVars.Instance.is_empty u then
     Kgetglobal kn :: cont
   else
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       (compile_instance env) cenv () [|u|] sz cont
 
-and compile_instance env cenv u0 sz cont =
+and compile_instance env cenv u sz cont =
   let () = set_max_stack_size cenv sz in
-  let u = Univ.Instance.to_array u0 in
-  let len = Array.length u in
-  let is_id i l = match Univ.Level.var_index l with
-  | None -> false
-  | Some j -> Int.equal i j
-  in
-  if Int.equal env.uinst_len len && Array.for_all_i is_id 0 u then
+  if is_toplevel_inst env u then
     (* Optimization: do not reallocate the same instance *)
     pos_instance cenv sz :: cont
-  else if Array.for_all (fun l -> Option.is_empty (Univ.Level.var_index l)) u then
+  else if is_closed_inst u then
     (* Optimization: allocate closed instances globally *)
-    compile_structured_constant cenv (Const_univ_instance u0) sz cont
+    compile_structured_constant cenv (Const_univ_instance u) sz cont
   else
-    let () = set_max_stack_size cenv (sz + len - 1) in
+    let qs, us = UVars.Instance.to_array u in
+    let comp_qual cenv q sz cont = match Sorts.Quality.var_index q with
+    | None -> compile_structured_constant cenv (Const_quality q) sz cont
+    | Some idx -> pos_instance cenv sz :: Kfield 0 :: Kfield idx :: cont
+    in
     let comp_univ cenv l sz cont = match Univ.Level.var_index l with
     | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
-    | Some idx -> pos_instance cenv sz :: Kfield idx :: cont
+    | Some idx -> pos_instance cenv sz :: Kfield 1 :: Kfield idx :: cont
     in
-    comp_args comp_univ cenv u sz (Kmakeblock (len, 0) :: cont)
+    let comp_array comp_val cenv vs sz cont =
+      if Array.is_empty vs then Kmakeblock (0,0) :: cont
+      else
+        let () = set_max_stack_size cenv (sz + Array.length vs - 1) in
+        comp_args comp_val cenv vs sz (Kmakeblock (Array.length vs, 0) :: cont)
+    in
+    let cont = Kmakeblock (2, 0) :: cont in
+    let cont = comp_array comp_qual cenv qs (sz+1) cont in
+    comp_array comp_univ cenv us sz (Kpush :: cont)
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
-  if Univ.Instance.is_empty u then
+  if UVars.Instance.is_empty u then
     (* normal compilation *)
     comp_app (fun _ _ sz cont ->
         compile_get_global env cenv (kn,u) sz cont)
@@ -847,17 +867,14 @@ and compile_constant env cenv kn u args sz cont =
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
 
-let is_univ_copy max u =
-  let u = Univ.Instance.to_array u in
-  if Array.length u = max then
-    Array.fold_left_i (fun i acc u ->
-        if acc then
-          match Univ.Level.var_index u with
-          | None -> false
-          | Some l -> l = i
-        else false) true u
-  else
-    false
+let is_univ_copy (maxq,maxu) u =
+  let qs,us = UVars.Instance.to_array u in
+  let check_array max var_index a =
+    Array.length a = max
+    && Array.for_all_i (fun i x -> Option.equal Int.equal (var_index x) (Some i)) 0 a
+  in
+  check_array maxq Sorts.Quality.var_index qs
+  && check_array maxu Univ.Level.var_index us
 
 let dump_bytecode = ref false
 
@@ -870,14 +887,14 @@ let dump_bytecodes init code fvs =
      prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
      fnl ())
 
-let compile ?universes:(universes=0) env sigma c =
+let compile ?universes:(universes=(0,0)) env sigma c =
   Label.reset_label_counter ();
   let cont = [Kstop] in
     let cenv, init_code, fun_code =
-      if Int.equal universes 0 then
+      if UVars.eq_sizes universes (0,0) then
         let lam = lambda_of_constr ~optimize:true env sigma c in
         let cenv = empty_comp_env () in
-        let env = { env; fun_code = []; uinst_len = 0 } in
+        let env = { env; fun_code = []; uinst_len = (0,0) } in
         let cont = compile_lam env cenv lam 0 cont in
         let cont = ensure_stack_capacity cenv cont in
         cenv, cont, env.fun_code
@@ -930,7 +947,7 @@ let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
   | Primitive _ -> None
   | Def body ->
-      let instance_size = Univ.AbstractContext.size (Declareops.universes_context univs) in
+      let instance_size = UVars.AbstractContext.size (Declareops.universes_context univs) in
       let alias =
         match kind body with
         | Const (kn',u) when is_univ_copy instance_size u ->

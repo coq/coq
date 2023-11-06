@@ -980,7 +980,7 @@ let fold_match ?(force=false) env sigma c =
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
   | App (f', args) when QConstant.equal env (fst (destConst sigma f')) sk ->
-      let v = Environ.constant_value_in env (sk,Univ.Instance.empty)(*FIXME*) in
+      let v = Environ.constant_value_in env (sk,UVars.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
         Reductionops.whd_beta env sigma (mkApp (v, args))
   | _ -> app
@@ -1375,8 +1375,8 @@ module Strategies =
     let inj_open hint = (); fun sigma ->
       let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
       let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
+      let subst = Sorts.QVar.Map.empty, subst in
       let lemma = Vars.subst_univs_level_constr subst (EConstr.of_constr lemma) in
-      (* not sure sideff:true is really needed here *)
       let sigma = Evd.merge_context_set UnivRigid sigma ctx in
       (sigma, (lemma, NoBindings))
 

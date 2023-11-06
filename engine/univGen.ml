@@ -12,19 +12,40 @@ open Sorts
 open Names
 open Constr
 open Univ
+open UVars
+
+type sort_context_set = (Sorts.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
+
+type 'a in_sort_context_set = 'a * sort_context_set
+
+let empty_sort_context = (QVar.Set.empty, Level.Set.empty), Constraints.empty
+
+let is_empty_sort_context ((qs,us),csts) =
+  QVar.Set.is_empty qs && Level.Set.is_empty us && Constraints.is_empty csts
+
+let sort_context_union ((qs,us),csts) ((qs',us'),csts') =
+  ((QVar.Set.union qs qs', Level.Set.union us us'),Constraints.union csts csts')
+
+let diff_sort_context ((qs,us),csts) ((qs',us'),csts') =
+  (QVar.Set.diff qs qs', Level.Set.diff us us'), Constraints.diff csts csts'
 
 type univ_length_mismatch = {
-  actual : int ;
-  expect : int ;
+  actual : int * int;
+  expect : int * int;
 }
 (* Due to an OCaml bug ocaml/ocaml#10027 inlining this record will cause
 compliation with -rectypes to crash. *)
 exception UniverseLengthMismatch of univ_length_mismatch
 
 let () = CErrors.register_handler (function
-  | UniverseLengthMismatch { actual; expect } ->
-      Some Pp.(str "Universe instance length is " ++ int actual
-        ++ str " but should be " ++ int expect ++ str ".")
+    | UniverseLengthMismatch { actual=(aq,au); expect=(eq,eu) } ->
+      let ppreal, ppexpected =
+        if aq = 0 && eq = 0 then Pp.(int au, int eu)
+        else Pp.(str "(" ++ int aq ++ str " | " ++ int au ++ str ")"
+                , str "(" ++ int eq ++ str " | " ++ int eu ++ str ")")
+      in
+      Some Pp.(str "Universe instance length is " ++ ppreal
+               ++ str " but should be " ++ ppexpected ++ str".")
   | _ -> None)
 
 (* Generator of levels *)
@@ -45,23 +66,31 @@ let new_sort_id =
 
 let new_sort_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
-  Sorts.QVar.make s (new_sort_id ())
+  Sorts.QVar.make_unif s (new_sort_id ())
 
-let fresh_instance auctx =
-  let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
-  let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
-  let inst = Instance.of_array inst in
-  inst, (ctx, AbstractContext.instantiate inst auctx)
+let fresh_instance auctx : _ in_sort_context_set =
+  let qlen, ulen = AbstractContext.size auctx in
+  let qinst = Array.init qlen (fun _ -> Sorts.Quality.QVar (new_sort_global())) in
+  let uinst = Array.init ulen (fun _ -> fresh_level()) in
+  let qctx = Array.fold_left (fun qctx q -> match q with
+      | Sorts.Quality.QVar q -> Sorts.QVar.Set.add q qctx
+      | _ -> assert false)
+      Sorts.QVar.Set.empty
+      qinst
+  in
+  let uctx = Array.fold_right Level.Set.add uinst Level.Set.empty in
+  let inst = Instance.of_array (qinst,uinst) in
+  inst, ((qctx,uctx), AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
   let () =
-    let actual = Array.length (Instance.to_array inst)
+    let actual = Instance.length inst
     and expect = AbstractContext.size auctx in
-      if not (Int.equal actual expect) then
+      if not (UVars.eq_sizes actual expect) then
         Loc.raise ?loc (UniverseLengthMismatch { actual; expect })
       else ()
   in
-  inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)
+  inst, ((Sorts.QVar.Set.empty,Level.Set.empty), AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
   | Some inst -> existing_instance ?loc ctx inst
@@ -103,12 +132,12 @@ let constr_of_monomorphic_global env gr =
           str " would forget universes.")
 
 let fresh_sort_in_family = function
-  | InSProp -> Sorts.sprop, ContextSet.empty
-  | InProp -> Sorts.prop, ContextSet.empty
-  | InSet -> Sorts.set, ContextSet.empty
+  | InSProp -> Sorts.sprop, empty_sort_context
+  | InProp -> Sorts.prop, empty_sort_context
+  | InSet -> Sorts.set, empty_sort_context
   | InType | InQSort (* Treat as Type *) ->
     let u = fresh_level () in
-      sort_of_univ (Univ.Universe.make u), ContextSet.singleton u
+      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u),Constraints.empty)
 
 let new_global_univ () =
   let u = fresh_level () in
@@ -126,3 +155,13 @@ let fresh_universe_context_set_instance ctx =
     in
     let cst' = subst_univs_level_constraints subst cst in
       subst, (univs', cst')
+
+let fresh_sort_context_instance ((qs,us),csts) =
+  let usubst, (us, csts) = fresh_universe_context_set_instance (us,csts) in
+  let qsubst, qs = QVar.Set.fold (fun q (qsubst,qs) ->
+      let q' = new_sort_global () in
+      QVar.Map.add q (Sorts.Quality.QVar q') qsubst, QVar.Set.add q' qs)
+      qs
+      (QVar.Map.empty, QVar.Set.empty)
+  in
+  (qsubst, usubst), ((qs, us), csts)

@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Names
-open Univ
 open Term
 open Constr
 open Vars
@@ -375,6 +374,13 @@ let make_project env sigma ind pred c branches ps =
   in
   let branch = branches.(0) in
   let ctx, br = decompose_lambda_n_decls sigma mip.mind_consnrealdecls.(0) branch in
+  let _, u = destInd sigma (fst (decompose_app sigma ty)) in
+  let u = Unsafe.to_instance u in
+  let mkProj i c =
+    let p, r = ps.(i) in
+    let r = UVars.subst_instance_relevance u r in
+    mkProj (Projection.make p true, r, c)
+  in
   let proj = match EConstr.destRel sigma br with
     | exception DestKO -> None
     | i ->
@@ -388,8 +394,7 @@ let make_project env sigma ind pred c branches ps =
           None
         | LocalAssum _ :: ctx ->
           (* This match is just a projection *)
-          let p = ps.(Context.Rel.nhyps ctx) in
-          Some (mkProj (Projection.make p true, c))
+          Some (mkProj (Context.Rel.nhyps ctx) c)
       end
   in
   match proj with
@@ -400,7 +405,7 @@ let make_project env sigma ind pred c branches ps =
       (fun decl (i, j, ctx) ->
          match decl with
          | LocalAssum (na, ty) ->
-           let t = mkProj (Projection.make ps.(i) true, mkRel j) in
+           let t = mkProj i (mkRel j) in
            (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
          | LocalDef (na, b, ty) ->
            (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
@@ -498,7 +503,7 @@ let make_arity env sigma dep indf s =
 let compute_projections env (kn, i as ind) =
   let open Term in
   let mib = Environ.lookup_mind kn env in
-  let u = make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
@@ -539,12 +544,8 @@ let compute_projections env (kn, i as ind) =
       match na.binder_name with
       | Name id ->
         let lab = Label.of_id id in
-        let proj_relevant = match na.binder_relevance with
-        | Sorts.Irrelevant -> false
-        | Sorts.Relevant -> true
-        | Sorts.RelevanceVar _ -> assert false
-        in
-        let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg lab in
+        let proj_relevant = na.binder_relevance in
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
@@ -553,8 +554,8 @@ let compute_projections env (kn, i as ind) =
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
         let ty = substl subst t in
-        let term = mkProj (Projection.make kn true, mkRel 1) in
-        let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let term = mkProj (Projection.make kn true, proj_relevant, mkRel 1) in
+        let fterm = mkProj (Projection.make kn false, proj_relevant, mkRel 1) in
         let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
         let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
         let body = (etab, etat) in
@@ -633,7 +634,7 @@ let arity_of_case_predicate env (ind,params) dep k =
 
 let univ_level_mem l s = match s with
 | Prop | Set | SProp -> false
-| Type u -> univ_level_mem l u
+| Type u -> Univ.univ_level_mem l u
 | QSort (_, u) -> assert false (* template cannot contain sort variables *)
 
 (* Compute the inductive argument types: replace the sorts
@@ -681,7 +682,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
       !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
 
 let type_of_projection_constant env (p,u) =
-  let pty = lookup_projection p env in
+  let _, pty = lookup_projection p env in
   Vars.subst_instance_constr u pty
 
 let type_of_projection_knowing_arg env sigma p c ty =
