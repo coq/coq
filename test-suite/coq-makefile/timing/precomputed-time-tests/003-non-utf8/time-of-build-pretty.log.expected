@@ -1,6 +1,6 @@
      Time |   Peak Mem | File Name                                                  
 ------------------------------------------------------------------------------------
-39m02.51s | 1980772 ko | Total Time / Peak Mem                                      
+39m02.52s | 1980772 ko | Total Time / Peak Mem                                      
 ------------------------------------------------------------------------------------
  3m26.96s | 1980772 ko | Kami/Ex/Multiplier64                                       
  3m22.44s |  899104 ko | bedrock2/compiler/src/FlatToRiscv                          

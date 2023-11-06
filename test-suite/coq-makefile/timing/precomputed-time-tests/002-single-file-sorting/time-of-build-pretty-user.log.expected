@@ -1,6 +1,6 @@
      Time |   Peak Mem | File Name                                     
 -----------------------------------------------------------------------
-19m16.04s | 3302508 ko | Total Time / Peak Mem                         
+19m16.05s | 3302508 ko | Total Time / Peak Mem                         
 -----------------------------------------------------------------------
  4m01.34s | 1617000 ko | Specific/X25519/C64/ladderstep                
  3m09.62s | 3302508 ko | Specific/NISTP256/AMD64/femul                 
