@@ -716,37 +716,10 @@ type inductive = Ind.t
 (** Designation of a (particular) constructor of a (particular) inductive type. *)
 type constructor = Construct.t
 
-let ind_modpath = Ind.modpath
-let constr_modpath = Construct.modpath
-
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, _i) = ind
 let index_of_constructor (_ind, i) = i
-
-let eq_ind = Ind.CanOrd.equal
-let eq_user_ind = Ind.UserOrd.equal
-let eq_syntactic_ind = Ind.SyntacticOrd.equal
-
-let ind_ord = Ind.CanOrd.compare
-let ind_user_ord = Ind.UserOrd.compare
-let ind_syntactic_ord = Ind.SyntacticOrd.compare
-
-let ind_hash = Ind.CanOrd.hash
-let ind_user_hash = Ind.UserOrd.hash
-let ind_syntactic_hash = Ind.SyntacticOrd.hash
-
-let eq_constructor = Construct.CanOrd.equal
-let eq_user_constructor = Construct.UserOrd.equal
-let eq_syntactic_constructor = Construct.SyntacticOrd.equal
-
-let constructor_ord = Construct.CanOrd.compare
-let constructor_user_ord = Construct.UserOrd.compare
-let constructor_syntactic_ord = Construct.SyntacticOrd.compare
-
-let constructor_hash = Construct.CanOrd.hash
-let constructor_user_hash = Construct.UserOrd.hash
-let constructor_syntactic_hash = Construct.SyntacticOrd.hash
 
 module Indset = Set.Make(Ind.CanOrd)
 module Indset_env = Set.Make(Ind.UserOrd)
@@ -766,7 +739,7 @@ module Hind = Hashcons.Make(
     type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
     let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
-    let hash = ind_hash
+    let hash = Ind.CanOrd.hash
   end)
 
 module Hconstruct = Hashcons.Make(
@@ -775,7 +748,7 @@ module Hconstruct = Hashcons.Make(
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
     let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
-    let hash = constructor_hash
+    let hash = Construct.CanOrd.hash
   end)
 
 let hcons_con = Constant.hcons
@@ -851,7 +824,7 @@ struct
     let arg c = c.proj_arg
 
     let hash p =
-      Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
+      Hashset.Combine.combinesmall p.proj_arg (Ind.CanOrd.hash p.proj_ind)
 
     let compare_gen a b =
       let c = Int.compare a.proj_arg b.proj_arg in
@@ -866,40 +839,40 @@ struct
       type nonrec t = t
 
       let compare a b =
-        let c = ind_syntactic_ord a.proj_ind b.proj_ind in
+        let c = Ind.SyntacticOrd.compare a.proj_ind b.proj_ind in
         if c <> 0 then c
         else compare_gen a b
 
       let equal a b = compare a b == 0
 
       let hash p =
-        Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
+        Hashset.Combine.combinesmall p.proj_arg (Ind.CanOrd.hash p.proj_ind)
     end
     module CanOrd = struct
       type nonrec t = t
 
       let compare a b =
-        let c = ind_ord a.proj_ind b.proj_ind in
+        let c = Ind.CanOrd.compare a.proj_ind b.proj_ind in
         if c <> 0 then c
         else compare_gen a b
 
       let equal a b = compare a b == 0
 
       let hash p =
-        Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
+        Hashset.Combine.combinesmall p.proj_arg (Ind.CanOrd.hash p.proj_ind)
     end
     module UserOrd = struct
       type nonrec t = t
 
       let compare a b =
-        let c = ind_user_ord a.proj_ind b.proj_ind in
+        let c = Ind.UserOrd.compare a.proj_ind b.proj_ind in
         if c <> 0 then c
         else compare_gen a b
 
       let equal a b = compare a b == 0
 
       let hash p =
-        Hashset.Combine.combinesmall p.proj_arg (ind_user_hash p.proj_ind)
+        Hashset.Combine.combinesmall p.proj_arg (Ind.UserOrd.hash p.proj_ind)
     end
 
     let equal = CanOrd.equal
@@ -1023,8 +996,8 @@ module GlobRefInternal = struct
   let equal gr1 gr2 =
     gr1 == gr2 || match gr1,gr2 with
     | ConstRef con1, ConstRef con2 -> Constant.equal con1 con2
-    | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
-    | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
+    | IndRef kn1, IndRef kn2 -> Ind.CanOrd.equal kn1 kn2
+    | ConstructRef kn1, ConstructRef kn2 -> Construct.CanOrd.equal kn1 kn2
     | VarRef v1, VarRef v2 -> Id.equal v1 v2
     | (ConstRef _ | IndRef _ | ConstructRef _ | VarRef _), _ -> false
 

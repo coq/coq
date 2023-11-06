@@ -534,52 +534,10 @@ module Constrmap : CMap.ExtS with type key = constructor and module Set := Const
 module Indmap_env : CMap.ExtS with type key = inductive and module Set := Indset_env
 module Constrmap_env : CMap.ExtS with type key = constructor and module Set := Constrset_env
 
-val ind_modpath : inductive -> ModPath.t
-[@@ocaml.deprecated "Use the Ind module"]
-
-val constr_modpath : constructor -> ModPath.t
-[@@ocaml.deprecated "Use the Construct module"]
-
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
-val eq_ind : inductive -> inductive -> bool
-[@@ocaml.deprecated "Use the Ind module"]
-val eq_user_ind : inductive -> inductive -> bool
-[@@ocaml.deprecated "Use the Ind module"]
-val eq_syntactic_ind : inductive -> inductive -> bool
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_ord : inductive -> inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_hash : inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_user_ord : inductive -> inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_user_hash : inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_syntactic_ord : inductive -> inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val ind_syntactic_hash : inductive -> int
-[@@ocaml.deprecated "Use the Ind module"]
-val eq_constructor : constructor -> constructor -> bool
-[@@ocaml.deprecated "Use the Construct module"]
-val eq_user_constructor : constructor -> constructor -> bool
-[@@ocaml.deprecated "Use the Construct module"]
-val eq_syntactic_constructor : constructor -> constructor -> bool
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_ord : constructor -> constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_hash : constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_user_ord : constructor -> constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_user_hash : constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_syntactic_ord : constructor -> constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
-val constructor_syntactic_hash : constructor -> int
-[@@ocaml.deprecated "Use the Construct module"]
 
 (** {6 Hash-consing } *)
 
