@@ -1591,3 +1591,23 @@ let rec vernac_interp_error_handler = function
     raise Unhandled
 
 let _ = CErrors.register_handler (wrap_unhandled vernac_interp_error_handler)
+
+(* Locating errors *)
+
+let explain_notation_not_reference = function
+  | Notation.AmbiguousNotationAsReference _ ->
+    str "Ambiguous notation."
+  | Notation.NotationNotReference (env,sigma,ntn,ntns) ->
+    match ntns with
+    | [] -> str "Unable to interpret " ++ quote (str ntn) ++ str " as a reference."
+    | ntns ->
+      let f (df, r) =
+        str "Notation" ++ brk (1,2) ++
+        Notation_ops.pr_notation_info (Printer.pr_notation_interpretation_env env sigma) df r in
+      str "Unable to unambiguously interpret " ++ quote (str ntn) ++
+      str " as a reference. Found:" ++ fnl () ++
+      v 0 (hov 0 (prlist_with_sep spc f ntns))
+
+let _ = CErrors.register_handler (function
+    | Notation.NotationAsReferenceError e -> Some (explain_notation_not_reference e)
+    | _ -> None)

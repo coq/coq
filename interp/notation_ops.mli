@@ -73,6 +73,9 @@ val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
 
 val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_constr
 
+val pr_notation_info :
+  (Glob_term.glob_constr -> Pp.t) -> Constrexpr.notation_key -> Notation_term.notation_constr -> Pp.t
+
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation

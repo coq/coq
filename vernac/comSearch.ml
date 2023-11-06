@@ -76,14 +76,10 @@ let interp_search_item env sigma =
       when Id.is_valid_ident_part s && String.equal (String.drop_simple_quotes s) s ->
       GlobSearchString s
   | SearchString ((where,head),s,sc) ->
-      (try
-        let ref =
-          Notation.interp_notation_as_global_reference
-            ~head:false (fun _ -> true) s sc in
-        GlobSearchSubPattern (where,head,Pattern.PRef ref)
-      with UserError _ ->
-        user_err
-          (str "Unable to interpret " ++ quote (str s) ++ str " as a reference."))
+      let ref =
+        Notation.interp_notation_as_global_reference
+          ~head:false (fun _ -> true) s sc in
+      GlobSearchSubPattern (where,head,Pattern.PRef ref)
   | SearchKind k ->
      match kind_searcher k with
      | Inl k -> GlobSearchKind k

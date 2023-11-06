@@ -2153,10 +2153,6 @@ let pr_scope_classes sc =
     hov 0 (str "Bound to class" ++ opt_s ++
       spc() ++ prlist_with_sep spc pr_scope_class l)
 
-let pr_notation_info prglob ntn c =
-  str (String.quote_coq_string ntn) ++ str " :=" ++ brk (1,2) ++
-  prglob (Notation_ops.glob_constr_of_notation_constr c)
-
 let pr_notation_status on_parsing on_printing =
   let disabled b = if b then [] else ["disabled"] in
   let l = match on_parsing, on_printing with
@@ -2175,7 +2171,7 @@ let pr_non_empty spc pp =
   if pp = mt () then mt () else spc ++ pp
 
 let pr_notation_data prglob (on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) }) =
-  hov 0 (pr_notation_info prglob df r ++ pr_non_empty (brk(1,2)) (pr_notation_status on_parsing on_printing))
+  hov 0 (Notation_ops.pr_notation_info prglob df r ++ pr_non_empty (brk(1,2)) (pr_notation_status on_parsing on_printing))
 
 let extract_notation_data (main,extra) =
   let main = match main with
@@ -2425,13 +2421,19 @@ let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not
       Some (on_parsing,on_printing,ntn,sc,ref)
   | _ -> None
 
-let error_ambiguous_notation ?loc _ntn =
-  user_err ?loc (str "Ambiguous notation.")
+type notation_as_reference_error =
+  | AmbiguousNotationAsReference of notation_key
+  | NotationNotReference of Environ.env * Evd.evar_map * notation_key * (notation_key * notation_constr) list
 
-let error_notation_not_reference ?loc ntn =
-  user_err ?loc
-   (str "Unable to interpret " ++ quote (str ntn) ++
-    str " as a reference.")
+exception NotationAsReferenceError of notation_as_reference_error
+
+let error_ambiguous_notation ?loc ntn =
+  Loc.raise ?loc (NotationAsReferenceError (AmbiguousNotationAsReference ntn))
+
+let error_notation_not_reference ?loc ntn ntns =
+  let ntns = List.map (fun (_,_,(_,_,{ not_interp  = (_, r); not_location = (_, df) })) -> df, r) ntns in
+  let env = Global.env () in let sigma = Evd.from_env env in
+  Loc.raise ?loc (NotationAsReferenceError (NotationNotReference (env, sigma, ntn, ntns)))
 
 let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let scopes = match sc with
@@ -2443,7 +2445,7 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let refs = List.map (global_reference_of_notation ~head test) ntns in
   match Option.List.flatten refs with
   | [Some true,_ (* why not if the only one? *),_,_,ref] -> ref
-  | [] -> error_notation_not_reference ?loc ntn
+  | [] -> error_notation_not_reference ?loc ntn ntns
   | refs ->
       let f (on_parsing,_,ntn,sc,ref) =
         let def = find_default ntn !scope_stack in
@@ -2453,7 +2455,7 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
       in
       match List.filter f refs with
       | [_,_,_,_,ref] -> ref
-      | [] -> error_notation_not_reference ?loc ntn
+      | [] -> error_notation_not_reference ?loc ntn ntns
       | _ -> error_ambiguous_notation ?loc ntn
 
 let locate_notation prglob ntn scope =
@@ -2468,7 +2470,7 @@ let locate_notation prglob ntn scope =
         (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) })) ->
           hov 0 (
             str "Notation" ++ brk (1,2) ++
-            pr_notation_info prglob df r ++
+            Notation_ops.pr_notation_info prglob df r ++
             (if String.equal sc default_scope then mt ()
              else (brk (1,2) ++ str ": " ++ str sc)) ++
             (if Option.equal String.equal (Some sc) scope
