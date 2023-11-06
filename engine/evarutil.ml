@@ -497,12 +497,12 @@ let filter_effective_candidates evd evi filter candidates =
   let ids = set_of_evctx (Filter.filter_list filter (evar_context evi)) in
   List.filter (fun a -> Id.Set.subset (collect_vars evd a) ids) candidates
 
-let restrict_evar evd evk filter ?src candidates =
+let restrict_evar evd evk filter candidates =
   let evar_info = Evd.find_undefined evd evk in
   let candidates = Option.map (filter_effective_candidates evd evar_info filter) candidates in
   match candidates with
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
-  | _ -> Evd.restrict evk filter ?candidates ?src evd
+  | _ -> Evd.restrict evk filter ?candidates evd
 
 let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~global c =
   (* returns a new constr where all the evars have been 'cleaned'

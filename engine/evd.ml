@@ -1438,9 +1438,8 @@ let restrict evk filter ?candidates ?src evd =
   (evd, evk')
 
 let update_source evd evk src =
-  let evar_info = EvMap.find evk evd.undf_evars in
-  let evar_info' = { evar_info with evar_source = src } in
-  { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
+  let modify _ info = { info with evar_source = src } in
+  { evd with undf_evars = EvMap.modify evk modify evd.undf_evars }
 
 (**********************************************************)
 (* Accessing metas *)
