@@ -17,5 +17,5 @@ export TIMED=1
 bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
 code=$?
 echo 'Aggregating timing log...'
-python ./tools/make-one-time-file.py "$CI_NAME.log"
+python ./tools/make-one-time-file.py --real "$CI_NAME.log"
 exit $code
