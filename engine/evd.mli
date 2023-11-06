@@ -359,6 +359,9 @@ val set_obligation_evar : evar_map -> Evar.t -> evar_map
 val is_obligation_evar : evar_map -> Evar.t -> bool
 (** Is the evar declared as an obligation *)
 
+val get_impossible_case_evars : evar_map -> Evar.Set.t
+(** Set of undefined evars with ImpossibleCase evar source. *)
+
 val downcast : Evar.t-> etypes -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
     subtype of its current type; subtyping must be ensured by caller *)

@@ -489,6 +489,7 @@ type evar_flags =
   { obligation_evars : Evar.Set.t;
     aliased_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t;
+    impossible_case_evars : Evar.Set.t;
   }
 
 type side_effect_role =
@@ -752,6 +753,11 @@ let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_i
       { flags with typeclass_evars = Evar.Set.add e flags.typeclass_evars }
     else d.evar_flags
   in
+  let evar_flags = match i.evar_source with
+    | _, ImpossibleCase ->
+      { evar_flags with impossible_case_evars = Evar.Set.add e evar_flags.impossible_case_evars }
+    | _ -> evar_flags
+  in
   let candidate_evars = match i.evar_candidates with
   | Undefined None -> Evar.Set.remove e d.candidate_evars
   | Undefined (Some _) -> Evar.Set.add e d.candidate_evars
@@ -788,11 +794,14 @@ let is_obligation_evar evd evk =
   let flags = evd.evar_flags in
   Evar.Set.mem evk flags.obligation_evars
 
+let get_impossible_case_evars evd = evd.evar_flags.impossible_case_evars
+
 (** Inheritance of flags: for evar-evar and restriction cases *)
 
 let inherit_evar_flags evar_flags evk evk' =
   let evk_typeclass = Evar.Set.mem evk evar_flags.typeclass_evars in
   let evk_obligation = Evar.Set.mem evk evar_flags.obligation_evars in
+  let evk_impossible = Evar.Set.mem evk evar_flags.impossible_case_evars in
   let aliased_evars = Evar.Map.add evk evk' evar_flags.aliased_evars in
   let typeclass_evars =
     if evk_typeclass then
@@ -806,15 +815,23 @@ let inherit_evar_flags evar_flags evk evk' =
       Evar.Set.add evk' obligation_evars
     else evar_flags.obligation_evars
   in
-  { obligation_evars; aliased_evars; typeclass_evars;  }
+  let impossible_case_evars =
+    if evk_impossible then
+      let impossible_case_evars = Evar.Set.remove evk evar_flags.impossible_case_evars in
+      Evar.Set.add evk' impossible_case_evars
+    else evar_flags.impossible_case_evars
+  in
+  { obligation_evars; aliased_evars; typeclass_evars; impossible_case_evars; }
 
 (** Removal: in all other cases of definition *)
 
 let remove_evar_flags evk evar_flags =
   { typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars;
     obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
+    impossible_case_evars = Evar.Set.remove evk evar_flags.impossible_case_evars;
     (* Aliasing information is kept. *)
-    aliased_evars = evar_flags.aliased_evars }
+    aliased_evars = evar_flags.aliased_evars;
+  }
 
 (** New evars *)
 
@@ -971,7 +988,9 @@ let create_evar_defs sigma = { sigma with
 let empty_evar_flags =
   { obligation_evars = Evar.Set.empty;
     aliased_evars = Evar.Map.empty;
-    typeclass_evars = Evar.Set.empty }
+    typeclass_evars = Evar.Set.empty;
+    impossible_case_evars = Evar.Set.empty;
+  }
 
 let empty_side_effects = {
   seff_private = Safe_typing.empty_private_constants;
@@ -1422,6 +1441,11 @@ let restrict evk filter ?candidates ?src evd =
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evar_flags = match src with
+    | Some (_,Evar_kinds.ImpossibleCase) ->
+      { evar_flags with impossible_case_evars = Evar.Set.add evk' evar_flags.impossible_case_evars }
+    | _ -> evar_flags
+  in
   let candidate_evars = Evar.Set.remove evk evd.candidate_evars in
   let candidate_evars = match candidates with
   | None -> candidate_evars

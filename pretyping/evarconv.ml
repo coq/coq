@@ -1818,14 +1818,14 @@ let rec solve_unconstrained_evars_with_candidates flags env evd =
       solve_unconstrained_evars_with_candidates flags env evd
 
 let solve_unconstrained_impossible_cases env evd =
-  Evd.fold_undefined (fun evk ev_info evd' ->
-    match Evd.evar_source ev_info with
-    | loc,Evar_kinds.ImpossibleCase ->
+  Evar.Set.fold (fun evk evd' ->
       let evd', j = coq_unit_judge env evd' in
       let ty = j_type j in
       let flags = default_flags env in
       instantiate_evar evar_unify flags env evd' evk ty (* should we protect from raising IllTypedInstance? *)
-    | _ -> evd') evd evd
+    )
+    (Evd.get_impossible_case_evars evd)
+    evd
 
 let solve_unif_constraints_with_heuristics env
     ?(flags=default_flags env) ?(with_ho=false) evd =
