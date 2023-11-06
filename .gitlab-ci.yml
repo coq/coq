@@ -546,6 +546,8 @@ test-suite:base+async:
     COQEXTRAFLAGS: "-async-proofs on -async-proofs-cache force"
   allow_failure: true
   timeout: 2h
+  variables:
+    NJOBS: "1"
   only:
     variables:
       - $UNRELIABLE =~ /enabled/ && $FULL_CI == "true"
