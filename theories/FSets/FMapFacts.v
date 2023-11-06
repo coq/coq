@@ -1265,61 +1265,35 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Lemma cardinal_Add_In:
     forall m m' x e, In x m -> Add x e m m' -> cardinal m' = cardinal m.
   Proof.
-  intros m.
-  induction m using map_induction.
-  - intros.
-    contradict H0.
-    intros [ e' He' ].
-    now apply H in He'.
-
-  - intros.
-    destruct  (E.eq_dec x x0).
-    + enough (Add x0 e0 m1 m').
-       rewrite cardinal_2 with (m:=m1) (m':=m2) (x:=x) (e:=e) by assumption.
-       rewrite cardinal_2 with (m:=m1) (m':=m') (x:=x0) (e:=e0); try assumption.
-       reflexivity.
-       contradict H.
-       now apply (In_iff m1 e1).
-
-      intro y.
-      destruct (E.eq_dec x0 y).
-      * rewrite H2.
-        now do 2 rewrite add_eq_o by assumption.
-      * rewrite H2.
-        do 2 rewrite add_neq_o by assumption.
-        rewrite H0.
-        assert (~E.eq x y).
-         contradict n.
-         now apply E.eq_trans with (y:= x).
-        now rewrite add_neq_o by assumption.
-
-    + destruct (Add_transpose_neqkey) with (k1:=x) (k2:=x0) (e1:=e) (e2:=e0) (m1:=m1) (m2:=m2) (m3:=m')
-        as [ transposed [ Add_transposed_1 Add_transposed_2 ] ]; auto.
-      rewrite cardinal_2 with (x:=x) (e:=e) (m:=transposed); try assumption.
-      rewrite cardinal_2 with (x:=x) (e:=e) (m:=m1) (m':=m2) by assumption.
-      rewrite IHm1 with (x:=x0) (e:=e0).
-      reflexivity.
-
-      destruct H1 as [ e' e'mapsto ].
-      exists e'.
-      apply M.add_3 with (x:=x) (e':=e).
-      assumption.
-
-      apply find_mapsto_iff.
-      rewrite <- H0 by assumption.
-      now apply find_mapsto_iff.
-      assumption.
-
-      contradict n.
-      assert (In x (add x0 e0 m1)).
-       destruct n as [ e' e'mapsto ].
-       exists e'.
-       apply find_mapsto_iff.
-       rewrite <- Add_transposed_1.
-       apply find_mapsto_iff.
-       assumption.
-      apply add_in_iff in H3.
-      now destruct H3.
+  assert (forall k e m, MapsTo k e m -> Add k e (remove k m) m) as remove_In_Add.
+  { intros. unfold Add.
+    intros.
+    rewrite F.add_o.
+    destruct (F.eq_dec k y).
+    - apply find_1. rewrite <-MapsTo_m; [exact H|assumption|reflexivity|reflexivity].
+    - rewrite F.remove_neq_o by assumption. reflexivity.
+  }
+  intros.
+  assert (Equal (remove x m) (remove x m')).
+  { intros y. rewrite 2!F.remove_o.
+    destruct (F.eq_dec x y). reflexivity.
+    unfold Add in H0. rewrite H0.
+    rewrite F.add_neq_o by assumption. reflexivity.
+  }
+  apply Equal_cardinal in H1.
+  rewrite 2!cardinal_fold.
+  destruct H as (e' & H).
+  rewrite fold_Add with (eqA:=eq) (m1:=remove x m) (m2:=m) (k:=x) (e:=e');
+  try now (compute; auto).
+  rewrite fold_Add with (eqA:=eq) (m1:=remove x m') (m2:=m') (k:=x) (e:=e);
+  try now (compute; auto).
+  rewrite <- 2!cardinal_fold. congruence.
+  apply remove_1. reflexivity.
+  apply remove_In_Add.
+  apply find_2. unfold Add in H0. rewrite H0.
+  rewrite F.add_eq_o; reflexivity.
+  apply remove_1. reflexivity.
+  apply remove_In_Add. assumption.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
