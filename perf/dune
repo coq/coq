@@ -4,4 +4,11 @@
  (public_name coq-core.perf)
  (wrapped false)
  (foreign_stubs (language c) (names perf))
- (enabled_if (= %{system} linux)))
+ ; Just "linux" is not enough, see https://github.com/ocaml/dune/issues/4895.
+ (enabled_if
+  (or
+   (= %{system} "linux")
+   (= %{system} "linux_eabi")
+   (= %{system} "linux_eabihf")
+   (= %{system} "linux_elf")
+   (= %{system} "elf"))))
