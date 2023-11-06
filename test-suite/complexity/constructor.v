@@ -1,3 +1,5 @@
+(* -*- coq-prog-args: ("-native-compiler" "no"); -*- *)
+
 (* Checks that constructor does not repeat the reduction of the conclusion *)
 (* Expected time < 3.00s *)
 
