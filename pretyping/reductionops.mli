@@ -297,6 +297,8 @@ val is_head_evar : env -> evar_map -> constr -> bool
 (** {6 Meta-related reduction functions } *)
 val meta_instance : env -> evar_map -> constr freelisted -> constr
 
+exception AnomalyInConversion of exn
+
 (* inferred_universes just gathers the constraints. *)
 val inferred_universes : (UGraph.t * Univ.Constraints.t) Conversion.universe_compare
 
