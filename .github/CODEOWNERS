@@ -272,8 +272,6 @@
 /test-suite/report.sh       @coq/test-suite-maintainers
 /test-suite/unit-tests/src/ @coq/test-suite-maintainers
 
-/test-suite/complexity/ @herbelin
-
 /test-suite/success/Compat*.v @coq/compat-maintainers
 
 ########## Developer tools ##########
