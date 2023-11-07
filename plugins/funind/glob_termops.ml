@@ -545,79 +545,85 @@ let expand_as =
   in
   expand_as Id.Map.empty
 
-(* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution
- *)
+(* [resolve_and_replace_implicits] solves implicits of its argument and replaces them by their solution *)
 
-exception Found of Evd.any_evar_info
-
-let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
-    ?(expected_type = Pretyping.WithoutTypeConstraint) env sigma rt =
+let resolve_and_replace_implicits exptyp env sigma rt =
   let open Evd in
   let open Evar_kinds in
   (* we first (pseudo) understand [rt] and get back the computed evar_map *)
   (* FIXME : JF (30/03/2017) I'm not completely sure to have split understand as needed.
      If someone knows how to prevent solved existantial removal in  understand, please do not hesitate to change the computation of [ctx] here *)
-  let ctx, _, _ =
-    Pretyping.ise_pretype_gen flags env sigma Glob_ops.empty_lvar expected_type
-      rt
+  let implicit_holes = ref [] in
+  let binder_holes = ref [] in
+  let ctx =
+    let open Pretyping in
+    let open Evarutil in
+    (* Intercept the pretyper for holes and record the generated evar *)
+    let register_evar kind loc evk = match kind with
+    | ImplicitArg (grk, pk, bk) -> implicit_holes := ((loc, grk, pk, bk), evk) :: !implicit_holes
+    | BinderType na -> binder_holes := ((loc, na), evk) :: !binder_holes
+    | _ -> ()
+    in
+    let pretype_hole self (kind, pat) ?loc ~flags tycon env sigma =
+      let sigma, j = default_pretyper.pretype_hole self (kind, pat) ?loc ~flags tycon env sigma in
+      (* The value is guaranteed to be an undefined evar at this point *)
+      let evk, _ = EConstr.destEvar sigma j.uj_val in
+      let () = register_evar kind loc evk  in
+      sigma, j
+    in
+    let pretype_type self c ?loc ~flags valcon env sigma =
+      let sigma, j = default_pretyper.pretype_type self c ?loc ~flags valcon env sigma in
+      let () = match DAst.get c, EConstr.kind sigma j.utj_val with
+      | GHole (kind, _), Evar (evk, _) -> register_evar kind c.CAst.loc evk
+      | _ -> ()
+      in
+      sigma, j
+    in
+    let flags = Pretyping.all_and_fail_flags in
+    let pretype_flags = {
+      program_mode = false;
+      use_coercions = true;
+      poly = false;
+      resolve_tc = true;
+    } in
+    let vars = Evarutil.VarSet.variables (Global.env ()) in
+    let hypnaming = RenameExistingBut vars in
+    let genv = GlobEnv.make ~hypnaming env sigma Glob_ops.empty_lvar in
+    let pretyper = { default_pretyper with pretype_hole; pretype_type } in
+    let sigma', _ = eval_pretyper pretyper ~flags:pretype_flags (Some exptyp) genv sigma rt in
+    solve_remaining_evars flags env ~initial:sigma sigma'
   in
   let ctx = Evd.minimize_universes ctx in
   let f c =
     EConstr.of_constr
       (Evarutil.nf_evars_universes ctx (EConstr.Unsafe.to_constr c))
   in
+  let expand_hole evopt default = match evopt with
+  | None -> default
+  | Some evk ->
+    (* we found the evar corresponding to this hole *)
+    let EvarInfo evi = Evd.find ctx evk in
+    match Evd.evar_body evi with
+    | Evar_defined c ->
+      (* we just have to lift the solution in glob_term *)
+      Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
+    | Evar_empty ->
+      (* the hole was not solved : we do nothing *)
+      default
+  in
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =
     match DAst.get rt with
-    | GHole (ImplicitArg (grk, pk, bk), _) -> (
-      try
-        (* we only want to deal with implicit arguments *)
-
-        (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
-        Evd.fold (* to simulate an iter *)
-          (fun _ (EvarInfo evi) _ ->
-            match Evd.evar_source evi with
-            | loc_evi, ImplicitArg (gr_evi, p_evi, b_evi) ->
-              if
-                Environ.QGlobRef.equal env grk gr_evi && pk = p_evi && bk = b_evi
-                && rt.CAst.loc = loc_evi
-              then raise (Found (EvarInfo evi))
-            | _ -> ())
-          ctx ();
-        (* the hole was not solved : we do nothing *)
-        rt
-      with Found (EvarInfo evi) -> (
-        (* we found the evar corresponding to this hole *)
-        match Evd.evar_body evi with
-        | Evar_defined c ->
-          (* we just have to lift the solution in glob_term *)
-          Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
-        | Evar_empty -> rt (* the hole was not solved : we do nothing *) ) )
-    | GHole (BinderType na, _) ->
-      (* we only want to deal with implicit arguments *)
-      let res =
-        try
-          (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
-          Evd.fold (* to simulate an iter *)
-            (fun _ (EvarInfo evi) _ ->
-              match Evd.evar_source evi with
-              | loc_evi, BinderType na' ->
-                if Name.equal na na' && rt.CAst.loc = loc_evi then
-                  raise (Found (EvarInfo evi))
-              | _ -> ())
-            ctx ();
-          (* the hole was not solved : we do nothing *)
-          rt
-        with Found (EvarInfo evi) -> (
-          (* we found the evar corresponding to this hole *)
-          match Evd.evar_body evi with
-          | Evar_defined c ->
-            (* we just have to lift the solution in glob_term *)
-            Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
-          | Evar_empty -> rt )
-        (* the hole was not solved : we d when falseo nothing *)
+    | GHole (ImplicitArg (grk, pk, bk), _) ->
+      let eq (loc1, gr1, p1, b1) (loc2, gr2, p2, b2) =
+        Environ.QGlobRef.equal env gr1 gr2 && p1 = p2 && b1 == (b2 : bool) && loc1 = (loc2 : Loc.t option)
       in
-      res
+      let evopt = List.assoc_f_opt eq (rt.CAst.loc, grk, pk, bk) !implicit_holes in
+      expand_hole evopt rt
+    | GHole (BinderType na, _) ->
+      let eq (loc1, na1) (loc2, na2) = Name.equal na1 na2 && loc1 = (loc2 : Loc.t option) in
+      let evopt = List.assoc_f_opt eq (rt.CAst.loc, na) !binder_holes in
+      expand_hole evopt rt
     | _ -> Glob_ops.map_glob_constr change rt
   in
   change rt

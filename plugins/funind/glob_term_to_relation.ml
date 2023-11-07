@@ -1318,7 +1318,7 @@ let do_build_inductive evd (funconstants : pconstant list)
           Typing.type_of env evd
             (EConstr.of_constr (mkConstU (Array.of_list funconstants).(i)))
         in
-        resolve_and_replace_implicits ~expected_type:(Pretyping.OfType t) env
+        resolve_and_replace_implicits t env
           evd rt)
       rta
   in
