@@ -124,8 +124,6 @@ val occur_var_constr_expr : Id.t -> constr_expr -> bool
 (** Return all (non-qualified) names treating binders as names *)
 val names_of_constr_expr : constr_expr -> Id.Set.t
 
-val split_at_annot : local_binder_expr list -> lident option -> local_binder_expr list * local_binder_expr list
-
 val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
 val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -> (int * int) list
 

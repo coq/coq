@@ -103,17 +103,31 @@ let check_true_recursivity env evd ~isfix fixl =
     | [x,Inr []] -> warn_non_recursive (x,isfix)
     | _ -> ()
 
+(* Interpret the index of a recursion order annotation *)
+exception Found of int
+let find_rec_annot bl ctx na =
+  let name = Name na.CAst.v in
+  try
+    Context.Rel.fold_outside (fun decl n ->
+      match Context.Rel.Declaration.(get_value decl, Name.equal (get_name decl) name) with
+      | None, true -> raise (Found n)
+      | Some _, true ->
+          let loc = List.find_map (fun id -> if Name.equal name id.CAst.v then Some id.CAst.loc else None) (Constrexpr_ops.names_of_local_binders bl) in
+          let loc = Option.default na.CAst.loc loc in
+          CErrors.user_err ?loc
+            (Name.print name ++ str" must be a proper parameter and not a local definition.")
+      | None, false -> n + 1
+      | Some _, false -> n (* let-ins don't count *))
+      ~init:0 ctx |> ignore;
+    CErrors.user_err ?loc:na.loc
+      (str "No parameter named " ++ Id.print na.v ++ str".");
+  with
+    Found k -> k
+
 let interp_fix_context ~program_mode ~cofix env sigma fix =
-  let before, after =
-    if not cofix
-    then Constrexpr_ops.split_at_annot fix.Vernacexpr.binders fix.Vernacexpr.rec_order
-    else [], fix.Vernacexpr.binders in
-  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma before in
-  let sigma, (impl_env', ((env'', ctx'), imps')) =
-    interp_context_evars ~program_mode ~impl_env env' sigma after
-  in
-  let annot = Option.map (fun _ -> List.length (Termops.assums_of_rel_context ctx)) fix.Vernacexpr.rec_order in
-  sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
+  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma fix.Vernacexpr.binders in
+  let annot = Option.map (find_rec_annot fix.Vernacexpr.binders ctx) fix.Vernacexpr.rec_order in
+  sigma, ((env', ctx), (impl_env, imps), annot)
 
 let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
