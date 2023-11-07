@@ -551,46 +551,6 @@ let patntn_loc ?loc (args,argslist,binders) =
 let error_invalid_pattern_notation ?loc () =
   CErrors.user_err ?loc  (str "Invalid notation for pattern.")
 
-(* Interpret the index of a recursion order annotation *)
-let split_at_annot bl na =
-  let open CAst in
-  let names = List.map (fun { v } -> v) (names_of_local_assums bl) in
-  match na with
-  | None ->
-    begin match names with
-      | [] -> CErrors.user_err (Pp.str "A fixpoint needs at least one parameter.")
-      | _ -> ([], bl)
-    end
-  | Some { loc; v = id } ->
-    let rec aux acc = function
-      | CLocalAssum (bls, k, t) as x :: rest ->
-        let test { CAst.v = na } = match na with
-          | Name id' -> Id.equal id id'
-          | Anonymous -> false
-        in
-        let l, r = List.split_when test bls in
-        begin match r with
-          | [] -> aux (x :: acc) rest
-          | _ ->
-            let ans = match l with
-              | [] -> acc
-              | _ -> CLocalAssum (l, k, t) :: acc
-            in
-            (List.rev ans, CLocalAssum (r, k, t) :: rest)
-        end
-      | CLocalDef ({ CAst.v = na },_,_) as x :: rest ->
-        if Name.equal (Name id) na then
-          CErrors.user_err ?loc
-            (Id.print id ++ str" must be a proper parameter and not a local definition.")
-        else
-          aux (x :: acc) rest
-      | CLocalPattern _ :: rest ->
-        Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed after fix")
-      | [] ->
-        CErrors.user_err ?loc
-          (str "No parameter named " ++ Id.print id ++ str".")
-    in aux [] bl
-
 (** Pseudo-constructors *)
 
 let mkIdentC id   = CAst.make @@ CRef (qualid_of_ident id,None)
