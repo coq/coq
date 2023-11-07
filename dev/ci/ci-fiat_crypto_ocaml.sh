@@ -17,5 +17,5 @@ ulimit -s 131072
 make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1 OCAMLFIND=ocamlfind)
 
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
-  make "${make_args[@]}" -j 2 standalone-ocaml lite-generated-files
+  make "${make_args[@]}" -j 2 standalone-ocaml lite-c-files
 )
