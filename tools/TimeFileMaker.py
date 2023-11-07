@@ -6,6 +6,7 @@ import sys
 import re
 import argparse
 import os
+import math
 from io import open
 
 # This script parses the output of `make TIMED=1` into a dictionary
@@ -306,12 +307,12 @@ def from_seconds(seconds, signed=False):
     Converts a number of seconds into a string time.
     '''
     sign = ('-' if seconds < 0 else '+') if signed else ''
-    seconds = abs(seconds)
+    full_centiseconds = round(abs(seconds) * 100)
+    seconds = int(full_centiseconds) // 100
+    centiseconds = full_centiseconds - (seconds * 100)
     minutes = int(seconds) // 60
     seconds -= minutes * 60
-    full_seconds = int(seconds)
-    partial_seconds = int(100 * (seconds - full_seconds))
-    return sign + '%dm%02d.%02ds' % (minutes, full_seconds, partial_seconds)
+    return sign + '%dm%02d.%02ds' % (minutes, seconds, centiseconds)
 
 def sum_times(times, signed=False):
     '''
@@ -319,7 +320,7 @@ def sum_times(times, signed=False):
     strings, and returns their sum, in the same string format.
     '''
     # sort the times before summing because floating point addition is not associative
-    return from_seconds(sum(sorted(map(to_seconds, times))), signed=signed)
+    return from_seconds(math.fsum(sorted(map(to_seconds, times))), signed=signed)
 
 def format_percentage(num, signed=True):
     sign = ('-' if num < 0 else '+') if signed else ''
