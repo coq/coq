@@ -19,12 +19,12 @@ End Notations.
 
 Ltac2 none := {
   rBeta := false; rMatch := false; rFix := false; rCofix := false;
-  rZeta := false; rDelta := false; rConst := [];
+  rZeta := false; rDelta := false; rConst := []; rStrength := Norm;
 }.
 
 Ltac2 all : t := {
   rBeta := true; rMatch := true; rFix := true; rCofix := true;
-  rZeta := true; rDelta := true; rConst := [];
+  rZeta := true; rDelta := true; rConst := []; rStrength := Norm;
 }.
 
 Ltac2 beta : t := red_flags:(beta).

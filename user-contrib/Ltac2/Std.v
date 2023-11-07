@@ -43,7 +43,10 @@ Ltac2 Type reference := [
 | ConstructRef (constructor)
 ].
 
+Ltac2 Type strength := [ Norm | Head ].
+
 Ltac2 Type red_flags := {
+  rStrength : strength;
   rBeta : bool;
   rMatch : bool;
   rFix : bool;

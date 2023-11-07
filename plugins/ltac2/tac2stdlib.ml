@@ -60,10 +60,15 @@ let to_clause v = match Value.to_tuple v with
 
 let clause = make_to_repr to_clause
 
+let to_red_strength = function
+  | ValInt 0 -> Norm
+  | ValInt 1 -> Head
+  | _ -> assert false
+
 let to_red_flag v = match Value.to_tuple v with
-| [| beta; iota; fix; cofix; zeta; delta; const |] ->
+| [| strength; beta; iota; fix; cofix; zeta; delta; const |] ->
   {
-    rStrength = Norm; (* specifying rStrength is not yet supported *)
+    rStrength = to_red_strength strength;
     rBeta = Value.to_bool beta;
     rMatch = Value.to_bool iota;
     rFix = Value.to_bool fix;

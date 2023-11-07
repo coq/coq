@@ -773,6 +773,7 @@ GRAMMAR EXTEND Gram
       | IDENT "cofix" -> { CAst.make ~loc @@ QCofix }
       | IDENT "zeta" -> { CAst.make ~loc @@ QZeta }
       | IDENT "delta"; d = delta_flag -> { d }
+      | IDENT "head" -> { CAst.make ~loc @@ QHead }
     ] ]
   ;
   refglobal:
