@@ -437,15 +437,15 @@ let expand_case env _sigma (ci, u, pms, p, iv, c, bl) =
   let iv = unsafe_to_case_invert iv in
   let c = unsafe_to_constr c in
   let bl = unsafe_to_branches bl in
-  let (ci, p, iv, c, bl) = Inductive.expand_case env (ci, u, pms, p, iv, c, bl) in
+  let (ci, (p,r), iv, c, bl) = Inductive.expand_case env (ci, u, pms, p, iv, c, bl) in
   let p = of_constr p in
   let c = of_constr c in
   let iv = of_case_invert iv in
   let bl = of_constr_array bl in
-  (ci, p, iv, c, bl)
+  (ci, (p,r), iv, c, bl)
 
 let annotate_case env sigma (ci, u, pms, p, iv, c, bl as case) =
-  let (_, p, _, _, bl) = expand_case env sigma case in
+  let (_, (p,r), _, _, bl) = expand_case env sigma case in
   let p =
     (* Too bad we need to fetch this data in the environment, should be in the
       case_info instead. *)
@@ -454,7 +454,7 @@ let annotate_case env sigma (ci, u, pms, p, iv, c, bl as case) =
   in
   let mk_br c n = decompose_lambda_n_decls sigma n c in
   let bl = Array.map2 mk_br bl ci.ci_cstr_ndecls in
-  (ci, u, pms, p, iv, c, bl)
+  (ci, u, pms, (p,r), iv, c, bl)
 
 let expand_branch env _sigma u pms (ind, i) (nas, _br) =
   let open Declarations in
@@ -469,12 +469,12 @@ let expand_branch env _sigma u pms (ind, i) (nas, _br) =
   let ans : rel_context = match Evd.MiniEConstr.unsafe_eq with Refl -> ans in
   ans
 
-let contract_case env _sigma (ci, p, iv, c, bl) =
+let contract_case env _sigma (ci, (p,r), iv, c, bl) =
   let p = unsafe_to_constr p in
   let iv = unsafe_to_case_invert iv in
   let c = unsafe_to_constr c in
   let bl = unsafe_to_constr_array bl in
-  let (ci, u, pms, p, iv, c, bl) = Inductive.contract_case env (ci, p, iv, c, bl) in
+  let (ci, u, pms, p, iv, c, bl) = Inductive.contract_case env (ci, (p,r), iv, c, bl) in
   let u = EInstance.make u in
   let pms = of_constr_array pms in
   let p = of_return p in
@@ -497,7 +497,7 @@ let iter_with_full_binders env sigma g f n c =
     let l = Evd.expand_existential sigma ev in
     List.iter (fun c -> f n c) l
   | Case (ci,u,pms,p,iv,c,bl) ->
-    let (ci, _, pms, p, iv, c, bl) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+    let (ci, _, pms, (p,_), iv, c, bl) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
     let f_ctx (ctx, c) = f (List.fold_right g ctx n) c in
     Array.Fun1.iter f n pms; f_ctx p; iter_invert (f n) iv; f n c; Array.iter f_ctx bl
   | Proj (_,_,c) -> f n c
@@ -731,8 +731,8 @@ let fold_constr_relevance sigma f acc c =
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
 
-  | Case (ci,_u,_params,ret,_iv,_v,brs) ->
-    let acc = f acc ci.ci_relevance in
+  | Case (_,_u,_params,(ret,r),_iv,_v,brs) ->
+    let acc = f acc r in
     let acc = fold_case_under_context_relevance f acc ret in
     let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
     acc

@@ -69,8 +69,8 @@ let unif env evd t1 t2=
               Queue.add (a,c) bige;Queue.add (pop b,pop d) bige
           | Case (cia,ua,pmsa,pa,iva,ca,va),Case (cib,ub,pmsb,pb,ivb,cb,vb)->
             let env = Global.env () in
-            let (cia,pa,iva,ca,va) = EConstr.expand_case env evd (cia,ua,pmsa,pa,iva,ca,va) in
-            let (cib,pb,iva,cb,vb) = EConstr.expand_case env evd (cib,ub,pmsb,pb,ivb,cb,vb) in
+            let (cia,(pa,_),iva,ca,va) = EConstr.expand_case env evd (cia,ua,pmsa,pa,iva,ca,va) in
+            let (cib,(pb,_),iva,cb,vb) = EConstr.expand_case env evd (cib,ub,pmsb,pb,ivb,cb,vb) in
               Queue.add (pa,pb) bige;
               Queue.add (ca,cb) bige;
               let l=Array.length va in

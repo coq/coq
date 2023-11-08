@@ -218,7 +218,7 @@ let unify_relevance sigma r1 r2 =
     in
     Some sigma
 
-let judge_of_case env sigma case ci pj iv cj lfj =
+let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let ((ind, u), spec) =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj in
@@ -226,16 +226,18 @@ let judge_of_case env sigma case ci pj iv cj lfj =
   let () = if Inductive.is_private specif then Type_errors.error_case_on_private_ind env ind in
   let indspec = ((ind, EInstance.kind sigma u), spec) in
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
-  (* should we have evar map aware check_case_info and should_invert_case? *)
-  let sigma, ci =
-    if Sorts.relevance_equal ci.ci_relevance rci then sigma, ci
-    else match unify_relevance sigma ci.ci_relevance rci with
-    | None -> sigma, ci (* will fail in check_case_info *)
-    | Some sigma -> sigma, { ci with ci_relevance = rci }
+  (* should we have evar map aware should_invert_case? *)
+  let sigma, rp =
+    if Sorts.relevance_equal rp rci then sigma, rp
+    else match unify_relevance sigma rp rci with
+    | None ->
+      raise_type_error (env,sigma,Type_errors.BadCaseRelevance (rp, mkCase case))
+    | Some sigma -> sigma, rci
   in
-  let () = check_case_info env (fst indspec) rci ci in
+  let () = check_case_info env (fst indspec) ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
-  let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true) != should_invert_case env ci
+  let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
+              != should_invert_case env rp ci
     then Type_errors.error_bad_invert env
   in
   sigma, { uj_val  = mkCase case;
@@ -491,7 +493,7 @@ let rec execute env sigma cstr =
 
     | Case (ci, u, pms, p, iv, c, lf) ->
         let case = (ci, u, pms, p, iv, c, lf) in
-        let (ci, p, iv, c, lf) = EConstr.expand_case env sigma case in
+        let (ci, (p,rp), iv, c, lf) = EConstr.expand_case env sigma case in
         let sigma, cj = execute env sigma c in
         let sigma, pj = execute env sigma p in
         let sigma, lfj = execute_array env sigma lf in
@@ -505,7 +507,7 @@ let rec execute env sigma cstr =
             let sigma = check_actual_type env sigma cj tj.utj_val in
             sigma
         in
-        judge_of_case env sigma case ci pj iv cj lfj
+        judge_of_case env sigma case ci (pj,rp) iv cj lfj
 
     | Fix ((vn,i as vni),recdef) ->
         let sigma, (_,tys,_ as recdef') = execute_recdef env sigma recdef in
@@ -718,9 +720,9 @@ let rec recheck_against env sigma good c =
 
     | Case (gci, gu, gpms, gp, giv, gc, glf),
       Case (ci, u, pms, p, iv, c, lf) ->
-      let (gci, gp, giv, gc, glf) = EConstr.expand_case env sigma (gci, gu, gpms, gp, giv, gc, glf) in
+      let (gci, (gp,_), giv, gc, glf) = EConstr.expand_case env sigma (gci, gu, gpms, gp, giv, gc, glf) in
       let case = (ci, u, pms, p, iv, c, lf) in
-      let (ci, p, iv, c, lf) = EConstr.expand_case env sigma case in
+      let (ci, (p,rp), iv, c, lf) = EConstr.expand_case env sigma case in
       let sigma, changedc, cj = recheck_against env sigma gc c in
       let sigma, changedp, pj = recheck_against env sigma gp p in
       let (sigma, changedlf), lfj =
@@ -758,7 +760,7 @@ let rec recheck_against env sigma good c =
       in
       if unchanged changedc && unchanged changedp && unchanged changediv && bodyonly changedlf
       then assume_unchanged_type sigma
-      else maybe_changed (judge_of_case env sigma case ci pj iv cj lfj)
+      else maybe_changed (judge_of_case env sigma case ci (pj,rp) iv cj lfj)
 
     | Proj (gp, _, gc),
       Proj (p, _, c) ->

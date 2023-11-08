@@ -187,14 +187,14 @@ let pattern_of_constr ~broken env sigma t =
       | _ ->
         PMeta None)
     | Case (ci, u, pms, p0, iv, a, br0) ->
-        let (ci, p, iv, a, br) = Inductive.expand_case env (ci, u, pms, p0, iv, a, br0) in
+        let (ci, (p,_), iv, a, br) = Inductive.expand_case env (ci, u, pms, p0, iv, a, br0) in
         let pattern_of_ctx c (nas, c0) =
           let ctx, c = Term.decompose_lambda_n_decls (Array.length nas) c in
           let env = push_rel_context ctx env in
           let c = pattern_of_constr env c in
           (Array.map Context.binder_name nas, c)
         in
-        let p = pattern_of_ctx p p0 in
+        let p = pattern_of_ctx p (fst p0) in
         let cip =
           { cip_style = ci.ci_pp_info.style;
             cip_ind = Some ci.ci_ind;

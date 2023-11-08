@@ -356,7 +356,12 @@ let expand_arity (mib, mip) (ind, u) params nas =
   let realdecls = LocalAssum (na, self) :: realdecls in
   instantiate_context u params nas realdecls
 
-let expand_case_specif mib (ci, u, params, p, iv, c, br) =
+type ('constr,'types) pexpanded_case =
+  (case_info * ('constr * Sorts.relevance) * 'constr pcase_invert * 'constr * 'constr array)
+
+type expanded_case = (constr,types) pexpanded_case
+
+let expand_case_specif mib (ci, u, params, (p,rp), iv, c, br) =
   (* Γ ⊢ c : I@{u} params args *)
   (* Γ, indices, self : I@{u} params indices ⊢ p : Type *)
   let mip = mib.mind_packets.(snd ci.ci_ind) in
@@ -377,13 +382,13 @@ let expand_case_specif mib (ci, u, params, p, iv, c, br) =
     in
     Array.map2_i build_one_branch br mip.mind_nf_lc
   in
-  (ci, ep, iv, c, ebr)
+  (ci, (ep,rp), iv, c, ebr)
 
 let expand_case env (ci, _, _, _, _, _, _ as case) =
   let specif = Environ.lookup_mind (fst ci.ci_ind) env in
   expand_case_specif specif case
 
-let contract_case env (ci, p, iv, c, br) =
+let contract_case env (ci, (p,rp), iv, c, br) =
   let (mib, mip) = lookup_mind_specif env ci.ci_ind in
   let (arity, p) = Term.decompose_lambda_n_decls (mip.mind_nrealdecls + 1) p in
   let (u, pms) = match arity with
@@ -401,7 +406,7 @@ let contract_case env (ci, p, iv, c, br) =
   in
   let p =
     let nas = Array.of_list (List.rev_map get_annot arity) in
-    (nas, p)
+    ((nas, p),rp)
   in
   let map i br =
     let (ctx, br) = Term.decompose_lambda_n_decls mip.mind_consnrealdecls.(i) br in
@@ -434,14 +439,13 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
 (************************************************************************)
 (* Checking the case annotation is relevant *)
 
-let check_case_info env (indsp,u) r ci =
+let check_case_info env (indsp,u) ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
     not (QInd.equal env indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
-    not (Sorts.relevance_equal ci.ci_relevance r) ||
     is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
 
@@ -905,7 +909,7 @@ let rec subterm_specif renv stack t =
     match kind f with
     | Rel k -> subterm_var k renv
     | Case (ci, u, pms, p, iv, c, lbr) -> (* iv ignored: it's just a cache *)
-      let (ci, p, _iv, c, lbr) = expand_case renv.env (ci, u, pms, p, iv, c, lbr) in
+      let (ci, (p,_), _iv, c, lbr) = expand_case renv.env (ci, u, pms, p, iv, c, lbr) in
        let stack' = push_stack_closures renv l stack in
        let cases_spec =
          branches_specif renv (lazy_subterm_specif renv [] c) ci
@@ -1164,7 +1168,7 @@ let check_one_fix renv recpos trees def =
             end
 
         | Case (ci, u, pms, ret, iv, c_0, br) -> (* iv ignored: it's just a cache *)
-            let (ci, p, _iv, c_0, brs) = expand_case renv.env (ci, u, pms, ret, iv, c_0, br) in
+            let (ci, (p,_), _iv, c_0, brs) = expand_case renv.env (ci, u, pms, ret, iv, c_0, br) in
             let needreduce_c_0, rs = check_rec_call renv rs c_0 in
             let rs = check_inert_subterm_rec_call renv rs p in
             (* compute the recarg info for the arguments of each branch *)
@@ -1536,7 +1540,7 @@ let check_one_cofix env nbfix def deftype =
 
         | Case (ci, u, pms, p, iv, tm, br) -> (* iv ignored: just a cache *)
           begin
-            let (_, p, _iv, tm, vrest) = expand_case env (ci, u, pms, p, iv, tm, br) in
+            let (_, (p,_), _iv, tm, vrest) = expand_case env (ci, u, pms, p, iv, tm, br) in
             let tree = match restrict_spec env (Subterm (Int.Set.empty, Strict, tree)) p with
             | Dead_code -> assert false
             | Subterm (_, _, tree') -> tree'

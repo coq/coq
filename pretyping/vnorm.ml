@@ -302,12 +302,12 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type (pctx, p) realargs c in
       let p = (get_case_annot pctx, p) in
-      let ci = Inductiveops.make_case_info env ind relevance RegularStyle in
-      let iv = if Typeops.should_invert_case env ci then
+      let ci = Inductiveops.make_case_info env ind RegularStyle in
+      let iv = if Typeops.should_invert_case env relevance ci then
           CaseInvert {indices=realargs}
         else NoInvert
       in
-      nf_stk env sigma (mkCase (ci, u, params, p, iv, c, branchs)) tcase stk
+      nf_stk env sigma (mkCase (ci, u, params, (p,relevance), iv, c, branchs)) tcase stk
   | Zproj p :: stk ->
     let () = assert (from = 0) in
     let ((ind, u), args) = Inductiveops.find_mrectype env sigma (EConstr.of_constr t) in

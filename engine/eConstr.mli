@@ -428,10 +428,10 @@ val is_global : Environ.env -> Evd.evar_map -> GlobRef.t -> t -> bool
 [@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
 
 val expand_case : Environ.env -> Evd.evar_map ->
-  case -> (case_info * t * case_invert * t * t array)
+  case -> (t,t) Inductive.pexpanded_case
 
 val annotate_case : Environ.env -> Evd.evar_map -> case ->
-  case_info * EInstance.t * t array * (rel_context * t) * case_invert * t * (rel_context * t) array
+  case_info * EInstance.t * t array * ((rel_context * t) * Sorts.relevance) * case_invert * t * (rel_context * t) array
 (** Same as above, but doesn't turn contexts into binders *)
 
 val expand_branch : Environ.env -> Evd.evar_map ->
@@ -440,7 +440,7 @@ val expand_branch : Environ.env -> Evd.evar_map ->
     constructs the typed context in which the branch lives. *)
 
 val contract_case : Environ.env -> Evd.evar_map ->
-  (case_info * t * case_invert * t * t array) -> case
+  (t,t) Inductive.pexpanded_case -> case
 
 (** {5 Extra} *)
 

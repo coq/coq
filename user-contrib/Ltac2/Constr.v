@@ -62,7 +62,7 @@ Ltac2 Type kind := [
 | Constant (constant, instance)
 | Ind (inductive, instance)
 | Constructor (constructor, instance)
-| Case (case, constr, case_invert, constr, constr array)
+| Case (case, (constr * Binder.relevance), case_invert, constr, constr array)
 | Fix (int array, int, binder array, constr array)
 | CoFix (int, binder array, constr array)
 | Proj (projection, Binder.relevance, constr)
@@ -116,7 +116,7 @@ Ltac2 constructor (ind : inductive) (i : int) : constructor :=
 
 Module Case.
   Ltac2 @ external equal : case -> case -> bool := "coq-core.plugins.ltac2" "constr_case_equal".
-  (** Checks equality of the inductive and relevance components of the
+  (** Checks equality of the inductive components of the
       case info. When comparing the inductives, those obtained through
       module aliases or Include are not considered equal by this
       function. *)

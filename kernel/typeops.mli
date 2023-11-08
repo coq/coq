@@ -135,6 +135,6 @@ type ('constr,'types) bad_relevance =
 val bad_relevance_msg : (env * (constr,types) bad_relevance) CWarnings.msg
 (** Used by the higher layers to register a nicer printer than the default. *)
 
-val should_invert_case : env -> case_info -> bool
+val should_invert_case : env -> Sorts.relevance -> case_info -> bool
 (** We have case inversion exactly when going from irrelevant nonempty
    (ie 1 constructor) inductive to relevant type. *)

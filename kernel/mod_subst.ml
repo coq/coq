@@ -355,7 +355,7 @@ let rec map_kn f f' c =
       | Construct (((kn,i),j),u) ->
           let kn' = f kn in
           if kn'==kn then c else mkConstructU (((kn',i),j),u)
-      | Case (ci,u,pms,p,iv,ct,l) ->
+      | Case (ci,u,pms,(p,r),iv,ct,l) ->
           let ci_ind =
             let (kn,i) = ci.ci_ind in
             let kn' = f kn in
@@ -374,7 +374,7 @@ let rec map_kn f f' c =
                 && l'==l && ct'==ct)then c
             else
               mkCase ({ci with ci_ind = ci_ind}, u,
-                      pms',p',iv',ct', l')
+                      pms',(p',r),iv',ct', l')
       | Cast (ct,k,t) ->
           let ct' = func ct in
           let t'= func t in

@@ -264,11 +264,6 @@ let usubst_binder e x =
   let r' = usubst_relevance e r in
   if r == r' then x else { x with binder_relevance = r' }
 
-let usubst_case_info e ci =
-  let r = ci.ci_relevance in
-  let r' = usubst_relevance e r in
-  if r == r' then ci else { ci with ci_relevance = r' }
-
 let mk_lambda env t =
   let (rvars,t') = Term.decompose_lambda t in
   FLambda(List.length rvars, List.rev rvars, t', env)
@@ -534,11 +529,11 @@ let rec to_constr (lfts, usubst as ulfts) v =
     | FIrrelevant -> assert (!Flags.in_debugger); mkVar(Id.of_string"_IRRELEVANT_")
     | FLOCKED -> assert (!Flags.in_debugger); mkVar(Id.of_string"_LOCKED_")
 
-and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
+and to_constr_case (lfts,_ as ulfts) ci u pms (p,r) iv c ve env =
   let subs = comp_subs ulfts env in
-  let ci = usubst_case_info subs ci in
+  let r = usubst_relevance subs r in
   if is_subs_id (fst env) && is_lift_id lfts then
-    mkCase (ci, usubst_instance subs u, pms, p, iv, to_constr ulfts c, ve)
+    mkCase (ci, usubst_instance subs u, pms, (p,r), iv, to_constr ulfts c, ve)
   else
     let f_ctx (nas, c) =
       let nas = Array.map (usubst_binder subs) nas in
@@ -548,7 +543,7 @@ and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
     mkCase (ci,
             usubst_instance subs u,
             Array.map (fun c -> subst_constr subs c) pms,
-            f_ctx p,
+            (f_ctx p,r),
             iv,
             to_constr ulfts c,
             Array.map f_ctx ve)
@@ -1215,8 +1210,8 @@ let rec skip_irrelevant_stack info stk = match stk with
 | (Zfix _ | Zproj _) :: s ->
   (* Typing rules ensure that fix / proj over SProp is irrelevant *)
   skip_irrelevant_stack info s
-| ZcaseT (ci, _, _, _, _, e) :: s ->
-  let r = usubst_relevance e ci.ci_relevance in
+| ZcaseT (_, _, _, (_,r), _, e) :: s ->
+  let r = usubst_relevance e r in
   if is_irrelevant info r then skip_irrelevant_stack info s
   else stk
 | Zprimitive _ :: _ -> assert false (* no irrelevant primitives so far *)
@@ -1240,9 +1235,9 @@ let rec knh info m stk =
     | FCLOS(t,e) -> knht info e t (zupdate info m stk)
     | FLOCKED -> assert false
     | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
-    | FCaseT(ci,u,pms,p,t,br,e) ->
-      let r = usubst_relevance e ci.ci_relevance in
-      if is_irrelevant info r then
+    | FCaseT(ci,u,pms,(_,r as p),t,br,e) ->
+      let r' = usubst_relevance e r in
+      if is_irrelevant info r' then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         knh info t (ZcaseT(ci,u,pms,p,br,e)::zupdate info m stk)
@@ -1271,13 +1266,13 @@ and knht info e t stk =
   match kind t with
     | App(a,b) ->
         knht info e a (append_stack (mk_clos_vect e b) stk)
-    | Case(ci,u,pms,p,NoInvert,t,br) ->
-      if is_irrelevant info (usubst_relevance e ci.ci_relevance) then
+    | Case(ci,u,pms,(_,r as p),NoInvert,t,br) ->
+      if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         knht info e t (ZcaseT(ci, u, pms, p, br, e)::stk)
-    | Case(ci,u,pms,p,CaseInvert{indices},t,br) ->
-      if is_irrelevant info (usubst_relevance e ci.ci_relevance) then
+    | Case(ci,u,pms,(_,r as p),CaseInvert{indices},t,br) ->
+      if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         let term = FCaseInvert (ci, u, pms, p, (Array.map (mk_clos e) indices), mk_clos e t, br, e) in
@@ -1572,15 +1567,15 @@ and zip_term info tab m stk = match stk with
 | [] -> m
 | Zapp args :: s ->
     zip_term info tab (mkApp(m, Array.map (kl info tab) args)) s
-| ZcaseT(ci, u, pms, p, br, e) :: s ->
+| ZcaseT(ci, u, pms, (p,r), br, e) :: s ->
   let zip_ctx (nas, c) =
       let nas = Array.map (usubst_binder e) nas in
       let e = usubs_liftn (Array.length nas) e in
       (nas, klt info tab e c)
     in
-    let ci = usubst_case_info e ci in
+    let r = usubst_relevance e r in
     let u = usubst_instance e u in
-    let t = mkCase(ci, u, Array.map (fun c -> klt info tab e c) pms, zip_ctx p,
+    let t = mkCase(ci, u, Array.map (fun c -> klt info tab e c) pms, (zip_ctx p, r),
       NoInvert, m, Array.map zip_ctx br) in
     zip_term info tab t s
 | Zproj (p,r)::s ->

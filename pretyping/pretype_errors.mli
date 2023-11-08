@@ -77,6 +77,11 @@ exception PretypeError of env * Evd.evar_map * pretype_error
 val precatchable_exception : exn -> bool
 
 (** Raising errors *)
+val raise_type_error
+  : ?loc:Loc.t
+  -> Environ.env * Evd.evar_map * type_error
+  -> 'a
+
 val error_actual_type :
   ?loc:Loc.t -> ?info:Exninfo.info -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
       unification_error -> 'b

@@ -293,7 +293,7 @@ let check_not_nested env sigma forbidden e =
     | Const _ -> ()
     | Ind _ -> ()
     | Construct _ -> ()
-    | Case (_, _, pms, (_, t), _, e, a) ->
+    | Case (_, _, pms, ((_, t), _), _, e, a) ->
       Array.iter check_not_nested pms;
       check_not_nested t;
       check_not_nested e;
@@ -359,7 +359,7 @@ type journey_info =
           -> constr infos
           -> unit Proofview.tactic)
       -> ( case_info
-           * constr
+           * (constr * Sorts.relevance)
            * case_invert
            * constr
            * constr array
@@ -766,7 +766,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
         try
           check_not_nested env sigma
             (expr_info.f_id :: expr_info.forbidden_ids)
-            a;
+            (fst a);
           false
         with e when CErrors.noncritical e -> true
       in

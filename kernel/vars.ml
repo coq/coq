@@ -281,11 +281,6 @@ let map_annot_relevance f na =
   let r' = f r in
   if r' == r then na else { na with binder_relevance = r' }
 
-let map_case_info_relevance f ci =
-  let r = ci.ci_relevance in
-  let r' = f r in
-  if r' == r then ci else { ci with ci_relevance = r' }
-
 let map_case_under_context_relevance f (nas,x as v) =
   let nas' = CArray.Smart.map (map_annot_relevance f) nas in
   if nas' == nas then v else (nas',x)
@@ -313,12 +308,12 @@ let map_constr_relevance f c =
     let na' = map_annot_relevance f na in
     if na' == na then c else mkLetIn (na',x,y,z)
 
-  | Case (ci,u,params,ret,iv,v,brs) ->
-    let ci' = map_case_info_relevance f ci in
+  | Case (ci,u,params,(ret,r),iv,v,brs) ->
+    let r' = f r in
     let ret' = map_case_under_context_relevance f ret in
     let brs' = CArray.Smart.map (map_case_under_context_relevance f) brs in
-    if ci' == ci && ret' == ret && brs' == brs then c
-    else mkCase (ci',u,params,ret',iv,v,brs')
+    if r' == r && ret' == ret && brs' == brs then c
+    else mkCase (ci,u,params,(ret',r'),iv,v,brs')
 
   | Fix data ->
     let data' = map_rec_declaration_relevance f data in
@@ -351,8 +346,8 @@ let fold_constr_relevance f acc c =
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
 
-  | Case (ci,_u,_params,ret,_iv,_v,brs) ->
-    let acc = f acc ci.ci_relevance in
+  | Case (_,_u,_params,(ret,r),_iv,_v,brs) ->
+    let acc = f acc r in
     let acc = fold_case_under_context_relevance f acc ret in
     let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
     acc

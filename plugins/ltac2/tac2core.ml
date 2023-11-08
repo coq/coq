@@ -526,7 +526,7 @@ let () =
     let (ci, c, iv, t, bl) = EConstr.expand_case env sigma (ci, u, pms, c, iv, t, bl) in
     v_blk 13 [|
       Tac2ffi.of_ext Tac2ffi.val_case ci;
-      Tac2ffi.of_constr c;
+      Tac2ffi.(of_pair of_constr of_relevance c);
       of_case_invert iv;
       Tac2ffi.of_constr t;
       Tac2ffi.of_array Tac2ffi.of_constr bl;
@@ -619,7 +619,7 @@ let () =
     EConstr.mkConstructU (cstr, u)
   | (13, [|ci; c; iv; t; bl|]) ->
     let ci = Tac2ffi.to_ext Tac2ffi.val_case ci in
-    let c = Tac2ffi.to_constr c in
+    let c = Tac2ffi.(to_pair to_constr to_relevance c) in
     let iv = to_case_invert iv in
     let t = Tac2ffi.to_constr t in
     let bl = Tac2ffi.to_array Tac2ffi.to_constr bl in
@@ -691,7 +691,7 @@ let () =
   define "constr_case" (inductive @-> tac valexpr) @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   try
-    let ans = Inductiveops.make_case_info env ind Sorts.Relevant Constr.RegularStyle in
+    let ans = Inductiveops.make_case_info env ind Constr.RegularStyle in
     return (Tac2ffi.of_ext Tac2ffi.val_case ans)
   with e when CErrors.noncritical e ->
     throw err_notfound
@@ -804,8 +804,7 @@ let () =
 let () =
   let ty = repr_ext val_case in
   define "constr_case_equal" (ty @-> ty @-> ret bool) @@ fun x y ->
-  Ind.UserOrd.equal x.ci_ind y.ci_ind &&
-  Sorts.relevance_equal x.ci_relevance y.ci_relevance
+  Ind.UserOrd.equal x.ci_ind y.ci_ind
 let () =
   let ty = repr_ext val_constructor in
   define "constructor_equal" (ty @-> ty @-> ret bool) Construct.UserOrd.equal

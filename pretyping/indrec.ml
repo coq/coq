@@ -192,8 +192,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
     let depind = build_dependent_inductive !!env indf' in
     let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
 
-    let rci = relevance in
-    let ci = make_case_info !!env (fst pind) rci RegularStyle in
+    let ci = make_case_info !!env (fst pind) RegularStyle in
     let pbody =
       appvect
         (mkRel (ndepar + nbprod),
@@ -209,7 +208,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
         let iv =
-          if Typeops.should_invert_case !!env ci then
+          if Typeops.should_invert_case !!env relevance ci then
             CaseInvert { indices = Context.Rel.instance mkRel 1 arsign }
           else NoInvert
         in
@@ -225,7 +224,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
         in
         let br = Array.init ncons mk_branch in
         let pnas = Array.of_list (List.rev_map get_annot pctx) in
-        let obj = mkCase (ci, u, pms, (pnas, liftn ndepar (ndepar + 1) pbody), iv, mkRel 1, br) in
+        let obj = mkCase (ci, u, pms, ((pnas, liftn ndepar (ndepar + 1) pbody), relevance), iv, mkRel 1, br) in
         sigma, obj, pbody
       | Some ps ->
         let term =
@@ -503,8 +502,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             (* body of i-th component of the mutual fixpoint *)
             let target_relevance = Sorts.relevance_of_sort_family target_sort in
             let deftyi =
-              let rci = target_relevance in
-              let ci = make_case_info !!env indi rci RegularStyle in
+              let ci = make_case_info !!env indi RegularStyle in
               let concl = applist (mkRel (dect+j+ndepar),pargs) in
               let pred =
                 it_mkLambda_or_LetIn_name env
@@ -514,8 +512,9 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               in
               let obj =
                 let indty = find_rectype !!env sigma (EConstr.of_constr depind) in
-                Inductiveops.make_case_or_project !!env !evdref indty ci (EConstr.of_constr pred)
-                                                  (EConstr.mkRel 1) (Array.map EConstr.of_constr branches)
+                Inductiveops.make_case_or_project !!env !evdref indty ci
+                  (EConstr.of_constr pred, target_relevance)
+                  (EConstr.mkRel 1) (Array.map EConstr.of_constr branches)
               in
               let obj = EConstr.to_constr !evdref obj in
                 it_mkLambda_or_LetIn_name env obj

@@ -438,12 +438,12 @@ let build_beq_scheme env handle kn =
     (* The restricted translation translates only types *)
     | Lambda _ | Construct _ -> assert false
 
-    | Case (ci, u, pms, (pnames,p), iv, tm, lbr) ->
+    | Case (ci, u, pms, ((pnames,p),r), iv, tm, lbr) ->
       let env_lift_pred = shiftn_env_lift (Array.length pnames) env_lift in
       let t =
         mkCase (ci, u,
           Array.map (translate_term env_lift_pred) pms,
-          translate_term_with_binders env_lift_pred (pnames,p),
+          (translate_term_with_binders env_lift_pred (pnames,p), r),
           Constr.map_invert (translate_term env_lift_pred) iv,
           mkRel 1,
           Array.map (translate_term_with_binders env_lift_pred) lbr) in
@@ -458,7 +458,7 @@ let build_beq_scheme env handle kn =
         | Some t_eq -> Some (names, mkLambda (na, t, t_eq))) lbr in
       if Array.for_all Option.has_some lbr then
         let lbr = Array.map Option.get lbr in
-        let case = mkCase (ci, u, pms, (pnames, p), iv, translate_term env_lift tm, lbr) in
+        let case = mkCase (ci, u, pms, ((pnames, p), r), iv, translate_term env_lift tm, lbr) in
         Some (mkApp (case, [|c|]))
       else
         None
@@ -550,14 +550,14 @@ let build_beq_scheme env handle kn =
        translate_type_eq, preserve the types in Construct/CoFix *)
     | Proj _ | Construct _ | CoFix _ -> None
 
-    | Case (ci, u, pms, (pnames,p), iv, tm, lbr) ->
+    | Case (ci, u, pms, ((pnames,p), r), iv, tm, lbr) ->
       let pctx = pred_context env ci pms u pnames in
       let env_lift_pred = List.fold_right push_env_lift pctx env_lift in
       let n = Array.length pnames in
       let c =
         mkCase (ci, u,
           Array.map (lift n) pms,
-          (pnames, liftn n (n+1) p),
+          ((pnames, liftn n (n+1) p), r),
           Constr.map_invert (lift n) iv,
           mkRel 1,
           Array.map (fun (names, br) -> (names, let q = Array.length names in liftn n (n+q+1) br)) lbr) in
@@ -570,7 +570,7 @@ let build_beq_scheme env handle kn =
         | Some t_eq -> Some (names, t_eq)) lbr in
       if Array.for_all Option.has_some lbr && Option.has_some p then
         let lbr = Array.map Option.get lbr in
-        Some (mkCase (ci, u, pms, (pnames, Option.get p), iv, translate_term env_lift tm, lbr))
+        Some (mkCase (ci, u, pms, ((pnames, Option.get p), r), iv, translate_term env_lift tm, lbr))
       else
         None
 
@@ -773,7 +773,7 @@ let build_beq_scheme env handle kn =
         make_andb_list eqs
       | None ->
         (* An inductive type *)
-        let ci = make_case_info env ind rci MatchStyle in
+        let ci = make_case_info env ind MatchStyle in
         let nconstr = Array.length constrs in
         let ar =
           Array.init nconstr (fun i ->
@@ -810,7 +810,7 @@ let build_beq_scheme env handle kn =
           let predj = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch_csargsi pred) in
           let case =
             simple_make_case_or_project env (Evd.from_env env)
-              ci predj NoInvert (EConstr.mkRel (nb_cstr_args + 1))
+              ci (predj,rci) NoInvert (EConstr.mkRel (nb_cstr_args + 1))
               (EConstr.of_constr_array ar2)
           in
           let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch constrs.(i).cs_args in
@@ -819,7 +819,7 @@ let build_beq_scheme env handle kn =
         let predi = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch pred) in
         let case =
           simple_make_case_or_project env (Evd.from_env env)
-            ci predi NoInvert (EConstr.mkRel 2)
+            ci (predi,rci) NoInvert (EConstr.mkRel 2)
             (EConstr.of_constr_array ar) in
         EConstr.Unsafe.to_constr case
     in

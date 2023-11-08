@@ -272,7 +272,7 @@ let iter_constr_LR sigma f c = match EConstr.kind sigma c with
   | Prod (_, t, b) | Lambda (_, t, b)  -> f t; f b
   | LetIn (_, v, t, b) -> f v; f t; f b
   | App (cf, a) -> f cf; Array.iter f a
-  | Case (_, _, pms, (_, p), iv, v, b) ->
+  | Case (_, _, pms, ((_, p), _), iv, v, b) ->
     f v; Array.iter f pms; f p; iter_invert f iv; Array.iter (fun (_, c) -> f c) b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done

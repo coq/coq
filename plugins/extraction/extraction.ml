@@ -1075,10 +1075,10 @@ let fake_match_projection env p =
     ci_npar = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
-    ci_relevance = relevance_of_projection_repr mib p;
     ci_pp_info;
   }
   in
+  let relevance = relevance_of_projection_repr mib p in
   let x = match mib.mind_record with
     | NotRecord | FakeRecord -> assert false
     | PrimRecord info ->
@@ -1101,7 +1101,7 @@ let fake_match_projection env p =
           (nas, mkRel (List.length ctx - (j - 1)))
         in
         let params = Context.Rel.instance mkRel 1 paramslet in
-        let body = mkCase (ci, u, params, p, NoInvert, mkRel 1, [|branch|]) in
+        let body = mkCase (ci, u, params, (p,relevance), NoInvert, mkRel 1, [|branch|]) in
         it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
     | LocalDef (_,c,t) :: rem ->
       let c = liftn 1 j c in

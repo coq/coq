@@ -405,7 +405,7 @@ let matches_core env sigma allow_bound_rels
             raise PatternMatchingFailure
 
       | PCase (ci1, p1, a1, br1), Case (ci2, u2, pms2, p2, iv, a2, br2) ->
-          let (_, _, _, p2, _, _, br2) = EConstr.annotate_case env sigma (ci2, u2, pms2, p2, iv, a2, br2) in
+          let (_, _, _, (p2,_), _, _, br2) = EConstr.annotate_case env sigma (ci2, u2, pms2, p2, iv, a2, br2) in
           let n2 = Array.length br2 in
           let () = match ci1.cip_ind with
           | None -> ()
@@ -577,7 +577,7 @@ let sub_match ?(closed=true) env sigma pat c =
      try_aux [(env, app); (env, Array.last lc)] mk_ctx next
   | Case (ci,u,pms,hd0,iv,c1,lc0) ->
       let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
-      let (_, hd, _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
+      let (_, (hd,hdr), _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
       let hd =
         let (ctx, hd) = decompose_lambda_decls sigma hd in
         (push_rel_context ctx env, hd)
@@ -593,9 +593,9 @@ let sub_match ?(closed=true) env sigma pat c =
         let pms, rem = List.chop (Array.length pms) rem in
         let pms = Array.of_list pms in
         let hd, lc = match rem with [] -> assert false | x :: l -> (x, l) in
-        let hd = (fst hd0, hd) in
+        let hd = (fst (fst hd0), hd) in
         let map_br (nas, _) br = (nas, br) in
-        mk_ctx (mkCase (ci,u,pms,hd,iv,c1,Array.map2 map_br lc0 (Array.of_list lc)))
+        mk_ctx (mkCase (ci,u,pms,(hd,hdr),iv,c1,Array.map2 map_br lc0 (Array.of_list lc)))
       | _ -> assert false
       in
       let sub = (env, c1) :: Array.fold_right (fun c accu -> (env, c) :: accu) pms (hd :: lc) in
