@@ -477,6 +477,18 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           else (* Two projections in WHNF: unfold *)
             raise NotConvertible)
 
+    | (FProj (p1,_r1,c1), FFlex(ConstKey (p2,_))) when Names.Constant.CanOrd.equal (Names.Projection.constant p1) p2 ->
+      (* TODO: relevance *)
+      let v1 = CClosure.append_stack [|c1|] v1 in
+      let v2 = CClosure.drop_parameters 0 (Names.Projection.npars p1) v2 in
+      convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+
+    | (FFlex(ConstKey (p1,_)), FProj (p2,_r2,c2)) when Names.Constant.CanOrd.equal p1 (Names.Projection.constant p2) ->
+      (* TODO: relevance *)
+      let v1 = CClosure.drop_parameters 0 (Names.Projection.npars p2) v1 in
+      let v2 = CClosure.append_stack [|c2|] v2 in
+      convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+
     | (FProj (p1,r1,c1), t2) ->
       begin match unfold_projection infos.cnv_inf p1 r1 with
        | Some s1 ->
