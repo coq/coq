@@ -10,11 +10,11 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.17 *)
 
+Local Set Warnings "-masking-absolute-name".
+
 Require Export Coq.Compat.Coq818.
 
 Require Coq.Lists.ListSet.
-
-Local Set Warnings "-masking-absolute-name".
 
 Module Export Coq.
   Module Export Lists.
