@@ -385,7 +385,7 @@ create_opam() {
         if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
 
         _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path --with-test $package.dev . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
@@ -416,8 +416,8 @@ create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_opam_archive_
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
-# Deliberately don't include the dummy "coq" package
-installable_coq_opam_packages="coq-core coq-stdlib"
+# Deliberately don't include the "coqide-server" package
+installable_coq_opam_packages="coq-core coq-stdlib coq"
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
