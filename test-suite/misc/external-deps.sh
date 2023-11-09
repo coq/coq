@@ -2,26 +2,28 @@
 
 set -e
 
-tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
-
 # Set Extra Dependency syntax
-$coqdep -Q misc/external-deps/deps foo.bar misc/external-deps/file1.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file1.found.deps $tmpoutput
+output=misc/external-deps/file1.found.real
+$coqdep -Q misc/external-deps/deps foo.bar misc/external-deps/file1.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file1.found.deps $output
 
-$coqdep -Q misc/external-deps/deps foo.bar -Q misc/external-deps/more foo.bar misc/external-deps/file1.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file1.ambiguous.deps $tmpoutput
+output=misc/external-deps/file1.ambiguous.real
+$coqdep -Q misc/external-deps/deps foo.bar -Q misc/external-deps/more foo.bar misc/external-deps/file1.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file1.ambiguous.deps $output
 
-$coqdep misc/external-deps/file1.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file1.notfound.deps $tmpoutput
+output=misc/external-deps/file1.notfound.real
+$coqdep misc/external-deps/file1.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file1.notfound.deps $output
 
 # From bla Extra Dependency syntax
-$coqdep -Q misc/external-deps/deps foo.bar misc/external-deps/file2.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file2.found.deps $tmpoutput
+output=misc/external-deps/file2.found.real
+$coqdep -Q misc/external-deps/deps foo.bar misc/external-deps/file2.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file2.found.deps $output
 
-$coqdep -Q misc/external-deps/deps foo.bar -Q misc/external-deps/more foo.bar misc/external-deps/file2.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file2.ambiguous.deps $tmpoutput
+output=misc/external-deps/file2.ambiguous.real
+$coqdep -Q misc/external-deps/deps foo.bar -Q misc/external-deps/more foo.bar misc/external-deps/file2.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file2.ambiguous.deps $output
 
-$coqdep misc/external-deps/file2.v > $tmpoutput 2>&1
-diff -u --strip-trailing-cr misc/external-deps/file2.notfound.deps $tmpoutput
-
-rm -f $tmpoutput
+output=misc/external-deps/file2.notfound.real
+$coqdep misc/external-deps/file2.v > $output 2>&1
+diff -u --strip-trailing-cr misc/external-deps/file2.notfound.deps $output
