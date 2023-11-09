@@ -1,14 +1,7 @@
 build: [
   ["dune" "subst"] {dev}
-  # need to run configure as in coq-core, or else dunestrap will
-  # use the default rule in config
-  [ "./configure"
-    "-prefix" prefix
-    "-mandir" man
-    "-libdir" "%{lib}%/coq"
-    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
-  ]
-  [ make "dunestrap" "COQ_DUNE_EXTRA_OPT=-split" ]
+  # We tell dunestrap to use coq-config from coq-core
+  [ make "dunestrap" "COQ_DUNE_EXTRA_OPT=-split" "DUNESTRAPOPT=-p coq-stdlib"]
   [
     "dune"
     "build"
