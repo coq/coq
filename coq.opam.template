@@ -1,0 +1,22 @@
+build: [
+  ["dune" "subst"] {dev}
+  [ "./configure"
+    "-prefix" prefix
+    "-mandir" man
+    "-libdir" "%{lib}%/coq"
+    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+  ] {with-test}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "--promote-install-files=false"
+    "@install"
+    "@doc" {with-doc}
+  ]
+  [ make "-C" "test-suite" "-j" jobs "COQ_INSTALLED=1" "PRINT_LOGS=1" ] {with-test}
+  ["dune" "install" "-p" name "--create-install-files" name]
+]

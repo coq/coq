@@ -37,11 +37,9 @@ endif
 # Variables
 #######################################################################
 
-# Using quotes to anticipate the possibility of spaces in the directory name
+# COQPREFIX is quoted to anticipate the possibility of spaces in the directory name
 # Note that this will later need an eval in shell to interpret the quotes
-ROOT='$(shell cd ..; pwd)'
-
-BIN:=$(ROOT)/_build/install/default/bin/
+BIN:=$(COQPREFIX)/bin/
 
 # An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
 ifeq ($(ARCH),win32)
