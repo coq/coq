@@ -100,7 +100,7 @@ let check_parameters_must_be_named = function
   | CLocalAssum (ls, bk, _ce) ->
     List.iter (error_parameters_must_be_named bk) ls
   | CLocalPattern {CAst.loc} ->
-    Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed in record parameters")
+    Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed in record parameters")
 
 (** [DataI.t] contains the information used in record interpretation,
    it is a strict subset of [Ast.t] thus this should be

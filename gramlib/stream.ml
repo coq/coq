@@ -24,7 +24,6 @@ and buffio =
   { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
 
 exception Failure
-exception Error of string
 
 let count { count } = count
 
