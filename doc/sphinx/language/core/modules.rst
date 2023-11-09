@@ -299,7 +299,7 @@ are now available through the dot notation.
 
    - ``notations`` corresponding to :cmd:`Notation` (including
      :cmd:`Reserved Notation`), scope controls (:cmd:`Delimit Scope`,
-     :cmd:`Bind Scope`, :cmd:`Open Scope`) and :ref:`Abbreviations`.
+     :cmd:`Bind Scope`, :cmd:`Open Scope`) but not :ref:`Abbreviations`.
 
    - ``ltac.notations`` corresponding to :cmd:`Tactic Notation`.
 
