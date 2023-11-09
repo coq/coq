@@ -757,6 +757,28 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
 
+  Lemma Add_transpose_neqkey : forall k1 k2 e1 e2 m1 m2 m3,
+    ~ E.eq k1 k2 -> Add k1 e1 m1 m2 -> Add k2 e2 m2 m3 ->
+    { m | Add k2 e2 m1 m /\ Add k1 e1 m m3 }.
+  Proof.
+  intros.
+  exists (add k2 e2 m1).
+  split.
+
+  easy.
+
+  unfold Add; intros.
+  rewrite H1.
+  destruct (E.eq_dec k1 y).
+  - assert (~ E.eq k2 y).
+     contradict H.
+     apply E.eq_trans with (y:=y); auto.
+    now rewrite add_neq_o, add_eq_o, H0, add_eq_o by assumption.
+  - destruct (E.eq_dec k2 y).
+    + now rewrite add_eq_o, add_neq_o, add_eq_o by assumption.
+    + now rewrite add_neq_o, H0, add_neq_o, add_neq_o, add_neq_o by assumption.
+  Qed.
+
   Notation eqke := (@eq_key_elt elt).
   Notation eqk := (@eq_key elt).
 
@@ -1238,6 +1260,40 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ _ => S) x e).
   apply fold_Add with (eqA:=eq); compute; auto.
+  Qed.
+
+  Lemma cardinal_Add_In:
+    forall m m' x e, In x m -> Add x e m m' -> cardinal m' = cardinal m.
+  Proof.
+  assert (forall k e m, MapsTo k e m -> Add k e (remove k m) m) as remove_In_Add.
+  { intros. unfold Add.
+    intros.
+    rewrite F.add_o.
+    destruct (F.eq_dec k y).
+    - apply find_1. rewrite <-MapsTo_m; [exact H|assumption|reflexivity|reflexivity].
+    - rewrite F.remove_neq_o by assumption. reflexivity.
+  }
+  intros.
+  assert (Equal (remove x m) (remove x m')).
+  { intros y. rewrite 2!F.remove_o.
+    destruct (F.eq_dec x y). reflexivity.
+    unfold Add in H0. rewrite H0.
+    rewrite F.add_neq_o by assumption. reflexivity.
+  }
+  apply Equal_cardinal in H1.
+  rewrite 2!cardinal_fold.
+  destruct H as (e' & H).
+  rewrite fold_Add with (eqA:=eq) (m1:=remove x m) (m2:=m) (k:=x) (e:=e');
+  try now (compute; auto).
+  rewrite fold_Add with (eqA:=eq) (m1:=remove x m') (m2:=m') (k:=x) (e:=e);
+  try now (compute; auto).
+  rewrite <- 2!cardinal_fold. congruence.
+  apply remove_1. reflexivity.
+  apply remove_In_Add.
+  apply find_2. unfold Add in H0. rewrite H0.
+  rewrite F.add_eq_o; reflexivity.
+  apply remove_1. reflexivity.
+  apply remove_In_Add. assumption.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
