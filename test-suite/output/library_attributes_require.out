@@ -1,0 +1,4 @@
+File "./output/library_attributes_require.v", line 1, characters 0-37:
+Warning: Library File TestSuite.library_attributes is deprecated since XX YY.
+This library is useless.
+[deprecated-library-file-since-XX-YY,deprecated-since-XX-YY,deprecated-library-file,deprecated,default]
