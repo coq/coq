@@ -915,45 +915,44 @@ module ProofFormat = struct
       (fun prf x n -> add_proof (mul_cst_proof n (IMap.find x env)) prf)
       Zero vect
 
-  module Env = struct
+  module Env :
+  sig
+    type t
+    val make : int -> t
+    val id_of_def : int -> t -> int
+    val id_of_hyp : int -> t -> int
+    val push_ref : t -> t
+    val push_def : int -> t -> t
+  end =
+  struct
 
+    (* Environments are of the form refs @ defs @ hyps *)
     type t =
       {
         lref  : int;
-        lhyps : prf_rule list
+        ndefs : int; (* Size of ldefs *)
+        ldefs : int Int.Map.t;
+        nhyps : int;
       }
 
-    let output_hyp_or_def o = function
-      | Hyp i -> Printf.fprintf o "Hyp %i" i
-      | Def i -> Printf.fprintf o "Def %i" i
-      | _ -> ()
+    let push_ref { nhyps; ndefs; lref; ldefs } =
+      { nhyps; ndefs; lref = lref + 1; ldefs }
 
-    let output_hyps o l = pp_list "," output_hyp_or_def o l
+    let push_def i { nhyps; ndefs; lref; ldefs } =
+      let () = if lref <> 0 then failwith "Cannot push def" in
+      { nhyps; ndefs = ndefs + 1; lref; ldefs = Int.Map.add i ndefs ldefs }
 
-    let push_ref {lref;lhyps} =
-      {lref = lref +1 ; lhyps}
+    let make n = { nhyps = n; ndefs = 0; lref = 0; ldefs = Int.Map.empty }
 
-    let push_def i {lref;lhyps} =
-      if lref <> 0 then failwith "Cannot push def";
-      {lref=lref;lhyps = Def i :: lhyps}
+    let id_of_def def { nhyps; ndefs; lref; ldefs } =
+      try
+        let pos = Int.Map.find def ldefs in
+        lref + (ndefs - pos - 1)
+      with Not_found -> failwith "Cannot find def"
 
-    let of_list l  = {lref = 0 ;lhyps = List.map (fun i -> Hyp i) l}
-    let of_listi l = {lref = 0 ;lhyps = List.mapi (fun i _ -> Hyp i) l}
-
-    let id_of_hyp hyp {lref;lhyps} =
-      let rec xid_of_hyp i l' =
-        match l' with
-        | [] ->
-          Printf.fprintf stdout "\nid_of_hyp: %a notin [%a]\n" output_hyp_or_def
-            hyp output_hyps lhyps;
-          flush stdout;
-          failwith "Cannot find hyp or def"
-        | hyp' :: l' -> if hyp = hyp' then i else xid_of_hyp (i + 1) l'
-      in
-      match hyp with
-      | Ref i -> i
-      | _     -> xid_of_hyp lref lhyps
-
+    let id_of_hyp h { nhyps; ndefs; lref; ldefs } =
+      if 0 <= h && h < nhyps then lref + ndefs + h
+      else failwith "Cannot find hyp"
 
   end
 
@@ -961,7 +960,9 @@ module ProofFormat = struct
   let cmpl_prf_rule norm (cst : Q.t -> 'a) env prf =
     let rec cmpl env = function
       | Annot (s, p) -> cmpl env p
-      | (Hyp _ | Def _| Ref _) as h -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_hyp h env))
+      | Ref i -> Mc.PsatzIn (CamlToCoq.nat i)
+      | Hyp h -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_hyp h env))
+      | Def d -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_def d env))
       | Cst i -> Mc.PsatzC (cst i)
       | Zero -> Mc.PsatzZ
       | MulPrf (p1, p2) -> Mc.PsatzMulE (cmpl env p1, cmpl env p2)
@@ -1012,7 +1013,7 @@ module ProofFormat = struct
   let compile_proof env prf =
     let id = 1 + proof_max_def prf in
     let _, prf = normalise_proof id prf in
-    cmpl_proof (Env.of_list env) prf
+    cmpl_proof env prf
 
   let rec eval_prf_rule env = function
     | Annot (s, p) -> eval_prf_rule env p

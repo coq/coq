@@ -272,13 +272,13 @@ module ProofFormat : sig
   val add_proof : prf_rule -> prf_rule -> prf_rule
   val mul_cst_proof : Q.t -> prf_rule -> prf_rule
   val mul_proof : prf_rule -> prf_rule -> prf_rule
-  val compile_proof : int list -> proof -> Micromega.zArithProof
 
   module Env: sig
     type t
-    val of_list : int list -> t
-    val of_listi : 'a list -> t
+    val make : int -> t
   end
+
+  val compile_proof : Env.t -> proof -> Micromega.zArithProof
 
   val cmpl_prf_rule :
        ('a Micromega.pExpr -> 'a Micromega.pol)
