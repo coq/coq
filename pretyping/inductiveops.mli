@@ -68,80 +68,50 @@ val mis_nf_constructor_type :
 
 (** @return number of constructors *)
 val nconstructors : env -> inductive -> int
-val nconstructors_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.nconstructors"]
 
 (** @return arity of constructors excluding parameters, excluding local defs *)
 val constructors_nrealargs : env -> inductive -> int array
-val constructors_nrealargs_env : env -> inductive -> int array
-[@@ocaml.deprecated "Alias for Inductiveops.constructors_nrealargs"]
 
 (** @return arity of constructors excluding parameters, including local defs *)
 val constructors_nrealdecls : env -> inductive -> int array
-val constructors_nrealdecls_env : env -> inductive -> int array
-[@@ocaml.deprecated "Alias for Inductiveops.constructors_nrealdecls"]
 
 (** @return the arity, excluding params, excluding local defs *)
 val inductive_nrealargs : env -> inductive -> int
-val inductive_nrealargs_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nrealargs"]
 
 (** @return the arity, excluding params, including local defs *)
 val inductive_nrealdecls : env -> inductive -> int
-val inductive_nrealdecls_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nrealdecls"]
 
 (** @return the arity, including params, excluding local defs *)
 val inductive_nallargs : env -> inductive -> int
-val inductive_nallargs_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nallargs"]
 
 (** @return the arity, including params, including local defs *)
 val inductive_nalldecls : env -> inductive -> int
-val inductive_nalldecls_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nalldecls"]
 
 (** @return nb of params without local defs *)
 val inductive_nparams : env -> inductive -> int
-val inductive_nparams_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nparams"]
 
 (** @return nb of params with local defs *)
 val inductive_nparamdecls : env -> inductive -> int
-val inductive_nparamdecls_env : env -> inductive -> int
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_nparamsdecls"]
 
 (** @return params context *)
 val inductive_paramdecls : env -> pinductive -> Constr.rel_context
-val inductive_paramdecls_env : env -> pinductive -> Constr.rel_context
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_paramsdecl"]
 
 (** @return full arity context, hence with letin *)
 val inductive_alldecls : env -> pinductive -> Constr.rel_context
-val inductive_alldecls_env : env -> pinductive -> Constr.rel_context
-[@@ocaml.deprecated "Alias for Inductiveops.inductive_alldecls"]
 
 (** {7 Extract information from a constructor name} *)
 
 (** @return param + args without letin *)
 val constructor_nallargs : env -> constructor -> int
-val constructor_nallargs_env : env -> constructor -> int
-[@@ocaml.deprecated "Alias for Inductiveops.constructor_nallargs"]
 
 (** @return param + args with letin *)
 val constructor_nalldecls : env -> constructor -> int
-val constructor_nalldecls_env : env -> constructor -> int
-[@@ocaml.deprecated "Alias for Inductiveops.constructor_nalldecls"]
 
 (** @return args without letin *)
 val constructor_nrealargs : env -> constructor -> int
-val constructor_nrealargs_env : env -> constructor -> int
-[@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealargs"]
 
 (** @return args with letin *)
 val constructor_nrealdecls : env -> constructor -> int
-val constructor_nrealdecls_env : env -> constructor -> int
-[@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealdecls"]
 
 (** @return tags of all decls: true = assumption, false = letin *)
 val inductive_alltags : env -> inductive -> bool list
