@@ -327,11 +327,11 @@ let rec cases_pattern_fold_map ?loc g e = DAst.with_val (function
   )
 
 let subst_binder_type_vars l = function
-  | Evar_kinds.BinderType (Name id) ->
+  | GBinderType (Name id) ->
      let id =
        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
        with Not_found -> id in
-     Evar_kinds.BinderType (Name id)
+     GBinderType (Name id)
   | e -> e
 
 let rec subst_glob_vars l gc = DAst.map (function
@@ -384,7 +384,7 @@ let protect g e na =
   e',na
 
 let set_anonymous_type na = function
-  | None -> DAst.make @@ GHole (Evar_kinds.BinderType na, IntroAnonymous)
+  | None -> DAst.make @@ GHole (GBinderType na, IntroAnonymous)
   | Some t -> t
 
 let apply_cases_pattern_term ?loc (ids,disjpat) tm c =
@@ -714,7 +714,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
       user_err Pp.(str "Existential variables not allowed in notations.")
   ) x
   and aux_type t = DAst.with_val (function
-  | GHole (Evar_kinds.BinderType _,IntroAnonymous) -> None
+  | GHole (GBinderType _, IntroAnonymous) -> None
   | _ -> Some (aux t)) t
   in
   let t = aux a in
@@ -911,9 +911,9 @@ let rec subst_notation_constr subst bound raw =
 
   | NHole (knd, naming) ->
     let nknd = match knd with
-    | Evar_kinds.ImplicitArg (ref, i, b) ->
+    | GImplicitArg (ref, i, b) ->
       let nref, _ = subst_global subst ref in
-      if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
+      if nref == ref then knd else GImplicitArg (nref, i, b)
     | _ -> knd
     in
     if nknd == knd then raw
@@ -955,7 +955,7 @@ let abstract_return_type_context pi mklam tml rtno =
 let abstract_return_type_context_glob_constr tml rtn =
   abstract_return_type_context (fun {CAst.v=(_,nal)} -> nal)
     (fun na c -> DAst.make @@
-      GLambda(na,Explicit,DAst.make @@ GHole(Evar_kinds.InternalHole,IntroAnonymous),c)) tml rtn
+      GLambda(na,Explicit,DAst.make @@ GHole (GInternalHole, IntroAnonymous), c)) tml rtn
 
 let abstract_return_type_context_notation_constr tml rtn =
   abstract_return_type_context snd
@@ -1558,7 +1558,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let avoid =
         Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
       let id' = Namegen.next_ident_away id avoid in
-      let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),IntroAnonymous) in
+      let t1 = DAst.make @@ GHole (GBinderType (Name id'),IntroAnonymous) in
       let sigma = match t2 with
       | None -> sigma
       | Some (NVar id2) -> bind_term_env alp sigma id2 t1
@@ -1674,7 +1674,7 @@ let group_by_type ids (terms,termlists,binders,binderlists) =
            | GLocalPattern ((disjpat,_),_,_,_) ->
              List.map (glob_constr_of_cases_pattern (Global.env())) disjpat
            | GLocalAssum (Anonymous,bk,t) ->
-             let hole = DAst.make (GHole (Evar_kinds.BinderType Anonymous,IntroAnonymous)) in
+             let hole = DAst.make (GHole (GBinderType Anonymous,IntroAnonymous)) in
              [DAst.make (GCast (hole, Some DEFAULTcast, t))]
            | GLocalAssum (Name id,bk,t) ->
              [DAst.make (GCast (DAst.make (GVar id), Some DEFAULTcast, t))]

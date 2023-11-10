@@ -443,7 +443,7 @@ GRAMMAR EXTEND Gram
   ;
   simple_binder:
     [ [ na=name -> { ([na],Default Glob_term.Explicit, CAst.make ~loc @@
-                    CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous)) }
+                    CHole (Some (GBinderType na.CAst.v), IntroAnonymous)) }
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> { (nal,Default Glob_term.Explicit,c) }
     ] ]
   ;

@@ -136,7 +136,7 @@ let mkCLetIn ?loc name bo t = CAst.make ?loc @@
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
 
 (** Constructors for rawconstr *)
-let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous)
+let mkRHole = DAst.make @@ GHole (GInternalHole, IntroAnonymous)
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
@@ -1155,7 +1155,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   | Some b -> {kind; pattern=(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)); interpretation}
   | None -> { kind
             ; pattern = DAst.make ?loc @@ GLetIn
-                  (x, DAst.make ?loc @@ GHole (BinderType x, IntroAnonymous), None, g), None
+                  (x, DAst.make ?loc @@ GHole (GBinderType x, IntroAnonymous), None, g), None
             ; interpretation} in
   match red with
   | T t -> let sigma, t = interp_term env sigma0 t in { pat_sigma = sigma; pat_pat = T t }

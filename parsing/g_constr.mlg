@@ -30,7 +30,7 @@ let ldots_var = Id.of_string ".."
 
 let binder_of_name expl { CAst.loc = loc; v = na } =
   CLocalAssum ([CAst.make ?loc na], Default expl,
-    CAst.make ?loc @@ CHole (Some (Evar_kinds.BinderType na), IntroAnonymous))
+    CAst.make ?loc @@ CHole (Some (GBinderType na), IntroAnonymous))
 
 let binders_of_names l =
   List.map (binder_of_name Explicit) l

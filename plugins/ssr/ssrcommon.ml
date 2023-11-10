@@ -112,7 +112,7 @@ let option_assert_get o msg =
 (** Constructors for rawconstr *)
 open Glob_term
 
-let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous)
+let mkRHole = DAst.make @@ GHole (GInternalHole, Namegen.IntroAnonymous)
 
 let rec mkRHoles n = if n > 0 then mkRHole :: mkRHoles (n - 1) else []
 let rec isRHoles cl = match cl with

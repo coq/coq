@@ -576,7 +576,7 @@ type pretyper = {
   pretype_if : pretyper -> glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_rec : pretyper -> glob_fix_kind * Id.t array * glob_decl list array * glob_constr array * glob_constr array -> unsafe_judgment pretype_fun;
   pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
-  pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr -> unsafe_judgment pretype_fun;
+  pretype_hole : pretyper -> Evar_kinds.glob_evar_kind * Namegen.intro_pattern_naming_expr -> unsafe_judgment pretype_fun;
   pretype_genarg : pretyper -> Genarg.glob_generic_argument -> unsafe_judgment pretype_fun;
   pretype_cast : pretyper -> glob_constr * cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
@@ -730,6 +730,7 @@ struct
       | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
       | IntroAnonymous -> IntroAnonymous
       | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
+    let k = kind_of_glob_kind k in
     let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
     let sigma = if flags.program_mode then mark_obligation_evar sigma k uj_val else sigma in
     sigma, { uj_val; uj_type }
@@ -1307,6 +1308,7 @@ struct
 let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.get c with
   | GHole (knd, naming) ->
       let loc = loc_of_glob_constr c in
+      let knd = kind_of_glob_kind knd in
       (match valcon with
        | Some v ->
            let sigma, s =
@@ -1533,7 +1535,7 @@ let path_convertible env sigma cl p q =
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
   let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Explicit,t,b) in
   let mkGSort u           = DAst.make @@ Glob_term.GSort u in
-  let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous) in
+  let mkGHole ()          = DAst.make @@ Glob_term.GHole (GBinderType Anonymous, Namegen.IntroAnonymous) in
   let path_to_gterm p =
     match p with
     | ic :: p' ->

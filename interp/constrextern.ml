@@ -1393,7 +1393,7 @@ let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma
 
 let any_any_branch =
   (* | _ => _ *)
-  CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,IntroAnonymous))
+  CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (GInternalHole, IntroAnonymous))
 
 let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in
@@ -1420,7 +1420,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
             anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable.")
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar id
-  | PMeta None -> GHole (Evar_kinds.InternalHole, IntroAnonymous)
+  | PMeta None -> GHole (GInternalHole, IntroAnonymous)
   | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
   | PProj (p,c) -> GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p),None),
                          [glob_of_pat avoid env sigma c])

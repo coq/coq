@@ -185,7 +185,7 @@ let tclINJ_CONSTR_IST ist p =
 
 let mkGHole =
   DAst.make
-    (Glob_term.GHole(Evar_kinds.InternalHole, Namegen.IntroAnonymous))
+    (Glob_term.GHole (GInternalHole, Namegen.IntroAnonymous))
 let rec mkGHoles n = if n > 0 then mkGHole :: mkGHoles (n - 1) else []
 let mkGApp f args =
   if args = [] then f

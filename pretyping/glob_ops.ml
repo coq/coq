@@ -604,7 +604,7 @@ let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun
   | PatVar (Name id) when not isclosed ->
       GVar id
   | PatVar Anonymous when not isclosed ->
-      GHole (Evar_kinds.QuestionMark {
+      GHole (GQuestionMark {
         Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
       },Namegen.IntroAnonymous)
   | _ -> raise Not_found
@@ -618,6 +618,15 @@ let glob_constr_of_closed_cases_pattern env p = match DAst.get p with
       raise Not_found
 
 let glob_constr_of_cases_pattern env p = glob_constr_of_cases_pattern_aux env false p
+
+let kind_of_glob_kind = function
+| GImplicitArg (gr, p, b) -> ImplicitArg (gr, p, b)
+| GBinderType na -> BinderType na
+| GNamedHole id -> NamedHole id
+| GQuestionMark qm -> QuestionMark qm
+| GCasesType -> CasesType false
+| GInternalHole -> InternalHole
+| GImpossibleCase -> ImpossibleCase
 
 (* This has to be in some file... *)
 

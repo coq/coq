@@ -259,7 +259,7 @@ open Evar_kinds
 let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
 let mkGApp f args = DAst.make @@ GApp (f, args)
 let mkGHole = DAst.make @@
-  GHole (QuestionMark {
+  GHole (GQuestionMark {
         Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
   }, Namegen.IntroAnonymous)
 let mkGProd id c1 c2 = DAst.make @@

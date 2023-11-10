@@ -2228,7 +2228,7 @@ let mk_JMeq_refl env sigma typ x =
   papp env sigma coq_JMeq_refl [| typ; x |]
 
 let hole na = DAst.make @@
-  GHole (Evar_kinds.QuestionMark {
+  GHole (GQuestionMark {
       Evar_kinds.qm_obligation= Evar_kinds.Define false;
       Evar_kinds.qm_name=na;
       Evar_kinds.qm_record_field=None},

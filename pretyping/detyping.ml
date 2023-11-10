@@ -594,7 +594,7 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
         then tomatch
         else
           let _, mip = Global.lookup_inductive ci.ci_ind in
-          let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
+          let hole = DAst.make @@ GHole (GInternalHole, Namegen.IntroAnonymous) in
           let indices = List.make mip.mind_nrealargs hole in
           let t = mkApp (mkIndU (ci.ci_ind,univs), params) in
           DAst.make @@ GCast (tomatch, None, mkGApp (detype t) indices)
@@ -880,7 +880,7 @@ and detype_r d flags avoid env sigma t =
       else
         let noparams () =
           let pars = Projection.npars p in
-          let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
+          let hole = DAst.make @@ GHole (GInternalHole, Namegen.IntroAnonymous) in
           let args = List.make pars hole in
           GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
                 (args @ [detype d flags avoid env sigma c]))
@@ -1241,9 +1241,9 @@ let rec subst_glob_constr env subst = DAst.map (function
 
   | GHole (knd, naming) as raw ->
     let nknd = match knd with
-    | Evar_kinds.ImplicitArg (ref, i, b) ->
+    | GImplicitArg (ref, i, b) ->
       let nref, _ = subst_global subst ref in
-      if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
+      if nref == ref then knd else GImplicitArg (nref, i, b)
     | _ -> knd
     in
     if nknd == knd then raw
