@@ -17,6 +17,24 @@ let backtrace : backtrace Exninfo.t = Exninfo.make ()
 
 let print_ltac2_backtrace = ref false
 
+let () = Goptions.declare_bool_option {
+  Goptions.optstage = Summary.Stage.Interp;
+  Goptions.optdepr = None;
+  Goptions.optkey = ["Ltac2"; "Backtrace"];
+  Goptions.optread = (fun () -> !print_ltac2_backtrace);
+  Goptions.optwrite = (fun b -> print_ltac2_backtrace := b);
+}
+
+let ltac2_in_ltac1_profiling = ref false
+
+let () = Goptions.declare_bool_option {
+  Goptions.optstage = Summary.Stage.Interp;
+  Goptions.optdepr = None;
+  Goptions.optkey = ["Ltac2"; "In"; "Ltac1"; "Profiling"];
+  Goptions.optread = (fun () -> !ltac2_in_ltac1_profiling);
+  Goptions.optwrite = (fun b -> ltac2_in_ltac1_profiling := b);
+}
+
 let get_backtrace =
   Proofview.tclEVARMAP >>= fun sigma ->
   match Evd.Store.get (Evd.get_extra_data sigma) backtrace_evd with
@@ -48,5 +66,7 @@ let with_frame frame tac =
       Proofview.tclUNIT ans
     else tac
   in
-  let pr_frame f = Some (Hook.get pr_frame f) in
-  Ltac_plugin.Profile_ltac.do_profile_gen pr_frame frame ~count_call:true tac
+  if !ltac2_in_ltac1_profiling then
+    let pr_frame f = Some (Hook.get pr_frame f) in
+    Ltac_plugin.Profile_ltac.do_profile_gen pr_frame frame ~count_call:true tac
+  else tac

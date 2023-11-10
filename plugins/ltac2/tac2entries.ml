@@ -965,14 +965,6 @@ let register_struct atts str = match str with
 
 (** Toplevel exception *)
 
-let () = Goptions.declare_bool_option {
-  Goptions.optstage = Summary.Stage.Interp;
-  Goptions.optdepr = None;
-  Goptions.optkey = ["Ltac2"; "Backtrace"];
-  Goptions.optread = (fun () -> !Tac2bt.print_ltac2_backtrace);
-  Goptions.optwrite = (fun b -> Tac2bt.print_ltac2_backtrace := b);
-}
-
 let pr_frame = function
 | FrAnon e -> str "Call {" ++ pr_glbexpr ~avoid:Id.Set.empty e ++ str "}"
 | FrLtac kn ->
