@@ -2249,6 +2249,12 @@ as_or_and_ipat: [
 | "as" or_and_intropattern
 ]
 
+rewstrategy: [
+| DELETE rewstrategy1
+| DELETE rewstrategy ";" rewstrategy1
+| LIST1 rewstrategy1 SEP ";"
+]
+
 SPLICE: [
 | clause
 | noedit_mode

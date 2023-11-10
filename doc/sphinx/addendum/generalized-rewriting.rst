@@ -808,40 +808,38 @@ combined to create custom rewriting procedures. Its set of strategies is based
 on the programmable rewriting strategies with generic traversals by Visser et al.
 :cite:`Luttik97specificationof` :cite:`Visser98`, which formed the core of
 the Stratego transformation language :cite:`Visser01`. Rewriting strategies
-are applied using the tactic :n:`rewrite_strat @rewstrategy`.
+are applied using the :tacn:`rewrite_strat` tactic.
 
-.. insertprodn rewstrategy rewstrategy
+.. insertprodn rewstrategy rewstrategy0
 
 .. prodn::
-   rewstrategy ::= @one_term
-   | <- @one_term
-   | fail
-   | id
-   | refl
-   | progress @rewstrategy
-   | try @rewstrategy
-   | @rewstrategy ; @rewstrategy
-   | choice {+ @rewstrategy }
-   | repeat @rewstrategy
-   | any @rewstrategy
-   | subterm @rewstrategy
-   | subterms @rewstrategy
-   | innermost @rewstrategy
-   | outermost @rewstrategy
-   | bottomup @rewstrategy
-   | topdown @rewstrategy
+   rewstrategy ::= {+; @rewstrategy1 }
+   rewstrategy1 ::= <- @one_term
+   | progress @rewstrategy1
+   | try @rewstrategy1
+   | choice {+ @rewstrategy0 }
+   | repeat @rewstrategy1
+   | any @rewstrategy1
+   | subterm @rewstrategy1
+   | subterms @rewstrategy1
+   | innermost @rewstrategy1
+   | outermost @rewstrategy1
+   | bottomup @rewstrategy1
+   | topdown @rewstrategy1
    | hints @ident
    | terms {* @one_term }
    | eval @red_expr
    | fold @one_term
-   | ( @rewstrategy )
+   | @rewstrategy0
    | old_hints @ident
+   rewstrategy0 ::= @one_term
+   | fail
+   | id
+   | refl
+   | ( @rewstrategy )
 
 :n:`@one_term`
    lemma, left to right
-
-:n:`<- @one_term`
-   lemma, right to left
 
 :n:`fail`
    failure
@@ -852,46 +850,49 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 :n:`refl`
    reflexivity
 
-:n:`progress @rewstrategy`
+:n:`<- @one_term`
+   lemma, right to left
+
+:n:`progress @rewstrategy1`
    progress
 
-:n:`try @rewstrategy`
+:n:`try @rewstrategy1`
    try catch
 
-:n:`@rewstrategy ; @rewstrategy`
+:n:`@rewstrategy ; @rewstrategy1`
    composition
 
-:n:`choice {+ @rewstrategy }`
+:n:`choice {+ @rewstrategy0 }`
    first successful strategy
 
-:n:`repeat @rewstrategy`
+:n:`repeat @rewstrategy1`
    one or more
 
-:n:`any @rewstrategy`
+:n:`any @rewstrategy1`
    zero or more
 
-:n:`subterm @rewstrategy`
+:n:`subterm @rewstrategy1`
    one subterm
 
-:n:`subterms @rewstrategy`
+:n:`subterms @rewstrategy1`
    all subterms
 
-:n:`innermost @rewstrategy`
+:n:`innermost @rewstrategy1`
    Innermost first.
    When there are multiple nested matches in a subterm, the innermost subterm
    is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
    rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`(b + a) + c`.
 
-:n:`outermost @rewstrategy`
+:n:`outermost @rewstrategy1`
    Outermost first.
    When there are multiple nested matches in a subterm, the outermost subterm
    is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
    rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`c + (a + b)`.
 
-:n:`bottomup @rewstrategy`
+:n:`bottomup @rewstrategy1`
    bottom-up
 
-:n:`topdown @rewstrategy`
+:n:`topdown @rewstrategy1`
    top-down
 
 :n:`hints @ident`
@@ -916,13 +917,13 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
 Conceptually, a few of these are defined in terms of the others using a
 primitive fixpoint operator `fix`, which the tactic doesn't currently support:
 
-- :n:`try @rewstrategy := choice @rewstrategy id`
-- :n:`any @rewstrategy := fix @ident. try (@rewstrategy ; @ident)`
-- :n:`repeat @rewstrategy := @rewstrategy; any @rewstrategy`
-- :n:`bottomup @rewstrategy := fix @ident. (choice (progress (subterms @ident)) @rewstrategy) ; try @ident`
-- :n:`topdown @rewstrategy := fix @ident. (choice @rewstrategy (progress (subterms @ident))) ; try @ident`
-- :n:`innermost @rewstrategy := fix @ident. (choice (subterm @ident) @rewstrategy)`
-- :n:`outermost @rewstrategy := fix @ident. (choice @rewstrategy (subterm @ident))`
+- :n:`try @rewstrategy1 := choice (@rewstrategy1) id`
+- :n:`any @rewstrategy1 := fix @ident. try (@rewstrategy1 ; @ident)`
+- :n:`repeat @rewstrategy1 := @rewstrategy1; any @rewstrategy1`
+- :n:`bottomup @rewstrategy1 := fix @ident. (choice (progress (subterms @ident)) @rewstrategy1) ; try @ident`
+- :n:`topdown @rewstrategy1 := fix @ident. (choice (@rewstrategy1) (progress (subterms @ident))) ; try @ident`
+- :n:`innermost @rewstrategy1 := fix @ident. (choice (subterm @ident) (@rewstrategy1))`
+- :n:`outermost @rewstrategy1 := fix @ident. (choice (@rewstrategy1) (subterm @ident))`
 
 The basic control strategy semantics are straightforward: strategies
 are applied to subterms of the term to rewrite, starting from the root
@@ -932,18 +933,18 @@ hand-side. Composition can be used to continue rewriting on the
 current subterm. The ``fail`` strategy always fails while the identity
 strategy succeeds without making progress. The reflexivity strategy
 succeeds, making progress using a reflexivity proof of rewriting.
-``progress`` tests progress of the argument :n:`@rewstrategy` and
+``progress`` tests progress of the argument :n:`@rewstrategy1` and
 fails if no progress was made, while ``try`` always succeeds, catching
 failures. ``choice`` uses the first successful strategy in the list of
-@rewstrategy. One can iterate a strategy at least 1 time using
+:n:`@rewstrategy0`s. One can iterate a strategy at least 1 time using
 ``repeat`` and at least 0 times using ``any``.
 
-The ``subterm`` and ``subterms`` strategies apply their argument :n:`@rewstrategy` to
+The ``subterm`` and ``subterms`` strategies apply their argument :n:`@rewstrategy1` to
 respectively one or all subterms of the current term under
 consideration, left-to-right. ``subterm`` stops at the first subterm for
-which :n:`@rewstrategy` made progress. The composite strategies ``innermost`` and ``outermost``
+which :n:`@rewstrategy1` made progress. The composite strategies ``innermost`` and ``outermost``
 perform a single innermost or outermost rewrite using their argument
-:n:`@rewstrategy`. Their counterparts ``bottomup`` and ``topdown`` perform as many
+:n:`@rewstrategy1`. Their counterparts ``bottomup`` and ``topdown`` perform as many
 rewritings as possible, starting from the bottom or the top of the
 term.
 
@@ -955,6 +956,15 @@ expression (see :ref:`applyingconversionrules`) and succeeds
 if it reduces the subterm under consideration. The ``fold`` strategy takes
 a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
 on success. It is stronger than the tactic ``fold``.
+
+.. note::
+   The symbol ';' is used to separate sequences of tactics as well as
+   sequences of rewriting strategies.
+   `rewrite_strat s; fail` is interpreted as `rewrite_strat (s; fail)`,
+   in which `fail` is a rewriting strategy.
+   Use `(rewrite_strat s); fail` to make `fail` a tactic.
+   `rewrite_strat s; apply I` gives a syntax error (`apply` is not
+   a valid rewrite strategy).
 
 .. _rewrite_strat_innermost_outermost:
 
