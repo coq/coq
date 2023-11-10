@@ -197,12 +197,6 @@ are now available through the dot notation.
 
 .. cmd:: Import {? @import_categories } {+ @filtered_import }
 
-   .. insertprodn import_categories filtered_import
-
-   .. prodn::
-      import_categories ::= {? - } ( {+, @qualid } )
-      filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
-
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a
    signature), makes its components available by their short names.
 
@@ -244,6 +238,11 @@ are now available through the dot notation.
 
          Check B.T.
 
+   .. insertprodn filtered_import filtered_import
+
+   .. prodn::
+      filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
+
    Appending a module name with a parenthesized list of names will
    make only those names available with short names, not other names
    defined in the module nor will it activate other features.
@@ -284,6 +283,12 @@ are now available through the dot notation.
 
       This warning is printed when a name in the list of names to
       import was declared as a local constant, and the name is not imported.
+
+   .. insertprodn import_categories import_categories
+
+   .. prodn::
+      import_categories ::= {? - } ( {+, @qualid } )
+
 
    Putting a list of :n:`@import_categories` after ``Import`` will
    restrict activation of features according to those categories.
