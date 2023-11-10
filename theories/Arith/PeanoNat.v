@@ -370,10 +370,9 @@ Proof.
       now rewrite <- sub_succ_l.
 Qed.
 
-Lemma div_mod x y : y<>0 -> x = y*(x/y) + x mod y.
+Lemma div_mod_eq x y : x = y*(x/y) + x mod y.
 Proof.
-  intros Hy.
-  destruct y as [|y]; [ now elim Hy | clear Hy ].
+  destruct y as [|y]; [reflexivity | ].
   unfold div, modulo.
   generalize (divmod_spec x y 0 y (le_n y)).
   destruct divmod as (q,u).
@@ -382,8 +381,11 @@ Proof.
   now rewrite mul_0_r, sub_diag, !add_0_r in U.
 Qed.
 
-Lemma div_mod_eq x y : x = y*(x/y) + x mod y.
-Proof. destruct y as [|y]; [reflexivity|now apply div_mod]. Qed.
+(** The [y <> 0] hypothesis is needed to fit in [NAxiomsSig]. *)
+Lemma div_mod x y : y <> 0 -> x = y*(x/y) + x mod y.
+Proof.
+  intros _; apply div_mod_eq.
+Qed.
 
 Lemma mod_bound_pos x y : 0<=x -> 0<y -> 0 <= x mod y < y.
 Proof.
@@ -586,7 +588,7 @@ Proof.
       destruct (gcd_divide (b mod (S a)) (S a)) as (H,H').
       set (a':=S a) in *.
       split; auto.
-      rewrite (div_mod b a') at 2 by discriminate.
+      rewrite (div_mod_eq b a') at 2.
       destruct H as (u,Hu), H' as (v,Hv).
       rewrite mul_comm.
       exists ((b/a')*v + u).
@@ -608,7 +610,7 @@ Proof.
     intros c H H'.
     apply gcd_greatest; auto.
     set (a':=S a) in *.
-    rewrite (div_mod b a') in H' by discriminate.
+    rewrite (div_mod_eq b a') in H'.
     destruct H as (u,Hu), H' as (v,Hv).
     exists (v - (b/a')*u).
     rewrite mul_comm in Hv.
