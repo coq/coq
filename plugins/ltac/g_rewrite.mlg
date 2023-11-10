@@ -107,7 +107,6 @@ GRAMMAR EXTEND Gram
   rewstrategy1:
     [ RIGHTA
       [ "<-"; c = constr -> { StratConstr (c, false) }
-      | IDENT "using"; id = identref -> { StratVar id }
       | IDENT "subterms"; h = SELF -> { StratUnary (Subterms, h) }
       | IDENT "subterm"; h = SELF -> { StratUnary (Subterm, h) }
       | IDENT "innermost"; h = SELF -> { StratUnary(Innermost, h) }

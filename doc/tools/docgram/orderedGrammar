@@ -2138,14 +2138,8 @@ rewstrategy: [
 | LIST1 rewstrategy1 SEP ";"
 ]
 
-rewstrategy2: [
-| rewstrategy2 ";" rewstrategy1
-| rewstrategy1
-]
-
 rewstrategy1: [
 | "<-" one_term
-| "using" ident
 | "progress" rewstrategy1
 | "try" rewstrategy1
 | "choice" LIST1 rewstrategy0

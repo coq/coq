@@ -2244,12 +2244,14 @@ as_or_and_ipat: [
 | "as" or_and_intropattern
 ]
 
-rewstrategy: [
-| REPLACE rewstrategy2
+rewstrategy2: [
+| DELETE rewstrategy1
+| REPLACE rewstrategy2 ";" rewstrategy1
 | WITH LIST1 rewstrategy1 SEP ";"
 ]
 
 SPLICE: [
+| rewstrategy2
 | clause
 | noedit_mode
 | match_list

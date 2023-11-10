@@ -2289,7 +2289,6 @@ rewstrategy2: [
 
 rewstrategy1: [
 | "<-" constr
-| "using" identref
 | "subterms" rewstrategy1
 | "subterm" rewstrategy1
 | "innermost" rewstrategy1

@@ -1714,7 +1714,7 @@ and pr_strategy1 prc prr prid = function
   str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr prid str)) strs
 | StratConstr (c, true) -> prc c
 | StratConstr (c, false) -> str "<-" ++ spc () ++ prc c
-| StratVar id -> str "using" ++ spc() ++ prid id
+| StratVar id -> prid id
 | StratTerms cl -> str "terms" ++ spc () ++ pr_sequence prc cl
 | StratHints (old, id) ->
   let cmd = if old then "old_hints" else "hints" in

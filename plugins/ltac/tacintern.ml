@@ -762,6 +762,8 @@ let intern_strategy ist s =
     | Rewrite.StratVar x ->
       if Id.Set.mem x.v stratvars then Rewrite.StratVar x.v
       else CErrors.user_err ?loc:x.loc Pp.(str "Unbound strategy" ++ spc() ++ Id.print x.v)
+    | StratConstr ({ v = CRef (qid, None) }, true) when idset_mem_qualid qid stratvars ->
+      let (_, x) = repr_qualid qid in Rewrite.StratVar x
     | StratFix (x, s) -> StratFix (x.v, aux (Id.Set.add x.v stratvars) s)
     | StratId | StratFail | StratRefl as s -> s
     | StratUnary (s, str) -> StratUnary (s, aux stratvars str)
