@@ -825,6 +825,7 @@ gallina: [
 | "Scheme" "Boolean" "Equality" "for" smart_global
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
 | "Register" global "as" qualid
+| "Register" "Scheme" global "as" qualid "for" global
 | "Register" "Inline" global
 | "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
 | "Universe" LIST1 identref
@@ -1337,6 +1338,7 @@ printable: [
 | "Strategy" smart_global
 | "Strategies"
 | "Registered"
+| "Registered" "Schemes"
 ]
 
 printunivs_subgraph: [

@@ -676,6 +676,8 @@ let pr_printable = function
     keyword "Print Strategy" ++ pr_smart_global qid
   | PrintRegistered ->
     keyword "Print Registered"
+  | PrintRegisteredSchemes ->
+    keyword "Print Registered Schemes"
   | PrintNotation (Constrexpr.InConstrEntry, ntn_key) ->
     keyword "Print Notation" ++ spc() ++ str ntn_key
   | PrintNotation (Constrexpr.InCustomEntry ent, ntn_key) ->
@@ -1224,6 +1226,12 @@ let pr_synpure_vernac_expr v =
       hov 2
         (keyword "Register" ++ spc() ++ pr_qualid qid ++ spc () ++ str "as"
          ++ spc () ++ pr_qualid name)
+    )
+  | VernacRegister (qid, RegisterScheme {inductive; scheme_kind}) ->
+    return (
+      hov 2
+        (keyword "Register" ++ spc() ++ keyword "Scheme" ++ spc() ++ pr_qualid qid ++ spc () ++ str "as"
+         ++ spc () ++ pr_qualid scheme_kind ++ spc() ++ str "for" ++ spc() ++ pr_qualid inductive)
     )
   | VernacRegister (qid, RegisterInline) ->
     return (

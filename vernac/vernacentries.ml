@@ -316,6 +316,16 @@ let print_registered () =
   in
   hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
 
+let print_registered_schemes () =
+  let schemes = DeclareScheme.all_schemes() in
+  let pr_one_scheme ind (kind, c) =
+    pr_global (ConstRef c) ++ str " registered as " ++ str kind ++ str " for " ++ pr_global (IndRef ind)
+  in
+  let pr_schemes_of_ind (ind, schemes) =
+    prlist_with_sep fnl (pr_one_scheme ind) (CString.Map.bindings schemes)
+  in
+  hov 0 (prlist_with_sep fnl pr_schemes_of_ind (Indmap.bindings schemes))
+
 let dump_universes output g =
   let open Univ in
   let dump_arc u = function
@@ -2032,6 +2042,7 @@ let vernac_print ~pstate =
       Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
   | PrintRegistered -> print_registered ()
+  | PrintRegisteredSchemes -> print_registered_schemes ()
 
 let vernac_search ~pstate ~atts s gopt r =
   let open ComSearch in
@@ -2063,13 +2074,16 @@ let vernac_locate ~pstate query =
   | LocateOther (s, qid) -> Prettyp.print_located_other env s qid
   | LocateFile f -> locate_file f
 
+let warn_unknown_scheme_kind = CWarnings.create ~name:"unknown-scheme-kind"
+    Pp.(fun sk -> str "Unknown scheme kind " ++ Libnames.pr_qualid sk ++ str ".")
+
 let vernac_register qid r =
   let gr = Smartlocate.global_with_alias qid in
   match r with
   | RegisterInline ->
     begin match gr with
     | GlobRef.ConstRef c -> Global.register_inline c
-    | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant.")
+    | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
     let ns, id = Libnames.repr_qualid n in
@@ -2083,13 +2097,25 @@ let vernac_register qid r =
         | "ind_cmp" -> CPrimitives.(PIE PIT_cmp)
         | "ind_f_cmp" -> CPrimitives.(PIE PIT_f_cmp)
         | "ind_f_class" -> CPrimitives.(PIE PIT_f_class)
-        | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the \"kernel\" namespace.")
+        | k -> CErrors.user_err ?loc:n.loc Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the \"kernel\" namespace.")
       in
       match gr with
       | GlobRef.IndRef ind -> Global.register_inductive ind pind
-      | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type.")
+      | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register in kernel: expecting an inductive type.")
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr
+  | RegisterScheme { inductive; scheme_kind } ->
+    let gr = match gr with
+      | ConstRef c -> c
+      | _ -> CErrors.user_err ?loc:qid.loc Pp.(str "Register Scheme: expecing a constant.")
+    in
+    let scheme_kind_s = Libnames.string_of_qualid scheme_kind in
+    let () = if not (Ind_tables.is_declared_scheme_object scheme_kind_s) then
+        warn_unknown_scheme_kind ?loc:scheme_kind.loc scheme_kind
+    in
+    let ind = Smartlocate.global_inductive_with_alias inductive in
+    Dumpglob.add_glob ?loc:inductive.loc (IndRef ind);
+    DeclareScheme.declare_scheme scheme_kind_s (ind,gr)
 
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
