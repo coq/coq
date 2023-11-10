@@ -717,7 +717,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
       try Inl (coerce_to_evaluable_ref env sigma x)
       with CannotCoerceTo _ ->
         let c = coerce_to_closed_constr env x in
-        Inr (legacy_bad_pattern_of_constr env sigma c) in
+        Inr (pattern_of_constr env sigma c) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (CAst.make ?loc id)
      with Not_found as exn ->
        let _, info = Exninfo.capture exn in
