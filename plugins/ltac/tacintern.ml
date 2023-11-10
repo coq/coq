@@ -433,7 +433,7 @@ let intern_red_expr ist = function
            Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
+  | (Red | Hnf | ExtraRedExpr _ as r ) -> r
 
 let intern_hyp_list ist = List.map (intern_hyp ist)
 

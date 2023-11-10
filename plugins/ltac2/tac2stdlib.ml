@@ -299,7 +299,7 @@ let () =
     (Tac2tactics.induction_destruct true)
 
 let () =
-  define "tac_red" (clause @-> tac unit) (Tac2tactics.reduce (Red false))
+  define "tac_red" (clause @-> tac unit) (Tac2tactics.reduce Red)
 
 let () =
   define "tac_hnf" (clause @-> tac unit) (Tac2tactics.reduce Hnf)

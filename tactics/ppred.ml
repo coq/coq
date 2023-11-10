@@ -49,7 +49,7 @@ let pr_union pr1 pr2 = function
   | Inr b -> pr2 b
 
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
-  | Red false -> keyword "red"
+  | Red -> keyword "red"
   | Hnf -> keyword "hnf"
   | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
                     ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern) keyword) o
@@ -71,8 +71,6 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
     hov 1 (keyword "pattern" ++
               pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr keyword)) l)
 
-  | Red true ->
-    CErrors.user_err Pp.(str "Shouldn't be accessible from user.")
   | ExtraRedExpr s ->
     str s
   | CbvVm o ->

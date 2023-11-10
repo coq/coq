@@ -365,7 +365,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   red_expr:
-    [ [ IDENT "red" -> { Red false }
+    [ [ IDENT "red" -> { Red }
       | IDENT "hnf" -> { Hnf }
       | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ];
         d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with ~head:(Option.has_some h) d,po) }
@@ -678,7 +678,7 @@ GRAMMAR EXTEND Gram
 
       (* Conversion *)
       | IDENT "red"; cl = clause_dft_concl ->
-          { CAst.make ~loc @@ TacAtom (TacReduce (Red false, cl)) }
+          { CAst.make ~loc @@ TacAtom (TacReduce (Red, cl)) }
       | IDENT "hnf"; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Hnf, cl)) }
       | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ]; d = delta_flag;

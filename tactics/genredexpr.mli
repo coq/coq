@@ -41,7 +41,7 @@ type 'a glob_red_flag = {
 (** Generic kinds of reductions *)
 
 type ('a, 'b, 'c, 'flags) red_expr_gen0 =
-  | Red of bool
+  | Red
   | Hnf
   | Simpl of 'flags * ('b, 'c) Util.union Locus.with_occurrences option
   | Cbv of 'flags
