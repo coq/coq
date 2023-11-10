@@ -22,7 +22,7 @@ mkdir "$BIN"
 wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
 chmod +x "$BIN"/opam
 
-export NJOBS=1 # used by the test suite through dune
+export NJOBS=2 # used by the test suite through dune
 
 export PATH="$BIN":$PATH
 
@@ -383,9 +383,9 @@ create_opam() {
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
 
-        # build stdlib with -j 1 to get nicer timings
+        # build stdlib with -j 2 to get nicer timings
         local this_nproc=$number_of_processors
-        if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
+        if [ "$package" = coq-stdlib ]; then this_nproc=2; fi
 
         with_test=--with-test
         if [ "$skip_coq_tests" ]; then with_test=; fi
@@ -530,14 +530,14 @@ $coq_opam_package (dependency install failed in $RUNNER)"
             continue 2
             }
 
-        opam var --global jobs=1 >/dev/null
+        opam var --global jobs=2 >/dev/null
 
         if [ ! -z "$BENCH_DEBUG" ]; then ls -l $working_dir; fi
 
         for iteration in $(seq $num_of_iterations); do
             export COQ_ITERATION=$iteration
             _RES=0
-            timeout "$timeout" opam install -v -b -j1 $coq_opam_package \
+            timeout "$timeout" opam install -v -b -j2 $coq_opam_package \
                  3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
                  4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
                 _RES=$?
