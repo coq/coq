@@ -26,6 +26,7 @@
    ../dev/header.ml
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
+   ../sysinit/coqargs.ml
    ; For the misc/printers.sh test
    ../dev/incdir_dune
    ../dev/base_include
