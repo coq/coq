@@ -1660,28 +1660,32 @@ type binary_strategy =
 
 type nary_strategy = Choice
 
-type ('constr,'redexpr) strategy_ast =
+type ('constr,'redexpr,'id) strategy_ast =
   | StratId | StratFail | StratRefl
-  | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
+  | StratUnary of unary_strategy * ('constr,'redexpr,'id) strategy_ast
   | StratBinary of
-      binary_strategy * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
-  | StratNAry of nary_strategy * ('constr,'redexpr) strategy_ast list
+      binary_strategy * ('constr,'redexpr,'id) strategy_ast * ('constr,'redexpr,'id) strategy_ast
+  | StratNAry of nary_strategy * ('constr,'redexpr,'id) strategy_ast list
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string
   | StratEval of 'redexpr
   | StratFold of 'constr
+  | StratVar of 'id
+  | StratFix of 'id * ('constr,'redexpr,'id) strategy_ast
 
-let rec map_strategy (f : 'a -> 'a2) (g : 'b -> 'b2) : ('a,'b) strategy_ast -> ('a2,'b2) strategy_ast = function
+let rec map_strategy f g h = function
   | StratId | StratFail | StratRefl as s -> s
-  | StratUnary (s, str) -> StratUnary (s, map_strategy f g str)
-  | StratBinary (s, str, str') -> StratBinary (s, map_strategy f g str, map_strategy f g str')
-  | StratNAry (s, strs) -> StratNAry (s, List.map (map_strategy f g) strs)
+  | StratUnary (s, str) -> StratUnary (s, map_strategy f g h str)
+  | StratBinary (s, str, str') -> StratBinary (s, map_strategy f g h str, map_strategy f g h str')
+  | StratNAry (s, strs) -> StratNAry (s, List.map (map_strategy f g h) strs)
   | StratConstr (c, b) -> StratConstr (f c, b)
   | StratTerms l -> StratTerms (List.map f l)
   | StratHints (b, id) -> StratHints (b, id)
   | StratEval r -> StratEval (g r)
   | StratFold c -> StratFold (f c)
+  | StratVar id -> StratVar (h id)
+  | StratFix (id, s) -> StratFix (h id, map_strategy f g h s)
 
 let pr_ustrategy = function
 | Subterms -> str "subterms"
@@ -1697,38 +1701,43 @@ let pr_ustrategy = function
 
 let paren p = str "(" ++ p ++ str ")"
 
-let rec pr_strategy0 prc prr = function
+let rec pr_strategy0 prc prr prid = function
 | StratId -> str "id"
 | StratFail -> str "fail"
 | StratRefl -> str "refl"
-| str -> paren (pr_strategy prc prr str)
+| str -> paren (pr_strategy prc prr prid str)
 
-and pr_strategy1 prc prr = function
+and pr_strategy1 prc prr prid = function
 | StratUnary (s, str) ->
-  pr_ustrategy s ++ spc () ++ pr_strategy1 prc prr str
+  pr_ustrategy s ++ spc () ++ pr_strategy1 prc prr prid str
 | StratNAry (Choice, strs) ->
-  str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr str)) strs
+  str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr prid str)) strs
 | StratConstr (c, true) -> prc c
 | StratConstr (c, false) -> str "<-" ++ spc () ++ prc c
+| StratVar id -> str "using" ++ spc() ++ prid id
 | StratTerms cl -> str "terms" ++ spc () ++ pr_sequence prc cl
 | StratHints (old, id) ->
   let cmd = if old then "old_hints" else "hints" in
   str cmd ++ spc () ++ str id
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
-| str -> pr_strategy0 prc prr str
+| str -> pr_strategy0 prc prr prid str
 
-and pr_strategy prc prr = function
+and pr_strategy2 prc prr prid = function
 | StratBinary (Compose, str1, str2) ->
-  pr_strategy prc prr str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy1 prc prr str2)
-| str -> hov 0 (pr_strategy1 prc prr str)
+  pr_strategy2 prc prr prid str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy1 prc prr prid str2)
+| str -> hov 0 (pr_strategy1 prc prr prid str)
 
-let rec strategy_of_ast = function
+and pr_strategy prc prr prid = function
+| StratFix (id,s) -> str "fix" ++ spc() ++ prid id ++ spc() ++ str ":=" ++ spc() ++ hov 0 (pr_strategy1 prc prr prid s)
+| str -> pr_strategy2 prc prr prid str
+
+let rec strategy_of_ast bindings = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast s in
+    let s' = strategy_of_ast bindings s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1742,13 +1751,13 @@ let rec strategy_of_ast = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast s in
-    let t' = strategy_of_ast t in
+    let s' = strategy_of_ast bindings s in
+    let t' = strategy_of_ast bindings t in
     let f' = match f with
       | Compose -> Strategies.seq
     in f' s' t'
   | StratNAry (Choice, strs) ->
-    let strs = List.map (strategy_of_ast) strs in
+    let strs = List.map (strategy_of_ast bindings) strs in
     begin match strs with
       | [] -> assert false
       | s::strs -> List.fold_left Strategies.choice s strs
@@ -1766,6 +1775,12 @@ let rec strategy_of_ast = function
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
+
+  | StratVar id -> Id.Map.get id bindings
+
+  | StratFix (id, s) -> Strategies.fix (fun self -> strategy_of_ast (Id.Map.add id self bindings) s)
+
+let strategy_of_ast s = strategy_of_ast Id.Map.empty s
 
 let proper_projection sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in

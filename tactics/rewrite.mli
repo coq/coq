@@ -27,17 +27,19 @@ type binary_strategy =
 
 type nary_strategy = Choice
 
-type ('constr,'redexpr) strategy_ast =
+type ('constr,'redexpr,'id) strategy_ast =
   | StratId | StratFail | StratRefl
-  | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
+  | StratUnary of unary_strategy * ('constr,'redexpr,'id) strategy_ast
   | StratBinary of
-      binary_strategy * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
-  | StratNAry of nary_strategy * ('constr,'redexpr) strategy_ast list
+      binary_strategy * ('constr,'redexpr,'id) strategy_ast * ('constr,'redexpr,'id) strategy_ast
+  | StratNAry of nary_strategy * ('constr,'redexpr,'id) strategy_ast list
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string
   | StratEval of 'redexpr
   | StratFold of 'constr
+  | StratVar of 'id
+  | StratFix of 'id * ('constr,'redexpr,'id) strategy_ast
 
 type rewrite_proof =
   | RewPrf of constr * constr
@@ -60,13 +62,13 @@ type rewrite_result =
 
 type strategy
 
-val strategy_of_ast : (Glob_term.glob_constr * constr delayed_open, Redexpr.red_expr delayed_open) strategy_ast -> strategy
+val strategy_of_ast : (Glob_term.glob_constr * constr delayed_open, Redexpr.red_expr delayed_open, Id.t) strategy_ast -> strategy
 
-val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
-  ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
+val map_strategy : ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) ->
+  ('a, 'c, 'e) strategy_ast -> ('b, 'd, 'f) strategy_ast
 
-val pr_strategy : ('a -> Pp.t) -> ('b -> Pp.t) ->
-  ('a, 'b) strategy_ast -> Pp.t
+val pr_strategy : ('a -> Pp.t) -> ('b -> Pp.t) -> ('c -> Pp.t) ->
+  ('a, 'b, 'c) strategy_ast -> Pp.t
 
 (** Entry point for user-level "rewrite_strat" *)
 val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic

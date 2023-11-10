@@ -2278,12 +2278,18 @@ glob_constr_with_bindings: [
 ]
 
 rewstrategy: [
-| rewstrategy ";" rewstrategy1
+| "fix" identref ":=" rewstrategy1
+| rewstrategy2
+]
+
+rewstrategy2: [
+| rewstrategy2 ";" rewstrategy1
 | rewstrategy1
 ]
 
 rewstrategy1: [
 | "<-" constr
+| "using" identref
 | "subterms" rewstrategy1
 | "subterm" rewstrategy1
 | "innermost" rewstrategy1

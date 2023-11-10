@@ -759,6 +759,12 @@ let interp_red_expr ist env sigma = function
     sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | (Red |  Hnf | ExtraRedExpr _ as r) -> sigma , r
 
+let interp_strategy ist _env _sigma s =
+  let interp_redexpr r = fun env sigma -> interp_red_expr ist env sigma r in
+  let interp_constr c = (fst c, fun env sigma -> interp_open_constr ist env sigma c) in
+  let s = Rewrite.map_strategy interp_constr interp_redexpr (fun x -> x) s in
+  Rewrite.strategy_of_ast s
+
 let interp_may_eval f ist env sigma = function
   | ConstrEval (r,c) ->
       let (sigma,redexp) = interp_red_expr ist env sigma r in

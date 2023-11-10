@@ -2245,9 +2245,8 @@ as_or_and_ipat: [
 ]
 
 rewstrategy: [
-| DELETE rewstrategy1
-| DELETE rewstrategy ";" rewstrategy1
-| LIST1 rewstrategy1 SEP ";"
+| REPLACE rewstrategy2
+| WITH LIST1 rewstrategy1 SEP ";"
 ]
 
 SPLICE: [
