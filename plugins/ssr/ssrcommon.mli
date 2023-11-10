@@ -215,13 +215,6 @@ val pf_interp_ty :
 val ssr_n_tac : string -> int -> unit Proofview.tactic
 val donetac : int -> unit Proofview.tactic
 
-val applyn :
-           with_evars:bool ->
-           ?beta:bool ->
-           ?with_shelve:bool ->
-           ?first_goes_last:bool ->
-           int ->
-           EConstr.t -> unit Proofview.tactic
 exception NotEnoughProducts
 val saturate :
            ?beta:bool ->
