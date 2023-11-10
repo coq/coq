@@ -84,7 +84,7 @@ before_script:
     - dev/ci/gitlab-section.sh end coq.clean
 
     - dev/ci/gitlab-section.sh start coq.config coq.config
-    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" $COQ_EXTRA_CONF
+    - ./configure -prefix "$(pwd)/_install_ci" $COQ_EXTRA_CONF
     - dev/ci/gitlab-section.sh end coq.config
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
@@ -915,7 +915,7 @@ plugin:plugin-tutorial:
   interruptible: true
   extends: .auto-use-tags
   script:
-    - ./configure -prefix "$(pwd)/_install_ci" -warn-error yes
+    - ./configure -prefix "$(pwd)/_install_ci"
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:

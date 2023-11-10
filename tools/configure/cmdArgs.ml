@@ -30,7 +30,6 @@ type t = {
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
-  warn_error : bool;
   debug : bool;
 }
 
@@ -52,7 +51,6 @@ let default_prefs = {
   bytecodecompiler = true;
   nativecompiler = NativeNo;
   coqwebsite = "http://coq.inria.fr/";
-  warn_error = false;
   debug = false;
 }
 
@@ -79,6 +77,11 @@ let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
 let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
 
 (* TODO : earlier any option -foo was also available as --foo *)
+
+let warn_warn_error () =
+  Format.eprintf "****** the -warn-error option is deprecated, \
+                  warnings are not set in the config section of the \
+                  corresponding build tool [coq_makefile, dune]@\n%!"
 
 let check_absolute = function
   | None -> ()
@@ -115,10 +118,10 @@ let args_options = Arg.align [
      yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled
      no (default): no native compilation available at all
      ondemand: -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
+  "-warn-error", arg_bool (fun p _warn_error -> warn_warn_error (); p),
+    "Deprecated option: warnings are now adjusted in the corresponding build tool.";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
-  "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
-    "(yes|no) Make OCaml warnings into errors (default no)";
   "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
 ]
 

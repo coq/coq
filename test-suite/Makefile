@@ -21,17 +21,22 @@
 # all tests to be run, use the "clean" target.
 
 ###########################################################################
-# Includes
+# Includes, see below for generation
 ###########################################################################
 
-# If Coq is not configured, we can't run the makefile.
-ifneq ($(wildcard ../config/Makefile ../_build/default/config/Makefile),)
--include ../_build/default/config/Makefile
--include ../config/Makefile
-  COQ_NOT_CONFIGURED:=false
+# Generate test-suite, when INSIDE_DUNE the file is guaranteed to
+# exist, when called directly by make we need to look into the build
+# directory.
+DUNE_CONTEXT:=default
+TEST_SUITE_CONFIG_FILE:=test_suite_config.inc
+
+ifeq ($(INSIDE_DUNE),)
+TEST_SUITE_CONFIG_PATH:=../_build/$(DUNE_CONTEXT)/test-suite/$(TEST_SUITE_CONFIG_FILE)
 else
-  COQ_NOT_CONFIGURED:=true
+TEST_SUITE_CONFIG_PATH:=$(TEST_SUITE_CONFIG_FILE)
 endif
+
+include $(TEST_SUITE_CONFIG_PATH)
 
 #######################################################################
 # Variables
@@ -144,6 +149,7 @@ VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coq
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
+# EJGA: This seems dangerous as first target...
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
 	chmod u+w $@
@@ -157,15 +163,6 @@ PREREQUISITELOG = $(addsuffix .log,$(wildcard prerequisite/*.v)) .csdp.cache
 .DELETE_ON_ERROR:
 .PHONY: all run clean $(SUBSYSTEMS)
 
-ifeq ($(COQ_NOT_CONFIGURED),true)
-all:
-	@echo ""
-	@echo "Coq has not been configured, please run: "
-	@echo "  - make check"
-	@echo "Before running the test suite"
-	@echo ""
-	@false
-else
 ifeq ($(COQLIB_NOT_FOUND),true)
 all:
 	@echo ""
@@ -176,7 +173,6 @@ all:
 else
 all: run
 	$(MAKE) report
-endif
 endif
 
 # do nothing
@@ -259,6 +255,16 @@ summary.log:
 
 report: summary.log
 	$(HIDE)bash report.sh
+
+#######################################################################
+# Test suite configuration, to eventually go away
+#######################################################################
+
+# Not inside Dune, build by hand, note the shuffling
+ifeq ($(INSIDE_DUNE),)
+$(TEST_SUITE_CONFIG_PATH): $(TESTCONFIGURE)
+	dune build $(TEST_SUITE_CONFIG_FILE)
+endif
 
 #######################################################################
 # Unit tests

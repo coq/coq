@@ -36,7 +36,7 @@ jobs:
       - name: Build Coq
         run: |
           eval $(opam env)
-          ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no
+          ./configure -prefix "$(pwd)/_install_ci" -native-compiler no
           make dunestrap
           dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
         env:

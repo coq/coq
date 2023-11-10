@@ -40,8 +40,6 @@ type t =
   (** Enable/disable Coq's native compiler *)
   ; coqwebsite : string
   (** Override Coq's website, used by distributions  *)
-  ; warn_error : bool
-  (** Enable/disable warn-error in makefile build *)
   ; debug : bool
   (** Debug package and environment detection *)
   }
