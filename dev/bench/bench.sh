@@ -73,6 +73,7 @@ check_variable () {
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
 : "${coq_native:=}"
+: "${skip_coq_tests:=}"
 
 : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
 : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
@@ -386,8 +387,11 @@ create_opam() {
         local this_nproc=$number_of_processors
         if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
 
+        with_test=--with-test
+        if [ "$skip_coq_tests" ]; then with_test=; fi
+
         _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path --with-test $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.dev . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
