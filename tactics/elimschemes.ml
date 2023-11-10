@@ -101,51 +101,51 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
     build_induction_scheme_in_type env dep sort ind
 
 let rect_scheme_kind_from_type =
-  declare_individual_scheme_object "_rect_nodep"
+  declare_individual_scheme_object "rect_nodep"
     (fun env _ x -> build_induction_scheme_in_type env false InType x)
 
 let rect_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rect" ~aux:"_rect_from_prop"
+  declare_individual_scheme_object "rect" ~aux:"rect_from_prop"
     (fun env _ x -> build_induction_scheme_in_type env false InType x)
 
 let rect_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
+  declare_individual_scheme_object "rect" ~aux:"rect_from_type"
     (fun env _ x -> build_induction_scheme_in_type env true InType x)
 
 let rec_scheme_kind_from_type =
-  declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
+  declare_individual_scheme_object "rec_nodep" ~aux:"rec_nodep_from_type"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
 
 let rec_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
+  declare_individual_scheme_object "rec" ~aux:"rec_from_prop"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
 
 let rec_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_rec" ~aux:"_rec_from_type"
+  declare_individual_scheme_object "rec" ~aux:"rec_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)
 
 let ind_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind_nodep"
+  declare_individual_scheme_object "ind_nodep"
   (optimize_non_type_induction_scheme rec_scheme_kind_from_type false InProp)
 
 let sind_scheme_kind_from_type =
-  declare_individual_scheme_object "_sind_nodep"
+  declare_individual_scheme_object "sind_nodep"
   (fun env _ x -> build_induction_scheme_in_type env false InSProp x)
 
 let ind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
+  declare_individual_scheme_object "ind" ~aux:"ind_from_type"
   (optimize_non_type_induction_scheme rec_dep_scheme_kind_from_type true InProp)
 
 let sind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_sind" ~aux:"_sind_from_type"
+  declare_individual_scheme_object "sind" ~aux:"sind_from_type"
   (fun env _ x -> build_induction_scheme_in_type env true InSProp x)
 
 let ind_scheme_kind_from_prop =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
+  declare_individual_scheme_object "ind" ~aux:"ind_from_prop"
   (optimize_non_type_induction_scheme rec_scheme_kind_from_prop false InProp)
 
 let sind_scheme_kind_from_prop =
-  declare_individual_scheme_object "_sind" ~aux:"_sind_from_prop"
+  declare_individual_scheme_object "sind" ~aux:"sind_from_prop"
   (fun env _ x -> build_induction_scheme_in_type env false InSProp x)
 
 let nondep_elim_scheme from_kind to_kind =
@@ -169,25 +169,25 @@ let build_case_analysis_scheme_in_type env dep sort ind =
   EConstr.Unsafe.to_constr c, Evd.evar_universe_context sigma
 
 let case_scheme_kind_from_type =
-  declare_individual_scheme_object "_case_nodep"
+  declare_individual_scheme_object "case_nodep"
   (fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
 
 let case_scheme_kind_from_prop =
-  declare_individual_scheme_object "_case" ~aux:"_case_from_prop"
+  declare_individual_scheme_object "case" ~aux:"case_from_prop"
   (fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
 
 let case_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_case" ~aux:"_case_from_type"
+  declare_individual_scheme_object "case" ~aux:"case_from_type"
   (fun env _ x -> build_case_analysis_scheme_in_type env true InType x)
 
 let case_dep_scheme_kind_from_type_in_prop =
-  declare_individual_scheme_object "_casep_dep"
+  declare_individual_scheme_object "casep_dep"
   (fun env _ x -> build_case_analysis_scheme_in_type env true InProp x)
 
 let case_dep_scheme_kind_from_prop =
-  declare_individual_scheme_object "_case_dep"
+  declare_individual_scheme_object "case_dep"
   (fun env _ x -> build_case_analysis_scheme_in_type env true InType x)
 
 let case_dep_scheme_kind_from_prop_in_prop =
-  declare_individual_scheme_object "_casep"
+  declare_individual_scheme_object "casep"
   (fun env _ x -> build_case_analysis_scheme_in_type env true InProp x)

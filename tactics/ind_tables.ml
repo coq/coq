@@ -58,7 +58,7 @@ let declare_scheme_object s aux f =
     if not (Id.is_valid ("ind" ^ s)) then
       user_err Pp.(str ("Illegal induction scheme suffix: " ^ s))
   in
-  let key = if String.is_empty aux then s else aux in
+  let key = Option.default s aux in
   try
     let _ = Hashtbl.find scheme_object_table key in
 (*    let aux_msg = if aux="" then "" else " (with key "^aux^")" in*)
@@ -68,11 +68,13 @@ let declare_scheme_object s aux f =
     Hashtbl.add scheme_object_table key (s,f);
     key
 
-let declare_mutual_scheme_object s ?deps ?(aux="") f =
+let declare_mutual_scheme_object s ?deps ?aux f =
   declare_scheme_object s aux (MutualSchemeFunction (f, deps))
 
-let declare_individual_scheme_object s ?deps ?(aux="") f =
+let declare_individual_scheme_object s ?deps ?aux f =
   declare_scheme_object s aux (IndividualSchemeFunction (f, deps))
+
+let is_declared_scheme_object key = Hashtbl.mem scheme_object_table key
 
 (**********************************************************************)
 (* Defining/retrieving schemes *)
@@ -169,7 +171,7 @@ let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i a
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
-    | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
+    | None -> add_suffix mib.mind_packets.(i).mind_typename ("_"^suff) in
   let role = Evd.Schema (ind, kind) in
   let const, neff = define ?loc internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
@@ -190,7 +192,7 @@ and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~interna
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
-      with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
+      with Not_found -> add_suffix mib.mind_packets.(i).mind_typename ("_"^suff)) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
     let loc = Locmap.lookup ~locmap (mind,i) in

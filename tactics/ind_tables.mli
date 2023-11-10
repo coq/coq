@@ -33,7 +33,17 @@ type individual_scheme_object_function =
 
 (** Main functions to register a scheme builder. Note these functions
    are not safe to be used by plugins as their effects won't be undone
-   on backtracking *)
+   on backtracking.
+
+    The first string argument is used as the suffix (after a "_") for
+    the name of generated schemes with no explicit names. It is also
+    the default value of [aux].
+
+    [aux] must be unique: across the Coq process's lifetime
+    [declare_*_scheme_object] may be called at most once with a given
+    [aux]. It is used to generate [scheme_kind] in a marshal-stable
+    way and otherwise unused.
+*)
 
 val declare_mutual_scheme_object : string ->
   ?deps:(Environ.env -> MutInd.t -> scheme_dependency list) ->
@@ -45,6 +55,9 @@ val declare_individual_scheme_object : string ->
   ?aux:string ->
   individual_scheme_object_function ->
   individual scheme_kind
+
+val is_declared_scheme_object : string -> bool
+(** Is the string used as the name of a [scheme_kind]? *)
 
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
