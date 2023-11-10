@@ -901,7 +901,7 @@ between universes for inductive types in the Type hierarchy.
    contradiction from it (we can test this by disabling the
    :flag:`Positivity Checking` flag):
 
-   .. coqtop:: none
+   .. coqtop:: in
 
       #[bypass_check(positivity)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
@@ -935,7 +935,7 @@ between universes for inductive types in the Type hierarchy.
    Again, if we were to accept it, we could derive a contradiction
    (this time through a non-terminating recursive function):
 
-   .. coqtop:: none
+   .. coqtop:: in
 
       #[bypass_check(positivity)] Inductive Lam := lam (_ : Lam -> Lam).
 
@@ -964,7 +964,7 @@ between universes for inductive types in the Type hierarchy.
    the type :math:`A` with the function :math:`λx. λz. z = x` injecting
    any type :math:`T` into :math:`T → \Prop`.
 
-   .. coqtop:: none
+   .. coqtop:: in
 
       #[bypass_check(positivity)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
