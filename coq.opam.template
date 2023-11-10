@@ -15,8 +15,8 @@ build: [
     jobs
     "--promote-install-files=false"
     "@install"
+    "@runtest" {with-test}
     "@doc" {with-doc}
   ]
-  [ make "-C" "test-suite" "-j" jobs "COQ_INSTALLED=1" "PRINT_LOGS=1" ] {with-test}
   ["dune" "install" "-p" name "--create-install-files" name]
 ]

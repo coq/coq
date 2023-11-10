@@ -22,6 +22,8 @@ mkdir "$BIN"
 wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
 chmod +x "$BIN"/opam
 
+export NJOBS=1 # used by the test suite through dune
+
 export PATH="$BIN":$PATH
 
 echo "Global env info:"
