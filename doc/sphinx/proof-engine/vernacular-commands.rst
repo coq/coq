@@ -1168,7 +1168,8 @@ Exposing constants to OCaml libraries
    .. seealso:: :ref:`primitive-integers`
 
 .. cmd:: Print Registered
-   :undocumented:
+
+   List the currently registered constants.
 
 Inlining hints for the fast reduction machines
 ``````````````````````````````````````````````
