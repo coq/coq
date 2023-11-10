@@ -47,8 +47,8 @@ Record PreCategory :=
 
     left_identity : forall a b (f : morphism a b), identity b o f = f;
     right_identity : forall a b (f : morphism a b), f o identity a = f }.
-Arguments identity {C%category} / x%object : rename.
-Arguments compose {C%category} / {s d d'}%object (m1 m2)%morphism : rename.
+Arguments identity {C%_category} / x%_object : rename.
+Arguments compose {C%_category} / {s d d'}%_object (m1 m2)%_morphism : rename.
 Infix "o" := compose : morphism_scope.
 Notation "1" := (identity _) : morphism_scope.
 Delimit Scope functor_scope with functor.
@@ -60,7 +60,7 @@ Record Functor (C D : PreCategory) :=
     identity_of : forall x, morphism_of _ _ (identity x)
                             = identity (object_of x) }.
 Bind Scope functor_scope with Functor.
-Arguments morphism_of [C%category] [D%category] F%functor / [s%object d%object] m%morphism : rename.
+Arguments morphism_of [C%_category] [D%_category] F%_functor / [s%_object d%_object] m%_morphism : rename.
 Notation "F '_1' m" := (morphism_of F m) (at level 10, no associativity) : morphism_scope.
 Section composition.
   Variable C : PreCategory.

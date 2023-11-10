@@ -21,9 +21,9 @@ Structure bi :=
 #[export] Declare Instance bi_equiv `{PROP:bi} : Equiv (bi_car PROP).
 
 Arguments bi_car : simpl never.
-Arguments bi_entails {PROP} _%I _%I : simpl never, rename.
-Arguments bi_impl {PROP} _%I _%I : simpl never, rename.
-Arguments bi_forall {PROP _} _%I : simpl never, rename.
+Arguments bi_entails {PROP} _%_I _%_I : simpl never, rename.
+Arguments bi_impl {PROP} _%_I _%_I : simpl never, rename.
+Arguments bi_forall {PROP _} _%_I : simpl never, rename.
 
 Notation "P ⊢ Q" := (bi_entails P%I Q%I) .
 Notation "P ⊣⊢ Q" := (equiv (A:=bi_car _) P%I Q%I) .

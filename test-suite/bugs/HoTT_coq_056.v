@@ -43,7 +43,7 @@ Record Functor (C D : PreCategory) :=
     ObjectOf :> C -> D;
     MorphismOf : forall s d, C.(Morphism) s d -> D.(Morphism) (ObjectOf s) (ObjectOf d)
   }.
-Arguments MorphismOf [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments MorphismOf [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 Class Isomorphic {C : PreCategory} (s d : C) := {}.
 Definition ComposeFunctors C D E (G : Functor D E) (F : Functor C D) : Functor C E
   := Build_Functor C E

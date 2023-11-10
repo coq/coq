@@ -151,7 +151,7 @@ Definition IPR (p:positive) : R :=
   | xO p => IPR_2 p
   | xI p => R1 + IPR_2 p
   end.
-Arguments IPR p%positive : simpl never.
+Arguments IPR p%_positive : simpl never.
 
 (**********)
 Definition IZR (z:Z) : R :=
@@ -160,7 +160,7 @@ Definition IZR (z:Z) : R :=
   | Zpos n => IPR n
   | Zneg n => - IPR n
   end.
-Arguments IZR z%Z : simpl never.
+Arguments IZR z%_Z : simpl never.
 
 Lemma total_order_T : forall r1 r2:R, {Rlt r1 r2} + {r1 = r2} + {Rlt r2 r1}.
 Proof.

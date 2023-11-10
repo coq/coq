@@ -106,7 +106,7 @@ let quote_constr ?delimiters c =
   let loc = Constrexpr_ops.constr_loc c in
   Option.cata
     (List.fold_left (fun c d ->
-          CAst.make ?loc @@ Constrexpr.CDelimiters(Id.to_string d, c))
+          CAst.make ?loc @@ Constrexpr.(CDelimiters(DelimUnboundedScope, Id.to_string d, c)))
         c)
     c delimiters
 

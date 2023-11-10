@@ -1491,6 +1491,10 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
 
    Use commands such as :cmd:`Notation` to add notations to the scope.
 
+.. exn:: Scope names should not start with an underscore.
+
+   Scope names starting with an underscore would make the :g:`%_` syntax ambiguous.
+
 Global interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1550,6 +1554,7 @@ Opening a notation scope locally
 
 .. prodn::
    term_scope ::= @term0 % @scope_key
+   | @term0 %_ @scope_key
 
 The notation scope stack can be locally extended within
 a :token:`term` with the syntax
@@ -1558,6 +1563,10 @@ a :token:`term` with the syntax
 In this case, :n:`@term` is
 interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
 
+The term :n:`@term0%_@scope_key` is interpreted similarly to :n:`@term0%@scope_key`
+except that the scope stack is only temporarily extended for the head of :n:`@term0`,
+rather than all its subterms.
+
 .. cmd:: Delimit Scope @scope_name with @scope_key
 
    Binds the delimiting key :token:`scope_key` to a scope.
@@ -1565,6 +1574,10 @@ interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
 .. cmd:: Undelimit Scope @scope_name
 
    Removes the delimiting keys associated with a scope.
+
+.. exn:: Scope delimiters should not start with an underscore.
+
+   Scope delimiters starting with an underscore would make the :g:`%_` syntax ambiguous.
 
 The arguments of an :ref:`abbreviation <Abbreviations>` can be interpreted
 in a scope stack locally extended with a given scope by using the modifier
@@ -2055,7 +2068,7 @@ Number notations
 
          .. note::
             In case of multiple implicit options (for instance
-            :g:`Arguments eq_refl {A}%type_scope {x}, [_] _`), an
+            :g:`Arguments eq_refl {A}%_type_scope {x}, [_] _`), an
             argument is considered implicit when it is implicit in any of the
             options.
 

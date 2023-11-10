@@ -108,6 +108,7 @@ term1: [
 | term0 ".(" global univ_annot LIST0 arg ")"
 | term0 ".(" "@" global univ_annot LIST0 ( term9 ) ")"
 | term0 "%" IDENT
+| term0 "%_" IDENT
 | term0
 ]
 
@@ -278,6 +279,7 @@ pattern10: [
 
 pattern1: [
 | pattern0 "%" IDENT
+| pattern0 "%_" IDENT
 | pattern0
 ]
 
@@ -1222,6 +1224,7 @@ args_modifier: [
 
 scope_delimiter: [
 | "%" IDENT
+| "%_" IDENT
 ]
 
 argument_spec: [

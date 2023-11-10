@@ -25,7 +25,7 @@ Record PreCategory :=
     }.
 
 Bind Scope category_scope with PreCategory.
-Arguments identity {!C%category} / x%object : rename.
+Arguments identity {!C%_category} / x%_object : rename.
 
 Local Open Scope morphism_scope.
 
@@ -55,7 +55,7 @@ Section Functor.
                               = identity (object_of x)
     }.
 End Functor.
-Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 
 Variables C1 C2 D : PreCategory.
 

@@ -104,8 +104,8 @@ let rec cases_pattern_expr_eq p1 p2 =
       qualid_eq r1 r2 && cases_pattern_expr_eq e1 e2
     in
     List.equal equal l1 l2
-  | CPatDelimiters(s1,e1), CPatDelimiters(s2,e2) ->
-    String.equal s1 s2 && cases_pattern_expr_eq e1 e2
+  | CPatDelimiters(depth1,s1,e1), CPatDelimiters(depth2,s2,e2) ->
+    depth1 = depth2 && String.equal s1 s2 && cases_pattern_expr_eq e1 e2
   | _ -> false
 
 and cases_pattern_notation_substitution_eq (s1, n1, b1) (s2, n2, b2) =
@@ -255,7 +255,8 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
       | CGeneralization (bk1, e1), CGeneralization (bk2, e2) ->
         Glob_ops.binding_kind_eq bk1 bk2 &&
         constr_expr_eq e1 e2
-      | CDelimiters(s1,e1), CDelimiters(s2,e2) ->
+      | CDelimiters(depth1,s1,e1), CDelimiters(depth2,s2,e2) ->
+        depth1 = depth2 &&
         String.equal s1 s2 &&
         constr_expr_eq e1 e2
       | CArray(u1,t1,def1,ty1), CArray(u2,t2,def2,ty2) ->
@@ -316,7 +317,7 @@ let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
     List.fold_left (cases_pattern_fold_names f h)
       (List.fold_left (cases_pattern_fold_names f h) nacc
          (patl@List.flatten patll@List.map fst binderl)) patl'
-  | CPatDelimiters (_,pat) -> cases_pattern_fold_names f h nacc pat
+  | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f h nacc pat
   | CPatAtom (Some qid)
       when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
       let (n, acc) = nacc in
@@ -366,7 +367,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
       List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous)) bl) acc bll
     | CGeneralization (_,c) -> f n acc c
-    | CDelimiters (_,a) -> f n acc a
+    | CDelimiters (_,_,a) -> f n acc a
     | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
     | CCases (sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
@@ -433,9 +434,9 @@ let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
     let acc, binderl' = List.fold_left_map (fold_fst (fold_map_cases_pattern f h)) acc binderl in
     let acc, patl' = List.fold_left_map (fold_map_cases_pattern f h) acc patl' in
     acc, CAst.make ?loc (CPatNotation (sc,ntn,(patl,patll,binderl'),patl'))
-  | CPatDelimiters (d,pat) ->
+  | CPatDelimiters (depth,d,pat) ->
     let acc, p = fold_map_cases_pattern f h acc pat in
-    acc, CAst.make ?loc (CPatDelimiters (d,pat))
+    acc, CAst.make ?loc (CPatDelimiters (depth,d,pat))
   | CPatAtom (Some qid)
       when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
     f (qualid_basename qid) acc, p
@@ -480,7 +481,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
                     List.map (fun bl -> snd (fold_map_local_binders f g e bl)) bll))
     | CGeneralization (b,c) -> CGeneralization (b,f e c)
-    | CDelimiters (s,a) -> CDelimiters (s,f e a)
+    | CDelimiters (depth,s,a) -> CDelimiters (depth,s,f e a)
     | CRecord l -> CRecord (List.map (fun (id, c) -> (id, f e c)) l)
     | CCases (sty,rtnpo,a,bl) ->
       let bl = List.map (fun {CAst.v=(patl,rhs);loc} ->
@@ -675,8 +676,8 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatPrim p
   | CRecord l ->
      CPatRecord (List.map (fun (r,p) -> (r,coerce_to_cases_pattern_expr p)) l)
-  | CDelimiters (s,p) ->
-     CPatDelimiters (s,coerce_to_cases_pattern_expr p)
+  | CDelimiters (depth,s,p) ->
+     CPatDelimiters (depth,s,coerce_to_cases_pattern_expr p)
   | CCast (p,Some Constr.DEFAULTcast, t) ->
     CPatCast (coerce_to_cases_pattern_expr p,t)
   | CLambdaN _ | CProdN _ | CSort _ | CLetIn _ | CGeneralization _

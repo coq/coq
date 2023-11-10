@@ -876,7 +876,8 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   scope_delimiter:
-    [ [ "%"; key = IDENT -> { key } ] ]
+    [ [ "%"; key = IDENT -> { DelimUnboundedScope, key }
+      | "%_"; key = IDENT -> { DelimOnlyTmpScope, key } ] ]
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = LIST0 scope_delimiter ->

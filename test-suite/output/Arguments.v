@@ -14,10 +14,10 @@ Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) :=
 Declare Scope foo_scope.
 Declare Scope bar_scope.
 Delimit Scope foo_scope with F.
-Arguments pf {D1%F C1%type} f [D2 C2] g x : simpl never.
+Arguments pf {D1%_F C1%_type} f [D2 C2] g x : simpl never.
 About pf.
 Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
-Arguments fcomp {_ _ _}%type_scope f g x /.
+Arguments fcomp {_ _ _}%_type_scope f g x /.
 About fcomp.
 Definition volatile := fun x : nat => x.
 Arguments volatile / _.
@@ -47,13 +47,13 @@ Record r := { pi :> nat -> bool -> unit }.
 Notation "$" := 3 (only parsing) : foo_scope.
 Notation "$" := true (only parsing) : bar_scope.
 Delimit Scope bar_scope with B.
-Arguments pi _ _%F _%B.
+Arguments pi _ _%_F _%_B.
 Check (forall w : r, pi w $ $ = tt).
 Fail Check (forall w : r, w $ $ = tt).
 Axiom w : r.
-Arguments w  x%F y%B : extra scopes.
+Arguments w  x%_F y%_B : extra scopes.
 Check (w $ $ = tt).
-Fail Arguments w  _%F _%B.
+Fail Arguments w  _%_F _%_B.
 
 Definition volatilematch (n : nat) :=
   match n with

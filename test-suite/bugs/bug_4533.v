@@ -82,7 +82,7 @@ Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
                                                eisadj : forall x : A, eisretr
 (f x) = ap f (eissect x)
                                              }.
-Arguments eissect {A B}%type_scope f%function_scope {_} _.
+Arguments eissect {A B}%_type_scope f%_function_scope {_} _.
 Inductive Unit : Type1 := tt : Unit.
 Local Open Scope path_scope.
 Definition concat_p_pp {A : Type} {x y z t : A} (p : x = y) (q : y = z) (r : z

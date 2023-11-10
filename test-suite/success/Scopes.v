@@ -11,7 +11,7 @@ Check (A.opp 3).
 
 Record B := { f :> Z -> Z }.
 Variable a:B.
-Arguments a _%Z_scope : extra scopes.
+Arguments a _%_Z_scope : extra scopes.
 Check a 0.
 
 (* Check that casts activate scopes if ever possible *)
@@ -45,7 +45,7 @@ Declare Scope foo_scope.
 Delimit Scope foo_scope with foo.
 Record prod A B := pair { fst : A ; snd : B }.
 Notation "[[ t , u ]]" := (pair _ _ t u) : foo_scope.
-Arguments fst {A B} p%foo.
+Arguments fst {A B} p%_foo.
 Check [[2,3]].(fst).
 
 End ScopeProjNotation.

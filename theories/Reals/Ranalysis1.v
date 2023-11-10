@@ -32,16 +32,16 @@ Definition mirr_fct f (x:R) : R := f (- x).
 Declare Scope Rfun_scope.
 Delimit Scope Rfun_scope with F.
 
-Arguments plus_fct (f1 f2)%F x%R.
-Arguments mult_fct (f1 f2)%F x%R.
-Arguments minus_fct (f1 f2)%F x%R.
-Arguments div_fct (f1 f2)%F x%R.
-Arguments inv_fct f%F x%R.
-Arguments opp_fct f%F x%R.
-Arguments mult_real_fct a%R f%F x%R.
-Arguments div_real_fct a%R f%F x%R.
-Arguments comp (f1 f2)%F x%R.
-Arguments mirr_fct f%F x%R.
+Arguments plus_fct (f1 f2)%_F x%_R.
+Arguments mult_fct (f1 f2)%_F x%_R.
+Arguments minus_fct (f1 f2)%_F x%_R.
+Arguments div_fct (f1 f2)%_F x%_R.
+Arguments inv_fct f%_F x%_R.
+Arguments opp_fct f%_F x%_R.
+Arguments mult_real_fct a%_R f%_F x%_R.
+Arguments div_real_fct a%_R f%_F x%_R.
+Arguments comp (f1 f2)%_F x%_R.
+Arguments mirr_fct f%_F x%_R.
 
 Infix "+" := plus_fct : Rfun_scope.
 Notation "- x" := (opp_fct x) : Rfun_scope.
@@ -79,8 +79,8 @@ Definition constant_D_eq f (D:R -> Prop) (c:R) : Prop :=
 Definition continuity_pt f (x0:R) : Prop := continue_in f no_cond x0.
 Definition continuity f : Prop := forall x:R, continuity_pt f x.
 
-Arguments continuity_pt f%F x0%R.
-Arguments continuity f%F.
+Arguments continuity_pt f%_F x0%_R.
+Arguments continuity f%_F.
 
 Lemma continuity_pt_locally_ext :
   forall f g a x, 0 < a -> (forall y, Rdist y x < a -> f y = g y) ->
@@ -296,12 +296,12 @@ Definition derivable f := forall x:R, derivable_pt f x.
 Definition derive_pt f (x:R) (pr:derivable_pt f x) := proj1_sig pr.
 Definition derive f (pr:derivable f) (x:R) := derive_pt f x (pr x).
 
-Arguments derivable_pt_lim f%F x%R l.
-Arguments derivable_pt_abs f%F (x l)%R.
-Arguments derivable_pt f%F x%R.
-Arguments derivable f%F.
-Arguments derive_pt f%F x%R pr.
-Arguments derive f%F pr x.
+Arguments derivable_pt_lim f%_F x%_R l.
+Arguments derivable_pt_abs f%_F (x l)%_R.
+Arguments derivable_pt f%_F x%_R.
+Arguments derivable f%_F.
+Arguments derive_pt f%_F x%_R pr.
+Arguments derive f%_F pr x.
 
 Definition antiderivative f (g:R -> R) (a b:R) : Prop :=
   (forall x:R,

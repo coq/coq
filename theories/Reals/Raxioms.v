@@ -288,7 +288,7 @@ Fixpoint INR (n:nat) : R :=
   | S O => 1
   | S n => INR n + 1
   end.
-Arguments INR n%nat.
+Arguments INR n%_nat.
 
 (**********************************************************)
 (** *    [R] Archimedean                                  *)

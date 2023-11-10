@@ -145,9 +145,9 @@ Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
   eisadj : forall x : A, eisretr (f x) = ap f (eissect x)
 }.
 
-Arguments eisretr {A B}%type_scope f%function_scope {_} _.
-Arguments eissect {A B}%type_scope f%function_scope {_} _.
-Arguments eisadj {A B}%type_scope f%function_scope {_} _.
+Arguments eisretr {A B}%_type_scope f%_function_scope {_} _.
+Arguments eissect {A B}%_type_scope f%_function_scope {_} _.
+Arguments eisadj {A B}%_type_scope f%_function_scope {_} _.
 
 Record Equiv A B := BuildEquiv {
   equiv_fun : A -> B ;

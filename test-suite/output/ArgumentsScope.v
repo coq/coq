@@ -40,7 +40,7 @@ Notation "'tt'" := false : B_scope.
 
 Definition f (x : bool) := x.
 
-Arguments f x%A%B.
+Arguments f x%_A%_B.
 About f.
 
 Check f tt.
@@ -48,7 +48,7 @@ Set Printing All.
 Check f tt.
 Unset Printing All.
 
-Arguments f x%B%A.
+Arguments f x%_B%_A.
 About f.
 
 Check f tt.

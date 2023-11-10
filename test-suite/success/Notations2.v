@@ -30,7 +30,7 @@ f x := @foo x   do not deactivate further arguments and scopes
 
 Inductive prod' A : Type -> Type :=
 | pair' (a:A) B (b:B) (c:bool) : prod' A B.
-Arguments pair' [A] a%bool_scope [B] b%bool_scope c%bool_scope.
+Arguments pair' [A] a%_bool_scope [B] b%_bool_scope c%_bool_scope.
 Notation "0" := true : bool_scope.
 
 (* 1. Abbreviations do not stop implicit arguments to be inserted and scopes to be used *)

@@ -153,3 +153,9 @@ Fail Check {?[n],y|0=0}.
 Section C.
 Notation "f $$$ x" := (id f x) (at level 10, left associativity).
 End C.
+
+(* Scope names should not start with an underscore *)
+Fail Declare Scope _scope_start_underscore.
+
+(* Scope delimiters should not start with an underscore *)
+Fail Delimit Scope type_scope with _type.

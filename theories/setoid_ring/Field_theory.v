@@ -148,7 +148,7 @@ Delimit Scope PE_scope with poly.
 Notation NPEeval := (PEeval rO rI radd rmul rsub ropp phi Cp_phi rpow).
 Notation "P @ l" := (NPEeval l P) (at level 10, no associativity).
 
-Arguments PEc _ _%coef.
+Arguments PEc _ _%_coef.
 
 Notation "0" := (PEc 0) : PE_scope.
 Notation "1" := (PEc 1) : PE_scope.

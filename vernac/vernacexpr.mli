@@ -18,6 +18,8 @@ type coercion_class = FunClass | SortClass | RefClass of qualid or_by_notation
 type goal_identifier = string
 type scope_name = string
 
+type scope_delimiter = delimiter_depth * scope_name
+
 type goal_reference =
   | OpenSubgoals
   | NthGoal of int
@@ -67,7 +69,7 @@ type glob_search_where = InHyp | InConcl | Anywhere
 
 type search_item =
   | SearchSubPattern of (glob_search_where * bool) * constr_pattern_expr
-  | SearchString of (glob_search_where * bool) * string * scope_name option
+  | SearchString of (glob_search_where * bool) * string * scope_delimiter option
   | SearchKind of Decls.logical_kind
 
 type search_request =
@@ -306,7 +308,7 @@ type module_binder = export_with_cats option * lident list * module_ast_inl
 type vernac_one_argument_status = {
   name : Name.t;
   recarg_like : bool;
-  notation_scope : string CAst.t list;
+  notation_scope : scope_delimiter CAst.t list;
   implicit_status : Glob_term.binding_kind;
 }
 

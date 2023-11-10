@@ -23,9 +23,9 @@ Bind Scope category_scope with SpecializedCategory.
 Bind Scope object_scope with Object.
 Bind Scope morphism_scope with Morphism.
 
-Arguments Object {obj%type} C%category / : rename.
-Arguments Morphism {obj%type} !C%category s d : rename. (* , simpl nomatch. *)
-Arguments Compose {obj%type} [!C%category s%object d%object d'%object] m1%morphism m2%morphism : rename.
+Arguments Object {obj%_type} C%_category / : rename.
+Arguments Morphism {obj%_type} !C%_category s d : rename. (* , simpl nomatch. *)
+Arguments Compose {obj%_type} [!C%_category s%_object d%_object d'%_object] m1%_morphism m2%_morphism : rename.
 
 Record Category := {
   CObject : Type;
@@ -58,8 +58,8 @@ Bind Scope functor_scope with Functor.
 
 Arguments SpecializedFunctor {objC} C {objD} D.
 Arguments Functor C D.
-Arguments ObjectOf {objC%type C%category objD%type D%category} F%functor c%object : rename, simpl nomatch.
-Arguments MorphismOf {objC%type} [C%category] {objD%type} [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments ObjectOf {objC%_type C%_category objD%_type D%_category} F%_functor c%_object : rename, simpl nomatch.
+Arguments MorphismOf {objC%_type} [C%_category] {objD%_type} [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 
 Section FunctorComposition.
   Context `(B : @SpecializedCategory objB).

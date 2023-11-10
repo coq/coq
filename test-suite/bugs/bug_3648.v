@@ -21,7 +21,7 @@ Record PreCategory :=
                 -> morphism s d'
     where "f 'o' g" := (compose f g)
   }.
-Arguments identity {!C%category} / x%object : rename.
+Arguments identity {!C%_category} / x%_object : rename.
 
 Infix "o" := (@compose _ _ _ _) : morphism_scope.
 
@@ -47,7 +47,7 @@ Record Functor (C D : PreCategory) :=
     identity_of : forall x, morphism_of _ _ (identity x)
                             = identity (object_of x)
   }.
-Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 Notation "F '_1' m" := (morphism_of F m) (at level 10, no associativity) : morphism_scope.
 Axiom cheat : forall {A}, A.
 Record NaturalTransformation C D (F G : Functor C D) := { components_of :> forall c, morphism D (F c) (G c) }.

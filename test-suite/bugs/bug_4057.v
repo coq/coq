@@ -20,7 +20,7 @@ Record string_like (CharType : Type) :=
 
 Delimit Scope string_like_scope with string_like.
 Bind Scope string_like_scope with String.
-Arguments Length {_%type_scope _} _%string_like.
+Arguments Length {_%_type_scope _} _%_string_like.
 Infix "++" := (@Concat _ _) : string_like_scope.
 
 Definition str_le {CharType} {String : string_like CharType} (s1 s2 : String)

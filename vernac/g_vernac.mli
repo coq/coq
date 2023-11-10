@@ -47,7 +47,7 @@ val of_type_inst :
 
 val section_subset_expr : Vernacexpr.section_subset_expr Pcoq.Entry.t
 
-val scope_delimiter : Vernacexpr.scope_name Pcoq.Entry.t
+val scope_delimiter : Vernacexpr.scope_delimiter Pcoq.Entry.t
 
 val syntax_modifiers : Vernacexpr.syntax_modifier CAst.t list Pcoq.Entry.t
 

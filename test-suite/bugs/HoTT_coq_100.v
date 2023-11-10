@@ -12,9 +12,9 @@ Record Category (obj : Type) :=
       Compose : forall s d d', Morphism d d' -> Morphism s d -> Morphism s d'
     }.
 
-Arguments Identity {obj%type} [!C] x : rename.
+Arguments Identity {obj%_type} [!C] x : rename.
 
-Arguments Compose {obj%type} [!C s d d'] m1 m2 : rename.
+Arguments Compose {obj%_type} [!C s d d'] m1 m2 : rename.
 Record > Category' :=
   {
     LSObject : Type;

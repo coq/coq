@@ -167,7 +167,7 @@ Delimit Scope hex_nat_scope with xnat.
 Declare Scope nat_scope.
 Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
-Arguments S _%nat.
+Arguments S _%_nat.
 
 Register nat as num.nat.type.
 Register O as num.nat.O.

@@ -42,7 +42,7 @@ Record Functor (C D : PreCategory) :=
   }.
 
 Bind Scope functor_scope with Functor.
-Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
+Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 Notation "F '_1' m" := (morphism_of F m) (at level 10, no associativity) : morphism_scope.
 Local Open Scope morphism_scope.
 

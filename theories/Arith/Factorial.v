@@ -19,7 +19,7 @@ Fixpoint fact (n:nat) : nat :=
     | S n => S n * fact n
   end.
 
-Arguments fact n%nat.
+Arguments fact n%_nat.
 
 Lemma lt_O_fact n : 0 < fact n.
 Proof.

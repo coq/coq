@@ -398,7 +398,7 @@ Module SSr.
    Coercion model_structure : model >-> structure.
    Delimit Scope real_scope with Rval.
    Local Open Scope real_scope.
-   Arguments add {R} x%Rval y%Rval : rename, simpl never.
+   Arguments add {R} x%_Rval y%_Rval : rename, simpl never.
 
    Reserved Notation "x == y" (at level 70, no associativity).
 

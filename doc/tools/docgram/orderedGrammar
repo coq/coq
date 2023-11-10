@@ -61,6 +61,7 @@ term_projection: [
 
 term_scope: [
 | term0 "%" scope_key
+| term0 "%_" scope_key
 ]
 
 term_evar: [
@@ -447,6 +448,7 @@ pattern10: [
 
 pattern1: [
 | pattern0 "%" scope_key
+| pattern0 "%_" scope_key
 | pattern0
 ]
 
@@ -648,13 +650,13 @@ arg_specs: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" LIST0 ( "%" scope )
-| "[" LIST1 argument_spec "]" LIST0 ( "%" scope )
-| "{" LIST1 argument_spec "}" LIST0 ( "%" scope )
+| "(" LIST1 argument_spec ")" LIST0 [ "%" scope | "%_" scope ]
+| "[" LIST1 argument_spec "]" LIST0 [ "%" scope | "%_" scope ]
+| "{" LIST1 argument_spec "}" LIST0 [ "%" scope | "%_" scope ]
 ]
 
 argument_spec: [
-| OPT "!" name LIST0 ( "%" scope )
+| OPT "!" name LIST0 [ "%" scope | "%_" scope ]
 ]
 
 implicits_alt: [

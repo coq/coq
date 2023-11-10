@@ -77,7 +77,7 @@ Record string_like (CharType : Type) :=
 
 Delimit Scope string_like_scope with string_like.
 Bind Scope string_like_scope with String.
-Arguments Length {_%type_scope _} _%string_like.
+Arguments Length {_%_type_scope _} _%_string_like.
 Notation "[[ x ]]" := (@Singleton _ _ x) : string_like_scope.
 Infix "++" := (@Concat _ _) : string_like_scope.
 Infix "=s" := (@bool_eq _ _) (at level 70, right associativity) : string_like_scope.

@@ -22,7 +22,7 @@ Section B.
   Fail Check f 1 0.   (* 0 in nat, 0 in bool *)
   Fail Check f 0 0.   (* 0 in nat, 0 in bool *)
   Check f 0 1.        (* 0 and 1 in nat *)
-  Global Arguments f _%nat_scope _%nat_scope.
+  Global Arguments f _%_nat_scope _%_nat_scope.
   Check f 0 0.        (* both 0 in nat *)
 End B.
 
@@ -48,5 +48,5 @@ Fail Check g 0 0 1. (* 2nd 0 in bool *)
 Fixpoint arr n := match n with 0%nat => nat | S n => nat -> arr n end.
 Fixpoint lam n : arr n := match n with 0%nat => 0%nat | S n => fun x => lam n  end.
 Notation "0" := true.
-Arguments lam _%nat_scope _%nat_scope : extra scopes.
+Arguments lam _%_nat_scope _%_nat_scope : extra scopes.
 Check (lam 1 0).

@@ -2,7 +2,7 @@
 
 Definition f (A:Type) (a:A) := a.
 
-Local Arguments f [A]%type_scope _%type_scope.
+Local Arguments f [A]%_type_scope _%_type_scope.
 
 (* Used in ImportedCoercion.v to test the locality flag *)
 

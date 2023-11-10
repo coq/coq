@@ -76,6 +76,7 @@ let interp_search_item env sigma =
       when Id.is_valid_ident_part s && String.equal (String.drop_simple_quotes s) s ->
       GlobSearchString s
   | SearchString ((where,head),s,sc) ->
+      let sc = Option.map snd sc in
       let ref =
         Notation.interp_notation_as_global_reference
           ~head:false (fun _ -> true) s sc in

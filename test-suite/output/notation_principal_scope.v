@@ -1,4 +1,4 @@
-Arguments conj {_ _} _ _%function.
+Arguments conj {_ _} _ _%_function.
 
 Set Warnings "+inconsistent-scopes".
 Fail Notation pp X := (conj X X).
