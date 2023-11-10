@@ -55,7 +55,7 @@ type t =
 type glob_evar_kind =
   | GImplicitArg of GlobRef.t * (int * Id.t option) * bool (** Force inference *)
   | GBinderType of Name.t
-  | GNamedHole of Id.t (* coming from some ?[id] syntax *)
+  | GNamedHole of bool (* fresh? *) * Id.t (* coming from some ?[id] syntax *)
   | GQuestionMark of question_mark
   | GCasesType
   | GInternalHole

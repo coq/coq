@@ -19,7 +19,6 @@ open Glob_term
 open Constrexpr
 open Constrexpr_ops
 open Util
-open Namegen
 
 open Pcoq
 open Pcoq.Prim
@@ -30,7 +29,7 @@ let ldots_var = Id.of_string ".."
 
 let binder_of_name expl { CAst.loc = loc; v = na } =
   CLocalAssum ([CAst.make ?loc na], Default expl,
-    CAst.make ?loc @@ CHole (Some (GBinderType na), IntroAnonymous))
+    CAst.make ?loc @@ CHole (Some (GBinderType na)))
 
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
@@ -296,9 +295,9 @@ GRAMMAR EXTEND Gram
   ;
   atomic_constr:
     [ [ s = sort   -> { CAst.make ~loc @@ CSort s }
-      | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous) }
-      | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v) }
-      | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroFresh id.CAst.v) }
+      | "_"      -> { CAst.make ~loc @@ CHole (None) }
+      | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (Some (GNamedHole (false, id.CAst.v))) }
+      | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (Some (GNamedHole (true, id.CAst.v))) }
       | id = pattern_ident; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
   ;
   inst:
@@ -440,7 +439,7 @@ GRAMMAR EXTEND Gram
         { binders_of_names (id::idl) @ bl }
       | id1 = name; ".."; id2 = name ->
         { [CLocalAssum ([id1;(CAst.make ~loc (Name ldots_var));id2],
-                        Default Explicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))] }
+                        Default Explicit, CAst.make ~loc @@ CHole (None))] }
       | bl = closed_binder; bl' = binders ->
         { bl@bl' } ] ]
   ;
@@ -448,7 +447,7 @@ GRAMMAR EXTEND Gram
     [ [ l = LIST0 binder -> { List.flatten l } ] ]
   ;
   binder:
-    [ [ id = name -> { [CLocalAssum ([id],Default Explicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))] }
+    [ [ id = name -> { [CLocalAssum ([id],Default Explicit, CAst.make ~loc @@ CHole (None))] }
       | bl = closed_binder -> { bl } ] ]
   ;
   closed_binder:
@@ -463,21 +462,21 @@ GRAMMAR EXTEND Gram
       | "("; id = name; ":"; t = lconstr; ":="; c = lconstr; ")" ->
         { [CLocalDef (id,c,Some t)] }
       | "{"; id = name; "}" ->
-        { [CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))] }
+        { [CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None))] }
       | "{"; id = name; idl = LIST1 name; ":"; c = lconstr; "}" ->
         { [CLocalAssum (id::idl,Default MaxImplicit,c)] }
       | "{"; id = name; ":"; c = lconstr; "}" ->
         { [CLocalAssum ([id],Default MaxImplicit,c)] }
       | "{"; id = name; idl = LIST1 name; "}" ->
-        { List.map (fun id -> CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))) (id::idl) }
+        { List.map (fun id -> CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None))) (id::idl) }
       | "["; id = name; "]" ->
-        { [CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))] }
+        { [CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None))] }
       | "["; id = name; idl = LIST1 name; ":"; c = lconstr; "]" ->
         { [CLocalAssum (id::idl,Default NonMaxImplicit,c)] }
       | "["; id = name; ":"; c = lconstr; "]" ->
         { [CLocalAssum ([id],Default NonMaxImplicit,c)] }
       | "["; id = name; idl = LIST1 name; "]" ->
-        { List.map (fun id -> CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous))) (id::idl) }
+        { List.map (fun id -> CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None))) (id::idl) }
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
         { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Explicit, b), t)) tc }
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
@@ -510,7 +509,7 @@ GRAMMAR EXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c = lconstr -> { c }
-      | -> { CAst.make ~loc @@ CHole (None, IntroAnonymous) } ] ]
+      | -> { CAst.make ~loc @@ CHole (None) } ] ]
   ;
   let_type_cstr:
     [ [ c = OPT [":"; c = lconstr -> { c } ] -> { Loc.tag ~loc c } ] ]

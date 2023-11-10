@@ -25,7 +25,7 @@ type notation_constr =
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
   | NProj of (Constant.t * glob_instance option) * notation_constr list * notation_constr
-  | NHole of glob_evar_kind * Namegen.intro_pattern_naming_expr
+  | NHole of glob_evar_kind
   | NGenarg of Genarg.glob_generic_argument
   | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   (* Part only in [glob_constr] *)

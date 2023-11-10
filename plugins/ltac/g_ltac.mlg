@@ -16,7 +16,6 @@ open Util
 open Pp
 open Constrexpr
 open Tacexpr
-open Namegen
 open Genarg
 open Genredexpr
 open Names
@@ -241,7 +240,7 @@ GRAMMAR EXTEND Gram
               | { CAst.v = CCast (t, Some DEFAULTcast, ty) } -> Term t, Some (Term ty)
               | _ -> mpv, None)
             | _ -> mpv, None
-          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous))) ty) }
+          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None))) ty) }
     ] ]
   ;
   match_context_rule:

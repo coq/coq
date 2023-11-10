@@ -706,7 +706,7 @@ let rec postprocess token_kind ?loc ty to_post post g =
     | [], [] -> []
     | ToPostHole :: a, gl ->
        let e = GImplicitArg (r, (n, None), true) in
-       let h = DAst.make ?loc (Glob_term.GHole (e, Namegen.IntroAnonymous)) in
+       let h = DAst.make ?loc (Glob_term.GHole e) in
        h :: f (n+1) a gl
     | (ToPostCopy | ToPostCheck _) :: a, g :: gl -> g :: f (n+1) a gl
     | ToPostAs c :: a, g :: gl ->

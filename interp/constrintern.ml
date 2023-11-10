@@ -473,12 +473,13 @@ let test_kind_tolerant ?loc = function
 (**)
 
 let locate_if_hole ?loc na c = match DAst.get c with
-  | GHole (_,naming) ->
+  | GHole (GNamedHole _) -> c
+  | GHole _ ->
       (try match na with
         | Name id -> glob_constr_of_notation_constr ?loc
                        (Reserve.find_reserved_type id)
         | Anonymous -> raise Not_found
-      with Not_found -> DAst.make ?loc @@ GHole (GBinderType na, naming))
+      with Not_found -> DAst.make ?loc @@ GHole (GBinderType na))
   | _ -> c
 
 let pure_push_name_env (id,implargs,is_ntn_id) env =
@@ -535,7 +536,7 @@ let intern_generalized_binder intern_type ntnvars
   let b' = check_implicit_meaningful ?loc b' env in
   let bl = List.map
     CAst.(map (fun id ->
-      (Name id, MaxImplicit, DAst.make ?loc @@ GHole (GBinderType (Name id), IntroAnonymous))))
+      (Name id, MaxImplicit, DAst.make ?loc @@ GHole (GBinderType (Name id)))))
     fvs
   in
   let na = match na with
@@ -578,7 +579,7 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
   | GLocalAssum (na,bk,t) -> (na,bk,None,t)
   | GLocalDef (na,c,Some t) -> (na,Explicit,Some c,t)
   | GLocalDef (na,c,None) ->
-      let t = DAst.make ?loc @@ GHole (GBinderType na,IntroAnonymous) in
+      let t = DAst.make ?loc @@ GHole (GBinderType na) in
       (na,Explicit,Some c,t)
   | GLocalPattern (_,_,_,_) ->
       Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
@@ -611,7 +612,7 @@ let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;lo
   let na = make ?loc @@ Name id in
   let t = match t with
     | Some t -> t
-    | None -> CAst.make ?loc @@ CHole (Some (GBinderType na.v),IntroAnonymous) in
+    | None -> CAst.make ?loc @@ CHole (Some (GBinderType na.v)) in
   let _, bl' = intern_assumption intern ntnvars env [na] (Default bk) t in
   let {v=(_,bk,t)} = List.hd bl' in
   env,((disjpat,il),id),na,bk,t
@@ -647,11 +648,11 @@ let intern_generalization intern env ntnvars loc bk c =
         if pi then
           (fun {loc=loc';v=id} acc ->
             DAst.make ?loc:(Loc.merge_opt loc' loc) @@
-            GProd (Name id, bk, DAst.make ?loc:loc' @@ GHole (GBinderType (Name id), IntroAnonymous), acc))
+            GProd (Name id, bk, DAst.make ?loc:loc' @@ GHole (GBinderType (Name id)), acc))
         else
           (fun {loc=loc';v=id} acc ->
             DAst.make ?loc:(Loc.merge_opt loc' loc) @@
-            GLambda (Name id, bk, DAst.make ?loc:loc' @@ GHole (GBinderType (Name id), IntroAnonymous), acc))
+            GLambda (Name id, bk, DAst.make ?loc:loc' @@ GHole (GBinderType (Name id)), acc))
     in
       List.fold_right (fun ({loc;v=id} as lid) (env, acc) ->
         let env' = push_name_env ntnvars [] env CAst.(make @@ Name id) in
@@ -722,7 +723,7 @@ let canonize_type = function
   | None -> None
   | Some t as t' ->
     match DAst.get t with
-    | GHole (GBinderType _,IntroAnonymous) -> None
+    | GHole (GBinderType _) -> None
     | _ -> t'
 
 let set_type ty1 ty2 =
@@ -759,7 +760,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
       (* Do not try to interpret a variable as a constructor *)
       let na = out_patvar pat in
       let env = push_name_env ntnvars [] env na in
-      let ty' = DAst.make @@ GHole (GBinderType na.CAst.v,IntroAnonymous) in
+      let ty' = DAst.make @@ GHole (GBinderType na.CAst.v) in
       (renaming,env), None, na.v, bk, set_type ty (Some ty')
     else
       (* Interpret as a pattern *)
@@ -798,7 +799,7 @@ let terms_of_binders bl =
     | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
        let qid = qualid_of_path ?loc (Nametab.path_of_global (GlobRef.ConstructRef c)) in
-       let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous) in
+       let hole = CAst.make ?loc @@ CHole (None) in
        let params = List.make (Inductiveops.inductive_nparams (Global.env()) (fst c)) hole in
        CAppExpl ((qid,None),params @ List.map term_of_pat l)) pt in
   let rec extract_variables l = match l with
@@ -895,7 +896,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         | _ -> AddTermIter (Id.Map.add y (a,(scopt,subscopes)) terms) in
       let l = List.map select_iter l in
       aux (terms,None,Some (l,terminator,iter)) subinfos (NVar ldots_var)
-    | NHole (knd, naming) ->
+    | NHole (knd) ->
       let knd = match knd with
       | GBinderType (Name id as na) ->
         let na =
@@ -907,7 +908,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         GBinderType na
       | _ -> knd
       in
-      DAst.make ?loc @@ GHole (knd, naming)
+      DAst.make ?loc @@ GHole (knd)
     | NGenarg arg ->
       let mk_env id (c, scopes) map =
         let nenv = set_env_scopes env scopes in
@@ -1772,7 +1773,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
   (* Interpret a primitive notation (part of Glob_ops.cases_pattern_of_glob_constr) *)
   let rec rcp_of_glob scopes x = DAst.(map_with_loc (fun ?loc -> function
     | GVar id -> RCPatAtom (Some (CAst.make ?loc id,scopes))
-    | GHole (_,_) -> RCPatAtom None
+    | GHole _ -> RCPatAtom None
     | GRef (g,_) -> RCPatCstr (g, [])
     | GApp (r, l) ->
       begin match DAst.get r with
@@ -1965,7 +1966,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
            (if revert then List.rev l else l) termin
        with Not_found ->
          anomaly (Pp.str "Inconsistent substitution of recursive notation."))
-    | NHole (_,_) ->
+    | NHole _ ->
       if not (List.is_empty args) then user_err ?loc (str "Such pattern cannot have arguments.");
       DAst.make ?loc @@ RCPatAtom None
     | NGenarg _ ->
@@ -2062,7 +2063,7 @@ let set_hole_implicit i b c =
   | GProj ((cst,_), _, _) -> loc, GlobRef.ConstRef cst
   | GVar id -> loc, GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Only refs have implicits.") in
-  Loc.tag ?loc (GImplicitArg (r,i,b),IntroAnonymous)
+  Loc.tag ?loc (GImplicitArg (r,i,b))
 
 let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
@@ -2285,14 +2286,14 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                  (GQuestionMark { Evar_kinds.default_question_mark with
                      Evar_kinds.qm_obligation=st;
                      Evar_kinds.qm_record_field=Some fieldinfo
-                }) , IntroAnonymous))
+                })))
        in
        begin
           match fields with
             | None -> user_err ?loc (str"No constructor inference.")
             | Some (n, constrname, args) ->
                 let args_scopes = find_arguments_scope constrname in
-                let pars = List.make n (CAst.make ?loc @@ CHole (None, IntroAnonymous)) in
+                let pars = List.make n (CAst.make ?loc @@ CHole (None)) in
                 let args = intern_args env args_scopes (List.rev_append pars args) in
                 let hd = DAst.make @@ GRef (constrname,None) in
                 DAst.make ?loc @@ GApp (hd, args)
@@ -2335,12 +2336,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
              let main_sub_eqn = CAst.make @@
                ([],thepats, (* "|p1,..,pn" *)
                 Option.cata (intern_type_no_implicit env')
-                  (DAst.make ?loc @@ GHole (GCasesType, IntroAnonymous))
+                  (DAst.make ?loc @@ GHole (GCasesType))
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
                if List.for_all (irrefutable globalenv) thepats then [] else
                   [CAst.make @@ ([],List.make (List.length thepats) (DAst.make @@ PatVar Anonymous), (* "|_,..,_" *)
-                   DAst.make @@ GHole(GImpossibleCase,IntroAnonymous))]   (* "=> _" *) in
+                   DAst.make @@ GHole(GImpossibleCase))]   (* "=> _" *) in
              Some (DAst.make @@ GCases(RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
         in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
@@ -2366,17 +2367,15 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_type (slide_binders env'') p) po in
         DAst.make ?loc @@
         GIf (c', (na', p'), intern env b1, intern env b2)
-    | CHole (k, naming) ->
+    | CHole k ->
         let k = match k with
         | None ->
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
-           (match naming with
-           | IntroIdentifier id -> GNamedHole id
-           | _ -> GQuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st; })
+           GQuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st; }
         | Some k -> k
         in
         DAst.make ?loc @@
-        GHole (k, naming)
+        GHole k
     | CGenargGlob gen -> DAst.make ?loc @@ GGenarg gen
     | CGenarg gen ->
         let (ltacvars, ntnvars) = lvar in
@@ -2580,7 +2579,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             (* with implicit arguments if maximal insertion is set *)
             []
           else
-              (DAst.map_from_loc (fun ?loc (a,b) -> GHole(a,b))
+              (DAst.map_from_loc (fun ?loc a -> GHole a)
                 (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c)
               ) :: aux (n+1) impl' subscopes' eargs rargs
           end

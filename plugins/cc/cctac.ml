@@ -449,7 +449,7 @@ let cc_tactic depth additional_terms b =
       | Incomplete terms_to_complete ->
         let open Glob_term in
         let env = Proofview.Goal.env gl in
-        let hole = DAst.make @@ GHole (GInternalHole, Namegen.IntroAnonymous) in
+        let hole = DAst.make @@ GHole (GInternalHole) in
         let pr_missing (c, missing) =
           let c = Detyping.detype Detyping.Now Id.Set.empty env sigma c in
           let holes = List.init missing (fun _ -> hole) in

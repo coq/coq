@@ -183,8 +183,8 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> glob_sort_eq s1 s2
-  | GHole (_kn1, nam1), GHole (_kn2, nam2) ->
-    Namegen.intro_pattern_naming_eq nam1 nam2
+  | GHole (_kn1), GHole (_kn2) ->
+    true (* this deserves a FIXME *)
   | GGenarg gn1, GGenarg gn2 ->
     gn1 == gn2 (* Only thing sensible *)
   | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
@@ -541,7 +541,7 @@ let rec cases_pattern_of_glob_constr env na c =
       raise Not_found
     | Anonymous -> PatVar (Name id)
     end
-  | GHole (_,_) -> PatVar na
+  | GHole _ -> PatVar na
   | GGenarg _ -> PatVar na (* XXX does this really make sense? *)
   | GRef (GlobRef.VarRef id,_) -> PatVar (Name id)
   | GRef (GlobRef.ConstructRef cstr,_) -> PatCstr (cstr,[],na)
@@ -606,7 +606,7 @@ let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun
   | PatVar Anonymous when not isclosed ->
       GHole (GQuestionMark {
         Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
-      },Namegen.IntroAnonymous)
+      })
   | _ -> raise Not_found
   ) x
 
@@ -622,11 +622,16 @@ let glob_constr_of_cases_pattern env p = glob_constr_of_cases_pattern_aux env fa
 let kind_of_glob_kind = function
 | GImplicitArg (gr, p, b) -> ImplicitArg (gr, p, b)
 | GBinderType na -> BinderType na
-| GNamedHole id -> NamedHole id
+| GNamedHole (fresh, id) -> NamedHole id
 | GQuestionMark qm -> QuestionMark qm
 | GCasesType -> CasesType false
 | GInternalHole -> InternalHole
 | GImpossibleCase -> ImpossibleCase
+
+let naming_of_glob_kind = function
+| GNamedHole (true, id) -> Namegen.IntroFresh id
+| GNamedHole (false, id) -> Namegen.IntroIdentifier id
+| _ -> Namegen.IntroAnonymous
 
 (* This has to be in some file... *)
 

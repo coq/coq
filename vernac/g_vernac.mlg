@@ -22,7 +22,6 @@ open Constrexpr_ops
 open Extend
 open Decls
 open Declaremods
-open Namegen
 
 module C = Constr
 
@@ -540,7 +539,7 @@ GRAMMAR EXTEND Gram
              ((NoCoercion,NoInstance),DefExpr(id,l,b,None)) } ] ]
   ;
   record_binder:
-    [ [ id = name -> { ((NoCoercion,NoInstance),AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous))) }
+    [ [ id = name -> { ((NoCoercion,NoInstance),AssumExpr(id, [], CAst.make ~loc @@ CHole (None))) }
       | id = name; f = field_body -> { f id } ] ]
   ;
   assum_list:
@@ -559,7 +558,7 @@ GRAMMAR EXTEND Gram
       t= [ coe = of_type_inst; c = lconstr ->
                     { fun l attr id -> ((attr, fst coe, snd coe),(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l attr id -> ((attr,NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous)))) } ]
+                 { fun l attr id -> ((attr,NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None)))) } ]
          -> { t l }
      ]]
 ;

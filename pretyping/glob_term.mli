@@ -79,7 +79,7 @@ type binding_kind = Explicit | MaxImplicit | NonMaxImplicit
 type glob_evar_kind = Evar_kinds.glob_evar_kind =
   | GImplicitArg of GlobRef.t * (int * Id.t option) * bool (** Force inference *)
   | GBinderType of Name.t
-  | GNamedHole of Id.t (* coming from some ?[id] syntax *)
+  | GNamedHole of bool (* fresh? *) * Id.t (* coming from some ?[id] syntax *)
   | GQuestionMark of Evar_kinds.question_mark
   | GCasesType
   | GInternalHole
@@ -106,7 +106,7 @@ type 'a glob_constr_r =
   | GRec  of glob_fix_kind * Id.t array * 'a glob_decl_g list array *
              'a glob_constr_g array * 'a glob_constr_g array
   | GSort of glob_sort
-  | GHole of glob_evar_kind * Namegen.intro_pattern_naming_expr
+  | GHole of glob_evar_kind
   | GGenarg of Genarg.glob_generic_argument
   | GCast of 'a glob_constr_g * Constr.cast_kind option * 'a glob_constr_g
   | GProj of (Constant.t * glob_instance option) * 'a glob_constr_g list * 'a glob_constr_g

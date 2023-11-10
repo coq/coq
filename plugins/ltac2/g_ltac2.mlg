@@ -839,7 +839,7 @@ GRAMMAR EXTEND Gram
                 let ty = CAst.make ?loc:ty.loc @@ QConstrMatchPattern ty in
                 t, ty
               | _ ->
-                let ty = CAst.make @@ QConstrMatchPattern (CAst.make @@ CHole (None, IntroAnonymous)) in
+                let ty = CAst.make @@ QConstrMatchPattern (CAst.make @@ CHole None) in
                 bod, ty
           in
           (na, Some bod, ty) }
