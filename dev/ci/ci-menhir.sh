@@ -10,6 +10,8 @@ git_download menhirlib
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/menhirlib"
+  sed -i.bak "s/unreleased/$(date +%Y%m%d)/" dune-project
+  echo "Definition require_$(date +%Y%m%d) := tt." > coq-menhirlib/src/Version.v
   dune build @install -p menhirLib,menhirSdk,menhir
   dune install -p menhirLib,menhirSdk,menhir menhir menhirSdk menhirLib --prefix="$CI_INSTALL_DIR"
 
