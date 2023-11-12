@@ -94,16 +94,6 @@ let from_list (l : Q.t list) =
   in
   xfrom_list 0 l
 
-let to_list m =
-  let rec xto_list i l =
-    match l with
-    | [] -> []
-    | {var = x; coe = v} :: l' ->
-      if Int.equal i x then v :: xto_list (i + 1) l'
-      else Q.zero :: xto_list (i + 1) l
-  in
-  xto_list 0 m
-
 let cons i v rst = if v =/ Q.zero then rst else {var = i; coe = v} :: rst
 
 let rec update i f t =
@@ -205,14 +195,6 @@ let variables v =
 let decomp_cst v =
   match v with {var = 0; coe = vl} :: v -> (vl, v) | _ -> (Q.zero, v)
 
-let rec decomp_at i v =
-  match v with
-  | [] -> (Q.zero, null)
-  | {var = vr; coe = vl} :: r ->
-    if Int.equal i vr then (vl, r)
-    else if i < vr then (Q.zero, v)
-    else decomp_at i r
-
 let decomp_fst v =
   match v with [] -> ((0, Q.zero), []) | x :: v -> ((x.var, x.coe), v)
 
@@ -227,15 +209,6 @@ let rec subst (vr : int) (e : t) (v : t) =
     | _ -> assert false )
 
 let fold f acc v = List.fold_left (fun acc x -> f acc x.var x.coe) acc v
-
-let fold_error f acc v =
-  let rec fold acc v =
-    match v with
-    | [] -> Some acc
-    | {var = x; coe = i} :: v' -> (
-      match f acc x i with None -> None | Some acc' -> fold acc' v' )
-  in
-  fold acc v
 
 let rec find p v =
   match v with
@@ -287,21 +260,6 @@ let dotproduct v1 v2 =
       else dot acc v1 v2'
   in
   dot Q.zero v1 v2
-
-let map f v = List.map (fun {var = x; coe = v} -> f x v) v
-
-let abs_min_elt v =
-  match v with
-  | [] -> None
-  | {var = v; coe = vl} :: r ->
-    Some
-      (List.fold_left
-         (fun (v1, vl1) {var = v2; coe = vl2} ->
-           if Q.abs vl1 </ Q.abs vl2 then (v1, vl1) else (v2, vl2))
-         (v, vl) r)
-
-let partition p = List.partition (fun {var = vr; coe = vl} -> p vr vl)
-let mkvar x = set x Q.one null
 
 module Bound = struct
   type t = {cst : Q.t; var : var; coeff : Q.t}

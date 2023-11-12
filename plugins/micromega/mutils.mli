@@ -100,30 +100,15 @@ module Hash : sig
 end
 
 val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
-val try_any : (('a -> 'b option) * 'c) list -> 'a -> 'b option
 val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list
 val extract_all : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
-val extract_best :
-     ('a -> 'b option)
-  -> ('b -> 'b -> bool)
-  -> 'a list
-  -> ('b * 'a) option * 'a list
-
-val find_some : ('a -> 'b option) -> 'a list -> 'b option
 val iterate_until_stable : ('a -> 'a option) -> 'a -> 'a
 val simplify : ('a -> 'a option) -> 'a list -> 'a list option
 
 val saturate :
   ('a -> 'b option) -> ('b * 'a -> 'a -> 'a option) -> 'a list -> 'a list
 
-val saturate_bin :
-     (module Set.S with type elt = 'a)
-  -> ('a -> 'a -> 'a option)
-  -> 'a list
-  -> 'a list
-
-val generate : ('a -> 'b option) -> 'a list -> 'b list
 val app_funs : ('a -> 'b option) list -> 'a -> 'b option
 val command : string -> string array -> 'a -> 'b

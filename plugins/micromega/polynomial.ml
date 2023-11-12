@@ -495,9 +495,6 @@ module LinPoly = struct
 
   let monomials p = Vect.fold (fun acc v _ -> ISet.add v acc) ISet.empty p
 
-  let degree v =
-    Vect.fold (fun acc v vl -> max acc (Monomial.degree (MonT.retrieve v))) 0 v
-
   let pp_goal typ o l =
     let vars =
       List.fold_left
@@ -1015,67 +1012,6 @@ module ProofFormat = struct
     let _, prf = normalise_proof id prf in
     cmpl_proof env prf
 
-  let rec eval_prf_rule env = function
-    | Annot (s, p) -> eval_prf_rule env p
-    | Hyp i | Def i | Ref i -> env i
-    | Cst n -> (
-      ( Vect.set 0 n Vect.null
-      , match Q.compare n Q.zero with
-        | 0 -> Ge
-        | 1 -> Gt
-        | _ -> failwith "eval_prf_rule : negative constant" ) )
-    | Zero -> (Vect.null, Ge)
-    | Square v -> (LinPoly.product v v, Ge)
-    | MulC (v, p) -> (
-      let p1, o = eval_prf_rule env p in
-      match o with
-      | Eq -> (LinPoly.product v p1, Eq)
-      | _ ->
-        Printf.fprintf stdout "MulC(%a,%a) invalid 2d arg %a %s" Vect.pp v
-          output_prf_rule p Vect.pp p1 (string_of_op o);
-        failwith "eval_prf_rule : not an equality" )
-    | Gcd (g, p) ->
-      let v, op = eval_prf_rule env p in
-      (Vect.div (Q.of_bigint g) v, op)
-    | MulPrf (p1, p2) ->
-      let v1, o1 = eval_prf_rule env p1 in
-      let v2, o2 = eval_prf_rule env p2 in
-      (LinPoly.product v1 v2, opMult o1 o2)
-    | AddPrf (p1, p2) ->
-      let v1, o1 = eval_prf_rule env p1 in
-      let v2, o2 = eval_prf_rule env p2 in
-      (LinPoly.addition v1 v2, opAdd o1 o2)
-    | CutPrf p -> eval_prf_rule env p
-    | LetPrf (p1, p2) ->
-      let v1, o1 = eval_prf_rule env p1 in
-      let v2, o2 =
-        eval_prf_rule (fun i -> if i = 0 then (v1, o1) else env (i - 1)) p2
-      in
-      (v2, o2)
-
-  let is_unsat (p, o) =
-    let c, r = Vect.decomp_cst p in
-    if Vect.is_null r then not (eval_op o c Q.zero) else false
-
-  let rec eval_proof env p =
-    match p with
-    | Done -> failwith "Proof is not finished"
-    | Step (i, prf, rst) ->
-      let p, o = eval_prf_rule (fun i -> IMap.find i env) prf in
-      if is_unsat (p, o) then true
-      else if rst = Done then begin
-        Printf.fprintf stdout "Last inference %a %s\n" LinPoly.pp p
-          (string_of_op o);
-        false
-      end
-      else eval_proof (IMap.add i (p, o) env) rst
-    | Split (i, v, p1, p2) -> failwith "Not implemented"
-    | Enum (i, r1, v, r2, l) ->
-      let _ = eval_prf_rule (fun i -> IMap.find i env) r1 in
-      let _ = eval_prf_rule (fun i -> IMap.find i env) r2 in
-      (* Should check bounds *)
-      failwith "Not implemented"
-    | ExProof _ -> failwith "Not implemented"
 end
 
 module WithProof = struct
@@ -1231,15 +1167,6 @@ module WithProof = struct
     let pred v = if strict then v =/ Q.one || v =/ Q.minus_one else true in
     match o with Eq -> LinPoly.search_linear pred p | _ -> None
 
-  let subst1 sys0 =
-    let oeq, sys' = extract (is_substitution true) sys0 in
-    match oeq with
-    | None -> sys0
-    | Some (v, pc) -> (
-      match simplify (linear_pivot sys0 pc v) sys' with
-      | None -> sys0
-      | Some sys' -> sys' )
-
   let sort (sys : t list) =
     let size ((p, o), prf) =
       let _, p' = Vect.decomp_cst p in
@@ -1318,21 +1245,6 @@ module BoundWithProof =
 struct
 
 type t = Vect.Bound.t * op * ProofFormat.prf_rule
-
-let bound_compare b1 b2 =
-  let open Vect.Bound in
-  let {cst = k1; var = v1; coeff = c1} = b1 in
-  let {cst = k2; var = v2; coeff = c2} = b2 in
-  let c = Int.compare v1 v2 in
-  if c <> 0 then c
-  else
-    let c = Q.compare k1 k2 in
-    if c <> 0 then c
-    else Q.compare c1 c2
-
-let compare (p1, o1, _) (p2, o2, _) =
-  let c = bound_compare p1 p2 in
-  if c = 0 then compare_op o1 o2 else c
 
 let make ((p, o), prf) = match Vect.Bound.of_vect p with
 | None -> None

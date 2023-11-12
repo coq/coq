@@ -50,11 +50,6 @@ let finally f rst =
     (try rst () with any -> raise reraise);
     raise reraise
 
-let rec try_any l x =
-  match l with
-  | [] -> None
-  | (f, s) :: l -> ( match f x with None -> try_any l x | x -> x )
-
 let all_pairs f l =
   let pair_with acc e l = List.fold_left (fun acc x -> f e x :: acc) acc l in
   let rec xpairs acc l =
@@ -78,28 +73,6 @@ let extract pred l =
         )
       | _ -> (fd, e :: sys))
     (None, []) l
-
-let extract_best red lt l =
-  let rec extractb c e rst l =
-    match l with
-    | [] -> (Some (c, e), rst)
-    | e' :: l' -> (
-      match red e' with
-      | None -> extractb c e (e' :: rst) l'
-      | Some c' ->
-        if lt c' c then extractb c' e' (e :: rst) l'
-        else extractb c e (e' :: rst) l' )
-  in
-  match extract red l with
-  | None, _ -> (None, l)
-  | Some (c, e), rst -> extractb c e [] rst
-
-let rec find_option pred l =
-  match l with
-  | [] -> raise Not_found
-  | e :: l -> ( match pred e with Some r -> r | None -> find_option pred l )
-
-let find_some pred l = try Some (find_option pred l) with Not_found -> None
 
 let extract_all pred l =
   List.fold_left
@@ -135,25 +108,6 @@ let saturate p f sys =
   with x ->
     Printexc.print_backtrace stdout;
     raise x
-
-let saturate_bin (type a) (module Set : Set.S with type elt = a)
-    (f : a -> a -> a option) (l : a list) =
-  let rec map_with (acc : Set.t) e l =
-    match l with
-    | [] -> acc
-    | e' :: l -> (
-      match f e e' with
-      | None -> map_with acc e l
-      | Some r -> map_with (Set.add r acc) e l )
-  in
-  let map2_with acc l' = Set.fold (fun e' acc -> map_with acc e' l) l' acc in
-  let rec iterate acc l' =
-    let res = map2_with Set.empty l' in
-    if Set.is_empty res then Set.union l' acc
-    else iterate (Set.union l' acc) res
-  in
-  let s0 = List.fold_left (fun acc e -> Set.add e acc) Set.empty l in
-  Set.elements (Set.diff (iterate Set.empty s0) s0)
 
 let iterate_until_stable f x =
   let rec iter x = match f x with None -> x | Some x' -> iter x' in

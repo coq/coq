@@ -541,23 +541,6 @@ let find_point (l : Polynomial.cstr list) =
   | Inl (rst, t, _) -> Some (find_solution rst t)
   | _ -> None
 
-let optimise obj l =
-  let vr = fresh_var l in
-  LinPoly.MonT.safe_reserve vr;
-  let l', _ = make_env l in
-  let bound pos res =
-    match res with
-    | Opt (_, Max n) -> Some (if pos then n else Q.neg n)
-    | Opt (_, Ubnd _) -> None
-    | Opt (_, Feas) -> None
-  in
-  match solve false l' (Restricted.make vr) IMap.empty with
-  | Inl (rst, t, _) ->
-    Some
-      ( bound false (simplex true vr rst (add_row vr t (Vect.uminus obj)))
-      , bound true (simplex true vr rst (add_row vr t obj)) )
-  | _ -> None
-
 (** [make_certificate env l] makes very strong assumptions
     about the form of the environment.
     Each proof is assumed to be either:

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open NumCompat
 open Polynomial
 
 (** Profiling *)
@@ -25,7 +24,6 @@ val get_profile_info : unit -> profile_info
 
 (** Simplex interface *)
 
-val optimise : Vect.t -> cstr list -> (Q.t option * Q.t option) option
 val find_point : cstr list -> Vect.t option
 val find_unsat_certificate : cstr list -> Vect.t option
 
