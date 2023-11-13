@@ -449,8 +449,8 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
     match revsk1, revsk2 with
     | [], [] -> None, Success i
     | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
-      let (ci1, u1, pms1, t1, br1) = Stack.expand_case env evd cse1 in
-      let (ci2, u2, pms2, t2, br2) = Stack.expand_case env evd cse2 in
+      let (ci1, u1, pms1, (t1,_), br1) = Stack.expand_case env evd cse1 in
+      let (ci2, u2, pms2, (t2,_), br2) = Stack.expand_case env evd cse2 in
       let hd1 = mkIndU (ci1.ci_ind, u1) in
       let hd2 = mkIndU (ci2.ci_ind, u2) in
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
@@ -494,8 +494,8 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
     | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
-      let (ci1, u1, pms1, t1, br1) = Stack.expand_case env evd cse1 in
-      let (ci2, u2, pms2, t2, br2) = Stack.expand_case env evd cse2 in
+      let (ci1, u1, pms1, (t1,_), br1) = Stack.expand_case env evd cse1 in
+      let (ci2, u2, pms2, (t2,_), br2) = Stack.expand_case env evd cse2 in
       let hd1 = mkIndU (ci1.ci_ind, u1) in
       let hd2 = mkIndU (ci2.ci_ind, u2) in
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in

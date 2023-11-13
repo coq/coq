@@ -692,7 +692,7 @@ let rec apply_stack info t = function
       apply_stack info (mkApp(t,Array.map_of_list (cbv_norm_value info) args)) st
   | CASE (u,pms,ty,br,iv,ci,env,st) ->
     (* FIXME: Prevent this expansion by caching whether an inductive contains let-bindings *)
-    let (_, ty, _, _, br) = Inductive.expand_case info.env (ci, u, pms, ty, iv, mkProp, br) in
+    let (_, (ty,r), _, _, br) = Inductive.expand_case info.env (ci, u, pms, ty, iv, mkProp, br) in
     let ty =
       let (_, mip) = Inductive.lookup_mind_specif info.env ci.ci_ind in
       Term.decompose_lambda_n_decls (mip.Declarations.mind_nrealdecls + 1) ty
@@ -713,7 +713,7 @@ let rec apply_stack info t = function
       (nas, cbv_norm_term info env c)
     in
       apply_stack info
-        (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, map_ctx ty, iv, t,
+        (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, (map_ctx ty,r), iv, t,
                     Array.map map_ctx br))
         st
   | PROJ (p, r, st) ->

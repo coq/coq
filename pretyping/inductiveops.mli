@@ -177,7 +177,7 @@ val arity_of_case_predicate :
   env -> inductive_family -> bool -> Sorts.t -> types
 
 (** Annotation for cases *)
-val make_case_info : env -> inductive -> Sorts.relevance -> case_style -> case_info
+val make_case_info : env -> inductive -> case_style -> case_info
 
 (** Make a case or substitute projections if the inductive type is a record
     with primitive projections.
@@ -185,15 +185,15 @@ val make_case_info : env -> inductive -> Sorts.relevance -> case_style -> case_i
     inductive type does not allow dependent elimination. *)
 val make_case_or_project :
   env -> evar_map -> inductive_type -> case_info ->
-  (* pred *) EConstr.constr -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+  (* pred *) EConstr.constr * Sorts.relevance -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
 (** Sometimes [make_case_or_project] is nicer to call with a pre-built
    [case_invert] than [inductive_type]. *)
 val simple_make_case_or_project :
   env -> evar_map -> case_info ->
-  (* pred *) EConstr.constr -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+  (* pred *) EConstr.constr * Sorts.relevance -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
-val make_case_invert : env -> inductive_type -> case_info
+val make_case_invert : env -> inductive_type -> case_relevance:Sorts.relevance -> case_info
   -> EConstr.case_invert
 
 (*i Compatibility

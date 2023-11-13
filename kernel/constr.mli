@@ -45,17 +45,8 @@ type case_info =
                                        in addition to the parameters of the related inductive type
                                        NOTE: "lets" are therefore excluded from the count
                                        NOTE: parameters of the inductive type are also excluded from the count *)
-    ci_relevance : Sorts.relevance; (* relevance of the predicate (not of the inductive!) *)
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
-
-type 'constr pcase_invert =
-  | NoInvert
-  (** Normal reduction: match when the scrutinee is a constructor. *)
-
-  | CaseInvert of { indices : 'constr array; }
-  (** Reduce when the indices match those of the unique constructor.
-      (SProp to non SProp only) *)
 
 (** {6 The type of constructions } *)
 
@@ -165,10 +156,18 @@ end
     {e construct_args |- case_term } *)
 
 type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
+(** Names bound by matching the constructor for this branch. *)
+
+type 'types pcase_return = (Name.t Context.binder_annot array * 'types) * Sorts.relevance
 (** Names of the indices + name of self *)
 
-type 'types pcase_return = Name.t Context.binder_annot array * 'types
-(** Names of the branches *)
+type 'constr pcase_invert =
+  | NoInvert
+  (** Normal reduction: match when the scrutinee is a constructor. *)
+
+  | CaseInvert of { indices : 'constr array; }
+  (** Reduce when the indices match those of the unique constructor.
+      (SProp to non SProp only) *)
 
 type ('constr, 'types, 'univs) pcase =
   case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array

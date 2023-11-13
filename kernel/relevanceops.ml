@@ -61,7 +61,7 @@ let rec relevance_of_term_extra env extra lft c =
   | App (c, _) -> relevance_of_term_extra env extra lft c
   | Const c -> relevance_of_constant env c
   | Construct c -> relevance_of_constructor env c
-  | Case (ci, _, _, _, _, _, _) -> ci.ci_relevance
+  | Case (_, _, _, (_, r), _, _, _) -> r
   | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
   | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
   | Proj (_, r, _) -> r

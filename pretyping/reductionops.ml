@@ -215,7 +215,7 @@ sig
   val zip : evar_map -> constr * t -> constr
   val check_native_args : CPrimitives.t -> t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
-  val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * (rel_context * constr) * (rel_context * constr) array
+  val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * ((rel_context * constr) * Sorts.relevance) * (rel_context * constr) array
 end =
 struct
   open EConstr
@@ -312,7 +312,7 @@ struct
         let t1,l1 = decomp_node_last n1 q1 in
         let t2,l2 = decomp_node_last n2 q2 in
         aux (f o t1 t2) l1 l2
-      | Case ((_,_,pms1,(_, t1),_,a1)) :: q1, Case ((_,_,pms2, (_, t2),_,a2)) :: q2 ->
+      | Case ((_,_,pms1,((_, t1),_),_,a1)) :: q1, Case ((_,_,pms2, ((_, t2),_),_,a2)) :: q2 ->
         let f' o (_, t1) (_, t2) = f o t1 t2 in
         aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
       | Proj (p1,_) :: q1, Proj (p2,_) :: q2 ->

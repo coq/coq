@@ -128,7 +128,7 @@ let v_boollist = List v_bool
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
   let v_cprint = v_tuple "case_printing" [|v_boollist;Array v_boollist;v_cstyle|] in
-  v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_relevance;v_cprint|]
+  v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 3
 
@@ -170,7 +170,7 @@ and v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|])
 
 and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
 
-and v_case_return = Tuple ("case_return", [|Array (v_binder_annot v_name); v_constr|])
+and v_case_return = Tuple ("case_return", [|Tuple ("case_return'", [|Array (v_binder_annot v_name); v_constr|]); v_relevance|])
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)

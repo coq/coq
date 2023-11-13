@@ -828,17 +828,17 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
 
   match projs with
   | None ->
-    let ci = make_case_info env ind relevance RegularStyle in
+    let ci = make_case_info env ind RegularStyle in
     let pbody =
       mkApp
         (pred,
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
     let iv =
-      if Typeops.should_invert_case env ci then CaseInvert { indices = indices }
+      if Typeops.should_invert_case env relevance ci then CaseInvert { indices = indices }
       else NoInvert
     in
-    RealCase (ci, u, params, (pnas, pbody), iv, indarg)
+    RealCase (ci, u, params, ((pnas, pbody), relevance), iv, indarg)
   | Some ps ->
     let args = Array.map (fun (p,r) ->
         let r = UVars.subst_instance_relevance (Unsafe.to_instance u) r in
@@ -911,11 +911,11 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let rec nf_betaiota c = EConstr.map sigma nf_betaiota (whd_betaiota env sigma c) in
   (* Call the legacy refiner on the result *)
   let arg = match body with
-  | RealCase (ci, u, pms, p, iv, c) ->
+  | RealCase (ci, u, pms, (p,r), iv, c) ->
     let c = nf_betaiota c in
     let pms = Array.map nf_betaiota pms in
     let p = on_snd nf_betaiota p in
-    Internal.Case ((ci, u, pms, p, iv, c), branches)
+    Internal.Case ((ci, u, pms, (p,r), iv, c), branches)
   | PrimitiveEta args ->
     let mv = new_meta () in
     let (ctx, t) = branches.(0) in

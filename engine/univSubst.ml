@@ -190,19 +190,16 @@ let nf_evars_and_universes_opt_subst fevar fqual funiv c =
     | Sort s ->
       let s' = Sorts.subst_fn (fqual, subst_univs_universe funiv) s in
       if s' == s then c else mkSort s'
-    | Case (ci,u,pms,p,iv,t,br) ->
+    | Case (ci,u,pms,(p,rel),iv,t,br) ->
       let u' = Instance.subst_fn flevel u in
-      let ci' =
-        let rel' = frel ci.ci_relevance in
-        if rel' == ci.ci_relevance then ci else { ci with ci_relevance = rel' }
-      in
+      let rel' = frel rel in
       let pms' = Array.Smart.map aux pms in
       let p' = aux_ctx p in
       let iv' = map_invert aux iv in
       let t' = aux t in
       let br' = Array.Smart.map aux_ctx br in
-      if ci' == ci && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
-      else mkCase (ci', u', pms', p', iv', t', br')
+      if rel' == rel && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
+      else mkCase (ci, u', pms', (p',rel'), iv', t', br')
     | Array (u,elems,def,ty) ->
       let u' = Instance.subst_fn flevel u in
       let elems' = CArray.Smart.map aux elems in

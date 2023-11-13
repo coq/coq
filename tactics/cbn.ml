@@ -544,7 +544,7 @@ let debug_RAKAM = Reductionops.debug_RAKAM
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
   let eq_fix a b = f_equal (mkFix a) (mkFix b) in
-  let eq_case (ci1, u1, pms1, p1, _, br1) (ci2, u2, pms2, p2, _, br2) =
+  let eq_case (ci1, u1, pms1, (p1,_), _, br1) (ci2, u2, pms2, (p2,_), _, br2) =
     Array.equal f_equal pms1 pms2 &&
     f_equal (snd p1) (snd p2) &&
     Array.equal (fun (_, c1) (_, c2) -> f_equal c1 c2) br1 br2

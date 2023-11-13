@@ -66,7 +66,7 @@ let instantiate_context u subst nas ctx =
   let () = if not (Int.equal (Array.length nas) (List.length ctx)) then raise_notrace Exit in
   instantiate (Array.length nas - 1) ctx
 
-let return_clause env sigma ind u params (nas, p) =
+let return_clause env sigma ind u params ((nas, p),_) =
   try
     let u = EConstr.Unsafe.to_instance u in
     let params = EConstr.Unsafe.to_constr_array params in
@@ -519,7 +519,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
   | na::nal ->
     match EConstr.kind sigma c with
-    | Case (ci,u,pms,p,iv,c,cl) when
+    | Case (ci,u,pms,(p,_),iv,c,cl) when
         eq_constr (snd (snd e)) sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
         && (* don't contract if p dependent *)
@@ -953,7 +953,7 @@ and detype_r d flags avoid env sigma t =
     | Construct (cstr_sp,u) ->
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,u,pms,p,iv,c,bl) ->
-        let comp = computable sigma p in
+        let comp = computable sigma (fst p) in
         let case = (ci, u, pms, p, iv, c, bl) in
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma comp)

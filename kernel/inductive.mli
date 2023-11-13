@@ -95,16 +95,21 @@ val inductive_params : mind_specif -> int
 val expand_arity : mind_specif -> pinductive -> constr array ->
   Name.t Context.binder_annot array -> rel_context
 
+type ('constr,'types) pexpanded_case =
+  (case_info * ('constr * Sorts.relevance) * 'constr pcase_invert * 'constr * 'constr array)
+
+type expanded_case = (constr,types) pexpanded_case
+
 (** Given a pattern-matching represented compactly, expands it so as to produce
     lambda and let abstractions in front of the return clause and the pattern
     branches. *)
-val expand_case : env -> case -> (case_info * constr * case_invert * constr * constr array)
+val expand_case : env -> case -> expanded_case
 
-val expand_case_specif : mutual_inductive_body -> case -> (case_info * constr * case_invert * constr * constr array)
+val expand_case_specif : mutual_inductive_body -> case -> expanded_case
 
 (** Dual operation of the above. Fails if the return clause or branch has not
     the expected form. *)
-val contract_case : env -> (case_info * constr * case_invert * constr * constr array) -> case
+val contract_case : env -> expanded_case -> case
 
 (** [instantiate_context u subst nas ctx] applies both [u] and [subst]
     to [ctx] while replacing names using [nas] (order reversed). In particular,
@@ -123,7 +128,7 @@ val inductive_sort_family : one_inductive_body -> Sorts.family
 
 (** Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
-val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
+val check_case_info : env -> pinductive -> case_info -> unit
 
 (** {6 Guard conditions for fix and cofix-points. } *)
 

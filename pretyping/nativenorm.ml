@@ -338,12 +338,12 @@ and nf_atom_type env sigma atom =
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type (pctx, p) realargs a in
       let p = (get_case_annot pctx, p) in
-      let ci = Inductiveops.make_case_info env ind relevance RegularStyle in
-      let iv = if Typeops.should_invert_case env ci then
+      let ci = Inductiveops.make_case_info env ind RegularStyle in
+      let iv = if Typeops.should_invert_case env relevance ci then
           CaseInvert {indices=realargs}
         else NoInvert
       in
-      mkCase (ci, u, params, p, iv, a, branchs), tcase
+      mkCase (ci, u, params, (p,relevance), iv, a, branchs), tcase
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
       let tt = Array.map fst tt and rt = Array.map snd tt in

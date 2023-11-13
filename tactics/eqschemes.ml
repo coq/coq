@@ -211,21 +211,28 @@ let build_sym_scheme env _handle ind =
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info env ind rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
+  let p =
+    my_it_mkLambda_or_LetIn_name env
+      (lift_rel_context (nrealargs+1) realsign_ind)
+      (mkApp (mkIndU indu,
+              Array.concat
+                [Context.Rel.instance mkRel (3*nrealargs+2) paramsctxt1;
+                 rel_vect 1 nrealargs;
+                 rel_vect (2*nrealargs+2) nrealargs]))
+  in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name env realsign_ind
-  (mkCase (Inductive.contract_case env (ci,
-     my_it_mkLambda_or_LetIn_name env
-       (lift_rel_context (nrealargs+1) realsign_ind)
-       (mkApp (mkIndU indu,Array.concat
-          [Context.Rel.instance mkRel (3*nrealargs+2) paramsctxt1;
-           rel_vect 1 nrealargs;
-           rel_vect (2*nrealargs+2) nrealargs])),
-           NoInvert,
-     mkRel 1 (* varH *),
-       [|cstr (nrealargs+1)|])))))
-  in c, UState.of_context_set ctx
+     (mkCase
+        (Inductive.contract_case env
+           (ci,
+            (p,rci),
+            NoInvert,
+            mkRel 1 (* varH *),
+            [|cstr (nrealargs+1)|])))))
+  in
+  c, UState.of_context_set ctx
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
@@ -272,12 +279,12 @@ let build_sym_involutive_scheme env handle ind =
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info env ind rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
   let c =
     (my_it_mkLambda_or_LetIn paramsctxt
      (my_it_mkLambda_or_LetIn_name env realsign_ind
       (mkCase (Inductive.contract_case env (ci,
-                my_it_mkLambda_or_LetIn_name env
+                (my_it_mkLambda_or_LetIn_name env
                 (lift_rel_context (nrealargs+1) realsign_ind)
                 (mkApp (eq,[|
                 mkApp
@@ -294,7 +301,7 @@ let build_sym_involutive_scheme env handle ind =
                  rel_vect (2*nrealargs+2) nrealargs;
                  rel_vect 1 nrealargs;
                  [|mkRel 1|]])|]]);
-               mkRel 1|])),
+               mkRel 1|])), rci),
                NoInvert,
                mkRel 1 (* varH *),
                [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))))
@@ -411,8 +418,8 @@ let build_l2r_rew_scheme dep env handle ind kind =
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info env ind rci RegularStyle in
-  let cieq = make_case_info env (fst (destInd eq)) rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
+  let cieq = make_case_info env (fst (destInd eq)) RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append (Context.Rel.instance mkRel 1 realsign)
            (if dep then [|cstr (2*nrealargs+1) 1|] else [||])) in
@@ -434,7 +441,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
                [|mkRel 2|]])|]]) in
   let main_body =
     mkCase (Inductive.contract_case env (ci,
-            my_it_mkLambda_or_LetIn_name env realsign_ind_G applied_PG,
+            (my_it_mkLambda_or_LetIn_name env realsign_ind_G applied_PG, rci),
             NoInvert,
             applied_sym_C 3,
             [|mkVar varHC|]))
@@ -448,10 +455,10 @@ let build_l2r_rew_scheme dep env handle ind kind =
   (mkNamedLambda (make_annot varH indr) (lift 2 applied_ind)
      (if dep then (* we need a coercion *)
      mkCase (Inductive.contract_case env (cieq,
-       mkLambda (make_annot (Name varH) indr,lift 3 applied_ind,
+       (mkLambda (make_annot (Name varH) indr,lift 3 applied_ind,
          mkLambda (make_annot Anonymous indr,
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
-                   applied_PR)),
+                   applied_PR)), rci),
        NoInvert,
        mkApp (sym_involutive,
          Array.append (Context.Rel.instance mkRel 3 mip.mind_arity_ctxt) [|mkVar varH|]),
@@ -519,7 +526,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in
-  let ci = make_case_info env ind rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append
            (rel_vect (nrealargs*2+3) nrealargs)
@@ -537,12 +544,12 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   (my_it_mkLambda_or_LetIn_name env realsign
   (mkNamedLambda (make_annot varH indr) applied_ind
   (mkCase (Inductive.contract_case env (ci,
-     my_it_mkLambda_or_LetIn_name env
+     (my_it_mkLambda_or_LetIn_name env
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkNamedProd (make_annot varP indr)
          (my_it_mkProd_or_LetIn
            (if dep then realsign_ind_P 2 applied_ind_P else realsign_P 2) s)
-       (mkNamedProd (make_annot varHC indr) applied_PC applied_PG)),
+       (mkNamedProd (make_annot varHC indr) applied_PC applied_PG)), rci),
      NoInvert,
      (mkVar varH),
      [|mkNamedLambda (make_annot varP indr)
@@ -601,7 +608,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info env ind rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
   let applied_PC =
     applist (mkVar varP,if dep then constrargs_cstr else constrargs) in
   let applied_PG =
@@ -617,9 +624,9 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   (mkNamedLambda (make_annot varHC indr) (lift 1 applied_PG)
   (mkApp
     (mkCase (Inductive.contract_case env (ci,
-       my_it_mkLambda_or_LetIn_name env
+       (my_it_mkLambda_or_LetIn_name env
          (lift_rel_context (nrealargs+3) realsign_ind)
-         (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)),
+         (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)), rci),
        NoInvert,
        mkRel 3 (* varH *),
        [|mkLambda
@@ -808,7 +815,7 @@ let build_congr env (eq,refl,ctx) ind =
   let varH,avoid = fresh env (Id.of_string "H") avoid in
   let varf,avoid = fresh env (Id.of_string "f") avoid in
   let rci = Sorts.Relevant in (* TODO relevance *)
-  let ci = make_case_info env ind rci RegularStyle in
+  let ci = make_case_info env ind RegularStyle in
   let uni, ctx' = UnivGen.new_global_univ () in
   let ctx =
     let (qs,us),csts = ctx in
@@ -825,7 +832,7 @@ let build_congr env (eq,refl,ctx) ind =
             Context.Rel.instance_list mkRel (mip.mind_nrealargs+2) paramsctxt @
             Context.Rel.instance_list mkRel 0 realsign))
      (mkCase (Inductive.contract_case env (ci,
-       my_it_mkLambda_or_LetIn_name env
+       (my_it_mkLambda_or_LetIn_name env
          (lift_rel_context (mip.mind_nrealargs+3) realsign)
          (mkLambda
            (make_annot Anonymous Sorts.Relevant,
@@ -837,7 +844,7 @@ let build_congr env (eq,refl,ctx) ind =
             mkApp (eq,
               [|mkVar varB;
                 mkApp (mkVar varf, [|lift (2*mip.mind_nrealdecls+4) b|]);
-                mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))),
+                mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))), rci),
        NoInvert,
        mkVar varH,
        [|mkApp (refl,

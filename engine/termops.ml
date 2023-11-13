@@ -649,8 +649,8 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
   | Evar ev ->
     let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
     if ev' == ev then c else mkEvar ev'
-  | Case (ci,u,pms,p,iv,b,bl) ->
-      let (ci, _, pms, p0, _, b, bl0) = annotate_case env sigma (ci, u, pms, p, iv, b, bl) in
+  | Case (ci,u,pms,(p,r),iv,b,bl) ->
+      let (ci, _, pms, (p0,_), _, b, bl0) = annotate_case env sigma (ci, u, pms, (p,r), iv, b, bl) in
       let f_ctx (nas, _ as r) (ctx, c) =
         let c' = f (List.fold_right g ctx l) c in
         if c' == c then r else (nas, c')
@@ -662,7 +662,7 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
       let iv' = map_invert (f l) iv in
       let bl' = Array.map_left (fun (c, c0) -> f_ctx c c0) (Array.map2 (fun x y -> (x, y)) bl bl0) in
         if b' == b && pms' == pms && p' == p && iv' == iv && bl' == bl then c
-        else mkCase (ci, u, pms', p', iv', b', bl')
+        else mkCase (ci, u, pms', (p',r), iv', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
@@ -715,8 +715,8 @@ let map_constr_with_full_binders env sigma g f l cstr =
   | Evar ev ->
     let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
     if ev' == ev then cstr else mkEvar ev'
-  | Case (ci, u, pms, p, iv, c, bl) ->
-      let (ci, _, pms, p0, _, c, bl0) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+  | Case (ci, u, pms, (p,r), iv, c, bl) ->
+      let (ci, _, pms, (p0,_), _, c, bl0) = annotate_case env sigma (ci, u, pms, (p,r), iv, c, bl) in
       let f_ctx (nas, _ as r) (ctx, c) =
         let c' = f (List.fold_right g ctx l) c in
         if c' == c then r else (nas, c')
@@ -727,7 +727,7 @@ let map_constr_with_full_binders env sigma g f l cstr =
       let c' = f l c in
       let bl' = Array.map2 f_ctx bl bl0 in
       if pms==pms' && p==p' && iv'==iv && c==c' && Array.for_all2 (==) bl bl' then cstr else
-        mkCase (ci, u, pms', p', iv', c', bl')
+        mkCase (ci, u, pms', (p',r), iv', c', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
       let l' = fold_rec_types g fx l in
@@ -770,7 +770,7 @@ let fold_constr_with_full_binders env sigma g f n acc c =
     let args = Evd.expand_existential sigma ev in
     List.fold_left (fun c -> f n c) acc args
   | Case (ci, u, pms, p, iv, c, bl) ->
-    let (ci, _, pms, p, _, c, bl) = EConstr.annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+    let (ci, _, pms, (p,_), _, c, bl) = EConstr.annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
     let f_ctx acc (ctx, c) = f (List.fold_right g ctx n) acc c in
     Array.fold_left f_ctx (f n (fold_invert (f n) (f_ctx (Array.fold_left (f n) acc pms) p) iv) c) bl
   | Fix (_,(lna,tl,bl)) ->

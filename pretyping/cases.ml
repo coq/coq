@@ -1162,7 +1162,7 @@ let rec ungeneralize sigma n ng body =
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
       mkLetIn (na,b,t,ungeneralize sigma (n+1) ng c)
-  | Case (ci,u,pms,p,iv,c,brs) ->
+  | Case (ci,u,pms,(p,rp),iv,c,brs) ->
       (* We traverse a split *)
       let p =
         let (nas, p) = p in
@@ -1171,7 +1171,7 @@ let rec ungeneralize sigma n ng body =
         nas, it_mkProd_or_LetIn p sign2
       in
       let map (nas, br) = nas, ungeneralize sigma (n + Array.length nas) ng br in
-      mkCase (ci, u, pms, p, iv, c, Array.map map brs)
+      mkCase (ci, u, pms, (p,rp), iv, c, Array.map map brs)
   | App (f,args) ->
       (* We traverse an inner generalization *)
       assert (isCase sigma f);
@@ -1479,9 +1479,9 @@ let compile ~program_mode sigma pb =
                 pred current indt (names,dep) tomatch
             in
             let rci = Typing.check_allowed_sort !!(pb.env) sigma mind current pred in
-            let ci = make_case_info !!(pb.env) (fst mind) rci pb.casestyle in
+            let ci = make_case_info !!(pb.env) (fst mind) pb.casestyle in
             let pred = nf_betaiota !!(pb.env) sigma pred in
-            let case = make_case_or_project !!(pb.env) sigma indt ci pred current brvals in
+            let case = make_case_or_project !!(pb.env) sigma indt ci (pred,rci) current brvals in
             let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
             let used = List.flatten (Array.to_list used) in
             used, sigma, { uj_val = applist (case, inst);

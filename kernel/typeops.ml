@@ -493,8 +493,8 @@ let check_branch_types env (_mib, mip) ci u pms c _ct lft (pctx, p) =
     let expbrt = it_mkLambda_or_LetIn expbrt brctx in
     error_ill_formed_branch env c ((ci.ci_ind, i + 1), u) brt expbrt
 
-let should_invert_case env ci =
-  Sorts.relevance_equal ci.ci_relevance Sorts.Relevant &&
+let should_invert_case env r ci =
+  Sorts.relevance_equal r Sorts.Relevant &&
   let mib,mip = lookup_mind_specif env ci.ci_ind in
   Sorts.relevance_equal mip.mind_relevance Sorts.Irrelevant &&
   (* NB: it's possible to have 2 ctors or arguments to 1 ctor by unsetting univ checks
@@ -523,7 +523,7 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
-let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct lf lft =
+let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c ct lf lft =
   let ((ind, u'), largs) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
@@ -534,20 +534,20 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct l
   | exception DestKO ->
     error_elim_arity env (ind, u') c None
   in
-  let rp = Sorts.relevance_of_sort sp in
-  let ci =
-    if Sorts.relevance_equal ci.ci_relevance rp then ci
+  let rp =
+    let expected = Sorts.relevance_of_sort sp in
+    if Sorts.relevance_equal rp expected then rp
     else
-      let () = warn_bad_relevance_case env rp (ci, u, pms, (pnas, p), iv, c, lf) in
-      {ci with ci_relevance=rp}
+      let () = warn_bad_relevance_case env expected (ci, u, pms, ((pnas, p), rp), iv, c, lf) in
+      expected
   in
-  let () = check_case_info env (ind, u') rp ci in
+  let () = check_case_info env (ind, u') ci in
   let () =
     let is_inversion = match iv with
       | NoInvert -> false
       | CaseInvert _ -> true (* contents already checked *)
     in
-    if not (is_inversion = should_invert_case env ci)
+    if not (is_inversion = should_invert_case env rp ci)
     then error_bad_invert env
   in
   let () =
@@ -563,7 +563,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct l
   (* We return the "higher" inductive universe instance from the predicate,
      the branches must be typeable using these universes. *)
   let () = check_branch_types env (mib, mip) ci u pms c ct lft (pctx, p) in
-  ci, rslty
+  rp, rslty
 
 let type_of_projection env p c ct =
   let pr, pty = lookup_projection p env in
@@ -721,7 +721,7 @@ let rec execute env cstr =
     | Construct c ->
       cstr, type_of_constructor env c
 
-    | Case (ci, u, pms, p, iv, c, lf) ->
+    | Case (ci, u, pms, (p,rp), iv, c, lf) ->
         let c', ct = execute env c in
         let iv' = match iv with
           | NoInvert -> NoInvert
@@ -781,10 +781,10 @@ let rec execute env cstr =
           if br == br' then b else (nas, br')
         in
         let lf' = Array.Smart.map_i build_one_branch lf in
-        let ci', t = type_of_case env (mib, mip) ci u pms' (pctx, fst p, p', pt) iv' c' ct lf' lft in
+        let rp', t = type_of_case env (mib, mip) ci u pms' (pctx, fst p, p', rp, pt) iv' c' ct lf' lft in
         let eqbr (_, br1) (_, br2) = br1 == br2 in
-        let cstr = if ci == ci' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
-          else mkCase (ci', u, pms', (fst p, p'), iv', c', lf')
+        let cstr = if rp == rp' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
+          else mkCase (ci, u, pms', ((fst p, p'), rp'), iv', c', lf')
         in
         cstr, t
 

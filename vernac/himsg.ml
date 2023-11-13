@@ -820,9 +820,9 @@ let explain_bad_binder_relevance env sigma rlv decl =
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_bad_case_relevance env sigma rlv case =
-  let (ci, _, _, _, _, _, _) = EConstr.destCase sigma case in
+  let (_, _, _, (_,badr), _, _, _) = EConstr.destCase sigma case in
   strbrk "Pattern-matching" ++ spc () ++ pr_leconstr_env env sigma case ++
-    strbrk " has relevance mark set to " ++ pr_relevance sigma ci.ci_relevance ++
+    strbrk " has relevance mark set to " ++ pr_relevance sigma badr ++
     strbrk " but was expected to be " ++ pr_relevance sigma rlv ++
     spc () ++ str "(maybe a bugged tactic)."
 

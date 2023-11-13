@@ -185,7 +185,7 @@ struct
     | Construct (c,u)-> Some (DRef (ConstructRef c), [])
     | Meta _         -> assert false
     | Evar (i,_)     -> None
-    | Case (ci,u1,pms1,c1,_iv,c2,ca)     ->
+    | Case (ci,u1,pms1,(c1,_),_iv,c2,ca)     ->
       let f_ctx (_, p) = p in
       Some (DCase(ci), [f_ctx c1; c2] @ Array.map_to_list f_ctx ca)
     | Fix ((ia,i),(_,ta,ca)) ->

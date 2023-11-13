@@ -844,7 +844,7 @@ and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu
       let ctx = LocalAssum (Context.anonR, dummy) :: ctx in
       Some (ctx, u1, u2, pms1, pms2)
   in
-  convert_under_context l2r infos e1 e2 l1 l2 ctx p1 p2 cu
+  convert_under_context l2r infos e1 e2 l1 l2 ctx (fst p1) (fst p2) cu
 
 and convert_branches mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
   let fold i (ctx, _) cuniv =

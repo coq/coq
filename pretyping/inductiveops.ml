@@ -243,7 +243,7 @@ let has_dependent_elim (mib,mip) =
   | NotRecord | FakeRecord -> true
 
 (* Annotation for cases *)
-let make_case_info env ind r style =
+let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let ind_tags =
     Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
@@ -256,7 +256,6 @@ let make_case_info env ind r style =
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
-    ci_relevance = r;
     ci_pp_info = print_info }
 
 (*s Useful functions *)
@@ -310,8 +309,8 @@ let get_constructors env (ind,params) =
 
 let get_projections = Environ.get_projections
 
-let make_case_invert env (IndType (((ind,u),params),indices)) ci =
-  if Typeops.should_invert_case env ci
+let make_case_invert env (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
+  if Typeops.should_invert_case env r ci
   then CaseInvert {indices=Array.of_list indices}
   else NoInvert
 
@@ -374,7 +373,7 @@ let simple_make_case_or_project env sigma ci pred invert c branches =
   let projs = get_projections env ind in
   match projs with
   | None -> mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
-  | Some ps -> make_project env sigma ind pred c branches ps
+  | Some ps -> make_project env sigma ind (fst pred) c branches ps
 
 let make_case_or_project env sigma indt ci pred c branches =
   let open EConstr in
@@ -382,9 +381,9 @@ let make_case_or_project env sigma indt ci pred c branches =
   let projs = get_projections env ind in
   match projs with
   | None ->
-     let invert = make_case_invert env indt ci in
+     let invert = make_case_invert env indt ~case_relevance:(snd pred) ci in
      mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
-  | Some ps -> make_project env sigma ind pred c branches ps
+  | Some ps -> make_project env sigma ind (fst pred) c branches ps
 
 (* substitution in a signature *)
 
