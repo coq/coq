@@ -116,3 +116,7 @@ val add_patterns_for_params_remove_local_defs : Environ.env -> constructor ->
   'a cases_pattern_g list -> 'a cases_pattern_g list
 
 val empty_lvar : Ltac_pretype.ltac_var_map
+
+val kind_of_glob_kind : glob_evar_kind -> Evar_kinds.t
+
+val naming_of_glob_kind : glob_evar_kind -> Namegen.intro_pattern_naming_expr

@@ -20,7 +20,6 @@ open Ppextend
 open Glob_term
 open Constrexpr
 open Constrexpr_ops
-open Namegen
 (*i*)
 
 module Tag =
@@ -267,8 +266,12 @@ let tag_var = tag Tag.variable
           | ExplByPos p -> int p in
         str "(" ++ pr_pos pos ++ str ":=" ++ pr no_after ltop a ++ str ")"
 
+  let is_anonymous_hole = function
+  | Some (GNamedHole _) -> false
+  | _ -> true
+
   let pr_opt_type_spc pr = function
-    | { CAst.v = CHole (_,IntroAnonymous) } -> mt ()
+    | { CAst.v = CHole h } when is_anonymous_hole h -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,4)) (pr no_after ltop) t
 
   let pr_prim_token = function
@@ -456,7 +459,7 @@ let tag_var = tag Tag.variable
         end
       | Default b ->
         match t with
-          | { CAst.v = CHole (_,IntroAnonymous) } ->
+          | { CAst.v = CHole h } when is_anonymous_hole h ->
             let s = prlist_with_sep spc pr_lname nal in
             hov 1 (surround_implicit b s)
           | _ ->
@@ -547,7 +550,8 @@ let tag_var = tag Tag.variable
 
   let pr_case_type pr po =
     match po with
-      | None | Some { CAst.v = CHole (_,IntroAnonymous) } -> mt()
+      | None -> mt ()
+      | Some { CAst.v = CHole h } when is_anonymous_hole h -> mt()
       | Some p ->
         spc() ++ hov 2 (keyword "return" ++ pr_sep_com spc (pr no_after lsimpleconstr) p)
 
@@ -751,9 +755,9 @@ let tag_var = tag Tag.variable
                      ++ pr (fun () -> brk (1,1)) no_after ltop b1) ++ spc () ++
               hov 0 (keyword "else" ++ pr (fun () -> brk (1,1)) lev_after ltop b2)))
         lif
-      | CHole (_,IntroIdentifier id) ->
+      | CHole (Some (GNamedHole (false, id))) ->
         return (fun lev_after -> str "?[" ++ pr_id id ++ str "]") latom
-      | CHole (_,IntroFresh id) ->
+      | CHole (Some (GNamedHole (true, id))) ->
         return (fun lev_after -> str "?[?" ++ pr_id id ++ str "]") latom
       | CHole _ -> return (fun lev_after -> str "_") latom
       | CGenarg arg -> pr_genarg return (Rawarg arg)

@@ -458,7 +458,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
                    Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) m.meth_const) k.cl_projs;
              c :: props, rest'
            with Not_found ->
-             ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous)) :: props), rest
+             ((CAst.make @@ CHole (None)) :: props), rest
          else props, rest)
       ([], props) k.cl_props
   in

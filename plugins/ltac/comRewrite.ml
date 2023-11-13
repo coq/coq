@@ -141,7 +141,7 @@ let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
        (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
        (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)]
 
-let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous)
+let cHole = CAst.make @@ CHole (None)
 
 let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in

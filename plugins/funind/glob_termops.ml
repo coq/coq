@@ -28,7 +28,7 @@ let mkGCases (rto, l, brl) = DAst.make @@ GCases (RegularStyle, rto, l, brl)
 
 let mkGHole () =
   DAst.make
-  @@ GHole (Evar_kinds.BinderType Anonymous, Namegen.IntroAnonymous)
+  @@ GHole (GBinderType Anonymous)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -560,12 +560,12 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     let open Evarutil in
     (* Intercept the pretyper for holes and record the generated evar *)
     let register_evar kind loc evk = match kind with
-    | ImplicitArg (grk, pk, bk) -> implicit_holes := ((loc, grk, pk, bk), evk) :: !implicit_holes
-    | BinderType na -> binder_holes := ((loc, na), evk) :: !binder_holes
+    | GImplicitArg (grk, pk, bk) -> implicit_holes := ((loc, grk, pk, bk), evk) :: !implicit_holes
+    | GBinderType na -> binder_holes := ((loc, na), evk) :: !binder_holes
     | _ -> ()
     in
-    let pretype_hole self (kind, pat) ?loc ~flags tycon env sigma =
-      let sigma, j = default_pretyper.pretype_hole self (kind, pat) ?loc ~flags tycon env sigma in
+    let pretype_hole self kind ?loc ~flags tycon env sigma =
+      let sigma, j = default_pretyper.pretype_hole self kind ?loc ~flags tycon env sigma in
       (* The value is guaranteed to be an undefined evar at this point *)
       let evk, _ = EConstr.destEvar sigma j.uj_val in
       let () = register_evar kind loc evk  in
@@ -574,7 +574,7 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     let pretype_type self c ?loc ~flags valcon env sigma =
       let sigma, j = default_pretyper.pretype_type self c ?loc ~flags valcon env sigma in
       let () = match DAst.get c, EConstr.kind sigma j.utj_val with
-      | GHole (kind, _), Evar (evk, _) -> register_evar kind c.CAst.loc evk
+      | GHole (kind), Evar (evk, _) -> register_evar kind c.CAst.loc evk
       | _ -> ()
       in
       sigma, j
@@ -614,13 +614,13 @@ let resolve_and_replace_implicits exptyp env sigma rt =
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =
     match DAst.get rt with
-    | GHole (ImplicitArg (grk, pk, bk), _) ->
+    | GHole (GImplicitArg (grk, pk, bk)) ->
       let eq (loc1, gr1, p1, b1) (loc2, gr2, p2, b2) =
         Environ.QGlobRef.equal env gr1 gr2 && p1 = p2 && b1 == (b2 : bool) && loc1 = (loc2 : Loc.t option)
       in
       let evopt = List.assoc_f_opt eq (rt.CAst.loc, grk, pk, bk) !implicit_holes in
       expand_hole evopt rt
-    | GHole (BinderType na, _) ->
+    | GHole (GBinderType na) ->
       let eq (loc1, na1) (loc2, na2) = Name.equal na1 na2 && loc1 = (loc2 : Loc.t option) in
       let evopt = List.assoc_f_opt eq (rt.CAst.loc, na) !binder_holes in
       expand_hole evopt rt

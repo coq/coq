@@ -13,7 +13,6 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Namegen
 open Glob_term
 open Notationextern
 open Constrexpr
@@ -365,7 +364,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous)) bl) acc bll
+      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None)) bl) acc bll
     | CGeneralization (_,c) -> f n acc c
     | CDelimiters (_,_,a) -> f n acc a
     | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
@@ -636,7 +635,7 @@ let coerce_to_id = function
 let coerce_to_name = function
   | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
     CAst.make ?loc @@ Name (qualid_basename qid)
-  | { CAst.loc; v = CHole (None,IntroAnonymous) } -> CAst.make ?loc Anonymous
+  | { CAst.loc; v = CHole (None) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          (str "This expression should be a name.")
 
@@ -659,7 +658,7 @@ let mkAppPattern ?loc p lp =
 let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (r,None) ->
      CPatAtom (Some r)
-  | CHole (None,IntroAnonymous) ->
+  | CHole (None) ->
      CPatAtom None
   | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (qid,None) })
       when qualid_is_ident qid && Id.equal id (qualid_basename qid) ->
@@ -683,9 +682,9 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CLambdaN _ | CProdN _ | CSort _ | CLetIn _ | CGeneralization _
   | CRef (_, Some _) | CCast (_, (Some (VMcast|NATIVEcast) | None), _)
   | CFix _ | CCoFix _ | CApp _ | CProj _ | CCases _ | CLetTuple _ | CIf _
-  | CPatVar _ | CEvar _ | CHole (_, (IntroIdentifier _|IntroFresh _))
+  | CPatVar _ | CEvar _
   | CNotation (_,_,(_,_,_,_::_))
-  | CHole (Some _, _) | CGenarg _ | CGenargGlob _ ->
+  | CHole (Some _) | CGenarg _ | CGenargGlob _ ->
     CErrors.user_err ?loc
                       (str "This expression should be coercible to a pattern.")
   | CArray _ ->

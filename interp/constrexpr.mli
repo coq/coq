@@ -151,7 +151,7 @@ and constr_expr_r =
                  constr_expr * constr_expr
   | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
-  | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr
+  | CHole   of Evar_kinds.glob_evar_kind option
   | CGenarg of Genarg.raw_generic_argument
 
   (* because print for genargs wants to print directly the glob without an extern phase (??) *)

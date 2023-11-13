@@ -112,7 +112,7 @@ let option_assert_get o msg =
 (** Constructors for rawconstr *)
 open Glob_term
 
-let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous)
+let mkRHole = DAst.make @@ GHole (GInternalHole)
 
 let rec mkRHoles n = if n > 0 then mkRHole :: mkRHoles (n - 1) else []
 let rec isRHoles cl = match cl with
@@ -714,8 +714,8 @@ let mkCProp loc = CAst.make ?loc @@ CSort (UNamed (None, [CProp, 0]))
 let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=UnivRigid})
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =
-  if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, Namegen.IntroAnonymous)) :: mkCHoles ?loc (n - 1)
-let mkCHole loc = CAst.make ?loc @@ CHole (None, Namegen.IntroAnonymous)
+  if n <= 0 then [] else (CAst.make ?loc @@ CHole (None)) :: mkCHoles ?loc (n - 1)
+let mkCHole loc = CAst.make ?loc @@ CHole (None)
 let mkCLambda ?loc name ty t =  CAst.make ?loc @@
    CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
