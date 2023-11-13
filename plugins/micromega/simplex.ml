@@ -582,7 +582,7 @@ let make_farkas_certificate (env : PrfEnv.t) v =
 let make_farkas_proof (env : PrfEnv.t) v =
   Vect.fold
     (fun wp x n ->
-      WithProof.addition wp (WithProof.mult (Vect.cst n) (PrfEnv.find x env)))
+      WithProof.addition wp (WithProof.mul_cst n (PrfEnv.find x env)))
     WithProof.zero v
 
 let frac_num n = n -/ Q.floor n
@@ -768,7 +768,7 @@ let eliminate_variable (bounded, env, tbl) x =
       (fun lp ->
         let ai = Vect.get x (WithProof.polynomial lp) in
         if ai =/ Q.zero then lp
-        else WithProof.addition (WithProof.mult (Vect.cst (Q.neg ai)) xp) lp)
+        else WithProof.addition (WithProof.mul_cst (Q.neg ai) xp) lp)
       env
   in
   (* Add the variables to the environment *)

@@ -309,10 +309,9 @@ module WithProof : sig
  *)
   val neg : t -> t
 
-  (** [mult p q]
-      @return the polynomial p*q with its sign and proof.
-      @raise InvalidProof if p is not a constant and p  is not an equality *)
-  val mult : LinPoly.t -> t -> t
+  (** [mul_cst c q]
+      @return the polynomial c * q with its sign and proof. *)
+  val mul_cst : Q.t -> t -> t
 
   (** [def p op i] creates an alias with the variable index [i] *)
   val def : LinPoly.t -> op -> int -> t

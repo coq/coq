@@ -478,6 +478,8 @@ module LinPoly = struct
 
   let search_linear p l = min_list (search_all_linear p l)
 
+  let mul_cst c p = Vect.mul c p
+
   let product p1 p2 =
     linpol_of_pol (Poly.product (pol_of_linpol p1) (pol_of_linpol p2))
 
@@ -1057,6 +1059,15 @@ module WithProof = struct
     | Eq ->
       ((Vect.mul Q.minus_one p1, o1), ProofFormat.mul_cst_proof Q.minus_one prf1)
     | _ -> failwith "neg: invalid proof"
+
+  let mul_cst c ((p1, o1), prf1) =
+    let () = match o1 with
+    | Eq -> ()
+    | Gt | Ge -> assert (c >/ Q.zero)
+    in
+    let p = LinPoly.mul_cst c p1 in
+    let prf = ProofFormat.mul_cst_proof c prf1 in
+    ((p, o1), prf)
 
   let mult p ((p1, o1), prf1) =
     match o1 with
