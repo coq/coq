@@ -160,20 +160,31 @@ let assign l n e =
 
 (** {6 Filtering} *)
 
-let rec filter_loop f p = function
-  | [] -> ()
-  | x :: l' as l ->
-    let b = f x in
-    filter_loop f p l';
-    if b then if p.tail == l' then p.tail <- l else p.tail <- x :: p.tail
+(* [filter_loop f (Some (c0,l0)) c l] will do c0.tail <- l0 if [for_all f l] *)
+let rec filter_loop f reset p = function
+  | [] -> begin match reset with
+      | None -> ()
+      | Some (c,orig) -> c.tail <- orig
+    end
+  | x :: l as orig ->
+    if f x then
+      let c = { head = x; tail = [] } in
+      let () = p.tail <- cast c in
+      let reset = match reset with
+        | Some _ -> reset
+        | None -> Some (p,orig)
+      in
+      filter_loop f reset c l
+    else
+      filter_loop f None p l
 
 let rec filter f = function
   | [] -> []
-  | x :: l' as l ->
+  | x :: l' as orig ->
     if f x then
       let c = { head = x; tail = [] } in
-      filter_loop f c l';
-      if c.tail == l' then l else cast c
+      filter_loop f None c l';
+      if c.tail == l' then orig else cast c
     else
       filter f l'
 
