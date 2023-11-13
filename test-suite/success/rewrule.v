@@ -67,7 +67,7 @@ Eval cbv in raise nat + 5.
 Eval cbn in raise nat + 5.
 Eval simpl in raise nat + 5.
 
-(* Set Primitive Projections. *)
+Set Primitive Projections.
 Record prod (A B : Type) := { fst: A; snd: B}.
 
 #[unfold_fix] Symbol id : forall A, A -> A.
@@ -97,7 +97,10 @@ with
   id _ 0 ==> 0
 with
   id _ (S ?n) ==> S (id _ ?n)
-.
+with
+  id _ (fun (n : ?A) => S ?n) ==> fun n => S (id _ ?n)
+with
+  id (prod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
 
 
 Symbol cast : forall A B, A -> B.
