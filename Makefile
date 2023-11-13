@@ -118,10 +118,18 @@ help-install:
 	@echo " Note that building a package in release mode ignores other packages present in"
 	@echo " the worktree. See Dune documentation for more information."
 
+# We setup the root even in dev mode, to avoid some problems.  We used
+# this in the past to workaround a bug in opam, but the bug was that
+# we didn't pass `-p` to the dune build below.
+#
+# This would be fixed once dune can directly use `(include
+# theories_dune)` in our files.
+DUNESTRAPOPT=--root .
+
 # We regenerate always as to correctly track deps, can do better
 # We do a single call to dune as to avoid races and locking
 _build/default/theories_dune _build/default/ltac2_dune .dune-stamp: FORCE
-	dune build $(DUNEOPT) --root . theories_dune ltac2_dune
+	dune build $(DUNEOPT) $(DUNESTRAPOPT) theories_dune ltac2_dune
 	touch .dune-stamp
 
 theories/dune: .dune-stamp
