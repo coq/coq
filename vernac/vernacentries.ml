@@ -702,7 +702,7 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
-      ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
+      ~no_native:atts.no_native ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
       ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
   else
     let () =

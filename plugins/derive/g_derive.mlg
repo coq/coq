@@ -20,9 +20,12 @@ DECLARE PLUGIN "coq-core.plugins.derive"
 
 let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 
+let native = Attributes.bool_attribute ~name:"native_compile"
+
 }
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command } STATE open_proof
-| [ "Derive" identref(f) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
-  { Derive.start_deriving f.CAst.v suchthat lemma.CAst.v }
+| #[ native ] [ "Derive" identref(f) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
+{ let no_native = not (Option.default true native) in
+  Derive.start_deriving ~no_native f.CAst.v suchthat lemma.CAst.v }
 END

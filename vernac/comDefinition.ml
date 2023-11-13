@@ -132,7 +132,7 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?no_na
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
-let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags ~kind ?using ?deprecation udecl bl red_option c ctypopt =
+let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags ~kind ?no_native ?using ?deprecation udecl bl red_option c ctypopt =
   let () = if not poly then udecl |> Option.iter (fun udecl ->
       if not udecl.UState.univdecl_extensible_instance
       || not udecl.UState.univdecl_extensible_constraints
@@ -152,6 +152,6 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
-    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?deprecation () in
+    let info = Declare.Info.make ?no_native ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?deprecation () in
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
   in pm

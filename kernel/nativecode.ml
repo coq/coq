@@ -2207,7 +2207,8 @@ let compile_deps env sigma prefix init t =
       let comp_stack, (mind_updates, const_updates) =
         match cb.const_body with
         | Def t ->
-           aux env lvl init t
+          if cb.const_no_native then raise (NativeSkippedConst c);
+          aux env lvl init t
         | _ -> init
       in
       let code = compile_constant env sigma c cb in

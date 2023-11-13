@@ -1032,7 +1032,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
       if not poly then shrink_body body types
       else ([], body, types, [||])
     in
-    let ce = definition_entry ?types:ty ~opaque ~univs body in
+    let ce = definition_entry ~no_native:prg.prg_info.no_native ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       declare_constant ~name:obl.obl_name
@@ -1826,9 +1826,6 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
     | Vernacexpr.Transparent -> false in
-  let () = if opaque && no_native
-    then CErrors.user_err Pp.(str "Cannot use #[native_compile=no] with opaque definitions.")
-  in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
@@ -2479,7 +2476,7 @@ let solve_obligation ?check_final prg num tac =
   let using = Internal.get_using prg in
   let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ?using () in
   let poly = Internal.get_poly prg in
-  let info = Info.make ~kind ~poly () in
+  let info = Info.make ~no_native:prg.prg_info.no_native ~kind ~poly () in
   let lemma = Proof.start_core ~cinfo ~info ~proof_ending evd  in
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
