@@ -290,11 +290,14 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 Rewrite rules } *)
 
-type instance_mask = bool array option
+type instance_mask = (bool array * bool array) option
+
+type sort_pattern =
+  | PSType | PSProp | PSSProp | PSSet | PSQSort of bool
 
 type 'arg head_pattern =
   | PHRel     of int
-  | PHSort    of Sorts.family
+  | PHSort    of sort_pattern
   | PHSymbol  of Constant.t * instance_mask
   | PHInd     of inductive * instance_mask
   | PHConstr  of constructor * instance_mask

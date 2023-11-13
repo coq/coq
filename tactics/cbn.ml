@@ -567,18 +567,32 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
 
 exception PatternFailure
 
-let match_universes pu u =
-  Option.cata (fun pu ->
-  List.filter_with (Array.to_list pu) (Array.to_list (snd @@ UVars.Instance.to_array u))
-  ) [] pu
-let match_euniverses sigma pu u = match_universes pu (EInstance.kind sigma u)
+let match_instance pu u =
+  let smask, umask = pu in
+  let s, u = UVars.Instance.to_array u in
+  List.filter_with (Array.to_list smask) (Array.to_list s),
+  List.filter_with (Array.to_list umask) (Array.to_list u)
+
+let match_einstance sigma pu u =
+  Option.cata (fun pu -> match_instance pu (EInstance.kind sigma u)) ([], []) pu
+
+let match_sort ps s =
+  let open Declarations in let open Sorts in
+  match [@ocaml.warning "-4"] ps, s with
+  | PSProp, Prop -> []
+  | PSSProp, SProp -> []
+  | PSSet, Set -> []
+  | PSType, Type _ -> []
+  | PSQSort true, s -> [Sorts.quality s]
+  | PSQSort false, _ -> []
+  | (PSProp | PSSProp | PSSet | PSType), _ -> raise PatternFailure
 
 let rec match_arg_pattern whrec env sigma ctx p t =
   let open Declarations in
   let t' = EConstr.it_mkLambda_or_LetIn t ctx in
   match p with
-  | EHole -> [t'], []
-  | EHoleIgnored -> [], []
+  | EHole -> [t'], [], []
+  | EHoleIgnored -> [], [], []
   | ERigid (ph, es) ->
       let (t, stk), _ = whrec Cst_stack.empty (t, Stack.empty) in
       let fsfus = match_rigid_arg_pattern whrec env sigma ctx ph t in
@@ -587,30 +601,20 @@ let rec match_arg_pattern whrec env sigma ctx p t =
       | [] -> fsfus
       | _ :: _ -> raise PatternFailure
 
-and match_sort ps s =
-  let open Sorts in
-  match [@ocaml.warning "-4"] ps, s with
-  | InProp, Prop -> [], []
-  | InSProp, SProp -> [], []
-  | InSet, Set -> [], []
-  | InType, Type u -> [], []
-  | InQSort, _ -> assert false
-  | (InProp | InSProp | InSet | InType), _ -> raise PatternFailure
-
 and match_rigid_arg_pattern whrec env sigma ctx p t =
   match [@ocaml.warning "-4"] p, EConstr.kind sigma t with
   | PHInd (ind, pu), Ind (ind', u) ->
-    if Ind.CanOrd.equal ind ind' then [], match_euniverses sigma pu u else raise PatternFailure
+    if Ind.CanOrd.equal ind ind' then let qs, us = match_einstance sigma pu u in [], qs, us else raise PatternFailure
   | PHConstr (constr, pu), Construct (constr', u) ->
-    if Construct.CanOrd.equal constr constr' then [], match_euniverses sigma pu u else raise PatternFailure
-  | PHRel i, Rel n when i = n -> [], []
-  | PHSort ps, Sort s -> match_sort ps (ESorts.kind sigma s)
+    if Construct.CanOrd.equal constr constr' then let qs, us = match_einstance sigma pu u in [], qs, us else raise PatternFailure
+  | PHRel i, Rel n when i = n -> [], [], []
+  | PHSort ps, Sort s -> [], match_sort ps (ESorts.kind sigma s), []
   | PHSymbol (c, pu), Const (c', u) ->
-    if Constant.CanOrd.equal c c' then [], match_euniverses sigma pu u else raise PatternFailure
+    if Constant.CanOrd.equal c c' then let qs, us = match_einstance sigma pu u in [], qs, us else raise PatternFailure
   | PHInt i, Int i' ->
-    if Uint63.equal i i' then [], [] else raise PatternFailure
+    if Uint63.equal i i' then [], [], [] else raise PatternFailure
   | PHFloat f, Float f' ->
-    if Float64.equal f f' then [], [] else raise PatternFailure
+    if Float64.equal f f' then [], [], [] else raise PatternFailure
   | PHLambda (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_lambda sigma t in
     let na = List.length ntys and np = Array.length ptys in
@@ -620,9 +624,9 @@ and match_rigid_arg_pattern whrec env sigma ctx p t =
     let tys = Array.of_list @@ List.rev_map snd ntys in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.skipn (na - i) ctx' @ ctx) in
-    let fss, fuss = Array.split @@ Array.map3 (match_arg_pattern whrec env sigma) contexts_upto ptys tys in
-    let fs, fus = match_arg_pattern whrec env sigma (ctx' @ ctx) pbod body in
-    (List.concat (Array.to_list fss) @ fs, List.concat (Array.to_list fuss) @ fus)
+    let fss, fqss, fuss = Array.split3 @@ Array.map3 (match_arg_pattern whrec env sigma) contexts_upto ptys tys in
+    let fs, fqs, fus = match_arg_pattern whrec env sigma (ctx' @ ctx) pbod body in
+    (List.concat (Array.to_list fss) @ fs, List.concat (Array.to_list fqss) @ fqs, List.concat (Array.to_list fuss) @ fus)
   | PHProd (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_prod sigma t in
     let na = List.length ntys and np = Array.length ptys in
@@ -632,9 +636,9 @@ and match_rigid_arg_pattern whrec env sigma ctx p t =
     let tys = Array.of_list @@ List.rev_map snd ntys in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.skipn (na - i) ctx' @ ctx) in
-    let fss, fuss = Array.split @@ Array.map3 (match_arg_pattern whrec env sigma) contexts_upto ptys tys in
-    let fs, fus = match_arg_pattern whrec env sigma (ctx' @ ctx) pbod body in
-    (List.concat (Array.to_list fss) @ fs, List.concat (Array.to_list fuss) @ fus)
+    let fss, fqss, fuss = Array.split3 @@ Array.map3 (match_arg_pattern whrec env sigma) contexts_upto ptys tys in
+    let fs, fqs, fus = match_arg_pattern whrec env sigma (ctx' @ ctx) pbod body in
+    (List.concat (Array.to_list fss) @ fs, List.concat (Array.to_list fqss) @ fqs, List.concat (Array.to_list fuss) @ fus)
   | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHSort _ | PHSymbol _), _ -> raise PatternFailure
 
 and extract_n_stack args n s =
@@ -650,18 +654,18 @@ and apply_rule whrec env sigma fsfus ctx es stk =
       let np = Array.length pargs in
       let pargs = Array.to_list pargs in
       let args, s = extract_n_stack [] np s in
-      let fs, fus = fsfus in
-      let fss, fuss = List.split @@ List.map2 (match_arg_pattern whrec env sigma ctx) pargs args in
-      apply_rule whrec env sigma (fs @ List.concat fss, fus @ List.concat fuss) ctx e s
+      let fs, fqs, fus = fsfus in
+      let fss, fqss, fuss = List.split3 @@ List.map2 (match_arg_pattern whrec env sigma ctx) pargs args in
+      apply_rule whrec env sigma (fs @ List.concat fss, fqs @ List.concat fqss, fus @ List.concat fuss) ctx e s
   | Declarations.PECase (pind, pu, pret, pbrs) :: e, Stack.Case ((ci, u, pms, p, iv, brs), cst_l) :: s ->
       if not @@ Ind.CanOrd.equal pind ci.ci_ind then raise PatternFailure;
       let dummy = mkProp in
-      let fs, fus = fsfus in
-      let fuus = match_euniverses sigma pu u in
+      let fs, fqs, fus = fsfus in
+      let fqus, fuus = match_einstance sigma pu u in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, NoInvert, dummy, brs) in
-      let fsret, fusret = match_arg_pattern whrec env sigma (ntys_ret @ ctx) pret ret in
-      let fsbrs, fusbrs = Array.split @@ Array.map2 (fun pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) pat br) pbrs brs in
-      apply_rule whrec env sigma (fs @ fsret @ List.concat (Array.to_list fsbrs), fus @ fuus @ fusret @ List.concat (Array.to_list fusbrs)) ctx e s
+      let fsret, fqsret, fusret = match_arg_pattern whrec env sigma (ntys_ret @ ctx) pret ret in
+      let fsbrs, fqsbrs, fusbrs = Array.split3 @@ Array.map2 (fun pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) pat br) pbrs brs in
+      apply_rule whrec env sigma (fs @ fsret @ List.concat (Array.to_list fsbrs), fqs @ fqus @ fqsret @ List.concat (Array.to_list fqsbrs), fus @ fuus @ fusret @ List.concat (Array.to_list fusbrs)) ctx e s
   | Declarations.PEProj proj :: e, Stack.Proj (proj', r, cst_l') :: s ->
       if not @@ Projection.CanOrd.equal proj proj' then raise PatternFailure;
       apply_rule whrec env sigma fsfus ctx e s
@@ -674,9 +678,9 @@ let rec apply_rules whrec env sigma u r stk =
   | [] -> raise PatternFailure
   | { lhs_pat = (pu, elims); rhs } :: rs ->
     try
-      let (fs, fus), stk = apply_rule whrec env sigma ([], []) [] elims stk in
-      let fus = match_euniverses sigma pu u @ fus in
-      let usubst = UVars.Instance.of_array ([||], Array.of_list fus) in
+      let (fs, fqs, fus), stk = apply_rule whrec env sigma ([], [], []) [] elims stk in
+      let fqus, fuus = match_einstance sigma pu u in
+      let usubst = UVars.Instance.of_array (Array.of_list (fqus @ fqs), Array.of_list (fuus @ fus)) in
       let rhsu = subst_instance_constr usubst (EConstr.of_constr rhs) in
       let rhs' = substl fs rhsu in
       (rhs', stk)

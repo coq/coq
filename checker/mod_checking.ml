@@ -84,8 +84,8 @@ let check_constant_declaration env opac kn cb opacify =
 let check_instance_mask udecl umask =
   let b = match udecl, umask with
     | _, None -> true
-    | Monomorphic, Some umask -> Array.is_empty umask
-    | Polymorphic uctx, Some umask -> Array.length umask = snd @@ UVars.AbstractContext.size uctx
+    | Monomorphic, Some (qmask, umask) -> Array.is_empty qmask && Array.is_empty umask
+    | Polymorphic uctx, Some (qmask, umask) -> (Array.length qmask, Array.length umask) = UVars.AbstractContext.size uctx
   in
   if b then () else CErrors.anomaly Pp.(str "Bad univ mask length.")
 
@@ -113,7 +113,7 @@ and get_holes_profiles_head env nargs ndecls = function
   | PHConstr (c, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in check_instance_mask mib.mind_universes u in []
   | PHInd (ind, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env ind in check_instance_mask mib.mind_universes u in []
   | PHInt _  | PHFloat _ -> []
-  | PHSort InSProp -> if Environ.sprop_allowed env then [] else Type_errors.error_disallowed_sprop env
+  | PHSort PSSProp -> if Environ.sprop_allowed env then [] else Type_errors.error_disallowed_sprop env
   | PHSort _ -> []
   | PHLambda (tys, bod) | PHProd (tys, bod) ->
       let holes_tys = Array.mapi (fun i' -> get_holes_profiles_parg env (nargs + i') (ndecls + i')) tys |> Array.to_list |> List.concat in
