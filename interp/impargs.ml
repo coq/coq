@@ -472,7 +472,7 @@ let compute_mib_implicits flags kn =
         (fun i mip ->
           (* No need to care about constraints here *)
           let ty, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef (kn,i)) in
-          let r = Inductive.relevance_of_inductive env (kn,i) in
+          let r = (snd @@ Inductive.lookup_mind_specif env (kn,i)).mind_relevance in
           Context.Rel.Declaration.LocalAssum (Context.make_annot (Name mip.mind_typename) r, ty))
         mib.mind_packets) in
   let env_ar = Environ.push_rel_context ar env in

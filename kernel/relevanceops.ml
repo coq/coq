@@ -28,10 +28,8 @@ let relevance_of_constant env (c,u) =
   let decl = lookup_constant c env in
   UVars.subst_instance_relevance u decl.const_relevance
 
-let relevance_of_constructor env (((mi,i),_),u) =
-  let decl = lookup_mind mi env in
-  let packet = decl.mind_packets.(i) in
-  UVars.subst_instance_relevance u packet.mind_relevance
+let relevance_of_constructor env ((ind,_),u) =
+  Inductive.relevance_of_inductive env (ind,u)
 
 let relevance_of_projection_repr env (p, u) =
   let mib = lookup_mind (Names.Projection.Repr.mind p) env in

@@ -74,8 +74,11 @@ type env = private {
   env_universes : UGraph.t;
   env_universes_lbound : UGraph.Bound.t;
   env_qualities : Sorts.QVar.Set.t;
-  irr_constants : Sorts.relevance Cmap_env.t;
-  irr_inds : Indset_env.t;
+  irr_constants : Sorts.relevance Cmap_env.t
+(** [irr_constants] is a cache of the relevances which are not Relevant.
+    In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
+  irr_inds : Sorts.relevance Indmap_env.t
+(** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
 }

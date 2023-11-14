@@ -55,7 +55,9 @@ val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 val constrained_type_of_inductive_knowing_parameters :
   mind_specif puniverses -> param_univs -> types constrained
 
-val relevance_of_inductive : env -> inductive -> Sorts.relevance
+val relevance_of_ind_body : one_inductive_body -> UVars.Instance.t -> Sorts.relevance
+
+val relevance_of_inductive : env -> pinductive -> Sorts.relevance
 
 val type_of_inductive : mind_specif puniverses -> types
 

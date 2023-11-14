@@ -216,9 +216,12 @@ let instantiate_universes ctx (templ, ar) args =
 
 (* Type of an inductive type *)
 
-let relevance_of_inductive env ind =
+let relevance_of_ind_body mip u =
+  UVars.subst_instance_relevance u mip.mind_relevance
+
+let relevance_of_inductive env (ind,u) =
   let _, mip = lookup_mind_specif env ind in
-  mip.mind_relevance
+  relevance_of_ind_body mip u
 
 let check_instance mib u =
   if not (match mib.mind_universes with
@@ -352,7 +355,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
-  let na = Context.make_annot Anonymous mip.mind_relevance in
+  let na = Context.make_annot Anonymous (relevance_of_ind_body mip u)  in
   let realdecls = LocalAssum (na, self) :: realdecls in
   instantiate_context u params nas realdecls
 
@@ -722,7 +725,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind mip env =
-    let r = mip.mind_relevance in
+    let r = relevance_of_ind_body mip u in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive ((mib,mip),u)) lpar) in
     push_rel decl env
@@ -1430,16 +1433,18 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
         | _ -> raise_err env i NotEnoughAbstractionInFixBody
     in
-    let ((ind, _), _) as res = check_occur fixenv 1 def in
+    let ((ind, u), _) as res = check_occur fixenv 1 def in
     let _, mip = lookup_mind_specif env ind in
     (* recursive sprop means non record with projections -> squashed *)
-    if mip.mind_relevance == Sorts.Irrelevant &&
-       not (Environ.is_type_in_type env (GlobRef.IndRef ind))
-    then
-      begin
-        if not (names.(i).Context.binder_relevance == Sorts.Irrelevant)
-        then raise_err env i FixpointOnIrrelevantInductive
-      end;
+    let () =
+      if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
+      else match relevance_of_ind_body mip u with
+        | Sorts.Irrelevant | Sorts.RelevanceVar _ ->
+          (* XXX if RelevanceVar also allow binder_relevance = the same var? *)
+          if not (names.(i).Context.binder_relevance == Sorts.Irrelevant)
+          then raise_err env i FixpointOnIrrelevantInductive
+        | Sorts.Relevant -> ()
+    in
     res
   in
   (* Do it on every fixpoint *)

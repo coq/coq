@@ -74,7 +74,7 @@ let lift_inductive_family n = liftn_inductive_family n 1
 
 let substnl_ind_family l n = map_ind_family (substnl l n)
 
-let relevance_of_inductive_family env ((ind,_),_ : inductive_family) =
+let relevance_of_inductive_family env (ind,_ : inductive_family) =
   Inductive.relevance_of_inductive env ind
 
 type inductive_type = IndType of inductive_family * EConstr.constr list
@@ -430,7 +430,7 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
-let make_arity_signature env sigma dep ((ind,_), _ as indf) =
+let make_arity_signature env sigma dep (ind, _ as indf) =
   let arsign = get_arity env indf in
   let r = Inductive.relevance_of_inductive env ind in
   let anon = make_annot Anonymous r in
@@ -577,7 +577,7 @@ let find_coinductive env sigma c =
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
   let arsign = get_arity env (ind,params) in
-  let r = Inductive.relevance_of_inductive env (fst ind) in
+  let r = Inductive.relevance_of_inductive env ind in
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   Term.it_mkProd_or_LetIn concl arsign

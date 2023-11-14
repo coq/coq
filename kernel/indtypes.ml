@@ -160,7 +160,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive specif in
   let env' =
-    let r = (snd (fst specif)).mind_relevance in
+    let r = Inductive.relevance_of_ind_body (snd (fst specif)) u in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in

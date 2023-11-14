@@ -799,7 +799,7 @@ let inductive_subst mib u pms =
   mk_pms (Array.length pms - 1) mib.mind_params_ctxt, u
 
 (* Iota-reduction: feed the arguments of the constructor to the branch *)
-let get_branch infos depth ci u pms (ind, c) br e args =
+let get_branch infos depth ci pms ((ind, c), u) br e args =
   let i = c - 1 in
   let args = drop_parameters depth ci.ci_npar args in
   let (_nas, br) = br.(i) in
@@ -1240,9 +1240,11 @@ let rec skip_irrelevant_stack info stk = match stk with
   let () = update m mk_irrelevant.mark mk_irrelevant.term in
   skip_irrelevant_stack info s
 
-let is_irrelevant_constructor infos (ind,_) = match infos.i_cache.i_mode with
-| Conversion -> Indset_env.mem ind infos.i_cache.i_env.irr_inds
-| Reduction -> false
+let is_irrelevant_constructor infos ((ind,_),u) =
+  match Indmap_env.find_opt ind (info_env infos).Environ.irr_inds with
+  | None -> false
+  | Some r ->
+    is_irrelevant infos @@ UVars.subst_instance_relevance u r
 
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
@@ -1361,14 +1363,15 @@ let rec knr info tab m stk =
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
         | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
-  | FConstruct(c,_u) ->
+  | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
       (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-        | (depth, args, ZcaseT(ci,u,pms,_,br,e)::s) when use_match ->
+        | (depth, args, ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
-            let (br, e) = get_branch info depth ci u pms c br e args in
+            (* instance on the case and instance on the constructor are compatible by typing *)
+            let (br, e) = get_branch info depth ci pms c br e args in
             knit info tab e br s
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in

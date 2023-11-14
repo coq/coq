@@ -1979,7 +1979,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
                 (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
-          let ((ind,u),_) = dest_ind_family indf' in
+          let ((ind,_ as indu),_) = dest_ind_family indf' in
           let nrealargs_ctxt = inductive_nrealdecls env0 ind in
           let arsign = get_arity env0 indf' in
           let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
@@ -1993,7 +1993,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
                   List.rev realnal
               | None ->
                   List.make nrealargs_ctxt Anonymous in
-          let r = Inductive.relevance_of_inductive env0 ind in
+          let r = Inductive.relevance_of_inductive env0 indu in
           let t = EConstr.of_constr (build_dependent_inductive env0 indf') in
           LocalAssum (make_annot na r, t) :: List.map2 RelDecl.set_name realnal arsign in
   let rec buildrec n = function

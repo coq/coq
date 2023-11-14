@@ -1716,7 +1716,7 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
           let ci = Inductiveops.make_case_info env ind RegularStyle in
           let br = [| mknas cs_args, b |] in
           let args = Context.Rel.instance mkRel 0 sign in
-          let pnas = Array.append (mknas arity) [|make_annot Anonymous mip.mind_relevance|] in
+          let pnas = Array.append (mknas arity) [|make_annot Anonymous (Inductive.relevance_of_ind_body mip (EConstr.Unsafe.to_instance u))|] in
           let p = (pnas, lift (Array.length pnas) t) in
           let c = mkCase (ci, u, Array.of_list params, (p, get_relevance decl), NoInvert, mkApp (c, args), br) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
