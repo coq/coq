@@ -552,10 +552,10 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
   in
   let () =
     let ksort = Sorts.family sp in
-    if not (Sorts.family_leq ksort mip.mind_kelim) then
-      let s = inductive_sort_family mip in
+    let s = elim_sort specif in
+    if not (Sorts.family_leq ksort s) then
       let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-      let kinds = Some (pj, mip.mind_kelim, ksort, s) in
+      let kinds = Some (pj, ksort, s) in
       error_elim_arity env (ind, u') c kinds
   in
   (* Check that the scrutinee has the right type *)

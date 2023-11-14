@@ -98,7 +98,8 @@ let check_template ar1 ar2 = match ar1, ar2 with
   ContextSet.equal template_context ar.template_context
 | None, Some _ | Some _, None -> false
 
-let check_kelim k1 k2 = Sorts.family_leq k1 k2
+(* if the generated inductive is squashed the original one must be squashed *)
+let check_squashed k1 k2 = if k2 then k1 else true
 
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.
@@ -122,7 +123,7 @@ let eq_in_context (ctx1, t1) (ctx2, t2) =
 
 let check_packet env mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
-      mind_nrealargs; mind_nrealdecls; mind_kelim; mind_nf_lc;
+      mind_nrealargs; mind_nrealdecls; mind_squashed; mind_nf_lc;
       mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_relevance;
       mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
   let check = check mind in
@@ -134,7 +135,7 @@ let check_packet env mind ind
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
   check "mind_nrealargs" Int.(equal ind.mind_nrealargs mind_nrealargs);
   check "mind_nrealdecls" Int.(equal ind.mind_nrealdecls mind_nrealdecls);
-  check "mind_kelim" (check_kelim ind.mind_kelim mind_kelim);
+  check "mind_squashed" (check_squashed ind.mind_squashed mind_squashed);
 
   check "mind_nf_lc" (Array.equal eq_in_context ind.mind_nf_lc mind_nf_lc);
   (* NB: here syntactic equality is not just an optimisation, we also

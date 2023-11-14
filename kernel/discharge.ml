@@ -136,7 +136,7 @@ let cook_one_ind cache ~ntypes mip =
     mind_user_lc;
     mind_nrealargs = mip.mind_nrealargs;
     mind_nrealdecls = mip.mind_nrealdecls;
-    mind_kelim = mip.mind_kelim;
+    mind_squashed = mip.mind_squashed;
     mind_nf_lc;
     mind_consnrealargs = mip.mind_consnrealargs;
     mind_consnrealdecls = mip.mind_consnrealdecls;

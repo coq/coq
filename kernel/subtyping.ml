@@ -139,7 +139,7 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
     let check f test why = if not (test (f p1) (f p2)) then error why in
       check (fun p -> p.mind_consnames) (Array.equal Id.equal) NotSameConstructorNamesField;
       check (fun p -> p.mind_typename) Id.equal NotSameInductiveNameInBlockField;
-      check (fun p -> p.mind_kelim) Sorts.family_equal (NotConvertibleInductiveField p2.mind_typename);
+      check (fun p -> p.mind_squashed) Bool.equal (NotConvertibleInductiveField p2.mind_typename);
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)

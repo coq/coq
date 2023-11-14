@@ -242,20 +242,6 @@ let check_record data =
           | _ -> false))
     data
 
-(* Allowed eliminations *)
-
-(* Previous comment: *)
-(* Unitary/empty Prop: elimination to all sorts are realizable *)
-(* unless the type is large. If it is large, forbids large elimination *)
-(* which otherwise allows simulating the inconsistent system Type:Type. *)
-(* -> this is now handled by is_smashed: *)
-(* - all_sorts in case of small, unitary Prop (not smashed) *)
-(* - logical_sorts in case of large, unitary Prop (smashed) *)
-
-let allowed_sorts {ind_squashed;ind_univ;ind_template=_;record_arg_info=_;missing=_} =
-  if not ind_squashed then InType
-  else Sorts.family ind_univ
-
 (* For a level to be template polymorphic, it must be introduced
    by the definition (so have no constraint except lbound <= l)
    and not to be constrained from below, so any universe l' <= l
@@ -340,8 +326,7 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
   in
 
-  let kelim = allowed_sorts univ_info in
-  (arity,lc), (indices,splayed_lc), kelim
+  (arity,lc), (indices,splayed_lc), univ_info.ind_squashed
 
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with

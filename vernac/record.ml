@@ -295,12 +295,12 @@ let warning_or_error ~info flags indsp err =
            strbrk " not defined.")
     | BadTypedProj (fi,_ctx,te) ->
         match te with
-          | ElimArity (_, _, Some (_, _, (InType | InSet), InProp)) ->
+          | ElimArity (_, _, Some (_, (InType | InSet), InProp)) ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is informative and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
-          | ElimArity (_, _, Some (_, _, InType, InSet)) ->
+          | ElimArity (_, _, Some (_, InType, InSet)) ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is large and " ++
                 Printer.pr_inductive (Global.env()) indsp ++

@@ -309,7 +309,9 @@ let inductive_sort_family mip =
   | RegularArity s -> Sorts.family s.mind_sort
   | TemplateArity _ -> Sorts.InType
 
-let elim_sort (_,mip) = mip.mind_kelim
+let elim_sort (_,mip) =
+  if not mip.mind_squashed then Sorts.InType
+  else inductive_sort_family mip
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =

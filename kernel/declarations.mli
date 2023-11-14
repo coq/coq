@@ -198,7 +198,7 @@ type one_inductive_body = {
 
     mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
-    mind_kelim : Sorts.family; (** Highest allowed elimination sort *)
+    mind_squashed : bool; (** Is elimination restricted to the inductive's sort? *)
 
     mind_nf_lc : (rel_context * types) array;
  (** Head normalized constructor types so that their conclusion

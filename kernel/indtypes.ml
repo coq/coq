@@ -483,7 +483,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
-  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
+  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),squashed) recarg =
     let lc = Array.map (substl subst) lc in
     (* Type of constructors in normal form *)
     let nf_lc =
@@ -519,7 +519,7 @@ let build_inductive env ~sec_univs names prv univs template variance
         mind_arity_ctxt = indices @ paramsctxt;
         mind_nrealargs = Context.Rel.nhyps indices;
         mind_nrealdecls = Context.Rel.length indices;
-        mind_kelim = kelim;
+        mind_squashed = squashed;
         mind_consnames = Array.of_list cnames;
         mind_consnrealdecls = consnrealdecls;
         mind_consnrealargs = consnrealargs;

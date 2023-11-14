@@ -116,7 +116,6 @@ let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 (** kernel/term *)
 
 let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|];[|v_qvar;v_univ(*QSort*)|]|]
-let v_sortfam = v_enum "sorts_family" 4
 
 let v_relevance = v_sum "relevance" 2 [|[|v_qvar|]|]
 let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
@@ -290,7 +289,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     Array v_constr;
     Int;
     Int;
-    v_sortfam;
+    v_bool;
     Array (v_pair v_rctxt v_constr);
     Array Int;
     Array Int;

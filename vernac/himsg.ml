@@ -236,9 +236,9 @@ let explain_elim_arity env sigma ind c okinds =
   let pi = pr_inductive env (fst ind) in
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
-  | Some (pj, sorts, kp, ki) ->
+  | Some (pj, kp, ki) ->
       let explanation = error_elim_explain kp ki in
-      let sorts = Inductiveops.sorts_below sorts in
+      let sorts = Inductiveops.sorts_below ki in
       let pki = Sorts.pr_sort_family ki in
       let pkp = Sorts.pr_sort_family kp in
       let explanation =	match explanation with

@@ -231,8 +231,8 @@ let inductive_has_local_defs env ind =
   not (Int.equal l1 l2)
 
 let top_allowed_sort env (kn,i as ind) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_kelim
+  let specif = Inductive.lookup_mind_specif env ind in
+  Inductive.elim_sort specif
 
 let sorts_below top =
   List.filter (fun s -> Sorts.family_leq s top) Sorts.[InSProp;InProp;InSet;InType]

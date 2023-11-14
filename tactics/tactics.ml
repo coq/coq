@@ -1707,10 +1707,10 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
         && not (isEvar sigma (fst (whd_betaiota_stack env sigma t)))
         && (not (isRel sigma t))
       then
-        let (_, mip) = Inductive.lookup_mind_specif env ind in
+        let (_, mip) as specif = Inductive.lookup_mind_specif env ind in
         let t = lift (i + 1 - n) t in
         let ksort = Retyping.get_sort_family_of (push_rel_context sign env) sigma t in
-        if Sorts.family_leq ksort mip.mind_kelim then
+        if Sorts.family_leq ksort (Inductive.elim_sort specif) then
           let arity = List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt in
           let mknas ctx = Array.of_list (List.rev_map get_annot ctx) in
           let ci = Inductiveops.make_case_info env ind RegularStyle in

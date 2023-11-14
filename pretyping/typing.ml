@@ -270,8 +270,7 @@ let check_allowed_sort env sigma ind c p =
     | InQSort -> InType (* FIXME *)
   in
   if not (Sorts.family_leq ksort sorts) then
-    let s = inductive_sort_family (snd specif) in
-    error_elim_arity env sigma ind c (Some (pj, sorts, ksort, s))
+    error_elim_arity env sigma ind c (Some (pj, ksort, sorts))
   else
     Sorts.relevance_of_sort sort
 
