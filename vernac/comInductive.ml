@@ -299,7 +299,7 @@ let inductive_levels env evd arities ctors =
       else ind)
       inds
   in
-  (* Add constraints from constructor arguments and indices.Q
+  (* Add constraints from constructor arguments and indices.
      We must do this after Prop lowering as otherwise we risk unifying sorts
      eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
      then ESorts.equal would make us believe that the constructor argument is a lowering candidate.

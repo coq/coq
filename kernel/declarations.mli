@@ -209,7 +209,7 @@ type one_inductive_body = {
      (possibly with let-ins). This context is internally represented
      as a list [[cstrdecl_ij{q_ij};...;cstrdecl_ij1;paramdecl_m;...;paramdecl_1]]
      such that the constructor in fine has type [forall paramdecls,
-     forall cstrdecls_ij, Ii params realargs_ij]] with [params] referring to
+     forall cstrdecls_ij, Ii params realargs_ij] with [params] referring to
      the assumptions of [paramdecls] and [realargs_ij] being the
      "indices" specific to the constructor. *)
 
