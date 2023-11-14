@@ -5,7 +5,7 @@
 a=$(uname)
 if [ "$a" = "Darwin" ] || [ "$a" = "Linux" ]; then
 rm -f misc/deps/théorèmes/*.v
-tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
+
 $coqc -R misc/deps AlphaBêta misc/deps/αβ/γδ.v
 R=$?
 $coqc -R misc/deps AlphaBêta misc/deps/αβ/εζ.v

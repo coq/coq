@@ -8,14 +8,6 @@
  (dev (flags :standard -w -70)))
 
 (rule
- (targets libpath.inc)
- (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/ ))))
-
-(rule
- (targets bin.inc)
- (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted -trailing-slash ../../install/%{context_name}/bin/ ))))
-
-(rule
  (targets summary.log)
  (deps
    ; File that should be promoted.
@@ -26,6 +18,7 @@
    ../dev/header.ml
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
+   ../sysinit/coqargs.ml
    ; For the misc/printers.sh test
    ../dev/incdir_dune
    ../dev/base_include
@@ -51,4 +44,4 @@
    ; %{bin:fake_ide}
  (action
   (progn
-   (bash "make -j %{env:NJOBS=2} BIN=%{read:bin.inc} COQLIB=%{read:libpath.inc} PRINT_LOGS=1 UNIT_TESTS=%{env:COQ_UNIT_TEST=unit-tests}"))))
+   (bash "make -j %{env:NJOBS=2} PRINT_LOGS=1 UNIT_TESTS=%{env:COQ_UNIT_TEST=unit-tests}"))))

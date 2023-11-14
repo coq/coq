@@ -37,11 +37,9 @@ endif
 # Variables
 #######################################################################
 
-# Using quotes to anticipate the possibility of spaces in the directory name
+# COQPREFIX is quoted to anticipate the possibility of spaces in the directory name
 # Note that this will later need an eval in shell to interpret the quotes
-ROOT='$(shell cd ..; pwd)'
-
-BIN:=$(ROOT)/_build/install/default/bin/
+BIN:=$(COQPREFIX)/bin/
 
 # An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
 ifeq ($(ARCH),win32)
@@ -530,8 +528,8 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  tmpexpected=`mktemp /tmp/coqcheck.XXXXXX`; \
+	  tmpoutput=`mktemp`; \
+	  tmpexpected=`mktemp`; \
 	  $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
@@ -746,7 +744,7 @@ coqwc : $(patsubst %.v,%.v.log,$(wildcard coqwc/*.v))
 coqwc/%.v.log : coqwc/%.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  tmpoutput=`mktemp /tmp/coqwc.XXXXXX`; \
+	  tmpoutput=`mktemp`; \
 	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
 	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \

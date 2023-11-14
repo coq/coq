@@ -26,8 +26,15 @@ depends: [
   "coqide-server" {= version}
   "odoc" {with-doc}
 ]
+dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}
+  [ "./configure"
+    "-prefix" prefix
+    "-mandir" man
+    "-libdir" "%{lib}%/coq"
+    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+  ] {with-test}
   [
     "dune"
     "build"
@@ -42,4 +49,3 @@ build: [
   ]
   ["dune" "install" "-p" name "--create-install-files" name]
 ]
-dev-repo: "git+https://github.com/coq/coq.git"

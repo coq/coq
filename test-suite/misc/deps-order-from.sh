@@ -3,9 +3,9 @@
 # Check that both coqdep and coqtop/coqc take the latter -R
 # See bugs #11631, #14539
 rm -f misc/deps/test-from/A/C.vo misc/deps/test-from/B/C.vo misc/deps/test-from/D.vo misc/deps/test-from/E.vo
-tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
-$coqdep -R misc/deps/test-from T misc/deps/test-from/D.v misc/deps/test-from/E.v > "$tmpoutput" 2>&1
-diff -u --strip-trailing-cr misc/deps/deps-from.out "$tmpoutput"
+output=misc/deps/deps-from.real
+$coqdep -R misc/deps/test-from T misc/deps/test-from/D.v misc/deps/test-from/E.v > "$output" 2>&1
+diff -u --strip-trailing-cr misc/deps/deps-from.out "$output"
 R=$?
 times
 $coqc -R misc/deps/test-from T misc/deps/test-from/A/C.v

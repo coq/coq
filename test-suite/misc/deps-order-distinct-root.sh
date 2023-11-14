@@ -3,9 +3,9 @@
 # Check that both coqdep and coqtop/coqc take the latter -R
 # See also bugs #2242, #2337, #2339
 rm -f misc/deps/DistinctRoot/*.vo misc/deps/DistinctRoot/*.vo/{A,B}/*.vo
-tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
-(cd misc/deps; $coqdep -f _CoqDistinctRoot) > "$tmpoutput" 2>&1
-diff -u --strip-trailing-cr misc/deps/DistinctRootDeps.out "$tmpoutput"
+output=misc/deps/DistinctRootDeps.real
+(cd misc/deps; $coqdep -f _CoqDistinctRoot) > "$output" 2>&1
+diff -u --strip-trailing-cr misc/deps/DistinctRootDeps.out "$output"
 R=$?
 times
 $coqc -R misc/deps/DistinctRoot/A A -R misc/deps/DistinctRoot/B B misc/deps/DistinctRoot/A/File1.v

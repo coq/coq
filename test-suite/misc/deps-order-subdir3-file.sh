@@ -8,9 +8,9 @@
 dotest=true
 if [ $dotest = false ]; then exit 0; fi
 rm -f misc/deps/Theory3/*.vo misc/deps/Theory3/Subtheory?/*.vo misc/deps/Theory3/Subtheory?/Subsubtheory?/*.vo
-tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
-(cd misc/deps; $coqdep -f _CoqTheory3Project) > "$tmpoutput" 2>&1
-diff -u --strip-trailing-cr misc/deps/Theory3Deps.out $tmpoutput
+output=misc/deps/Theory3Deps.real
+(cd misc/deps; $coqdep -f _CoqTheory3Project) > "$output" 2>&1
+diff -u --strip-trailing-cr misc/deps/Theory3Deps.out $output
 R=$?
 if [ $R != 0 ]; then
     printf "Unexpected coqdep result.\n"
