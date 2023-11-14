@@ -309,9 +309,6 @@ let inductive_sort_family mip =
   | RegularArity s -> Sorts.family s.mind_sort
   | TemplateArity _ -> Sorts.InType
 
-let mind_arity mip =
-  mip.mind_arity_ctxt, inductive_sort_family mip
-
 let elim_sort (_,mip) = mip.mind_kelim
 
 let is_private (mib,_) = mib.mind_private = Some true

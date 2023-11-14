@@ -124,8 +124,6 @@ val build_branches_type :
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family
-
 val inductive_sort_family : one_inductive_body -> Sorts.family
 
 (** Check a [case_info] actually correspond to a Case expression on the
