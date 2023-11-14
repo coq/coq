@@ -155,6 +155,8 @@ let synterp_import export refl =
   export, List.map (fun (qid,f) -> CAst.make ?loc:qid.loc @@ synterp_import_mod export qid f, f) refl
 
 let synterp_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
+  if Lib.sections_are_opened () then
+    user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   let export = Option.map (on_snd synterp_import_cats) export in
   match mexpr_ast_l with
     | [] ->
@@ -187,6 +189,8 @@ let synterp_define_module export {loc;v=id} (binders_ast : module_binder list) m
        export, args, [], expr, sign
 
 let synterp_declare_module_type_syntax {loc;v=id} binders_ast mty_sign mty_ast_l =
+  if Lib.sections_are_opened () then
+    user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mty_ast_l with
     | [] ->
        let binders_ast,argsexport =
