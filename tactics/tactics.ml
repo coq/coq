@@ -645,27 +645,31 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   let (sp, u) = check_mutind env sigma n concl in
   let firsts, lasts = List.chop j rest in
   let all = firsts @ (f, n, concl) :: lasts in
+  let all = List.map (fun (f, n, ar) ->
+      let r = Retyping.relevance_of_type env sigma ar in
+      (f, r, n, ar))
+      all
+  in
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, n, ar) :: oth ->
+  | (f, r, n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
     if not (QMutInd.equal env sp sp') then
       error FixpointSameMutualInductiveType;
     if mem_named_context_val f sign then
       error (IntroAlreadyDeclared f);
-    mk_sign (push_named_context_val (LocalAssum (make_annot f Sorts.Relevant, ar)) sign) oth
+    mk_sign (push_named_context_val (LocalAssum (make_annot f r, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
-    let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
-    let ids = List.map pi1 all in
+    let (sigma, evs) = mk_holes nenv sigma (List.map (fun (_,_,_,ar) -> ar) all) in
+    let ids, rs, _, ars = List.split4 all in
     let evs = List.map (Vars.subst_vars sigma (List.rev ids)) evs in
-    let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
-    (* TODO relevance *)
-    let funnames = Array.of_list (List.map (fun i -> make_annot (Name i) Sorts.Relevant) ids) in
-    let typarray = Array.of_list (List.map pi3 all) in
+    let indxs = Array.of_list (List.map (fun n -> n-1) (List.map (fun (_,_,n,_) -> n) all)) in
+    let funnames = Array.of_list (List.map2 (fun i r -> make_annot (Name i) r) ids rs) in
     let bodies = Array.of_list evs in
+    let typarray = Array.of_list ars in
     let oterm = mkFix ((indxs,0),(funnames,typarray,bodies)) in
     (sigma, oterm)
   end
@@ -693,21 +697,22 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   let firsts,lasts = List.chop j others in
   let all = firsts @ (f, concl) :: lasts in
   List.iter (fun (_, c) -> check_is_mutcoind env sigma c) all;
+  let all = List.map (fun (id,t) -> (id, Retyping.relevance_of_type env sigma t, t)) all in
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, ar) :: oth ->
+  | (f, r, ar) :: oth ->
     let open Context.Named.Declaration in
     if mem_named_context_val f sign then
       error (AlreadyUsed f);
-    mk_sign (push_named_context_val (LocalAssum (make_annot f Sorts.Relevant, ar)) sign) oth
+    mk_sign (push_named_context_val (LocalAssum (make_annot f r, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
-    let (ids, types) = List.split all in
+    let (ids, rs, types) = List.split3 all in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars sigma (List.rev ids)) evs in
     (* TODO relevance *)
-    let funnames = Array.of_list (List.map (fun i -> make_annot (Name i) Sorts.Relevant) ids) in
+    let funnames = Array.of_list (List.map2 (fun i r -> make_annot (Name i) r) ids rs) in
     let typarray = Array.of_list types in
     let bodies = Array.of_list evs in
     let oterm = mkCoFix (0, (funnames, typarray, bodies)) in
