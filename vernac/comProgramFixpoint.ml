@@ -202,10 +202,14 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
       Constrintern.compute_internalization_data env sigma recname
         Constrintern.Recursive full_arity impls
     in
+    let impl = Some Impargs.{
+      impl_pos = (Name (Id.of_string "recproof"), 1, None);
+      impl_expl = Manual;
+      impl_max = true;
+      impl_force = false;
+    } in
     let newimpls = Id.Map.singleton recname
-        (Constrintern.extend_internalization_data interning_data
-           (Some ((Name (Id.of_string "recproof"),1,None), Impargs.Manual, (true, false)))
-           []) in
+        (Constrintern.extend_internalization_data interning_data impl []) in
     interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)
   in

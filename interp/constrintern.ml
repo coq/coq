@@ -348,7 +348,7 @@ let warn_shadowed_implicit_name =
 
 let exists_name na l =
   match na with
-  | Name id -> List.exists (function Some ((Name id',_,_),_,_) -> Id.equal id id' | _ -> false) l
+  | Name id -> List.exists (function Some { impl_pos = (Name id', _, _) } -> Id.equal id id' | _ -> false) l
   | _ -> false
 
 let build_impls ?loc n bk na acc =
@@ -356,7 +356,12 @@ let build_impls ?loc n bk na acc =
     let na =
       if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
       else na in
-    Some ((na,n,(*TODO, enhancement: compute dependency*)None),Manual,(max,true))
+    Some {
+      impl_pos = (na, n, (*TODO, enhancement: compute dependency*) None);
+      impl_expl = Manual;
+      impl_max = max;
+      impl_force = true
+    }
   in
   match bk with
   | NonMaxImplicit -> impl_status false :: acc
@@ -2069,7 +2074,7 @@ let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function Some ((Name id,_,_),_,_) -> Some id | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = (Name id, _, _) } -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2078,7 +2083,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function Some ((_,_,Some n),_,_) -> Some n | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = (_, _, Some n) } -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2883,7 +2888,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
             let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in (* useful? *)
             let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
             let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
-            let imps = List.map (function None -> CAst.make None | Some (_,_,(max,_)) -> CAst.make @@ Some (na,max)) imps in
+            let imps = List.map (function None -> CAst.make None | Some imp -> CAst.make @@ Some (na, imp.impl_max)) imps in
             let imps = compute_internalization_data env sigma id ty t imps in
             let int_env = { int_env with impls = Id.Map.add id imps int_env.impls } in
             let r = Retyping.relevance_of_type env sigma t in
