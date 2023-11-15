@@ -1072,6 +1072,12 @@ let tycon_app ?loc env ~ft t =
         Pp.(str "This expression has type" ++ spc() ++ pr_glbtype env ft ++ str"." ++
             spc() ++ str "It is not a function and cannot be applied.")
 
+let warn_useless_record_with = CWarnings.create ~name:"ltac2-useless-record-with" ~default:AsError
+    ~category:CWarnings.CoreCategories.ltac2
+    Pp.(fun () ->
+        str "All the fields are explicitly listed in this record:" ++
+        spc() ++ str "the 'with' clause is useless.")
+
 let rec intern_rec env tycon {loc;v=e} =
   let check et = check ?loc env tycon et in
   match e with
@@ -1225,10 +1231,7 @@ let rec intern_rec env tycon {loc;v=e} =
             MissingField i)
           args
       in
-      let () = if not !used then
-          user_err ?loc (str "All the fields are explicitly listed in this record:" ++
-                         spc() ++ str "the 'with' clause is useless.");
-      in
+      let () = if not !used then warn_useless_record_with ?loc (); in
       let def = intern_rec_with_constraint env def (GTypRef (Other kn, Array.to_list deftparam)) in
       let var = match def with
         | GTacVar _ | GTacRef _ -> None
