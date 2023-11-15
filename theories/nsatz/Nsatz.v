@@ -67,13 +67,15 @@ try (try apply Rsth;
 - exact Rplus_opp_r.
 Defined.
 
-Class can_compute_Z (z : Z) := dummy_can_compute_Z : True.
-#[global]
-Hint Extern 0 (can_compute_Z ?v) =>
-  match isZcst v with true => exact I end : typeclass_instances.
-#[global]
-Instance reify_IZR z lvar {_ : can_compute_Z z} : reify (PEc z) lvar (IZR z).
-Defined.
+Ltac extra_reify term ::=
+  match term with
+  | IZR ?z =>
+      match isZcst z with
+      | true => open_constr:((true, PEc z))
+      | false => open_constr:((false,tt))
+      end
+  | _ => open_constr:((false,tt))
+  end.
 
 Lemma R_one_zero: 1%R <> 0%R.
 discrR.
