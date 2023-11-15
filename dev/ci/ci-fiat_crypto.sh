@@ -18,8 +18,14 @@ stacksize=32768
 make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1)
 
 export COQEXTRAFLAGS='-native-compiler no' # following bedrock2
+
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
   ulimit -s $stacksize
+  if ! grep -q async-proofs-tac-j Makefile.coq.local; then
+    echo 'OTHERFLAGS += -async-proofs-tac-j 0' > tmp
+    cat Makefile.coq.local >> tmp
+    mv tmp Makefile.coq.local
+  fi
   make "${make_args[@]}" pre-standalone-extracted printlite lite ||
     make -j 1 "${make_args[@]}" pre-standalone-extracted printlite lite
   make "${make_args[@]}" all-except-compiled ||
