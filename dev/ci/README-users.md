@@ -31,7 +31,9 @@ On the condition that:
 - You maintain a reasonable build time for your project, or you provide
   a "lite" target that we can use.
 
-In case you forget to comply with these last three conditions, we would reach
+- You keep points-of-contact up to date.
+
+In case you forget to comply with these last four conditions, we would reach
 out to you and give you a 30-day grace period during which your project
 would be moved into our "allow failure" category. At the end of the grace
 period, in the absence of progress, the project would be removed from our
@@ -80,6 +82,9 @@ example. **Do not hesitate to submit an incomplete pull request if you need
 help to finish it.**
 
 Some important points:
+
+- Mention one or a few points of contact in
+  [`ci-basic-overlay.sh`](ci-basic-overlay.sh).
 
 - Let `$job` be the name of the new job as used for the name of
   the added script file `dev/ci/ci-$job.sh`. Then the added target
