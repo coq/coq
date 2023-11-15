@@ -299,17 +299,21 @@ let () =
   define "format_alpha" (format @-> ret format) @@ fun s ->
   Tac2print.FmtAlpha :: s
 
+let arity_of_format fmt =
+  let open Tac2print in
+  let fold accu = function
+    | FmtLiteral _ -> accu
+    | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
+    | FmtAlpha -> 2 + accu
+  in
+  List.fold_left fold 0 fmt
+
 let () =
   define "format_kfprintf" (closure @-> format @-> tac valexpr) @@ fun k fmt ->
   let open Tac2print in
-  let fold accu = function
-  | FmtLiteral _ -> accu
-  | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
-  | FmtAlpha -> 2 + accu
-  in
   let pop1 l = match l with [] -> assert false | x :: l -> (x, l) in
   let pop2 l = match l with [] | [_] -> assert false | x :: y :: l -> (x, y, l) in
-  let arity = List.fold_left fold 0 fmt in
+  let arity = arity_of_format fmt in
   let rec eval accu args fmt = match fmt with
   | [] -> apply k [of_pp accu]
   | tag :: fmt ->
@@ -341,6 +345,13 @@ let () =
       eval (Pp.app accu (to_pp pp)) args fmt
   in
   let eval v = eval (Pp.mt ()) v fmt in
+  if Int.equal arity 0 then eval []
+  else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
+
+let () =
+  define "format_ikfprintf" (closure @-> valexpr @-> format @-> tac valexpr) @@ fun k v fmt ->
+  let arity = arity_of_format fmt in
+  let eval _args = apply k [v] in
   if Int.equal arity 0 then eval []
   else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
 

@@ -55,4 +55,7 @@ Ltac2 @ external alpha : ('a, 'b, 'c, 'd) format ->
 Ltac2 @ external kfprintf : (message -> 'r) -> ('a, unit, message, 'r) format -> 'a :=
   "coq-core.plugins.ltac2" "format_kfprintf".
 
+Ltac2 @ external ikfprintf : ('v -> 'r) -> 'v -> ('a, unit, 'v, 'r) format -> 'a :=
+  "coq-core.plugins.ltac2" "format_ikfprintf".
+
 End Format.
