@@ -272,29 +272,29 @@ and subst_genarg subst (GenArg (Glbwit wit, x)) =
     let q = out_gen (glbwit wit2) (subst_genarg subst (in_gen (glbwit wit2) q)) in
     in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
   | ExtraArg s ->
-      Genintern.generic_substitute subst (in_gen (glbwit wit) x)
+      Gensubst.generic_substitute subst (in_gen (glbwit wit) x)
 
 (** Registering *)
 
 let () =
-  Genintern.register_subst0 wit_int_or_var (fun _ v -> v);
-  Genintern.register_subst0 wit_nat_or_var (fun _ v -> v);
-  Genintern.register_subst0 wit_ref subst_global_reference;
-  Genintern.register_subst0 wit_smart_global subst_global_reference;
-  Genintern.register_subst0 wit_pre_ident (fun _ v -> v);
-  Genintern.register_subst0 wit_ident (fun _ v -> v);
-  Genintern.register_subst0 wit_hyp (fun _ v -> v);
-  Genintern.register_subst0 wit_intropattern subst_intro_pattern [@warning "-3"];
-  Genintern.register_subst0 wit_simple_intropattern subst_intro_pattern;
-  Genintern.register_subst0 wit_tactic subst_tactic;
-  Genintern.register_subst0 wit_ltac subst_tactic;
-  Genintern.register_subst0 wit_constr subst_glob_constr;
-  Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
-  Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
-  Genintern.register_subst0 wit_open_constr (fun subst c -> subst_glob_constr subst c);
-  Genintern.register_subst0 Redexpr.wit_red_expr subst_redexp;
-  Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
-  Genintern.register_subst0 wit_bindings subst_bindings;
-  Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
-  Genintern.register_subst0 wit_destruction_arg subst_destruction_arg;
+  Gensubst.register_subst0 wit_int_or_var (fun _ v -> v);
+  Gensubst.register_subst0 wit_nat_or_var (fun _ v -> v);
+  Gensubst.register_subst0 wit_ref subst_global_reference;
+  Gensubst.register_subst0 wit_smart_global subst_global_reference;
+  Gensubst.register_subst0 wit_pre_ident (fun _ v -> v);
+  Gensubst.register_subst0 wit_ident (fun _ v -> v);
+  Gensubst.register_subst0 wit_hyp (fun _ v -> v);
+  Gensubst.register_subst0 wit_intropattern subst_intro_pattern [@warning "-3"];
+  Gensubst.register_subst0 wit_simple_intropattern subst_intro_pattern;
+  Gensubst.register_subst0 wit_tactic subst_tactic;
+  Gensubst.register_subst0 wit_ltac subst_tactic;
+  Gensubst.register_subst0 wit_constr subst_glob_constr;
+  Gensubst.register_subst0 wit_clause_dft_concl (fun _ v -> v);
+  Gensubst.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
+  Gensubst.register_subst0 wit_open_constr (fun subst c -> subst_glob_constr subst c);
+  Gensubst.register_subst0 Redexpr.wit_red_expr subst_redexp;
+  Gensubst.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
+  Gensubst.register_subst0 wit_bindings subst_bindings;
+  Gensubst.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
+  Gensubst.register_subst0 wit_destruction_arg subst_destruction_arg;
   ()

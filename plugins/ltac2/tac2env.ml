@@ -329,6 +329,7 @@ let ltac1_prefix =
 type var_quotation_kind =
   | ConstrVar
   | PretermVar
+  | PatternVar
 
 let wit_ltac2in1 = Genarg.make0 "ltac2in1"
 let wit_ltac2in1_val = Genarg.make0 "ltac2in1val"

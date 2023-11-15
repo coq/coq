@@ -180,6 +180,7 @@ val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genar
 type var_quotation_kind =
   | ConstrVar
   | PretermVar
+  | PatternVar
 
 val wit_ltac2_var_quotation : (lident option * lident, var_quotation_kind * Id.t, Util.Empty.t) genarg_type
 (** Ltac2 quotations for variables "$x" or "$kind:foo" in Gallina terms.

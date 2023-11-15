@@ -777,6 +777,15 @@ Similarly variables of type `preterm` have an antiquotation
 
 It is equivalent to pretyping the preterm with the appropriate typing constraint.
 
+Variables of type `pattern` have an antiquotation
+
+.. prodn:: term += $pattern:@lident
+
+Its use is only allowed when producing a pattern, i.e.
+`pattern:($pattern:x -> True)` is allowed but
+`constr:($pattern:x -> True)` is not allowed. Conversely `constr` and `preterm`
+antiquotations are not allowed when producing a pattern.
+
 Match over terms
 ~~~~~~~~~~~~~~~~
 

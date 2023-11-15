@@ -830,7 +830,7 @@ let in_tacval =
   let intern_fun _ e = Empty.abort e in
   let subst_fun s v = v in
   let () = Genintern.register_intern0 wit intern_fun in
-  let () = Genintern.register_subst0 wit subst_fun in
+  let () = Gensubst.register_subst0 wit subst_fun in
   (* No need to register a value tag for it via register_val0 since we will
      never access this genarg directly. *)
   let interp_fun ist tac =
@@ -871,7 +871,7 @@ type ('a, 'b) argument_intern =
 | ArgInternWit : ('a, 'b, 'c) Genarg.genarg_type -> ('a, 'b) argument_intern
 
 type 'b argument_subst =
-| ArgSubstFun : 'b Genintern.subst_fun -> 'b argument_subst
+| ArgSubstFun : 'b Gensubst.subst_fun -> 'b argument_subst
 | ArgSubstWit : ('a, 'b, 'c) Genarg.genarg_type -> 'b argument_subst
 
 type ('b, 'c) argument_interp =
@@ -898,7 +898,7 @@ match arg.arg_intern with
     let ans = Genarg.out_gen (glbwit wit) (Tacintern.intern_genarg ist (Genarg.in_gen (rawwit wit) v)) in
     (ist, ans)
 
-let subst_fun (type a b c) (arg : (a, b, c) tactic_argument) : b Genintern.subst_fun =
+let subst_fun (type a b c) (arg : (a, b, c) tactic_argument) : b Gensubst.subst_fun =
 match arg.arg_subst with
 | ArgSubstFun f -> f
 | ArgSubstWit wit ->
@@ -923,7 +923,7 @@ match arg.arg_interp with
 let argument_extend (type a b c) ~plugin ~name (arg : (a, b, c) tactic_argument) =
   let wit = Genarg.create_arg name in
   let () = Genintern.register_intern0 wit (intern_fun name arg) in
-  let () = Genintern.register_subst0 wit (subst_fun arg) in
+  let () = Gensubst.register_subst0 wit (subst_fun arg) in
   let tag = match arg.arg_tag with
   | None ->
     let () = register_val0 wit None in

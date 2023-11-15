@@ -26,7 +26,7 @@ let case_info_pattern_eq i1 i2 =
   Option.equal Ind.CanOrd.equal i1.cip_ind i2.cip_ind &&
   i1.cip_extensible == i2.cip_extensible
 
-let rec constr_pattern_eq p1 p2 = match p1, p2 with
+let rec constr_pattern_eq (p1:constr_pattern) p2 = match p1, p2 with
 | PRef r1, PRef r2 -> GlobRef.CanOrd.equal r1 r2
 | PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
@@ -66,6 +66,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PArray (t1, def1, ty1), PArray (t2, def2, ty2) ->
   Array.equal constr_pattern_eq t1 t2 && constr_pattern_eq def1 def2
   && constr_pattern_eq ty1 ty2
+| PUninstantiated _, _ -> .
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
    | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
    | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _ | PInt _
@@ -80,7 +81,8 @@ and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
   Array.equal constr_pattern_eq c1 c2 &&
   Array.equal constr_pattern_eq r1 r2
 
-let rec occurn_pattern n = function
+let rec occurn_pattern : 'a. _ -> 'a constr_pattern_r -> _
+  = fun (type a) n (p:a constr_pattern_r) -> match p with
   | PRel p -> Int.equal n p
   | PApp (f,args) ->
       (occurn_pattern n f) || (Array.exists (occurn_pattern n) args)
@@ -106,12 +108,13 @@ let rec occurn_pattern n = function
      Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
   | PArray (t,def,ty) ->
     Array.exists (occurn_pattern n) t || occurn_pattern n def || occurn_pattern n ty
+  | PUninstantiated (PGenarg _) -> false
 
 let noccurn_pattern n c = not (occurn_pattern n c)
 
 exception BoundPattern;;
 
-let rec head_pattern_bound t =
+let rec head_pattern_bound (t:constr_pattern) =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b
     | PLetIn (_,_,_,b) -> head_pattern_bound b
@@ -126,6 +129,7 @@ let rec head_pattern_bound t =
     | PLambda _ -> raise BoundPattern
     | PCoFix _ | PInt _ | PFloat _ | PArray _ ->
       anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
+    | PUninstantiated _ -> .
 
 let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Const (sp,_) -> GlobRef.ConstRef sp
@@ -224,11 +228,11 @@ let pattern_of_constr ~broken env sigma t =
   pattern_of_constr env t
 
 let legacy_bad_pattern_of_constr env sigma c : constr_pattern = pattern_of_constr ~broken:true env sigma c
-let pattern_of_constr env sigma c : constr_pattern = pattern_of_constr ~broken:false env sigma c
+let pattern_of_constr env sigma c = pattern_of_constr ~broken:false env sigma c
 
 (* To process patterns, we need a translation without typing at all. *)
 
-let map_pattern_with_binders g f l = function
+let map_pattern_with_binders_gen (type a b) g f fgen l : a constr_pattern_r -> b constr_pattern_r = function
   | PApp (p,pl) -> PApp (f l p, Array.map (f l) pl)
   | PSoApp (n,pl) -> PSoApp (n, List.map (f l) pl)
   | PLambda (n,a,b) -> PLambda (n,f l a,f (g n l) b)
@@ -248,9 +252,17 @@ let map_pattern_with_binders g f l = function
      let l' = Array.fold_left (fun l na -> g na l) l lna in
      PCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
   | PArray (t,def,ty) -> PArray (Array.map (f l) t, f l def, f l ty)
+  | PEvar (ev,ps) -> PEvar (ev, List.map (f l) ps)
+  | PUninstantiated (PGenarg _ as x) -> fgen (x:a uninstantiated_pattern)
   (* Non recursive *)
-  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ | PInt _
-     | PFloat _ as x) -> x
+  | (PVar _ | PRel _ | PRef _  | PSort _  | PMeta _ | PInt _
+    | PFloat _ as x) -> x
+
+let map_pattern_with_binders (type a) g f l (p:a constr_pattern_r) : a constr_pattern_r =
+  let fgen : a uninstantiated_pattern -> a constr_pattern_r = function
+    | PGenarg _ as x -> PUninstantiated x
+  in
+  map_pattern_with_binders_gen g f fgen l p
 
 let rec liftn_pattern k n = function
   | PRel i as x -> if i >= n then PRel (i+k) else x
@@ -258,7 +270,9 @@ let rec liftn_pattern k n = function
 
 let lift_pattern k = liftn_pattern k 1
 
-let rec subst_pattern env sigma subst pat =
+let rec subst_pattern
+  : 'a. _ -> _ -> _ -> 'a constr_pattern_r -> 'a constr_pattern_r
+  = fun (type a) env sigma subst (pat: a constr_pattern_r) ->
   match pat with
   | PRef ref ->
     let ref',t = subst_global subst ref in
@@ -271,6 +285,7 @@ let rec subst_pattern env sigma subst pat =
   | PRel _
   | PInt _
   | PFloat _ -> pat
+  | PUninstantiated (PGenarg g) -> PUninstantiated (PGenarg (Genarg.generic_substitute subst g))
   | PProj (p,c) ->
       let p' = Projection.map (subst_mind subst) p in
       let c' = subst_pattern env sigma subst c in
@@ -358,8 +373,33 @@ let mkPLambda_or_LetIn (na,_,bo,t) c =
   | None -> mkPLambda na t c
   | Some b -> mkPLetIn na b (Some t) c
 
-let it_mkPProd_or_LetIn = List.fold_left (fun c d -> mkPProd_or_LetIn d c)
-let it_mkPLambda_or_LetIn = List.fold_left (fun c d -> mkPLambda_or_LetIn d c)
+let it_mkPProd_or_LetIn x y = List.fold_left (fun c d -> mkPProd_or_LetIn d c) x y
+let it_mkPLambda_or_LetIn x y = List.fold_left (fun c d -> mkPLambda_or_LetIn d c) x y
+
+type 'a pat_interp_fun = Environ.env -> Evd.evar_map -> Ltac_pretype.ltac_var_map
+  -> 'a -> Pattern.constr_pattern
+
+module InterpPatObj =
+struct
+  type (_, 'g, _) obj = 'g pat_interp_fun
+  let name = "interp_pat"
+  let default _ = None
+end
+
+module InterpPat = Genarg.Register(InterpPatObj)
+
+let interp_pat = InterpPat.obj
+
+let register_interp_pat = InterpPat.register0
+
+let interp_pattern env sigma ist p =
+  let fgen = function
+    | PGenarg (GenArg (Glbwit tag,g)) -> interp_pat tag env sigma ist g
+  in
+  let rec aux p =
+    map_pattern_with_binders_gen (fun _ () -> ()) (fun () p -> aux p) fgen () p
+  in
+  aux p
 
 let err ?loc pp = user_err ?loc pp
 
@@ -385,7 +425,9 @@ let in_cast_type loc = function
        Alternatively we could use the loc of the meta, or the loc of the innermost cast. *)
     v
 
-let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
+let pat_of_raw (type pkind) (kind:pkind pattern_kind) metas vars p =
+
+let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val (fun ?loc -> function
   | GVar id ->
       (try PRel (List.index Name.equal (Name id) vars)
        with Not_found -> PVar id)
@@ -426,11 +468,19 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
      (try PSort (Glob_ops.glob_sort_family gs)
       with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
   | GHole _ -> PMeta None
-  | GGenarg _ -> CErrors.user_err ?loc Pp.(str "Quotation not supported in pattern.")
+  | GGenarg (GenArg (Glbwit tag, _) as g) -> begin match kind with
+      | Uninstantiated ->
+        let () = if not (InterpPat.mem tag) then
+            let name = Genarg.(ArgT.repr (get_arg_tag tag)) in
+            user_err ?loc (str "This quotation is not supported in patterns (" ++ str name ++ str ").")
+        in
+        PUninstantiated (PGenarg g)
+      | Any -> user_err ?loc (str "Quotations not allowed in this pattern.")
+    end
   | GCast (c,_,t) ->
       let () =
         (* Checks that there are no pattern variables in the type *)
-        let _ : constr_pattern = pat_of_raw (in_cast_type t.loc metas) vars t in
+        let _ : pkind constr_pattern_r = pat_of_raw (in_cast_type t.loc metas) vars t in
         ()
       in
       warn_cast_in_pattern ?loc ();
@@ -556,7 +606,14 @@ and pats_of_glob_branches loc metas vars ind brs =
   in
   get_pat Int.Set.empty brs
 
+in pat_of_raw metas vars p
+
 let pattern_of_glob_constr c =
   let metas = ref Id.Set.empty in
-  let p = pat_of_raw (Metas metas) [] c in
+  let p = pat_of_raw Any (Metas metas) [] c in
+  (!metas, p)
+
+let uninstantiated_pattern_of_glob_constr c =
+  let metas = ref Id.Set.empty in
+  let p = pat_of_raw Uninstantiated (Metas metas) [] c in
   (!metas, p)

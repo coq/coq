@@ -29,7 +29,7 @@ val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
 val extern_glob_constr : extern_env -> 'a glob_constr_g -> constr_expr
 val extern_glob_type : ?impargs:Glob_term.binding_kind list -> extern_env -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
-  constr_pattern -> constr_expr
+  _ constr_pattern_r -> constr_expr
 val extern_closed_glob : ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name ->
   env -> Evd.evar_map -> closed_glob_constr -> constr_expr
 
