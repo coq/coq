@@ -1437,7 +1437,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
        not (Environ.is_type_in_type env (GlobRef.IndRef ind))
     then
       begin
-        if names.(i).Context.binder_relevance == Sorts.Relevant
+        if not (names.(i).Context.binder_relevance == Sorts.Irrelevant)
         then raise_err env i FixpointOnIrrelevantInductive
       end;
     res
