@@ -100,7 +100,7 @@ Instance  reify_mul (R:Type)
 Defined.
 
 #[global]
-Instance  reify_mul_ext (R:Type) `{Ring R}
+Instance  reify_mul_ext (R:Type)
   lvar (z:Z) e2 t2 
  `{Ring (T:=R)}
  {_:reify e2 lvar t2}
@@ -126,7 +126,7 @@ Instance  reify_opp (R:Type)
 Defined.
 
 #[global]
-Instance  reify_pow (R:Type) `{Ring R}
+Instance  reify_pow (R:Type)
  e1 lvar t1 n 
  `{Ring (T:=R)}
  {_:reify e1 lvar t1}
