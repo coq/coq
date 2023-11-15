@@ -157,6 +157,10 @@ TACTIC EXTEND unify
   }
 END
 
+TACTIC EXTEND convert
+| ["convert" constr(x) constr(y) ] -> { Tactics.convert x y }
+END
+
 {
 
 let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_qualid

@@ -362,24 +362,25 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
  let nparam := eval compute in (Z.of_nat (List.length lparam)) in
  match goal with
   |- ?g => let lb := lterm_goal g in
-     match (match lvar with
+     match (lazymatch lvar with
               |(@nil _) =>
-                 match lparam with
-                   |(@nil _) =>
-                     let r := eval red in (list_reifyl (lterm:=lb)) in r
+                 lazymatch lparam with
+                 |(@nil _) =>
+                    let r := list_reifyl0 lb in
+                    r
                    |_ =>
-                     match eval red in (list_reifyl (lterm:=lb)) with
+                     let reif := list_reifyl0 lb in
+                     match reif with
                        |(?fv, ?le) =>
                          let fv := parametres_en_tete fv lparam in
                            (* we reify a second time, with the good order
                               for variables *)
-                         let r := eval red in
-                                  (list_reifyl (lterm:=lb) (lvar:=fv)) in r
+                         list_reifyl fv lb
                      end
                   end
               |_ =>
-                let fv := parametres_en_tete lvar lparam in
-                let r := eval red in (list_reifyl (lterm:=lb) (lvar:=fv)) in r
+                 let fv := parametres_en_tete lvar lparam in
+                list_reifyl fv lb
             end) with
           |(?fv, ?le) =>
             reify_goal fv le lb ;
