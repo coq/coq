@@ -14,7 +14,7 @@ Require Import Ltac2.Std.
 Ltac2 Type t := Std.red_flags.
 
 Module Export Notations.
-Ltac2 Notation "red_flags:(" s(strategy) ")" := s.
+Ltac2 Notation "red_flags:(" s(strategy) ")" : 0 := s.
 End Notations.
 
 Ltac2 none := {
