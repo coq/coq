@@ -29,3 +29,5 @@
      : unit
      = ignore (fun x : nat => 1 + x)
      : unit
+- : constr = constr:(4)
+- : constr = constr:(2 + 2)

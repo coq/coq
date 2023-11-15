@@ -25,3 +25,8 @@ Axiom ignore : forall {T}, T -> unit.
 Eval simpl head in ignore (fun x => 1 + x).
 Eval cbn head in ignore (fun x => 1 + x).
 Eval lazy head in ignore (fun x => 1 + x).
+
+Require Import Ltac2.Ltac2.
+
+Ltac2 Eval eval lazy in (2 + 2).
+Ltac2 Eval eval lazy head in (2 + 2).

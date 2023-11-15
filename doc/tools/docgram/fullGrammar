@@ -3190,6 +3190,7 @@ ltac2_red_flag: [
 | "cofix"      (* ltac2 plugin *)
 | "zeta"      (* ltac2 plugin *)
 | "delta" G_LTAC2_delta_flag      (* ltac2 plugin *)
+| "head"      (* ltac2 plugin *)
 ]
 
 refglobal: [

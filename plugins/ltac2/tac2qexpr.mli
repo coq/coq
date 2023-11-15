@@ -128,6 +128,7 @@ type red_flag_r =
 | QZeta
 | QConst of reference or_anti list CAst.t
 | QDeltaBut of reference or_anti list CAst.t
+| QHead
 
 type red_flag = red_flag_r CAst.t
 

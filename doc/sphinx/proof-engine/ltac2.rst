@@ -1643,6 +1643,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | cofix
    | zeta
    | delta {? @ltac2_delta_reductions }
+   | head
    ltac2_delta_reductions ::= {? - } [ {+ @refglobal } ]
 
 .. insertprodn refglobal refglobal

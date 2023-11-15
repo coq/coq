@@ -357,6 +357,7 @@ let make_red_flag l =
   | [] -> red
   | {v=flag} :: lf ->
     let red = match flag with
+    | QHead -> { red with rStrength = Head }
     | QBeta -> { red with rBeta = true }
     | QMatch -> { red with rMatch = true }
     | QFix -> { red with rFix = true }
@@ -388,10 +389,18 @@ let of_reference r =
   in
   of_anti of_ref r
 
+let of_strength ?loc s =
+  let s = let open Genredexpr in match s with
+  | Norm -> std_core "Norm"
+  | Head -> std_core "Head"
+  in
+  constructor ?loc s []
+
 let of_strategy_flag {loc;v=flag} =
   let open Genredexpr in
   let flag = make_red_flag flag in
   CAst.make ?loc @@ CTacRec (None, [
+    std_proj "rStrength", of_strength ?loc flag.rStrength;
     std_proj "rBeta", of_bool ?loc flag.rBeta;
     std_proj "rMatch", of_bool ?loc flag.rMatch;
     std_proj "rFix", of_bool ?loc flag.rFix;

@@ -1858,6 +1858,7 @@ ltac2_red_flag: [
 | "cofix"      (* ltac2 plugin *)
 | "zeta"      (* ltac2 plugin *)
 | "delta" OPT ltac2_delta_reductions      (* ltac2 plugin *)
+| "head"      (* ltac2 plugin *)
 ]
 
 ltac2_delta_reductions: [
