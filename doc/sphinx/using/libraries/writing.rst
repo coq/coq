@@ -25,7 +25,8 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    This attribute is supported by the following commands: :cmd:`Ltac`,
    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`, :cmd:`Ltac2`,
-   :cmd:`Ltac2 Notation`, :cmd:`Ltac2 external`. To attach it to a
+   :cmd:`Ltac2 Notation`, :cmd:`Ltac2 external`, :cmd:`Definition`,
+   :cmd:`Theorem`, and similar commands. To attach it to a
    compiled library file, use :cmd:`Attributes`.
 
    It can trigger the following warnings:
