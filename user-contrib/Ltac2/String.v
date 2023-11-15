@@ -17,7 +17,7 @@ Ltac2 @external length : string -> int := "coq-core.plugins.ltac2" "string_lengt
 Ltac2 @external get : string -> int -> char := "coq-core.plugins.ltac2" "string_get".
 Ltac2 @external set : string -> int -> char -> unit := "coq-core.plugins.ltac2" "string_set".
 Ltac2 @external concat : string -> string list -> string := "coq-core.plugins.ltac2" "string_concat".
-Ltac2 @external app : string -> string := "coq-core.plugins.ltac2" "string_app".
+Ltac2 @external app : string -> string -> string := "coq-core.plugins.ltac2" "string_app".
 Ltac2 @external equal : string -> string -> bool := "coq-core.plugins.ltac2" "string_equal".
 Ltac2 @external compare : string -> string -> int := "coq-core.plugins.ltac2" "string_compare".
 
