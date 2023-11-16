@@ -983,6 +983,8 @@ struct
 
 end
 
+module PRpred = Predicate.Make(Projection.Repr.CanOrd)
+
 module GlobRefInternal = struct
 
   type t =

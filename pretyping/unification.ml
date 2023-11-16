@@ -330,6 +330,10 @@ let default_core_unify_flags () =
   modulo_eta = true;
  }
 
+let ts_var_full =
+  let open TransparentState in
+  { tr_var = Id.Pred.full; tr_cst = Cpred.empty; tr_prj = PRpred.empty }
+
 (* Default flag for first-order or second-order unification of a type *)
 (* against another type (e.g. apply)                                  *)
 (* We set all conversion flags (no flag should be modified anymore)   *)
@@ -337,7 +341,7 @@ let default_unify_flags () =
   let flags = default_core_unify_flags () in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = TransparentState.var_full };
+  subterm_unify_flags = { flags with modulo_delta = ts_var_full };
   allow_K_in_toplevel_higher_order_unification = false; (* Why not? *)
   resolve_evars = false
 }

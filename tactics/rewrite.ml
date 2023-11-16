@@ -543,7 +543,9 @@ let get_symmetric_proof b =
 
 let rewrite_db = "rewrite"
 
-let conv_transparent_state = TransparentState.cst_full
+let conv_transparent_state =
+  let open TransparentState in
+  { tr_var = Id.Pred.empty; tr_cst = Cpred.full; tr_prj = PRpred.full }
 
 let rewrite_transparent_state () =
   Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)

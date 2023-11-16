@@ -14,6 +14,7 @@ open Names
 type t = {
   tr_var : Id.Pred.t;
   tr_cst : Cpred.t;
+  tr_prj : PRpred.t;
 }
 
 val empty : t
@@ -22,13 +23,8 @@ val empty : t
 val full : t
 (** Everything transparent *)
 
-val var_full : t
-(** All variables transparent *)
-
-val cst_full : t
-(** All constant transparent *)
-
 val is_empty : t -> bool
 
 val is_transparent_variable : t -> Id.t -> bool
 val is_transparent_constant : t -> Constant.t -> bool
+val is_transparent_projection : t -> Projection.Repr.t -> bool

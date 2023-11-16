@@ -645,6 +645,9 @@ module Projection : sig
 
 end
 
+(** Predicate on projection representation (ignoring unfolding state) *)
+module PRpred : Predicate.S with type elt = Projection.Repr.t
+
 (** {6 Global reference is a kernel side type for all references together } *)
 
 module GlobRef : sig
