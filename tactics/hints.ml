@@ -259,6 +259,7 @@ module Bounded_net :
 sig
   type t
   val empty : TransparentState.t option -> t
+  val build : TransparentState.t option -> stored_data list -> t
   val add : t -> hint_pattern -> stored_data -> t
   val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> stored_data list
 end =
@@ -268,72 +269,122 @@ struct
 
   type diff = hint_pattern * stored_data
 
-  type data = Bnet of (TransparentState.t option * Bnet.t) | Diff of diff * data ref
+  type data =
+  | Bnet of (TransparentState.t option * Bnet.t)
+  | Diff of diff * data ref
+  | Build of TransparentState.t option * stored_data list
+
   type t = data ref
 
   let empty st = ref (Bnet (st, Bnet.empty))
 
   let add net p v = ref (Diff ((p, v), net))
 
-  let rec force env sigma net = match !net with
-  | Bnet dn -> dn
-  | Diff ((p, v), rem) ->
-    let st, dn = force env sigma rem in
+  let build st data = ref (Build (st, data))
+
+  let add0 env sigma st p v dn =
     let p = match p with
     | ConstrPattern p -> Bnet.pattern env st p
     | DefaultPattern ->
       let c = get_default_pattern (snd v).code.obj in
       Bnet.constr_pattern env sigma st c
     in
-    let dn = Bnet.add dn p v in
+    Bnet.add dn p v
+
+  let rec force env sigma net = match !net with
+  | Bnet dn -> dn
+  | Diff ((p, v), rem) ->
+    let st, dn = force env sigma rem in
+    let dn = add0 env sigma st p v dn in
     let () = net := (Bnet (st, dn)) in
     st, dn
+  | Build (st, data) ->
+    let fold dn v = add0 env sigma st (Option.get (snd v).pat) v dn in
+    let ans = List.fold_left fold Bnet.empty data in
+    let () = net := Bnet (st, ans) in
+    st, ans
 
   let lookup env sigma net p =
     let st, dn = force env sigma net in
     Bnet.lookup env sigma st dn p
 end
 
+module StoredData :
+sig
+  type t
+  val empty : t
+  val mem : KerName.t -> t -> bool
+  val add : stored_data -> t -> t
+  val remove : GlobRef.Set.t -> t -> t
+  val elements : t -> stored_data list
+end =
+struct
+
+type t = {
+  data : stored_data list;
+  set : KNset.t;
+}
+
+let empty = { data = []; set = KNset.empty }
+
+let mem kn sd = KNset.mem kn sd.set
+
+let add t sd = {
+  data = List.insert pri_order t sd.data;
+  set = KNset.add (snd t).code.uid sd.set;
+}
+
+let remove grs sd =
+  let fold (accu, ans) ((_, h) as v) =
+    let keep = match h.name with
+    | Some gr -> not (GlobRef.Set.mem gr grs)
+    | None -> true
+    in
+    if keep then (accu, v :: ans) else (KNset.remove h.code.uid accu, ans)
+  in
+  let set, data = List.fold_left fold (sd.set, []) sd.data in
+  if set == sd.set then sd
+  else { data = List.rev data; set }
+
+let elements v = v.data
+
+end
+
 type search_entry = {
-  sentry_nopat : stored_data list;
-  sentry_pat : stored_data list;
+  sentry_nopat : StoredData.t;
+  sentry_pat : StoredData.t;
   sentry_bnet : Bounded_net.t;
   sentry_mode : hint_mode array list;
 }
 
 let empty_se st = {
-  sentry_nopat = [];
-  sentry_pat = [];
+  sentry_nopat = StoredData.empty;
+  sentry_pat = StoredData.empty;
   sentry_bnet = Bounded_net.empty st;
   sentry_mode = [];
 }
 
-let eq_pri_auto_tactic (_, x) (_, y) = KerName.equal x.code.uid y.code.uid
-
 let add_tac pat t se =
   match pat with
   | None ->
-    if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
-    else { se with sentry_nopat = List.insert pri_order t se.sentry_nopat }
+    let uid = (snd t).code.uid in
+    if StoredData.mem uid se.sentry_nopat then se
+    else { se with sentry_nopat = StoredData.add t se.sentry_nopat }
   | Some pat ->
-    if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
+    let uid = (snd t).code.uid in
+    if StoredData.mem uid se.sentry_pat then se
     else { se with
-        sentry_pat = List.insert pri_order t se.sentry_pat;
+        sentry_pat = StoredData.add t se.sentry_pat;
         sentry_bnet = Bounded_net.add se.sentry_bnet pat t; }
 
 let rebuild_dn st se =
-  let dn' =
-    List.fold_left
-      (fun dn (id, t) ->
-        Bounded_net.add dn (Option.get t.pat) (id, t))
-      (Bounded_net.empty st) se.sentry_pat
-  in
+  let dn' = Bounded_net.build st (StoredData.elements se.sentry_pat) in
   { se with sentry_bnet = dn' }
 
 let lookup_tacs env sigma concl se =
   let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
-  List.merge pri_order_int se.sentry_nopat sl'
+  List.merge pri_order_int (StoredData.elements se.sentry_nopat) sl'
 
 let merge_context_set_opt sigma ctx = match ctx with
 | None -> sigma
@@ -641,7 +692,7 @@ struct
 
   let map_all ~secvars k db =
     let se = find k db in
-    merge_entry secvars db se.sentry_nopat se.sentry_pat
+    merge_entry secvars db (StoredData.elements se.sentry_nopat) (StoredData.elements se.sentry_pat)
 
   (* Precondition: concl has no existentials *)
   let map_auto env sigma ~secvars (k,args) concl db =
@@ -709,25 +760,26 @@ struct
 
   let add_list env sigma l db = List.fold_left (fun db k -> add_one env sigma k db) db l
 
-  let remove_sdl p sdl = List.filter p sdl
-
-  let remove_he st p se =
-    let sl1' = remove_sdl p se.sentry_nopat in
-    let sl2' = remove_sdl p se.sentry_pat in
-    if sl1' == se.sentry_nopat && sl2' == se.sentry_pat then se
-    else rebuild_dn st { se with sentry_nopat = sl1'; sentry_pat = sl2' }
+  let remove st grs se =
+    let grs = List.fold_left (fun accu gr -> GlobRef.Set.add gr accu) GlobRef.Set.empty grs in
+    let nopat = StoredData.remove grs se.sentry_nopat in
+    let pat = StoredData.remove grs se.sentry_pat in
+    if pat == se.sentry_pat && nopat == se.sentry_nopat then se
+    else
+      let se = { se with sentry_nopat = nopat; sentry_pat = pat } in
+      rebuild_dn st se
 
   let remove_list env grs db =
     let filter (_, h) =
       match h.name with Some gr -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | None -> true in
-    let hintmap = GlobRef.Map.map (remove_he (dn_ts db) filter) db.hintdb_map in
+    let hintmap = GlobRef.Map.map (fun e -> remove (dn_ts db) grs e) db.hintdb_map in
     let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one env gr db = remove_list env [gr] db
 
   let get_entry se =
-    let h = List.merge pri_order_int se.sentry_nopat se.sentry_pat in
+    let h = List.merge pri_order_int (StoredData.elements se.sentry_nopat) (StoredData.elements se.sentry_pat) in
     List.map snd h
 
   let iter f db =
