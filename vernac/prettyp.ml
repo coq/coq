@@ -242,7 +242,7 @@ let needs_extra_scopes ref scopes =
 
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
-  | Some ((na,_,_),_,(maximal,_)) -> na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | Some imp -> pi1 imp.impl_pos, if imp.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in

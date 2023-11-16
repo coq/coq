@@ -70,8 +70,14 @@ type force_inference = bool (** true = always infer, never turn into evar/subgoa
 
 type implicit_position = Name.t * int * int option
 
-type implicit_status = (implicit_position * implicit_explanation *
-                          (maximal_insertion * force_inference)) option
+type implicit_status_info = {
+  impl_pos : implicit_position;
+  impl_expl : implicit_explanation;
+  impl_max : maximal_insertion;
+  impl_force : force_inference;
+}
+
+type implicit_status = implicit_status_info option
     (** [None] = Not implicit *)
 
 type implicit_side_condition
