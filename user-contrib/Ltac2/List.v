@@ -211,16 +211,16 @@ Ltac2 rev_map (f : 'a -> 'b) (ls : 'a list) :=
       end in
   rmap_f [] ls.
 
-Ltac2 rec fold_right (f : 'a -> 'b -> 'b) (a : 'b) (ls : 'a list) :=
+Ltac2 rec fold_right (f : 'a -> 'b -> 'b) (ls : 'a list) (a : 'b) : 'b :=
   match ls with
   | [] => a
-  | l :: ls => f l (fold_right f a ls)
+  | l :: ls => f l (fold_right f ls a)
   end.
 
-Ltac2 rec fold_left (f : 'a -> 'b -> 'a) (xs : 'b list) (a : 'a) :=
+Ltac2 rec fold_left (f : 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=
   match xs with
   | [] => a
-  | x :: xs => fold_left f xs (f a x)
+  | x :: xs => fold_left f (f a x) xs
   end.
 
 Ltac2 fold_lefti (f : int -> 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=

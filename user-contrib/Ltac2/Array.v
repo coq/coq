@@ -187,17 +187,19 @@ Ltac2 rec fold_left_aux (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) (pos : int)
   | false => fold_left_aux f (f x (get a pos)) a (Int.add pos 1) (Int.sub len 1)
   end.
 
-Ltac2 fold_left (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) := fold_left_aux f x a 0 (length a).
+Ltac2 fold_left (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) : 'a :=
+  fold_left_aux f x a 0 (length a).
 
-Ltac2 rec fold_right_aux (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) (pos : int) (len : int) :=
+Ltac2 rec fold_right_aux (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) (pos : int) (len : int) :=
   (* Note: one could compare pos<0.
      We keep an extra len parameter so that the function can be used for any sub array *)
   match Int.equal len 0 with
   | true => x
-  | false => fold_right_aux f (f x (get a pos)) a (Int.sub pos 1) (Int.sub len 1)
+  | false => fold_right_aux f a (f (get a pos) x) (Int.sub pos 1) (Int.sub len 1)
   end.
 
-Ltac2 fold_right (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) := fold_right_aux f x a (Int.sub (length a) 1) (length a).
+Ltac2 fold_right (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) : 'b :=
+  fold_right_aux f a x (Int.sub (length a) 1) (length a).
 
 Ltac2 rec exist_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
   match Int.equal len 0 with
