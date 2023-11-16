@@ -10,7 +10,6 @@
 
 open Util
 open Constr
-open EConstr
 open Names
 open Pattern
 
@@ -22,11 +21,13 @@ let dnet_depth = ref 8
 
 type term_label =
 | GRLabel of GlobRef.t
+| ProjLabel of Projection.t
 | ProdLabel
 | SortLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
 | GRLabel gr1, GRLabel gr2 -> GlobRef.CanOrd.compare gr1 gr2
+| ProjLabel p1, ProjLabel p2 -> Projection.CanOrd.compare p1 p2
 | _ -> Stdlib.compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
@@ -56,31 +57,6 @@ let rec eta_reduce_pat (p:constr_pattern) = match p with
 | PFloat _ | PArray _ -> p
 | PUninstantiated _ -> .
 
-let decomp_pat p =
-  let rec decrec acc = function
-    | PApp (f,args) -> decrec (Array.to_list args @ acc) f
-    | PProj (p, c) ->
-      let hole = PMeta None in
-      let params = List.make (Projection.npars p) hole in
-      (PRef (GlobRef.ConstRef (Projection.constant p)), params @ c :: acc)
-    | c -> (c,acc)
-  in
-  decrec [] (eta_reduce_pat p)
-
-let decomp sigma t =
-  let rec decrec acc c = match EConstr.kind sigma c with
-    | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | Proj (p, _, c) ->
-      (* Hack: fake evar to generate [Everything] in the functions below *)
-      let hole = mkEvar (Evar.unsafe_of_int (-1), SList.empty) in
-      let params = List.make (Projection.npars p) hole in
-      (* UnsafeMonomorphic: universes are ignored by the only user *)
-      (UnsafeMonomorphic.mkConst (Projection.constant p), params @ c :: acc)
-    | Cast (c1,_,_) -> decrec acc c1
-    | _ -> (c,acc)
-  in
-    decrec [] (eta_reduce sigma t)
-
 let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
      bug #2668. *)
@@ -91,56 +67,59 @@ let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
+let evaluable_projection p _env ts =
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts (Projection.repr p))
+
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
    this specification. TODO: try to make them follow the spec. *)
 
 let constr_val_discr env sigma ts t =
   (* Should we perform weak βι here? *)
-  let c, l = decomp sigma t in
   let open GlobRef in
-    match EConstr.kind sigma c with
-    | Const (c,u) ->
-      if evaluable_constant c env ts then Everything
-      else Label(GRLabel (ConstRef c),l)
-    | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
-    | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id ->
-      if evaluable_named id env ts then Everything
-      else Label(GRLabel (VarRef id),l)
-    | Prod (n, d, c) ->
-      Label(ProdLabel, [d; c])
-    | Lambda (n, d, c) ->
-      if Option.is_empty ts && List.is_empty l then Nothing
-      else Everything
+  let rec decomp stack t =
+    match EConstr.kind sigma t with
+    | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
+    | Proj (p,_,c) when evaluable_projection p env ts -> Everything
+    | Proj (p,_,c) -> Label(ProjLabel p, c :: stack)
+    | Cast (c,_,_) -> decomp stack c
+    | Const (c,_) when evaluable_constant c env ts -> Everything
+    | Const (c,_) -> Label(GRLabel (ConstRef c), stack)
+    | Ind (ind_sp,_) -> Label(GRLabel (IndRef ind_sp), stack)
+    | Construct (cstr_sp,_) -> Label(GRLabel (ConstructRef cstr_sp), stack)
+    | Var id when evaluable_named id env ts -> Everything
+    | Var id -> Label(GRLabel (VarRef id), stack)
+    | Prod (n,d,c) -> Label(ProdLabel, [d; c])
+    | Lambda _ when Option.is_empty ts && List.is_empty stack -> Nothing
+    | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
-    | Case (_, _, _, _, _, c, _) ->
-      (* Overapproximate wildly. TODO: be less brutal. *)
-      Everything
-    | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Fix _ | CoFix _
-    | Proj _ | Int _ | Float _ | Array _ -> Nothing
+    | Case _ -> Everything (* Overapproximate wildly. TODO: be less brutal. *)
+    | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
+    | Int _ | Float _ | Array _ -> Nothing
+  in
+  decomp [] (eta_reduce sigma t)
 
-let constr_pat_discr env ts t =
+let constr_pat_discr env ts p =
   let open GlobRef in
-  match decomp_pat t with
-  | PRef ((IndRef _) as ref), args
-  | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-  | PRef ((VarRef v) as ref), args ->
-    if evaluable_named v env ts then None
-    else Some(GRLabel ref,args)
-  | PRef ((ConstRef c) as ref), args ->
-    if evaluable_constant c env ts then None
-    else Some (GRLabel ref, args)
-  | PVar v, args ->
-    if evaluable_named v env ts then None
-    else Some(GRLabel (VarRef v),args)
-  | PProd (_, d, c), [] ->
-    Some (ProdLabel, [d ; c])
-  | PLambda (_, d, c), [] -> None
-  | PSort s, [] ->
-    Some (SortLabel, [])
-  | _ -> None
+  let rec decomp stack p =
+    match p with
+    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+    | PProj (p,c) when evaluable_projection p env ts -> None
+    | PProj (p,c) -> Some (ProjLabel p, c :: stack)
+    | PRef ((IndRef _) as ref)
+    | PRef ((ConstructRef _ ) as ref) -> Some (GRLabel ref, stack)
+    | PRef (VarRef v) when evaluable_named v env ts -> None
+    | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
+    | PRef (ConstRef c) when evaluable_constant c env ts -> None
+    | PRef ((ConstRef _) as ref) -> Some (GRLabel ref, stack)
+    | PVar v when evaluable_named v env ts -> None
+    | PVar v -> Some (GRLabel (VarRef v), stack)
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PSort s when stack = [] -> Some (SortLabel, [])
+    | _ -> None
+  in
+  decomp [] (eta_reduce_pat p)
 
 let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then None
