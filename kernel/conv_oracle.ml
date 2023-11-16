@@ -39,6 +39,7 @@ type oracle = {
   cst_opacity : level Cmap.t;
   var_trstate : Id.Pred.t;
   cst_trstate : Cpred.t;
+  prj_trstate : PRpred.t;
 }
 
 let empty = {
@@ -46,6 +47,7 @@ let empty = {
   cst_opacity = Cmap.empty;
   var_trstate = Id.Pred.full;
   cst_trstate = Cpred.full;
+  prj_trstate = PRpred.full;
 }
 
 let get_strategy { var_opacity; cst_opacity; _ } f = function
@@ -87,8 +89,9 @@ let fold_strategy f { var_opacity; cst_opacity; _ } accu =
   let accu = Id.Map.fold fvar var_opacity accu in
   Cmap.fold fcst cst_opacity accu
 
-let get_transp_state { var_trstate; cst_trstate; _ } =
-  { TransparentState.tr_var = var_trstate; tr_cst = cst_trstate }
+let get_transp_state { var_trstate; cst_trstate; prj_trstate; _ } =
+  let open TransparentState in
+  { tr_var = var_trstate; tr_cst = cst_trstate ; tr_prj = prj_trstate }
 
 let dep_order l2r k1 k2 = match k1, k2 with
 | RelKey _, RelKey _ -> l2r
