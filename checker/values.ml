@@ -272,7 +272,7 @@ let v_recarg = v_sum "recarg" 1 (* Norec *)
 
 let rec v_wfp = Sum ("wf_paths",0,
     [|[|Int;Int|]; (* Rtree.Param *)
-      [|v_recarg;Array v_wfp|]; (* Rtree.Node *)
+      [|v_recarg;Array (Array v_wfp)|]; (* Rtree.Node *)
       [|Int;Array v_wfp|] (* Rtree.Rec *)
     |])
 

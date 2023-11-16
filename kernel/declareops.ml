@@ -171,8 +171,8 @@ let eq_recarg r1 r2 = match r1, r2 with
 | Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
 | Nested _, _ -> false
 
-let pp_recarg = let open Pp in function
-  | Declarations.Norec -> str "Norec"
+let pr_recarg = let open Pp in function
+  | Declarations.Norec -> Pp.str "Norec"
   | Declarations.Mrec (mind,i) ->
      str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
   | Declarations.(Nested (NestedInd (mind,i))) ->
@@ -180,7 +180,7 @@ let pp_recarg = let open Pp in function
   | Declarations.(Nested (NestedPrimitive c)) ->
      str "Nested[" ++ Names.Constant.print c ++ str "]"
 
-let pp_wf_paths x = Rtree.pp_tree pp_recarg x
+let pr_wf_paths x = Rtree.pr_tree pr_recarg x
 
 let subst_nested_type subst ty = match ty with
 | NestedInd (kn,i) ->
@@ -203,7 +203,7 @@ let mk_norec = Rtree.mk_node Norec [||]
 
 let mk_paths r recargs =
   Rtree.mk_node r
-    (Array.map (fun l -> Rtree.mk_node Norec (Array.of_list l)) recargs)
+    (Array.map Array.of_list recargs)
 
 let dest_recarg p = fst (Rtree.dest_node p)
 
@@ -215,11 +215,11 @@ let dest_recarg p = fst (Rtree.dest_node p)
 let dest_subterms p =
   let (ra,cstrs) = Rtree.dest_node p in
   assert (match ra with Norec -> false | _ -> true);
-  Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
+  Array.map Array.to_list cstrs
 
 let recarg_length p j =
   let (_,cstrs) = Rtree.dest_node p in
-  Array.length (snd (Rtree.dest_node cstrs.(j-1)))
+  Array.length cstrs.(j-1)
 
 let subst_wf_paths subst p = Rtree.Smart.map (subst_recarg subst) p
 

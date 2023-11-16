@@ -11,28 +11,29 @@
 open Util
 
 (* Type of regular trees:
-   - Param denotes tree variables (like de Bruijn indices)
+   - Var denotes tree variables (like de Bruijn indices)
      the first int is the depth of the occurrence, and the second int
      is the index in the array of trees introduced at that depth.
-     Warning: Param's indices both start at 0!
-   - Node denotes the usual tree node, labelled with 'a
+     Warning: Var's indices both start at 0!
+   - Node denotes the usual tree node, labelled with 'a, to the
+     exception that it takes an array of arrays as argument
    - Rec(j,v1..vn) introduces infinite tree. It denotes
      v(j+1) with parameters 0..n-1 replaced by
      Rec(0,v1..vn)..Rec(n-1,v1..vn) respectively.
  *)
 type 'a t =
-    Param of int * int
-  | Node of 'a * 'a t array
+    Var of int * int
+  | Node of 'a * 'a t array array
   | Rec of int * 'a t array
 
 (* Building trees *)
-let mk_rec_calls i = Array.init i (fun j -> Param(0,j))
+let mk_rec_calls i = Array.init i (fun j -> Var(0,j))
 let mk_node lab sons = Node (lab, sons)
 
 (* The usual lift operation *)
 let rec lift_rtree_rec depth n = function
-    Param (i,j) as t -> if i < depth then t else Param (i+n,j)
-  | Node (l,sons) -> Node (l,Array.map (lift_rtree_rec depth n) sons)
+    Var (i,j) as t -> if i < depth then t else Var (i+n,j)
+  | Node (l,sons) -> Node (l,Array.map (Array.map (lift_rtree_rec depth n)) sons)
   | Rec(j,defs) ->
       Rec(j, Array.map (lift_rtree_rec (depth+1) n) defs)
 
@@ -40,12 +41,12 @@ let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
 
 (* The usual subst operation *)
 let rec subst_rtree_rec depth sub = function
-    Param (i,j) as t ->
+    Var (i,j) as t ->
       if i < depth then t
       else if i = depth then
         lift depth (Rec (j, sub))
-      else Param (i - 1, j)
-  | Node (l,sons) -> Node (l,Array.map (subst_rtree_rec depth sub) sons)
+      else Var (i - 1, j)
+  | Node (l,sons) -> Node (l,Array.map (Array.map (subst_rtree_rec depth sub)) sons)
   | Rec(j,defs) ->
       Rec(j, Array.map (subst_rtree_rec (depth+1) sub) defs)
 
@@ -65,7 +66,7 @@ let rec expand = function
    accept definitions like  rec X=Y and Y=f(X,Y) *)
 let mk_rec defs =
   let rec check histo d = match expand d with
-  | Param (0, j) ->
+  | Var (0, j) ->
     if Int.Set.mem j histo then failwith "invalid rec call"
     else check (Int.Set.add j histo) defs.(j)
   | _ -> ()
@@ -79,10 +80,10 @@ the last one should be accepted
 *)
 
 (* Tree destructors, expanding loops when necessary *)
-let dest_param t =
+let dest_var t =
   match expand t with
-      Param (i,j) -> (i,j)
-    | _ -> failwith "Rtree.dest_param"
+      Var (i,j) -> (i,j)
+    | _ -> failwith "Rtree.dest_var"
 
 let dest_node t =
   match expand t with
@@ -95,17 +96,17 @@ let is_node t =
     | _ -> false
 
 let rec map f t = match t with
-    Param(i,j) -> Param(i,j)
-  | Node (a,sons) -> Node (f a, Array.map (map f) sons)
+    Var(i,j) -> Var(i,j)
+  | Node (a,sons) -> Node (f a, Array.map (Array.map (map f)) sons)
   | Rec(j,defs) -> Rec (j, Array.map (map f) defs)
 
 module Smart =
 struct
 
   let map f t = match t with
-      Param _ -> t
+      Var _ -> t
     | Node (a,sons) ->
-        let a'=f a and sons' = Array.Smart.map (map f) sons in
+        let a'=f a and sons' = Array.Smart.map (Array.Smart.map (map f)) sons in
         if a'==a && sons'==sons then t
         else Node (a',sons')
     | Rec(j,defs) ->
@@ -118,8 +119,8 @@ end
 (** Structural equality test, parametrized by an equality on elements *)
 
 let rec raw_eq cmp t t' = match t, t' with
-  | Param (i,j), Param (i',j') -> Int.equal i i' && Int.equal j j'
-  | Node (x, a), Node (x', a') -> cmp x x' && Array.equal (raw_eq cmp) a a'
+  | Var (i,j), Var (i',j') -> Int.equal i i' && Int.equal j j'
+  | Node (x, a), Node (x', a') -> cmp x x' && Array.equal (Array.equal (raw_eq cmp)) a a'
   | Rec (i, a), Rec (i', a') -> Int.equal i i' && Array.equal (raw_eq cmp) a a'
   | _ -> false
 
@@ -137,7 +138,7 @@ let equiv cmp cmp' =
     | Node(x,v), Node(x',v') ->
         cmp' x x' &&
         Int.equal (Array.length v) (Array.length v') &&
-        Array.for_all2 (compare ((t,t')::histo)) v v'
+        Array.for_all2 (Array.for_all2 (compare ((t,t')::histo))) v v'
     | _ -> false
   in compare []
 
@@ -151,15 +152,15 @@ let equal cmp t t' =
 let rec inter cmp interlbl def n histo t t' =
   try
     let (i,j) = List.assoc_f (raw_eq2 cmp) (t,t') histo in
-    Param (n-i-1,j)
+    Var (n-i-1,j)
   with Not_found ->
   match t, t' with
-  | Param (i,j), Param (i',j') ->
+  | Var (i,j), Var (i',j') ->
       assert (Int.equal i i' && Int.equal j j'); t
   | Node (x, a), Node (x', a') ->
       (match interlbl x x' with
       | None -> mk_node def [||]
-      | Some x'' -> Node (x'', Array.map2 (inter cmp interlbl def n histo) a a'))
+      | Some x'' -> Node (x'', Array.map2 (Array.map2 (inter cmp interlbl def n histo)) a a'))
   | Rec (i,v), Rec (i',v') ->
      (* If possible, we preserve the shape of input trees *)
      if Int.equal i i' && Int.equal (Array.length v) (Array.length v') then
@@ -187,7 +188,7 @@ let is_infinite cmp t =
   let rec is_inf histo t =
     List.mem_f (raw_eq cmp) t histo ||
     match expand t with
-    | Node (_,v) -> Array.exists (is_inf (t::histo)) v
+    | Node (_,v) -> Array.exists (Array.exists (is_inf (t::histo))) v
     | _ -> false
   in
   is_inf [] t
@@ -195,17 +196,22 @@ let is_infinite cmp t =
 (* Pretty-print a tree (not so pretty) *)
 open Pp
 
-let rec pp_tree prl t =
+let rec pr_tree prl t =
   match t with
-      Param (i,j) -> str"#"++int i++str","++int j
-    | Node(lab,[||]) -> hov 2 (str"("++prl lab++str")")
+    | Var (i,j) -> str"#"++int i++str":"++int j
+    | Node(lab,[||]) -> prl lab
     | Node(lab,v) ->
-        hov 2 (str"("++prl lab++str","++brk(1,0)++
-               prvect_with_sep pr_comma (pp_tree prl) v++str")")
+        hov 0 (prl lab++str","++spc()++
+               str"["++
+               hv 0 (prvect_with_sep pr_comma (fun a ->
+                   str"("++
+                   hv 0 (prvect_with_sep pr_comma (pr_tree prl) a)++
+                   str")") v)++
+               str"]")
     | Rec(i,v) ->
         if Int.equal (Array.length v) 0 then str"Rec{}"
         else if Int.equal (Array.length v) 1 then
-          hov 2 (str"Rec{"++pp_tree prl v.(0)++str"}")
+          hv 2 (str"Rec{"++pr_tree prl v.(0)++str"}")
         else
-          hov 2 (str"Rec{"++int i++str","++brk(1,0)++
-                 prvect_with_sep pr_comma (pp_tree prl) v++str"}")
+          hv 2 (str"Rec{"++int i++str","++brk(1,0)++
+                 prvect_with_sep pr_comma (pr_tree prl) v++str"}")
