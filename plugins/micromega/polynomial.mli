@@ -91,8 +91,6 @@ and op = Eq | Ge | Gt
 val eval_op : op -> Q.t -> Q.t -> bool
 val compare_op : op -> op -> int
 
-(*val opMult : op -> op -> op*)
-
 val opAdd : op -> op -> op
 
 (** [is_strict c]
@@ -146,12 +144,6 @@ module LinPoly : sig
    *)
   val var : var -> t
 
-  (** [coq_poly_of_linpol c p]
-      @param p is a multi-variate polynomial.
-      @param c maps a rational to a Coq polynomial coefficient.
-      @return the coq expression corresponding to polynomial [p].*)
-  val coq_poly_of_linpol : (Q.t -> 'a) -> t -> 'a Mc.pExpr
-
   (** [of_monomial m]
       @returns 1.x where x is the variable (index) for monomial m *)
   val of_monomial : Monomial.t -> t
@@ -185,13 +177,6 @@ module LinPoly : sig
    *)
   val constant : Q.t -> t
 
-  (** [search_linear pred p]
-      @return a variable x such p = a.x + b such that
-      p is linear in x i.e x does not occur in b and
-      a is a constant such that [pred a] *)
-
-  val search_linear : (Q.t -> bool) -> t -> var option
-
   (** [search_all_linear pred p]
       @return all the variables x such p = a.x + b such that
       p is linear in x i.e x does not occur in b and
@@ -202,11 +187,6 @@ module LinPoly : sig
      @return the product of the polynomial [p*q] *)
   val product : t -> t -> t
 
-  (** [factorise x p]
-      @return [a,b] such that [p = a.x + b]
-      and [x] does not occur in [b] *)
-  val factorise : var -> t -> t * t
-
   (** [collect_square p]
       @return a mapping m such that m[s] = s^2
       for every s^2 that is a monomial of [p] *)
@@ -215,10 +195,6 @@ module LinPoly : sig
   (** [monomials p]
       @return the set of monomials. *)
   val monomials : t -> ISet.t
-
-  (** [degree p]
-      @return return the maximum degree *)
-  val degree : t -> int
 
   (** [pp_var o v] pretty-prints a monomial indexed by v. *)
   val pp_var : out_channel -> var -> unit
@@ -288,15 +264,11 @@ module ProofFormat : sig
     -> 'a Micromega.psatz
 
   val proof_of_farkas : prf_rule IMap.t -> Vect.t -> prf_rule
-  val eval_prf_rule : (int -> LinPoly.t * op) -> prf_rule -> LinPoly.t * op
-  val eval_proof : (LinPoly.t * op) IMap.t -> proof -> bool
   val simplify_proof : proof -> proof * Mutils.ISet.t
 
-  module PrfRuleMap : Map.S with type key = prf_rule
 end
 
 val output_cstr : out_channel -> cstr -> unit
-val opMult : op -> op -> op
 
 (** [module WithProof] constructs polynomials packed with the proof that their sign is correct. *)
 module WithProof : sig
@@ -372,17 +344,11 @@ module WithProof : sig
       only if there is an equation a.x = c for a,c a constant and a divides c if b= true*)
   val subst_constant : bool -> t list -> t list
 
-  (** [subst1 sys] performs a single substitution *)
-  val subst1 : t list -> t list
-
   val saturate_subst : bool -> t list -> t list
-  val is_substitution : bool -> t -> var option
 end
 
 module BoundWithProof : sig
   type t
-
-  val compare : t -> t -> int
   val make : WithProof.t -> t option
   val mul_bound : t -> t -> t option
   val bound : t -> Vect.Bound.t

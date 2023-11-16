@@ -56,9 +56,6 @@ val get_cst : t -> Q.t
 (** [decomp_cst v] returns the pair (c,a1.x1+...+an.xn) *)
 val decomp_cst : t -> Q.t * t
 
-(** [decomp_at xi v] returns the pair (ai, ai+1.xi+...+an.xn) *)
-val decomp_at : var -> t -> Q.t * t
-
 val decomp_fst : t -> (var * Q.t) * t
 
 (** [cst c] returns the vector v=c+0.x1+...+0.xn *)
@@ -82,9 +79,6 @@ val get : var -> t -> Q.t
     i.e. the coefficient of the variable xi is set to ai' *)
 val set : var -> Q.t -> t -> t
 
-(** [mkvar xi] returns 1.xi *)
-val mkvar : var -> t
-
 (** [update xi f v] returns c+a1.x1+...+f(ai).xi+...+an.xn *)
 val update : var -> (Q.t -> Q.t) -> t -> t
 
@@ -99,11 +93,6 @@ val choose : t -> (var * Q.t * t) option
 
 (** [from_list l] returns the vector c+a1.x1...an.xn from the list of coefficient [l=c;a1;...;an] *)
 val from_list : Q.t list -> t
-
-(** [to_list v] returns the list of all coefficient of the vector v i.e. [c;a1;...;an]
-    The list representation is (obviously) not sparsed
-    and therefore certain ai may be 0 *)
-val to_list : t -> Q.t list
 
 (** [decr_var i v] decrements the variables of the vector [v] by the amount [i].
     Beware, it is only defined if all the variables of v are greater than i
@@ -152,12 +141,6 @@ val uminus : t -> t
 (** [fold f acc v] returns f (f (f acc 0 c ) x1 a1 ) ... xn an *)
 val fold : ('acc -> var -> Q.t -> 'acc) -> 'acc -> t -> 'acc
 
-(** [fold_error f acc v] is the same as
-    [fold (fun acc x i -> match acc with None -> None | Some acc' -> f acc' x i) (Some acc) v]
-    but with early exit...
- *)
-val fold_error : ('acc -> var -> Q.t -> 'acc option) -> 'acc -> t -> 'acc option
-
 (** [find f v] returns the first [f xi ai] such that [f xi ai <> None].
     If no such xi ai exists, it returns None *)
 val find : (var -> Q.t -> 'c option) -> t -> 'c option
@@ -172,10 +155,6 @@ val exists2 : (Q.t -> Q.t -> bool) -> t -> t -> (var * Q.t * Q.t) option
 
 (** [dotproduct v1 v2] is the dot product of v1 and v2. *)
 val dotproduct : t -> t -> Q.t
-
-val map : (var -> Q.t -> 'a) -> t -> 'a list
-val abs_min_elt : t -> (var * Q.t) option
-val partition : (var -> Q.t -> bool) -> t -> t * t
 
 module Bound : sig
   (** represents a0 + ai.xi  *)
