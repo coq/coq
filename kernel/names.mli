@@ -643,6 +643,12 @@ module Projection : sig
   val print : t -> Pp.t
   (** Print internal representation (not to be used for user-facing messages). *)
 
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs extra information related to debug. *)
+
+  val debug_print : t -> Pp.t
+  (** Same as [print], but outputs extra information related to debug. *)
+
 end
 
 (** Predicate on projection representation (ignoring unfolding state) *)

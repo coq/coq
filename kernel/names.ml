@@ -981,6 +981,12 @@ struct
   let to_string p = Constant.to_string (constant p)
   let print p = Constant.print (constant p)
 
+  let debug_to_string p =
+    (if unfolded p then "unfolded(" else "") ^
+    Constant.debug_to_string (constant p) ^
+    (if unfolded p then ")" else "")
+  let debug_print p = str (debug_to_string p)
+
 end
 
 module PRpred = Predicate.Make(Projection.Repr.CanOrd)
