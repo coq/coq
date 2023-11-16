@@ -50,7 +50,7 @@ let ppdir dir = pp (DirPath.print dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
 let ppcon con = pp(Constant.debug_print con)
 let ppprojrepr con = pp(Constant.debug_print (Projection.Repr.constant con))
-let ppproj con = pp(Constant.debug_print (Projection.constant con))
+let ppproj p = pp(Projection.debug_print p)
 let ppkn kn = pp(str (KerName.to_string kn))
 let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
@@ -348,7 +348,7 @@ let constr_display csr =
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
-  | Proj (p, r, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
+  | Proj (p, r, c) -> "Proj("^(Projection.to_string p)^","^term_display c ^")"
   | Case (ci,u,pms,((_,p),_),iv,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display (Array.map snd bl))^")"
@@ -457,7 +457,7 @@ let print_pure_constr csr =
       print_string ","; universes_display u;
       print_string ")"
   | Proj (p,_,c') -> print_string "Proj(";
-      sp_con_display (Projection.constant p);
+      sp_prj_display p;
       print_string ",";
       box_display c';
       print_string ")"
@@ -577,7 +577,8 @@ let print_pure_constr csr =
         | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (Constant.debug_to_string sp)
-
+  and sp_prj_display sp =
+      print_string (Projection.debug_to_string sp)
   in
     try
      box_display csr; print_flush()
