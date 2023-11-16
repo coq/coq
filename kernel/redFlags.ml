@@ -28,6 +28,7 @@ type reds = {
 type red_kind =
   | BETA | DELTA | MATCH | FIX | COFIX | ZETA
   | CONST of Constant.t
+  | PROJ of Projection.Repr.t
   | VAR of Id.t
 
 let fBETA = BETA
@@ -36,7 +37,8 @@ let fMATCH = MATCH
 let fFIX = FIX
 let fCOFIX = COFIX
 let fZETA = ZETA
-let fCONST kn  = CONST kn
+let fCONST kn = CONST kn
+let fPROJ p = PROJ p
 let fVAR id  = VAR id
 
 let no_red = {
@@ -55,6 +57,9 @@ let red_add red = function
   | CONST kn ->
     let r = red.r_const in
     { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
+  | PROJ p ->
+    let r = red.r_const in
+    { red with r_const = { r with tr_prj = PRpred.add p r.tr_prj } }
   | MATCH -> { red with r_match = true }
   | FIX -> { red with r_fix = true }
   | COFIX -> { red with r_cofix = true }
@@ -69,6 +74,9 @@ let red_sub red = function
   | CONST kn ->
     let r = red.r_const in
     { red with r_const = { r with tr_cst = Cpred.remove kn r.tr_cst } }
+  | PROJ p ->
+    let r = red.r_const in
+    { red with r_const = { r with tr_prj = PRpred.remove p r.tr_prj } }
   | MATCH -> { red with r_match = false }
   | FIX -> { red with r_fix = false }
   | COFIX -> { red with r_cofix = false }
@@ -90,6 +98,8 @@ let red_set red = function
   | BETA -> red.r_beta
   | CONST kn ->
     is_transparent_constant red.r_const kn
+  | PROJ p ->
+    is_transparent_projection red.r_const p
   | VAR id ->
     is_transparent_variable red.r_const id
   | ZETA -> red.r_zeta
@@ -101,7 +111,7 @@ let red_set red = function
 
 let red_projection red p =
   if Projection.unfolded p then true
-  else red_set red (fCONST (Projection.constant p))
+  else red_set red (fPROJ (Projection.repr p))
 
 let all = mkfullflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
 let allnolet = mkfullflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
