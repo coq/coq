@@ -582,7 +582,7 @@ let build_beq_scheme env handle kn =
               interpreted as the pair of the whole fix and of the
               translated recursive call building the equality
            2. something to do around either packaging the type with
-              its equality, or begin able for a match to have a return
+              its equality, or being able for a match to have a return
               predicate different though convertible to itself, namely
               here a fix of match (see test-suite) *)
       let mkfix j = mkFix ((recindxs,j),recdef) in

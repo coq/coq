@@ -68,7 +68,7 @@ type maximal_insertion = bool (** true = maximal contextual insertion *)
 
 type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
-type implicit_position = Name.t * int * int option
+type implicit_position = Name.t * int * Evar_kinds.explicitation
 
 type implicit_status_info = {
   impl_pos : implicit_position;

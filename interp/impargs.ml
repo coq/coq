@@ -270,7 +270,12 @@ let compute_implicits_names env sigma t =
     | (na,rels',ids')::names ->
       let (absolute_pos,nnondep,names) = set_names (rels'::allrels,Id.Set.union ids ids') names in
       let isdep = List.exists_i (fun i rels -> Int.Set.mem i rels) 1 allrels in
-      let nnondep',dep_pos = if isdep then nnondep, None else nnondep + 1, Some nnondep in
+      let nnondep',dep_pos =
+        if isdep then
+          match na with
+          | Anonymous -> user_err (str "Unnamed dependent binder.")
+          | Name id -> nnondep, ExplByName id
+        else nnondep + 1, ExplByPos nnondep in
       (absolute_pos+1,nnondep',(na,absolute_pos,dep_pos)::names) in
     let _,_,names = set_names ([rels],ids) names in
     List.rev names
@@ -315,7 +320,7 @@ let compute_auto_implicits env sigma flags enriching t =
 type maximal_insertion = bool (* true = maximal contextual insertion *)
 type force_inference = bool (* true = always infer, never turn into evar/subgoal *)
 
-type implicit_position = Name.t * int * int option
+type implicit_position = Name.t * int * Evar_kinds.explicitation
 
 type implicit_status_info = {
   impl_pos : implicit_position;
@@ -333,8 +338,9 @@ type implicits_list = implicit_side_condition * implicit_status list
 let warn_arg_by_pos =
   let open CWarnings in
   create ~name:"deprecated-arg_n-implicit" ~category:CWarnings.CoreCategories.deprecated
-    (fun (id,p) -> strbrk "Deprecated explicitation of argument by position, use \"(" ++
-                   int p ++ strbrk ":=term)\" instead of \"(" ++ Id.print id ++ str ":=term)\".")
+    (fun (na,p) -> strbrk "Deprecated syntax for explicitation of implicit arguments, use \"(" ++
+                   (match na with Name id -> Id.print id ++ strbrk ":=term)\" or \"(" | Anonymous -> mt ()) ++
+                   int p ++ strbrk ":=term)\".")
 
 let is_status_implicit = function
   | None -> false
@@ -349,18 +355,17 @@ let binding_kind_of_status = function
 
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
-  | Some { impl_pos = (Name id, _, _) } -> ExplByName id (* Note: may have a name even if non-dependent *)
-  | Some { impl_pos = (Anonymous, _, Some n) } -> ExplByPos n
-  | Some _ -> assert false
+  | Some { impl_pos = (Name id,_,_) } -> ExplByName id (* Note: may have a name even if non-dependent *)
+  | Some { impl_pos = (Anonymous,_,expl) } -> expl
 
 let match_implicit ?(warn=true) imp pos = match imp, pos with
   | None, _ -> anomaly (Pp.str "Not an implicit argument.")
-  | Some { impl_pos = (Name id, _, None) }, ExplByName id' -> Id.equal id id'
-  | Some { impl_pos = (_, _, Some n) }, ExplByPos n' -> Int.equal n n'
-  | Some { impl_pos = (Name id, n, Some p) }, ExplByName id' ->
+  | Some { impl_pos = (_, _, ExplByName id) }, ExplByName id' -> Id.equal id id'
+  | Some { impl_pos = (_, _, ExplByPos n) }, ExplByPos n' -> Int.equal n n'
+  | Some { impl_pos = (na, n, ExplByPos p) }, ExplByName id' ->
     let b = Id.equal id' (name_of_pos n) in
-    if b then warn_arg_by_pos (id,p);
-    b || Id.equal id' id
+    if b then warn_arg_by_pos (na,p);
+    (match na with Name id -> b || Id.equal id' id | Anonymous -> b)
   | _ -> false
 
 let maximal_insertion_of = function
@@ -372,7 +377,7 @@ let force_inference_of = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
 
 let is_nondep_implicit p imps =
-  List.exists (function Some { impl_pos = (_,_,Some p') } -> Int.equal p p' | _ -> false) imps
+  List.exists (function Some { impl_pos = (_,_,ExplByPos p') } -> Int.equal p p' | _ -> false) imps
 
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
@@ -387,12 +392,7 @@ let is_inferable_implicit in_ctx n = function
 
 let explicitation = function
   | None -> anomaly (Pp.str "not implicit")
-  | Some imp ->
-    let (na, _, p) = imp.impl_pos in
-    match na, p with
-    | Name id, _ -> ExplByName id
-    | _, Some p -> ExplByPos p
-    | _ -> anomaly (Pp.str "Implicit without a position")
+  | Some { impl_pos = (_,_,expl) } -> expl
 
 let positions_of_implicits (_,impls) =
   let rec aux n = function
@@ -555,8 +555,11 @@ let implicits_of_global ref =
       let rec rename implicits names = match implicits, names with
         | [], _ -> []
         | _, [] -> implicits
-        | Some ({ impl_pos = (_, n1, n2) } as impl) :: implicits, Name id :: names ->
-           Some { impl with impl_pos = (Name id, n1, n2) } :: rename implicits names
+        | Some ({ impl_pos = (_, n1, expl) } as impl) :: implicits, Name id :: names ->
+           let expl = match expl with
+             | ExplByName _ -> ExplByName id
+             | ExplByPos _ -> expl in
+           Some { impl with impl_pos = (Name id, n1, expl) } :: rename implicits names
         | imp :: implicits, _ :: names -> imp :: rename implicits names
       in
       List.map (fun (t, il) -> t, rename il rename_l) l
@@ -584,7 +587,7 @@ let sec_implicits =
 
 let impls_of_context vars =
   let map n id =
-    let impl_pos = (Name id, n, None) in
+    let impl_pos = (Name id, n, ExplByName id) in
     match Id.Map.get id !sec_implicits with
     | NonMaxImplicit ->
       Some { impl_pos; impl_expl = Manual; impl_max = false; impl_force = true }

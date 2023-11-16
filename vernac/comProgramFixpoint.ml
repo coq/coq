@@ -202,8 +202,9 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
       Constrintern.compute_internalization_data env sigma recname
         Constrintern.Recursive full_arity impls
     in
+    let id = Id.of_string "recproof" in
     let impl = Some Impargs.{
-      impl_pos = (Name (Id.of_string "recproof"), 1, None);
+      impl_pos = (Name id, 1, Evar_kinds.ExplByName id);
       impl_expl = Manual;
       impl_max = true;
       impl_force = false;

@@ -347,21 +347,25 @@ let warn_shadowed_implicit_name =
   CWarnings.create ~name:"shadowed-implicit-name" ~category:CWarnings.CoreCategories.syntax
     Pp.(fun (na,id) -> str "Renaming shadowed implicit argument name to " ++ Id.print id ++ str ".")
 
-let exists_name na l =
-  match na with
-  | Name id -> List.exists (function Some { impl_pos = (Name id', _, _) } -> Id.equal id id' | _ -> false) l
-  | _ -> false
+let exists_id id l =
+  List.exists (function Some { impl_pos = (Name id', _, _) } -> Id.equal id id' | _ -> false) l
 
 let build_impls ?loc n bk na acc =
   let impl_status max =
-    let na =
-      if exists_name na acc then
-        let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = (Name id,_,_) } -> Some id | _ -> None) acc) in
-        let id = next_name_away na avoid in
-        begin warn_shadowed_implicit_name ?loc (na,id); Name id end
-      else na in
+    let id =
+      match na with
+      | Name id ->
+        if exists_id id acc then
+          let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = (Name id,_,_) } -> Some id | _ -> None) acc) in
+          let id = next_name_away na avoid in
+          begin warn_shadowed_implicit_name ?loc (na,id); id end
+        else id
+      | Anonymous ->
+        (* Unable to know before completion of type-checking that a name is dependent *)
+        user_err ?loc (str "Local implicit argument requires a name.")
+    in
     Some {
-      impl_pos = (na, n, (*TODO, enhancement: compute dependency*) None);
+      impl_pos = (na, n, ExplByName id);
       impl_expl = Manual;
       impl_max = max;
       impl_force = true
@@ -2093,7 +2097,7 @@ let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && match_implicit imp (ExplByName id))
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (Name id, _, _) } -> Some id | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = (_, _, ExplByName id) } -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2102,7 +2106,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (_, _, Some n) } -> Some n | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = (_, _, ExplByPos n) } -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
