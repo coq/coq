@@ -64,7 +64,14 @@ val type_of_inductive : mind_specif puniverses -> types
 val type_of_inductive_knowing_parameters :
   ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
 
-val elim_sort : mind_specif -> Sorts.family
+val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
+(** For squashing. *)
+
+val is_squashed : mind_specif puniverses -> Sorts.t option
+(** Returns the sort to which the inductive is squashed (i.e. the sort
+    of the inductive) if it is squashed. *)
+
+val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool

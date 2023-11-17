@@ -69,11 +69,11 @@ let pp_rel name n =
   Name.print name ++  str "##" ++ int n
 
 let pp_sort s =
-  match Sorts.family s with
-  | Sorts.InSet -> str "Set"
-  | Sorts.InProp -> str "Prop"
-  | Sorts.InSProp -> str "SProp"
-  | Sorts.InType | Sorts.InQSort -> str "Type"
+  match s with
+  | Sorts.Set -> str "Set"
+  | Sorts.Prop -> str "Prop"
+  | Sorts.SProp -> str "SProp"
+  | Sorts.Type _ | Sorts.QSort _ -> str "Type"
 
 let pr_con sp = str(Names.Label.to_string (Constant.label sp))
 

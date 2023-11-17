@@ -164,6 +164,15 @@ type regular_inductive_arity = {
 
 type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
 
+type squash_info =
+  | AlwaysSquashed
+  | SometimesSquashed of Sorts.Quality.t list
+  (** A sort polymorphic inductive [I@{...|...|...} : ... -> Type@{ s|...}]
+      is squashed at a given instantiation if the qualities in the list are not smaller than [s].
+
+      NB: if [s] is sort poly and the inductive has >0 constructors
+      SometimesSquashed contains Prop ie the SProp instantiation is squashed. *)
+
 (** {7 Datas specific to a single type of a block of mutually inductive type } *)
 type one_inductive_body = {
 (** {8 Primitive datas } *)
@@ -198,7 +207,7 @@ type one_inductive_body = {
 
     mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
-    mind_squashed : bool; (** Is elimination restricted to the inductive's sort? *)
+    mind_squashed : squash_info option; (** Is elimination restricted to the inductive's sort? *)
 
     mind_nf_lc : (rel_context * types) array;
  (** Head normalized constructor types so that their conclusion

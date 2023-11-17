@@ -74,7 +74,7 @@ type record_arg_info =
   | HasRelevantArg
 
 type univ_info =
-  { ind_squashed : bool
+  { ind_squashed : squash_info option
   ; record_arg_info : record_arg_info
   ; ind_template : bool
   ; ind_univ : Sorts.t
@@ -94,22 +94,21 @@ let check_univ_leq ?(is_real_arg=false) env u info =
       | Sorts.SProp | QSort _ -> info
       | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
   in
-  (* If we would squash (eg Prop, SProp case) we still need to check the type in type flag. *)
-  let ind_squashed = not (Environ.type_in_type env) in
-  match u, info.ind_univ with
+  if (Environ.type_in_type env) then info
+  else match u, info.ind_univ with
   | SProp, (SProp | Prop | Set | QSort _ | Type _) ->
     (* Inductive types provide explicit lifting from SProp to other universes,
        so allow SProp <= any. *)
     info
 
-  | Prop, SProp -> { info with ind_squashed }
-  | Prop, QSort _ -> { info with ind_squashed } (* imprecise *)
+  | Prop, SProp -> { info with ind_squashed = Some AlwaysSquashed }
+  | Prop, QSort _ -> { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
   | Prop, (Prop | Set | Type _) -> info
 
-  | Set, (SProp | Prop) -> { info with ind_squashed }
+  | Set, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
   | Set, QSort (_, indu) ->
     if UGraph.check_leq (universes env) Universe.type0 indu
-    then { info with ind_squashed } (* imprecise *)
+    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
     else { info with missing = u :: info.missing }
   | Set, Set -> info
   | Set, Type indu ->
@@ -117,34 +116,34 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     then info
     else { info with missing = u :: info.missing }
 
-  | QSort _, (SProp | Prop) -> { info with ind_squashed } (* imprecise *)
+  | QSort _, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
   | QSort (cq, uu), QSort (indq, indu) ->
     if UGraph.check_leq (universes env) uu indu
     then begin if Sorts.QVar.equal cq indq then info
-      else { info with ind_squashed } (* imprecise *)
+      else { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
     end
     else { info with missing = u :: info.missing }
   | QSort (_, uu), Set ->
     if UGraph.check_leq (universes env) uu Universe.type0
     then info
     else if is_impredicative_set env
-    then { info with ind_squashed } (* imprecise *)
+    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
     else { info with missing = u :: info.missing }
   | QSort (_,uu), Type indu ->
     if UGraph.check_leq (universes env) uu indu
     then info
     else { info with missing = u :: info.missing }
 
-  | Type _, (SProp | Prop) -> { info with ind_squashed }
+  | Type _, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
   | Type uu, Set ->
     if UGraph.check_leq (universes env) uu Universe.type0
     then info
     else if is_impredicative_set env
-    then { info with ind_squashed }
+    then { info with ind_squashed = Some AlwaysSquashed }
     else { info with missing = u :: info.missing }
   | Type uu, QSort (_, indu) ->
     if UGraph.check_leq (universes env) uu indu
-    then { info with ind_squashed } (* imprecise *)
+    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
     else { info with missing = u :: info.missing }
   | Type uu, Type indu ->
     if UGraph.check_leq (universes env) uu indu
@@ -173,7 +172,7 @@ let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
   let univ_info = {
-    ind_squashed=false;
+    ind_squashed=None;
     record_arg_info=NoRelevantArg;
     ind_template = template;
     ind_univ=ind_sort;
@@ -205,10 +204,12 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
       (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
       if isrecord then univ_info
       (* 1 constructor with no arguments also OK in SProp (to make
-         things easier on ourselves when reducing we forbid letins) *)
+         things easier on ourselves when reducing we forbid letins)
+         unless ind_univ is sort polymorphic (for ease of implementation) *)
       else if (Environ.typing_flags env_ar_par).allow_uip
            && fst (splayed_lc.(0)) = []
            && List.for_all Context.Rel.Declaration.is_local_assum params
+           && Sorts.is_sprop univ_info.ind_univ
       then univ_info
       (* 1 constructor with arguments must squash if SProp
          (we could allow arguments in SProp but the reduction rule is a pain) *)
@@ -225,7 +226,7 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
 let check_record data =
   List.for_all (fun (_,(_,splayed_lc),info) ->
       (* records must have all projections definable -> equivalent to not being squashed *)
-      not info.ind_squashed
+      Option.is_empty info.ind_squashed
       (* relevant records must have at least 1 relevant argument,
          and we don't yet support variable relevance projections *)
       && (match info.record_arg_info with
@@ -326,7 +327,14 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
   in
 
-  (arity,lc), (indices,splayed_lc), univ_info.ind_squashed
+  let squashed = Option.map (function
+      | AlwaysSquashed -> AlwaysSquashed
+      | SometimesSquashed qs ->
+        SometimesSquashed (List.map (UVars.subst_sort_level_quality usubst) qs))
+      univ_info.ind_squashed
+  in
+
+  (arity,lc), (indices,splayed_lc), squashed
 
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with

@@ -550,13 +550,11 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
     if not (is_inversion = should_invert_case env rp ci)
     then error_bad_invert env
   in
-  let () =
-    let ksort = Sorts.family sp in
-    let s = elim_sort specif in
-    if not (Sorts.family_leq ksort s) then
-      let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-      let kinds = Some (pj, ksort, s) in
-      error_elim_arity env (ind, u') c kinds
+  let () = if not (is_allowed_elimination (specif,u) sp) then begin
+    let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+    let kinds = Some (pj, sp) in
+    error_elim_arity env (ind, u') c kinds
+  end
   in
   (* Check that the scrutinee has the right type *)
   let rslty = type_case_scrutinee env (mib, mip) (u', largs) u pms (pctx, p) c in

@@ -2093,7 +2093,7 @@ let expected_elimination_sort env tomatchl =
       match tm with
       | IsInd (_,IndType(indf,_),_) ->
         (* Not a degenerated line, see coerce_to_indtype *)
-        let s' = Inductive.elim_sort (Inductive.lookup_mind_specif env (fst (fst (dest_ind_family indf)))) in
+        let s' = Inductiveops.elim_sort (Inductive.lookup_mind_specif env (fst (fst (dest_ind_family indf)))) in
         if Sorts.family_leq s s' then s else s'
       | NotInd _ -> s) tomatchl Sorts.InType
 

@@ -206,6 +206,8 @@ val subst_univs_level_abstract_universe_context :
 val subst_sort_level_instance : sort_level_subst -> Instance.t -> Instance.t
 (** Level to universe substitutions. *)
 
+val subst_sort_level_quality : sort_level_subst -> Sorts.Quality.t -> Sorts.Quality.t
+
 val subst_sort_level_sort : sort_level_subst -> Sorts.t -> Sorts.t
 
 val subst_sort_level_relevance : sort_level_subst -> Sorts.relevance -> Sorts.relevance
@@ -213,6 +215,7 @@ val subst_sort_level_relevance : sort_level_subst -> Sorts.relevance -> Sorts.re
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
+val subst_instance_quality : Instance.t -> Sorts.Quality.t -> Sorts.Quality.t
 val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
 

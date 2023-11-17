@@ -334,7 +334,7 @@ let type_of_constant cb = cb.Declarations.const_type
 
 let uses_uip mib =
   Array.exists (fun mip ->
-      not mip.mind_squashed
+      Option.is_empty mip.mind_squashed
       && mip.mind_relevance == Sorts.Irrelevant
       && Array.length mip.mind_nf_lc = 1
       && List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt)

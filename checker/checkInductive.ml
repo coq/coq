@@ -99,7 +99,25 @@ let check_template ar1 ar2 = match ar1, ar2 with
 | None, Some _ | Some _, None -> false
 
 (* if the generated inductive is squashed the original one must be squashed *)
-let check_squashed k1 k2 = if k2 then k1 else true
+let check_squashed orig generated = match orig, generated with
+  | None, None -> true
+  | Some _, None ->
+    (* the inductive is from functor instantiation which removed the need for squash *)
+    true
+  | None, Some _ ->
+    (* missing squash *)
+    false
+  | Some s1, Some s2 ->
+    (* functor instantiation can change sort qualities
+       (from Type -> Prop)
+       Condition: every quality which can make the generated inductive
+       squashed must also make the original inductive squashed *)
+    match s1, s2 with
+    | AlwaysSquashed, AlwaysSquashed -> true
+    | AlwaysSquashed, SometimesSquashed _ -> true
+    | SometimesSquashed _, AlwaysSquashed -> false
+    | SometimesSquashed s1, SometimesSquashed s2 ->
+      List.for_all (fun s2 -> List.exists (fun s1 -> Sorts.Quality.equal s1 s2) s1) s2
 
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.

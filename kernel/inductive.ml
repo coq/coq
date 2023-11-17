@@ -304,14 +304,65 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (* Get type of inductive, with parameters instantiated *)
 
+(* XXX questionable for sort poly inductives *)
 let inductive_sort_family mip =
   match mip.mind_arity with
   | RegularArity s -> Sorts.family s.mind_sort
   | TemplateArity _ -> Sorts.InType
 
-let elim_sort (_,mip) =
-  if not mip.mind_squashed then Sorts.InType
-  else inductive_sort_family mip
+let quality_leq q q' =
+  let open Sorts.Quality in
+  match q, q' with
+  | QVar q, QVar q' -> Sorts.QVar.equal q q'
+  | QConstant QSProp, _
+  | _, QConstant QType
+  | QConstant QProp, QConstant QProp
+    -> true
+
+  | (QVar _ | QConstant (QProp | QType)), _ -> false
+
+let is_squashed ((_,mip),u) =
+  match mip.mind_squashed with
+  | None -> None
+  | Some squash ->
+    let inds = match mip.mind_arity with
+      | TemplateArity _ -> assert false (* template is never squashed *)
+      | RegularArity a -> a.mind_sort
+    in
+    let inds = UVars.subst_instance_sort u inds in
+    match squash with
+    | AlwaysSquashed -> Some inds
+    | SometimesSquashed squash ->
+      match inds with
+      | Sorts.Set ->
+        (* impredicative set squashes are always AlwaysSquashed *)
+        assert false
+      | Sorts.Type _ -> None
+      | _ ->
+        let squash = List.map (UVars.subst_instance_quality u) squash in
+        if List.for_all (fun q -> quality_leq q (Sorts.quality inds)) squash then None
+        else Some inds
+
+let is_allowed_elimination specifu s =
+  match is_squashed specifu with
+  | None -> true
+  | Some inds ->
+    let open Sorts in
+    match s, inds with
+    (* impredicative set squash *)
+    | (SProp|Prop|Set), Set -> true
+    | (QSort _|Type _), Set -> false
+
+    (* we never squash to Type *)
+    | _, Type _ -> assert false
+
+    (* other squashes *)
+    | SProp, (SProp|Prop|QSort _) | Prop, Prop -> true
+    | QSort (q,_), QSort (indq,_) -> Sorts.QVar.equal q indq
+    | (Set|Type _), (SProp|Prop|QSort _) -> false
+    | Prop, SProp
+    | Prop, QSort _
+    | QSort _, (Prop|SProp) -> false
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =

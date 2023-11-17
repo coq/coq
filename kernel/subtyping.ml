@@ -114,6 +114,11 @@ let check_variance error v1 v2 =
   | None, Some _ -> error (CumulativeStatusExpected true)
   | Some _, None -> error (CumulativeStatusExpected false)
 
+let squash_info_equal s1 s2 = match s1, s2 with
+  | AlwaysSquashed, AlwaysSquashed -> true
+  | SometimesSquashed s1, SometimesSquashed s2 -> List.equal Sorts.Quality.equal s1 s2
+  | (AlwaysSquashed | SometimesSquashed _), _ -> false
+
 (* for now we do not allow reorderings *)
 
 let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 reso1 reso2=
@@ -139,7 +144,8 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
     let check f test why = if not (test (f p1) (f p2)) then error why in
       check (fun p -> p.mind_consnames) (Array.equal Id.equal) NotSameConstructorNamesField;
       check (fun p -> p.mind_typename) Id.equal NotSameInductiveNameInBlockField;
-      check (fun p -> p.mind_squashed) Bool.equal (NotConvertibleInductiveField p2.mind_typename);
+      check (fun p -> p.mind_squashed) (Option.equal squash_info_equal)
+        (NotConvertibleInductiveField p2.mind_typename);
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)

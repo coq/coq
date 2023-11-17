@@ -237,7 +237,7 @@ let subst_instance_quality s l =
       | Some n -> (fst (Instance.to_array s)).(n)
       | None -> l
     end
-  | _ -> l
+  | Quality.QConstant _ -> l
 
 let subst_instance_instance s i =
   let qs, us = Instance.to_array i in
@@ -412,18 +412,23 @@ let subst_sort_level_instance (qsubst,usubst) i =
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
-let subst_fn_of_qsubst qsubst qv =
+let subst_sort_level_qvar (qsubst,_) qv =
   match Sorts.QVar.Map.find_opt qv qsubst with
   | None -> Quality.QVar qv
   | Some q -> q
 
-let subst_sort_level_sort (qsubst,usubst) s =
-  let fq qv = subst_fn_of_qsubst qsubst qv in
+let subst_sort_level_quality subst = function
+  | Sorts.Quality.QConstant _ as q -> q
+  | Sorts.Quality.QVar q ->
+    subst_sort_level_qvar subst q
+
+let subst_sort_level_sort (_,usubst as subst) s =
+  let fq qv = subst_sort_level_qvar subst qv in
   let fu u = subst_univs_level_universe usubst u in
   Sorts.subst_fn (fq,fu) s
 
-let subst_sort_level_relevance (qsubst,_) r =
-  Sorts.relevance_subst_fn (subst_fn_of_qsubst qsubst) r
+let subst_sort_level_relevance subst r =
+  Sorts.relevance_subst_fn (subst_sort_level_qvar subst) r
 
 let make_instance_subst i =
   let qarr, uarr = Instance.to_array i in

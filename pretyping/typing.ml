@@ -258,21 +258,16 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let specif = lookup_mind_specif env (fst ind) in
-  let sorts = elim_sort specif in
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = whd_decompose_prod env sigma pj.uj_type in
   let sort =  match EConstr.kind sigma s with
-    | Sort s -> EConstr.ESorts.kind sigma s
+    | Sort s -> s
     | _ -> error_elim_arity env sigma ind c None
   in
-  let ksort = match Sorts.family sort with
-    | InType | InSProp | InSet | InProp as f -> f
-    | InQSort -> InType (* FIXME *)
-  in
-  if not (Sorts.family_leq ksort sorts) then
-    error_elim_arity env sigma ind c (Some (pj, ksort, sorts))
+  if Inductiveops.is_allowed_elimination sigma (specif,(snd ind)) sort then
+    ESorts.relevance_of_sort sigma sort
   else
-    Sorts.relevance_of_sort sort
+    error_elim_arity env sigma ind c (Some (pj, sort))
 
 let check_actual_type env sigma cj t =
   try Evarconv.unify_leq_delay env sigma cj.uj_type t
