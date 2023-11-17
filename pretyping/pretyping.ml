@@ -407,20 +407,13 @@ let process_inference_flags flags env initial (sigma,c,cty) =
 let adjust_evar_source sigma na c =
   match na, kind sigma c with
   | Name id, Evar (evk,args) ->
-     let EvarInfo evi = Evd.find sigma evk in
+     let evi = Evd.find_undefined sigma evk in
      begin match Evd.evar_source evi with
-     | loc, Evar_kinds.QuestionMark {
-         Evar_kinds.qm_obligation=b;
-         Evar_kinds.qm_name=Anonymous;
-         Evar_kinds.qm_record_field=recfieldname;
-        } ->
-        let src = (loc,Evar_kinds.QuestionMark {
-            Evar_kinds.qm_obligation=b;
-            Evar_kinds.qm_name=na;
-            Evar_kinds.qm_record_field=recfieldname;
-        }) in
-        let (sigma, evk') = restrict_evar sigma evk (evar_filter evi) ~src None in
-        sigma, mkEvar (evk',args)
+     | loc, Evar_kinds.QuestionMark ({ Evar_kinds.qm_name=Anonymous } as qm) ->
+       let src = (loc,Evar_kinds.QuestionMark { qm with Evar_kinds.qm_name=na }) in
+       (* Evd.update_source doesn't work for some reason, cf test bug_18260_1.v *)
+       let (sigma, evk') = Evd.restrict evk (evar_filter evi) ~src sigma in
+       sigma, mkEvar (evk',args)
      | _ -> sigma, c
      end
   | _, _ -> sigma, c
