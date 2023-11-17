@@ -66,12 +66,11 @@ let mind_check_names mie =
 (************************************************************************)
 
 
-let no_sort_variable () =
-  CErrors.user_err (Pp.str "Sort variables not yet supported for the inductive's sort.")
-
 type record_arg_info =
   | NoRelevantArg
   | HasRelevantArg
+  (** HasRelevantArg means when the record is relevant at least one arg is relevant.
+      When the record is in a polymorphic sort this can mean one arg is in the same sort. *)
 
 type univ_info =
   { ind_squashed : squash_info option
@@ -94,19 +93,23 @@ let check_univ_leq ?(is_real_arg=false) env u info =
   let open Sorts.Quality in
   let info = if not is_real_arg then info
     else match info.record_arg_info with
-    | NoRelevantArg | HasRelevantArg -> match u with
-      | Sorts.SProp | QSort _ -> info
-      | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
+      | HasRelevantArg -> info
+      | NoRelevantArg -> match u with
+        | Sorts.SProp -> info
+        | QSort (q,_) -> if Sorts.Quality.equal (QVar q) (Sorts.quality info.ind_univ)
+          then { info with record_arg_info = HasRelevantArg }
+          else info
+        | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
   in
   if (Environ.type_in_type env) then info
   else match u, info.ind_univ with
-  | SProp, (SProp | Prop | Set | QSort _ | Type _) ->
+  | SProp, (SProp | Prop | Set | Type _) ->
     (* Inductive types provide explicit lifting from SProp to other universes,
        so allow SProp <= any. *)
     info
 
   | Prop, SProp -> { info with ind_squashed = Some AlwaysSquashed }
-  | Prop, QSort _ -> add_squash qprop info
+  | (SProp|Prop), QSort _ -> add_squash (Sorts.quality u) info
   | Prop, (Prop | Set | Type _) -> info
 
   | Set, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
@@ -202,11 +205,11 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
   let splayed_lc = Array.map (Reduction.whd_decompose_prod_decls env_ar_par) lc in
   let univ_info = match Array.length lc with
-    (* Empty type: all OK *)
-    | 0 -> univ_info
+    (* Empty type: sort poly must squash *)
+    | 0 -> check_univ_leq env_ar_par Sorts.sprop univ_info
 
     | 1 ->
-      (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
+      (* SProp and sort poly primitive records are OK, if we squash and become fakerecord also OK *)
       if isrecord then univ_info
       (* 1 constructor with no arguments also OK in SProp (to make
          things easier on ourselves when reducing we forbid letins)
@@ -216,7 +219,7 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
            && List.for_all Context.Rel.Declaration.is_local_assum params
            && Sorts.is_sprop univ_info.ind_univ
       then univ_info
-      (* 1 constructor with arguments must squash if SProp
+      (* 1 constructor with arguments must squash if SProp / sort poly
          (we could allow arguments in SProp but the reduction rule is a pain) *)
       else check_univ_leq env_ar_par Sorts.prop univ_info
 
@@ -319,11 +322,7 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       args,out)
       splayed_lc
   in
-  let ind_univ = match univ_info.ind_univ with
-    | QSort _ -> no_sort_variable ()
-    | _ ->
-      UVars.subst_sort_level_sort usubst univ_info.ind_univ
-  in
+  let ind_univ = UVars.subst_sort_level_sort usubst univ_info.ind_univ in
 
   let arity =
     if univ_info.ind_template then

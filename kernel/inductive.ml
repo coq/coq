@@ -314,55 +314,50 @@ let quality_leq q q' =
   let open Sorts.Quality in
   match q, q' with
   | QVar q, QVar q' -> Sorts.QVar.equal q q'
-  | QConstant QSProp, _
-  | _, QConstant QType
-  | QConstant QProp, QConstant QProp
-    -> true
+  | QConstant q, QConstant q' ->
+    begin match q, q' with
+    | QSProp, _
+    | _, QType
+    | QProp, QProp
+      -> true
+    | (QProp|QType), _ -> false
+    end
+  | (QVar _|QConstant _), _ -> false
 
-  | (QVar _ | QConstant (QProp | QType)), _ -> false
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 let is_squashed ((_,mip),u) =
-  match mip.mind_squashed with
-  | None -> None
-  | Some squash ->
-    let inds = match mip.mind_arity with
-      | TemplateArity _ -> assert false (* template is never squashed *)
-      | RegularArity a -> a.mind_sort
-    in
-    let inds = UVars.subst_instance_sort u inds in
-    match squash with
-    | AlwaysSquashed -> Some inds
-    | SometimesSquashed squash ->
-      match inds with
-      | Sorts.Set ->
-        (* impredicative set squashes are always AlwaysSquashed *)
-        assert false
-      | Sorts.Type _ -> None
-      | _ ->
+  match mip.mind_arity with
+  | TemplateArity _ -> None (* template is never squashed *)
+  | RegularArity a ->
+    match mip.mind_squashed with
+    | None -> None
+    | Some squash ->
+      let indq = Sorts.quality (UVars.subst_instance_sort u a.mind_sort) in
+      match squash with
+      | AlwaysSquashed -> begin match a.mind_sort with
+          | Sorts.Set -> Some SquashToSet
+          | _ -> Some (SquashToQuality indq)
+        end
+      | SometimesSquashed squash ->
+        (* impredicative set squashes are always AlwaysSquashed,
+           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         let squash = List.map (UVars.subst_instance_quality u) squash in
-        if List.for_all (fun q -> quality_leq q (Sorts.quality inds)) squash then None
-        else Some inds
+        if List.for_all (fun q -> quality_leq q indq) squash then None
+        else Some (SquashToQuality indq)
 
 let is_allowed_elimination specifu s =
+  let open Sorts in
   match is_squashed specifu with
   | None -> true
-  | Some inds ->
-    let open Sorts in
-    match s, inds with
-    (* impredicative set squash *)
-    | (SProp|Prop|Set), Set -> true
-    | (QSort _|Type _), Set -> false
-
-    (* we never squash to Type *)
-    | _, Type _ -> assert false
-
-    (* other squashes *)
-    | SProp, (SProp|Prop|QSort _) | Prop, Prop -> true
-    | QSort (q,_), QSort (indq,_) -> Sorts.QVar.equal q indq
-    | (Set|Type _), (SProp|Prop|QSort _) -> false
-    | Prop, SProp
-    | Prop, QSort _
-    | QSort _, (Prop|SProp) -> false
+  | Some SquashToSet ->
+    begin match s with
+      | SProp|Prop|Set -> true
+      | QSort _ | Type _ ->
+        (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
+        false
+    end
+  | Some (SquashToQuality indq) -> quality_leq (Sorts.quality s) indq
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =
@@ -1489,9 +1484,8 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     let () =
       if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
       else match relevance_of_ind_body mip u with
-        | Sorts.Irrelevant | Sorts.RelevanceVar _ ->
-          (* XXX if RelevanceVar also allow binder_relevance = the same var? *)
-          if not (names.(i).Context.binder_relevance == Sorts.Irrelevant)
+        | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
+          if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
           then raise_err env i FixpointOnIrrelevantInductive
         | Sorts.Relevant -> ()
     in

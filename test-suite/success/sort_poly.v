@@ -100,12 +100,17 @@ Module Inference.
 End Inference.
 
 Module Inductives.
-  (* TODO sort variable in the output sort *)
-  Fail Inductive foo1@{s| |} : Type@{s|Set} := .
+  Inductive foo1@{s| |} : Type@{s|Set} := .
+  Fail Check foo1_sind.
+
+  Fail Definition foo1_False@{s|+|+} (x:foo1@{s|}) : False := match x return False with end.
+  (* XXX error message is bad *)
 
   Inductive foo2@{s| |} := Foo2 : Type@{s|Set} -> foo2.
+  Check foo2_rect.
 
   Inductive foo3@{s| |} (A:Type@{s|Set}) := Foo3 : A -> foo3 A.
+  Check foo3_rect.
 
   Fail Inductive foo4@{s|u v|v < u} : Type@{v} := C (_:Type@{s|u}).
 
@@ -126,6 +131,57 @@ Module Inductives.
     : P f
     := match f with Foo5 _ a => H a end.
 
+  (* all sort poly output with nonzero contructors are squashed (avoid interfering with uip) *)
+  Inductive foo6@{s| |} : Type@{s|Set} := Foo6.
+  Fail Check foo6_sind.
+
+  Fail Definition foo6_rect (P:foo6 -> Type)
+    (H : P Foo6)
+    (f : foo6)
+    : P f
+    := match f with Foo6 => H end.
+  (* XXX error message is pretty bad *)
+
+  Definition foo6_prop_rect (P:foo6 -> Type)
+    (H : P Foo6)
+    (f : foo6@{Prop|})
+    : P f
+    := match f with Foo6 => H end.
+
+  Definition foo6_type_rect (P:foo6 -> Type)
+    (H : P Foo6)
+    (f : foo6@{Type|})
+    : P f
+    := match f with Foo6 => H end.
+
+  Definition foo6_qsort_rect@{s|u|} (P:foo6 -> Type@{s|u})
+    (H : P Foo6)
+    (f : foo6@{s|})
+    : P f
+    := match f with Foo6 => H end.
+
+  Fail Definition foo6_2qsort_rect@{s s'|u|} (P:foo6 -> Type@{s|u})
+    (H : P Foo6)
+    (f : foo6@{s'|})
+    : P f
+    := match f with Foo6 => H end.
+
+  Inductive foo7@{s| |} : Type@{s|Set} := Foo7_1 | Foo7_2.
+  Fail Check foo7_sind.
+  Fail Check foo7_ind.
+
+  Definition foo7_prop_ind (P:foo7 -> Prop)
+    (H : P Foo7_1) (H' : P Foo7_2)
+    (f : foo7@{Prop|})
+    : P f
+    := match f with Foo7_1 => H | Foo7_2 => H' end.
+
+  Fail Definition foo7_prop_rect (P:foo7 -> Type)
+    (H : P Foo7_1) (H' : P Foo7_2)
+    (f : foo7@{Prop|})
+    : P f
+    := match f with Foo7_1 => H | Foo7_2 => H' end.
+
   Set Primitive Projections.
   Set Warnings "+records".
 
@@ -138,8 +194,7 @@ Module Inductives.
   (* R3@{SProp Type|} may not be primitive  *)
   Fail Record R3@{s s'| |} (A:Type@{s|Set}) : Type@{s'|Set} := { R3f1 : A }.
 
-  (* TODO sort variable in output sort *)
-  Fail Record R4@{s| |} (A:Type@{s|Set}) : Type@{s|Set} := { R4f1 : A}.
+  Record R4@{s| |} (A:Type@{s|Set}) : Type@{s|Set} := { R4f1 : A}.
 
   (* non SProp instantiation must be squashed *)
   Fail Record R5@{s| |} (A:Type@{s|Set}) : SProp := { R5f1 : A}.
@@ -162,5 +217,59 @@ Module Inductives.
   #[projections(primitive=no)] Record R7@{s| |} (A:Type@{s|Set}) := { R7f1 : A; R7f2 : nat }.
   Check R7@{SProp|} : SProp -> Set.
   Check R7@{Type|} : Set -> Set.
+
+  Inductive sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
+    := pair : forall x : A, B x -> sigma A B.
+
+  Definition sigma_srect@{s|k +|} A B
+    (P : sigma@{s|_ _} A B -> Type@{s|k})
+    (H : forall x b, P (pair _ _ x b))
+    (s:sigma A B)
+    : P s
+    := match s with pair _ _ x b => H x b end.
+
+  (* squashed because positive type with >0 constructors *)
+  Fail Definition sigma_srect'@{s sk|k +|} A B
+    (P : sigma@{s|_ _} A B -> Type@{sk|k})
+    (H : forall x b, P (pair _ _ x b))
+    (s:sigma A B)
+    : P s
+    := match s with pair _ _ x b => H x b end.
+
+  (* even though it's squashed, we can still define the projections *)
+  Definition pr1@{s|+|} {A B} (s:sigma@{s|_ _} A B) : A
+    := match s with pair _ _ x _ => x end.
+
+  Definition pr2@{s|+|} {A B} (s:sigma@{s|_ _} A B) : B (pr1 s)
+    := match s with pair _ _ _ y => y end.
+
+  (* but we can't prove eta *)
+  Inductive seq@{s|u|} (A:Type@{s|u}) (a:A) : A -> Prop := seq_refl : seq A a a.
+  Arguments seq_refl {_ _}.
+
+  Definition eta@{s|+|+} A B (s:sigma@{s|_ _} A B) : seq _ s (pair A B (pr1 s) (pr2 s)).
+  Proof.
+    Fail destruct s.
+  Abort.
+
+  (* sigma as a primitive record works better *)
+  Record Rsigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
+    := Rpair { Rpr1 : A; Rpr2 : B Rpr1 }.
+
+  (* match desugared to primitive projections using definitional eta *)
+  Definition Rsigma_srect@{s sk|k +|} A B
+    (P : Rsigma@{s|_ _} A B -> Type@{sk|k})
+    (H : forall x b, P (Rpair _ _ x b))
+    (s:Rsigma A B)
+    : P s
+    := match s with Rpair _ _ x b => H x b end.
+
+  (* sort polymorphic exists (we could also make B sort poly)
+     can't be a primitive record since the first projection isn't defined at all sorts *)
+  Inductive sexists@{s|u|} (A:Type@{s|u}) (B:A -> Prop) : Prop
+    := sexist : forall a:A, B a -> sexists A B.
+
+  (* we can eliminate to Prop *)
+  Check sexists_ind.
 
 End Inductives.

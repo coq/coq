@@ -2088,14 +2088,13 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
         Some (sigma', p, arsign)
   with e when precatchable_exception e -> None
 
-let expected_elimination_sort env tomatchl =
-  List.fold_right (fun (_,tm) s ->
-      match tm with
+let expected_elimination_sorts env sigma tomatchl =
+  List.map_filter (fun (_,tm) -> match tm with
+      | NotInd _ -> None
       | IsInd (_,IndType(indf,_),_) ->
-        (* Not a degenerated line, see coerce_to_indtype *)
-        let s' = Inductiveops.elim_sort (Inductive.lookup_mind_specif env (fst (fst (dest_ind_family indf)))) in
-        if Sorts.family_leq s s' then s else s'
-      | NotInd _ -> s) tomatchl Sorts.InType
+        let (ind, u), _ = dest_ind_family indf in
+        Inductiveops.is_squashed sigma (Inductive.lookup_mind_specif env ind, u))
+    tomatchl
 
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
@@ -2155,32 +2154,36 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
         underspecified, i.e. a QSort, we make a non-canonical choice for the
         return type. Incompatible constraints are ignored and handled later
         when typing the pattern-matching. *)
-      let sigma = match expected_elimination_sort !!env tomatchs with
-      | InType ->
-        (* Not squashed, no constraints *)
-        sigma
-      | InProp ->
-        (* Squashed inductive in Prop, return sort must be Prop or SProp *)
-        begin match ESorts.kind sigma rtnsort with
-        | Sorts.QSort _ ->
-          Evd.set_eq_sort !!env sigma rtnsort ESorts.prop
-        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
-        end
-      | InSProp ->
-        (* Squashed inductive in SProp, return sort must be SProp. *)
-        begin match ESorts.kind sigma rtnsort with
-        | Sorts.QSort _ ->
-          Evd.set_eq_sort !!env sigma rtnsort ESorts.sprop
-        | Sorts.Type _ | Sorts.Set | Sorts.Prop | Sorts.SProp -> sigma
-        end
-      | InSet ->
+      let check_elim_sort sigma = function
+      | SquashToSet ->
         (* Squashed inductive in Set, only happens with impredicative Set *)
         begin match ESorts.kind sigma rtnsort with
         | Sorts.QSort _ ->
           Evd.set_eq_sort !!env sigma rtnsort ESorts.set
         | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
         end
-      | InQSort -> assert false
+      | SquashToQuality (QConstant QProp) ->
+        (* Squashed inductive in Prop, return sort must be Prop or SProp *)
+        begin match ESorts.kind sigma rtnsort with
+        | Sorts.QSort _ ->
+          Evd.set_eq_sort !!env sigma rtnsort ESorts.prop
+        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
+        end
+      | SquashToQuality (QConstant QSProp) ->
+        (* Squashed inductive in SProp, return sort must be SProp. *)
+        begin match ESorts.kind sigma rtnsort with
+        | Sorts.QSort _ ->
+          Evd.set_eq_sort !!env sigma rtnsort ESorts.sprop
+        | Sorts.Type _ | Sorts.Set | Sorts.Prop | Sorts.SProp -> sigma
+        end
+      | SquashToQuality (QConstant QType) ->
+        (* Sort poly squash to type *)
+        Evd.set_leq_sort !!env sigma ESorts.set rtnsort
+      | SquashToQuality (QVar q) ->
+        Evd.set_leq_sort !!env sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+      in
+      let sigma = List.fold_left check_elim_sort sigma
+          (expected_elimination_sorts !!env sigma tomatchs)
       in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]

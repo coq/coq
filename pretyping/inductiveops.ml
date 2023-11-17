@@ -230,49 +230,62 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
+(* XXX use above_prop from the ustate *)
+let quality_leq q q' =
+  let open Sorts.Quality in
+  match q, q' with
+  | QVar q, QVar q' -> Sorts.QVar.equal q q'
+  | QConstant q, QConstant q' ->
+    begin match q, q' with
+    | QSProp, _
+    | _, QType
+    | QProp, QProp
+      -> true
+    | (QProp|QType), _ -> false
+    end
+  | (QVar _|QConstant _), _ -> false
+
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
 let is_squashed sigma ((_,mip),u) =
-  match mip.mind_squashed with
-  | None -> None
-  | Some squash ->
-    let inds = match mip.mind_arity with
-      | TemplateArity _ -> assert false (* template is never squashed *)
-      | RegularArity a -> a.mind_sort
-    in
-    let inds = UVars.subst_instance_sort u inds in
-    match squash with
-    | AlwaysSquashed -> Some (EConstr.ESorts.make inds)
-    | SometimesSquashed squash ->
-      match inds with
-      | Sorts.Set ->
-        (* impredicative set squashes are always AlwaysSquashed *)
-        assert false
-      | Sorts.Type _ -> None
-      | _ ->
-        let squash = List.map (UVars.subst_instance_quality u) squash in
-        let nfq q = UState.nf_quality (Evd.evar_universe_context sigma) q in
-        let indq = nfq (Sorts.quality inds) in
-        if List.for_all (fun q -> Inductive.quality_leq (nfq q) indq) squash then None
-        else Some (EConstr.ESorts.make inds)
+  match mip.mind_arity with
+  | TemplateArity _ -> None (* template is never squashed *)
+  | RegularArity a ->
+    match mip.mind_squashed with
+    | None -> None
+    | Some squash ->
+      let indq = EConstr.ESorts.quality sigma
+          (EConstr.ESorts.make @@ UVars.subst_instance_sort u a.mind_sort)
+      in
+      match squash with
+      | AlwaysSquashed -> begin match a.mind_sort with
+          | Sorts.Set -> Some SquashToSet
+          | _ -> Some (SquashToQuality indq)
+        end
+      | SometimesSquashed squash ->
+        (* impredicative set squashes are always AlwaysSquashed,
+           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
+        if List.for_all (fun q ->
+            let q = UVars.subst_instance_quality u q in
+            let q = UState.nf_quality (Evd.evar_universe_context sigma) q in
+            quality_leq q indq) squash then None
+        else Some (SquashToQuality indq)
 
-let is_allowed_elimination sigma specifu s =
-  match is_squashed sigma specifu with
-  | None -> true
-  | Some inds ->
-    match EConstr.ESorts.kind sigma s, EConstr.ESorts.kind sigma inds with
-    (* impredicative set squash *)
-    | (SProp|Prop|Set), Set -> true
-    | (QSort _|Type _), Set -> false
-
-    (* we never squash to Type *)
-    | _, Type _ -> assert false
-
-    (* other squashes *)
-    | SProp, (SProp|Prop|QSort _) | Prop, Prop -> true
-    | QSort (q,_), QSort (indq,_) -> Sorts.QVar.equal q indq
-    | (Set|Type _), (SProp|Prop|QSort _) -> false
-    | Prop, QSort _ (* XXX check above_prop in the ustate? *)
-    | Prop, SProp
-    | QSort _, (Prop|SProp) -> false
+let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
+  let open Sorts in
+  match mib.mind_record with
+  | PrimRecord _ -> true
+  | NotRecord | FakeRecord ->
+    match is_squashed sigma specifu with
+    | None -> true
+    | Some SquashToSet ->
+      begin match EConstr.ESorts.kind sigma s with
+      | SProp|Prop|Set -> true
+      | QSort _ | Type _ ->
+        (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
+        false
+      end
+    | Some (SquashToQuality indq) -> quality_leq (EConstr.ESorts.quality sigma s) indq
 
 let elim_sort (_,mip) =
   if Option.is_empty mip.mind_squashed then Sorts.InType
@@ -286,10 +299,12 @@ let sorts_below top =
   List.filter (fun s ->
       Sorts.family_equal s top
       || match s, top with
+      | InQSort, _ -> assert false
+      | _, InQSort -> false
       | InSProp, _ -> true
       | InProp, InSet -> true
       | _, InType -> true
-      | (InProp|InSet|InType|InQSort), _ -> false)
+      | (InProp|InSet|InType), _ -> false)
     Sorts.[InSProp;InProp;InSet;InType]
 
 let sorts_for_schemes specif =

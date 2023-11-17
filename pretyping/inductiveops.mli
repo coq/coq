@@ -125,6 +125,10 @@ val sorts_below : Sorts.family -> Sorts.family list
 
 val sorts_for_schemes : mind_specif -> Sorts.family list
 
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+val is_squashed : evar_map -> (mind_specif * UVars.Instance.t) -> squash option
+
 val is_allowed_elimination : evar_map -> (mind_specif * UVars.Instance.t) -> EConstr.ESorts.t -> bool
 
 val elim_sort : mind_specif -> Sorts.family
