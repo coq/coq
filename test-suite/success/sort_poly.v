@@ -113,10 +113,16 @@ Module Inductives.
   Definition foo5_ind'@{s| |} : forall (A : Type@{s|Set}) (P : Prop), (A -> P) -> foo5 A -> P
     := foo5_ind.
 
-  (* TODO more precise squashing *)
+  (* TODO unify sort variable instead of failing *)
   Fail Definition foo5_Prop_rect (A:Prop) (P:foo5 A -> Type)
     (H : forall a, P (Foo5 A a))
     (f : foo5 A)
+    : P f
+    := match f with Foo5 _ a => H a end.
+
+  Definition foo5_Prop_rect (A:Prop) (P:foo5 A -> Type)
+    (H : forall a, P (Foo5 A a))
+    (f : foo5@{Prop|} A)
     : P f
     := match f with Foo5 _ a => H a end.
 

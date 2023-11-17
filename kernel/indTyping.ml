@@ -81,13 +81,17 @@ type univ_info =
   ; missing : Sorts.t list (* missing u <= ind_univ constraints *)
   }
 
-(* TODO squash depending on the instance
-   (so eg in the "QSort(q, _), Prop" case, "@{q:=Prop|}" is not squashed
-    but "@{q:=Type|}" does need squashing)
-   Cases which will be modified are annotated with "imprecise".
+let add_squash q info =
+  match info.ind_squashed with
+  | None -> { info with ind_squashed = Some (SometimesSquashed [q]) }
+  | Some AlwaysSquashed -> info
+  | Some (SometimesSquashed qs) ->
+    (* XXX dedup insertion *)
+    { info with ind_squashed = Some (SometimesSquashed (q::qs)) }
 
-   This code can probably be simplified but I can't quite see how right now. *)
+(* This code can probably be simplified but I can't quite see how right now. *)
 let check_univ_leq ?(is_real_arg=false) env u info =
+  let open Sorts.Quality in
   let info = if not is_real_arg then info
     else match info.record_arg_info with
     | NoRelevantArg | HasRelevantArg -> match u with
@@ -102,13 +106,13 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     info
 
   | Prop, SProp -> { info with ind_squashed = Some AlwaysSquashed }
-  | Prop, QSort _ -> { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+  | Prop, QSort _ -> add_squash qprop info
   | Prop, (Prop | Set | Type _) -> info
 
   | Set, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
   | Set, QSort (_, indu) ->
     if UGraph.check_leq (universes env) Universe.type0 indu
-    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+    then add_squash qtype info
     else { info with missing = u :: info.missing }
   | Set, Set -> info
   | Set, Type indu ->
@@ -116,18 +120,19 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     then info
     else { info with missing = u :: info.missing }
 
-  | QSort _, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+  | QSort (q,_), (SProp | Prop) -> add_squash (QVar q) info
   | QSort (cq, uu), QSort (indq, indu) ->
     if UGraph.check_leq (universes env) uu indu
     then begin if Sorts.QVar.equal cq indq then info
-      else { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+      else add_squash (QVar cq) info
     end
     else { info with missing = u :: info.missing }
   | QSort (_, uu), Set ->
     if UGraph.check_leq (universes env) uu Universe.type0
     then info
     else if is_impredicative_set env
-    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+    then (* imprecise but we don't handle complex impredicative set squashings  *)
+      { info with ind_squashed = Some AlwaysSquashed }
     else { info with missing = u :: info.missing }
   | QSort (_,uu), Type indu ->
     if UGraph.check_leq (universes env) uu indu
@@ -143,7 +148,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     else { info with missing = u :: info.missing }
   | Type uu, QSort (_, indu) ->
     if UGraph.check_leq (universes env) uu indu
-    then { info with ind_squashed = Some AlwaysSquashed } (* imprecise *)
+    then add_squash qtype info
     else { info with missing = u :: info.missing }
   | Type uu, Type indu ->
     if UGraph.check_leq (universes env) uu indu
