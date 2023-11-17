@@ -31,30 +31,63 @@ struct
 
   type 'a _map =
   | MEmpty
-  | MNode of 'a map * int * 'a * 'a map * int
+  | MNode of {l:'a map; v:int; d:'a; r:'a map; h:int}
 
   let map_prj : 'a map -> 'a _map = Obj.magic
+  let map_inj : 'a _map -> 'a map = Obj.magic
 
   let rec find i s = match map_prj s with
   | MEmpty -> raise Not_found
-  | MNode (l, k, v, r, h) ->
-    if i < k then find i l
-    else if i = k then v
+  | MNode {l; v; d; r; h} ->
+    if i < v then find i l
+    else if i = v then d
     else find i r
 
   let rec get i s = match map_prj s with
   | MEmpty -> assert false
-  | MNode (l, k, v, r, h) ->
-    if i < k then get i l
-    else if i = k then v
+  | MNode {l; v; d; r; h} ->
+    if i < v then get i l
+    else if i = v then d
     else get i r
 
   let rec find_opt i s = match map_prj s with
   | MEmpty -> None
-  | MNode (l, k, v, r, h) ->
-    if i < k then find_opt i l
-    else if i = k then Some v
+  | MNode {l; v; d; r; h} ->
+    if i < v then find_opt i l
+    else if i = v then Some d
     else find_opt i r
+
+  let rec set k v (s : 'a map) : 'a map = match map_prj s with
+  | MEmpty -> raise Not_found
+  | MNode {l; v=k'; d=v'; r; h} ->
+    if k < k' then
+      let l' = set k v l in
+      if l == l' then s
+      else map_inj (MNode {l=l'; v=k'; d=v'; r; h})
+    else if k = k' then
+      if v' == v then s
+      else map_inj (MNode {l; v=k'; d=v; r; h})
+    else
+      let r' = set k v r in
+      if r == r' then s
+      else map_inj (MNode {l; v=k'; d=v'; r=r'; h})
+
+  let rec modify k f (s : 'a map) : 'a map = match map_prj s with
+  | MEmpty -> raise Not_found
+  | MNode {l; v; d; r; h} ->
+    if k < v then
+      let l' = modify k f l in
+      if l == l' then s
+      else map_inj (MNode {l=l'; v; d; r; h})
+    else if k = v then
+      let d' = f v d in
+      if d' == d then s
+      else map_inj (MNode {l; v; d=d'; r; h})
+    else
+      let r' = modify k f r in
+      if r == r' then s
+      else map_inj (MNode {l; v; d; r=r'; h})
+
 end
 
 module List = struct
