@@ -343,6 +343,10 @@ project atbr "https://github.com/coq-community/atbr" "master"
 # perennial
 ########################################################################
 project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
+# PRs to fix Perennial failures should be submitted against the Perennial
+# `master` branch. `coq/tested` is automatically updated every night to the
+# `master` branch if CI on `master` is green. This is to avoid breaking Coq CI
+# when Perennial CI breaks.
 
 ########################################################################
 # metacoq
