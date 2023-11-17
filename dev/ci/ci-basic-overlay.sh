@@ -83,8 +83,11 @@ project corn "https://github.com/coq-community/corn" "master"
 # Iris
 ########################################################################
 
-# NB: stdpp and Iris refs are gotten from the opam files in the Iris
-# and iris_examples repos respectively.
+# NB: stdpp and Iris refs are gotten from the opam files in the Iris and
+# iris_examples repos respectively. So just getting a fix landed in stdpp or
+# Iris is not enough. Ping @RalfJung and @robbertkrebbers if you need the
+# versions of stdpp or Iris to be bumped. Perennial also has its own pinned
+# versions of stdpp and Iris; ping @tchajed and @zeldovich to get that bumped.
 project stdpp "https://gitlab.mpi-sws.org/iris/stdpp" ""
 
 project iris "https://gitlab.mpi-sws.org/iris/iris" ""
