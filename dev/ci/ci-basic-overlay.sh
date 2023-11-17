@@ -84,7 +84,7 @@ project corn "https://github.com/coq-community/corn" "master"
 ########################################################################
 
 # NB: stdpp and Iris refs are gotten from the opam files in the Iris
-# and lambdaRust repos respectively.
+# and iris_examples repos respectively.
 project stdpp "https://gitlab.mpi-sws.org/iris/stdpp" ""
 
 project iris "https://gitlab.mpi-sws.org/iris/iris" ""
