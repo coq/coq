@@ -59,9 +59,13 @@ val binding_kind_eq : binding_kind -> binding_kind -> bool
 val map_glob_constr_left_to_right :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr
 
+val map_glob_constr_left_to_right_with_names :
+  (glob_constr -> glob_constr) -> (Name.t -> Name.t) -> glob_constr -> glob_constr
+
 val warn_variable_collision : ?loc:Loc.t -> Id.t -> unit
 
 val mk_glob_constr_eq : (glob_constr -> glob_constr -> bool) ->
+  (Name.t -> Name.t -> glob_constr option -> glob_constr option -> bool) ->
   glob_constr -> glob_constr -> bool
 
 val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a

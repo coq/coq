@@ -267,3 +267,32 @@ fun z : nat => (z, 1, z, 2)
      : nat -> nat * nat * nat * nat
 fun z : nat => [(!!z) + z]
      : nat -> nat * nat * nat * nat * nat
+uncurryλ a b c => a + b + c
+     : unit * nat * nat * nat -> nat
+fun x : unit * nat * (nat * nat) =>
+match x with
+| (x0, y) =>
+    match y with
+    | (a, b) =>
+        let d := 1 in
+        match x0 with
+        | (x1, c) => let 'tt := x1 in a + b + c + d
+        end
+    end
+end
+     : unit * nat * (nat * nat) -> nat
+fun x : unit * nat * (nat * nat) =>
+match x with
+| (x0, (a, b)) => let d := 1 in match x0 with
+                                | (tt, c) => a + b + c + d
+                                end
+end
+     : unit * nat * (nat * nat) -> nat
+uncurryλ '(a, b) => a + b
+     : unit * (nat * nat) -> nat
+lets a b c := 0 in a + b + c
+     : nat
+let
+'(a, b) := (0, 0) in
+ lets d := 1 in let '(c, e) := (0, 0) in a + b + c + d + e
+     : nat

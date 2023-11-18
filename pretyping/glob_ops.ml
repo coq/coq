@@ -111,10 +111,10 @@ let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | RegularStyle, RegularStyle -> true
   | (LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle), _ -> false
 
-let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
-  | PatVar na1, PatVar na2 -> Name.equal na1 na2
+let rec mk_cases_pattern_eq g p1 p2 = match DAst.get p1, DAst.get p2 with
+  | PatVar na1, PatVar na2 -> g na1 na2
   | PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
-    Construct.CanOrd.equal c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+    Construct.CanOrd.equal c1 c2 && List.equal (mk_cases_pattern_eq g) pl1 pl2 &&
       Name.equal na1 na2
   | (PatVar _ | PatCstr _), _ -> false
 
@@ -136,8 +136,9 @@ let tomatch_tuple_eq f (c1, p1) (c2, p2) =
   let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
   f c1 c2 && eq_pred p1 p2
 
-and cases_clause_eq f {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
-  List.equal Id.equal id1 id2 && List.equal cases_pattern_eq p1 p2 && f c1 c2
+and cases_clause_eq f g {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
+  (* In principle, id1 and id2 canonically derive from p1 and p2 *)
+  List.equal (mk_cases_pattern_eq g) p1 p2 && f c1 c2
 
 let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
   Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
@@ -152,7 +153,7 @@ let fix_kind_eq k1 k2 = match k1, k2 with
 let evar_instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1.CAst.v x2.CAst.v && f c1 c2
 
-let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
+let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->
     GlobRef.CanOrd.equal gr1 gr2 &&
     Option.equal instance_eq u1 u2
@@ -163,20 +164,20 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GApp (f1, arg1), GApp (f2, arg2) ->
     f f1 f2 && List.equal f arg1 arg2
   | GLambda (na1, bk1, t1, c1), GLambda (na2, bk2, t2, c2) ->
-    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
   | GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
-    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
   | GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
-    Name.equal na1 na2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
+    g na1 na2 t1 t2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
   | GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
     case_style_eq st1 st2 && Option.equal f c1 c2 &&
     List.equal (tomatch_tuple_eq f) tp1 tp2 &&
-    List.equal (cases_clause_eq f) cl1 cl2
+    List.equal (cases_clause_eq f (fun na1 na2 -> g na1 na2 None None)) cl1 cl2
   | GLetTuple (na1, (n1, p1), c1, t1), GLetTuple (na2, (n2, p2), c2, t2) ->
-    List.equal Name.equal na1 na2 && Name.equal n1 n2 &&
+    List.equal (fun na1 na2 -> g na1 na2 None None) na1 na2 && g n1 n2 None None &&
     Option.equal f p1 p2 && f c1 c2 && f t1 t2
   | GIf (m1, (pat1, p1), c1, t1), GIf (m2, (pat2, p2), c2, t2) ->
-    f m1 m2 && Name.equal pat1 pat2 &&
+    f m1 m2 && g pat1 pat2 None None &&
     Option.equal f p1 p2 && f c1 c2 && f t1 t2
   | GRec (kn1, id1, decl1, t1, c1), GRec (kn2, id2, decl2, t2, c2) ->
     fix_kind_eq kn1 kn2 && Array.equal Id.equal id1 id2 &&
@@ -202,9 +203,25 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
      GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _ | GCast _ | GProj _ |
      GInt _ | GFloat _ | GArray _), _ -> false
 
-let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
+let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq (fun na1 na2 _ _ -> Name.equal na1 na2) c
 
-let map_glob_constr_left_to_right f = DAst.map (function
+let cases_pattern_eq c = mk_cases_pattern_eq Name.equal c
+
+let rec map_case_pattern_binders f = DAst.map (function
+  | PatVar na as x ->
+      let r = f na in
+      if r == na then x
+      else PatVar r
+  | PatCstr (c,ps,na) as x ->
+      let rna = f na in
+      let rps =
+        CList.Smart.map (fun p -> map_case_pattern_binders f p) ps
+      in
+      if rna == na && rps == ps then x
+      else PatCstr(c,rps,rna)
+  )
+
+let map_glob_constr_left_to_right_with_names f g = DAst.map (function
   | GApp (g,args) ->
       let comp1 = f g in
       let comp2 = Util.List.map_left f args in
@@ -212,36 +229,37 @@ let map_glob_constr_left_to_right f = DAst.map (function
   | GLambda (na,bk,ty,c) ->
       let comp1 = f ty in
       let comp2 = f c in
-      GLambda (na,bk,comp1,comp2)
+      GLambda (g na,bk,comp1,comp2)
   | GProd (na,bk,ty,c) ->
       let comp1 = f ty in
       let comp2 = f c in
-      GProd (na,bk,comp1,comp2)
+      GProd (g na,bk,comp1,comp2)
   | GLetIn (na,b,t,c) ->
       let comp1 = f b in
       let compt = Option.map f t in
       let comp2 = f c in
-      GLetIn (na,comp1,compt,comp2)
+      GLetIn (g na,comp1,compt,comp2)
   | GCases (sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in
-      let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
-      let comp3 = Util.List.map_left (CAst.map (fun (idl,p,c) -> (idl,p,f c))) pl in
+      let comp2 = Util.List.map_left (fun (tm,(x,indxl)) -> (f tm,(g x,Option.map (CAst.map (fun (ind,xl) -> (ind,List.map g xl))) indxl))) tml in
+      let comp3 = Util.List.map_left (CAst.map (fun (idl,p,c) -> (List.map (fun id -> Name.get_id (g (Name id))) idl,List.map (map_case_pattern_binders g) p,f c))) pl in
       GCases (sty,comp1,comp2,comp3)
   | GLetTuple (nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
       let comp2 = f b in
       let comp3 = f c in
-      GLetTuple (nal,(na,comp1),comp2,comp3)
+      GLetTuple (List.map g nal,(g na,comp1),comp2,comp3)
   | GIf (c,(na,po),b1,b2) ->
       let comp1 = Option.map f po in
       let comp2 = f b1 in
       let comp3 = f b2 in
-      GIf (f c,(na,comp1),comp2,comp3)
+      GIf (f c,(g na,comp1),comp2,comp3)
   | GRec (fk,idl,bl,tyl,bv) ->
       let comp1 = Array.map (Util.List.map_left (map_glob_decl_left_to_right f)) bl in
       let comp2 = Array.map f tyl in
       let comp3 = Array.map f bv in
-      GRec (fk,idl,comp1,comp2,comp3)
+      let g id = Name.get_id (g (Name id)) in
+      GRec (fk,Array.map g idl,comp1,comp2,comp3)
   | GCast (c,k,t) ->
       let c = f c in
       let t = f t in
@@ -257,6 +275,8 @@ let map_glob_constr_left_to_right f = DAst.map (function
       GArray (u,comp1,comp2,comp3)
   | (GVar _ | GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) as x -> x
   )
+
+let map_glob_constr_left_to_right f = map_glob_constr_left_to_right_with_names f (fun na -> na)
 
 let map_glob_constr = map_glob_constr_left_to_right
 
@@ -406,20 +426,6 @@ let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
   let r = Option.Smart.map (fun p -> map_inpattern_binders f p) inp in
   if r == inp then x
   else c,(f na, r)
-
-let rec map_case_pattern_binders f = DAst.map (function
-  | PatVar na as x ->
-      let r = f na in
-      if r == na then x
-      else PatVar r
-  | PatCstr (c,ps,na) as x ->
-      let rna = f na in
-      let rps =
-        CList.Smart.map (fun p -> map_case_pattern_binders f p) ps
-      in
-      if rna == na && rps == ps then x
-      else PatCstr(c,rps,rna)
-  )
 
 let map_cases_branch_binders f ({CAst.loc;v=(il,cll,rhs)} as x) : cases_clause =
   (* spiwack: not sure if I must do something with the list of idents.

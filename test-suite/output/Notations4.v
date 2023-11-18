@@ -588,3 +588,36 @@ Notation "( x )" := x (in custom myconstr2 at level 0, x at level 2).
 Check fun z:nat => [(!! z) + z].
 
 End CustomCyclicNotations.
+
+Module RecursivePatternsInMatch.
+
+Remove Printing Let prod.
+Unset Printing Matching.
+
+Notation "'uncurryλ' x1 .. xn => body"
+  := (fun x => match x with (pair x x1) => .. (match x with (pair x xn) => let 'tt := x in body end) .. end)
+     (at level 200, x1 binder, xn binder, right associativity).
+
+Check uncurryλ a b c => a + b + c.
+
+(* Check other forms of binders, but too complex interaction
+    with pattern-matching compaction for printing *)
+Check uncurryλ '(a,b) (d:=1) c => a + b + c + d.
+
+Set Printing Matching.
+Check uncurryλ '(a,b) (d:=1) c => a + b + c + d.
+
+(* This is a case where printing is easy though, relying on pattern-matching compaction *)
+Check uncurryλ '(a,b) => a + b.
+
+Notation "'lets' x1 .. xn := c 'in' body"
+  := (let x1 := c in .. (let xn := c in body) ..)
+     (at level 200, x1 binder, xn binder, right associativity).
+
+Check lets a b c := 0 in a + b + c.
+
+(* Check other forms of binders, but too complex interaction
+    with pattern-matching factorization for printing *)
+Check lets '(a,b) (d:=1) '(c,e) := (0,0) in a + b + c + d + e.
+
+End RecursivePatternsInMatch.

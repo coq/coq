@@ -620,7 +620,8 @@ let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;lo
     | None -> CAst.make ?loc @@ CHole (Some (GBinderType na.v)) in
   let _, bl' = intern_assumption intern ntnvars env [na] (Default bk) t in
   let {v=(_,bk,t)} = List.hd bl' in
-  env,((disjpat,il),id),na,bk,t
+  let il = List.map (fun id -> id.v) il in
+  env,((disjpat,il),id),bk,t
 
 let intern_local_binder_aux intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
@@ -631,8 +632,8 @@ let intern_local_binder_aux intern ntnvars (env,bl) = function
      let env,(na,def,ty) = intern_letin_binder intern ntnvars env (locna,def,ty) in
      env, (DAst.make ?loc @@ GLocalDef (na,def,ty)) :: bl
   | CLocalPattern p ->
-      let env, ((disjpat,il),id),na,bk,t = intern_cases_pattern_as_binder intern test_kind_tolerant ntnvars env Explicit p in
-      (env, (DAst.make ?loc:p.CAst.loc @@ GLocalPattern((disjpat,List.map (fun x -> x.v) il),id,bk,t)) :: bl)
+      let env, ((disjpat,il),id),bk,t = intern_cases_pattern_as_binder intern test_kind_tolerant ntnvars env Explicit p in
+      (env, (DAst.make ?loc:p.CAst.loc @@ GLocalPattern((disjpat,il),id,bk,t)) :: bl)
 
 let intern_generalization intern env ntnvars loc bk c =
   let c = intern {env with strict_check = Some false} c in
@@ -742,20 +743,32 @@ let set_type ty1 ty2 =
     (* An explicitly typed meta-binding binder, not supposed to be a pattern; checked in interp_notation *)
     user_err ?loc:t2.CAst.loc Pp.(str "Unexpected type constraint in notation already providing a type constraint.")
 
-let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) na ty =
+let cook_pattern ((disjpat, ids), id) =
+  let store,get = set_temporary_memory () in
+  let pat, na = match disjpat with
+    | [pat] when is_patvar_store store pat -> let na = get () in None, na.v
+    | _ -> Some ((ids,disjpat),id), Name id in
+  pat, na
+
+let extract_pattern_from_binder b =
+  match DAst.get b with
+  | GLocalDef (n, b, oty) -> user_err ?loc:b.CAst.loc (str "Local definitions not supported here.")
+  | GLocalAssum (na, bk, t) -> None, na, bk, t
+  | GLocalPattern (patl, id, bk, ty) ->
+    let pat, na = cook_pattern (patl, id) in
+    pat, na, bk, ty
+
+let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) binderopt avoid (renaming,env) na ty =
   match na with
   | Anonymous -> (renaming,env), None, Anonymous, Explicit, set_type ty None
   | Name id ->
-  let store,get = set_temporary_memory () in
   let test_kind = test_kind_tolerant in
   try
     (* We instantiate binder name with patterns which may be parsed as terms *)
     let pat = coerce_to_cases_pattern_expr (fst (Id.Map.find id terms)) in
-    let env,((disjpat,ids),id),na,bk,t = intern_pat test_kind ntnvars env Explicit pat in
-    let pat, na = match disjpat with
-    | [pat] when is_patvar_store store pat -> let na = get () in None, na
-    | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na in
-    (renaming,env), pat, na.v, bk, set_type ty (Some t)
+    let env,pat,bk,t = intern_pat test_kind ntnvars env Explicit pat in
+    let pat, na = cook_pattern pat in
+    (renaming,env), pat, na, bk, set_type ty (Some t)
   with Not_found ->
   try
     (* Trying to associate a pattern *)
@@ -769,13 +782,15 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
       (renaming,env), None, na.v, bk, set_type ty (Some ty')
     else
       (* Interpret as a pattern *)
-      let env,((disjpat,ids),id),na,bk,t = intern_pat test_kind ntnvars env bk pat in
-      let pat, na =
-        match disjpat with
-        | [pat] when is_patvar_store store pat -> let na = get () in None, na
-        | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na in
-      (renaming,env), pat, na.v, bk, set_type ty (Some t)
+      let env,pat,bk,t = intern_pat test_kind ntnvars env bk pat in
+      let pat, na = cook_pattern pat in
+      (renaming,env), pat, na, bk, set_type ty (Some t)
   with Not_found ->
+  if option_mem_assoc id binderopt then
+    let binder = snd (Option.get binderopt) in
+    let pat, na, bk, t = extract_pattern_from_binder binder in
+    (renaming,env), pat, na, bk, set_type ty (Some t)
+  else
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let id' = find_fresh_name renaming subst avoid id in
@@ -927,7 +942,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         let test_kind =
           if onlyident then test_kind_ident_in_notation
           else test_kind_pattern_in_notation in
-        let _,((disjpat,_),_),_,_,_ty = intern_pat test_kind ntnvars nenv Explicit c in
+        let _,((disjpat,_),_),_,_ty = intern_pat test_kind ntnvars nenv Explicit c in
         (* TODO: use cast? *)
         match disjpat with
         | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat)
@@ -960,7 +975,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         expand_binders ?loc mkGLambda [binder] (aux subst' (renaming,env) c')
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
-        (traverse_binder intern_pat ntnvars subst avoid) (aux subst') ~h:binder_status_fun subinfos t
+        (traverse_binder intern_pat ntnvars subst binderopt avoid) (aux subst') ~h:binder_status_fun subinfos t
   and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
@@ -974,7 +989,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       let test_kind =
         if onlyident then test_kind_ident_in_notation
         else test_kind_pattern_in_notation in
-      let env,((disjpat,ids),id),na,bk,_ty = intern_pat test_kind ntnvars env bk pat in
+      let env,((disjpat,ids),id),bk,_ty = intern_pat test_kind ntnvars env bk pat in
       (* TODO: use cast? *)
       match disjpat with
       | [pat] -> glob_constr_of_cases_pattern (Global.env()) pat

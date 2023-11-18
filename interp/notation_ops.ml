@@ -335,18 +335,13 @@ let subst_binder_type_vars l = function
 
 let rec subst_glob_vars l gc = DAst.map (function
   | GVar id as r -> (try DAst.get (Id.List.assoc id l) with Not_found -> r)
-  | GProd (Name id,bk,t,c) ->
-      let id =
-        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
-        with Not_found -> id in
-      GProd (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
-  | GLambda (Name id,bk,t,c) ->
-      let id =
-        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
-        with Not_found -> id in
-      GLambda (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | GHole x -> GHole (subst_binder_type_vars l x)
-  | _ -> DAst.get (map_glob_constr (subst_glob_vars l) gc) (* assume: id is not binding *)
+  | _ ->
+    let g =
+      Name.map (fun id ->
+          try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
+          with Not_found -> id) in
+    DAst.get (map_glob_constr_left_to_right_with_names (subst_glob_vars l) g gc) (* assume: id is not binding *)
   ) gc
 
 type 'a binder_status_fun = {
@@ -540,7 +535,9 @@ let subtract_loc loc1 loc2 =
   let l2 = fst (Option.cata Loc.unloc (0,0) loc2) in
   Some (Loc.make_loc (l1,l2-1))
 
-let check_is_hole id t = match DAst.get t with GHole _ -> () | _ ->
+let check_is_hole id = function
+  | None -> ()
+  | Some t -> match DAst.get t with GHole _ -> () | _ ->
   user_err ?loc:(loc_of_glob_constr t)
    (strbrk "In recursive notation with binders, " ++ Id.print id ++
     strbrk " is expected to come without type.")
@@ -564,6 +561,27 @@ type recursive_pattern_kind =
 let compare_recursive_parts recvars found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
+  let treat_binder ?loc x y t_x t_y =
+    match x, y with
+    | Name x, Name y when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
+      (* We found a binding position where it differs *)
+      check_is_hole x t_x;
+      check_is_hole y t_y;
+      let revert = mem_recursive_pair (y,x) recvars in
+      let x,y = if revert then y,x else x,y in
+      begin match !diff with
+      | None -> diff := Some (x, y, RecursiveBinders revert)
+      | Some (x', y', RecursiveBinders revert') ->
+        check_pair_matching ?loc x y x' y' revert revert'
+      | Some (x', y', RecursiveTerms revert') ->
+        (* Recursive binders have precedence: they can be coerced to
+           terms but not reciprocally *)
+        check_pair_matching ?loc x y x' y' revert revert';
+        diff := Some (x, y, RecursiveBinders revert)
+      end;
+      true
+    | _ -> Name.equal x y
+  in
   let rec aux c1 c2 = match DAst.get c1, DAst.get c2 with
   | GVar v, term when Id.equal v ldots_var ->
       (* We found the pattern *)
@@ -578,7 +596,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
       assert (match !terminator with None -> true | Some _ -> false);
       terminator := Some term;
       List.for_all2eq aux l1 l2
-    | _ -> mk_glob_constr_eq aux c1 c2
+    | _ -> mk_glob_constr_eq aux (treat_binder ?loc:c1.CAst.loc) c1 c2
     end
   | GVar x, GVar y
         when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
@@ -594,30 +612,8 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
         true
       end
-  | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
-  | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term)
-        when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
-      (* We found a binding position where it differs *)
-      check_is_hole x t_x;
-      check_is_hole y t_y;
-      let revert = mem_recursive_pair (y,x) recvars in
-      let x,y = if revert then y,x else x,y in
-      begin match !diff with
-      | None ->
-        let () = diff := Some (x, y, RecursiveBinders revert) in
-        aux c term
-      | Some (x', y', RecursiveBinders revert') ->
-        check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
-        aux c term
-      | Some (x', y', RecursiveTerms revert') ->
-        (* Recursive binders have precedence: they can be coerced to
-           terms but not reciprocally *)
-        check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
-        let () = diff := Some (x, y, RecursiveBinders revert) in
-        aux c term
-      end
   | _ ->
-      mk_glob_constr_eq aux c1 c2 in
+      mk_glob_constr_eq aux (treat_binder ?loc:c1.CAst.loc) c1 c2 in
   if aux iterator subc then
     match !diff with
     | None ->
@@ -986,6 +982,10 @@ let is_onlybinding_meta id metas =
   try match Id.List.assoc id metas with NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
+let is_onlybindinglist_meta id metas =
+  try match Id.List.assoc id metas with NtnTypeBinderList _ -> true | _ -> false
+  with Not_found -> false
+
 let is_onlybinding_pattern_like_meta isvar id metas =
   try match Id.List.assoc id metas with
     | NtnTypeBinder (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern)) -> true
@@ -1318,8 +1318,17 @@ let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1
   match DAst.get pat1, DAst.get pat2 with
   | PatVar _, PatVar (Name id2) when is_onlybinding_pattern_like_meta true id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
+  | PatVar id1, PatVar (Name id2) when is_onlybindinglist_meta id2 metas ->
+      let t1 = DAst.make @@ GHole(GBinderType id1) in
+      bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalAssum (id1,Explicit,t1)]
   | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta false id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
+  | _, PatVar (Name id2) when is_onlybindinglist_meta id2 metas ->
+      (* dummy data; should not be used anyway *)
+      let id1 = Namegen.next_ident_away (Id.of_string "x") Id.Set.empty in
+      let t1 = DAst.make @@ GHole(GBinderType (Name id1)) in
+      let ids1 = [] in
+      bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalPattern (([pat1],ids1),id1,Explicit,t1)]
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
@@ -1483,11 +1492,12 @@ let rec match_ inner u alp metas sigma a1 a2 =
      match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
      match_extended_binders (not inner) u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
-  | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
-  | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
+  | GLetIn (na1,b1,t1,c1), NLetIn (na2,b2,None,c2)
+  | GLetIn (na1,b1,(None as t1),c1), NLetIn (na2,b2,_,c2) ->
+     let t = match t1 with Some t -> t | None -> DAst.make @@ GHole(GBinderType na1) in
+     match_extended_binders false u alp metas na1 na2 Explicit t (match_in u alp metas sigma b1 b2) c1 c2
   | GLetIn (na1,b1,Some t1,c1), NLetIn (na2,b2,Some t2,c2) ->
-     match_binders u alp metas na1 na2
+     match_extended_binders false u alp metas na1 na2 Explicit t1
        (match_in u alp metas (match_in u alp metas sigma b1 b2) t1 t2) c1 c2
   | GCases (sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
       when sty1 == sty2 && Int.equal (List.length tml1) (List.length tml2) ->
