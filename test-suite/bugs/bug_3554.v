@@ -1,2 +1,2 @@
-Example foo (f : forall {_ : Type}, Type) : Type.
+Example foo (f : forall {A : Type}, Type) : Type.
 Abort.

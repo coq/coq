@@ -155,7 +155,7 @@ Check let f := fun [x:nat] y => y=true in f false.
 
 (* Isn't the name "arg_1" a bit fragile, here? *)
 
-Check fun f : forall {_:nat}, nat => f (arg_1:=0).
+Check fun f : forall {n:nat}, nat => f (n:=0).
 
 (* This test was wrongly warning/failing at some time *)
 
