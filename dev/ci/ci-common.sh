@@ -93,8 +93,9 @@ set -x
 # in [$CI_BUILD_DIR/project] if the folder does not exist already;
 # if it does, it will do nothing except print a warning (this can be
 # useful when building locally).
-# Note: when $FORCE_GIT is set to 1 or when $CI is unset or empty
+# Note: when there is an overlay, $WITH_SUBMODULES is set to 1 or $CI is unset or empty
 # (local build), it uses git clone to perform the download.
+# If $CI is nonempty it then removes the .git (to reduce artifact size)
 git_download()
 {
   local project=$1
@@ -134,6 +135,9 @@ git_download()
     fi
     if [ "$WITH_SUBMODULES" = 1 ]; then
         git submodule update --init --recursive
+    fi
+    if [ "$CI" ]; then
+        rm -rf .git
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency
