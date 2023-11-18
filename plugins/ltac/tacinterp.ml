@@ -421,7 +421,7 @@ let interp_reference ist env sigma = function
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
   match v with
-  | LocalDef _ -> EvalVarRef id
+  | LocalDef _ -> Evaluable.EvalVarRef id
   | _ -> error_not_evaluable (GlobRef.VarRef id)
 
 let interp_evaluable ist env sigma = function
@@ -431,7 +431,7 @@ let interp_evaluable ist env sigma = function
       try try_interp_evaluable env (loc, id)
       with Not_found as exn ->
         match r with
-        | EvalConstRef _ -> r
+        | Evaluable.EvalConstRef _ -> r
         | _ ->
           let _, info = Exninfo.capture exn in
           Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)

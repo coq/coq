@@ -192,10 +192,9 @@ let flatten_contravariant_disj _ ist =
   | _ -> fail
 
 let evalglobref_of_globref =
-  let open Tacred in
   function
-  | GlobRef.VarRef v -> EvalVarRef v
-  | GlobRef.ConstRef c -> EvalConstRef c
+  | GlobRef.VarRef v -> Evaluable.EvalVarRef v
+  | GlobRef.ConstRef c -> Evaluable.EvalConstRef c
   | GlobRef.IndRef _ | GlobRef.ConstructRef _ -> assert false
 
 let make_unfold name =

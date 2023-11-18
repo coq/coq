@@ -303,8 +303,8 @@ let short_name strict qid =
   else None
 
 let evalref_of_globref ?loc ?short = function
-  | GlobRef.ConstRef cst -> ArgArg (Tacred.EvalConstRef cst, short)
-  | GlobRef.VarRef id -> ArgArg (Tacred.EvalVarRef id, short)
+  | GlobRef.ConstRef cst -> ArgArg (Evaluable.EvalConstRef cst, short)
+  | GlobRef.VarRef id -> ArgArg (Evaluable.EvalVarRef id, short)
   | r ->
     let tpe = match r with
     | GlobRef.IndRef _ -> "inductive"

@@ -989,6 +989,8 @@ struct
 
 end
 
+module PRmap = HMap.Make(Projection.Repr.CanOrd)
+module PRset = PRmap.Set
 module PRpred = Predicate.Make(Projection.Repr.CanOrd)
 
 module GlobRefInternal = struct
@@ -1104,3 +1106,28 @@ type lname = Name.t CAst.t
 type lstring = string CAst.t
 
 let lident_eq = CAst.eq Id.equal
+
+(** Evaluable references (whose transparency can be controlled) *)
+
+module Evaluable = struct
+  type t =
+    | EvalVarRef of Id.t
+    | EvalConstRef of Constant.t
+    | EvalProjectionRef of Projection.Repr.t
+
+  let map fvar fcst fprj = function
+    | EvalVarRef v -> EvalVarRef (fvar v)
+    | EvalConstRef c -> EvalConstRef (fcst c)
+    | EvalProjectionRef p -> EvalProjectionRef (fprj p)
+
+  let equal er1 er2 =
+    er1 == er2 ||
+    match er1, er2 with
+    | EvalVarRef v1, EvalVarRef v2 ->
+        Id.equal v1 v2
+    | EvalConstRef c1, EvalConstRef c2 ->
+        Constant.CanOrd.equal c1 c2
+    | EvalProjectionRef p1, EvalProjectionRef p2 ->
+        Projection.Repr.CanOrd.equal p1 p2
+    | _ -> false
+end

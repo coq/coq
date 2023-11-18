@@ -1268,7 +1268,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
                       tclTHENLIST
                         [ unfold_in_concl
                             [ ( Locus.AllOccurrences
-                              , Tacred.EvalConstRef (fst fname) ) ]
+                              , Evaluable.EvalConstRef (fst fname) ) ]
                         ; (let do_prove =
                              build_proof interactive_proof
                                (Array.to_list fnames)

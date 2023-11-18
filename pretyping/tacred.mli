@@ -17,20 +17,13 @@ open Pattern
 open Locus
 open Ltac_pretype
 
-(* XXX: Move to a module *)
-type evaluable_global_reference =
-  | EvalVarRef of Id.t
-  | EvalConstRef of Constant.t
-
-val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
-
 (** Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"
    where X.t is later on instantiated with y? I choose the first
    interpretation (i.e. an evaluable reference is never expanded). *)
 val subst_evaluable_reference :
-  Mod_subst.substitution -> evaluable_global_reference -> evaluable_global_reference
+  Mod_subst.substitution -> Evaluable.t -> Evaluable.t
 
 type reduction_tactic_error =
     InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
@@ -41,16 +34,16 @@ exception ReductionTacticError of reduction_tactic_error
 
 (** Evaluable global reference *)
 
-val is_evaluable : Environ.env -> evaluable_global_reference -> bool
+val is_evaluable : Environ.env -> Evaluable.t -> bool
 
 exception NotEvaluableRef of GlobRef.t
 val error_not_evaluable : GlobRef.t -> 'a
 
 val evaluable_of_global_reference :
-  Environ.env -> GlobRef.t -> evaluable_global_reference
+  Environ.env -> GlobRef.t -> Evaluable.t
 
 val global_of_evaluable_reference :
-  evaluable_global_reference -> GlobRef.t
+  Evaluable.t -> GlobRef.t
 
 (** Red (returns None if nothing reducible) *)
 val red_product : env -> evar_map -> constr -> constr option
@@ -70,7 +63,7 @@ val hnf_constr0 : reduction_function
 
 (** Unfold *)
 val unfoldn :
-  (occurrences * evaluable_global_reference) list ->  reduction_function
+  (occurrences * Evaluable.t) list ->  reduction_function
 
 (** Fold *)
 val fold_commands : constr list ->  reduction_function

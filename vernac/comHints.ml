@@ -76,10 +76,9 @@ let warn_deprecated_hint_constr =
  *)
 let soft_evaluable =
   let open GlobRef in
-  let open Tacred in
   function
-  | ConstRef c -> EvalConstRef c
-  | VarRef id -> EvalVarRef id
+  | ConstRef c -> Evaluable.EvalConstRef c
+  | VarRef id -> Evaluable.EvalVarRef id
   | (IndRef _ | ConstructRef _) as r -> Tacred.error_not_evaluable r
 
 let interp_hints ~poly h =

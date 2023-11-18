@@ -912,13 +912,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
+                    , Evaluable.EvalVarRef (destVar sigma args.(1)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
+                           , Evaluable.EvalVarRef (destVar sigma args.(1)) ) ]
                          (destVar sigma args.(1), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -931,13 +931,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
+                    , Evaluable.EvalVarRef (destVar sigma args.(2)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
+                           , Evaluable.EvalVarRef (destVar sigma args.(2)) ) ]
                          (destVar sigma args.(2), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -1145,7 +1145,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
             else
               unfold_in_concl
                 [ ( Locus.AllOccurrences
-                  , Tacred.EvalConstRef
+                  , Evaluable.EvalConstRef
                       (fst (destConst (Proofview.Goal.sigma g) f)) ) ]
           in
           (* The proof of each branche itself *)

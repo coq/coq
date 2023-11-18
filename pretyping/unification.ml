@@ -502,29 +502,29 @@ let subterm_restriction opt flags =
 let key_of env sigma b flags f =
   if subterm_restriction b flags then None else
   match EConstr.kind sigma f with
-  | Const (cst, u) when is_transparent env (ConstKey cst) &&
+  | Const (cst, u) when is_transparent env (Evaluable.EvalConstRef cst) &&
       (TransparentState.is_transparent_constant flags.modulo_delta cst
        || PrimitiveProjections.mem cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
-  | Var id when is_transparent env (VarKey id) &&
+  | Var id when is_transparent env (Evaluable.EvalVarRef id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
   | Proj (p, r, c) when Names.Projection.unfolded p
-    || (is_transparent env (ConstKey (Projection.constant p)) &&
-       (TransparentState.is_transparent_constant flags.modulo_delta (Projection.constant p))) ->
+    || (is_transparent env (Evaluable.EvalProjectionRef (Projection.repr p)) &&
+       (TransparentState.is_transparent_projection flags.modulo_delta (Projection.repr p))) ->
     Some (IsProj (p, r, c))
   | _ -> None
 
 
 let translate_key = function
-  | ConstKey (cst,u) -> ConstKey cst
-  | VarKey id -> VarKey id
-  | RelKey n -> RelKey n
+  | ConstKey (cst,u) -> Some (Evaluable.EvalConstRef cst)
+  | VarKey id -> Some (Evaluable.EvalVarRef id)
+  | RelKey _ -> None
 
 let translate_key = function
   | IsKey k -> translate_key k
-  | IsProj (c, _, _) -> ConstKey (Projection.constant c)
+  | IsProj (p, _, _) -> Some (Evaluable.EvalProjectionRef (Projection.repr p))
 
 let oracle_order env cf1 cf2 =
   match cf1 with
@@ -544,7 +544,7 @@ let oracle_order env cf1 cf2 =
           when Environ.QConstant.equal env p (Projection.constant p') ->
           Some (Projection.unfolded p')
         | _ ->
-          Some (Conv_oracle.oracle_order (fun x -> x)
+          Some (Conv_oracle.oracle_order
                   (Environ.oracle env) false (translate_key k1) (translate_key k2))
 
 let is_rigid_head sigma flags t =
@@ -639,11 +639,11 @@ let rec is_neutral env sigma ts t =
     match EConstr.kind sigma f with
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
-      not (is_transparent env (ConstKey c)) ||
+      not (is_transparent env (Evaluable.EvalConstRef c)) ||
       not (TransparentState.is_transparent_constant ts c)
     | Var id ->
       not (Environ.evaluable_named id env) ||
-      not (is_transparent env (VarKey id)) ||
+      not (is_transparent env (Evaluable.EvalVarRef id)) ||
       not (TransparentState.is_transparent_variable ts id)
     | Rel n -> true
     | Evar _ | Meta _ -> true

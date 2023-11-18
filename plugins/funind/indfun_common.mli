@@ -95,7 +95,7 @@ val acc_rel : EConstr.constr Util.delayed
 val well_founded : EConstr.constr Util.delayed
 
 val evaluable_of_global_reference :
-  GlobRef.t -> Tacred.evaluable_global_reference
+  GlobRef.t -> Evaluable.t
 
 val list_rewrite : bool -> (EConstr.constr * bool) list -> unit Proofview.tactic
 
