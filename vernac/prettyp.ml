@@ -242,7 +242,7 @@ let needs_extra_scopes ref scopes =
 
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
-  | Some imp -> pi1 imp.impl_pos, if imp.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | Some imp -> name_of_argument imp.impl_pos, if imp.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -315,7 +315,7 @@ let print_arguments ref =
     with Not_found ->
       let env = Global.env () in
       let ty, _ = Typeops.type_of_global_in_context env ref in
-      List.map pi1 (Impargs.compute_implicits_names env (Evd.from_env env) (EConstr.of_constr ty)), true in
+      List.map name_of_argument (Impargs.compute_implicits_names env (Evd.from_env env) (EConstr.of_constr ty)), true in
   let scopes = Notation.find_arguments_scope ref in
   let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in

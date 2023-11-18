@@ -348,7 +348,7 @@ let warn_shadowed_implicit_name =
     Pp.(fun (na,id) -> str "Renaming shadowed implicit argument name to " ++ Id.print id ++ str ".")
 
 let exists_id id l =
-  List.exists (function Some { impl_pos = (Name id', _, _) } -> Id.equal id id' | _ -> false) l
+  List.exists (function Some { impl_pos = { arg_explicitation = ByName (id', _) } } -> Id.equal id id' | _ -> false) l
 
 let build_impls ?loc n bk na acc =
   let impl_status max =
@@ -356,7 +356,7 @@ let build_impls ?loc n bk na acc =
       match na with
       | Name id ->
         if exists_id id acc then
-          let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = (Name id,_,_) } -> Some id | _ -> None) acc) in
+          let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = { arg_explicitation = ByName (id,_) } } -> Some id | _ -> None) acc) in
           let id = next_name_away na avoid in
           begin warn_shadowed_implicit_name ?loc (na,id); id end
         else id
@@ -365,7 +365,7 @@ let build_impls ?loc n bk na acc =
         user_err ?loc (str "Local implicit argument requires a name.")
     in
     Some {
-      impl_pos = (na, n, ExplByName id);
+      impl_pos = { arg_explicitation = ByName (id,None); arg_absolute_pos = n };
       impl_expl = Manual;
       impl_max = max;
       impl_force = true
@@ -2097,7 +2097,7 @@ let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && match_implicit imp (ExplByName id))
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (_, _, ExplByName id) } -> Some id | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = { arg_explicitation = ByName (id,_) } } -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2106,7 +2106,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (_, _, ExplByPos n) } -> Some n | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = { arg_explicitation = ByNonDepPos n } } -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->

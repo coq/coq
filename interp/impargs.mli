@@ -68,10 +68,17 @@ type maximal_insertion = bool (** true = maximal contextual insertion *)
 
 type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
-type implicit_position = Name.t * int * Evar_kinds.explicitation
+type argument_explicitation =
+  | ByName of Id.t * int option (* Named and optionally non-dependent *)
+  | ByNonDepPos of int (* [n]-th non-dependent arg (implicit or not) *)
+
+type argument_denotation = {
+  arg_absolute_pos : int;
+  arg_explicitation : argument_explicitation;
+}
 
 type implicit_status_info = {
-  impl_pos : implicit_position;
+  impl_pos : argument_denotation;
   impl_expl : implicit_explanation;
   impl_max : maximal_insertion;
   impl_force : force_inference;
@@ -92,7 +99,7 @@ val match_implicit : ?warn:bool -> implicit_status -> Evar_kinds.explicitation -
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
 val is_nondep_implicit : int -> implicit_status list -> bool
-val explicitation : implicit_status -> Evar_kinds.explicitation
+(*val explicitation : implicit_status -> Evar_kinds.explicitation*)
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -103,7 +110,8 @@ type manual_implicits = (Name.t * bool) option CAst.t list
 val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
   manual_implicits -> implicit_status list
 
-val compute_implicits_names : env -> Evd.evar_map -> types -> implicit_position list
+val compute_implicits_names : env -> Evd.evar_map -> types -> argument_denotation list
+val name_of_argument : argument_denotation -> Name.t
 
 (** {6 Computation of implicits (done using the global environment). } *)
 

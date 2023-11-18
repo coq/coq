@@ -204,7 +204,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
     in
     let id = Id.of_string "recproof" in
     let impl = Some Impargs.{
-      impl_pos = (Name id, 1, Evar_kinds.ExplByName id);
+      impl_pos = { arg_explicitation = ByName (id,None); arg_absolute_pos = 1 };
       impl_expl = Manual;
       impl_max = true;
       impl_force = false;
