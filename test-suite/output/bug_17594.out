@@ -2,7 +2,7 @@
 3
 2
 3
-File "./output/bug_17594.v", line 8, characters 2-102:
+File "./output/bug_17594.v", line 12, characters 19-20:
 The command has indeed failed with message:
 The term "0" has type "nat" while it is expected to have type "True".
 1
@@ -16,7 +16,7 @@ The term "0" has type "nat" while it is expected to have type "True".
 3
 2
 3
-File "./output/bug_17594.v", line 19, characters 2-115:
+File "./output/bug_17594.v", line 23, characters 19-20:
 The command has indeed failed with message:
 The term "0" has type "nat" while it is expected to have type "True".
 1

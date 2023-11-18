@@ -32,6 +32,18 @@ let constr_flags =
     polymorphic = false;
   }
 
+let open_constr_use_classes_flags =
+  let open Pretyping in
+  {
+  use_coercions = true;
+  use_typeclasses = Pretyping.UseTC;
+  solve_unification_constraints = true;
+  fail_evar = false;
+  expand_evars = true;
+  program_mode = false;
+  polymorphic = false;
+  }
+
 let open_constr_no_classes_flags =
   let open Pretyping in
   {
@@ -749,23 +761,22 @@ let () =
     throw err_notfocussed
 
 (** preterm -> constr *)
+let () = define "constr_flags" (ret (repr_ext val_pretype_flags)) constr_flags
+
+let () = define "open_constr_flags" (ret (repr_ext val_pretype_flags)) open_constr_use_classes_flags
+
+let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
+
+let () = define "expected_oftype" (constr @-> ret (repr_ext val_expected_type)) @@ fun c ->
+  OfType c
+
+let () = define "expected_without_type_constraint" (ret (repr_ext val_expected_type))
+    WithoutTypeConstraint
+
 let () =
-  define "constr_pretype" (repr_ext val_preterm @-> tac constr) @@ fun c ->
-  let open Pretyping in
-  let open Ltac_pretype in
+  define "constr_pretype" (repr_ext val_pretype_flags @-> repr_ext val_expected_type @-> repr_ext val_preterm @-> tac constr) @@ fun flags expected_type c ->
   let pretype env sigma =
-    (* For now there are no primitives to create preterms with a non-empty
-       closure. I do not know whether [closed_glob_constr] is really the type
-       we want but it does not hurt in the meantime. *)
-    let { closure; term } = c in
-    let vars = {
-      ltac_constrs = closure.typed;
-      ltac_uconstrs = closure.untyped;
-      ltac_idents = closure.idents;
-      ltac_genargs = closure.genargs;
-    } in
-    let flags = constr_flags in
-    let sigma, t = understand_ltac flags env sigma vars WithoutTypeConstraint term in
+    let sigma, t = Pretyping.understand_uconstr ~flags ~expected_type env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
   in
   pf_apply ~catch_exceptions:true pretype
