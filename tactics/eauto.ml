@@ -379,16 +379,17 @@ let gen_eauto ?debug ?depth lems dbs =
   let dbs = match dbs with None -> current_pure_db () | Some dbs -> make_db_list dbs in
   eauto_with_bases ?debug ?depth lems dbs
 
-let autounfolds ids csts gl cls =
-  let open Tacred in
+let autounfolds ids csts prjs gl cls =
   let hyps = Tacmach.pf_ids_of_hyps gl in
   let env = Tacmach.pf_env gl in
   let ids = List.filter (fun id -> List.mem id hyps && Tacred.is_evaluable env (EvalVarRef id)) ids in
   let csts = List.filter (fun cst -> Tacred.is_evaluable env (EvalConstRef cst)) csts in
+  let prjs = List.filter (fun p -> Tacred.is_evaluable env (EvalProjectionRef p)) prjs in
   let flags =
-    List.fold_left (fun flags cst -> RedFlags.(red_add flags (fCONST cst)))
-      (List.fold_left (fun flags id -> RedFlags.(red_add flags (fVAR id)))
-         (RedFlags.red_add_transparent RedFlags.all TransparentState.empty) ids) csts
+    let flags = RedFlags.red_add_transparent RedFlags.all TransparentState.empty in
+    let flags = List.fold_left (fun flags id -> RedFlags.(red_add flags (fVAR id))) flags ids in
+    let flags = List.fold_left (fun flags cst -> RedFlags.(red_add flags (fCONST cst))) flags csts in
+    List.fold_left (fun flags p -> RedFlags.(red_add flags (fPROJ p))) flags prjs
   in reduct_option ~check:false (Reductionops.clos_norm_flags flags, DEFAULTcast) cls
 
 let cons a l = a :: l
@@ -398,16 +399,16 @@ exception UnknownDatabase of string
 let autounfold db cls =
   if not (Locusops.clause_with_generic_occurrences cls) then
     user_err (str "\"at\" clause not supported.");
-  match List.fold_left (fun (ids, csts) dbname ->
+  match List.fold_left (fun (ids, csts, prjs) dbname ->
     let db = try searchtable_map dbname
       with Not_found -> raise (UnknownDatabase dbname)
     in
-    let (db_ids, db_csts) = Hint_db.unfolds db in
-    (Id.Set.fold cons db_ids ids, Cset.fold cons db_csts csts)) ([], []) db
+    let (db_ids, db_csts, db_prjs) = Hint_db.unfolds db in
+    (Id.Set.fold cons db_ids ids, Cset.fold cons db_csts csts, PRset.fold cons db_prjs prjs)) ([], [], []) db
   with
-  | (ids, csts) -> Proofview.Goal.enter begin fun gl ->
+  | (ids, csts, prjs) -> Proofview.Goal.enter begin fun gl ->
       let cls = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps gl) cls in
-      let tac = autounfolds ids csts gl in
+      let tac = autounfolds ids csts prjs gl in
       Tacticals.tclMAP (function
       | OnHyp (id, _, where) -> tac (Some (id, where))
       | OnConcl _ -> tac None) cls
@@ -423,7 +424,8 @@ let autounfold_tac db cls =
   in
   autounfold dbs cls
 
-let unfold_head env sigma (ids, csts) c =
+let unfold_head env sigma (ids, csts, prjs) c =
+  (* TODO use prjs *)
   let rec aux c =
     match EConstr.kind sigma c with
     | Var id when Id.Set.mem id ids ->
@@ -462,12 +464,12 @@ let autounfold_one db cl =
   let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
   let st =
-    List.fold_left (fun (i,c) dbname ->
+    List.fold_left (fun (i,c,p) dbname ->
       let db = try searchtable_map dbname
         with Not_found -> user_err (str "Unknown database " ++ str dbname ++ str ".")
       in
-      let (ids, csts) = Hint_db.unfolds db in
-        (Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
+      let (ids, csts, prjs) = Hint_db.unfolds db in
+        (Id.Set.union ids i, Cset.union csts c, PRset.union prjs p)) (Id.Set.empty, Cset.empty, PRset.empty) db
   in
   let did, c' = unfold_head env sigma st
     (match cl with Some (id, _) -> Tacmach.pf_get_hyp_typ id gl | None -> concl)

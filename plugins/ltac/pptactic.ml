@@ -191,8 +191,9 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_and_short_name pr (c,_) = pr c
 
   let pr_evaluable_reference = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Evaluable.EvalVarRef id -> pr_id id
+    | Evaluable.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Evaluable.EvalProjectionRef p -> str "TODO projection" (* TODO *)
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
@@ -381,9 +382,11 @@ let string_of_genarg_arg (ArgumentType arg) =
         str "<" ++ KerName.print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp ->
+    | Evaluable.EvalVarRef id -> pr_id id
+    | Evaluable.EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
+    | Evaluable.EvalProjectionRef p ->
+      str "TODO projection" (* TODO *)
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++

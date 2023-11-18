@@ -881,7 +881,7 @@ let declare_class_constant ~univs paramimpls params data =
   Impargs.declare_manual_implicits false cref paramimpls;
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
-    [Tacred.EvalConstRef cst] false;
+    [Evaluable.EvalConstRef cst] false;
   let () =
     declare_proj_coercion_instance ~flags:proj_flags (GlobRef.ConstRef proj_cst) cref ~with_coercion:false in
   let m = {
@@ -976,7 +976,7 @@ let add_constant_class cst =
   in
   Classes.add_class tc;
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
-    [Tacred.EvalConstRef cst] false
+    [Evaluable.EvalConstRef cst] false
 
 let add_inductive_class ind =
   let env = Global.env () in

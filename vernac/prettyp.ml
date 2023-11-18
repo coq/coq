@@ -152,7 +152,7 @@ let opacity env =
   function
   | GlobRef.VarRef v when NamedDecl.is_local_def (Environ.lookup_named v env) ->
       Some(TransparentMaybeOpacified
-        (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
+        (Conv_oracle.get_strategy (Environ.oracle env) (Evaluable.EvalVarRef v)))
   | GlobRef.ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       (match cb.const_body with
@@ -160,7 +160,7 @@ let opacity env =
         | OpaqueDef _ -> Some FullyOpaque
         | Def _ -> Some
           (TransparentMaybeOpacified
-            (Conv_oracle.get_strategy (Environ.oracle env) (ConstKey cst))))
+            (Conv_oracle.get_strategy (Environ.oracle env) (Evaluable.EvalConstRef cst))))
   | _ -> None
 
 let print_opacity ref =

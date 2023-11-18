@@ -55,15 +55,11 @@ let { Goptions.get = simplIsCbn } =
     ~value:false
     ()
 
-let set_strategy_one ref l  =
-  let k =
-    match ref with
-      | EvalConstRef sp -> ConstKey sp
-      | EvalVarRef id -> VarKey id in
-  let () = Global.set_strategy k l in
-  match k, l with
-  | ConstKey sp, Conv_oracle.Opaque -> ()
-  | ConstKey sp, _ ->
+let set_strategy_one ref l =
+  Global.set_strategy ref l;
+  match ref, l with
+  | Evaluable.EvalConstRef sp, Conv_oracle.Opaque -> ()
+  | Evaluable.EvalConstRef sp, _ ->
     if Declareops.is_opaque (Global.lookup_constant sp) then
       user_err
         (str "Cannot make" ++ spc () ++
@@ -101,15 +97,15 @@ let classify_strategy (local,_) =
 
 let disch_ref ref =
   match ref with
-      EvalConstRef c -> Some ref
-    | EvalVarRef id -> if Lib.is_in_section (GlobRef.VarRef id) then None else Some ref
+  | Evaluable.EvalConstRef c -> Some ref
+  | Evaluable.EvalProjectionRef p -> Some ref
+  | Evaluable.EvalVarRef id -> if Lib.is_in_section (GlobRef.VarRef id) then None else Some ref
 
 let discharge_strategy (local,obj) =
   if local then None else
   map_strategy disch_ref obj
 
-type strategy_obj =
-    bool * (Conv_oracle.level * evaluable_global_reference list) list
+type strategy_obj = bool * (Conv_oracle.level * Evaluable.t list) list
 
 let inStrategy : strategy_obj -> obj =
   declare_object
@@ -127,15 +123,15 @@ let set_strategy local str =
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
-type red_expr =
-    (constr, evaluable_global_reference, constr_pattern) red_expr_gen
+type red_expr = (constr, Evaluable.t, constr_pattern) red_expr_gen
 
 type red_expr_val =
-  (constr, evaluable_global_reference, constr_pattern, strength * RedFlags.reds) red_expr_gen0
+  (constr, Evaluable.t, constr_pattern, strength * RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
-  | EvalVarRef id -> fVAR id
-  | EvalConstRef sp -> fCONST sp
+  | Evaluable.EvalVarRef id -> fVAR id
+  | Evaluable.EvalConstRef sp -> fCONST sp
+  | Evaluable.EvalProjectionRef p -> fPROJ p
 
 let make_flag env f =
   let red = no_red in

@@ -32,24 +32,14 @@ exception ReductionTacticError of reduction_tactic_error
 
 exception Elimconst
 
-type evaluable_global_reference =
-  | EvalVarRef of Id.t
-  | EvalConstRef of Constant.t
-
-(* Better to have it here that in closure, since used in grammar.cma *)
-let eq_egr e1 e2 = match e1, e2 with
-    EvalConstRef con1, EvalConstRef con2 -> Constant.CanOrd.equal con1 con2
-  | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
-  | _, _ -> false
-
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"
    where X.t is later on instantiated with y? I choose the first
    interpretation (i.e. an evaluable reference is never expanded). *)
-let subst_evaluable_reference subst = function
-  | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (Mod_subst.subst_constant subst kn)
+let subst_evaluable_reference subst =
+  Evaluable.map (fun id -> id) (Mod_subst.subst_constant subst)
+    (Mod_subst.subst_proj_repr subst)
 
 exception NotEvaluableRef of GlobRef.t
 
@@ -62,30 +52,43 @@ let () = CErrors.register_handler (function
 let error_not_evaluable r = raise (NotEvaluableRef r)
 
 let is_evaluable_const env cst =
-  is_transparent env (ConstKey cst) && evaluable_constant cst env
+  is_transparent env (Evaluable.EvalConstRef cst) && evaluable_constant cst env
 
 let is_evaluable_var env id =
-  is_transparent env (VarKey id) && evaluable_named id env
+  is_transparent env (Evaluable.EvalVarRef id) && evaluable_named id env
+
+let is_evaluable_projection env p =
+  is_transparent env (Evaluable.EvalProjectionRef p)
 
 let is_evaluable env = function
-  | EvalConstRef cst -> is_evaluable_const env cst
-  | EvalVarRef id -> is_evaluable_var env id
+  | Evaluable.EvalConstRef cst -> is_evaluable_const env cst
+  | Evaluable.EvalVarRef id -> is_evaluable_var env id
+  | Evaluable.EvalProjectionRef p -> is_evaluable_projection env p
 
 let value_of_evaluable_ref env evref u =
   match evref with
-  | EvalConstRef con ->
+  | Evaluable.EvalConstRef con ->
     let u = Unsafe.to_instance u in
     EConstr.of_constr (constant_value_in env (con, u))
-  | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
+  | Evaluable.EvalVarRef id ->
+    env |> lookup_named id |> NamedDecl.get_value |> Option.get
+  | Evaluable.EvalProjectionRef _ ->
+    assert false (* TODO *)
 
 let evaluable_of_global_reference env = function
-  | GlobRef.ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
-  | GlobRef.VarRef id when is_evaluable_var env id -> EvalVarRef id
+  | GlobRef.ConstRef cst when is_evaluable_const env cst ->
+      begin
+        match Structures.PrimitiveProjections.find_opt cst with
+        | None -> Evaluable.EvalConstRef cst
+        | Some p -> Evaluable.EvalProjectionRef p
+      end
+  | GlobRef.VarRef id when is_evaluable_var env id -> Evaluable.EvalVarRef id
   | r -> error_not_evaluable r
 
 let global_of_evaluable_reference = function
-  | EvalConstRef cst -> GlobRef.ConstRef cst
-  | EvalVarRef id -> GlobRef.VarRef id
+  | Evaluable.EvalConstRef cst -> GlobRef.ConstRef cst
+  | Evaluable.EvalVarRef id -> GlobRef.VarRef id
+  | Evaluable.EvalProjectionRef p -> GlobRef.ConstRef (Projection.Repr.constant p)
 
 type evaluable_reference =
   | EvalConst of Constant.t
@@ -1092,8 +1095,9 @@ let contextually byhead occs f env sigma t =
 
 let match_constr_evaluable_ref sigma c evref =
   match EConstr.kind sigma c, evref with
-  | Const (c,u), EvalConstRef c' when Constant.CanOrd.equal c c' -> Some u
-  | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
+  | Const (c,u), Evaluable.EvalConstRef c' when Constant.CanOrd.equal c c' -> Some u
+  | Proj (p,_,_), Evaluable.EvalProjectionRef p' when Projection.Repr.CanOrd.equal (Projection.repr p) p' -> Some EInstance.empty
+  | Var id, Evaluable.EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
 let substlin env sigma evalref occs c =
@@ -1117,18 +1121,21 @@ let substlin env sigma evalref occs c =
   (Locusops.current_occurrence !count, t')
 
 let string_of_evaluable_ref env = function
-  | EvalVarRef id -> Id.to_string id
-  | EvalConstRef kn ->
+  | Evaluable.EvalVarRef id -> Id.to_string id
+  | Evaluable.EvalConstRef kn ->
       Libnames.string_of_qualid
         (Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn))
+  | Evaluable.EvalProjectionRef p ->
+      Projection.Repr.to_string p
 
 (* Removing fZETA for finer behaviour would break many developments *)
 let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let unfold_side_red = RedFlags.(mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA])
 let unfold_red kn =
   let flag = match kn with
-    | EvalVarRef id -> RedFlags.fVAR id
-    | EvalConstRef kn -> RedFlags.fCONST kn in
+    | Evaluable.EvalVarRef id -> RedFlags.fVAR id
+    | Evaluable.EvalConstRef kn -> RedFlags.fCONST kn
+    | Evaluable.EvalProjectionRef p -> RedFlags.fPROJ p in
   RedFlags.mkflags (flag::RedFlags.fDELTA::unfold_side_flags)
 
 let unfold env sigma name c =

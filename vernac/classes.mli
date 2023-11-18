@@ -105,7 +105,7 @@ val deactivate_observer : observer -> unit
 
 val set_typeclass_transparency
   :  locality:Hints.hint_locality
-  -> Tacred.evaluable_global_reference list
+  -> Evaluable.t list
   -> bool
   -> unit
 

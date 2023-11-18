@@ -442,7 +442,13 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | Some t1, Some t2 ->
           (* else the oracle tells which constant is to be expanded *)
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
-          if Conv_oracle.oracle_order UVars.out_punivs oracle l2r fl1 fl2 then
+          let to_er fl =
+            match fl with
+            | ConstKey (c, _) -> Some (Evaluable.EvalConstRef c)
+            | VarKey id -> Some (Evaluable.EvalVarRef id)
+            | RelKey _ -> None
+          in
+          if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then
             eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
           else
             eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv

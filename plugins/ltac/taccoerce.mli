@@ -71,7 +71,7 @@ val coerce_to_uconstr : Value.t -> Ltac_pretype.closed_glob_constr
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 
 val coerce_to_evaluable_ref :
-  Environ.env -> Evd.evar_map -> Value.t -> Tacred.evaluable_global_reference
+  Environ.env -> Evd.evar_map -> Value.t -> Evaluable.t
 
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 

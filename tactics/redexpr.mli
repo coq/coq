@@ -17,8 +17,7 @@ open Genredexpr
 open Reductionops
 open Locus
 
-type red_expr =
-  (constr, Tacred.evaluable_global_reference, constr_pattern) red_expr_gen
+type red_expr = (constr, Names.Evaluable.t, constr_pattern) red_expr_gen
 
 type red_expr_val
 
@@ -49,7 +48,7 @@ val declare_red_expr : bool -> string -> red_expr -> unit
    true, the effect is non-synchronous (i.e. it does not survive
    section and module closure). *)
 val set_strategy :
-  bool -> (Conv_oracle.level * Tacred.evaluable_global_reference list) list -> unit
+  bool -> (Conv_oracle.level * Names.Evaluable.t list) list -> unit
 
 (** call by value normalisation function using the virtual machine *)
 val cbv_vm : reduction_function
@@ -59,6 +58,6 @@ open Libnames
 
 val wit_red_expr :
   ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-   (Genintern.glob_constr_and_expr,Tacred.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
-   (EConstr.t,Tacred.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
+   (Genintern.glob_constr_and_expr,Names.Evaluable.t and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
+   (EConstr.t,Names.Evaluable.t,Pattern.constr_pattern) red_expr_gen)
     Genarg.genarg_type
