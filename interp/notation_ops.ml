@@ -980,7 +980,7 @@ let rec push_context_binders vars = function
     push_context_binders vars bl
 
 let is_term_meta id metas =
-  try match Id.List.assoc id metas with NtnTypeConstr | NtnTypeConstrList -> true | _ -> false
+  try match Id.List.assoc id metas with NtnTypeConstr -> true | _ -> false
   with Not_found -> false
 
 let is_onlybinding_strict_meta id metas =
