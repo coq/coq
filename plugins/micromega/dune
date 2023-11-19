@@ -1,18 +1,26 @@
 (library
+ (name micromega_core_plugin)
+ (public_name coq-core.plugins.micromega_core)
+ (modules micromega numCompat mutils sos_types sos_lib sos)
+ (synopsis "Coq's micromega core plugin")
+ (libraries zarith coq-core.clib))
+
+(library
  (name micromega_plugin)
  (public_name coq-core.plugins.micromega)
  ; be careful not to link the executable to the plugin!
- (modules (:standard \ csdpcert g_zify zify))
+ (modules (:standard \ micromega numCompat mutils sos_types sos_lib sos csdpcert g_zify zify))
+ (flags :standard -open Micromega_core_plugin)
  (synopsis "Coq's micromega plugin")
- (libraries coq-core.plugins.ltac))
+ (libraries coq-core.plugins.ltac coq-core.plugins.micromega_core))
 
 (executable
  (name csdpcert)
  (public_name csdpcert)
  (package coq-core)
  (modules csdpcert)
- (flags :standard -open Micromega_plugin)
- (libraries coq-core.plugins.micromega))
+ (flags :standard -open Micromega_core_plugin)
+ (libraries coq-core.plugins.micromega_core))
 
 (library
  (name zify_plugin)
