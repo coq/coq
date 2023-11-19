@@ -14,6 +14,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "${DIR}/../.." || exit 1
 
 export TIMED=1
+export COQEXTRAFLAGS='-color yes'
 bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee time-of-build.log
 code=$?
 echo 'Aggregating timing log...'

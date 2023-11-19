@@ -15,7 +15,7 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 # export COMPCERT=bundled
 
 # See ci-compcert.sh
-export COQEXTRAFLAGS='-native-compiler no'
+COQEXTRAFLAGS="$COQEXTRAFLAGS -native-compiler no"
 ( cd "${CI_BUILD_DIR}/vst"
   make IGNORECOQVERSION=true IGNORECOMPCERTVERSION=true
 )

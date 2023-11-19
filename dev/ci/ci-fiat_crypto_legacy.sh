@@ -24,7 +24,7 @@ targets2=(
     selected-specific-display
 )
 
-export COQEXTRAFLAGS='-native-compiler no'
+COQEXTRAFLAGS="$COQEXTRAFLAGS -native-compiler no"
 ( cd "${CI_BUILD_DIR}/fiat_crypto_legacy"
   make "${targets1[@]}"
   make -j 1 "${targets2[@]}"

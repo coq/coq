@@ -10,7 +10,7 @@ git_download fiat_crypto
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-export COQEXTRAFLAGS='-native-compiler no'
+COQEXTRAFLAGS="$COQEXTRAFLAGS -native-compiler no"
 ( cd "${CI_BUILD_DIR}/fiat_crypto/rupicola/bedrock2"
   COQMF_ARGS='-arg "-async-proofs-tac-j 1"' make
   make install

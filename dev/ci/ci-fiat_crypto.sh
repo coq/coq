@@ -17,7 +17,7 @@ stacksize=32768
 # version of other developments
 make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1)
 
-export COQEXTRAFLAGS='-native-compiler no' # following bedrock2
+COQEXTRAFLAGS="$COQEXTRAFLAGS -native-compiler no" # following bedrock2
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
   ulimit -s $stacksize
   make "${make_args[@]}" pre-standalone-extracted printlite lite ||

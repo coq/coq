@@ -9,7 +9,7 @@ git_download unimath
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-export COQEXTRAFLAGS='-native-compiler no'
+COQEXTRAFLAGS="$COQEXTRAFLAGS -native-compiler no"
 ( cd "${CI_BUILD_DIR}/unimath"
   # these files consumes too much memory for the shared workers
   # (at least with -j 2 when the scheduler runs them in parallel)
