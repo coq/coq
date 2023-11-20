@@ -60,8 +60,17 @@ Module Conversion.
   Definition t1@{s|u|} (A:Type@{s|u}) (x y : A) := box _ x.
   Definition t2@{s|u|} (A:Type@{s|u}) (x y : A) := box _ y.
 
+  Definition t1'@{s|u|} (A:Type@{s|u}) (x y : A) := x.
+  Definition t2'@{s|u|} (A:Type@{s|u}) (x y : A) := y.
+
   Fail Check eq_refl : t1 nat = t2 nat.
+  Fail Check eq_refl : t1' nat = t2' nat.
+
   Check fun A:SProp => eq_refl : t1 A = t2 A.
+  Check fun A:SProp => eq_refl : box _ (t1' A) = box _ (t2' A).
+
+  Definition ignore@{s|u|} {A:Type@{s|u}} (x:A) := tt.
+  Definition unfold_ignore@{s|u|} (A:Type@{s|u}) : ignore (t1 A) = ignore (t2 A) := eq_refl.
 
   Definition t (A:SProp) := Eval lazy in t1 A.
 

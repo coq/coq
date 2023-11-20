@@ -624,8 +624,8 @@ type 'a evar_expansion =
 type 'constr evar_handler = {
   evar_expand : 'constr pexistential -> 'constr evar_expansion;
   evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_relevant : 'constr pexistential -> bool;
-  qvar_relevant : Sorts.QVar.t -> bool;
+  evar_irrelevant : 'constr pexistential -> bool;
+  qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
 val default_evar_handler : 'constr evar_handler

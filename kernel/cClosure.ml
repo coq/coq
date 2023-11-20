@@ -309,7 +309,7 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 | Reduction -> false
 | Conversion -> match r with
   | Sorts.Irrelevant -> true
-  | Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
+  | Sorts.RelevanceVar q -> info.i_cache.i_sigma.qvar_irrelevant q
   | Sorts.Relevant -> false
 
 (************************************************************************)
@@ -1303,11 +1303,11 @@ and knht info e t stk =
       | EvarDefined c -> knht info e c stk
       | EvarUndefined (evk, args) ->
         assert (UVars.Instance.is_empty (snd e));
-        if info.i_cache.i_sigma.evar_relevant ev then
+        if info.i_cache.i_sigma.evar_irrelevant ev then
+          (mk_irrelevant, skip_irrelevant_stack info stk)
+        else
           let repack = info.i_cache.i_sigma.evar_repack in
           { mark = Ntrl; term = FEvar (evk, args, e, repack) }, stk
-        else
-          (mk_irrelevant, skip_irrelevant_stack info stk)
       end
     | Array(u,t,def,ty) ->
       let len = Array.length t in
