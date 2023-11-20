@@ -506,9 +506,10 @@ and extract_really_ind env kn mib =
         let field_names =
           List.skipn mib.mind_nparams (names_prod mip0.mind_user_lc.(0)) in
         assert (Int.equal (List.length field_names) (List.length typ));
-        let projs = ref Cset.empty in
         let mp = MutInd.modpath kn in
         let implicits = implicits_of_global (GlobRef.ConstructRef (ip,1)) in
+        let ty = Inductive.type_of_inductive ((mib,mip0),u) in
+        let nparams = nb_default_params env sg (EConstr.of_constr ty) in
         let rec select_fields i l typs = match l,typs with
           | [],[] -> []
           | _::l, typ::typs when isTdummy (expand env typ) || Int.Set.mem i implicits ->
@@ -519,22 +520,11 @@ and extract_really_ind env kn mib =
               let knp = Constant.make2 mp (Label.of_id id) in
               (* Is it safe to use [id] for projections [foo.id] ? *)
               if List.for_all ((==) Keep) (type2signature env typ)
-              then projs := Cset.add knp !projs;
+              then add_projection nparams knp ip;
               Some (GlobRef.ConstRef knp) :: (select_fields (i+1) l typs)
           | _ -> assert false
         in
-        let field_glob = select_fields (1+npar) field_names typ
-        in
-        (* Is this record officially declared with its projections ? *)
-        (* If so, we use this information. *)
-        begin try
-          let ty = Inductive.type_of_inductive ((mib,mip0),u) in
-          let n = nb_default_params env sg (EConstr.of_constr ty) in
-          let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
-          in
-          List.iter (Option.iter check_proj) (Structures.Structure.find_projections ip)
-        with Not_found -> ()
-        end;
+        let field_glob = select_fields (1+npar) field_names typ in
         Record field_glob
       with (I info) -> info
     in
