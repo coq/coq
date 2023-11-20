@@ -34,8 +34,9 @@ CI_TARGETS= \
     ci-coq_tools \
     ci-coqprime \
     ci-deriving \
-    ci-elpi_hb \
+    ci-elpi \
     ci-elpi_test \
+    ci-hb \
     ci-hb_test \
     ci-engine_bench \
     ci-ext_lib \
@@ -97,7 +98,10 @@ CI_TARGETS= \
     ci-vst \
     ci-waterproof
 
-.PHONY: ci-all $(CI_TARGETS)
+CI_VIRTUAL_TARGETS= \
+    ci-elpi_hb
+
+.PHONY: ci-all $(CI_TARGETS) $(CI_VIRTUAL_TARGETS)
 
 ci-help:
 	echo '*** Coq CI system, please specify a target to build.'
@@ -135,6 +139,8 @@ ci-finmap: ci-mathcomp_1
 ci-bigenough: ci-mathcomp_1
 ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
 
+ci-hb: ci-elpi
+
 ci-elpi_test: ci-elpi_hb
 ci-hb_test: ci-elpi_hb
 
@@ -167,6 +173,10 @@ ci-serapi_test: ci-mathcomp_1 ci-serapi
 
 ci-coq_lsp: ci-serapi
 
+# Virtual targets used by the CI to group compilation of rules in a single job
+
+ci-elpi_hb: ci-elpi ci-hb
+
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
@@ -178,6 +188,7 @@ $(CI_TARGETS): ci-%:
 NON_CI_GOALS:=$(strip $(filter-out ci-%,$(MAKECMDGOALS)))
 ifneq (,$(NON_CI_GOALS))
 $(CI_TARGETS): $(NON_CI_GOALS)
+$(CI_VIRTUAL_TARGETS): $(NON_CI_GOALS)
 endif
 
 # For emacs:
