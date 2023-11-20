@@ -191,6 +191,8 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
 (** {6 Substitution} *)
 
+val pr_quality_level_subst : (QVar.t -> Pp.t) -> Quality.t QVar.Map.t -> Pp.t
+
 type sort_level_subst = Quality.t QVar.Map.t * universe_level_subst
 
 val empty_sort_subst : sort_level_subst

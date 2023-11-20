@@ -393,6 +393,11 @@ let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
 
 let hcons_abstract_universe_context = AbstractContext.hcons
 
+let pr_quality_level_subst prl l =
+  let open Pp in
+  h (prlist_with_sep fnl (fun (u,v) -> prl u ++ str " := " ++ Sorts.Quality.pr prl v)
+       (Sorts.QVar.Map.bindings l))
+
 type sort_level_subst = Quality.t Sorts.QVar.Map.t * universe_level_subst
 
 let is_empty_sort_subst (qsubst,usubst) = Sorts.QVar.Map.is_empty qsubst && is_empty_level_subst usubst
