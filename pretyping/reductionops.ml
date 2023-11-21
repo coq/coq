@@ -1090,7 +1090,7 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
     let evars = Evd.evar_handler sigma in
     try
       let env = Environ.set_universes (Evd.universes sigma) env in
-      let _ = Conversion.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
+      let _ = Conversion.generic_conv ~l2r:false pb ~evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
       true
     with Conversion.NotConvertible -> false
     | e ->
@@ -1177,7 +1177,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Conversion.generic_conv pb ~l2r (Evd.evar_handler sigma))
+      Conversion.generic_conv pb ~l2r ~evars:(Evd.evar_handler sigma))
 
 let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
@@ -1195,7 +1195,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
         let cstr =
-          Conversion.generic_conv pb ~l2r:false (Evd.evar_handler sigma) ts
+          Conversion.generic_conv pb ~l2r:false ~evars:(Evd.evar_handler sigma) ts
             env (UnivProblem.Set.empty, univproblem_univ_state) x y in
         Some cstr
   with

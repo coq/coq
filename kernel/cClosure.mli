@@ -116,6 +116,19 @@ val destFLambda :
 (** Global and local constant cache *)
 type clos_infos
 type clos_tab
+
+type 'a evar_expansion =
+| EvarDefined of 'a
+| EvarUndefined of Evar.t * 'a list
+
+type 'constr evar_handler = {
+  evar_expand : 'constr pexistential -> 'constr evar_expansion;
+  evar_repack : Evar.t * 'constr list -> 'constr;
+  evar_irrelevant : 'constr pexistential -> bool;
+  qvar_irrelevant : Sorts.QVar.t -> bool;
+}
+
+val default_evar_handler : 'constr evar_handler
 val create_conv_infos :
   ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
 val create_clos_infos :

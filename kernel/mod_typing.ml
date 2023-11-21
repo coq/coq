@@ -52,10 +52,10 @@ let rec rebuild_mp mp l =
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
 let infer_gen_conv state env c1 c2 =
-  Conversion.generic_conv Conversion.CONV ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
+  Conversion.generic_conv Conversion.CONV ~l2r:false TransparentState.full env state c1 c2
 
 let infer_gen_conv_leq state env c1 c2 =
-  Conversion.generic_conv Conversion.CUMUL ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
+  Conversion.generic_conv Conversion.CUMUL ~l2r:false TransparentState.full env state c1 c2
 
 type with_body = {
   w_def : Constr.t;

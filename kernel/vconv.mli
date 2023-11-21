@@ -17,4 +17,4 @@ val vm_conv : conv_pb -> types kernel_conversion_function
 
 (** A conversion function parametrized by a universe comparator and
    evar normalizer. Used outside of the kernel. *)
-val vm_conv_gen : conv_pb -> Genlambda.evars -> (types, 'a) generic_conversion_function
+val vm_conv_gen : conv_pb -> Genlambda.evars -> Environ.env -> 'a generic_conversion_function

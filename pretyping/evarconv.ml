@@ -552,13 +552,13 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
   let evar_expand ev =
     let v = existential_expand_value0 sigma ev in
     let () = match v with
-    | Constr.EvarUndefined _ -> has_evar := true
-    | Constr.EvarDefined _ -> ()
+    | CClosure.EvarUndefined _ -> has_evar := true
+    | CClosure.EvarDefined _ -> ()
     in
     v
   in
   let evar_handler = { (Evd.evar_handler sigma) with evar_expand } in
-  let conv pb ~l2r sigma = Conversion.generic_conv pb ~l2r evar_handler in
+  let conv pb ~l2r sigma = Conversion.generic_conv pb ~l2r ~evars:evar_handler in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->

@@ -914,8 +914,8 @@ let existential_opt_value0 = existential_opt_value
 let existential_expand_value0 sigma (evk, args) = match existential_opt_value sigma (evk, args) with
 | None ->
   let args = expand_existential sigma (evk, args) in
-  Constr.EvarUndefined (evk, args)
-| Some c -> Constr.EvarDefined c
+  CClosure.EvarUndefined (evk, args)
+| Some c -> CClosure.EvarDefined c
 
 let mkLEvar sigma (evk, args) =
   let EvarInfo evi = find sigma evk in
@@ -942,7 +942,7 @@ let evar_handler sigma =
   | exception Not_found -> true
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with

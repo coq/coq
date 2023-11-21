@@ -119,6 +119,24 @@ let mk_red f = {mark=Red;term=f}
 let update v1 mark t =
   v1.mark <- mark; v1.term <- t
 
+type 'a evar_expansion =
+| EvarDefined of 'a
+| EvarUndefined of Evar.t * 'a list
+
+type 'constr evar_handler = {
+  evar_expand : 'constr pexistential -> 'constr evar_expansion;
+  evar_repack : Evar.t * 'constr list -> 'constr;
+  evar_irrelevant : 'constr pexistential -> bool;
+  qvar_irrelevant : Sorts.QVar.t -> bool;
+}
+
+let default_evar_handler = {
+  evar_expand = (fun _ -> assert false);
+  evar_repack = (fun _ -> assert false);
+  evar_irrelevant = (fun _ -> assert false);
+  qvar_irrelevant = (fun _ -> false);
+}
+
 (** Reduction cache *)
 type infos_cache = {
   i_env : env;
