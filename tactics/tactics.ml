@@ -2953,6 +2953,7 @@ let specialize (c,lbind) ipat =
       instantiate sigma env subst accu decls
     in
     let sigma, subst, nctx, holes = instantiate sigma env (Esubst.subs_id 0) [] (List.rev ctx) in
+    let freeezed_sigma= sigma in
     let nty = Vars.esubst Vars.lift_substituend subst ty in
     (* Solve holes with the provided bindings *)
     let unify sigma n c =
@@ -2962,7 +2963,8 @@ let specialize (c,lbind) ipat =
     let sigma = Specialize.unify_bindings sigma unify typ_of_c lbind in
     (* Instantiate unsolved holes with their default value *)
     let fold sigma (env, ev) =
-      if isEvar sigma ev then Evarconv.unify env sigma CONV ev (mkRel 1)
+      if isEvar sigma ev && (fst (destEvar sigma ev)) = (fst (destEvar freeezed_sigma ev))
+      then Evarconv.unify env sigma CONV ev (mkRel 1)
       else sigma
     in
     let sigma = List.fold_left fold sigma holes in
