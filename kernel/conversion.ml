@@ -924,7 +924,7 @@ let () =
   in
   CClosure.set_conv conv
 
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler env) t1 t2 =
   let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
@@ -938,7 +938,7 @@ let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=defaul
 let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
-let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler) univs t1 t2 =
+let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) univs t1 t2 =
   let graph = Environ.universes env in
   let (s, _) =
     clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2

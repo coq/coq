@@ -52,7 +52,7 @@ and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambd
 type evars =
   { evars_val : constr CClosure.evar_handler }
 
-val empty_evars : evars
+val empty_evars : Environ.env -> evars
 
 (** {5 Manipulation functions} *)
 

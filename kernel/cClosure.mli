@@ -128,7 +128,7 @@ type 'constr evar_handler = {
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
-val default_evar_handler : 'constr evar_handler
+val default_evar_handler : env -> 'constr evar_handler
 val create_conv_infos :
   ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
 val create_clos_infos :

@@ -130,11 +130,13 @@ type 'constr evar_handler = {
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
-let default_evar_handler = {
+let default_evar_handler env = {
   evar_expand = (fun _ -> assert false);
   evar_repack = (fun _ -> assert false);
   evar_irrelevant = (fun _ -> assert false);
-  qvar_irrelevant = (fun _ -> false);
+  qvar_irrelevant = (fun q ->
+      assert (Sorts.QVar.Set.mem q env.env_qualities);
+      false);
 }
 
 (** Reduction cache *)
@@ -1637,7 +1639,8 @@ let whd_stack infos tab m stk = match m.mark with
   in
   k
 
-let create_infos i_mode ?univs ?(evars=default_evar_handler) i_flags i_env =
+let create_infos i_mode ?univs ?evars i_flags i_env =
+  let evars = Option.default (default_evar_handler i_env) evars in
   let i_univs = Option.default (Environ.universes i_env) univs in
   let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
   let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in
