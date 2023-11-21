@@ -387,6 +387,7 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Nametab.obj_dir id in
     let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
     check_mod_fresh ~is_type prefix id;
+    assert (not (sections_are_opened()));
     add_entry (OpenedModule (is_type,export,prefix,fs));
     synterp_state := { !synterp_state with path_prefix = prefix } ;
     prefix
