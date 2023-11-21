@@ -81,10 +81,11 @@ val pattern_occs : (occurrences * constr) list -> e_reduction_function
 (** Rem: Lazy strategies are defined in Reduction *)
 
 (** Call by value strategy (uses Closures) *)
-val cbv_norm_flags : RedFlags.reds ->  reduction_function
+val cbv_norm_flags : RedFlags.reds -> strong:bool -> reduction_function
   val cbv_beta : reduction_function
   val cbv_betaiota : reduction_function
   val cbv_betadeltaiota :  reduction_function
+  val whd_compute :  reduction_function
   val compute :  reduction_function  (** = [cbv_betadeltaiota] *)
 
 (** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]

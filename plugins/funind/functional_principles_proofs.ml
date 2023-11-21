@@ -999,7 +999,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
         match body.Declarations.const_body with
         | Def body ->
           let sigma = Evd.from_env env in
-          Tacred.cbv_norm_flags
+          Tacred.cbv_norm_flags ~strong:true
             (RedFlags.mkflags [RedFlags.fZETA])
             env sigma (EConstr.of_constr body)
         | Undef _ | Primitive _ | OpaqueDef _ -> user_err Pp.(str "Cannot define a principle over an axiom ")

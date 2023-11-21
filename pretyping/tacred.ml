@@ -1179,13 +1179,15 @@ let fold_commands cl env sigma c =
 
 
 (* call by value reduction functions *)
-let cbv_norm_flags flags env sigma t =
-  Cbv.(cbv_norm (create_cbv_infos flags env sigma) t)
+let cbv_norm_flags flags ~strong env sigma t =
+  Cbv.(cbv_norm (create_cbv_infos flags ~strong env sigma) t)
 
-let cbv_beta = cbv_norm_flags RedFlags.beta
-let cbv_betaiota = cbv_norm_flags RedFlags.betaiota
-let cbv_betadeltaiota env sigma = cbv_norm_flags RedFlags.all env sigma
+let cbv_beta = cbv_norm_flags RedFlags.beta ~strong:true
+let cbv_betaiota = cbv_norm_flags RedFlags.betaiota ~strong:true
+let cbv_betadeltaiota env sigma = cbv_norm_flags RedFlags.all env sigma ~strong:true
+let whd_cbv_betadeltaiota env sigma = cbv_norm_flags RedFlags.all env sigma ~strong:false
 
+let whd_compute = whd_cbv_betadeltaiota
 let compute = cbv_betadeltaiota
 
 (* Pattern *)

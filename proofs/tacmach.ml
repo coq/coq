@@ -87,6 +87,7 @@ let pf_hnf_type_of gl t =
   pf_whd_all gl (pf_get_type_of gl t)
 
 let pf_compute gl t = pf_apply compute gl t
+let pf_whd_compute gl t = pf_apply whd_compute gl t
 
 let pf_nf_evar gl t = nf_evar (project gl) t
 

@@ -13,6 +13,8 @@
              | S p => S (add p m)
              end) 1 2)
      : nat
+     = 4
+     : nat
      = (fix add (n m : nat) {struct n} : nat :=
           match n with
           | 0 => m
@@ -23,6 +25,10 @@
      : nat
      = S (1 + 2 + 2)
      : nat
+     = 6
+     : nat
+     = ignore (fun x : nat => 1 + x)
+     : unit
      = ignore (fun x : nat => 1 + x)
      : unit
      = ignore (fun x : nat => 1 + x)
@@ -31,3 +37,26 @@
      : unit
 - : constr = constr:(4)
 - : constr = constr:(2 + 2)
+     = let x := 2 in 2 + 2
+     : nat
+     = let x := 2 in 4
+     : nat
+     = (let x := 2 in fun x0 : nat => 1 + x0) 2
+     : nat
+     = match n with
+       | 0 => 1 + 1
+       | S n => 1 + n
+       end
+     : nat
+     = fix f (n : nat) : nat :=
+         match 0 + n with
+         | 0 => 1 + 1
+         | S n0 => 1 + f n0
+         end
+     : nat -> nat
+     = 4%uint63
+     : int
+     = (2 + x)%uint63
+     : int
+     = 1%float
+     : float
