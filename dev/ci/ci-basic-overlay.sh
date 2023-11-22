@@ -386,7 +386,9 @@ project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
 ########################################################################
 # Mathcomp-word
 ########################################################################
-project mathcomp_word "https://github.com/jasmin-lang/coqword" "main"
+project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
+# go back to "main" and change dependency to MC 2 when
+# https://github.com/jasmin-lang/jasmin/pull/560 is merged
 
 ########################################################################
 # Jasmin
