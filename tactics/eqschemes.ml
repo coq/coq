@@ -101,7 +101,6 @@ let my_it_mkLambda_or_LetIn_name env s c =
 
 let get_coq_eq env ctx =
   let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
-  (* Do not force the lazy if they are not defined *)
   let eq, ctx = with_context_set ctx
       (UnivGen.fresh_inductive_instance env eq) in
   mkIndU eq, mkConstructUi (eq,1), ctx
