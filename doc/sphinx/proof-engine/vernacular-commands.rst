@@ -717,15 +717,6 @@ Load paths
    removed. Load paths can be managed using Coq command line options or
    enviroment variables (see :ref:`logical-paths-load-path`).
 
-.. cmd:: Pwd
-
-   This command displays the current working directory.
-
-.. cmd:: Cd {? @string }
-
-   If :n:`@string` is specified, changes the current directory according to :token:`string` which
-   can be any valid path.  Otherwise, it displays the current directory.
-
 .. cmd:: Print LoadPath {? @dirpath }
 
    Displays the current Coq :term:`load path`.  If :n:`@dirpath` is specified,

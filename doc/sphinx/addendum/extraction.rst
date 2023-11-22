@@ -12,12 +12,12 @@ functional languages available as output are currently OCaml, Haskell
 and Scheme. In the following, "ML" will be used (abusively) to refer
 to any of the three.
 
-Before using any of the commands or options described in this chapter,
-the extraction framework should first be loaded explicitly
-via ``Require Extraction``, or via the more robust
-``From Coq Require Extraction``.
-Note that in earlier versions of Coq, these commands and options were
-directly available without any preliminary ``Require``.
+.. versionchanged:: 8.11
+
+   Before using any of the commands or options described in this chapter,
+   the extraction framework should first be loaded explicitly
+   via ``Require Extraction``, or via the more robust
+   ``From Coq Require Extraction``.
 
 .. coqtop:: in
 
@@ -50,7 +50,10 @@ Generating ML Code
    requirements of the target language, keeping original
    names as much as possible.
 
-The following commands also generate file(s).
+The following commands also generate file(s). The generated file(s) are
+produced in the current working directory. It is possible to inspect what
+is the current directory with the command :cmd:`Pwd` and to change it with
+the command :cmd:`Cd`.
   
 .. cmd:: Extraction Library @ident
 
@@ -92,6 +95,17 @@ in the Coq sources.
 
 .. cmd:: Show Extraction
    :undocumented:
+
+.. cmd:: Pwd
+
+   This command displays the current working directory (where the extracted
+   files are produced).
+
+.. cmd:: Cd {? @string }
+
+   If :n:`@string` is specified, changes the current directory according to
+   :token:`string` which can be any valid path.  Otherwise, it displays the
+   current directory as :cmd:`Pwd` does.
 
 Extraction Options
 -------------------
