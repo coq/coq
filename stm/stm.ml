@@ -126,13 +126,7 @@ let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
   | VernacSynPure (VernacPrint _) -> true
-  | VernacSynterp (VernacExtend (("Extraction",_), _)
-    | VernacExtend (("SeparateExtraction",_), _)
-    | VernacExtend (("ExtractionLibrary",_), _)
-    | VernacExtend (("RecursiveExtractionLibrary",_), _)
-    | VernacExtend (("ExtractionConstant",_), _)
-    | VernacExtend (("ExtractionInlinedConstant",_), _)
-    | VernacExtend (("ExtractionInductive",_), _)) -> true
+  | VernacSynterp (VernacExtend ({ ext_plugin = "coq-core.plugins.extraction" }, _)) -> true
   | _ -> false
 
 type depth = int

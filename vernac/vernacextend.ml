@@ -68,7 +68,7 @@ let vinterp_map s =
     Hashtbl.find vernac_tab s
   with Not_found ->
     user_err
-      (str"Cannot find vernac command " ++ str (fst s) ++ str".")
+      (str"Cannot find vernac command " ++ str s.ext_entry ++ str".")
 
 let warn_deprecated_command =
   let open CWarnings in
@@ -95,13 +95,24 @@ let type_vernac opn converted_args ?loc ~atts =
 type classifier = Genarg.raw_generic_argument list -> vernac_classification
 
 (** Classifiers  *)
-let classifiers : classifier array String.Map.t ref = ref String.Map.empty
+module StringPair =
+struct
+  type t = string * string
+  let compare (s1, s2) (t1, t2) =
+    let c = String.compare s1 t1 in
+    if Int.equal c 0 then String.compare s2 t2 else c
+end
 
-let get_vernac_classifier (name, i) args =
-  (String.Map.find name !classifiers).(i) args
+module StringPairMap = Map.Make(StringPair)
+
+let classifiers : classifier array StringPairMap.t ref = ref StringPairMap.empty
+
+let get_vernac_classifier e args =
+  let open Vernacexpr in
+  (StringPairMap.find (e.ext_plugin, e.ext_entry) !classifiers).(e.ext_index) args
 
 let declare_vernac_classifier name f =
-  classifiers := String.Map.add name f !classifiers
+  classifiers := StringPairMap.add name f !classifiers
 
 let classify_as_query = VtQuery
 let classify_as_sideeff = VtSideff ([], VtLater)
@@ -173,10 +184,10 @@ let declare_dynamic_vernac_extend ~command ?entry ~depr cl ty f =
   let cl = untype_classifier ty cl in
   let f = untype_command ty f in
   let r = untype_grammar ty in
-  let ext = command, 0 in
+  let ext = { command with Vernacexpr.ext_index = 0 } in
   vinterp_add depr ext f;
   Egramml.declare_vernac_command_grammar ~allow_override:true ext entry r;
-  declare_vernac_classifier command [|cl|];
+  declare_vernac_classifier (ext.ext_plugin, ext.ext_entry) [|cl|];
   ext
 
 let is_static_linking_done = ref false
@@ -215,11 +226,13 @@ let static_vernac_extend ~plugin ~command ?classifier ?entry ext =
       CErrors.user_err (Pp.strbrk msg)
   in
   let cl = Array.map_of_list get_classifier ext in
+  let ext_plugin = Option.default "__" plugin in
   let iter i (TyML (depr, ty, f, _)) =
     let f = untype_command ty f in
     let r = untype_grammar ty in
-    let () = vinterp_add depr (command, i) f in
-    let () = Egramml.declare_vernac_command_grammar ~allow_override:false (command, i) entry r in
+    let ext = Vernacexpr.{ ext_plugin; ext_entry = command; ext_index = i } in
+    let () = vinterp_add depr ext f in
+    let () = Egramml.declare_vernac_command_grammar ~allow_override:false ext entry r in
     let () = match plugin with
       | None ->
         let () =
@@ -227,14 +240,14 @@ let static_vernac_extend ~plugin ~command ?classifier ?entry ext =
           then CErrors.anomaly
               Pp.(str "static_vernac_extend in dynlinked code must pass non-None plugin.")
         in
-        Egramml.extend_vernac_command_grammar ~undoable:false (command, i)
+        Egramml.extend_vernac_command_grammar ~undoable:false ext
       | Some plugin ->
         Mltop.add_init_function plugin (fun () ->
-            Egramml.extend_vernac_command_grammar ~undoable:true (command, i))
+            Egramml.extend_vernac_command_grammar ~undoable:true ext)
     in
     ()
   in
-  let () = declare_vernac_classifier command cl in
+  let () = declare_vernac_classifier (ext_plugin, command) cl in
   let () = List.iteri iter ext in
   ()
 

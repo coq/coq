@@ -122,7 +122,7 @@ val static_linking_done : unit -> unit
     enabled it.
 *)
 val declare_dynamic_vernac_extend
-  : command:string
+  : command:Vernacexpr.extend_name
   -> ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t
   -> depr:bool
   -> 's (* classifier *)
