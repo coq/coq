@@ -963,7 +963,7 @@ let compile_constant_body ~fail_on_error env univs = function
       match alias with
       | Some kn -> Some (BCalias kn)
       | _ ->
-          let res = compile ~fail_on_error ~universes:instance_size env empty_evars body in
+          let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
           Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 
 (* Shortcut of the previous function used during module strengthening *)

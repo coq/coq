@@ -914,8 +914,8 @@ let existential_opt_value0 = existential_opt_value
 let existential_expand_value0 sigma (evk, args) = match existential_opt_value sigma (evk, args) with
 | None ->
   let args = expand_existential sigma (evk, args) in
-  Constr.EvarUndefined (evk, args)
-| Some c -> Constr.EvarDefined c
+  CClosure.EvarUndefined (evk, args)
+| Some c -> CClosure.EvarDefined c
 
 let mkLEvar sigma (evk, args) =
   let EvarInfo evi = find sigma evk in
@@ -928,21 +928,21 @@ let mkLEvar sigma (evk, args) =
 
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
-  let qvar_relevant q = match UState.nf_qvar sigma.universes q with
-  | QConstant QSProp -> false
-  | QConstant QProp | QConstant QType | QVar _ -> true
+  let qvar_irrelevant q = match UState.nf_qvar sigma.universes q with
+  | QConstant QSProp -> true
+  | QConstant QProp | QConstant QType | QVar _ -> false
   in
-  let evar_relevant (evk, _) = match find sigma evk with
+  let evar_irrelevant (evk, _) = match find sigma evk with
   | EvarInfo evi ->
     begin match evi.evar_relevance with
-    | Sorts.Relevant -> true
-    | Sorts.Irrelevant -> false
-    | Sorts.RelevanceVar q -> qvar_relevant q
+    | Sorts.Relevant -> false
+    | Sorts.Irrelevant -> true
+    | Sorts.RelevanceVar q -> qvar_irrelevant q
     end
   | exception Not_found -> true
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { evar_expand; evar_relevant; evar_repack; qvar_relevant }
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with

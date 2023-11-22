@@ -119,6 +119,26 @@ let mk_red f = {mark=Red;term=f}
 let update v1 mark t =
   v1.mark <- mark; v1.term <- t
 
+type 'a evar_expansion =
+| EvarDefined of 'a
+| EvarUndefined of Evar.t * 'a list
+
+type 'constr evar_handler = {
+  evar_expand : 'constr pexistential -> 'constr evar_expansion;
+  evar_repack : Evar.t * 'constr list -> 'constr;
+  evar_irrelevant : 'constr pexistential -> bool;
+  qvar_irrelevant : Sorts.QVar.t -> bool;
+}
+
+let default_evar_handler env = {
+  evar_expand = (fun _ -> assert false);
+  evar_repack = (fun _ -> assert false);
+  evar_irrelevant = (fun _ -> assert false);
+  qvar_irrelevant = (fun q ->
+      assert (Sorts.QVar.Set.mem q env.env_qualities);
+      false);
+}
+
 (** Reduction cache *)
 type infos_cache = {
   i_env : env;
@@ -309,7 +329,7 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 | Reduction -> false
 | Conversion -> match r with
   | Sorts.Irrelevant -> true
-  | Sorts.RelevanceVar q -> not (info.i_cache.i_sigma.qvar_relevant q)
+  | Sorts.RelevanceVar q -> info.i_cache.i_sigma.qvar_irrelevant q
   | Sorts.Relevant -> false
 
 (************************************************************************)
@@ -1303,11 +1323,11 @@ and knht info e t stk =
       | EvarDefined c -> knht info e c stk
       | EvarUndefined (evk, args) ->
         assert (UVars.Instance.is_empty (snd e));
-        if info.i_cache.i_sigma.evar_relevant ev then
+        if info.i_cache.i_sigma.evar_irrelevant ev then
+          (mk_irrelevant, skip_irrelevant_stack info stk)
+        else
           let repack = info.i_cache.i_sigma.evar_repack in
           { mark = Ntrl; term = FEvar (evk, args, e, repack) }, stk
-        else
-          (mk_irrelevant, skip_irrelevant_stack info stk)
       end
     | Array(u,t,def,ty) ->
       let len = Array.length t in
@@ -1619,7 +1639,8 @@ let whd_stack infos tab m stk = match m.mark with
   in
   k
 
-let create_infos i_mode ?univs ?(evars=default_evar_handler) i_flags i_env =
+let create_infos i_mode ?univs ?evars i_flags i_env =
+  let evars = Option.default (default_evar_handler i_env) evars in
   let i_univs = Option.default (Environ.universes i_env) univs in
   let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
   let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in

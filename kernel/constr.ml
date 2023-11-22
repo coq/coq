@@ -1465,24 +1465,6 @@ type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
-type 'a evar_expansion =
-| EvarDefined of 'a
-| EvarUndefined of Evar.t * 'a list
-
-type 'constr evar_handler = {
-  evar_expand : 'constr pexistential -> 'constr evar_expansion;
-  evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_relevant : 'constr pexistential -> bool;
-  qvar_relevant : Sorts.QVar.t -> bool;
-}
-
-let default_evar_handler = {
-  evar_expand = (fun _ -> assert false);
-  evar_repack = (fun _ -> assert false);
-  evar_relevant = (fun _ -> assert false);
-  qvar_relevant = (fun _ -> assert false);
-}
-
 (** Minimalistic constr printer, typically for debugging *)
 
 let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =

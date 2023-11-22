@@ -19,6 +19,7 @@
 #install_printer  (* univ instance *) ppuniverse_instance;;
 #install_printer  (* univ subst *) ppuniverse_subst;;
 #install_printer  (* univ full subst *) ppuniverse_level_subst;;
+#install_printer ppqvar_subst;;
 #install_printer  (* univ opt subst *) ppuniverse_opt_subst;;
 #install_printer  (* evar univ ctx *) ppevar_universe_context;;
 #install_printer  (* inductive *) ppind;;

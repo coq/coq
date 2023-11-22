@@ -19,7 +19,7 @@ exception NotConvertible
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:constr evar_handler ->
+  ?evars:constr CClosure.evar_handler ->
   'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL
@@ -34,7 +34,7 @@ type 'a universe_compare = {
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
+type 'b generic_conversion_function = 'b universe_state -> constr -> constr -> 'b
 
 type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraints.t
 
@@ -63,8 +63,9 @@ val conv_leq : types extended_conversion_function
 (** Depending on the universe state functions, this might raise
   [UniverseInconsistency] in addition to [NotConvertible] (for better error
   messages). *)
-val generic_conv : conv_pb -> l2r:bool -> constr evar_handler ->
-  TransparentState.t -> (constr,'a) generic_conversion_function
+val generic_conv : conv_pb -> l2r:bool
+  -> TransparentState.t -> env -> ?evars:constr CClosure.evar_handler
+  -> 'a generic_conversion_function
 
 val default_conv     : conv_pb -> types kernel_conversion_function
 val default_conv_leq : types kernel_conversion_function

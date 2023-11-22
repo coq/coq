@@ -200,7 +200,7 @@ let warn_bytecode_compiler_failed =
 
 let vm_conv_gen cv_pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
-    Conversion.generic_conv cv_pb ~l2r:false sigma.Genlambda.evars_val
+    Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
   else
   try
@@ -209,7 +209,7 @@ let vm_conv_gen cv_pb sigma env univs t1 t2 =
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
   with Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
-    Conversion.generic_conv cv_pb ~l2r:false sigma.Genlambda.evars_val
+    Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
 
 let vm_conv cv_pb env t1 t2 =
@@ -222,7 +222,7 @@ let vm_conv cv_pb env t1 t2 =
     let state = (univs, checked_universes) in
     let _ : UGraph.t =
       NewProfile.profile "vm_conv" (fun () ->
-          vm_conv_gen cv_pb Genlambda.empty_evars env state t1 t2)
+          vm_conv_gen cv_pb (Genlambda.empty_evars env) env state t1 t2)
         ()
     in
     ()

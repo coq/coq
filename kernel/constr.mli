@@ -617,19 +617,6 @@ val compare_head_gen_leq : UVars.Instance.t instance_compare_fn ->
 val eq_invert : ('a -> 'a -> bool)
   -> 'a pcase_invert -> 'a pcase_invert -> bool
 
-type 'a evar_expansion =
-| EvarDefined of 'a
-| EvarUndefined of Evar.t * 'a list
-
-type 'constr evar_handler = {
-  evar_expand : 'constr pexistential -> 'constr evar_expansion;
-  evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_relevant : 'constr pexistential -> bool;
-  qvar_relevant : Sorts.QVar.t -> bool;
-}
-
-val default_evar_handler : 'constr evar_handler
-
 (** {6 Hashconsing} *)
 
 val hash : constr -> int

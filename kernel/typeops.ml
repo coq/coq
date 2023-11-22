@@ -387,7 +387,7 @@ let check_cast env c ct k expected_type =
     | DEFAULTcast ->
       default_conv CUMUL env ct expected_type
     | NATIVEcast ->
-      let sigma = Genlambda.empty_evars in
+      let sigma = Genlambda.empty_evars env in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
   with NotConvertible ->
     error_actual_type env (make_judge c ct) expected_type

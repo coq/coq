@@ -217,7 +217,7 @@ let infer_definition ~sec_univs env entry =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_relevance = Relevanceops.relevance_of_term env j.uj_val;
+    const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.const_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
   }

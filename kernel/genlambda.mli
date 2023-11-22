@@ -50,9 +50,9 @@ and 'v lam_branches =
 and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-  { evars_val : constr evar_handler }
+  { evars_val : constr CClosure.evar_handler }
 
-val empty_evars : evars
+val empty_evars : Environ.env -> evars
 
 (** {5 Manipulation functions} *)
 

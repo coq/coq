@@ -53,10 +53,10 @@ and 'v lam_branches =
 and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-  { evars_val : constr evar_handler }
+  { evars_val : constr CClosure.evar_handler }
 
-let empty_evars =
-  { evars_val = default_evar_handler }
+let empty_evars env =
+  { evars_val = CClosure.default_evar_handler env }
 
 (** Printing **)
 
@@ -567,7 +567,7 @@ module Cache =
         r
   end
 
-let evar_value sigma ev = sigma.evars_val.evar_expand ev
+let evar_value sigma ev = sigma.evars_val.CClosure.evar_expand ev
 
 (** Extract the inductive type over which a fixpoint is decreasing *)
 let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
@@ -590,10 +590,10 @@ let rec lambda_of_constr cache env sigma c =
 
   | Evar ev ->
      (match evar_value sigma ev with
-     | Constr.EvarUndefined (evk, args) ->
+     | CClosure.EvarUndefined (evk, args) ->
         let args = Array.map_of_list (fun c -> lambda_of_constr cache env sigma c) args in
         Levar(evk, args)
-     | Constr.EvarDefined t -> lambda_of_constr cache env sigma t)
+     | CClosure.EvarDefined t -> lambda_of_constr cache env sigma t)
 
   | Cast (c, _, _) -> lambda_of_constr cache env sigma c
 
