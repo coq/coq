@@ -1835,11 +1835,19 @@ let vernac_set_strategy ~local l =
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
-let vernac_set_opacity ~local (v,l) =
+let vernac_set_opacity ~on_proj_constant ~local (v,l) =
   let local = Option.default true local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> Evaluable.EvalConstRef sp
+      | GlobRef.ConstRef sp ->
+          begin
+            match Structures.PrimitiveProjections.find_opt sp with
+            | None when on_proj_constant -> user_err Pp.(str
+                "Only compatibility constant opacity can be set this way.")
+            | None -> Evaluable.EvalConstRef sp
+            | Some _ when on_proj_constant -> Evaluable.EvalConstRef sp
+            | Some p -> Evaluable.EvalProjectionRef p
+          end
       | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
@@ -2465,8 +2473,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacGeneralizable gen ->
     vtdefault(fun () -> with_locality ~atts vernac_generalizable gen)
 
-  | VernacSetOpacity qidl ->
-    vtdefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
+  | VernacSetOpacity (qidl, on_proj_constant) ->
+    vtdefault(fun () ->
+        with_locality ~atts (vernac_set_opacity ~on_proj_constant) qidl)
 
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)

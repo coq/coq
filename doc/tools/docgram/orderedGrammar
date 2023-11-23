@@ -923,8 +923,8 @@ command: [
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
 | "Include" "Type" LIST1 module_type_inl SEP "<+"
-| "Transparent" LIST1 reference
-| "Opaque" LIST1 reference
+| "Transparent" OPT "!" LIST1 reference
+| "Opaque" OPT "!" LIST1 reference
 | "Strategy" LIST1 [ strategy_level "[" LIST1 reference "]" ]
 | "Canonical" OPT "Structure" ident_decl def_body
 | "Canonical" OPT "Structure" reference

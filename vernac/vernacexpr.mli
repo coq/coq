@@ -463,7 +463,7 @@ type nonrec synpure_vernac_expr =
       arguments_modifier list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
-  | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
+  | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list) * bool
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
   | VernacMemOption of Goptions.option_name * Goptions.table_value list

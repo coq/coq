@@ -1126,14 +1126,14 @@ let pr_synpure_vernac_expr v =
             str (if List.length idl > 1 then "s " else " ") ++
             prlist_with_sep spc pr_lident idl)
         ))
-  | VernacSetOpacity(k,l) when Conv_oracle.is_transparent k ->
+  | VernacSetOpacity((k,l),b) when Conv_oracle.is_transparent k ->
     return (
-      hov 1 (keyword "Transparent" ++
+      hov 1 (keyword (if b then "Transparent!" else "Transparent") ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
     )
-  | VernacSetOpacity(Conv_oracle.Opaque,l) ->
+  | VernacSetOpacity((Conv_oracle.Opaque,l),b) ->
     return (
-      hov 1 (keyword "Opaque" ++
+      hov 1 (keyword (if b then "Opaque!" else "Opaque") ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
     )
   | VernacSetOpacity _ ->
