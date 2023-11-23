@@ -43,41 +43,54 @@ function project {
 # MathComp
 ########################################################################
 project mathcomp "https://github.com/math-comp/math-comp" "master"
+# Contact @CohenCyril, @proux01 on github
 
 project mathcomp_1 "https://github.com/math-comp/math-comp" "mathcomp-1"
+# Contact @CohenCyril, @proux01 on github
 
 project fourcolor "https://github.com/math-comp/fourcolor" "master"
+# Contact @ybertot, @proux01 on github
 
 project oddorder "https://github.com/math-comp/odd-order" "master"
+# Contact @gares, @proux01 on github
 
 project mczify "https://github.com/math-comp/mczify" "master"
+# Contact @pi8027 on github
 
 project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4c7ebda35081b60"
 # put back master when Analysis master moves to MathComp 2
 # project finmap "https://github.com/math-comp/finmap" "master"
+# Contact @CohenCyril on github
 
 project bigenough "https://github.com/math-comp/bigenough" "master"
+# Contact @CohenCyril on github
 
 project analysis "https://github.com/math-comp/analysis" "master"
+# Contact @affeldt-aist, @CohenCyril on github
 
 ########################################################################
 # UniMath
 ########################################################################
 project unimath "https://github.com/UniMath/UniMath" "master"
+# Contact @benediktahrens, @m-lindgren, @nmvdw, @rmatthes on github
 
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
 project unicoq "https://github.com/unicoq/unicoq" "master"
+# Contact @beta-ziliani, @Janno, @mattam82 on github
 
 project mtac2 "https://github.com/Mtac2/Mtac2" "master"
+# Contact @beta-ziliani, @Janno, @mattam82 on github
 
 ########################################################################
 # Mathclasses + Corn
 ########################################################################
 project math_classes "https://github.com/coq-community/math-classes" "master"
+# Contact @spitters on github
 
 project corn "https://github.com/coq-community/corn" "master"
+# Contact @spitters on github
 
 ########################################################################
 # Iris
@@ -86,263 +99,320 @@ project corn "https://github.com/coq-community/corn" "master"
 # NB: stdpp and Iris refs are gotten from the opam files in the Iris
 # and iris_examples repos respectively.
 project stdpp "https://gitlab.mpi-sws.org/iris/stdpp" ""
+# Contact @RalfJung, @robbertkrebbers on github
 
 project iris "https://gitlab.mpi-sws.org/iris/iris" ""
+# Contact @RalfJung, @robbertkrebbers on github
 
 project autosubst "https://github.com/coq-community/autosubst" "master"
+# Contact @RalfJung, @co-dan on github
 
 project iris_examples "https://gitlab.mpi-sws.org/iris/examples" "master"
+# Contact @RalfJung, @robbertkrebbers on github
 
 ########################################################################
 # HoTT
 ########################################################################
 project hott "https://github.com/HoTT/HoTT" "master"
+# Contact @Alizter, @jdchristensen on github
 
 ########################################################################
 # CoqHammer
 ########################################################################
 project coqhammer "https://github.com/lukaszcz/coqhammer" "master"
+# Contact @lukaszcz on github
 
 ########################################################################
 # Flocq
 ########################################################################
 project flocq "https://gitlab.inria.fr/flocq/flocq" "master"
+# Contact @silene on github
 
 ########################################################################
 # coq-performance-tests
 ########################################################################
 project coq_performance_tests "https://github.com/coq-community/coq-performance-tests" "master"
+# Contact @JasonGross on github
 
 ########################################################################
 # coq-tools
 ########################################################################
 project coq_tools "https://github.com/JasonGross/coq-tools" "master"
+# Contact @JasonGross on github
 
 ########################################################################
 # Coquelicot
 ########################################################################
 project coquelicot "https://gitlab.inria.fr/coquelicot/coquelicot" "master"
+# Contact @silene on github
 
 ########################################################################
 # CompCert
 ########################################################################
 project compcert "https://github.com/AbsInt/CompCert" "master"
+# Contact @xavierleroy on github
 
 ########################################################################
 # VST
 ########################################################################
 project vst "https://github.com/PrincetonUniversity/VST" "master"
+# Contact @andrew-appel on github
 
 ########################################################################
 # cross-crypto
 ########################################################################
 project cross_crypto "https://github.com/mit-plv/cross-crypto" "master"
+# Contact @andres-erbsen on github
 
 ########################################################################
 # rewriter
 ########################################################################
 project rewriter "https://github.com/mit-plv/rewriter" "master"
+# Contact @JasonGross on github
 
 ########################################################################
 # fiat_parsers
 ########################################################################
 project fiat_parsers "https://github.com/mit-plv/fiat" "master"
+# Contact @JasonGross on github
 
 ########################################################################
 # fiat_crypto
 ########################################################################
 project fiat_crypto "https://github.com/mit-plv/fiat-crypto" "master"
+# Contact @andres-erbsen, @JasonGross on github
 
 ########################################################################
 # fiat_crypto_legacy
 ########################################################################
 project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
+# Contact @JasonGross on github
 
 ########################################################################
 # coq_dpdgraph
 ########################################################################
-project coq_dpdgraph "https://github.com/Karmaki/coq-dpdgraph" "coq-master"
+project coq_dpdgraph "https://github.com/coq-community/coq-dpdgraph" "coq-master"
+# Contact @Karmaki, @ybertot on github
 
 ########################################################################
 # CoLoR
 ########################################################################
 project color "https://github.com/fblanqui/color" "master"
+# Contact @fblanqui on github
 
 ########################################################################
 # TLC
 ########################################################################
 project tlc "https://github.com/charguer/tlc" "master-for-coq-ci"
+# Contact @charguer on github
 
 ########################################################################
 # Bignums
 ########################################################################
 project bignums "https://github.com/coq/bignums" "master"
+# Contact @erikmd, @proux01 on github
 
 ########################################################################
 # coqprime
 ########################################################################
 project coqprime "https://github.com/thery/coqprime" "master"
+# Contact @thery on github
 
 ########################################################################
 # bbv
 ########################################################################
 project bbv "https://github.com/mit-plv/bbv" "master"
+# Contact @JasonGross, @samuelgruetter on github
 
 ########################################################################
 # bedrock2
 ########################################################################
 project bedrock2 "https://github.com/mit-plv/bedrock2" "tested"
+# Contact @samuelgruetter, @andres-erbsen on github
 
 ########################################################################
 # Coinduction
 ########################################################################
 project coinduction "https://github.com/damien-pous/coinduction" "master"
+# Contact @damien-pous on github
 
 ########################################################################
 # coq-lsp
 ########################################################################
 project coq_lsp "https://github.com/ejgallego/coq-lsp" "main"
+# Contact @ejgallego on github
 
 ########################################################################
 # Equations
 ########################################################################
 project equations "https://github.com/mattam82/Coq-Equations" "main"
+# Contact @mattam82 on github
 
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
 project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
+# Contact @gares on github
 
 project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "master"
+# Contact @CohenCyril, @gares on github
 
 ########################################################################
 # Engine-Bench
 ########################################################################
 project engine_bench "https://github.com/mit-plv/engine-bench" "master"
+# Contact @JasonGross on github
 
 ########################################################################
 # fcsl-pcm
 ########################################################################
 project fcsl_pcm "https://github.com/imdea-software/fcsl-pcm" "master"
+# Contact @aleksnanevski, @clayrat on github
 
 ########################################################################
 # ext-lib
 ########################################################################
 project ext_lib "https://github.com/coq-community/coq-ext-lib" "master"
+# Contact @gmalecha, @liyishuai on github
 
 ########################################################################
 # simple-io
 ########################################################################
 project simple_io "https://github.com/Lysxia/coq-simple-io" "master"
+# Contact @Lysxia, @liyishuai on github
 
 ########################################################################
 # quickchick
 ########################################################################
 project quickchick "https://github.com/QuickChick/QuickChick" "master"
+# Contact @lemonidas, @Lysxia, @liyishuai on github
 
 ########################################################################
 # reduction-effects
 ########################################################################
 project reduction_effects "https://github.com/coq-community/reduction-effects" "master"
+# Contact @liyishuai, @JasonGross on github
 
 ########################################################################
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
 project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "master"
+# Contact @fpottier, @jhjourdan on github
 
 ########################################################################
 # coq-neural-net-interp
 ########################################################################
 project neural_net_interp "https://github.com/JasonGross/neural-net-coq-interp" "tested"
+# Contact @JasonGross on github
 
 ########################################################################
 # aac_tactics
 ########################################################################
 project aac_tactics "https://github.com/coq-community/aac-tactics" "master"
+# Contact @palmskog on github
 
 ########################################################################
 # paco
 ########################################################################
 project paco "https://github.com/snu-sf/paco" "master"
+# Contact @minkiminki on github
 
 ########################################################################
 # coq-itree
 ########################################################################
 project itree "https://github.com/DeepSpec/InteractionTrees" "master"
+# Contact @Lysxia on github
 
 ########################################################################
 # coq-itree_io
 ########################################################################
 project itree_io "https://github.com/Lysxia/coq-itree-io" "master"
+# Contact @Lysxia, @liyishuai on github
 
 ########################################################################
 # coq-ceres
 ########################################################################
 project ceres "https://github.com/Lysxia/coq-ceres" "master"
+# Contact @Lysxia on github
 
 ########################################################################
 # coq-parsec
 ########################################################################
 project parsec "https://github.com/liyishuai/coq-parsec" "master"
+# Contact @liyishuai on github
 
 ########################################################################
 # coq-json
 ########################################################################
 project json "https://github.com/liyishuai/coq-json" "master"
+# Contact @liyishuai on github
 
 ########################################################################
 # coq-async-test
 ########################################################################
 project async_test "https://github.com/liyishuai/coq-async-test" "master"
+# Contact @liyishuai on github
 
 ########################################################################
 # coq-http
 ########################################################################
 project http "https://github.com/liyishuai/coq-http" "master"
+# Contact @liyishuai on github
 
 ########################################################################
 # paramcoq
 ########################################################################
 project paramcoq "https://github.com/coq-community/paramcoq" "master"
+# Contact @proux01 on github
 
 ########################################################################
 # relation_algebra
 ########################################################################
 project relation_algebra "https://github.com/damien-pous/relation-algebra" "master"
+# Contact @damien-pous on github
 
 ########################################################################
 # StructTact + InfSeqExt + Cheerios + Verdi + Verdi Raft
 ########################################################################
 project struct_tact "https://github.com/uwplse/StructTact" "master"
+# Contact @palmskog on github
 
 project inf_seq_ext "https://github.com/DistributedComponents/InfSeqExt" "master"
+# Contact @palmskog on github
 
 project cheerios "https://github.com/uwplse/cheerios" "master"
+# Contact @palmskog on github
 
 project verdi "https://github.com/uwplse/verdi" "master"
+# Contact @palmskog on github
 
 project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
+# Contact @palmskog on github
 
 ########################################################################
 # stdlib2
 ########################################################################
 project stdlib2 "https://github.com/coq/stdlib2" "master"
+# Contact @maximedenes, @vbgl on github
 
 ########################################################################
 # argosy
 ########################################################################
 project argosy "https://github.com/mit-pdos/argosy" "master"
+# Contact @tchajed on github
 
 ########################################################################
 # ATBR
 ########################################################################
 project atbr "https://github.com/coq-community/atbr" "master"
+# Contact @palmskog, @tchajed on github
 
 ########################################################################
 # perennial
 ########################################################################
 project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
+# Contact @upamanyus, @RalfJung, @tchajed on github
 # PRs to fix Perennial failures should be submitted against the Perennial
 # `master` branch. `coq/tested` is automatically updated every night to the
 # `master` branch if CI on `master` is green. This is to avoid breaking Coq CI
@@ -352,41 +422,49 @@ project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
 # metacoq
 ########################################################################
 project metacoq "https://github.com/MetaCoq/metacoq" "main"
+# Contact @mattam82, @yforster on github
 
 ########################################################################
 # SF suite
 ########################################################################
 project sf "https://github.com/DeepSpec/sf" "master"
+# Contact @bcpierce00, @liyishuai on github
 
 ########################################################################
 # Coqtail
 ########################################################################
 project coqtail "https://github.com/whonore/Coqtail" "master"
+# Contact @whonore on github
 
 ########################################################################
 # Deriving
 ########################################################################
 project deriving "https://github.com/arthuraa/deriving" "master"
+# Contact @arthuraa on github
 
 ########################################################################
 # VsCoq
 ########################################################################
 project vscoq "https://github.com/coq-community/vscoq" "coq-master"
+# Contact @rtetley, @gares on github
 
 ########################################################################
 # category-theory
 ########################################################################
 project category_theory "https://github.com/jwiegley/category-theory" "master"
+# Contact @jwiegley on github
 
 ########################################################################
 # itauto
 ########################################################################
 project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
+# Contact @fajb on github
 
 ########################################################################
 # Mathcomp-word
 ########################################################################
 project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
+# Contact @vbgl, @strub on github
 # go back to "main" and change dependency to MC 2 when
 # https://github.com/jasmin-lang/jasmin/pull/560 is merged
 
@@ -394,43 +472,52 @@ project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
 # Jasmin
 ########################################################################
 project jasmin "https://github.com/jasmin-lang/jasmin" "main"
+# Contact @vbgl, @bgregoir on github
 
 ########################################################################
 # Lean Importer
 ########################################################################
 project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
+# Contact @SkySkimmer on github
 
 ########################################################################
 # SerAPI
 ########################################################################
 project serapi "https://github.com/ejgallego/coq-serapi" "main"
+# Contact @ejgallego on github
 
 ########################################################################
 # SMTCoq
 ########################################################################
 project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
+# Contact @ckeller on github
 
 ########################################################################
 # Stalmarck
 ########################################################################
 project stalmarck "https://github.com/coq-community/stalmarck" "master"
+# Contact @palmskog on github
 
 ########################################################################
 # coq-library-undecidability
 ########################################################################
 project coq_library_undecidability "https://github.com/uds-psl/coq-library-undecidability" "master"
+# Contact @mrhaandi, @yforster on github
 
 ########################################################################
 # Tactician
 ########################################################################
 project tactician "https://github.com/coq-tactician/coq-tactician" "coqdev"
+# Contact @LasseBlaauwbroek on github
 
 ########################################################################
 # Ltac2 compiler
 ########################################################################
 project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
+# Contact @SkySkimmer on github
 
 ########################################################################
 # Waterproof
 ########################################################################
 project waterproof "https://github.com/impermeable/coq-waterproof" "coq-master"
+# Contact @jellooo038, @jim-portegies on github
