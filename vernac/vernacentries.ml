@@ -69,6 +69,12 @@ module DefAttributes = struct
 
   let clearbody = bool_attribute ~name:"clearbody"
 
+  let make_information deprecated =
+    let open Library_info in
+    match deprecated with
+    | Some depr -> [Deprecation depr]
+    | None -> []
+
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
     let (((((((locality, deprecated), polymorphic), program),
@@ -1399,7 +1405,9 @@ let vernac_require_interp needed modrefl export qidl =
   in
   if Dumpglob.dump () then
     List.iter2 (fun ({CAst.loc},_) dp -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
+  (* Load *)
   Library.require_library_from_dirpath needed;
+  (* Import*)
   Option.iter (fun (export,cats) ->
       let cats = interp_import_cats cats in
       List.iter2 (fun m (_,f) ->
@@ -2076,6 +2084,13 @@ let vernac_register qid r =
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr
 
+let vernac_library_attributes atts =
+  if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
+    let deprecated = Attributes.parse deprecation atts in
+    Lib.Synterp.declare_info (DefAttributes.make_information deprecated)
+  else
+    user_err (Pp.str "A library attribute should be at toplevel of the library.")
+
 (********************)
 (* Proof management *)
 
@@ -2517,6 +2532,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         Flags.if_verbose Feedback.msg_info (str "Comments ok\n"))
+
+  | VernacAttributes atts ->
+    vtdefault(fun () ->
+        vernac_library_attributes atts)
 
   (* Proof management *)
   | VernacFocus n ->

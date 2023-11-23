@@ -22,7 +22,7 @@ Defining record types
 
    .. prodn::
       record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident } }
-      record_field ::= {* #[ {*, @attribute } ] } @name {? @field_spec } {? %| @natural }
+      record_field ::= {* #[ {+, @attribute } ] } @name {? @field_spec } {? %| @natural }
       field_spec ::= {* @binder } @of_type_inst
       | {* @binder } := @term
       | {* @binder } @of_type_inst := @term

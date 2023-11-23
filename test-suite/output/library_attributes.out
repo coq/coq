@@ -1,0 +1,10 @@
+File "./output/library_attributes.v", line 4, characters 16-21:
+The command has indeed failed with message:
+This command does not support this attribute: local.
+[unsupported-attributes,parsing,default]
+File "./output/library_attributes.v", line 7, characters 0-70:
+The command has indeed failed with message:
+A library attribute should be at toplevel of the library.
+File "./output/library_attributes.v", line 11, characters 0-69:
+The command has indeed failed with message:
+A library attribute should be at toplevel of the library.

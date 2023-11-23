@@ -1226,7 +1226,12 @@ let pr_synpure_vernac_expr v =
         (keyword "Comments" ++ spc()
          ++ prlist_with_sep sep (pr_comment pr_constr) l)
     )
-
+  | VernacAttributes attrs ->
+    return (
+      hov 2
+        (keyword "Attributes" ++ spc () ++
+         pr_vernac_attributes attrs)
+    )
   | VernacProof (None, None) ->
     return (keyword "Proof")
   | VernacProof (None, Some e) ->

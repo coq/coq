@@ -43,6 +43,7 @@ let search_queries = Entry.make "search_queries"
 let subprf = Entry.make "subprf"
 
 let quoted_attributes = Entry.make "quoted_attributes"
+let attribute_list = Entry.make "attribute_list"
 let coercion_class = Entry.make "coercion_class"
 let thm_token = Entry.make "thm_token"
 let def_token = Entry.make "def_token"
@@ -89,7 +90,7 @@ let test_id_colon =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: vernac_control quoted_attributes gallina_ext noedit_mode subprf;
+  GLOBAL: vernac_control quoted_attributes attribute_list gallina_ext noedit_mode subprf;
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
         { add_control_flag ~loc ~flag:ControlTime c }
@@ -116,7 +117,7 @@ GRAMMAR EXTEND Gram
     ]
   ;
   attribute_list:
-    [ [ a = LIST0 attribute SEP "," -> { a } ]
+    [ [ a = LIST1 attribute SEP "," -> { a } ]
     ]
   ;
   attribute:
@@ -955,6 +956,9 @@ GRAMMAR EXTEND Gram
 
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> { VernacSynPure (VernacComments l) }
+
+      | IDENT "Attributes"; attr = attribute_list ->
+        { VernacSynPure (VernacAttributes attr) }
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";

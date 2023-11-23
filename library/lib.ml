@@ -132,6 +132,8 @@ let dummy = {
 let synterp_state = ref dummy
 let interp_state = ref ([] : Summary.Interp.frozen library_segment)
 
+let library_info = ref []
+
 let contents () = !interp_state
 
 let start_compilation s mp =
@@ -346,6 +348,8 @@ module type LibActions = sig
 
   val drop_objects : frozen -> frozen
 
+  val declare_info : Library_info.t list -> unit
+
 end
 
 module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = struct
@@ -433,6 +437,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
     { st with lib_stk = lib_synterp_stk }
 
+  let declare_info info = library_info := !library_info @ info
+
 end
 
 module InterpActions : LibActions with type summary = Summary.Interp.frozen = struct
@@ -500,6 +506,8 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
     in
     List.map (fun (node,_) -> drop_node node, []) interp_state
 
+  let declare_info _ = ()
+
 end
 
 let add_discharged_leaf obj =
@@ -563,6 +571,8 @@ module type StagedLibS = sig
   val init : unit -> unit
 
   val drop_objects : frozen -> frozen
+
+  val declare_info : Library_info.t list -> unit
 
 end
 
@@ -645,6 +655,8 @@ let init () = Actions.init ()
 
 let drop_objects st = Actions.drop_objects st
 
+let declare_info info = Actions.declare_info info
+
 end
 
 module Synterp : StagedLibS with type summary = Summary.Synterp.frozen = StagedLib(SynterpActions)
@@ -659,7 +671,7 @@ let end_compilation dir =
   synterp_state := { !synterp_state with comp_name = None };
   let syntax_after = Synterp.classify_segment syntax_after in
   let after = Interp.classify_segment after in
-  !synterp_state.path_prefix, after, syntax_after
+  !synterp_state.path_prefix, !library_info, after, syntax_after
 
 (** Compatibility layer *)
 let init () =

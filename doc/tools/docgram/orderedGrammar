@@ -264,7 +264,7 @@ attribute: [
 attr_value: [
 | "=" string
 | "=" ident
-| "(" LIST0 attribute SEP "," ")"
+| "(" LIST1 attribute SEP "," ")"
 ]
 
 legacy_attr: [
@@ -533,7 +533,7 @@ record_definition: [
 ]
 
 record_field: [
-| LIST0 [ "#[" LIST0 attribute SEP "," "]" ] name OPT field_spec OPT [ "|" natural ]
+| LIST0 [ "#[" LIST1 attribute SEP "," "]" ] name OPT field_spec OPT [ "|" natural ]
 ]
 
 field_spec: [
@@ -559,7 +559,7 @@ inductive_definition: [
 ]
 
 constructor: [
-| LIST0 [ "#[" LIST0 attribute SEP "," "]" ] ident LIST0 binder OPT of_type_inst
+| LIST0 [ "#[" LIST1 attribute SEP "," "]" ] ident LIST0 binder OPT of_type_inst
 ]
 
 import_categories: [
@@ -826,6 +826,7 @@ command: [
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]
+| "Attributes" LIST1 attribute SEP ","
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
 | "Obligation" natural OPT ( "of" ident ) OPT ( ":" type OPT ( "with" ltac_expr ) )

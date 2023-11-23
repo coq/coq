@@ -528,6 +528,7 @@ command: [
 | "Remove" "Hints" LIST1 global opt_hintbases
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
+| "Attributes" attribute_list
 | "Declare" "Instance" ident_decl binders ":" term200 hint_info
 | "Declare" "Scope" IDENT
 | "Pwd"
@@ -751,7 +752,7 @@ quoted_attributes: [
 ]
 
 attribute_list: [
-| LIST0 attribute SEP ","
+| LIST1 attribute SEP ","
 ]
 
 attribute: [

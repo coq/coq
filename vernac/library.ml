@@ -90,6 +90,7 @@ type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
+  md_info : Library_info.t list;
 }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -280,6 +281,7 @@ let intern_from_file lib_resolver dir =
        DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
+  List.iter (fun info -> Library_info.warn_library_info (lsd.md_name,info)) lsd.md_info;
   lsd, lmd, digest_lmd, univs, digest_u, del_opaque
 
 let rec intern_library ~intern (needed, contents as acc) dir =
@@ -488,12 +490,13 @@ let save_library_base f sum lib univs tasks proofs =
 
 (* This is the basic vo save structure *)
 let save_library_struct ~output_native_objects dir =
-  let md_compiled, md_objects, md_syntax_objects, ast =
+  let md_compiled, md_objects, md_syntax_objects, ast, info =
     Declaremods.end_library ~output_native_objects dir in
   let sd =
     { md_name = dir
     ; md_deps = Array.of_list (current_deps ())
     ; md_ocaml = Coq_config.caml_version
+    ; md_info = info
     } in
   let md =
     { md_compiled

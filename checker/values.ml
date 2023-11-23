@@ -435,8 +435,14 @@ let v_stm_seg = v_pair v_tasks v_counters
 
 (** Toplevel structures in a vo (see Cic.mli) *)
 
+let v_deprecation =
+  v_pair (Opt String) (Opt String)
+
+let v_library_info =
+  v_sum "library_info" 0 [|[|String|];[|v_deprecation|]|]
+
 let v_libsum =
-  Tuple ("summary", [|v_dp;v_deps;String|])
+  Tuple ("summary", [|v_dp;v_deps;String;List v_library_info|])
 
 let v_lib =
   Tuple ("library",[|v_compiled_lib;v_librarysyntaxobjs;v_libraryobjs|])
