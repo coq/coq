@@ -647,9 +647,9 @@ library:ci-fcsl_pcm:
   - library:ci-mathcomp_1
 
 library:ci-fiat_crypto:
-  extends:
-    - .ci-template-flambda
-    - .large-tags
+  extends: .ci-template-flambda
+  tags:
+    - "large"
   variables:
     COQEXTRAFLAGS: "-async-proofs-tac-j 0"
   needs:
