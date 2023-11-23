@@ -102,11 +102,13 @@ type library_t = {
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
+  library_info : Library_info.t list;
 }
 
 type library_summary = {
   libsum_name : compilation_unit_name;
   libsum_digests : Safe_typing.vodigest;
+  libsum_info : Library_info.t list;
 }
 
 (* This is a map from names to loaded libraries *)
@@ -238,11 +240,13 @@ let mk_library sd md digests univs =
     library_deps     = sd.md_deps;
     library_digests  = digests;
     library_extra_univs = univs;
+    library_info     = sd.md_info;
   }
 
 let mk_summary m = {
   libsum_name = m.library_name;
   libsum_digests = m.library_digests;
+  libsum_info = m.library_info;
 }
 
 let mk_intern_library sum lib digest_lib univs digest_univs proofs =
@@ -281,19 +285,18 @@ let intern_from_file lib_resolver dir =
        DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  List.iter (fun info -> Library_info.warn_library_info (lsd.md_name,info)) lsd.md_info;
   lsd, lmd, digest_lmd, univs, digest_u, del_opaque
 
 let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
-  try (find_library dir).libsum_digests, acc
+  try find_library dir, acc
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try (DPmap.find dir contents).library_digests, acc
+  try mk_summary (DPmap.find dir contents), acc
   with Not_found ->
   let lsd, lmd, digest_lmd, univs, digest_u, del_opaque = intern dir in
   let m = mk_intern_library lsd lmd digest_lmd univs digest_u del_opaque in
-  m.library_digests, intern_library_deps ~intern acc dir m
+  mk_summary m, intern_library_deps ~intern acc dir m
 
 and intern_library_deps ~intern libs dir m =
   let needed, contents =
@@ -302,7 +305,8 @@ and intern_library_deps ~intern libs dir m =
   (dir :: needed, DPmap.add dir m contents )
 
 and intern_mandatory_library ~intern caller libs (dir,d) =
-  let digest, libs = intern_library ~intern libs dir in
+  let m, libs = intern_library ~intern libs dir in
+  let digest = m.libsum_digests in
   let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     let from = library_full_filename caller in
     user_err
@@ -315,7 +319,9 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
 
 let rec_intern_library ~lib_resolver libs dir =
   let intern dir = intern_from_file lib_resolver dir in
-  let _, libs = intern_library ~intern libs dir in
+  let m, libs = intern_library ~intern libs dir in
+  List.iter (fun info -> Library_info.warn_library_info (m.libsum_name,info))
+    m.libsum_info;
   libs
 
 let native_name_from_filename f =
