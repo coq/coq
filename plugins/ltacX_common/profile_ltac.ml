@@ -10,7 +10,6 @@
 
 open Unicode
 open Pp
-open Printer
 open Util
 
 module M = CString.Map
@@ -231,20 +230,6 @@ let time () =
   let times = Unix.times () in
   times.Unix.tms_utime +. times.Unix.tms_stime
 
-let pp_ltac_call_kind = function
-  | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
-  | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-  (* todo: don't want the KerName instead? *)
-  | Tacexpr.LtacVarCall (_, id, t) -> Names.Id.print id
-  | Tacexpr.LtacAtomCall te ->
-    Pptactic.pr_glob_tactic (Global.env ())
-      (CAst.make (Tacexpr.TacAtom te))
-  | Tacexpr.LtacConstrInterp (env, sigma, c, _) ->
-    pr_glob_constr_env env sigma c
-  | Tacexpr.LtacMLCall te ->
-    (Pptactic.pr_glob_tactic (Global.env ())
-       te)
-
 let string_of_call ck =
   let s = string_of_ppcmds ck in
   let s = String.map (fun c -> if c = '\n' then ' ' else c) s in
@@ -369,12 +354,6 @@ let do_profile_gen pp_call call_trace ?(count_call=true) tac =
           (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
                exit_tactic ~count_call start_time name)))
         | None -> Proofview.tclUNIT ())
-
-let do_profile trace ?count_call tac =
-  do_profile_gen (function
-      | (_, c) :: _ -> Some (pp_ltac_call_kind c)
-      | [] -> None)
-    trace ?count_call tac
 
 (* ************** Accumulation of data from workers ************************* *)
 

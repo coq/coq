@@ -27,6 +27,8 @@ open Pcoq.Constr
 open Pvernac.Vernac_
 open Pltac
 
+open LtacX_common_plugin.G_ltacX_common
+
 let fail_default_value = Locus.ArgArg 0
 
 let arg_of_expr = function
@@ -48,18 +50,10 @@ let reference_to_id qid =
 
 let tactic_mode = Entry.make "tactic_command"
 
-let toplevel_selector = Entry.make "toplevel_selector"
 let tacdef_body = Entry.make "tacdef_body"
 
 (* Registers [tactic_mode] as a parser for proof editing *)
 let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode
-
-(* Hack to parse "[ id" without dropping [ *)
-let test_bracket_ident =
-  let open Pcoq.Lookahead in
-  to_entry "test_bracket_ident" begin
-    lk_kw "[" >> lk_ident
-  end
 
 (* Tactics grammar rules *)
 
@@ -71,7 +65,7 @@ let for_extraargs = ()
 
 GRAMMAR EXTEND Gram
   GLOBAL: tactic tacdef_body ltac_expr tactic_value command hint
-          tactic_mode constr_may_eval constr_eval toplevel_selector
+          tactic_mode constr_may_eval constr_eval
           term;
 
   tactic_then_last:
@@ -119,7 +113,7 @@ GRAMMAR EXTEND Gram
       | IDENT "abstract"; tc = NEXT -> { CAst.make ~loc (TacAbstract (tc,None)) }
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
         { CAst.make ~loc (TacAbstract (tc,Some s)) }
-      | IDENT "only"; sel = selector; ":"; ta = ltac_expr -> { CAst.make ~loc (TacSelect (sel, ta)) } ]
+      | IDENT "only"; sel = goal_selector; ":"; ta = ltac_expr -> { CAst.make ~loc (TacSelect (sel, ta)) } ]
 (*End of To do*)
     | "2" RIGHTA
       [ ta0 = ltac_expr; "+"; ta1 = ltac_expr -> { CAst.make ~loc (TacOr (ta0,ta1)) }
@@ -288,30 +282,6 @@ GRAMMAR EXTEND Gram
     [ [ tac = ltac_expr -> { tac } ] ]
   ;
 
-  range_selector:
-    [ [ n = natural ; "-" ; m = natural -> { (n, m) }
-      | n = natural -> { (n, n) } ] ]
-  ;
-  (* We unfold a range selectors list once so that we can make a special case
-   * for a unique SelectNth selector. *)
-  range_selector_or_nth:
-    [ [ n = natural ; "-" ; m = natural;
-        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
-        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
-      | n = natural;
-        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
-        { let open Goal_select in
-          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
-  ;
-  selector:
-  [ [ l = range_selector_or_nth -> { l }
-    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
-  ;
-  toplevel_selector:
-    [ [ sel = selector; ":" -> { sel }
-    |   "!"; ":" -> { Goal_select.SelectAlreadyFocused }
-    |   IDENT "all"; ":" -> { Goal_select.SelectAll } ] ]
-  ;
   tactic_mode:
     [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> { Vernacexpr.VernacSynPure (tac g) }
       | g = OPT toplevel_selector; "{" -> { Vernacexpr.VernacSynPure (Vernacexpr.VernacSubproof g) } ] ]
@@ -343,34 +313,12 @@ open Tacarg
 open Vernacextend
 open Libnames
 
-let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
-
-}
-
-VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY { pr_ltac_selector }
-| [ toplevel_selector(s) ] -> { s }
-END
-
-{
-
 let pr_ltac_info n = str "Info" ++ spc () ++ int n
 
 }
 
 VERNAC ARGUMENT EXTEND ltac_info PRINTED BY { pr_ltac_info }
 | [ "Info" natural(n) ] -> { n }
-END
-
-{
-
-let pr_ltac_use_default b =
-  if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
-
-}
-
-VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY { pr_ltac_use_default }
-| [ "." ] -> { false }
-| [ "..." ] -> { true }
 END
 
 {

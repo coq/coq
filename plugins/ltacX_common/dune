@@ -1,0 +1,7 @@
+(library
+ (name ltacX_common_plugin)
+ (public_name coq-core.plugins.ltacX_common)
+ (synopsis "Ltac2 and Ltac1 common code plugin")
+ (libraries vernac))
+
+(coq.pp (modules g_ltacX_common))

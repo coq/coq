@@ -964,7 +964,7 @@ command: [
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
 | "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Set" qualid OPT [ "as" ident ] ":=" ltac2_expr
-| "Ltac2" "Notation" [ string | ident      (* ltac2 plugin *) ] ":=" ltac2_expr      (* Ltac2 plugin *)
+| "Ltac2" "Notation" [ string | ident ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* ltac2 plugin *)
 | "Print" "Ltac2" qualid      (* ltac2 plugin *)
 | "Print" "Ltac2" "Type" qualid      (* ltac2 plugin *)
@@ -1178,7 +1178,7 @@ q_ident: [
 ]
 
 ident_or_anti: [
-| ident      (* ltac2 plugin *)
+| ident
 | "$" ident      (* ltac2 plugin *)
 ]
 
@@ -1188,7 +1188,7 @@ q_destruction_arg: [
 
 ltac2_destruction_arg: [
 | natural      (* ltac2 plugin *)
-| ident      (* ltac2 plugin *)
+| ident
 | ltac2_constr_with_bindings      (* ltac2 plugin *)
 ]
 
@@ -1216,7 +1216,7 @@ ltac2_simple_binding: [
 qhyp: [
 | "$" ident      (* ltac2 plugin *)
 | natural      (* ltac2 plugin *)
-| ident      (* ltac2 plugin *)
+| ident
 ]
 
 language: [
@@ -1376,7 +1376,7 @@ simple_tactic: [
 | "once" ltac_expr3
 | "exactly_once" ltac_expr3
 | "abstract" ltac_expr2 OPT ( "using" ident )
-| "only" selector ":" ltac_expr3
+| "only" goal_selector ":" ltac_expr3
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
 | "first" ident
@@ -2055,7 +2055,7 @@ ltac2_expr0: [
 | "[" LIST0 ltac2_expr5 SEP ";" "]"      (* ltac2 plugin *)
 | "{" ltac2_expr0 "with" OPT ( LIST1 tac2rec_fieldexpr SEP ";" OPT ";" ) "}"      (* ltac2 plugin *)
 | "{" OPT ( LIST1 tac2rec_fieldexpr SEP ";" OPT ";" ) "}"      (* ltac2 plugin *)
-| ltac2_tactic_atom      (* ltac2 plugin *)
+| ltac2_atom      (* ltac2 plugin *)
 ]
 
 tac2rec_fieldpats: [
@@ -2068,7 +2068,7 @@ tac2rec_fieldpat: [
 | qualid OPT [ ":=" tac2pat1 ]      (* ltac2 plugin *)
 ]
 
-ltac2_tactic_atom: [
+ltac2_atom: [
 | integer      (* ltac2 plugin *)
 | string      (* ltac2 plugin *)
 | qualid      (* ltac2 plugin *)
@@ -2090,8 +2090,8 @@ ltac2_quotations: [
 ]
 
 ltac1_expr_in_env: [
-| ltac_expr      (* ltac2 plugin *)
-| LIST0 ident "|-" ltac_expr      (* ltac2 plugin *)
+| ltac_expr      (* ltac2_ltac1 plugin *)
+| LIST0 ident "|-" ltac_expr      (* ltac2_ltac1 plugin *)
 ]
 
 ltac2_branches: [
@@ -2249,13 +2249,13 @@ goal_tactics: [
 ]
 
 toplevel_selector: [
-| selector
+| goal_selector
 | "all"
 | "!"
 | "par"
 ]
 
-selector: [
+goal_selector: [
 | LIST1 range_selector SEP ","
 | "[" ident "]"
 ]

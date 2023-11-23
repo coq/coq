@@ -25,6 +25,7 @@ load_printer coqworkmgrlib.cma
 load_printer stm.cma
 load_printer toplevel.cma
 
+load_printer ltacX_common_plugin.cma
 load_printer ltac_plugin.cma
 load_printer top_printers.cma
 

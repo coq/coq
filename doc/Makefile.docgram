@@ -21,6 +21,7 @@ DOC_MLGS := \
 	plugins/extraction/g_extraction.mlg \
 	plugins/firstorder/g_ground.mlg \
 	plugins/funind/g_indfun.mlg \
+	plugins/ltacX_common/g_ltacX_common.mlg \
 	plugins/ltac/coretactics.mlg plugins/ltac/extraargs.mlg plugins/ltac/extratactics.mlg \
 	plugins/ltac/g_auto.mlg plugins/ltac/g_class.mlg plugins/ltac/g_eqdecide.mlg \
 	plugins/ltac/g_ltac.mlg plugins/ltac/g_obligations.mlg plugins/ltac/g_rewrite.mlg \
@@ -30,7 +31,7 @@ DOC_MLGS := \
 	plugins/ring/g_ring.mlg \
 	plugins/rtauto/g_rtauto.mlg \
 	plugins/syntax/g_number_string.mlg \
-	plugins/ltac2/g_ltac2.mlg
+	plugins/ltac2/g_ltac2.mlg plugins/ltac2_ltac1/g_ltac2_ltac1.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 

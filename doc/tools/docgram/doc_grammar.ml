@@ -515,6 +515,7 @@ let autoloaded_mlgs = [ (* productions from other mlgs are marked with TAGs *)
  "plugins/btauto/g_btauto.mlg";
  "plugins/cc/g_congruence.mlg";
  "plugins/firstorder/g_ground.mlg";
+ "plugins/ltacX_common/g_ltacX_common.mlg";
  "plugins/ltac/coretactics.mlg";
  "plugins/ltac/extraargs.mlg";
  "plugins/ltac/extratactics.mlg";

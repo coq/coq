@@ -22,6 +22,8 @@ let legacy_to_findlib = [
   ("extraction_plugin",             ["plugins";"extraction"]) ;
   ("funind_plugin",                 ["plugins";"funind"]) ;
   ("ltac2_plugin",                  ["plugins";"ltac2"]) ;
+  ("ltac2_ltac1_plugin",            ["plugins";"ltac2_ltac1"]) ;
+  ("ltacX_common_plugin",     ["plugins";"ltacX_common"]) ;
   ("nsatz_plugin",                  ["plugins";"nsatz"]) ;
   ("rtauto_plugin",                 ["plugins";"rtauto"]) ;
   ("ssrmatching_plugin",            ["plugins";"ssrmatching"]) ;

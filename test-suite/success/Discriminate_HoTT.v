@@ -9,6 +9,7 @@ Unset Elimination Schemes.
 
 Set Universe Polymorphism.
 
+Declare ML Module "coq-core.plugins.ltacX_common".
 Declare ML Module "coq-core.plugins.ltac".
 
 Global Set Default Proof Mode "Classic".

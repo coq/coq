@@ -8,7 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "ltacX_common_plugin:coq-core.plugins.ltacX_common".
-Declare ML Module "ltac_plugin:coq-core.plugins.ltac".
+val goal_selector : Goal_select.t Pcoq.Entry.t
 
-#[export] Set Default Proof Mode "Classic".
+val toplevel_selector : Goal_select.t Pcoq.Entry.t
+
+val wit_ltac_selector : (Goal_select.t, unit, unit) Genarg.genarg_type
+
+val ltac_selector : Goal_select.t Pcoq.Entry.t
+
+val wit_ltac_use_default : (bool, unit, unit) Genarg.genarg_type
+
+val ltac_use_default : bool Pcoq.Entry.t

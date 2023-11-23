@@ -1,0 +1,71 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+DECLARE PLUGIN "coq-core.plugins.ltacX_common"
+
+{
+open Pcoq
+open Pcoq.Prim
+
+let goal_selector = Entry.make "goal_selector"
+
+let toplevel_selector = Entry.make "toplevel_selector"
+
+let pr_ltac_selector s = Pp.(Goal_select.pr_goal_selector s ++ str ":")
+
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_bracket_ident" begin
+    lk_kw "[" >> lk_ident
+  end
+
+let pr_ltac_use_default b =
+  let open Pp in
+  if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
+
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: toplevel_selector goal_selector;
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> { (n, m) }
+      | n = natural -> { (n, n) } ] ]
+  ;
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { let open Goal_select in
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
+  ;
+  goal_selector:
+  [ [ l = range_selector_or_nth -> { l }
+    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
+  ;
+  toplevel_selector:
+    [ [ sel = goal_selector; ":" -> { sel }
+    |   "!"; ":" -> { Goal_select.SelectAlreadyFocused }
+    |   IDENT "all"; ":" -> { Goal_select.SelectAll } ] ]
+  ;
+END
+
+VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY { pr_ltac_selector }
+| [ toplevel_selector(s) ] -> { s }
+END
+
+VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY { pr_ltac_use_default }
+| [ "." ] -> { false }
+| [ "..." ] -> { true }
+END

@@ -1,5 +1,6 @@
 (* -*- coq-prog-args: ("-noinit"); -*- *)
 
+Declare ML Module "ltacX_common_plugin".
 Declare ML Module "ltac_plugin".
 Global Set Default Proof Mode "Classic".
 

@@ -7,8 +7,3 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-
-Declare ML Module "ltacX_common_plugin:coq-core.plugins.ltacX_common".
-Declare ML Module "ltac_plugin:coq-core.plugins.ltac".
-
-#[export] Set Default Proof Mode "Classic".
