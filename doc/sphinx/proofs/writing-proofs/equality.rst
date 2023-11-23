@@ -952,7 +952,7 @@ The commands to fine-tune the reduction strategies and the lazy conversion
 algorithm are described in this section.  Also see :ref:`Args_effect_on_unfolding`,
 which supports additional fine-tuning.
 
-.. cmd:: Opaque {+ @reference }
+.. cmd:: Opaque {? ! } {+ @reference }
 
    Marks the specified constants as :term:`opaque` so tactics won't :term:`unfold` them
    with :term:`delta-reduction`.
@@ -968,7 +968,7 @@ which supports additional fine-tuning.
    has to check that two distinct applied constants are convertible.
    See Section :ref:`conversion-rules`.
 
-.. cmd:: Transparent {+ @reference }
+.. cmd:: Transparent {? ! } {+ @reference }
 
    The opposite of :cmd:`Opaque`, it marks the specified constants
    as :term:`transparent`
