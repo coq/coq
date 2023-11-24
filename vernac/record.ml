@@ -401,7 +401,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
       if primitive then
         let p = Projection.Repr.make indsp
             ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
-        mkProj (Projection.make p true, rci, mkRel 1), Some (p,rci)
+        mkProj (Projection.make p false, rci, mkRel 1), Some (p,rci)
       else
         let ccl' = liftn 1 2 ccl in
         let p = mkLambda (x, lift 1 rp, ccl') in
