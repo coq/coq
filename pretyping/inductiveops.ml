@@ -265,10 +265,11 @@ let is_squashed sigma ((_,mip),u) =
       | SometimesSquashed squash ->
         (* impredicative set squashes are always AlwaysSquashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
-        if List.for_all (fun q ->
+        if Sorts.Quality.Set.for_all (fun q ->
             let q = UVars.subst_instance_quality u q in
             let q = UState.nf_quality (Evd.evar_universe_context sigma) q in
-            quality_leq q indq) squash then None
+            quality_leq q indq) squash
+        then None
         else Some (SquashToQuality indq)
 
 let is_allowed_elimination sigma ((mib,_),_ as specifu) s =

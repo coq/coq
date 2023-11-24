@@ -281,7 +281,7 @@ let v_mono_ind_arity =
 let v_ind_arity = v_sum "inductive_arity" 0
   [|[|v_mono_ind_arity|];[|v_template_arity|]|]
 
-let v_squash_info = v_sum "squash_info" 1 [|[|List v_quality|]|]
+let v_squash_info = v_sum "squash_info" 1 [|[|v_set v_quality|]|]
 
 let v_one_ind = v_tuple "one_inductive_body"
   [|v_id;

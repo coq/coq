@@ -342,8 +342,11 @@ let is_squashed ((_,mip),u) =
       | SometimesSquashed squash ->
         (* impredicative set squashes are always AlwaysSquashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
-        let squash = List.map (UVars.subst_instance_quality u) squash in
-        if List.for_all (fun q -> quality_leq q indq) squash then None
+        if Sorts.Quality.Set.for_all (fun q ->
+            let q = UVars.subst_instance_quality u q in
+            quality_leq q indq)
+            squash
+        then None
         else Some (SquashToQuality indq)
 
 let is_allowed_elimination specifu s =

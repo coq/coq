@@ -82,11 +82,11 @@ type univ_info =
 
 let add_squash q info =
   match info.ind_squashed with
-  | None -> { info with ind_squashed = Some (SometimesSquashed [q]) }
+  | None -> { info with ind_squashed = Some (SometimesSquashed (Sorts.Quality.Set.singleton q)) }
   | Some AlwaysSquashed -> info
   | Some (SometimesSquashed qs) ->
     (* XXX dedup insertion *)
-    { info with ind_squashed = Some (SometimesSquashed (q::qs)) }
+    { info with ind_squashed = Some (SometimesSquashed (Sorts.Quality.Set.add q qs)) }
 
 (* This code can probably be simplified but I can't quite see how right now. *)
 let check_univ_leq ?(is_real_arg=false) env u info =
@@ -334,7 +334,12 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   let squashed = Option.map (function
       | AlwaysSquashed -> AlwaysSquashed
       | SometimesSquashed qs ->
-        SometimesSquashed (List.map (UVars.subst_sort_level_quality usubst) qs))
+        let qs = Sorts.Quality.Set.fold (fun q qs ->
+            Sorts.Quality.Set.add (UVars.subst_sort_level_quality usubst q) qs)
+            qs
+            Sorts.Quality.Set.empty
+        in
+        SometimesSquashed qs)
       univ_info.ind_squashed
   in
 

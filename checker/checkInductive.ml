@@ -117,7 +117,7 @@ let check_squashed orig generated = match orig, generated with
     | AlwaysSquashed, SometimesSquashed _ -> true
     | SometimesSquashed _, AlwaysSquashed -> false
     | SometimesSquashed s1, SometimesSquashed s2 ->
-      List.for_all (fun s2 -> List.exists (fun s1 -> Sorts.Quality.equal s1 s2) s1) s2
+      Sorts.Quality.Set.subset s2 s1
 
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.

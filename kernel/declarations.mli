@@ -166,7 +166,7 @@ type inductive_arity = (regular_inductive_arity, template_arity) declaration_ari
 
 type squash_info =
   | AlwaysSquashed
-  | SometimesSquashed of Sorts.Quality.t list
+  | SometimesSquashed of Sorts.Quality.Set.t
   (** A sort polymorphic inductive [I@{...|...|...} : ... -> Type@{ s|...}]
       is squashed at a given instantiation if any quality in the list is not smaller than [s].
 

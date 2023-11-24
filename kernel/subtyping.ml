@@ -116,7 +116,7 @@ let check_variance error v1 v2 =
 
 let squash_info_equal s1 s2 = match s1, s2 with
   | AlwaysSquashed, AlwaysSquashed -> true
-  | SometimesSquashed s1, SometimesSquashed s2 -> List.equal Sorts.Quality.equal s1 s2
+  | SometimesSquashed s1, SometimesSquashed s2 -> Sorts.Quality.Set.equal s1 s2
   | (AlwaysSquashed | SometimesSquashed _), _ -> false
 
 (* for now we do not allow reorderings *)
