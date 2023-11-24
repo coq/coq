@@ -13,8 +13,9 @@ Ltac2 red_flags_all : Std.red_flags := {
   Std.rFix   := true;
   Std.rCofix := true;
   Std.rZeta  := true;
-  Std.rConst := []
+  Std.rConst := [];
+  Std.rStrength := Std.Head;
 }.
 Optimize Heap.
 Instructions Ltac2 Eval
-  let t := Std.eval_lazy_whnf red_flags_all '(fac 3) in ().
+  let t := Std.eval_lazy red_flags_all '(fac 3) in ().

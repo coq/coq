@@ -13,7 +13,7 @@ Definition check_unblock@{u} : forall (T : Type@{u}), Blocked@{u} T -> T := @unb
 
 Ltac syn_refl := lazymatch goal with |- ?t = ?t => exact eq_refl end.
 Notation LAZY t := (ltac:(let x := eval lazy in t in exact x)) (only parsing).
-Notation WHNF t := (ltac:(let x := eval lazywhnf  in t in exact x)) (only parsing).
+Notation WHNF t := (ltac:(let x := eval lazy head in t in exact x)) (only parsing).
 
 Goal LAZY (@block) = @block.
 Proof. syn_refl. Qed.
@@ -263,7 +263,7 @@ Module FunctionTypes.
   Inductive D := | d.
   Inductive R := | r (b: D).
   Definition id (x:Set) := x.
-  Eval lazywhnf in @unblock R (let f := (fun x : id (id R) => block x) in @block R (@unblock R (f (r d)))).
+  Eval lazy head in @unblock R (let f := (fun x : id (id R) => block x) in @block R (@unblock R (f (r d)))).
 End FunctionTypes.
 
 Module Conversion.
