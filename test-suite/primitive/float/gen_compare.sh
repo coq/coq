@@ -19,20 +19,17 @@ genTest() {
     if [ $# -ne 10 ]; then
         echo >&2 "genTest expects 10 arguments"
     fi
-    TACTICS=(":" "<:" "<<:")
     OPS=("=?" "<?" "<=?" "?=")
     x="$1"
     y="$2"
     OPS1=("$3" "$4" "$5" "$6")  # for x y
     OPS2=("$7" "$8" "$9" "${10}") # for y x
-    for tac in "${TACTICS[@]}"; do
-        for i in {0..3}; do
-            op="${OPS[$i]}"
-            op1="${OPS1[$i]}"
-            op2="${OPS2[$i]}"
-            echo "Check (eq_refl $op1 $tac $x $op $y = $op1)."
-            echo "Check (eq_refl $op2 $tac $y $op $x = $op2)."
-        done
+    for i in {0..3}; do
+        op="${OPS[$i]}"
+        op1="${OPS1[$i]}"
+        op2="${OPS2[$i]}"
+        echo "Check (eq_refl : $x $op $y = $op1)."
+        echo "Check (eq_refl : $y $op $x = $op2)."
         echo
     done
 }
