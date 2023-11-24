@@ -440,7 +440,7 @@ let v_deprecation =
   v_tuple "deprecation" [|Opt String; Opt String|]
 
 let v_library_info =
-  v_sum "library_info" 0 [|[|String|];[|v_deprecation|]|]
+  v_sum "library_info" 0 [|[|v_deprecation|]|]
 
 let v_libsum =
   Tuple ("summary", [|v_dp;v_deps;String;List v_library_info|])
