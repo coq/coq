@@ -436,7 +436,7 @@ let v_stm_seg = v_pair v_tasks v_counters
 (** Toplevel structures in a vo (see Cic.mli) *)
 
 let v_deprecation =
-  v_pair (Opt String) (Opt String)
+  v_tuple "deprecation" [|Opt String; Opt String|]
 
 let v_library_info =
   v_sum "library_info" 0 [|[|String|];[|v_deprecation|]|]
