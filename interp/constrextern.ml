@@ -1351,8 +1351,9 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
                   insert_entry_coercion appcoercion (CAst.make ?loc @@ extern_applied_notation c extra_args))
           | AbbrevRule kn ->
               let l =
-                List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
-                  extern true ((subentry,lev_after),(scopt,scl@snd scopes)) (vars,uvars) c)
+                List.map (fun ((vars,c),subscope) ->
+                    let scopes = update_with_subscope constr_lowest_level subscope lev_after false (snd scopes) in
+                  extern true scopes (vars,uvars) c)
                   terms
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
