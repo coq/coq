@@ -14,6 +14,19 @@ type production_position =
   | BorderProd of Constrexpr.side * Gramlib.Gramext.g_assoc option
   | InternalProd
 
+let side_eq s1 s2 =
+  Constrexpr.(match s1, s2 with
+  | Left, Left -> true
+  | Right, Right -> true
+  | (Left | Right), _ -> false)
+
+let production_position_eq pos1 pos2 =
+  match pos1, pos2 with
+  | BorderProd (s1,a1), BorderProd (s2,a2) ->
+    side_eq s1 s2 && Option.equal Gramlib.Gramext.g_assoc_eq a1 a2
+  | InternalProd, InternalProd -> true
+  | (BorderProd _ | InternalProd), _ -> false
+
 type production_level =
   | NextLevel
   | NumLevel of int
@@ -37,16 +50,19 @@ type 'a constr_entry_key_gen =
   | ETConstr of Constrexpr.notation_entry * Notation_term.notation_binder_kind option * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
 
-let constr_entry_key_eq v1 v2 = match v1, v2 with
+let constr_entry_key_gen_eq f v1 v2 = match v1, v2 with
   | ETIdent, ETIdent -> true
   | ETName, ETName -> true
   | ETGlobal, ETGlobal -> true
   | ETBigint, ETBigint -> true
   | ETBinder b1, ETBinder b2 -> b1 == b2
-  | ETConstr (s1,bko1,_lev1), ETConstr (s2,bko2,_lev2) ->
-    Notationextern.notation_entry_eq s1 s2 && Option.equal (=) bko1 bko2
+  | ETConstr (s1,bko1,a1), ETConstr (s2,bko2,a2) ->
+    Notationextern.notation_entry_eq s1 s2 && Option.equal Notationextern.notation_binder_kind_eq bko1 bko2 && f a1 a2
   | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
   | (ETIdent | ETName | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
+
+let constr_entry_key_eq =
+  constr_entry_key_gen_eq (Util.eq_pair production_level_eq production_position_eq)
 
 (** Entries level (left-hand side of grammar rules) *)
 
