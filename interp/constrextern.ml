@@ -1284,8 +1284,9 @@ and extern_notation depth inctx ((custom,(lev_after: int option)),scopes as alls
                   insert_entry_coercion appcoercion (CAst.make ?loc @@ extern_applied_notation c extra_args))
           | AbbrevRule kn ->
               let l =
-                List.map (fun ((vars,c),(subentry, scl)) ->
-                  extern depth true ((subentry,lev_after), scl @ subscopes_unbounded scopes) { eenv with vars } c)
+                List.map (fun ((vars,c),subscope) ->
+                    let scopes = update_with_subscope ~flags:eenv.flags constr_lowest_level subscope lev_after false (subscopes_unbounded scopes) in
+                  extern depth true scopes { eenv with vars } c)
                   terms
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc eenv.vars kn in
