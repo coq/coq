@@ -359,11 +359,11 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
    or a typeclass instance according to [flags]. *)
 (* remove the last argument (it will become alway true) after deprecation phase
    (started in 8.17, c.f. https://github.com/coq/coq/pull/16230) *)
-let declare_proj_coercion_instance ~flags ref from ~poly ~with_coercion =
+let declare_proj_coercion_instance ~flags ref from ~with_coercion =
   if with_coercion && flags.Data.pf_coercion then begin
     let cl = ComCoercion.class_of_global from in
     let local = flags.Data.pf_locality = Goptions.OptLocal in
-    ComCoercion.try_add_new_coercion_with_source ref ~local ~poly ~reversible:flags.Data.pf_reversible ~source:cl
+    ComCoercion.try_add_new_coercion_with_source ref ~local ~reversible:flags.Data.pf_reversible ~source:cl
   end;
   if flags.Data.pf_instance then begin
     let env = Global.env () in
@@ -432,7 +432,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let refi = GlobRef.ConstRef kn in
   Impargs.maybe_declare_manual_implicits false refi impls;
-  declare_proj_coercion_instance ~flags refi (GlobRef.IndRef indsp) ~poly ~with_coercion:true;
+  declare_proj_coercion_instance ~flags refi (GlobRef.IndRef indsp) ~with_coercion:true;
   let i = if is_local_assum decl then i+1 else i in
   (Some kn, i, Projection term::subst)
 
@@ -823,7 +823,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
     let cstr = (rsp, 1) in
     let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id proj_flags implfs fields in
     let build = GlobRef.ConstructRef cstr in
-    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~reversible:true in
+    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~reversible:true in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
     GlobRef.IndRef rsp
@@ -877,9 +877,7 @@ let declare_class_constant ~univs paramimpls params data =
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
   let () =
-    let csb = Global.lookup_constant cst in
-    let poly = Declareops.constant_is_polymorphic csb in
-    declare_proj_coercion_instance ~flags:proj_flags (GlobRef.ConstRef proj_cst) cref ~poly ~with_coercion:false in
+    declare_proj_coercion_instance ~flags:proj_flags (GlobRef.ConstRef proj_cst) cref ~with_coercion:false in
   let m = {
     meth_name = Name proj_name;
     meth_info = None;

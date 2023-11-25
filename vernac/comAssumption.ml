@@ -32,14 +32,14 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        r ~local:true ~poly:false ~reversible:true in
+        r ~local:true ~reversible:true in
   ()
 
 let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
   | UState.Monomorphic_entry _ -> UVars.Instance.empty
 
-let declare_axiom is_coe ~poly ~local ~kind ?deprecation typ (univs, ubinders) imps nl {CAst.v=name} =
+let declare_axiom is_coe ~local ~kind ?deprecation typ (univs, ubinders) imps nl {CAst.v=name} =
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -59,7 +59,7 @@ let declare_axiom is_coe ~poly ~local ~kind ?deprecation typ (univs, ubinders) i
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        gr ~local ~poly ~reversible:true in
+        gr ~local ~reversible:true in
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 
@@ -85,7 +85,7 @@ let clear_univs scope univ =
   | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry ~poly:false
   | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry ~poly:true
 
-let declare_assumptions ~poly ~scope ~kind ?deprecation univs nl l =
+let declare_assumptions ~scope ~kind ?deprecation univs nl l =
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
       (* NB: here univs are ignored when scope=Discharge *)
       let typ = replace_vars subst typ in
@@ -96,7 +96,7 @@ let declare_assumptions ~poly ~scope ~kind ?deprecation univs nl l =
                 declare_variable is_coe ~kind typ univs imps Glob_term.Explicit id;
                 GlobRef.VarRef id.CAst.v, UVars.Instance.empty
               | Locality.Global local ->
-                declare_axiom is_coe ~local ~poly ~kind ?deprecation typ univs imps nl id
+                declare_axiom is_coe ~local ~kind ?deprecation typ univs imps nl id
             in
             clear_univs scope univs, (id.CAst.v, Constr.mkRef refu))
           univs idl
@@ -174,7 +174,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?deprecation nl l =
      this case too. *)
   let sigma = Evd.restrict_universe_context sigma uvars in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  declare_assumptions ~poly ~scope ~kind ?deprecation univs nl l
+  declare_assumptions ~scope ~kind ?deprecation univs nl l
 
 let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl

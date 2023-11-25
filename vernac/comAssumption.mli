@@ -45,7 +45,6 @@ val declare_variable
 
 val declare_axiom
   : coercion_flag
-  -> poly:bool
   -> local:Locality.import_status
   -> kind:Decls.assumption_object_kind
   -> ?deprecation:Deprecation.t
