@@ -1011,7 +1011,7 @@ let check_prefix_incompatible_level ntn prec nottyps =
        let pref_nottyps = Notgram_ops.non_terminals_of_notation pref in
        let pref_nottyps = CList.firstn k pref_nottyps in
        let nottyps = CList.firstn k nottyps in
-       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_eq_ignore_binder_kind nottyps pref_nottyps) then
+       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_visible_eq nottyps pref_nottyps) then
          warn_prefix_incompatible_level (pref, ntn, pref_prec, pref_nottyps, prec, nottyps);
      with Not_found | Failure _ -> ()
 
@@ -1033,7 +1033,7 @@ let cache_one_syntax_extension (ntn,synext) =
         with Not_found -> None
       in
       let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
-      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) then begin
+      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_visible_eq synext.synext_nottyps oldtyps) then begin
         if oldparsing = None || synext.synext_notgram = None then
           warn_incompatible_level (ntn,oldprec,oldtyps,prec,synext.synext_nottyps,synext.synext_notgram = None)
         else

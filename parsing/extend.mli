@@ -41,7 +41,7 @@ type constr_entry_key =
 
 val constr_entry_key_eq : constr_entry_key -> constr_entry_key -> bool
 
-val constr_entry_key_eq_ignore_binder_kind : constr_entry_key -> constr_entry_key -> bool
+val constr_entry_key_visible_eq : constr_entry_key -> constr_entry_key -> bool
 
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
