@@ -471,18 +471,19 @@ let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
 (* Used in correctness and interface *)
 let map_binder g e nal = List.fold_right (CAst.with_val (Name.fold_right g)) nal e
 
+let fold_map_local_binder f g e = function
+  (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
+  | CLocalAssum(nal,r,k,ty) ->
+    (map_binder g e nal, CLocalAssum(nal,r,k,f e ty))
+  | CLocalDef( { loc ; v = na } as cna,r,c,ty) ->
+    (Name.fold_right g na e, CLocalDef(cna,r,f e c,Option.map (f e) ty))
+  | CLocalPattern pat ->
+    let e, pat = fold_map_cases_pattern g f e pat in
+    (e, CLocalPattern pat)
+
 let fold_map_local_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
-  let open CAst in
-  let h (e,bl) = function
-      CLocalAssum(nal,r,k,ty) ->
-      (map_binder g e nal, CLocalAssum(nal,r,k,f e ty)::bl)
-    | CLocalDef( { loc ; v = na } as cna ,r,c,ty) ->
-      (Name.fold_right g na e, CLocalDef(cna,r,f e c,Option.map (f e) ty)::bl)
-    | CLocalPattern pat ->
-      let e, pat = fold_map_cases_pattern g f e pat in
-      (e, CLocalPattern pat::bl) in
-  let (e,rbl) = List.fold_left h (e,[]) bl in
+  let (e,rbl) = List.fold_left (fun (e,bl) b -> let (e, b) = fold_map_local_binder f g e b in (e,b::bl)) (e,[]) bl in
   (e, List.rev rbl)
 
 let map_constr_expr_with_binders g f e = CAst.map (function
