@@ -352,16 +352,20 @@ let ids_of_cases_tomatch tms =
          (Option.fold_right (CAst.with_val (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
 
-let rec fold_local_binders g f n acc b = let open CAst in function
-  | CLocalAssum (nal,_,bk,t)::l ->
+let fold_local_binder h g f n acc = let open CAst in function
+  | CLocalAssum (nal,_,bk,t) ->
     let nal = List.(map (fun {v} -> v) nal) in
     let n' = List.fold_right (Name.fold_right g) nal n in
-    f n (fold_local_binders g f n' acc b l) t
-  | CLocalDef ( { v = na },_,c,t)::l ->
-    Option.fold_left (f n) (f n (fold_local_binders g f (Name.fold_right g na n) acc b l) c) t
-  | CLocalPattern pat :: l ->
+    f n (h n' acc) t
+  | CLocalDef ( { v = na },_,c,t) ->
+    Option.fold_left (f n) (f n (h (Name.fold_right g na n) acc) c) t
+  | CLocalPattern pat ->
     let n, acc = cases_pattern_fold_names g (f n) (n,acc) pat in
-    fold_local_binders g f n acc b l
+    h n acc
+
+let rec fold_local_binders g f n acc b = function
+  | decl :: l ->
+    fold_local_binder (fun n acc -> fold_local_binders g f n acc b l) g f n acc decl
   | [] ->
     f n acc b
 
