@@ -354,16 +354,24 @@ let ids_of_cases_tomatch tms =
          (Option.fold_right (CAst.with_val (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
 
-let rec fold_local_binders g f n acc b = let open CAst in function
-  | CLocalAssum (nal,_,bk,t)::l ->
+(* [n] collects data from binders using [g];
+   [acc] accumulates over "constr" subterms using [f];
+   [k] is a continuation, working on the updated [n] *)
+let fold_local_binder k g f n acc = let open CAst in function
+  | CLocalAssum (nal,_,bk,t) ->
     let nal = List.(map (fun {v} -> v) nal) in
     let n' = List.fold_right (Name.fold_right g) nal n in
-    f n (fold_local_binders g f n' acc b l) t
-  | CLocalDef ( { v = na },_,c,t)::l ->
-    Option.fold_left (f n) (f n (fold_local_binders g f (Name.fold_right g na n) acc b l) c) t
-  | CLocalPattern pat :: l ->
+    k n' (f n acc t)
+  | CLocalDef ( { v = na },_,c,t) ->
+    let n' = Name.fold_right g na n in
+    k n' (Option.fold_left (f n) (f n acc c) t)
+  | CLocalPattern pat ->
     let n, acc = cases_pattern_fold_names g (f n) (n,acc) pat in
-    fold_local_binders g f n acc b l
+    k n acc
+
+let rec fold_local_binders g f n acc b = function
+  | decl :: l ->
+    fold_local_binder (fun n acc -> fold_local_binders g f n acc b l) g f n acc decl
   | [] ->
     f n acc b
 
