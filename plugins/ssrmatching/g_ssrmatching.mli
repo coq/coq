@@ -24,3 +24,5 @@ val wit_lcpattern     : cpattern uniform_genarg_type
 (** OS rpattern: f _, in t, X in t, in X in t, t in X in t, t as X in t *)
 val rpattern         : rpattern Pcoq.Entry.t
 val wit_rpattern     : rpattern uniform_genarg_type
+
+val wit_ssrpatternarg : rpattern uniform_genarg_type

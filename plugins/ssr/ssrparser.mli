@@ -227,3 +227,59 @@ module Internal : sig
   val pr_wgen : wgen -> Pp.t
 
 end
+
+val wit_ast_closure_lterm : ast_closure_term Genarg.uniform_genarg_type
+
+val wit_ast_closure_term : ast_closure_term Genarg.uniform_genarg_type
+
+val wit_ident_no_do  : Names.Id.t Genarg.uniform_genarg_type
+
+val wit_ssrbinder :
+  (ssrfwdfmt * Constrexpr.constr_expr,
+   ssrfwdfmt * Genintern.glob_constr_and_expr,
+   ssrfwdfmt * EConstr.constr) Genarg.genarg_type
+
+val wit_ssrbvar :
+  (Constrexpr.constr_expr, Genintern.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
+
+val wit_ssrclausehyps :
+  ((ssrhyps * ((ssrhyp_or_id * string) * cpattern option) option) list,
+   (ssrclear * ((ssrhyp_or_id * string) *cpattern option) option) list,
+   (ssrclear * ((ssrhyp_or_id * string) * cpattern option) option) list)
+    Genarg.genarg_type
+
+val wit_ssrclear_ne : (ssrhyps, ssrclear, ssrclear) Genarg.genarg_type
+
+val wit_ssrhoi_hyp : ssrhyp_or_id Genarg.uniform_genarg_type
+
+val wit_ssrhoi_id : ssrhyp_or_id Genarg.uniform_genarg_type
+
+val wit_ssrhyp : ssrhyp Genarg.uniform_genarg_type
+
+val wit_ssrindex : (int Locus.or_var) Genarg.uniform_genarg_type
+
+val wit_ssriorpat : ssripatss Genarg.uniform_genarg_type
+
+val wit_ssripat : ssripats Genarg.uniform_genarg_type
+val wit_ssripats : ssripats Genarg.uniform_genarg_type
+val wit_ssripats_ne  : ssripats Genarg.uniform_genarg_type
+val wit_ssrmult_ne : (int * ssrmmod) Genarg.uniform_genarg_type
+val wit_ssrortacarg :
+  (Tacexpr.raw_tactic_expr ssrhint,
+   bool * Ltac_plugin.Tacexpr.glob_tactic_expr option list,
+   bool * Geninterp.Val.t option list)
+    Genarg.genarg_type
+
+val wit_ssrortacs :
+  (Tacexpr.raw_tactic_expr option list,
+   Tacexpr.glob_tactic_expr option list,
+   Geninterp.Val.t option list)
+    Genarg.genarg_type
+
+val wit_ssrsimpl_ne :
+  ssrsimpl Genarg.uniform_genarg_type
+
+val wit_ssrstruct : Names.Id.t option Genarg.uniform_genarg_type
+
+val wit_ssrtac3arg :
+    (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
