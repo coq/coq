@@ -270,6 +270,3 @@ intros P Hdec Hinf.
 apply inductively_barred_at_is_path_from_decidable in Hdec.
 apply PreWeakKonigsLemma; assumption.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Lt.

@@ -7,7 +7,6 @@ Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
 Require Import Coq.Lists.List.
 Require Import Coq.Setoids.Setoid.
-Require Import Coq.Numbers.Natural.Peano.NPeano.
 Global Set Implicit Arguments.
 Global Generalizable All Variables.
 Coercion is_true : bool >-> Sortclass.
@@ -378,7 +377,7 @@ Section general.
 End general.
 
 Module Export BooleanRecognizer.
-Import Coq.Numbers.Natural.Peano.NPeano.
+Import Coq.Arith.PeanoNat.
 Import Coq.Arith.Compare_dec.
 Import Coq.Arith.Wf_nat.
 

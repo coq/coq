@@ -2188,6 +2188,3 @@ Qed.
 (** Re-export the notation for those who just [Import BinPos] *)
 Number Notation positive Pos.of_num_int Pos.to_num_hex_uint : hex_positive_scope.
 Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Plus.

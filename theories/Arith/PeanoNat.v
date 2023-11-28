@@ -1257,6 +1257,20 @@ Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 #[global] Hint Unfold Nat.le : core.
 #[global] Hint Unfold Nat.lt : core.
 
+(* Register *)
+#[local]
+Definition lt_n_Sm_le := (fun n m => (proj1 (Nat.lt_succ_r n m))).
+Register lt_n_Sm_le as num.nat.lt_n_Sm_le.
+#[local]
+Definition le_lt_n_Sm := (fun n m => (proj2 (Nat.lt_succ_r n m))).
+Register le_lt_n_Sm as num.nat.le_lt_n_Sm.
+#[local]
+Definition lt_S_n := (fun n m => (proj2 (Nat.succ_lt_mono n m))).
+Register lt_S_n as num.nat.lt_S_n.
+Register Nat.le_lt_trans as num.nat.le_lt_trans.
+#[local]
+Definition pred_of_minus := (fun n => eq_sym (Nat.sub_1_r n)).
+Register pred_of_minus as num.nat.pred_of_minus.
 Register Nat.le_trans as num.nat.le_trans.
 Register Nat.nlt_0_r as num.nat.nlt_0_r.
 

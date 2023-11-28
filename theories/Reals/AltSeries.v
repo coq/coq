@@ -413,6 +413,3 @@ Proof.
           apply Rplus_lt_compat_l; prove_sup0.
     + assumption.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

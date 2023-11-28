@@ -250,6 +250,3 @@ Lemma leb_compare n m : (n <=? m) = true <-> (n ?= m) <> Gt.
 Proof.
  rewrite Nat.compare_le_iff. apply Nat.leb_le.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Le Lt Gt.

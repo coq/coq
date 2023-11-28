@@ -78,7 +78,3 @@ Ltac natpostring :=
 Add Ring natr : natSRth
   (morphism nat_morph_N, constants [natcst],
    preprocess [natprering], postprocess [natpostring]).
-
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Mult.

@@ -1,5 +1,5 @@
 Module numbers.
-  From Coq Require Export EqdepFacts PArith NArith ZArith NPeano.
+  From Coq Require Export EqdepFacts PArith NArith ZArith.
 End numbers.
 
 Import numbers.

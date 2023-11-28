@@ -859,8 +859,6 @@ Defined.
 Print Acc.
 
 
-Require Import Minus.
-
 Fail Fixpoint div (x y:nat){struct x}: nat :=
  if eq_nat_dec x 0
   then 0

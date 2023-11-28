@@ -715,6 +715,3 @@ Proof.
   replace (Reste x y (pred n)) with (Reste x y (pred n) - 0) by ring.
   apply H10. lia.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

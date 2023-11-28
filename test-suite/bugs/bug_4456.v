@@ -576,7 +576,7 @@ admit.
 Defined.
         Local Ltac t_parse_production_for := repeat
                       match goal with
-              | [ H : (beq_nat _ _) = true |- _ ] => apply EqNat.beq_nat_true in H
+                      | [ H : (Nat.eqb _ _) = true |- _ ] => apply ->Nat.eqb_eq in H
               | _ => progress subst
               | _ => solve [ constructor; assumption ]
               | [ H : minimal_parse_of_production _ _ _ nil |- _ ] => (inversion H; clear H)
@@ -619,7 +619,7 @@ Defined.
                       dec (minimal_parse_of_production (G := G) len0 valid str prod))
                  (
                    fun Hreachable str len Hlen pf
-                   => match Utils.dec (beq_nat len 0) with
+                   => match Utils.dec (Nat.eqb len 0) with
                         | left H => inl _
                         | right H => inr (fun p => _)
                       end)

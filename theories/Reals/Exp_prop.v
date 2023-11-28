@@ -751,6 +751,3 @@ Proof.
       rewrite Rmult_minus_distr_l.
     rewrite Rmult_1_r; rewrite exp_plus; reflexivity.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Div2 Even Max.

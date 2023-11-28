@@ -394,6 +394,3 @@ Proof.
   - rewrite N.lxor_assoc. rewrite <- (N.lxor_assoc a'' a'' a'). rewrite N.lxor_nilpotent.
     rewrite N.lxor_0_l. reflexivity.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Min.

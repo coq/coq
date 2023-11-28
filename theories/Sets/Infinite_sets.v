@@ -240,6 +240,3 @@ Section Infinite_sets.
   Qed.
 
 End Infinite_sets.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Export Gt Lt Le.

@@ -397,6 +397,3 @@ Proof.
     symmetry; apply Nat.lt_succ_pred with 0%nat; apply Nat.lt_le_trans with (S x);trivial.
     apply Nat.lt_0_succ.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

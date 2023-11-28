@@ -110,6 +110,3 @@ Infix    "^|"   := (BVor   _) (at level 50, left  associativity) : Bvector_scope
 Infix    "=?"   := (BVeq _ _) (at level 70, no    associativity) : Bvector_scope.
 Open Scope Bvector_scope.
 End BvectorNotations.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Minus.

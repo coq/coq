@@ -191,6 +191,3 @@ Proof.
        * apply Rinv_0_lt_compat.
          prove_sup0.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

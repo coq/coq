@@ -12,7 +12,7 @@
 
 Require Coq.extraction.Extraction.
 
-Require Import Arith Even Div2 EqNat Euclid.
+Require Import Arith EqNat Euclid.
 Require Import ExtrOcamlBasic.
 
 (** Disclaimer: trying to obtain efficient certified programs

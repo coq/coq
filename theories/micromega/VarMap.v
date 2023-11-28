@@ -82,4 +82,3 @@ Section MakeVarMap.
 End MakeVarMap.
 
 (* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Max.

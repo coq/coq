@@ -3,16 +3,16 @@ Definition le_trans := 0.
 
 Module Test_Read.
   Module M.
-    Require Le.        (* Reading without importing *)
+    Require PeanoNat.        (* Reading without importing *)
 
-    Check Le.le_trans.
+    Check PeanoNat.Nat.le_trans.
 
     Lemma th0 : le_trans = 0.
       reflexivity.
     Qed.
   End M.
 
-  Check Le.le_trans.
+  Check PeanoNat.Nat.le_trans.
 
   Lemma th0 : le_trans = 0.
     reflexivity.

@@ -154,6 +154,3 @@ Proof.
     + apply le_S; assumption.
     + apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
 Qed.
-
-(* TODO #14736 for compatibility only, should be removed after deprecation *)
-Require Import Even Div2.
