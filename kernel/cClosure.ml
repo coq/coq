@@ -1388,7 +1388,7 @@ let set_conv f = conv := f
 
 type 'constr partial_subst = {
   subst: 'constr list;
-  usubst: Sorts.Quality.t list * Univ.Level.t list;
+  usubst: Sorts.Quality.t list * Univ.Universe.t list;
   rhs: constr;
 }
 
@@ -1462,7 +1462,7 @@ let match_instance pu u =
   let smask, umask = pu in
   let s, u = UVars.Instance.to_array u in
   List.filter_with (Array.to_list smask) (Array.to_list s),
-  List.filter_with (Array.to_list umask) (Array.to_list u)
+  List.map Univ.Universe.make @@ List.filter_with (Array.to_list umask) (Array.to_list u)
 
 
 let match_instance pu u =
@@ -1471,13 +1471,14 @@ let match_instance pu u =
 let match_sort ps s =
   let open Sorts in
   match [@ocaml.warning "-4"] ps, s with
-  | PSProp, Prop -> Some []
-  | PSSProp, SProp -> Some []
-  | PSSet, Set -> Some []
-  | PSType, Type _ -> Some []
-  | PSQSort true, s -> Some [Sorts.quality s]
-  | PSQSort false, _ -> Some []
-  | (PSProp | PSSProp | PSSet | PSType), _ -> None
+  | PSProp, Prop -> Some ([], [])
+  | PSSProp, SProp -> Some ([], [])
+  | PSSet, Set -> Some ([], [])
+  | PSType false, Type _ -> Some ([], [])
+  | PSType true, Set -> Some ([], [Univ.Universe.type0])
+  | PSType true, Type u -> Some ([], [u])
+  | PSQSort (bq, bu), s -> Some ((if bq then [Sorts.quality s] else []), (if bu then [Sorts.algebraic s] else []))
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> None
 
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
@@ -1640,8 +1641,9 @@ and match_main : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
     begin match Array.find2_map (fun state elim -> match [@ocaml.warning "-4"] state, elim with Live s, Check [] -> Some s | _ -> None) states elims with
     | Some { subst; usubst; rhs } ->
         let subst = List.fold_right subs_cons subst (subs_id 0) in
-        let usubst = UVars.Instance.of_array (Array.of_list (fst usubst), Array.of_list (snd usubst)) in
-        let m' = mk_clos (subst, usubst) rhs in
+        let usubst = UVars.AInstance.of_array (Array.of_list (fst usubst), Array.of_list (snd usubst)) in
+        let rhsu = Vars.subst_ainstance_constr usubst rhs in
+        let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
         begin match pat_state with
         | Nil Yes (k, _) -> k (m', stack)
         | _ -> kni info tab ~pat_state m' stack
@@ -1800,7 +1802,7 @@ and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   | FAtom t' -> begin match [@ocaml.warning "-4"] kind t' with Sort s ->
       let fuuselims, states = extract_or_kill (function [@ocaml.warning "-4"]
       | PHSort ps, elims ->
-        Option.map (fun fus -> (fus, []), elims) (match_sort ps s)
+        Option.map (fun fus -> fus, elims) (match_sort ps s)
       | _ -> None) patterns states
       in
       let fuus, elims = Array.split (Array.map Status.split fuuselims) in

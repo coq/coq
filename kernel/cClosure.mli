@@ -207,7 +207,7 @@ val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
 open Declarations
 type 'constr partial_subst = {
   subst: 'constr list;
-  usubst: Sorts.Quality.t list * Univ.Level.t list;
+  usubst: Sorts.Quality.t list * Univ.Universe.t list;
   rhs: constr;
 }
 

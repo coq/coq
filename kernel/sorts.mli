@@ -149,6 +149,7 @@ val is_prop : t -> bool
 val is_small : t -> bool
 val family : t -> family
 val quality : t -> Quality.t
+val algebraic : t -> Univ.Universe.t
 
 val hcons : t -> t
 

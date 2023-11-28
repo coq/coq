@@ -67,7 +67,7 @@ open Util
 open Constr
 open Declarations
 
-type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * int Int.Map.t)
+type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * (int * bool) Int.Map.t)
 
 let update_invtbl ~loc env evd evk (curvar, tbl) =
   succ curvar, tbl |> Evar.Map.update evk @@ function
@@ -81,11 +81,11 @@ let update_invtbl ~loc env evd evk (curvar, tbl) =
           ++ str" but used here for hole " ++ int curvar
           ++ str".")
 
-let update_invtblu1 ~loc evd lvl (curvaru, tbl) =
+let update_invtblu1 ~loc ~(alg:bool) evd lvl (curvaru, tbl) =
   succ curvaru, tbl |> Int.Map.update lvl @@ function
-    | None -> Some curvaru
-    | Some k as c when k = curvaru -> c
-    | Some k ->
+    | None -> Some (curvaru, alg)
+    | Some (k, alg') as c when k = curvaru && alg = alg' -> c
+    | Some (k, _) ->
         CErrors.user_err ?loc
           Pp.(str "Universe variable "
             ++ Termops.pr_evd_level evd (Univ.Level.var lvl)
@@ -115,27 +115,42 @@ let update_invtblu ~loc evd (state, stateq, stateu : state) u : state * _ =
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvl ->
       match Univ.Level.var_index lvl with
-      | Some lvl -> update_invtblu1 ~loc evd lvl stateu, true
+      | Some lvl -> update_invtblu1 ~loc ~alg:false evd lvl stateu, true
       | None -> stateu, false
     ) stateu u
   in
   let mask = if Array.exists Fun.id maskq || Array.exists Fun.id masku then Some (maskq, masku) else None in
   (state, stateq, stateu), mask
 
+let universe_level_var_index u =
+  match Univ.Universe.level u with
+    | None -> None
+    | Some lvl -> Univ.Level.var_index lvl
+
 let safe_sort_pattern_of_sort ~loc evd (st, sq, su as state) s =
   let open Sorts in
   match s with
-  | Type u -> state, PSType
+  | Type u ->
+      begin match universe_level_var_index u with
+      | None -> state, PSType false
+      | Some lvl ->
+        (st, sq, update_invtblu1 ~loc ~alg:true evd lvl su), PSType true
+      end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
   | Set -> state, PSSet
   | QSort (q, u) ->
-      match Sorts.QVar.var_index q with
-      | Some q ->
-        let stateq = update_invtblq1 ~loc evd q sq in
-        (st, stateq, su), PSQSort true
-      | None ->
-        state, PSQSort false
+      let sq, bq =
+        match Sorts.QVar.var_index q with
+        | Some q -> update_invtblq1 ~loc evd q sq, true
+        | None -> sq, false
+      in
+      let su, ba =
+        match universe_level_var_index u with
+        | Some lvl -> update_invtblu1 ~loc ~alg:true evd lvl su, true
+        | None -> su, false
+      in
+      (st, sq, su), PSQSort (bq, ba)
 
 
 let rec safe_pattern_of_constr ~loc env depth state t = Constr.kind t |> function
@@ -347,9 +362,28 @@ let interp_rule (udecl, lhs, rhs) =
   ));
   let usubst = UVars.Instance.of_array
     (Array.init nvarqs (fun i -> Sorts.Quality.var (Option.default i (Int.Map.find_opt i invtblq))),
-     Array.init nvarus (fun i -> Univ.Level.var (Option.default i (Int.Map.find_opt i invtblu))))
+     Array.init nvarus (fun i -> Univ.Level.var (Option.cata fst i (Int.Map.find_opt i invtblu))))
   in
   let rhs = Vars.subst_instance_constr usubst rhs in
+
+  let test_level lvl =
+    match Univ.Level.var_index lvl with
+    | Some n ->
+      let i = Int.Map.bindings invtblu |> List.find_map (fun (i, (a, b)) -> if a = n && b then Some i else None) in
+      Option.iter (fun i ->
+      CErrors.user_err ?loc:rhs_loc
+        Pp.(str "Algebraic universe variable" ++ Termops.pr_evd_level evd (Univ.Level.var i) ++ str " appears in rhs as a universe level variable.")
+      ) i
+    | _ -> ()
+  in
+
+  let test_universe u =
+    match universe_level_var_index u with
+    | Some _ -> ()
+    | None -> Univ.Universe.repr u |> List.iter (fun (lvl, _) -> test_level lvl)
+  in
+
+  let () = Vars.iter_on_instance (fun u -> UVars.Instance.to_array u |> snd |> Array.iter test_level) test_universe rhs in
 
   head_symbol, { lhs_pat = head_umask, elims; rhs }
 

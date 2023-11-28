@@ -293,7 +293,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 type instance_mask = (bool array * bool array) option
 
 type sort_pattern =
-  | PSType | PSProp | PSSProp | PSSet | PSQSort of bool
+  | PSProp | PSSProp | PSSet | PSType of bool | PSQSort of bool * bool
 
 type 'arg head_pattern =
   | PHRel     of int

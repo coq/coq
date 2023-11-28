@@ -346,6 +346,11 @@ let quality = let open Quality in function
 | SProp -> QConstant QSProp
 | QSort (q, _) -> QVar q
 
+let algebraic = function
+  | Type u -> u
+  | QSort (_, u) -> u
+  | Prop | SProp | Set -> Univ.Universe.type0
+
 let family_compare a b = match a,b with
   | InSProp, InSProp -> 0
   | InSProp, _ -> -1

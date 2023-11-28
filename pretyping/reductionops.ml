@@ -690,7 +690,7 @@ let match_instance pu u =
   let smask, umask = pu in
   let s, u = UVars.Instance.to_array u in
   List.filter_with (Array.to_list smask) (Array.to_list s),
-  List.filter_with (Array.to_list umask) (Array.to_list u)
+  List.map Univ.Universe.make @@ List.filter_with (Array.to_list umask) (Array.to_list u)
 
 let match_einstance sigma pu u =
   Option.cata (fun pu -> match_instance pu (EInstance.kind sigma u)) ([], []) pu
@@ -698,13 +698,14 @@ let match_einstance sigma pu u =
 let match_sort ps s =
   let open Declarations in let open Sorts in
   match [@ocaml.warning "-4"] ps, s with
-  | PSProp, Prop -> []
-  | PSSProp, SProp -> []
-  | PSSet, Set -> []
-  | PSType, Type _ -> []
-  | PSQSort true, s -> [Sorts.quality s]
-  | PSQSort false, _ -> []
-  | (PSProp | PSSProp | PSSet | PSType), _ -> raise PatternFailure
+  | PSProp, Prop -> [], []
+  | PSSProp, SProp -> [], []
+  | PSSet, Set -> [], []
+  | PSType false, Type _ -> [], []
+  | PSType true, Set -> [], [Univ.Universe.type0]
+  | PSType true, Type u -> [], [u]
+  | PSQSort (bq, bu), s -> (if bq then [Sorts.quality s] else []), (if bu then [Sorts.algebraic s] else [])
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> raise PatternFailure
 
 let rec match_arg_pattern whrec env sigma ctx p t =
   let open Declarations in
@@ -725,7 +726,7 @@ and match_rigid_arg_pattern whrec env sigma ctx p t =
   | PHConstr (constr, pu), Construct (constr', u) ->
     if Construct.CanOrd.equal constr constr' then let qs, us = match_einstance sigma pu u in [], qs, us else raise PatternFailure
   | PHRel i, Rel n when i = n -> [], [], []
-  | PHSort ps, Sort s -> [], match_sort ps (ESorts.kind sigma s), []
+  | PHSort ps, Sort s -> let qs, us = match_sort ps (ESorts.kind sigma s) in [], qs, us
   | PHSymbol (c, pu), Const (c', u) ->
     if Constant.CanOrd.equal c c' then let qs, us = match_einstance sigma pu u in [], qs, us else raise PatternFailure
   | PHInt i, Int i' ->
@@ -797,8 +798,8 @@ let rec apply_rules whrec env sigma u r stk =
     try
       let (fs, fqs, fus), stk = apply_rule whrec env sigma ([], [], []) [] elims stk in
       let fqus, fuus = match_einstance sigma pu u in
-      let usubst = UVars.Instance.of_array (Array.of_list (fqus @ fqs), Array.of_list (fuus @ fus)) in
-      let rhsu = subst_instance_constr usubst (EConstr.of_constr rhs) in
+      let usubst = UVars.AInstance.of_array (Array.of_list (fqus @ fqs), Array.of_list (fuus @ fus)) in
+      let rhsu = subst_ainstance_constr usubst (EConstr.of_constr rhs) in
       let rhs' = substl fs rhsu in
       (rhs', stk)
     with PatternFailure -> apply_rules whrec env sigma u rs stk

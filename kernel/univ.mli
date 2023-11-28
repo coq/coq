@@ -111,6 +111,8 @@ sig
   val hash : t -> int
   (** Hash function *)
 
+  val hcons : t -> t
+
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
 

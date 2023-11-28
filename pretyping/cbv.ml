@@ -503,7 +503,7 @@ let match_instance pu u =
   let smask, umask = pu in
   let s, u = UVars.Instance.to_array u in
   List.filter_with (Array.to_list smask) (Array.to_list s),
-  List.filter_with (Array.to_list umask) (Array.to_list u)
+  List.map Univ.Universe.make @@ List.filter_with (Array.to_list umask) (Array.to_list u)
 
 
 let match_instance pu u =
@@ -791,13 +791,14 @@ and cbv_match_arg_pattern_lift info env ctx n p t =
 and match_sort ps s =
   let open Declarations in let open Sorts in
   match [@ocaml.warning "-4"] ps, s with
-  | PSProp, Prop -> []
-  | PSSProp, SProp -> []
-  | PSSet, Set -> []
-  | PSType, Type _ -> []
-  | PSQSort true, s -> [Sorts.quality s]
-  | PSQSort false, _ -> []
-  | (PSProp | PSSProp | PSSet | PSType), _ -> raise PatternFailure
+  | PSProp, Prop -> [], []
+  | PSSProp, SProp -> [], []
+  | PSSet, Set -> [], []
+  | PSType false, Type _ -> [], []
+  | PSType true, Set -> [], [Univ.Universe.type0]
+  | PSType true, Type u -> [], [u]
+  | PSQSort (bq, bu), s -> (if bq then [Sorts.quality s] else []), (if bu then [Sorts.algebraic s] else [])
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> raise PatternFailure
 
 and cbv_match_rigid_arg_pattern info env ctx p t =
   let open Declarations in
@@ -809,7 +810,7 @@ and cbv_match_rigid_arg_pattern info env ctx p t =
   | PHRel i, VAL(k, t') ->
     begin match kind t' with Rel n when Int.equal i (k + n) -> [], [], [] | _ -> raise PatternFailure end
   | PHSort ps, VAL(0, t') ->
-    begin match kind t' with Sort s -> [], match_sort ps s, [] | _ -> raise PatternFailure end
+    begin match kind t' with Sort s -> let qs, us = match_sort ps s in [], qs, us | _ -> raise PatternFailure end
   | PHSymbol (c, pu), SYMBOL { cst = c', u; _ } ->
     if Constant.CanOrd.equal c c' then let qs, us = match_instance pu u in [], qs, us else raise PatternFailure
   | PHInt i, VAL(0, t') ->
@@ -893,8 +894,8 @@ and cbv_apply_rules info env u r stk =
     try
       let (fs, fqs, fus), stk = cbv_apply_rule info env ([], [], []) [] elims stk in
       let fqus, fuus = match_instance pu u in
-      let usubst = UVars.Instance.of_array (Array.of_list (fqus @ fqs), Array.of_list (fuus @ fus)) in
-      let rhsu = subst_instance_constr usubst rhs in
+      let usubst = UVars.AInstance.of_array (Array.of_list (fqus @ fqs), Array.of_list (fuus @ fus)) in
+      let rhsu = subst_ainstance_constr usubst rhs in
       let subst = List.fold_right subs_cons fs env in
       let rhs' = cbv_stack_term info TOP subst rhsu in
       rhs', stk
