@@ -123,6 +123,16 @@ val inductive_has_local_defs : env -> inductive -> bool
 
 val sorts_below : Sorts.family -> Sorts.family list
 
+val sorts_for_schemes : mind_specif -> Sorts.family list
+
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+val is_squashed : evar_map -> (mind_specif * UVars.Instance.t) -> squash option
+
+val is_allowed_elimination : evar_map -> (mind_specif * UVars.Instance.t) -> EConstr.ESorts.t -> bool
+
+val elim_sort : mind_specif -> Sorts.family
+
 val top_allowed_sort : env -> inductive -> Sorts.family
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,

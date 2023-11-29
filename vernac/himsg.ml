@@ -236,9 +236,11 @@ let explain_elim_arity env sigma ind c okinds =
   let pi = pr_inductive env (fst ind) in
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
-  | Some (pj, sorts, kp, ki) ->
+  | Some (pj, sp) ->
+      let kp = Sorts.family sp in
+      let ki = Inductiveops.elim_sort (Inductive.lookup_mind_specif env (fst ind)) in
       let explanation = error_elim_explain kp ki in
-      let sorts = Inductiveops.sorts_below sorts in
+      let sorts = Inductiveops.sorts_below ki in
       let pki = Sorts.pr_sort_family ki in
       let pkp = Sorts.pr_sort_family kp in
       let explanation =	match explanation with
@@ -248,7 +250,10 @@ let explain_elim_arity env sigma ind c okinds =
           "strong elimination on non-small inductive types leads to paradoxes"
         | WrongArity ->
           "wrong arity" in
-      let ppar = pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts in
+      let ppar = match sorts with
+        | [] -> str "at some variable quality"
+        | _ -> pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts
+      in
       let ppt = pr_leconstr_env env sigma (snd (decompose_prod_decls sigma pj.uj_type)) in
       hov 0
         (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++

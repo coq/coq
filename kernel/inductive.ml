@@ -216,9 +216,12 @@ let instantiate_universes ctx (templ, ar) args =
 
 (* Type of an inductive type *)
 
-let relevance_of_inductive env ind =
+let relevance_of_ind_body mip u =
+  UVars.subst_instance_relevance u mip.mind_relevance
+
+let relevance_of_inductive env (ind,u) =
   let _, mip = lookup_mind_specif env ind in
-  mip.mind_relevance
+  relevance_of_ind_body mip u
 
 let check_instance mib u =
   if not (match mib.mind_universes with
@@ -301,15 +304,63 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (* Get type of inductive, with parameters instantiated *)
 
+(* XXX questionable for sort poly inductives *)
 let inductive_sort_family mip =
   match mip.mind_arity with
   | RegularArity s -> Sorts.family s.mind_sort
   | TemplateArity _ -> Sorts.InType
 
-let mind_arity mip =
-  mip.mind_arity_ctxt, inductive_sort_family mip
+let quality_leq q q' =
+  let open Sorts.Quality in
+  match q, q' with
+  | QVar q, QVar q' -> Sorts.QVar.equal q q'
+  | QConstant q, QConstant q' ->
+    begin match q, q' with
+    | QSProp, _
+    | _, QType
+    | QProp, QProp
+      -> true
+    | (QProp|QType), _ -> false
+    end
+  | (QVar _|QConstant _), _ -> false
 
-let elim_sort (_,mip) = mip.mind_kelim
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+let is_squashed ((_,mip),u) =
+  match mip.mind_arity with
+  | TemplateArity _ -> None (* template is never squashed *)
+  | RegularArity a ->
+    match mip.mind_squashed with
+    | None -> None
+    | Some squash ->
+      let indq = Sorts.quality (UVars.subst_instance_sort u a.mind_sort) in
+      match squash with
+      | AlwaysSquashed -> begin match a.mind_sort with
+          | Sorts.Set -> Some SquashToSet
+          | _ -> Some (SquashToQuality indq)
+        end
+      | SometimesSquashed squash ->
+        (* impredicative set squashes are always AlwaysSquashed,
+           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
+        if Sorts.Quality.Set.for_all (fun q ->
+            let q = UVars.subst_instance_quality u q in
+            quality_leq q indq)
+            squash
+        then None
+        else Some (SquashToQuality indq)
+
+let is_allowed_elimination specifu s =
+  let open Sorts in
+  match is_squashed specifu with
+  | None -> true
+  | Some SquashToSet ->
+    begin match s with
+      | SProp|Prop|Set -> true
+      | QSort _ | Type _ ->
+        (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
+        false
+    end
+  | Some (SquashToQuality indq) -> quality_leq (Sorts.quality s) indq
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =
@@ -352,7 +403,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
-  let na = Context.make_annot Anonymous mip.mind_relevance in
+  let na = Context.make_annot Anonymous (relevance_of_ind_body mip u)  in
   let realdecls = LocalAssum (na, self) :: realdecls in
   instantiate_context u params nas realdecls
 
@@ -722,7 +773,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind mip env =
-    let r = mip.mind_relevance in
+    let r = relevance_of_ind_body mip u in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive ((mib,mip),u)) lpar) in
     push_rel decl env
@@ -1430,16 +1481,17 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
         | _ -> raise_err env i NotEnoughAbstractionInFixBody
     in
-    let ((ind, _), _) as res = check_occur fixenv 1 def in
+    let ((ind, u), _) as res = check_occur fixenv 1 def in
     let _, mip = lookup_mind_specif env ind in
     (* recursive sprop means non record with projections -> squashed *)
-    if mip.mind_relevance == Sorts.Irrelevant &&
-       not (Environ.is_type_in_type env (GlobRef.IndRef ind))
-    then
-      begin
-        if not (names.(i).Context.binder_relevance == Sorts.Irrelevant)
-        then raise_err env i FixpointOnIrrelevantInductive
-      end;
+    let () =
+      if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
+      else match relevance_of_ind_body mip u with
+        | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
+          if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
+          then raise_err env i FixpointOnIrrelevantInductive
+        | Sorts.Relevant -> ()
+    in
     res
   in
   (* Do it on every fixpoint *)

@@ -803,6 +803,58 @@ witness these temporary variables.
    `α` followed by a number as printing will not distinguish between
    your bound variables and temporary variables.
 
+Sort polymorphic inductives may be declared when every instantiation
+is valid.
+
+Elimination at a given universe instance requires that elimination is
+allowed at every ground instantiation of the sort variables in the
+instance. Additionally if the output sort at the given universe
+instance is sort polymorphic, the return type of the elimination must
+be at the same quality. These restrictions ignore :flag:`Definitional
+UIP`.
+
+For instance
+
+.. coqtop:: all reset
+
+   Set Universe Polymorphism.
+
+   Inductive Squash@{s|u|} (A:Type@{s|u}) : Prop := squash (_:A).
+
+Elimination to `Prop` and `SProp` is always allowed, so `Squash_ind`
+and `Squash_sind` are automatically defined.
+
+Elimination to `Type` is not allowed with variable `s`, because the
+instantiation `s := Type` does not allow elimination to `Type`.
+
+However elimination to `Type` or to a polymorphic sort with `s := Prop` is allowed:
+
+.. coqtop:: all
+
+   Definition Squash_Prop_rect A (P:Squash@{Prop|_} A -> Type)
+     (H:forall x, P (squash _ x))
+     : forall s, P s
+     := fun s => match s with squash _ x => H x end.
+
+   Definition Squash_Prop_srect@{s|u +|} A (P:Squash@{Prop|_} A -> Type@{s|u})
+     (H:forall x, P (squash _ x))
+     : forall s, P s
+     := fun s => match s with squash _ x => H x end.
+
+.. note::
+
+   Since inductive types with sort polymorphic output may only be
+   polymorphically eliminated to the same sort quality, containers
+   such as sigma types may be better defined as primitive records (which
+   do not have this restriction) when possible.
+
+   .. coqtop:: all
+
+      Set Primitive Projections.
+      Record sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v})
+        : Type@{s|max(u,v)}
+        := pair { pr1 : A; pr2 : B pr1 }.
+
 .. _universe-polymorphism-in-sections:
 
 Universe polymorphism and sections

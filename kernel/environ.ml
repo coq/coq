@@ -83,7 +83,7 @@ type env = {
   env_universes_lbound : UGraph.Bound.t;
   env_qualities : Sorts.QVar.Set.t;
   irr_constants : Sorts.relevance Cmap_env.t;
-  irr_inds : Indset_env.t;
+  irr_inds : Sorts.relevance Indmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
 }
@@ -113,7 +113,7 @@ let empty_env = {
   env_universes_lbound = UGraph.Bound.Set;
   env_qualities = Sorts.QVar.Set.empty;
   irr_constants = Cmap_env.empty;
-  irr_inds = Indset_env.empty;
+  irr_inds = Indmap_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
 }
@@ -644,8 +644,8 @@ let add_mind_key kn (mind, _ as mind_key) env =
       Globals.inductives = new_inds; }
   in
   let irr_inds = Array.fold_left_i (fun i irr_inds mip ->
-      if mip.mind_relevance == Sorts.Irrelevant
-      then Indset_env.add (kn, i) irr_inds
+      if mip.mind_relevance != Sorts.Relevant
+      then Indmap_env.add (kn, i) mip.mind_relevance irr_inds
       else irr_inds) env.irr_inds mind.mind_packets
   in
   { env with irr_inds; env_globals = new_globals }

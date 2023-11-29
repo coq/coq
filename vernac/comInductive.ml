@@ -233,7 +233,8 @@ let inductive_levels env evd arities ctors =
   let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
   let evd = List.fold_left (fun evd (raw_arity,(_,s),ctors) ->
       if less_than_2 ctors || is_impredicative_sort evd s then evd
-      else Evd.set_leq_sort env evd ESorts.set s)
+      else (* >=2 constructors is like having a bool argument *)
+        include_constructor_argument env evd ~ctor_sort:ESorts.set ~inductive_sort:s)
       evd inds
   in
   (* If indices_matter, the index telescope acts like an extra
@@ -299,7 +300,7 @@ let inductive_levels env evd arities ctors =
       else ind)
       inds
   in
-  (* Add constraints from constructor arguments and indices.Q
+  (* Add constraints from constructor arguments and indices.
      We must do this after Prop lowering as otherwise we risk unifying sorts
      eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
      then ESorts.equal would make us believe that the constructor argument is a lowering candidate.

@@ -835,7 +835,7 @@ let build_beq_scheme env handle kn =
       | Finite when truly_recursive || nb_ind > 1 (* Hum... *) ->
          let cores = Array.init nb_ind make_one_eq in
          Array.init nb_ind (fun i ->
-            let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
+            let kelim = Inductiveops.elim_sort (mib,mib.mind_packets.(i)) in
             if not (Sorts.family_leq InSet kelim) then
               raise (NonSingletonProp (kn,i));
             let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
@@ -845,7 +845,7 @@ let build_beq_scheme env handle kn =
          assert (Int.equal nb_ind 1);
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
-         let kelim = Inductive.elim_sort (mib,mib.mind_packets.(0)) in
+         let kelim = Inductiveops.elim_sort (mib,mib.mind_packets.(0)) in
          if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
          [|Term.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in

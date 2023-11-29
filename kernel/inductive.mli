@@ -55,14 +55,19 @@ val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 val constrained_type_of_inductive_knowing_parameters :
   mind_specif puniverses -> param_univs -> types constrained
 
-val relevance_of_inductive : env -> inductive -> Sorts.relevance
+val relevance_of_ind_body : one_inductive_body -> UVars.Instance.t -> Sorts.relevance
+
+val relevance_of_inductive : env -> pinductive -> Sorts.relevance
 
 val type_of_inductive : mind_specif puniverses -> types
 
 val type_of_inductive_knowing_parameters :
   ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
 
-val elim_sort : mind_specif -> Sorts.family
+val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
+(** For squashing. *)
+
+val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool
@@ -122,8 +127,6 @@ val build_branches_type :
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family
-
 val inductive_sort_family : one_inductive_body -> Sorts.family
 
 (** Check a [case_info] actually correspond to a Case expression on the

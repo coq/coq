@@ -160,7 +160,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive specif in
   let env' =
-    let r = (snd (fst specif)).mind_relevance in
+    let r = Inductive.relevance_of_ind_body (snd (fst specif)) u in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
@@ -483,7 +483,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
-  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
+  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),squashed) recarg =
     let lc = Array.map (substl subst) lc in
     (* Type of constructors in normal form *)
     let nf_lc =
@@ -519,7 +519,7 @@ let build_inductive env ~sec_univs names prv univs template variance
         mind_arity_ctxt = indices @ paramsctxt;
         mind_nrealargs = Context.Rel.nhyps indices;
         mind_nrealdecls = Context.Rel.length indices;
-        mind_kelim = kelim;
+        mind_squashed = squashed;
         mind_consnames = Array.of_list cnames;
         mind_consnrealdecls = consnrealdecls;
         mind_consnrealargs = consnrealargs;

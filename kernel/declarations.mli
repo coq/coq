@@ -164,6 +164,15 @@ type regular_inductive_arity = {
 
 type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
 
+type squash_info =
+  | AlwaysSquashed
+  | SometimesSquashed of Sorts.Quality.Set.t
+  (** A sort polymorphic inductive [I@{...|...|...} : ... -> Type@{ s|...}]
+      is squashed at a given instantiation if any quality in the list is not smaller than [s].
+
+      NB: if [s] is a variable SometimesSquashed contains SProp
+      ie non ground instantiations are squashed. *)
+
 (** {7 Datas specific to a single type of a block of mutually inductive type } *)
 type one_inductive_body = {
 (** {8 Primitive datas } *)
@@ -198,7 +207,8 @@ type one_inductive_body = {
 
     mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
-    mind_kelim : Sorts.family; (** Highest allowed elimination sort *)
+    mind_squashed : squash_info option;
+    (** Is elimination restricted to the inductive's sort? *)
 
     mind_nf_lc : (rel_context * types) array;
  (** Head normalized constructor types so that their conclusion
@@ -209,7 +219,7 @@ type one_inductive_body = {
      (possibly with let-ins). This context is internally represented
      as a list [[cstrdecl_ij{q_ij};...;cstrdecl_ij1;paramdecl_m;...;paramdecl_1]]
      such that the constructor in fine has type [forall paramdecls,
-     forall cstrdecls_ij, Ii params realargs_ij]] with [params] referring to
+     forall cstrdecls_ij, Ii params realargs_ij] with [params] referring to
      the assumptions of [paramdecls] and [realargs_ij] being the
      "indices" specific to the constructor. *)
 

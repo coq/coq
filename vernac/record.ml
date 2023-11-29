@@ -294,18 +294,24 @@ let warning_or_error ~info flags indsp err =
            prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
            strbrk " not defined.")
     | BadTypedProj (fi,_ctx,te) ->
-        match te with
-          | ElimArity (_, _, Some (_, _, (InType | InSet), InProp)) ->
+      let err = match te with
+        | ElimArity (_, _, Some (_, s)) ->
+          Himsg.error_elim_explain (Sorts.family s)
+            (Inductiveops.elim_sort (Global.lookup_inductive indsp))
+        | _ -> WrongArity
+      in
+        match err with
+          | NonInformativeToInformative ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is informative and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
-          | ElimArity (_, _, Some (_, _, InType, InSet)) ->
+          | StrongEliminationOnNonSmallType ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is large and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
-          | _ ->
+          | WrongArity ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ~info st;
@@ -476,7 +482,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
   let r = mkIndU (indsp,uinstance) in
   let rp = applist (r, Context.Rel.instance_list mkRel 0 paramdecls) in
   let paramargs = Context.Rel.instance_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = make_annot (Name inhabitant_id) mip.mind_relevance in
+  let x = make_annot (Name inhabitant_id) (Inductive.relevance_of_ind_body mip uinstance) in
   let fields = instantiate_possibly_recursive_type (fst indsp) uinstance mib.mind_ntypes paramdecls fields in
   let lifted_fields = Vars.lift_rel_context 1 fields in
   let primitive =

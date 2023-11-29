@@ -74,7 +74,7 @@ let lift_inductive_family n = liftn_inductive_family n 1
 
 let substnl_ind_family l n = map_ind_family (substnl l n)
 
-let relevance_of_inductive_family env ((ind,_),_ : inductive_family) =
+let relevance_of_inductive_family env (ind,_ : inductive_family) =
   Inductive.relevance_of_inductive env ind
 
 type inductive_type = IndType of inductive_family * EConstr.constr list
@@ -230,12 +230,86 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
+(* XXX use above_prop from the ustate *)
+let quality_leq q q' =
+  let open Sorts.Quality in
+  match q, q' with
+  | QVar q, QVar q' -> Sorts.QVar.equal q q'
+  | QConstant q, QConstant q' ->
+    begin match q, q' with
+    | QSProp, _
+    | _, QType
+    | QProp, QProp
+      -> true
+    | (QProp|QType), _ -> false
+    end
+  | (QVar _|QConstant _), _ -> false
+
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+let is_squashed sigma ((_,mip),u) =
+  match mip.mind_arity with
+  | TemplateArity _ -> None (* template is never squashed *)
+  | RegularArity a ->
+    match mip.mind_squashed with
+    | None -> None
+    | Some squash ->
+      let indq = EConstr.ESorts.quality sigma
+          (EConstr.ESorts.make @@ UVars.subst_instance_sort u a.mind_sort)
+      in
+      match squash with
+      | AlwaysSquashed -> begin match a.mind_sort with
+          | Sorts.Set -> Some SquashToSet
+          | _ -> Some (SquashToQuality indq)
+        end
+      | SometimesSquashed squash ->
+        (* impredicative set squashes are always AlwaysSquashed,
+           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
+        if Sorts.Quality.Set.for_all (fun q ->
+            let q = UVars.subst_instance_quality u q in
+            let q = UState.nf_quality (Evd.evar_universe_context sigma) q in
+            quality_leq q indq) squash
+        then None
+        else Some (SquashToQuality indq)
+
+let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
+  let open Sorts in
+  match mib.mind_record with
+  | PrimRecord _ -> true
+  | NotRecord | FakeRecord ->
+    match is_squashed sigma specifu with
+    | None -> true
+    | Some SquashToSet ->
+      begin match EConstr.ESorts.kind sigma s with
+      | SProp|Prop|Set -> true
+      | QSort _ | Type _ ->
+        (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
+        false
+      end
+    | Some (SquashToQuality indq) -> quality_leq (EConstr.ESorts.quality sigma s) indq
+
+let elim_sort (_,mip) =
+  if Option.is_empty mip.mind_squashed then Sorts.InType
+  else Inductive.inductive_sort_family mip
+
 let top_allowed_sort env (kn,i as ind) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_kelim
+  let specif = Inductive.lookup_mind_specif env ind in
+  elim_sort specif
 
 let sorts_below top =
-  List.filter (fun s -> Sorts.family_leq s top) Sorts.[InSProp;InProp;InSet;InType]
+  List.filter (fun s ->
+      Sorts.family_equal s top
+      || match s, top with
+      | InQSort, _ -> assert false
+      | _, InQSort -> false
+      | InSProp, _ -> true
+      | InProp, InSet -> true
+      | _, InType -> true
+      | (InProp|InSet|InType), _ -> false)
+    Sorts.[InSProp;InProp;InSet;InType]
+
+let sorts_for_schemes specif =
+  sorts_below (elim_sort specif)
 
 let has_dependent_elim (mib,mip) =
   match mib.mind_record with
@@ -430,7 +504,7 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
-let make_arity_signature env sigma dep ((ind,_), _ as indf) =
+let make_arity_signature env sigma dep (ind, _ as indf) =
   let arsign = get_arity env indf in
   let r = Inductive.relevance_of_inductive env ind in
   let anon = make_annot Anonymous r in
@@ -577,7 +651,7 @@ let find_coinductive env sigma c =
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
   let arsign = get_arity env (ind,params) in
-  let r = Inductive.relevance_of_inductive env (fst ind) in
+  let r = Inductive.relevance_of_inductive env ind in
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   Term.it_mkProd_or_LetIn concl arsign
