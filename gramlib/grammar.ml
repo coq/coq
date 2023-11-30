@@ -184,9 +184,11 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
 type _ tag = ..
+module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
+
 type 'a ty_entry = {
   ename : string;
-  etag : 'a tag;
+  etag : 'a DMap.onetag;
 }
 
 and 'a ty_desc =
@@ -245,8 +247,6 @@ type ('t,'a) entry_data = {
   econtinue : 't -> int -> int -> 'a -> 'a parser_t;
 }
 
-module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
-
 module rec EState : DMap.MapS
   with type 'a value := (GState.t, 'a) entry_data
   = DMap.Map(struct type 'a t = (GState.t, 'a) entry_data end)
@@ -264,7 +264,8 @@ end = struct
 end
 open GState
 
-let get_entry estate e = try EState.find e.etag estate with Not_found -> assert false
+let get_entry estate e = try EState.find (DMap.tag_of_onetag e.etag) estate
+  with Not_found -> assert false
 
 type 'a ty_rules =
 | TRules : (_, norec, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_rules
@@ -292,10 +293,8 @@ and tree_derive_eps : type s tr a. (s, tr, a) ty_tree -> bool =
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
   | DeadEnd -> false
 
-(** FIXME: find a way to do that type-safely *)
 let eq_entry : type a1 a2. a1 ty_entry -> a2 ty_entry -> (a1, a2) eq option = fun e1 e2 ->
-  if (Obj.magic e1) == (Obj.magic e2) then Some (Obj.magic Refl)
-  else None
+  DMap.eq_onetag e1.etag (DMap.tag_of_onetag e2.etag)
 
 let tok_pattern_eq_list pl1 pl2 =
   let f (TPattern p1) (TPattern p2) = Option.has_some (L.tok_pattern_eq p1 p2) in
@@ -1612,9 +1611,12 @@ let make_entry_data entry desc = {
 
 (* Extend syntax *)
 
-let modify_entry estate e f = try EState.modify e.etag f estate with Not_found -> assert false
+let modify_entry estate e f = try EState.modify (DMap.tag_of_onetag e.etag) f estate
+  with Not_found -> assert false
 
-let add_entry otag estate e v = assert (not (EState.mem e.etag estate)); EState.add otag v estate
+let add_entry otag estate e v =
+  assert (not (EState.mem (DMap.tag_of_onetag e.etag) estate));
+  EState.add otag v estate
 
 let extend_entry add_kw estate kwstate entry statement =
   let kwstate = ref kwstate in
@@ -1706,8 +1708,8 @@ module Entry = struct
   type 'a t = 'a ty_entry
 
   let fresh n =
-    let otag = DMap.make () in
-    { ename = n; etag = DMap.tag_of_onetag otag }, otag
+    let etag = DMap.make () in
+    { ename = n; etag }, etag
 
   let make n estate =
     let e, otag = fresh n in
@@ -1772,7 +1774,7 @@ module Entry = struct
           List.iter (fun (ExS rule) -> iter_in_symbols f rule) rules)
         elev
 
-  let same_entry (Any e) (Any e') = (Obj.magic e) == (Obj.magic e')
+  let same_entry (Any e) (Any e') = Option.has_some (eq_entry e e')
 
   let accumulate_in e estate =
     let initial = Any e in
