@@ -159,7 +159,7 @@ One can define new types with the following commands.
       tac2rec_field ::= {? mutable } @ident : @ltac2_type
 
    :n:`:=`
-     Defines a type with with an explicit set of constructors
+     Defines a type with an explicit set of constructors
 
    :n:`::=`
      Extends an existing open variant type, a special kind of variant type whose constructors are not

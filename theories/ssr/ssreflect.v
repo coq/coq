@@ -332,7 +332,7 @@ Register protect_term as plugins.ssreflect.protect_term.
   - unkeyed t will match any subterm that unifies with t, regardless of
     whether it displays the same head symbol as t.
   - unkeyed t a b will match any application of a term f unifying with t,
-    to two arguments unifying with with a and b, respectively, regardless of
+    to two arguments unifying with a and b, respectively, regardless of
     apparent head symbols.
   - unkeyed x where x is a variable will match any subterm with the same
     type as x (when x would raise the 'indeterminate pattern' error).        **)
