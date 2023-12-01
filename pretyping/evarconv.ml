@@ -76,11 +76,37 @@ let unfold_projection env evd ts p r c =
     Some (mkProj (Projection.unfold p, r, c))
   else None
 
+(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+   expanded, folded primitive projection of name [n] and unfolds the primitive
+   projection. It respects projection transparency of [ts]. *)
+let unfold_projection_under_eta env evd ts n c =
+  let rec go c lams =
+    match EConstr.kind evd c with
+    | Lambda (b, t, c) -> go c ((b,t)::lams)
+    | Proj (p, r, c) when Names.Constant.CanOrd.equal n (Projection.constant p) ->
+      let c = unfold_projection env evd ts p r c in
+      begin
+        match c with
+        | None -> None
+        | Some c ->
+          let f c (b,t) = mkLambda (b,t,c) in
+          Some (List.fold_left f c lams)
+      end
+      | _ -> None
+  in
+  go c []
+
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
   | Const (c, u) ->
-      if Structures.PrimitiveProjections.is_transparent_constant ts c
-      then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
+      if Structures.PrimitiveProjections.is_transparent_constant ts c then
+        let value = Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u)) in
+        (* If we are unfolding a compatibility constant we want to return the
+           unfolded primitive projection directly since we would like to pretend
+           that the compatibility constant itself does not count as an unfolding
+           (delta) step. *)
+        let unf = Option.bind value (unfold_projection_under_eta env evd ts c) in
+        if Option.has_some unf then unf else value
       else None
   | Rel n ->
       (try match lookup_rel n env with
