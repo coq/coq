@@ -1,6 +1,6 @@
 (lang dune 3.6)
 (name coq)
-(using coq 0.3)
+(using coq 0.6)
 
 (formatting
  (enabled_for ocaml))
