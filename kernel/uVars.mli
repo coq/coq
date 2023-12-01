@@ -264,6 +264,7 @@ val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 val subst_instance_quality : Instance.t -> Sorts.Quality.t -> Sorts.Quality.t
 val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
+val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_level_subst
 
 (** Substitution of instances *)
 val subst_ainstance_instance : AInstance.t -> Instance.t -> Instance.t

@@ -1,4 +1,15 @@
 Set Allow Rewrite Rules.
+Set Universe Polymorphism.
+Set Printing Universes.
+
+
+Symbol ty_prec@{i} : forall (A : Type@{i}), SProp.
+Symbol tm_prec@{i} : forall {A : Type@{i}}, A -> SProp.
+
+Rewrite Rules prec_types := @{a +} |- @tm_prec@{a} Type ?A ==> ty_prec@{a} ?A.
+
+Definition tm_prec_implies_ty_prec@{a b} {A : Type@{a}} (H : tm_prec@{b} A) : ty_prec@{b} A := H.
+Unset Universe Polymorphism.
 
 Symbol pplus : nat -> nat -> nat.
 Notation "a ++ b" := (pplus a b).
@@ -74,15 +85,15 @@ Record prod (A B : Type) := { fst: A; snd: B}.
 
 
 Rewrite Rules id_rew :=
-  id _ Type ==> Type
+  @{u+} |- id _ Type@{u} ==> Type@{u}
 
 with
-  id _ (forall (x : ?A), ?P) ==> forall (x : ?A), id _ ?P
+  @{u+} |- id Type@{u} (forall (x : ?A), ?P) ==> forall x, id Type@{u} ?P
 with
   id (forall x, ?P) (fun (x : ?A) => ?f) ==> fun (x : ?A) => id ?P ?f
 
 with
-  id _ (?A * ?B)%type ==> (id _ ?A * id _ ?B)%type
+  @{u+} |- id Type@{u} (?A * ?B)%type ==> (id Type@{u} ?A * id Type@{u} ?B)%type
 with
   id (?A * ?B) (?a, ?b) ==> (id _ ?a, id _ ?b)
 
@@ -103,7 +114,7 @@ with
   id (prod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
 
 
-Symbol cast : forall A B, A -> B.
+Symbol cast : forall (A B : Type), A -> B.
 Notation "<< B <== A >> t" := (cast A B t) (at level 10).
 
 Rewrite Rules cast_rew :=

@@ -67,7 +67,7 @@ open Util
 open Constr
 open Declarations
 
-type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * (int * bool) Int.Map.t)
+type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * bool list * int Int.Map.t)
 
 let update_invtbl ~loc env evd evk (curvar, tbl) =
   succ curvar, tbl |> Evar.Map.update evk @@ function
@@ -81,11 +81,11 @@ let update_invtbl ~loc env evd evk (curvar, tbl) =
           ++ str" but used here for hole " ++ int curvar
           ++ str".")
 
-let update_invtblu1 ~loc ~(alg:bool) evd lvl (curvaru, tbl) =
-  succ curvaru, tbl |> Int.Map.update lvl @@ function
-    | None -> Some (curvaru, alg)
-    | Some (k, alg') as c when k = curvaru && alg = alg' -> c
-    | Some (k, _) ->
+let update_invtblu1 ~loc ~(alg:bool) evd lvl (curvaru, alg_vars, tbl) =
+  succ curvaru, alg :: alg_vars, tbl |> Int.Map.update lvl @@ function
+    | None -> Some curvaru
+    | Some k as c when k = curvaru -> c
+    | Some k ->
         CErrors.user_err ?loc
           Pp.(str "Universe variable "
             ++ Termops.pr_evd_level evd (Univ.Level.var lvl)
@@ -278,41 +278,86 @@ and test_pattern_redex_aux env evd ~loc = function
   | EHole | EHoleIgnored -> ()
   | ERigid p -> test_pattern_redex env evd ~loc p
 
-let interp_rule (udecl, lhs, rhs) =
+
+let warn_rewrite_rules_break_SR = "rewrite-rules-break-SR"
+
+let rewrite_rules_break_SR_warning =
+  CWarnings.create_warning ~name:warn_rewrite_rules_break_SR ~default:CWarnings.Enabled ()
+
+let rewrite_rules_break_SR_msg = CWarnings.create_msg rewrite_rules_break_SR_warning ()
+let warn_rewrite_rules_break_SR ~loc reason =
+  CWarnings.warn rewrite_rules_break_SR_msg ?loc reason
+let () = CWarnings.register_printer rewrite_rules_break_SR_msg
+  (fun reason -> Pp.(str "This rewrite rule breaks subject reduction (" ++ reason ++ str ")"))
+
+let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) =
   let env = Global.env () in
-  let poly = Option.has_some udecl in
-  let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
+  let evd = Evd.from_env env in
+
+  (* 1. Read universe level binders, leaving out the constraints for now *)
+  (* Inlined the relevant part of Constrintern.interp_univ_decl *)
+  let evd, udecl =
+    let open CAst in let open UState in
+    match udecl with
+    | None -> evd, default_univ_decl
+    | Some udecl ->
+    let evd, qualities = List.fold_left_map (fun evd lid ->
+        Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+        evd
+        udecl.univdecl_qualities
+    in
+    let evd, instance = List.fold_left_map (fun evd lid ->
+        Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
+        evd
+        udecl.univdecl_instance
+    in
+    let cstrs =
+      udecl.univdecl_constraints |> List.to_seq
+      |> Seq.map (Constrintern.interp_univ_constraint evd)
+      |> Univ.Constraints.of_seq
+    in
+    let decl = {
+      univdecl_qualities = qualities;
+      univdecl_instance = instance;
+      univdecl_extensible_instance = udecl.univdecl_extensible_instance;
+      univdecl_constraints = cstrs;
+      univdecl_extensible_constraints = udecl.univdecl_extensible_constraints;
+    } in
+    evd, decl
+  in
+  let nvarqs = List.length udecl.univdecl_qualities in
+  let nvarus = List.length udecl.univdecl_instance in
+
+
+  (* 2. Read left hand side, into a pattern *)
+  (* The udecl constraints must be implied by the lhs (and not the reverse) *)
 
   let lhs_loc = lhs.CAst.loc in
   let rhs_loc = rhs.CAst.loc in
 
   let lhs = Constrintern.(intern_gen WithoutTypeConstraint ~pattern_mode:true env evd lhs) in
   let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false; expand_evars = false; solve_unification_constraints = false } in
-  let evd, lhs = Pretyping.understand_tcc ~flags env evd lhs in
-  (* let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in *)
+  let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
   (* let patvars, lhs = Constrintern.intern_constr_pattern env evd lhs in *)
 
   let evd = Evd.minimize_universes evd in
   let _qvars, uvars = EConstr.universes_of_constr evd lhs in
   let evd = Evd.restrict_universe_context evd uvars in
-  let univs = Evd.check_univ_decl ~poly evd udecl in
+  let uctx, uctx' = UState.check_univ_decl_rev (Evd.evar_universe_context evd) udecl in
 
-  let (nvarqs, nvarus), usubst =
-    match fst univs with
-    | Monomorphic_entry _ -> (0, 0), UVars.empty_sort_subst
-    | Polymorphic_entry ctx ->
-        UVars.UContext.size ctx,
-        let inst, auctx = UVars.abstract_universes ctx in
-        UVars.make_instance_subst inst
+  let usubst =
+    let inst, auctx = UVars.abstract_universes uctx' in
+    UVars.make_instance_subst inst
   in
 
   let lhs = Vars.subst_univs_level_constr usubst (EConstr.Unsafe.to_constr lhs) in
 
-  let ((nvars', invtbl), (nvarqs', invtblq), (nvarus', invtblu)), (head_pat, elims) =
-    safe_pattern_of_constr ~loc:lhs_loc (env, evd) 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, Int.Map.empty)) lhs
+  let ((nvars', invtbl), (nvarqs', invtblq), (nvarus', alg_vars, invtblu)), (head_pat, elims) =
+    safe_pattern_of_constr ~loc:lhs_loc (env, evd) 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, [], Int.Map.empty)) lhs
   in
+  let alg_vars = Array.rev_of_list alg_vars in
   let () = test_pattern_redex env evd ~loc:lhs_loc (head_pat, elims) in
-  let _inv_tbl_dbg = Evar.Map.bindings invtbl in
+
   let head_symbol, head_umask = match head_pat with PHSymbol (symb, mask) -> symb, mask | _ ->
     CErrors.user_err ?loc:lhs_loc
     Pp.(str "Head pattern is not a symbol.")
@@ -334,12 +379,36 @@ let interp_rule (udecl, lhs, rhs) =
     Evar.Map.add evk (n, vars) invtbl
   in
 
-  let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false } in
-  let evd, rhs = Pretyping.understand_tcc ~flags env evd (* ~expected_type:(OfType typ) *) rhs in
   let invtbl = Evar.Map.fold (update_invtbl evd) invtbl Evar.Map.empty in
 
-  let rhs = evar_subst invtbl evd 0 rhs in
+  let usubst' = UVars.Instance.of_array
+    (Array.init nvarqs (fun i -> Sorts.Quality.var (Option.default (-1) (Int.Map.find_opt i invtblq))),
+     Array.init nvarus (fun i -> Univ.Level.var (Option.default (-1) (Int.Map.find_opt i invtblu))))
+  in
+  let usubst = UVars.subst_instance_sort_level_subst usubst' usubst in
+
+  (* 3. Read right hand side *)
+  (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
+  let evd = Evd.set_universe_context evd uctx in
+  let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false } in
+  let evd', rhs =
+    try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType typ) rhs
+    with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
+      warn_rewrite_rules_break_SR ~loc:rhs_loc (Pp.str "right-hand side doesn't have the type of left-hand side");
+      Pretyping.understand_tcc ~flags env evd rhs
+  in
+
+  let evd' = Evd.minimize_universes evd' in
+  let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
+  let evd' = Evd.restrict_universe_context evd' (Univ.Level.Set.union uvars uvars') in
+  let () =
+    try UState.check_uctx_impl ?loc:rhs_loc (Evd.evar_universe_context evd) (Evd.evar_universe_context evd')
+    with CErrors.UserError _ -> warn_rewrite_rules_break_SR ~loc:rhs_loc (Pp.str "universe inconsistency")
+  in
+  let evd = evd' in
+
+  let rhs = evar_subst invtbl evd' 0 rhs in
   let rhs = match EConstr.to_constr_opt evd rhs with
     | Some rhs -> rhs
     | None ->
@@ -349,41 +418,44 @@ let interp_rule (udecl, lhs, rhs) =
 
   let rhs = Vars.subst_univs_level_constr usubst rhs in
 
-  let qvars, uvars = Vars.sort_and_universes_of_constr rhs in
-  qvars |> Sorts.QVar.Set.iter (fun lvl -> lvl |> Sorts.QVar.var_index |> Option.iter (fun lvli ->
-    if not (Int.Map.mem lvli invtblu) then
-      CErrors.user_err ?loc:rhs_loc
-        Pp.(str "Sort quality variable" ++ Termops.pr_evd_qvar evd lvl ++ str " appears in rhs but does not appear in the pattern.")
-  ));
-  uvars |> Univ.Level.Set.iter (fun lvl -> lvl |> Univ.Level.var_index |> Option.iter (fun lvli ->
-    if not (Int.Map.mem lvli invtblu) then
-      CErrors.user_err ?loc:rhs_loc
-        Pp.(str "Universe level variable " ++ Termops.pr_evd_level evd lvl ++ str " appears in rhs but does not appear in the pattern.")
-  ));
-  let usubst = UVars.Instance.of_array
-    (Array.init nvarqs (fun i -> Sorts.Quality.var (Option.default i (Int.Map.find_opt i invtblq))),
-     Array.init nvarus (fun i -> Univ.Level.var (Option.cata fst i (Int.Map.find_opt i invtblu))))
+  let test_qvar q =
+    match Sorts.QVar.var_index q with
+    | Some -1 ->
+        CErrors.user_err ?loc:rhs_loc
+          Pp.(str "Sort quality variable " ++ Termops.pr_evd_qvar evd q ++ str " appears in rhs but does not appear in the pattern.")
+    | Some n when n < 0 || n > nvarqs' -> CErrors.anomaly Pp.(str "Unknown universe level variable in rewrite rule")
+    | Some _ -> ()
+    | None ->
+        if not @@ Sorts.QVar.Set.mem q (evd |> Evd.sort_context_set |> fst |> fst) then
+          CErrors.user_err ?loc:rhs_loc
+            Pp.(str "Sort quality " ++ Termops.pr_evd_qvar evd q ++ str " appears in rhs but does not appear in the pattern.")
   in
-  let rhs = Vars.subst_instance_constr usubst rhs in
+  let test_quality = function Sorts.Quality.QVar q -> test_qvar q | QConstant _ -> () in
 
-  let test_level lvl =
+  let test_level ?(alg_ok=false) lvl =
     match Univ.Level.var_index lvl with
-    | Some n ->
-      let i = Int.Map.bindings invtblu |> List.find_map (fun (i, (a, b)) -> if a = n && b then Some i else None) in
-      Option.iter (fun i ->
-      CErrors.user_err ?loc:rhs_loc
-        Pp.(str "Algebraic universe variable" ++ Termops.pr_evd_level evd (Univ.Level.var i) ++ str " appears in rhs as a universe level variable.")
-      ) i
-    | _ -> ()
+    | Some -1 ->
+        CErrors.user_err ?loc:rhs_loc
+          Pp.(str "Universe level variable " ++ Termops.pr_evd_level evd lvl ++ str " appears in rhs but does not appear in the pattern.")
+    | Some n when n < 0 || n > nvarus' -> CErrors.anomaly Pp.(str "Unknown universe level variable in rewrite rule")
+    | Some n when not alg_ok && alg_vars.(n) ->
+        let prelvl = Univ.Level.Map.bindings (snd usubst) |> List.find (fun (i, a) -> Univ.Level.equal a lvl) |> fst in
+        CErrors.user_err ?loc:rhs_loc
+          Pp.(str "Algebraic universe variable " ++ Termops.pr_evd_level evd prelvl ++ str " appears in rhs as a universe level variable.")
+    | Some _ -> ()
+    | None ->
+        try UGraph.check_declared_universes (Environ.universes env) (Univ.Level.Set.singleton lvl)
+        with UGraph.UndeclaredLevel lvl ->
+          CErrors.user_err ?loc:rhs_loc
+            Pp.(str "Universe level " ++ Termops.pr_evd_level evd lvl ++ str " appears in rhs but does not appear in the pattern.")
   in
 
   let test_universe u =
-    match universe_level_var_index u with
-    | Some _ -> ()
-    | None -> Univ.Universe.repr u |> List.iter (fun (lvl, _) -> test_level lvl)
+    let alg_ok = Option.has_some (universe_level_var_index u) in
+    Univ.Level.Set.iter (test_level ~alg_ok) (Univ.Universe.levels u)
   in
 
-  let () = Vars.iter_on_instance (fun u -> UVars.Instance.to_array u |> snd |> Array.iter test_level) test_universe rhs in
+  let () = Vars.iter_on_instance (fun u -> let qs, us = UVars.Instance.to_array u in Array.iter test_quality qs; Array.iter test_level us) test_universe rhs in
 
   head_symbol, { lhs_pat = head_umask, elims; rhs }
 
