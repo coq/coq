@@ -18,9 +18,11 @@ Build Requirements
 To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.09.0)
-  (This version of Coq has been tested up to OCaml 4.14.0)
+  (This version of Coq has been tested up to OCaml 4.14.1, for the 4.x series)
 
-- The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 2.9.1
+  Support for OCaml 5.x remains experimental.
+
+- The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 3.6.1
 
 - The [ZArith library](https://github.com/ocaml/Zarith) >= 1.11
 
@@ -60,7 +62,7 @@ CoqIDE with:
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
-    $ opam switch create coq --packages="ocaml-variants.4.12.0+options,ocaml-option-flambda"
+    $ opam switch create coq --packages="ocaml-variants.4.14.1+options,ocaml-option-flambda"
     $ eval $(opam env)
     $ opam install dune ocamlfind zarith lablgtk3-sourceview3
 
@@ -119,11 +121,3 @@ like `COQLIB="some path"`, that is a variable name followed by `=` and
 a string that follows OCaml's escaping conventions. This feature can be
 used by installers of binary package to make Coq aware of its installation
 path.
-
-Known problems
---------------
-
-- On OSX, when using Opam with sandboxing and Dune < 3.0 with caching
-  enabled, Coq may fail to install, due to Opam's sandboxing
-  restricting the permissions needed for the Dune 2.x caching
-  daemon. See https://github.com/coq/coq/issues/15138 more details.

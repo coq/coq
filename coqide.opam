@@ -17,7 +17,7 @@ homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
-  "dune" {>= "2.9"}
+  "dune" {>= "3.6"}
   "ocamlfind" {build}
   "conf-findutils" {build}
   "conf-adwaita-icon-theme"
@@ -35,11 +35,9 @@ build: [
     name
     "-j"
     jobs
-    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
-  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/coq/coq.git"

@@ -6,7 +6,7 @@
  ; Uncomment this to have dune compile native files in release mode
  ; (mode native)
  (boot)
- (libraries
+ (plugins
    coq-core.plugins.ltac
    coq-core.plugins.tauto
 

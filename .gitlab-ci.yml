@@ -36,7 +36,7 @@ variables:
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
-  BASE_CACHEKEY: "old_ubuntu_lts-V2023-06-30-8ca33f9dfd"
+  BASE_CACHEKEY: "old_ubuntu_lts-V2023-11-30-7323af070e"
   EDGE_CACHEKEY: "edge_ubuntu-V2023-11-30-ba911a5fa6"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"

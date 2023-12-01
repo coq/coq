@@ -71,7 +71,7 @@ val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 
 module PrintingInductiveMake :
-  functor (Test : sig
+  functor (_ : sig
     val encode : Environ.env -> Libnames.qualid -> Names.inductive
     val member_message : Pp.t -> bool -> Pp.t
     val field : string
