@@ -636,7 +636,6 @@ library:ci-coquelicot:
 
 library:ci-cross_crypto:
   extends: .ci-template
-  allow_failure: true # See https://github.com/coq/coq/pull/18164/
 
 library:ci-engine_bench:
   extends: .ci-template
@@ -658,7 +657,6 @@ library:ci-fiat_crypto:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   timeout: 3h
-  allow_failure: true # See https://github.com/coq/coq/pull/18164/
 
 library:ci-fiat_crypto_legacy:
   extends: .ci-template-flambda
@@ -678,7 +676,6 @@ library:ci-fiat_crypto_ocaml:
   - library:ci-fiat_crypto
   artifacts:
     paths: [] # These artifacts would go over the size limit
-  allow_failure: true # See https://github.com/coq/coq/pull/18164/
 
 library:ci-flocq:
   extends: .ci-template-flambda
@@ -890,7 +887,6 @@ plugin:ci-equations_test:
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
-  allow_failure: true # See https://github.com/coq/coq/pull/18164/
 
 plugin:ci-lean_importer:
   extends: .ci-template
