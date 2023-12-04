@@ -34,7 +34,7 @@ Require Ltac2.Message.
 (* Question: what is returned in case of an out of range value?
    Answer:   Ltac2 throws a panic *)
 
-Ltac2 @external empty : unit -> 'a array := "coq-core.plugins.ltac2" "array_empty".
+Ltac2 @external empty : 'a array := "coq-core.plugins.ltac2" "array_empty".
 Ltac2 @external make : int -> 'a -> 'a array := "coq-core.plugins.ltac2" "array_make".
 Ltac2 @external length : 'a array -> int := "coq-core.plugins.ltac2" "array_length".
 Ltac2 @external get : 'a array -> int -> 'a := "coq-core.plugins.ltac2" "array_get".
@@ -48,7 +48,7 @@ Ltac2 @external concat : ('a array) list -> 'a array := "coq-core.plugins.ltac2"
 Ltac2 lowlevel_sub (arr : 'a array) (start : int) (len : int) :=
   let l := length arr in
   match Int.equal l 0 with
-  | true => empty ()
+  | true => empty
   | false =>
       let newarr:=make len (get arr 0) in
       lowlevel_blit arr start newarr 0 len;
@@ -67,7 +67,7 @@ Ltac2 init (l : int) (f : int->'a) :=
     end
   in
   match Int.le l 0 with
-  | true => empty ()
+  | true => empty
   | false =>
       let arr:=make l (f 0) in
       init_aux arr 1 (Int.sub l 1) f;
@@ -174,7 +174,7 @@ Ltac2 of_list (ls : 'a list) :=
     | _ :: tl => Int.add 1 (list_length tl)
     end in
   match ls with
-  | [] => empty ()
+  | [] => empty
   | hd::tl =>
       let anew := make (list_length ls) hd in
       of_list_aux ls anew 0;

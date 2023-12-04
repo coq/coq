@@ -109,7 +109,7 @@ Module RealCodeTest.
             } =>
             true
           end)
-        (Array.empty ())
+        Array.empty
     }.
 
 End RealCodeTest.

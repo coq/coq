@@ -562,5 +562,5 @@ let of_format { v = fmt; loc } =
     with Tac2print.InvalidFormat ->
       CErrors.user_err ?loc (str "Invalid format")
   in
-  let stop = CAst.make @@ CTacApp (global_ref (kername format_prefix "stop"), [of_tuple []]) in
+  let stop = global_ref (kername format_prefix "stop") in
   List.fold_left of_format stop fmt
