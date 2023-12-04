@@ -16,11 +16,29 @@ module MiniJson = struct
     | `List of t list
   ]
 
+  (* https://www.ietf.org/rfc/rfc4627.txt *)
+  (* https://github.com/ocaml-community/yojson/blob/4c1d4b52f9e87a4bd3b7f26111e8a4976c1e8676/lib/write.ml#L27 *)
+  let prstring ch s =
+    let buf = Buffer.create (String.length s) in
+    let encode c =
+      match c with
+      | '"' -> Buffer.add_string buf "\\\""
+      | '\\' -> Buffer.add_string buf "\\\\"
+      | '\b' -> Buffer.add_string buf "\\b"
+      | '\012' -> Buffer.add_string buf "\\f"
+      | '\n' -> Buffer.add_string buf "\\n"
+      | '\r' -> Buffer.add_string buf "\\r"
+      | '\t' -> Buffer.add_string buf "\\t"
+      | '\x00'..'\x1F'
+      | '\x7F' ->
+          Buffer.add_string buf (Printf.sprintf "\\u%04x" (Char.code c))
+      | _ -> Buffer.add_char buf c
+    in
+    String.iter encode s;
+    Format.fprintf ch "\"%s\"" (Buffer.contents buf)
+
   let rec pr ch : t -> _ = function
-    | `String s ->
-      let s = String.split_on_char '"' s in
-      let s = String.concat "\\\"" s in
-      Format.fprintf ch "\"%s\"" s
+    | `String s -> prstring ch s
     | `Intlit s -> Format.fprintf ch "%s" s
     | `Assoc elts ->
       Format.fprintf ch "{ %a }" prrecord elts
@@ -29,8 +47,8 @@ module MiniJson = struct
 
   and prrecord ch = function
     | [] -> ()
-    | [(x,v)] -> Format.fprintf ch "\"%s\": %a" x pr v
-    | (x,v) :: l -> Format.fprintf ch "\"%s\": %a, %a" x pr v prrecord l
+    | [(x,v)] -> Format.fprintf ch "%a: %a" prstring x pr v
+    | (x,v) :: l -> Format.fprintf ch "%a: %a, %a" prstring x pr v prrecord l
 
   and prarray ch = function
     | [] -> ()
