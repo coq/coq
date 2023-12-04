@@ -686,7 +686,7 @@ let pr_using e =
 let pr_extend s cl =
   let pr_arg a =
     try pr_gen a
-    with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
+    with Failure _ -> str "<error in " ++ str s.ext_entry ++ str ">" in
   try
     let rl = Egramml.get_extend_vernac_rule s in
     let rec aux rl cl =
@@ -697,7 +697,7 @@ let pr_extend s cl =
       | _ -> assert false in
     hov 1 (pr_sequence identity (aux rl cl))
   with Not_found ->
-    hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
+    hov 1 (str "TODO(" ++ str s.ext_entry ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
 let pr_synpure_vernac_expr v =
   let return = tag_vernac v in

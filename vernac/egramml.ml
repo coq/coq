@@ -82,7 +82,7 @@ let get_extend_vernac_rule s =
 
 let declare_vernac_command_grammar ~allow_override s nt gl =
   let () = if not allow_override && Hashtbl.mem vernac_exts s
-    then CErrors.anomaly Pp.(str "bad vernac extend: " ++ str (fst s) ++ str ", " ++ int (snd s))
+    then CErrors.anomaly Pp.(str "bad vernac extend: " ++ str s.ext_entry ++ str ", " ++ int s.ext_index)
   in
   let nt = Option.default Pvernac.Vernac_.command nt in
   Hashtbl.add vernac_exts s (nt, gl)
