@@ -13,11 +13,6 @@ type non_prim_record_one_field =
   bool
   (* singleton inductive, whose constructor was Build_non_prim_record_one_field *)
 
-(** val non_prim_proj1_of_1 : non_prim_record_one_field -> bool **)
-
-let non_prim_proj1_of_1 n =
-  n
-
 (** val d11 : non_prim_record_two_fields -> bool **)
 
 let d11 x =
@@ -30,24 +25,19 @@ let d12 x =
 
 (** val e11 : non_prim_record_one_field -> bool **)
 
-let e11 =
-  non_prim_proj1_of_1
+let e11 x =
+  x
 
 (** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
 
 let e12 x =
-  non_prim_proj1_of_1 (x Tt)
+  x Tt
 
 type prim_record_two_fields = { prim_proj1_of_2 : bool; prim_proj2_of_2 : bool }
 
 type prim_record_one_field =
   bool
   (* singleton inductive, whose constructor was Build_prim_record_one_field *)
-
-(** val prim_proj1_of_1 : prim_record_one_field -> bool **)
-
-let prim_proj1_of_1 p =
-  p
 
 (** val d21 : prim_record_two_fields -> bool **)
 
@@ -61,13 +51,13 @@ let d22 x =
 
 (** val e21 : prim_record_one_field -> bool **)
 
-let e21 =
-  prim_proj1_of_1
+let e21 x =
+  x
 
 (** val e22 : (unit0 -> prim_record_one_field) -> bool **)
 
 let e22 x =
-  prim_proj1_of_1 (x Tt)
+  x Tt
 
 
 type unit0 =
@@ -108,13 +98,13 @@ module A =
 
   (** val e11 : non_prim_record_one_field -> bool **)
 
-  let e11 =
-    non_prim_proj1_of_1
+  let e11 x =
+    x
 
   (** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
 
   let e12 x =
-    non_prim_proj1_of_1 (x Tt)
+    x Tt
 
   type prim_record_two_fields = { prim_proj1_of_2 : bool;
                                   prim_proj2_of_2 : bool }
@@ -145,13 +135,13 @@ module A =
 
   (** val e21 : prim_record_one_field -> bool **)
 
-  let e21 =
-    prim_proj1_of_1
+  let e21 x =
+    x
 
   (** val e22 : (unit0 -> prim_record_one_field) -> bool **)
 
   let e22 x =
-    prim_proj1_of_1 (x Tt)
+    x Tt
  end
 
 
@@ -217,13 +207,13 @@ module M =
 
   (** val e11 : non_prim_record_one_field -> bool **)
 
-  let e11 =
-    non_prim_proj1_of_1
+  let e11 x =
+    x
 
   (** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
 
   let e12 x =
-    non_prim_proj1_of_1 (x Tt)
+    x Tt
 
   type prim_record_two_fields = { prim_proj1_of_2 : bool;
                                   prim_proj2_of_2 : bool }

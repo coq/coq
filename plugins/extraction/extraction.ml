@@ -490,11 +490,11 @@ and extract_really_ind env kn mib =
         if not (Int.equal (Array.length p.ip_types) 1) then raise (I Standard);
         let typ = p.ip_types.(0) in
         let l = if conservative_types () then [] else List.filter (fun t -> not (isTdummy (expand env t))) typ in
-        if not (keep_singleton ()) &&
-            Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
-        then raise (I Singleton);
         if List.is_empty l then raise (I Standard);
-        if mib.mind_record == Declarations.NotRecord then raise (I Standard);
+        if mib.mind_record == Declarations.NotRecord then
+          if not (keep_singleton ()) && Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
+          then raise (I Singleton)
+          else raise (I Standard);
         (* Now we're sure it's a record. *)
         (* First, we find its field names. *)
         let rec names_prod t = match Constr.kind t with
@@ -520,12 +520,14 @@ and extract_really_ind env kn mib =
               let knp = Constant.make2 mp (Label.of_id id) in
               (* Is it safe to use [id] for projections [foo.id] ? *)
               if List.for_all ((==) Keep) (type2signature env typ)
-              then add_projection nparams knp ip;
+              then (* for OCaml inlining: *) add_projection nparams knp ip;
               Some (GlobRef.ConstRef knp) :: (select_fields (i+1) l typs)
           | _ -> assert false
         in
         let field_glob = select_fields (1+npar) field_names typ in
-        Record field_glob
+        if not (keep_singleton ()) && Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
+        then Singleton (* in passing, we registered the (identity) projection *)
+        else Record field_glob
       with (I info) -> info
     in
     let i = {ind_kind = ind_info;
