@@ -100,14 +100,10 @@ let my_it_mkLambda_or_LetIn_name env s c =
   List.fold_left (fun c d -> mkLambda_or_LetIn_name d c) c s
 
 let get_coq_eq env ctx =
-  try
-    let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
-    (* Do not force the lazy if they are not defined *)
-    let eq, ctx = with_context_set ctx
+  let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
+  let eq, ctx = with_context_set ctx
       (UnivGen.fresh_inductive_instance env eq) in
-      mkIndU eq, mkConstructUi (eq,1), ctx
-  with Not_found ->
-    user_err Pp.(str "eq not found.")
+  mkIndU eq, mkConstructUi (eq,1), ctx
 
 let univ_of_eq env eq =
   let open EConstr in

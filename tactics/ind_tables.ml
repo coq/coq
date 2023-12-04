@@ -231,17 +231,21 @@ let find_scheme kind (mind,i as ind) =
   | Some s ->
     Proofview.tclUNIT s
   | None ->
-  match Hashtbl.find scheme_object_table kind with
-  | s,IndividualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
-    let c, eff = define_individual_scheme_base kind s f ~internal:true None ind eff in
-    Proofview.tclEFFECTS eff <*> Proofview.tclUNIT c
-  | s,MutualSchemeFunction (f, deps) ->
-    let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
-    let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
-    Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
+    try
+      match Hashtbl.find scheme_object_table kind with
+      | s,IndividualSchemeFunction (f, deps) ->
+        let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
+        let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+        let c, eff = define_individual_scheme_base kind s f ~internal:true None ind eff in
+        Proofview.tclEFFECTS eff <*> Proofview.tclUNIT c
+      | s,MutualSchemeFunction (f, deps) ->
+        let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
+        let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+        let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
+        Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
+    with Coqlib.NotFoundRef _ as e ->
+      let e, info = Exninfo.capture e in
+      Proofview.tclZERO ~info e
 
 let define_individual_scheme ?loc kind names ind =
   let _ , eff = define_individual_scheme ?loc kind ~internal:false names ind in
