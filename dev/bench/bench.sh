@@ -604,7 +604,7 @@ $skipped_packages"
     for iteration in $(seq $num_of_iterations); do
         # opam logs prefix the printing with "- " so remove that
         # remove the base path for nicer printing and so the script can identify common files
-        "$program_path"/../../tools/make-both-time-files.py \
+        "$program_path"/../../tools/make-both-time-files.py --real \
             <(sed -e 's/^- //' -e "s:$new_base_path::" "$log_dir/$coq_opam_package.NEW.opam_install.$iteration.stdout.log") \
             <(sed -e 's/^- //' -e "s:$old_base_path::" "$log_dir/$coq_opam_package.OLD.opam_install.$iteration.stdout.log") \
             > "$log_dir/$coq_opam_package.BOTH.perfile_timings.$iteration.log"
@@ -654,7 +654,7 @@ du -ha "$working_dir" > "$working_dir/files.listing"
 new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/
 old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/
 for iteration in $(seq $num_of_iterations); do
-    "$program_path"/../../tools/make-both-time-files.py \
+    "$program_path"/../../tools/make-both-time-files.py --real \
         <(sed -e 's/^- //' -e "s:$new_base_path::" "$log_dir/"*".NEW.opam_install.$iteration.stdout.log") \
         <(sed -e 's/^- //' -e "s:$old_base_path::" "$log_dir/"*".OLD.opam_install.$iteration.stdout.log") \
         > "$log_dir/ALL.BOTH.perfile_timings.$iteration.log"
