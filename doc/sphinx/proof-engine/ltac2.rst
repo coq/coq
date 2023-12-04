@@ -1751,6 +1751,14 @@ Debug
 
    When this :term:`flag` is set, toplevel failures will be printed with a backtrace.
 
+Profiling
+---------
+
+.. flag:: Ltac2 In Ltac1 Profiling
+
+   When this :term:`flag` and :flag:`Ltac Profiling` are set, profiling data is gathered for Ltac2 via the
+   Ltac profiler. It is unset by default.
+
 Compatibility layer with Ltac1
 ------------------------------
 
