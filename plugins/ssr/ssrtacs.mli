@@ -35,3 +35,23 @@ val wit_ssrdgens : cpattern ssragens Genarg.uniform_genarg_type
 val wit_ssrdgens_tl : cpattern ssragens Genarg.uniform_genarg_type
 
 val wit_ssr_idcomma : Names.Id.t option option Genarg.uniform_genarg_type
+
+val wit_ssrgen :
+    (ssrdocc * cpattern, ssrdocc * cpattern, ssrdocc * cpattern) Genarg.genarg_type
+
+val wit_ssreqid : ssripat option Genarg.uniform_genarg_type
+
+val wit_ssragen :
+    (ssrdocc * ssrterm, ssrdocc * ssrterm, ssrdocc * ssrterm) Genarg.genarg_type
+
+val wit_ssragens :
+    ((ssrdocc * ssrterm) list list * ssrhyps,
+     (ssrdocc * ssrterm) list list * ssrclear,
+     (ssrdocc * ssrterm) list list * ssrclear)
+      Genarg.genarg_type
+
+val wit_ssrrwocc : ssrdocc Genarg.uniform_genarg_type
+val wit_ssrrule_ne : (ssrwkind * ssrterm) Genarg.uniform_genarg_type
+val wit_ssrrule : (ssrwkind * ssrterm) Genarg.uniform_genarg_type
+val wit_ssrpattern_squarep : (rpattern option) Genarg.uniform_genarg_type
+val wit_ssrpattern_ne_squarep : (rpattern option) Genarg.uniform_genarg_type
