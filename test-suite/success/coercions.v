@@ -79,7 +79,7 @@ Defined.
 
 Definition ClaimA := forall (X Y:Setoid) (f: extSetoid X Y) x, f x= f x.
 
-Coercion irrelevent := (fun _ => I) : True -> car (Build_Setoid True).
+Coercion irrelevant := (fun _ => I) : True -> car (Build_Setoid True).
 
 Definition ClaimB := forall (X Y:Setoid) (f: extSetoid X Y) (x:X), f x= f x.
 
