@@ -42,6 +42,11 @@ Ltac2 Type ('a, 'b, 'c, 'd) format.
 Ltac2 Type exn := [ .. ].
 Ltac2 Type 'a array.
 
+(** Tuples *)
+
+Ltac2 fst (p:'a * 'b) : 'a := let (x,_) := p in x.
+Ltac2 snd (p:'a * 'b) : 'b := let (_,y) := p in y.
+
 (** Pervasive types *)
 
 Ltac2 Type 'a option := [ None | Some ('a) ].
