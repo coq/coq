@@ -12,7 +12,7 @@ type t = { since : string option ; note : string option }
 
 val make : ?since:string -> ?note:string -> unit -> t
 
-val create_warning : object_name:string -> warning_name_if_no_since:string ->
+val create_warning : ?default:CWarnings.status -> object_name:string -> warning_name_if_no_since:string ->
   ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
 
 module Version : sig
