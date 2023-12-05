@@ -364,7 +364,7 @@ Insufficiently restrictive variance annotations lead to errors:
 
       Inductive Invariant @{=u} : Type@{u}.
       Inductive Covariant @{+u} : Type@{u}.
-      Inductive Irrelevent@{*u} : Type@{u}.
+      Inductive Irrelevant@{*u} : Type@{u}.
 
       Section Universes.
         Universe low high.
@@ -388,13 +388,13 @@ Insufficiently restrictive variance annotations lead to errors:
         Fail Check (co_high : Covariant@{low}).
    .. coqtop:: in
 
-        (* An invariant universe allows cumulativity from any level *)
-        Axiom irr_low  : Irrelevent@{low}.
-        Axiom irr_high : Irrelevent@{high}.
+        (* An irrelevant universe allows cumulativity from any level *)
+        Axiom irr_low  : Irrelevant@{low}.
+        Axiom irr_high : Irrelevant@{high}.
    .. coqtop:: all
 
-        Check (irr_low : Irrelevent@{high}).
-        Check (irr_high : Irrelevent@{low}).
+        Check (irr_low : Irrelevant@{high}).
+        Check (irr_high : Irrelevant@{low}).
    .. coqtop:: in
 
       End Universes.
