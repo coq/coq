@@ -21,6 +21,14 @@ let warn_library_deprecated =
     ~warning_name_if_no_since:"deprecated-library-file"
     (fun dp -> DirPath.print dp)
 
-let warn_library_info ?loc (dp,infos) =
+let warn_library_deprecated_transitive =
+  Deprecation.create_warning ~object_name:"Library File (transitively required)"
+    ~warning_name_if_no_since:"deprecated-transitive-library-file"
+    ~default:CWarnings.Disabled
+    (fun dp -> DirPath.print dp)
+
+let warn_library_info ?loc ?(transitive=false) (dp,infos) =
   match infos with
-  | Deprecation t -> warn_library_deprecated ?loc (dp, t)
+  | Deprecation t ->
+     if transitive then warn_library_deprecated_transitive ?loc (dp, t)
+     else warn_library_deprecated ?loc (dp, t)

@@ -285,6 +285,9 @@ let intern_from_file lib_resolver dir =
        DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
+  List.iter (fun info ->
+      Library_info.warn_library_info ~transitive:true (lsd.md_name,info))
+    lsd.md_info;
   lsd, lmd, digest_lmd, univs, digest_u, del_opaque
 
 let rec intern_library ~intern (needed, contents as acc) dir =
