@@ -32,8 +32,7 @@ type argument = Genarg.ArgT.any Extend.user_symbol
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
 let atactic n =
-  if n = 5 then Pcoq.Symbol.nterm Pltac.binder_tactic
-  else Pcoq.Symbol.nterml Pltac.ltac_expr (string_of_int n)
+  Pcoq.Symbol.nterml Pltac.ltac_expr (string_of_int n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.Symbol.t -> entry_name
@@ -42,7 +41,6 @@ type entry_name = EntryName :
 let get_tacentry n m =
   let check_lvl n =
     Int.equal m n
-    && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
     && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
   if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Pcoq.Symbol.self)
@@ -113,9 +111,7 @@ let interp_entry_name interp symb =
 let get_tactic_entry n =
   if Int.equal n 0 then
     Pltac.simple_tactic, None
-  else if Int.equal n 5 then
-    Pltac.binder_tactic, None
-  else if 1<=n && n<5 then
+  else if 1<=n && n<=5 then
     Pltac.ltac_expr, Some (string_of_int n)
   else
     user_err Pp.(str ("Invalid Tactic Notation level: "^(string_of_int n)^"."))
