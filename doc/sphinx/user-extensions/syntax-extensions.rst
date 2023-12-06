@@ -730,10 +730,9 @@ Displaying information about notations
 
      Entry ltac_expr is
      [ "5" RIGHTA
-       [ binder_tactic ]
+       [ ]
      | "4" LEFTA
-       [ SELF; ";"; binder_tactic
-       | SELF; ";"; SELF
+       [ SELF; ";"; SELF
        | SELF; ";"; tactic_then_locality; for_each_goal; "]" ]
      | "3" RIGHTA
        [ IDENT "try"; SELF
