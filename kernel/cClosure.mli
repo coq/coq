@@ -192,7 +192,8 @@ val eta_expand_ind_stack : env -> pinductive -> fconstr -> stack ->
     reference is irrelevant and the infos was created with
     [create_conv_infos]. *)
 val unfold_ref_with_args
-  : clos_infos
+  : ?force_def:bool
+  -> clos_infos
   -> clos_tab
   -> table_key
   -> stack

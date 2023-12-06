@@ -334,7 +334,8 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 
 (************************************************************************)
 
-type table_val = (fconstr, Empty.t) constant_def
+(* The boolean indicates whether the definiton is transparent. *)
+type table_val = (bool * fconstr, Empty.t) constant_def
 
 module Table : sig
   type t
@@ -383,26 +384,22 @@ end = struct
           | RelDecl.LocalAssum _ -> raise Not_found
           | RelDecl.LocalDef (_, t, _) -> lift n t
         in
-        Def (inject body)
+        Def (true, inject body)
       | VarKey id ->
         let def = Environ.lookup_named id env in
         shortcut_irrelevant info
           (binder_relevance (NamedDecl.get_annot def));
         let ts = RedFlags.red_transparent info.i_flags in
-        if TransparentState.is_transparent_variable ts id then
-          Def (assoc_defined def)
-        else
-          raise Not_found
+        let transparent = TransparentState.is_transparent_variable ts id in
+        Def (transparent, assoc_defined def)
       | ConstKey (cst,u) ->
         let cb = lookup_constant cst env in
         shortcut_irrelevant info (UVars.subst_instance_relevance u cb.const_relevance);
         let ts = RedFlags.red_transparent info.i_flags in
-        if TransparentState.is_transparent_constant ts cst then
-          Def (constant_value_in u cb.const_body)
-        else
-          raise Not_found
+        let transparent = TransparentState.is_transparent_constant ts cst in
+        Def (transparent, constant_value_in u cb.const_body)
     with
-    | Irrelevant -> Def mk_irrelevant
+    | Irrelevant -> Def (true, mk_irrelevant)
     | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
     | Not_found (* List.assoc *)
     | NotEvaluableConst _ (* Const *) -> Undef None
@@ -1353,7 +1350,7 @@ let rec knr info tab m stk =
         | Inr lam, s -> (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
       (match Table.lookup info tab fl with
-        | Def v -> kni info tab v stk
+        | Def (true, v) -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
@@ -1362,7 +1359,7 @@ let rec knr info tab m stk =
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
-        | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
+        | Def _ | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
   | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
@@ -1657,11 +1654,11 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_ref_with_args infos tab fl v =
+let unfold_ref_with_args ?(force_def=false) infos tab fl v =
   match Table.lookup infos tab fl with
-  | Def def -> Some (def, v)
+  | Def (transparent, def) when transparent || force_def -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
-  | Undef _ | OpaqueDef _ | Primitive _ -> None
+  | Def _ | Undef _ | OpaqueDef _ | Primitive _ -> None

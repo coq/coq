@@ -484,8 +484,18 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        | None ->
          begin match t2 with
           | FFlex fl2 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
+            let force_def =
+              match fl2 with
+              | ConstKey (cst, _) -> Constant.CanOrd.equal (Projection.constant p1) cst
+              | _ -> false
+            in
+            begin match unfold_ref_with_args ~force_def infos.cnv_inf infos.rgt_tab fl2 v2 with
              | Some t2 ->
+               let appr1 =
+                 if force_def then
+                   (lft1, (mk_red (FProj (Projection.unfold p1, r1, c1)), v1))
+                 else appr1
+               in
                eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
              | None -> raise NotConvertible
             end
@@ -500,8 +510,18 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        | None ->
          begin match t1 with
           | FFlex fl1 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
+            let force_def =
+              match fl1 with
+              | ConstKey (cst, _) -> Constant.CanOrd.equal (Projection.constant p2) cst
+              | _ -> false
+            in
+            begin match unfold_ref_with_args ~force_def infos.cnv_inf infos.lft_tab fl1 v1 with
              | Some t1 ->
+               let appr2 =
+                 if force_def then
+                   (lft2, (mk_red (FProj (Projection.unfold p2, r2, c2)), v2))
+                 else appr2
+               in
                eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
              | None -> raise NotConvertible
             end
