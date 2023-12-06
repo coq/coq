@@ -70,7 +70,7 @@ let for_extraargs = ()
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic tacdef_body ltac_expr binder_tactic tactic_value command hint
+  GLOBAL: tactic tacdef_body ltac_expr tactic_value command hint
           tactic_mode constr_may_eval constr_eval toplevel_selector
           term;
 
@@ -163,11 +163,6 @@ GRAMMAR EXTEND Gram
   ;
   failkw:
   [ [ IDENT "fail" -> { TacLocal } | IDENT "gfail" -> { TacGlobal } ] ]
-  ;
-  (* binder_tactic: level 1 of ltac_expr *)
-  binder_tactic:
-    [ RIGHTA
-      [ ] ]
   ;
   (* Tactic arguments to the right of an application *)
   tactic_arg:

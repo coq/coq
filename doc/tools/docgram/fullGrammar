@@ -2101,9 +2101,6 @@ failkw: [
 | "gfail"
 ]
 
-binder_tactic: [
-]
-
 tactic_arg: [
 | tactic_value
 | Constr.constr

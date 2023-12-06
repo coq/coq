@@ -34,6 +34,5 @@ val in_clause : Names.lident Locus.clause_expr Entry.t
 val clause_dft_concl : Names.lident Locus.clause_expr Entry.t
 val tactic_value : raw_tactic_arg Entry.t
 val ltac_expr : raw_tactic_expr Entry.t
-val binder_tactic : raw_tactic_expr Entry.t
 val tactic : raw_tactic_expr Entry.t
 val tactic_eoi : raw_tactic_expr Entry.t

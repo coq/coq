@@ -2227,9 +2227,6 @@ ltac_expr0: [
 | tactic_atom
 ]
 
-binder_tactic: [
-]
-
 tactic_atom: [
 | integer
 | qualid
