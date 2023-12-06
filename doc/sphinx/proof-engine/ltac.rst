@@ -121,7 +121,8 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
      :tacn:`do`, :tacn:`repeat`, :tacn:`timeout`, :tacn:`time`, :tacn:`progress`, :tacn:`once`,
      :tacn:`exactly_once`, :tacn:`only` and :tacn:`abstract`
    - :production:`l2_tactic`\s are: :tacn:`tryif`
-   - :production:`l1_tactic`\s are the :token:`simple_tactic`\s, :tacn:`first`, :tacn:`solve`,
+   - :production:`l1_tactic`\s are the :token:`binder_tactic`\s and
+     :token:`simple_tactic`\s, :tacn:`first`, :tacn:`solve`,
      :tacn:`idtac`, :tacn:`fail` and
      :tacn:`gfail` as well as :tacn:`match`, :tacn:`match goal` and their :n:`lazymatch` and
      :n:`multimatch` variants.
