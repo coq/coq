@@ -78,9 +78,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    | @ltac_expr1 %|| @ltac_expr2
    | @l2_tactic
    | @ltac_expr1
-   ltac_expr1 ::= fun {+ @name } => @ltac_expr
-   | let {? rec } @let_clause {* with @let_clause } in @ltac_expr
-   | @tactic_value
+   ltac_expr1 ::= @tactic_value
    | @qualid {+ @tactic_arg }
    | @l1_tactic
    | @ltac_expr0
@@ -116,13 +114,12 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    varying levels in :token:`ltac_expr`.  For simplicity of presentation, the |Ltac| constructs
    are documented as tactics.  Tactics are grouped as follows:
 
-   - :production:`binder_tactic`\s are: :tacn:`fun` and :tacn:`let`
    - :production:`l3_tactic`\s include |Ltac| tactics: :tacn:`try`,
      :tacn:`do`, :tacn:`repeat`, :tacn:`timeout`, :tacn:`time`, :tacn:`progress`, :tacn:`once`,
      :tacn:`exactly_once`, :tacn:`only` and :tacn:`abstract`
    - :production:`l2_tactic`\s are: :tacn:`tryif`
-   - :production:`l1_tactic`\s are the :token:`binder_tactic`\s and
-     :token:`simple_tactic`\s, :tacn:`first`, :tacn:`solve`,
+   - :production:`l1_tactic`\s are: :tacn:`fun` and :tacn:`let`,
+     the :token:`simple_tactic`\s, :tacn:`first`, :tacn:`solve`,
      :tacn:`idtac`, :tacn:`fail` and
      :tacn:`gfail` as well as :tacn:`match`, :tacn:`match goal` and their :n:`lazymatch` and
      :n:`multimatch` variants.
@@ -294,7 +291,7 @@ Local definitions: let
    Use :tacn:`let` `rec` to create recursive or mutually recursive bindings, which
    causes the definitions to be evaluated lazily.
 
-   :tacn:`let` is a :token:`binder_tactic`.
+   :tacn:`let` is a :token:`l1_tactic`.
 
 Function construction and application
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -307,7 +304,7 @@ local definitions) with:
    Indeed, local definitions of functions are syntactic sugar for binding
    a :n:`fun` tactic to an identifier.
 
-   :tacn:`fun` is a :token:`binder_tactic`.
+   :tacn:`fun` is a :token:`l1_tactic`.
 
 Functions can return values of any type.
 

@@ -881,6 +881,8 @@ ltac_expr2: [
 l1_tactic: [ ]
 
 ltac_expr1: [
+| REPLACE "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
+| WITH "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr5
 | EDIT match_key ADD_OPT "reverse" "goal" "with" match_context_list "end"
 | MOVETO simple_tactic match_key OPT "reverse" "goal" "with" match_context_list "end"
 | MOVETO simple_tactic match_key ltac_expr5 "with" match_list "end"
@@ -891,7 +893,6 @@ ltac_expr1: [
 | l1_tactic
 | DELETE simple_tactic
 | MOVEALLBUT ltac_builtins
-| binder_tactic
 | l1_tactic
 | tactic_value
 | reference LIST1 tactic_arg
@@ -1438,11 +1439,6 @@ explicit_subentry: [
 | DELETE "constr"    (* covered by another prod *)
 ]
 
-binder_tactic: [
-| REPLACE "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
-| WITH "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr5
-]
-
 field_body: [
 | REPLACE binders of_type_inst lconstr
 | WITH binders of_type_inst
@@ -1904,7 +1900,6 @@ ltac2_constructs: [
 ]
 
 simple_tactic: [
-| binder_tactic
 | ltac_builtins
 | ltac_constructs
 | ltac2_constructs
@@ -2512,7 +2507,6 @@ SPLICE: [
 | vernac_control
 | vernac_toplevel
 | command_entry
-| binder_tactic
 | ltac_builtins
 | ltac_constructs
 | ltac2_constructs

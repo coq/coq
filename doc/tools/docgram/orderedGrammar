@@ -2204,8 +2204,6 @@ ltac_expr2: [
 ]
 
 ltac_expr1: [
-| "fun" LIST1 name "=>" ltac_expr
-| "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" ltac_expr
 | tactic_value
 | qualid LIST1 tactic_arg
 | l1_tactic
@@ -2226,6 +2224,9 @@ ltac_expr0: [
 | "(" ltac_expr ")"
 | "[>" for_each_goal "]"
 | tactic_atom
+]
+
+binder_tactic: [
 ]
 
 tactic_atom: [
