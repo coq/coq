@@ -620,7 +620,6 @@ let () =
   let open Pcoq.Entry in
   let entries = [
     Any Pltac.ltac_expr;
-    Any Pltac.binder_tactic;
     Any Pltac.simple_tactic;
     Any Pltac.tactic_value;
   ] in
