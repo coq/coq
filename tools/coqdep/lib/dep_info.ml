@@ -11,7 +11,7 @@
 module Dep = struct
   type t =
   | Require of string (* one basename, to which we later append .vo or .vos *)
-  | Ml of string * string
+  | Ml of string
   | Other of string (* filenames of dependencies, separated by spaces *)
 end
 

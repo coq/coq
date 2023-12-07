@@ -68,7 +68,7 @@ let rec find_parsable_META meta_files package =
 let rec find_plugin_field_opt fld = function
   | [] ->
     None
-  | { Fl_metascanner.def_var; def_value; _ } :: rest ->
+  | { Fl_metascanner.def_var; def_value; Fl_metascanner.def_preds ;_ } :: rest ->
     if String.equal def_var fld
     then Some def_value
     else find_plugin_field_opt fld rest

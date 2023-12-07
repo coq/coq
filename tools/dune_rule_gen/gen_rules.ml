@@ -110,8 +110,14 @@ let main () =
   Format.pp_print_flush fmt ();
   ()
 
+let pr_feedback (fb : Feedback.feedback) =
+  match fb.contents with
+  | Message (_,_,_,msg) -> Format.eprintf "%a" Pp.pp_with msg
+  | _ -> () [@@warning "-4"]
+
 let () =
   Printexc.record_backtrace true;
+  let _ : int = Feedback.add_feeder pr_feedback in
   try main ()
   with exn ->
     let bt = Printexc.get_backtrace () in
