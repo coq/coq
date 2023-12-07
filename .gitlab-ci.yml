@@ -411,7 +411,6 @@ pkg:nix:
   extends: .nix-template
   script:
     - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
-  only: *full-ci
 
 doc:refman:
   extends: .doc-template
