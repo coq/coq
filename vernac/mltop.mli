@@ -18,15 +18,8 @@ module PluginSpec : sig
       such as [coq-core.plugins.ltac] *)
   type t
 
-  (** [repr p] returns a pair of [legacy_name, lib_name] where
-     [lib_name] is the canoncial library name.
-
-      [legacy_name] may be [Some pname] for the cases the plugin was
-     specified in [Declare ML Module] with their legacy name (for
-     example [ltac_plugin]). This will stop being supported soon and
-     is only here for compatiblity. Note that the name doesn't include
-     the ".cmxs" / ".cma" extension *)
-  val repr : t -> string option * string
+  (** [to_package p] returns the findlib name of the package *)
+  val to_package : t -> string
 
   val pp : t -> string
 end
@@ -108,6 +101,5 @@ val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
 (** {5 Utilities} *)
 
-val print_ml_path : unit -> Pp.t
 val print_ml_modules : unit -> Pp.t
 val print_gc : unit -> Pp.t
