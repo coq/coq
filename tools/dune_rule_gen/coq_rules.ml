@@ -137,7 +137,6 @@ module Boot_type = struct
   type t = Stdlib | NoInit | Regular of Theory.t
 end
 
-
 (* Context for a Coq theory *)
 module Context = struct
 
@@ -181,13 +180,6 @@ module Context = struct
   let build_dep_info ~coqdep_args dir_info =
     Dep_info.make ~args:coqdep_args ~dir_info
 
-  let ltac2_theory =
-    Theory.
-      { directory = Path.make "user-contrib/Ltac2"
-      ; dirname = ["Ltac2"]
-      ; implicit = false
-      }
-
   let make ~root_lvl ~theory ~user_flags ~boot ~rule ~async ~dir_info ~split =
 
     let flags =
@@ -198,7 +190,7 @@ module Context = struct
 
       let boot_paths = match boot with
         | Boot_type.NoInit -> []
-        | Stdlib -> Theory.args theory @ Theory.args ltac2_theory
+        | Stdlib -> Theory.args theory
         | Regular stdlib -> Theory.args stdlib @ Theory.args theory
       in
       let loadpath =
