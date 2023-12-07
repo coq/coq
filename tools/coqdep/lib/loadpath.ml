@@ -193,6 +193,7 @@ module State = struct
     }
 
   let gen_add h x s suff =
+    let s = Option.map File_util.normalize_path s in
     try
       let s',suff' = Hashtbl.find h x in warning_ml_clash x s' suff' s suff
     with Not_found -> Hashtbl.add h x (s,suff)
