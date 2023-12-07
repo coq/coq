@@ -7,6 +7,19 @@
 (* Written by: Rudi Grinberg                                            *)
 (************************************************************************)
 
+module Theory : sig
+  (** A theory binding; directories should be relative to Coq's
+      sources root *)
+  type t =
+    { directory : Path.t
+    (** Directory of the theory *)
+    ; dirname: string list
+    (** Coq's logical path *)
+    ; implicit : bool
+    (** Use -R or -Q *)
+    }
+end
+
 (** theory kind *)
 module Boot_type : sig
 
@@ -14,25 +27,26 @@ module Boot_type : sig
       Stdlib
     (** Standard library *)
     | NoInit
-    (** Standalone library (without Coq's stdlib) *)
-    | Regular of Path.t option
-    (** Regular library, path controls where the Coq stdlib is *)
+    (** Standalone library (without Coq's stdlib, for example the prelude) *)
+    | Regular of Theory.t
+    (** Regular library, qualified with -Q, path controls where the
+        Coq stdlib is *)
 
 end
 
 module Context : sig
   type t
 
+  (** *)
   val make :
     root_lvl:int
-    -> tname:string list
+    -> theory:Theory.t
     -> user_flags:Arg.t list
-    -> rule:Coq_module.Rule_type.t
     -> boot:Boot_type.t
+    -> rule:Coq_module.Rule_type.t (* quick, native, etc... *)
     -> async:bool
-    -> dir_info:Coq_module.t Dir_info.t
-    -> package:string
-    -> split:bool
+    -> dir_info:Coq_module.t Dir_info.t (* contents of the directory scan *)
+    -> split:bool (* whether we are building coq-core + coq-stdlib or only coq-stdlib *)
     -> t
 
 end

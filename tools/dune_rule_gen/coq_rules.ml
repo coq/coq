@@ -113,10 +113,30 @@ let cmi_of_dep ~tname dep =
   in
   Option.map Path.make file
 
-(* Regular (Some directory_of_stdlib) *)
-module Boot_type = struct
-  type t = Stdlib | NoInit | Regular of Path.t option
+module Theory = struct
+  (** A theory binding; directories should be relative to Coq's
+      sources root *)
+  type t =
+    { directory : Path.t
+    (** Directory of the theory *)
+    ; dirname: string list
+    (** Coq's logical path *)
+    ; implicit : bool
+    (** Use -R or -Q *)
+    }
+
+  let args { directory; dirname; implicit } =
+    let barg = if implicit then "-R" else "-Q" in
+    Arg.[ A barg; Path directory; A (String.concat "." dirname) ]
+
 end
+
+(** [Regular theory] contains the info about the stdlib theory, see
+    documentation in the .mli file *)
+module Boot_type = struct
+  type t = Stdlib | NoInit | Regular of Theory.t
+end
+
 
 (* Context for a Coq theory *)
 module Context = struct
@@ -132,13 +152,12 @@ module Context = struct
   end
 
   type t =
-    { tname : string list       (* wrapper name *)
+    { theory : Theory.t
     ; flags : Flags.t           (* flags *)
     ; rule : Coq_module.Rule_type.t (* rule kind *)
     ; boot : Boot_type.t        (* type of library *)
     ; dep_info : Dep_info.t
     ; async_deps : string list  (* whether coqc needs the workers *)
-    ; package : string          (* installation path under lib/coq *)
     ; root_lvl : int
     }
 
@@ -162,10 +181,16 @@ module Context = struct
   let build_dep_info ~coqdep_args dir_info =
     Dep_info.make ~args:coqdep_args ~dir_info
 
-  let make ~root_lvl ~tname ~user_flags ~rule ~boot ~async ~dir_info ~package ~split =
+  let ltac2_theory =
+    Theory.
+      { directory = Path.make "user-contrib/Ltac2"
+      ; dirname = ["Ltac2"]
+      ; implicit = false
+      }
+
+  let make ~root_lvl ~theory ~user_flags ~boot ~rule ~async ~dir_info ~split =
 
     let flags =
-
 
       (* both coqdep and coqc need the -I flags, coqc otherwise
          doesn't use the legacy plugin resolution method *)
@@ -173,15 +198,8 @@ module Context = struct
 
       let boot_paths = match boot with
         | Boot_type.NoInit -> []
-        | Stdlib ->
-          assert (package = "theories");
-          assert (tname = ["Coq"]);
-          Arg.[ A "-R"; Path (Path.make "theories"); A "Coq";
-                A "-Q"; Path (Path.relative (Path.make "user-contrib") "Ltac2"); A "Ltac2" ]
-        | Regular None -> []
-        | Regular (Some stdlib) ->
-          Arg.[ A "-R"; Path stdlib; A "Coq";
-                A "-Q"; Path (Path.make package); A (String.concat "." tname)]
+        | Stdlib -> Theory.args theory @ Theory.args ltac2_theory
+        | Regular stdlib -> Theory.args stdlib @ Theory.args theory
       in
       let loadpath =
         Arg.(A "-boot") ::
@@ -198,14 +216,18 @@ module Context = struct
     let dep_info = build_dep_info ~coqdep_args dir_info in
 
     let async_deps = if async then build_async_deps else [] in
-    { tname; flags; rule; boot; dep_info; async_deps;  package; root_lvl }
+    { theory; flags; rule; boot; dep_info; async_deps; root_lvl }
 
 end
 
 (* Return flags and deps to inject *)
 let prelude_path ~ext = "Init/Prelude" ^ ext
 
-(* This can't happen in Context.make due to the dynamic check for "Init" *)
+(* Return extra flags and deps for a concrete file; the case of
+   interest is to determine when a file needs [-nonit].  If it
+   doesn't, we must inject the [Init/Prelude] dependency.  Note that
+   we can't compute this in Context.make due to the per-file check for
+   "Init" *)
 let boot_module_setup ~cctx coq_module =
   let ext = Coq_module.Rule_type.vo_ext cctx.Context.rule in
   let prelude_path = prelude_path ~ext in
@@ -216,12 +238,11 @@ let boot_module_setup ~cctx coq_module =
      | ["Init"] -> [ Arg.A "-noinit" ], []
      | _ -> [ ], [ Path.relative (Path.make "theories") prelude_path ]
     )
-  | Regular (Some stdlib) -> [], [ Path.relative stdlib prelude_path]
-  | Regular None -> [], []
+  | Regular stdlib -> [], [ Path.relative stdlib.directory prelude_path ]
 
 (* rule generation for a module *)
 let module_rule ~(cctx : Context.t) coq_module =
-  let tname, rule = cctx.tname, cctx.rule in
+  let tname, rule = cctx.theory.dirname, cctx.rule in
   (* retrieve deps *)
   let vfile = Coq_module.source coq_module in
   let vo_ext = Coq_module.Rule_type.vo_ext rule in
@@ -296,7 +317,7 @@ let vio2vo_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:vio2vo_rule
 
 (* rule generation for .vo -> .{cmi,cmxs} *)
 let coqnative_module_rule ~(cctx: Context.t) coq_module =
-  let tname = cctx.tname in
+  let tname = cctx.theory.dirname in
   (* deps *)
   let vfile = Coq_module.source coq_module in
   let vofile_deps = Dep_info.lookup ~dep_info:cctx.dep_info vfile |> Util.pmap (cmi_of_dep ~tname) in
@@ -324,8 +345,8 @@ let coqnative_module_rule ~(cctx: Context.t) coq_module =
 let coqnative_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:coqnative_module_rule
 
 let install_rule ~(cctx : Context.t) coq_module =
-  let tname, rule, package = cctx.tname, cctx.rule, cctx.package in
-  let dst_base = Filename.concat "coq" package in
+  let tname, rule, package = cctx.theory.dirname, cctx.rule, cctx.theory.directory in
+  let dst_base = Filename.concat "coq" (Path.to_string package) in
   let files =
     Coq_module.install_files ~tname ~rule coq_module
     |> List.map (fun (src,dst) -> src, Filename.concat dst_base dst) in
