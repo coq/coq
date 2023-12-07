@@ -34,7 +34,7 @@ module DynMap = Dyn.Map(Decl)
 
 module MarshMap = Dyn.Map(struct type 'a t = 'a -> 'a end)
 
-type ml_modules = (string option * string) list
+type ml_modules = string list
 
 let sum_mod : ml_modules summary_declaration option ref = ref None
 let sum_map_synterp = ref DynMap.empty
