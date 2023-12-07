@@ -387,7 +387,9 @@ Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
-(* fun_scope below should eventually be deprecated. *)
+(**
+ fun_scope below is deprecated and should eventually be
+ removed. Use function_scope instead.                    **)
 Declare Scope fun_scope.
 Delimit Scope fun_scope with FUN.
 Open Scope fun_scope.
