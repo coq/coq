@@ -8,12 +8,16 @@
  (dev (flags :standard -w -70)))
 
 (rule
+ (targets test_suite_config.inc)
+ (action (with-stdout-to %{targets} (run tools/coq_config_to_make.exe))))
+
+(rule
  (targets summary.log)
  (deps
    ; File that should be promoted.
    misc/universes/all_stdlib.v
-   ; Dependencies of the legacy makefile
-   ../config/Makefile
+   ; Configure for test-suite
+   test_suite_config.inc
    ; Stuff for the compat script test
    ../dev/header.ml
    ../dev/tools/update-compat.py
