@@ -387,13 +387,17 @@ Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
+(**
+ fun_scope below is deprecated and should eventually be
+ removed. Use function_scope instead.                    **)
 Declare Scope fun_scope.
 Delimit Scope fun_scope with FUN.
 Open Scope fun_scope.
+Open Scope function_scope.
 
 (**  Notations for argument transpose  **)
-Notation "f ^~ y" := (fun x => f x y) : fun_scope.
-Notation "@^~ x" := (fun f => f x) : fun_scope.
+Notation "f ^~ y" := (fun x => f x y) : function_scope.
+Notation "@^~ x" := (fun f => f x) : function_scope.
 
 (**
  Definitions and notation for explicit functions with simplification,
@@ -412,19 +416,19 @@ End SimplFun.
 
 Coercion fun_of_simpl : simpl_fun >-> Funclass.
 
-Notation "[ 'fun' : T => E ]" := (SimplFun (fun _ : T => E)) : fun_scope.
-Notation "[ 'fun' x => E ]" := (SimplFun (fun x => E)) : fun_scope.
-Notation "[ 'fun' x y => E ]" := (fun x => [fun y => E]) : fun_scope.
+Notation "[ 'fun' : T => E ]" := (SimplFun (fun _ : T => E)) : function_scope.
+Notation "[ 'fun' x => E ]" := (SimplFun (fun x => E)) : function_scope.
+Notation "[ 'fun' x y => E ]" := (fun x => [fun y => E]) : function_scope.
 Notation "[ 'fun' x : T => E ]" := (SimplFun (fun x : T => E))
-  (only parsing) : fun_scope.
+  (only parsing) : function_scope.
 Notation "[ 'fun' x y : T => E ]" := (fun x : T => [fun y : T => E])
-  (only parsing) : fun_scope.
+  (only parsing) : function_scope.
 Notation "[ 'fun' ( x : T ) y => E ]" := (fun x : T => [fun y => E])
-  (only parsing) : fun_scope.
+  (only parsing) : function_scope.
 Notation "[ 'fun' x ( y : T ) => E ]" := (fun x => [fun y : T => E])
-  (only parsing) : fun_scope.
+  (only parsing) : function_scope.
 Notation "[ 'fun' ( x : T ) ( y : U ) => E ]" := (fun x : T => [fun y : U => E])
-  (only parsing) : fun_scope.
+  (only parsing) : function_scope.
 
 (**  For delta functions in eqtype.v.  **)
 Definition SimplFunDelta aT rT (f : aT -> aT -> rT) := [fun z => f z z].
@@ -456,10 +460,10 @@ Global Typeclasses Opaque eqfun eqrel.
 #[global]
 Hint Resolve frefl rrefl : core.
 
-Notation "f1 =1 f2" := (eqfun f1 f2) : fun_scope.
-Notation "f1 =1 f2 :> A" := (f1 =1 (f2 : A)) : fun_scope.
-Notation "f1 =2 f2" := (eqrel f1 f2) : fun_scope.
-Notation "f1 =2 f2 :> A" := (f1 =2 (f2 : A)) : fun_scope.
+Notation "f1 =1 f2" := (eqfun f1 f2) : type_scope.
+Notation "f1 =1 f2 :> A" := (f1 =1 (f2 : A)) : type_scope.
+Notation "f1 =2 f2" := (eqrel f1 f2) : type_scope.
+Notation "f1 =2 f2 :> A" := (f1 =2 (f2 : A)) : type_scope.
 
 Section Composition.
 
@@ -476,19 +480,20 @@ End Composition.
 
 Arguments comp {A B C} f g x /.
 Arguments catcomp {A B C} g f x /.
-Notation "f1 \o f2" := (comp f1 f2) : fun_scope.
-Notation "f1 \; f2" := (catcomp f1 f2) : fun_scope.
+Notation "f1 \o f2" := (comp f1 f2) : function_scope.
+Notation "f1 \; f2" := (catcomp f1 f2) : function_scope.
 
 Lemma compA {A B C D : Type} (f : B -> A) (g : C -> B) (h : D -> C) :
   f \o (g \o h) = (f \o g) \o h.
 Proof. by []. Qed.
 
-Notation "[ 'eta' f ]" := (fun x => f x) : fun_scope.
+Notation "[ 'eta' f ]" := (fun x => f x) : function_scope.
 
-Notation "'fun' => E" := (fun _ => E) : fun_scope.
+Notation "'fun' => E" := (fun _ => E) : function_scope.
 
 Notation id := (fun x => x).
-Notation "@ 'id' T" := (fun x : T => x) (only parsing) : fun_scope.
+
+Notation "@ 'id' T" := (fun x : T => x) (only parsing) : function_scope.
 
 Definition idfun T x : T := x.
 Arguments idfun {T} x /.
@@ -568,8 +573,8 @@ Proof. by case/all_tag=> f /all_pair[]; exists f. Qed.
 (**  Refinement types.  **)
 
 (**  Prenex Implicits and renaming.  **)
-Notation "@ 'sval'" := (@proj1_sig) (at level 10, format "@ 'sval'").
 Notation sval := (@proj1_sig _ _).
+Notation "@ 'sval'" := (@proj1_sig) (only parsing) : function_scope.
 
 Section Sig.
 

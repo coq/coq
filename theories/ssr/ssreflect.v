@@ -59,13 +59,20 @@ Declare ML Module "ssreflect_plugin:coq-core.plugins.ssreflect".
      This minimizes the comparison overhead for foo, while still allowing
      rewrite unlock to expose big_foo_expression.
 
+         #[#elaborate x#]# == triggers Coq elaboration to fill the holes of the term x
+                          The main use case is to trigger typeclass inference in
+                          the body of a ssreflect have := #[#elaborate body#]#.
+
   Additionally we provide default intro pattern ltac views:
   - top of the stack actions:
-    => /[apply]     := => hyp {}/hyp
-    => /[swap]      := => x y; move: y x
+    => /#[#apply#]#     := => hyp {}/hyp
+    => /#[#swap#]#      := => x y; move: y x
                       (also swap and preserves let bindings)
-    => /[dup]       := => x; have copy := x; move: copy x
+    => /#[#dup#]#       := => x; have copy := x; move: copy x
                       (also copies and preserves let bindings)
+  - calling rewrite from an intro pattern, use with parsimony:
+    => /#[#1! rules#]#  := rewrite rules
+    => /#[#! rules#]#   := rewrite !rules
 
  More information about these definitions and their use can be found in the
  ssreflect manual, and in specific comments below.                           **)
@@ -123,6 +130,8 @@ Reserved Notation "[ 'unlockable' 'of' C ]" (at level 0,
   format "[ 'unlockable'  'of'  C ]").
 Reserved Notation "[ 'unlockable' 'fun' C ]" (at level 0,
   format "[ 'unlockable'  'fun'  C ]").
+
+Reserved Notation "[ 'elaborate' x ]" (at level 0).
 
 (**
  To define notations for tactic in intro patterns.
@@ -433,6 +442,9 @@ Canonical locked_with_unlockable T k x :=
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
+(**  Notation to trigger Coq elaboration to fill the holes **)
+Notation "[ 'elaborate' x ]" := (ltac:(refine x)) (only parsing).
+
 (**  Internal N-ary congruence lemmas for the congr tactic.  **)
 
 Fixpoint nary_congruence_statement (n : nat)
@@ -653,4 +665,21 @@ Notation "'[' 'dup' ']'" := (ltac:(move;
   end))
   (at level 0, only parsing) : ssripat_scope.
 
+Notation "'[' '1' '!' rules ']'"     := (ltac:(rewrite rules))
+  (at level 0, rules at level 200, only parsing) : ssripat_scope.
+Notation "'[' '!' rules ']'"         := (ltac:(rewrite !rules))
+  (at level 0, rules at level 200, only parsing) : ssripat_scope.
+
 End ipat.
+
+(* A class to trigger reduction by rewriting.                           *)
+(* Usage: rewrite [pattern]vm_compute.                                  *)
+(* Alternatively one may redefine a lemma as in algebra/rat.v :         *)
+(* Lemma rat_vm_compute n (x : rat) : vm_compute_eq n%:Q x -> n%:Q = x. *)
+(* Proof. exact. Qed.                                                   *)
+
+Class vm_compute_eq {T : Type} (x y : T) := vm_compute : x = y.
+
+#[global]
+Hint Extern 0 (@vm_compute_eq _ _ _) =>
+       vm_compute; reflexivity : typeclass_instances.
