@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import ZifyClasses ZifyInst.
-Declare ML Module "zify_plugin:coq-core.plugins.zify".
+Declare ML Module "coq-core.plugins.zify".
 
 (** [zify_pre_hook] and [zify_post_hook] are there to be redefined. *)
 Ltac zify_pre_hook := idtac.

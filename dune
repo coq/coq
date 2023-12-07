@@ -39,7 +39,8 @@
  (targets theories_dune)
  (deps
   (source_tree theories)
-  (source_tree plugins))
+  (source_tree plugins)
+  (package coq-core))
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Coq theories %{env:COQ_DUNE_EXTRA_OPT=}))))
@@ -49,7 +50,8 @@
  (deps
   (source_tree theories)
   (source_tree plugins)
-  (source_tree user-contrib/Ltac2))
+  (source_tree user-contrib/Ltac2)
+  (package coq-core))
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))

@@ -1980,7 +1980,7 @@ let vernac_print ~pstate =
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
   | PrintNamespace ns -> print_namespace ~pstate ns
-  | PrintMLLoadPath -> Mltop.print_ml_path ()
+  | PrintMLLoadPath -> Pp.mt () (* Mltop.print_ml_path () *)
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
