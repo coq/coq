@@ -237,6 +237,13 @@ let get_compat_file = function
     CErrors.user_err
       Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
+(* Workaround for the OCaml parser using regex in update-compat.py *)
+let get_compat_files v =
+  let coq_compat = get_compat_file v in
+  match v with
+  | "8.18" | "8.17" -> coq_compat :: ["Ltac2.Compat.Coq818"]
+  | _ -> [coq_compat]
+
 let to_opt_key = Str.(split (regexp " +"))
 
 let parse_option_set opt =
@@ -299,7 +306,8 @@ let parse_args ~usage ~init arglist : t * string list =
       }}
 
     |"-compat" ->
-      add_vo_require oval (get_compat_file (next ())) None (Some Lib.Import)
+      get_compat_files (next ()) |>
+      List.fold_left (fun oval lib -> add_vo_require oval lib None (Some Lib.Import)) oval
 
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval
