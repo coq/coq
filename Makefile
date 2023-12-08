@@ -137,6 +137,9 @@ theories/dune: .dune-stamp
 
 user-contrib/Ltac2/dune: .dune-stamp
 	cp -a _build/default/ltac2_dune $@ && chmod +w $@
+	ls -l _build
+	whoami
+	echo $(MAKECMDGOALS)
 
 FORCE: ;
 
@@ -150,7 +153,8 @@ states: dunestrap
 NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
 
 world: dunestrap
-	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
+	ls -l _build && id && stat _build/log
+	dune build --display=short $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
 
 # only useful for CI
 vio: dunestrap
