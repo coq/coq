@@ -70,7 +70,7 @@ let for_extraargs = ()
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic tacdef_body ltac_expr binder_tactic tactic_value command hint
+  GLOBAL: tactic tacdef_body ltac_expr tactic_value command hint
           tactic_mode constr_may_eval constr_eval toplevel_selector
           term;
 
@@ -128,7 +128,11 @@ GRAMMAR EXTEND Gram
               "else" ; tae = ltac_expr -> { CAst.make ~loc (TacIfThenCatch (ta,tat,tae)) }
       | ta0 = ltac_expr; "||"; ta1 = ltac_expr -> { CAst.make ~loc (TacOrelse (ta0,ta1)) } ]
     | "1" RIGHTA
-      [ te = binder_tactic -> { te }
+      [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac_expr LEVEL "5" ->
+          { CAst.make ~loc (TacFun (it,body)) }
+      | "let"; isrec = [IDENT "rec" -> { true } | -> { false } ];
+          llc = LIST1 let_clause SEP "with"; "in";
+          body = ltac_expr LEVEL "5" -> { CAst.make ~loc (TacLetIn (isrec,llc,body)) }
       | b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
           { CAst.make ~loc (TacMatchGoal (b,false,mrl)) }
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
@@ -159,15 +163,6 @@ GRAMMAR EXTEND Gram
   ;
   failkw:
   [ [ IDENT "fail" -> { TacLocal } | IDENT "gfail" -> { TacGlobal } ] ]
-  ;
-  (* binder_tactic: level 1 of ltac_expr *)
-  binder_tactic:
-    [ RIGHTA
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac_expr LEVEL "5" ->
-          { CAst.make ~loc (TacFun (it,body)) }
-      | "let"; isrec = [IDENT "rec" -> { true } | -> { false } ];
-          llc = LIST1 let_clause SEP "with"; "in";
-          body = ltac_expr LEVEL "5" -> { CAst.make ~loc (TacLetIn (isrec,llc,body)) } ] ]
   ;
   (* Tactic arguments to the right of an application *)
   tactic_arg:

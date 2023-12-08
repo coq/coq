@@ -44,7 +44,7 @@ for documentation purposes:
     ```
     ltac_expr:
       [ "5" RIGHTA
-        [ te = binder_tactic -> { te } ]
+        [ ... ]
       [ "4"   ...
     ```
 
@@ -52,7 +52,7 @@ for documentation purposes:
 
     ```
     tactic_expr5: [
-    | binder_tactic
+    | ...
     | tactic_expr4
     ]
     ```

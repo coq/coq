@@ -2074,7 +2074,8 @@ ltac_expr2: [
 ]
 
 ltac_expr1: [
-| binder_tactic
+| "fun" LIST1 input_fun "=>" ltac_expr5
+| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
 | match_key "goal" "with" match_context_list "end"
 | match_key "reverse" "goal" "with" match_context_list "end"
 | match_key ltac_expr5 "with" match_list "end"
@@ -2097,11 +2098,6 @@ ltac_expr0: [
 failkw: [
 | "fail"
 | "gfail"
-]
-
-binder_tactic: [
-| "fun" LIST1 input_fun "=>" ltac_expr5
-| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
 ]
 
 tactic_arg: [
