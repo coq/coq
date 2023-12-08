@@ -302,6 +302,7 @@ build:edge+flambda:
   variables:
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes"
+  only: *full-ci
 
 build:base:dev:
   extends: .build-template:base:dev
@@ -340,7 +341,7 @@ build:vio:
   allow_failure: true # See https://github.com/coq/coq/issues/9637
   only:
     variables:
-      - $UNRELIABLE =~ /enabled/
+      - ($FULL_CI == "true" && $UNRELIABLE =~ /enabled/)
   artifacts:
     when: always
     paths:
@@ -410,6 +411,7 @@ pkg:nix:
   extends: .nix-template
   script:
     - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
+  only: *full-ci
 
 doc:refman:
   extends: .doc-template
@@ -495,6 +497,7 @@ test-suite:edge+flambda:
     - build:edge+flambda
   variables:
     OPAM_VARIANT: "+flambda"
+  only: *full-ci
 
 test-suite:base:dev:
   stage: build
@@ -567,6 +570,7 @@ validate:edge+flambda:
     - build:edge+flambda
   variables:
     OPAM_VARIANT: "+flambda"
+  only: *full-ci
 
 validate:vio:
   extends: .validate-template
@@ -574,7 +578,7 @@ validate:vio:
     - build:vio
   only:
     variables:
-      - $UNRELIABLE =~ /enabled/
+      - ($FULL_CI == "true" && $UNRELIABLE =~ /enabled/)
 
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API
