@@ -37,7 +37,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2023-06-30-8ca33f9dfd"
-  EDGE_CACHEKEY: "edge_ubuntu-V2023-08-28-93124ee272"
+  EDGE_CACHEKEY: "edge_ubuntu-V2023-11-30-ba911a5fa6"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
