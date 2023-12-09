@@ -21,19 +21,6 @@ open EConstr
 open Reductionops
 open Constrexpr
 
-let whd_prod env sigma typ =
-  let open CClosure in
-  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
-  let tab = create_tab () in
-  let typ = inject (EConstr.Unsafe.to_constr typ) in
-  let typ, stk = whd_stack infos tab typ [] in
-  match fterm_of typ with
-  | FProd (na, c1, c2, e) ->
-    let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
-    let c2 = EConstr.of_constr @@ term_of_fconstr (mk_clos (CClosure.usubs_lift e) c2) in
-    Some (EConstr.of_binder_annot na, c1, c2)
-  | _ -> None
-
 module NamedDecl = Context.Named.Declaration
 
 (*s Flags governing the computation of implicit arguments *)

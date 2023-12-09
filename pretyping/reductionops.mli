@@ -225,6 +225,9 @@ val whd_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_conte
 (** Extract the n first lambdas of a term, preserving let-ins (but not counting them);
     Raises [Invalid_argument] if not enough lambdas *)
 
+val whd_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * types * types) option
+(** Extract the first product if any *)
+
 val reducible_mind_case : evar_map -> constr -> bool
 
 val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t, ERelevance.t) kind_of_term
