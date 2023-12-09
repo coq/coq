@@ -520,6 +520,7 @@ sig
   val pick : t -> t -> t
   val pick_annot : (t,'r) Context.pbinder_annot -> (t,'r) Context.pbinder_annot -> (t,'r) Context.pbinder_annot
   val cons : t -> Id.t list -> Id.t list
+  val add : Name.t -> Id.Set.t -> Id.Set.t
   val to_option : Name.t -> Id.t option
 
 end
@@ -572,6 +573,11 @@ struct
     match na with
     | Anonymous -> l
     | Name id -> id::l
+
+  let add na l =
+    match na with
+    | Anonymous -> l
+    | Name id -> Id.Set.add id l
 
   let to_option = function
     | Anonymous -> None
