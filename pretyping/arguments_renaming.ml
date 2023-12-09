@@ -75,6 +75,37 @@ let rename_arguments local r names =
 
 let arguments_names r = GlobRef.Map.find r !name_table
 
+let declare_arguments_names r =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let changed = ref false in
+  let t, _ = Typeops.type_of_global_in_context env r in
+  let rec aux l avoid t = match Reductionops.whd_prod env sigma t with
+  | Some (na,t,u) ->
+    let na = na.binder_name in
+    let rels,_ = Termops.free_rels_and_unqualified_refs sigma t in
+    List.iteri (fun i b -> if Int.Set.mem (i+1) rels then b := true) l;
+    let isdep = ref false in
+    let names = aux (isdep :: l) (Nameops.Name.add na avoid) u in
+    let na =
+      match na with
+      | Anonymous ->
+        if !isdep then
+          (changed:=true; Name (Namegen.next_canonical_ident (Namegen.hd_ident env sigma t) avoid))
+        else
+          na
+      | Name id ->
+          let id' = Namegen.next_canonical_ident id avoid in
+          if Id.equal id id' then na else (changed:=true; Name id') in
+    na :: names
+  | None ->
+    let rels,_ = Termops.free_rels_and_unqualified_refs sigma t in
+    List.iteri (fun i b -> if Int.Set.mem (i+1) rels then b := true) l;
+    []
+  in
+  let names = aux [] Id.Set.empty (EConstr.of_constr t) in
+  if !changed then Lib.add_leaf (inRenameArgs (ReqGlobal, (r, names)))
+
 let rename_type ty ref =
   let name_override old_name override =
     match override with

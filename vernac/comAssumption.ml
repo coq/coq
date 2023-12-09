@@ -36,6 +36,7 @@ let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name 
   let () = if body = None then Declare.assumption_message name else Declare.definition_message name in
   let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r impargs in
+  let () = Arguments_renaming.declare_arguments_names r in
   let _ = if try_assum_as_instance && Option.is_empty body then
       let env = Global.env () in
       let sigma = Evd.from_env env in
@@ -72,6 +73,7 @@ let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~
   let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr impargs in
+  let () = Arguments_renaming.declare_arguments_names gr in
   let () = match body with None -> Declare.assumption_message name | Some _ -> Declare.definition_message name in
   let local = match local with
     | Locality.ImportNeedQualified -> true

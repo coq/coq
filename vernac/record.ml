@@ -453,6 +453,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let refi = GlobRef.ConstRef kn in
   Impargs.maybe_declare_manual_implicits false refi impls;
+  Arguments_renaming.declare_arguments_names refi;
   declare_proj_coercion_instance ~flags refi (GlobRef.IndRef indsp) ~with_coercion:true;
   let i = if is_local_assum decl then i+1 else i in
   (Some kn, i, Projection term::subst)

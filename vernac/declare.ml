@@ -396,7 +396,7 @@ let declare_constant_core ~name ~typing_flags cd =
         (* This globally defines the side-effects in the environment
            and registers their libobjects. *)
         let () = export_side_effects eff in
-        let de = { de with proof_entry_body = body, () } in
+        let de = { de with proof_entry_body = (body, ()) } in
         let e, ctx = cast_proof_entry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         (* We register the global universes after exporting side-effects, since
@@ -714,6 +714,7 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
     gr
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
+  let () = Arguments_renaming.declare_arguments_names dref in
   let () = definition_message name in
   Hook.call ?hook { Hook.S.uctx; obls; scope; dref };
   dref

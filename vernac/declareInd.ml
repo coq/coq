@@ -172,10 +172,12 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
       let ind = (mind,i) in
       let gr = GlobRef.IndRef ind in
       Impargs.maybe_declare_manual_implicits false gr indimpls;
+      Arguments_renaming.declare_arguments_names gr;
       List.iteri
         (fun j impls ->
            Impargs.maybe_declare_manual_implicits false
-             (GlobRef.ConstructRef (ind, succ j)) impls)
+             (GlobRef.ConstructRef (ind, succ j)) impls;
+           Arguments_renaming.declare_arguments_names gr)
         constrimpls)
     impls;
   let () = match default_dep_elim with
