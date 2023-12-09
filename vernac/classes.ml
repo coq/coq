@@ -355,6 +355,7 @@ let do_declare_instance sigma ~locality ~poly k u ctx ctx' pri udecl impargs sub
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   let cst = (GlobRef.ConstRef cst) in
   Impargs.maybe_declare_manual_implicits false cst impargs;
+  Arguments_renaming.declare_arguments_names cst;
   instance_hook pri locality cst
 
 let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl term termtype =

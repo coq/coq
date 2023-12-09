@@ -8,13 +8,17 @@ Unset Mangle Names.
 (* Coq doesn't make up names for arguments *)
 Definition bar (a a : nat) : nat := 3.
 Arguments bar _ _ : assert.
-Fail Arguments bar a a0 : assert.
+Arguments bar a a0 : assert.
+Definition bar' (a a0 : nat) : nat := 3.
+Arguments bar' a a0 : assert.
 
 (* This definition caused an anomaly in a version of this PR
 without the change to prepare_implicits *)
 Set Implicit Arguments.
 Definition foo (_ : nat) (_ : @eq nat ltac:(assumption) 2) : True := I.
-Fail Check foo (H := 2).
+Check foo (n := 2). (* Generated name *)
+Definition foo' (x : nat) (_ : @eq nat ltac:(assumption) 2) : True := I.
+Check foo' (x := 2).
 
 Definition baz (a b : nat) := b.
 Arguments baz a {b}.

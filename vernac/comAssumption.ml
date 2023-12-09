@@ -26,6 +26,7 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   let () = Declare.assumption_message name in
   let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r imps in
+  let () = Arguments_renaming.declare_arguments_names r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None Hints.Local r in
@@ -51,6 +52,7 @@ let declare_axiom is_coe ~local ~kind ?deprecation typ (univs, ubinders) imps nl
   let kn = Declare.declare_constant ~name ~local ~kind ?deprecation decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
+  let () = Arguments_renaming.declare_arguments_names gr in
   let () = Declare.assumption_message name in
   let local = match local with
     | Locality.ImportNeedQualified -> true

@@ -17,6 +17,8 @@ val rename_arguments : bool -> GlobRef.t -> Name.t list -> unit
 (** [Not_found] is raised if no names are defined for [r] *)
 val arguments_names : GlobRef.t -> Name.t list
 
+val declare_arguments_names : GlobRef.t -> unit
+
 val rename_type : types -> GlobRef.t -> types
 
 val rename_typing : env -> constr -> unsafe_judgment
