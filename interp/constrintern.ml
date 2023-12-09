@@ -2832,6 +2832,13 @@ let interp_binder_evars env sigma na t =
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 
+let default_internalization_env ids bound_univs impl_env =
+  {ids; strict_check = Some true;
+   local_univs = { bound = bound_univs; unb_univs = true };
+   tmp_scope = []; scopes = []; impls = impl_env;
+   binder_block_names = Some (Some AbsPi);
+   ntn_binding_ids = Id.Set.empty}
+
 let intern_context env ~bound_univs impl_env binders =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
@@ -2842,12 +2849,14 @@ let intern_context env ~bound_univs impl_env binders =
             (fun (lenv, bl) b ->
                let (env, bl) = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
                (env, bl))
-            ({ids; strict_check = Some true;
-              local_univs = { bound = bound_univs; unb_univs = true };
-              tmp_scope = []; scopes = []; impls = impl_env;
-              binder_block_names = Some (Some AbsPi);
-              ntn_binding_ids = Id.Set.empty}, []) binders in
+            (default_internalization_env ids bound_univs impl_env, [])
+            binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
+
+let impl_of_binder_kind na = function
+  | NonMaxImplicit -> CAst.make (Some (na,false))
+  | MaxImplicit -> CAst.make (Some (na,true))
+  | Explicit -> CAst.make None
 
 let interp_glob_context_evars ?(program_mode=false) env sigma bl =
   let open EConstr in
@@ -2864,12 +2873,7 @@ let interp_glob_context_evars ?(program_mode=false) env sigma bl =
           None ->
               let r = Retyping.relevance_of_type env sigma t in
               let d = LocalAssum (make_annot na r,t) in
-              let impls =
-                match k with
-                | NonMaxImplicit -> CAst.make (Some (na,false)) :: impls
-                | MaxImplicit -> CAst.make (Some (na,true)) :: impls
-                | Explicit -> CAst.make None :: impls
-              in
+              let impls = impl_of_binder_kind na k :: impls in
                 (push_rel d env, sigma, d::params, impls)
           | Some b ->
               let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
@@ -2892,10 +2896,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
     (* We assume all ids around are parts of the prefix of the current
        context being interpreted *)
      extract_ids env in
-  let int_env = {ids; strict_check = Some true;
-              local_univs = { bound = bound_univs sigma; unb_univs = true };
-              tmp_scope = []; scopes = []; impls = impl_env;
-              binder_block_names = Some (Some AbsPi); ntn_binding_ids = Id.Set.empty} in
+  let int_env = default_internalization_env ids (bound_univs sigma) impl_env in
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
   let (int_env, (env, sigma, bl, impls)) =
     List.fold_left
@@ -2918,12 +2919,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
             let int_env = { int_env with impls = Id.Map.add id imps int_env.impls } in
             let r = Retyping.relevance_of_type env sigma t in
             let d = LocalAssum (make_annot id r,t) in
-            let impls =
-              match bk with
-              | NonMaxImplicit -> CAst.make (Some (na,false)) :: impls
-              | MaxImplicit -> CAst.make (Some (na,true)) :: impls
-              | Explicit -> CAst.make None :: impls
-            in
+            let impls = impl_of_binder_kind na bk :: impls in
             (int_env, (push_named d env, sigma, d::params, impls))
           | Some b ->
             assert (bk = Explicit);
