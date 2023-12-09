@@ -40,6 +40,7 @@ val default_dependent_ident : Id.t     (* "x" *)
 val lowercase_first_char : Id.t -> string
 val sort_hdchar : Sorts.t -> string
 val hdchar : env -> evar_map -> types -> string
+val hd_ident : env -> evar_map -> types -> Id.t
 val id_of_name_using_hdchar : env -> evar_map -> types -> Name.t -> Id.t
 val named_hd : env -> evar_map -> types -> Name.t -> Name.t
 val head_name : evar_map -> types -> Id.t option
@@ -101,6 +102,8 @@ val next_name_away_with_default_using_types : string -> Name.t ->
   Id.Set.t -> types -> Id.t
 
 val set_reserved_typed_name : (types -> Name.t) -> unit
+
+val next_canonical_ident : Id.t -> Id.Set.t -> Id.t
 
 (*********************************************************************
    Making name distinct for displaying *)
