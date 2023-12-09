@@ -2858,39 +2858,13 @@ let impl_of_binder_kind na = function
   | MaxImplicit -> CAst.make (Some (na,true))
   | Explicit -> CAst.make None
 
-let interp_glob_context_evars ?(program_mode=false) env sigma bl =
-  let open EConstr in
-  let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  let env, sigma, par, impls =
-    List.fold_left
-      (fun (env,sigma,params,impls) (na, _, k, b, t) ->
-       let t' =
-         if Option.is_empty b then locate_if_hole ?loc:(loc_of_glob_constr t) na t
-         else t
-       in
-       let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
-        match b with
-          None ->
-              let r = Retyping.relevance_of_type env sigma t in
-              let d = LocalAssum (make_annot na r,t) in
-              let impls = impl_of_binder_kind na k :: impls in
-                (push_rel d env, sigma, d::params, impls)
-          | Some b ->
-              let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
-              let r = Retyping.relevance_of_type env sigma t in
-              let d = LocalDef (make_annot na r, c, t) in
-                (push_rel d env, sigma, d::params, impls))
-      (env,sigma,[],[]) (List.rev bl)
-  in
-  sigma, ((env, par), List.rev impls)
+let push_auto_implicit env sigma t int_env id =
+  let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
+  let imps = List.map (fun imp -> CAst.make (Option.map (fun imp -> (pi1 imp.impl_pos,imp.impl_max)) imp)) imps in
+  let imps = compute_internalization_data env sigma id ty t imps in (* add automatic implicit arguments to manual ones *)
+  { int_env with impls = Id.Map.add id imps int_env.impls }
 
-let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env sigma params =
-  let int_env,bl = intern_context env ~bound_univs:(bound_univs sigma) impl_env params in
-  let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
-  sigma, (int_env, x)
-
-let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internalization_env) env sigma bl =
-  let open EConstr in
+let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalization_env) ~autoimp env sigma make_decl push_decl bl =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
@@ -2902,37 +2876,35 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
     List.fold_left
       (fun (int_env, acc) b ->
         let int_env, bl = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (int_env,[]) b in
-        let bl = List.map glob_local_binder_of_extended bl in
-        let acc = List.fold_right (fun (na, _, bk, b, t) (int_env, (env,sigma,params,impls)) ->
-          let id = match na with
-          | Name id -> id
-          | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.")
-          in
-          let open Context.Named.Declaration in
+        let acc = List.fold_right (fun b (int_env, (env,sigma,params,impls)) ->
+          let (na, _, bk, b, t) = glob_local_binder_of_extended b in
+          let t' = if Option.is_empty b then locate_if_hole ?loc:(loc_of_glob_constr t) na t else t in (* useful? *)
+          let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
+          let r = Retyping.relevance_of_type env sigma t in
           match b with
           | None ->
-            let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in (* useful? *)
-            let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
-            let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
-            let imps = List.map (function None -> CAst.make None | Some imp -> CAst.make @@ Some (na, imp.impl_max)) imps in
-            let imps = compute_internalization_data env sigma id ty t imps in
-            let int_env = { int_env with impls = Id.Map.add id imps int_env.impls } in
-            let r = Retyping.relevance_of_type env sigma t in
-            let d = LocalAssum (make_annot id r,t) in
+            let int_env = if autoimp then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
+            let d = make_decl (LocalAssum (make_annot na r,t)) in
             let impls = impl_of_binder_kind na bk :: impls in
-            (int_env, (push_named d env, sigma, d::params, impls))
+            (int_env, (push_decl d env, sigma, d::params, impls))
           | Some b ->
             assert (bk = Explicit);
-            let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t in
             let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
-            let r = Retyping.relevance_of_type env sigma t in
-            let d = LocalDef (make_annot id r, c, t) in
-            (int_env, (push_named d env, sigma, d::params, impls)))
+            let d = make_decl (LocalDef (make_annot na r, c, t)) in
+            (int_env, (push_decl d env, sigma, d::params, impls)))
           bl (int_env,acc) in
         acc)
       (int_env,(env,sigma,[],[])) bl
   in
   sigma, (int_env.impls, ((env, bl), List.rev impls))
+
+let interp_named_context_evars ?program_mode ?impl_env env sigma bl =
+  let extract_name = function Name id -> id | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.") in
+  let make_decl = Context.Named.Declaration.of_rel_decl extract_name in
+  interp_context_evars_gen ?program_mode ?impl_env ~autoimp:true env sigma make_decl EConstr.push_named bl
+
+let interp_context_evars ?program_mode ?impl_env env sigma bl =
+  interp_context_evars_gen ?program_mode ?impl_env ~autoimp:false env sigma (fun d -> d) EConstr.push_rel bl
 
 (** Local universe and constraint declarations. *)
 
