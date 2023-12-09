@@ -1068,6 +1068,12 @@ let discrEq eq =
       discr_positions env sigma eq cpath dirn
   end
 
+let make_clause with_evars env sigma t lbindc =
+  let sigma', eq_clause = EClause.make_evar_clause env sigma t in
+  let sigma' = EClause.solve_evar_clause env sigma' false eq_clause lbindc in
+  let () = if not with_evars then EClause.check_evar_clause env sigma sigma' eq_clause in
+  sigma', eq_clause
+
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -1075,13 +1081,7 @@ let onEquality with_evars tac (c,lbindc) =
   let state = Proofview.Goal.state gl in
   let t = Retyping.get_type_of env sigma c in
   let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with UserError _ -> t in
-  let sigma, eq_clause = EClause.make_evar_clause env sigma t' in
-  let sigma = EClause.solve_evar_clause env sigma false eq_clause lbindc in
-  if not with_evars && List.exists (fun h -> h.EClause.hole_deps) eq_clause.EClause.cl_holes then
-    let filter h = if h.EClause.hole_deps then Some h.EClause.hole_name else None in
-    let bindings = List.map_filter filter eq_clause.EClause.cl_holes in
-    Proofview.tclZERO  (RefinerError (env, sigma, UnresolvedBindings bindings))
-  else
+  let sigma, eq_clause = make_clause with_evars env sigma t' lbindc in
   let filter h =
     if h.EClause.hole_deps then None
     else
