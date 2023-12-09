@@ -1712,6 +1712,7 @@ simple_tactic: [
 | "autounfold_one" hintbases
 | "unify" constr constr
 | "unify" constr constr "with" preident
+| "convert" constr constr
 | "typeclasses" "eauto" "dfs" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" "best_effort" OPT nat_or_var "with" LIST1 preident

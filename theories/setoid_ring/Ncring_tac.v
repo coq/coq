@@ -23,145 +23,132 @@ Require Import Ncring_initial.
 
 Set Implicit Arguments.
 
-Class nth (R:Type) (t:R) (l:list R) (i:nat).
+Ltac reify_as_var_aux n lvar term :=
+  lazymatch lvar with
+  | @cons _ ?t0 ?tl =>
+      let conv :=
+        match goal with
+        | _ => let _ := match goal with _ => convert term t0 end in open_constr:(true)
+        | _ => open_constr:(false)
+        end
+      in
+      match conv with
+      | true => n
+      | false => reify_as_var_aux open_constr:(S n) tl term
+      end
+  | _ =>
+      let _ := open_constr:(eq_refl : lvar = @cons _ term _) in
+      n
+  end.
 
-#[global]
-Instance  Ifind0 (R:Type) (t:R) l
- : nth t(t::l) 0.
-Defined.
+Ltac reify_as_var lvar term := reify_as_var_aux Datatypes.O lvar term.
 
-#[global]
-Instance  IfindS (R:Type) (t2 t1:R) l i 
- {_:nth t1 l i} 
- : nth t1 (t2::l) (S i) | 1.
-Defined.
+Ltac close_varlist lvar :=
+  match lvar with
+  | @nil _ => idtac
+  | @cons _ _ ?tl => close_varlist tl
+  | _ => let _ := constr:(eq_refl : lvar = @nil _) in idtac
+  end.
 
-Class closed (T:Type) (l:list T).
+Ltac extra_reify term := open_constr:((false,tt)).
 
-#[global]
-Instance Iclosed_nil T 
- : closed (T:=T) nil.
-Defined.
+Ltac reify_term Tring lvar term :=
+  match open_constr:((Tring, term)) with
+  (* int literals *)
+  | (_, Z0) => open_constr:(PEc 0%Z)
+  | (_, Zpos ?p) => open_constr:(PEc (Zpos p))
+  | (_, Zneg ?p) => open_constr:(PEc (Zneg p))
 
-#[global]
-Instance Iclosed_cons T t (l:list T) 
- {_:closed l} 
- : closed (t::l).
-Defined.
+  (* ring constants *)
+  | (Ring (ring0:=?op), _) =>
+      let _ := match goal with _ => convert op term end in
+      open_constr:(PEc 0%Z)
+  | (Ring (ring1:=?op), _) =>
+      let _ := match goal with _ => convert op term end in
+      open_constr:(PEc 1%Z)
 
-Class reify (R:Type)`{Rr:Ring (T:=R)} (e:PExpr Z) (lvar:list R) (t:R).
+  (* binary operators *)
+  | (Ring (T:=?R) (add:=?add) (mul:=?mul) (sub:=?sub), ?op ?t1 ?t2) =>
+      (* quick(?) check op is of th right type? TODO try without this check *)
+      let _ := open_constr:(t1 : R) in
+      let _ := open_constr:(t2 : R) in
+      match tt with
+      | _ =>
+          let _ := match goal with _ => convert add op end in
+          (* NB: don't reify before we recognize the operator in case we can't recognire it *)
+          let et1 := reify_term Tring lvar t1 in
+          let et2 := reify_term Tring lvar t2 in
+          open_constr:(PEadd et1 et2)
+      | _ =>
+          let _ := match goal with _ => convert mul op end in
+          let et1 := reify_term Tring lvar t1 in
+          let et2 := reify_term Tring lvar t2 in
+          open_constr:(PEmul et1 et2)
+      | _ =>
+          let _ := match goal with _ => convert sub op end in
+          let et1 := reify_term Tring lvar t1 in
+          let et2 := reify_term Tring lvar t2 in
+          open_constr:(PEsub et1 et2)
+      end
 
-#[global]
-Instance  reify_zero (R:Type)  lvar op
- `{Ring (T:=R)(ring0:=op)}
- : reify (ring0:=op)(PEc 0%Z) lvar op.
-Defined.
+  (* unary operator (opposite) *)
+  | (Ring (T:=?R) (opp:=?opp), ?op ?t) =>
+      let _ := match goal with _ => convert opp op end in
+      let et := reify_term Tring lvar t in
+      open_constr:(PEopp et)
 
-#[global]
-Instance  reify_one (R:Type)  lvar op
- `{Ring (T:=R)(ring1:=op)}
- : reify (ring1:=op) (PEc 1%Z) lvar op.
-Defined.
+  (* special cases (XXX can/should we be less syntactic?) *)
+  | (_, @multiplication Z _ _ ?z ?t) =>
+      let et := reify_term Tring lvar t in
+      open_constr:(PEmul (PEc z) et)
+  | (_, pow_N ?t ?n) =>
+      let et := reify_term Tring lvar t in
+      open_constr:(PEpow et n)
+  | (_, @power _ _ power_ring ?t ?n) =>
+      let et := reify_term Tring lvar t in
+      open_constr:(PEpow et (ZN n))
 
-#[global]
-Instance  reifyZ0 (R:Type)  lvar 
- `{Ring (T:=R)}
- : reify (PEc Z0) lvar Z0|11.
-Defined.
+  (* extensibility and variable case *)
+  | _ =>
+      let extra := extra_reify term in
+      lazymatch extra with
+      | (false,_) =>
+        let n := reify_as_var lvar term in
+        open_constr:(PEX Z (Pos.of_succ_nat n))
+      | (true,?v) => v
+      end
+  end.
 
-#[global]
-Instance  reifyZpos (R:Type)  lvar (p:positive)
- `{Ring (T:=R)}
- : reify (PEc (Zpos p)) lvar (Zpos p)|11.
-Defined.
+Ltac list_reifyl_core Tring lvar lterm :=
+  match lterm with
+  | @nil _ => open_constr:(@nil (PExpr Z))
+  | @cons _ ?t ?tl =>
+      let et := reify_term Tring lvar t in
+      let etl := list_reifyl_core Tring lvar tl in
+      open_constr:(@cons (PExpr Z) et etl)
+  end.
 
-#[global]
-Instance  reifyZneg (R:Type)  lvar (p:positive)
- `{Ring (T:=R)}
- : reify (PEc (Zneg p)) lvar (Zneg p)|11.
-Defined.
+Ltac list_reifyl lvar lterm :=
+  match lterm with
+  | @cons ?R _ _ =>
+      let R_ring := constr:(_ :> Ring (T:=R)) in
+      let Tring := type of R_ring in
+      let lexpr := list_reifyl_core Tring lvar lterm in
+      let _ := match goal with _ => close_varlist lvar end in
+      constr:((lvar,lexpr))
+  end.
 
-#[global]
-Instance  reify_add (R:Type)
-  e1 lvar t1 e2 t2 op 
- `{Ring (T:=R)(add:=op)}
- {_:reify (add:=op) e1 lvar t1}
- {_:reify (add:=op) e2 lvar t2}
- : reify (add:=op) (PEadd e1 e2) lvar (op t1 t2).
-Defined.
+Ltac list_reifyl0 lterm :=
+  match lterm with
+  | @cons ?R _ _ =>
+      let lvar := open_constr:(_ :> list R) in
+      list_reifyl lvar lterm
+  end.
 
-#[global]
-Instance  reify_mul (R:Type) 
-  e1 lvar t1 e2 t2 op 
- `{Ring (T:=R)(mul:=op)}
- {_:reify (mul:=op) e1 lvar t1}
- {_:reify (mul:=op) e2 lvar t2}
- : reify (mul:=op) (PEmul e1 e2) lvar (op t1 t2)|10.
-Defined.
+Class ReifyL {R:Type} (lvar lterm : list R) := list_reifyl : (list R * list (PExpr Z)).
+Arguments list_reifyl {R lvar lterm _}.
 
-#[global]
-Instance  reify_mul_ext (R:Type) `{Ring R}
-  lvar (z:Z) e2 t2 
- `{Ring (T:=R)}
- {_:reify e2 lvar t2}
- : reify (PEmul (PEc z) e2) lvar
-      (@multiplication Z _ _ z t2)|9.
-Defined.
-
-#[global]
-Instance  reify_sub (R:Type)
- e1 lvar t1 e2 t2 op
- `{Ring (T:=R)(sub:=op)}
- {_:reify (sub:=op) e1 lvar t1}
- {_:reify (sub:=op) e2 lvar t2}
- : reify (sub:=op) (PEsub e1 e2) lvar (op t1 t2).
-Defined.
-
-#[global]
-Instance  reify_opp (R:Type)
- e1 lvar t1  op
- `{Ring (T:=R)(opp:=op)}
- {_:reify (opp:=op) e1 lvar t1}
- : reify (opp:=op) (PEopp e1) lvar (op t1).
-Defined.
-
-#[global]
-Instance  reify_pow (R:Type) `{Ring R}
- e1 lvar t1 n 
- `{Ring (T:=R)}
- {_:reify e1 lvar t1}
- : reify (PEpow e1 n) lvar (pow_N t1 n)|1.
-Defined.
-
-#[global]
-Instance  reify_var (R:Type) t lvar i 
- `{nth R t lvar i}
- `{Rr: Ring (T:=R)}
- : reify (Rr:= Rr) (PEX Z (Pos.of_succ_nat i))lvar t
- | 100.
-Defined.
-
-Class reifylist (R:Type)`{Rr:Ring (T:=R)} (lexpr:list (PExpr Z)) (lvar:list R) 
-  (lterm:list R).
-
-#[global]
-Instance reify_nil (R:Type) lvar 
- `{Rr: Ring (T:=R)}
- : reifylist (Rr:= Rr) nil lvar (@nil R).
-Defined.
-
-#[global]
-Instance reify_cons (R:Type) e1 lvar t1 lexpr2 lterm2
- `{Rr: Ring (T:=R)}
- {_:reify (Rr:= Rr) e1 lvar t1}
- {_:reifylist (Rr:= Rr) lexpr2 lvar lterm2} 
- : reifylist (Rr:= Rr) (e1::lexpr2) lvar (t1::lterm2).
-Defined.
-
-Definition list_reifyl (R:Type) lexpr lvar lterm 
- `{Rr: Ring (T:=R)}
- {_:reifylist (Rr:= Rr) lexpr lvar lterm}
- `{closed (T:=R) lvar}  := (lvar,lexpr).
+Global Hint Extern 0 (ReifyL ?lvar ?lterm) => let reif := list_reifyl lvar lterm in exact reif : typeclass_instances.
 
 Unset Implicit Arguments.
 
@@ -214,8 +201,10 @@ Qed.
 
 Ltac ring_gen :=
    match goal with
-     |- ?g => let lterm := lterm_goal g in 
-       match eval red in (list_reifyl (lterm:=lterm)) with
+     |- ?g =>
+       let lterm := lterm_goal g in
+       let reif := list_reifyl0 lterm in
+       match reif with
          | (?fv, ?lexpr) => 
            (*idtac "variables:";idtac fv;
            idtac "terms:"; idtac lterm;
@@ -321,7 +310,8 @@ Ltac ring_simplify_gen a hyp :=
       | _::_ => a
       | _ => constr:(a::nil)
     end in
-    match eval red in (list_reifyl (lterm:=lterm)) with
+   let reif := list_reifyl0 lterm in
+    match reif with
       | (?fv, ?lexpr) => idtac lterm; idtac fv; idtac lexpr;
       let n := eval compute in (length fv) in
       idtac n;
