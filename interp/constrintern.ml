@@ -618,7 +618,7 @@ let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;lo
   let t = match t with
     | Some t -> t
     | None -> CAst.make ?loc @@ CHole (Some (GBinderType na.v)) in
-  let _, bl' = intern_assumption intern ntnvars env [na] (Default bk) t in
+  let env, bl' = intern_assumption intern ntnvars env [na] (Default bk) t in
   let {v=(_,bk,t)} = List.hd bl' in
   let il = List.map (fun id -> id.v) il in
   env,((disjpat,il),id),bk,t
