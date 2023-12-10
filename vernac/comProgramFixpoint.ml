@@ -117,7 +117,12 @@ let nf_evar_context sigma ctx =
 let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?deprecation ?using r measure notation =
   let open EConstr in
   let open Vars in
-  Coqlib.check_required_library ["Coq";"Program";"Wf"];
+  let fix_sub_ref, measure_on_R_ref = try fix_sub_ref (), measure_on_R_ref ()
+    with NotFoundRef r ->
+      CErrors.user_err
+        Pp.(str r ++ spc() ++ str "not registered," ++ spc() ++
+            str "you should try requiring library Coq.Program.Wf.")
+  in
   let env = Global.env() in
   let sigma, udecl = interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
@@ -151,7 +156,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let sigma, comb = Evd.fresh_global (Global.env ()) sigma (delayed_force measure_on_R_ref) in
+    let sigma, comb = Evd.fresh_global (Global.env ()) sigma measure_on_R_ref in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
@@ -218,7 +223,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
   (* XXX: Previous code did parallel evdref update, so possible old
      weak ordering semantics may bite here. *)
   let sigma, def =
-    let sigma, h_a_term = Evd.fresh_global (Global.env ()) sigma (delayed_force fix_sub_ref) in
+    let sigma, h_a_term = Evd.fresh_global (Global.env ()) sigma fix_sub_ref in
     let sigma, h_e_term = Evarutil.new_evar env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
             Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
