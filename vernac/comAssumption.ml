@@ -151,19 +151,6 @@ let process_assumptions_no_udecls l =
                  | ({CAst.loc}, Some _) -> error_polymorphic_section_variable ?loc ()
                  | (id, None) -> id) ids, c))) l
 
-let restrict_assumptions_universes sigma l =
-  let uvars, l = List.fold_left_map (fun uvars d ->
-      let uvars = NamedDecl.fold_constr (fun t -> Univ.Level.Set.union (Vars.universes_of_constr t)) d uvars in
-      uvars, d)
-      Univ.Level.Set.empty l
-  in
-  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
-     possible as we indeed declare several parameters; however,
-     restrict_universe_context should be called in a centralized place
-     IMO, thus I think we should adapt `prepare_parameter` to handle
-     this case too. *)
-  Evd.restrict_universe_context sigma uvars
-
 let extract_manual_implicit e =
   CAst.make (match e with
     | Some {impl_pos = (na,_,_); impl_expl = Manual; impl_max = max} -> Some (na,max)
@@ -196,10 +183,8 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let (sigma, (ienv, ((env, ctx), impls))) = interp_named_context_evars ~program_mode ~share:true env sigma ctx in
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
   (* The universe constraints come from the whole telescope. *)
-  let sigma = Evd.minimize_universes sigma in
-  let nf_evar c = EConstr.to_constr sigma c in
-  let ctx = List.map (NamedDecl.map_constr_het nf_evar) ctx in
-  let sigma = restrict_assumptions_universes sigma ctx in
+  let sigma, ctx = Evarutil.finalize
+      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
