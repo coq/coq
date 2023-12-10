@@ -110,17 +110,17 @@ let clear_univs scope univ =
   | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry false
   | _, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
 
-let context_subst subst (name,b,t,impl) =
-  name, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, impl
+let context_subst subst (id,b,t,infos) =
+  id, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, infos
 
 let declare_context ~try_global_assum_as_instance ~scope univs ?user_warns nl ctx =
   let fn i subst d =
-    let (name,b,t,(impl,kind,is_coe,impls)) = context_subst subst d in
+    let (id,b,t,(impl,kind,is_coe,impls)) = context_subst subst d in
     let univs = if i = 0 then univs else clear_univs scope univs in
     let refu = match scope with
-      | Locality.Discharge -> declare_local is_coe ~try_assum_as_instance:true ~kind b t univs impls impl name
-      | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns b t univs impls nl name in
-    (name, Constr.mkRef refu) :: subst
+      | Locality.Discharge -> declare_local is_coe ~try_assum_as_instance:true ~kind b t univs impls impl id
+      | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns b t univs impls nl id in
+    (id, Constr.mkRef refu) :: subst
   in
   let _ = List.fold_left_i fn 0 [] ctx in
   ()
