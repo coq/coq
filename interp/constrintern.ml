@@ -2867,7 +2867,7 @@ let push_auto_implicit env sigma t int_env id =
   let imps = compute_internalization_data env sigma ~silent:false id ty t imps in (* add automatic implicit arguments to manual ones *)
   { int_env with impls = Id.Map.add id imps int_env.impls }
 
-let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalization_env) ?(share=false) ~autoimp env sigma make_decl push_decl bl =
+let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalization_env) ?(share=false) ?(autoimp_enable=true) env sigma make_decl push_decl bl =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
@@ -2889,7 +2889,7 @@ let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalizat
           let r = Retyping.relevance_of_type env sigma t in
           match b' with
           | None ->
-            let int_env = if autoimp then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
+            let int_env = if autoimp_enable then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
             let d = make_decl (LocalAssum (make_annot na r,t)) in
             let impls = impl_of_binder_kind na bk :: impls in
             (int_env, Some t, (push_decl d env, sigma, d::params, impls))
@@ -2904,13 +2904,13 @@ let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalizat
   in
   sigma, (int_env.impls, ((env, bl), List.rev impls))
 
-let interp_named_context_evars ?program_mode ?impl_env ?share env sigma bl =
+let interp_named_context_evars ?program_mode ?impl_env ?share ?autoimp_enable env sigma bl =
   let extract_name = function Name id -> id | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.") in
   let make_decl = Context.Named.Declaration.of_rel_decl extract_name in
-  interp_context_evars_gen ?program_mode ?impl_env ?share ~autoimp:true env sigma make_decl EConstr.push_named bl
+  interp_context_evars_gen ?program_mode ?impl_env ?share ?autoimp_enable env sigma make_decl EConstr.push_named bl
 
 let interp_context_evars ?program_mode ?impl_env ?share env sigma bl =
-  interp_context_evars_gen ?program_mode ?impl_env ?share ~autoimp:false env sigma (fun d -> d) EConstr.push_rel bl
+  interp_context_evars_gen ?program_mode ?impl_env ?share ~autoimp_enable:false env sigma (fun d -> d) EConstr.push_rel bl
 
 (** Local universe and constraint declarations. *)
 

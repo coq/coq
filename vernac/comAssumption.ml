@@ -156,6 +156,12 @@ let extract_manual_implicit e =
     | Some {impl_pos = (na,_,_); impl_expl = Manual; impl_max = max} -> Some (na,max)
     | Some {impl_expl = (DepFlexAndRigid _ | DepFlex _ | DepRigid _ )} | None -> None)
 
+let find_implicits id ienv =
+  try
+    let impls = implicits_of_decl_in_internalization_env id ienv in
+    List.map extract_manual_implicit impls
+  with Not_found -> []
+
 let local_binders_of_decls ~poly l =
   let coercions, l =
     List.fold_left_map (fun coercions (is_coe,(idl,c)) ->
@@ -172,6 +178,32 @@ let local_binders_of_decls ~poly l =
       (coercions,decl)) Id.Set.empty l in
   coercions, List.flatten l
 
+let find_binding_kind id impls =
+  let open Glob_term in
+  let find x = match x.CAst.v with
+    | Some (Name id',max) when Id.equal id id' -> Some (if max then MaxImplicit else NonMaxImplicit)
+    | _ -> None in
+  Option.default Explicit (CList.find_map find impls)
+
+let interp_context_gen ~program_mode ~kind ~share ~autoimp_enable ~coercions env sigma l =
+  let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~share ~autoimp_enable env sigma l in
+  (* Note, we must use the normalized evar from now on! *)
+  let sigma = solve_remaining_evars all_and_fail_flags env sigma in
+  let sigma, ctx = Evarutil.finalize
+      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
+  (* reorder, evar-normalize and add implicit status *)
+  let ctx = List.rev_map (fun d ->
+      let {binder_name=id}, b, t = NamedDecl.to_tuple d in
+      let impl = find_binding_kind id impls in
+      let kind = Decls.(if b = None then IsAssumption kind else IsDefinition (match kind with Context -> LetContext | _ -> Let)) in
+      let is_coe = if Id.Set.mem id coercions then Vernacexpr.AddCoercion else Vernacexpr.NoCoercion in
+      let impls = if autoimp_enable then find_implicits id ienv else [] in
+      let data = (impl,kind,is_coe,impls) in
+      (id,b,t,data))
+      ctx
+  in
+   sigma, ctx
+
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let env = Global.env () in
   let udecl, l = match scope with
@@ -179,57 +211,11 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
-  (* We interpret all declarations in the same evar_map, i.e. as a telescope. *)
-  let (sigma, (ienv, ((env, ctx), impls))) = interp_named_context_evars ~program_mode ~share:true env sigma ctx in
-  let sigma = solve_remaining_evars all_and_fail_flags env sigma in
-  (* The universe constraints come from the whole telescope. *)
-  let sigma, ctx = Evarutil.finalize
-      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
+  let sigma, ctx = interp_context_gen ~program_mode ~kind ~share:true ~autoimp_enable:true ~coercions env sigma ctx in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  (* reorder, evar-normalize and add implicit status *)
-  let ctx = List.rev_map (fun d ->
-      let {binder_name=id}, b, t = NamedDecl.to_tuple d in
-      let impls =
-        try
-          let impls = implicits_of_decl_in_internalization_env id ienv in
-          List.map extract_manual_implicit impls
-        with Not_found -> [] in
-      let is_coe = if Id.Set.mem id coercions then Vernacexpr.AddCoercion else Vernacexpr.NoCoercion in
-      let data = (Glob_term.Explicit,Decls.IsAssumption kind,is_coe,impls) in
-      (id,b,t,data))
-      ctx
-  in
   declare_context ~try_global_assum_as_instance:false ~scope univs ?user_warns nl ctx
 
-let interp_context_gen ~program_mode env sigma l =
-  let sigma, (_, ((env, ctx), impls)) =
-    Impargs.with_implicit_protection (fun () ->
-        let () = Impargs.make_implicit_args false in
-        interp_named_context_evars ~program_mode env sigma l) ()
-  in
-  (* Note, we must use the normalized evar from now on! *)
-  let sigma = solve_remaining_evars all_and_fail_flags env sigma in
-  let sigma, ctx = Evarutil.finalize
-      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
-  (* reorder, evar-normalize and add implicit status *)
-  let ctx = List.rev_map (fun d ->
-      let {binder_name=name}, b, t = NamedDecl.to_tuple d in
-      let impl = let open Glob_term in
-      let search x = match x.CAst.v with
-        | Some (Name id',max) when Id.equal name id' ->
-          Some (if max then MaxImplicit else NonMaxImplicit)
-        | _ -> None
-        in
-        Option.default Explicit (CList.find_map search impls)
-      in
-      let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
-      let data = (impl,kind,Vernacexpr.NoCoercion,[]) in
-      (name,b,t,data))
-      ctx
-  in
-   sigma, ctx
-
-let do_context ~program_mode ~poly l =
+let do_context ~program_mode ~poly ctx =
   let sec = Lib.sections_are_opened () in
   if Dumpglob.dump () then begin
     let l = List.map (function
@@ -238,7 +224,7 @@ let do_context ~program_mode ~poly l =
         | Constrexpr.CLocalDef (n, _, _, _) ->
            let ty = if sec then "var "else "def" in [ty, n]
         | Constrexpr.CLocalPattern _ -> [])
-      l in
+      ctx in
     List.iter (function
         | ty, {CAst.v = Names.Name.Anonymous; _} -> ()
         | ty, {CAst.v = Names.Name.Name id; loc} ->
@@ -246,13 +232,13 @@ let do_context ~program_mode ~poly l =
       (List.flatten l) end;
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, ctx = interp_context_gen ~program_mode env sigma l in
-  let univs = Evd.univ_entry ~poly sigma in
-  let open Locality in
   let scope =
+    let open Locality in
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
+  let sigma, ctx = interp_context_gen ~program_mode ~kind:Context ~share:false ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let univs = Evd.univ_entry ~poly sigma in
   declare_context ~try_global_assum_as_instance:true ~scope univs Declaremods.NoInline ctx
 
 (* API compatibility (used in Elpi) *)
@@ -262,6 +248,6 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let sigma, ctx = interp_context_gen ~program_mode:false env sigma ctx in
+  let sigma, ctx = interp_context_gen ~program_mode:false ~kind:Context ~share:false ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx
