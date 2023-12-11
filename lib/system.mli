@@ -22,6 +22,11 @@ val (//) : unix_path -> string -> unix_path
 
 val exists_dir : unix_path -> bool
 
+(** [mkdir path] ensures that [path] exists as a directory, creating
+    the missing suffix if necessary (like Unix' mkdirhier) *)
+
+val mkdir : unix_path -> unit
+
 (** [exclude_search_in_dirname path] excludes [path] when processing
     directories *)
 
