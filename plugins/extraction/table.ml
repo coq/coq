@@ -495,6 +495,36 @@ let my_bool_option name value =
   in
   get
 
+(*s Extraction Output Directory *)
+
+let warn_using_current_directory =
+  CWarnings.(create ~name:"extraction-default-directory" ~category:CoreCategories.extraction)
+    (fun s ->
+       Pp.(strbrk
+             "Setting extraction output directory by default to \"" ++ str s ++ strbrk "\". Use \"" ++
+           str "Set Extraction Output Directory" ++
+           strbrk "\" to set a different directory for extracted files to appear in."))
+
+let output_directory_key = ["Extraction"; "Output"; "Directory"]
+
+let { Goptions.get = output_directory } =
+  declare_stringopt_option_and_ref ~stage:Summary.Stage.Interp ~value:None
+    ~key:output_directory_key ()
+
+let output_directory () =
+  match output_directory () with
+  | Some dir ->
+      (* Ensure that the directory exists *)
+      System.mkdir dir;
+      dir
+      (* CErrors.user_err Pp.(str "Extraction output directory " ++ str dir ++ str " does not exist.") *)
+  | None ->
+    let pwd = Sys.getcwd () in
+    warn_using_current_directory pwd;
+    (* Note: in case of error in the caller of output_directory, the effect of the setting will be undo *)
+    set_string_option_value ~stage:Summary.Stage.Interp output_directory_key pwd;
+    pwd
+
 (*s Extraction AccessOpaque *)
 
 let access_opaque = my_bool_option "AccessOpaque" true

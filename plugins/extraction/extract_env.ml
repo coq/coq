@@ -444,15 +444,23 @@ let mono_filename f =
             with UserError _ ->
               user_err Pp.(str "Extraction: provided filename is not a valid identifier")
         in
+        let f =
+          if Filename.is_relative f then
+            Filename.concat (output_directory ()) f
+          else f
+        in
         Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
 (* Builds a suitable filename from a module id *)
 
 let module_filename mp =
   let f = file_of_modfile mp in
+  let id = Id.of_string f in
+  let f = Filename.concat (output_directory ()) f in
   let d = descr () in
-  let p = d.file_naming mp ^ d.file_suffix in
-  Some p, Option.map ((^) f) d.sig_suffix, Id.of_string f
+  let fimpl_base = d.file_naming mp ^ d.file_suffix in
+  let fimpl = Filename.concat (output_directory ()) fimpl_base in
+  Some fimpl, Option.map ((^) f) d.sig_suffix, id
 
 (*s Extraction of one decl to stdout. *)
 
@@ -610,7 +618,8 @@ let full_extr f (refs,mps) =
   print_structure_to_file (mono_filename f) false struc;
   reset ()
 
-let full_extraction f lr = full_extr f (locate_ref lr)
+let full_extraction f lr =
+  full_extr f (locate_ref lr)
 
 (*s Separate extraction is similar to recursive extraction, with the output
    decomposed in many files, one per Coq .v file *)
