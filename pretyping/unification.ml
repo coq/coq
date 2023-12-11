@@ -464,12 +464,49 @@ let use_metas_pattern_unification sigma flags nb l =
   || flags.use_meta_bound_pattern_unification &&
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
+
+(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+   expanded, folded primitive projection of name [n] and unfolds the primitive
+   projection. It respects projection transparency of [ts]. *)
+let unfold_projection_under_eta env ts n c =
+  let unfold_projection env ts p r c =
+    if TransparentState.is_transparent_projection ts (Projection.repr p) then
+      Some (Constr.mkProj (Projection.unfold p, r, c))
+    else None
+  in
+  let rec go c lams =
+    match Constr.kind c with
+    | Lambda (b, t, c) -> go c ((b,t)::lams)
+    | Proj (p, r, c) when Names.Constant.CanOrd.equal n (Projection.constant p) ->
+      let c = unfold_projection env ts p r c in
+      begin
+        match c with
+        | None -> None
+        | Some c ->
+          let f c (b,t) = Constr.mkLambda (b,t,c) in
+          Some (List.fold_left f c lams)
+      end
+    | _ -> None
+  in
+  go c []
+
+
 type key =
   | IsKey of CClosure.table_key
   | IsProj of Projection.t * Sorts.relevance * EConstr.constr
 
-let expand_table_key env = function
-  | ConstKey cst -> constant_opt_value_in env cst
+let expand_table_key ts env = function
+  | ConstKey ((c,u) as cst) ->
+    if Structures.PrimitiveProjections.is_transparent_constant ts c
+      then
+        let value = constant_opt_value_in env cst in
+        (* If we are unfolding a compatibility constant we want to return the
+           unfolded primitive projection directly since we would like to pretend
+           that the compatibility constant itself does not count as an unfolding
+           (delta) step. *)
+        let unf = Option.bind value (unfold_projection_under_eta env ts c) in
+        if Option.has_some unf then unf else value
+      else None
   | VarKey id -> (try named_body id env with Not_found -> None)
   | RelKey _ -> None
 
@@ -478,7 +515,7 @@ let unfold_projection env p r stk =
   s :: stk
 
 let expand_key ts env sigma = function
-  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
+  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key ts env k)
   | Some (IsProj (p, r, c)) ->
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
                                (c, unfold_projection env p r []))
