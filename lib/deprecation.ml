@@ -37,9 +37,9 @@ let printer ~object_name pp (x,{since;note}) =
   pr_opt (fun since -> str "since " ++ str since) since ++
   str "." ++ pr_opt (fun note -> str note) note
 
-let create_warning ~object_name ~warning_name_if_no_since pp =
+let create_warning ?default ~object_name ~warning_name_if_no_since pp =
   let pp = printer ~object_name pp in
-  let main_cat, main_w = CWarnings.create_hybrid ~name:warning_name_if_no_since ~from:[depr_cat] () in
+  let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_since ~from:[depr_cat] () in
   let main_w = CWarnings.create_in main_w pp in
   let warnings = ref CString.Map.empty in
   fun ?loc (v, ({since} as info)) ->
@@ -51,7 +51,7 @@ let create_warning ~object_name ~warning_name_if_no_since pp =
         | Some w -> w
         | None ->
           let generic_cat = get_generic_cat since in
-          let w = CWarnings.create_warning ~from:[main_cat; generic_cat]
+          let w = CWarnings.create_warning ?default ~from:[main_cat; generic_cat]
               ~name:(warning_name_if_no_since ^ "-since-" ^ since) ()
           in
           let w = CWarnings.create_in w pp in

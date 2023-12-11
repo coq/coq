@@ -14,4 +14,4 @@ open Names
 
 type t = Deprecation of Deprecation.t
 
-val warn_library_info : ?loc:Loc.t -> DirPath.t * t -> unit
+val warn_library_info : ?loc:Loc.t -> ?transitive:bool -> DirPath.t * t -> unit
