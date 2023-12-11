@@ -438,7 +438,12 @@ let () = define "int_lnot" (int @-> ret int) lnot
 
 (** Char *)
 
-let () = define "char_of_int" (int @-> ret char) Char.chr
+let () = define "char_of_int" (int @-> tac char) @@ fun i ->
+  try return (Char.chr i)
+  with Invalid_argument _ as e ->
+    let e, info = Exninfo.capture e in
+    throw ~info e
+
 let () = define "char_to_int" (char @-> ret int) Char.code
 
 (** String *)
