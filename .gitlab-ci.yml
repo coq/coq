@@ -169,8 +169,7 @@ before_script:
     # the validate:vio job is sometimes started before build:vio, without artifacts
     # we ignore these spurious errors so if the job fails it's a real error
     - cd _install_ci || exit 0
-    - find lib/coq/ -name '*.vo' -fprint0 vofiles
-    - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
+    - bin/coqchk -o -m -coqlib lib/coq/ -dir lib/coq > ../coqchk.log 2>&1 || touch coqchk.failed
     - tail -n 1000 ../coqchk.log # the log is too big for gitlab so pipe to a file and display the tail
     - "[ ! -f coqchk.failed ]" # needs quoting for yml syntax reasons
   artifacts:
