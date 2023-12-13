@@ -211,7 +211,7 @@ end
 
 (** Server-side functor. [MakeWorker T] creates the server task
     dispatcher. *)
-module MakeWorker(T : Task) () : sig
+module MakeWorker(_ : Task) () : sig
 
   (** [init_stdout ()] is called at [Coqtop.toploop_init] time. *)
   val init_stdout : unit -> unit

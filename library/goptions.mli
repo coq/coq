@@ -61,7 +61,7 @@ type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
 
 module MakeStringTable :
   functor
-    (A : sig
+    (_ : sig
        val key : option_name
        val title : string
        val member_message : string -> bool -> Pp.t

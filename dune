@@ -1,6 +1,6 @@
 ; Default flags for all Coq libraries.
 (env
- (dev     (flags :standard -w -9-27@60@70 \ -short-paths)
+ (dev     (flags :standard -w -9-27@60-69@70 \ -short-paths)
           (coq (flags :standard -w +default)))
  (release (flags :standard)
           (ocamlopt_flags :standard -O3 -unbox-closures))

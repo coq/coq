@@ -1,7 +1,6 @@
-(lang dune 2.9)
+(lang dune 3.6)
 (name coq)
 (using coq 0.3)
-(cram enable)
 
 (formatting
  (enabled_for ocaml))
@@ -18,10 +17,14 @@
 (version dev)
 
 ; Note that we use coq.opam.template to have dune add the correct opam
-; prefix for configure
+; prefix for configure; also note that we manually add the dune >= 3.6.1
+; dependency due a dune bug preventing Coq to build in
+; 3.6.0. Dune adds `dune >= 3.6` automatically, based on `(lang dune 3.6)`
+; above, but that's not enough.
 (package
  (name coq-core)
  (depends
+  (dune (>= 3.6.1))
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11)))
