@@ -45,7 +45,7 @@ function project {
 project mathcomp "https://github.com/math-comp/math-comp" "master"
 # Contact @CohenCyril, @proux01 on github
 
-project mathcomp_1 "https://github.com/math-comp/math-comp" "mathcomp-1"
+project mathcomp_1 "https://github.com/math-comp/math-comp" "a526d8dc7956ce1c1bc88051d0656d35b76608a3"
 # Contact @CohenCyril, @proux01 on github
 
 project fourcolor "https://github.com/math-comp/fourcolor" "master"
@@ -474,8 +474,10 @@ project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
 ########################################################################
 # Jasmin
 ########################################################################
-project jasmin "https://github.com/jasmin-lang/jasmin" "main"
+project jasmin "https://github.com/jasmin-lang/jasmin" "504d05f25c561f117b3ee2a2b664f8b692130d6c"
 # Contact @vbgl, @bgregoir on github
+# go back to "main" and change dependency to MC 2 when
+# https://github.com/jasmin-lang/jasmin/pull/560 is merged
 
 ########################################################################
 # Lean Importer
