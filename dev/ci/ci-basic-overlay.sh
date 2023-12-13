@@ -45,7 +45,7 @@ function project {
 project mathcomp "https://github.com/math-comp/math-comp" "master"
 # Contact @CohenCyril, @proux01 on github
 
-project mathcomp_1 "https://github.com/math-comp/math-comp" "mathcomp-1"
+project mathcomp_1 "https://github.com/math-comp/math-comp" "a526d8dc7956ce1c1bc88051d0656d35b76608a3"
 # Contact @CohenCyril, @proux01 on github
 
 project fourcolor "https://github.com/math-comp/fourcolor" "master"
