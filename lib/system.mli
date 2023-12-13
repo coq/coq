@@ -40,7 +40,7 @@ val process_directory : (file_kind -> unit) -> unix_path -> unit
 
 (** [process_subdirectories f path] applies [f path/file file] on each
     [file] of the directory [path]; fails with Unix_error if the
-    latter does not exists; kips all files or dirs starting with "." *)
+    latter does not exists; skips all files or dirs starting with "." *)
 
 val process_subdirectories : (unix_path -> string -> unit) -> unix_path -> unit
 

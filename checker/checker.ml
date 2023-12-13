@@ -157,6 +157,13 @@ let compile_list = ref ([] : object_file list)
 let add_compile s =
   compile_list := path_of_string s :: !compile_list
 
+let rec add_dir d =
+  System.process_directory (function
+      | FileDir (d, _) -> add_dir d
+      | FileRegular f ->
+        if String.equal (Filename.extension f) ".vo" then add_compile (Filename.concat d f))
+    d
+
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
@@ -183,6 +190,8 @@ let print_usage_channel co command =
 \n  -coqlib dir                 set coqchk's standard library location\
 \n  -boot                       don't initialize the library paths automatically\
 \n\
+\n  -dir dir                    check all .vo files in directory dir\
+\n                              (skips files and directories with leading .)\
 \n  -admit module               load module and dependencies without checking\
 \n  -norec module               check module but admit dependencies without checking\
 \n\
@@ -372,6 +381,11 @@ let parse_args argv =
 
     | "-silent" :: rem ->
         Flags.quiet := true; parse rem
+
+    | "-dir" :: rem -> begin match rem with
+        | [] -> usage 1
+        | d :: rem -> add_dir d; parse rem
+      end
 
     | s :: _ when s<>"" && s.[0]='-' ->
         fatal_error (str "Unknown option " ++ str s) false
