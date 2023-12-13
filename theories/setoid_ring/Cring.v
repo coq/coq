@@ -93,8 +93,10 @@ End cring.
 
 Ltac cring_gen :=
   match goal with
-    |- ?g => let lterm := lterm_goal g in
-        match eval red in (list_reifyl (lterm:=lterm)) with
+    |- ?g =>
+      let lterm := lterm_goal g in
+      let reif := list_reifyl0 lterm in
+        match reif with
           | (?fv, ?lexpr) => 
            (*idtac "variables:";idtac fv;
            idtac "terms:"; idtac lterm;
@@ -249,7 +251,8 @@ Ltac cring_simplify_gen a hyp :=
       | _::_ => a
       | _ => constr:(a::nil)
     end in
-    match eval red in (list_reifyl (lterm:=lterm)) with
+   let reif := list_reifyl0 lterm in
+    match reif with
       | (?fv, ?lexpr) => idtac lterm; idtac fv; idtac lexpr;
       let n := eval compute in (length fv) in
       idtac n;

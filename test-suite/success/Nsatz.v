@@ -15,7 +15,7 @@ Lemma example3 : forall x y z,
   x*y+x*z+y*z==0->
   x*y*z==0 -> x^3%Z==0.
 Proof.
-Time nsatz. 
+  Time nsatz.
 Qed.
 
 Lemma example4 : forall x y z u,
