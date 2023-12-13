@@ -824,7 +824,6 @@ library:ci-jasmin:
   - build:edge+flambda
   - library:ci-mathcomp_1
   - library:ci-mathcomp_word
-  allow_failure: true # Forgot to ran CI before merging https://github.com/coq/coq/pull/18374
 
 library:ci-coq_library_undecidability:
   extends: .ci-template
