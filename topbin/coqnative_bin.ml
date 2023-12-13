@@ -91,13 +91,17 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_compiled : Safe_typing.compiled_library;
+  md_syntax_objects : library_objects;
   md_objects : library_objects;
 }
+
+type library_info
 
 type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
+  md_info : library_info;
 }
 
 type library_t = {

@@ -611,6 +611,19 @@ Conflicts with axioms in library
   GH issue number: #17871
   risk: proof of false when using primitive floats and native_compute
 
+Deserialization
+
+  component: coqchk (coqc trusts that .vo files are well formed)
+  summary: deserialization of .vo data not properly checked
+  introduced: 8.16 (univ levels), 8.10 (retroknowledge)
+  impacted released versions: 8.10-8.18.1
+  impacted coqchk versions: same
+  fixed in: 8.19
+  found by: Mario Carneiro
+  GH issue number: N/A (fix pull requests: #18403, #18406)
+  risk: can lead to segfaults or arbitrary code execution on crafted .vo files
+    (files produced by coqc are fine)
+
 There were otherwise several bugs in beta-releases, from memory, bugs with beta versions of primitive projections or template polymorphism or native compilation or guard (e7fc96366, 2a4d714a1).
 
 There were otherwise maybe unexploitable kernel bugs, e.g. 2df88d83 (Require overloading), 0adf0838 ("Univs: uncovered bug in strengthening of opaque polymorphic definitions."), 5122a398 (#3746 about functors), #4346 (casts in VM), a14bef4 (guard condition in 8.1), 6ed40a8 ("Georges' bug" with ill-typed lazy machine), and various other bugs in 8.0 or 8.1 w/o knowing if they are critical.
