@@ -31,7 +31,6 @@ depends: [
   "ocaml" {>= "4.09.0"}
   "ocamlfind" {>= "1.8.1"}
   "zarith" {>= "1.11"}
-  "ounit2" {with-test}
   "odoc" {with-doc}
 ]
 depopts: ["coq-native"]
