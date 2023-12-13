@@ -55,14 +55,3 @@ Ltac Z.euclidean_division_equations_cleanup ::=
          | [ H : ?A -> ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
          | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
          end.
-
-Local Set Warnings "-masking-absolute-name".
-
-Require Ltac2.Array.
-
-Module Export Ltac2.
-  Module Array.
-    Export Ltac2.Array.
-    Ltac2 empty () := empty.
-  End Array.
-End Ltac2.
