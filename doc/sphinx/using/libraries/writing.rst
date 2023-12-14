@@ -31,16 +31,26 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    It can trigger the following warnings:
 
-   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note
-             Tactic Notation @qualid is deprecated since @string__since. @string__note
-             Notation @string is deprecated since @string__since. @string__note
-             Ltac2 definition @qualid is deprecated since @string__since. @string__note
+   .. warn:: Library File @qualid is deprecated since @string__since. @string__note
+             Library File (transitively required) @qualid is deprecated since @string__since. @string__note
              Ltac2 alias @qualid is deprecated since @string__since. @string__note
+             Ltac2 definition @qualid is deprecated since @string__since. @string__note
              Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note
+             Notation @string is deprecated since @string__since. @string__note
+             Tactic @qualid is deprecated since @string__since. @string__note
+             Tactic Notation @qualid is deprecated since @string__since. @string__note
 
       :n:`@qualid` or :n:`@string` is the notation,
       :n:`@string__since` is the version number, :n:`@string__note` is
       the note (usually explains the replacement).
+
+      Explicitly :cmd:`Require`\ing a file that has been deprecated,
+      using the :cmd:`Attributes` command, triggers a ``Library File``
+      deprecation warning. Requiring a deprecated file, even indirectly through a chain of
+      :cmd:`Require`\s, will produce a
+      ``Library File (transitively required)`` deprecation warning
+      if the :opt:`Warnings` option "deprecated-transitive-library-file"
+      is set (it is "-deprecated-transitive-library-file" by default, silencing the warning).
 
 .. note::
 
