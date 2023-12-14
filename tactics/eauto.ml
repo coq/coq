@@ -424,6 +424,11 @@ let autounfold_tac db cls =
   in
   autounfold dbs cls
 
+let transparent_constant csts prjs c =
+  match Structures.PrimitiveProjections.find_opt c with
+  | None -> Cset.mem c csts
+  | Some p -> PRset.mem p prjs
+
 let unfold_head env sigma (ids, csts, prjs) c =
   (* TODO use prjs *)
   let rec aux c =
@@ -432,7 +437,7 @@ let unfold_head env sigma (ids, csts, prjs) c =
         (match Environ.named_body id env with
         | Some b -> true, EConstr.of_constr b
         | None -> false, c)
-    | Const (cst, u) when Cset.mem cst csts ->
+    | Const (cst, u) when transparent_constant csts prjs cst ->
         let u = EInstance.kind sigma u in
         true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
     | App (f, args) ->
