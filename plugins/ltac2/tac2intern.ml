@@ -116,7 +116,7 @@ let is_pure_constructor kn =
   | GTydDef _ -> assert false (** Type definitions have no constructors *)
 
 let rec is_value = function
-| GTacAtm (AtmInt _) | GTacVar _ -> true
+| GTacAtm (AtmInt _) | GTacVar _ | GTacPrm _ -> true
 | GTacFun (bnd,_) -> assert (not (CList.is_empty bnd)); true
 | GTacAtm (AtmStr _) | GTacApp _ -> false
 | GTacRef kn -> not (Tac2env.interp_global kn).gdata_mutable
@@ -127,7 +127,7 @@ let rec is_value = function
 | GTacLet (_, bnd, e) ->
   (* in the recursive case the bnd are guaranteed to be values but it doesn't hurt to check *)
   is_value e && List.for_all (fun (_, e) -> is_value e) bnd
-| GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
+| GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _
 | GTacWth _ | GTacFullMatch _ -> false
 
 let is_rec_rhs = function
