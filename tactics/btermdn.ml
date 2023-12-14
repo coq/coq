@@ -85,7 +85,7 @@ let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
      bug #2668. *)
   (if Environ.mem_constant c env then Environ.evaluable_constant c env else true) &&
-  (match ts with None -> true | Some ts -> TransparentState.is_transparent_constant ts c)
+  (match ts with None -> true | Some ts -> Structures.PrimitiveProjections.is_transparent_constant ts c)
 
 let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&

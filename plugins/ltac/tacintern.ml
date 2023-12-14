@@ -303,7 +303,12 @@ let short_name strict qid =
   else None
 
 let evalref_of_globref ?loc ?short = function
-  | GlobRef.ConstRef cst -> ArgArg (Evaluable.EvalConstRef cst, short)
+  | GlobRef.ConstRef cst ->
+      begin
+        match Structures.PrimitiveProjections.find_opt cst with
+        | None -> ArgArg (Evaluable.EvalConstRef cst, short)
+        | Some p -> ArgArg (Evaluable.EvalProjectionRef p, short)
+      end
   | GlobRef.VarRef id -> ArgArg (Evaluable.EvalVarRef id, short)
   | r ->
     let tpe = match r with

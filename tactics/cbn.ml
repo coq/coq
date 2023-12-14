@@ -193,7 +193,7 @@ struct
          prvect_with_sep (pr_bar) (fun (_, b) -> pr_c b) br
        ++ str ")"
     | Proj (p,_,cst) ->
-      str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
+      str "ZProj(" ++ Projection.debug_print p ++ str ")"
     | Fix (f,args,cst) ->
        str "ZFix(" ++ Constr.debug_print_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"
@@ -217,7 +217,7 @@ struct
         else str"(" ++ Constant.debug_print c ++ str ", " ++
           UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str")"
       | Cst_proj (p,r) ->
-        str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
+        str".(" ++ Projection.debug_print p ++ str")"
 
   let empty = []
 

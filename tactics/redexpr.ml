@@ -129,9 +129,14 @@ type red_expr_val =
   (constr, Evaluable.t, constr_pattern, strength * RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
-  | Evaluable.EvalVarRef id -> fVAR id
-  | Evaluable.EvalConstRef sp -> fCONST sp
-  | Evaluable.EvalProjectionRef p -> fPROJ p
+  | Evaluable.EvalVarRef id -> [fVAR id]
+  | Evaluable.EvalConstRef sp ->
+      begin
+        match Structures.PrimitiveProjections.find_opt sp with
+        | None -> [fCONST sp]
+        | Some p -> [fCONST sp; fPROJ p]
+      end
+  | Evaluable.EvalProjectionRef p -> [fPROJ p; fCONST (Projection.Repr.constant p)]
 
 let make_flag env f =
   let red = no_red in
@@ -146,12 +151,12 @@ let make_flag env f =
         let red = red_add_transparent red
                     (Conv_oracle.get_transp_state (Environ.oracle env)) in
         List.fold_right
-          (fun v red -> red_sub red (make_flag_constant v))
+          (fun v red -> red_sub_list red (make_flag_constant v))
           f.rConst red
     else (* Only rConst *)
         let red = red_add red fDELTA in
         List.fold_right
-          (fun v red -> red_add red (make_flag_constant v))
+          (fun v red -> red_add_list red (make_flag_constant v))
           f.rConst red
   in
   f.rStrength, red
