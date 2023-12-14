@@ -85,6 +85,9 @@ let red_sub red = function
     let r = red.r_const in
     { red with r_const = { r with tr_var = Id.Pred.remove id r.tr_var } }
 
+let red_sub_list = List.fold_left red_sub
+let red_add_list = List.fold_left red_add
+
 let red_transparent red = red.r_const
 
 let red_add_transparent red tr =

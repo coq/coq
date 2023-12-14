@@ -35,8 +35,14 @@ val no_red : reds
 (** Adds a reduction kind to a set *)
 val red_add : reds -> red_kind -> reds
 
-(** Removes a reduction kind to a set *)
+(** Removes a reduction kind from a set *)
 val red_sub : reds -> red_kind -> reds
+
+(** Adds a list of reduction kind to a set *)
+val red_add_list : reds -> red_kind list -> reds
+
+(** Removes a list of reduction kind from a set *)
+val red_sub_list : reds -> red_kind list -> reds
 
 (** Adds a reduction kind to a set *)
 val red_add_transparent : reds -> TransparentState.t -> reds
