@@ -5,6 +5,7 @@
 # this only works in bash, which we don't require project-wide.
 
 set -o pipefail
+set -x
 
 CI_NAME="$1"
 CI_SCRIPT="ci-${CI_NAME}.sh"
@@ -14,7 +15,27 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "${DIR}/../.." || exit 1
 
 export TIMED=1
-bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
+
+# NB: in CI TERM is unset in the environment
+# when TERM is unset, bash sets it to "dumb" as a bash variable (not exported?)
+if { [ -t 1 ] && ! [ "$TERM" = dumb ]; } || [ "$CI" ]
+then color_wanted=1
+else color_wanted=
+fi
+
+if [ "$color_wanted" ] && command -v script > /dev/null; then
+  # prevent piping from disabling auto colors / enable auto colors in CI
+    if [ "$CI" ]; then
+      export TERM=xterm-color
+      export GIT_PAGER=
+    fi
+  script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
+else
+  if [ "$color_wanted" ]; then
+    >&2 echo 'script command not available, colors will be hidden'
+  fi
+  bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
+fi
 code=$?
 echo 'Aggregating timing log...'
 python ./tools/make-one-time-file.py --real "$CI_NAME.log"
