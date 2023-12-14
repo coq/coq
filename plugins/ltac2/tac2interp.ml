@@ -258,11 +258,14 @@ and eval_pure bnd kn = function
 | GTacLet (true, el, body) ->
   let bnd = push_let_rec bnd el in
   eval_pure bnd kn body
+| GTacPrj (_,e,i) ->
+  let v = eval_pure bnd kn e in
+  Valexpr.field v i
 
 | GTacPrm ml -> Tac2env.interp_primitive ml
 
 | GTacAtm (AtmStr _) | GTacSet _
-| GTacApp _ | GTacCse _ | GTacPrj _
+| GTacApp _ | GTacCse _
 | GTacExt _ | GTacWth _
 | GTacFullMatch _ ->
   anomaly (Pp.str "Term is not a syntactical value")
