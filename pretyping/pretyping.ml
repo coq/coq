@@ -93,6 +93,9 @@ let search_guard ?loc env possible_indexes fixdefs =
     indexes
   else
     (* we now search recursively among all combinations *)
+    let combinations = List.combinations possible_indexes in
+    if List.is_empty combinations then
+      user_err ?loc (Pp.str "A fixpoint needs at least one parameter.");
     (try
        List.iter
          (fun l ->
@@ -109,7 +112,7 @@ let search_guard ?loc env possible_indexes fixdefs =
               let env = Environ.set_typing_flags flags env in
               check_fix env fix; raise (Found indexes)
             with TypeError _ -> ())
-         (List.combinations possible_indexes);
+          combinations;
        let errmsg = "Cannot guess decreasing argument of fix." in
          user_err ?loc (Pp.str errmsg)
      with Found indexes -> indexes)
@@ -813,7 +816,7 @@ struct
             Array.to_list (Array.mapi
                              (fun i annot -> match annot with
                              | Some n -> [n]
-                             | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
+                             | None -> List.interval 0 (Context.Rel.nhyps ctxtv.(i) - 1))
            vn)
           in
           let fixdecls = (names,ftys,fdefs) in

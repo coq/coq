@@ -2171,12 +2171,22 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                let (env',bl) = List.fold_left intern_local_binder (env,[]) bl in
                let bl = List.rev_map glob_local_binder_of_extended bl in
                let n = Option.map (fun recarg ->
-                   List.fold_left_until (fun n (id,_,body,_) -> match body with
-                       | None ->
-                         if Name.equal id (Name recarg.v) then Stop n else Cont (n+1)
-                       | Some _ -> Cont n (* let-ins don't count *))
-                     0 bl)
-                   recarg
+                 let exception Found of int in
+                 try
+                   List.fold_left (fun n (id,_,body,_) ->
+                     match body, Name.equal id (Name recarg.v) with
+                     | None, true -> raise (Found n)
+                     | Some _, true ->
+                         CErrors.user_err ?loc
+                           (Name.print id ++ str" must be a proper parameter and not a local definition.")
+                     | None, false -> n + 1
+                     | Some _, false -> n (* let-ins don't count *))
+                     0 bl |> ignore;
+                   CErrors.user_err ?loc:recarg.loc
+                     (str "No parameter named " ++ Id.print recarg.v ++ str".");
+                 with
+                   Found k -> k)
+                 recarg
                in
                let bl_impls = remember_binders_impargs env' bl in
                (n, bl, intern_type env' ty, bl_impls)) dl in
