@@ -42,7 +42,7 @@ val of_preterm : ?delimiters:Id.t list -> Constrexpr.constr_expr -> raw_tacexpr
 
 val of_list : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a list -> raw_tacexpr
 
-val array_of_list : ?loc:Loc.t -> raw_tacexpr -> raw_tacexpr
+val array_literal : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
 val of_bindings : bindings -> raw_tacexpr
 
