@@ -1,4 +1,0 @@
-- **Added:**
-  `-profile` command line argument and `PROFILE` variable in `coq_makefile` to control a new :ref:`profiling` system
-  (`#17702 <https://github.com/coq/coq/pull/17702>`_,
-  by Gaëtan Gilbert).
