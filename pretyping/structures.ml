@@ -443,4 +443,9 @@ let find_opt_with_relevance (c,u) =
       let u = EConstr.Unsafe.to_instance u in
       p, Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
 
+let is_transparent_constant ts c =
+  match find_opt c with
+  | None -> TransparentState.is_transparent_constant ts c
+  | Some p -> TransparentState.is_transparent_projection ts p
+
 end

@@ -503,7 +503,7 @@ let key_of env sigma b flags f =
   if subterm_restriction b flags then None else
   match EConstr.kind sigma f with
   | Const (cst, u) when is_transparent env (Evaluable.EvalConstRef cst) &&
-      (TransparentState.is_transparent_constant flags.modulo_delta cst
+      (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst
        || PrimitiveProjections.mem cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
@@ -549,7 +549,7 @@ let oracle_order env cf1 cf2 =
 
 let is_rigid_head sigma flags t =
   match EConstr.kind sigma t with
-  | Const (cst,u) -> not (TransparentState.is_transparent_constant flags.modulo_delta cst)
+  | Const (cst,u) -> not (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst)
   | Ind (i,u) -> true
   | Construct _ | Int _ | Float _ | Array _ -> true
   | Fix _ | CoFix _ -> true
@@ -640,7 +640,7 @@ let rec is_neutral env sigma ts t =
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
       not (is_transparent env (Evaluable.EvalConstRef c)) ||
-      not (TransparentState.is_transparent_constant ts c)
+      not (Structures.PrimitiveProjections.is_transparent_constant ts c)
     | Var id ->
       not (Environ.evaluable_named id env) ||
       not (is_transparent env (Evaluable.EvalVarRef id)) ||
@@ -1335,7 +1335,7 @@ let applyHead env evd c cl =
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
-  | Const (c,u) -> not (TransparentState.is_transparent_constant ts c)
+  | Const (c,u) -> not (Structures.PrimitiveProjections.is_transparent_constant ts c)
   | Var id -> not (TransparentState.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false

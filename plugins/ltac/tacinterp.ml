@@ -432,6 +432,7 @@ let interp_evaluable ist env sigma = function
       with Not_found as exn ->
         match r with
         | Evaluable.EvalConstRef _ -> r
+        | Evaluable.EvalProjectionRef _ -> r
         | _ ->
           let _, info = Exninfo.capture exn in
           Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)
