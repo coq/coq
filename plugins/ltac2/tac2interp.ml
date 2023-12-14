@@ -130,23 +130,8 @@ let rec interp (ist : environment) = function
   Proofview.Monad.List.fold_left fold ist el >>= fun ist ->
   interp ist e
 | GTacLet (true, el, e) ->
-  let map (na, e) = match e with
-  | GTacFun (ids, e) ->
-    let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = interp_closure cls in
-    na, cls, f
-  | _ -> anomaly (str "Ill-formed recursive function")
-  in
-  let fixs = List.map map el in
-  let fold accu (na, _, cls) = match na with
-  | Anonymous -> accu
-  | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
-  in
-  let ist = List.fold_left fold ist fixs in
-  (* Hack to make a cycle imperatively in the environment *)
-  let iter (_, e, _) = e.clos_env <- ist.env_ist in
-  let () = List.iter iter fixs in
-  interp ist e
+  let ist = push_let_rec ist.env_ist el in
+  interp { env_ist = ist } e
 | GTacCst (_, n, []) -> return (Valexpr.make_int n)
 | GTacCst (_, n, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
@@ -169,6 +154,25 @@ let rec interp (ist : environment) = function
 | GTacPrm ml ->
   return (Tac2env.interp_primitive ml)
 | GTacExt (tag, e) -> eval_glb_ext ist (Glb (tag,e))
+
+and push_let_rec ist el =
+  let map (na, e) = match e with
+  | GTacFun (ids, e) ->
+    let cls = { clos_ref = None; clos_env = ist; clos_var = ids; clos_exp = e } in
+    let f = interp_closure cls in
+    na, cls, f
+  | _ -> anomaly (str "Ill-formed recursive function")
+  in
+  let fixs = List.map map el in
+  let fold accu (na, _, cls) =match na with
+    | Anonymous -> accu
+    | Name id -> Id.Map.add id cls accu
+  in
+  let ist = List.fold_left fold ist fixs in
+  (* Hack to make a cycle imperatively in the environment *)
+  let iter (_, e, _) = e.clos_env <- ist in
+  let () = List.iter iter fixs in
+  ist
 
 and interp_closure f =
   let ans = fun args ->
@@ -240,8 +244,7 @@ and eval_pure bnd kn = function
 | GTacCst (_, n, []) -> Valexpr.make_int n
 | GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args bnd el)
 | GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args bnd el)
-| GTacLet (isrec, vals, body) ->
-  let () = assert (not isrec) in
+| GTacLet (false, vals, body) ->
   let fold accu (na, e) = match na with
   | Anonymous ->
     (* No need to evaluate, we know this is a value *)
@@ -251,6 +254,9 @@ and eval_pure bnd kn = function
     Id.Map.add id v accu
   in
   let bnd = List.fold_left fold bnd vals in
+  eval_pure bnd kn body
+| GTacLet (true, el, body) ->
+  let bnd = push_let_rec bnd el in
   eval_pure bnd kn body
 
 | GTacPrm ml -> Tac2env.interp_primitive ml
