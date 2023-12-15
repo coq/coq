@@ -123,7 +123,7 @@ git_download()
         # but rebasing produces something that is nicer to edit
         if [[ $CI ]]; then
             git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
-                pull --no-ff "$ov_url" "$ov_ref"
+                pull --no-edit --no-ff "$ov_url" "$ov_ref"
             git log -n 1 HEAD^2 || true # no merge commit if the overlay was merged upstream
             git log -n 1
         else
