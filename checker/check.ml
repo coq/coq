@@ -267,16 +267,16 @@ let raw_intern_library f =
 (************************************************************************)
 (* Internalise libraries *)
 
+type library_info
+
 type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
+  md_info : library_info;
 }
 
-module Dyn = Dyn.Make ()
-type obj = Dyn.t (* persistent dynamic objects *)
-type lib_objects = (Id.t * obj) list
-type library_objects = lib_objects * lib_objects
+type library_objects
 
 type library_disk = {
   md_compiled : Safe_typing.compiled_library;
