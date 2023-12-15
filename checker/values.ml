@@ -334,7 +334,6 @@ let v_retro_action =
   v_sum "retro_action" 0 [|
     [|v_prim_ind; v_ind|];
     [|v_prim_type; v_cst|];
-    [|v_cst|];
   |]
 
 let v_retroknowledge =
@@ -382,33 +381,6 @@ let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
   v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps|]
 
-(** Library objects *)
-
-let v_obj = Dyn
-
-let v_open_filter = Sum ("open_filter",1,[|[|v_pred String|]|])
-
-let rec v_aobjs = Sum("algebraic_objects", 0,
-  [| [|v_libobjs|];
-     [|v_mp;v_subst|]
-  |])
-and v_substobjs =
-  Tuple("*", [|List v_uid;v_aobjs|])
-and v_libobjt = Sum("Libobject.t",0,
-  [| [| v_id; v_substobjs |];
-     [| v_id; v_substobjs |];
-     [| v_aobjs |];
-     [| v_id; v_libobjs |];
-     [| List (v_pair v_open_filter v_mp)|];
-     [| v_obj |]
-  |])
-
-and v_libobjs = List v_libobjt
-
-let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
-
-let v_librarysyntaxobjs = Tuple ("library_syntax_objects",[|v_libobjs;v_libobjs|])
-
 (** STM objects *)
 
 let v_frozen = Tuple ("frozen", [|List (v_pair Int Dyn); Opt Dyn|])
@@ -436,17 +408,11 @@ let v_stm_seg = v_pair v_tasks v_counters
 
 (** Toplevel structures in a vo (see Cic.mli) *)
 
-let v_deprecation =
-  v_tuple "deprecation" [|Opt String; Opt String|]
-
-let v_library_info =
-  v_sum "library_info" 0 [|[|v_deprecation|]|]
-
 let v_libsum =
-  Tuple ("summary", [|v_dp;v_deps;String;List v_library_info|])
+  Tuple ("summary", [|v_dp;v_deps;String;Any|])
 
 let v_lib =
-  Tuple ("library",[|v_compiled_lib;v_librarysyntaxobjs;v_libraryobjs|])
+  Tuple ("library",[|v_compiled_lib;Any;Any|])
 
 let v_delayed_universes =
   Sum ("delayed_universes", 0, [| [| v_unit |]; [| v_context_set |] |])
