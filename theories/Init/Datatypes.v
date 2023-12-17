@@ -50,6 +50,24 @@ Register bool as core.bool.type.
 Register true as core.bool.true.
 Register false as core.bool.false.
 
+(************************************************)
+(** * Reflect: a specialized inductive type for
+    relating propositions and booleans,
+    as popularized by the Ssreflect library.    *)
+(************************************************)
+
+Inductive reflect (P : Prop) : bool -> Set :=
+  | ReflectT : P -> reflect P true
+  | ReflectF : ~ P -> reflect P false.
+#[global]
+Hint Constructors reflect : bool.
+Arguments ReflectT : clear implicits.
+Arguments ReflectF : clear implicits.
+
+(** Interest: a case on a reflect lemma or hyp performs clever
+    unification, and leave the goal in a convenient shape
+    (a bit like case_eq). *)
+
 (** Basic boolean operators *)
 
 Definition andb (b1 b2:bool) : bool := if b1 then b2 else false.
