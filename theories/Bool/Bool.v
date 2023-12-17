@@ -939,11 +939,9 @@ Qed.
     as popularized by the Ssreflect library.    *)
 (************************************************)
 
-Inductive reflect (P : Prop) : bool -> Set :=
-  | ReflectT : P -> reflect P true
-  | ReflectF : ~ P -> reflect P false.
-#[global]
-Hint Constructors reflect : bool.
+Notation reflect := Datatypes.reflect (only parsing).
+Notation ReflectT := Datatypes.ReflectT (only parsing).
+Notation ReflectF := Datatypes.ReflectF (only parsing).
 
 (** Interest: a case on a reflect lemma or hyp performs clever
     unification, and leave the goal in a convenient shape
