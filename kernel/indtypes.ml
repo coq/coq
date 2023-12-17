@@ -219,7 +219,8 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
               | Some b ->
                   check_strict_positivity (ienv_push_var ienv (na, b, mk_norec)) nmr d)
         | Rel k ->
-            (try let (ra,rarg) = List.nth ra_env (k-1) in
+            (match List.nth_opt ra_env (k-1) with
+            | Some (ra,rarg) ->
             let largs = List.map (whd_all env) largs in
             let nmr1 =
               (match ra with
@@ -233,7 +234,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                  not (List.for_all (noccur_between n ntypes) largs)
               then failwith_non_pos_list n ntypes largs
               else (nmr1,rarg)
-             with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
+            | None -> (nmr,mk_norec))
         | Ind ind_kn ->
             (** If one of the inductives of the mutually inductive
                 block being defined appears in a parameter, then we
