@@ -40,6 +40,9 @@ Byte.to_bits_of_bits:
   forall
     b : bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))),
   Byte.to_bits (Byte.of_bits b) = b
+bool_of_sumbool:
+  forall [A B : Prop], {A} + {B} -> {b : bool | if b then A else B}
+sumbool_of_bool: forall b : bool, {b = true} + {b = false}
 Number.internal_number_dec_lb:
   forall x y : Number.number, x = y -> Number.number_beq x y = true
 Number.internal_uint_dec_lb1:

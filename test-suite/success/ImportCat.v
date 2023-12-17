@@ -95,7 +95,3 @@ Module Notas.
   Lemma foo : False.
   Proof. @@. Abort.
 End Notas.
-
-Require Import(notations) Sumbool.
-Check Sumbool.sumbool_of_bool.
-Fail Check sumbool_of_bool.
