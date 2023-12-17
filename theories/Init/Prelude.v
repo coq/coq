@@ -22,6 +22,7 @@ Require Export Stdlib.Init.Wf.
 Require Export Stdlib.Init.Ltac.
 Require Export Stdlib.Init.Tactics.
 Require Export Stdlib.Init.Tauto.
+Require Export Stdlib.Init.Sumbool.
 (* Some initially available plugins. See also:
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
