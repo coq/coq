@@ -1,0 +1,18 @@
+File "./output/apply_with.v", line 3, characters 11-26:
+The command has indeed failed with message:
+No such bound variable d (possible names are: a, b and c).
+File "./output/apply_with.v", line 4, characters 11-26:
+The command has indeed failed with message:
+Unable to find an instance for the variable b.
+File "./output/apply_with.v", line 5, characters 24-25:
+The command has indeed failed with message:
+No such bound variable d (possible names are: a, b and c).
+File "./output/apply_with.v", line 6, characters 5-31:
+The command has indeed failed with message:
+Unable to find an instance for the variables b, c.
+File "./output/apply_with.v", line 14, characters 23-24:
+The command has indeed failed with message:
+No such bound variable c (possible names are: a and b).
+File "./output/apply_with.v", line 15, characters 5-16:
+The command has indeed failed with message:
+Unable to find an instance for the variables a, b.

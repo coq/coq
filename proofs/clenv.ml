@@ -484,7 +484,7 @@ let meta_with_name evd ({CAst.v=id} as lid) =
         in
         if na != Anonymous then Name.get_id na :: l else l
       in
-      let mvl = Evd.Metamap.fold fold (Evd.meta_list evd) [] in
+      let mvl = List.rev (Evd.Metamap.fold fold (Evd.meta_list evd) []) in
       explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n

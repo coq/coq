@@ -25,6 +25,7 @@ type hole = {
   hole_type : EConstr.types;
   hole_deps  : bool;
   hole_name : Name.t;
+  hole_evar_key : Evar.t;
 }
 
 type clause = {
@@ -84,8 +85,8 @@ let make_evar_clause env sigma ?len t =
         Some (ctx, args, subst), ctx, args, subst
       | Some (ctx, args, subst) -> inst, ctx, args, subst
       in
-      let (sigma, ev) = new_pure_evar ~typeclass_candidate:false ctx sigma (csubst_subst sigma subst t1) in
-      let ev = mkEvar (ev, args) in
+      let (sigma, evk) = new_pure_evar ~typeclass_candidate:false ctx sigma (csubst_subst sigma subst t1) in
+      let ev = mkEvar (evk, args) in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;
@@ -93,6 +94,7 @@ let make_evar_clause env sigma ?len t =
         hole_deps = dep;
         (* We fix it later *)
         hole_name = na.binder_name;
+        hole_evar_key = evk;
       } in
       let t2 = subst1 ev t2 in
       clrec (sigma, hole :: holes) inst (pred n) t2
@@ -176,3 +178,12 @@ let solve_evar_clause env sigma hyp_only clause = function
   in
   let sigma = List.fold_left fold sigma lbind in
   sigma
+
+let check_evar_clause env sigma sigma' eq_clause =
+  let f h = if h.hole_deps then Some h.hole_evar_key else None in
+  match Tacticals.check_evar_list env sigma' (Evar.Set.of_list (List.map_filter f eq_clause.cl_holes)) sigma with
+  | [] -> ()
+  | evkl ->
+    let filter h = if List.exists (Evar.equal h.hole_evar_key) evkl then Some h.hole_name else None in
+    let bindings = List.map_filter filter eq_clause.cl_holes in
+    Loc.raise (Logic.RefinerError (env, sigma, UnresolvedBindings bindings))

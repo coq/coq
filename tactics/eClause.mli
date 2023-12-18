@@ -45,6 +45,8 @@ type hole = {
       appears somewhere in the returned clause. *)
   hole_name : Name.t;
   (** Name of the hole coming from its binder. *)
+  hole_evar_key : Evar.t;
+  (** Internal evar key of the hole. *)
 }
 
 type clause = {
@@ -74,3 +76,5 @@ val check_bindings : 'a explicit_bindings -> unit
 val explain_no_such_bound_variable : Id.t list -> Id.t CAst.t -> 'a
 
 val error_not_right_number_missing_arguments : int -> 'a
+
+val check_evar_clause :  Environ.env -> evar_map -> evar_map -> clause -> unit

@@ -115,6 +115,13 @@ val tclMAPDELAYEDWITHHOLES : bool -> 'a delayed_open list -> ('a -> unit tactic)
     argument of [l] are evaluated in the possibly-updated
     environment and updated sigma of each new successive goals *)
 
+val check_evar_list : Environ.env -> evar_map -> Evar.Set.t -> evar_map -> Evar.t list
+  (* [check_evar_list env sigma evars origsigma] returns the subset of
+     [evars] not instantiated (up to restriction) in the extension
+     [sigma] of [origsigma] where evars of [origsigma] are considered
+     as "axioms", that is that an evar of [evars] instantiated by an
+     evar of [origsigma] is considered to be instantiated *)
+
 val tclTIMEOUT : int -> unit tactic -> unit tactic
 val tclTIME : string option -> 'a tactic -> 'a tactic
 

@@ -371,8 +371,9 @@ let tclPROGRESS t =
 
 (* Check that holes in arguments have been resolved *)
 
-let check_evars env sigma extsigma origsigma =
-  (* origsigma ⊆ extsigma ⊆ sigma *)
+let check_evar_list env sigma evars origsigma =
+  (* origsigma ⊆ sigma *)
+  (* evars ⊆ sigma *)
   let reachable = lazy (Evarutil.reachable_from_evars sigma
                           (Evar.Map.domain (Evd.undefined_map origsigma))) in
   let rec is_undefined_up_to_restriction sigma evk =
@@ -387,25 +388,26 @@ let check_evars env sigma extsigma origsigma =
           evar remaining after typing from the initial term given to
           apply/elim and co tactics, is it correct? *)
         None in
-  if Evd.undefined_map extsigma == Evd.undefined_map origsigma then ()
-  else
-  let rest =
-    Evd.fold_undefined (fun evk evi acc ->
+  Evar.Set.fold (fun evk acc ->
       match is_undefined_up_to_restriction sigma evk with
       | Some (evk',evi) ->
           (* If [evk'] descends from [evk] which descends itself from
             an originally undefined evar in [origsigma], it is a not
             a fresh undefined hole from [sigma]. *)
           if Evar.Set.mem evk (Lazy.force reachable) then acc
-          else (evk',evi)::acc
+          else evk'::acc
       | _ -> acc)
-      extsigma []
-  in
-  match rest with
-  | [] -> ()
-  | (evk, EvarInfo evi) :: _ ->
-    let (loc,_) = Evd.evar_source evi in
-    Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
+      evars []
+
+let check_evars env sigma extsigma origsigma =
+  (* origsigma ⊆ extsigma ⊆ sigma *)
+  if Evd.undefined_map extsigma != Evd.undefined_map origsigma then
+    match check_evar_list env sigma (Evar.Map.domain (Evd.undefined_map extsigma)) origsigma with
+    | [] -> ()
+    | evk :: _ ->
+      let EvarInfo evi = Evd.find sigma evk in
+      let (loc,_) = Evd.evar_source evi in
+      Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
 
 let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =
   let rec aux = function
