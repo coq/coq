@@ -1715,7 +1715,11 @@ end = struct (* {{{ *)
            the call to [check_task_aux] above. *)
         let uc = Option.get @@ Opaques.get_current_constraints (Option.get bucket) in
         let uc = Univ.hcons_universe_context_set uc in
-        let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
+        let access =
+          (* this is only used to access the local opaque (Opaques.get_current_opaque) *)
+          Library.indirect_accessor[@@warning "-3"]
+        in
+        let (pr, priv, ctx) = Option.get (Global.body_of_constant_body access c) in
         (* We only manipulate monomorphic terms here. *)
         let () = assert (UVars.AbstractContext.is_empty ctx) in
         let () = match priv with

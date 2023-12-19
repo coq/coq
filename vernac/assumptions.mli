@@ -22,7 +22,7 @@ open Printer
     NOTE: this function is used in the plugin paramcoq.
 *)
 val traverse :
-  Label.t -> constr ->
+  Global.indirect_accessor -> Label.t -> constr ->
     (GlobRef.Set_env.t * GlobRef.Set_env.t option GlobRef.Map_env.t *
      (Label.t * Constr.rel_context * types) list GlobRef.Map_env.t)
 
@@ -30,5 +30,5 @@ val traverse :
    on which a term relies (together with their type). The above warning of
    {!traverse} also applies. *)
 val assumptions :
-  ?add_opaque:bool -> ?add_transparent:bool -> TransparentState.t ->
-     GlobRef.t -> constr -> types ContextObjectMap.t
+  ?add_opaque:bool -> ?add_transparent:bool -> Global.indirect_accessor ->
+  TransparentState.t -> GlobRef.t -> constr -> types ContextObjectMap.t

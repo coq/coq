@@ -149,7 +149,7 @@ let force_proof access o = match access.access_proof o with
 | None -> CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 | Some (c, u) -> (c, u)
 
-let body_of_constant_body access env cb =
+let body_of_constant_body access cb =
   let open Declarations in
   match cb.const_body with
   | Undef _ | Primitive _ | Symbol _ ->
@@ -163,8 +163,6 @@ let body_of_constant_body access env cb =
   | OpaqueDef o ->
     let c, u = force_proof access o in
     Some (c, u, Declareops.constant_polymorphic_context cb)
-
-let body_of_constant_body access ce = body_of_constant_body access (env ()) ce
 
 let body_of_constant access cst = body_of_constant_body access (lookup_constant cst)
 
