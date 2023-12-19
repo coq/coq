@@ -369,6 +369,11 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
    + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot` and :g:`Z.rem`: either ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations`` or ``Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true)``.
+     The :g:`Z.to_euclidean_division_equations` tactic consists of the following passes:
+     - :g:`Z.div_mod_to_equations'`, posing characteristic equations for and generalizing over :g:`Z.div` and :g:`Z.modulo`
+     - :g:`Z.quot_rem_to_equations'`, posing characteristic equations for and generalizing over :g:`Z.quot` and :g:`Z.rem`
+     - :g:`Z.euclidean_division_equations_cleanup`, removing impossible hypotheses introduced by the above passes, such as those presupposing :g:`x <> x`
+     - :g:`Z.euclidean_division_equations_find_duplicate_quotients`, which heuristically adds equations of the form :g:`q1 = q2 \/ q1 <> q2` when it seems that two quotients might be equal, allowing :g:`nia` to prove more goals, including those relating :g:`Z.quot` and :g:`Z.modulo` to :g:`Z.quot` and :g:`Z.rem`.
 
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
