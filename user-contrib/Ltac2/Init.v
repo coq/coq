@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "ltac2_plugin:coq-core.plugins.ltac2".
+Declare ML Module "coq-core.plugins.ltac2".
 
 #[export] Set Default Proof Mode "Ltac2".
 

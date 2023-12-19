@@ -21,12 +21,8 @@ let load_module fmt name =
     CErrors.user_err Pp.(str ("Could not load plugin " ^ name))
 
 let load_plugin fmt ps =
-  match Mltop.PluginSpec.repr ps with
-  | (Some file, _)  ->
-    let file = file ^ ".cma" in
-    load_module fmt file
-  | (None, lib ) ->
-    Topfind.load_deeply [lib]
+  let lib = Mltop.PluginSpec.to_package ps in
+  Topfind.load_deeply [lib]
 
 let drop_setup () =
   let ppf = Format.std_formatter in

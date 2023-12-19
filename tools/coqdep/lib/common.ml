@@ -55,15 +55,6 @@ let warning_module_notfound =
   CWarnings.create ~name:"module-not-found"
     ~category:CWarnings.CoreCategories.filesystem warn
 
-let warning_declare =
-  let warn (f, s) =
-    let open Pp in
-    str "in file " ++ str f ++ str ", declared ML module " ++ str s ++
-    str " has not been found!"
-  in
-  CWarnings.create ~name:"declared-module-not-found"
-    ~category:CWarnings.CoreCategories.filesystem warn
-
 let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in function
   | f2::fl ->
       let f =
@@ -126,30 +117,20 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
-
 let meta_files = ref []
 
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
-let declare_ml_to_file file decl =
-  let decl = String.split_on_char ':' decl in
-  let decl = List.map (String.split_on_char '.') decl in
+let declare_ml_to_file file (decl : string) =
+  let decl = String.split_on_char '.' decl in
   let meta_files = !meta_files in
   match decl with
-  | [[x]] when List.mem_assoc x legacy_mapping ->
-    None, x                     (* This case only exists for 3rd party packages, should remove in 8.17 *)
-  | [[x]] ->
-    Error.findlib_name file x
-  | [[legacy]; package :: plugin_name] ->
-    None, legacy
-  | [package :: plugin_name] ->
-    let meta, cmxs = Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name in
-    Some meta, cmxs
-  | plist ->
+  | (package :: plugin_name) ->
+    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+  | bad_pkg ->
     CErrors.user_err
-      Pp.(str "Failed to resolve plugin " ++
-          pr_sequence (pr_sequence str) plist)
+      Pp.(str "Failed to resolve plugin: " ++
+          pr_sequence str bad_pkg)
 
 let rec find_dependencies st basename =
   let verbose = true in (* for past/future use? *)
@@ -197,22 +178,13 @@ let rec find_dependencies st basename =
             let base = file_name s dir in
             add_dep (Dep_info.Dep.Ml (base,suff))
           in
-          let decl (meta_file,str) =
-            Option.iter add_dep_other meta_file;
+          let decl (meta_file, str) =
+            add_dep_other meta_file;
             let s = basename_noext str in
             if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
-                let pick_mldir mldir =
-                  match meta_file with
-                  | None -> mldir
-                  | Some _ -> Some(Filename.dirname str)
-                in
-                match Loadpath.search_mllib_known st s with
-                | Some mldir -> declare ".cma" (pick_mldir mldir) s
-                | None ->
-                  match Loadpath.search_mlpack_known st s with
-                  | Some mldir -> declare ".cmo" (pick_mldir mldir) s
-                  | None -> warning_declare (f,str)
+                (* EJGA: we should be able to remove this dance *)
+                declare ".cma" (Some (Filename.dirname str)) s
               end
           in
           List.iter decl sl
@@ -346,7 +318,8 @@ let treat_coqproject st f =
     | Parsing_error msg -> Error.cannot_parse_project_file f msg
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
-  iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
+  (* EJGA: This should add to findlib search path *)
+  (* iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes; *)
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
@@ -365,7 +338,8 @@ let init ~make_separator_hack args =
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
   Option.iter (treat_coqproject st) args.Args.coqproject;
-  List.iter (Loadpath.add_caml_dir st) args.Args.ml_path;
+  (* EJGA: This should add to findlib search path *)
+  (* List.iter (Loadpath.add_caml_dir st) args.Args.ml_path; *)
   List.iter (add_include st) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
   meta_files := args.Args.meta_files;
