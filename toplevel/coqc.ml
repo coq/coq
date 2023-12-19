@@ -57,7 +57,9 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
 
   if copts.Coqcargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
-    Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
+    let access = Library.indirect_accessor[@@warning "-3"] in
+    Feedback.msg_notice Pp.(Flags.(with_option raw_print (fun () ->
+        Prettyp.print_full_pure_context access env sigma) ()) ++ fnl ())
   end;
   CProfile.print_profile ()
 

@@ -1998,7 +1998,7 @@ let vernac_print ~pstate =
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
+  | PrintName (qid,udecl) -> Prettyp.print_name (Library.indirect_accessor[@warning "-3"]) env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes ()
   | PrintTypeclasses -> Prettyp.print_typeclasses ()
@@ -2038,7 +2038,7 @@ let vernac_print ~pstate =
       let cstr, _ = UnivGen.fresh_global_instance env gr in
       let st = Conv_oracle.get_transp_state (Environ.oracle env) in
       let nassums =
-        Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
+        Assumptions.assumptions (Library.indirect_accessor[@warning "-3"]) st ~add_opaque:o ~add_transparent:t gr cstr in
       Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
   | PrintRegistered -> print_registered ()

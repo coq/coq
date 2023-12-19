@@ -20,26 +20,26 @@ val print_closed_sections : bool ref
 val print_context (* unused? *)
   : env
   -> Evd.evar_map
-  -> bool -> int option -> 'a Lib.library_segment -> Pp.t
+  -> with_values:Global.indirect_accessor option -> int option -> 'a Lib.library_segment -> Pp.t
 val print_library_leaf
   : env
   -> Evd.evar_map
-  -> bool
+  -> with_values:Global.indirect_accessor option
   -> ModPath.t
   -> Libobject.t
   -> Pp.t option
 val print_library_node : Summary.Interp.frozen Lib.node -> Pp.t (* unused? *)
-val print_full_context : env -> Evd.evar_map -> Pp.t
+val print_full_context : Global.indirect_accessor -> env -> Evd.evar_map -> Pp.t
 val print_full_context_typ : env -> Evd.evar_map -> Pp.t
 
-val print_full_pure_context : env -> Evd.evar_map -> Pp.t
+val print_full_pure_context : Global.indirect_accessor -> env -> Evd.evar_map -> Pp.t
 
-val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
+val print_sec_context : Global.indirect_accessor -> env -> Evd.evar_map -> qualid -> Pp.t
 val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : Safe_typing.judgment -> Pp.t
 
-val print_name : env -> Evd.evar_map
+val print_name : Global.indirect_accessor -> env -> Evd.evar_map
   -> qualid Constrexpr.or_by_notation
   -> UnivNames.full_name_list option
   -> Pp.t
@@ -48,7 +48,7 @@ val print_notation : env -> Evd.evar_map
   -> string
   -> Pp.t
 
-val print_abbreviation : env -> Evd.evar_map -> KerName.t -> Pp.t
+val print_abbreviation : Global.indirect_accessor -> env -> Evd.evar_map -> KerName.t -> Pp.t
 
 val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.full_name_list option -> Pp.t
