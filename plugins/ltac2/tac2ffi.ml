@@ -476,3 +476,8 @@ let app_fun1 cls r0 r1 x =
 let annotate_closure fr (MLTactic (arity, fr0, f)) =
   assert (Option.is_empty fr0);
   MLTactic (arity, Some fr, f)
+
+let rec purify_closure : type a. a arity -> a -> a = fun arity f ->
+  match arity with
+  | OneAty -> (fun x -> Proofview.tclUNIT () >>= fun () -> f x)
+  | AddAty a -> (fun x -> purify_closure a (f x))

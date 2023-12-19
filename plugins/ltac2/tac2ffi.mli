@@ -46,11 +46,18 @@ val arity_one : (valexpr -> valexpr Proofview.tactic) arity
 val arity_suc : 'a arity -> (valexpr -> 'a) arity
 
 val mk_closure : 'v arity -> 'v -> closure
+(** The arrows in ['v] should be pure. Use [tclLIFT] or do
+    [tclUNIT () >>= fun () -> f args] when you need effects. *)
+
 val mk_closure_val : 'v arity -> 'v -> valexpr
 (** Composition of [mk_closure] and [ValCls] *)
 
 val annotate_closure : Tac2expr.frame -> closure -> closure
 (** The closure must not be already annotated *)
+
+val purify_closure : 'v arity -> 'v -> 'v
+(** For internal use (Tac2externals). Wraps the last application of the ['v] argument
+    to make it pure. *)
 
 module Valexpr :
 sig
