@@ -13,26 +13,7 @@ open Synterp
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
-let interp_typed_vernac (Vernactypes.TypedVernac { inprog; outprog; inproof; outproof; run })
-    ~pm ~stack =
-  let open Vernactypes in
-  let module LStack = Vernacstate.LemmaStack in
-  let proof = Option.map LStack.get_top stack in
-  let pm', proof' = run
-      ~pm:(InProg.cast (NeList.head pm) inprog)
-      ~proof:(InProof.cast proof inproof)
-  in
-  let pm = OutProg.cast pm' outprog pm in
-  let stack = let open OutProof in
-    match stack, outproof with
-    | stack, No -> stack
-    | None, Close -> assert false
-    | Some stack, Close -> snd (LStack.pop stack)
-    | None, Update -> assert false
-    | Some stack, Update -> Some (LStack.map_top ~f:(fun _ -> proof') stack)
-    | stack, New -> Some (LStack.push stack proof')
-  in
-  stack, pm
+let interp_typed_vernac = Vernactypes.run
 
 (* Timeout *)
 let vernac_timeout ~timeout (f : 'a -> 'b) (x : 'a) : 'b =
