@@ -153,23 +153,77 @@ let safe_sort_pattern_of_sort ~loc evd (st, sq, su as state) s =
       (st, sq, su), PSQSort (bq, ba)
 
 
-let rec safe_pattern_of_constr ~loc env depth state t = Constr.kind t |> function
+let warn_irrelevant_pattern = "irrelevant-pattern"
+
+let irrelevant_pattern_warning =
+  CWarnings.create_warning ~name:warn_irrelevant_pattern ~default:CWarnings.Enabled ()
+
+let irrelevant_pattern_msg = CWarnings.create_msg irrelevant_pattern_warning ()
+let warn_irrelevant_pattern ~loc () =
+  CWarnings.warn irrelevant_pattern_msg ?loc ()
+let () = CWarnings.register_printer irrelevant_pattern_msg
+  (fun () -> Pp.(str "This subpattern is irrelevant and can never be matched against"))
+
+let warn_redex_in_rewrite_rules = "redex-in-rewrite-rules"
+
+let redex_in_rewrite_rules_warning =
+  CWarnings.create_warning ~name:warn_redex_in_rewrite_rules ~default:CWarnings.Enabled ()
+
+let redex_in_rewrite_rules_msg = CWarnings.create_msg redex_in_rewrite_rules_warning ()
+let warn_redex_in_rewrite_rules ~loc redex =
+  let msg = Pp.(str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered") in
+  CWarnings.warn redex_in_rewrite_rules_msg ?loc msg
+let () = CWarnings.register_printer redex_in_rewrite_rules_msg Fun.id
+
+let rec check_may_eta ~loc env evd t =
+  match EConstr.kind evd (Reductionops.whd_all env evd t) with
+  | Prod _ ->
+      CWarnings.warn redex_in_rewrite_rules_msg ?loc
+        Pp.(str "This subpattern has a product type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
+  | Sort _ -> ()
+  | Ind (ind, u) ->
+      let specif = Inductive.lookup_mind_specif env ind in
+      if not @@ Inductive.is_primitive_record specif then () else
+        CWarnings.warn redex_in_rewrite_rules_msg ?loc
+          Pp.(str "This subpattern has a primitive record type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
+  | App (i, _) -> check_may_eta ~loc env evd i
+  | _ ->
+      CWarnings.warn redex_in_rewrite_rules_msg ?loc
+        Pp.(str "This subpattern has a yet unknown type, which may be a product type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
+
+let test_may_eta ~loc env evd constr =
+  let t = Retyping.get_type_of env evd constr in
+  let () = check_may_eta ~loc env evd t in
+  ()
+
+
+let rec safe_pattern_of_constr_aux ~loc env depth state t = Constr.kind t |> function
   | App (f, args) ->
-      let state, (head, elims) = safe_pattern_of_constr ~loc env depth state f in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state f in
       let state, pargs = Array.fold_left_map (safe_arg_pattern_of_constr ~loc env depth) state args in
       state, (head, elims @ [PEApp pargs])
   | Case (ci, u, _, (ret, _), _, c, brs) ->
       let state, mask = update_invtblu ~loc (snd env) state u in
-      let state, (head, elims) = safe_pattern_of_constr ~loc env depth state c in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state c in
       let state, pret = safe_deep_pattern_of_constr ~loc env depth state ret in
       let state, pbrs = Array.fold_left_map (safe_deep_pattern_of_constr ~loc env depth) state brs in
       state, (head, elims @ [PECase (ci.ci_ind, mask, pret, pbrs)])
   | Proj (p, _, c) ->
-      let state, (head, elims) = safe_pattern_of_constr ~loc env depth state c in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state c in
       state, (head, elims @ [PEProj p])
   | _ ->
       let state, head = safe_head_pattern_of_constr ~loc env depth state t in
       state, (head, [])
+
+and safe_pattern_of_constr ~loc env depth state t =
+  begin match Relevanceops.relevance_of_term (fst env) t with
+  (* This gives the wrong relevance on evars, but we are fine with assuming they are relevant
+     because we only disallow nontrivial irrelevant patterns *)
+  | Sorts.Irrelevant -> warn_irrelevant_pattern ~loc ()
+  | Sorts.RelevanceVar _ -> () (* FIXME *)
+  | Sorts.Relevant -> ()
+  end;
+  safe_pattern_of_constr_aux ~loc env depth state t
 
 and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> function
   | Const (c, u) when Environ.is_symbol (fst env) c ->
@@ -191,14 +245,24 @@ and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> functi
   | Float f -> state, PHFloat f
   | Lambda _ ->
     let (ntys, b) = Term.decompose_lambda t in
-    let tys = Array.of_list (List.rev_map snd ntys) in
-    let state, ptys = Array.fold_left_map_i (fun i state ty -> safe_arg_pattern_of_constr ~loc env (depth+i) state ty) state tys in
+    let tys = Array.rev_of_list ntys in
+    let (state, env), ptys = Array.fold_left_map_i
+      (fun i (state, env) (na, ty) ->
+          let state, p = safe_arg_pattern_of_constr ~loc env (depth+i) state ty in
+          (state, on_fst (Environ.push_rel (LocalAssum (na, ty))) env), p)
+        (state, env) tys
+    in
     let state, pbod = safe_arg_pattern_of_constr ~loc env (depth + Array.length tys) state b in
     state, PHLambda (ptys, pbod)
   | Prod _ ->
     let (ntys, b) = Term.decompose_prod t in
-    let tys = Array.of_list (List.rev_map snd ntys) in
-    let state, ptys = Array.fold_left_map_i (fun i state ty -> safe_arg_pattern_of_constr ~loc env (depth+i) state ty) state tys in
+    let tys = Array.rev_of_list ntys in
+    let (state, env), ptys = Array.fold_left_map_i
+      (fun i (state, env) (na, ty) ->
+          let state, p = safe_arg_pattern_of_constr ~loc env (depth+i) state ty in
+          (state, on_fst (Environ.push_rel (LocalAssum (na, ty))) env), p)
+        (state, env) tys
+    in
     let state, pbod = safe_arg_pattern_of_constr ~loc env (depth + Array.length tys) state b in
     state, PHProd (ptys, pbod)
   | _ ->
@@ -219,6 +283,7 @@ and safe_arg_pattern_of_constr ~loc (env, evd as envevd) depth (st, stateq, stat
         CErrors.user_err ?loc Pp.(str "Named evar in unsupported context: " ++ Printer.safe_pr_lconstr_env env evd t)
     )
   | _ ->
+    test_may_eta ~loc env evd (EConstr.of_constr t);
     let state, p = safe_pattern_of_constr ~loc envevd depth state t in
     state, ERigid p
 
@@ -238,17 +303,6 @@ let rec evar_subst evmap evd k t =
         Evd.instantiate_evar_array evd evi body inst
     end
   | _ -> EConstr.map_with_binders evd succ (evar_subst evmap evd) k t
-
-let warn_redex_in_rewrite_rules = "redex-in-rewrite-rules"
-
-let redex_in_rewrite_rules_warning =
-  CWarnings.create_warning ~name:warn_redex_in_rewrite_rules ~default:CWarnings.Enabled ()
-
-let redex_in_rewrite_rules_msg = CWarnings.create_msg redex_in_rewrite_rules_warning ()
-let warn_redex_in_rewrite_rules ~loc redex =
-  CWarnings.warn redex_in_rewrite_rules_msg ?loc redex
-let () = CWarnings.register_printer redex_in_rewrite_rules_msg
-  (fun redex -> Pp.(str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered"))
 
 let test_projection_apps env evd ~loc ind args =
   let specif = Inductive.lookup_mind_specif env ind in

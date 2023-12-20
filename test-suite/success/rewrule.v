@@ -113,6 +113,14 @@ with
 with
   id (prod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
 
+#[unfold_fix] Symbol idS : forall (A : SProp), A -> A.
+Inductive unitS : SProp := ttS.
+Rewrite Rule id_rew' := idS _ ttS ==> ttS.
+
+Symbol vararity : forall n, (fix f n := match n with 0 => unit | S n => unit -> f n end) n.
+Check vararity (4 + _) tt tt tt _.
+Rewrite Rule vararity_rew := id _ (vararity _) ==> 0.
+
 
 Symbol cast : forall (A B : Type), A -> B.
 Notation "<< B <== A >> t" := (cast A B t) (at level 10).
