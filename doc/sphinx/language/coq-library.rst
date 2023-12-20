@@ -138,7 +138,6 @@ Propositional Connectives
   single: or_introl (term)
   single: or_intror (term)
   single: iff (term)
-  single: IF_then_else (term)
 
 First, we find propositional calculus connectives.
 At times, it's helpful to know exactly what these notations represent.
@@ -158,7 +157,6 @@ At times, it's helpful to know exactly what these notations represent.
   | or_introl (_:A)
   | or_intror (_:B).
   Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
-  Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
 Quantifiers
 +++++++++++
