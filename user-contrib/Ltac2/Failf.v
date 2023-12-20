@@ -1,6 +1,7 @@
 (** printf-style formatted failures gfail/fail/anomaly *)
 
-Require Import Ltac2.Ltac2.
+Require Import Ltac2.Init.
+Require Ltac2.Control Ltac2.Notations.
 
 (** "global fail", i.e. without first focusing on a goal.
    Advantage over normal [fail] is that it can return any ['a] instead of [unit] *)
@@ -19,7 +20,7 @@ Ltac2 fail_with_string (s : string) : unit :=
   Control.enter (fun _ => Control.zero (Tactic_failure (Some (Message.of_string s)))).
 
 Ltac2 Notation "fail" s(tactic) := fail_with_string s.
-Ltac2 Notation "fail" := fail0 ().
+Ltac2 Notation "fail" := Notations.fail0 ().
 
 Ltac2 Type exn ::= [ Anomaly (message option) ].
 
