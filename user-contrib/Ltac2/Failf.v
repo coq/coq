@@ -1,9 +1,9 @@
-(* printf-style formatted failures gfail/fail/anomaly *)
+(** printf-style formatted failures gfail/fail/anomaly *)
 
 Require Import Ltac2.Ltac2.
 
-(* "global fail", i.e. without first focusing on a goal.
-   Advantage over normal `fail` is that it can return any 'a instead of unit *)
+(** "global fail", i.e. without first focusing on a goal.
+   Advantage over normal [fail] is that it can return any ['a] instead of [unit] *)
 Ltac2 gfail0 () := Control.zero (Tactic_failure None).
 Ltac2 gfail_with_fmt fmt :=
   Message.Format.kfprintf (fun msg => Control.zero (Tactic_failure (Some msg))) fmt.
@@ -11,7 +11,7 @@ Ltac2 gfail_with_fmt fmt :=
 Ltac2 Notation "gfail" fmt(format) := gfail_with_fmt fmt.
 Ltac2 Notation "gfail" := gfail0 ().
 
-(* Unfortunately, since `fail` auto-focuses, we can't pass it constr arguments,
+(* Unfortunately, since [fail] auto-focuses, we can't pass it constr arguments,
    because that would require focusing first, so it would have to be thunked constrs,
    which doesn't work nicely either, see https://github.com/coq/coq/issues/17463.
    So for now, we only support simple string messages. *)
