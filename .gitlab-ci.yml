@@ -316,6 +316,7 @@ build:base:dev:dune:
   interruptible: true
   extends: .auto-use-tags
   script:
+    - opam pin add dune --dev
     - cp theories/dune.disabled theories/dune
     - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
     - dune build coq-core.install coq-stdlib.install coq.install
