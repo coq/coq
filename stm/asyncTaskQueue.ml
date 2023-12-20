@@ -117,7 +117,7 @@ module Make(T : Task) () = struct
         | ("-emacs" | "--xml_format=Ppcmds" | "-batch" | "-vok" | "-vos") :: tl  ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
-        | ( "-async-proofs" | "-vio2vo" | "-o"
+        | ( "-async-proofs" | "-o"
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
           | "-require-import" | "-require-export" | "-ri" | "-re"
           | "-load-vernac-object"

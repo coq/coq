@@ -130,7 +130,7 @@ val end_modtype : unit -> ModPath.t
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.ContextSet.t -> Vmlibrary.on_disk ->
+  Vmlibrary.on_disk ->
   unit
 
 (** [import_module export mp] imports the module [mp].

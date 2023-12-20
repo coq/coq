@@ -82,8 +82,6 @@ let print_dep fmt { Dep_info.name; deps } =
     let glob = if !option_noglob then "" else ename^".glob " in
   fprintf fmt "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
     (string_of_dependency_list ~suffix:".vo" deps);
-  fprintf fmt "%s.vio: %s.v %s\n" ename ename
-    (string_of_dependency_list ~suffix:".vio" deps);
   if !option_write_vos then
     fprintf fmt "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
       (string_of_dependency_list ~suffix:".vos" deps);

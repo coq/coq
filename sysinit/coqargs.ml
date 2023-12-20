@@ -263,7 +263,7 @@ let parse_option_set opt =
 let get_native_compiler s =
   (* We use two boolean flags because the four states make sense, even if
      only three are accessible to the user at the moment. The selection of the
-     produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
+     produced artifact(s) (`.vo`, `.coq-native`, ...) should be done by
      a separate flag, and the "ondemand" value removed. Once this is done, use
      [get_bool] here. *)
   let n = match s with

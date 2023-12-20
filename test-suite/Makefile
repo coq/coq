@@ -172,7 +172,7 @@ VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coq
   coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile precomputed-time-tests tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide coqchk output-coqchk coqwc coq-makefile precomputed-time-tests tools $(UNIT_TESTS)
 
 # EJGA: This seems dangerous as first target...
 .csdp.cache: .csdp.cache.test-suite
@@ -216,9 +216,9 @@ run: $(SUBSYSTEMS)
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f misc/universes/all_stdlib.v
-	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob> <**/*.time>'
+	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.log> <**/*.glob> <**/*.time>'
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' -o -name '*.time' \
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' -o -name '*.time' \
 	  \) -exec rm -f {} +
 	$(SHOW) 'RM        <**/*.cmx> <**/*.cmi> <**/*.o> <**/*.test>'
 	$(HIDE)find unit-tests \( \
@@ -264,7 +264,6 @@ summary:
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "SSR tests", ssr); \
 	  $(call summary_dir, "IDE tests", ide); \
-	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
 	  $(call summary_dir, "Output tests with coqchk", output-coqchk); \
 	  $(call summary_dir, "Coqwc tests", coqwc); \
@@ -706,27 +705,6 @@ ide/fake_ide.exe : ide/fake_ide.ml
 	  fi; \
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
-
-# vio compilation
-
-vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
-
-%.vio.log:%.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  $(call WITH_TIMER,$*.vio,$(coqc) -vio -R vio vio $* 2>&1) && \
-	  $(call WITH_TIMER,$*.vo,$(coqc) -R vio vio -vio2vo $*.vio 2>&1) && \
-	  $(call WITH_TIMER,$*.chk,$(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1); \
-	  if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error!"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-	$(HIDE)$(call REPORT_TIMER,$*.vio $*.vo $*.chk)
 
 # coqwc : test output
 

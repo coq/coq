@@ -47,7 +47,7 @@ end
    to aux files. *)
 type stm_doc_type =
   | VoDoc       of string       (* file path *)
-  | VioDoc      of string       (* file path *)
+  | VosDoc      of string       (* file path *)
   | Interactive of Coqargs.top    (* module path *)
 
 (** STM initialization options: *)
@@ -69,7 +69,7 @@ type doc
 (** [init_process] performs some low-level initialization, call early *)
 val init_process : AsyncOpts.stm_opt -> unit
 
-(** [init_core] snapshorts the initial system state *)
+(** [init_core] snapshots the initial system state *)
 val init_core : unit -> unit
 
 (** [new_doc opt] Creates a new document with options [opt] *)
@@ -138,28 +138,14 @@ val stop_worker : string -> unit
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : doc:doc -> unit
 
-(* Saves on the disk a .vio corresponding to the current status:
-   - if the worker pool is empty, all tasks are saved
-   - if the worker proof is not empty, then it waits until all workers
-     are done with their current jobs and then dumps (or fails if one
-     of the completed tasks is a failure).
-   Note: the create_vos argument is used in the "-vos" mode, where the
-   proof tasks are not dumped into the output file. *)
-val snapshot_vio : create_vos:bool -> doc:doc -> output_native_objects:bool -> DirPath.t -> string -> unit
+(* Saves on the disk a .vos file. *)
+val snapshot_vos : doc:doc -> output_native_objects:bool -> DirPath.t -> string -> unit
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.
- * after having built a .vio in batch mode *)
+ * after having built a .vos in batch mode *)
 val reset_task_queue : unit -> unit
 
 type document
-
-(* A .vio contains tasks to be completed *)
-type tasks = (Opaqueproof.opaque_handle option, document) Library.tasks
-val check_task : string -> tasks -> int -> bool
-val info_tasks : tasks -> (string * float * int) list
-val finish_tasks : string ->
-  Library.seg_univ -> Library.seg_proofs ->
-    tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t
@@ -170,9 +156,6 @@ val get_ast : doc:doc -> Stateid.t -> Vernacexpr.vernac_control option
 
 (* Filename *)
 val set_compilation_hints : string -> unit
-
-(* Reorders the task queue putting forward what is in the perspective *)
-val set_perspective : doc:doc -> Stateid.t list -> unit
 
 (** workers **************************************************************** **)
 

@@ -49,7 +49,6 @@ let pr_path sp =
 
 type compilation_unit_name = DirPath.t
 
-type seg_univ = Univ.ContextSet.t * bool
 type seg_proofs = Opaqueproof.opaque_proofterm option array
 
 type library_t = {
@@ -59,7 +58,6 @@ type library_t = {
   library_opaques : seg_proofs;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
-  library_extra_univs : Univ.ContextSet.t;
   library_vm : Vmlibrary.on_disk;
 }
 
@@ -125,12 +123,12 @@ let check_one_lib admit senv (dir,m) =
     if LibrarySet.mem dir admit then
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
-       Safe_checking.unsafe_import (fst senv) md m.library_extra_univs m.library_vm dig),
+       Safe_checking.unsafe_import (fst senv) md m.library_vm dig),
       (snd senv)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
-       Safe_checking.import (fst senv) (snd senv) md m.library_extra_univs  m.library_vm dig)
+       Safe_checking.import (fst senv) (snd senv) md m.library_vm dig)
   in
     register_loaded_library m; senv
 
@@ -285,14 +283,13 @@ type library_disk = {
   md_objects : library_objects;
 }
 
-let mk_library sd md f table digest cst vm = {
+let mk_library sd md f table digest vm = {
   library_name = sd.md_name;
   library_filename = f;
   library_compiled = md.md_compiled;
   library_opaques = table;
   library_deps = sd.md_deps;
   library_digest = digest;
-  library_extra_univs = cst;
   library_vm = vm;
 }
 
@@ -326,22 +323,18 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
 
 let summary_seg : summary_disk ObjFile.id = ObjFile.make_id "summary"
 let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
-let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
-let tasks_seg : Obj.t option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg = Vmlibrary.vm_segment
 
 let intern_from_file ~intern_mode ~enable_VM (dir, f) =
   let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
-  let (sd,md,table,opaque_csts,vmlib,digest) =
+  let (sd,md,table,vmlib,digest) =
     try
       (* First pass to read the metadata of the file *)
       let ch = System.with_magic_number_check raw_intern_library f in
       let seg_sd = ObjFile.get_segment ch ~segment:summary_seg in
       let seg_md = ObjFile.get_segment ch ~segment:library_seg in
-      let seg_univs = ObjFile.get_segment ch ~segment:universes_seg in
-      let seg_tasks = ObjFile.get_segment ch ~segment:tasks_seg in
       let seg_opaque = ObjFile.get_segment ch ~segment:opaques_seg in
       let seg_vmlib = ObjFile.get_segment ch ~segment:vm_seg in
       let () = ObjFile.close_in ch in
@@ -350,8 +343,6 @@ let intern_from_file ~intern_mode ~enable_VM (dir, f) =
 
       let sd = marshal_in_segment ~validate ~value:Values.v_libsum ~segment:seg_sd f ch in
       let md = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
-      let opaque_csts = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
-      let tasks = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
       let table = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
       let vmlib = if enable_VM
         then marshal_in_segment ~validate ~value:Values.v_vmlib ~segment:seg_vmlib f ch
@@ -365,29 +356,14 @@ let intern_from_file ~intern_mode ~enable_VM (dir, f) =
       if dir <> sd.md_name then
         CErrors.user_err
           (name_clash_message dir sd.md_name f);
-      if tasks <> None then
-        CErrors.user_err
-          (str "The file "++str f++str " contains unfinished tasks");
-      if opaque_csts <> None then begin
-       Flags.if_verbose chk_pp (str " (was a vio file) ");
-      Option.iter (fun (_,b) -> if not b then
-        CErrors.user_err
-          (str "The file "++str f++str " is still a .vio"))
-        opaque_csts;
-      end;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
-        let open ObjFile in
-        if opaque_csts <> None then Safe_typing.Dvivo (seg_md.hash, seg_univs.hash)
-        else (Safe_typing.Dvo_or_vi seg_md.hash) in
-      sd,md,table,opaque_csts,vmlib,digest
+        Safe_typing.Dvo_or_vi seg_md.hash in
+      sd,md,table,vmlib,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
-  let extra_cst =
-    Option.default Univ.ContextSet.empty
-      (Option.map (fun (cs,_) -> cs) opaque_csts) in
-  mk_library sd md f table digest extra_cst (Vmlibrary.inject vmlib)
+  mk_library sd md f table digest (Vmlibrary.inject vmlib)
 
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)

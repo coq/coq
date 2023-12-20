@@ -279,7 +279,7 @@ end (* }}} *)
 (* The main document type associated to a VCS *)
 type stm_doc_type =
   | VoDoc       of string
-  | VioDoc      of string
+  | VosDoc      of string
   | Interactive of Coqargs.top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
@@ -315,7 +315,7 @@ module VCS : sig
   val get_ldir : unit -> Names.DirPath.t
 
   val is_interactive : unit -> bool
-  val is_vio_doc : unit -> bool
+  val is_vos_doc : unit -> bool
 
   val current_branch : unit -> Branch.t
   val checkout : Branch.t -> unit
@@ -537,9 +537,9 @@ end = struct (* {{{ *)
     | Interactive _ -> true
     | _ -> false
 
-  let is_vio_doc () =
+  let is_vos_doc () =
     match !doc_type with
-    | VioDoc _ -> true
+    | VosDoc _ -> true
     | _ -> false
 
   let current_branch () = current_branch !vcs
@@ -1334,9 +1334,6 @@ module rec ProofTask : sig
     Stateid.exn_info -> Stateid.t ->
       Declare.Proof.closed_proof_output Future.computation
 
-  (* If set, only tasks overlapping with this list are processed *)
-  val set_perspective : Stateid.t list -> unit
-
 end = struct (* {{{ *)
 
   let forward_feedback msg = !Hooks.forward_feedback msg
@@ -1378,17 +1375,9 @@ end = struct (* {{{ *)
   let name = "proof"
   let extra_env () = !async_proofs_workers_extra_env
 
-  let perspective = ref []
-  let set_perspective l = perspective := l
-
-  let is_inside_perspective st = true
-    (* This code is now disabled. If an IDE needs this feature, make it accessible again.
-    List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) st
-    *)
-
   let task_match age t =
     match age, t with
-    | Fresh, BuildProof { t_states } -> is_inside_perspective t_states
+    | Fresh, BuildProof { t_states } -> true
     | Old my_states, States l ->
         List.for_all (fun x -> CList.mem_f Stateid.equal x my_states) l
     | _ -> false
@@ -1601,18 +1590,10 @@ and Slaves : sig
 
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
-  val check_task : string -> 'a tasks -> int -> bool
-  val info_tasks : 'a tasks -> (string * float * int) list
-  val finish_task :
-    string ->
-    Library.seg_univ -> Library.seg_proofs ->
-    Opaqueproof.opaque_handle option tasks -> int -> Library.seg_univ
 
   val cancel_worker : WorkerPool.worker_id -> unit
 
   val reset_task_queue : unit -> unit
-
-  val set_perspective : Stateid.t list -> unit
 
 end = struct (* {{{ *)
 
@@ -1625,147 +1606,10 @@ end = struct (* {{{ *)
     else
       queue := Some (TaskQueue.create 0 priority)
 
-  type check_result =
-  | OK of Id.t
-  | OK_ADMITTED
-  | ERROR
-  | ERROR_ADMITTED
-
-  let check_task_aux extra name l i =
-    let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
-    Flags.if_verbose msg_info
-      Pp.(str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
-    VCS.restore document;
-    let start =
-      let rec aux cur =
-        try aux (VCS.visit cur).next
-        with VCS.Expired -> cur in
-      aux stop in
-    try
-      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false stop;
-      if drop then
-        let _proof = PG_compat.return_partial_proof () in
-        OK_ADMITTED
-      else begin
-      let opaque = Opaque in
-
-      let proof =
-        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
-
-      (* We jump at the beginning since the kernel handles side effects by also
-       * looking at the ones that happen to be present in the current env *)
-
-      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false start;
-      (* STATE SPEC:
-       * - start: First non-expired state! [This looks very fishy]
-       * - end  : start + qed
-       * => takes nothing from the itermediate states.
-       *)
-      (* STATE We use the state resulting from reaching start. *)
-      let st = Vernacstate.freeze_full_state () in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc ~control:[] (Proved (opaque,None)));
-      (* Is this name the same than the one in scope? *)
-      let name = Declare.Proof.get_po_name proof in
-      OK name
-      end
-    with e ->
-      let (e, info) = Exninfo.capture e in
-      (try match Stateid.get info with
-      | None ->
-        msg_warning Pp.(
-            str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-            spc () ++ iprint (e, info))
-      | Some (_, cur) ->
-          match VCS.visit cur with
-          | { step = SCmd { cast } }
-          | { step = SFork (( cast, _, _, _), _) }
-          | { step = SQed ( { qast = cast }, _) }
-          | { step = SSideff (ReplayCommand cast, _) } ->
-              let loc = cast.expr.CAst.loc in
-              let start, stop = Option.cata Loc.unloc (0,0) loc in
-              msg_warning Pp.(
-                str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                str ": chars " ++ int start ++ str "-" ++ int stop ++
-                spc () ++ iprint (e, info))
-          | _ ->
-              msg_warning Pp.(
-                str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                spc () ++ iprint (e, info))
-    with e ->
-      msg_warning Pp.(str"unable to print error message: " ++
-                      str (Printexc.to_string e)));
-      if drop then ERROR_ADMITTED else ERROR
-
-  let finish_task name (cst,_) p l i =
-    let { Stateid.uuid = bucket }, drop = List.nth l i in
-    let bucket_name = match bucket with
-    | None -> (assert drop; ", no bucket")
-    | Some bucket -> Printf.sprintf ", bucket %d" (Opaqueproof.repr_handle bucket) in
-    match check_task_aux bucket_name name l i with
-    | ERROR -> exit 1
-    | ERROR_ADMITTED -> cst, false
-    | OK_ADMITTED -> cst, false
-    | OK name ->
-        let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
-        let c = Global.lookup_constant con in
-        let () = match c.Declarations.const_body with
-          | Declarations.OpaqueDef _ -> ()
-          | _ -> assert false in
-        (* No need to delay the computation, the future has been forced by
-           the call to [check_task_aux] above. *)
-        let uc = Option.get @@ Opaques.get_current_constraints (Option.get bucket) in
-        let uc = Univ.hcons_universe_context_set uc in
-        let access =
-          (* this is only used to access the local opaque (Opaques.get_current_opaque) *)
-          Library.indirect_accessor[@@warning "-3"]
-        in
-        let (pr, priv, ctx) = Option.get (Global.body_of_constant_body access c) in
-        (* We only manipulate monomorphic terms here. *)
-        let () = assert (UVars.AbstractContext.is_empty ctx) in
-        let () = match priv with
-        | Opaqueproof.PrivateMonomorphic () -> ()
-        | Opaqueproof.PrivatePolymorphic uctx ->
-          assert (Univ.ContextSet.is_empty uctx)
-        in
-        let () = Opaques.set_opaque_disk (Option.get bucket) (pr, priv) p in
-        Univ.ContextSet.union cst uc, false
-
-  let check_task name l i =
-    match check_task_aux "" name l i with
-    | OK _ | OK_ADMITTED -> true
-    | ERROR | ERROR_ADMITTED -> false
-
-  let info_tasks l =
-    CList.map_i (fun i ({ Stateid.loc; name }, _) ->
-      let time1 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_build_time")
-        with Not_found -> 0.0 in
-      let time2 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_check_time")
-        with Not_found -> 0.0 in
-      name, max (time1 +. time2) 0.0001,i) 0 l
-
-  let set_perspective idl =
-    ProofTask.set_perspective idl;
-    TaskQueue.broadcast (Option.get !queue);
-    let open ProofTask in
-    let overlap s1 s2 =
-      List.exists (fun x -> CList.mem_f Stateid.equal x s2) s1 in
-    let overlap_rel s1 s2 =
-      match overlap s1 idl, overlap s2 idl with
-      | true, true | false, false -> 0
-      | true, false -> -1
-      | false, true -> 1 in
-    TaskQueue.set_order (Option.get !queue) (fun task1 task2 ->
-     match task1, task2 with
-     | BuildProof { t_states = s1 },
-       BuildProof { t_states = s2 } -> overlap_rel s1 s2
-     | _ -> 0)
-
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
     let cancel_switch = ref false in
     let n_workers = TaskQueue.n_workers (Option.get !queue) in
-    if Int.equal n_workers 0 && not (VCS.is_vio_doc ()) then
+    if Int.equal n_workers 0 && not (VCS.is_vos_doc ()) then
       ProofTask.build_proof_here ~doc ?loc ~drop_pt exn_info block_stop, cancel_switch
     else
       let f, t_assign = Future.create_delegate ~name:pname (Some exn_info) in
@@ -1890,11 +1734,11 @@ let async_policy () =
   else if VCS.is_interactive () then
     (async_proofs_is_master (cur_opt()) || (cur_opt()).async_proofs_mode = APonLazy)
   else
-    (VCS.is_vio_doc () || (cur_opt()).async_proofs_mode <> APoff)
+    (VCS.is_vos_doc () || (cur_opt()).async_proofs_mode <> APoff)
 
 let delegate name =
      get_hint_bp_time name >= (cur_opt()).async_proofs_delegation_threshold
-  || VCS.is_vio_doc ()
+  || VCS.is_vos_doc ()
 
 type reason =
 | Aborted
@@ -1984,7 +1828,7 @@ let collect_proof keep cur hd brkind id =
         ASync (parent last,accn,name,delegate name)
     | SFork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
-       VCS.is_vio_doc () ->
+       VCS.is_vos_doc () ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
           let name, hint = name ids, get_hint_ctx loc  in
@@ -2347,15 +2191,6 @@ type stm_init_options =
 
   }
 
-  (* fb_handler   : Feedback.feedback -> unit; *)
-
-(*
-let doc_type_module_name (std : stm_doc_type) =
-  match std with
-  | VoDoc mn | VioDoc mn | Vio2Vo mn -> mn
-  | Interactive mn -> Names.DirPath.to_string mn
-*)
-
 let init_process stm_flags =
   Spawned.init_channels ();
   set_cur_opt stm_flags;
@@ -2386,7 +2221,7 @@ let new_doc { doc_type ; injections } =
       set_compilation_hints f;
       ldir
 
-    | VioDoc f ->
+    | VosDoc f ->
       let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
       set_compilation_hints f;
@@ -2478,31 +2313,6 @@ let join ~doc =
     CErrors.anomaly Pp.(str "Stm.join: tip not cached");
   VCS.print ()
 
-type tasks = Opaqueproof.opaque_handle option Slaves.tasks
-let check_task name tasks i =
-  let vcs = VCS.backup () in
-  try
-    let rc = State.purify (Slaves.check_task name tasks) i in
-    VCS.restore vcs;
-    rc
-  with e when CErrors.noncritical e -> VCS.restore vcs; false
-
-let info_tasks = Slaves.info_tasks
-
-let finish_tasks name u p tasks =
-  let finish_task u (_,_,i) =
-    let vcs = VCS.backup () in
-    let u = State.purify (Slaves.finish_task name u p tasks) i in
-    VCS.restore vcs;
-    u in
-  try
-    let a, _ = List.fold_left finish_task u (info_tasks tasks) in
-    (a,true), p
-  with e ->
-    let e = Exninfo.capture e in
-    msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
-    exit 1
-
 type branch_result = Ok | Unfocus of Stateid.t
 
 let merge_proof_branch ~valid ?id qast keep brname =
@@ -2539,20 +2349,16 @@ let handle_failure (e, info) vcs =
   VCS.print ();
   Exninfo.iraise (e, info)
 
-let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
+let snapshot_vos ~doc ~output_native_objects ldir long_f_dot_vo =
   let _ : Vernacstate.t = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
-    CErrors.user_err (str"Cannot dump a vio with open proofs.");
+    CErrors.user_err (str"Cannot dump a vos with open proofs.");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
   let tasks = Slaves.dump_snapshot() in
   let except = List.fold_left (fun e (r,_) ->
      Future.UUIDSet.add r.Stateid.uuid e) Future.UUIDSet.empty tasks in
-  let todo_proofs =
-    if create_vos
-      then Library.ProofsTodoSomeEmpty except
-      else Library.ProofsTodoSome (except,tasks)
-    in
+  let todo_proofs = Library.ProofsTodoSomeEmpty except in
   Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo
 
 let reset_task_queue = Slaves.reset_task_queue
@@ -2615,7 +2421,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
       | VtQuery ->
           let id = VCS.new_node ~id:newtip proof_mode () in
           let queue =
-            if VCS.is_vio_doc () &&
+            if VCS.is_vos_doc () &&
                VCS.((get_branch head).kind = Master) &&
                may_pierce_opaque x.expr.CAst.v.expr
             then SkipQueue
@@ -2794,8 +2600,6 @@ let add ~doc ~ontop ?newtip verb ast =
   match process_transaction ~doc ?newtip aast clas with
   | Ok -> doc, VCS.cur_tip (), NewAddTip
   | Unfocus qed_id -> doc, qed_id, Unfocus (VCS.cur_tip ())
-
-let set_perspective ~doc id_list = Slaves.set_perspective id_list
 
 type focus = {
   start : Stateid.t;

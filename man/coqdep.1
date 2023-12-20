@@ -147,11 +147,8 @@ example% coqdep \-I . -Q . Foo *.v
 .sp .5
 .nf
 .B X.vo X.glob X.v.beautified X.required_vo: X.v 
-.B X.vio: X.v 
 .B Y.vo Y.glob Y.v.beautified Y.required_vo: Y.v X.vo
-.B Y.vio: Y.v X.vio
 .B Z.vo Z.glob Z.v.beautified Z.required_vo: Z.v X.vo ./a.cma ./a.cmxs
-.B Z.vio: Z.v X.vio ./a.cma ./a.cmxs
 .fi
 .RE
 .br

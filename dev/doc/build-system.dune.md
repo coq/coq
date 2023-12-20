@@ -84,20 +84,9 @@ currently `coqnative` incurs a 33% build time overhead on a powerful
 16-core machine.
 
 There are several modes for the rule generation script to work,
-depending on the parameter passed. As of today, it support `-async`
-and `-vio`.
+depending on the parameter passed. As of today, it support `-async`.
 
 `-async` will pass `-async-proofs on` to `coqc`.
-
-`-vio` will have the script setup compilation such that `.vo` files
-are generated first going thru `.vio` files.
-
-In particular, `-vio` mode has several pitfalls, for example, no
-`.glob` files are generated (this is inherited from Coq
-itself). Moreover, it is not possible to do a full parallel build
-doing `.v -> .vio` and `.vio -> .vo`, as it'd be racy, so a barrier
-must be used (the first process must be completed) before running the
-`.vio -> .vo` step.
 
 ## Per-User Custom Settings
 

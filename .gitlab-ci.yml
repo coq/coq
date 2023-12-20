@@ -104,7 +104,6 @@ before_script:
   extends: .auto-use-tags
   script:
     - make $DUNE_TARGET
-    - find _build -name '*.vio' -exec rm -f {} \;
     - tar cfj _build.tar.bz2 _build
   variables:
     DUNE_TARGET: world
@@ -165,10 +164,7 @@ before_script:
   needs:
     - not-a-real-job
   script:
-    # exit 0: workaround for https://gitlab.com/gitlab-org/gitlab/issues/202505
-    # the validate:vio job is sometimes started before build:vio, without artifacts
-    # we ignore these spurious errors so if the job fails it's a real error
-    - cd _install_ci || exit 0
+    - cd _install_ci
     - find lib/coq/ -name '*.vo' -fprint0 vofiles
     - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
     - tail -n 1000 ../coqchk.log # the log is too big for gitlab so pipe to a file and display the tail
@@ -333,24 +329,6 @@ build:base+async:
       - config/dune.c_flags
       - dmesg.txt
   timeout: 1h 30min
-
-build:vio:
-  extends: .build-template:base:dev
-  variables:
-    COQ_EXTRA_CONF: "-native-compiler no"
-    COQ_DUNE_EXTRA_OPT: "-vio"
-    DUNE_TARGET: "vio world"
-  after_script:
-    - dmesg > dmesg.txt
-  allow_failure: true # See https://github.com/coq/coq/issues/9637
-  only:
-    variables:
-      - ($FULL_CI == "true" && $UNRELIABLE =~ /enabled/)
-  artifacts:
-    when: always
-    paths:
-      - _install_ci
-      - dmesg.txt
 
 lint:
   stage: build
@@ -575,14 +553,6 @@ validate:edge+flambda:
   variables:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
-
-validate:vio:
-  extends: .validate-template
-  needs:
-    - build:vio
-  only:
-    variables:
-      - ($FULL_CI == "true" && $UNRELIABLE =~ /enabled/)
 
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API

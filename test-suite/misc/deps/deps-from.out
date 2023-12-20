@@ -1,4 +1,2 @@
 misc/deps/test-from/D.vo misc/deps/test-from/D.glob misc/deps/test-from/D.v.beautified misc/deps/test-from/D.required_vo: misc/deps/test-from/D.v misc/deps/test-from/A/C.vo
-misc/deps/test-from/D.vio: misc/deps/test-from/D.v misc/deps/test-from/A/C.vio
 misc/deps/test-from/E.vo misc/deps/test-from/E.glob misc/deps/test-from/E.v.beautified misc/deps/test-from/E.required_vo: misc/deps/test-from/E.v misc/deps/test-from/B/C.vo
-misc/deps/test-from/E.vio: misc/deps/test-from/E.v misc/deps/test-from/B/C.vio
