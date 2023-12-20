@@ -71,12 +71,14 @@ let save_library ldir in_file ~out_file =
   let todo_proofs = Library.ProofsTodoNone in
   Library.save_library_to todo_proofs ~output_native_objects ldir out_vo;
 
-  let out_aux =
+  let out_aux, out_timings =
     let d, f = Filename.dirname in_file, Filename.basename in_file in
     let f = Filename.(remove_extension f) in
-    d ^ Filename.dir_sep ^ "." ^ f ^ ".aux"
+    d ^ Filename.dir_sep ^ "." ^ f ^ ".aux",
+    d ^ Filename.dir_sep ^ f ^ ".timing"
   in
-  touch_file out_aux
+  touch_file out_aux;
+  touch_file out_timings
 
 let start_glob ~in_file =
   let out_vo = Filename.(remove_extension in_file) ^ ".vo" in
