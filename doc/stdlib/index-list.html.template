@@ -673,6 +673,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Control.v
     user-contrib/Ltac2/Env.v
     user-contrib/Ltac2/Evar.v
+    user-contrib/Ltac2/Failf.v
     user-contrib/Ltac2/Float.v
     user-contrib/Ltac2/FMap.v
     user-contrib/Ltac2/FSet.v
