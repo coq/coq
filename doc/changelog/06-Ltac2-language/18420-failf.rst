@@ -1,0 +1,7 @@
+- **Added:**
+  Ltac2 ``gfail``: a version of ``fail`` that does not auto-focus,
+  and thus can return any ``'a`` instead of only ``unit``, and
+  also accepts printf-style arguments
+  (`#18420 <https://github.com/coq/coq/pull/18420>`_,
+  fixes `#17463 <https://github.com/coq/coq/issues/17463>`_,
+  by Samuel Gruetter).
