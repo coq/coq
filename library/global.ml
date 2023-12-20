@@ -178,8 +178,7 @@ let mind_of_delta_kn kn =
 let start_library dir = globalize (Safe_typing.start_library dir)
 let export ~output_native_objects s =
   Safe_typing.export ~output_native_objects (safe_env ()) s
-let import c u d = globalize (Safe_typing.import c u d)
-
+let import c d = globalize (Safe_typing.import c d)
 
 (** Function to get an environment from the constants part of the global
     environment and a given context. *)

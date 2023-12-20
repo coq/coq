@@ -101,14 +101,10 @@ module NamedDecl = Context.Named.Declaration
 
 type vodigest =
   | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
-  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
 
 let digest_match ~actual ~required =
   match actual, required with
-  | Dvo_or_vi d1, Dvo_or_vi d2
-  | Dvivo (d1,_), Dvo_or_vi d2 -> String.equal d1 d2
-  | Dvivo (d1,e1), Dvivo (d2,e2) -> String.equal d1 d2 && String.equal e1 e2
-  | Dvo_or_vi _, Dvivo _ -> false
+  | Dvo_or_vi d1, Dvo_or_vi d2 -> String.equal d1 d2
 
 type library_info = DirPath.t * vodigest
 
@@ -122,7 +118,7 @@ type compiled_library = {
   comp_deps : library_info array;
 }
 
-type reimport = compiled_library * Univ.ContextSet.t * vodigest
+type reimport = compiled_library * vodigest
 
 (** Part of the safe_env at a section opening time to be backtracked *)
 type section_data = {
@@ -1317,9 +1313,7 @@ let export ~output_native_objects senv dir =
   } in
   mp, lib, (ast, symbols)
 
-(* cst are the constraints that were computed by the vi2vo step and hence are
- * not part of the [lib.comp_univs] field (but morally should be) *)
-let import lib cst vodigest senv =
+let import lib vodigest senv =
   check_required senv.required lib.comp_deps;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err
@@ -1327,17 +1321,14 @@ let import lib cst vodigest senv =
           ++ DirPath.print lib.comp_name ++ str").");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
-  let env = Environ.push_context_set ~strict:true
-      (Univ.ContextSet.union lib.comp_univs cst)
-      senv.env
-  in
+  let env = Environ.push_context_set ~strict:true lib.comp_univs senv.env in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mb linkinfo env
   in
   let sections =
     Option.map (Section.map_custom (fun custom ->
-        {custom with rev_reimport = (lib,cst,vodigest) :: custom.rev_reimport}))
+        {custom with rev_reimport = (lib,vodigest) :: custom.rev_reimport}))
       senv.sections
   in
   mp,
@@ -1378,7 +1369,7 @@ let close_section senv =
         rev_reimport; rev_revstruct = revstruct } = revert in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay Requires *)
-  let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))
+  let senv = List.fold_left (fun senv (lib,vodigest) -> snd (import lib vodigest senv))
       senv (List.rev rev_reimport)
   in
   (* Third phase: replay the discharged section contents *)

@@ -11,8 +11,6 @@
 (** Compilation modes:
   - BuildVo      : process statements and proofs (standard compilation),
                    and also output an empty .vos file and .vok file
-  - BuildVio     : process statements, delay proofs in futures
-  - Vio2Vo       : load delayed proofs and process them
   - BuildVos     : process statements, and discard proofs,
                    and load .vos files for required libraries
   - BuildVok     : like BuildVo, but load .vos files for required libraries
@@ -22,18 +20,13 @@
   This trick is useful to avoid the need for the user to compile .vos version
   when an up to date .vo version is already available.
 *)
-type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
+type compilation_mode = BuildVo | BuildVos | BuildVok
 
 type t =
   { compilation_mode : compilation_mode
 
   ; compile_file: (string * bool) option  (* bool is verbosity  *)
   ; compilation_output_name : string option
-
-  ; vio_checking : bool
-  ; vio_tasks    : (int list * string) list
-  ; vio_files    : string list
-  ; vio_files_j  : int
 
   ; echo : bool
 

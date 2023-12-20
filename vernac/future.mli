@@ -83,6 +83,3 @@ val compute : 'a computation -> 'a value
 
 (** Debug: print a computation given an inner printing function. *)
 val print : ('a -> Pp.t) -> 'a computation -> Pp.t
-
-val customize_not_ready_msg : (string -> Pp.t) -> unit
-val customize_not_here_msg : (string -> Pp.t) -> unit
