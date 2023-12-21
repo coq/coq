@@ -18,6 +18,9 @@
    misc/universes/all_stdlib.v
    ; Configure for test-suite
    test_suite_config.inc
+   ; when TIMED is set, used to print the timing table
+   ../tools/make-one-time-file.py
+   ../tools/TimeFileMaker.py
    ; Stuff for the compat script test
    ../dev/header.ml
    ../dev/tools/update-compat.py

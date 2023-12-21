@@ -24,6 +24,9 @@ chmod +x "$BIN"/opam
 
 export NJOBS=1 # used by the test suite through dune
 
+# generate per file info in test suite and coq_makefile devs
+export TIMED=1
+
 export PATH="$BIN":$PATH
 
 echo "Global env info:"
@@ -464,7 +467,6 @@ skipped_packages=
 
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
-export TIMED=1
 export PROFILING=1
 export COQ_PROFILE_COMPONENTS=command,parse_command
 

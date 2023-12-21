@@ -148,7 +148,7 @@ before_script:
     - cd test-suite
     - make clean
     - export OCAMLPATH=$(readlink -f ../_install_ci/lib/):"$OCAMLPATH"
-    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make -j "$NJOBS" all
+    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make -j "$NJOBS" TIMED=1 all
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
