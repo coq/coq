@@ -72,16 +72,16 @@ check_variable () {
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
-: "${new_coq_version:=dev}"
-: "${old_coq_version:=dev}"
+: "${new_coq_version:=8.19+rc1}"
+: "${old_coq_version:=8.18.0}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
 : "${coq_native:=}"
-: "${skip_coq_tests:=}"
+: "${skip_coq_tests:=1}"
 
-: "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-: "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+: "${new_coq_commit:=$(git rev-parse v8.19)}"
+: "${old_coq_commit:=$(git rev-parse v8.18)}"
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
 old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
