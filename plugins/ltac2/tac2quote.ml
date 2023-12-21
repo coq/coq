@@ -450,10 +450,7 @@ let of_constr_matching {loc;v=m} =
     of_tuple [knd; pat; e]
   in
   let e = of_list ?loc map m in
-  let tykn = pattern_core "constr_matching" in
-  let ty = CAst.make ?loc (CTypRef (AbsKn (Other tykn),[CAst.make ?loc (CTypVar Anonymous)])) in
-  CAst.make ?loc (CTacCnv (e, ty))
-
+  e
 
 (** From the patterns and the body of the branch, generate:
     - a goal pattern: (constr_match list * constr_match)
