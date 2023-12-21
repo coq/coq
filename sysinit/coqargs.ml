@@ -242,6 +242,7 @@ let get_compat_file = function
 let get_compat_files v =
   let coq_compat = get_compat_file v in
   match v with
+  | "8.19" -> coq_compat :: ["Ltac2.Compat.Coq819"]
   | "8.18" | "8.17" -> coq_compat :: ["Ltac2.Compat.Coq818"]
   | _ -> [coq_compat]
 

@@ -1,0 +1,4 @@
+File "./output/ltac2_typed_notations.v", line 5, characters 9-10:
+The command has indeed failed with message:
+This expression has type bool but an expression was expected of type 
+constr

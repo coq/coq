@@ -1724,7 +1724,7 @@ let debug_globalize_allow_ext ids tac =
 
 let { Goptions.get = typed_notations } =
   Goptions.declare_bool_option_and_ref
-    ~key:["Ltac2";"Typed";"Notations"] ~value:false ()
+    ~key:["Ltac2";"Typed";"Notations"] ~value:true ()
 
 let intern_notation_data ids body =
   if typed_notations () then
