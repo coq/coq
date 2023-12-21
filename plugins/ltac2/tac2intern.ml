@@ -1722,9 +1722,34 @@ let debug_globalize_allow_ext ids tac =
   let tacext ?loc (RawExt (tag,arg)) = CAst.make ?loc @@ CTacExt (tag,arg) in
   globalize_gen ~tacext ids tac
 
+let { Goptions.get = typed_notations } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Ltac2";"Typed";"Notations"] ~value:false ()
+
 let intern_notation_data ids body =
-  let body = globalize ids body in
-  Tac2env.UntypedNota body
+  if typed_notations () then
+    let env = empty_env ~strict:true () in
+    let fold id (env,argtys) =
+      let ty = GTypVar (fresh_id env) in
+      let env = push_name (Name id) (monomorphic ty) env in
+      env, Id.Map.add id ty argtys
+    in
+    let env, argtys = Id.Set.fold fold ids (env,Id.Map.empty) in
+    let body, ty = intern_rec env None body in
+    let count = ref 0 in
+    let vars = ref TVar.Map.empty in
+    let argtys = Id.Map.map (fun ty -> normalize env (count, vars) ty) argtys in
+    let ty = normalize env (count, vars) ty in
+    let prms = !count in
+    Tac2env.TypedNota {
+      nota_prms = prms;
+      nota_argtys = argtys;
+      nota_ty = ty;
+      nota_body = body;
+    }
+  else
+    let body = globalize ids body in
+    Tac2env.UntypedNota body
 
 (** Kernel substitution *)
 
