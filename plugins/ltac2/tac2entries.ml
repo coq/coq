@@ -674,7 +674,7 @@ let perform_notation syn st =
     | Some depr -> deprecated_ltac2_notation ~loc (syn.synext_tok, depr)
     in
     let map (na, e) =
-      ((CAst.make ?loc:e.loc @@ CPatVar na), e)
+      ((CAst.make ?loc:e.loc na), e)
     in
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacSyn (bnd, syn.synext_kn)

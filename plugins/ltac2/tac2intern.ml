@@ -1186,6 +1186,7 @@ let rec intern_rec env tycon {loc;v=e} =
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
+  let el = List.map (fun (pat, e) -> CAst.map (fun na -> CPatVar na) pat, e) el in
   let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
   intern_rec env tycon v
 | CTacCnv (e, tc) ->
@@ -1603,6 +1604,7 @@ let globalize_gen ~tacext ids tac =
       CAst.make ?loc @@ CTacLet (isrec, bnd, e)
     | CTacSyn (el, kn) ->
       let body = Tac2env.interp_notation kn in
+      let el = List.map (fun (pat, e) -> CAst.map (fun na -> CPatVar na) pat, e) el in
       let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
       globalize ids v
     | CTacCnv (e, t) ->

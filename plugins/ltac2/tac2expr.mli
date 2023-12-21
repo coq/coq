@@ -107,7 +107,7 @@ type raw_tacexpr_r =
 | CTacCst of ltac_constructor or_tuple or_relid
 | CTacFun of raw_patexpr list * raw_tacexpr
 | CTacApp of raw_tacexpr * raw_tacexpr list
-| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t
+| CTacSyn of (lname * raw_tacexpr) list * KerName.t
 | CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
 | CTacCnv of raw_tacexpr * raw_typexpr
 | CTacSeq of raw_tacexpr * raw_tacexpr
