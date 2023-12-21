@@ -139,7 +139,7 @@ let args_options = Arg.align [
   "--with-header", arg_file (fun p f -> { p with header_trailer = true;
                                                  header_file_spec = true;
                                                  header_file = f }),
-  "<file> Prepend <file> as html reader";
+  "<file> Prepend <file> as html header";
   "--with-footer", arg_file (fun p f -> { p with header_trailer = true;
                                                  footer_file_spec = true;
                                                  footer_file = f }),
