@@ -70,7 +70,7 @@ endif
 endif
 export COQLIB
 
-ifeq ($(wildcard $(COQLIB)/theories/Reals/Reals.vo),)
+ifeq ($(wildcard $(COQLIB)/theories/Init/Prelude.vo),)
   COQLIB_NOT_FOUND:=true
 else
   COQLIB_NOT_FOUND:=false

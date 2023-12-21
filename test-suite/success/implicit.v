@@ -79,8 +79,6 @@ Inductive P n : nat -> Prop := c : P n n.
 
 (* Avoid evars in the computation of implicit arguments (cf r9827) *)
 
-Require Import List.
-
 Fixpoint plus n m {struct n} :=
   match n with
   | 0 => m

@@ -18,7 +18,7 @@ Arguments t_rect (P f)%function_scope t
      : TT -> 0 = 0
 proj =
 fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
-match Nat.eq_dec x y with
+match eq_nat_dec x y with
 | left eqprf => match eqprf in (_ = z) return (P z) with
                 | eq_refl => def
                 end
@@ -31,8 +31,8 @@ foo =
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with
   | nil => None
-  | x0 :: nil => Some x0
-  | x0 :: (_ :: _) as l0 => foo A l0
+  | (x0 :: nil)%list => Some x0
+  | (x0 :: (_ :: _) as l0)%list => foo A l0
   end
      : forall A : Type, list A -> option A
 

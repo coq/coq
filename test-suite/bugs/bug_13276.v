@@ -1,4 +1,4 @@
-From Stdlib Require Import Floats.
+Require Import PrimFloat.
 Open Scope float_scope.
 
 Lemma foo :
