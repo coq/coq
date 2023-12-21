@@ -1,4 +1,4 @@
-Require Import Floats.
+Require Import PrimFloat.
 
 Goal True.
 pose (f := one).

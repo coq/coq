@@ -11,7 +11,7 @@ Goal forall n, foo n = 1.
   Fail progress cbn.
 Abort.
 
-Require Bool.
+Require Import TestSuite.bool.
 
 Definition do_something (p q : bool) (a b : nat) : option nat :=
   if Bool.eqb p q then Some a else Some b.

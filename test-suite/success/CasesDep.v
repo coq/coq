@@ -527,7 +527,6 @@ Fixpoint app {A} {n m} (v : listn A n) (w : listn A m) : listn A (n + m) :=
 (* Testing regression of bug 2106 *)
 
 Set Implicit Arguments.
-Require Import List.
 
 Inductive nt := E.
 Definition root := E.

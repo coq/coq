@@ -1,4 +1,4 @@
-Require Import FunctionalExtensionality.
+Require Import TestSuite.funext.
 
 Ltac make_apply_under_binders_in lem H :=
   let tac := make_apply_under_binders_in in
