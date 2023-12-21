@@ -575,6 +575,8 @@ let rec pr_rawpat_gen lvl p = match p.CAst.v with
   in
   paren (hv 0 (pr_rawpat_gen E1 p ++ spc() ++ str "as" ++ spc () ++ Id.print x.v))
 
+(* XXX in principle we could have collisions with user names *)
+let base_internal_ty_ident = Id.of_string "__α"
 
 let pr_rawexpr_gen lvl ~avoid c =
   let rec pr_rawexpr lvl avoid c =
@@ -699,6 +701,32 @@ let pr_rawexpr_gen lvl ~avoid c =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     obj.ml_raw_print env sigma arg
+  | CTacGlb (prms, args, body, ty) ->
+    let avoid, tynames =
+      Array.fold_left_map (fun avoid () ->
+          let na = Namegen.next_ident_away base_internal_ty_ident avoid in
+          let avoid = Id.Set.add na avoid in
+          avoid, Id.to_string na)
+        avoid
+        (Array.make prms ())
+    in
+    let tynames i = tynames.(i) in
+    let pr_arg (pat, arg, ty) =
+      let bnd = match ty with
+        | Some ty ->
+          paren (pr_name pat.CAst.v ++ spc() ++ str ":" ++ spc() ++ pr_glbtype_gen tynames T5_l ty)
+        | None -> pr_name pat.CAst.v
+      in
+      bnd ++ spc() ++ str ":=" ++ spc() ++ hov 2 (pr_rawexpr E5 avoid arg) ++ spc()
+    in
+    let paren = match lvl with
+      | E0 | E1 | E2 | E3 | E4 -> paren
+      | E5 -> fun x -> x
+    in
+    let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_arg args in
+    paren (hv 0 (hov 2 (str "let" ++ spc() ++ bnd ++ str "in") ++ spc()
+                 ++ pr_glbexpr_gen ~avoid E5 body ++ spc()
+                 ++ str ":" ++ pr_glbtype_gen tynames T5_l ty))
   in
   hov 0 (pr_rawexpr lvl avoid c)
 
