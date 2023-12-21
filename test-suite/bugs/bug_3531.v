@@ -5,7 +5,7 @@ Require Import TestSuite.admit.
 4.01.0
   coqtop version cagnode17:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk
 (56ece74efc25af1b0e09265f3c7fcf74323abcaf) *)
-Require Import Stdlib.Lists.List.
+Require Import TestSuite.list.
 Set Implicit Arguments.
 Definition mem := nat -> option nat.
 Definition pred := mem -> Prop.

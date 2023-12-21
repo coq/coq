@@ -114,7 +114,13 @@ Axiom cast_coalesce :
 
 #[export] Hint Rewrite cast_coalesce : ltamer.
 
-Require Import Program.
+Definition id := fun {A : Type} (x : A) => x.
+
+Definition compose :=
+  fun {A B C : Type} (g : B -> C) (f : A -> B) (x : A) => g (f x).
+
+Notation "g ∘ f " := (compose g f) (at level 10).
+
 Module HintCut.
 Class A (f : nat -> nat) := a : True.
 Class B (f : nat -> nat) := b : True.

@@ -283,7 +283,7 @@ with SVN 11296 *)
 
 Set Implicit Arguments.
 
-Require Import List.
+Require Import TestSuite.list.
 
 Definition listk1 (A:Set) : Set := list A.
 Open Scope type_scope.
@@ -352,7 +352,7 @@ Definition  Bush:= mu2.
 Module BushM := Bush BP.
 
 Parameter BushkToList: forall(k:nat)(A:k0)(t:Pow Bush k A), list A.
-Axiom BushkToList0: forall(A:k0)(t:Pow Bush 0 A), BushkToList 0 A t = t::nil.
+Axiom BushkToList0: forall(A:k0)(t:Pow Bush 0 A), BushkToList 0 A t = cons t nil.
 
 End BushkToList_Type.
 

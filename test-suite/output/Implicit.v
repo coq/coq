@@ -23,9 +23,7 @@ Unset Implicit Arguments.
 
 (* Check maximal insertion of implicit *)
 
-Require Import List.
-
-Open Scope list_scope.
+Require Import TestSuite.list.
 
 Set Implicit Arguments.
 Set Maximal Implicit Insertion.

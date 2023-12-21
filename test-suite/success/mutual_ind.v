@@ -9,8 +9,6 @@
 (************************************************************************)
 (* Definition mutuellement inductive et dependante *)
 
-Require Export List.
-
  Record signature : Type :=
    {sort : Set;
     sort_beq : sort -> sort -> bool;

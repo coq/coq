@@ -1,5 +1,5 @@
 (** Non-termination and state monad with extraction *)
-Require Import List.
+Require Import TestSuite.list.
 
 Set Implicit Arguments.
 Set Asymmetric Patterns.
@@ -17,7 +17,7 @@ Module Mem.
   Inductive t: MemSig.t -> Type :=
   | Nil: t nil
   | Cons: forall (T: Type), option T -> forall (sig: MemSig.t), t sig ->
-    t (T :: sig).
+    t (cons T sig).
 End Mem.
 
 Module Ref.
@@ -66,7 +66,7 @@ Definition pop (sig: MemSig.t) (T: Type) (trace: Ref.t sig (list T))
   : Monad.t sig T :=
   Bind (Read trace) (fun _ s => (None, s)).
 
-Definition sig: MemSig.t := (list nat: Type) :: nil.
+Definition sig: MemSig.t := cons (list nat: Type) nil.
 
 Definition trace: Ref.t sig (list nat).
 Admitted.

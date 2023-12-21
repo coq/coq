@@ -1,4 +1,4 @@
-Require Import Stdlib.Vectors.Vector.
+Require Import TestSuite.vector.
 Module Bar.
   Definition foo A n (l : Vector.t A n) : True.
   Proof.

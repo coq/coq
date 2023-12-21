@@ -1,4 +1,4 @@
-Require Import Classes.RelationClasses List Setoid.
+Require Import TestSuite.relationclasses.
 
 Definition eqT (T : Type) := @eq T.
 
@@ -9,7 +9,7 @@ Definition RowType := list Type.
 
 Inductive Row : RowType -> Type :=
 | RNil : Row nil
-| RCons : forall T Ts, T -> Row Ts -> Row (T :: Ts).
+| RCons : forall T Ts, T -> Row Ts -> Row (cons T Ts).
 
 Inductive RowTypeDecidable (P : forall T, relation T) `(H : forall T, Equivalence (P T))
 : RowType -> Type :=
@@ -17,7 +17,7 @@ Inductive RowTypeDecidable (P : forall T, relation T) `(H : forall T, Equivalenc
 | RTDecCons : forall T Ts, (forall t0 t1 : T,
                               {P T t0 t1} + {~P T t0 t1})
                            -> RowTypeDecidable P H Ts
-                           -> RowTypeDecidable P H (T :: Ts).
+                           -> RowTypeDecidable P H (cons T Ts).
 
 
 Set Printing Universes.

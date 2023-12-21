@@ -69,7 +69,7 @@ Qed.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-Require Import Bvector.
+Require Import TestSuite.vector.
 
 Inductive I : nat -> Set :=
   | C1 : I 1

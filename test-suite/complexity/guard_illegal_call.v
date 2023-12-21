@@ -1,7 +1,6 @@
 (* Examples to check that the guard condition does not evaluate
    irrelevant subterms *)
 (* Expected time < 1.00s *)
-Require Import Bool.
 
 Fixpoint slow n (s:bool) :=
  match n with

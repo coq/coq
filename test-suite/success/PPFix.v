@@ -1,6 +1,6 @@
 
 (* To test PP of fixpoints *)
-Require Import PeanoNat.
+Require Import TestSuite.arith.
 Check fix a(n: nat): n<5 -> nat :=
   match n return n<5 -> nat with
     | 0 => fun _ => 0

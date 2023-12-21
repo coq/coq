@@ -1,9 +1,4 @@
-Require Import Arith Lia.
-
-Lemma test : forall p:nat, p<>0 -> p-1+1=p.
-Proof.
- intros; lia.
-Qed.
+Axiom test : forall p:nat, p<>0 -> p-1+1=p.
 
 (** Test of new syntax for rewrite : ! ? and so on... *)
 

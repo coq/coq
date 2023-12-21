@@ -32,7 +32,7 @@ Abort.
 
 (* Behavior of rewrite wrt conversion *)
 
-Require Import Arith.
+Require Import TestSuite.arith.
 
 Goal forall n, 0 + n = n -> True.
 intros n H.
@@ -70,7 +70,7 @@ Qed.
 
 (* Dependent rewrite *)
 
-Require Import JMeq.
+Require Import TestSuite.jmeq.
 
 Goal forall A B (a:A) (b:B), JMeq a b -> JMeq b a -> True.
 inversion 1; (* Goal is now [JMeq a a -> True] *) dependent rewrite H3.
@@ -137,7 +137,8 @@ intros.
 subst x. (* was failing *)
 subst z.
 rewrite H0.
-auto with arith.
+rewrite Nat.add_0_r.
+reflexivity.
 Qed.
 
 (* Check that evars are instantiated when the term to rewrite is

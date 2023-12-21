@@ -20,31 +20,28 @@ Definition LamF (X: Set -> Set)(A:Set) :Set :=
 Definition LamF' (X: Set -> Set)(A:Set) :Set :=
   LamF X A.
 
-Require Import List.
-Require Import Bool.
-
 Definition index := list bool.
 
 Inductive L (A:Set) : index -> Set :=
   initL: A -> L A nil
-  | pluslL: forall l:index, One -> L A (false::l)
-  | plusrL: forall l:index, L A l -> L A (false::l)
-  | varL: forall l:index, L A l -> L A (true::l)
-  | appL: forall l:index, L A (true::l) -> L A (true::l) -> L A (true::l)
-  | absL: forall l:index, L A (true::false::l) -> L A (true::l).
+  | pluslL: forall l:index, One -> L A (cons false l)
+  | plusrL: forall l:index, L A l -> L A (cons false l)
+  | varL: forall l:index, L A l -> L A (cons true l)
+  | appL: forall l:index, L A (cons true l) -> L A (cons true l) -> L A (cons true l)
+  | absL: forall l:index, L A (cons true (cons false l)) -> L A (cons true l).
 
 Scheme L_rec_simp := Minimality for L Sort Set.
 
-Definition Lam' (A:Set) := L A (true::nil).
+Definition Lam' (A:Set) := L A (cons true nil).
 
 Definition aczelapp: forall (l1 l2: index)(A:Set), L (L A l2) l1 -> L A
-  (l1++l2).
+  (app l1 l2).
 Proof.
   intros l1 l2 A.
   generalize l1.
   clear l1.
   (* Check (fun i:index => L A (i++l2)). *)
-  apply (L_rec_simp (A:=L A l2) (fun i:index => L A (i++l2))).
+  apply (L_rec_simp (A:=L A l2) (fun i:index => L A (app i l2))).
   trivial.
   intros l o.
   simpl app.
@@ -101,7 +98,7 @@ Proof.
   unfold Lam' in * |- *.
   Check 0.
   apply absL.
-  change (L A ((true::nil) ++ (false::nil))).
+  change (L A (app (cons true nil) (cons false nil))).
   apply aczelapp.
   (* Check (fun x:One + A =>  (match (maybe (fun a:A => initL a) x) with
     | inl u => pluslL _ _ u
@@ -121,8 +118,8 @@ Hypothesis step: sub1 (LamF' G) G.
 Fixpoint L'(A:Set)(i:index){struct i} : Set :=
   match i with
     nil => A
-    | false::l => One + L' A l
-    | true::l => G (L' A l)
+    | cons false l => One + L' A l
+    | cons true l => G (L' A l)
   end.
 
 Definition LinL': forall (A:Set)(i:index), L A i -> L' A i.
@@ -149,7 +146,7 @@ Proof.
   exact (inr _ r).
 Defined.
 
-Definition L'inG: forall A: Set, L' A (true::nil) -> G A.
+Definition L'inG: forall A: Set, L' A (cons true nil) -> G A.
 Proof.
   intros A t.
   unfold L' in t.
@@ -177,7 +174,7 @@ Proof.
   assumption.
   induction a.
   simpl L' in t.
-  apply (aczelapp (l1:=true::nil) (l2:=i)).
+  apply (aczelapp (l1:=cons true nil) (l2:=i)).
   exact (lam' IHi t).
   simpl L' in t.
   induction t.

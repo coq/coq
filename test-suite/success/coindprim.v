@@ -1,5 +1,3 @@
-Require Import Program.
-
 Set Primitive Projections.
 
 CoInductive Stream (A : Type) := mkStream { hd : A; tl : Stream A}.
@@ -18,8 +16,8 @@ CoInductive stream_equiv {A} (s : Stream A) (s' : Stream A) : Prop :=
 Arguments hdeq {A} {s} {s'}.
 Arguments tleq {A} {s} {s'}.
 
-Program CoFixpoint ones_eq : stream_equiv ones ones.(tl) :=
-  {| hdeq := eq_refl; tleq := ones_eq |}.
+CoFixpoint ones_eq : stream_equiv ones ones.(tl) :=
+  {| hdeq := @eq_refl _ (hd ones); tleq := ones_eq |}.
 
 CoFixpoint stream_equiv_refl {A} (s : Stream A) : stream_equiv s s :=
   {| hdeq := eq_refl; tleq := stream_equiv_refl (tl s) |}.
@@ -32,8 +30,8 @@ CoFixpoint stream_equiv_trans {A} {s s' s'' : Stream A}
   {| hdeq := eq_trans H.(hdeq) H'.(hdeq);
      tleq := stream_equiv_trans H.(tleq) H'.(tleq) |}.
 
-Program Definition eta_eq {A} (s : Stream A) : stream_equiv s (eta s):=
-  {| hdeq := eq_refl; tleq := stream_equiv_refl (tl (eta s))|}.
+Definition eta_eq {A} (s : Stream A) : stream_equiv s (eta s) :=
+  mkStreamEq _ _ (@eta A s) (@eq_refl _ (hd s)) (stream_equiv_refl (tl (eta s))).
 
 Section Parks.
   Variable A : Type.
@@ -52,10 +50,10 @@ Section Parks.
                 (bisim2 s1 s2 p)).
 End Parks.
 
-Program CoFixpoint iterate {A} (f : A -> A) (x : A) : Stream A :=
+CoFixpoint iterate {A} (f : A -> A) (x : A) : Stream A :=
   {| hd := x; tl := iterate f (f x) |}.
 
-Program CoFixpoint map {A B} (f : A -> B) (s : Stream A) : Stream B :=
+CoFixpoint map {A B} (f : A -> B) (s : Stream A) : Stream B :=
   {| hd := f s.(hd); tl := map f s.(tl) |}.
 
 Theorem map_iterate A (f : A -> A) (x : A) : stream_equiv (iterate f (f x))

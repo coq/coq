@@ -1,8 +1,8 @@
 (* Check that the subterms of the predicate of a match are taken into account *)
 
-Require Import List.
-Open Scope list_scope.
-Goal forall A (x x' : A) (xs xs' : list A) (H : x::xs = x'::xs'),
+Require Import TestSuite.list.
+
+Goal forall A (x x' : A) (xs xs' : list A) (H : cons x xs = cons x' xs'),
        let k :=
            (match H in (_ = y) return x = hd x y with
               | eq_refl => eq_refl
