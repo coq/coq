@@ -425,8 +425,8 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_s "browser" browser;
   pr_s "wwwcoq" prefs.coqwebsite;
   pr_s "wwwbugtracker" (prefs.coqwebsite ^ "bugs/");
-  pr_s "wwwrefman" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/refman/");
-  pr_s "wwwstdlib" (prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
+  pr_s "wwwrefman" (prefs.coqwebsite ^ "doc/V" ^ coq_version ^ "/refman/");
+  pr_s "wwwstdlib" (prefs.coqwebsite ^ "doc/V" ^ coq_version ^ "/stdlib/");
   pr_b "bytecode_compiler" prefs.bytecodecompiler;
   pr "type native_compiler = NativeOff | NativeOn of { ondemand : bool }\n";
   pr "let native_compiler = %s\n"
