@@ -17,7 +17,6 @@ open CAst
 
 open Extend
 open Constrexpr
-open Constrexpr_ops
 open Vernacexpr
 open Declaremods
 open Pputils
@@ -1034,7 +1033,7 @@ let pr_synpure_vernac_expr v =
   | VernacRemoveHints (dbnames, ids) ->
     return (
       hov 1 (keyword "Remove Hints" ++ spc () ++
-             prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++
+             prlist_with_sep spc (fun r -> pr_qualid r) ids ++
              pr_opt_hintbases dbnames)
     )
   | VernacHints (dbnames,h) ->
