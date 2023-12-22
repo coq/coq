@@ -49,10 +49,9 @@ RUN opam init -a --disable-sandboxing --bare && eval $(opam env) && opam update 
     opam switch create "${COMPILER}+flambda" \
       --repositories default,ocaml-beta=git+https://github.com/ocaml/ocaml-beta-repository.git \
       --packages="ocaml-variants.${COMPILER}+options,ocaml-option-flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE
-
-
-RUN opam clean -a -c
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # set the locale for the benefit of Python
 ENV LANG C.UTF-8

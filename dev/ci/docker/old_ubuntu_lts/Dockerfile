@@ -58,14 +58,16 @@ ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
 
 # base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
-    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM $BASE_ONLY_OPAM
+    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM $BASE_ONLY_OPAM && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # base+32bit switch, note the zarith hack
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         i386 env CC='gcc -m32' opam install zarith.1.11 && \
-        opam install $BASE_OPAM
-
-RUN opam clean -a -c
+    opam install $BASE_OPAM && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # set the locale for the benefit of Python
 ENV LANG C.UTF-8
