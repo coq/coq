@@ -15,8 +15,6 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
-        # Dependencies of Gappa
-        libboost1.67-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
@@ -25,7 +23,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of HB (test suite)
         wdiff \
         # Required for fiat-crypto and Coqtail
-        python-is-python3
+        python-is-python3 \
+      && rm -rf /var/lib/apt/lists /usr/share/doc
 
 # More dependencies of the sphinx doc, pytest for coqtail
 RUN pip3 install docutils==0.17.1 sphinx==4.5.0 sphinx_rtd_theme==1.0.0 \

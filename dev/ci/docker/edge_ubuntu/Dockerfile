@@ -15,8 +15,6 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
-        # Dependencies of Gappa
-        libboost1.81-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of source-doc and coq-makefile
         texlive-latex-extra texlive-science tipa \
         # Dependencies of HB (test suite)
@@ -24,7 +22,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Required to get the wget step to succeed
         ca-certificates \
         # Required for fiat-crypto and Coqtail
-        python-is-python3
+        python-is-python3 \
+      && rm -rf /var/lib/apt/lists /usr/share/doc
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
