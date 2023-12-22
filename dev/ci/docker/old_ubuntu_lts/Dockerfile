@@ -29,7 +29,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
 # More dependencies of the sphinx doc, pytest for coqtail
 RUN pip3 install docutils==0.17.1 sphinx==4.5.0 sphinx_rtd_theme==1.0.0 \
         antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.2 \
-        pytest==5.4.3
+        pytest==5.4.3 \
+      && rm -rf ~/.cache/pip
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.0.6/opam-2.0.6-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
