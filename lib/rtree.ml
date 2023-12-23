@@ -85,6 +85,10 @@ let dest_var t =
       Var (i,j) -> (i,j)
     | _ -> failwith "Rtree.dest_var"
 
+let dest_rec = function
+  | Rec (i,d) -> (i,d)
+  | _ -> failwith "Rtree.dest_rec"
+
 let dest_node t =
   match expand t with
       Node (l,sons) -> (l,sons)
@@ -149,32 +153,41 @@ let equal cmp t t' =
   t == t' || raw_eq cmp t t' || equiv cmp cmp t t'
 
 (** Intersection of rtrees of same arity *)
-let rec inter cmp interlbl def n histo t t' =
-  try
-    let (i,j) = List.assoc_f (raw_eq2 cmp) (t,t') histo in
-    Var (n-i-1,j)
-  with Not_found ->
+let rec inter cmp interlbl def n histo1 histo2 t t' =
   match t, t' with
   | Var (i,j), Var (i',j') ->
       assert (Int.equal i i' && Int.equal j j'); t
+  | Var (i,j), _ ->
+      let (u,u') = List.nth histo1 i in
+      let k,u = dest_rec u in
+      if Int.equal i k && raw_eq cmp t' u' then Var (i,j)
+      else inter cmp interlbl def n histo1 histo2 (Rec (j,u)) t'
+  | _, Var (i',j') ->
+      let (u,u') = List.nth histo1 i' in
+      let k',u' = dest_rec u in
+      if Int.equal i' k' && raw_eq cmp t u then Var (i',j')
+      else inter cmp interlbl def n histo1 histo2 t (Rec (j',u'))
   | Node (x, a), Node (x', a') ->
       (match interlbl x x' with
       | None -> mk_node def [||]
-      | Some x'' -> Node (x'', Array.map2 (Array.map2 (inter cmp interlbl def n histo)) a a'))
+      | Some x'' -> Node (x'', Array.map2 (Array.map2 (inter cmp interlbl def n histo1 histo2)) a a'))
   | Rec (i,v), Rec (i',v') ->
      (* If possible, we preserve the shape of input trees *)
      if Int.equal i i' && Int.equal (Array.length v) (Array.length v') then
-       let histo = ((t,t'),(n,i))::histo in
-       Rec(i, Array.map2 (inter cmp interlbl def (n+1) histo) v v')
+       let histo1 = (t,t')::histo1 in
+       Rec(i, Array.map2 (inter cmp interlbl def (n+1) histo1 histo2) v v')
      else
      (* Otherwise, mutually recursive trees are transformed into nested trees *)
-       let histo = ((t,t'),(n,0))::histo in
-       Rec(0, [|inter cmp interlbl def (n+1) histo (expand t) (expand t')|])
-  | Rec _, _ -> inter cmp interlbl def n histo (expand t) t'
-  | _ , Rec _ -> inter cmp interlbl def n histo t (expand t')
-  | _ -> assert false
+       (try
+         let (i,j) = List.assoc_f (raw_eq2 cmp) (t,t') histo2 in
+         Var (n-i-1,j)
+       with Not_found ->
+         let histo2 = ((t,t'),(n,0))::histo2 in
+       Rec(0, [|inter cmp interlbl def (n+1) histo1 histo2 (expand t) (expand t')|]))
+  | Rec _, _ -> inter cmp interlbl def n histo1 histo2 (expand t) t'
+  | _ , Rec _ -> inter cmp interlbl def n histo1 histo2 t (expand t')
 
-let inter cmp interlbl def t t' = inter cmp interlbl def 0 [] t t'
+let inter cmp interlbl def t t' = inter cmp interlbl def 0 [] [] t t'
 
 (** Inclusion of rtrees. We may want a more efficient implementation. *)
 let incl cmp interlbl def t t' =
