@@ -207,6 +207,8 @@ let mk_paths r recargs =
 
 let dest_recarg p = fst (Rtree.dest_node p)
 
+let is_norec r = eq_recarg (dest_recarg r) Norec
+
 (* dest_subterms returns the sizes of each argument of each constructor of
    an inductive object of size [p]. This should never be done for Norec,
    because the number of sons does not correspond to the number of

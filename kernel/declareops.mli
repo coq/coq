@@ -56,6 +56,7 @@ val mk_paths : recarg -> wf_paths list array -> wf_paths
 val dest_recarg : wf_paths -> recarg
 val dest_subterms : wf_paths -> wf_paths list array
 val recarg_length : wf_paths -> int -> int
+val is_norec : wf_paths -> bool
 
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
