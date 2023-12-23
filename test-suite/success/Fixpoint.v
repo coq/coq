@@ -406,3 +406,25 @@ Fixpoint f (n : nat) :=
   end.
 
 End WithLateCaseReduction.
+
+Module HighlyNested.
+
+Inductive T A := E : A * list A * list (list A) -> T A.
+Inductive U := H : T (T U) -> U.
+
+Definition map {A B : Type} (f : A -> B) :=
+  fix map (l : list A) : list B :=
+  match l with
+  | nil => nil
+  | cons a t => cons (f a) (map t)
+  end.
+
+Definition mapT {A B} (f:A -> B) t :=
+  match t with E _ (a, l, ll) => E _ (f a, map f l, map (map f) ll) end.
+
+Fixpoint mapU (f:U->U) u :=
+  match u with
+  | H t => H (mapT (mapT (mapU f)) t)
+  end.
+
+End HighlyNested.
