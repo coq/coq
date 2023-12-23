@@ -45,6 +45,7 @@ val betazeta_appvect : int -> constr -> constr array -> constr
   s Recognizing products and arities modulo reduction *)
 
 val whd_decompose_prod         : env -> types -> Constr.rel_context * types
+val whd_decompose_prod_n       : env -> int -> types -> Constr.rel_context * types
 val whd_decompose_prod_decls   : env -> types -> Constr.rel_context * types
 val whd_decompose_lambda       : env -> constr -> Constr.rel_context * constr
 val whd_decompose_lambda_decls : env -> constr -> Constr.rel_context * constr

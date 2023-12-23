@@ -107,6 +107,18 @@ let whd_decompose_prod env =
   in
   decrec env Context.Rel.empty
 
+let whd_decompose_prod_n env i =
+  let rec decrec env i m c =
+    let t = whd_all env c in
+    if i = 0 then m,t else
+    match kind t with
+      | Prod (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (i-1) (Context.Rel.add d m) c0
+      | _ -> m,t
+  in
+  decrec env i Context.Rel.empty
+
 let whd_decompose_lambda env =
   let rec decrec env m c =
     let t = whd_all env c in
