@@ -231,4 +231,4 @@ let rec pr_tree prl t =
           hv 2 (str"Rec{"++pr_tree prl v.(0)++str"}")
         else
           hv 2 (str"Rec{"++int i++str","++brk(1,0)++
-                 prvect_with_sep pr_comma (pr_tree prl) v++str"}")
+                prvect_with_sep pr_comma (fun t -> str"("++pr_tree prl t++str")") v++str"}")
