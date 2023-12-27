@@ -84,6 +84,38 @@ let rec read_loop () =
     failwith ("ltac2 invalid action: " ^ (DebugHook.Action.to_string !DebugCommon.action))
 
 [@@@ocaml.warning "-32"]
+let rec dump_pat ?(indent=0) p =
+  let printloc item e =
+    let {CAst.loc} = e in
+    let loc = match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Printf.eprintf "%s  %s\n%!" item loc
+  in
+  Printf.eprintf "%s" (String.make indent ' ');
+  let indent = indent + 2 in
+  let {CAst.v} = p in
+  match v with
+  | CPatVar n ->
+    let name = match n with
+    | Anonymous -> "Anonymous"
+    | Name id -> Names.Id.to_string id
+    in
+  printloc (Printf.sprintf "CPatVar %s" name) p
+  | CPatAtm a ->
+    let atom = match a with
+    | AtmInt i -> string_of_int i
+    | AtmStr s -> s
+    in
+    printloc (Printf.sprintf "CPatAtm %s" atom) p
+  | CPatRef (c,pl) -> printloc "CPatRef" p;
+    List.iter (fun p -> dump_pat ~indent p) pl
+  | CPatRecord _ -> printloc "CPatRecord" p
+  | CPatCnv _ -> printloc "CPatCnv" p
+  | CPatOr _ -> printloc "CPatOr" p
+  | CPatAs _ -> printloc "CPatAs" p
+
 let rec dump_expr ?(indent=0) e =
   let printloc item e =
     let {CAst.loc} = e in
@@ -110,7 +142,7 @@ let rec dump_expr ?(indent=0) e =
     Printf.eprintf "%s> %s\n%!" (String.make indent ' ') (Names.KerName.to_string kn);
     List.iter (fun i -> let (_, e) = i in dump_expr ~indent e) el
   | CTacLet (isrec, lc, e) -> printloc "CTacLet" e;
-    List.iter (fun (p,te) -> dump_expr ~indent te) lc;
+    List.iter (fun (p,te) -> dump_pat ~indent p; dump_expr ~indent te) lc;
     dump_expr ~indent:(indent-2) e;
   | CTacCnv _ -> printloc "CTacCnv" e
   | CTacSeq (e1, e2) ->
@@ -118,7 +150,9 @@ let rec dump_expr ?(indent=0) e =
     dump_expr ~indent e1;
     dump_expr ~indent e2
   | CTacIft _ -> printloc "CTacIft" e
-  | CTacCse _ -> printloc "CTacCse" e
+  | CTacCse (e,pl) -> printloc "CTacCse" e;
+    dump_expr ~indent e;
+    List.iter (fun (p, e) -> dump_pat ~indent p; dump_expr ~indent e) pl
   | CTacRec _ -> printloc "CTacRec" e
   | CTacPrj _ -> printloc "CTacPrj" e
   | CTacSet _ -> printloc "CTacSet" e
@@ -175,8 +209,9 @@ let rec dump_Gexpr ?(indent=0) ?(p="D") e =
     print (Printf.sprintf "GTacCst %s %d" s n);
     List.iter (fun e -> dump_Gexpr ~indent ~p e) el
   | GTacCse (e, ci, a1, a2) -> print (Printf.sprintf "GTacCse %d %d" (Array.length a1)  (Array.length a2));
+    Array.iter (fun e1 -> dump_Gexpr ~indent ~p e1) a1;
     Array.iter (fun (a3, e2) ->
-        Array.iter (fun n ->
+        Array.iter (fun (n,_) ->
             match n with
             | Name nm -> print (Printf.sprintf "case name = %s" (Id.to_string nm))  (* vars to be assigned *)
             | Anonymous -> print (Printf.sprintf "Anonymous");

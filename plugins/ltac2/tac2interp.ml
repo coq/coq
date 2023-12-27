@@ -97,12 +97,13 @@ let check_atom_against atm v =
 
 let rec match_pattern_against ist pat v =
   match pat with
-  | GPatVar x -> push_name ist x v
+  | GPatVar (x,t) ->
+    push_name ist x {e=v.e; t}
   | GPatAtm atm -> check_atom_against atm v.e; ist
   | GPatAs (p,x) -> match_pattern_against (push_name ist (Name x) v) p v
   | GPatRef (ctor,pats) ->
     let vs = match_ctor_against ctor v in
-    List.fold_left_i (fun i ist pat -> match_pattern_against ist pat {e=vs.(i); t=None} ) 0 ist pats
+    List.fold_left_i (fun i ist pat -> match_pattern_against ist pat {e=vs.(i); t=None } ) 0 ist pats
   | GPatOr pats -> match_pattern_against_or ist pats v
 
 and match_pattern_against_or ist pats v =
@@ -162,7 +163,7 @@ let rec interp (ist : environment) = function
   | GTacFun (ids, ts, e) ->
     let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_types=ts; clos_exp = e } in
     let f = interp_closure ist cls in
-    na, cls, {e=f; t=None}
+    na, cls, {e=f; t=None }
   | _ -> anomaly (str "Ill-formed recursive function")
   in
   let fixs = List.map map el in
@@ -254,7 +255,7 @@ and interp_closure ist0 f =
     let ist = { ist0 with env_ist = ist } in
     let args = match ts with
     | Some ts -> List.map2 (fun e t -> { e; t=Some t}) args ts
-    | None -> List.map (fun e -> { e; t=None}) args
+    | None -> List.map (fun e -> { e; t=None }) args
     in
     let ist = List.fold_left2 push_name ist ids args in
     with_frame frame (interp ist e)
@@ -267,8 +268,7 @@ and interp_case ist e cse0 cse1 =
   else
     let (n, args) = Tac2ffi.to_block e in
     let (ids, e) = cse1.(n) in
-    let args = Array.map (fun e -> { e; t=None}) args in
-    let ist = CArray.fold_left2 push_name ist ids args in
+    let ist = CArray.fold_left2 (fun ist (id,t) e -> push_name ist id { e; t }) ist ids args in
     interp ist e
 
 and interp_with ist e cse def =
@@ -277,11 +277,11 @@ and interp_with ist e cse def =
   begin match br with
   | None ->
     let (self, def) = def in
-    let ist = push_name ist self { e; t=None} in
+    let ist = push_name ist self { e; t=None } in
     interp ist def
   | Some (self, ids, p) ->
-    let ist = push_name ist self { e; t=None} in
-    let args = Array.map (fun e -> { e; t=None}) args in
+    let ist = push_name ist self { e; t=None } in
+    let args = Array.map (fun e -> { e; t=None }) args in
     let ist = CArray.fold_left2 push_name ist ids args in
     interp ist p
   end
@@ -289,7 +289,7 @@ and interp_with ist e cse def =
 and interp_full_match ist e = function
   | [] -> CErrors.anomaly Pp.(str "ltac2 match not exhaustive")
   | (pat,br) :: rest ->
-    begin match match_pattern_against ist pat { e; t=None} with
+    begin match match_pattern_against ist pat { e; t=None } with
     | exception NoMatch -> interp_full_match ist e rest
     | ist -> interp ist br
     end
@@ -315,7 +315,7 @@ and eval_pure ist bnd kn = function
     eval_pure ist bnd (Some kn) e
   end
 | GTacFun (na, ts, e) ->
-  let bnd = Id.Map.map (fun e -> { e; t=None}) bnd in
+  let bnd = Id.Map.map (fun e -> { e; t=None }) bnd in
   let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_types=ts; clos_exp = e } in
   interp_closure ist cls
 | GTacCst (_, n, []) -> Valexpr.make_int n

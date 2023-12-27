@@ -264,7 +264,7 @@ let pr_partial_pat pat = pr_partial_pat_gen E5 pat
 let rec partial_pat_of_glb_pat pat =
   let open PartialPat in
   let pat = match pat with
-    | GPatVar x -> Var x
+    | GPatVar (x,_) -> Var x
     | GPatAtm x -> Atom x
     | GPatRef (ctor,pats) -> Ref (ctor, List.map partial_pat_of_glb_pat pats)
     | GPatOr pats -> Or (List.map partial_pat_of_glb_pat pats)
@@ -275,7 +275,7 @@ let rec partial_pat_of_glb_pat pat =
 let pr_glb_pat pat = pr_partial_pat (partial_pat_of_glb_pat pat)
 
 let rec avoid_glb_pat avoid = function
-  | GPatVar x -> Termops.add_vname avoid x
+  | GPatVar (x,_) -> Termops.add_vname avoid x
   | GPatAtm _ -> avoid
   | GPatRef (_, pats) -> List.fold_left avoid_glb_pat avoid pats
   | GPatOr [] -> assert false
@@ -341,14 +341,18 @@ let pr_glbexpr_gen lvl ~avoid c =
         let vars = match vars with
         | [] -> mt ()
         | _ -> spc () ++ pr_sequence pr_name vars
+(*        (fun (v,_) -> pr_name v) *)
         in
         hov 4 (str "|" ++ spc () ++ hov 0 (cstr ++ vars ++ spc () ++ str "=>") ++ spc () ++
           hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
       in
+      let br = List.map (fun (a,b,c) -> (a, List.map (fun (d,e) -> d) b, c)) br in
       prlist pr_branch br
     | Tuple n ->
       let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
+      let vars = Array.map (fun (a,b) -> a) vars in
       let avoid = Array.fold_left Termops.add_vname avoid vars in
+(*        (fun (v,_) -> pr_name v) vars *)
       let p = pr_glbexpr E5 avoid p in
       let vars = prvect_with_sep (fun () -> str "," ++ spc ()) pr_name vars in
       hov 4 (str "|" ++ spc () ++ hov 0 (paren vars ++ spc () ++ str "=>") ++ spc () ++ p)

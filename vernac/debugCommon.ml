@@ -626,10 +626,7 @@ let is_showable_exn = function
 let show_exn_in_debugger exn loc =
 (* todo: ? add try block? *)
   let exn0, info = exn in
-  let history_good =   (* todo: find root cause *)
-    try let _ = get_history !hist_index in true
-    with exn -> Printf.eprintf "bad history:\n%s\n%!" (Printexc.to_string exn); false
-  in
+  let history_good = try let _ = get_history !hist_index in true with exn -> false in
   if !in_ltac && history_good then begin
     let chunks = get_all_chunks !hist_index in
     let stack_len = 1 + (List.fold_left (fun len i -> List.length i.locs + len)

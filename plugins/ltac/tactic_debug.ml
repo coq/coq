@@ -380,7 +380,7 @@ let entry_stop_check tac =
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN
-        (DebugCommon.pr_goals_t)
+        DebugCommon.pr_goals_t
         (Proofview.tclLIFT (Proofview.NonLogical.return ()))
     in
     Proofview.tclTHEN (goal_com ()) (Proofview.tclIGNORE (Proofview.tclLIFT (prompt 0)))

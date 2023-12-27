@@ -251,6 +251,8 @@ let expand_pattern avoid bnd =
         let qid = RelId (qualid_of_ident ?loc:pat.loc id) in
         Name id, Some qid
     in
+    (* todo: instead of excluding ids that appear in the pattern, why not use
+       ".p*" as the ident for fresh variables? *)
     let avoid = ids_of_pattern avoid pat in
     let avoid = add_name avoid na in
     (avoid, (na, pat, expand) :: bnd)
@@ -481,15 +483,22 @@ let rec intern_pat_rec env cpat t =
 
 let intern_pat env cpat t =
   let patvars, pat = intern_pat_rec env cpat t in
-  Id.Map.map (fun (_,v) -> monomorphic v) patvars, pat
+  Id.Map.map (fun (_,v) -> monomorphic v) patvars, patvars, pat
 
-let rec glb_of_wip_pat_r = function
-  | PatVar x -> GPatVar x
+let add_pat_type env tm id =
+  match id with
+  | Name id2 ->
+    let t = snd (Names.Id.Map.find id2 tm) in
+    id, (Some (wrap (env, t)))
+  | Anonymous -> Anonymous, None
+
+let rec glb_of_wip_pat_r env tm = function
+  | PatVar x -> let n,t = add_pat_type env tm x in GPatVar (n,t)
   | PatAtm atm -> GPatAtm atm
-  | PatRef (ctor,pats) -> GPatRef (ctor, List.map glb_of_wip_pat pats)
-  | PatOr pats -> GPatOr (List.map glb_of_wip_pat pats)
-  | PatAs (p,x) -> GPatAs (glb_of_wip_pat p, x.v)
-and glb_of_wip_pat pat = glb_of_wip_pat_r pat.CAst.v
+  | PatRef (ctor,pats) -> GPatRef (ctor, List.map (glb_of_wip_pat env tm) pats)
+  | PatOr pats -> GPatOr (List.map (glb_of_wip_pat env tm) pats)
+  | PatAs (p,x) -> GPatAs ((glb_of_wip_pat env tm) p, x.v)
+and glb_of_wip_pat env tm pat = glb_of_wip_pat_r env tm pat.CAst.v
 
 (** Pattern analysis for non-exhaustiveness and (TODO) useless patterns based on
     "Warnings for pattern matching", Luc Maranget, Journal of Functional Programming, 17(3), 2007 *)
@@ -916,7 +925,7 @@ let get_pattern_kind env pl = match pl with
 
 (** For now, patterns recognized by the pattern-matching compiling are limited
     to depth-one where leaves are either variables or catch-all *)
-let to_simple_case env ?loc (e,t) pl =
+let to_simple_case env ?loc (e,t) pl tml =
   let todo () = raise HardCase in
   match get_pattern_kind env pl with
   | PKind_any ->
@@ -925,7 +934,7 @@ let to_simple_case env ?loc (e,t) pl =
     | GEPatVar na -> na
     | _ -> assert false
     in
-    GTacLet (false, [na, e, (* wrap *) None], b)
+    GTacLet (false, [na, e, Some (wrap (env, t))], b)     (* what case is this for? *)
   | PKind_empty ->
     let kn = check_elt_empty loc env t in
     GTacCse (e, Other kn, [||], [||])
@@ -945,9 +954,9 @@ let to_simple_case env ?loc (e,t) pl =
     in
     let const = Array.make nconst None in
     let nonconst = Array.make nnonconst None in
-    let rec intern_branch = function
-    | [] -> ()
-    | (pat, br) :: rem ->
+    let rec intern_branch pl tml = match pl, tml with
+    | [],[] -> ()
+    | (pat, br) :: rem, tm :: tymrem ->
       let () = match pat.v with
       | PatAtm _ | PatOr _ | PatAs _ ->
         raise HardCase
@@ -963,7 +972,7 @@ let to_simple_case env ?loc (e,t) pl =
           else
             let () =
               if Option.is_empty nonconst.(narg) then
-                let ids = Array.make arity Anonymous in
+                let ids = Array.make arity (Anonymous, None) in
                 nonconst.(narg) <- Some (ids, br)
             in
             (ncst, succ narg)
@@ -984,16 +993,19 @@ let to_simple_case env ?loc (e,t) pl =
           if List.is_empty args then
             if Option.is_empty const.(index) then const.(index) <- Some br
             else ()
-          else
+          else begin
+            let ids = List.map (add_pat_type env tm) ids in
             let ids = Array.of_list ids in
             if Option.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br)
             else ()
+          end
         in
         ()
       in
-      intern_branch rem
+      intern_branch rem tymrem
+    | _,_ -> failwith "not possible"
     in
-    let () = intern_branch pl in
+    let () = intern_branch pl tml in
     let map n is_const = function
     | None -> assert false (* exhaustivity check *)
     | Some x -> x
@@ -1138,7 +1150,7 @@ let rec intern_rec env tycon {loc;v=e} =
     | None -> List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t
     | Some tycon -> tycon
   in
-  let tl2 = List.map (fun t -> Tac2valtype.wrap (env, t)) tl in
+  let tl2 = List.map (fun t -> wrap (env, t)) tl in
   (GTacFun (nas, Some tl2, e), t)
 | CTacApp ({loc;v=CTacCst qid}, args) ->
   let kn = get_constructor env qid in
@@ -1214,13 +1226,13 @@ let rec intern_rec env tycon {loc;v=e} =
   let e2 = intern_rec_with_constraint env e2 t in
   (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t)
 | CTacCse (e, pl) ->
-  let e,brs,rt = intern_case env loc e tycon pl in
+  let e,brs,tml,rt = intern_case env loc e tycon pl in
   begin try
-    let cse = to_simple_case env ?loc e brs in
+    let cse = to_simple_case env ?loc e brs tml in
     cse, rt
   with HardCase ->
     let e, _ = e in
-    let brs = List.map (fun (p,br) -> glb_of_wip_pat p, br) brs in
+    let brs = List.map2 (fun (p,br) tm -> glb_of_wip_pat env tm p, br) brs tml in
     GTacFullMatch (e,brs), rt
   end
 | CTacRec (def, fs) ->
@@ -1471,12 +1483,14 @@ and intern_case env loc e tycon pl =
     | Some t -> t
     | None -> GTypVar (fresh_id env)
   in
+  let tml = ref [] in
   let pl = List.map (fun (cpat,cbr) ->
       (* intern_pat: check type of pattern = type of discriminee,
          check or patterns bind same vars to same types,
          return bound vars
          + pattern representation with casts removed and names globalized *)
-      let patvars, pat = intern_pat env cpat et in
+      let patvars, tm, pat = intern_pat env cpat et in
+      tml := tm :: !tml;
       let patenv = push_ids patvars env in
       let br = intern_rec_with_constraint patenv cbr rt in
       pat, br)
@@ -1485,7 +1499,7 @@ and intern_case env loc e tycon pl =
   let just_patterns = List.map fst pl in
   let () = check_no_missing_pattern env et just_patterns in
   let () = check_redundant_clauses env et just_patterns in
-  ((e,et),pl,rt)
+  ((e,et),pl,(List.rev !tml),rt)
 
 type context = (Id.t * type_scheme) list
 
