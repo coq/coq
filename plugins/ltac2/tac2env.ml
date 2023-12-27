@@ -280,11 +280,16 @@ type 'a or_glb_tacexpr =
 | GlbVal of 'a
 | GlbTacexpr of glb_tacexpr
 
+ type typed_valexpr = {
+  e : valexpr;
+  t : Obj.t option (* really Tac2typing_env.TVar.t Tac2expr.glb_typexpr *)
+ }
+
 type environment = {
-  env_ist : valexpr Id.Map.t;
+  env_ist : typed_valexpr Id.Map.t;
   locs : Loc.t option list;
   stack : (string * Loc.t option) list option;
-  varmaps : valexpr Id.Map.t list;
+  varmaps : typed_valexpr Id.Map.t list;
 }
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr

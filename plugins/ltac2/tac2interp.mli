@@ -25,7 +25,7 @@ val interp_value : environment -> glb_tacexpr -> valexpr
 
 val eval_glb_ext : environment -> Tac2dyn.Arg.glb -> valexpr Proofview.tactic
 
-val push_id : environment -> Id.t -> valexpr -> environment
+val push_id : environment -> Id.t -> Tac2env.typed_valexpr -> environment
 
 (* val interp_app : closure -> ml_tactic *)
 

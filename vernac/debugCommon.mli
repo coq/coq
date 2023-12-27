@@ -20,6 +20,8 @@ val stop_in_debugger : Loc.t option -> bool
 
 val action : DebugHook.Action.t ref
 
+val get_sigma : unit -> Evd.evar_map
+
 (* Comm module stuff *)
 
 val init : unit -> unit

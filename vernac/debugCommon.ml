@@ -491,6 +491,12 @@ let fmt_goals () =
   str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map fmt_goal gls)
 
+let get_sigma () =
+  let open Proofview in
+  match (get_history !hist_index).goals with
+  | hd :: tl -> Goal.sigma hd
+  | [] -> Evd.empty
+
 let isTerminal () = (hook ()).isTerminal
 
 let pr_goals () =
@@ -517,10 +523,10 @@ type export_goals_args = {
   show_diffs: bool;
 }
 
-let fwd_db_subgoals = (ref ((fun x y -> failwith "fwd_db_subgoals")
+let fwd_db_subgoals = ref ((fun x y -> failwith "fwd_db_subgoals")
                   : goal_flags -> export_goals_args option ->
                     Proof_diffs.goal_map_args option ->
-                    subgoals_rty))
+                    subgoals_rty)
 
 (* get arguments for printing goals, either current or from history
    and set up to show diffs *)
@@ -620,7 +626,11 @@ let is_showable_exn = function
 let show_exn_in_debugger exn loc =
 (* todo: ? add try block? *)
   let exn0, info = exn in
-  if !in_ltac then begin
+  let history_good =   (* todo: find root cause *)
+    try let _ = get_history !hist_index in true
+    with exn -> Printf.eprintf "bad history:\n%s\n%!" (Printexc.to_string exn); false
+  in
+  if !in_ltac && history_good then begin
     let chunks = get_all_chunks !hist_index in
     let stack_len = 1 + (List.fold_left (fun len i -> List.length i.locs + len)
       0 chunks) in

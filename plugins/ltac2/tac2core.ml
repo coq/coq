@@ -1715,7 +1715,7 @@ let () =
   let interp env (ids,c) =
     let open Ltac_pretype in
     let get_preterm id = match Id.Map.find_opt id env.env_ist with
-      | Some (ValExt (tag, v)) ->
+      | Some {e=(ValExt (tag, v))} ->
         begin match Tac2dyn.Val.eq tag val_preterm with
           | Some Refl -> (v:closed_glob_constr)
           | None -> assert false
@@ -1921,7 +1921,7 @@ let interp_constr_var_as_constr ?loc env sigma tycon id =
   let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
   let env = GlobEnv.renamed_env env in
   let c = Id.Map.find id ist.env_ist in
-  let c = Tac2ffi.to_constr c in
+  let c = Tac2ffi.to_constr c.e in
   let t = Retyping.get_type_of env sigma c in
   let j = { Environ.uj_val = c; uj_type = t } in
   match tycon with
@@ -1940,7 +1940,7 @@ let interp_preterm_var_as_constr ?loc env sigma tycon id =
   let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
   let env = GlobEnv.renamed_env env in
   let c = Id.Map.find id ist.env_ist in
-  let {closure; term} = Tac2ffi.to_ext Tac2ffi.val_preterm c in
+  let {closure; term} = Tac2ffi.to_ext Tac2ffi.val_preterm c.e in
   let vars = {
     ltac_constrs = closure.typed;
     ltac_uconstrs = closure.untyped;
@@ -1976,7 +1976,7 @@ let () =
     in
     let ist = Tac2interp.get_env ist.Ltac_pretype.ltac_genargs in
     let c = Id.Map.find id ist.env_ist in
-    let c = Tac2ffi.to_pattern c in
+    let c = Tac2ffi.to_pattern c.e in
     c
   in
   Patternops.register_interp_pat wit_ltac2_var_quotation interp
@@ -2014,7 +2014,7 @@ let () =
     let fold id c (rem, accu) =
       let c = GTacExt (Tac2quote.wit_preterm, (avoid, c), None) in
       let rem = Id.Set.remove id rem in
-      rem, (Name id, c) :: accu
+      rem, (Name id, c, (* Tac2valtype.wrap *) None) :: accu
     in
     let rem, bnd = Id.Map.fold fold globs (ids, []) in
     (* FIXME: provide a reasonable middle-ground with the behaviour
@@ -2028,7 +2028,7 @@ let () =
                (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
         in
         let c = GTacExt (Tac2quote.wit_preterm, (Id.Set.empty, c), None) in
-        (Name id, c) :: bnd)
+        (Name id, c, (* Tac2valtype.wrap *) None) :: bnd)
         rem bnd
     in
     let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
@@ -2131,7 +2131,7 @@ let () =
     let args = List.map mk_arg ids in
     let clos = CAst.make (Tacexpr.TacFun
         (nas, CAst.make (Tacexpr.TacML (ltac2_eval, mk_arg self_id :: args)))) in
-    let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
+    let self = GTacFun (List.map (fun id -> Name id) ids, None, tac) in
     let self = Tac2interp.interp_value (Tac2interp.empty_environment ()) self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in

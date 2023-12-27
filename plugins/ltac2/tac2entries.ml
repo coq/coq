@@ -853,7 +853,7 @@ let perform_redefinition redef =
   | None -> redef.redef_body
   | Some id ->
     (* Rebind the old value with a let-binding *)
-    GTacLet (false, [Name id, data.Tac2env.gdata_expr], redef.redef_body)
+    GTacLet (false, [Name id, data.Tac2env.gdata_expr, (* Tac2valtype.wrap *) None], redef.redef_body)
   in
   let data = { data with Tac2env.gdata_expr = body } in
   Tac2env.define_global kn data

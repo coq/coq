@@ -59,6 +59,8 @@ val kind : t -> TVar.t glb_typexpr -> TVar.t glb_typexpr
 
 val pr_glbtype : t -> TVar.t glb_typexpr -> Pp.t
 
+val nf : t -> TVar.t glb_typexpr -> TVar.t glb_typexpr
+
 val eq_or_tuple : ('a -> 'b -> bool) -> 'a or_tuple -> 'b or_tuple -> bool
 
 exception CannotUnify of TVar.t glb_typexpr * TVar.t glb_typexpr
