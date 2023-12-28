@@ -1991,7 +1991,7 @@ let vernac_print ~pstate =
   | PrintCoercions -> Prettyp.print_coercions ()
   | PrintNotation (entry, ntnstr) -> Prettyp.print_notation env sigma entry ntnstr
   | PrintCoercionPaths (cls,clt) ->
-    Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
+    Prettyp.print_coercion_paths (cl_of_qualid cls) (cl_of_qualid clt)
   | PrintCanonicalConversions qids ->
     let grefs = List.map Smartlocate.smart_global qids in
     Prettyp.print_canonical_projections env sigma grefs
