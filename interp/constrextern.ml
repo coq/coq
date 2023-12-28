@@ -913,10 +913,11 @@ let rec insert_impargs impargs r = match impargs with
     match DAst.get r with
     | GProd (na,rinfo,_,t,c) ->
       DAst.make ?loc:r.loc (GProd (na, rinfo, bk, t, insert_impargs rest c))
+    | GLetIn (na,rinfo,b,t,c) ->
+      DAst.make ?loc:r.loc (GLetIn (na, rinfo, b, t, insert_impargs impargs c))
     | _ -> r
 
-let rec extern inctx ?impargs scopes vars r =
-  let r = Option.cata (fun impargs -> insert_impargs impargs r) r impargs in
+let rec extern inctx scopes vars r =
   match remove_one_coercion inctx (flatten_application r) with
   | Some (nargs,inctx,r') ->
     (try extern_notations inctx scopes vars (Some nargs) r
@@ -996,10 +997,10 @@ let rec extern inctx ?impargs scopes vars r =
     CLetIn (make ?loc na,
             sub_extern (Option.has_some t) scopes vars b,
             Option.map (extern_typ scopes vars) t,
-            extern inctx ?impargs scopes (add_vname vars na) c)
+            extern inctx scopes (add_vname vars na) c)
 
   | GProd (na,r,bk,t,c) ->
-      factorize_prod ?impargs scopes vars na r bk t c
+      factorize_prod scopes vars na r bk t c
 
   | GLambda (na,r,bk,t,c) ->
       factorize_lambda inctx scopes vars na r bk t c
@@ -1106,12 +1107,12 @@ let rec extern inctx ?impargs scopes vars r =
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
-and extern_typ ?impargs (subentry,(_,scopes)) =
-  extern true ?impargs (subentry,(Notation.current_type_scope_names (),scopes))
+and extern_typ (subentry,(_,scopes)) =
+  extern true (subentry,(Notation.current_type_scope_names (),scopes))
 
 and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,([],scopes))
 
-and factorize_prod ?impargs scopes vars na r bk t c =
+and factorize_prod scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
   let r = extern_relevance_info r in
   let aty = extern_typ scopes vars t in
@@ -1132,13 +1133,7 @@ and factorize_prod ?impargs scopes vars na r bk t c =
       | _ -> CProdN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let impargs_hd, impargs_tl =
-        match impargs with
-        | Some [hd] -> Some hd, None
-        | Some (hd::tl) -> Some hd, Some tl
-        | _ -> None, None in
-      let bk = Option.default Explicit impargs_hd in
-      let c' = extern_typ ?impargs:impargs_tl scopes vars c in
+      let c' = extern_typ scopes vars c in
       match na, c'.v with
       | Name id, CProdN (CLocalAssum(nal,r',Default bk',ty)::bl,b)
         when relevance_info_expr_eq r r'
@@ -1363,7 +1358,8 @@ let extern_glob_constr vars c =
   extern false ((constr_some_level,None),([],[])) vars c
 
 let extern_glob_type ?impargs vars c =
-  extern_typ ?impargs ((constr_some_level,None),([],[])) vars c
+  let c = Option.fold_right insert_impargs impargs c in
+  extern_typ ((constr_some_level,None),([],[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)

@@ -1,4 +1,4 @@
-test : Foo -> nat -> forall A : Type, A
+test : Foo -> nat -> forall {A : Type}, A
 
 test is not universe polymorphic
 Arguments test H n%nat_scope {A}%type_scope
