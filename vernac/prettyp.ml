@@ -402,25 +402,27 @@ let print_typed_value_in_env env sigma (trm,typ) =
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
    synthesizes the type nat of the abstraction on u *)
 
-let print_named_def env sigma name body typ =
+let print_named_def env sigma ~impargs name body typ =
   let pbody = pr_lconstr_env ~inctx:true env sigma body in
-  let ptyp = pr_ltype_env env sigma typ in
+  let ptyp = pr_ltype_env env sigma ~impargs typ in
   let pbody = if Constr.isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
               str ":" ++ brk (1,2) ++ ptyp) ++
            str "]")
 
-let print_named_assum env sigma name typ =
-  str "*** [" ++ str name ++ str " : " ++ pr_ltype_env env sigma typ ++ str "]"
+let print_named_assum env sigma ~impargs name typ =
+  str "*** [" ++ str name ++ str " : " ++ pr_ltype_env env sigma ~impargs typ ++ str "]"
 
-let print_named_decl env sigma id =
+let print_named_decl env sigma with_implicit id =
   let open Context.Named.Declaration in
+  let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (VarRef id)) else [] in
+  let impargs = List.map binding_kind_of_status impargs in
   match lookup_named id env with
   | LocalAssum (id, typ) ->
-     print_named_assum env sigma (Id.to_string id.Context.binder_name) typ
+     print_named_assum env sigma ~impargs (Id.to_string id.Context.binder_name) typ
   | LocalDef (id, body, typ) ->
-     print_named_def env sigma (Id.to_string id.Context.binder_name) body typ
+     print_named_def env sigma ~impargs (Id.to_string id.Context.binder_name) body typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
@@ -450,15 +452,15 @@ let print_inductive_with_infos mind udecl =
      print_inductive_args mind mipv)
 
 let print_section_variable_with_infos env sigma id =
-  print_named_decl env sigma id ++
+  print_named_decl env sigma true id ++
   with_line_skip (print_name_infos (GlobRef.VarRef id))
 
 let print_body env evd = function
   | Some c  -> pr_lconstr_env ~inctx:true env evd c
   | None -> (str"<no body>")
 
-let print_typed_body env evd (val_0,typ) =
-  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
+let print_typed_body env evd ~impargs (val_0,typ) =
+  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd ~impargs typ)
 
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
@@ -467,7 +469,7 @@ let print_instance sigma cb =
     pr_universe_instance sigma inst
   else mt()
 
-let print_constant with_values cst udecl =
+let print_constant with_values with_implicit cst udecl =
   let cb = Global.lookup_constant cst in
   let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
@@ -477,12 +479,14 @@ let print_constant with_values cst udecl =
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx uctx in
+  let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (ConstRef cst)) else [] in
+  let impargs = List.map binding_kind_of_status impargs in
   let pr_ltype = pr_ltype_env env sigma in
   hov 0 (
     match val_0 with
     | None ->
         str"*** [ " ++
-        print_basename cst ++ print_instance sigma cb ++ str " :" ++ spc () ++ pr_ltype typ ++
+        print_basename cst ++ print_instance sigma cb ++ str " :" ++ spc () ++ pr_ltype ~impargs typ ++
         str" ]" ++
         Printer.pr_universes sigma univs
     | Some (c, priv, ctx) ->
@@ -492,11 +496,11 @@ let print_constant with_values cst udecl =
       in
       print_basename cst ++ print_instance sigma cb ++
       str (if with_values then " =" else " :") ++ spc() ++
-      (if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
+      (if with_values then print_typed_body env sigma ~impargs (Some c,typ) else pr_ltype ~impargs typ)++
       Printer.pr_universes sigma univs ?priv)
 
 let print_constant_with_infos cst udecl =
-  print_constant true cst udecl ++
+  print_constant true true cst udecl ++
   with_line_skip (print_name_infos (GlobRef.ConstRef cst))
 
 let print_global_reference env sigma gref udecl =
@@ -569,11 +573,11 @@ let print_library_leaf env sigma with_values mp lobj =
       DynHandle.add Declare.Internal.objVariable begin fun id ->
           (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
-          (try Some(print_named_decl env sigma id) with Not_found -> None)
+          (try Some(print_named_decl env sigma false id) with Not_found -> None)
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
         let kn = Constant.make2 mp (Label.of_id id) in
-        Some (print_constant with_values kn None)
+        Some (print_constant with_values false kn None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
         let kn = MutInd.make2 mp (Label.of_id id) in
@@ -821,10 +825,10 @@ let print_any_name env sigma na udecl =
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj
   | Undefined qid ->
-  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
+  try  (* A goal variable which is not a section variable *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    print_named_decl env sigma str
+    print_named_decl env sigma true str
   with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name env sigma na udecl =

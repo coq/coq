@@ -32,7 +32,7 @@ Wrap@{uu} = fun A : Type@{uu} => A
 Arguments Wrap A%type_scope
 wrap@{uu} =
 fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
-     : forall A : Type@{uu}, Wrap@{uu} A -> A
+     : forall {A : Type@{uu}}, Wrap@{uu} A -> A
 (* uu |=  *)
 
 Arguments wrap {A}%type_scope {Wrap}
