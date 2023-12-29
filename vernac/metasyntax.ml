@@ -1929,12 +1929,6 @@ let add_abbreviation ~local user_warns env ident (vars,c) modl =
   let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
-    match vars, intern_name_alias c with
-    | [], Some(r,u) ->
-      (* Check if abbreviation to a name and avoid early insertion of
-         maximal implicit arguments *)
-      Id.Map.empty, NRef(r, u), APrioriReversible
-    | _ ->
       let fold accu (id,scope) = Id.Map.add id (NtnInternTypeAny scope) accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {

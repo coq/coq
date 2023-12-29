@@ -1267,16 +1267,6 @@ let intern_instance ~local_univs = function
     let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
     Some (qs, us)
 
-let intern_name_alias = function
-  | { CAst.v = CRef(qid,u) } ->
-      let r =
-        try Some (intern_extended_global_of_qualid qid)
-        with Not_found -> None
-      in
-      Option.bind r Smartlocate.global_of_extended_global |>
-      Option.map (fun r -> r, intern_instance ~local_univs:empty_local_univs u)
-  | _ -> None
-
 let intern_field_ref qid =
   match
     Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) |>

@@ -155,10 +155,6 @@ val intern_uninstantiated_constr_pattern :
     if not existing *)
 val intern_reference : qualid -> GlobRef.t option
 
-(** Returns None if not a reference or a abbrev not bound to a name *)
-val intern_name_alias :
-  constr_expr -> (GlobRef.t * Glob_term.glob_instance option) option
-
 (** Expands abbreviations; raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
 
