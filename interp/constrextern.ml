@@ -710,8 +710,8 @@ let mkFlattenedCApp (head,args) =
     (* may happen with notations for a prefix of an n-ary application *)
     (* or after removal of a coercion to funclass *)
     CApp (g,args'@args)
-  | _ ->
-    CApp (head, args)
+  | h ->
+    if List.is_empty args then h else CApp (head, args)
 
 let extern_applied_notation inctx n impl f args =
   if List.is_empty args then
