@@ -451,15 +451,15 @@ let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val 
       PProj (p, pat_of_raw metas vars c)
     else
       PApp (PRef (GlobRef.ConstRef p), Array.map_of_list (pat_of_raw metas vars) (cl @ [c]))
-  | GLambda (na,bk,c1,c2) ->
+  | GLambda (na,_,bk,c1,c2) ->
       Name.iter (fun n -> push_meta metas n) na;
       PLambda (na, pat_of_raw metas vars c1,
                pat_of_raw metas (na::vars) c2)
-  | GProd (na,bk,c1,c2) ->
+  | GProd (na,_,bk,c1,c2) ->
       Name.iter (fun n -> push_meta metas n) na;
       PProd (na, pat_of_raw metas vars c1,
                pat_of_raw metas (na::vars) c2)
-  | GLetIn (na,c1,t,c2) ->
+  | GLetIn (na,_,c1,t,c2) ->
       Name.iter (fun n -> push_meta metas n) na;
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
@@ -564,7 +564,7 @@ let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val 
 
 and pat_of_glob_in_context metas vars decls c =
   let rec aux acc vars = function
-    | (na,bk,b,t) :: decls ->
+    | (na,_,bk,b,t) :: decls ->
        let decl = (na,bk,Option.map (pat_of_raw metas vars) b,pat_of_raw metas vars t) in
        aux (decl::acc) (na::vars) decls
     | [] ->

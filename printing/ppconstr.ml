@@ -198,6 +198,15 @@ let tag_var = tag Tag.variable
     | CQVar qid -> tag_type (pr_qualid qid)
     | CRawQVar q -> (* TODO names *) tag_type (Sorts.QVar.raw_pr q)
 
+  let pr_relevance = function
+    | CRelevant -> str "Relevant"
+    | CIrrelevant -> str "Irrelevant"
+    | CRelevanceVar q -> pr_qvar_expr q
+
+  let pr_relevance_info = function
+    | None -> mt()
+    | Some r -> str "(* " ++ pr_relevance r ++ str " *) "
+
   let pr_quality_expr q = match q with
     | CQConstant q -> tag_type (Sorts.Quality.Constants.pr q)
     | CQualVar q -> pr_qvar_expr q
@@ -423,8 +432,8 @@ let tag_var = tag Tag.variable
   let begin_of_binder l_bi =
     let b_loc l = fst (Option.cata Loc.unloc (0,0) l) in
     match l_bi with
-    | CLocalDef({loc},_,_) -> b_loc loc
-    | CLocalAssum({loc}::_,_,_) -> b_loc loc
+    | CLocalDef({loc},_,_,_) -> b_loc loc
+    | CLocalAssum({loc}::_,_,_,_) -> b_loc loc
     | CLocalPattern{loc} -> b_loc loc
     | _ -> assert false
 
@@ -444,16 +453,17 @@ let tag_var = tag Tag.variable
       | NonMaxImplicit -> str"[" ++ p ++ str"]"
       | MaxImplicit -> (str"{" ++ p ++ str"}")
 
-  let pr_binder many pr (nal,k,t) =
+  let pr_binder many pr (nal,r,k,t) =
+    let r = pr_relevance_info r in
     match k with
       | Generalized (b', t') ->
         begin match nal with
           |[{loc; v=Anonymous}] ->
             hov 1 (str"`" ++ (surround_impl b'
-                                ((if t' then str "!" else mt ()) ++ pr t)))
+                                (r ++ (if t' then str "!" else mt ()) ++ pr t)))
           |[{loc; v=Name id}] ->
             hov 1 (str "`" ++ (surround_impl b'
-                                 (pr_lident CAst.(make ?loc id) ++ str " : " ++
+                                 (pr_lident CAst.(make ?loc id) ++ str " : " ++ r ++
                                     (if t' then str "!" else mt()) ++ pr t)))
           |_ -> anomaly (Pp.str "List of generalized binders have always one element.")
         end
@@ -461,16 +471,16 @@ let tag_var = tag Tag.variable
         match t with
           | { CAst.v = CHole h } when is_anonymous_hole h ->
             let s = prlist_with_sep spc pr_lname nal in
-            hov 1 (surround_implicit b s)
+            hov 1 (r ++ surround_implicit b s)
           | _ ->
-            let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ pr t in
+            let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ r ++ pr t in
             hov 1 (if many then surround_impl b s else surround_implicit b s)
 
   let pr_binder_among_many withquote pr_c = function
-    | CLocalAssum (nal,k,t) ->
-      pr_binder true pr_c (nal,k,t)
-    | CLocalDef (na,c,topt) ->
-      surround (pr_lname na ++
+    | CLocalAssum (nal,r,k,t) ->
+      pr_binder true pr_c (nal,r,k,t)
+    | CLocalDef (na,r,c,topt) ->
+      surround (pr_lname na ++ pr_relevance_info r ++
                 pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
                 str" :=" ++ spc() ++ pr_c c)
     | CLocalPattern p ->
@@ -482,8 +492,8 @@ let tag_var = tag Tag.variable
   let pr_delimited_binders kw sep withquote pr_c bl =
     let n = begin_of_binders bl in
     match bl with
-      | [CLocalAssum (nal,k,t)] ->
-        kw n ++ pr_binder false pr_c (nal,k,t)
+      | [CLocalAssum (nal,r,k,t)] ->
+        kw n ++ pr_binder false pr_c (nal,r,k,t)
       | (CLocalAssum _ | CLocalPattern _ | CLocalDef _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep withquote pr_c bdl
       | [] -> anomaly (Pp.str "The ast is malformed, found lambda/prod without proper binders.")
@@ -507,8 +517,8 @@ let tag_var = tag Tag.variable
         match ro with
           | CStructRec { v = id } ->
             let names_of_binder = function
-              | CLocalAssum (nal,_,_) -> nal
-              | CLocalDef (_,_,_) -> []
+              | CLocalAssum (nal,_,_,_) -> nal
+              | CLocalDef (_,_,_,_) -> []
               | CLocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
@@ -521,11 +531,11 @@ let tag_var = tag Tag.variable
             match id with None -> mt() | Some id -> brk (1,1) ++ pr_lident id ++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
-  let pr_fixdecl pr prd lev_after kw dangling_with_for ({v=id},ro,bl,t,c) =
+  let pr_fixdecl pr prd lev_after kw dangling_with_for ({v=id},_,ro,bl,t,c) =
     let annot = pr_guard_annot (pr no_after lsimpleconstr) bl ro in
     pr_recursive_decl pr prd lev_after kw dangling_with_for id bl annot t c
 
-  let pr_cofixdecl pr prd lev_after kw dangling_with_for ({v=id},bl,t,c) =
+  let pr_cofixdecl pr prd lev_after kw dangling_with_for ({v=id},_,bl,t,c) =
     pr_recursive_decl pr prd lev_after kw dangling_with_for id bl (mt()) t c
 
   let pr_recursive lev_after kw pr_decl id = function

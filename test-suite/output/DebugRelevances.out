@@ -1,0 +1,47 @@
+foo@{u} =
+fun (A : (* Relevant *) Type) (a : (* Relevant *) A) => a
+     : forall A : (* Relevant *) Type, A -> A
+
+Arguments foo A%type_scope a
+foo'@{} =
+fun (A : (* Relevant *) Prop) (a : (* Relevant *) A) => a
+     : forall A : (* Relevant *) Prop, A -> A
+
+Arguments foo' A%type_scope a
+bar@{} =
+fun (A : (* Relevant *) SProp) (a : (* Irrelevant *) A) => a
+     : forall A : (* Relevant *) SProp, A -> A
+
+Arguments bar A%type_scope a
+baz@{s | u} =
+fun (A : (* Relevant *) Type) (a : (* s *) A) => a
+     : forall A : (* Relevant *) Type, A -> A
+
+Arguments baz A%type_scope a
+boz@{s s' | u} =
+fun (A B : (* Relevant *) Type) (a : (* s *) hide) (_ : (* s' *) hide) => a
+     : forall A B : (* Relevant *) Type, hide -> hide -> hide
+
+Arguments boz (A B)%type_scope a b
+1 goal
+  
+  f := fun (A : (* Relevant *) Type) (_ : (* α8 *) A) => A
+   : forall (A : (* Relevant *) Type) (_ : (* α8 *) A), Type
+  ============================
+  True
+1 goal
+  
+  f := fun (A : (* Relevant *) Type) (_ : (* Relevant *) A) => A
+   : forall (A : (* Relevant *) Type) (_ : (* Relevant *) A), Type
+  ============================
+  True
+let x := 0 in x
+     : nat
+fix f (n : (* Relevant *) nat) : nat := 0
+     : nat -> nat
+match 0 with
+| 0 | _ => 0
+end
+     : nat
+fun v : (* Relevant *) R => p v
+     : R -> nat

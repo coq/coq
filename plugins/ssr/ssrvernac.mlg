@@ -121,7 +121,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: closed_binder;
   closed_binder: TOP [
     [ ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" ->
-      { [CLocalAssum ([CAst.make ~loc Anonymous], Default Explicit, c)] }
+      { [CLocalAssum ([CAst.make ~loc Anonymous], None, Default Explicit, c)] }
   ] ];
 END
 

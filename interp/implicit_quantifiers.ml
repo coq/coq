@@ -213,7 +213,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
   in
   let rec aux c =
     match DAst.get c with
-    | GProd (na, bk, t, b) ->
+    | GProd (na, _, bk, t, b) ->
       if with_products then add_impl na bk (aux b)
       else
         let () = match bk with
@@ -221,11 +221,11 @@ let implicits_of_glob_constr ?(with_products=true) l =
           | MaxImplicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
           | Explicit -> ()
         in []
-    | GLambda (na, bk, t, b) -> add_impl ?loc:t.CAst.loc na bk (aux b)
-    | GLetIn (na, b, t, c) -> aux c
+    | GLambda (na, _, bk, t, b) -> add_impl ?loc:t.CAst.loc na bk (aux b)
+    | GLetIn (na, _, b, t, c) -> aux c
     | GRec (fix_kind, nas, args, tys, bds) ->
       let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
-      List.fold_right (fun (na,bk,t,_) l ->
+      List.fold_right (fun (na,_,bk,t,_) l ->
           match t with
           | Some _ -> l
           | _ -> add_impl ?loc:c.CAst.loc na bk l)

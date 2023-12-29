@@ -597,11 +597,11 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_app self (c, args) ?loc ~flags tycon env sigma
   | GProj (hd, args, c) ->
     self.pretype_proj self (hd, args, c) ?loc ~flags tycon env sigma
-  | GLambda (na, bk, t, c) ->
+  | GLambda (na, _, bk, t, c) ->
     self.pretype_lambda self (na, bk, t, c) ?loc ~flags tycon env sigma
-  | GProd (na, bk, t, c) ->
+  | GProd (na, _, bk, t, c) ->
     self.pretype_prod self (na, bk, t, c) ?loc ~flags tycon env sigma
-  | GLetIn (na, b, t, c) ->
+  | GLetIn (na, _, b, t, c) ->
     self.pretype_letin self (na, b, t, c) ?loc ~flags tycon env sigma
   | GCases (st, c, tm, cl) ->
     self.pretype_cases self (st, c, tm, cl) ?loc ~flags tycon env sigma
@@ -745,13 +745,13 @@ struct
     let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
     let rec type_bl env sigma ctxt = function
       | [] -> sigma, ctxt
-      | (na,bk,None,ty)::bl ->
+      | (na,_,bk,None,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
         let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
         let dcl = LocalAssum (make_annot na rty', ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
         type_bl env sigma (Context.Rel.add dcl' ctxt) bl
-      | (na,bk,Some bd,ty)::bl ->
+      | (na,_,bk,Some bd,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
         let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
         let sigma, bd' = pretype (mk_tycon ty'.utj_val) env sigma bd in
@@ -1534,7 +1534,7 @@ let path_convertible env sigma cl p q =
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
-  let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Explicit,t,b) in
+  let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,None,Explicit,t,b) in
   let mkGSort u           = DAst.make @@ Glob_term.GSort u in
   let mkGHole ()          = DAst.make @@ Glob_term.GHole (GBinderType Anonymous) in
   let path_to_gterm p =

@@ -773,7 +773,7 @@ let rec flatten_application c = match DAst.get c with
 
 let same_binder_type ty nal c =
   match nal, DAst.get c with
-  | _::_, (GProd (_,_,ty',_) | GLambda (_,_,ty',_)) -> glob_constr_eq ty ty'
+  | _::_, (GProd (_,_,_,ty',_) | GLambda (_,_,_,ty',_)) -> glob_constr_eq ty ty'
   | [], _ -> true
   | _ -> assert false
 
@@ -814,13 +814,13 @@ let extern_prim_token_delimiter_if_required n key_n scope_n scopes =
 (* mapping decl                                                       *)
 
 let extended_glob_local_binder_of_decl loc = function
-  | (p,bk,None,t) -> GLocalAssum (p,bk,t)
-  | (p,bk,Some x, t) ->
+  | (p,r,bk,None,t) -> GLocalAssum (p,r,bk,t)
+  | (p,r,bk,Some x, t) ->
     assert (bk = Explicit);
     match DAst.get t with
-    | GHole (GNamedHole _) -> GLocalDef (p,x,Some t)
-    | GHole _ -> GLocalDef (p,x,None)
-    | _ -> GLocalDef (p,x,Some t)
+    | GHole (GNamedHole _) -> GLocalDef (p,r,x,Some t)
+    | GHole _ -> GLocalDef (p,r,x,None)
+    | _ -> GLocalDef (p,r,x,Some t)
 
 let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_local_binder_of_decl loc u)
 
@@ -862,19 +862,26 @@ let extern_glob_sort_name uvars = function
       | None -> CRawType u
     end
 
-let extern_glob_qvar uvars = function
+let extern_glob_qvar = function
   | GLocalQVar {v=Anonymous;loc} -> CQAnon loc
   | GLocalQVar {v=Name id; loc} -> CQVar (qualid_of_ident ?loc id)
   | GRawQVar q -> CRawQVar q
   | GQVar q -> CRawQVar q
 
-let extern_glob_quality uvars = function
+let extern_relevance = function
+  | GRelevant -> CRelevant
+  | GIrrelevant -> CIrrelevant
+  | GRelevanceVar q -> CRelevanceVar (extern_glob_qvar q)
+
+let extern_relevance_info = Option.map extern_relevance
+
+let extern_glob_quality = function
   | GQConstant q -> CQConstant q
-  | GQualVar q -> CQualVar (extern_glob_qvar uvars q)
+  | GQualVar q -> CQualVar (extern_glob_qvar q)
 
 let extern_glob_sort uvars u =
   let map (q, l) =
-    Option.map (extern_glob_qvar uvars) q, List.map (on_fst (extern_glob_sort_name uvars)) l
+    Option.map extern_glob_qvar q, List.map (on_fst (extern_glob_sort_name uvars)) l
   in
   map_glob_sort_gen map u
 
@@ -887,7 +894,7 @@ let extern_glob_sort uvars = function
 
 let extern_instance uvars = function
   | Some (ql,ul) when !print_universes ->
-    let ql = List.map (extern_glob_quality uvars) ql in
+    let ql = List.map extern_glob_quality ql in
     let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
     Some (ql,ul)
   | _ -> None
@@ -904,8 +911,8 @@ let rec insert_impargs impargs r = match impargs with
   | [] -> r
   | bk :: rest ->
     match DAst.get r with
-    | GProd (na,_,t,c) ->
-      DAst.make ?loc:r.loc (GProd (na, bk, t, insert_impargs rest c))
+    | GProd (na,rinfo,_,t,c) ->
+      DAst.make ?loc:r.loc (GProd (na, rinfo, bk, t, insert_impargs rest c))
     | _ -> r
 
 let rec extern inctx ?impargs scopes vars r =
@@ -985,16 +992,17 @@ let rec extern inctx ?impargs scopes vars r =
   | GProj (f,params,c) ->
       extern_applied_proj inctx scopes vars f params c []
 
-  | GLetIn (na,b,t,c) ->
-      CLetIn (make ?loc na,sub_extern (Option.has_some t) scopes vars b,
-              Option.map (extern_typ scopes vars) t,
-              extern inctx ?impargs scopes (add_vname vars na) c)
+  | GLetIn (na,_,b,t,c) ->
+    CLetIn (make ?loc na,
+            sub_extern (Option.has_some t) scopes vars b,
+            Option.map (extern_typ scopes vars) t,
+            extern inctx ?impargs scopes (add_vname vars na) c)
 
-  | GProd (na,bk,t,c) ->
-      factorize_prod ?impargs scopes vars na bk t c
+  | GProd (na,r,bk,t,c) ->
+      factorize_prod ?impargs scopes vars na r bk t c
 
-  | GLambda (na,bk,t,c) ->
-      factorize_lambda inctx scopes vars na bk t c
+  | GLambda (na,r,bk,t,c) ->
+      factorize_lambda inctx scopes vars na r bk t c
 
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
@@ -1058,7 +1066,7 @@ let rec extern inctx ?impargs scopes vars r =
                    | None -> None
                    | Some x -> Some (CAst.make @@ CStructRec (CAst.make @@ Name.get_id (List.nth assums x)))
                              in
-                 ((CAst.make fi), n, bl, extern_typ scopes vars0 ty,
+                 ((CAst.make fi), None, n, bl, extern_typ scopes vars0 ty,
                   sub_extern true scopes vars1 def)) idv
              in
              CFix (CAst.(make ?loc idv.(n)), Array.to_list listdecl)
@@ -1069,7 +1077,7 @@ let rec extern inctx ?impargs scopes vars r =
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
                  let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
-                 ((CAst.make fi),bl,extern_typ scopes vars0 tyv.(i),
+                 ((CAst.make fi),None,bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern true scopes vars1 bv.(i))) idv
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
@@ -1103,8 +1111,9 @@ and extern_typ ?impargs (subentry,(_,scopes)) =
 
 and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,([],scopes))
 
-and factorize_prod ?impargs scopes vars na bk t c =
+and factorize_prod ?impargs scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
+  let r = extern_relevance_info r in
   let aty = extern_typ scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
@@ -1131,21 +1140,23 @@ and factorize_prod ?impargs scopes vars na bk t c =
       let bk = Option.default Explicit impargs_hd in
       let c' = extern_typ ?impargs:impargs_tl scopes vars c in
       match na, c'.v with
-      | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when binding_kind_eq bk bk'
-                && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *)
-                && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
-         let ty = if implicit_type then ty else aty in
-         CProdN (CLocalAssum(make na::nal,Default bk,ty)::bl,b)
+      | Name id, CProdN (CLocalAssum(nal,r',Default bk',ty)::bl,b)
+        when relevance_info_expr_eq r r'
+            && binding_kind_eq bk bk'
+            && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *)
+            && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
+        let ty = if implicit_type then ty else aty in
+        CProdN (CLocalAssum(make na::nal,r,Default bk,ty)::bl,b)
       | _, CProdN (bl,b) ->
          let ty = if implicit_type then hole else aty in
-         CProdN (CLocalAssum([make na],Default bk,ty)::bl,b)
+         CProdN (CLocalAssum([make na],r,Default bk,ty)::bl,b)
       | _, _ ->
          let ty = if implicit_type then hole else aty in
-         CProdN ([CLocalAssum([make na],Default bk,ty)],c')
+         CProdN ([CLocalAssum([make na],r,Default bk,ty)],c')
 
-and factorize_lambda inctx scopes vars na bk t c =
+and factorize_lambda inctx scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
+  let r = extern_relevance_info r in
   let aty = extern_typ scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
@@ -1166,44 +1177,45 @@ and factorize_lambda inctx scopes vars na bk t c =
   | _, _ ->
       let c' = sub_extern inctx scopes vars c in
       match c'.v with
-      | CLambdaN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when binding_kind_eq bk bk'
-                && not (occur_name na ty)  (* avoid na in ty escapes scope *)
-                && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
-         let aty = if implicit_type then ty else aty in
-         CLambdaN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
+      | CLambdaN (CLocalAssum(nal,r',Default bk',ty)::bl,b)
+        when relevance_info_expr_eq r r'
+          && binding_kind_eq bk bk'
+          && not (occur_name na ty)  (* avoid na in ty escapes scope *)
+          && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
+        let aty = if implicit_type then ty else aty in
+        CLambdaN (CLocalAssum(make na::nal,r,Default bk,aty)::bl,b)
       | CLambdaN (bl,b) ->
          let ty = if implicit_type then hole else aty in
-         CLambdaN (CLocalAssum([make na],Default bk,ty)::bl,b)
+         CLambdaN (CLocalAssum([make na],r,Default bk,ty)::bl,b)
       | _ ->
          let ty = if implicit_type then hole else aty in
-         CLambdaN ([CLocalAssum([make na],Default bk,ty)],c')
+         CLambdaN ([CLocalAssum([make na],r,Default bk,ty)],c')
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])
   | b :: l ->
     match DAst.get b with
-    | GLocalDef (na,bd,ty) ->
+    | GLocalDef (na,r,bd,ty) ->
       let (assums,ids,l) =
         extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
-       CLocalDef(CAst.make na, extern false scopes vars bd,
+       CLocalDef(CAst.make na, extern_relevance_info r, extern false scopes vars bd,
                    Option.map (extern_typ scopes vars) ty) :: l)
 
-    | GLocalAssum (na,bk,ty) ->
+    | GLocalAssum (na,r,bk,ty) ->
       let implicit_type = is_reserved_type na ty in
       let ty = extern_typ scopes vars ty in
       (match extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l with
-          (assums,ids,CLocalAssum(nal,k,ty')::l)
-            when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
+       | (assums,ids,CLocalAssum(nal,r',k,ty')::l)
+         when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
               match na with Name id -> not (occur_var_constr_expr id ty')
-                | _ -> true ->
-              (na::assums,na::ids,
-               CLocalAssum(CAst.make na::nal,k,ty')::l)
-        | (assums,ids,l) ->
-            let ty = if implicit_type then hole else ty in
-            (na::assums,na::ids,
-             CLocalAssum([CAst.make na],Default bk,ty) :: l))
+                          | _ -> true ->
+         (na::assums,na::ids,
+          CLocalAssum(CAst.make na::nal,r',k,ty')::l)
+       | (assums,ids,l) ->
+         let ty = if implicit_type then hole else ty in
+         (na::assums,na::ids,
+          CLocalAssum([CAst.make na],extern_relevance_info r,Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
@@ -1448,16 +1460,16 @@ let rec glob_of_pat
   | PProd (na,t,c) ->
       let na',avoid' = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na c in
       let env' = Termops.add_name na' env in
-      GProd (na',Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
+      GProd (na',None,Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
       let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
       let env' = Termops.add_name na' env in
-      GLetIn (na',glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
+      GLetIn (na',None,glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)
   | PLambda (na,t,c) ->
       let na',avoid' = compute_displayed_name_in_pattern (Global.env ()) sigma avoid na c in
       let env' = Termops.add_name na' env in
-      GLambda (na',Explicit,glob_of_pat avoid env sigma t, glob_of_pat avoid' env' sigma c)
+      GLambda (na',None,Explicit,glob_of_pat avoid env sigma t, glob_of_pat avoid' env' sigma c)
   | PIf (c,b1,b2) ->
       GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)

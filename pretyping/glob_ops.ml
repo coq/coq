@@ -39,10 +39,10 @@ let mkGApp ?loc p l = DAst.make ?loc @@
   | GApp (f,l') -> GApp (f,l'@l)
   | _          -> GApp (p,l)
 
-let map_glob_decl_left_to_right f (na,k,obd,ty) =
+let map_glob_decl_left_to_right f (na,r,k,obd,ty) =
   let comp1 = Option.map f obd in
   let comp2 = f ty in
-  (na,k,comp1,comp2)
+  (na,r,k,comp1,comp2)
 
 let glob_qvar_eq g1 g2 = match g1, g2 with
   | GLocalQVar na1, GLocalQVar na2 -> CAst.eq Name.equal na1 na2
@@ -103,6 +103,13 @@ let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | MaxImplicit, MaxImplicit -> true
   | (Explicit | NonMaxImplicit | MaxImplicit), _ -> false
 
+let glob_relevance_eq a b = match a, b with
+  | GRelevant, GRelevant | GIrrelevant, GIrrelevant -> true
+  | GRelevanceVar q1, GRelevanceVar q2 -> glob_qvar_eq q1 q2
+  | (GRelevant | GIrrelevant | GRelevanceVar _), _ -> false
+
+let relevance_info_eq = Option.equal glob_relevance_eq
+
 let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | LetStyle, LetStyle -> true
   | IfStyle, IfStyle -> true
@@ -140,8 +147,8 @@ and cases_clause_eq f g {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
   (* In principle, id1 and id2 canonically derive from p1 and p2 *)
   List.equal (mk_cases_pattern_eq g) p1 p2 && f c1 c2
 
-let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
-  Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
+let glob_decl_eq f (na1, r1, bk1, c1, t1) (na2, r2, bk2, c2, t2) =
+  Name.equal na1 na2 && relevance_info_eq r1 r2 && binding_kind_eq bk1 bk2 &&
   Option.equal f c1 c2 && f t1 t2
 
 let fix_kind_eq k1 k2 = match k1, k2 with
@@ -163,12 +170,15 @@ let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
   | GPatVar k1, GPatVar k2 -> matching_var_kind_eq k1 k2
   | GApp (f1, arg1), GApp (f2, arg2) ->
     f f1 f2 && List.equal f arg1 arg2
-  | GLambda (na1, bk1, t1, c1), GLambda (na2, bk2, t2, c2) ->
-    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
-  | GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
-    g na1 na2 (Some t1) (Some t2) && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
-  | GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
-    g na1 na2 t1 t2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
+  | GLambda (na1, r1, bk1, t1, c1), GLambda (na2, r2, bk2, t2, c2) ->
+    g na1 na2 (Some t1) (Some t2) && relevance_info_eq r1 r2
+    && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+  | GProd (na1, r1, bk1, t1, c1), GProd (na2, r2, bk2, t2, c2) ->
+    g na1 na2 (Some t1) (Some t2) && relevance_info_eq r1 r2
+    && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+  | GLetIn (na1, r1, b1, t1, c1), GLetIn (na2, r2, b2, t2, c2) ->
+    g na1 na2 t1 t2 && relevance_info_eq r1 r2
+    && f b1 b2 && Option.equal f t1 t2 && f c1 c2
   | GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
     case_style_eq st1 st2 && Option.equal f c1 c2 &&
     List.equal (tomatch_tuple_eq f) tp1 tp2 &&
@@ -226,19 +236,19 @@ let map_glob_constr_left_to_right_with_names f g = DAst.map (function
       let comp1 = f g in
       let comp2 = Util.List.map_left f args in
       GApp (comp1,comp2)
-  | GLambda (na,bk,ty,c) ->
+  | GLambda (na,r,bk,ty,c) ->
       let comp1 = f ty in
       let comp2 = f c in
-      GLambda (g na,bk,comp1,comp2)
-  | GProd (na,bk,ty,c) ->
+      GLambda (g na,r,bk,comp1,comp2)
+  | GProd (na,r,bk,ty,c) ->
       let comp1 = f ty in
       let comp2 = f c in
-      GProd (g na,bk,comp1,comp2)
-  | GLetIn (na,b,t,c) ->
+      GProd (g na,r,bk,comp1,comp2)
+  | GLetIn (na,r,b,t,c) ->
       let comp1 = f b in
       let compt = Option.map f t in
       let comp2 = f c in
-      GLetIn (g na,comp1,compt,comp2)
+      GLetIn (g na,r,comp1,compt,comp2)
   | GCases (sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in
       let comp2 = Util.List.map_left (fun (tm,(x,indxl)) -> (f tm,(g x,Option.map (CAst.map (fun (ind,xl) -> (ind,List.map g xl))) indxl))) tml in
@@ -285,9 +295,9 @@ let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
 let fold_glob_constr f acc = DAst.with_val (function
   | GVar _ -> acc
   | GApp (c,args) -> List.fold_left f (f acc c) args
-  | GLambda (_,_,b,c) | GProd (_,_,b,c) ->
+  | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) ->
     f (f acc b) c
-  | GLetIn (_,b,t,c) ->
+  | GLetIn (_,_,b,t,c) ->
     f (Option.fold_left f (f acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc {CAst.v=(idl,p,c)} = f acc c in
@@ -300,7 +310,7 @@ let fold_glob_constr f acc = DAst.with_val (function
     f (f (f (fold_return_type f acc rtntyp) c) b1) b2
   | GRec (_,_,bl,tyl,bv) ->
     let acc = Array.fold_left
-      (List.fold_left (fun acc (na,k,bbd,bty) ->
+      (List.fold_left (fun acc (_,_,_,bbd,bty) ->
         f (Option.fold_left f acc bbd) bty)) acc bl in
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k,t) ->
@@ -318,9 +328,9 @@ let fold_return_type_with_binders f g v acc (na,tyopt) =
 let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GVar _ -> acc
   | GApp (c,args) -> List.fold_left (f v) (f v acc c) args
-  | GLambda (na,_,b,c) | GProd (na,_,b,c) ->
+  | GLambda (na,_,_,b,c) | GProd (na,_,_,b,c) ->
     f (Name.fold_right g na v) (f v acc b) c
-  | GLetIn (na,b,t,c) ->
+  | GLetIn (na,_,b,t,c) ->
     f (Name.fold_right g na v) (Option.fold_left (f v) (f v acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc {v=(idl,p,c)} = f (List.fold_right g idl v) acc c in
@@ -342,7 +352,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     let f' i acc fid =
       let v,acc =
         List.fold_left
-          (fun (v,acc) (na,k,bbd,bty) ->
+          (fun (v,acc) (na,_,_,bbd,bty) ->
             (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in
@@ -492,15 +502,15 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
   | GRef (GlobRef.VarRef id,_) as r ->
       if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
       else r
-  | GProd (na,bk,t,c) ->
+  | GProd (na,r,bk,t,c) ->
       let na',l' = update_subst na l in
-      GProd (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
-  | GLambda (na,bk,t,c) ->
+      GProd (na',r,bk,rename_glob_vars l t,rename_glob_vars l' c)
+  | GLambda (na,r,bk,t,c) ->
       let na',l' = update_subst na l in
-      GLambda (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
-  | GLetIn (na,b,t,c) ->
+      GLambda (na',r,bk,rename_glob_vars l t,rename_glob_vars l' c)
+  | GLetIn (na,r,b,t,c) ->
       let na',l' = update_subst na l in
-      GLetIn (na',rename_glob_vars l b,Option.map (rename_glob_vars l) t,rename_glob_vars l' c)
+      GLetIn (na',r,rename_glob_vars l b,Option.map (rename_glob_vars l) t,rename_glob_vars l' c)
   (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
   | GCases (ci,po,tomatchl,cls) ->
       let test_pred_pat (na,ino) =
@@ -521,8 +531,9 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
   | GRec (k,idl,decls,bs,ts) ->
      Array.iter (test_id l) idl;
      GRec (k,idl,
-           Array.map (List.map (fun (na,k,bbd,bty) ->
-             test_na l na; (na,k,Option.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
+           Array.map (List.map (fun (na,r,k,bbd,bty) ->
+               test_na l na;
+               (na,r,k,Option.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
            Array.map (rename_glob_vars l) bs,
            Array.map (rename_glob_vars l) ts)
   | _ -> DAst.get (map_glob_constr (rename_glob_vars l) c)
@@ -559,7 +570,7 @@ let rec cases_pattern_of_glob_constr env na c =
       PatCstr (cstr,List.map (cases_pattern_of_glob_constr env Anonymous) l,na)
     | _ -> raise Not_found
     end
-  | GLetIn (Name id as na',b,None,e) when is_gvar id e && na = Anonymous ->
+  | GLetIn (Name id as na',_,b,None,e) when is_gvar id e && na = Anonymous ->
      (* A canonical encoding of aliases *)
      DAst.get (cases_pattern_of_glob_constr env na' b)
   | _ -> raise Not_found
@@ -598,7 +609,7 @@ let add_patterns_for_params_remove_local_defs env (ind,j) l =
 let add_alias ?loc na c =
   match na with
   | Anonymous -> c
-  | Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
+  | Name id -> GLetIn (na,None,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
 
 (* Turn a closed cases pattern into a glob_constr *)
 let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun ?loc -> function

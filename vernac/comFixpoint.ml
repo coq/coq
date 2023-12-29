@@ -327,9 +327,9 @@ let adjust_rec_order ~structonly binders rec_order =
   let rec_order = Option.map (fun rec_order ->
       let open Constrexpr in
       match binders, rec_order with
-      | [CLocalAssum([{ CAst.v = Name x }],_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+      | [CLocalAssum([{ CAst.v = Name x }],_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
         CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-      | [CLocalDef({ CAst.v = Name x },_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+      | [CLocalDef({ CAst.v = Name x },_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
         CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
       | _, x -> x) rec_order
   in

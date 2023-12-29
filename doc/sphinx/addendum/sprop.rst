@@ -238,18 +238,37 @@ breaks termination of reduction
 
 The term :g:`c (top -> top) (fun x => x) c` infinitely reduces to itself.
 
-Lack of tactic support
-----------------------
+Debugging |SProp| issues
+------------------------
 
-Some tactics do not handle |SProp| as they were not correctly ported. While in
-most of the cases they will just fail, in some cases this can result in sending
-ill-typed terms to the kernel, which will fail with anomalies at `Qed`.
+Every binder in a term (such as `fun x` or `forall x`) caches
+information called the :gdef:`relevance mark` indicating whether its type is
+in |SProp| or not. This is used to efficiently implement proof
+irrelevance.
+
+The user should usually not be concerned with relevance marks, so by
+default they are not displayed. However code outside the kernel may
+generate incorrect marks resulting in bugs. Typically this means a
+conversion will incorrectly fail as a variable was incorrectly marked
+proof relevant.
 
 .. warn:: Bad relevance
 
   This is a developer warning, which is treated as an error by default. It is
   emitted by the kernel when it is passed a term with incorrect relevance marks.
-  This is always caused by a bug in Coq, which should thus be reported and
+  This is always caused by a bug in Coq (or a plugin), which should thus be reported and
   fixed. In order to allow the user to work around such bugs, we leave the
   ability to unset the ``bad-relevance`` warning for the time being, so that the
   kernel will silently repair the proof term instead of failing.
+
+.. flag:: Printing Relevance Marks
+
+   This :term:`flag` enables debug printing of relevance marks. It is off by default.
+   Note that :flag:`Printing All` does not affect printing of relevance marks.
+
+   .. coqtop:: all
+
+      Set Printing Relevance Marks.
+
+      Check fun x : nat => x.
+      Check fun (P:SProp) (p:P) => p.

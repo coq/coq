@@ -123,13 +123,13 @@ let destCVar = function
     qualid_basename qid
   | _ ->
     CErrors.anomaly (str"not a CRef.")
-let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _) -> true | _ -> false
-let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
+let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _, _) -> true | _ -> false
+let destGLambda c = match DAst.get c with GLambda (Name id, _, _, _, c) -> (id, c)
   | _ -> CErrors.anomaly (str "not a GLambda")
 let isGHole c = match DAst.get c with GHole _ -> true | _ -> false
 let mkCHole ~loc = CAst.make ?loc @@ CHole (None)
 let mkCLambda ?loc name ty t = CAst.make ?loc @@
-   CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
+   CLambdaN ([CLocalAssum([CAst.make ?loc name], None, Default Explicit, ty)], t)
 let mkCLetIn ?loc name bo t = CAst.make ?loc @@
    CLetIn ((CAst.make ?loc name), bo, None, t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
@@ -138,7 +138,7 @@ let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
 let mkRHole = DAst.make @@ GHole (GInternalHole)
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
-let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
+let mkRLambda n s t = DAst.make @@ GLambda (n, None, Explicit, s, t)
 
 (* }}} *)
 
@@ -1154,7 +1154,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   | Some b -> {kind; pattern=(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)); interpretation}
   | None -> { kind
             ; pattern = DAst.make ?loc @@ GLetIn
-                  (x, DAst.make ?loc @@ GHole (GBinderType x), None, g), None
+                  (x, None, DAst.make ?loc @@ GHole (GBinderType x), None, g), None
             ; interpretation} in
   match red with
   | T t -> let sigma, t = interp_term env sigma0 t in { pat_sigma = sigma; pat_pat = T t }

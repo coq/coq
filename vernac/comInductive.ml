@@ -99,8 +99,8 @@ let rec check_type_conclusion ind =
     (* should have been made flexible *)
     assert false
   | GSort (UNamed _) -> true
-  | GProd ( _, _, _, e)
-  | GLetIn (_, _, _, e) ->
+  | GProd (_, _, _, _, e)
+  | GLetIn (_, _, _, _, e) ->
     check_type_conclusion e
   | _ -> false
 
@@ -110,13 +110,13 @@ let rec make_anonymous_conclusion_flexible ind =
   | GSort (UAnonymous {rigid=UnivRigid}) ->
     Some (DAst.make ?loc:ind.loc (GSort (UAnonymous {rigid=UnivFlexible true})))
   | GSort (UNamed _) -> None
-  | GProd (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+  | GProd (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
-      | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, e)))
+      | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, d, e)))
     end
-  | GLetIn (a, b, c, e) -> begin match make_anonymous_conclusion_flexible e with
+  | GLetIn (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
-      | Some e -> Some (DAst.make ?loc:ind.loc (GLetIn (a, b, c, e)))
+      | Some e -> Some (DAst.make ?loc:ind.loc (GLetIn (a, b, c, d, e)))
     end
   | _ -> None
 
@@ -442,9 +442,9 @@ match user_template, univ_entry with
     else Monomorphic_ind_entry, uctx
 
 let check_param = function
-| CLocalDef (na, _, _) -> check_named na
-| CLocalAssum (nas, Default _, _) -> List.iter check_named nas
-| CLocalAssum (nas, Generalized _, _) -> ()
+| CLocalDef (na, _, _, _) -> check_named na
+| CLocalAssum (nas, _, Default _, _) -> List.iter check_named nas
+| CLocalAssum (nas, _, Generalized _, _) -> ()
 | CLocalPattern {CAst.loc} ->
   Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
@@ -721,7 +721,7 @@ end
 
 let rec count_binder_expr = function
   | [] -> 0
-  | CLocalAssum(l,_,_) :: rest -> List.length l + count_binder_expr rest
+  | CLocalAssum(l,_,_,_) :: rest -> List.length l + count_binder_expr rest
   | CLocalDef _ :: rest -> 1 + count_binder_expr rest
   | CLocalPattern {CAst.loc} :: _ ->
     Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")

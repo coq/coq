@@ -419,9 +419,9 @@ let match_goals ot nt =
     in
     let local_binder_expr ogname exp exp2 =
       match exp, exp2 with
-      | CLocalAssum (nal,bk,ty), CLocalAssum(nal2,bk2,ty2) ->
+      | CLocalAssum (nal,_,bk,ty), CLocalAssum(nal2,_,bk2,ty2) ->
         constr_expr ogname ty ty2
-      | CLocalDef (n,c,t), CLocalDef (n2,c2,t2) ->
+      | CLocalDef (n,_,c,t), CLocalDef (n2,_,c2,t2) ->
         constr_expr ogname c c2;
         constr_expr_opt ogname t t2
       | CLocalPattern p, CLocalPattern p2 ->
@@ -441,14 +441,14 @@ let match_goals ot nt =
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (3)")
     in
     let fix_expr ogname exp exp2 =
-      let (l,ro,lb,ce1,ce2), (l2,ro2,lb2,ce12,ce22) = exp,exp2 in
+      let (l,_,ro,lb,ce1,ce2), (l2,_,ro2,lb2,ce12,ce22) = exp,exp2 in
         Option.iter2 (recursion_order_expr ogname) ro ro2;
         iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22
     in
     let cofix_expr ogname exp exp2 =
-      let (l,lb,ce1,ce2), (l2,lb2,ce12,ce22) = exp,exp2 in
+      let (l,_,lb,ce1,ce2), (l2,_,lb2,ce12,ce22) = exp,exp2 in
         iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22

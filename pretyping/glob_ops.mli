@@ -25,6 +25,8 @@ val glob_quality_eq :  glob_quality -> glob_quality -> bool
 
 val glob_level_eq : Glob_term.glob_level -> Glob_term.glob_level -> bool
 
+val relevance_info_eq : relevance_info -> relevance_info -> bool
+
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 
 (** Expect a Prop/SProp/Set/Type universe; raise [ComplexSort] if
