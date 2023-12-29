@@ -1,0 +1,72 @@
+Notation foo := eq_refl
+
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
+
+Arguments eq {A}%type_scope x _
+Arguments eq_refl {A}%type_scope {x}, [_] _
+Notation foo := eq_refl
+Expands to: Notation bug_3516.A.AA.foo
+
+eq_refl : forall {A : Type} {x : A}, x = x
+
+eq_refl is not universe polymorphic
+Arguments eq_refl {A}%type_scope {x}, [_] _
+Expands to: Constructor Coq.Init.Logic.eq_refl
+foo
+     : 3 = 3
+foo
+     : 3 = 3
+Notation foo2 := eq_refl
+Notation foo2 := eq_refl
+Expands to: Notation bug_3516.A.AB.foo2
+foo2
+     : 3 = 3
+Notation foo := foo2
+
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
+
+Arguments eq {A}%type_scope x _
+Arguments eq_refl {A}%type_scope {x}, [_] _
+foo2
+     : ?x = ?x
+where
+?A : [ |- Type]
+?x : [ |- ?A]
+foo2
+     : ?x = ?x
+where
+?A : [ |- Type]
+?x : [ |- ?A]
+foo2
+     : ?x = ?x
+where
+?A : [ |- Type]
+?x : [ |- ?A]
+Notation foo := foo2
+Expands to: Notation bug_3516.A.AA.foo
+
+eq_refl : forall {A : Type} {x : A}, x = x
+
+eq_refl is not universe polymorphic
+Arguments eq_refl {A}%type_scope {x}, [_] _
+Expands to: Constructor Coq.Init.Logic.eq_refl
+Notation foo2 := foo
+Notation foo2 := foo
+Expands to: Notation bug_3516.A.AB.foo2
+Notation foo := (id 2)
+Notation foo := (id 2)
+Expands to: Notation bug_3516.B.foo
+foo 3
+     : nat * nat
+foo 3
+     : nat * nat
+Notation foo2 := foo
+Notation foo2 := foo
+Expands to: Notation bug_3516.B.foo2
+Notation foo := foo2
+Notation foo := foo2
+Expands to: Notation bug_3516.B.foo
+foo2 3
+     : nat * nat
+expfoo 3
+     : 3 = 3
