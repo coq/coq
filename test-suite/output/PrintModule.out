@@ -1,11 +1,7 @@
 Module N : S with Definition T := nat := M
-
 Module N : S with Definition T := M
-
 Module N : S with Module T := K := M
-
 Module N : S with Module T := M
-
 Module Type Func = Funsig (T0:Test) Sig Parameter x : T0.t. End
 Module
 A
@@ -14,4 +10,3 @@ A
      Record R : Set := Build_R { n : nat }.
      Definition n : R -> nat.
    End
-
