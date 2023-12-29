@@ -276,7 +276,7 @@ type 'a notation_query_pattern_gen = {
 
 type notation_query_pattern = qualid notation_query_pattern_gen
 
-val toggle_notations : on:bool -> all:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
+val toggle_notations : on:bool -> all:bool -> ?verbose:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
 
 (** {6 Miscellaneous} *)
 
@@ -293,6 +293,11 @@ exception NotationAsReferenceError of notation_as_reference_error
     Raise NotationAsReferenceError if not resolvable as a global reference *)
 val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool ->
       (GlobRef.t -> bool) -> notation_key -> delimiters option -> GlobRef.t
+
+(** Same together with the full notation *)
+val interp_notation_as_global_reference_expanded : ?loc:Loc.t -> head:bool ->
+      (GlobRef.t -> bool) -> notation_key -> delimiters option ->
+  (notation_entry * notation_key) * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :

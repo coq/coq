@@ -78,6 +78,13 @@ Arguments bar {x}
 Module Coq.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
+
+eq_sym : forall [A : Type] [x y : A], x = y -> y = x
+
+eq_sym is not universe polymorphic
+Arguments eq_sym [A]%type_scope [x y] _
+eq_sym is transparent
+Expands to: Constant Coq.Init.Logic.eq_sym
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%type_scope x _

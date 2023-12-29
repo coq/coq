@@ -1,0 +1,20 @@
+Notation pow := Nat.pow
+
+Nat.pow =
+fix pow (n m : nat) {struct m} : nat :=
+  match m with
+  | 0 => 1
+  | S m0 => n * pow n m0
+  end
+     : nat -> nat -> nat
+
+Arguments Nat.pow (n m)%nat_scope
+Notation pow := Nat.pow
+Expands to: Notation wish_18097.pow
+
+Nat.pow : nat -> nat -> nat
+
+Nat.pow is not universe polymorphic
+Arguments Nat.pow (n m)%nat_scope
+Nat.pow is transparent
+Expands to: Constant Coq.Init.Nat.pow
