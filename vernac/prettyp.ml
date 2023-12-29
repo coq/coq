@@ -556,6 +556,28 @@ let glob_constr_of_abbreviation kn =
   let (vars,a) = Abbreviation.search_abbreviation kn in
   (List.map fst vars, Notation_ops.glob_constr_of_notation_constr a)
 
+let add_maximal_implicit c =
+  let open Glob_term in
+  let f gref us args =
+    let impl = select_stronger_impargs (implicits_of_global gref) in
+    let impl = List.skipn_at_least (List.length args) impl in
+    let rec aux = function
+      | a :: l ->
+        if is_status_implicit a && maximal_insertion_of a
+        then DAst.make (GHole GInternalHole) :: aux l
+        else aux l
+      | [] -> [] in
+    let args = args @ aux impl in
+    Glob_ops.mkGApp (DAst.make (GRef (gref,us))) args
+  in
+  match DAst.get c with
+  | GRef (gref,us) -> f gref us []
+  | GApp (r,args) ->
+    (match DAst.get r with
+     | GRef (gref,us) -> f gref us args
+     | _ -> c)
+  | _ -> c
+
 let print_abbreviation_body env kn (vars,c) =
   let qid = Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn in
   hov 2
@@ -566,6 +588,11 @@ let print_abbreviation_body env kn (vars,c) =
      spc () ++
      Vernacstate.System.protect (fun () ->
          Abbreviation.toggle_abbreviation ~on:false ~use:ParsingAndPrinting kn;
+         (* Applied references inherit implicit arguments, but they
+            are not necessarily saturated in maximal implicit
+            arguments as a notation. To prevent them to be printed
+            with a @, we saturate them with maximal implicit arguments *)
+         let c = add_maximal_implicit c in
          pr_glob_constr_env env (Evd.from_env env) c) ())
 
 let print_abbreviation access env sigma kn =
