@@ -1794,7 +1794,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
   let rec rcp_of_glob scopes x = DAst.(map_with_loc (fun ?loc -> function
     | GVar id -> RCPatAtom (Some (CAst.make ?loc id,scopes))
     | GHole _ -> RCPatAtom None
-    | GRef (g,_) -> RCPatCstr (g, [])
+    | GRef (g,_) -> RCPatCstr (g, in_patargs ?loc scopes g true false [] [])
     | GApp (r, l) ->
       begin match DAst.get r with
       | GRef (g,_) ->
@@ -1805,13 +1805,12 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
         let allscs = List.skipn nparams allscs in
         let l = List.skipn nparams l in
         let pl = List.map2 (fun sc a -> rcp_of_glob (sc,snd scopes) a) allscs l in
-        RCPatCstr (g, params @ pl)
+        RCPatCstr (g, in_patargs ?loc scopes g true false (params@pl) [])
       | _ ->
         CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr.")
       end
     | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr."))) x
-  in
-  let rec drop_abbrev {test_kind} ?loc scopes qid add_par_if_no_ntn_with_par no_impl pats =
+  and drop_abbrev {test_kind} ?loc scopes qid add_par_if_no_ntn_with_par no_impl pats =
     try
       if qualid_is_ident qid && Option.cata (Id.Set.mem (qualid_basename qid)) false env.pat_ids && List.is_empty pats then
         raise Not_found;
@@ -2264,7 +2263,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CGeneralization (b,c) ->
         intern_generalization intern env ntnvars loc b c
     | CPrim p ->
-        fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes))
+        let c = fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes)) in
+        apply_impargs env loc c []
     | CDelimiters (depth, key, e) ->
         let sc = find_delimiters_scope ?loc key in
         let env = match depth with
