@@ -45,3 +45,23 @@ Module MakeArgumentPrinted.
 Notation expfoo x := (eq_refl x).
 Check expfoo 3.
 End MakeArgumentPrinted.
+
+Module AtomWithMultipleImplSign.
+(* An example with an argument followed by further maximal arguments *)
+Definition id B (b:B) := eq_refl b.
+Arguments id {B} b, {B b}, B b.
+Notation foo := id.
+Check foo nat 0.
+Check foo 0.
+Check foo.
+End AtomWithMultipleImplSign.
+
+Module NonAtomWithMultipleImplSign.
+(* An example with an argument followed by further maximal arguments *)
+Definition id (a:nat) B (b:B) := eq_refl b.
+Arguments id a {B} b, a {B b}, a B b.
+Notation foo := (id 0).
+Check foo nat 0.
+Check foo 0.
+Check foo.
+End NonAtomWithMultipleImplSign.

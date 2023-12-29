@@ -70,3 +70,21 @@ foo2 3
      : nat * nat
 expfoo 3
      : 3 = 3
+foo
+     : 0 = 0
+foo
+     : 0 = 0
+foo
+     : ?b = ?b
+where
+?B : [ |- Type]
+?b : [ |- ?B]
+foo
+     : 0 = 0
+foo
+     : 0 = 0
+foo
+     : ?b = ?b
+where
+?B : [ |- Type]
+?b : [ |- ?B]
