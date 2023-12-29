@@ -1,4 +1,4 @@
-toto = (fun y : True => conj y y) I
+toto = ssr_have I (fun y : True => conj y y)
      : True /\ True
-toto = (fun y : True => conj y y) I
+toto = ssr_have I (fun y : True => conj y y)
      : True /\ True
