@@ -261,6 +261,7 @@ type intern_env = {
   impls: internalization_env;
   binder_block_names: abstraction_kind option (* None = unknown *) option;
   ntn_binding_ids: Id.Set.t; (* subset of ids that are notation variables *)
+  use_maximal_impls: bool;
 }
 
 type pattern_intern_env = {
@@ -342,6 +343,8 @@ let reset_tmp_scope env = {env with tmp_scope = []}
 
 let set_env_scopes env (scopt,subscopes) =
   {env with tmp_scope = scopt; scopes = subscopes @ env.scopes}
+
+let set_max_impl_args env = {env with use_maximal_impls = true}
 
 let env_for_pattern env =
   {pat_scopes = (env.tmp_scope, env.scopes); pat_ids = Some env.ids}
@@ -1486,7 +1489,7 @@ let interp_reference vars r =
       {ids = Id.Set.empty; strict_check = Some true;
        local_univs = empty_local_univs;(* <- doesn't matter here *)
        tmp_scope = []; scopes = []; impls = empty_internalization_env;
-       binder_block_names = None; ntn_binding_ids = Id.Set.empty}
+       binder_block_names = None; ntn_binding_ids = Id.Set.empty; use_maximal_impls = true}
       Environ.empty_named_context_val
       (vars, Id.Map.empty) None [] r
   in r
@@ -2148,7 +2151,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = CAst.with_loc_val (fun ?loc -> function
     | CRef (ref,us) ->
         let c,_ =
-          intern_applied_reference ~isproj:false intern env (Environ.named_context_val globalenv)
+          intern_applied_reference ~isproj:false intern_inner env (Environ.named_context_val globalenv)
             lvar us [] ref
         in
           apply_impargs env loc c []
@@ -2201,7 +2204,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl = Array.map2 (fun (_,_,_,_,_,bd) (n,bl,ty,before_impls) ->
             (* We add the binders common to body and type to the environment *)
             let env_body = restore_binders_impargs env_rec before_impls in
-            (n,bl,ty,intern {env_body with tmp_scope = []} bd)) dl idl_temp in
+            (n,bl,ty,intern_inner {env_body with tmp_scope = []} bd)) dl idl_temp in
         DAst.make ?loc @@
         GRec (GFix
                 (Array.map (fun (ro,_,_,_) -> ro) idl,n),
@@ -2235,7 +2238,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl = Array.map2 (fun (_,_,_,_,bd) (b,c,bl_impls) ->
           (* We add the binders common to body and type to the environment *)
           let env_body = restore_binders_impargs env_rec bl_impls in
-          (b,c,intern {env_body with tmp_scope = []} bd)) dl idl_tmp in
+          (b,c,intern_inner {env_body with tmp_scope = []} bd)) dl idl_tmp in
         DAst.make ?loc @@
         GRec (GCoFix n,
               Array.of_list lf,
@@ -2249,7 +2252,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CLambdaN ([],c2) -> anomaly (Pp.str "The AST is malformed, found lambda without binders.")
     | CLambdaN (bl,c2) ->
         let (env',bl) = List.fold_left intern_local_binder (reset_tmp_scope (switch_lambda_binders env),[]) bl in
-        expand_binders ?loc mkGLambda bl (intern env' c2)
+        expand_binders ?loc mkGLambda bl (intern_inner env' c2)
     | CLetIn (na,c1,t,c2) ->
         let inc1 = intern_restart_binders (reset_tmp_scope env) c1 in
         let int = Option.map (intern_type_restart_binders env) t in
@@ -2261,10 +2264,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        intern env (CAst.make ?loc @@ CPrim (Number (SMinus,p)))
     | CNotation (_,(InConstrEntry,"( _ )"),([a],[],[],[])) -> intern env a
     | CNotation (_,ntn,args) ->
-        let c = intern_notation intern env ntnvars loc ntn args in
+        let c = intern_notation intern_inner env ntnvars loc ntn args in
         apply_impargs env loc c []
     | CGeneralization (b,c) ->
-        intern_generalization intern env ntnvars loc b c
+        intern_generalization intern_inner env ntnvars loc b c
     | CPrim p ->
         let c = fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes)) in
         apply_impargs env loc c []
@@ -2279,7 +2282,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CAppExpl ((ref,us), args) ->
         let f,args =
           let args = List.map (fun a -> (a,None)) args in
-          intern_applied_reference ~isproj:false intern env (Environ.named_context_val globalenv)
+          intern_applied_reference ~isproj:false intern_inner env (Environ.named_context_val globalenv)
             lvar us args ref
         in
         check_not_notation_variable f ntnvars;
@@ -2292,11 +2295,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         | CProj (expl, (ref,us), args', c) ->
           intern_proj ?loc:f.CAst.loc env expl (ref,us) args' c args
         | CRef (ref,us) ->
-          let f, args = intern_applied_reference ~isproj:false intern env
+          let f, args = intern_applied_reference ~isproj:false intern_inner env
             (Environ.named_context_val globalenv) lvar us args ref in
           apply_impargs env loc f args
         | CNotation (_,ntn,ntnargs) ->
-          let c = intern_notation intern env ntnvars loc ntn ntnargs in
+          let c = intern_notation intern_inner env ntnvars loc ntn ntnargs in
           apply_impargs env loc c args
         | _ ->
           let f = intern_no_implicit env f in
@@ -2385,7 +2388,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_type (slide_binders env'') u) po in
         DAst.make ?loc @@
         GLetTuple (List.map (fun { CAst.v } -> v) nal, (na', p'), b',
-                   intern (List.fold_left (push_name_env ~dump:true ntnvars []) env nal) c)
+                   intern_inner (List.fold_left (push_name_env ~dump:true ntnvars []) env nal) c)
     | CIf (c, (na,po), b1, b2) ->
       let env' = reset_tmp_scope env in
       let ((c',(na',_)),_,_) = intern_case_item env' Id.Set.empty (c,na,None) in (* no "in" no match to ad too *)
@@ -2394,7 +2397,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             (CAst.make na') in
           intern_type (slide_binders env'') p) po in
         DAst.make ?loc @@
-        GIf (c', (na', p'), intern env b1, intern env b2)
+        GIf (c', (na', p'), intern_inner env b1, intern_inner env b2)
     | CHole k ->
         let k = match k with
         | None ->
@@ -2456,24 +2459,26 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let c2 = intern_type (slide_binders env) c2 in
         let sc = Notation.compute_glob_type_scope c2 in
         let env' = {env with tmp_scope = sc @ env.tmp_scope} in
-        let c1 = intern env' c1 in
+        let c1 = intern_inner env' c1 in
         DAst.make ?loc @@
         GCast (c1, k, c2)
     | CArray(u,t,def,ty) ->
       DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
     )
-  and intern_type env = intern (set_type_scope env)
+  and intern_inner env = intern (set_max_impl_args env)
 
-  and intern_type_no_implicit env = intern (restart_no_binders (set_type_scope env))
+  and intern_type env = intern_inner (set_type_scope env)
 
-  and intern_no_implicit env = intern (restart_no_binders env)
+  and intern_type_no_implicit env = intern_inner (restart_no_binders (set_type_scope env))
 
-  and intern_restart_binders env = intern (restart_lambda_binders env)
+  and intern_no_implicit env = intern_inner (restart_no_binders env)
 
-  and intern_type_restart_binders env = intern (restart_prod_binders (set_type_scope env))
+  and intern_restart_binders env = intern_inner (restart_lambda_binders env)
+
+  and intern_type_restart_binders env = intern_inner (restart_prod_binders (set_type_scope env))
 
   and intern_local_binder env bind : intern_env * Glob_term.extended_glob_local_binder list =
-    intern_local_binder_aux ~dump:true intern ntnvars env bind
+    intern_local_binder_aux ~dump:true intern_inner ntnvars env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern env n pl =
@@ -2560,7 +2565,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 
   and intern_proj ?loc env expl (qid,us) args1 c args2 =
     let f,args1 =
-      intern_applied_reference ~isproj:true intern env
+      intern_applied_reference ~isproj:true intern_inner env
         (Environ.named_context_val globalenv) lvar us args1 qid
     in
     match find_projection_data f with
@@ -2631,6 +2636,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and apply_impargs env loc c args =
     let head, impls, subscopes = find_appl_head_data env lvar c in
     let imps = select_impargs_size (List.length (List.filter (fun (_,x) -> x == None) args)) impls in
+    let imps = if env.use_maximal_impls then imps else List.map (Option.map (fun c -> {c with impl_max = false})) imps in
     let args = intern_impargs head env imps subscopes args in
     smart_gapp c loc args
 
@@ -2692,7 +2698,8 @@ let intern_gen kind env sigma
   internalize env {ids = extract_ids env; strict_check;
                    local_univs = { bound = bound_univs sigma; unb_univs = true };
                    tmp_scope = tmp_scope; scopes = [];
-                   impls; binder_block_names = Some k; ntn_binding_ids = Id.Set.empty}
+                   impls; binder_block_names = Some k; ntn_binding_ids = Id.Set.empty;
+                   use_maximal_impls = true;}
     pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_unknown_if_term_or_type env sigma c =
@@ -2779,7 +2786,7 @@ let intern_uninstantiated_constr_pattern env sigma ?(as_type=false) ?strict_chec
   uninstantiated_pattern_of_glob_constr env c
 
 let intern_core kind env sigma ?strict_check ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
-      { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
+    { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
   let tmp_scope = scope_of_type_kind env sigma kind in
   let impls = empty_internalization_env in
   let k = allowed_binder_kind_of_type_kind kind in
@@ -2787,7 +2794,7 @@ let intern_core kind env sigma ?strict_check ?(pattern_mode=false) ?(ltacvars=em
     {ids; strict_check;
      local_univs = { bound = bound_univs sigma; unb_univs = true };
      tmp_scope; scopes = []; impls;
-     binder_block_names = Some (Some k); ntn_binding_ids = Id.Set.empty}
+     binder_block_names = Some (Some k); ntn_binding_ids = Id.Set.empty; use_maximal_impls = true}
     pattern_mode (ltacvars, vl) c
 
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
@@ -2802,7 +2809,8 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let c = internalize env
       {ids; strict_check = Some true;
        local_univs = empty_local_univs;
-       tmp_scope = []; scopes = []; impls; binder_block_names = None; ntn_binding_ids = Id.Set.empty}
+       tmp_scope = []; scopes = []; impls; binder_block_names = None;
+       ntn_binding_ids = Id.Set.empty; use_maximal_impls = false}
       false (empty_ltac_sign, vl) a
   in
   (* Splits variables into those that are binding, bound, or both *)
@@ -2837,7 +2845,7 @@ let default_internalization_env ids bound_univs impl_env =
    local_univs = { bound = bound_univs; unb_univs = true };
    tmp_scope = []; scopes = []; impls = impl_env;
    binder_block_names = Some (Some AbsPi);
-   ntn_binding_ids = Id.Set.empty}
+   ntn_binding_ids = Id.Set.empty; use_maximal_impls = true}
 
 let intern_context env ~bound_univs impl_env binders =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
