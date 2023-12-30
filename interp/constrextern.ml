@@ -412,11 +412,22 @@ let rec extern_cases_pattern_in_scope ((custom,(lev_after:int option)),scopes as
 and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb_to_drop,more_args))
     ((custom, lev_after), (tmp_scope, scopes) as allscopes) vars pat rule =
   let lev_after = if List.is_empty more_args then lev_after else Some Notation.app_level in
+  let extra_args =
+    let subscopes = find_arguments_scope gr in
+    let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
+    let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
+    let more_args = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
+    if Constrintern.get_asymmetric_patterns () || not (List.is_empty termlists) then more_args
+    else if no_implicit then more_args else
+      match drop_implicits_in_patt gr nb_to_drop more_args with
+      | Some true_args -> true_args
+      | None -> raise No_match in
   match rule with
     | NotationRule (_,ntn as specific_ntn) ->
       begin
-        let entry = fst (Notation.level_of_notation ntn) in
-        let entry = if overlap_right_left lev_after pat then {entry with notation_level = max_int} else entry in
+        let entry =
+          let entry = fst (Notation.level_of_notation ntn) in
+          if overlap_right_left lev_after pat then {entry with notation_level = max_int} else entry in
         match availability_of_entry_coercion custom entry with
         | None -> raise No_match
         | Some coercion ->
@@ -443,20 +454,9 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
                 (extern_cases_pattern_in_scope scopes vars c, Explicit))
                 binders
             in
-            let subscopes = find_arguments_scope gr in
-            let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
-            let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
-            let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
-            let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
-              else
-                if no_implicit then l2 else
-                  match drop_implicits_in_patt gr nb_to_drop l2 with
-                  | Some true_args -> true_args
-                  | None -> raise No_match
-            in
             insert_pat_coercion coercion
               (insert_pat_delimiters ?loc
-                 (make_pat_notation ?loc specific_ntn (l,ll,bl) l2') key)
+                 (make_pat_notation ?loc specific_ntn (l,ll,bl) extra_args) key)
       end
     | AbbrevRule kn ->
       match availability_of_entry_coercion custom constr_lowest_level with
@@ -467,20 +467,10 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope ((subentry,lev_after),(scopt,scl@scopes)) vars c)
           terms in
-      let subscopes = find_arguments_scope gr in
-      let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
-      let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
-      let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
-      let l2' = if Constrintern.get_asymmetric_patterns () then l2
-        else
-          if no_implicit then l2 else
-            match drop_implicits_in_patt gr nb_to_drop l2 with
-            | Some true_args -> true_args
-            | None -> raise No_match
-      in
       assert (List.is_empty termlists);
       assert (List.is_empty binders);
-      insert_pat_coercion ?loc coercion (CAst.make ?loc @@ CPatCstr (qid,None,List.rev_append l1 l2'))
+      insert_pat_coercion ?loc coercion (CAst.make ?loc @@ CPatCstr (qid,None,List.rev_append l1 extra_args))
+
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
@@ -694,13 +684,16 @@ let extern_applied_ref inctx impl (cf,f) us args =
     | _ ->
        CAppExpl ((f,us), args)
 
-let extern_applied_abbreviation inctx n extraimpl (cf,f) abbrevargs extraargs =
-  try
+type application_style =
+  | UseCApp of (Constrexpr.constr_expr * Constrexpr.explicitation CAst.t option) list
+  | UseCAppExpl of constr_expr Lazy.t list
+
+let extern_applied_abbreviation (cf,f) abbrevargs = function
+  | UseCApp extraargs ->
     let abbrevargs = List.map (fun a -> (a,None)) abbrevargs in
-    let extraargs = adjust_implicit_arguments inctx n extraargs extraimpl in
     let args = abbrevargs @ extraargs in
     if args = [] then cf else CApp (CAst.make cf, args)
-  with Expl ->
+  | UseCAppExpl extraargs ->
     let args = abbrevargs @ List.map Lazy.force extraargs in
     CAppExpl ((f,None), args)
 
@@ -713,14 +706,9 @@ let mkFlattenedCApp (head,args) =
   | h ->
     if List.is_empty args then h else CApp (head, args)
 
-let extern_applied_notation inctx n impl f args =
-  if List.is_empty args then
-    f.CAst.v
-  else
-  try
-    let args = adjust_implicit_arguments inctx n args impl in
-    mkFlattenedCApp (f,args)
-  with Expl -> raise No_match
+let extern_applied_notation f = function
+  | UseCApp args -> mkFlattenedCApp (f,args)
+  | UseCAppExpl _ -> raise No_match (* No @f for notations *)
 
 let extern_args extern env args =
   let map (arg, argscopes) = lazy (extern argscopes env arg) in
@@ -1283,6 +1271,11 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
         let terms,termlists,binders,binderlists =
           match_notation_constr ~print_univ:(!print_universes) t ~vars pat in
         let lev_after = if List.is_empty args then lev_after else Some Notation.app_level in
+        (* Try externing extra args... *)
+        let extra_args =
+          let args = fill_arg_scopes args argsscopes allscopes in
+          let args = extern_args (extern true) (vars,uvars) args in
+          try UseCApp (adjust_implicit_arguments inctx nallargs args argsimpls) with Expl -> UseCAppExpl args in
         (* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
@@ -1326,9 +1319,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
                   in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
                   let c = insert_entry_coercion coercion (insert_delimiters c key) in
-                  let args = fill_arg_scopes args argsscopes allscopes in
-                  let args = extern_args (extern true) (vars,uvars) args in
-                  CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
+                  CAst.make ?loc @@ extern_applied_notation c extra_args)
           | AbbrevRule kn ->
               let l =
                 List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
@@ -1337,13 +1328,11 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
               let a = CRef (cf,None) in
-              let args = fill_arg_scopes args argsscopes allscopes in
-              let args = extern_args (extern true) (vars,uvars) args in
-              let c = CAst.make ?loc @@ extern_applied_abbreviation inctx nallargs argsimpls (a,cf) l args in
+              let c = CAst.make ?loc @@ extern_applied_abbreviation (a,cf) l extra_args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
-             else match availability_of_entry_coercion custom constr_lowest_level with
-             | None -> raise No_match
-             | Some coercion -> insert_entry_coercion coercion c
+              else match availability_of_entry_coercion custom constr_lowest_level with
+                | None -> raise No_match
+                | Some coercion -> insert_entry_coercion coercion c
       with
           No_match -> extern_notation inctx allscopes vars t rules
 
