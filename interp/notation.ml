@@ -1619,10 +1619,10 @@ let rec search nfrom nto = function
   | ((pfrom,pto),coe)::l ->
     if entry_relative_level_le pfrom nfrom && entry_relative_level_le nto pto then coe else search nfrom nto l
 
-let availability_of_entry_coercion ?(non_empty=false)
+let availability_of_entry_coercion ?(non_included=false)
     ({ notation_subentry = entry; notation_relative_level = sublev } as entry_sublev)
     ({ notation_entry = entry'; notation_level = lev' } as entry_lev) =
-  if included entry_lev entry_sublev && not non_empty then
+  if included entry_lev entry_sublev && not non_included then
     (* [entry] is by default included in [relative_entry] *)
     Some []
   else
