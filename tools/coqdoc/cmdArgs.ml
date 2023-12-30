@@ -180,7 +180,7 @@ let args_options = Arg.align [
   "--verbose", arg_set (fun p -> { p with quiet = false }), " Verbose mode";
   "--no-externals", arg_set (fun p -> { p with externals = false }),
   " No links to Coq standard library";
-  "--external", arg_url_path Index.add_external_library,
+  "--external", arg_url_path (fun url lp -> Index.add_external_library lp url),
   "<url>+<d> set URL for external library <d>";
   "--coqlib_url", arg_string (fun p u -> { p with coqlib_url = u }),
   "<url> Set URL for Coq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
