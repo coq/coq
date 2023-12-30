@@ -48,6 +48,10 @@ Module Z.
   Lemma rem_bound_neg_neg x y : y < 0 -> x <= 0 -> y < Z.rem x y <= 0.
   Proof. rewrite <- (Z.opp_involutive x), <- (Z.opp_involutive y), Z.rem_opp_l', <- Z.opp_lt_mono, and_comm, !Z.opp_nonpos_nonneg, Z.opp_involutive; apply rem_bound_neg_pos. Qed.
 
+  (* Make the direction of [Z.divide] line up with the rest of the Euclidean equation facts *)
+  Local Lemma divide_alt x y : Z.divide x y -> exists z, y = x * z.
+  Proof. intros [z H]; exists z; subst; apply Z.mul_comm. Qed.
+
   Ltac div_mod_to_equations_generalize x y :=
     pose proof (Z.div_mod x y);
     pose proof (Z.mod_pos_bound x y);
@@ -87,8 +91,11 @@ Module Z.
     | [ H : context[Z.quot ?x ?y] |- _ ] => quot_rem_to_equations_generalize x y
     | [ H : context[Z.rem ?x ?y] |- _ ] => quot_rem_to_equations_generalize x y
     end.
+  Ltac divide_to_equations_step :=
+    match goal with | [ H : Z.divide _ _ |- _ ] => apply divide_alt in H; destruct H end.
   Ltac div_mod_to_equations' := repeat div_mod_to_equations_step.
   Ltac quot_rem_to_equations' := repeat quot_rem_to_equations_step.
+  Ltac divide_to_equations' := repeat divide_to_equations_step.
   Ltac euclidean_division_equations_cleanup :=
     repeat match goal with
            | [ H : ?x = ?x -> ?Q |- _ ] => specialize (H eq_refl)
@@ -158,6 +165,7 @@ Module Z.
     repeat euclidean_division_equations_find_duplicate_quotients_step.
   Ltac div_mod_to_equations := div_mod_to_equations'; euclidean_division_equations_cleanup.
   Ltac quot_rem_to_equations := quot_rem_to_equations'; euclidean_division_equations_cleanup.
+  Ltac divide_to_equations := divide_to_equations'; euclidean_division_equations_cleanup.
   Module euclidean_division_equations_flags.
     #[local] Set Primitive Projections.
     Record t :=
@@ -208,7 +216,7 @@ Module Z.
   End euclidean_division_equations_flags.
   Import euclidean_division_equations_flags (find_duplicate_quotients).
   Ltac to_euclidean_division_equations_with flags :=
-    div_mod_to_equations'; quot_rem_to_equations';
+    divide_to_equations'; div_mod_to_equations'; quot_rem_to_equations';
     euclidean_division_equations_cleanup;
     euclidean_division_equations_flags.guard_with find_duplicate_quotients flags euclidean_division_equations_find_duplicate_quotients.
   Ltac to_euclidean_division_equations :=

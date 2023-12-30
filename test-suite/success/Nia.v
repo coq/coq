@@ -409,6 +409,7 @@ Example Zdiv_unique: forall a b q r : Z, 0 <= r < b -> a = b * q + r -> q = a / 
 Example Z_div_unique_pos: forall a b q r : Z, 0 <= r < b -> a = b * q + r -> q = a / b. Proof. intros; nia. Qed.
 Example Z_div_small_iff: forall a b : Z, b <> 0 -> a / b = 0 <-> 0 <= a < b \/ b < a <= 0. Proof. intros; nia. Qed.
 Example Z_div_unique: forall a b q r : Z, 0 <= r < b \/ b < r <= 0 -> a = b * q + r -> q = a / b. Proof. intros; nia. Qed.
+Example Z_divide_mod : forall a b : Z, (b | a) -> a mod b = 0. Proof. intros. nia. Qed.
 Example Z_mod_divide: forall a b : Z, b <> 0 -> a mod b = 0 <-> (b | a). Proof. split; intros. Fail all: nia. Abort.
 Example Zmod_divides: forall a b : Z, b <> 0 -> a mod b = 0 <-> (exists c : Z, a = b * c). Proof. split; intros. Fail all: nia. Abort.
 

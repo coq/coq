@@ -366,10 +366,12 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    :tacn:`zify` can also be extended by rebinding the tactics `Zify.zify_pre_hook` and `Zify.zify_post_hook` that are
    respectively run in the first and the last steps of :tacn:`zify`.
 
+   + To support :g:`Z.divide`: ``Ltac Zify.zify_post_hook ::= Z.divide_to_equations``.
    + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
-   + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot` and :g:`Z.rem`: either ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations`` or ``Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true)``.
+   + To support :g:`Z.divide`, :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot` and :g:`Z.rem`: either ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations`` or ``Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true)``.
      The :g:`Z.to_euclidean_division_equations` tactic consists of the following passes:
+     - :g:`Z.divide_to_equations'`, posing characteristic equations using factors from :g:`Z.divide`
      - :g:`Z.div_mod_to_equations'`, posing characteristic equations for and generalizing over :g:`Z.div` and :g:`Z.modulo`
      - :g:`Z.quot_rem_to_equations'`, posing characteristic equations for and generalizing over :g:`Z.quot` and :g:`Z.rem`
      - :g:`Z.euclidean_division_equations_cleanup`, removing impossible hypotheses introduced by the above passes, such as those presupposing :g:`x <> x`
