@@ -58,7 +58,7 @@ struct
      applications can be significantly slower.
 
      Documentation of this behaviour can be found at:
-     https://ocaml.janestreet.com/?q=node/30 *)
+     https://blog.janestreet.com/the-dangers-of-being-too-partial/ *)
 
   include Monad.Make(struct
     type 'a t = unit -> 'a
