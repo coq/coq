@@ -68,7 +68,7 @@ END
 
 let subst_strategy sub = map_strategy
     (Tacsubst.subst_glob_constr_and_expr sub)
-    (Tacsubst.subst_redexp sub)
+    (Tacsubst.subst_glob_red_expr sub)
     (fun x -> x)
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"

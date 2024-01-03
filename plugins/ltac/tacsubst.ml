@@ -99,14 +99,14 @@ let subst_glob_constr_or_pattern subst (bvars,c,p) =
   let sigma = Evd.from_env env in
   (bvars,subst_glob_constr subst c,subst_pattern env sigma subst p)
 
-let subst_redexp subst =
+let subst_glob_red_expr subst =
   Redops.map_red_expr_gen
     (subst_glob_constr subst)
     (subst_evaluable subst)
     (subst_glob_constr_or_pattern subst)
 
 let subst_raw_may_eval subst = function
-  | ConstrEval (r,c) -> ConstrEval (subst_redexp subst r,subst_glob_constr subst c)
+  | ConstrEval (r,c) -> ConstrEval (subst_glob_red_expr subst r,subst_glob_constr subst c)
   | ConstrContext (locid,c) -> ConstrContext (locid,subst_glob_constr subst c)
   | ConstrTypeOf c -> ConstrTypeOf (subst_glob_constr subst c)
   | ConstrTerm c -> ConstrTerm (subst_glob_constr subst c)
@@ -154,7 +154,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacInductionDestruct (isrec,ev,(l',el'))
 
   (* Conversion *)
-  | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
+  | TacReduce (r,cl) -> TacReduce (subst_glob_red_expr subst r, cl)
   | TacChange (check,op,c,cl) ->
       TacChange (check,Option.map (subst_glob_constr_or_pattern subst) op,
         subst_glob_constr subst c, cl)
@@ -292,7 +292,7 @@ let () =
   Gensubst.register_subst0 wit_clause_dft_concl (fun _ v -> v);
   Gensubst.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
   Gensubst.register_subst0 wit_open_constr (fun subst c -> subst_glob_constr subst c);
-  Gensubst.register_subst0 Redexpr.wit_red_expr subst_redexp;
+  Gensubst.register_subst0 Redexpr.wit_red_expr subst_glob_red_expr;
   Gensubst.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
   Gensubst.register_subst0 wit_bindings subst_bindings;
   Gensubst.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
