@@ -192,7 +192,8 @@ let rec dump_Gexpr ?(indent=0) ?(p="D") e =
     dump_Gexpr ~indent ~p e
   | GTacApp (e, el, loc) -> print (Printf.sprintf "GTacApp el len = %d" (List.length el));
     printloc loc;
-    dump_Gexpr ~indent ~p e
+    dump_Gexpr ~indent ~p e;
+    List.iter (fun e -> dump_Gexpr ~indent ~p e) el
   | GTacLet (isrec, lc, e) -> print "GTacLet";
     List.iter (fun (p,e2, t) ->
         (match p with

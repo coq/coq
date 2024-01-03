@@ -150,7 +150,13 @@ let rec interp (ist : environment) = function
     (DebugCommon.save_goals ())
     (step >>= fun f ->
       Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-      Tac2ffi.apply (Tac2ffi.to_closure f) args)
+        if DebugCommon.get_debug () && maybe_stop ist loc then begin
+          read_loop ();
+          Proofview.tclTHEN
+            DebugCommon.pr_goals_t
+            (Tac2ffi.apply (Tac2ffi.to_closure f) args)
+        end else
+          Tac2ffi.apply (Tac2ffi.to_closure f) args)
 | GTacLet (false, el, e) ->
   let fold accu (na, e, t) =
     interp ist e >>= fun e ->
@@ -230,7 +236,6 @@ and step_GTacApp ist f args loc =
       | _ -> false)
     | _ -> false
   in
-  let ist0 = ist in
   let ist =
     if DebugCommon.get_debug () && (not (is_primitive fname)) then
       { ist with locs = push_locs loc ist;
@@ -238,12 +243,7 @@ and step_GTacApp ist f args loc =
         varmaps = ist.env_ist :: ist.varmaps }
     else ist
   in
-  let (>=) = Proofview.tclBIND in  (* todo?: simplify fun () -> () below *)
-  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> ())) >= fun () ->
-    if DebugCommon.get_debug () && maybe_stop ist0 loc then
-      (DebugCommon.pr_goals_t) >= fun () -> read_loop (); interp ist f
-    else
-      interp ist f
+  interp ist f
 
 and interp_closure ist0 f =
   let ans = fun args ->
