@@ -13,6 +13,7 @@ let legacy_to_findlib = [
   ("derive_plugin",                 ["plugins";"derive"]) ;
   ("firstorder_plugin",             ["plugins";"firstorder"]) ;
   ("ltac_plugin",                   ["plugins";"ltac"]) ;
+  ("micromega_core_plugin",         ["plugins";"micromega_core";]) ;
   ("micromega_plugin",              ["plugins";"micromega"]) ;
   ("ring_plugin",                   ["plugins";"ring"]) ;
   ("ssr_plugin",                    ["plugins";"ssr"]) ;
