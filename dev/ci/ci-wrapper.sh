@@ -29,7 +29,11 @@ if [ "$color_wanted" ] && command -v script > /dev/null; then
       export TERM=xterm-color
       export GIT_PAGER=
     fi
-  script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
+    if [ "$OSTYPE" = darwin ]; then
+        script -q /dev/null bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
+    else
+        script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
+    fi
 else
   if [ "$color_wanted" ]; then
     >&2 echo 'script command not available, colors will be hidden'
