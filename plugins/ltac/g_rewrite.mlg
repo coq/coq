@@ -99,9 +99,9 @@ GRAMMAR EXTEND Gram
   rewstrategy:
     [ NONA
       [ IDENT "fix"; id = identref; ":="; s = rewstrategy1 -> { StratFix (id, s) }
-      | h = ne_rewstrategy1_list -> { h } ] ]
+      | h = ne_rewstrategy1_list_sep_semicolon -> { h } ] ]
   ;
-  ne_rewstrategy1_list:
+  ne_rewstrategy1_list_sep_semicolon:
     [ LEFTA
       [ h = SELF; ";"; h' = rewstrategy1 -> { StratBinary (Compose, h, h') }
       | h = rewstrategy1 -> { h } ] ]

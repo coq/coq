@@ -2279,11 +2279,11 @@ glob_constr_with_bindings: [
 
 rewstrategy: [
 | "fix" identref ":=" rewstrategy1
-| ne_rewstrategy1_list
+| ne_rewstrategy1_list_sep_semicolon
 ]
 
-ne_rewstrategy1_list: [
-| ne_rewstrategy1_list ";" rewstrategy1
+ne_rewstrategy1_list_sep_semicolon: [
+| ne_rewstrategy1_list_sep_semicolon ";" rewstrategy1
 | rewstrategy1
 ]
 
