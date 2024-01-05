@@ -2134,6 +2134,7 @@ rewrite_occs: [
 ]
 
 rewstrategy: [
+| "fix" ident ":=" rewstrategy1
 | LIST1 rewstrategy1 SEP ";"
 ]
 

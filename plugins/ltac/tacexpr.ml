@@ -351,6 +351,11 @@ type t_dispatch =  <
 type atomic_tactic_expr =
     t_dispatch gen_atomic_tactic_expr
 
+(** Misc *)
+
+type raw_strategy = (constr_expr, Genredexpr.raw_red_expr, lident) Rewrite.strategy_ast
+type glob_strategy = (Genintern.glob_constr_and_expr, Genredexpr.glob_red_expr, Id.t) Rewrite.strategy_ast
+
 (** Traces *)
 
 type ltac_call_kind =

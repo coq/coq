@@ -31,3 +31,5 @@ val subst_glob_constr_and_expr :
 val subst_glob_with_bindings : substitution ->
   glob_constr_and_expr with_bindings ->
   glob_constr_and_expr with_bindings
+
+val subst_glob_red_expr : substitution -> Genredexpr.glob_red_expr -> Genredexpr.glob_red_expr

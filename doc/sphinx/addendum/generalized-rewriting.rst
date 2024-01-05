@@ -813,7 +813,8 @@ are applied using the :tacn:`rewrite_strat` tactic.
 .. insertprodn rewstrategy rewstrategy0
 
 .. prodn::
-   rewstrategy ::= {+; @rewstrategy1 }
+   rewstrategy ::= fix @ident := @rewstrategy1
+   | {+; @rewstrategy1 }
    rewstrategy1 ::= <- @one_term
    | progress @rewstrategy1
    | try @rewstrategy1
@@ -907,6 +908,10 @@ are applied using the :tacn:`rewrite_strat` tactic.
 :n:`fold @term`
    unify
 
+:n:`fix @ident := @rewstrategy1`
+   fixpoint operator, where :math:`\texttt{fix }f := v` evaluates to
+   :math:`\subst{v}{f}{(\texttt{fix }f := v)}`
+
 :n:`( @rewstrategy )`
    to be documented
 
@@ -914,16 +919,15 @@ are applied using the :tacn:`rewrite_strat` tactic.
    to be documented
 
 
-Conceptually, a few of these are defined in terms of the others using a
-primitive fixpoint operator `fix`, which the tactic doesn't currently support:
+Conceptually, a few of these are defined in terms of the others:
 
 - :n:`try @rewstrategy1 := choice (@rewstrategy1) id`
-- :n:`any @rewstrategy1 := fix @ident. try (@rewstrategy1 ; @ident)`
+- :n:`any @rewstrategy1 := fix @ident := try (@rewstrategy1 ; @ident)`
 - :n:`repeat @rewstrategy1 := @rewstrategy1; any @rewstrategy1`
-- :n:`bottomup @rewstrategy1 := fix @ident. (choice (progress (subterms @ident)) @rewstrategy1) ; try @ident`
-- :n:`topdown @rewstrategy1 := fix @ident. (choice (@rewstrategy1) (progress (subterms @ident))) ; try @ident`
-- :n:`innermost @rewstrategy1 := fix @ident. (choice (subterm @ident) (@rewstrategy1))`
-- :n:`outermost @rewstrategy1 := fix @ident. (choice (@rewstrategy1) (subterm @ident))`
+- :n:`bottomup @rewstrategy1 := fix @ident := (choice (progress subterms @ident) (@rewstrategy1) ; try @ident)`
+- :n:`topdown @rewstrategy1 := fix @ident := (choice (@rewstrategy1) (progress subterms @ident) ; try @ident)`
+- :n:`innermost @rewstrategy1 := fix @ident := choice (subterm @ident) (@rewstrategy1)`
+- :n:`outermost @rewstrategy1 := fix @ident := choice (@rewstrategy1) (subterm @ident)`
 
 The basic control strategy semantics are straightforward: strategies
 are applied to subterms of the term to rewrite, starting from the root

@@ -2244,13 +2244,14 @@ as_or_and_ipat: [
 | "as" or_and_intropattern
 ]
 
-rewstrategy: [
+ne_rewstrategy1_list_sep_semicolon: [
 | DELETE rewstrategy1
-| DELETE rewstrategy ";" rewstrategy1
-| LIST1 rewstrategy1 SEP ";"
+| REPLACE ne_rewstrategy1_list_sep_semicolon ";" rewstrategy1
+| WITH LIST1 rewstrategy1 SEP ";"
 ]
 
 SPLICE: [
+| ne_rewstrategy1_list_sep_semicolon
 | clause
 | noedit_mode
 | match_list

@@ -27,18 +27,10 @@ val wit_glob_constr_with_bindings :
 val glob_constr_with_bindings :
   constr_expr_with_bindings Pcoq.Entry.t
 
-type raw_strategy =
-    (Constrexpr.constr_expr, Genredexpr.raw_red_expr)
-    Rewrite.strategy_ast
-
-type glob_strategy =
-    (Genintern.glob_constr_and_expr, Genredexpr.glob_red_expr)
-    Rewrite.strategy_ast
-
 val wit_rewstrategy :
-  (raw_strategy, glob_strategy, Rewrite.strategy) Genarg.genarg_type
+  (Tacexpr.raw_strategy, Tacexpr.glob_strategy, Rewrite.strategy) Genarg.genarg_type
 
-val rewstrategy : raw_strategy Pcoq.Entry.t
+val rewstrategy : Tacexpr.raw_strategy Pcoq.Entry.t
 
 type binders_argtype = Constrexpr.local_binder_expr list
 

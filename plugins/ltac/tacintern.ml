@@ -757,6 +757,29 @@ let glob_tactic_env l env x =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   intern_pure_tactic { (Genintern.empty_glob_sign ~strict:true env) with ltacvars } x
 
+let intern_strategy ist s =
+  let rec aux stratvars = function
+    | Rewrite.StratVar x ->
+      (* We could make this whole branch assert false, since it's
+         unreachable except from plugins. But maybe it's useful if any
+         plug-in wants to craft a strategy by hand. *)
+      if Id.Set.mem x.v stratvars then Rewrite.StratVar x.v
+      else CErrors.user_err ?loc:x.loc Pp.(str "Unbound strategy" ++ spc() ++ Id.print x.v)
+    | StratConstr ({ v = CRef (qid, None) }, true) when idset_mem_qualid qid stratvars ->
+      let (_, x) = repr_qualid qid in Rewrite.StratVar x
+    | StratConstr (c, b) -> StratConstr (intern_constr ist c, b)
+    | StratFix (x, s) -> StratFix (x.v, aux (Id.Set.add x.v stratvars) s)
+    | StratId | StratFail | StratRefl as s -> s
+    | StratUnary (s, str) -> StratUnary (s, aux stratvars str)
+    | StratBinary (s, str, str') -> StratBinary (s, aux stratvars str, aux stratvars str')
+    | StratNAry (s, strs) -> StratNAry (s, List.map (aux stratvars) strs)
+    | StratTerms l -> StratTerms (List.map (intern_constr ist) l)
+    | StratHints (b, id) -> StratHints (b, id)
+    | StratEval r -> StratEval (intern_red_expr ist r)
+    | StratFold c -> StratFold (intern_constr ist c)
+  in
+  aux Id.Set.empty s
+
 (** Registering *)
 
 let lift intern = (); fun ist x -> (ist, intern ist x)
