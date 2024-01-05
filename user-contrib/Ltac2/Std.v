@@ -214,8 +214,8 @@ Ltac2 @ external revert : ident list -> unit := "coq-core.plugins.ltac2" "tac_re
 
 Ltac2 @ external admit : unit -> unit := "coq-core.plugins.ltac2" "tac_admit".
 
-Ltac2 @ external fix_ : ident option -> int -> unit := "coq-core.plugins.ltac2" "tac_fix".
-Ltac2 @ external cofix_ : ident option -> unit := "coq-core.plugins.ltac2" "tac_cofix".
+Ltac2 @ external fix_ : ident -> int -> unit := "coq-core.plugins.ltac2" "tac_fix".
+Ltac2 @ external cofix_ : ident -> unit := "coq-core.plugins.ltac2" "tac_cofix".
 
 Ltac2 @ external clear : ident list -> unit := "coq-core.plugins.ltac2" "tac_clear".
 Ltac2 @ external keep : ident list -> unit := "coq-core.plugins.ltac2" "tac_keep".
