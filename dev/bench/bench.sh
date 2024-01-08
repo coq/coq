@@ -72,7 +72,7 @@ check_variable () {
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
-: "${new_coq_version:=8.19+rc1}"
+: "${new_coq_version:=dev}"
 : "${old_coq_version:=8.18.0}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
