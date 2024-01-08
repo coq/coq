@@ -134,6 +134,7 @@ val ppexistentialfilter : Evd.Filter.t -> unit
 val ppclenv : Clenv.clausenv -> unit
 
 val ppgoal : Proofview.Goal.t -> unit
+val ppgoal_with_state : Proofview_monad.goal_with_state -> unit
 
 val pphintdb : Hints.Hint_db.t -> unit
 val ppproofview : Proofview.proofview -> unit
