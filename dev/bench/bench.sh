@@ -597,10 +597,10 @@ $skipped_packages"
     fi
 
     # N.B. Not all packages end in .dev, e.g., coq-lambda-rust uses .dev.timestamp.
-    # So we use a wildcard to catch such packages.  This will have to be updated if
-    # ever there is a package that uses some different naming scheme.
-    new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package.dev*/
-    old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package.dev*/
+    # So we use a wildcard to catch such packages.
+    coq_opam_package_nover=${coq_opam_package%%.*}
+    new_base_path=$(echo "$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package_nover".*/)
+    old_base_path=$(echo "$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package_nover".*/)
 
     # Generate per-file comparison
     for iteration in $(seq $num_of_iterations); do
