@@ -14,10 +14,11 @@ Unset Universe Polymorphism.
 Symbol pplus : nat -> nat -> nat.
 Notation "a ++ b" := (pplus a b).
 
-Rewrite Rules plus_rew := ?n ++ 0 ==> ?n
-with ?n ++ S ?n' ==> S (?n ++ ?n')
-with 0 ++ ?n ==> ?n
-with S ?n ++ ?n' ==> S (?n ++ ?n').
+Rewrite Rules plus_rew :=
+| ?n ++ 0 ==> ?n
+| ?n ++ S ?n' ==> S (?n ++ ?n')
+| 0 ++ ?n ==> ?n
+| S ?n ++ ?n' ==> S (?n ++ ?n').
 
 Check eq_refl : 5 ++ 10 = 15.
 Check (fun _ _ => eq_refl) : forall n n', 2 + n ++ 3 + n' = 5 + (n ++ n').
@@ -33,38 +34,30 @@ Eval simpl in fun n n' => 2 + n ++ 3 + n'.
 Rewrite Rules raise_rew :=
   raise (forall (x : ?A), ?P) ==> fun x => raise ?P
 
-with
-  raise (?A * ?B) ==> (raise ?A, raise ?B)
+| raise (?A * ?B) ==> (raise ?A, raise ?B)
 
-with
-  raise unit ==> tt
+| raise unit ==> tt
 
-with
-  match raise bool as b return ?P with
+| match raise bool as b return ?P with
     true => _ | false => _
   end ==> raise ?P@{b := raise bool}
 
-with
-  match raise nat as n return ?P with
+| match raise nat as n return ?P with
     0 => ?p | S n => ?p'
   end ==> raise ?P@{n := raise nat}
 
-with
-  match raise (@eq ?A ?a ?b) as e in _ = b return ?P with
+| match raise (@eq ?A ?a ?b) as e in _ = b return ?P with
   | eq_refl => _
   end ==> raise ?P@{b := _; e := raise (?a = ?b)}
 
-with
-  match raise (list ?A) as l return ?P with
+| match raise (list ?A) as l return ?P with
   | nil => _ | cons _ _ => _
   end ==> raise ?P@{l := raise (list ?A)}
 
-with
-  match raise False as e return ?P with
+| match raise False as e return ?P with
   end ==> raise ?P@{e := raise False}
 
-with
-  match raise (?A + ?B) as e return ?P with
+| match raise (?A + ?B) as e return ?P with
   | inl _ => _ | inr _ => _
   end ==> raise ?P@{e := raise (?A + ?B)}.
 
@@ -85,33 +78,22 @@ Record prod (A B : Type) := { fst: A; snd: B}.
 
 
 Rewrite Rules id_rew :=
-  @{u+} |- id _ Type@{u} ==> Type@{u}
+| @{u+} |- id _ Type@{u} ==> Type@{u}
 
-with
-  @{u+} |- id Type@{u} (forall (x : ?A), ?P) ==> forall x, id Type@{u} ?P
-with
-  id (forall x, ?P) (fun (x : ?A) => ?f) ==> fun (x : ?A) => id ?P ?f
+| @{u+} |- id Type@{u} (forall (x : ?A), ?P) ==> forall x, id Type@{u} ?P
+| id (forall x, ?P) (fun (x : ?A) => ?f) ==> fun (x : ?A) => id ?P ?f
 
-with
-  @{u+} |- id Type@{u} (?A * ?B)%type ==> (id Type@{u} ?A * id Type@{u} ?B)%type
-with
-  id (?A * ?B) (?a, ?b) ==> (id _ ?a, id _ ?b)
+| @{u+} |- id Type@{u} (?A * ?B)%type ==> (id Type@{u} ?A * id Type@{u} ?B)%type
+| id (?A * ?B) (?a, ?b) ==> (id _ ?a, id _ ?b)
 
-with
-  id _ unit ==> unit
-with
-  id _ tt ==> tt
+| id _ unit ==> unit
+| id _ tt ==> tt
 
-with
-  id _ nat ==> nat
-with
-  id _ 0 ==> 0
-with
-  id _ (S ?n) ==> S (id _ ?n)
-with
-  id _ (fun (n : ?A) => S ?n) ==> fun n => S (id _ ?n)
-with
-  id (prod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
+| id _ nat ==> nat
+| id _ 0 ==> 0
+| id _ (S ?n) ==> S (id _ ?n)
+| id _ (fun (n : ?A) => S ?n) ==> fun n => S (id _ ?n)
+| id (prod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
 
 #[unfold_fix] Symbol idS : forall (A : SProp), A -> A.
 Inductive unitS : SProp := ttS.
@@ -126,16 +108,13 @@ Symbol cast : forall (A B : Type), A -> B.
 Notation "<< B <== A >> t" := (cast A B t) (at level 10).
 
 Rewrite Rules cast_rew :=
-  << forall (y : ?C), ?D <== forall (x: ?A), ?B >> ?f
+| << forall (y : ?C), ?D <== forall (x: ?A), ?B >> ?f
   ==> fun (y : ?C) => let x := << _ <== _ >> y in << ?D <== ?B@{x := x} >> (?f x)
 
-with
-  << Type <== Type >> ?t ==> ?t
+| << Type <== Type >> ?t ==> ?t
 
-with
-  << nat <== bool >> _ ==> raise nat
-with
-  << bool <== nat >> _ ==> raise bool
+| << nat <== bool >> _ ==> raise nat
+| << bool <== nat >> _ ==> raise bool
 .
 
 
@@ -144,10 +123,10 @@ Module MLTTmap.
 Symbol map : forall A B, (A -> B) -> list A -> list B.
 
 Rewrite Rule map_rew :=
-     map _ _ (fun x => x) ?l ==> ?l
-with map _ ?C ?f (map ?A _ ?g ?l) ==> map ?A ?C (fun x => ?f (?g x)) ?l
-with map ?A ?B ?f (@nil _) ==> @nil ?B
-with map ?A ?B ?f (@cons _ ?a ?l) ==> @cons ?B (?f ?a) (map _ _ ?f ?l).
+| map _ _ (fun x => x) ?l ==> ?l
+| map _ ?C ?f (map ?A _ ?g ?l) ==> map ?A ?C (fun x => ?f (?g x)) ?l
+| map ?A ?B ?f (@nil _) ==> @nil ?B
+| map ?A ?B ?f (@cons _ ?a ?l) ==> @cons ?B (?f ?a) (map _ _ ?f ?l).
 
 Definition idA {A: Type} := fun (x : A) => x.
 
@@ -216,12 +195,12 @@ Eval simpl in match raise _ with C a b c d e => id2 _ (a, b, c, d, e) end.
 Module SuccPred.
 #[unfold_fix] Symbols P S : nat -> nat.
 Rewrite Rule P_rew :=
-  P (S ?n) ==> ?n
-with S (P ?n) ==> ?n
-with S ?n ++ ?m ==> S (?n ++ ?m)
-with ?n ++ S ?m ==> S (?n ++ ?m)
-with P ?n ++ ?m ==> P (?n ++ ?m)
-with ?n ++ P ?m ==> P (?n ++ ?m)
+| P (S ?n) ==> ?n
+| S (P ?n) ==> ?n
+| S ?n ++ ?m ==> S (?n ++ ?m)
+| ?n ++ S ?m ==> S (?n ++ ?m)
+| P ?n ++ ?m ==> P (?n ++ ?m)
+| ?n ++ P ?m ==> P (?n ++ ?m)
 .
 
 Eval lazy in fun n => S (S (S n)) ++ P (P (P n)).
@@ -233,9 +212,9 @@ Definition operator := unit.
 Symbol op : operator -> operator.
 Symbols plus mult : operator.
 Rewrite Rules op_rew :=
-  op (op ?op) ==> ?op
-with op plus ==> mult
-with op mult ==> plus.
+| op (op ?op) ==> ?op
+| op plus ==> mult
+| op mult ==> plus.
 
 
 
@@ -244,10 +223,11 @@ with op mult ==> plus.
 Symbol pmult : nat -> nat -> nat.
 Notation "a ** b" := (pmult a b) (at level 8).
 
-Rewrite Rules pmult_rew := _ ** 0 ==> 0
-with ?n ** (S ?n') ==> (?n ** ?n') ++ ?n
-with 0 ** _ ==> 0
-with (S ?n) ** ?n' ==> ?n' ++ (?n ** ?n').
+Rewrite Rules pmult_rew :=
+| _ ** 0 ==> 0
+| ?n ** (S ?n') ==> (?n ** ?n') ++ ?n
+| 0 ** _ ==> 0
+| (S ?n) ** ?n' ==> ?n' ++ (?n ** ?n').
 
 Fixpoint fact (n : nat) :=
   match n with 0 => 1 | S n => (S n) ** (fact n) end.
@@ -260,12 +240,12 @@ Time Eval lazy in fact 7.
 
 Symbol mod5 : nat -> nat.
 Rewrite Rules mod5_rew :=
-  mod5 (S (S (S (S (S ?n))))) ==> mod5 ?n
-with mod5 0 ==> 0
-with mod5 1 ==> 1
-with mod5 2 ==> 2
-with mod5 3 ==> 3
-with mod5 4 ==> 4
+| mod5 (S (S (S (S (S ?n))))) ==> mod5 ?n
+| mod5 0 ==> 0
+| mod5 1 ==> 1
+| mod5 2 ==> 2
+| mod5 3 ==> 3
+| mod5 4 ==> 4
 .
 Eval lazy in (fun n => mod5 (4 ** (3 ++ n))).
 
@@ -287,9 +267,10 @@ Arguments vector : clear implicits.
 Symbol vapp : forall {A n m}, vector A n -> vector A m -> vector A (n ++ m).
 Arguments vapp {_ _ _}.
 
-Rewrite Rules vapp_rew := vapp (m := 0) ?v _ ==> ?v
-with vapp (n := 0) _ ?v' ==> ?v'
-with @vapp ?A (S ?n) ?m (vcons ?a ?v) ?v' ==> @vcons ?A _ ?a (@vapp ?A ?n ?m ?v ?v').
+Rewrite Rules vapp_rew :=
+| vapp (m := 0) ?v _ ==> ?v
+| vapp (n := 0) _ ?v' ==> ?v'
+| @vapp ?A (S ?n) ?m (vcons ?a ?v) ?v' ==> @vcons ?A _ ?a (@vapp ?A ?n ?m ?v ?v').
 
 Fixpoint vapp' {A n m} (v : vector A n) (v' : vector A m) : vector A (n ++ m) :=
   match v with
@@ -354,8 +335,9 @@ Qed.
 
 
 Symbol brk : bool -> bool -> bool.
-Rewrite Rules brk_rew := brk true ?b ==> true
-with brk ?b true ==> false.
+Rewrite Rules brk_rew :=
+| brk true ?b ==> true
+| brk ?b true ==> false.
 
 Lemma f0 : False.
   cut { b | brk true b = brk b true}.
@@ -411,9 +393,8 @@ Definition test_subst_context :=
 Symbol Devil : bool -> bool.
 
 Rewrite Rule devil :=
-  Devil ?b ==> false
-with
-  Devil true ==> true.
+| Devil ?b ==> false
+| Devil true ==> true.
 
 Lemma Devil_false b : Devil b = false.
 Proof. reflexivity. Defined.

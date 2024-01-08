@@ -825,8 +825,8 @@ gallina: [
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
-| "Rewrite" "Rule" identref ":=" LIST1 rewrite_rule SEP "with"
-| "Rewrite" "Rules" identref ":=" LIST1 rewrite_rule SEP "with"
+| "Rewrite" "Rule" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| "Rewrite" "Rules" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 ]
 
 register_token: [

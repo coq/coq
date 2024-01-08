@@ -61,7 +61,7 @@ When a rule is applied, the term is matched against the pattern,
 subterms aligned with pattern variables are collected
 and substituted into the right-hand side which is returned.
 
-.. cmd:: Rewrite {| Rule | Rules } @ident := @rewrite_rule {* with @rewrite_rule }
+.. cmd:: Rewrite {| Rule | Rules } @ident := {? %| } {+| @rewrite_rule }
   :name: Rewrite Rule; Rewrite Rules
 
    The command declares a named block of rewrite rules.
@@ -69,10 +69,10 @@ and substituted into the right-hand side which is returned.
   .. coqtop:: all
 
      Rewrite Rule pplus_rewrite :=
-          ?n ++ 0 ==> ?n
-     with ?n ++ S ?m ==> S (?n ++ ?m)
-     with 0 ++ ?n ==> ?n
-     with S ?n ++ ?m ==> S (?n ++ ?m).
+     | ?n ++ 0 ==> ?n
+     | ?n ++ S ?m ==> S (?n ++ ?m)
+     | 0 ++ ?n ==> ?n
+     | S ?n ++ ?m ==> S (?n ++ ?m).
 
 Pattern syntax
 --------------

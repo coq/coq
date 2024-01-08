@@ -914,7 +914,7 @@ command: [
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
-| "Rewrite" [ "Rule" | "Rules" ] ident ":=" rewrite_rule LIST0 ( "with" rewrite_rule )
+| "Rewrite" [ "Rule" | "Rules" ] ident ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" record_definition LIST0 ( "with" record_definition )
 | "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations

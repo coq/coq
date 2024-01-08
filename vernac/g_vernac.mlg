@@ -284,9 +284,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
-      | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; rules = LIST1 rewrite_rule SEP "with" ->
+      | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { VernacAddRewRule (id, rules) }
-      | IDENT "Rewrite"; IDENT "Rules"; id = identref; ":="; rules = LIST1 rewrite_rule SEP "with" ->
+      | IDENT "Rewrite"; IDENT "Rules"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { test_plural_form_rules loc "Rewrite Rules" rules;
             VernacAddRewRule (id, rules) }
   ] ]
