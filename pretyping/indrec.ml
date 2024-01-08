@@ -270,7 +270,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
  * on it with which predicate and which recursive function.
  *)
 
-let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
+let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) (mind,tyi) cs recargs =
   let make_prod = make_prod_dep dep in
   let nparams = List.length vargs in
   let process_pos env depK pk =
@@ -309,9 +309,8 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
               | [] -> None,[]
               | ra::rest ->
                   (match dest_recarg ra with
-                    | Mrec (_,j) when is_rec -> (depPvect.(j),rest)
-                    | Nested _  -> (None,rest)
-                    | _ -> (None, rest))
+                    | Mrec (RecArgInd (mind',j)) -> ((if is_rec && Names.MutInd.CanOrd.equal mind mind' then depPvect.(j) else None),rest)
+                    | Norec | Mrec (RecArgPrim _) -> (None,rest))
           in
           (match optionpos with
              | None ->
@@ -352,7 +351,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
   let c = it_mkProd_or_LetIn base cs.cs_args in
   process_constr env 0 c recargs nhyps []
 
-let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
+let make_rec_branch_arg env sigma (nparrec,fvect,decF) mind f cstr recargs =
   let process_pos env fk  =
     let rec prec env i hyps p =
       let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
@@ -382,9 +381,8 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
     | (LocalAssum (n,t) as d)::cprest, recarg::rest ->
         let optionpos =
           match dest_recarg recarg with
-            | Norec   -> None
-            | Nested _  -> None
-            | Mrec (_,i)  -> fvect.(i)
+            | Norec | Mrec (RecArgPrim _) -> None
+            | Mrec (RecArgInd (mind',i)) -> if Names.MutInd.CanOrd.equal mind mind' then fvect.(i) else None
         in
         (match optionpos with
            | None ->
@@ -475,7 +473,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               in
                 Array.map3
                   (make_rec_branch_arg !!env !evdref
-                      (nparrec,depPvec,larsign))
+                      (nparrec,depPvec,larsign) (fst indi))
                   vecfi constrs (dest_subterms recargsvec.(tyi))
             in
 
@@ -558,7 +556,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               let cs = get_constructor ((indi,u),mibi,mipi,vargs) (j+1) in
               let p_0 =
                 type_rec_branch
-                  true dep !!env !evdref (vargs,depPvec,i+j) tyi cs recarg
+                  true dep !!env !evdref (vargs,depPvec,i+j) indi cs recarg
               in
               let r_0 = Sorts.relevance_of_sort_family sfam in
               let namef = make_name env "f" r_0 in
@@ -588,7 +586,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     let ((indi,u),mibi,mipi,dep,kind) = List.nth listdepkind p in
 
       if force_mutual || (mis_is_recursive_subset
-        (List.map (fun ((indi,u),_,_,_,_) -> snd indi) listdepkind)
+        (List.map (fun ((indi,u),_,_,_,_) -> indi) listdepkind)
         mipi.mind_recargs)
       then
         let env' = RelEnv.push_rel_context lnamesparrec env in

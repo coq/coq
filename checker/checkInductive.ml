@@ -122,17 +122,15 @@ let check_squashed orig generated = match orig, generated with
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.
    Try with to see test-suite/coqchk/include.v *)
-let eq_nested_types ty1 ty2 = match ty1, ty2 with
-| NestedInd ind1, NestedInd ind2 -> eq_ind_chk ind1 ind2
-| NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
-| NestedPrimitive _, _ -> false
+let eq_recarg_type ty1 ty2 = match ty1, ty2 with
+  | RecArgInd ind1, RecArgInd ind2 -> eq_ind_chk ind1 ind2
+  | RecArgPrim c1, RecArgPrim c2 -> Names.Constant.CanOrd.equal c1 c2
+  | (RecArgInd _ | RecArgPrim _), _ -> false
 
-let eq_recarg a1 a2 = match a1, a2 with
+let eq_recarg r1 r2 = match r1, r2 with
   | Norec, Norec -> true
-  | Mrec i1, Mrec i2 -> eq_ind_chk i1 i2
-  | Nested ty1, Nested ty2 -> eq_nested_types ty1 ty2
-  | (Norec | Mrec _ | Nested _), _ -> false
+  | Mrec ty1, Mrec ty2 -> eq_recarg_type ty1 ty2
+  | (Norec | Mrec _), _ -> false
 
 let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
 

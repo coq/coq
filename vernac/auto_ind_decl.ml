@@ -673,7 +673,7 @@ let build_beq_scheme env handle kn =
   let nb_ind = Array.length mib.mind_packets in
   let truly_recursive =
     let open Declarations in
-    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ | Nested _ -> true | Norec -> false in
+    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ -> true | Norec -> false in
     Array.exists
       (fun mip -> Array.exists (List.exists is_rec) (Declareops.dest_subterms mip.mind_recargs))
       mib.mind_packets in

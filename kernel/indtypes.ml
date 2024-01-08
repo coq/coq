@@ -165,7 +165,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
     let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
   let ra_env' =
-    (Nested (NestedInd mi),(Rtree.mk_rec_calls 1).(0)) ::
+    (Mrec (RecArgInd mi),(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
   (* New index of the inductive types *)
   let newidx = n + auxntyp in
@@ -195,7 +195,7 @@ let array_min nmr a = if Int.equal nmr 0 then 0 else
     If [chkpos] is [false] then positivity is assumed, and
     [check_positivity_one] computes the subterms occurrences in a
     best-effort fashion. *)
-let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (_,i as ind) nnonrecargs lcnames indlc =
+let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (mind,i as ind) nnonrecargs lcnames indlc =
   let nparamsctxt = Context.Rel.length paramsctxt in
   let nmr = Context.Rel.nhyps paramsctxt in
   (** Positivity of one argument [c] of a constructor (i.e. the
@@ -219,12 +219,17 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
               | Some b ->
                   check_strict_positivity (ienv_push_var ienv (na, b, mk_norec)) nmr d)
         | Rel k ->
-            (try let (ra,rarg) = List.nth ra_env (k-1) in
+            (match List.nth_opt ra_env (k-1) with
+            | Some (ra,rarg) ->
             let largs = List.map (whd_all env) largs in
             let nmr1 =
               (match ra with
-                  Mrec _ -> compute_rec_par ienv paramsctxt nmr largs
-                |  _ -> nmr)
+                (* Are we referring to the original block of mutual inductive types? *)
+                | Mrec (RecArgInd (mind',_)) ->
+                  if Names.MutInd.CanOrd.equal mind mind'
+                  then compute_rec_par ienv paramsctxt nmr largs
+                  else nmr
+                | Norec | Mrec (RecArgPrim _) -> nmr)
             in
               (** The case where one of the inductives of the mutually
                   inductive block occurs as an argument of another is not
@@ -233,7 +238,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                  not (List.for_all (noccur_between n ntypes) largs)
               then failwith_non_pos_list n ntypes largs
               else (nmr1,rarg)
-             with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
+            | None -> (nmr,mk_norec))
         | Ind ind_kn ->
             (** If one of the inductives of the mutually inductive
                 block being defined appears in a parameter, then we
@@ -301,7 +306,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
         let irecargs = Array.map snd irecargs_nmr
         and nmr' = array_min nmr irecargs_nmr
         in
-          (nmr',(Rtree.mk_rec [|mk_paths (Nested (NestedInd ind)) irecargs|]).(0))
+          (nmr',(Rtree.mk_rec [|mk_paths (Mrec (RecArgInd ind)) irecargs|]).(0))
 
   and check_positivity_nested_primitive (env,n,ntypes,ra_env) nmr (c, largs) =
     (* We model the primitive type c X1 ... Xn as if it had one constructor
@@ -310,7 +315,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
     let ra_env = List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
     let ienv = (env,n,ntypes,ra_env) in
     let nmr',recargs = List.fold_left_map (check_strict_positivity ienv) nmr largs in
-    (nmr', (Rtree.mk_rec [| mk_paths (Nested (NestedPrimitive c)) [| recargs |] |]).(0))
+    (nmr', (Rtree.mk_rec [| mk_paths (Mrec (RecArgPrim c)) [| recargs |] |]).(0))
 
   (** [check_constructors ienv check_head nmr c] checks the positivity
       condition in the type [c] of a constructor (i.e. that recursive
@@ -360,7 +365,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
   in
   let irecargs = Array.map snd irecargs_nmr
   and nmr' = array_min nmr irecargs_nmr
-  in (nmr', mk_paths (Mrec ind) irecargs)
+  in (nmr', mk_paths (Mrec (RecArgInd ind)) irecargs)
 
 (** [check_positivity ~chkpos kn env_ar paramsctxt inds] checks that the mutually
     inductive block [inds] is strictly positive.
@@ -372,7 +377,7 @@ let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
   let ntypes = Array.length inds in
   let recursive = finite != BiFinite in
   if not recursive && Array.length inds <> 1 then raise (InductiveError Type_errors.BadEntry);
-  let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
+  let rc = Array.mapi (fun j t -> (Mrec (RecArgInd (kn,j)),t)) (Rtree.mk_rec_calls ntypes) in
   let ra_env_ar = Array.rev_to_list rc in
   let nparamsctxt = Context.Rel.length paramsctxt in
   let nmr = Context.Rel.nhyps paramsctxt in

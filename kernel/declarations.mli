@@ -120,14 +120,14 @@ type 'opaque pconstant_body = {
 type constant_body = Opaqueproof.opaque pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
-type nested_type =
-| NestedInd of inductive
-| NestedPrimitive of Constant.t
+
+type recarg_type =
+| RecArgInd of inductive
+| RecArgPrim of Constant.t
 
 type recarg =
 | Norec
-| Mrec of inductive
-| Nested of nested_type
+| Mrec of recarg_type
 
 type wf_paths = recarg Rtree.t
 
