@@ -72,6 +72,8 @@ check_variable () {
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
+: "${new_coq_version:=dev}"
+: "${old_coq_version:=dev}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
@@ -332,8 +334,9 @@ create_opam() {
     local OPAM_DIR="$working_dir/opam.$RUNNER"
     local OCAML_VER="$2"
     local COQ_HASH="$3"
-    local OPAM_COQ_DIR="$4"
-    local USE_FLAMBDA="$5"
+    local COQ_VER="$4"
+    local OPAM_COQ_DIR="$5"
+    local USE_FLAMBDA="$6"
 
     local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
@@ -394,7 +397,7 @@ create_opam() {
         if [ "$skip_coq_tests" ]; then with_test=; fi
 
         _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.$COQ_VER . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
@@ -417,11 +420,11 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" "$new_coq_opam_archive_dir"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_opam_archive_dir"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
