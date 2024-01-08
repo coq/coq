@@ -414,7 +414,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
 
   let head_symbol, head_umask = match head_pat with PHSymbol (symb, mask) -> symb, mask | _ ->
     CErrors.user_err ?loc:lhs_loc
-    Pp.(str "Head pattern is not a symbol.")
+    Pp.(str "Head head-pattern is not a symbol.")
   in
   if nvarus <> nvarus' then begin
     assert (nvarus' < nvarus);

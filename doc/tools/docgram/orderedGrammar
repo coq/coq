@@ -574,8 +574,12 @@ cofix_definition: [
 | ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
+rw_pattern: [
+| term
+]
+
 rewrite_rule: [
-| OPT [ univ_decl "|-" ] term "==>" term
+| OPT [ univ_decl "|-" ] rw_pattern "==>" term
 ]
 
 scheme_kind: [
