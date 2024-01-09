@@ -370,7 +370,7 @@ val declare_entry_coercion : specific_notation -> notation_entry_level -> notati
   (** Add a coercion from some-entry to some-relative-entry *)
 
 type entry_coercion = (notation_with_optional_scope * notation) list
-val availability_of_entry_coercion : ?non_empty:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
+val availability_of_entry_coercion : ?non_included:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
   (** Return a coercion path from some-relative-entry to some-entry if there is one *)
 
 (** Special properties of entries *)
