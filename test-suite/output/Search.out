@@ -49,7 +49,7 @@ Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 eq_true_rec_r:
   forall (P : bool -> Set) [b : bool], P b -> eq_true b -> P true
 eq_true_ind:
-  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
+  forall P : bool -> Prop, P true -> forall [b : bool], eq_true b -> P b
 bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
 eq_true_rect_r:
   forall (P : bool -> Type) [b : bool], P b -> eq_true b -> P true
@@ -57,14 +57,14 @@ bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
 eq_true_ind_r:
   forall (P : bool -> Prop) [b : bool], P b -> eq_true b -> P true
 eq_true_rect:
-  forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
+  forall P : bool -> Type, P true -> forall [b : bool], eq_true b -> P b
 bool_sind:
   forall P : bool -> SProp, P true -> P false -> forall b : bool, P b
 eq_true_rec:
-  forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
+  forall P : bool -> Set, P true -> forall [b : bool], eq_true b -> P b
 bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
 eq_true_sind:
-  forall P : bool -> SProp, P true -> forall b : bool, eq_true b -> P b
+  forall P : bool -> SProp, P true -> forall [b : bool], eq_true b -> P b
 Number.internal_uint_dec_bl1:
   forall x y : Number.uint, Number.uint_beq x y = true -> x = y
 Hexadecimal.internal_hexadecimal_dec_lb:
@@ -125,11 +125,11 @@ andb_true_intro:
 BoolSpec_ind:
   forall [P Q : Prop] (P0 : bool -> Prop),
   (P -> P0 true) ->
-  (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
+  (Q -> P0 false) -> forall [b : bool], BoolSpec P Q b -> P0 b
 BoolSpec_sind:
   forall [P Q : Prop] (P0 : bool -> SProp),
   (P -> P0 true) ->
-  (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
+  (Q -> P0 false) -> forall [b : bool], BoolSpec P Q b -> P0 b
 Byte.to_bits_of_bits:
   forall
     b : bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))),
