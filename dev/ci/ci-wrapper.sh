@@ -16,14 +16,17 @@ cd "${DIR}/../.." || exit 1
 
 export TIMED=1
 
-# NB: in CI TERM is unset in the environment
-# when TERM is unset, bash sets it to "dumb" as a bash variable (not exported?)
-if { [ -t 1 ] && ! [ "$TERM" = dumb ]; } || [ "$CI" ]
-then color_wanted=1
-else color_wanted=
+# if COQ_CI_COLOR is set (from the environment) keep it intact (even when it's the empty string)'
+if ! [ "${COQ_CI_COLOR+1}" ]; then
+  # NB: in CI TERM is unset in the environment
+  # when TERM is unset, bash sets it to "dumb" as a bash variable (not exported?)
+  if { [ -t 1 ] && ! [ "$TERM" = dumb ]; } || [ "$CI" ]
+  then COQ_CI_COLOR=1
+  else COQ_CI_COLOR=
+  fi
 fi
 
-if [ "$color_wanted" ] && command -v script > /dev/null; then
+if [ "$COQ_CI_COLOR" = 1 ] && command -v script > /dev/null; then
   # prevent piping from disabling auto colors / enable auto colors in CI
     if [ "$CI" ]; then
       export TERM=xterm-color
@@ -35,7 +38,7 @@ if [ "$color_wanted" ] && command -v script > /dev/null; then
         script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
     fi
 else
-  if [ "$color_wanted" ]; then
+  if [ "$COQ_CI_COLOR" = 1 ]; then
     >&2 echo 'script command not available, colors will be hidden'
   fi
   bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
