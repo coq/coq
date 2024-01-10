@@ -744,9 +744,6 @@ gallina_ext: [
 | REPLACE "Coercion" global OPT [ OPT univ_decl def_body ]
 | WITH "Coercion" ident_decl def_body
 
-| REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
-| WITH "Include" "Type" LIST1 module_type_inl SEP "<+"
-
 | REPLACE "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
 | WITH "Generalizable" [  [ "Variable" | "Variables" ] LIST1 identref | "All" "Variables" | "No" "Variables" ]
 
