@@ -48,13 +48,13 @@ project mathcomp 'https://github.com/math-comp/math-comp' '28837b16a2358f97d3142
 project mathcomp_1 'https://github.com/math-comp/math-comp' '26c1db2a83deffba627719c3e9b754b2bb83e83b'
 # Contact @CohenCyril, @proux01 on github
 
-project fourcolor "https://github.com/math-comp/fourcolor" "master"
+project fourcolor 'https://github.com/math-comp/fourcolor' '43719c0fb5fb6cb0c8fc1c2db09efc632c23df90'
 # Contact @ybertot, @proux01 on github
 
 project oddorder 'https://github.com/math-comp/odd-order' '8dbbae0e53a6d1fcf3471c8fae4dd14c8f18bd93'
 # Contact @gares, @proux01 on github
 
-project mczify "https://github.com/math-comp/mczify" "master"
+project mczify 'https://github.com/math-comp/mczify' '371b29c7eb30ce408fa29feaf7b94146eed6660b'
 # Contact @pi8027 on github
 
 project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4c7ebda35081b60"
@@ -65,7 +65,7 @@ project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4
 project bigenough 'https://github.com/math-comp/bigenough' 'ff71b25f31658d80fdae9657e8cf34e5e1052647'
 # Contact @CohenCyril on github
 
-project analysis "https://github.com/math-comp/analysis" "master"
+project analysis 'https://github.com/math-comp/analysis' 'b0d400f667f98cedde05414cff99853eb86642b8'
 # Contact @affeldt-aist, @CohenCyril on github
 
 ########################################################################
@@ -77,7 +77,7 @@ project unimath 'https://github.com/UniMath/UniMath' 'ee7af93f47daf41c752e6bd212
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-project unicoq "https://github.com/unicoq/unicoq" "master"
+project unicoq 'https://github.com/unicoq/unicoq' 'e0486d27f687c8c34f530158fee743b3e7a3c259'
 # Contact @beta-ziliani, @Janno, @mattam82 on github
 
 project mtac2 'https://github.com/Mtac2/Mtac2' '71640c37a3685db5c7aab069cede807faadacc25'
@@ -86,7 +86,7 @@ project mtac2 'https://github.com/Mtac2/Mtac2' '71640c37a3685db5c7aab069cede807f
 ########################################################################
 # Mathclasses + Corn
 ########################################################################
-project math_classes "https://github.com/coq-community/math-classes" "master"
+project math_classes 'https://github.com/coq-community/math-classes' 'f9712ba67b59c90446522e102c87200c7da756ec'
 # Contact @spitters on github
 
 project corn 'https://github.com/coq-community/corn' '79e7ee7cc878cd98077d16cfbac12b8133a13805'
@@ -104,7 +104,7 @@ project stdpp "https://gitlab.mpi-sws.org/iris/stdpp" ""
 project iris "https://gitlab.mpi-sws.org/iris/iris" ""
 # Contact @RalfJung, @robbertkrebbers on github
 
-project autosubst "https://github.com/coq-community/autosubst" "master"
+project autosubst 'https://github.com/coq-community/autosubst' '6ba0acccef68c75f6cca8928706c726754d69791'
 # Contact @RalfJung, @co-dan on github
 
 project iris_examples 'https://gitlab.mpi-sws.org/iris/examples' '7c5ce0d556f4e03f27ddc6463462bf4040f5103d'
@@ -113,7 +113,7 @@ project iris_examples 'https://gitlab.mpi-sws.org/iris/examples' '7c5ce0d556f4e0
 ########################################################################
 # HoTT
 ########################################################################
-project hott "https://github.com/HoTT/HoTT" "master"
+project hott 'https://github.com/HoTT/HoTT' '191c10ed39de2fa9821e63b6578f4fba9175ab31'
 # Contact @Alizter, @jdchristensen on github
 
 ########################################################################
@@ -125,7 +125,7 @@ project coqhammer 'https://github.com/lukaszcz/coqhammer' '4131a8ccac570336b5ffe
 ########################################################################
 # Flocq
 ########################################################################
-project flocq "https://gitlab.inria.fr/flocq/flocq" "master"
+project flocq 'https://gitlab.inria.fr/flocq/flocq' '3e8b2e09d79ce3c150a732dd446610d63dabc759'
 # Contact @silene on github
 
 ########################################################################
@@ -137,7 +137,7 @@ project coq_performance_tests 'https://github.com/coq-community/coq-performance-
 ########################################################################
 # coq-tools
 ########################################################################
-project coq_tools "https://github.com/JasonGross/coq-tools" "master"
+project coq_tools 'https://github.com/JasonGross/coq-tools' '32dcc6b48607c34442e64789eaaf894dac3dd020'
 # Contact @JasonGross on github
 
 ########################################################################
@@ -149,7 +149,7 @@ project coquelicot 'https://gitlab.inria.fr/coquelicot/coquelicot' '218b5cca0417
 ########################################################################
 # CompCert
 ########################################################################
-project compcert "https://github.com/AbsInt/CompCert" "master"
+project compcert 'https://github.com/AbsInt/CompCert' 'c7b27e30a9057c14d5a02a9f9aa3d8f230715eb0'
 # Contact @xavierleroy on github
 
 ########################################################################
@@ -161,7 +161,7 @@ project vst 'https://github.com/PrincetonUniversity/VST' '6d2eb96dd42a4d3ee398ee
 ########################################################################
 # cross-crypto
 ########################################################################
-project cross_crypto "https://github.com/mit-plv/cross-crypto" "master"
+project cross_crypto 'https://github.com/mit-plv/cross-crypto' 'c46bbe27ef7a05a82f744230c6f2d5f1fdefdaaa'
 # Contact @andres-erbsen on github
 
 ########################################################################
@@ -173,7 +173,7 @@ project rewriter 'https://github.com/mit-plv/rewriter' '026f87bfbc5d235c3f7f31b2
 ########################################################################
 # fiat_parsers
 ########################################################################
-project fiat_parsers "https://github.com/mit-plv/fiat" "master"
+project fiat_parsers 'https://github.com/mit-plv/fiat' '157f13408ef9731ccf0829fbcac3c11b9856fb81'
 # Contact @JasonGross on github
 
 ########################################################################
@@ -185,7 +185,7 @@ project fiat_crypto 'https://github.com/mit-plv/fiat-crypto' '4d9fadc163b8a09d75
 ########################################################################
 # fiat_crypto_legacy
 ########################################################################
-project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
+project fiat_crypto_legacy 'https://github.com/mit-plv/fiat-crypto' '47058dc312a5cad924972056cdfc4de06c432a82'
 # Contact @JasonGross on github
 
 ########################################################################
@@ -197,7 +197,7 @@ project coq_dpdgraph 'https://github.com/coq-community/coq-dpdgraph' '8452ebdebb
 ########################################################################
 # CoLoR
 ########################################################################
-project color "https://github.com/fblanqui/color" "master"
+project color 'https://github.com/fblanqui/color' '42f4b271d41b81d59508936a375ac2f9fafe6b9c'
 # Contact @fblanqui on github
 
 ########################################################################
@@ -209,7 +209,7 @@ project tlc 'https://github.com/charguer/tlc' '1f1df8cfbdfb1838a446fa1614c857248
 ########################################################################
 # Bignums
 ########################################################################
-project bignums "https://github.com/coq/bignums" "master"
+project bignums 'https://github.com/coq/bignums' 'cb65c878e764793081ead5fdcaffbe018dd713c3'
 # Contact @erikmd, @proux01 on github
 
 ########################################################################
@@ -221,7 +221,7 @@ project coqprime 'https://github.com/thery/coqprime' 'd5935ca3b7f3d2f738b0810a49
 ########################################################################
 # bbv
 ########################################################################
-project bbv "https://github.com/mit-plv/bbv" "master"
+project bbv 'https://github.com/mit-plv/bbv' 'f4caa0504125460afa41fb92c9071dd628154d8b'
 # Contact @JasonGross, @samuelgruetter on github
 
 ########################################################################
@@ -233,7 +233,7 @@ project bedrock2 'https://github.com/mit-plv/bedrock2' '65988d2662e522b0a7dcd04c
 ########################################################################
 # Coinduction
 ########################################################################
-project coinduction "https://github.com/damien-pous/coinduction" "master"
+project coinduction 'https://github.com/damien-pous/coinduction' '65d020794e817fcf0295566abe1be454ad3284e4'
 # Contact @damien-pous on github
 
 ########################################################################
@@ -245,7 +245,7 @@ project coq_lsp 'https://github.com/ejgallego/coq-lsp' '75a92e0abeb29cbc3f75bbff
 ########################################################################
 # Equations
 ########################################################################
-project equations "https://github.com/mattam82/Coq-Equations" "main"
+project equations 'https://github.com/mattam82/Coq-Equations' 'a517a3e128719b078397a415dc9ce6b856019245'
 # Contact @mattam82 on github
 
 ########################################################################
@@ -254,7 +254,7 @@ project equations "https://github.com/mattam82/Coq-Equations" "main"
 project elpi 'https://github.com/LPCIC/coq-elpi' 'b753aa43a643ad7c0b2722d9850253b9d737fec7'
 # Contact @gares on github
 
-project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "master"
+project hierarchy_builder 'https://github.com/math-comp/hierarchy-builder' 'b4e8cbce83cff0f817494adc625a127bd4114b2e'
 # Contact @CohenCyril, @gares on github
 
 ########################################################################
@@ -266,7 +266,7 @@ project engine_bench 'https://github.com/mit-plv/engine-bench' '8c0b15abc38b1d3f
 ########################################################################
 # fcsl-pcm
 ########################################################################
-project fcsl_pcm "https://github.com/imdea-software/fcsl-pcm" "master"
+project fcsl_pcm 'https://github.com/imdea-software/fcsl-pcm' '35cb0a2235adb656c2696e33512f0c4555ad753b'
 # Contact @aleksnanevski, @clayrat on github
 
 ########################################################################
@@ -278,7 +278,7 @@ project ext_lib 'https://github.com/coq-community/coq-ext-lib' '00d3f4e2a260c7c2
 ########################################################################
 # simple-io
 ########################################################################
-project simple_io "https://github.com/Lysxia/coq-simple-io" "master"
+project simple_io 'https://github.com/Lysxia/coq-simple-io' '7b1e6de2c2028a35776f080dc3db117cae117836'
 # Contact @Lysxia, @liyishuai on github
 
 ########################################################################
@@ -290,7 +290,7 @@ project quickchick 'https://github.com/QuickChick/QuickChick' '7c570ed650f770e29
 ########################################################################
 # reduction-effects
 ########################################################################
-project reduction_effects "https://github.com/coq-community/reduction-effects" "master"
+project reduction_effects 'https://github.com/coq-community/reduction-effects' 'f0570f498bc8a0d25e878115b4066b140908c4b4'
 # Contact @liyishuai, @JasonGross on github
 
 ########################################################################
@@ -303,7 +303,7 @@ project menhirlib 'https://gitlab.inria.fr/fpottier/menhir' 'bb68b8fdb186266dbed
 ########################################################################
 # coq-neural-net-interp
 ########################################################################
-project neural_net_interp "https://github.com/JasonGross/neural-net-coq-interp" "tested"
+project neural_net_interp 'https://github.com/JasonGross/neural-net-coq-interp' '06509a99be412d06847de938a19e02be64f6fc4c'
 # Contact @JasonGross on github
 
 ########################################################################
@@ -315,7 +315,7 @@ project aac_tactics 'https://github.com/coq-community/aac-tactics' '059dd94f4fbf
 ########################################################################
 # paco
 ########################################################################
-project paco "https://github.com/snu-sf/paco" "master"
+project paco 'https://github.com/snu-sf/paco' '5c5693f46c8957f36a2349a0d906e911366136de'
 # Contact @minkiminki on github
 
 ########################################################################
@@ -327,7 +327,7 @@ project itree 'https://github.com/DeepSpec/InteractionTrees' 'dda104937d79e2052d
 ########################################################################
 # coq-itree_io
 ########################################################################
-project itree_io "https://github.com/Lysxia/coq-itree-io" "master"
+project itree_io 'https://github.com/Lysxia/coq-itree-io' 'af0326793a19f142eba800dba6044143b108ceaa'
 # Contact @Lysxia, @liyishuai on github
 
 ########################################################################
@@ -339,7 +339,7 @@ project ceres 'https://github.com/Lysxia/coq-ceres' 'f61b24d48222db0100de19f88c1
 ########################################################################
 # coq-parsec
 ########################################################################
-project parsec "https://github.com/liyishuai/coq-parsec" "master"
+project parsec 'https://github.com/liyishuai/coq-parsec' '2efb4437f8451dfbeb174368f860e629135c08ab'
 # Contact @liyishuai on github
 
 ########################################################################
@@ -351,7 +351,7 @@ project json 'https://github.com/liyishuai/coq-json' '2d1d11eb1be9ad96614d9cd224
 ########################################################################
 # coq-async-test
 ########################################################################
-project async_test "https://github.com/liyishuai/coq-async-test" "master"
+project async_test 'https://github.com/liyishuai/coq-async-test' '0637b95ae52060d8a808261ca97890d03c9a4503'
 # Contact @liyishuai on github
 
 ########################################################################
@@ -363,7 +363,7 @@ project http 'https://github.com/liyishuai/coq-http' 'cabde79a4a0d978d031475c744
 ########################################################################
 # paramcoq
 ########################################################################
-project paramcoq "https://github.com/coq-community/paramcoq" "master"
+project paramcoq 'https://github.com/coq-community/paramcoq' 'a61b1b3f8cea3fce6c904a0b8da6236345ed896f'
 # Contact @proux01 on github
 
 ########################################################################
@@ -375,19 +375,19 @@ project relation_algebra 'https://github.com/damien-pous/relation-algebra' '38cf
 ########################################################################
 # StructTact + InfSeqExt + Cheerios + Verdi + Verdi Raft
 ########################################################################
-project struct_tact "https://github.com/uwplse/StructTact" "master"
+project struct_tact 'https://github.com/uwplse/StructTact' '97268e11564c8fe59aa72b062478458d7aa53e9d'
 # Contact @palmskog on github
 
 project inf_seq_ext 'https://github.com/DistributedComponents/InfSeqExt' '601e89ec019501c48c27fcfc14b9a3c70456e408'
 # Contact @palmskog on github
 
-project cheerios "https://github.com/uwplse/cheerios" "master"
+project cheerios 'https://github.com/uwplse/cheerios' '5c9318c269f9cae1c1c6583a44405969ac0be0dd'
 # Contact @palmskog on github
 
 project verdi 'https://github.com/uwplse/verdi' 'f082f86b2a0cb56cc0703a79da351d8b9a6e7468'
 # Contact @palmskog on github
 
-project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
+project verdi_raft 'https://github.com/uwplse/verdi-raft' 'a3375e867326a82225e724cc1a7b4758b029376f'
 # Contact @palmskog on github
 
 ########################################################################
@@ -399,7 +399,7 @@ project stdlib2 'https://github.com/coq/stdlib2' '33212e05c51efa012c9dfccd0b9e73
 ########################################################################
 # argosy
 ########################################################################
-project argosy "https://github.com/mit-pdos/argosy" "master"
+project argosy 'https://github.com/mit-pdos/argosy' 'a6a5aa0d3868efd4ada0b40927b5748e5d8967d3'
 # Contact @tchajed on github
 
 ########################################################################
@@ -411,7 +411,7 @@ project atbr 'https://github.com/coq-community/atbr' '39de8e4c654a53023839070467
 ########################################################################
 # perennial
 ########################################################################
-project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
+project perennial 'https://github.com/mit-pdos/perennial' 'd045aca7d0bd3c43ec561179954777f160eed1e4'
 # Contact @upamanyus, @RalfJung, @tchajed on github
 # PRs to fix Perennial failures should be submitted against the Perennial
 # `master` branch. `coq/tested` is automatically updated every night to the
@@ -427,13 +427,13 @@ project metacoq 'https://github.com/MetaCoq/metacoq' '194116d4f80dc53253f8730aa8
 ########################################################################
 # SF suite
 ########################################################################
-project sf "https://github.com/DeepSpec/sf" "master"
+project sf 'https://github.com/DeepSpec/sf' 'd7f9ab78cd01f36ce5a2a359dfe4cfe1e160fae9'
 # Contact @bcpierce00, @liyishuai on github
 
 ########################################################################
 # Coqtail
 ########################################################################
-project coqtail "https://github.com/whonore/Coqtail" "master"
+project coqtail "https://github.com/whonore/Coqtail" "ecca5017b6b27e1bded009f9725186d941d85b53"
 # Contact @whonore on github
 
 ########################################################################
@@ -445,7 +445,7 @@ project deriving 'https://github.com/arthuraa/deriving' '9d6aea3df446854aa1aa009
 ########################################################################
 # VsCoq
 ########################################################################
-project vscoq "https://github.com/coq-community/vscoq" "coq-master"
+project vscoq 'https://github.com/coq-community/vscoq' '84032c7f46e0a21a01da91e5364cfc7d4951e297'
 # Contact @rtetley, @gares on github
 
 ########################################################################
@@ -457,13 +457,13 @@ project category_theory 'https://github.com/jwiegley/category-theory' '41ab38d0c
 ########################################################################
 # itauto
 ########################################################################
-project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
+project itauto 'https://gitlab.inria.fr/fbesson/itauto' 'a527a27d9dd21ac8f69821f35fd677314d5eadbe'
 # Contact @fajb on github
 
 ########################################################################
 # Mathcomp-word
 ########################################################################
-project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
+project mathcomp_word "https://github.com/jasmin-lang/coqword" "537141ac0dbdd0a0ca2b409826d93a6f8398b0b3"
 # Contact @vbgl, @strub on github
 # go back to "main" and change dependency to MC 2 when
 # https://github.com/jasmin-lang/jasmin/pull/560 is merged
@@ -477,7 +477,7 @@ project jasmin 'https://github.com/jasmin-lang/jasmin' 'd195c58958771ba26bc479fe
 ########################################################################
 # Lean Importer
 ########################################################################
-project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
+project lean_importer 'https://github.com/SkySkimmer/coq-lean-import' '10363695d2f9692b4d8a9e7ee29be444ebe96c80'
 # Contact @SkySkimmer on github
 
 ########################################################################
@@ -489,7 +489,7 @@ project serapi 'https://github.com/ejgallego/coq-serapi' 'ba0bd1d3fb086b7a7c79ad
 ########################################################################
 # SMTCoq
 ########################################################################
-project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
+project smtcoq 'https://github.com/smtcoq/smtcoq' 'e24b14768d6f61c915bc25734d769bbe9f044775'
 # Contact @ckeller on github
 
 ########################################################################
@@ -501,7 +501,7 @@ project stalmarck 'https://github.com/coq-community/stalmarck' '22a05ddcc6a826ff
 ########################################################################
 # coq-library-undecidability
 ########################################################################
-project coq_library_undecidability "https://github.com/uds-psl/coq-library-undecidability" "master"
+project coq_library_undecidability 'https://github.com/uds-psl/coq-library-undecidability' '91165e2e95d4372d692aca05f5d53ab628e3c8b9'
 # Contact @mrhaandi, @yforster on github
 
 ########################################################################
@@ -513,7 +513,7 @@ project tactician 'https://github.com/coq-tactician/coq-tactician' '938ee07cba97
 ########################################################################
 # Ltac2 compiler
 ########################################################################
-project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
+project ltac2_compiler 'https://github.com/SkySkimmer/coq-ltac2-compiler' '9fd8b13fd2eb9b3ed49e76e944c5e2f211d7c52d'
 # Contact @SkySkimmer on github
 
 ########################################################################
