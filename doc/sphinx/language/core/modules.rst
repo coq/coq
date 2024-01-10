@@ -941,7 +941,7 @@ with the logical name :n:`Top` and there is no associated file system path.
 
 If :n:`@qualid` is the fully qualified name of an item, Coq
 always interprets :n:`@qualid` as a reference to that item.  If :n:`@qualid` is also a
-partially qualified name for another item, then you must use provide a more-qualified
+partially qualified name for another item, then you must provide a more-qualified
 name to uniquely identify that other item.  For example, if there are two
 fully qualified items named `Foo.Bar` and `Coq.X.Foo.Bar`, then `Foo.Bar` refers
 to the first item and `X.Foo.Bar` is the shortest name for referring to the second item.
