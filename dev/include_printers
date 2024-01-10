@@ -34,6 +34,7 @@
 (*#install_printer  (* hint_db *)  print_hint_db;;*)
 (*#install_printer  (* hints_path *)  pphintspath;;*)
 #install_printer  (* goal *)  ppgoal;;
+#install_printer  ppgoal_with_state;;
 (*#install_printer  (* sigma goal *)  ppsigmagoal;;*)
 #install_printer  (* proof *)  pproof;;
 #install_printer  (* proofview *)  ppproofview;;

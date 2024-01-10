@@ -61,6 +61,7 @@ install_printer Top_printers.ppexistentialset
 install_printer Top_printers.ppexistentialfilter
 install_printer Top_printers.ppclenv
 install_printer Top_printers.ppgoal
+install_printer Top_printers.ppgoal_with_state
 install_printer Top_printers.pphintdb
 install_printer Top_printers.ppproofview
 install_printer Top_printers.ppopenconstr
