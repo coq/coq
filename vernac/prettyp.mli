@@ -12,12 +12,12 @@ open Names
 open Environ
 open Libnames
 
-(** A Pretty-Printer for the Calculus of Inductive Constructions. *)
+(** This module implements Print/About/Locate commands *)
 
-val assumptions_for_print : Name.t list -> Termops.names_context
+val assumptions_for_print : Name.t list -> Termops.names_context (* unused? *)
 
 val print_closed_sections : bool ref
-val print_context
+val print_context (* unused? *)
   : env
   -> Evd.evar_map
   -> bool -> int option -> 'a Lib.library_segment -> Pp.t
@@ -28,7 +28,7 @@ val print_library_leaf
   -> ModPath.t
   -> Libobject.t
   -> Pp.t option
-val print_library_node : Summary.Interp.frozen Lib.node -> Pp.t
+val print_library_node : Summary.Interp.frozen Lib.node -> Pp.t (* unused? *)
 val print_full_context : env -> Evd.evar_map -> Pp.t
 val print_full_context_typ : env -> Evd.evar_map -> Pp.t
 
@@ -58,7 +58,7 @@ val print_impargs : GlobRef.t -> Pp.t
 val print_graph : unit -> Pp.t
 val print_classes : unit -> Pp.t
 val print_coercions : unit -> Pp.t
-val print_path_between : Coercionops.cl_typ -> Coercionops.cl_typ -> Pp.t
+val print_coercion_paths : Coercionops.cl_typ -> Coercionops.cl_typ -> Pp.t
 val print_canonical_projections : env -> Evd.evar_map -> GlobRef.t list -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)

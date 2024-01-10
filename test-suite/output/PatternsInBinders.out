@@ -21,7 +21,7 @@ fun '(Bar n1 _ tt p1) '(Bar _ _ tt _) => n1 + p1
 Arguments baz pat pat
 swap =
 fun (A B : Type) '(x, y) => (y, x)
-     : forall A B : Type, A * B -> B * A
+     : forall {A B : Type}, A * B -> B * A
 
 Arguments swap {A B}%type_scope pat
 fun (A B : Type) '(x, y) => swap (x, y) = (y, x)

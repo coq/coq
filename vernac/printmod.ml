@@ -410,10 +410,10 @@ let print_module ~with_body mp =
   try
     if !short then raise ShortPrinting;
     unsafe_print_module WithContents
-      (Global.env ()) mp with_body me ++ fnl ()
+      (Global.env ()) mp with_body me
   with e when CErrors.noncritical e ->
     unsafe_print_module OnlyNames
-      (Global.env ()) mp with_body me ++ fnl ()
+      (Global.env ()) mp with_body me
 
 let print_modtype kn =
   let mtb = Global.lookup_modtype kn in

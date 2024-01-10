@@ -27,7 +27,7 @@ fun (A : Type) (x y : A) (H : @eq A x y) =>
 match H in (@eq _ _ a) return (@eq A a x) with
 | @eq_refl _ _ => @eq_refl A x
 end
-     : forall (A : Type) (x y : A) (_ : @eq A x y), @eq A y x
+     : forall [A : Type] [x y : A] (_ : @eq A x y), @eq A y x
 
 Arguments eq_sym [A]%type_scope [x y] _
 eq_sym =
@@ -35,7 +35,7 @@ fun (A : Type) (x y : A) (H : x = y) =>
 match H in (_ = a) return (a = x) with
 | @eq_refl _ _ => @eq_refl A x
 end
-     : forall (A : Type) (x y : A), x = y -> y = x
+     : forall [A : Type] [x y : A], x = y -> y = x
 
 Arguments eq_sym [A]%type_scope [x y] _
 eq_sym =
@@ -43,6 +43,6 @@ fun (A : Type) (x y : A) (H : x = y) =>
 match H in (_ = a) return (a = x) with
 | @eq_refl _ _ => @eq_refl A x
 end
-     : forall (A : Type) (x y : A), x = y -> y = x
+     : forall [A : Type] [x y : A], x = y -> y = x
 
 Arguments eq_sym [A]%type_scope [x y] _
