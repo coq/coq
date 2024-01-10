@@ -79,7 +79,7 @@ check_variable () {
 : "${skip_coq_tests:=}"
 
 : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-: "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+: "${old_coq_commit:=$(git rev-parse V8.20+alpha)}"
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
 old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
