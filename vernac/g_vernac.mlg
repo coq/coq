@@ -632,10 +632,6 @@ let starredidentreflist_to_expr l =
   | [] -> SsEmpty
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
-let warn_deprecated_include_type =
-  CWarnings.create ~name:"deprecated-include-type" ~category:Deprecation.Version.v8_3
-         (fun () -> strbrk "Include Type is deprecated; use Include instead")
-
 let warn_deprecated_as_ident_kind =
   CWarnings.create ~name:"deprecated-as-ident-kind" ~category:Deprecation.Version.v8_14
          (fun () -> strbrk "grammar kind \"as ident\" no longer accepts \"_\"; use \"as name\" instead to accept \"_\", too, or silence the warning if you actually intended to accept only identifiers.")
@@ -686,10 +682,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacImport ((Export,cats),qidl)) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
-          { VernacSynterp (VernacInclude(e::l)) }
-      | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-         { warn_deprecated_include_type ~loc ();
-        VernacSynterp (VernacInclude(e::l)) } ] ]
+          { VernacSynterp (VernacInclude(e::l)) } ] ]
   ;
   import_categories:
   [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
