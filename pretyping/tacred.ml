@@ -114,13 +114,6 @@ let isEvalRef env sigma c = match EConstr.kind sigma c with
   | Rel _ | Evar _ -> true
   | _ -> false
 
-let isTransparentEvalRef env sigma ts c = match EConstr.kind sigma c with
-  | Const (cst,_) -> is_evaluable env (EvalConstRef cst) && TransparentState.is_transparent_constant ts cst
-  | Var id -> is_evaluable env (EvalVarRef id) && TransparentState.is_transparent_variable ts id
-  | Rel _ -> true
-  | Evar _ -> false (* undefined *)
-  | _ -> false
-
 let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const (cst,u) ->  EvalConst cst, u
   | Var id  -> (EvalVar id, EInstance.empty)
@@ -152,20 +145,12 @@ let reference_value env sigma c u =
 (* Reduction of constants hiding a fixpoint (e.g. for "simpl" tactic).  *)
 (* One reuses the name of the function after reduction of the fixpoint  *)
 
-type fix_refolding = {
-  refolding_names : (evaluable_reference * EInstance.t) option array;
-  refolding_wrapper_data : (int * constr) list;
-  expected_args : int;
-}
-
-type fix_evaluation_data = {
-  trigger_min_args : int;
-  refolding_target : evaluable_reference;
-  refolding_data : fix_refolding;
-}
-
 type constant_evaluation =
-  | EliminationFix of fix_evaluation_data
+  | EliminationFix of int * (int * (int * constr) list * int)
+  | EliminationMutualFix of
+      int * evaluable_reference *
+      ((evaluable_reference * EInstance.t) option array *
+       (int * (int * constr) list * int))
   | EliminationCases of int
   | EliminationProj of int
   | NotAnElimination
@@ -176,112 +161,79 @@ type frozen = constant_evaluation Cmap.t
 
 let eval_table = Summary.ref (Cmap.empty : frozen) ~name:"evaluation"
 
-(* [compute_consteval] determines whether f is an "elimination constant"
+(* [compute_consteval] determines whether c is an "elimination constant"
 
    either [yn:Tn]..[y1:T1](match yi with f1..fk end g1 ..gp)
 
-   or     [yn:Tn]..[y1:T1](Fix(m0,..) yi1..yip)
+   or     [yn:Tn]..[y1:T1](Fix(f|t) yi1..yip)
           with yi1..yip distinct variables among the yi, not occurring in t
 
    In the second case, [check_fix_reversibility [T1;...;Tn] args fix]
    checks that [args] is a subset of disjoint variables in y1..yn (a necessary
-   condition for reversibility). Assuming a constant f_m naming
-   Fix(m,..), with f := f_m0, it also returns for each m the relevant
+   condition for reversibility). It also returns the relevant
    information ([i1,Ti1;..;ip,Tip],n) in order to compute an
-   equivalent g_m of Fix(m,..) such that
+   equivalent of Fix(f|t) such that
 
-   g_m := [xp:Tip']..[x1:Ti1'](f_m a1..an)
-       == [xp:Tip']..[x1:Ti1'](Fix(f|t) yi1..yip)
+   g := [xp:Tip']..[x1:Ti1'](f a1..an)
+     == [xp:Tip']..[x1:Ti1'](Fix(f|t) yi1..yip)
 
-   with a_k:=y_k if k<>i_j and (but only in the case m_0), a_k:=args_k
-   otherwise, as well as Tij':=Tij[x1..xi(j-1) <- a1..ai(j-1)]
+   with a_k:=y_k if k<>i_j, a_k:=args_k otherwise, and
+   Tij':=Tij[x1..xi(j-1) <- a1..ai(j-1)]
 
    Note that the types Tk, when no i_j=k, must not be dependent on
    the xp..x1.
 *)
 
-let compute_fix_reversibility sigma labs args fix =
-  let nlam = List.length labs in
+let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
+  let n = List.length labs in
   let nargs = List.length args in
-  if nargs > nlam then
-    (* Necessary non-linear, thus not reversible *)
-    raise Elimconst;
-  (* Check that arguments are bound by the lambdas, up to a
-     substitution, and that they do not occur elsewhere *)
-  let typed_reversible_args =
+  if nargs > n then raise Elimconst;
+  let nbfix = Array.length bds in
+  let li =
     List.map
       (function d -> match EConstr.kind sigma d with
          | Rel k ->
-             if Vars.noccurn sigma k fix && k <= nlam then
-               (* Bound in labs and occurring only in args *)
+             if
+               Array.for_all (Vars.noccurn sigma k) tys
+               && Array.for_all (Vars.noccurn sigma (k+nbfix)) bds
+               && k <= n
+             then
                (k, List.nth labs (k-1))
              else
                raise Elimconst
          | _ ->
-             raise Elimconst) args in
-  let reversible_rels = List.map fst typed_reversible_args in
+             raise Elimconst) args
+  in
+  let reversible_rels = List.map fst li in
   if not (List.distinct_f Int.compare reversible_rels) then
     raise Elimconst;
-  (* Lambda's that are not used should not depend on those that are
-     used and that will thus be different in the recursive calls *)
   List.iteri (fun i t_i ->
-    if not (Int.List.mem (i+1) reversible_rels) then
+    if not (Int.List.mem_assoc (i+1) li) then
       let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels sigma t_i)) in
       match List.intersect Int.equal fvs reversible_rels with
       | [] -> ()
       | _ -> raise Elimconst)
     labs;
-  typed_reversible_args, nlam, nargs
-
-let check_fix_reversibility env sigma ref u labs args refs ((lv,i),_ as fix) =
-  let li, nlam, nargs = compute_fix_reversibility sigma labs args (mkFix fix) in
   let k = lv.(i) in
-  let refolding_data = {
-    refolding_names = refs;
-    refolding_wrapper_data = li;
-    expected_args = nlam;
-  } in
   if k < nargs then
 (*  Such an optimisation would need eta-expansion
       let p = destRel (List.nth args k) in
-      EliminationFix (n-p+1,(li,n))
+      EliminationFix (n-p+1,(nbfix,li,n))
 *)
-      EliminationFix {
-        trigger_min_args = nlam;
-        refolding_target = ref;
-        refolding_data;
-        }
+      EliminationFix (n,(nbfix,li,n))
   else
-    EliminationFix {
-        trigger_min_args = nlam - nargs + k + 1;
-        refolding_target = ref;
-        refolding_data;
-        }
-
-let compute_fix_wrapper allowed_reds env sigma ref u =
-  try match reference_opt_value env sigma ref u with
-    | None -> None
-    | Some c ->
-      let labs, ccl = whd_decompose_lambda env sigma c in
-      let c, l = whd_stack_gen allowed_reds env sigma ccl in
-      let labs = List.map snd labs in
-      assert (isFix sigma c);
-      Some (labs, l)
-  with Not_found (* Undefined ref *) -> None
+    EliminationFix (n-nargs+k+1,(nbfix,li,n))
 
 (* Heuristic to look if global names are associated to other
    components of a mutual fixpoint *)
 
-let invert_names allowed_reds env sigma ref u names i =
-  let labs, l =
-    match compute_fix_wrapper allowed_reds env sigma ref u with
-    | None -> assert false
-    | Some (labs, l) -> labs, l in
-  let make_name j =
-    if Int.equal i j then Some (ref, u) else
-    match names.(j).binder_name with
-      | Anonymous -> None (* should not happen *)
-      | Name id ->
+let invert_name labs l {binder_name=na0} env sigma ref u na =
+  match na.binder_name with
+  | Name id ->
+      begin match na0 with
+      | Name id' when Id.equal id' id ->
+        Some (ref, u)
+      | _ ->
         let refi = match ref with
           | EvalRel _ | EvalEvar _ -> None
           | EvalVar id' -> Some (EvalVar id)
@@ -290,61 +242,87 @@ let invert_names allowed_reds env sigma ref u names i =
             if Environ.mem_constant kn env then Some (EvalConst kn) else None
         in
         match refi with
-        | None -> None
-        | Some ref ->
-          match compute_fix_wrapper allowed_reds env sigma ref u with
           | None -> None
-          | Some (labs', l') ->
-              let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
-              if List.equal eq_constr labs' labs &&
-                 List.equal eq_constr l l' then Some (ref, u)
-              else None in
-  labs, l, Array.init (Array.length names) make_name
+          | Some ref ->
+              try match reference_opt_value env sigma ref u with
+                | None -> None
+                | Some c ->
+                    let labs',ccl = decompose_lambda sigma c in
+                    let _, l' = whd_betalet_stack env sigma ccl in
+                    let labs' = List.map snd labs' in
+                    (* ppedrot: there used to be generic equality on terms here *)
+                    let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
+                    if List.equal eq_constr labs' labs &&
+                       List.equal eq_constr l l' then Some (ref, u)
+                    else None
+              with Not_found (* Undefined ref *) -> None
+      end
+  | Anonymous -> None (* Actually, should not occur *)
 
-let deactivate_delta allowed_reds =
-  (* Act both on Delta and transparent state as not all reduction functions work the same *)
-  RedFlags.(red_add_transparent (red_sub allowed_reds fDELTA) TransparentState.empty)
+(* [compute_consteval_direct] expand all constant in a whole, but
+   [compute_consteval_mutual_fix] only one by one, until finding the
+   last one before the Fix if the latter is mutually defined *)
 
-(* [compute_consteval] expands and refolds an arbitrary long sequence
-   of reversible constants for unary fixpoints but consider the last
-   constant before revealing a Fix if the latter is mutually defined *)
-
-let compute_consteval allowed_reds env sigma ref u =
-  let allowed_reds_no_delta = deactivate_delta allowed_reds in
-  let rec srec env n labs lastref lastu onlyproj c =
-    let c',l = whd_stack_gen allowed_reds_no_delta env sigma c in
+let compute_consteval_direct allowed_reds env sigma ref u =
+  let rec srec env n labs onlyproj c =
+    let c',l = whd_stack_gen allowed_reds env sigma c in
     match EConstr.kind sigma c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
           let open Context.Rel.Declaration in
-          srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) lastref lastu onlyproj g
-      | Fix ((lv,i),(names,_,_) as fix) when not onlyproj ->
-          let nbfix = Array.length lv in
-          (if nbfix = 1 then
-            let names = [|Some (ref,u)|] in
-            try check_fix_reversibility env sigma ref u labs l names fix
-            with Elimconst -> NotAnElimination
-          else
-            let labs, l, names = invert_names allowed_reds env sigma lastref lastu names i in
-            try check_fix_reversibility env sigma lastref lastu labs l names fix
-            with Elimconst -> NotAnElimination)
+          srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
+      | Fix fix when not onlyproj ->
+          (try check_fix_reversibility sigma labs l fix
+          with Elimconst -> NotAnElimination)
       | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
-      | Case (_,_,_,_,_,d,_) -> srec env n labs lastref lastu true d
+      | Case (_,_,_,_,_,d,_) -> srec env n labs true d
       | Proj (p, _, d) when isRel sigma d -> EliminationProj n
-      | _ when isTransparentEvalRef env sigma (RedFlags.red_transparent allowed_reds) c' ->
-          (* Forget all \'s and args and do as if we had started with c' *)
-          let ref, u = destEvalRefU sigma c' in
-          (match reference_opt_value env sigma ref u with
-            | None -> NotAnElimination (* e.g. if a rel *)
-            | Some c -> srec env n labs ref u onlyproj (applist (c,l)))
       | _ -> NotAnElimination
   in
   match reference_opt_value env sigma ref u with
     | None -> NotAnElimination
-    | Some c -> srec env 0 [] ref u false c
+    | Some c -> srec env 0 [] false c
+
+let compute_consteval_mutual_fix allowed_reds env sigma ref u =
+  let rec srec env minarg labs ref u c =
+    let c',l = whd_betalet_stack env sigma c in
+    let nargs = List.length l in
+    match EConstr.kind sigma c' with
+      | Lambda (na,t,g) when List.is_empty l ->
+          let open Context.Rel.Declaration in
+          srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref u g
+      | Fix ((lv,i),(names,_,_)) ->
+          (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
+          (match compute_consteval_direct allowed_reds env sigma ref u with
+             | NotAnElimination -> (*Above const was eliminable but this not!*)
+                 NotAnElimination
+             | EliminationFix (minarg',infos) ->
+                 let refs =
+                   Array.map
+                     (invert_name labs l names.(i) env sigma ref u) names in
+                 let new_minarg = max (minarg'+minarg-nargs) minarg' in
+                 EliminationMutualFix (new_minarg,ref,(refs,infos))
+             | _ -> assert false)
+      | _ when isEvalRef env sigma c' ->
+          (* Forget all \'s and args and do as if we had started with c' *)
+          let ref, u = destEvalRefU sigma c' in
+          (match reference_opt_value env sigma ref u with
+            | None -> anomaly (Pp.str "Should have been trapped by compute_direct.")
+            | Some c -> srec env (minarg-nargs) [] ref u c)
+      | _ -> (* Should not occur *) NotAnElimination
+  in
+  match reference_opt_value env sigma ref u with
+    | None -> (* Should not occur *) NotAnElimination
+    | Some c -> srec env 0 [] ref u c
+
+let compute_consteval allowed_reds env sigma ref u =
+  match compute_consteval_direct allowed_reds env sigma ref u with
+    | EliminationFix (_,(nbfix,_,_)) when not (Int.equal nbfix 1) ->
+        compute_consteval_mutual_fix allowed_reds env sigma ref u
+    | elim -> elim
 
 let reference_eval allowed_reds env sigma ref u =
   match ref with
-  | EvalConst cst as ref when EInstance.is_empty u ->
+  | EvalConst cst as ref ->
       (try
          Cmap.find cst !eval_table
        with Not_found -> begin
@@ -354,9 +332,9 @@ let reference_eval allowed_reds env sigma ref u =
        end)
   | ref -> compute_consteval allowed_reds env sigma ref u
 
-(* If f is bound to EliminationFix (n',refs,infos), then n' is the minimal
-   number of args for triggering the reduction and infos is
-   ([(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts
+(* If f is bound to EliminationFix (n',infos), then n' is the minimal
+   number of args for starting the reduction and infos is
+   (nbfix,[(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts
    to some [y1:T1,...,yn:Tn](Fix(..) yip .. yi1) where the y_{i_j} consist in a
    disjoint subset of the yi, i.e. 1 <= ij <= n and the ij are disjoint (in
    particular, p <= n).
@@ -366,20 +344,13 @@ let reference_eval allowed_reds env sigma ref u =
 
       g := [xp:Tip',...,x1:Ti1'](f a1 ... an)
 
-   s.t. any (Fix(..) u1 ... up) can be re-expanded to (g u1 ... up)
+   s.t. (g u1 ... up) reduces to (Fix(..) u1 ... up)
 
    This is made possible by setting
       a_k:=x_j    if k=i_j for some j
       a_k:=arg_k  otherwise
 
    The type Tij' is Tij[yi(j-1)..y1 <- ai(j-1)..a1]
-
-   In the case of a mutual fix and f is the m-th component, this is
-   the same for the components different from m except that for the
-   f_l associated to component l, and f_l is convertible to
-   [y1:U1,...,yn:Un](Fix(..,l,..) yip .. yi1), we need i_j to be a
-   bijection (since we have no more arg_k at our disposal to fill a
-   position k not in the image of i_j).
 *)
 
 let xname = Name Namegen.default_dependent_ident
@@ -419,7 +390,7 @@ let contract_fix env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies) as fixp) = match f with
 | None -> contract_fix sigma fixp
 | Some f ->
-  let {refolding_names; refolding_wrapper_data = lv; expected_args = n}, largs = f in
+  let (names, (nbfix, lv, n)), largs = f in
   let lu = List.firstn n largs in
   let p = List.length lv in
   let lyi = List.map fst lv in
@@ -430,7 +401,7 @@ let contract_fix env sigma f
       with Not_found -> Vars.lift p aq)
       0 lu
   in
-  let make_Fi i = match refolding_names.(i) with
+  let make_Fi i = match names.(i) with
   | None -> mkFix((recindices,i),typedbodies)
   | Some (ref, u) ->
       let body = applist (mkEvalRef ref u, la) in
@@ -664,18 +635,23 @@ let rec red_elim_const allowed_reds env sigma ref u largs =
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
         let* ans = reduce_proj allowed_reds env sigma c' in
         Reduced ((ans, lrest), nocase)
-    | EliminationFix {trigger_min_args; refolding_target; refolding_data}
-      when nargs >= trigger_min_args ->
+    | EliminationFix (min,infos) when nargs >= min ->
+        let c = reference_value env sigma ref u in
+        let d, lrest = whd_nothing_for_iota env sigma (c, largs) in
+        let f = ([|Some (ref, u)|],infos), largs in
+        let* (c, rest) = reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest in
+        Reduced ((c, rest), nocase)
+    | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
         let rec descend (ref,u) args =
           let c = reference_value env sigma ref u in
-          if evaluable_reference_eq sigma ref refolding_target then
+          if evaluable_reference_eq sigma ref refgoal then
             (c,args)
           else
             let c', lrest = whd_betalet_stack env sigma (applist(c,args)) in
             descend (destEvalRefU sigma c') lrest in
         let (_, midargs as s) = descend (ref,u) largs in
         let d, lrest = whd_nothing_for_iota env sigma s in
-        let f = refolding_data, midargs in
+        let f = refinfos, midargs in
         let* (c, rest) = reduce_fix allowed_reds env sigma (Some f) (destFix sigma d) lrest in
         Reduced ((c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
