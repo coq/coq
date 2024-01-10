@@ -436,7 +436,7 @@ project sf "https://github.com/DeepSpec/sf" "master"
 ########################################################################
 # Coqtail
 ########################################################################
-project coqtail "https://github.com/whonore/Coqtail" "master"
+project coqtail "https://github.com/whonore/Coqtail" "main"
 # Contact @whonore on github
 
 ########################################################################
