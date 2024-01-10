@@ -1266,7 +1266,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
           match DAst.get f with
           | GRef (ref,_) ->
             let subscopes = find_arguments_scope ref in
-            let impls = select_impargs_size nallargs (implicits_of_global ref) in
+            let impls = select_stronger_impargs (implicits_of_global ref) in
             subscopes, impls
           | _ ->
             [], [] in

@@ -187,3 +187,12 @@ Arguments bar {A} {x} _ {B} {y}.
 Check bar (1:=true) 0 (3:=false).
 
 End TestUnnamedImplicit.
+
+Module NotationAppliedConstantMultipleImplicit.
+
+Axiom f : nat -> nat -> nat -> nat.
+Arguments f {_} _ _, {_ _} _.
+Notation "#" := (@f 0).
+Check # 0 : nat.
+
+End NotationAppliedConstantMultipleImplicit.

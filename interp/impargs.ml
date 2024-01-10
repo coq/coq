@@ -813,7 +813,7 @@ let rec drop_first_implicits p l =
   | DefaultImpArgs,imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)
   | LessArgsThan n,imp::impls ->
-      let n = if is_status_implicit imp then n-1 else n in
+      let n = if is_status_implicit imp then n else n-1 in
       drop_first_implicits (p-1) (LessArgsThan n,impls)
 
 let rec chop_and_adjust n l1 l2 =
