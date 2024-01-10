@@ -10,14 +10,30 @@
 
 (** Initial Author : Evgeny Makarov, INRIA, 2007 *)
 
-Require Export Equalities Orders NumPrelude GenericMinMax.
+(** * Axioms for a domain with [zero], [succ], [pred]. *)
 
-(** Axiomatization of a domain with zero, successor, predecessor,
-    and a bi-directional induction principle. We require [P (S n) = n]
-    but not the other way around, since this domain is meant
-    to be either N or Z. In fact it can be a few other things,
+From Coq.Structures Require Export Equalities Orders GenericMinMax.
+
+(** We use the [Equalities] module in order to work with a general decidable
+    equality [eq]. *)
+
+(** The [Orders] module contains module types about orders [lt] and [le] in
+    [Prop].
+*)
+
+(** The [GenericMinMax] module adds specifications and basic lemmas for [min]
+   and [max] operators on ordered types. *)
+
+From Coq.Numbers Require Export NumPrelude.
+
+(** ** Axiomatization of a domain with [zero], [succ], [pred] and a bi-directional induction principle. *)
+
+(** We require [P (S n) = n] but not the other way around, since this domain
+    is meant to be either N or Z. In fact it can be a few other things,
     for instance [Z/nZ] (See file [NZDomain] for a study of that).
 *)
+
+(** The [Typ] module type in [Equalities] only has a parameter [t : Type]. *)
 
 Module Type ZeroSuccPred (Import T:Typ).
  Parameter Inline(20) zero : t.
@@ -34,6 +50,9 @@ End ZeroSuccPredNotation.
 Module Type ZeroSuccPred' (T:Typ) :=
  ZeroSuccPred T <+ ZeroSuccPredNotation T.
 
+(** The [Eq'] module type in [Equalities] is a [Type] [t] with a binary predicate
+    [eq] denoted [==], the negation of [==] is denoted [~=]. *)
+
 Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
 #[global]
  Declare Instance succ_wd : Proper (eq ==> eq) S.
@@ -45,10 +64,10 @@ Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
     A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
 End IsNZDomain.
 
-(** Axiomatization of some more constants
+(** ** Axiomatization of some more constants *)
 
-    Simply denoting "1" for (S 0) and so on works ok when implementing
-    by nat, but leaves some (N.succ N0) when implementing by N.
+(** Simply denoting "1" for (S 0) and so on works ok when implementing
+    by [nat], but leaves some ([N.succ N0]) when implementing by [N].
 *)
 
 Module Type OneTwo (Import T:Typ).
@@ -73,7 +92,14 @@ Module Type NZDomainSig :=
 Module Type NZDomainSig' :=
  EqualityType' <+ ZeroSuccPred' <+ IsNZDomain <+ OneTwo' <+ IsOneTwo.
 
-(** Axiomatization of basic operations : [+] [-] [*] *)
+(** At this point, a module implementing [NZDomainSig] has :
+- two unary operators [pred] and [succ] such that
+  [forall n, pred (succ n) = n].
+- a bidirectional induction principle
+- three constants [0], [1 = S 0], [2 = S 1]
+*)
+
+(** ** Axiomatization of basic operations : [+] [-] [*] *)
 
 Module Type AddSubMul (Import T:Typ).
  Parameters Inline add sub mul : t -> t -> t.
@@ -110,8 +136,10 @@ Module Type NZBasicFunsSig' := NZDomainSig' <+ AddSubMul' <+IsAddSubMul.
 Module Type NZAxiomsSig := NZBasicFunsSig.
 Module Type NZAxiomsSig' := NZBasicFunsSig'.
 
-(** Axiomatization of order *)
+(** ** Axiomatization of order *)
 
+(** The module type [HasLt] (resp. [HasLe]) is just a type equipped with
+    a relation [lt] (resp. [le]) in [Prop]. *)
 Module Type NZOrd := NZDomainSig <+ HasLt <+ HasLe.
 Module Type NZOrd' := NZDomainSig' <+ HasLt <+ HasLe <+
                       LtNotation <+ LeNotation <+ LtLeNotation.
@@ -132,6 +160,9 @@ Module Type NZOrdSig' := NZOrd' <+ IsNZOrd.
 
 (** Everything together : *)
 
+(** The [HasMinMax] module type is a type with [min] and [max] operators
+   consistent with [le]. *)
+
 Module Type NZOrdAxiomsSig <: NZBasicFunsSig <: NZOrdSig
  := NZOrdSig <+ AddSubMul <+ IsAddSubMul <+ HasMinMax.
 Module Type NZOrdAxiomsSig' <: NZOrdAxiomsSig
@@ -139,6 +170,11 @@ Module Type NZOrdAxiomsSig' <: NZOrdAxiomsSig
 
 
 (** Same, plus a comparison function. *)
+
+(** The [HasCompare] module type requires a comparison function in type
+    [comparison] consistent with [eq] and [lt]. In particular, this imposes
+    that the order is decidable.
+*)
 
 Module Type NZDecOrdSig := NZOrdSig <+ HasCompare.
 Module Type NZDecOrdSig' := NZOrdSig' <+ HasCompare.
@@ -148,6 +184,7 @@ Module Type NZDecOrdAxiomsSig' := NZOrdAxiomsSig' <+ HasCompare.
 
 (** A square function *)
 
+(* TODO: why is this here? *)
 Module Type NZSquare (Import NZ : NZBasicFunsSig').
  Parameter Inline square : t -> t.
  Axiom square_spec : forall n, square n == n * n.
