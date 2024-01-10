@@ -1383,14 +1383,19 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
     let sigma, jty = eval_type_pretyper self ~flags tycon' env sigma ty in
-    let sigma, u = match u with
-    | Some u -> sigma, u
-    | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
-    in
-    let sigma = Evd.set_leq_sort !!env sigma jty.utj_type (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u))) in
     let sigma, jdef = eval_pretyper self ~flags (mk_tycon jty.utj_val) env sigma def in
     let pretype_elem = eval_pretyper self ~flags (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in
+    let sigma, u = match u with
+      | Some u -> sigma, u
+      | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
+    in
+    let sigma = Evd.set_leq_sort !!env sigma
+        (* we retype because it may be an evar which has been defined, resulting in a lower sort
+           cf #18480 *)
+        (Retyping.get_sort_of !!env sigma jty.utj_val)
+        (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u)))
+    in
     let u = UVars.Instance.of_array ([||],[| u |]) in
     let ta = EConstr.of_constr @@ Typeops.type_of_array !!env u in
     let j = {
