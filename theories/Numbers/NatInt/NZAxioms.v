@@ -12,7 +12,7 @@
 
 (** * Axioms for a domain with [zero], [succ], [pred]. *)
 
-From Coq.Structures Require Export Equalities Orders GenericMinMax.
+From Coq.Structures Require Export Equalities Orders.
 
 (** We use the [Equalities] module in order to work with a general decidable
     equality [eq]. *)
@@ -21,10 +21,69 @@ From Coq.Structures Require Export Equalities Orders GenericMinMax.
     [Prop].
 *)
 
+From Coq.Numbers Require Export NumPrelude.
+
+From Coq.Structures Require Export GenericMinMax.
 (** The [GenericMinMax] module adds specifications and basic lemmas for [min]
    and [max] operators on ordered types. *)
 
-From Coq.Numbers Require Export NumPrelude.
+
+(** At the end of the day, this file defines the module types
+    [NZDecOrdAxiomsSig] and [NZDecOrdAxiomsSig'] (with notations) :
+[[
+Module Type
+ NZDecOrdAxiomsSig' =
+ Sig
+   Parameter t : Type.
+   Parameter eq : t -> t -> Prop.
+   Parameter eq_equiv : Equivalence eq.
+   Parameter zero : t.
+   Parameter succ : t -> t.
+   Parameter pred : t -> t.
+   Parameter succ_wd : Proper (eq ==> eq) succ.
+   Parameter pred_wd : Proper (eq ==> eq) pred.
+   Parameter pred_succ : forall n : t, eq (pred (succ n)) n.
+   Parameter bi_induction :
+     forall A : t -> Prop,
+     Proper (eq ==> iff) A ->
+     A zero -> (forall n : t, A n <-> A (succ n)) -> forall n : t, A n.
+   Parameter one : t.
+   Parameter two : t.
+   Parameter one_succ : eq one (succ zero).
+   Parameter two_succ : eq two (succ one).
+   Parameter lt : t -> t -> Prop.
+   Parameter le : t -> t -> Prop.
+   Parameter lt_wd : Proper (eq ==> eq ==> iff) lt.
+   Parameter lt_eq_cases : forall n m : t, le n m <-> lt n m \/ eq n m.
+   Parameter lt_irrefl : forall n : t, ~ lt n n.
+   Parameter lt_succ_r : forall n m : t, lt n (succ m) <-> le n m.
+   Parameter add : t -> t -> t.
+   Parameter sub : t -> t -> t.
+   Parameter mul : t -> t -> t.
+   Parameter add_wd : Proper (eq ==> eq ==> eq) add.
+   Parameter sub_wd : Proper (eq ==> eq ==> eq) sub.
+   Parameter mul_wd : Proper (eq ==> eq ==> eq) mul.
+   Parameter add_0_l : forall n : t, eq (add zero n) n.
+   Parameter add_succ_l :
+     forall n m : t, eq (add (succ n) m) (succ (add n m)).
+   Parameter sub_0_r : forall n : t, eq (sub n zero) n.
+   Parameter sub_succ_r :
+     forall n m : t, eq (sub n (succ m)) (pred (sub n m)).
+   Parameter mul_0_l : forall n : t, eq (mul zero n) zero.
+   Parameter mul_succ_l :
+     forall n m : t, eq (mul (succ n) m) (add (mul n m) m).
+   Parameter max : t -> t -> t.
+   Parameter max_l : forall x y : t, le y x -> eq (max x y) x.
+   Parameter max_r : forall x y : t, le x y -> eq (max x y) y.
+   Parameter min : t -> t -> t.
+   Parameter min_l : forall x y : t, le x y -> eq (min x y) x.
+   Parameter min_r : forall x y : t, le y x -> eq (min x y) y.
+   Parameter compare : t -> t -> comparison.
+   Parameter compare_spec :
+     forall x y : t, CompareSpec (eq x y) (lt x y) (lt y x) (compare x y).
+ End
+]]
+ *)
 
 (** ** Axiomatization of a domain with [zero], [succ], [pred] and a bi-directional induction principle. *)
 
@@ -51,7 +110,7 @@ Module Type ZeroSuccPred' (T:Typ) :=
  ZeroSuccPred T <+ ZeroSuccPredNotation T.
 
 (** The [Eq'] module type in [Equalities] is a [Type] [t] with a binary predicate
-    [eq] denoted [==], the negation of [==] is denoted [~=]. *)
+    [eq] denoted [==]. The negation of [==] is denoted [~=]. *)
 
 Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
 #[global]
