@@ -1157,7 +1157,6 @@ gallina_ext: [
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ext_module_expr
-| "Include" "Type" module_type_inl LIST0 ext_module_type
 | "Transparent" OPT "!" LIST1 smart_global
 | "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
