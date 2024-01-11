@@ -170,12 +170,6 @@ type constant_evaluation =
   | EliminationProj of int
   | NotAnElimination
 
-(* We use a cache registered as a global table *)
-
-type frozen = constant_evaluation Cmap.t
-
-let eval_table = Summary.ref (Cmap.empty : frozen) ~name:"evaluation"
-
 (* [compute_consteval] determines whether f is an "elimination constant"
 
    either [yn:Tn]..[y1:T1](match yi with f1..fk end g1 ..gp)
@@ -349,16 +343,28 @@ let compute_consteval allowed_reds env sigma ref u =
     | None -> NotAnElimination
     | Some c -> srec env [] ref u false c
 
-let reference_eval allowed_reds env sigma ref u =
+module CacheTable = Hashtbl.Make(struct
+    type t = Constant.t * UVars.Instance.t
+    let equal (c,u) (c',u') =
+      Constant.CanOrd.equal c c' && UVars.Instance.equal u u'
+
+    let hash (c,u) =
+      Hashset.Combine.combine (Constant.CanOrd.hash c) (UVars.Instance.hash u)
+  end)
+
+let make_simpl_cache () =
+  CacheTable.create 12
+
+let reference_eval (cache,allowed_reds) env sigma ref u =
   match ref with
-  | EvalConst cst as ref when EInstance.is_empty u ->
-      (try
-         Cmap.find cst !eval_table
-       with Not_found -> begin
-         let v = compute_consteval allowed_reds env sigma ref u in
-         eval_table := Cmap.add cst v !eval_table;
-         v
-       end)
+  | EvalConst cst as ref ->
+    let cu = cst, EInstance.kind sigma u in
+    (match CacheTable.find_opt cache cu with
+     | Some v -> v
+     | None ->
+       let v = compute_consteval allowed_reds env sigma ref u in
+       CacheTable.add cache cu v;
+       v)
   | ref -> compute_consteval allowed_reds env sigma ref u
 
 (* If f is bound to EliminationFix (n',refs,infos), then n' is the minimal
@@ -971,8 +977,9 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
 
 let whd_simpl_orelse_delta_but_fix env sigma c =
   let reds = make_simpl_reds env in
+  let cache = make_simpl_cache() in
   let rec redrec s =
-    let (constr, stack as s') = whd_simpl_stack reds env sigma s in
+    let (constr, stack as s') = whd_simpl_stack (cache,reds) env sigma s in
     match match_eval_ref_value env sigma constr stack with
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lambda sigma c)) with
@@ -1003,13 +1010,15 @@ let hnf_constr env sigma c =
 let whd_simpl_with_reds allowed_reds env sigma c =
   applist (whd_simpl_stack allowed_reds env sigma (c, []))
 
-let whd_simpl env sigma x = whd_simpl_with_reds (make_simpl_reds env) env sigma x
+let whd_simpl env sigma x =
+  whd_simpl_with_reds (make_simpl_cache(), make_simpl_reds env) env sigma x
 
 let simpl env sigma c =
   let allowed_reds = make_simpl_reds env in
+  let cache = make_simpl_cache () in
   let rec strongrec env t =
     map_constr_with_full_binders env sigma push_rel strongrec env
-        (whd_simpl_with_reds allowed_reds env sigma t) in
+      (whd_simpl_with_reds (cache,allowed_reds) env sigma t) in
   strongrec env c
 
 (* Reduction at specific subterms *)
@@ -1290,6 +1299,7 @@ let find_hnf_rectype env sigma t =
 exception NotStepReducible
 
 let one_step_reduce env sigma c =
+  let cache_reds = make_simpl_cache(), RedFlags.betadeltazeta in
   let rec redrec (x, stack) =
     match EConstr.kind sigma x with
       | Lambda (n,t,c)  ->
@@ -1300,18 +1310,18 @@ let one_step_reduce env sigma c =
       | LetIn (_,f,_,cl) -> (Vars.subst1 f cl,stack)
       | Cast (c,_,_) -> redrec (c,stack)
       | Case (ci,u,pms,p,iv,c,lf) ->
-        begin match special_red_case RedFlags.betadeltazeta env sigma (ci,u,pms,p,iv,c,lf) with
+        begin match special_red_case cache_reds env sigma (ci,u,pms,p,iv,c,lf) with
         | Reduced c -> (c, stack)
         | NotReducible -> raise NotStepReducible
         end
       | Fix fix ->
-        begin match reduce_fix RedFlags.betadeltazeta env sigma None fix stack with
+        begin match reduce_fix cache_reds env sigma None fix stack with
         | Reduced s' -> s'
         | NotReducible -> raise NotStepReducible
         end
       | _ when isEvalRef env sigma x ->
           let ref,u = destEvalRefU sigma x in
-          begin match red_elim_const RedFlags.betadeltazeta env sigma ref u stack with
+          begin match red_elim_const cache_reds env sigma ref u stack with
           | Reduced (c, _) -> c
           | NotReducible ->
              match reference_opt_value env sigma ref u with
