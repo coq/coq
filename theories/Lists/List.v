@@ -360,6 +360,8 @@ Section Facts.
       right; unfold not; intros [Hc1| Hc2]; auto.
   Defined.
 
+  Lemma tl_length l : length (@tl A l) = pred (length l).
+  Proof. case l; trivial. Qed.
 End Facts.
 
 #[global]
@@ -1160,6 +1162,9 @@ Section Map.
   Proof.
     intros n l d H. now rewrite nth_error_map, H.
   Qed.
+
+  Lemma tl_map l : tl (map l) = map (tl l).
+  Proof. case l; trivial. Qed.
 
   Lemma map_app : forall l l',
     map (l++l') = (map l)++(map l').
@@ -2212,6 +2217,9 @@ Section Cutting.
   Lemma skipn_cons n a l: skipn (S n) (a::l) = skipn n l.
   Proof. reflexivity. Qed.
 
+  Lemma hd_error_skipn n : forall xs, hd_error (skipn n xs) = nth_error xs n.
+  Proof. induction n, xs; cbn [hd_error skipn nth_error]; auto. Qed.
+
   Lemma skipn_all : forall l, skipn (length l) l = nil.
   Proof. now intro l; induction l. Qed.
 
@@ -2775,6 +2783,22 @@ Section NatSeq.
    change [start + len] with (seq (start + len) 1).
    rewrite <- seq_app.
    rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
+  Qed.
+
+  Lemma skipn_seq n start len : skipn n (seq start len) = seq (start+n) (len-n).
+  Proof.
+    revert len; revert start; induction n, len;
+      cbn [skipn seq]; rewrite ?Nat.add_0_r, ?IHn; cbn [Nat.add]; auto.
+  Qed.
+
+  Lemma nth_error_seq n start len : nth_error (seq start len) n =
+    if Nat.ltb n len then Some (Nat.add start n) else None.
+  Proof.
+    rewrite <-hd_error_skipn, skipn_seq.
+    destruct (Nat.sub len n) eqn:?, (Nat.ltb_spec n len);
+    cbn [nth_error seq]; trivial (*; lia *).
+    { apply Nat.sub_0_le, Nat.le_ngt in Heqn0; intuition idtac. }
+    { apply Nat.sub_0_le in H; congruence. }
   Qed.
 
 End NatSeq.

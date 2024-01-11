@@ -1649,6 +1649,15 @@ Proof.
  rewrite H. apply IHp.
 Qed.
 
+Lemma iter_op_correct {A} op x p zero
+  (op_zero_r : op x zero = x)
+  (op_assoc : forall x y zero : A, op x (op y zero) = op (op x y) zero)
+  : @Pos.iter_op A op p x = Pos.iter (op x) zero p.
+Proof.
+  induction p using peano_ind; cbn;
+    rewrite ?iter_op_succ, ?iter_succ, ?IHp; auto.
+Qed.
+
 (** ** Results about [of_nat] and [of_succ_nat] *)
 
 Lemma of_nat_succ (n:nat) : of_succ_nat n = of_nat (S n).
