@@ -1451,6 +1451,11 @@ field_body: [
 | WITH binders of_type_inst ":=" lconstr
 ]
 
+assum_list: [
+| DELETE LIST1 assum_coe
+| LIST1 assum_coe
+]
+
 assumpt: [
 | REPLACE LIST1 ident_decl of_type lconstr
 | WITH LIST1 ident_decl of_type

@@ -895,9 +895,9 @@ command: [
 | "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
-| assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
+| assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ assumpt | LIST1 ( "(" assumpt ")" ) ]
 | [ "Definition" | "Example" ] ident_decl def_body
-| [ "Symbol" | "Symbols" ] [ LIST1 ( "(" assumpt ")" ) | assumpt ]
+| [ "Symbol" | "Symbols" ] [ assumpt | LIST1 ( "(" assumpt ")" ) ]
 | "Let" ident_decl def_body
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "Inductive" record_definition LIST0 ( "with" record_definition )

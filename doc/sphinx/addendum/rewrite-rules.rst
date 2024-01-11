@@ -36,7 +36,7 @@ They stand in-between defined constants and axioms,
 in that they don't always reduce as defined constants do,
 but they may still reduce using the provided rules, unlike axioms.
 
-.. cmd:: {| Symbol | Symbols } {| {+ ( @assumpt ) } | @assumpt }
+.. cmd:: {| Symbol | Symbols } {| @assumpt | {+ ( @assumpt ) } }
    :name: Symbol; Symbols
 
    Binds an :n:`@ident` to a :n:`@type` as a symbol.
