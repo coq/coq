@@ -1,15 +1,15 @@
-Require Import Numbers.ZmodDef NArith ZArith ZModOffset Lia.
+Require Import NArith ZArith ZModOffset Lia Numbers.ZmodDef.
 Require Import Bool.Bool Lists.List Sorting.Permutation.
 Import ListNotations.
 Local Open Scope Z_scope.
 Local Coercion Z.pos : positive >-> Z.
 Local Coercion N.pos : positive >-> N.
 Local Coercion Z.of_N : N >-> Z.
+Local Coercion ZmodDef.Zmod.to_Z : Zmod >-> Z.
 
-Module Export Basics.
+Module Export Base.
 Module Zmod.
 Export ZmodDef.Zmod.
-Local Coercion to_Z : Zmod >-> Z.
 
 (** ** Unsigned conversions to [Z] *)
 
@@ -604,7 +604,6 @@ End Zmod.
 
 Module Zstar.
 Import Znumtheory Zmod Zstar.
-Local Coercion Zmod.to_Z : Zmod.Zmod >-> Z.
 Local Coercion Zstar.to_Zmod : Zstar.Zstar >-> Zmod.Zmod.
 
 Lemma coprime_to_Zmod {m} (a : Zstar m) : Z.gcd (to_Zmod a) m = 1.
@@ -797,11 +796,9 @@ Qed.
 
 Lemma NoDup_elements {m} : List.NoDup (elements m).
 Proof.
-  (* List.NoDup_map_iff *)
-  eapply FinFun.Injective_map_NoDup, List.NoDup_filter, NoDup_elements.
-  intros ? ? ?.
-  apply of_Zmod_inj.
-Admitted.
+  eapply FinFun.Injective_map_NoDup_in, List.NoDup_filter, NoDup_elements.
+  intros ?????%of_Zmod_inj; rewrite filter_In in *; trivial; lia.
+Qed.
 
 Local Hint Unfold FinFun.Injective List.incl : core.
 Lemma Permutation_mul_elements {m} (a : Zstar m) :
@@ -827,10 +824,10 @@ Proof.
     progress cbn [List.seq List.tl List.map List.filter].
   rewrite Z.gcd_0_l; destruct (Z.eqb_spec (Z.abs m) 1).
   { pose proof prime_ge_2 m H; lia. }
-  erewrite List.filter_map. filter_ext; trivial.
-  apply List.Forall_forall; intros i ?%List.in_seq; apply Z.eqb_eq.
+  erewrite filter_map_comm, filter_ext_in, filter_true; trivial; cbv beta.
+  intros i ?%List.in_seq; apply Z.eqb_eq.
   eapply Zgcd_1_rel_prime, rel_prime_le_prime; trivial.
-  rewrite Zmod.to_Z_of_nat, Z.mod_small; lia.
+  rewrite Zmod.to_Z_of_Z, Z.mod_small; lia.
 Qed.
 
 Lemma length_elements_prime (m : positive) (H : prime m) : length (elements m) = N.to_nat (Pos.pred_N m).
@@ -850,5 +847,5 @@ Proof.
     trivial; pose proof prime_ge_2 m H; lia.
 Qed.
 
-
-End Basics.
+End Zstar.
+End Base.

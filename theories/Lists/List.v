@@ -1649,7 +1649,18 @@ End Fold_Right_Recursor.
   (*******************************)
 
   Section Filtering.
+
+    Lemma filter_map_comm A B f g l :
+      filter f (@map A B g l) = @map A B g (filter (fun a => f (g a)) l).
+    Proof. induction l; cbn [map filter]; auto. rewrite IHl; case f; auto. Qed.
+
     Variables (A : Type).
+
+    Lemma filter_true l : filter (fun _ : A => true) l = l.
+    Proof. induction l; cbn [filter]; congruence. Qed.
+
+    Lemma filter_false l : filter (fun _ : A => false) l = nil.
+    Proof. induction l; cbn [filter]; congruence. Qed.
 
     Lemma filter_ext_in : forall (f g : A -> bool) (l : list A),
       (forall a, In a l -> f a = g a) -> filter f l = filter g l.
