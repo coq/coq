@@ -15,8 +15,6 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
-        # Dependencies of Gappa
-        libboost1.81-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of source-doc and coq-makefile
         texlive-latex-extra texlive-science tipa \
         # Dependencies of HB (test suite)
@@ -24,7 +22,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Required to get the wget step to succeed
         ca-certificates \
         # Required for fiat-crypto and Coqtail
-        python-is-python3
+        python-is-python3 \
+      && rm -rf /var/lib/apt/lists /usr/share/doc
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
@@ -50,10 +49,9 @@ RUN opam init -a --disable-sandboxing --bare && eval $(opam env) && opam update 
     opam switch create "${COMPILER}+flambda" \
       --repositories default,ocaml-beta=git+https://github.com/ocaml/ocaml-beta-repository.git \
       --packages="ocaml-variants.${COMPILER}+options,ocaml-option-flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE
-
-
-RUN opam clean -a -c
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # set the locale for the benefit of Python
 ENV LANG C.UTF-8

@@ -15,8 +15,6 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
-        # Dependencies of Gappa
-        libboost1.67-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
@@ -25,12 +23,14 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of HB (test suite)
         wdiff \
         # Required for fiat-crypto and Coqtail
-        python-is-python3
+        python-is-python3 \
+      && rm -rf /var/lib/apt/lists /usr/share/doc
 
 # More dependencies of the sphinx doc, pytest for coqtail
 RUN pip3 install docutils==0.17.1 sphinx==4.5.0 sphinx_rtd_theme==1.0.0 \
         antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.2 \
-        pytest==5.4.3
+        pytest==5.4.3 \
+      && rm -rf ~/.cache/pip
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.0.6/opam-2.0.6-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
@@ -58,14 +58,16 @@ ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
 
 # base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
-    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM $BASE_ONLY_OPAM
+    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM $BASE_ONLY_OPAM && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # base+32bit switch, note the zarith hack
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         i386 env CC='gcc -m32' opam install zarith.1.11 && \
-        opam install $BASE_OPAM
-
-RUN opam clean -a -c
+    opam install $BASE_OPAM && \
+    opam clean -a -c && \
+    find ~ '(' -name '*.cmt' -o -name '*.cmti' ')' -delete
 
 # set the locale for the benefit of Python
 ENV LANG C.UTF-8
