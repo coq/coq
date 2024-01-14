@@ -67,6 +67,7 @@ type named_context_val = {
   env_named_ctx : Constr.named_context;
   env_named_map : Constr.named_declaration Id.Map.t;
   env_named_idx : Constr.named_declaration Range.t;
+  env_named_fsh : Nameops.Fresh.t;
 }
 
 type rel_context_val = {
@@ -92,6 +93,7 @@ let empty_named_context_val = {
   env_named_ctx = [];
   env_named_map = Id.Map.empty;
   env_named_idx = Range.empty;
+  env_named_fsh = Nameops.Fresh.empty;
 }
 
 let empty_rel_context_val = {
@@ -165,13 +167,15 @@ let push_named_context_val d ctxt =
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
     env_named_map = Id.Map.add (NamedDecl.get_id d) d ctxt.env_named_map;
     env_named_idx = Range.cons d ctxt.env_named_idx;
+    env_named_fsh = Nameops.Fresh.add (NamedDecl.get_id d) ctxt.env_named_fsh;
   }
 
 let match_named_context_val c = match c.env_named_ctx with
 | [] -> None
 | decl :: ctx ->
   let map = Id.Map.remove (NamedDecl.get_id decl) c.env_named_map in
-  let cval = { env_named_ctx = ctx; env_named_map = map; env_named_idx = Range.tl c.env_named_idx } in
+  let fsh = Nameops.Fresh.remove (NamedDecl.get_id decl) c.env_named_fsh in
+  let cval = { env_named_ctx = ctx; env_named_map = map; env_named_idx = Range.tl c.env_named_idx; env_named_fsh = fsh } in
   Some (decl, cval)
 
 let map_named_val f ctxt =
@@ -188,7 +192,7 @@ let map_named_val f ctxt =
   if map == ctxt.env_named_map then ctxt
   else
     let idx = List.fold_right Range.cons ctx Range.empty in
-    { env_named_ctx = ctx; env_named_map = map; env_named_idx = idx }
+    { env_named_ctx = ctx; env_named_map = map; env_named_idx = idx; env_named_fsh = ctxt.env_named_fsh }
 
 let push_named d env =
   {env with env_named_context = push_named_context_val d env.env_named_context}

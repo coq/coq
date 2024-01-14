@@ -59,6 +59,7 @@ type named_context_val = private {
   (** Identifier-indexed version of [env_named_ctx] *)
   env_named_idx : Constr.named_declaration Range.t;
   (** Same as env_named_ctx but with a fast-access list. *)
+  env_named_fsh : Nameops.Fresh.t;
 }
 
 type rel_context_val = private {

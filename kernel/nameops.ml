@@ -496,9 +496,6 @@ let of_list l =
 let of_set s =
   Id.Set.fold add s empty
 
-let of_named_context_val s =
-  of_set @@ Environ.ids_of_named_context_val s
-
 end
 
 (* Names *)
