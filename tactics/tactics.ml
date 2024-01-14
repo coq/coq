@@ -463,9 +463,9 @@ let rename_hyp repl =
 (**************************************************************)
 
 let fresh_id_in_env avoid id env =
-  let avoid' = ids_of_named_context_val (named_context_val env) in
-  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
-  next_ident_away_in_goal (Global.env ()) id avoid
+  let avoid' = (named_context_val env).Environ.env_named_fsh in
+  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.fold (fun id accu -> Nameops.Fresh.add id accu) avoid avoid' in
+  fresh_ident_away_in_goal (Global.env ()) id avoid
 
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
@@ -1147,8 +1147,8 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in
     let avoid =
-      let avoid' = ids_of_named_context_val (named_context_val env) in
-      if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid
+      let avoid' = (named_context_val env).env_named_fsh in
+      if Id.Set.is_empty avoid then avoid' else Id.Set.fold (fun id accu -> Nameops.Fresh.add id accu) avoid avoid'
     in
     let rec decompose env avoid n concl subst decls ndecls =
       let decl =
@@ -1164,8 +1164,8 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
       | None -> ndecls, decls, Vars.esubst Vars.lift_substituend subst concl
       | Some (decl, concl) ->
         let id = default_id env sigma decl in
-        let id = next_ident_away_in_goal (Global.env ()) id avoid in
-        let avoid = Id.Set.add id avoid in
+        let id = fresh_ident_away_in_goal (Global.env ()) id avoid in
+        let avoid = Nameops.Fresh.add id avoid in
         let env = EConstr.push_rel decl env in
         let ndecl = NamedDecl.of_rel_decl (fun _ -> id) decl in
         let ndecl = NamedDecl.map_constr (fun c -> Vars.esubst Vars.lift_substituend subst c) ndecl in
@@ -2742,7 +2742,7 @@ let pose_tac na c =
       id
     | Anonymous ->
       let id = id_of_name_using_hdchar env sigma t Anonymous in
-      next_ident_away_in_goal (Global.env ()) id (ids_of_named_context_val hyps)
+      fresh_ident_away_in_goal (Global.env ()) id hyps.Environ.env_named_fsh
     in
     Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine ~typecheck:false begin fun sigma ->

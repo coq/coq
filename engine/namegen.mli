@@ -88,6 +88,8 @@ val next_ident_away : Id.t -> Id.Set.t -> Id.t
 (** Avoid clashing with a name already used in current module *)
 val next_ident_away_in_goal : Environ.env -> Id.t -> Id.Set.t -> Id.t
 
+val fresh_ident_away_in_goal : Environ.env -> Id.t -> Nameops.Fresh.t -> Id.t
+
 (** Avoid clashing with a name already used in current module
    but tolerate overwriting section variables, as in goals *)
 val next_global_ident_away : Id.t -> Id.Set.t -> Id.t

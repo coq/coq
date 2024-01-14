@@ -352,6 +352,16 @@ let next_ident_away_in_goal env id avoid =
   let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable env id)) in
   next_ident_away_from id bad
 
+let fresh_ident_away_in_goal env id avoid =
+  let id = if Nameops.Fresh.mem id avoid then restart_subscript id else id in
+  let id = mangle_id id in
+  let rec name_rec avoid id =
+    let id, avoid = Nameops.Fresh.fresh id avoid in
+    if is_global id && not (is_section_variable env id) then name_rec avoid id
+    else id
+  in
+  name_rec avoid id
+
 let next_name_away_in_goal env na avoid =
   let id = match na with
     | Name id -> id

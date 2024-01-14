@@ -113,9 +113,9 @@ let tactic_interp_error_handler = function
 let _ = CErrors.register_handler (wrap_unhandled tactic_interp_error_handler)
 
 let fresh_id_in_env avoid id env =
-  let avoid' = ids_of_named_context_val (named_context_val env) in
-  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
-  next_ident_away_in_goal (Global.env ()) id avoid
+  let avoid' = (named_context_val env).Environ.env_named_fsh in
+  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.fold (fun id accu -> Nameops.Fresh.add id accu) avoid avoid' in
+  fresh_ident_away_in_goal (Global.env ()) id avoid
 
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
