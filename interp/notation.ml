@@ -2429,11 +2429,11 @@ let browse_notation strict ntn map =
       map [] in
   List.sort (fun x y -> String.compare (snd (pi1 x)) (snd (pi1 y))) l
 
-let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not_interp = (_,c)})) =
+let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not_interp = (_,c as interp); not_location = (_, df)})) =
   match c with
-  | NRef (ref,_) when test ref -> Some (on_parsing,on_printing,ntn,sc,ref)
+  | NRef (ref,_) when test ref -> Some (on_parsing,on_printing,ntn,df,sc,interp,ref)
   | NApp (NRef (ref,_), l) when head || List.for_all isNVar_or_NHole l && test ref ->
-      Some (on_parsing,on_printing,ntn,sc,ref)
+      Some (on_parsing,on_printing,ntn,df,sc,interp,ref)
   | _ -> None
 
 type notation_as_reference_error =
@@ -2450,7 +2450,7 @@ let error_notation_not_reference ?loc ntn ntns =
   let env = Global.env () in let sigma = Evd.from_env env in
   Loc.raise ?loc (NotationAsReferenceError (NotationNotReference (env, sigma, ntn, ntns)))
 
-let interp_notation_as_global_reference ?loc ~head test ntn sc =
+let interp_notation_as_global_reference_expanded ?loc ~head test ntn sc =
   let scopes = match sc with
   | Some sc ->
       let scope = find_scope (find_delimiters_scope sc) in
@@ -2458,20 +2458,24 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation ~head test) ntns in
+  let make_scope sc = if String.equal sc default_scope then LastLonelyNotation else NotationInScope sc in
   match Option.List.flatten refs with
-  | [Some true,_ (* why not if the only one? *),_,_,ref] -> ref
+  | [Some true,_ (* why not if the only one? *),ntn,df,sc,interp,ref] -> (ntn,df,make_scope sc,interp,ref)
   | [] -> error_notation_not_reference ?loc ntn ntns
   | refs ->
-      let f (on_parsing,_,ntn,sc,ref) =
+      let f (on_parsing,_,ntn,df,sc,_,ref) =
         let def = find_default ntn !scope_stack in
         match def with
         | None -> false
         | Some sc' -> on_parsing = Some true && String.equal sc sc'
       in
       match List.filter f refs with
-      | [_,_,_,_,ref] -> ref
+      | [_,_,ntn,df,sc,interp,ref] -> (ntn,df,make_scope sc,interp,ref)
       | [] -> error_notation_not_reference ?loc ntn ntns
       | _ -> error_ambiguous_notation ?loc ntn
+
+let interp_notation_as_global_reference ?loc ~head test ntn sc =
+  let _,_,_,_,ref = interp_notation_as_global_reference_expanded ?loc ~head test ntn sc in ref
 
 let locate_notation prglob ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in
@@ -2667,7 +2671,7 @@ let toggle_abbreviations ~on found ntn_pattern =
     Abbreviation.toggle_abbreviations ~on ~use:ntn_pattern.use_pattern test
   with Exit -> ()
 
-let toggle_notations ~on ~all prglob ntn_pattern =
+let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
   let found = ref [] in
   (* Deal with (parsing) notations *)
   begin
@@ -2689,7 +2693,7 @@ let toggle_notations ~on ~all prglob ntn_pattern =
   | _::_::_ when not all ->
     user_err (strbrk "More than one interpretation bound to this notation, confirm with the \"all\" modifier.")
   | _ ->
-     Feedback.msg_info
+     if verbose then Feedback.msg_info
        (str "The following notations have been " ++
           str (if on then "enabled" else "disabled") ++
           (match ntn_pattern.use_pattern with

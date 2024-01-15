@@ -527,8 +527,13 @@ let print_abbreviation_body env kn (vars,c) =
          Abbreviation.toggle_abbreviation ~on:false ~use:ParsingAndPrinting kn;
          pr_glob_constr_env env (Evd.from_env env) c) ())
 
-let print_abbreviation env kn =
-  print_abbreviation_body env kn (glob_constr_of_abbreviation kn)
+let print_abbreviation env sigma kn =
+  let (vars,c) = glob_constr_of_abbreviation kn in
+  let pp = match DAst.get c with
+  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_global_reference env sigma gref None]
+  | _ -> [] in
+  print_abbreviation_body env kn (vars,c) ++
+  with_line_skip pp
 
 (** Unused outside? *)
 
@@ -819,7 +824,7 @@ let print_any_name env sigma na udecl =
   maybe_error_reject_univ_decl na udecl;
   match na with
   | Term gref -> print_global_reference env sigma gref udecl
-  | Abbreviation kn -> print_abbreviation env kn
+  | Abbreviation kn -> print_abbreviation env sigma kn
   | Module mp -> print_module mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
@@ -831,13 +836,24 @@ let print_any_name env sigma na udecl =
     print_named_decl env sigma true str
   with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
+let print_notation_interpretation env sigma (entry,ntn) df sc c =
+  let filter = Notation.{
+    notation_entry_pattern = [entry];
+    interp_rule_key_pattern = Some (Inl ntn);
+    use_pattern = OnlyPrinting;
+    scope_pattern = sc;
+    interpretation_pattern = Some c;
+  } in
+  Vernacstate.System.protect (fun () ->
+      Notation.toggle_notations ~on:false ~all:false ~verbose:false (pr_glob_constr_env env sigma) filter;
+      hov 0 (str "Notation" ++ spc () ++ Notation_ops.pr_notation_info (pr_glob_constr_env env sigma) df (snd c))) ()
+
 let print_name env sigma na udecl =
   match na with
   | {loc; v=Constrexpr.ByNotation (ntn,sc)} ->
-    print_any_name env sigma
-      (Term (Notation.interp_notation_as_global_reference ?loc ~head:false (fun _ -> true)
-               ntn sc))
-      udecl
+    let ntn, df, sc, c, ref = Notation.interp_notation_as_global_reference_expanded ?loc ~head:false (fun _ -> true) ntn sc in
+    print_notation_interpretation env sigma ntn df (Some sc) c ++ fnl () ++ fnl () ++
+    print_any_name env sigma (Term ref) udecl
   | {loc; v=Constrexpr.AN ref} ->
     print_any_name env sigma (locate_any_name ref) udecl
 
@@ -896,25 +912,29 @@ let print_about_global_reference ?loc ref udecl =
     print_bidi_hints ref @
     [hov 0 (str "Expands to: " ++ pr_located_qualid (Term ref))])
 
-let print_about_abbreviation env kn =
+let print_about_abbreviation env sigma kn =
   let (vars,c) = glob_constr_of_abbreviation kn in
+  let pp = match DAst.get c with
+  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_about_global_reference gref None]
+  | _ -> [] in
   print_abbreviation_body env kn (vars,c) ++ fnl () ++
-  hov 0 (str "Expands to: " ++ pr_located_qualid (Abbreviation kn))
+  hov 0 (str "Expands to: " ++ pr_located_qualid (Abbreviation kn)) ++
+  with_line_skip pp
 
 let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref -> Dumpglob.add_glob ?loc ref; print_about_global_reference ref udecl
-  | Abbreviation kn -> v 0 (print_about_abbreviation env kn)
+  | Abbreviation kn -> v 0 (print_about_abbreviation env sigma kn)
   | Dir _ | Module _ | ModuleType _ | Undefined _ -> hov 0 (pr_located_qualid k)
   | Other (obj, info) -> hov 0 (info.about obj)
 
 let print_about env sigma na udecl =
   match na with
   | {loc;v=Constrexpr.ByNotation (ntn,sc)} ->
-      print_about_any ?loc env sigma
-        (Term (Notation.interp_notation_as_global_reference ?loc ~head:false (fun _ -> true)
-               ntn sc)) udecl
+    let ntn, df, sc, c, ref = Notation.interp_notation_as_global_reference_expanded ?loc ~head:false (fun _ -> true) ntn sc in
+    print_notation_interpretation env sigma ntn df (Some sc) c ++ fnl () ++ fnl () ++
+    print_about_any ?loc env sigma (Term ref) udecl
   | {loc;v=Constrexpr.AN ref} ->
       print_about_any ?loc env sigma (locate_any_name ref) udecl
 
