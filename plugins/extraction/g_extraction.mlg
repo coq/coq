@@ -150,11 +150,47 @@ VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF
   -> { reset_extraction_blacklist () }
 END
 
+(* Commands for setting, printing and resetting callbacks extraction. *)
+
+(* Defining a Coq object as ML callback for FFI call target from C *)
+VERNAC COMMAND EXTEND ExtractionCallback CLASSIFIED AS SIDEFF
+| [ "Extract" "Callback" string_opt(o) global(x) ]
+  -> { extract_callback o x }
+END
+
+VERNAC COMMAND EXTEND PrintExtractionCallback CLASSIFIED AS QUERY
+| [ "Print" "Extraction" "Callback" ]
+  -> {Feedback.msg_notice (print_extraction_callback ()) }
+END
+
+VERNAC COMMAND EXTEND ResetExtractionCallback CLASSIFIED AS SIDEFF
+| [ "Reset" "Extraction" "Callback" ]
+  -> { reset_extraction_callback () }
+END
+
+(* Commands for printing and resetting foreigns extraction. *)
+VERNAC COMMAND EXTEND PrintExtractionForeign CLASSIFIED AS QUERY
+| [ "Print" "Extraction" "Foreign" ]
+  -> {Feedback.msg_notice (print_extraction_foreign ()) }
+END
+
+(*
+VERNAC COMMAND EXTEND ResetExtractionForeign CLASSIFIED AS SIDEFF
+| [ "Reset" "Extraction" "Foreign" ]
+  -> { reset_extraction_foreign () }
+END
+*)
 
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
   -> { extract_constant_inline false x idl y }
+END
+
+(* Overriding of a Coq object by an ML one that will be a FFI call to C *)
+VERNAC COMMAND EXTEND ExtractionForeignConstant CLASSIFIED AS SIDEFF
+| [ "Extract" "Foreign" "Constant" global(x) "=>" string(y) ]
+  -> { extract_constant_foreign x y }
 END
 
 VERNAC COMMAND EXTEND ExtractionInlinedConstant CLASSIFIED AS SIDEFF

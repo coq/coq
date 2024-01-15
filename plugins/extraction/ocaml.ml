@@ -599,11 +599,30 @@ let pp_decl = function
         hov 2 (str "type " ++ ids ++ name ++ def)
     | Dterm (r, a, t) ->
         let def =
-          if is_custom r then str (" = " ^ find_custom r)
+          (* If it it is an foreign custom, set the def to ': type =  <quote>foreign_fun_name<quote> '.
+             TODO: I'm not sure, but could we use pp_native_string for quoting the custom name of r?
+          *)
+          if is_foreign_custom r then str ": " ++ pp_type false [] t ++ str " = \"" ++ str (find_custom r) ++ str "\""
+          (* Otherwise, check if it is a regular custom term. *)
+          else if is_custom r then str (" = " ^ find_custom r)
           else pp_function (empty_env ()) a
         in
         let name = pp_global_name Term r in
-        pp_val name t ++ hov 0 (str "let " ++ name ++ def ++ mt ())
+        (* If it is an foreign custom, begin the expression with 'external'/'foreign' instead of 'let' *)
+        let expr_begin = if is_foreign_custom r then str "external " else str "let " in
+        (* Make sure that a callback registration is synthesised, if specified for that term. *)
+        let callback_def =
+          try
+            let alias =
+              match find_callback r with
+                | Some s -> str s
+                | None   -> name (* No alias specified, use the qualid name. *)
+            in
+            cut2 () ++ hov 0 ((str "let () = Stdlib.Callback.register \"") ++ alias ++ (str "\" ") ++ name)
+          with Not_found -> (* No callback registration specified for qualid. *)
+            mt()
+        in pp_val name t ++ hov 0 (expr_begin ++ name ++ def ++ mt ()) ++ callback_def;
+
     | Dfix (rv,defs,typs) ->
         pp_Dfix (rv,defs,typs)
 

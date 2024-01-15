@@ -190,6 +190,8 @@ val type_scheme_nb_args_hook : (Environ.env -> Constr.t -> int) Hook.t
 
 val is_custom : GlobRef.t -> bool
 val is_inline_custom : GlobRef.t -> bool
+val is_foreign_custom : GlobRef.t -> bool
+val find_callback : GlobRef.t -> string option
 val find_custom : GlobRef.t -> string
 val find_type_custom : GlobRef.t -> string list * string
 
@@ -201,9 +203,16 @@ val find_custom_match : ml_branch array -> string
 val extraction_language : lang -> unit
 val extraction_inline : bool -> qualid list -> unit
 val print_extraction_inline : unit -> Pp.t
+val print_extraction_foreign : unit -> Pp.t
+val print_extraction_callback : unit -> Pp.t
 val reset_extraction_inline : unit -> unit
+val reset_extraction_foreign : unit -> unit
+val reset_extraction_callback : unit -> unit
+val extract_callback : string option -> qualid -> unit
 val extract_constant_inline :
   bool -> qualid -> string list -> string -> unit
+val extract_constant_foreign :
+  qualid -> string -> unit
 val extract_inductive :
   qualid -> string -> string list -> string option -> unit
 
