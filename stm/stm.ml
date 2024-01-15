@@ -410,10 +410,10 @@ end = struct (* {{{ *)
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (Spawned.process_id ()) in
     let string_of_transaction = function
       | Cmd { cast = t } | Fork (t, _,_,_) ->
-          (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
+          (try Pp.string_of_ppcmds (pr_ast t) with e when CErrors.noncritical e -> "ERR")
       | Sideff (ReplayCommand t) ->
           sprintf "Sideff(%s)"
-            (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
+            (try Pp.string_of_ppcmds (pr_ast t) with e when CErrors.noncritical e -> "ERR")
       | Sideff CherryPickEnv -> "EnvChange"
       | Noop -> " "
       | Alias (id,_) -> sprintf "Alias(%s)" (Stateid.to_string id)

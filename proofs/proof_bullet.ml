@@ -109,8 +109,8 @@ module Strict = struct
      of bullet or higher) then raise [Proof.CannotUnfocusThisWay]. *)
   let pop pr =
     match get_bullets pr with
-    | b::_ -> unfocus bullet_kind pr () , b
-    | _ -> assert false
+    | b::_ -> Some (unfocus bullet_kind pr (), b)
+    | _ -> None
 
   let push (b:t) pr =
     focus bullet_cond (b::get_bullets pr) 1 pr
@@ -126,16 +126,16 @@ module Strict = struct
             let us look at the bullet needed. *)
       let rec loop prf =
         match pop prf with
-        | prf, b ->
+        | Some (prf, b) ->
           (* pop went well, this means that there are no more goals
            *under this* bullet b, see if a new b can be pushed. *)
           begin
             try ignore (push b prf); Suggest b
-            with _ ->
+            with e when CErrors.noncritical e ->
               (* b could not be pushed, so we must look for a outer bullet *)
               loop prf
           end
-        | exception _ ->
+        | None ->
           (* No pop was possible, but there are still
              subgoals somewhere: there must be a "}" to use. *)
           NeedClosingBrace
@@ -143,7 +143,7 @@ module Strict = struct
       loop prf
 
   let rec pop_until (prf : Proof.t) bul : Proof.t =
-    let prf', b = pop prf in
+    let prf', b = Option.get (pop prf) in
     if bullet_eq bul b then prf'
     else pop_until prf' bul
 
