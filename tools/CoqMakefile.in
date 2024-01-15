@@ -819,6 +819,7 @@ define globvorule=
   $(1).vo $(1).glob &: $(1).v | $$(VDFILE)
 	$$(SHOW)COQC $(1).v
 	$$(HIDE)$$(TIMER) $$(COQC) $$(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $$(COQFLAGS) $$(COQLIBS) $(1).v
+	$$(HIDE)$$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$$(SHOW)COQNATIVE $(1).vo
 	$$(HIDE)$$(call TIMER,$(1).vo.native) $$(COQNATIVE) $$(COQLIBS) $(1).vo
