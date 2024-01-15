@@ -10,11 +10,36 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NZAxioms NZBase Decidable OrdersTac.
+(**
+* Lemmas about orders for modules implementing [NZOrdSig']
+
+This file defines the [NZOrderProp] functor type, meant to be [Include]d in
+a module implementing the [NZOrdSig'] module type.
+
+It contains lemmas and tactics about [le], [lt] and [eq].
+
+The firt part contains important basic lemmas about [le] and [lt], for instance
+- [succ_lt_mono], [succ_le_mono], [lt_succ_diag_r], [le_succ_diag_r], ...
+- [le_refl], [le_antisymm], [lt_asymm], [le_trans], [lt_trans], ...
+- decidability lemmas like [le_gt_cases], [eq_decidable], ...
+It also adds the following tactics:
+- [le_elim H] to reason by cases on an hypothesis [(H) : n <= m]
+- the domain-agnostic [order] (see [Coq.Structures.OrdersTac]) and [order']
+  which knows that [0 < 1 < 2]
+
+The second part proves many induction principles involving the orders and
+defines the tactic notation [nzord_induct].
+*)
+From Coq.Numbers.NatInt Require Import NZAxioms NZBase.
+From Coq.Logic Require Import Decidable.
+From Coq.Structures Require Import OrdersTac.
 
 Module Type NZOrderProp
  (Import NZ : NZOrdSig')(Import NZBase : NZBaseProp NZ).
 
+(** ** Basic facts about [le], [lt], [eq] and [succ] *)
+
+(** *** Direct consequences of the specifications of [lt] and [le] *)
 #[global]
 Instance le_wd : Proper (eq==>eq==>iff) le.
 Proof.
@@ -92,7 +117,7 @@ Qed.
 
 Notation lt_eq_gt_cases := lt_trichotomy (only parsing).
 
-(** Asymmetry and transitivity. *)
+(** *** Asymmetry and transitivity. *)
 
 Theorem lt_asymm : forall n m, n < m -> ~ m < n.
 Proof.
@@ -130,7 +155,7 @@ intros [LT|EQ] [LT'|EQ']; try rewrite EQ; try rewrite <- EQ';
  generalize (lt_trans n m p); auto with relations.
 Qed.
 
-(** Some type classes about order *)
+(** *** Some type classes about order *)
 
 #[global]
 Instance lt_strorder : StrictOrder lt.
@@ -148,7 +173,7 @@ intros x y. compute. split.
 - rewrite 2 lt_eq_cases. intuition auto with relations. elim (lt_irrefl x). now transitivity y.
 Qed.
 
-(** We know enough now to benefit from the generic [order] tactic. *)
+(** *** Making the generic [order] tactic *)
 
 Definition lt_compat := lt_wd.
 Definition lt_total := lt_trichotomy.
@@ -166,7 +191,7 @@ Module Tac := !MakeOrderTac NZ IsTotal.
 End Private_OrderTac.
 Ltac order := Private_OrderTac.Tac.order.
 
-(** Some direct consequences of [order]. *)
+(** *** Some direct consequences of [order] *)
 
 Theorem lt_neq : forall n m, n < m -> n ~= m.
 Proof. order. Qed.
@@ -203,7 +228,7 @@ Proof. order. Qed.
 Theorem le_antisymm : forall n m, n <= m -> m <= n -> n == m.
 Proof. order. Qed.
 
-(** More properties of [<] and [<=] with respect to [S] and [0]. *)
+(** *** More properties of [<] and [<=] with respect to [S] and [0] *)
 
 Theorem le_succ_r : forall n m, n <= S m <-> n <= m \/ n == S m.
 Proof.
@@ -269,10 +294,10 @@ Proof.
 intros n m H1 H2. rewrite <- le_succ_l, <- one_succ in H1. order.
 Qed.
 
-(** More Trichotomy, decidability and double negation elimination. *)
+(** *** More Trichotomy, decidability and double negation elimination *)
 
 (** The following theorem is cleary redundant, but helps not to
-remember whether one has to say le_gt_cases or lt_ge_cases *)
+remember whether one has to say [le_gt_cases] or [lt_ge_cases]. *)
 
 Theorem lt_ge_cases : forall n m, n < m \/ n >= m.
 Proof.
@@ -301,7 +326,7 @@ intros n m; destruct (lt_trichotomy n m) as [ | [ | ]];
  (right; order) || (left; order).
 Qed.
 
-(** DNE stands for double-negation elimination *)
+(** DNE stands for double-negation elimination. *)
 
 Theorem eq_dne : forall n m, ~ ~ n == m <-> n == m.
 Proof.
@@ -382,6 +407,8 @@ Proof.
  rewrite EQ. now rewrite pred_succ.
 Qed.
 
+(** ** Order-based induction principles *)
+
 Section WF.
 
 Variable z : t.
@@ -427,7 +454,7 @@ Qed.
 
 End WF.
 
-(** Stronger variant of induction with assumptions n >= 0 (n < 0)
+(** Stronger variant of induction with assumptions [n >= 0] ([n < 0])
 in the induction step *)
 
 Section Induction.
@@ -569,16 +596,16 @@ Theorem order_induction_0 :
   (forall n, 0 <= n -> A n -> A (S n)) ->
   (forall n, n < 0  -> A (S n) -> A n) ->
     forall n, A n.
-Proof (order_induction 0).
+Proof. exact (order_induction 0). Qed.
 
 Theorem order_induction'_0 :
   A 0 ->
   (forall n, 0 <= n -> A n -> A (S n)) ->
   (forall n, n <= 0 -> A n -> A (P n)) ->
     forall n, A n.
-Proof (order_induction' 0).
+Proof. exact (order_induction' 0). Qed.
 
-(** Elimintation principle for < *)
+(** Elimination principle for [<] *)
 
 Theorem lt_ind : forall (n : t),
   A (S n) ->
@@ -590,7 +617,7 @@ apply right_induction with (S n); [assumption | | now apply le_succ_l].
 intros; apply H2; try assumption. now apply le_succ_l.
 Qed.
 
-(** Elimination principle for <= *)
+(** Elimination principle for [<=] *)
 
 Theorem le_ind : forall (n : t),
   A n ->
@@ -609,7 +636,7 @@ Tactic Notation "nzord_induct" ident(n) :=
 Tactic Notation "nzord_induct" ident(n) constr(z) :=
   induction_maker n ltac:(apply order_induction with z).
 
-(** Induction principles with respect to a measure. *)
+(** Induction principles with respect to a measure *)
 
 Section MeasureInduction.
 
@@ -642,7 +669,7 @@ End MeasureInduction.
 
 End NZOrderProp.
 
-(** If we have moreover a [compare] function, we can build
+(* If we have moreover a [compare] function, we can build
     an [OrderedType] structure. *)
 
 (* Temporary workaround for bug #2949: remove this problematic + unused functor
