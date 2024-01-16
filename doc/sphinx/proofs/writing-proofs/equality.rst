@@ -968,6 +968,12 @@ which supports additional fine-tuning.
    has to check that two distinct applied constants are convertible.
    See Section :ref:`conversion-rules`.
 
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants opaque, while
+   by default the projection themselves are made opaque and the compatibility
+   constants always remain transparent. This mechanism is only intended for
+   debugging purposes.
+
 .. cmd:: Transparent {? ! } {+ @reference }
 
    The opposite of :cmd:`Opaque`, it marks the specified constants
@@ -985,6 +991,10 @@ which supports additional fine-tuning.
    statements, not their actual proofs. This distinguishes lemmas from
    the usual defined constants, whose actual values are of course
    relevant in general.
+
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants transparent
+   (see :cmd:`Opaque` for more details).
 
    .. exn:: The reference @qualid was not found in the current environment.
 
