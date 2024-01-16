@@ -66,7 +66,12 @@ let whd_evar = EConstr.whd_evar
 
 let nf_evar sigma c =
   let lsubst = Evd.universe_subst sigma in
-  let evar_value ev = Evd.existential_opt_value0 sigma ev in
+  let evar_value self (evk, args) =
+    let args' = SList.Smart.map self args in
+    match try Evd.existential_opt_value0 sigma (evk, args') with Not_found -> None with
+    | None -> mkEvar (evk, args')
+    | Some c -> self c
+  in
   let univ_value l = UnivFlex.normalize_univ_variable lsubst l in
   let qvar_value q = UState.nf_qvar (Evd.evar_universe_context sigma) q in
   EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value (EConstr.Unsafe.to_constr c)

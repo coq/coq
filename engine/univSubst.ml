@@ -173,11 +173,12 @@ let nf_evars_and_universes_opt_subst fevar fqual funiv c =
   let flevel = fqual, level_subst_of funiv in
   let rec aux c =
     match kind c with
-    | Evar (evk, args) ->
-      let args' = SList.Smart.map aux args in
-      (match try fevar (evk, args') with Not_found -> None with
-      | None -> if args == args' then c else mkEvar (evk, args')
-      | Some c -> aux c)
+    | Evar (evk, args as ev) ->
+      let ans = fevar aux ev in
+      begin match Constr.kind ans with
+      | Evar (evk', args') when Evar.equal evk evk' && args == args' -> c
+      | _ -> ans
+      end
     | Const pu ->
       let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstU pu'

@@ -1712,21 +1712,27 @@ module MiniEConstr = struct
   let unsafe_eq = Refl
 
   let to_constr_nocheck sigma c =
-    let evar_value ((evk, args) as ev) = match EvMap.find_opt evk sigma.defn_evars with
-    | None ->
-      (* Hack: we fully expand the evar instance *)
-      let rec has_default = function
-      | SList.Nil -> false
-      | SList.Cons (_, l) -> has_default l
-      | SList.Default _ -> true
+    let evar_value self (evk, args) =
+      let args' = SList.Smart.map self args in
+      let v = match EvMap.find_opt evk sigma.defn_evars with
+      | None ->
+        (* Hack: we fully expand the evar instance *)
+        let rec has_default = function
+        | SList.Nil -> false
+        | SList.Cons (_, l) -> has_default l
+        | SList.Default _ -> true
+        in
+        if has_default args' then
+          let args' = expand_existential sigma (evk, args') in
+          Some (mkEvar (evk, SList.of_full_list args'))
+        else None
+      | Some info ->
+        let Evar_defined c = evar_body info in
+        Some (instantiate_evar_array sigma info c args')
       in
-      if has_default args then
-        let args = expand_existential sigma ev in
-        Some (mkEvar (evk, SList.of_full_list args))
-      else None
-    | Some info ->
-      let Evar_defined c = evar_body info in
-      Some (instantiate_evar_array sigma info c args)
+      match v with
+      | None -> mkEvar (evk, args')
+      | Some c -> self c
     in
     let lsubst = universe_subst sigma in
     let univ_value l =
@@ -1737,10 +1743,13 @@ module MiniEConstr = struct
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
-    let evar_value ev =
-      let v = existential_opt_value sigma ev in
-      saw_evar := !saw_evar || Option.is_empty v;
-      v
+    let evar_value self (evk, args) =
+      let args' = SList.Smart.map self args in
+      let v = existential_opt_value sigma (evk, args') in
+      let () = saw_evar := !saw_evar || Option.is_empty v in
+      match v with
+      | None -> mkEvar (evk, args')
+      | Some c -> self c
     in
     let lsubst = universe_subst sigma in
     let univ_value l =
