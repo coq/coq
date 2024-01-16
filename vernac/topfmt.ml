@@ -139,19 +139,25 @@ let info_hdr = mt ()
 let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
 let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
 
-let make_body quoter info ?pre_hdr s =
-  pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter (hov 0 (info ++ s))
+let test_mode = ref false
+
+let make_body quoter info ?pre_hdr ?(qf=[]) s =
+  let main = hov 0 (info ++ s) in
+  let main = match qf with
+    | (_ :: _ as qf) when !test_mode -> v 0 (main ++ cut () ++ Quickfix.print qf)
+    | _ -> main in
+  pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter main
 
 (* The empty quoter *)
 let noq x = x
 (* Generic logger *)
-let gen_logger dbg warn ?pre_hdr level msg = let open Feedback in match level with
-  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
-  | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
-  | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr msg)
+let gen_logger dbg warn ?qf ?pre_hdr level msg = let open Feedback in match level with
+  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr ?qf msg)
+  | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr ?qf msg)
+  | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr ?qf msg)
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body warn warn_hdr ?pre_hdr msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body noq   err_hdr ?pre_hdr msg)
+               msgnl_with !err_ft (make_body warn warn_hdr ?pre_hdr ?qf msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body noq   err_hdr ?pre_hdr ?qf msg)
 
 (** Standard loggers *)
 
@@ -160,8 +166,8 @@ let gen_logger dbg warn ?pre_hdr level msg = let open Feedback in match level wi
 *)
 let std_logger_cleanup = ref (fun () -> ())
 
-let std_logger ?pre_hdr level msg =
-  gen_logger (fun x -> x) (fun x -> x) ?pre_hdr level msg;
+let std_logger ?qf ?pre_hdr level msg =
+  gen_logger (fun x -> x) (fun x -> x) ?qf ?pre_hdr level msg;
   !std_logger_cleanup ()
 
 (** Color logging. Moved from Ppstyle, it may need some more refactoring  *)

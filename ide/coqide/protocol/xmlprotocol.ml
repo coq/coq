@@ -1048,7 +1048,7 @@ let of_message lvl loc msg =
 
 let to_message xml = match xml with
   | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
-      Message(to_message_level lvl, to_option to_loc xloc, to_pp content)
+      Message(to_message_level lvl, to_option to_loc xloc, [], to_pp content)
   | x -> raise (Marshal_error("message",x))
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
@@ -1108,7 +1108,7 @@ let of_feedback_content = function
       constructor "feedback_content" "fileloaded" [
         of_string dirpath;
         of_string filename ]
-  | Message (l,loc,m) -> constructor "feedback_content" "message" [ of_message l loc m ]
+  | Message (l,loc,_,m) -> constructor "feedback_content" "message" [ of_message l loc m ]
 
 let of_edit_or_state_id id = ["object","state"], of_stateid id
 

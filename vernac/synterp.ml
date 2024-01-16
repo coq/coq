@@ -369,8 +369,6 @@ let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
     else ControlTimeout { remaining } :: ctrl, v
   end
 
-let test_mode = ref false
-
 (* Restoring the state is the caller's responsibility *)
 let with_fail f : (Loc.t option * Pp.t, 'a) result =
   try
@@ -397,8 +395,8 @@ let with_fail ~loc f =
   | Error (ctrl, v) ->
     ControlFail { st = transient_st } :: ctrl, v
   | Ok (eloc, msg) ->
-    let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !test_mode
+    let loc = if !Topfmt.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
+    if not !Flags.quiet || !Topfmt.test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg);
     [], VernacSynterp EVernacNoop
 

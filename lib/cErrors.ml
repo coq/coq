@@ -128,9 +128,14 @@ let print_gen ~anomaly (e, info) =
     str "<in exception printer>:" ++ spc() ++ print_anomaly anomaly exn ++ print_extra info ++ fnl() ++
     str "<original exception>:" ++ spc() ++ print_anomaly false e ++ extra_msg
 
+let print_quickfix = function
+  | [] -> mt ()
+  | qf -> fnl () ++ Quickfix.print qf
+
 (** The standard exception printer *)
 let iprint (e, info) =
-  print_gen ~anomaly:true (e,info)
+  print_gen ~anomaly:true (e,info) ++
+  Result.fold ~ok:print_quickfix ~error:(print_gen ~anomaly:true) (Quickfix.from_exception e)
 
 let print e =
   iprint (e, Exninfo.info e)

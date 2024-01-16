@@ -47,8 +47,8 @@ let with_fail ~loc ~st f =
   | Error () ->
     CErrors.user_err (Pp.str "The command has not failed!")
   | Ok (eloc, msg) ->
-    let loc = if !Synterp.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !Synterp.test_mode
+    let loc = if !Topfmt.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
+    if not !Flags.quiet || !Topfmt.test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
 let with_succeed ~st f =

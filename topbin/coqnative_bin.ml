@@ -260,7 +260,7 @@ let init_load_path ~boot ~vo_path =
 let fb_handler = function
   | Feedback.{ contents; _ } ->
     match contents with
-    | Feedback.Message(_lvl,_loc,msg)->
+    | Feedback.Message(_lvl,_loc,_qf, msg)->
       Format.printf "%s@\n%!" Pp.(string_of_ppcmds msg)
     | _ -> ()
 

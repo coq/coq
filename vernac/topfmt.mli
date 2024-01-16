@@ -39,8 +39,8 @@ val set_margin : int option -> unit
 val get_margin : unit -> int option
 
 (** Console display of feedback, we may add some location information *)
-val std_logger   : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
-val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
+val std_logger   : ?qf:Quickfix.t list -> ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
+val emacs_logger : ?qf:Quickfix.t list -> ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 
 (** Color output *)
 val default_styles : unit -> unit
@@ -73,3 +73,7 @@ val print_err_exn : exn -> unit
 val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
 
 val pr_cmd_header : Vernacexpr.vernac_control -> Pp.t
+
+(** Flag set when the test-suite is called. Its only effect to display
+    verbose information for [Fail] *)
+val test_mode : bool ref
