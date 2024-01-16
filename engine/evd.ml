@@ -433,55 +433,77 @@ val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
 val ident : Evar.t -> t -> Id.t option
 val key : Id.t -> t -> Evar.t
+val state : t -> Fresh.t
 
 end =
 struct
 
-type t = Id.t EvMap.t * Evar.t Id.Map.t
+type t = {
+  fwd_map : Id.t EvMap.t;
+  rev_map : Evar.t Id.Map.t;
+  fsh_map : Fresh.t;
+}
 
-let empty = (EvMap.empty, Id.Map.empty)
+let empty = {
+  fwd_map = EvMap.empty;
+  rev_map = Id.Map.empty;
+  fsh_map = Fresh.empty;
+}
 
-let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
+let add_name_newly_undefined id evk evi names =
   match id with
   | None -> names
   | Some id ->
-    if Id.Map.mem id idtoev then
+    if Id.Map.mem id names.rev_map then
       user_err  (str "Already an existential evar of name " ++ Id.print id);
-    (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
+    { fwd_map = EvMap.add evk id names.fwd_map;
+      rev_map = Id.Map.add id evk names.rev_map;
+      fsh_map = Fresh.add id names.fsh_map; }
 
-let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
-  if EvMap.mem evk evtoid then
+let add_name_undefined naming evk evi evar_names =
+  if EvMap.mem evk evar_names.fwd_map then
     evar_names
   else
     add_name_newly_undefined naming evk evi evar_names
 
-let remove_name_defined evk (evtoid, idtoev as names) =
-  let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
+let remove_name_defined evk names =
+  let id = try Some (EvMap.find evk names.fwd_map) with Not_found -> None in
   match id with
   | None -> names
-  | Some id -> (EvMap.remove evk evtoid, Id.Map.remove id idtoev)
+  | Some id ->
+    { fwd_map = EvMap.remove evk names.fwd_map;
+      rev_map = Id.Map.remove id names.rev_map;
+      fsh_map = Fresh.remove id names.fsh_map }
 
-let rename evk id (evtoid, idtoev) =
-  let id' = try Some (EvMap.find evk evtoid) with Not_found -> None in
+let rename evk id names =
+  let id' = try Some (EvMap.find evk names.fwd_map) with Not_found -> None in
   match id' with
-  | None -> (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
+  | None ->
+    { fwd_map = EvMap.add evk id names.fwd_map;
+      rev_map = Id.Map.add id evk names.rev_map;
+      fsh_map = Fresh.add id names.fsh_map }
   | Some id' ->
-    if Id.Map.mem id idtoev then anomaly (str "Evar name already in use.");
-    (EvMap.set evk id evtoid (* overwrite old name *), Id.Map.add id evk (Id.Map.remove id' idtoev))
+    if Id.Map.mem id names.rev_map then anomaly (str "Evar name already in use.");
+    { fwd_map = EvMap.set evk id names.fwd_map; (* overwrite old name *)
+      rev_map = Id.Map.add id evk (Id.Map.remove id' names.rev_map);
+      fsh_map = Fresh.add id (Fresh.remove id' names.fsh_map) }
 
-let reassign_name_defined evk evk' (evtoid, idtoev as names) =
-  let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
+let reassign_name_defined evk evk' names =
+  let id = try Some (EvMap.find evk names.fwd_map) with Not_found -> None in
   match id with
   | None -> names (* evk' must not be defined *)
   | Some id ->
-    (EvMap.add evk' id (EvMap.remove evk evtoid),
-    Id.Map.add id evk' (Id.Map.remove id idtoev))
+    { fwd_map = EvMap.add evk' id (EvMap.remove evk names.fwd_map);
+      rev_map = Id.Map.add id evk' (Id.Map.remove id names.rev_map);
+      fsh_map = names.fsh_map; }
 
-let ident evk (evtoid, _) =
-  try Some (EvMap.find evk evtoid) with Not_found -> None
+let ident evk names =
+  try Some (EvMap.find evk names.fwd_map) with Not_found -> None
 
-let key id (_, idtoev) =
-  Id.Map.find id idtoev
+let key id names =
+  Id.Map.find id names.rev_map
+
+let state names = names.fsh_map
 
 end
 
@@ -1039,6 +1061,7 @@ let conv_pbs d = d.conv_pbs
 
 let evar_source evi = evi.evar_source
 
+let evar_names evd = EvNames.state evd.evar_names
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
