@@ -297,9 +297,9 @@ let map_evar_info f evi =
 exception NotInstantiatedEvar
 
 (* Note: let-in contributes to the instance *)
-let evar_instance_array info args =
+let evar_instance_array empty push info args =
   let rec instrec pos filter args = match filter with
-  | Filter.Empty -> if SList.is_empty args then [] else instance_mismatch ()
+  | Filter.Empty -> if SList.is_empty args then empty else instance_mismatch ()
   | Filter.TCons (n, filter) -> instpush pos n filter args
   | Filter.FCons (n, filter) -> instrec (pos + n) filter args
   and instpush pos n filter args =
@@ -309,8 +309,7 @@ let evar_instance_array info args =
     | SList.Cons (c, args) ->
       let d = Range.get info.evar_hyps.env_named_idx pos in
       let id = NamedDecl.get_id d in
-      if isVarId id c then instpush (pos + 1) (n - 1) filter args
-      else (id, c) :: instpush (pos + 1) (n - 1) filter args
+      push id c (instpush (pos + 1) (n - 1) filter args)
     | SList.Default (m, args) ->
       if m <= n then instpush (pos + m) (n - m) filter args
       else instrec (pos + n) filter (SList.defaultn (m - n) args)
@@ -318,12 +317,11 @@ let evar_instance_array info args =
   match Filter.unfold (evar_filter info) with
   | None ->
     let rec instance pos args = match args with
-    | SList.Nil -> []
+    | SList.Nil -> empty
     | SList.Cons (c, args) ->
       let d = Range.get info.evar_hyps.env_named_idx pos in
       let id = NamedDecl.get_id d in
-      if isVarId id c then instance (pos + 1) args
-      else (id, c) :: instance (pos + 1) args
+      push id c (instance (pos + 1) args)
     | SList.Default (n, args) -> instance (pos + n) args
     in
     instance 0 args
@@ -332,7 +330,9 @@ let evar_instance_array info args =
 
 let make_evar_instance_array info args =
   if SList.is_default args then []
-  else evar_instance_array info args
+  else
+    let push id c l = if isVarId id c then l else (id, c) :: l in
+    evar_instance_array [] push info args
 
 type 'a in_evar_universe_context = 'a * UState.t
 
@@ -1742,6 +1742,15 @@ module MiniEConstr = struct
     in
     self () c
 
+  type evclos = {
+    evc_map : (int * Vars.substituend Lazy.t) Id.Map.t;
+    (* Map each bound ident to its value and the depth it was introduced at *)
+    evc_lift : int; (* number of binders crossed since last evar *)
+    evc_stack : int list; (* stack of binders crossed at each evar *)
+    evc_depth : int; (* length of evc_stack *)
+    evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
+  }
+
   let to_constr_gen sigma c =
     let saw_evar = ref false in
     let lsubst = universe_subst sigma in
@@ -1749,18 +1758,74 @@ module MiniEConstr = struct
       UnivFlex.normalize_univ_variable lsubst l
     in
     let qvar_value q = UState.nf_qvar sigma.universes q in
-    let rec self () c = match Constr.kind c with
-    | Evar (evk, args) ->
-      let args' = SList.Smart.map (self ()) args in
-      let v = existential_opt_value sigma (evk, args') in
-      let () = saw_evar := !saw_evar || Option.is_empty v in
-      begin match v with
-      | None -> if args == args' then c else mkEvar (evk, args')
-      | Some c -> self () c
-      end
-    | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self qvar_value univ_value () c
+    let next s = { s with evc_lift = s.evc_lift + 1 } in
+    let find clos id = match Id.Map.find_opt id clos.evc_map with
+    | None -> None
+    | Some (depth, lazy v) ->
+      let pos = clos.evc_depth - depth - 1 in
+      let rec get_lift accu n lft =
+        if Int.equal n 0 then accu
+        else match lft with
+        | [] -> assert false
+        | k :: lft -> get_lift (accu + k) (n - 1) lft
+      in
+      let ans = match Int.Map.find_opt pos clos.evc_cache.contents with
+      | None ->
+        let ans = get_lift 0 pos clos.evc_stack in
+        let () = clos.evc_cache := Int.Map.add pos ans clos.evc_cache.contents in
+        ans
+      | Some ans -> ans
+      in
+      let k = clos.evc_lift + ans in
+      Some (lift_substituend k v)
     in
-    let c = self () c in
+    let rec self clos c = match Constr.kind c with
+    | Var id ->
+      begin match find clos id with
+      | None -> c
+      | Some v -> v
+      end
+    | Evar (evk, args) ->
+      begin match EvMap.find_opt evk sigma.defn_evars with
+      | None ->
+        let () = saw_evar := true in
+        let evi = find_undefined sigma evk in
+        let rec inst ctx args = match ctx, SList.view args with
+        | [], None -> SList.empty
+        | decl :: ctx, Some (c, args) ->
+          let c = match c with
+          | None -> find clos (NamedDecl.get_id decl)
+          | Some c -> Some (self clos c)
+          in
+          SList.cons_opt c (inst ctx args)
+        | _ :: _, None | [], Some _ -> instance_mismatch ()
+        in
+        let args' = inst (evar_filtered_context evi) args in
+        if args == args' then c else mkEvar (evk, args')
+      | Some info ->
+        let Evar_defined c = evar_body info in
+        let push id c map = Id.Map.add id (clos.evc_depth, lazy (make_substituend (self clos c))) map in
+        let nmap = evar_instance_array clos.evc_map push info args in
+        let nclos = {
+          evc_lift = 0;
+          evc_map = nmap;
+          evc_depth = clos.evc_depth + 1;
+          evc_stack = clos.evc_lift :: clos.evc_stack;
+          evc_cache = ref Int.Map.empty;
+        } in
+        self nclos c
+      end
+    | _ ->
+      UnivSubst.map_universes_opt_subst_with_binders next self qvar_value univ_value clos c
+    in
+    let clos = {
+      evc_lift = 0;
+      evc_depth = 0;
+      evc_stack = [];
+      evc_map = Id.Map.empty;
+      evc_cache = ref Int.Map.empty;
+    } in
+    let c = self clos c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in
