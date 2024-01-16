@@ -96,3 +96,6 @@ theories/ssr/ssrsetoid.v
 theories/Reals/Cauchy/ConstructiveExtra.v
 theories/Reals/Cauchy/PosExtra.v
 theories/Reals/Cauchy/QExtra.v
+theories/Numbers/Natural/Binary/NBinary.v
+theories/Numbers/Integer/Binary/ZBinary.v
+theories/Numbers/Integer/NatPairs/ZNatPairs.v

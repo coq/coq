@@ -304,7 +304,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NLcm0.v
     theories/Numbers/Natural/Abstract/NBits.v
     theories/Numbers/Natural/Abstract/NProperties.v
-    theories/Numbers/Natural/Binary/NBinary.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Integer</b>:
@@ -330,8 +329,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZDivEucl.v
     theories/Numbers/Integer/Abstract/ZDivFloor.v
     theories/Numbers/Integer/Abstract/ZDivTrunc.v
-    theories/Numbers/Integer/Binary/ZBinary.v
-    theories/Numbers/Integer/NatPairs/ZNatPairs.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Floats</b>:
