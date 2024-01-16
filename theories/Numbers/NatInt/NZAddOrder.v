@@ -10,7 +10,15 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NZAxioms NZBase NZMul NZOrder.
+(**
+* Properties of orders and addition for modules implementing [NZOrdAxiomsSig']
+
+This file defines the [NZAddOrderProp] functor type, meant to be [Include]d
+in a module implementing [NZOrdAxiomsSig'] (see [Coq.Numbers.NatInt.NZAxioms]).
+
+This gives important basic compatibility lemmas between [add] and [lt], [le].
+*)
+From Coq.Numbers.NatInt Require Import NZAxioms NZBase NZMul NZOrder.
 
 Module Type NZAddOrderProp (Import NZ : NZOrdAxiomsSig').
 Include NZBaseProp NZ <+ NZMulProp NZ <+ NZOrderProp NZ.

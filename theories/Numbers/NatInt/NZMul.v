@@ -10,9 +10,26 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NZAxioms NZBase NZAdd.
+(**
+* Some properties of the multiplication for modules implementing [NZBasicFunsSig']
 
-Module Type NZMulProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
+This file defines the [NZMulProp] functor type on top of [NZAddProp]. This
+functor type is meant to be [Include]d in a module implementing [NZBasicFunsSig'].
+
+This gives the following basic lemmas:
+- [mul_0_r], [mul_1_l], [mul_1_r]
+- [mul_succ_r], [mul_comm]
+- [mul_add_distr_r], [mul_add_distr_l]
+- [mul_assoc]
+- [mul_shuffle0] and [mul_shuffle3] to rearrange products of 3 terms
+- [mul_shuffle1] and [mul_shuffle2] to rearrange products of 4 terms
+
+Notice that [NZMulProp] itself [Include]s [NZAddProp].
+*)
+
+From Coq.Numbers.NatInt Require Import NZAxioms NZBase NZAdd.
+
+Module Type NZMulProp (Import NZ : NZBasicFunsSig')(Import NZBase : NZBaseProp NZ).
 Include NZAddProp NZ NZBase.
 
 Theorem mul_0_r : forall n, n * 0 == 0.
