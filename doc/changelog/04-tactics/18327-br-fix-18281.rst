@@ -1,0 +1,7 @@
+- **Changed:**
+  The opacity/transparency of primitive projections is now attached to the
+  projections themselves, not the compatibility constants, and compatibility
+  constants are always considered transparent
+  (`#18327 <https://github.com/coq/coq/pull/18327>`_,
+  fixes `#18281 <https://github.com/coq/coq/issues/18281>`_,
+  by Jan-Oliver Kaiser and Rodolphe Lepigre).
