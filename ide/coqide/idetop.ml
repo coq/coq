@@ -76,7 +76,7 @@ let is_known_option cmd = match cmd with
   | _ -> false
 
 let ide_cmd_warns ~id { CAst.loc; v } =
-  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
+  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, [], strbrk msg))) in
   if is_known_option v.expr then
     warn "Set this option from the IDE menu instead";
   if is_navigation_vernac v.expr || is_undo v.expr then

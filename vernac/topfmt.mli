@@ -39,8 +39,8 @@ val set_margin : int option -> unit
 val get_margin : unit -> int option
 
 (** Console display of feedback, we may add some location information *)
-val std_logger   : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
-val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
+val std_logger   : ?qf:Quickfix.t list -> ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
+val emacs_logger : ?qf:Quickfix.t list -> ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 
 (** Color output *)
 val default_styles : unit -> unit
