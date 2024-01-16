@@ -168,19 +168,21 @@ let nf_binder_annot frel na =
   if rel' == na.binder_relevance then na
   else { binder_name = na.binder_name; binder_relevance = rel' }
 
-let map_universes_opt_subst aux fqual funiv c =
+let map_universes_opt_subst_with_binders next aux fqual funiv k c =
   let frel = Sorts.relevance_subst_fn fqual in
   let flevel = fqual, level_subst_of funiv in
   let aux_rec ((nas, tys, bds) as rc) =
     let nas' = Array.Smart.map (fun na -> nf_binder_annot frel na) nas in
-    let tys' = Array.Smart.map aux tys in
-    let bds' = Array.Smart.map aux bds in
+    let tys' = Array.Fun1.Smart.map aux k tys in
+    let k' = iterate next (Array.length tys') k in
+    let bds' = Array.Fun1.Smart.map aux k' bds in
     if nas' == nas && tys' == tys && bds' == bds then rc
     else (nas', tys', bds')
   in
   let aux_ctx ((nas, c) as p) =
     let nas' = Array.Smart.map (fun na -> nf_binder_annot frel na) nas in
-    let c' = aux c in
+    let k' = iterate next (Array.length nas) k in
+    let c' = aux k' c in
     if nas' == nas && c' == c then p
     else (nas', c')
   in
@@ -200,37 +202,37 @@ let map_universes_opt_subst aux fqual funiv c =
   | Case (ci,u,pms,(p,rel),iv,t,br) ->
     let u' = Instance.subst_fn flevel u in
     let rel' = frel rel in
-    let pms' = Array.Smart.map aux pms in
+    let pms' = Array.Fun1.Smart.map aux k pms in
     let p' = aux_ctx p in
-    let iv' = map_invert aux iv in
-    let t' = aux t in
+    let iv' = map_invert (aux k) iv in
+    let t' = aux k t in
     let br' = Array.Smart.map aux_ctx br in
     if rel' == rel && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
     else mkCase (ci, u', pms', (p',rel'), iv', t', br')
   | Array (u,elems,def,ty) ->
     let u' = Instance.subst_fn flevel u in
-    let elems' = CArray.Smart.map aux elems in
-    let def' = aux def in
-    let ty' = aux ty in
+    let elems' = CArray.Fun1.Smart.map aux k elems in
+    let def' = aux k def in
+    let ty' = aux k ty in
     if u == u' && elems == elems' && def == def' && ty == ty' then c
     else mkArray (u',elems',def',ty')
   | Prod (na, t, u) ->
     let na' = nf_binder_annot frel na in
-    let t' = aux t in
-    let u' = aux u in
+    let t' = aux k t in
+    let u' = aux (next k) u in
     if na' == na && t' == t && u' == u then c
     else mkProd (na', t', u')
   | Lambda (na, t, u) ->
     let na' = nf_binder_annot frel na in
-    let t' = aux t in
-    let u' = aux u in
+    let t' = aux k t in
+    let u' = aux (next k) u in
     if na' == na && t' == t && u' == u then c
     else mkLambda (na', t', u')
   | LetIn (na, b, t, u) ->
     let na' = nf_binder_annot frel na in
-    let b' = aux b in
-    let t' = aux t in
-    let u' = aux u in
+    let b' = aux k b in
+    let t' = aux k t in
+    let u' = aux (next k) u in
     if na' == na && b' == b && t' == t && u' == u then c
     else mkLetIn (na', b', t', u')
   | Fix (i, rc) ->
@@ -243,10 +245,10 @@ let map_universes_opt_subst aux fqual funiv c =
     else mkCoFix (i, rc')
   | Proj (p, r, v) ->
     let r' = frel r in
-    let v' = aux v in
+    let v' = aux k v in
     if r' == r && v' == v then  c
     else mkProj (p, r', v')
-  | _ -> Constr.map aux c
+  | _ -> Constr.map_with_binders next aux k c
 
 let pr_universe_subst prl =
   let open Pp in

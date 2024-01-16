@@ -1717,9 +1717,9 @@ module MiniEConstr = struct
       UnivFlex.normalize_univ_variable lsubst l
     in
     let qvar_value q = UState.nf_qvar sigma.universes q in
-    let rec self c = match Constr.kind c with
+    let rec self () c = match Constr.kind c with
     | Evar (evk, args) ->
-      let args' = SList.Smart.map self args in
+      let args' = SList.Smart.map (self ()) args in
       begin match EvMap.find_opt evk sigma.defn_evars with
       | None ->
         (* Hack: we fully expand the evar instance *)
@@ -1736,11 +1736,11 @@ module MiniEConstr = struct
         if args == args' then c else mkEvar (evk, args')
       | Some info ->
         let Evar_defined c = evar_body info in
-        self (instantiate_evar_array sigma info c args')
+        self () (instantiate_evar_array sigma info c args')
       end
-    | _ -> UnivSubst.map_universes_opt_subst self qvar_value univ_value c
+    | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self qvar_value univ_value () c
     in
-    self c
+    self () c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
@@ -1749,18 +1749,18 @@ module MiniEConstr = struct
       UnivFlex.normalize_univ_variable lsubst l
     in
     let qvar_value q = UState.nf_qvar sigma.universes q in
-    let rec self c = match Constr.kind c with
+    let rec self () c = match Constr.kind c with
     | Evar (evk, args) ->
-      let args' = SList.Smart.map self args in
+      let args' = SList.Smart.map (self ()) args in
       let v = existential_opt_value sigma (evk, args') in
       let () = saw_evar := !saw_evar || Option.is_empty v in
       begin match v with
       | None -> if args == args' then c else mkEvar (evk, args')
-      | Some c -> self c
+      | Some c -> self () c
       end
-    | _ -> UnivSubst.map_universes_opt_subst self qvar_value univ_value c
+    | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self qvar_value univ_value () c
     in
-    let c = self c in
+    let c = self () c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in
