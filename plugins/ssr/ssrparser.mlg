@@ -392,7 +392,7 @@ let interp_index ist env sigma idx =
           end
         | None -> raise Not_found
         end end
-    with _ -> CErrors.user_err ?loc:id.CAst.loc (str"Index not a number") in
+    with e when CErrors.noncritical e -> CErrors.user_err ?loc:id.CAst.loc (str"Index not a number") in
     ArgArg (check_index ?loc:id.CAst.loc i)
 
 open Pltac
@@ -684,7 +684,8 @@ let interp_intro_pattern = Tacinterp.interp_intro_pattern
 
 let interp_introid ist env sigma id =
  try IntroNaming (IntroIdentifier (hyp_id (interp_hyp ist env sigma (SsrHyp (Loc.tag id)))))
- with _ -> (interp_intro_pattern ist env sigma (CAst.make @@ IntroNaming (IntroIdentifier id))).CAst.v
+ with e when CErrors.noncritical e ->
+   (interp_intro_pattern ist env sigma (CAst.make @@ IntroNaming (IntroIdentifier id))).CAst.v
 
 let get_intro_id = function
   | IntroNaming (IntroIdentifier id) -> id
