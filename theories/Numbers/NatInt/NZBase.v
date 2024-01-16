@@ -10,11 +10,27 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NZAxioms.
+(**
+* Basic lemmas about modules implementing [NZDomainSig']
+
+This file defines the functor type [NZBaseProp] which adds the following
+lemmas:
+- [eq_refl], [eq_sym], [eq_trans]
+- [eq_sym_iff], [neq_sym], [eq_stepl]
+- [succ_inj], [succ_inj_wd], [succ_inj_wd_neg]
+- [central_induction] and the tactic notation [nzinduct]
+
+The functor type [NZBaseProp] is meant to be [Include]d in a module implementing
+[NZDomainSig'].
+*)
+
+From Coq.Numbers.NatInt Require Import NZAxioms.
 
 Module Type NZBaseProp (Import NZ : NZDomainSig').
 
-Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
+(** This functor from [Coq.Structures.Equalities] gives
+    [eq_refl], [eq_sym] and [eq_trans]. *)
+Include BackportEq NZ NZ.
 
 Lemma eq_sym_iff : forall x y, x==y <-> y==x.
 Proof.
@@ -28,6 +44,8 @@ Theorem neq_sym : forall n m, n ~= m -> m ~= n.
 Proof.
 intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
 Qed.
+
+(** We add entries in the [stepl] and [stepr] databases. *)
 
 Theorem eq_stepl : forall x y z, x == y -> x == z -> z == y.
 Proof.
