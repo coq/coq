@@ -30,8 +30,8 @@ val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
 
 (** Full universes substitutions into terms *)
 
-val nf_evars_and_universes_opt_subst
-  : ((constr -> constr) -> existential -> constr)
+val map_universes_opt_subst
+  : (constr -> constr)
   -> quality_subst_fn
   -> universe_subst_fn
   -> constr -> constr

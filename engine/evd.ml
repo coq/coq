@@ -1712,9 +1712,15 @@ module MiniEConstr = struct
   let unsafe_eq = Refl
 
   let to_constr_nocheck sigma c =
-    let evar_value self (evk, args) =
+    let lsubst = universe_subst sigma in
+    let univ_value l =
+      UnivFlex.normalize_univ_variable lsubst l
+    in
+    let qvar_value q = UState.nf_qvar sigma.universes q in
+    let rec self c = match Constr.kind c with
+    | Evar (evk, args) ->
       let args' = SList.Smart.map self args in
-      match EvMap.find_opt evk sigma.defn_evars with
+      begin match EvMap.find_opt evk sigma.defn_evars with
       | None ->
         (* Hack: we fully expand the evar instance *)
         let rec has_default = function
@@ -1727,34 +1733,34 @@ module MiniEConstr = struct
             SList.of_full_list (expand_existential sigma (evk, args'))
           else args'
         in
-        mkEvar (evk, args')
+        if args == args' then c else mkEvar (evk, args')
       | Some info ->
         let Evar_defined c = evar_body info in
         self (instantiate_evar_array sigma info c args')
+      end
+    | _ -> UnivSubst.map_universes_opt_subst self qvar_value univ_value c
     in
-    let lsubst = universe_subst sigma in
-    let univ_value l =
-      UnivFlex.normalize_univ_variable lsubst l
-    in
-    let qvar_value q = UState.nf_qvar sigma.universes q in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value c
+    self c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
-    let evar_value self (evk, args) =
-      let args' = SList.Smart.map self args in
-      let v = existential_opt_value sigma (evk, args') in
-      let () = saw_evar := !saw_evar || Option.is_empty v in
-      match v with
-      | None -> mkEvar (evk, args')
-      | Some c -> self c
-    in
     let lsubst = universe_subst sigma in
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
     in
     let qvar_value q = UState.nf_qvar sigma.universes q in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value c in
+    let rec self c = match Constr.kind c with
+    | Evar (evk, args) ->
+      let args' = SList.Smart.map self args in
+      let v = existential_opt_value sigma (evk, args') in
+      let () = saw_evar := !saw_evar || Option.is_empty v in
+      begin match v with
+      | None -> if args == args' then c else mkEvar (evk, args')
+      | Some c -> self c
+      end
+    | _ -> UnivSubst.map_universes_opt_subst self qvar_value univ_value c
+    in
+    let c = self c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in
