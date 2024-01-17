@@ -64,8 +64,10 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.09.1}"
-: "${old_ocaml_version:=4.09.1}"
+: "${new_ocaml_version:=4.14.1}"
+: "${old_ocaml_version:=4.14.1}"
+: "${new_ocaml_flambda:=0}"
+: "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=$CI_REPOSITORY_URL}"
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -351,7 +353,7 @@ create_opam() {
     # Rest of default switches
     opam repo add -q --set-default iris-dev "https://gitlab.mpi-sws.org/FP/opam-dev.git"
 
-    if [[ $USE_FLAMBDA ]];
+    if [[ $USE_FLAMBDA = 1 ]];
     then flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-flambda
     else flambda=
     fi
@@ -420,11 +422,13 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
+            "$new_coq_opam_archive_dir" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
+            "$old_coq_opam_archive_dir" "$old_ocaml_flambda"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
