@@ -649,20 +649,19 @@ type stack_element =
   (* arguments applied to a "match": only their spec traverse the match *)
   | SArg of subterm_spec Lazy.t
 
-let needreduce_of_stack = function
-  | [] | SArg _ :: _ -> NoNeedReduce
-  | SClosure (needreduce,_,_,_) :: _ -> needreduce
-
 let (|||) x y = match x with
   | NeedReduce _ -> x
   | NoNeedReduce -> y
 
+let rec needreduce_of_stack = function
+  | [] -> NoNeedReduce
+  | SArg _ :: l -> needreduce_of_stack l
+  | SClosure (needreduce,_,_,_) :: l -> needreduce ||| needreduce_of_stack l
+
 let redex_level rs = List.length rs
 
 let push_stack_closure renv needreduce c stack =
-  (* In (f a b), if b requires reduction, than a has to require too *)
-  let needreduce' = needreduce ||| needreduce_of_stack stack in
-  (SClosure (needreduce', renv, 0, c)) :: stack
+  (SClosure (needreduce, renv, 0, c)) :: stack
 
 let push_stack_closures renv l stack =
   List.fold_right (push_stack_closure renv NoNeedReduce) l stack
