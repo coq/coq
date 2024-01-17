@@ -444,8 +444,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
           let to_er fl =
             match fl with
-            | ConstKey (c, _) -> Some (Evaluable.EvalConstRef c)
-            | VarKey id -> Some (Evaluable.EvalVarRef id)
+            | ConstKey (c, _) -> Some (Conv_oracle.EvalConstRef c)
+            | VarKey id -> Some (Conv_oracle.EvalVarRef id)
             | RelKey _ -> None
           in
           if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then

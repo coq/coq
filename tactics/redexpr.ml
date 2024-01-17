@@ -56,7 +56,7 @@ let { Goptions.get = simplIsCbn } =
     ()
 
 let set_strategy_one ref l =
-  Global.set_strategy ref l;
+  Global.set_strategy (Evaluable.to_kevaluable ref) l;
   match ref, l with
   | Evaluable.EvalConstRef sp, Conv_oracle.Opaque -> ()
   | Evaluable.EvalConstRef sp, _ ->
