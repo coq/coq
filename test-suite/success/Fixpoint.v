@@ -557,7 +557,8 @@ match l with
 | cons x l => cons (f x) (lmap'' (S n) f l)
 end.
 
-Fixpoint map'' {A} (f : A -> A) (t : tree A) {struct t} : tree A :=
+(* The current guard supports extrusion of uniform arguments only in prefix position *)
+Fail Fixpoint map'' {A} (f : A -> A) (t : tree A) {struct t} : tree A :=
 match t with
 | Node _ x l => Node _ (f x) (lmap'' 0 (map'' f) l)
 end.
