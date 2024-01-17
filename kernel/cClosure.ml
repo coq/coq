@@ -2172,7 +2172,7 @@ and zip_term info tab m stk =
     let ty1 = klt ~mode info tab e ty1 in
     let ty2 = klt ~mode info tab e ty2 in
     let k = klt ~mode info tab e k in
-    let m = term_of_fconstr ~info ~tab (mk_clos ~mode:normal_whnf e m) in (* TODO mode? see [Zunblock] above *)
+    let m = term_of_fconstr ~info ~tab (inject ~mode:normal_whnf m) in (* TODO mode? see [Zunblock] above *)
     let op = subst_instance_constr (snd e) op in
     let h = Constr.mkApp (op, [|ty1; ty2; m; k|]) in
     zip_term info tab h s

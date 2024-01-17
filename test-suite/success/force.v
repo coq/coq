@@ -286,3 +286,19 @@ Module Bla.
     destruct p.
   Qed.
 End Bla.
+
+(* Double substitution due to [Zrun] *)
+Module Ind.
+  Axiom P : nat -> Blocked Prop.
+  Axiom x : nat.
+  Axiom nat_ind_2 : forall P : nat -> Prop, (forall n : nat, True -> P (S n)) -> forall n : nat, P n.
+
+  Goal forall n, (run (P n) (fun p => p)).
+  Proof.
+    refine (@nat_ind_2 (fun n => run (P n) (fun p => p)) _).
+    intros n IHn.
+    (* [Zrun]'s substitution was re-applied to the head in [zip_term] leading to wrong [REL]s. *)
+    Fail lazymatch goal with |- context [P (S IHn)] => idtac end.
+    lazymatch goal with |- context [P (S n)] => idtac end.
+  Abort.
+End Ind.
