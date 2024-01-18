@@ -250,6 +250,18 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
     else mkProj (p, r', v')
   | _ -> Constr.map_with_binders next aux k c
 
+let nf_evars_and_universes_opt_subst fevar fqual funiv c =
+  let rec self () c = match Constr.kind c with
+  | Evar (evk, args) ->
+    let args' = SList.Smart.map (self ()) args in
+    begin match try fevar (evk, args') with Not_found -> None with
+    | None -> if args == args' then c else mkEvar (evk, args')
+    | Some c -> self () c
+    end
+  | _ -> map_universes_opt_subst_with_binders ignore self fqual funiv () c
+  in
+  self () c
+
 let pr_universe_subst prl =
   let open Pp in
   Level.Map.pr prl (fun u -> str" := " ++ Universe.pr prl u ++ spc ())
