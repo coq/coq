@@ -1711,37 +1711,6 @@ module MiniEConstr = struct
   let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
 
-  let to_constr_nocheck sigma c =
-    let lsubst = universe_subst sigma in
-    let univ_value l =
-      UnivFlex.normalize_univ_variable lsubst l
-    in
-    let qvar_value q = UState.nf_qvar sigma.universes q in
-    let rec self () c = match Constr.kind c with
-    | Evar (evk, args) ->
-      let args' = SList.Smart.map (self ()) args in
-      begin match EvMap.find_opt evk sigma.defn_evars with
-      | None ->
-        (* Hack: we fully expand the evar instance *)
-        let rec has_default = function
-        | SList.Nil -> false
-        | SList.Cons (_, l) -> has_default l
-        | SList.Default _ -> true
-        in
-        let args' =
-          if has_default args' then
-            SList.of_full_list (expand_existential sigma (evk, args'))
-          else args'
-        in
-        if args == args' then c else mkEvar (evk, args')
-      | Some info ->
-        let Evar_defined c = evar_body info in
-        self () (instantiate_evar_array sigma info c args')
-      end
-    | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self qvar_value univ_value () c
-    in
-    self () c
-
   type evclos = {
     evc_map : (int * Vars.substituend Lazy.t) Id.Map.t;
     (* Map each bound ident to its value and the depth it was introduced at *)
@@ -1751,7 +1720,7 @@ module MiniEConstr = struct
     evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
   }
 
-  let to_constr_gen sigma c =
+  let to_constr_gen ~expand sigma c =
     let saw_evar = ref false in
     let lsubst = universe_subst sigma in
     let univ_value l =
@@ -1794,7 +1763,12 @@ module MiniEConstr = struct
         | [], None -> SList.empty
         | decl :: ctx, Some (c, args) ->
           let c = match c with
-          | None -> find clos (NamedDecl.get_id decl)
+          | None ->
+            let c = find clos (NamedDecl.get_id decl) in
+            if expand then match c with
+            | None -> Some (mkVar (NamedDecl.get_id decl))
+            | Some _  -> c
+            else c
           | Some c -> Some (self clos c)
           in
           SList.cons_opt c (inst ctx args)
@@ -1826,28 +1800,25 @@ module MiniEConstr = struct
       evc_cache = ref Int.Map.empty;
     } in
     let c = self clos c in
-    let saw_evar = if not !saw_evar then false
-      else
-        let exception SawEvar in
-        let rec iter c = match Constr.kind c with
-          | Evar _ -> raise SawEvar
-          | _ -> Constr.iter iter c
-        in
-        try iter c; false with SawEvar -> true
+    !saw_evar, c
+
+  let check_evar c =
+    let exception SawEvar in
+    let rec iter c = match Constr.kind c with
+      | Evar _ -> raise SawEvar
+      | _ -> Constr.iter iter c
     in
-    saw_evar, c
+    try iter c; false with SawEvar -> true
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    if not abort_on_undefined_evars then to_constr_nocheck sigma c
-    else
-      let saw_evar, c = to_constr_gen sigma c in
-      if saw_evar
-      then anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term");
-      c
+    let saw_evar, c = to_constr_gen ~expand:true sigma c in
+    if abort_on_undefined_evars && saw_evar && check_evar c then
+      anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+    else c
 
   let to_constr_opt sigma c =
-    let saw_evar, c = to_constr_gen sigma c in
-    if saw_evar then None else Some c
+    let saw_evar, c = to_constr_gen ~expand:false sigma c in
+    if saw_evar && check_evar c then None else Some c
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
@@ -1907,7 +1878,7 @@ let drop_new_defined ~original sigma =
       sigma.defn_evars
   in
   let dummy = { empty with defn_evars = to_drop } in
-  let nfc c = MiniEConstr.to_constr_nocheck dummy c in
+  let nfc c = snd @@ MiniEConstr.to_constr_gen ~expand:true dummy c in (* FIXME: do we really need to expand? *)
   assert (Metamap.is_empty sigma.metas);
   assert (List.is_empty sigma.conv_pbs);
   let normalize_changed _ev orig evi =
