@@ -1820,6 +1820,10 @@ module MiniEConstr = struct
     let saw_evar, c = to_constr_gen ~expand:false sigma c in
     if saw_evar && check_evar c then None else Some c
 
+  let nf_evar sigma c =
+    let _, c = to_constr_gen ~expand:false sigma c in
+    c
+
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
   let of_rel_decl d = d

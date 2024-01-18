@@ -793,6 +793,7 @@ module MiniEConstr : sig
 
   val to_constr : ?abort_on_undefined_evars:bool -> evar_map -> t -> Constr.t
   val to_constr_opt : evar_map -> t -> Constr.t option
+  val nf_evar : evar_map -> t -> t
 
   val unsafe_to_constr : t -> Constr.t
   val unsafe_to_constr_array : t array -> Constr.t array
