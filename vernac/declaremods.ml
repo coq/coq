@@ -776,6 +776,9 @@ let start_module_core id args res =
   mp, res_entry_o, mbids, sign, args
 
 let start_module export id args res =
+  let () = if Option.has_some export && not (CList.is_empty args)
+    then user_err Pp.(str "Cannot import functors.")
+  in
   let fs = Summary.Synterp.freeze_summaries () in
   let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
