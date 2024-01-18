@@ -90,6 +90,10 @@ module Instance : sig
 
     val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
+
+    type mask = (bool array * bool array) option
+
+    val pattern_match : mask -> t -> Quality.t list * Universe.t list
 end =
 struct
   type t = Quality.t array * Level.t array
@@ -193,6 +197,14 @@ struct
     CArray.equal Quality.equal xq yq
     && CArray.equal Level.equal xu yu
 
+  type mask = (bool array * bool array) option
+
+  let pattern_match (qmask, umask) (qs, us) =
+    List.filter_with (Array.to_list qmask) (Array.to_list qs),
+    List.map Univ.Universe.make @@ List.filter_with (Array.to_list umask) (Array.to_list us)
+
+  let pattern_match pu u =
+    Option.cata (fun pu -> pattern_match pu u) ([], []) pu
 end
 
 module AInstance : sig

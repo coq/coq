@@ -2254,19 +2254,12 @@ let compile_mind_field mp l acc mb =
   let mind = MutInd.make2 mp l in
   compile_mind mb mind acc
 
-let warn_native_rewrite_rules = "native-rewrite-rules"
+let warn_native_rules ?loc lbl =
+  CWarnings.create ~name:"native-rewrite-rules"
+    (fun lbl -> Pp.(str "Cannot translate the following rewrite rules: " ++ Label.print lbl)) ?loc lbl
 
-let native_rewrite_rules_warning =
-  CWarnings.create_warning ~name:warn_native_rewrite_rules ~default:CWarnings.Enabled ()
-
-let native_rewrite_rules_msg = CWarnings.create_msg native_rewrite_rules_warning ()
-let warn_native_rules ?loc env lbl =
-  CWarnings.warn native_rewrite_rules_msg ?loc (env, lbl)
-let () = CWarnings.register_printer native_rewrite_rules_msg
-  (fun (_env, lbl) -> Pp.(str "Cannot translate the following rewrite rules: " ++ Label.print lbl))
-
-let compile_rewrite_rules env lbl acc rrb =
-  warn_native_rules env lbl;
+let compile_rewrite_rules _env lbl acc rrb =
+  warn_native_rules lbl;
   ignore rrb; (* TODO *)
   acc
 

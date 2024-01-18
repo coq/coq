@@ -108,6 +108,7 @@ type 'opaque pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
     const_univ_hyps : UVars.Instance.t;
     const_body : (Constr.t, 'opaque, bool) constant_def;
+                    (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
     const_relevance : Sorts.relevance;
     const_body_code : Vmemitcodes.body_code option;
@@ -290,11 +291,15 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 Rewrite rules } *)
 
-type instance_mask = (bool array * bool array) option
+type instance_mask = UVars.Instance.mask
 
-type sort_pattern =
+type sort_pattern = Sorts.pattern =
   | PSProp | PSSProp | PSSet | PSType of bool | PSQSort of bool * bool
 
+(** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
+    Eliminations correspond to elements of the stack in a reduction machine,
+    they represent a pattern with a hole, to be filled with the head-pattern
+*)
 type 'arg head_pattern =
   | PHRel     of int
   | PHSort    of sort_pattern
@@ -325,6 +330,7 @@ type rewrite_rule = {
 
 (** {6 Representation of rewrite rules in the kernel } *)
 
+(** [(c, { lhs_pat = (u, elims); rhs })] in this list stands for [(PHSymbol (c,u), elims) ==> rhs] *)
 type rewrite_rules_body = {
   rewrules_rules : (Constant.t * rewrite_rule) list;
 }

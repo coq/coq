@@ -346,11 +346,6 @@ let quality = let open Quality in function
 | SProp -> QConstant QSProp
 | QSort (q, _) -> QVar q
 
-let algebraic = function
-  | Type u -> u
-  | QSort (_, u) -> u
-  | Prop | SProp | Set -> Univ.Universe.type0
-
 let family_compare a b = match a,b with
   | InSProp, InSProp -> 0
   | InSProp, _ -> -1
@@ -465,3 +460,22 @@ let pr_sort_family = function
   | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")
   | InQSort -> Pp.(str "Type") (* FIXME? *)
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of bool | PSQSort of bool * bool
+
+let algebraic = function
+  | Type u -> u
+  | QSort (_, u) -> u
+  | Prop | SProp | Set -> Univ.Universe.type0
+
+let pattern_match ps s =
+  match ps, s with
+  | PSProp, Prop -> Some ([], [])
+  | PSSProp, SProp -> Some ([], [])
+  | PSSet, Set -> Some ([], [])
+  | PSType false, Type _ -> Some ([], [])
+  | PSType true, Set -> Some ([], [Univ.Universe.type0])
+  | PSType true, Type u -> Some ([], [u])
+  | PSQSort (bq, bu), s -> Some ((if bq then [quality s] else []), (if bu then [algebraic s] else []))
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> None

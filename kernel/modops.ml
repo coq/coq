@@ -50,6 +50,7 @@ type signature_mismatch_error =
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
   | IncompatibleVariance
+  | NoRewriteRulesSubtyping
 
 type subtyping_trace_elt =
   | Submodule of Label.t
@@ -69,7 +70,6 @@ type module_typing_error =
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
   | IncludeRestrictedFunctor of ModPath.t
-  | UnsupportedRewriteRules of string * Label.t
 
 exception ModuleTypingError of module_typing_error
 
@@ -111,9 +111,6 @@ let error_no_such_label_sub l l1 =
 
 let error_include_restricted_functor mp =
   raise (ModuleTypingError (IncludeRestrictedFunctor mp))
-
-let error_rules_not_supported funname id =
-  raise (ModuleTypingError (UnsupportedRewriteRules (funname, id)))
 
 (** {6 Operations on functors } *)
 
@@ -192,13 +189,15 @@ let rec subst_structure subst do_delta sign =
     | SFBmind mib ->
       let mib' = subst_mind_body subst mib in
       if mib==mib' then orig else (l,SFBmind mib')
+    | SFBrules rrb ->
+      let rrb' = subst_rewrite_rules subst rrb in
+      if rrb==rrb' then orig else (l,SFBrules rrb')
     | SFBmodule mb ->
       let mb' = subst_module subst do_delta mb in
       if mb==mb' then orig else (l,SFBmodule mb')
     | SFBmodtype mtb ->
       let mtb' = subst_modtype subst do_delta mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
-    | SFBrules _ -> error_rules_not_supported "Modops.subst_structure" l
   in
   List.Smart.map subst_field sign
 
@@ -358,7 +357,7 @@ and strengthen_signature mp_from struc mp_to reso = match struc with
     let item' = l,SFBconst (strengthen_const mp_from l cb reso) in
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item'::rest'
-  | (_,SFBmind _ as item):: rest ->
+  | (_,(SFBmind _|SFBrules _) as item):: rest ->
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
   | (l,SFBmodule mb) :: rest ->
@@ -371,7 +370,6 @@ and strengthen_signature mp_from struc mp_to reso = match struc with
   | (_l,SFBmodtype _mty as item) :: rest ->
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
-  | (l, SFBrules _) :: _rest -> error_rules_not_supported "Modops.strengthen_signature" l
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
@@ -440,6 +438,17 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
           add_kn_delta_resolver kn_to kn_canonical reso', item'
         else
           reso', item'
+    | (l, SFBrules rrb) ->
+        let rrb' = subst_rewrite_rules subst rrb in
+        let item' = if rrb' == rrb then item else (l, SFBrules rrb') in
+        (* Same as constant *)
+        if incl then
+          let kn_from = KerName.make mp_from l in
+          let kn_to = KerName.make mp_to l in
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
+        else
+          reso', item'
     | (l,SFBmodule mb) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot (mp_to,l) in
@@ -467,7 +476,6 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
         add_mp_delta_resolver mp_to' mp_to' reso', item'
-    | (l, SFBrules _) -> error_rules_not_supported "Modops.strengthen_and_subst_structure" l
   in
   List.Smart.fold_left_map strengthen_and_subst_field empty_delta_resolver struc
 

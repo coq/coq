@@ -61,6 +61,8 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
 
+val subst_rewrite_rules : substitution -> rewrite_rules_body -> rewrite_rules_body
+
 val inductive_polymorphic_context : mutual_inductive_body -> AbstractContext.t
 
 (** Is the inductive polymorphic? *)

@@ -1154,6 +1154,8 @@ let explain_not_match_error = function
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
     str "incompatible variance information"
+  | NoRewriteRulesSubtyping ->
+    strbrk "subtyping for rewrite rule blocks is not supported"
 
 let rec get_submodules acc = function
   | [] -> acc, []
@@ -1235,11 +1237,6 @@ let explain_include_restricted_functor mp =
   strbrk " since it has a restricted signature. " ++
   strbrk "You may name first an instance of this functor, and include it."
 
-let explain_unsupported_rules funname id =
-  str "Rewrite Rules in modules are only partially supported. " ++
-  strbrk "In function " ++ str funname ++ str ", rules " ++ Label.print id ++ str " are blocking. " ++
-  strbrk "You can report this limitation if you need it."
-
 let explain_module_error = function
   | SignatureMismatch (trace,l,err) -> explain_signature_mismatch trace l err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
@@ -1254,7 +1251,6 @@ let explain_module_error = function
   | GenerativeModuleExpected l -> explain_generative_module_expected l
   | LabelMissing (l,s) -> explain_label_missing l s
   | IncludeRestrictedFunctor mp -> explain_include_restricted_functor mp
-  | UnsupportedRewriteRules (funname, id) -> explain_unsupported_rules funname id
 
 (* Module internalization errors *)
 

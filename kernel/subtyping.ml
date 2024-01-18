@@ -281,6 +281,8 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
         | SFBmind mib2 ->
             check_inductive (cst, ustate) trace env mp1 l (get_obj mp1 map1 l)
               mp2 mib2 subst1 subst2 reso1 reso2
+        | SFBrules _ ->
+            error_signature_mismatch trace l NoRewriteRulesSubtyping
         | SFBmodule msb2 ->
             begin match get_mod mp1 map1 l with
               | Module msb -> check_modules (cst, ustate) (Submodule l :: trace) env msb msb2 subst1 subst2
@@ -296,7 +298,6 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
                 (add_module_type mtb1.mod_mp mtb1 env)
             in
             check_modtypes (cst, ustate) (Submodule l :: trace) env mtb1 mtb2 subst1 subst2 true
-        | SFBrules _ -> error_rules_not_supported "Subtyping.check_signatures" l
   in
     List.fold_left check_one_body cst sig2
 

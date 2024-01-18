@@ -341,8 +341,41 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
-let v_rewrule = Any
-let v_rrb = v_tuple "rewrite_rules_body" [| List (v_tuple "cst+rule" [|v_cst; v_rewrule|]) |]
+let v_instance_mask = Opt (v_pair (Array v_bool) (Array v_bool))
+
+let v_sort_pattern = Sum ("sort_pattern", 3,
+  [|[|v_bool|];        (* PSType *)
+    [|v_bool; v_bool|] (* PSQSort *)
+  |])
+
+let rec v_hpattern = Sum ("head_pattern", 0,
+  [|[|Int|];                      (* PHRel *)
+    [|v_sort_pattern|];           (* PHSort *)
+    [|v_cst; v_instance_mask|];   (* PHSymbol *)
+    [|v_ind; v_instance_mask|];   (* PHInd *)
+    [|v_cons; v_instance_mask|];  (* PHConstr *)
+    [|v_uint63|];                 (* PHInt *)
+    [|Float64|];                  (* PHFloat *)
+    [|Array v_patarg; v_patarg|]; (* PHLambda *)
+    [|Array v_patarg; v_patarg|]; (* PHProd *)
+  |])
+
+and v_elimination = Sum ("pattern_elimination", 0,
+  [|[|Array v_patarg|];                                   (* PEApp *)
+    [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
+    [|v_proj|];                                           (* PEProj *)
+  |])
+
+and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
+
+and v_patarg = Sum ("pattern_argument", 2,
+  [|[|v_head_elim|]; (* ERigid *)
+  |])
+
+let v_rewrule = v_tuple "rewrite_rule"
+  [| v_pair v_instance_mask (List v_elimination); v_constr |]
+let v_rrb = v_tuple "rewrite_rules_body"
+  [| List (v_pair v_cst v_rewrule) |]
 
 let rec v_mae =
   Sum ("module_alg_expr",0,

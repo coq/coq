@@ -38,6 +38,11 @@ and translate_field mp env acc (l,x) =
         let msg = Printf.sprintf "Compiling inductive %s..." (Id.to_string id) in
         Pp.str msg));
      compile_mind_field mp l acc mb
+  | SFBrules rrb ->
+     (debug_native_compiler (fun () ->
+        let msg = Printf.sprintf "Not Compiling rules %s..." (Label.to_string l) in
+        Pp.str msg));
+     compile_rewrite_rules env l acc rrb
   | SFBmodule md ->
      let mp = md.mod_mp in
      (debug_native_compiler (fun () ->
@@ -54,13 +59,6 @@ and translate_field mp env acc (l,x) =
         in
         Pp.str msg));
      translate_mod mp env mdtyp.mod_type acc
-  | SFBrules rrb ->
-     (debug_native_compiler (fun () ->
-        let msg =
-          Printf.sprintf "Not Compiling rules %s..." (Label.to_string l)
-        in
-        Pp.str msg));
-     compile_rewrite_rules env l acc rrb
 
 let dump_library mp env mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");

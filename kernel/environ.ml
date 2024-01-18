@@ -594,7 +594,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of UVars.Instance.t * CPrimitives.t
-  | HasRules of bool * rewrite_rule list
+  | HasRules of UVars.Instance.t * bool * rewrite_rule list
 
 exception NotEvaluableConst of const_evaluation_result
 
@@ -628,7 +628,7 @@ let constant_value_in env (kn,u) =
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
     | Symbol b ->
         match Cmap_env.find_opt kn env.symb_pats with
-        | Some r -> raise (NotEvaluableConst (HasRules (b, r)))
+        | Some r -> raise (NotEvaluableConst (HasRules (u, b, r)))
         | None -> assert false
 
 let constant_opt_value_in env cst =

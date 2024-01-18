@@ -78,6 +78,10 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
+  type mask = (bool array * bool array) option
+
+  val pattern_match : mask -> t -> Quality.t list * Universe.t list
+  (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 
 module AInstance :

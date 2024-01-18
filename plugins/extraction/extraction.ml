@@ -1136,7 +1136,8 @@ let extract_constant env kn cb =
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
-          | Primitive _ | Symbol _ | Undef _ -> warn_info (); mk_typ_ax ()
+          | Symbol _ -> add_symbol r; mk_typ_ax ()
+          | Primitive _ | Undef _ -> warn_info (); mk_typ_ax ()
           | Def c ->
              (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_typ (get_body c)
@@ -1149,7 +1150,8 @@ let extract_constant env kn cb =
             else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
-          | Primitive _ | Symbol _ | Undef _ -> warn_info (); mk_ax ()
+          | Symbol _ -> add_symbol r; mk_ax ()
+          | Primitive _ | Undef _ -> warn_info (); mk_ax ()
           | Def c ->
              (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_def (get_body c)

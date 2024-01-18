@@ -353,6 +353,15 @@ let hcons_mind mib =
     mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
     mind_universes = hcons_universes mib.mind_universes }
 
+let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
+  let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->
+      let rhs' = subst_mps subst rhs in
+      if rhs == rhs' then orig else name, { rule with rhs = rhs' })
+      rewrules_rules
+  in
+  if rewrules_rules == body' then rules else
+    { rewrules_rules = body' }
+
 (** Hashconsing of modules *)
 
 let hcons_functorize hty he hself f = match f with
@@ -390,7 +399,7 @@ let rec hcons_structure_field_body sb = match sb with
 | SFBmodtype mb ->
   let mb' = hcons_module_type mb in
   if mb == mb' then sb else SFBmodtype mb'
-| SFBrules _ -> assert false (* TODO? *)
+| SFBrules _ -> sb (* TODO? *)
 
 and hcons_structure_body sb =
   (** FIXME *)

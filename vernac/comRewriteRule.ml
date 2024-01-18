@@ -69,6 +69,11 @@ open Declarations
 
 type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * bool list * int Int.Map.t)
 
+let rec is_rel_inst k = function
+  | SList.Nil -> true
+  | SList.Default _ -> false
+  | SList.Cons (t, l) -> kind t = Rel k && is_rel_inst (succ k) l
+
 let update_invtbl ~loc env evd evk (curvar, tbl) =
   succ curvar, tbl |> Evar.Map.update evk @@ function
   | None -> Some curvar
@@ -76,119 +81,107 @@ let update_invtbl ~loc env evd evk (curvar, tbl) =
   | Some k ->
       CErrors.user_err ?loc
         Pp.(str "Variable "
-          ++ Printer.safe_pr_lconstr_env env evd (of_kind (Evar (evk, SList.empty)))
-          ++ str" already taken for hole " ++ int k
-          ++ str" but used here for hole " ++ int curvar
-          ++ str".")
+          ++ Termops.pr_existential_key env evd evk
+          ++ str" is bound multiple times in the pattern (holes number "
+          ++ int k ++ str" and " ++ int curvar ++ str").")
 
-let update_invtblu1 ~loc ~(alg:bool) evd lvl (curvaru, alg_vars, tbl) =
+let update_invtblu1 ~loc ~(alg:bool) evd lvlold lvl (curvaru, alg_vars, tbl) =
   succ curvaru, alg :: alg_vars, tbl |> Int.Map.update lvl @@ function
     | None -> Some curvaru
     | Some k as c when k = curvaru -> c
     | Some k ->
         CErrors.user_err ?loc
           Pp.(str "Universe variable "
-            ++ Termops.pr_evd_level evd (Univ.Level.var lvl)
-            ++ str" already taken for hole " ++ int k
-            ++ str" but used here for hole " ++ int curvaru
-            ++ str".")
+            ++ Termops.pr_evd_level evd lvlold
+            ++ str" is bound multiple times in the pattern (holes number "
+            ++ int k ++ str" and " ++ int curvaru ++ str").")
 
-let update_invtblq1 ~loc evd q (curvarq, tbl) =
-  succ curvarq, tbl |> Int.Map.update q @@ function
+let update_invtblq1 ~loc evd qold qvar (curvarq, tbl) =
+  succ curvarq, tbl |> Int.Map.update qvar @@ function
     | None -> Some curvarq
     | Some k as c when k = curvarq -> c
     | Some k ->
         CErrors.user_err ?loc
           Pp.(str "Sort variable "
-            ++ Termops.pr_evd_qvar evd (Sorts.QVar.make_var q)
-            ++ str" already taken for hole " ++ int k
-            ++ str" but used here for hole " ++ int curvarq
-            ++ str".")
+            ++ Sorts.Quality.pr (Termops.pr_evd_qvar evd) qold
+            ++ str" is bound multiple times in the pattern (holes number "
+            ++ int k ++ str" and " ++ int curvarq ++ str").")
 
-let update_invtblu ~loc evd (state, stateq, stateu : state) u : state * _ =
+let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u : state * _ =
   let (q, u) = u |> UVars.Instance.to_array in
-  let stateq, maskq = Array.fold_left_map (fun stateq qvar ->
-    match Sorts.Quality.var_index qvar with
-    | Some lvl -> update_invtblq1 ~loc evd lvl stateq, true
+  let stateq, maskq = Array.fold_left_map (fun stateq qold ->
+    match Sorts.Quality.(var_index @@ subst (subst_fn qsubst) qold) with
+    | Some qvar -> update_invtblq1 ~loc evd qold qvar stateq, true
     | None -> stateq, false
   ) stateq q
   in
-  let stateu, masku = Array.fold_left_map (fun stateu lvl ->
-      match Univ.Level.var_index lvl with
-      | Some lvl -> update_invtblu1 ~loc ~alg:false evd lvl stateu, true
+  let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
+      match Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold with
+      | Some lvl -> update_invtblu1 ~loc ~alg:false evd lvlold lvl stateu, true
       | None -> stateu, false
     ) stateu u
   in
   let mask = if Array.exists Fun.id maskq || Array.exists Fun.id masku then Some (maskq, masku) else None in
   (state, stateq, stateu), mask
 
-let universe_level_var_index u =
+let universe_level_subst_var_index usubst u =
   match Univ.Universe.level u with
     | None -> None
-    | Some lvl -> Univ.Level.var_index lvl
+    | Some lvlold ->
+        let lvl = Univ.subst_univs_level_level usubst lvlold in
+        Option.map (fun lvl -> lvlold, lvl) @@ Univ.Level.var_index lvl
 
-let safe_sort_pattern_of_sort ~loc evd (st, sq, su as state) s =
+let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =
   let open Sorts in
   match s with
   | Type u ->
-      begin match universe_level_var_index u with
+      begin match universe_level_subst_var_index usubst u with
       | None -> state, PSType false
-      | Some lvl ->
-        (st, sq, update_invtblu1 ~loc ~alg:true evd lvl su), PSType true
+      | Some (lvlold, lvl) ->
+        (st, sq, update_invtblu1 ~loc ~alg:true evd lvlold lvl su), PSType true
       end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
   | Set -> state, PSSet
-  | QSort (q, u) ->
+  | QSort (qold, u) ->
       let sq, bq =
-        match Sorts.QVar.var_index q with
-        | Some q -> update_invtblq1 ~loc evd q sq, true
+        match Sorts.Quality.(var_index @@ subst_fn qsubst qold) with
+        | Some q -> update_invtblq1 ~loc evd (QVar qold) q sq, true
         | None -> sq, false
       in
       let su, ba =
-        match universe_level_var_index u with
-        | Some lvl -> update_invtblu1 ~loc ~alg:true evd lvl su, true
+        match universe_level_subst_var_index usubst u with
+        | Some (lvlold, lvl) -> update_invtblu1 ~loc ~alg:true evd lvlold lvl su, true
         | None -> su, false
       in
       (st, sq, su), PSQSort (bq, ba)
 
 
-let warn_irrelevant_pattern = "irrelevant-pattern"
+let warn_irrelevant_pattern =
+  CWarnings.create ~name:"irrelevant-pattern"
+    (fun () -> Pp.(str "This subpattern is irrelevant and can never be matched against."))
 
-let irrelevant_pattern_warning =
-  CWarnings.create_warning ~name:warn_irrelevant_pattern ~default:CWarnings.Enabled ()
+let warn_eta_in_pattern =
+  CWarnings.create ~name:"eta-in-pattern" Fun.id
 
-let irrelevant_pattern_msg = CWarnings.create_msg irrelevant_pattern_warning ()
-let warn_irrelevant_pattern ~loc () =
-  CWarnings.warn irrelevant_pattern_msg ?loc ()
-let () = CWarnings.register_printer irrelevant_pattern_msg
-  (fun () -> Pp.(str "This subpattern is irrelevant and can never be matched against"))
-
-let warn_redex_in_rewrite_rules = "redex-in-rewrite-rules"
-
-let redex_in_rewrite_rules_warning =
-  CWarnings.create_warning ~name:warn_redex_in_rewrite_rules ~default:CWarnings.Enabled ()
-
-let redex_in_rewrite_rules_msg = CWarnings.create_msg redex_in_rewrite_rules_warning ()
-let warn_redex_in_rewrite_rules ~loc redex =
-  let msg = Pp.(str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered") in
-  CWarnings.warn redex_in_rewrite_rules_msg ?loc msg
-let () = CWarnings.register_printer redex_in_rewrite_rules_msg Fun.id
+let warn_redex_in_rewrite_rules =
+  CWarnings.create ~name:"redex-in-rewrite-rules"
+  (fun redex -> Pp.(str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered"))
 
 let rec check_may_eta ~loc env evd t =
   match EConstr.kind evd (Reductionops.whd_all env evd t) with
   | Prod _ ->
-      CWarnings.warn redex_in_rewrite_rules_msg ?loc
+      warn_eta_in_pattern ?loc
         Pp.(str "This subpattern has a product type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
   | Sort _ -> ()
   | Ind (ind, u) ->
       let specif = Inductive.lookup_mind_specif env ind in
       if not @@ Inductive.is_primitive_record specif then () else
-        CWarnings.warn redex_in_rewrite_rules_msg ?loc
+        warn_eta_in_pattern ?loc
           Pp.(str "This subpattern has a primitive record type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
   | App (i, _) -> check_may_eta ~loc env evd i
   | _ ->
-      CWarnings.warn redex_in_rewrite_rules_msg ?loc
+      warn_eta_in_pattern ?loc
         Pp.(str "This subpattern has a yet unknown type, which may be a product type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times")
 
 let test_may_eta ~loc env evd constr =
@@ -197,49 +190,47 @@ let test_may_eta ~loc env evd constr =
   ()
 
 
-let rec safe_pattern_of_constr_aux ~loc env depth state t = Constr.kind t |> function
+let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.kind t |> function
   | App (f, args) ->
-      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state f in
-      let state, pargs = Array.fold_left_map (safe_arg_pattern_of_constr ~loc env depth) state args in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state f in
+      let state, pargs = Array.fold_left_map (safe_arg_pattern_of_constr ~loc env evd usubst depth) state args in
       state, (head, elims @ [PEApp pargs])
   | Case (ci, u, _, (ret, _), _, c, brs) ->
-      let state, mask = update_invtblu ~loc (snd env) state u in
-      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state c in
-      let state, pret = safe_deep_pattern_of_constr ~loc env depth state ret in
-      let state, pbrs = Array.fold_left_map (safe_deep_pattern_of_constr ~loc env depth) state brs in
+      let state, mask = update_invtblu ~loc evd usubst state u in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
+      let state, pret = safe_deep_pattern_of_constr ~loc env evd usubst depth state ret in
+      let state, pbrs = Array.fold_left_map (safe_deep_pattern_of_constr ~loc env evd usubst depth) state brs in
       state, (head, elims @ [PECase (ci.ci_ind, mask, pret, pbrs)])
   | Proj (p, _, c) ->
-      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env depth state c in
+      let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
       state, (head, elims @ [PEProj p])
   | _ ->
-      let state, head = safe_head_pattern_of_constr ~loc env depth state t in
+      let state, head = safe_head_pattern_of_constr ~loc env evd usubst depth state t in
       state, (head, [])
 
-and safe_pattern_of_constr ~loc env depth state t =
-  begin match Relevanceops.relevance_of_term (fst env) t with
-  (* This gives the wrong relevance on evars, but we are fine with assuming they are relevant
-     because we only disallow nontrivial irrelevant patterns *)
-  | Sorts.Irrelevant -> warn_irrelevant_pattern ~loc ()
+and safe_pattern_of_constr ~loc env evd usubst depth state t =
+  begin match Retyping.relevance_of_term env evd (EConstr.of_constr t) with
+  | Sorts.Irrelevant -> warn_irrelevant_pattern ?loc ()
   | Sorts.RelevanceVar _ -> () (* FIXME *)
   | Sorts.Relevant -> ()
   end;
-  safe_pattern_of_constr_aux ~loc env depth state t
+  safe_pattern_of_constr_aux ~loc env evd usubst depth state t
 
-and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> function
-  | Const (c, u) when Environ.is_symbol (fst env) c ->
-    let state, mask = update_invtblu ~loc (snd env) state u in
+and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind t |> function
+  | Const (c, u) when Environ.is_symbol env c ->
+    let state, mask = update_invtblu ~loc evd usubst state u in
     state, PHSymbol (c, mask)
   | Rel i ->
     assert (i <= depth);
     state, PHRel i
   | Sort s ->
-    let state, ps = safe_sort_pattern_of_sort ~loc (snd env) state s in
+    let state, ps = safe_sort_pattern_of_sort ~loc evd usubst state s in
     state, PHSort ps
   | Ind (ind, u) ->
-    let state, mask = update_invtblu ~loc (snd env) state u in
+    let state, mask = update_invtblu ~loc evd usubst state u in
     state, PHInd (ind, mask)
   | Construct (c, u) ->
-    let state, mask = update_invtblu ~loc (snd env) state u in
+    let state, mask = update_invtblu ~loc evd usubst state u in
     state, PHConstr (c, mask)
   | Int i -> state, PHInt i
   | Float f -> state, PHFloat f
@@ -248,46 +239,52 @@ and safe_head_pattern_of_constr ~loc env depth state t = Constr.kind t |> functi
     let tys = Array.rev_of_list ntys in
     let (state, env), ptys = Array.fold_left_map_i
       (fun i (state, env) (na, ty) ->
-          let state, p = safe_arg_pattern_of_constr ~loc env (depth+i) state ty in
-          (state, on_fst (Environ.push_rel (LocalAssum (na, ty))) env), p)
+          let state, p = safe_arg_pattern_of_constr ~loc env evd usubst (depth+i) state ty in
+          (state, Environ.push_rel (LocalAssum (na, ty)) env), p)
         (state, env) tys
     in
-    let state, pbod = safe_arg_pattern_of_constr ~loc env (depth + Array.length tys) state b in
+    let state, pbod = safe_arg_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
     state, PHLambda (ptys, pbod)
   | Prod _ ->
     let (ntys, b) = Term.decompose_prod t in
     let tys = Array.rev_of_list ntys in
     let (state, env), ptys = Array.fold_left_map_i
       (fun i (state, env) (na, ty) ->
-          let state, p = safe_arg_pattern_of_constr ~loc env (depth+i) state ty in
-          (state, on_fst (Environ.push_rel (LocalAssum (na, ty))) env), p)
+          let state, p = safe_arg_pattern_of_constr ~loc env evd usubst (depth+i) state ty in
+          (state, Environ.push_rel (LocalAssum (na, ty)) env), p)
         (state, env) tys
     in
-    let state, pbod = safe_arg_pattern_of_constr ~loc env (depth + Array.length tys) state b in
+    let state, pbod = safe_arg_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
     state, PHProd (ptys, pbod)
   | _ ->
-    CErrors.user_err ?loc Pp.(str "Subterm not recognised as pattern: " ++ Printer.safe_pr_lconstr_env (fst env) (snd env) t)
+    CErrors.user_err ?loc Pp.(str "Subterm not recognised as pattern: " ++ Printer.safe_pr_lconstr_env env evd t)
 
-and safe_arg_pattern_of_constr ~loc (env, evd as envevd) depth (st, stateq, stateu as state) t = Constr.kind t |> function
+and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as state) t = Constr.kind t |> function
   | Evar (evk, inst) ->
     let EvarInfo evi = Evd.find evd evk in
     (match snd (Evd.evar_source evi) with
     | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
-      if Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.length <> depth then
-        CErrors.user_err ?loc Pp.(str "Pattern variable cannot access the whole context : " ++ Printer.safe_pr_lconstr_env env evd t);
       let st = update_invtbl ~loc env evd evk st in
+      if not @@ is_rel_inst 1 inst then
+        CErrors.user_err ?loc
+          Pp.(str "In " ++ Printer.safe_pr_lconstr_env env evd (of_kind (Evar (evk, inst)))
+            ++ str ", variable "
+            ++ Termops.pr_existential_key env evd evk
+            ++ str" appears with a non-trivial instantiation.");
+      if Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.length <> SList.length inst then
+        CErrors.user_err ?loc Pp.(str "Pattern variable cannot access the whole context: " ++ Printer.safe_pr_lconstr_env env evd t);
       (st, stateq, stateu), EHole
-    | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named hole are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
+    | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named holes are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
     | _ ->
       if Option.is_empty @@ Evd.evar_ident evk evd then state, EHoleIgnored else
         CErrors.user_err ?loc Pp.(str "Named evar in unsupported context: " ++ Printer.safe_pr_lconstr_env env evd t)
     )
   | _ ->
     test_may_eta ~loc env evd (EConstr.of_constr t);
-    let state, p = safe_pattern_of_constr ~loc envevd depth state t in
+    let state, p = safe_pattern_of_constr ~loc env evd usubst depth state t in
     state, ERigid p
 
-and safe_deep_pattern_of_constr ~loc env depth state p = safe_arg_pattern_of_constr ~loc env (depth + Array.length (fst p)) state (snd p)
+and safe_deep_pattern_of_constr ~loc env evd usubst depth state p = safe_arg_pattern_of_constr ~loc env evd usubst (depth + Array.length (fst p)) state (snd p)
 
 (* relocation of evars into de Bruijn indices *)
 let rec evar_subst evmap evd k t =
@@ -316,12 +313,12 @@ let test_projection_apps env evd ~loc ind args =
       | PEProj p -> Ind.CanOrd.equal (Projection.inductive p) ind && Projection.arg p = i
       | _ -> false
   ) 0 args then
-    warn_redex_in_rewrite_rules ~loc Pp.(str " subpattern compatible with an eta-long form for " ++ Id.print (snd specif).mind_typename ++ str"," )
+    warn_redex_in_rewrite_rules ?loc Pp.(str " subpattern compatible with an eta-long form for " ++ Id.print (snd specif).mind_typename ++ str"," )
 
 let rec test_pattern_redex env evd ~loc = function
-  | PHLambda _, PEApp _ :: _ -> warn_redex_in_rewrite_rules ~loc (Pp.str " beta redex")
-  | PHConstr _, (PECase _ | PEProj _) :: _ -> warn_redex_in_rewrite_rules ~loc (Pp.str " iota redex")
-  | PHLambda _, _ -> warn_redex_in_rewrite_rules ~loc (Pp.str " lambda pattern")
+  | PHLambda _, PEApp _ :: _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " beta redex")
+  | PHConstr _, (PECase _ | PEProj _) :: _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " iota redex")
+  | PHLambda _, _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " lambda pattern")
   | PHConstr (c, _) as head, PEApp args :: elims -> test_projection_apps env evd ~loc (fst c) args; Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
   | head, PEApp args :: elims -> Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
   | head, PECase (_, _, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
@@ -389,10 +386,9 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let lhs_loc = lhs.CAst.loc in
   let rhs_loc = rhs.CAst.loc in
 
-  let lhs = Constrintern.(intern_gen WithoutTypeConstraint ~pattern_mode:true env evd lhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false; expand_evars = false; solve_unification_constraints = false } in
+  let lhs = Constrintern.(intern_gen WithoutTypeConstraint env evd lhs) in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_patvars = true; expand_evars = false; solve_unification_constraints = false } in
   let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
-  (* let patvars, lhs = Constrintern.intern_constr_pattern env evd lhs in *)
 
   let evd = Evd.minimize_universes evd in
   let _qvars, uvars = EConstr.universes_of_constr evd lhs in
@@ -404,10 +400,8 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
     UVars.make_instance_subst inst
   in
 
-  let lhs = Vars.subst_univs_level_constr usubst (EConstr.Unsafe.to_constr lhs) in
-
   let ((nvars', invtbl), (nvarqs', invtblq), (nvarus', alg_vars, invtblu)), (head_pat, elims) =
-    safe_pattern_of_constr ~loc:lhs_loc (env, evd) 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, [], Int.Map.empty)) lhs
+    safe_pattern_of_constr ~loc:lhs_loc env evd usubst 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, [], Int.Map.empty)) (EConstr.Unsafe.to_constr lhs)
   in
   let alg_vars = Array.rev_of_list alg_vars in
   let () = test_pattern_redex env evd ~loc:lhs_loc (head_pat, elims) in
@@ -445,7 +439,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
   let evd = Evd.set_universe_context evd uctx in
   let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with unify_patvars = false } in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_patvars = true } in
   let evd', rhs =
     try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType typ) rhs
     with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
@@ -505,7 +499,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   in
 
   let test_universe u =
-    let alg_ok = Option.has_some (universe_level_var_index u) in
+    let alg_ok = Option.has_some @@ Option.bind (Univ.Universe.level u) Univ.Level.var_index in
     Univ.Level.Set.iter (test_level ~alg_ok) (Univ.Universe.levels u)
   in
 

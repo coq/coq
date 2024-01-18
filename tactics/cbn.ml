@@ -567,26 +567,13 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
 
 exception PatternFailure
 
-let match_instance pu u =
-  let smask, umask = pu in
-  let s, u = UVars.Instance.to_array u in
-  List.filter_with (Array.to_list smask) (Array.to_list s),
-  List.map Univ.Universe.make @@ List.filter_with (Array.to_list umask) (Array.to_list u)
-
 let match_einstance sigma pu u =
-  Option.cata (fun pu -> match_instance pu (EInstance.kind sigma u)) ([], []) pu
+  UVars.Instance.pattern_match pu (EInstance.kind sigma u)
 
 let match_sort ps s =
-  let open Declarations in let open Sorts in
-  match [@ocaml.warning "-4"] ps, s with
-  | PSProp, Prop -> [], []
-  | PSSProp, SProp -> [], []
-  | PSSet, Set -> [], []
-  | PSType false, Type _ -> [], []
-  | PSType true, Set -> [], [Univ.Universe.type0]
-  | PSType true, Type u -> [], [u]
-  | PSQSort (bq, bu), s -> (if bq then [Sorts.quality s] else []), (if bu then [Sorts.algebraic s] else [])
-  | (PSProp | PSSProp | PSSet | PSType _), _ -> raise PatternFailure
+  match Sorts.pattern_match ps s with
+  | Some r -> r
+  | None -> raise PatternFailure
 
 let rec match_arg_pattern whrec env sigma ctx p t =
   let open Declarations in
@@ -794,7 +781,7 @@ let whd_state_gen ?csts flags env sigma =
           (* Should not fail thanks to [check_native_args] *)
           let (before,a,after) = Option.get o in
           whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
-       | exception NotEvaluableConst (HasRules (b, r)) ->
+       | exception NotEvaluableConst (HasRules (u', b, r)) ->
           begin try
             let rhs_stack = apply_rules whrec env sigma u r stack in
             whrec Cst_stack.empty rhs_stack

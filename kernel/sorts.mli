@@ -149,7 +149,6 @@ val is_prop : t -> bool
 val is_small : t -> bool
 val family : t -> family
 val quality : t -> Quality.t
-val algebraic : t -> Univ.Universe.t
 
 val hcons : t -> t
 
@@ -182,3 +181,8 @@ val relevance_of_sort_family : family -> relevance
 val debug_print : t -> Pp.t
 
 val pr_sort_family : family -> Pp.t
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of bool | PSQSort of bool * bool
+
+val pattern_match : pattern -> t -> (Quality.t list * Univ.Universe.t list) option

@@ -8,7 +8,7 @@ User-defined rewrite rules
    Rewrite rules are highly experimental.
 
    In particular, ill-typed rewrite rules will lead to mistyped expressions,
-   and manipulating these will most often result in anomalies.
+   and manipulating these will most often result in inconsistencies and anomalies.
 
 
 This section describes the extension of Coq's reduction mechanisms with user-defined rewrite rules,
@@ -57,7 +57,7 @@ Rewrite rules
   .. prodn::
      rewrite_rule ::= {? @univ_decl %|- } @rw_pattern ==> @term
 
-Declares a named block of rewrite rules.
+Declares a named block of rewrite rules. The name is declared in the same namespace as constants and inductives.
 
 Rewrite rules have two parts named pattern (left-hand side) and replacement (right-hand side).
 Patterns are a subclass of :n:`@term`\s described :ref:`below<Pattern syntax>`,
