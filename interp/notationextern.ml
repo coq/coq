@@ -139,7 +139,10 @@ let keymap_find key map =
   with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
+let notations_key_table = Summary.ref
+    ~stage:Summary.Stage.Interp
+    ~name:"notation_uninterpretation"
+    (KeyMap.empty : notation_rule list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
   | GRef (ref, _) -> Some (canonical_gr ref)
@@ -204,16 +207,6 @@ let freeze () =
 
 let unfreeze fkm =
   notations_key_table := fkm
-
-let init () =
-  notations_key_table := KeyMap.empty
-
-let () =
-  Summary.declare_summary "notation_uninterpretation"
-    { stage = Summary.Stage.Interp;
-      Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
 
 let with_notation_uninterpretation_protection f x =
   let fs = freeze () in
