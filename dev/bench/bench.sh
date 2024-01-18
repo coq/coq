@@ -64,8 +64,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.09.1}"
-: "${old_ocaml_version:=4.09.1}"
+: "${new_ocaml_version:=4.14.1}"
+: "${old_ocaml_version:=4.14.1}"
 : "${new_coq_repository:=$CI_REPOSITORY_URL}"
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
