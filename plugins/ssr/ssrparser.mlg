@@ -1643,23 +1643,15 @@ let ltac_expr = Pltac.ltac_expr
 
 {
 
-let ssr_reserved_ids = Summary.ref ~name:"SSR:idents" true
-
-let () =
-  Goptions.(declare_bool_option
-    { optstage = Summary.Stage.Synterp;
-      optkey   = ["SsrIdents"];
-      optdepr  = None;
-      optread  = (fun _ -> !ssr_reserved_ids);
-      optwrite = (fun b -> ssr_reserved_ids := b)
-    })
+let { Goptions.get = ssr_reserved_ids } =
+  Goptions.declare_bool_option_and_ref ~stage:Synterp ~key:["SsrIdents"] ~value:true ()
 
 let is_ssr_reserved s =
   let n = String.length s in n > 2 && s.[0] = '_' && s.[n - 1] = '_'
 
 let ssr_id_of_string loc s =
   if is_ssr_reserved s && is_ssr_loaded () then begin
-    if !ssr_reserved_ids then
+    if ssr_reserved_ids() then
       CErrors.user_err ~loc (str ("The identifier " ^ s ^ " is reserved."))
     else if is_internal_name s then
       Feedback.msg_warning (str ("Conflict between " ^ s ^ " and ssreflect internal names."))
