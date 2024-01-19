@@ -1298,7 +1298,7 @@ let find_appl_head_data env (_,ntnvars) c =
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
       (if n = 0 then [] else List.map (drop_first_implicits n) impls),
-       List.skipn_at_least n scopes
+       List.skipn_at_best n scopes
     | _ -> [],[]
     end
   | GProj ((cst,_), l, c) ->
@@ -1307,7 +1307,7 @@ let find_appl_head_data env (_,ntnvars) c =
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
       List.map (drop_first_implicits n) impls,
-      List.skipn_at_least n scopes
+      List.skipn_at_best n scopes
   | _ -> [],[]
 
 let error_not_enough_arguments ?loc =
@@ -1924,9 +1924,9 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
         if no_impl then [] else
           let impls_st = implicits_of_global gr in
           if Int.equal n 0 then select_impargs_size npats impls_st
-          else List.skipn_at_least n (select_stronger_impargs impls_st) in
+          else List.skipn_at_best n (select_stronger_impargs impls_st) in
       adjust_to_down tags imps None in
-    let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) [] in
+    let subscopes = adjust_to_down tags (List.skipn_at_best n (find_arguments_scope gr)) [] in
     let has_letin = check_has_letin ?loc gr expanded npats (List.count is_status_implicit imps) tags in
     let rec aux imps subscopes tags pats =
     match imps, subscopes, tags, pats with

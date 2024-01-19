@@ -718,7 +718,7 @@ let check_rigidity isrigid =
 
 let projection_implicits env p impls =
   let npars = Projection.npars p in
-  CList.skipn_at_least npars impls
+  CList.skipn_at_best npars impls
 
 let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in

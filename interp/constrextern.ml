@@ -288,7 +288,7 @@ let drop_implicits_in_patt cst nb_expl args =
   in
   if Int.equal nb_expl 0 then select impl_data
   else
-    let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
+    let imps = List.skipn_at_best nb_expl (select_stronger_impargs impl_st) in
     try_impls_fit (imps,args)
 
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
