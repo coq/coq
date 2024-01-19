@@ -135,7 +135,7 @@ let interp_search env sigma s r =
         let impargs = List.map binding_kind_of_status impargs in
         if List.length impls > 1 ||
            List.exists Glob_term.(function Explicit -> false | MaxImplicit | NonMaxImplicit -> true)
-             (List.skipn_at_least (Termops.nb_prod_modulo_zeta sigma (EConstr.of_constr c)) impargs)
+             (List.skipn_at_best (Termops.nb_prod_modulo_zeta sigma (EConstr.of_constr c)) impargs)
           then warnlist := pr :: !warnlist;
         let pc = pr_ltype_env env sigma ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)

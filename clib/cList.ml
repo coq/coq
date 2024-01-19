@@ -704,7 +704,7 @@ let rec skipn n l = match n,l with
   | _, [] -> failwith "List.skipn"
   | n, _ :: l -> skipn (pred n) l
 
-let skipn_at_least n l =
+let skipn_at_best n l =
   try skipn n l with Failure _ when n >= 0 -> []
 
 (** if [l=p++t] then [drop_prefix p l] is [t] else [l] *)

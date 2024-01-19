@@ -289,7 +289,7 @@ val skipn : int -> 'a list -> 'a list
     [Failure _] if [n] is less than 0 or larger than the length of [l].
     This is the second part of [chop]. *)
 
-val skipn_at_least : int -> 'a list -> 'a list
+val skipn_at_best : int -> 'a list -> 'a list
 (** Same as [skipn] but returns [] if [n] is larger than the length of
     the list. *)
 
