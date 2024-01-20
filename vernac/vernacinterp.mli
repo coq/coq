@@ -8,9 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Regular intern using the filesystem  *)
+val fs_intern : Library.Intern.t
+
 (** The main interpretation function of vernacular expressions *)
 val interp
-  : intern:(Names.DirPath.t -> Library.library_t)
+  : intern:Library.Intern.t
   -> ?verbosely:bool
   -> st:Vernacstate.t
   -> Vernacexpr.vernac_control

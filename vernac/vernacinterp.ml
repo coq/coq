@@ -215,12 +215,17 @@ let interp_entry ?(verbosely=true) ~st entry =
   Vernacstate.unfreeze_full_state st;
   interp_gen ~verbosely ~st ~interp_fn:interp_control entry
 
+let fs_intern dp =
+  let file = Loadpath.try_locate_absolute_library dp in
+  Feedback.feedback @@ Feedback.FileDependency (Some file, Names.DirPath.to_string dp);
+  let res = Library.intern_from_file file, ("file", file) in
+  Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file);
+  res
+
 let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Vernacstate.Interp.t =
   (* Synterp duplication of control handling bites us here... *)
-  let lib_resolver = Loadpath.try_locate_absolute_library in
-  let intern = Library.intern_from_file ~lib_resolver in
   let cmd = CAst.make ?loc { control; expr = VernacSynPure (VernacEndProof pe); attrs = [] } in
-  let CAst.{ loc; v = entry } = Synterp.synterp_control ~intern cmd in
+  let CAst.{ loc; v = entry } = Synterp.synterp_control ~intern:fs_intern cmd in
   let control = entry.control in
   NewProfile.profile "interp-delayed-qed" (fun () ->
       interp_gen ~verbosely:false ~st

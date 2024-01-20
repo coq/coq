@@ -259,27 +259,34 @@ let library_seg : seg_lib ObjFile.id = ObjFile.make_id "library"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
-let intern_from_file ?loc ~lib_resolver dir =
-  let f = lib_resolver dir in
-  Feedback.feedback(Feedback.FileDependency (Some f, DirPath.to_string dir));
-  let ch = raw_intern_library f ?loc in
+module Intern = struct
+  module Provenance = struct
+    type t = string * string
+    (** A pair of [kind, object], for example ["file",
+        "/usr/local/foo.vo"], used for error messages. *)
+  end
+  type t = DirPath.t -> library_t * Provenance.t
+end
+
+let intern_from_file file =
+  let ch = raw_intern_library file in
   let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
-  let del_opaque, _ = in_delayed f ch ~segment:opaques_seg in
-  let vmlib = Vmlibrary.load dir ~file:f ch in
+  let del_opaque, _ = in_delayed file ch ~segment:opaques_seg in
+  let vmlib = Vmlibrary.load lsd.md_name ~file ch in
   ObjFile.close_in ch;
-  System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
-  register_library_filename lsd.md_name f;
-  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-  if not (DirPath.equal dir lsd.md_name) then
-    user_err ?loc
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-       DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
-       spc() ++ DirPath.print dir ++ str ".");
-  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
+  System.check_caml_version ~caml:lsd.md_ocaml ~file;
+  register_library_filename lsd.md_name file;
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
-  (* lsd, lmd, digest_lmd, univs, digest_u, del_opaque, vmlib *)
   mk_intern_library lsd lmd digest_lmd del_opaque vmlib
+
+let check_library_expected_name ~provenance dir library_name =
+  if not (DirPath.equal dir library_name) then
+    let kind, obj = provenance in
+    user_err
+      (str "The " ++ str kind ++ str " " ++ str obj ++ str " contains library" ++ spc () ++
+       DirPath.print library_name ++ spc () ++ str "and not library" ++
+       spc() ++ DirPath.print dir ++ str ".")
 
 (* Returns the digest of a library, checks both caches to see what is loaded *)
 let rec intern_library ~root ~intern (needed, contents as acc) dir =
@@ -293,7 +300,8 @@ let rec intern_library ~root ~intern (needed, contents as acc) dir =
       mk_summary interned_lib, acc
     | None ->
       (* We intern the library, and then intern the deps *)
-      let m = intern dir in
+      let m, provenance = intern dir in
+      check_library_expected_name ~provenance dir m.library_name;
       mk_summary m, intern_library_deps ~root ~intern acc dir m
 
 and intern_library_deps ~root ~intern libs dir m =

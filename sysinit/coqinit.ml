@@ -186,8 +186,7 @@ let require_file ~prefix ~lib ~export =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  let lib_resolver = Loadpath.try_locate_absolute_library in
-  let intern = Library.intern_from_file ~lib_resolver in
+  let intern = Vernacinterp.fs_intern in
   Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
