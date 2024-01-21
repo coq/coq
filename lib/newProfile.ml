@@ -159,7 +159,7 @@ let make_instr_diff ~istart ~iend =
    through [profile] and I'm too lazy to make them conditional *)
 let components =
   match Sys.getenv_opt "COQ_PROFILE_COMPONENTS" with
-  | None -> CString.Pred.full
+  | None -> CString.Pred.(full |> remove "unification" |> remove "Conversion")
   | Some s ->
     List.fold_left (fun cs c -> CString.Pred.add c cs)
       CString.Pred.empty
