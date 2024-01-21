@@ -1720,7 +1720,7 @@ module MiniEConstr = struct
     evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
   }
 
-  let to_constr_gen ~expand sigma c =
+  let to_constr_gen ~expand ~ignore_missing sigma c =
     let saw_evar = ref false in
     let lsubst = universe_subst sigma in
     let univ_value l =
@@ -1758,24 +1758,32 @@ module MiniEConstr = struct
       begin match EvMap.find_opt evk sigma.defn_evars with
       | None ->
         let () = saw_evar := true in
-        let evi = find_undefined sigma evk in
-        let rec inst ctx args = match ctx, SList.view args with
-        | [], None -> SList.empty
-        | decl :: ctx, Some (c, args) ->
-          let c = match c with
-          | None ->
-            let c = find clos (NamedDecl.get_id decl) in
-            if expand then match c with
-            | None -> Some (mkVar (NamedDecl.get_id decl))
-            | Some _  -> c
-            else c
-          | Some c -> Some (self clos c)
+        begin match EvMap.find_opt evk sigma.undf_evars with
+        | None ->
+          if ignore_missing then
+            let map c = self clos c in
+            let args' = SList.Smart.map map args in
+            if args' == args then c else mkEvar (evk, args')
+          else raise Not_found
+        | Some evi ->
+          let rec inst ctx args = match ctx, SList.view args with
+          | [], None -> SList.empty
+          | decl :: ctx, Some (c, args) ->
+            let c = match c with
+            | None ->
+              let c = find clos (NamedDecl.get_id decl) in
+              if expand then match c with
+              | None -> Some (mkVar (NamedDecl.get_id decl))
+              | Some _  -> c
+              else c
+            | Some c -> Some (self clos c)
+            in
+            SList.cons_opt c (inst ctx args)
+          | _ :: _, None | [], Some _ -> instance_mismatch ()
           in
-          SList.cons_opt c (inst ctx args)
-        | _ :: _, None | [], Some _ -> instance_mismatch ()
-        in
-        let args' = inst (evar_filtered_context evi) args in
-        if args == args' then c else mkEvar (evk, args')
+          let args' = inst (evar_filtered_context evi) args in
+          if args == args' then c else mkEvar (evk, args')
+        end
       | Some info ->
         let Evar_defined c = evar_body info in
         let push id c map = Id.Map.add id (clos.evc_depth, lazy (make_substituend (self clos c))) map in
@@ -1811,17 +1819,17 @@ module MiniEConstr = struct
     try iter c; false with SawEvar -> true
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    let saw_evar, c = to_constr_gen ~expand:true sigma c in
+    let saw_evar, c = to_constr_gen ~expand:true ~ignore_missing:false sigma c in
     if abort_on_undefined_evars && saw_evar && check_evar c then
       anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
     else c
 
   let to_constr_opt sigma c =
-    let saw_evar, c = to_constr_gen ~expand:false sigma c in
+    let saw_evar, c = to_constr_gen ~expand:false ~ignore_missing:false sigma c in
     if saw_evar && check_evar c then None else Some c
 
   let nf_evar sigma c =
-    let _, c = to_constr_gen ~expand:false sigma c in
+    let _, c = to_constr_gen ~expand:false ~ignore_missing:true sigma c in
     c
 
   let of_named_decl d = d
@@ -1882,7 +1890,7 @@ let drop_new_defined ~original sigma =
       sigma.defn_evars
   in
   let dummy = { empty with defn_evars = to_drop } in
-  let nfc c = snd @@ MiniEConstr.to_constr_gen ~expand:true dummy c in (* FIXME: do we really need to expand? *)
+  let nfc c = snd @@ MiniEConstr.to_constr_gen ~expand:true ~ignore_missing:false dummy c in (* FIXME: do we really need to expand? *)
   assert (Metamap.is_empty sigma.metas);
   assert (List.is_empty sigma.conv_pbs);
   let normalize_changed _ev orig evi =
