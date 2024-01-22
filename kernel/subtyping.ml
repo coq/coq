@@ -246,18 +246,23 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
       (* Now we check the bodies:
          - A transparent constant can only be implemented by a compatible
            transparent constant.
+         - A primitive cannot be implemented.
+           (We could try to allow implementing with the same primitive,
+            but for some reason we get cb1.const_body = Def,
+            without some use case there is no motivation to solve this.)
          - In the signature, an opaque is handled just as a parameter:
            anything of the right type can implement it, even if bodies differ.
       *)
       (match cb2.const_body with
-        | Primitive _ | Undef _ | OpaqueDef _ -> cst
-        | Def c2 ->
-          (match cb1.const_body with
-            | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
-            | Def c1 ->
-              (* NB: cb1 might have been strengthened and appear as transparent.
-                 Anyway [check_conv] will handle that afterwards. *)
-              check_conv NotConvertibleBodyField cst poly CONV env c1 c2))
+       | Undef _ | OpaqueDef _ -> cst
+       | Primitive _ -> error NotConvertibleBodyField
+       | Def c2 ->
+         (match cb1.const_body with
+          | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
+          | Def c1 ->
+            (* NB: cb1 might have been strengthened and appear as transparent.
+               Anyway [check_conv] will handle that afterwards. *)
+            check_conv NotConvertibleBodyField cst poly CONV env c1 c2))
 
 let rec check_modules state trace env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in
