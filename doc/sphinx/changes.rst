@@ -138,6 +138,11 @@ Kernel
   (`#17836 <https://github.com/coq/coq/pull/17836>`_,
   `#18331 <https://github.com/coq/coq/pull/18331>`_,
   by Gaëtan Gilbert).
+- **Fixed:**
+  Primitives being incorrectly considered convertible to anything by module subtyping
+  (`#18507 <https://github.com/coq/coq/pull/18507>`_,
+  fixes `#18503 <https://github.com/coq/coq/issues/18503>`_,
+  by Gaëtan Gilbert).
 
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -550,6 +555,12 @@ Command-line tools
   Spurious `coqdep` warnings due to missing path normalization for plugins
   (`#18165 <https://github.com/coq/coq/pull/18165>`_,
   by Rodolphe Lepigre).
+- **Fixed:**
+  Regression in option :g:`--external` of `coqdoc`, whose two arguments
+  were inadvertently swapped
+  (`#18448 <https://github.com/coq/coq/pull/18448>`_,
+  fixes `#18434 <https://github.com/coq/coq/issues/18434>`_,
+  by Hugo Herbelin).
 
 .. _819Stdlib:
 
