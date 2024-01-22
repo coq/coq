@@ -1387,7 +1387,7 @@ let apply_on_subterm env evd fixed f test c t =
   let t' = applyrec (env,(0,c)) t in
   !evdref, !fixedref, t'
 
-let filter_possible_projections evd c ty ctxt args =
+let filter_possible_projections evd i0 c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
      fv of args to have a well-typed filter; don't know how necessary
     it is however to have a well-typed filter here *)
@@ -1402,7 +1402,7 @@ let filter_possible_projections evd c ty ctxt args =
     (match decl with
      | NamedDecl.LocalAssum _ -> false
      | NamedDecl.LocalDef (_,c,_) -> not (isRel evd c || isVar evd c)) ||
-    a == c ||
+    Int.equal i0 i (* check whether [c] is [args.(i)] *) ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
     (* in u *)
@@ -1498,13 +1498,13 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       the solution we are trying to build here by adding the problem as a constraint. *)
   let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkLEvar evd (evk, args),rhs) evd in
   let prc env evd c = Termops.Internal.print_constr_env env evd c in
-  let rec make_subst = function
+  let rec make_subst i = function
     | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
       begin match occs with
         | AtOccurrences loc when not (Locusops.is_all_occurrences loc) ->
           user_err Pp.(str "Cannot force abstraction on identity instance.")
         | _ ->
-          make_subst (ctxt',l,occsl)
+          make_subst (i + 1) (ctxt',l,occsl)
       end
     | decl'::ctxt', c::l, occs::occsl ->
       let id = NamedDecl.get_annot decl' in
@@ -1513,8 +1513,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       let c = nf_evar evd c in
       (* ty is in env_rhs now *)
       let ty = replace_vars evd argsubst t in
-      let filter' = filter_possible_projections evd c (nf_evar evd ty) ctxt args in
-      (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
+      let filter' = filter_possible_projections evd i c (nf_evar evd ty) ctxt args in
+      (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (i + 1) (ctxt',l,occsl)
     | _, _, [] -> []
     | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
   in
@@ -1567,7 +1567,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      set_holes env_rhs' evd fixed rhs' subst
   | [] -> evd, fixed, rhs in
 
-  let subst = make_subst (ctxt,args,argoccs) in
+  let subst = make_subst 0 (ctxt,args,argoccs) in
 
   let evd, _, rhs' = set_holes env_rhs evd Evar.Set.empty rhs subst in
   let rhs' = nf_evar evd rhs' in
