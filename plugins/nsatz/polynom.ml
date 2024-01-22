@@ -558,6 +558,13 @@ let pseudo_div p q x =
             (!r,c,!delta, !s)
         )
 
+(* Hack to prevent segfault when running x86-compiled Coq on MacOS arm *)
+(* the line below has the effect to modify how the x86 code is aligned,  *)
+(* with the effect to prevent the bug (a just-in-time emulation issue    *)
+(* with page loading is suspected in Rosetta 2) *)
+
+let _f x = x
+
 (* gcd with subresultants *)
 
 let rec pgcdP p q =
