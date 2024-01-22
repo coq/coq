@@ -99,3 +99,4 @@ theories/Reals/Cauchy/QExtra.v
 theories/Numbers/Natural/Binary/NBinary.v
 theories/Numbers/Integer/Binary/ZBinary.v
 theories/Numbers/Integer/NatPairs/ZNatPairs.v
+theories/Numbers/NatInt/NZProperties.v
