@@ -151,8 +151,6 @@ Module system
   GH issue number: #4294
   risk: ?
 
-Module system
-
   component: modules, universes
   summary: universe constraints for module subtyping not stored in vo files
   introduced: presumably 8.2 (b3d3b56)
@@ -186,6 +184,17 @@ Module system
   GH issue number: #7615
   exploit: see issue
   risk: medium
+
+  component: modules, primitive types
+  summary: Primitives are incorrectly considered convertible to anything by module subtyping
+  introduced: 8.11
+  impacted released versions: V8.11.0-V8.18.0
+  impacted coqchk versions: same
+  fixed in: V8.19.0
+  found by: Gaëtan Gilbert
+  GH issue number: #18503
+  exploit: see issue
+  risk: high if there is a Primitive in a Module Type, otherwise low
 
 Universes
 
