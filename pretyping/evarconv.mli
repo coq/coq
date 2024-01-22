@@ -127,6 +127,8 @@ val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
 (** Override default [evar_conv_x] algorithm. *)
 val set_evar_conv : unify_fun -> unit
 
+val pr_econstr : (env -> evar_map -> EConstr.t -> Pp.t) ref
+
 (** The default unification algorithm with evars and universes. *)
 val evar_conv_x : unify_fun
 

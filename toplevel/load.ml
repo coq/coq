@@ -16,6 +16,7 @@ open Coqargs
 (******************************************************************************)
 
 let load_init_file opts ~state =
+   Evarconv.pr_econstr := Printer.pr_econstr_env;
   if opts.pre.load_rcfile then
     Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
         Coqrc.load_rcfile ~rcfile:opts.config.rcfile ~state) ()

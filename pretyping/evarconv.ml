@@ -568,6 +568,38 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     if !has_evar then None
     else Some (UnifFailure (sigma, UnifUnivInconsistency e))
 
+let pr_econstr = ref (fun _ _ _ -> Pp.str "unable to print econstr")
+
+(* TODO: move to a proper place *)
+let rec split_at n acc l =
+   if n = 0 then (List.rev acc, l)
+   else match l with
+   | [] -> (List.rev acc, l)
+   | h :: t -> split_at (n-1) (h :: acc) t
+let split_at n l = split_at n [] l
+
+let try_simplify_proj_construct flags env evd v k sk =
+   match k with (* try unfolding an applied projection on the rhs *)
+   | Proj (p, _, c) -> begin
+      let c = whd_all env evd c in (* reduce argument *)
+      try let (hd, args) = destApp evd c in
+         if isConstruct evd hd then Some (args.(Projection.npars p + Projection.arg p), sk)
+         else None
+      with _ -> None
+      end
+   | Const (cn, _) when Structures.Structure.is_projection cn -> begin
+      match split_at (Structures.Structure.projection_nparams cn) (Option.default [] (Stack.list_of_app_stack sk)) with
+      | (_, []) -> None
+      | (_, c :: _) -> begin
+         let c = whd_all env evd c in
+         try let (hd, _) = destApp evd c in
+            if isConstruct evd hd then
+              Some (whd_betaiota_deltazeta_for_iota_state flags.open_ts env evd (v,sk))
+            else None
+         with _ -> None
+      end end
+   | _ -> None
+
 let rec evar_conv_x flags env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -900,7 +932,22 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       flex_maybeflex false ev2 appr2 appr1 v1
 
     | MaybeFlexible v1, MaybeFlexible v2 -> begin
-        match EConstr.kind evd term1, EConstr.kind evd term2 with
+       let k1 = EConstr.kind evd term1 in
+       let k2 = EConstr.kind evd term2 in
+      (* We refrain from simplifying terms which are projections applied to the associated constructor when both terms
+         have the same head and only one of them simplifies. *)
+      let same_head =
+          match k1, k2 with
+          | Proj (p1, _, _), Proj (p2, _, _) -> QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
+          | Proj (p, _, _), Const (c, _) | Const (c, _), Proj (p, _, _) -> QConstant.equal env (Projection.constant p) c
+          | Const (c1, _), Const (c2, _) -> QConstant.equal env c1 c2
+          | _, _ -> false
+       in match try_simplify_proj_construct flags env evd v1 k1 sk1, try_simplify_proj_construct flags env evd v2 k2 sk2 with
+       | Some x1, Some x2 -> evar_eqappr_x flags env evd pbty x1 x2
+       | Some x1, None when not same_head -> evar_eqappr_x flags env evd pbty x1 appr2
+       | None, Some x2 when not same_head -> evar_eqappr_x flags env evd pbty appr1 x2
+       | _, _ -> begin
+        match k1, k2 with
         | LetIn (na1,b1,t1,c'1), LetIn (na2,b2,t2,c'2) ->
         let f1 i = (* FO *)
           ise_and i
@@ -1017,7 +1064,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                  flags.open_ts env i (v2,sk2))
         in
         ise_try evd [f1; f2; f3]
-    end
+    end end
 
     | Rigid, Rigid when EConstr.isLambda evd term1 && EConstr.isLambda evd term2 ->
         let (na1,c1,c'1) = EConstr.destLambda evd term1 in
@@ -1035,6 +1082,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
 
     | MaybeFlexible v1, Rigid ->
+       let k1 = EConstr.kind evd term1 in begin
+       match try_simplify_proj_construct flags env evd v1 k1 sk1 with
+       | Some x1 -> evar_eqappr_x flags env evd pbty x1 appr2
+       | None ->
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
@@ -1047,8 +1098,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             appr2
         in
           ise_try evd [f3; f4]
+        end
 
     | Rigid, MaybeFlexible v2 ->
+       let k2 = EConstr.kind evd term2 in begin
+       match try_simplify_proj_construct flags env evd v2 k2 sk2 with
+       | Some x2 -> evar_eqappr_x flags env evd pbty appr1 x2
+       | None ->
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
@@ -1060,6 +1116,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                flags.open_ts env i (v2,sk2))
         in
           ise_try evd [f3; f4]
+        end
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda evd term1 && (* if ever ill-typed: *) List.is_empty sk1 ->
@@ -1243,8 +1300,7 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
        (fun i -> evar_conv_x flags env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
        test;
-       (fun i -> evar_conv_x flags env i CONV h2
-         (fst (decompose_app i (substl ks h))))]
+       (fun i -> evar_conv_x flags env i CONV h2 (fst (decompose_app i (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
