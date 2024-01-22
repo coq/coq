@@ -19,7 +19,7 @@ type info
 type iexn = exn * info
 (** Information-wearing exceptions *)
 
-val make : unit -> 'a t
+val make : string -> 'a t
 (** Create a new piece of information. *)
 
 val null : info

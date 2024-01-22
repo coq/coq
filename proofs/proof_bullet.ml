@@ -84,7 +84,7 @@ module Strict = struct
 
 
   (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
-  let bullet_kind = (new_focus_kind () : t list focus_kind)
+  let bullet_kind = (new_focus_kind "bullet_kind" : t list focus_kind)
   let bullet_cond = done_cond ~loose_end:true bullet_kind
 
   (* spiwack: as it is bullets are reset (locally) by *any* non-bullet focusing command

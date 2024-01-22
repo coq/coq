@@ -11,9 +11,9 @@
 open Tac2expr
 open Proofview.Notations
 
-let backtrace_evd : backtrace Evd.Store.field = Evd.Store.field ()
+let backtrace_evd : backtrace Evd.Store.field = Evd.Store.field "ltac2_trace"
 
-let backtrace : backtrace Exninfo.t = Exninfo.make ()
+let backtrace : backtrace Exninfo.t = Exninfo.make "ltac2_trace"
 
 let print_ltac2_backtrace = ref false
 

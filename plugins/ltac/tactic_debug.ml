@@ -15,7 +15,7 @@ open Names
 open Pp
 open Tacexpr
 
-let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make ()
+let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make "ltac_trace"
 
 let prtac x =
   let env = Global.env () in

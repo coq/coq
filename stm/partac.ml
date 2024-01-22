@@ -97,7 +97,7 @@ end = struct (* {{{ *)
       t_assign := Some (RespKilled t_goalno)
     | _ -> ()
 
-  let command_focus = Proof.new_focus_kind ()
+  let command_focus = Proof.new_focus_kind "partac_focus"
   let focus_cond = Proof.no_cond command_focus
 
   let state = ref None

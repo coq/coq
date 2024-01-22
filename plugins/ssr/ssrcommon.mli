@@ -348,6 +348,7 @@ val tacMK_SSR_CONST : string -> EConstr.t Proofview.tactic
 module type StateType = sig
   type state
   val init : state
+  val name : string
 end
 
 module MakeState(S : StateType) : sig
