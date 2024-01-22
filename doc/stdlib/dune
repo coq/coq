@@ -12,7 +12,7 @@
    (bash "doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files"))))
 
 (rule
-  (targets html)
+  (targets (dir html))
   (alias stdlib-html)
   (package coq-doc)
   (deps
@@ -40,6 +40,6 @@
 ; _build/install/default/doc/coq-doc looks just right!
 
 (install
- (files (html as html/stdlib))
+ (dirs (html as html/stdlib))
  (section doc)
  (package coq-doc))
