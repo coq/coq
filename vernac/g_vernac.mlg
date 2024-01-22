@@ -57,6 +57,8 @@ let of_type_inst = Entry.make "of_type_inst"
 let section_subset_expr = Entry.make "section_subset_expr"
 let scope_delimiter = Entry.make "scope_delimiter"
 let syntax_modifiers = Entry.make "syntax_modifiers"
+let goal_selector = Entry.make "goal_selector"
+let toplevel_selector = Entry.make "toplevel_selector"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -1354,5 +1356,44 @@ GRAMMAR EXTEND Gram
       | "as"; IDENT "name" -> { Notation_term.AsName }
       | "as"; IDENT "pattern" -> { Notation_term.AsAnyPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
+  ;
+END
+
+{
+
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_bracket_ident" begin
+    lk_kw "[" >> lk_ident
+  end
+
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: toplevel_selector goal_selector;
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> { (n, m) }
+      | n = natural -> { (n, n) } ] ]
+  ;
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { let open Goal_select in
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
+  ;
+  goal_selector:
+  [ [ l = range_selector_or_nth -> { l }
+    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
+  ;
+  toplevel_selector:
+    [ [ sel = goal_selector; ":" -> { sel }
+    |   "!"; ":" -> { Goal_select.SelectAlreadyFocused }
+    |   IDENT "all"; ":" -> { Goal_select.SelectAll } ] ]
   ;
 END

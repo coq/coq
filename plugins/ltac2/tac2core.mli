@@ -16,6 +16,9 @@ open Tac2expr
 module Core :
 sig
 
+val t_unit : type_constant
+val v_unit : Tac2ffi.valexpr
+
 val t_list : type_constant
 val c_nil : ltac_constructor
 val c_cons : ltac_constructor

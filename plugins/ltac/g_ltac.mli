@@ -25,13 +25,9 @@ val in_tac :
 
 val tactic_mode : Vernacexpr.vernac_expr Pcoq.Entry.t
 
-val toplevel_selector : Goal_select.t Pcoq.Entry.t
-
 val tacdef_body : Tacexpr.tacdef_body Pcoq.Entry.t
 
 val classic_proof_mode : Pvernac.proof_mode
-
-val test_bracket_ident : unit Pcoq.Entry.t
 
 val hint : Vernacexpr.hints_expr Pcoq.Entry.t
 

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Declare ML Module "ltac2_plugin:coq-core.plugins.ltac2".
+Declare ML Module "ltac2_ltac1_plugin:coq-core.plugins.ltac2_ltac1".
 
 #[export] Set Default Proof Mode "Ltac2".
 

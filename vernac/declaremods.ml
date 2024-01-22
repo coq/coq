@@ -1663,3 +1663,5 @@ let end_modtype () =
 let declare_include me_asts =
   let l = Synterp.declare_include me_asts in
   Interp.declare_include l
+
+let () = append_end_library_hook Profile_tactic.do_print_results_at_close

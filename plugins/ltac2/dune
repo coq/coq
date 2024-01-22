@@ -3,6 +3,6 @@
  (public_name coq-core.plugins.ltac2)
  (synopsis "Ltac2 plugin")
  (modules_without_implementation tac2expr tac2qexpr tac2types)
- (libraries coq-core.plugins.ltac))
+ (libraries vernac))
 
 (coq.pp (modules g_ltac2))

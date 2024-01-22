@@ -41,11 +41,6 @@
    count and tactic running time goes in the second tree.  Alas, I
    suspect that fixing this requires a redesign of how the profiler
    hooks into the tactic engine. *)
-val do_profile :
-  ('a * Tacexpr.ltac_call_kind) list ->
-  ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic
-
-
 val do_profile_gen :
   ('a -> Pp.t option) -> 'a ->
   ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic

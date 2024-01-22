@@ -1179,6 +1179,20 @@ let pr_goal_selector ~toplevel s =
 
   let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma c
 
+let pp_ltac_call_kind = function
+  | LtacNotationCall s -> pr_alias_key s
+  | LtacNameCall cst -> pr_ltac_constant cst
+  (* todo: don't want the KerName instead? *)
+  | LtacVarCall (_, id, t) -> Names.Id.print id
+  | LtacAtomCall te ->
+    pr_glob_tactic (Global.env ())
+      (CAst.make (TacAtom te))
+  | LtacConstrInterp (env, sigma, c, _) ->
+    pr_glob_constr_env env sigma c
+  | LtacMLCall te ->
+    (pr_glob_tactic (Global.env ())
+       te)
+
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
   (g : 'b glob_extra_genarg_printer)

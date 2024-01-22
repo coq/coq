@@ -353,7 +353,7 @@ behavior.)
    .. insertprodn toplevel_selector toplevel_selector
 
    .. prodn::
-      toplevel_selector ::= @selector
+      toplevel_selector ::= @goal_selector
       | all
       | !
       | par
@@ -364,10 +364,10 @@ behavior.)
    lowest-numbered selected goal, ordered by goal number.  :ref:`Example
    <reordering_goals_ex>`.  If the selector applies
    to a single goal or to all goals, the reordering will not be apparent.  The order of
-   the goals in the :token:`selector` is irrelevant.  (This may not be what you expect;
+   the goals in the :token:`goal_selector` is irrelevant.  (This may not be what you expect;
    see `#8481 <https://github.com/coq/coq/issues/8481>`_.)
 
-   .. todo why shouldn't "all" and "!" be accepted anywhere a @selector is accepted?
+   .. todo why shouldn't "all" and "!" be accepted anywhere a @goal_selector is accepted?
       It would be simpler to explain.
 
    `all`
@@ -391,18 +391,18 @@ behavior.)
 Selectors can also be used nested within a tactic expression with the
 :tacn:`only` tactic:
 
-.. tacn:: only @selector : @ltac_expr3
+.. tacn:: only @goal_selector : @ltac_expr3
 
-   .. insertprodn selector range_selector
+   .. insertprodn goal_selector range_selector
 
    .. prodn::
-      selector ::= {+, @range_selector }
+      goal_selector ::= {+, @range_selector }
       | [ @ident ]
       range_selector ::= @natural
       | @natural - @natural
 
    Applies :token:`ltac_expr3` to the selected goals.  (At the beginning of a
-   sentence, use the form :n:`@selector: @tactic` rather than :n:`only @selector: @tactic`.
+   sentence, use the form :n:`@goal_selector: @tactic` rather than :n:`only @goal_selector: @tactic`.
    In the latter, the :opt:`Default Goal Selector` (by default set to :n:`1:`)
    is applied before :n:`only` is interpreted.  This is probably not what you
    want.)

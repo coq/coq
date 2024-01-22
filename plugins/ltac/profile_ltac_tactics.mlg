@@ -12,7 +12,7 @@
 
 (** Ltac profiling entrypoints *)
 
-open Profile_ltac
+open Profile_tactic
 open Stdarg
 
 }
