@@ -436,11 +436,11 @@ let saveall _ =
 
 let () = Coq.save_all := saveall
 
-let revert_all ?parent _ =
+let reload_all ?parent _ =
   List.iter
     (fun sn -> if sn.fileops#changed_on_disk then begin
         clear_all_bpts sn;
-        sn.fileops#revert ?parent ()
+        sn.fileops#reload ?parent ()
       end)
     notebook#pages
 
@@ -558,12 +558,12 @@ end
 
 (** Timers *)
 
-let reset_revert_timer () =
-  FileOps.revert_timer.kill ();
-  if global_auto_revert#get then
-    FileOps.revert_timer.run
-      ~ms:global_auto_revert_delay#get
-      ~callback:(fun () -> File.revert_all (); true)
+let reset_reload_timer () =
+  FileOps.reload_timer.kill ();
+  if global_auto_reload#get then
+    FileOps.reload_timer.run
+      ~ms:global_auto_reload_delay#get
+      ~callback:(fun () -> File.reload_all (); true)
 
 let reset_autosave_timer () =
   let autosave sn = try sn.fileops#auto_save with _ -> () in
@@ -600,7 +600,7 @@ let editor ?parent sn =
       File.save ();
       let f = Filename.quote f in
       let cmd = Util.subst_command_placeholder cmd_editor#get f in
-      run_command ignore (fun _ -> sn.fileops#revert ?parent ()) cmd
+      run_command ignore (fun _ -> sn.fileops#reload ?parent ()) cmd
 
 let editor ?parent = cb_on_current_term (editor ?parent)
 
@@ -1466,7 +1466,7 @@ let build_ui () =
           with e ->
             flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;
-        reset_revert_timer ());
+        reset_reload_timer ());
   ];
 
   menu view_menu [
@@ -1768,7 +1768,7 @@ let make_scratch_buffer () =
 
 let main files =
   let w = build_ui () in
-  reset_revert_timer ();
+  reset_reload_timer ();
   reset_autosave_timer ();
   (match files with
     | [] -> make_scratch_buffer ()

@@ -10,7 +10,7 @@
 
 open Ideutils
 
-let revert_timer = mktimer ()
+let reload_timer = mktimer ()
 let autosave_timer = mktimer ()
 
 class type ops =
@@ -18,7 +18,7 @@ object
   method filename : string option
   method update_stats : unit
   method changed_on_disk : bool
-  method revert : ?parent:GWindow.window -> unit -> unit
+  method reload : ?parent:GWindow.window -> unit -> unit
   method auto_save : unit
   method save : string -> bool
   method saveas : ?parent:GWindow.window -> string -> bool
@@ -48,9 +48,9 @@ object(self)
           false
         |_ -> false
 
-  method revert ?parent () =
-    let do_revert f =
-      push_info "Reverting buffer";
+  method reload ?parent () =
+    let do_reload f =
+      push_info "Reloading buffer";
       try
         reset_handler ();
         let b = Buffer.create 1024 in
@@ -61,35 +61,35 @@ object(self)
         buffer#place_cursor ~where:buffer#start_iter;
         buffer#set_modified false;
         pop_info ();
-        flash_info "Buffer reverted";
+        flash_info "Buffer reloaded";
         Sentence.tag_all buffer;
       with _  ->
         pop_info ();
-        flash_info "Warning: could not revert buffer";
+        flash_info "Warning: could not reload buffer";
     in
     match filename with
       | None -> ()
       | Some f ->
-        if not buffer#modified then do_revert f
+        if not buffer#modified then do_reload f
         else
           let answ = Configwin_ihm.question_box
             ~title:"Modified buffer changed on disk"
-            ~buttons:["Revert from File";
+            ~buttons:["Reload from File";
                       "Overwrite File";
-                      "Disable Auto Revert"]
+                      "Disable Auto Reload"]
             ~default:0
             ~icon:(stock_to_widget `DIALOG_WARNING)
             ?parent
             "Some unsaved buffers changed on disk"
           in
           match answ with
-            | 1 -> do_revert f
+            | 1 -> do_reload f
             | 2 -> if self#save f then flash_info "Overwritten" else
                 flash_info "Could not overwrite file"
             | _ ->
-              Minilib.log "Auto revert set to false";
-              Preferences.global_auto_revert#set false;
-              revert_timer.kill ()
+              Minilib.log "Auto reload set to false";
+              Preferences.global_auto_reload#set false;
+              reload_timer.kill ()
 
   method save f =
     if try_export f (buffer#get_text ()) then begin
