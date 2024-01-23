@@ -2619,6 +2619,11 @@ Tactic notations allow customizing the syntax of tactics.
         - a term
         - :tacn:`exact`
 
+      * - ``open_constr``
+        - :token:`one_term`
+        - a term where all `_` which are not resolved by unification become evars; typeclass resolution is not triggered
+        - tacn:`epose`, tacn:`eapply`
+
       * - ``uconstr``
         - :token:`one_term`
         - an untyped term
