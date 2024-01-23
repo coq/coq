@@ -117,9 +117,12 @@ let make_coqtop_args fname =
         (* at initialization of coqtop (see #10286) *)
         (* If the file name is a valid identifier, use it as toplevel name; *)
         (* otherwise the default “Top” will be used. *)
-        match Unicode.ident_refutation (Filename.chop_extension (Filename.basename fname)) with
-        | Some _ -> args
-        | None -> "-topfile"::fname::args
+        try
+          match Unicode.ident_refutation (Filename.chop_extension (Filename.basename fname)) with
+          | Some _ -> args
+          | None -> "-topfile"::fname::args
+        with Invalid_argument _ ->
+          failwith "CoqIDE cannot open files which do not have an extension in their filename."
   in
   proj, args
 
