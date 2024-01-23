@@ -1,0 +1,5 @@
+- **Fixed:**
+  coqdoc links to section variables introduced with :cmd:`Context`
+  (`#18527 <https://github.com/coq/coq/pull/18527>`_,
+  fixes `#18516 <https://github.com/coq/coq/issues/18516>`_,
+  by Pierre Roux).

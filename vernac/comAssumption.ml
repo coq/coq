@@ -261,9 +261,23 @@ let interp_context env sigma l =
    sigma, ctx
 
 let do_context ~poly l =
+  let sec = Lib.sections_are_opened () in
+  if Dumpglob.dump () then begin
+    let l = List.map (function
+        | Constrexpr.CLocalAssum (l, _, _, _) ->
+           let ty = if sec then "var "else "ax" in List.map (fun n -> ty, n) l
+        | Constrexpr.CLocalDef (n, _, _, _) ->
+           let ty = if sec then "var "else "def" in [ty, n]
+        | Constrexpr.CLocalPattern _ -> [])
+      l in
+    List.iter (function
+        | ty, {CAst.v = Names.Name.Anonymous; _} -> ()
+        | ty, {CAst.v = Names.Name.Name id; loc} ->
+           Dumpglob.dump_definition (CAst.make ?loc id) sec ty)
+      (List.flatten l) end;
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, ctx = interp_context env sigma l in
-  if Lib.sections_are_opened ()
+  if sec
   then context_insection sigma ~poly ctx
   else context_nosection sigma ~poly ctx
