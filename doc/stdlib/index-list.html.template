@@ -122,7 +122,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Compare.v
     theories/Arith/EqNat.v
     theories/Arith/Euclid.v
-    theories/Arith/Bool_nat.v
     theories/Arith/Factorial.v
     theories/Arith/Wf_nat.v
     theories/Arith/Cantor.v
