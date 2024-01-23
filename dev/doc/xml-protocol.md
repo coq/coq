@@ -100,27 +100,25 @@ Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state
 
 ```html
 <call val="Add">
-  <call val="Add">
+  <pair>
     <pair>
       <pair>
         <pair>
-          <pair>
-            <string>${command}</string>
-            <int>${editId}</int>
-          </pair>
-          <pair>
-            <state_id val="${stateId}"/>
-            <bool val="${verbose}"/>
-          </pair>
+          <string>${command}</string>
+          <int>${editId}</int>
         </pair>
-        <int>${bp}</int>
+        <pair>
+          <state_id val="${stateId}"/>
+          <bool val="${verbose}"/>
+        </pair>
       </pair>
-      <pair>
-        <int>${line_nb}</int>
-        <int>${bol_pos}</int>
-      </pair>
+      <int>${bp}</int>
     </pair>
-  </call>
+    <pair>
+      <int>${line_nb}</int>
+      <int>${bol_pos}</int>
+    </pair>
+  </pair>
 </call>
 ```
 
