@@ -583,7 +583,7 @@ let try_simplify_proj_construct flags env evd v k sk =
    | Proj (p, _, c) -> begin
       let c = whd_all env evd c in (* reduce argument *)
       try let (hd, args) = destApp evd c in
-         if isConstruct evd hd then Some (args.(Projection.npars p + Projection.arg p), sk)
+         if isConstruct evd hd then Some (whd_nored_state env evd (args.(Projection.npars p + Projection.arg p), sk))
          else None
       with _ -> None
       end
@@ -1083,6 +1083,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     | MaybeFlexible v1, Rigid ->
        let k1 = EConstr.kind evd term1 in begin
+      let () = debug_unification (fun () -> Pp.(v 0 (str "v1 maybeflexible against rigid" ++ !pr_econstr env evd v1 ++ cut ()))) in
        match try_simplify_proj_construct flags env evd v1 k1 sk1 with
        | Some x1 -> evar_eqappr_x flags env evd pbty x1 appr2
        | None ->
@@ -1102,8 +1103,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     | Rigid, MaybeFlexible v2 ->
        let k2 = EConstr.kind evd term2 in begin
+      let () = debug_unification (fun () -> Pp.(v 0 (str "rigid against v2 maybeflexible" ++ !pr_econstr env evd v2 ++ cut ()))) in
        match try_simplify_proj_construct flags env evd v2 k2 sk2 with
-       | Some x2 -> evar_eqappr_x flags env evd pbty appr1 x2
+       | Some x2 -> let () = debug_unification (fun () -> Pp.(v 0 (str "reduced to" ++ !pr_econstr env evd (let (x, _) = x2 in x)))) in evar_eqappr_x flags env evd pbty appr1 x2
        | None ->
         let f3 i =
           (try
