@@ -1220,10 +1220,21 @@ Notations
    side (before the `:=`) defines the syntax to recognize and gives formal parameter
    names for the syntactic values.  :n:`@integer` is the level of the notation.
    When the notation is used, the values are substituted
-   into the right-hand side.  The right-hand side is typechecked when the notation is used,
-   not when it is defined.  In the following example, `x` is the formal parameter name and
+   into the right-hand side.  In the following example, `x` is the formal parameter name and
    `constr` is its :ref:`syntactic class<syntactic_classes>`.  `print` and `of_constr` are
    functions provided by Coq through `Message.v`.
+
+   .. flag:: Ltac2 Typed Notations
+
+      By default Ltac2 notations are typechecked at declaration time.
+      This assigns an expected type to notation arguments.
+
+      When a notation is declared with this flag unset, it is not
+      typechecked at declaration time and its expansion is typechecked
+      when it is used. This may allow slightly more flexible use of
+      the notation arguments at the cost of worse error messages when
+      incorrectly using the notation. It is not believed to be useful
+      in practice, please report any real use cases you find.
 
    .. todo "print" doesn't seem to pay attention to "Set Printing All"
 
