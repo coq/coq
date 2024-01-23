@@ -87,9 +87,23 @@ Module Type
 
 (** ** Axiomatization of a domain with [zero], [succ], [pred] and a bi-directional induction principle. *)
 
+(* NB: This was Pierre Letouzey's conclusion in the (now deprecated) NZDomain
+   file. *)
 (** We require [P (S n) = n] but not the other way around, since this domain
     is meant to be either N or Z. In fact it can be a few other things,
-    for instance [Z/nZ] (See file [NZDomain] for a study of that).
+
+    S is always injective, P is always surjective  (thanks to [pred_succ]).
+
+    I) If S is not surjective, we have an initial point, which is unique.
+       This bottom is below zero: we have N shifted (or not) to the left.
+       P cannot be injective: P init = P (S (P init)).
+       (P init) can be arbitrary.
+
+    II) If S is surjective, we have [forall n, S (P n) = n], S and P are
+       bijective and reciprocal.
+
+       IIa) if [exists k<>O, 0 == S^k 0], then we have a cyclic structure Z/nZ
+       IIb) otherwise, we have Z
 *)
 
 (** The [Typ] module type in [Equalities] only has a parameter [t : Type]. *)

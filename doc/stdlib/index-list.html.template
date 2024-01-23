@@ -253,7 +253,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/NatInt/NZDiv.v
     theories/Numbers/NatInt/NZMulOrder.v
     theories/Numbers/NatInt/NZOrder.v
-    theories/Numbers/NatInt/NZDomain.v
     theories/Numbers/NatInt/NZParity.v
     theories/Numbers/NatInt/NZPow.v
     theories/Numbers/NatInt/NZSqrt.v
