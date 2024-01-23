@@ -101,3 +101,5 @@ theories/Numbers/Integer/Binary/ZBinary.v
 theories/Numbers/Integer/NatPairs/ZNatPairs.v
 theories/Numbers/NatInt/NZProperties.v
 theories/Numbers/NatInt/NZDomain.v
+theories/Numbers/Integer/Abstract/ZDivEucl.v
+theories/ZArith/Zeuclid.v
