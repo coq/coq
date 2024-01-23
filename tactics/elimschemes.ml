@@ -24,12 +24,18 @@ open Ind_tables
 
 (* Induction/recursion schemes *)
 
-let optimize_non_type_induction_scheme kind dep sort env _handle ind =
+let build_induction_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
+  let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
+  let sigma, c = build_induction_scheme env sigma pind dep sort in
+    c, Evd.evar_universe_context sigma
+
+let optimize_non_type_induction_scheme kind dep sort env _handle ind =
   (* This non-local call to [lookup_scheme] is fine since we do not use it on a
      dependency generated on the fly. *)
   match lookup_scheme kind ind with
   | Some cte ->
+    let sigma = Evd.from_env env in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
@@ -50,15 +56,7 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
     let sigma = Evd.minimize_universes sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.evar_universe_context sigma)
   | None ->
-    let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
-    let sigma, c = build_induction_scheme env sigma pind dep sort in
-      (c, Evd.evar_universe_context sigma)
-
-let build_induction_scheme_in_type env dep sort ind =
-  let sigma = Evd.from_env env in
-  let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
-  let sigma, c = build_induction_scheme env sigma pind dep sort in
-    c, Evd.evar_universe_context sigma
+    build_induction_scheme_in_type env dep sort ind
 
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
