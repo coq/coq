@@ -311,7 +311,7 @@ let select_and_save ?parent ~saveas ?filename sn =
       let ok = do_save f in
       confirm_save ok;
       if ok then begin
-        sn.tab_label#set_text (Filename.basename f);
+        sn.tab_label#set_text (Filename.remove_extension (Filename.basename f));
         sn.abs_file_name <- Some (Session.to_abs_file_name f);
         (* copying local breakpoints to other sessions seems pointless
            for a "save as" because the saved file needs to be compiled
@@ -347,7 +347,7 @@ let check_quit ?parent saveall =
       ~default:0
       ~icon:(warn_image ())#coerce
       ?parent
-      "There are unsaved buffers"
+      "There are unsaved buffers."
     in
     match answ with
       | 1 -> saveall ()
