@@ -133,16 +133,15 @@ let load_file_cb : (string -> unit) ref = ref ignore
 let drop_received context ~x ~y data ~info ~time =
   if data#format = 8 then begin
     let files = Str.split (Str.regexp "\r?\n") data#data in
-    let path = Str.regexp "^file://\\(.*\\)$" in
     List.iter (fun f ->
-      if Str.string_match path f 0 then
-        !load_file_cb (Str.matched_group 1 f)
+      let _, f = Glib.Convert.filename_from_uri f in
+      !load_file_cb f;
     ) files;
     context#finish ~success:true ~del:false ~time
   end else context#finish ~success:false ~del:false ~time
 
 let drop_targets = [
-  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0}
+  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0 }
 ]
 
 let set_drag (w : GObj.drag_ops) =
