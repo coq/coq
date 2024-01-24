@@ -156,6 +156,8 @@ val pr_match_rule : bool -> ('a -> Pp.t) -> ('b -> Pp.t) ->
 
 val pr_value : entry_relative_level -> Val.t -> Pp.t
 
+val pp_ltac_call_kind : ltac_call_kind -> Pp.t
+
 val ltop : entry_relative_level
 
 val make_constr_printer : (env -> Evd.evar_map -> entry_relative_level -> 'a -> Pp.t) ->

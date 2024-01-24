@@ -67,7 +67,6 @@ RENAME: [
 | G_LTAC2_binder ltac2_binder
 | G_LTAC2_branches ltac2_branches
 | G_LTAC2_let_clause ltac2_let_clause
-| G_LTAC2_tactic_atom ltac2_tactic_atom
 | G_LTAC2_rewriter ltac2_rewriter
 | G_LTAC2_constr_with_bindings ltac2_constr_with_bindings
 | G_LTAC2_match_rule ltac2_match_rule
@@ -926,7 +925,7 @@ match_rule: [
 | DELETE "_" "=>" ltac_expr5
 ]
 
-selector: [
+goal_selector: [
 | REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
 | WITH LIST1 range_selector SEP ","
 ]
@@ -1766,7 +1765,7 @@ RENAME: [
 ]
 
 toplevel_selector: [
-| selector
+| goal_selector
 | "all"
 | "!"
 (* par is accepted even though it's not in the .mlg *)
@@ -1774,7 +1773,7 @@ toplevel_selector: [
 ]
 
 toplevel_selector_temp: [
-| DELETE selector ":"
+| DELETE goal_selector ":"
 | DELETE "all" ":"
 | DELETE "!" ":"
 | toplevel_selector ":"
@@ -2027,7 +2026,7 @@ ltac2_entry: [
 | WITH "Ltac2" tac2def_val
 | REPLACE tac2def_ext     (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_ext
-| "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
+| "Ltac2" "Notation" [ string | ident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
 | MOVEALLBUT command
 (* todo: MOVEALLBUT should ignore tag on "but" prodns *)
 ]
@@ -2057,7 +2056,6 @@ SPLICE: [
 | ltac2def_syn
 | tac2def_mut
 | rec_flag
-| locident
 | tac2alg_constructors
 | ltac2_binder
 | branch
@@ -2082,11 +2080,11 @@ ltac2_quotations: [
 
 ]
 
-ltac2_tactic_atom: [
+ltac2_atom: [
 | MOVETO ltac2_quotations "constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "open_constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "preterm" ":" "(" lconstr ")"      (* Ltac2 plugin *)
-| MOVETO ltac2_quotations "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "ident" ":" "(" identref ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "pat" ":" "(" cpattern ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
@@ -2440,7 +2438,6 @@ SPLICE: [
 | enable_notation_interpretation
 | enable_notation_flags
 | opt_scope
-| lident
 ] (* end SPLICE *)
 
 RENAME: [

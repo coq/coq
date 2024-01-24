@@ -16,11 +16,11 @@ open Pp
 open Util
 open Names
 open Pcoq
+open Pcoq.Prim
 open Attributes
 open Constrexpr
 open Tac2expr
 open Tac2qexpr
-open Ltac_plugin
 
 let lk_ident_or_anti =
   Pcoq.Lookahead.(lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space))
@@ -110,16 +110,14 @@ let tac2def_ext = Entry.make "tac2def_ext"
 let tac2def_syn = Entry.make "tac2def_syn"
 let tac2def_mut = Entry.make "tac2def_mut"
 let tac2mode = Entry.make "ltac2_command"
+let ltac2_atom = Entry.make "ltac2_atom"
 
-let ltac_expr = Pltac.ltac_expr
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
 let inj_open_constr loc c = inj_wit Tac2quote.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2quote.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2quote.wit_reference loc c
-let inj_ltac1 loc e = inj_wit Tac2quote.wit_ltac1 loc e
-let inj_ltac1val loc e = inj_wit Tac2quote.wit_ltac1val loc e
 
 let pattern_of_qualid qid =
   if Tac2env.is_constructor qid then CAst.make ?loc:qid.CAst.loc @@ CPatRef (RelId qid, [])
@@ -142,7 +140,7 @@ let opt_fun ?loc args ty e =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ltac2_expr ltac2_type tac2def_val tac2def_typ tac2def_ext tac2def_syn
-          tac2def_mut tac2expr_in_env;
+          tac2def_mut tac2expr_in_env ltac2_atom;
   tac2pat:
     [ "1" LEFTA
       [ qid = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> {
@@ -157,7 +155,7 @@ GRAMMAR EXTEND Gram
       | p = tac2pat; "|"; pl = LIST1 tac2pat SEP "|" ->
         { let pl = p :: pl in
           CAst.make ~loc @@ CPatOr pl }
-      | p = tac2pat; "as"; id = lident -> { CAst.make ~loc @@ CPatAs (p,id) }
+      | p = tac2pat; "as"; id = identref -> { CAst.make ~loc @@ CPatAs (p,id) }
       ]
     | "0"
       [ "_" -> { CAst.make ~loc @@ CPatVar Anonymous }
@@ -230,7 +228,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacRec (Some e, a) }
       | "{"; a = tac2rec_fieldexprs; "}" ->
         { CAst.make ~loc @@ CTacRec (None, a) }
-      | a = tactic_atom -> { a } ]
+      | a = ltac2_atom -> { a } ]
     ]
   ;
   array_literal:
@@ -261,7 +259,7 @@ GRAMMAR EXTEND Gram
   ltac2_typevar:
     [ [ "'"; id = Prim.ident -> { id } ] ]
   ;
-  tactic_atom:
+  ltac2_atom:
     [ [ n = Prim.integer -> { CAst.make ~loc @@ CTacAtm (AtmInt n) }
       | s = Prim.string -> { CAst.make ~loc @@ CTacAtm (AtmStr s) }
       | qid = Prim.qualid ->
@@ -270,25 +268,18 @@ GRAMMAR EXTEND Gram
         else
           CAst.make ~loc @@ CTacRef (RelId qid) }
       | "@"; id = Prim.ident -> { Tac2quote.of_ident (CAst.make ~loc id) }
-      | "&"; id = lident -> { Tac2quote.of_hyp ~loc id }
+      | "&"; id = identref -> { Tac2quote.of_hyp ~loc id }
       | "'"; c = Constr.constr -> { inj_open_constr loc c }
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr c }
       | IDENT "preterm"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_preterm c }
-      | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
+      | IDENT "ident"; ":"; "("; c = identref; ")" -> { Tac2quote.of_ident c }
       | IDENT "pat"; ":"; "("; c = Constr.cpattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
-      | IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }
-      | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1val loc qid }
-    ] ]
-  ;
-  ltac1_expr_in_env:
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac_expr -> { ids, e }
-      | e = ltac_expr -> { [], e }
     ] ]
   ;
   tac2expr_in_env :
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac2_expr ->
+    [ [ test_ltac1_env; ids = LIST0 identref; "|-"; e = ltac2_expr ->
       { let check { CAst.v = id; CAst.loc = loc } =
           if Tac2env.is_constructor (Libnames.qualid_of_ident ?loc id) then
             CErrors.user_err ?loc Pp.(str "Invalid bound Ltac2 identifier " ++ Id.print id)
@@ -341,9 +332,6 @@ GRAMMAR EXTEND Gram
       | qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, []) }
       ]
     ];
-  locident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
-  ;
   binder:
     [ [ "_" -> { CAst.make ~loc Anonymous }
       | l = Prim.ident -> { CAst.make ~loc (Name l) } ] ]
@@ -362,7 +350,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_mut:
-    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = locident -> { id } ]; ":="; e = ltac2_expr -> { StrMut (qid, old, e) } ] ]
+    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = identref -> { id } ]; ":="; e = ltac2_expr -> { StrMut (qid, old, e) } ] ]
   ;
   tac2typ_knd:
     [ [ t = ltac2_type -> { CTydDef (Some t) }
@@ -444,7 +432,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_ext:
-    [ [ "@"; IDENT "external"; id = locident; ":"; t = ltac2_type LEVEL "5"; ":=";
+    [ [ "@"; IDENT "external"; id = identref; ":"; t = ltac2_type LEVEL "5"; ":=";
         plugin = Prim.string; name = Prim.string ->
       { let ml = { mltac_plugin = plugin; mltac_tactic = name } in
         StrPrm (id, t, ml) }
@@ -474,9 +462,6 @@ GRAMMAR EXTEND Gram
         { (toks, n, e) }
     ] ]
   ;
-  lident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
-  ;
   globref:
     [ [ "&"; id = Prim.ident -> { CAst.make ~loc (QHypothesis id) }
       | qid = Prim.qualid -> { CAst.make ~loc @@ QReference qid }
@@ -501,12 +486,9 @@ GRAMMAR EXTEND Gram
     [ [ "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) } ] ]
   ;
   ident_or_anti:
-    [ [ id = lident -> { QExpr id }
+    [ [ id = identref -> { QExpr id }
       | "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) }
     ] ]
-  ;
-  lident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
   ;
   lnatural:
     [ [ n = Prim.natural -> { CAst.make ~loc n } ] ]
@@ -517,7 +499,7 @@ GRAMMAR EXTEND Gram
   qhyp:
     [ [ x = anti -> { x }
       | n = lnatural -> { QExpr (CAst.make ~loc @@ QAnonHyp n) }
-      | id = lident -> { QExpr (CAst.make ~loc @@ QNamedHyp id) }
+      | id = identref -> { QExpr (CAst.make ~loc @@ QNamedHyp id) }
     ] ]
   ;
   simple_binding:
@@ -572,9 +554,9 @@ GRAMMAR EXTEND Gram
       | test_leftsquarebracket_equal; "["; "="; tc = intropatterns; "]" -> { CAst.make ~loc @@ QIntroInjection tc } ] ]
   ;
   naming_intropattern:
-    [ [ LEFTQMARK; id = lident ->
+    [ [ LEFTQMARK; id = identref ->
         { CAst.make ~loc @@ QIntroFresh (QExpr id) }
-      | "?$"; id = lident ->
+      | "?$"; id = identref ->
         { CAst.make ~loc @@ QIntroFresh (QAnti id) }
       | "?" ->
         { CAst.make ~loc @@ QIntroAnonymous }
@@ -629,7 +611,7 @@ GRAMMAR EXTEND Gram
   ;
   destruction_arg:
     [ [ n = lnatural -> { CAst.make ~loc @@ QElimOnAnonHyp n }
-      | id = lident -> { CAst.make ~loc @@ QElimOnIdent id }
+      | id = identref -> { CAst.make ~loc @@ QElimOnIdent id }
       | c = constr_with_bindings -> { CAst.make ~loc @@ QElimOnConstr c }
     ] ]
   ;
@@ -1035,17 +1017,32 @@ END
 
 let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
 
-open G_ltac
 open Vernacextend
+
+let toplevel_selector = G_vernac.toplevel_selector
+
+let pr_ltac2_selector s = Pp.(Goal_select.pr_goal_selector s ++ str ":")
+
+let pr_ltac2_use_default b =
+  if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
 
 }
 
+VERNAC ARGUMENT EXTEND ltac2_selector PRINTED BY { pr_ltac2_selector }
+| [ toplevel_selector(s) ] -> { s }
+END
+
+VERNAC ARGUMENT EXTEND ltac2_use_default PRINTED BY { pr_ltac2_use_default }
+| [ "." ] -> { false }
+| [ "..." ] -> { true }
+END
+
 VERNAC { tac2mode } EXTEND VernacLtac2
-| ![proof] [ ltac_selector_opt(g) ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
+| ![proof] [ ltac2_selector_opt(g) ltac2_expr(t) ltac2_use_default(with_end_tac) ] =>
   { classify_as_proofstep } -> { fun ~pstate ->
     Tac2entries.call ~pstate g ~with_end_tac t
   }
-| ![proof] [ "par" ":" ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
+| ![proof] [ "par" ":" ltac2_expr(t) ltac2_use_default(with_end_tac) ] =>
   { classify_as_proofstep } -> { fun ~pstate ->
     Tac2entries.call_par ~pstate ~with_end_tac t
   }

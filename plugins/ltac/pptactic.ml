@@ -525,19 +525,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
 
-  let pr_range_selector (i, j) =
-    if Int.equal i j then int i
-    else int i ++ str "-" ++ int j
-
-let pr_goal_selector toplevel = let open Goal_select in function
-  | SelectAlreadyFocused -> str "!:"
-  | SelectNth i -> int i ++ str ":"
-  | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l ++ str ":"
-  | SelectId id -> str "[" ++ Id.print id ++ str "]:"
-  | SelectAll -> assert toplevel; str "all:"
-
 let pr_goal_selector ~toplevel s =
-  (if toplevel then mt () else str "only ") ++ pr_goal_selector toplevel s
+  (if toplevel then mt () else str "only ") ++ Goal_select.pr_goal_selector s ++ str ":"
 
   let pr_lazy = function
     | General -> keyword "multi"
@@ -1192,6 +1181,20 @@ let pr_goal_selector ~toplevel s =
     pr_extend_gen pr lev ml args
 
   let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma c
+
+let pp_ltac_call_kind = function
+  | LtacNotationCall s -> pr_alias_key s
+  | LtacNameCall cst -> pr_ltac_constant cst
+  (* todo: don't want the KerName instead? *)
+  | LtacVarCall (_, id, t) -> Names.Id.print id
+  | LtacAtomCall te ->
+    pr_glob_tactic (Global.env ())
+      (CAst.make (TacAtom te))
+  | LtacConstrInterp (env, sigma, c, _) ->
+    pr_glob_constr_env env sigma c
+  | LtacMLCall te ->
+    (pr_glob_tactic (Global.env ())
+       te)
 
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)

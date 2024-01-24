@@ -327,9 +327,8 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval ["Mangle"; "Names"; "Prefix"] (OptionSet(Some(next ())))
 
     |"-profile-ltac-cutoff" ->
-      Flags.profile_ltac := true;
       Flags.profile_ltac_cutoff := get_float ~opt (next ());
-      oval
+      add_set_option oval ["Ltac"; "Profiling"] (OptionSet None)
 
     |"-load-vernac-object"|"-require" ->
       add_vo_require oval (next ()) None None

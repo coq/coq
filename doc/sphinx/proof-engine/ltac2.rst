@@ -230,7 +230,7 @@ user to bind a variable and match on it at the same time, in the usual ML style.
 
 There is dedicated syntax for list and array literals.
 
-.. insertprodn ltac2_expr ltac2_tactic_atom
+.. insertprodn ltac2_expr ltac2_atom
 
 .. prodn::
    ltac2_expr ::= @ltac2_expr5 ; @ltac2_expr
@@ -254,12 +254,12 @@ There is dedicated syntax for list and array literals.
    | [ {*; @ltac2_expr5 } ]
    | %{ @ltac2_expr0 with {? {+; @tac2rec_fieldexpr } {? ; } } %}
    | %{ {? {+; @tac2rec_fieldexpr } {? ; } } %}
-   | @ltac2_tactic_atom
+   | @ltac2_atom
    tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
    | @tac2rec_fieldpat ;
    | @tac2rec_fieldpat
    tac2rec_fieldpat ::= @qualid {? := @tac2pat1 }
-   ltac2_tactic_atom ::= @integer
+   ltac2_atom ::= @integer
    | @string
    | @qualid
    | @ @ident

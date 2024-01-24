@@ -42,6 +42,12 @@ open Proofview.Notations
 open Context.Named.Declaration
 open Ltac_pretype
 
+let do_profile trace ?count_call tac =
+  Profile_tactic.do_profile_gen (function
+      | (_, c) :: _ -> Some (Pptactic.pp_ltac_call_kind c)
+      | [] -> None)
+    trace ?count_call tac
+
 let ltac_trace_info = Tactic_debug.ltac_trace_info
 
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
@@ -1116,7 +1122,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacAtom t ->
       let call = LtacAtomCall t in
       let (stack, _) = push_trace(loc,call) ist in
-      Profile_ltac.do_profile stack
+      do_profile stack
         (catch_error_tac_loc loc stack (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
@@ -1149,7 +1155,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
       let (stack,_) = push_trace(None,call) ist in
-      Profile_ltac.do_profile stack
+      do_profile stack
         (catch_error_tac stack begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
         (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
@@ -1271,7 +1277,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
          already in another global reference *)
       let ist = ensure_loc loc ist in
       let (stack, _) = trace in
-      Profile_ltac.do_profile stack ~count_call:false
+      do_profile stack ~count_call:false
         (catch_error_tac_loc (* loc for interpretation *) loc stack
            (val_interp ~appl ist (Tacenv.interp_ltac r)))
 
@@ -1346,7 +1352,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
                 ; extra = TacStore.set ist.extra f_trace trace
                 } in
               let (stack, _) = trace in
-              Profile_ltac.do_profile stack ~count_call:false
+              do_profile stack ~count_call:false
                 (catch_error_tac_loc loc stack (val_interp (ensure_loc loc ist) body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
@@ -1399,7 +1405,7 @@ and tactic_of_value ist vle =
         extra = TacStore.set ist.extra f_trace (if !Flags.profile_ltac then ([],[]) else trace); } in
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       let (stack, _) = trace in
-      Profile_ltac.do_profile stack (catch_error_tac_loc loc stack tac)
+      do_profile stack (catch_error_tac_loc loc stack tac)
   | VFun (appl,(stack,_),loc,vmap,vars,_) ->
      let tactic_nm =
        match appl with

@@ -1,0 +1,7 @@
+(library
+ (name ltac2_ltac1_plugin)
+ (public_name coq-core.plugins.ltac2_ltac1)
+ (synopsis "Ltac2 and Ltac1 interoperability plugin")
+ (libraries ltac_plugin ltac2_plugin))
+
+(coq.pp (modules g_ltac2_ltac1))

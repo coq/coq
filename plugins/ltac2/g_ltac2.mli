@@ -47,8 +47,6 @@ val tac2def_mut : Tac2expr.strexpr Pcoq.Entry.t
 
 val tac2mode : Vernacexpr.vernac_expr Pcoq.Entry.t
 
-val ltac_expr : Ltac_plugin.Tacexpr.raw_tactic_expr Pcoq.Entry.t
-
 val tac2expr_in_env :
   (Names.Id.t CAst.t list * Tac2expr.raw_tacexpr) Pcoq.Entry.t
 
@@ -71,3 +69,5 @@ val wit_ltac2_expr :
   (Tac2expr.raw_tacexpr, unit, unit) Genarg.genarg_type
 
 val ltac2_expr : Tac2expr.raw_tacexpr Pcoq.Entry.t
+
+val ltac2_atom : Tac2expr.raw_tacexpr Pcoq.Entry.t
