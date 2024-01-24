@@ -182,7 +182,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zpower.v
     theories/ZArith/Zdiv.v
     theories/ZArith/Zquot.v
-    theories/ZArith/Zeuclid.v
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
@@ -324,7 +323,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZLcm.v
     theories/Numbers/Integer/Abstract/ZBits.v
     theories/Numbers/Integer/Abstract/ZProperties.v
-    theories/Numbers/Integer/Abstract/ZDivEucl.v
     theories/Numbers/Integer/Abstract/ZDivFloor.v
     theories/Numbers/Integer/Abstract/ZDivTrunc.v
     </dd>
