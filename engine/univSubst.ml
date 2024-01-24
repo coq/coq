@@ -168,91 +168,99 @@ let nf_binder_annot frel na =
   if rel' == na.binder_relevance then na
   else { binder_name = na.binder_name; binder_relevance = rel' }
 
-let nf_evars_and_universes_opt_subst fevar fqual funiv c =
+let map_universes_opt_subst_with_binders next aux fqual funiv k c =
   let frel = Sorts.relevance_subst_fn fqual in
   let flevel = fqual, level_subst_of funiv in
-  let rec aux c =
-    match kind c with
-    | Evar (evk, args) ->
-      let args' = SList.Smart.map aux args in
-      (match try fevar (evk, args') with Not_found -> None with
-      | None -> if args == args' then c else mkEvar (evk, args')
-      | Some c -> aux c)
-    | Const pu ->
-      let pu' = subst_univs_fn_puniverses flevel pu in
-        if pu' == pu then c else mkConstU pu'
-    | Ind pu ->
-      let pu' = subst_univs_fn_puniverses flevel pu in
-        if pu' == pu then c else mkIndU pu'
-    | Construct pu ->
-      let pu' = subst_univs_fn_puniverses flevel pu in
-        if pu' == pu then c else mkConstructU pu'
-    | Sort s ->
-      let s' = Sorts.subst_fn (fqual, subst_univs_universe funiv) s in
-      if s' == s then c else mkSort s'
-    | Case (ci,u,pms,(p,rel),iv,t,br) ->
-      let u' = Instance.subst_fn flevel u in
-      let rel' = frel rel in
-      let pms' = Array.Smart.map aux pms in
-      let p' = aux_ctx p in
-      let iv' = map_invert aux iv in
-      let t' = aux t in
-      let br' = Array.Smart.map aux_ctx br in
-      if rel' == rel && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
-      else mkCase (ci, u', pms', (p',rel'), iv', t', br')
-    | Array (u,elems,def,ty) ->
-      let u' = Instance.subst_fn flevel u in
-      let elems' = CArray.Smart.map aux elems in
-      let def' = aux def in
-      let ty' = aux ty in
-      if u == u' && elems == elems' && def == def' && ty == ty' then c
-      else mkArray (u',elems',def',ty')
-    | Prod (na, t, u) ->
-      let na' = nf_binder_annot frel na in
-      let t' = aux t in
-      let u' = aux u in
-      if na' == na && t' == t && u' == u then c
-      else mkProd (na', t', u')
-    | Lambda (na, t, u) ->
-      let na' = nf_binder_annot frel na in
-      let t' = aux t in
-      let u' = aux u in
-      if na' == na && t' == t && u' == u then c
-      else mkLambda (na', t', u')
-    | LetIn (na, b, t, u) ->
-      let na' = nf_binder_annot frel na in
-      let b' = aux b in
-      let t' = aux t in
-      let u' = aux u in
-      if na' == na && b' == b && t' == t && u' == u then c
-      else mkLetIn (na', b', t', u')
-    | Fix (i, rc) ->
-      let rc' = aux_rec rc in
-      if rc' == rc then c
-      else mkFix (i, rc')
-    | CoFix (i, rc) ->
-      let rc' = aux_rec rc in
-      if rc' == rc then c
-      else mkCoFix (i, rc')
-    | Proj (p, r, v) ->
-      let r' = frel r in
-      let v' = aux v in
-      if r' == r && v' == v then  c
-      else mkProj (p, r', v')
-    | _ -> Constr.map aux c
-  and aux_rec ((nas, tys, bds) as rc) =
+  let aux_rec ((nas, tys, bds) as rc) =
     let nas' = Array.Smart.map (fun na -> nf_binder_annot frel na) nas in
-    let tys' = Array.Smart.map aux tys in
-    let bds' = Array.Smart.map aux bds in
+    let tys' = Array.Fun1.Smart.map aux k tys in
+    let k' = iterate next (Array.length tys') k in
+    let bds' = Array.Fun1.Smart.map aux k' bds in
     if nas' == nas && tys' == tys && bds' == bds then rc
     else (nas', tys', bds')
-  and aux_ctx ((nas, c) as p) =
+  in
+  let aux_ctx ((nas, c) as p) =
     let nas' = Array.Smart.map (fun na -> nf_binder_annot frel na) nas in
-    let c' = aux c in
+    let k' = iterate next (Array.length nas) k in
+    let c' = aux k' c in
     if nas' == nas && c' == c then p
     else (nas', c')
   in
-  aux c
+  match kind c with
+  | Const pu ->
+    let pu' = subst_univs_fn_puniverses flevel pu in
+    if pu' == pu then c else mkConstU pu'
+  | Ind pu ->
+    let pu' = subst_univs_fn_puniverses flevel pu in
+    if pu' == pu then c else mkIndU pu'
+  | Construct pu ->
+    let pu' = subst_univs_fn_puniverses flevel pu in
+    if pu' == pu then c else mkConstructU pu'
+  | Sort s ->
+    let s' = Sorts.subst_fn (fqual, subst_univs_universe funiv) s in
+    if s' == s then c else mkSort s'
+  | Case (ci,u,pms,(p,rel),iv,t,br) ->
+    let u' = Instance.subst_fn flevel u in
+    let rel' = frel rel in
+    let pms' = Array.Fun1.Smart.map aux k pms in
+    let p' = aux_ctx p in
+    let iv' = map_invert (aux k) iv in
+    let t' = aux k t in
+    let br' = Array.Smart.map aux_ctx br in
+    if rel' == rel && u' == u && pms' == pms && p' == p && iv' == iv && t' == t && br' == br then c
+    else mkCase (ci, u', pms', (p',rel'), iv', t', br')
+  | Array (u,elems,def,ty) ->
+    let u' = Instance.subst_fn flevel u in
+    let elems' = CArray.Fun1.Smart.map aux k elems in
+    let def' = aux k def in
+    let ty' = aux k ty in
+    if u == u' && elems == elems' && def == def' && ty == ty' then c
+    else mkArray (u',elems',def',ty')
+  | Prod (na, t, u) ->
+    let na' = nf_binder_annot frel na in
+    let t' = aux k t in
+    let u' = aux (next k) u in
+    if na' == na && t' == t && u' == u then c
+    else mkProd (na', t', u')
+  | Lambda (na, t, u) ->
+    let na' = nf_binder_annot frel na in
+    let t' = aux k t in
+    let u' = aux (next k) u in
+    if na' == na && t' == t && u' == u then c
+    else mkLambda (na', t', u')
+  | LetIn (na, b, t, u) ->
+    let na' = nf_binder_annot frel na in
+    let b' = aux k b in
+    let t' = aux k t in
+    let u' = aux (next k) u in
+    if na' == na && b' == b && t' == t && u' == u then c
+    else mkLetIn (na', b', t', u')
+  | Fix (i, rc) ->
+    let rc' = aux_rec rc in
+    if rc' == rc then c
+    else mkFix (i, rc')
+  | CoFix (i, rc) ->
+    let rc' = aux_rec rc in
+    if rc' == rc then c
+    else mkCoFix (i, rc')
+  | Proj (p, r, v) ->
+    let r' = frel r in
+    let v' = aux k v in
+    if r' == r && v' == v then  c
+    else mkProj (p, r', v')
+  | _ -> Constr.map_with_binders next aux k c
+
+let nf_evars_and_universes_opt_subst fevar fqual funiv c =
+  let rec self () c = match Constr.kind c with
+  | Evar (evk, args) ->
+    let args' = SList.Smart.map (self ()) args in
+    begin match try fevar (evk, args') with Not_found -> None with
+    | None -> if args == args' then c else mkEvar (evk, args')
+    | Some c -> self () c
+    end
+  | _ -> map_universes_opt_subst_with_binders ignore self fqual funiv () c
+  in
+  self () c
 
 let pr_universe_subst prl =
   let open Pp in

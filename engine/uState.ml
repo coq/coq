@@ -410,7 +410,13 @@ let nf_relevance uctx r = match r with
 let nf_universes uctx c =
   let lsubst = uctx.univ_variables in
   let nf_univ u = UnivFlex.normalize_univ_variable lsubst u in
-  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (nf_qvar uctx) nf_univ c
+  let rec self () c = match Constr.kind c with
+  | Evar (evk, args) ->
+    let args' = SList.Smart.map (self ()) args in
+    if args == args' then c else Constr.mkEvar (evk, args')
+  | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self (nf_qvar uctx) nf_univ () c
+  in
+  self ()  c
 
 type small_universe = USet | UProp | USProp
 
