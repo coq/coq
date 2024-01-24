@@ -294,7 +294,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 type instance_mask = UVars.Instance.mask
 
 type sort_pattern = Sorts.pattern =
-  | PSProp | PSSProp | PSSet | PSType of bool | PSQSort of bool * bool
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
 (** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
     Eliminations correspond to elements of the stack in a reduction machine,
@@ -319,11 +319,12 @@ type pattern_elimination =
 and head_elimination = pattern_argument head_pattern * pattern_elimination list
 
 and pattern_argument =
-  | EHole
+  | EHole of int
   | EHoleIgnored
   | ERigid of head_elimination
 
 type rewrite_rule = {
+  nvars : int * int * int;
   lhs_pat : instance_mask * pattern_elimination list;
   rhs : constr;
 }

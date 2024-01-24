@@ -266,6 +266,7 @@ let prqvar q = Sorts.QVar.raw_pr q
 let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc QVar.raw_pr (QVar.Set.elements l) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prqvar prlev l)
+let ppuniverse_ainstance l = pp (AInstance.pr prqvar (Universe.pr prlev) l)
 let ppuniverse_context l = pp (pr_universe_context prqvar prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
 let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
@@ -296,6 +297,11 @@ let ppaucontext auctx =
   let prlev l = prgen prlev Level.var_index unas l in
   pp (pr_universe_context prqvar prlev (AbstractContext.repr auctx))
 
+let pp_partialfsubst psubst =
+  pp (Partial_subst.pr (fun f -> pr_constr (CClosure.term_of_fconstr f)) (Quality.pr prqvar) (Universe.pr prlev) psubst)
+
+let pp_partialsubst psubst =
+  pp (Partial_subst.pr pr_econstr (Quality.pr prqvar) (Universe.pr prlev) psubst)
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++

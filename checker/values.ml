@@ -341,11 +341,11 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
-let v_instance_mask = Opt (v_pair (Array v_bool) (Array v_bool))
+let v_instance_mask = Opt (v_pair (Array (Opt Int)) (Array (Opt Int)))
 
 let v_sort_pattern = Sum ("sort_pattern", 3,
-  [|[|v_bool|];        (* PSType *)
-    [|v_bool; v_bool|] (* PSQSort *)
+  [|[|Opt Int|];         (* PSType *)
+    [|Opt Int; Opt Int|] (* PSQSort *)
   |])
 
 let rec v_hpattern = Sum ("head_pattern", 0,
@@ -368,12 +368,13 @@ and v_elimination = Sum ("pattern_elimination", 0,
 
 and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
 
-and v_patarg = Sum ("pattern_argument", 2,
-  [|[|v_head_elim|]; (* ERigid *)
+and v_patarg = Sum ("pattern_argument", 1,
+  [|[|Int|];         (* EHole *)
+    [|v_head_elim|]; (* ERigid *)
   |])
 
 let v_rewrule = v_tuple "rewrite_rule"
-  [| v_pair v_instance_mask (List v_elimination); v_constr |]
+  [| v_tuple "nvars" [| Int; Int; Int |]; v_pair v_instance_mask (List v_elimination); v_constr |]
 let v_rrb = v_tuple "rewrite_rules_body"
   [| List (v_pair v_cst v_rewrule) |]
 

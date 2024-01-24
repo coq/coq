@@ -81,44 +81,61 @@ let check_constant_declaration env opac kn cb opacify =
   let opac = check_constant_declaration env opac kn cb opacify in
   Environ.add_constant kn cb env, opac
 
-let check_instance_mask udecl umask =
-  let b = match udecl, umask with
-    | _, None -> true
-    | Monomorphic, Some (qmask, umask) -> Array.is_empty qmask && Array.is_empty umask
-    | Polymorphic uctx, Some (qmask, umask) -> (Array.length qmask, Array.length umask) = UVars.AbstractContext.size uctx
-  in
-  if b then () else CErrors.anomaly Pp.(str "Bad univ mask length.")
+let check_instance_mask udecl umask lincheck =
+  match udecl, umask with
+    | _, None -> lincheck
+    | Monomorphic, Some ([||], [||]) -> lincheck
+    | Polymorphic uctx, Some (qmask, umask) ->
+        let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_quality mask () lincheck) lincheck qmask in
+        let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_univ mask () lincheck) lincheck umask in
+        if (Array.length qmask, Array.length umask) <> UVars.AbstractContext.size uctx then CErrors.anomaly Pp.(str "Bad univ mask length.");
+        lincheck
+    | _ -> CErrors.anomaly Pp.(str "Bad univ mask length.")
 
-let rec get_holes_profiles env nargs ndecls el =
-  List.concat_map (get_holes_profiles_elim env nargs ndecls) el
+let rec get_holes_profiles env nargs ndecls lincheck el =
+  List.fold_left (get_holes_profiles_elim env nargs ndecls) lincheck el
 
-and get_holes_profiles_elim env nargs ndecls = function
-  | PEApp args -> List.concat_map (get_holes_profiles_parg env nargs ndecls) (Array.to_list args)
+and get_holes_profiles_elim env nargs ndecls lincheck = function
+  | PEApp args -> Array.fold_left (get_holes_profiles_parg env nargs ndecls) lincheck args
   | PECase (ind, u, ret, brs) ->
       let mib, mip = Inductive.lookup_mind_specif env ind in
-      let () = check_instance_mask mib.mind_universes u in
-      get_holes_profiles_parg env (nargs + mip.mind_nrealargs +1) (ndecls + mip.mind_nrealdecls) ret @
-      (Array.map3 (fun nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b)) mip.mind_consnrealargs mip.mind_consnrealdecls brs |> Array.to_list |> List.concat)
+      let lincheck = check_instance_mask mib.mind_universes u lincheck in
+      let lincheck = get_holes_profiles_parg env (nargs + mip.mind_nrealargs +1) (ndecls + mip.mind_nrealdecls) lincheck ret in
+      Array.fold_left3 (fun lincheck nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b) lincheck) lincheck mip.mind_consnrealargs mip.mind_consnrealdecls brs
   | PEProj proj ->
-      let () = lookup_projection proj env |> ignore in []
+      let () = lookup_projection proj env |> ignore in
+      lincheck
 
-and get_holes_profiles_parg env nargs ndecls = function
-  | EHoleIgnored -> []
-  | EHole -> [nargs]
-  | ERigid (h, el) -> get_holes_profiles_head env nargs ndecls h @ get_holes_profiles env nargs ndecls el
+and get_holes_profiles_parg env nargs ndecls lincheck = function
+  | EHoleIgnored -> lincheck
+  | EHole i -> Partial_subst.add_term i nargs lincheck
+  | ERigid (h, el) ->
+      let lincheck = get_holes_profiles_head env nargs ndecls lincheck h in
+      get_holes_profiles env nargs ndecls lincheck el
 
-and get_holes_profiles_head env nargs ndecls = function
-  | PHRel n -> if n <= ndecls then [] else Type_errors.error_unbound_rel env n
-  | PHSymbol (c, u) -> let () = let cb = lookup_constant c env in check_instance_mask cb.const_universes u in []
-  | PHConstr (c, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in check_instance_mask mib.mind_universes u in []
-  | PHInd (ind, u) -> let () = let (mib, _) = Inductive.lookup_mind_specif env ind in check_instance_mask mib.mind_universes u in []
-  | PHInt _  | PHFloat _ -> []
-  | PHSort PSSProp -> if Environ.sprop_allowed env then [] else Type_errors.error_disallowed_sprop env
-  | PHSort _ -> []
+and get_holes_profiles_head env nargs ndecls lincheck = function
+  | PHRel n -> if n <= ndecls then lincheck else Type_errors.error_unbound_rel env n
+  | PHSymbol (c, u) ->
+      let cb = lookup_constant c env in
+      check_instance_mask cb.const_universes u lincheck
+  | PHConstr (c, u) ->
+      let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in
+      check_instance_mask mib.mind_universes u lincheck
+  | PHInd (ind, u) ->
+      let (mib, _) = Inductive.lookup_mind_specif env ind in
+      check_instance_mask mib.mind_universes u lincheck
+  | PHInt _  | PHFloat _ -> lincheck
+  | PHSort PSSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
+  | PHSort PSType io -> Partial_subst.maybe_add_univ io () lincheck
+  | PHSort PSQSort (qio, uio) ->
+      lincheck
+      |> Partial_subst.maybe_add_quality qio ()
+      |> Partial_subst.maybe_add_univ uio ()
+  | PHSort _ -> lincheck
   | PHLambda (tys, bod) | PHProd (tys, bod) ->
-      let holes_tys = Array.mapi (fun i' -> get_holes_profiles_parg env (nargs + i') (ndecls + i')) tys |> Array.to_list |> List.concat in
-      let holes_bod = get_holes_profiles_parg env (nargs + Array.length tys) (ndecls + Array.length tys) bod in
-      holes_tys @ holes_bod
+      let lincheck = Array.fold_left_i (fun i -> get_holes_profiles_parg env (nargs + i) (ndecls + i)) lincheck tys in
+      let lincheck = get_holes_profiles_parg env (nargs + Array.length tys) (ndecls + Array.length tys) lincheck bod in
+      lincheck
 
 let check_rhs env holes_profile rhs =
   let rec check i c = match Constr.kind c with
@@ -138,15 +155,17 @@ let check_rhs env holes_profile rhs =
 
 let check_rewrite_rule env lab i (symb, rule) =
   Flags.if_verbose Feedback.msg_notice (str "  checking rule:" ++ Label.print lab ++ str"#" ++ Pp.int i);
-  let { lhs_pat; rhs } = rule in
+  let { nvars; lhs_pat; rhs } = rule in
   let symb_cb = Environ.lookup_constant symb env in
   let () =
     match symb_cb.const_body with Symbol _ -> ()
     | _ -> ignore @@ invalid_arg "Rule defined on non-symbol"
   in
-  let () = check_instance_mask symb_cb.const_universes (fst lhs_pat) in
-  let holes_profile = get_holes_profiles env 0 0 (snd lhs_pat) in
-  let () = check_rhs env (Array.of_list holes_profile) rhs in
+  let lincheck = Partial_subst.make nvars in
+  let lincheck = check_instance_mask symb_cb.const_universes (fst lhs_pat) lincheck in
+  let lincheck = get_holes_profiles env 0 0 lincheck (snd lhs_pat) in
+  let holes_profile, _, _ = Partial_subst.to_arrays lincheck in
+  let () = check_rhs env holes_profile rhs in
   ()
 
 let check_rewrite_rules_body env lab rrb =

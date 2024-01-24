@@ -151,6 +151,7 @@ val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
 val ppqvarset : Sorts.QVar.Set.t -> unit
 val ppuniverse_set : Univ.Level.Set.t -> unit
 val ppuniverse_instance : UVars.Instance.t -> unit
+val ppuniverse_ainstance : UVars.AInstance.t -> unit
 val ppuniverse_context : UVars.UContext.t -> unit
 val ppaucontext : UVars.AbstractContext.t -> unit
 val ppuniverse_context_set : Univ.ContextSet.t -> unit
@@ -163,6 +164,9 @@ val ppconstraints : Univ.Constraints.t -> unit
 val ppuniverseconstraints : UnivProblem.Set.t -> unit
 val ppuniverse_context_future : UVars.UContext.t Future.computation -> unit
 val ppuniverses : UGraph.t -> unit
+
+val pp_partialfsubst : (CClosure.fconstr, Sorts.Quality.t, Univ.Universe.t) Partial_subst.t -> unit
+val pp_partialsubst : (EConstr.constr, Sorts.Quality.t, Univ.Universe.t) Partial_subst.t -> unit
 
 val ppnamedcontextval : Environ.named_context_val -> unit
 val ppenv : Environ.env -> unit

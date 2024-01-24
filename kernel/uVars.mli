@@ -78,9 +78,9 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
-  type mask = (bool array * bool array) option
+  type mask = (int option array * int option array) option
 
-  val pattern_match : mask -> t -> Quality.t list * Universe.t list
+  val pattern_match : mask -> t -> ('term, Quality.t, Universe.t) Partial_subst.t -> ('term, Quality.t, Universe.t) Partial_subst.t
   (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 

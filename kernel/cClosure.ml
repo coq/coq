@@ -1387,8 +1387,7 @@ let conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) ref
 let set_conv f = conv := f
 
 type 'constr partial_subst = {
-  subst: 'constr list;
-  usubst: Sorts.Quality.t list * Univ.Universe.t list;
+  subst: ('constr, Sorts.Quality.t, Univ.Universe.t) Partial_subst.t;
   rhs: constr;
 }
 
@@ -1399,11 +1398,6 @@ type 'a status =
   | Ignore
 
 module Status = struct
-  let map f = function Check a -> Check (f a) | Ignore as p -> p
-
-  let split = function Check (a, b) -> Check a, Check b | Ignore as p -> p, p
-  let split3 = function Check (a, b, c) -> Check a, Check b, Check c | Ignore as p -> p, p, p
-  let split4 = function Check (a, b, c, d) -> Check a, Check b, Check c, Check d | Ignore as p -> p, p, p, p
   let split_array n = function
   | Check a when Array.length a <> n -> invalid_arg "Status.split_array"
   | Check a -> Array.init n (fun i -> Check (Array.unsafe_get a i))
@@ -1437,20 +1431,46 @@ type ('constr, 'stack, 'context, _) depth =
 let extract_or_kill filter a status =
   let step elim status =
     match elim, status with
+    | Ignore, s -> s
+    | _, Dead -> Dead
+    | Check e, Live s -> match filter (e, s) with
+      | None -> Dead
+      | Some s -> Live s
+  in
+  Array.map2 step a status
+
+let extract_or_kill2 filter a status =
+  let step elim status =
+    match elim, status with
    | Ignore, s -> Ignore, s
-   | Check e, s -> match filter e with
+   | _, Dead -> Ignore, Dead
+   | Check e, Live s -> match filter (e, s) with
       | None -> Ignore, Dead
-      | Some p -> Check p, s
+      | Some (p, s) -> Check p, Live s
   in
   Array.split @@ Array.map2 step a status
 
-let merge f a b =
-  match a, b with
-  | Live a, Check b -> Live (f a b)
-  | Dead, _ -> Dead
-  | Live _, Ignore -> a
+let extract_or_kill3 filter a status =
+  let step elim status =
+    match elim, status with
+    | Ignore, s -> Ignore, Ignore, s
+    | _, Dead -> Ignore, Ignore, Dead
+    | Check e, Live s -> match filter (e, s) with
+      | None -> Ignore, Ignore, Dead
+      | Some (p1, p2, s) -> Check p1, Check p2, Live s
+  in
+  Array.split3 @@ Array.map2 step a status
 
-let merge_usubst (s1, u1) (s2, u2) = s1 @ s2, u1 @ u2
+let extract_or_kill4 filter a status =
+  let step elim status =
+    match elim, status with
+    | Ignore, s -> Ignore, Ignore, Ignore, s
+    | _, Dead -> Ignore, Ignore, Ignore, Dead
+    | Check e, Live s -> match filter (e, s) with
+      | None -> Ignore, Ignore, Ignore, Dead
+      | Some (p1, p2, p3, s) -> Check p1, Check p2, Check p3, Live s
+  in
+  Array.split4 @@ Array.map2 step a status
 
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
@@ -1476,7 +1496,9 @@ let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
             let states, elims = Array.split @@ Array.map
               (fun r ->
                 let pu, es = r.lhs_pat in
-                Live { subst = []; usubst = UVars.Instance.pattern_match pu u; rhs = r.Declarations.rhs }, Check es
+                let subst = Partial_subst.make r.nvars in
+                let subst = UVars.Instance.pattern_match pu u subst in
+                Live { subst; rhs = r.Declarations.rhs }, Check es
               ) (Array.of_list r)
             in
             let loc = LocStart { elims; context=[]; head = m; stack = stk; next = Return (unfold_fix, m, stk) } in
@@ -1610,9 +1632,10 @@ and match_main : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   match [@ocaml.warning "-4"] loc with
   | LocStart { elims; context; head; stack; next = Return _ as next } ->
     begin match Array.find2_map (fun state elim -> match state, elim with Live s, Check [] -> Some s | _ -> None) states elims with
-    | Some { subst; usubst; rhs } ->
-        let subst = List.fold_right subs_cons subst (subs_id 0) in
-        let usubst = UVars.AInstance.of_array (Array.of_list (fst usubst), Array.of_list (snd usubst)) in
+    | Some { subst; rhs } ->
+        let subst, qsubst, usubst = Partial_subst.to_arrays subst in
+        let subst = Array.fold_right subs_cons subst (subs_id 0) in
+        let usubst = UVars.AInstance.of_array (qsubst, usubst) in
         let rhsu = Vars.subst_ainstance_constr usubst rhs in
         let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
         begin match pat_state with
@@ -1660,16 +1683,16 @@ and match_elim : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   fun info tab ~pat_state next context states elims head stk ->
   match stk with
   | Zapp args :: s ->
-      let pargselims, states = extract_or_kill (function [@ocaml.warning "-4"] PEApp pargs :: es -> Some (pargs, es) | _ -> None) elims states in
+      let pargselims, states = extract_or_kill2 (function [@ocaml.warning "-4"] PEApp pargs :: es, subst -> Some ((pargs, es), subst) | _ -> None) elims states in
       let na = Array.length args in
       let np = Array.fold_left (Status.fold_left (fun a (pargs, _) -> min a (Array.length pargs))) na pargselims in
-      let pargs, elims = pargselims |> Array.map (Status.map (fun (pargs, elims) ->
+      let pargs, elims, states =
+        extract_or_kill3 (fun ((pargs, elims), subst) ->
           let npp = Array.length pargs in
-          if npp == np then (pargs, elims) else
+          if npp == np then Some (pargs, elims, subst) else
           let fst, lst = Array.chop np pargs in
-          fst, PEApp lst :: elims
-        ) %> Status.split)
-        |> Array.split
+          Some (fst, PEApp lst :: elims, subst))
+          pargselims states
       in
       let args, rest = Array.chop np args in
       let head = {mark=neutr head.mark; term=FApp(head, args)} in
@@ -1689,16 +1712,14 @@ and match_elim : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
       let specif = (specif, specif.mind_packets.(snd ci.ci_ind)) in
       let ntys_ret = Environ.expand_arity specif (ci.ci_ind, u) pms (fst p) in
       let ntys_brs = Environ.expand_branch_contexts specif u pms brs in
-      let fuuspretspbrsspelims, states = extract_or_kill (function [@ocaml.warning "-4"]
-      | PECase (pind, pu, pret, pbrs) :: es ->
+      let prets, pbrss, elims, states = extract_or_kill4 (function [@ocaml.warning "-4"]
+      | PECase (pind, pu, pret, pbrs) :: es, psubst ->
         if not @@ Ind.CanOrd.equal pind ci.ci_ind then None else
-          let fuus = UVars.Instance.pattern_match pu u in
-          Some (fuus, pret, pbrs, es)
+          let subst = UVars.Instance.pattern_match pu u psubst.subst in
+          Some (pret, pbrs, es, { psubst with subst })
           | _ -> None)
           elims states
       in
-      let fuus, prets, pbrss, elims = Array.split4 (Array.map Status.split4 fuuspretspbrsspelims) in
-      let states = Array.map2 (merge (fun ({ usubst; _ } as state) fuus -> { state with usubst = merge_usubst usubst fuus })) states fuus in
       let loc = LocStart { elims; context; head; stack=s; next } in
       let ntys_ret = subst_context e ntys_ret in
       let ret = mk_clos (usubs_liftn (Context.Rel.length ntys_ret) e) (snd p) in
@@ -1709,20 +1730,20 @@ and match_elim : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   | Zproj (proj', r) :: s ->
       let mark = (neutr head.mark) in
       let head = {mark; term=FProj(Projection.make proj' true, r, head)} in
-      let elims, states = extract_or_kill (function [@ocaml.warning "-4"]
-      | PEProj proj :: es ->
+      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+      | PEProj proj :: es, subst ->
         if not @@ Projection.Repr.CanOrd.equal (Projection.repr proj) proj' then None else
-        Some es
+        Some (es, subst)
       | _ -> None) elims states
       in
       let loc = LocStart { elims; context; head; stack=s; next } in
       match_main info tab ~pat_state states loc
   | Zfix _ :: _ | Zprimitive _ :: _ ->
-      let _, states = extract_or_kill (fun _ -> None) elims states in
+      let states = extract_or_kill (fun _ -> None) elims states in
       ignore (zip head stk);
       match_endstack info tab ~pat_state states next
   | [] ->
-      let _, states = extract_or_kill (function [] -> Some () | _ -> None) elims states in
+      let states = extract_or_kill (function [], subst -> Some subst | _ -> None) elims states in
       match_endstack info tab ~pat_state states next
 
 
@@ -1730,12 +1751,12 @@ and match_arg : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ 
   fun info tab ~pat_state next context states patterns t ->
   let match_deeper = ref false in
   let t' = it_mkLambda_or_LetIn context t in
-  let states, patterns = Array.split @@ Array.map2
-    (function Dead -> fun _ -> Dead, Ignore | (Live ({ subst; _ } as state) as sstate) -> function
-      | Ignore -> sstate, Ignore
-      | Check EHole -> Live { state with subst = subst @ [t'] }, Ignore
-      | Check EHoleIgnored -> sstate, Ignore
-      | Check ERigid p -> match_deeper := true; sstate, Check p
+  let patterns, states = Array.split @@ Array.map2
+    (function Dead -> fun _ -> Ignore, Dead | (Live ({ subst; _ } as psubst) as state) -> function
+      | Ignore -> Ignore, state
+      | Check EHole i -> Ignore, Live { psubst with subst = Partial_subst.add_term i t' subst }
+      | Check EHoleIgnored -> Ignore, state
+      | Check ERigid p -> match_deeper := true; Check p, state
     ) states patterns in
   if !match_deeper then
     let pat_state = Cons ({ states; context; patterns; next }, pat_state) in
@@ -1747,81 +1768,74 @@ and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   fun info tab ~pat_state next context states patterns t stk ->
   match [@ocaml.warning "-4"] t.term with
   | FInd (ind', u) ->
-    let fuuselims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHInd (ind, pu), elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHInd (ind, pu), elims), psubst ->
       if not @@ Ind.CanOrd.equal ind ind' then None else
-      let fus = UVars.Instance.pattern_match pu u in
-      Some (fus, elims)
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
     | _ -> None) patterns states
     in
-    let fuus, elims = Array.split (Array.map Status.split fuuselims) in
-    let states = Array.map2 (merge (fun ({ usubst; _ } as state) fuus -> { state with usubst = merge_usubst usubst fuus })) states fuus in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main info tab ~pat_state states loc
   | FConstruct (constr', u) ->
-    let fuuselims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHConstr (constr, pu), elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHConstr (constr, pu), elims), psubst ->
       if not @@ Construct.CanOrd.equal constr constr' then None else
-      let fus = UVars.Instance.pattern_match pu u in
-      Some (fus, elims)
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
     | _ -> None) patterns states
     in
-    let fuus, elims = Array.split (Array.map Status.split fuuselims) in
-    let states = Array.map2 (merge (fun ({ usubst; _ } as state) fuus -> { state with usubst = merge_usubst usubst fuus })) states fuus in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main info tab ~pat_state states loc
   | FAtom t' -> begin match [@ocaml.warning "-4"] kind t' with
     | Sort s ->
-      let fuuselims, states = extract_or_kill (function [@ocaml.warning "-4"]
-      | PHSort ps, elims ->
-        Option.map (fun fus -> fus, elims) (Sorts.pattern_match ps s)
+      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+      | (PHSort ps, elims), psubst ->
+        let subst = Sorts.pattern_match ps s psubst.subst in
+        Option.map (fun subst -> elims, { psubst with subst }) subst
       | _ -> None) patterns states
       in
-      let fuus, elims = Array.split (Array.map Status.split fuuselims) in
-      let states = Array.map2 (merge (fun ({ usubst; _ } as state) fuus -> { state with usubst = merge_usubst usubst fuus })) states fuus in
       let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
       match_main info tab ~pat_state states loc
     | Meta _ ->
-      let elims, states = extract_or_kill (fun _ -> None) patterns states in
+      let elims, states = extract_or_kill2 (fun _ -> None) patterns states in
       let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
       match_main info tab ~pat_state states loc
     | _ -> assert false
     end
   | FFlex (ConstKey (c', u)) ->
-    let fuuselims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHSymbol (c, pu), elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHSymbol (c, pu), elims), psubst ->
       if not @@ Constant.CanOrd.equal c c' then None else
-      let fus = UVars.Instance.pattern_match pu u in
-      Some (fus, elims)
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
     | _ -> None) patterns states
     in
-    let fuus, elims = Array.split (Array.map Status.split fuuselims) in
-    let states = Array.map2 (merge (fun ({ usubst; _ } as state) fuus -> { state with usubst = merge_usubst usubst fuus })) states fuus in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main info tab ~pat_state states loc
   | FRel n ->
-    let elims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHRel n', elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHRel n', elims), psubst ->
       if not @@ Int.equal n n' then None else
-      Some elims
+      Some (elims, psubst)
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main info tab ~pat_state states loc
   | FInt i' ->
-    let elims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHInt i, elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHInt i, elims), psubst ->
       if not @@ Uint63.equal i i' then None else
-      Some elims
+      Some (elims, psubst)
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main info tab ~pat_state states loc
   | FFloat f' ->
-    let elims, states = extract_or_kill (function [@ocaml.warning "-4"]
-    | PHFloat f, elims ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHFloat f, elims), psubst ->
       if not @@ Float64.equal f f' then None else
-      Some elims
+      Some (elims, psubst)
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
@@ -1829,16 +1843,15 @@ and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
   | FProd (n, ty, body, e) ->
     let ntys, _ = Term.decompose_prod body in
     let na = 1 + List.length ntys in
-    let tysbodyelims, states = extract_or_kill (function [@ocaml.warning "-4"] PHProd (ptys, pbod), es when Array.length ptys <= na -> Some (ptys, pbod, es) | _ -> None) patterns states in
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
     let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
     assert (na > 0);
-    let ptys, pbody, elims = tysbodyelims |> Array.map (Status.map (fun (ptys, pbod, elims) ->
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
         let npp = Array.length ptys in
-        if npp == na then (ptys, pbod, elims) else
+        if npp == na then Some (ptys, pbod, elims, psubst) else
         let fst, lst = Array.chop na ptys in
-        fst, ERigid (PHProd (lst, pbod), []), elims
-      ) %> Status.split3)
-      |> Array.split3
+        Some (fst, ERigid (PHProd (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
     in
 
     let ntys, body = Term.decompose_prod_n (na-1) body in
@@ -1852,16 +1865,15 @@ and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
     let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
     match_main info tab ~pat_state states loc
   | FLambda (na, ntys, body, e) ->
-    let tysbodyelims, states = extract_or_kill (function [@ocaml.warning "-4"] PHLambda (ptys, pbod), es when Array.length ptys <= na -> Some (ptys, pbod, es) | _ -> None) patterns states in
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
     let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
     assert (na > 0);
-    let ptys, pbody, elims = tysbodyelims |> Array.map (Status.map (fun (ptys, pbod, elims) ->
-        let np = Array.length ptys in
-        if np == na then (ptys, pbod, elims) else
-        let fst, lst = Array.chop na ptys in
-        fst, ERigid (PHLambda (lst, pbod), []), elims
-      ) %> Status.split3)
-      |> Array.split3
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+      let np = Array.length ptys in
+      if np == na then Some (ptys, pbod, elims, psubst) else
+      let fst, lst = Array.chop na ptys in
+      Some (fst, ERigid (PHLambda (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
     in
     let ntys, tys' = List.chop na ntys in
     let body = Term.compose_lam (List.rev tys') body in
@@ -1874,7 +1886,7 @@ and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
     let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
     match_main info tab ~pat_state states loc
   | _ ->
-    let _, states = extract_or_kill (fun _ -> None) patterns states in
+    let states = extract_or_kill (fun _ -> None) patterns states in
     ignore (zip t stk);
     match_main info tab ~pat_state states next
 
@@ -2080,7 +2092,9 @@ let unfold_ref_with_args infos tab fl v =
     let states, elims = Array.split @@ Array.map
       (fun r ->
         let pu, es = r.lhs_pat in
-        Live { subst = []; usubst = UVars.Instance.pattern_match pu u; rhs = r.Declarations.rhs }, Check es
+        let subst = Partial_subst.make r.nvars in
+        let subst = UVars.Instance.pattern_match pu u subst in
+        Live { subst; rhs = r.Declarations.rhs }, Check es
       ) (Array.of_list r)
     in
     let head = { mark = Red; term = FFlex fl } in

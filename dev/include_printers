@@ -17,11 +17,14 @@
 #install_printer  (* qvar set *) ppqvarset;;
 #install_printer  (* univ set *) ppuniverse_set;;
 #install_printer  (* univ instance *) ppuniverse_instance;;
+#install_printer  (* univ ainstance *) ppuniverse_ainstance;;
 #install_printer  (* univ subst *) ppuniverse_subst;;
 #install_printer  (* univ full subst *) ppuniverse_level_subst;;
 #install_printer ppqvar_subst;;
 #install_printer  (* univ opt subst *) ppuniverse_opt_subst;;
 #install_printer  (* evar univ ctx *) ppevar_universe_context;;
+#install_printer  (* cclosure partial_subst *) pp_partialfsubst;;
+#install_printer  (* reductionops partial_subst *) pp_partialsubst;;
 #install_printer  (* inductive *) ppind;;
 #install_printer  (* 'a scheme_kind *) ppscheme;;
 #install_printer  (* type_judgement *) pptype;;

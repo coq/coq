@@ -75,7 +75,7 @@ let rec is_rel_inst k = function
   | SList.Cons (t, l) -> kind t = Rel k && is_rel_inst (succ k) l
 
 let update_invtbl ~loc env evd evk (curvar, tbl) =
-  succ curvar, tbl |> Evar.Map.update evk @@ function
+  curvar, (succ curvar, tbl |> Evar.Map.update evk @@ function
   | None -> Some curvar
   | Some k as c when k = curvar -> c
   | Some k ->
@@ -83,7 +83,7 @@ let update_invtbl ~loc env evd evk (curvar, tbl) =
         Pp.(str "Variable "
           ++ Termops.pr_existential_key env evd evk
           ++ str" is bound multiple times in the pattern (holes number "
-          ++ int k ++ str" and " ++ int curvar ++ str").")
+          ++ int k ++ str" and " ++ int curvar ++ str")."))
 
 let update_invtblu1 ~loc ~(alg:bool) evd lvlold lvl (curvaru, alg_vars, tbl) =
   succ curvaru, alg :: alg_vars, tbl |> Int.Map.update lvl @@ function
@@ -110,18 +110,16 @@ let update_invtblq1 ~loc evd qold qvar (curvarq, tbl) =
 let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u : state * _ =
   let (q, u) = u |> UVars.Instance.to_array in
   let stateq, maskq = Array.fold_left_map (fun stateq qold ->
-    match Sorts.Quality.(var_index @@ subst (subst_fn qsubst) qold) with
-    | Some qvar -> update_invtblq1 ~loc evd qold qvar stateq, true
-    | None -> stateq, false
+    let qnew = Sorts.Quality.(var_index @@ subst (subst_fn qsubst) qold) in
+    Option.fold_right (update_invtblq1 ~loc evd qold) qnew stateq, qnew
   ) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
-      match Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold with
-      | Some lvl -> update_invtblu1 ~loc ~alg:false evd lvlold lvl stateu, true
-      | None -> stateu, false
+      let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
+      Option.fold_right (update_invtblu1 ~loc ~alg:false evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
-  let mask = if Array.exists Fun.id maskq || Array.exists Fun.id masku then Some (maskq, masku) else None in
+  let mask = if Array.exists Option.has_some maskq || Array.exists Option.has_some masku then Some (maskq, masku) else None in
   (state, stateq, stateu), mask
 
 let universe_level_subst_var_index usubst u =
@@ -136,9 +134,9 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
   match s with
   | Type u ->
       begin match universe_level_subst_var_index usubst u with
-      | None -> state, PSType false
+      | None -> state, PSType None
       | Some (lvlold, lvl) ->
-        (st, sq, update_invtblu1 ~loc ~alg:true evd lvlold lvl su), PSType true
+        (st, sq, update_invtblu1 ~loc ~alg:true evd lvlold lvl su), PSType (Some lvl)
       end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
@@ -146,13 +144,13 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
   | QSort (qold, u) ->
       let sq, bq =
         match Sorts.Quality.(var_index @@ subst_fn qsubst qold) with
-        | Some q -> update_invtblq1 ~loc evd (QVar qold) q sq, true
-        | None -> sq, false
+        | Some q -> update_invtblq1 ~loc evd (QVar qold) q sq, Some q
+        | None -> sq, None
       in
       let su, ba =
         match universe_level_subst_var_index usubst u with
-        | Some (lvlold, lvl) -> update_invtblu1 ~loc ~alg:true evd lvlold lvl su, true
-        | None -> su, false
+        | Some (lvlold, lvl) -> update_invtblu1 ~loc ~alg:true evd lvlold lvl su, Some lvl
+        | None -> su, None
       in
       (st, sq, su), PSQSort (bq, ba)
 
@@ -264,7 +262,7 @@ and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as 
     let EvarInfo evi = Evd.find evd evk in
     (match snd (Evd.evar_source evi) with
     | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
-      let st = update_invtbl ~loc env evd evk st in
+      let holei, st = update_invtbl ~loc env evd evk st in
       if not @@ is_rel_inst 1 inst then
         CErrors.user_err ?loc
           Pp.(str "In " ++ Printer.safe_pr_lconstr_env env evd (of_kind (Evar (evk, inst)))
@@ -273,7 +271,7 @@ and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as 
             ++ str" appears with a non-trivial instantiation.");
       if Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.length <> SList.length inst then
         CErrors.user_err ?loc Pp.(str "Pattern variable cannot access the whole context: " ++ Printer.safe_pr_lconstr_env env evd t);
-      (st, stateq, stateu), EHole
+      (st, stateq, stateu), EHole holei
     | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named holes are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
     | _ ->
       if Option.is_empty @@ Evd.evar_ident evk evd then state, EHoleIgnored else
@@ -306,7 +304,7 @@ let test_projection_apps env evd ~loc ind args =
   if not @@ Inductive.is_primitive_record specif then () else
   if Array.for_all_i (fun i arg ->
     match arg with
-    | EHole | EHoleIgnored -> true
+    | EHole _ | EHoleIgnored -> true
     | ERigid (_, []) -> false
     | ERigid (_, elims) ->
       match List.last elims with
@@ -326,7 +324,7 @@ let rec test_pattern_redex env evd ~loc = function
   | PHProd (tys, bod), [] -> Array.iter (test_pattern_redex_aux env evd ~loc) tys; test_pattern_redex_aux env evd ~loc bod
   | (PHRel _ | PHInt _ | PHFloat _ | PHSort _ | PHInd _ | PHConstr _ | PHSymbol _), [] -> ()
 and test_pattern_redex_aux env evd ~loc = function
-  | EHole | EHoleIgnored -> ()
+  | EHole _ | EHoleIgnored -> ()
   | ERigid p -> test_pattern_redex env evd ~loc p
 
 
@@ -429,12 +427,6 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
 
   let invtbl = Evar.Map.fold (update_invtbl evd) invtbl Evar.Map.empty in
 
-  let usubst' = UVars.Instance.of_array
-    (Array.init nvarqs (fun i -> Sorts.Quality.var (Option.default (-1) (Int.Map.find_opt i invtblq))),
-     Array.init nvarus (fun i -> Univ.Level.var (Option.default (-1) (Int.Map.find_opt i invtblu))))
-  in
-  let usubst = UVars.subst_instance_sort_level_subst usubst' usubst in
-
   (* 3. Read right hand side *)
   (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
   let evd = Evd.set_universe_context evd uctx in
@@ -505,7 +497,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
 
   let () = Vars.iter_on_instance (fun u -> let qs, us = UVars.Instance.to_array u in Array.iter test_quality qs; Array.iter test_level us) test_universe rhs in
 
-  head_symbol, { lhs_pat = head_umask, elims; rhs }
+  head_symbol, { nvars = (nvars' - 1, nvarqs', nvarus'); lhs_pat = head_umask, elims; rhs }
 
 let do_rules id rules =
   let env = Global.env () in
