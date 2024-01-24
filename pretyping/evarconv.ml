@@ -934,19 +934,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     | MaybeFlexible v1, MaybeFlexible v2 -> begin
        let k1 = EConstr.kind evd term1 in
        let k2 = EConstr.kind evd term2 in
-      (* We refrain from simplifying terms which are projections applied to the associated constructor when both terms
-         have the same head and only one of them simplifies. *)
-      let same_head =
-          match k1, k2 with
-          | Proj (p1, _, _), Proj (p2, _, _) -> QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
-          | Proj (p, _, _), Const (c, _) | Const (c, _), Proj (p, _, _) -> QConstant.equal env (Projection.constant p) c
-          | Const (c1, _), Const (c2, _) -> QConstant.equal env c1 c2
-          | _, _ -> false
-       in match try_simplify_proj_construct flags env evd v1 k1 sk1, try_simplify_proj_construct flags env evd v2 k2 sk2 with
-       | Some x1, Some x2 -> evar_eqappr_x flags env evd pbty x1 x2
-       | Some x1, None when not same_head -> evar_eqappr_x flags env evd pbty x1 appr2
-       | None, Some x2 when not same_head -> evar_eqappr_x flags env evd pbty appr1 x2
-       | _, _ -> begin
+        begin
         match k1, k2 with
         | LetIn (na1,b1,t1,c'1), LetIn (na2,b2,t2,c'2) ->
         let f1 i = (* FO *)
@@ -1020,12 +1008,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           | None ->
             UnifFailure (i,NotSameHead)
         and f2 i =
-          (try
+          (match try_simplify_proj_construct flags env evd v1 k1 sk1, try_simplify_proj_construct flags env evd v2 k2 sk2 with
+          | Some x1, Some x2 -> evar_eqappr_x flags env evd pbty x1 x2
+          | Some x1, None -> evar_eqappr_x flags env evd pbty x1 appr2
+          | None, Some x2 -> evar_eqappr_x flags env evd pbty appr1 x2
+          | _, _ -> try
              if not flags.with_cs then raise Not_found
              else conv_record flags env
                (try check_conv_record env i appr1 appr2
                 with Not_found -> check_conv_record env i appr2 appr1)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+            with Not_found -> UnifFailure (i,NoCanonicalStructure))
         and f3 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
