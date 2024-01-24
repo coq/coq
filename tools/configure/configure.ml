@@ -24,7 +24,7 @@ let (/) = Filename.concat
 
 let coq_version = "8.19.0"
 let vo_magic = 81999
-let is_a_released_version = true
+let is_a_released_version = false
 
 (** Default OCaml binaries *)
 
