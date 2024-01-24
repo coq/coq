@@ -1009,9 +1009,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             UnifFailure (i,NotSameHead)
         and f2 i =
           (match try_simplify_proj_construct flags env evd v1 k1 sk1, try_simplify_proj_construct flags env evd v2 k2 sk2 with
-          | Some x1, Some x2 -> evar_eqappr_x flags env evd pbty x1 x2
-          | Some x1, None -> evar_eqappr_x flags env evd pbty x1 appr2
-          | None, Some x2 -> evar_eqappr_x flags env evd pbty appr1 x2
+          | Some x1, Some x2 -> UnifFailure (i,NoCanonicalStructure)
+          | Some x1, None -> UnifFailure (i,NoCanonicalStructure)
+          | None, Some x2 -> UnifFailure (i,NoCanonicalStructure)
           | _, _ -> try
              if not flags.with_cs then raise Not_found
              else conv_record flags env
