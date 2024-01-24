@@ -57,9 +57,7 @@ project oddorder "https://github.com/math-comp/odd-order" "master"
 project mczify "https://github.com/math-comp/mczify" "master"
 # Contact @pi8027 on github
 
-project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4c7ebda35081b60"
-# put back master when Analysis master moves to MathComp 2
-# project finmap "https://github.com/math-comp/finmap" "master"
+project finmap "https://github.com/math-comp/finmap" "master"
 # Contact @CohenCyril on github
 
 project bigenough "https://github.com/math-comp/bigenough" "master"
