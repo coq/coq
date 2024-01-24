@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Attributes deprecated(since="8.20").
+
 Require Export NumPrelude NZAxioms.
 Require Import NZBase NZOrder NZAddOrder PeanoNat.
 
