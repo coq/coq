@@ -750,19 +750,19 @@ library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
 
 library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
 
 library:ci-analysis:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
   - library:ci-finmap
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
