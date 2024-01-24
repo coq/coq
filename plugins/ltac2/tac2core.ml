@@ -778,7 +778,7 @@ let () = define "expected_without_type_constraint" (ret (repr_ext val_expected_t
     WithoutTypeConstraint
 
 let () =
-  define "constr_pretype" (repr_ext val_pretype_flags @-> repr_ext val_expected_type @-> repr_ext val_preterm @-> tac constr) @@ fun flags expected_type c ->
+  define "constr_pretype" (repr_ext val_pretype_flags @-> repr_ext val_expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
   let pretype env sigma =
     let sigma, t = Pretyping.understand_uconstr ~flags ~expected_type env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
@@ -1654,7 +1654,7 @@ let () =
       genargs = Tac2interp.set_env env Id.Map.empty;
     } in
     let c = { closure; term = c } in
-    return (Tac2ffi.of_ext val_preterm c)
+    return (Tac2ffi.of_preterm c)
   in
   let subst subst (ids,c) = ids, Detyping.subst_glob_constr (Global.env()) subst c in
   let print env sigma (ids,c) =
@@ -1747,7 +1747,7 @@ let interp_preterm_var_as_constr ?loc env sigma tycon id =
   let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
   let env = GlobEnv.renamed_env env in
   let c = Id.Map.find id ist.env_ist in
-  let {closure; term} = Tac2ffi.to_ext Tac2ffi.val_preterm c in
+  let {closure; term} = Tac2ffi.to_preterm c in
   let vars = {
     ltac_constrs = closure.typed;
     ltac_uconstrs = closure.untyped;
