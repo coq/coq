@@ -284,12 +284,12 @@ let print_strategy r =
   let oracle = Environ.oracle (Global.env ()) in
   match r with
   | None ->
-    let fold key lvl (vacc, cacc) = match key with
-    | VarKey id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc)
-    | ConstKey cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc)
-    | RelKey _ -> (vacc, cacc)
+    let fold key lvl (vacc, cacc, pacc) = match key with
+    | Evaluable.EvalVarRef id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc, pacc)
+    | Evaluable.EvalConstRef cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc, pacc)
+    | Evaluable.EvalProjectionRef p -> (vacc, cacc, (GlobRef.ConstRef (Projection.Repr.constant p), lvl) :: pacc)
     in
-    let var_lvl, cst_lvl = fold_strategy fold oracle ([], []) in
+    let var_lvl, cst_lvl, prj_lvl = fold_strategy fold oracle ([], [], []) in
     let var_msg =
       if List.is_empty var_lvl then mt ()
       else str "Variable strategies" ++ fnl () ++
@@ -300,12 +300,17 @@ let print_strategy r =
       else str "Constant strategies" ++ fnl () ++
         hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
     in
-    var_msg ++ cst_msg
+    let prj_msg =
+      if List.is_empty prj_lvl then mt ()
+      else str "Projection strategies" ++ fnl () ++
+        hov 0 (prlist_with_sep fnl pr_strategy prj_lvl)
+    in
+    var_msg ++ cst_msg ++ prj_msg
   | Some r ->
     let r = Smartlocate.smart_global r in
     let key = let open GlobRef in match r with
-    | VarRef id -> VarKey id
-    | ConstRef cst -> ConstKey cst
+    | VarRef id -> Evaluable.EvalVarRef id
+    | ConstRef cst -> Evaluable.EvalConstRef cst
     | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable.")
     in
     let lvl = get_strategy oracle key in
@@ -1820,24 +1825,30 @@ let () =
     }
 
 let vernac_set_strategy ~local l =
-  let open Tacred in
   let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> EvalConstRef sp
-      | GlobRef.VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp -> Evaluable.EvalConstRef sp
+      | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
-let vernac_set_opacity ~local (v,l) =
-  let open Tacred in
+let vernac_set_opacity ~on_proj_constant ~local (v,l) =
   let local = Option.default true local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> EvalConstRef sp
-      | GlobRef.VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp ->
+          begin
+            match Structures.PrimitiveProjections.find_opt sp with
+            | None when on_proj_constant -> user_err Pp.(str
+                "Only compatibility constant opacity can be set this way.")
+            | None -> Evaluable.EvalConstRef sp
+            | Some _ when on_proj_constant -> Evaluable.EvalConstRef sp
+            | Some p -> Evaluable.EvalProjectionRef p
+          end
+      | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map glob_ref l in
@@ -2462,8 +2473,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacGeneralizable gen ->
     vtdefault(fun () -> with_locality ~atts vernac_generalizable gen)
 
-  | VernacSetOpacity qidl ->
-    vtdefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
+  | VernacSetOpacity (qidl, on_proj_constant) ->
+    vtdefault(fun () ->
+        with_locality ~atts (vernac_set_opacity ~on_proj_constant) qidl)
 
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)

@@ -777,10 +777,10 @@ GRAMMAR EXTEND Gram
 
   gallina_ext: TOP
     [ [ (* Transparent and Opaque *)
-        IDENT "Transparent"; l = LIST1 smart_global ->
-          { VernacSynPure (VernacSetOpacity (Conv_oracle.transparent, l)) }
-      | IDENT "Opaque"; l = LIST1 smart_global ->
-          { VernacSynPure (VernacSetOpacity (Conv_oracle.Opaque, l)) }
+        IDENT "Transparent"; o = OPT [ "!" -> {()} ]; l = LIST1 smart_global ->
+          { VernacSynPure (VernacSetOpacity ((Conv_oracle.transparent, l), o <> None)) }
+      | IDENT "Opaque"; o = OPT [ "!" -> {()} ]; l = LIST1 smart_global ->
+          { VernacSynPure (VernacSetOpacity ((Conv_oracle.Opaque, l), o <> None)) }
       | IDENT "Strategy"; l =
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
             { VernacSynPure (VernacSetStrategy l) }

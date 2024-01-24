@@ -37,7 +37,7 @@ type 'a hint_ast =
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
-  | Unfold_nth of Tacred.evaluable_global_reference       (* Hint Unfold *)
+  | Unfold_nth of Evaluable.t (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument       (* Hint Extern *)
 
 type hint
@@ -149,7 +149,7 @@ module Hint_db :
     val add_cut : hints_path -> t -> t
     val cut : t -> hints_path
 
-    val unfolds : t -> Id.Set.t * Cset.t
+    val unfolds : t -> Id.Set.t * Cset.t * PRset.t
 
     val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
     val modes : t -> hint_mode array list GlobRef.Map.t
@@ -165,8 +165,8 @@ type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hint_term) list
   | HintsImmediateEntry of hint_term list
   | HintsCutEntry of hints_path
-  | HintsUnfoldEntry of Tacred.evaluable_global_reference list
-  | HintsTransparencyEntry of Tacred.evaluable_global_reference hints_transparency_target * bool
+  | HintsUnfoldEntry of Evaluable.t list
+  | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 

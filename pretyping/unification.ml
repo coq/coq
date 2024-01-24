@@ -330,6 +330,10 @@ let default_core_unify_flags () =
   modulo_eta = true;
  }
 
+let ts_var_full =
+  let open TransparentState in
+  { tr_var = Id.Pred.full; tr_cst = Cpred.empty; tr_prj = PRpred.empty }
+
 (* Default flag for first-order or second-order unification of a type *)
 (* against another type (e.g. apply)                                  *)
 (* We set all conversion flags (no flag should be modified anymore)   *)
@@ -337,7 +341,7 @@ let default_unify_flags () =
   let flags = default_core_unify_flags () in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = TransparentState.var_full };
+  subterm_unify_flags = { flags with modulo_delta = ts_var_full };
   allow_K_in_toplevel_higher_order_unification = false; (* Why not? *)
   resolve_evars = false
 }
@@ -460,12 +464,49 @@ let use_metas_pattern_unification sigma flags nb l =
   || flags.use_meta_bound_pattern_unification &&
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
+
+(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+   expanded, folded primitive projection of name [n] and unfolds the primitive
+   projection. It respects projection transparency of [ts]. *)
+let unfold_projection_under_eta env ts n c =
+  let unfold_projection env ts p r c =
+    if TransparentState.is_transparent_projection ts (Projection.repr p) then
+      Some (Constr.mkProj (Projection.unfold p, r, c))
+    else None
+  in
+  let rec go c lams =
+    match Constr.kind c with
+    | Lambda (b, t, c) -> go c ((b,t)::lams)
+    | Proj (p, r, c) when Names.Constant.CanOrd.equal n (Projection.constant p) ->
+      let c = unfold_projection env ts p r c in
+      begin
+        match c with
+        | None -> None
+        | Some c ->
+          let f c (b,t) = Constr.mkLambda (b,t,c) in
+          Some (List.fold_left f c lams)
+      end
+    | _ -> None
+  in
+  go c []
+
+
 type key =
   | IsKey of CClosure.table_key
   | IsProj of Projection.t * Sorts.relevance * EConstr.constr
 
-let expand_table_key env = function
-  | ConstKey cst -> constant_opt_value_in env cst
+let expand_table_key ts env = function
+  | ConstKey ((c,u) as cst) ->
+    if Structures.PrimitiveProjections.is_transparent_constant ts c
+      then
+        let value = constant_opt_value_in env cst in
+        (* If we are unfolding a compatibility constant we want to return the
+           unfolded primitive projection directly since we would like to pretend
+           that the compatibility constant itself does not count as an unfolding
+           (delta) step. *)
+        let unf = Option.bind value (unfold_projection_under_eta env ts c) in
+        if Option.has_some unf then unf else value
+      else None
   | VarKey id -> (try named_body id env with Not_found -> None)
   | RelKey _ -> None
 
@@ -474,7 +515,7 @@ let unfold_projection env p r stk =
   s :: stk
 
 let expand_key ts env sigma = function
-  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
+  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key ts env k)
   | Some (IsProj (p, r, c)) ->
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
                                (c, unfold_projection env p r []))
@@ -498,29 +539,29 @@ let subterm_restriction opt flags =
 let key_of env sigma b flags f =
   if subterm_restriction b flags then None else
   match EConstr.kind sigma f with
-  | Const (cst, u) when is_transparent env (ConstKey cst) &&
-      (TransparentState.is_transparent_constant flags.modulo_delta cst
+  | Const (cst, u) when is_transparent env (Evaluable.EvalConstRef cst) &&
+      (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst
        || PrimitiveProjections.mem cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
-  | Var id when is_transparent env (VarKey id) &&
+  | Var id when is_transparent env (Evaluable.EvalVarRef id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
   | Proj (p, r, c) when Names.Projection.unfolded p
-    || (is_transparent env (ConstKey (Projection.constant p)) &&
-       (TransparentState.is_transparent_constant flags.modulo_delta (Projection.constant p))) ->
+    || (is_transparent env (Evaluable.EvalProjectionRef (Projection.repr p)) &&
+       (TransparentState.is_transparent_projection flags.modulo_delta (Projection.repr p))) ->
     Some (IsProj (p, r, c))
   | _ -> None
 
 
 let translate_key = function
-  | ConstKey (cst,u) -> ConstKey cst
-  | VarKey id -> VarKey id
-  | RelKey n -> RelKey n
+  | ConstKey (cst,u) -> Some (Evaluable.EvalConstRef cst)
+  | VarKey id -> Some (Evaluable.EvalVarRef id)
+  | RelKey _ -> None
 
 let translate_key = function
   | IsKey k -> translate_key k
-  | IsProj (c, _, _) -> ConstKey (Projection.constant c)
+  | IsProj (p, _, _) -> Some (Evaluable.EvalProjectionRef (Projection.repr p))
 
 let oracle_order env cf1 cf2 =
   match cf1 with
@@ -540,12 +581,12 @@ let oracle_order env cf1 cf2 =
           when Environ.QConstant.equal env p (Projection.constant p') ->
           Some (Projection.unfolded p')
         | _ ->
-          Some (Conv_oracle.oracle_order (fun x -> x)
+          Some (Conv_oracle.oracle_order
                   (Environ.oracle env) false (translate_key k1) (translate_key k2))
 
 let is_rigid_head sigma flags t =
   match EConstr.kind sigma t with
-  | Const (cst,u) -> not (TransparentState.is_transparent_constant flags.modulo_delta cst)
+  | Const (cst,u) -> not (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst)
   | Ind (i,u) -> true
   | Construct _ | Int _ | Float _ | Array _ -> true
   | Fix _ | CoFix _ -> true
@@ -635,11 +676,11 @@ let rec is_neutral env sigma ts t =
     match EConstr.kind sigma f with
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
-      not (is_transparent env (ConstKey c)) ||
-      not (TransparentState.is_transparent_constant ts c)
+      not (is_transparent env (Evaluable.EvalConstRef c)) ||
+      not (Structures.PrimitiveProjections.is_transparent_constant ts c)
     | Var id ->
       not (Environ.evaluable_named id env) ||
-      not (is_transparent env (VarKey id)) ||
+      not (is_transparent env (Evaluable.EvalVarRef id)) ||
       not (TransparentState.is_transparent_variable ts id)
     | Rel n -> true
     | Evar _ | Meta _ -> true
@@ -1331,7 +1372,7 @@ let applyHead env evd c cl =
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
-  | Const (c,u) -> not (TransparentState.is_transparent_constant ts c)
+  | Const (c,u) -> not (Structures.PrimitiveProjections.is_transparent_constant ts c)
   | Var id -> not (TransparentState.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false

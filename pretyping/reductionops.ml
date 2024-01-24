@@ -258,7 +258,7 @@ struct
          prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
     | Proj (p,_)  ->
-      str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
+      str "ZProj(" ++ Projection.debug_print p ++ str ")"
     | Fix (f,args) ->
        str "ZFix(" ++ Constr.debug_print_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"

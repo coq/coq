@@ -952,7 +952,7 @@ The commands to fine-tune the reduction strategies and the lazy conversion
 algorithm are described in this section.  Also see :ref:`Args_effect_on_unfolding`,
 which supports additional fine-tuning.
 
-.. cmd:: Opaque {+ @reference }
+.. cmd:: Opaque {? ! } {+ @reference }
 
    Marks the specified constants as :term:`opaque` so tactics won't :term:`unfold` them
    with :term:`delta-reduction`.
@@ -968,7 +968,13 @@ which supports additional fine-tuning.
    has to check that two distinct applied constants are convertible.
    See Section :ref:`conversion-rules`.
 
-.. cmd:: Transparent {+ @reference }
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants opaque, while
+   by default the projection themselves are made opaque and the compatibility
+   constants always remain transparent. This mechanism is only intended for
+   debugging purposes.
+
+.. cmd:: Transparent {? ! } {+ @reference }
 
    The opposite of :cmd:`Opaque`, it marks the specified constants
    as :term:`transparent`
@@ -985,6 +991,10 @@ which supports additional fine-tuning.
    statements, not their actual proofs. This distinguishes lemmas from
    the usual defined constants, whose actual values are of course
    relevant in general.
+
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants transparent
+   (see :cmd:`Opaque` for more details).
 
    .. exn:: The reference @qualid was not found in the current environment.
 

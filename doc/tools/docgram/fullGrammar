@@ -1063,8 +1063,8 @@ gallina_ext: [
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ext_module_expr
 | "Include" "Type" module_type_inl LIST0 ext_module_type
-| "Transparent" LIST1 smart_global
-| "Opaque" LIST1 smart_global
+| "Transparent" OPT "!" LIST1 smart_global
+| "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
 | "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
 | "Canonical" OPT "Structure" by_notation

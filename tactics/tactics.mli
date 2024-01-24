@@ -174,11 +174,11 @@ val normalise_in_hyp  : hyp_location -> unit Proofview.tactic
 val normalise_option  : goal_location -> unit Proofview.tactic
 val normalise_vm_in_concl : unit Proofview.tactic
 val unfold_in_concl   :
-  (occurrences * Tacred.evaluable_global_reference) list -> unit Proofview.tactic
+  (occurrences * Evaluable.t) list -> unit Proofview.tactic
 val unfold_in_hyp     :
-  (occurrences * Tacred.evaluable_global_reference) list -> hyp_location -> unit Proofview.tactic
+  (occurrences * Evaluable.t) list -> hyp_location -> unit Proofview.tactic
 val unfold_option     :
-  (occurrences * Tacred.evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
+  (occurrences * Evaluable.t) list -> goal_location -> unit Proofview.tactic
 val change            :
   check:bool -> constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
 val pattern_option    :

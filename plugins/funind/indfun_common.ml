@@ -402,11 +402,10 @@ let make_eq () =
   with e when CErrors.noncritical e -> assert false
 
 let evaluable_of_global_reference r =
-  let open Tacred in
   (* Tacred.evaluable_of_global_reference (Global.env ()) *)
   match r with
-  | GlobRef.ConstRef sp -> EvalConstRef sp
-  | GlobRef.VarRef id -> EvalVarRef id
+  | GlobRef.ConstRef sp -> Evaluable.EvalConstRef sp
+  | GlobRef.VarRef id -> Evaluable.EvalVarRef id
   | _ -> assert false
 
 let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =

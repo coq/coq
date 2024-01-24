@@ -37,29 +37,35 @@ let is_transparent = function
 type oracle = {
   var_opacity : level Id.Map.t;
   cst_opacity : level Cmap.t;
+  prj_opacity : level PRmap.t;
   var_trstate : Id.Pred.t;
   cst_trstate : Cpred.t;
+  prj_trstate : PRpred.t;
 }
 
 let empty = {
   var_opacity = Id.Map.empty;
   cst_opacity = Cmap.empty;
+  prj_opacity = PRmap.empty;
   var_trstate = Id.Pred.full;
   cst_trstate = Cpred.full;
+  prj_trstate = PRpred.full;
 }
 
-let get_strategy { var_opacity; cst_opacity; _ } f = function
-  | VarKey id ->
+let get_strategy { var_opacity; cst_opacity; prj_opacity; _ } = function
+  | Evaluable.EvalVarRef id ->
       (try Id.Map.find id var_opacity
       with Not_found -> default)
-  | ConstKey c ->
-      (try Cmap.find (f c) cst_opacity
+  | Evaluable.EvalConstRef c ->
+      (try Cmap.find c cst_opacity
       with Not_found -> default)
-  | RelKey _ -> Expand
+  | Evaluable.EvalProjectionRef p ->
+      (try PRmap.find p prj_opacity
+      with Not_found -> default)
 
-let set_strategy ({ var_opacity; cst_opacity; _ } as oracle) k l =
+let set_strategy ({var_opacity; cst_opacity; prj_opacity; _} as oracle) k l =
   match k with
-  | VarKey id ->
+  | Evaluable.EvalVarRef id ->
     let var_opacity =
       if is_default l then Id.Map.remove id var_opacity
       else Id.Map.add id l var_opacity
@@ -69,7 +75,7 @@ let set_strategy ({ var_opacity; cst_opacity; _ } as oracle) k l =
     | _ -> Id.Pred.add id oracle.var_trstate
     in
     { oracle with var_opacity; var_trstate; }
-  | ConstKey c ->
+  | Evaluable.EvalConstRef c ->
     let cst_opacity =
       if is_default l then Cmap.remove c cst_opacity
       else Cmap.add c l cst_opacity
@@ -79,30 +85,52 @@ let set_strategy ({ var_opacity; cst_opacity; _ } as oracle) k l =
     | _ -> Cpred.add c oracle.cst_trstate
     in
     { oracle with cst_opacity; cst_trstate; }
-  | RelKey _ -> CErrors.user_err Pp.(str "set_strategy: RelKey")
+  | Evaluable.EvalProjectionRef p ->
+    let prj_opacity =
+      if is_default l then PRmap.remove p prj_opacity
+      else PRmap.add p l prj_opacity
+    in
+    let prj_trstate = match l with
+    | Opaque -> PRpred.remove p oracle.prj_trstate
+    | _ -> PRpred.add p oracle.prj_trstate
+    in
+    {oracle with prj_opacity; prj_trstate}
 
-let fold_strategy f { var_opacity; cst_opacity; _ } accu =
-  let fvar id lvl accu = f (VarKey id) lvl accu in
-  let fcst cst lvl accu = f (ConstKey cst) lvl accu in
+let fold_strategy f {var_opacity; cst_opacity; prj_opacity; _} accu =
+  let fvar id lvl accu = f (Evaluable.EvalVarRef id) lvl accu in
+  let fcst cst lvl accu = f (Evaluable.EvalConstRef cst) lvl accu in
+  let fprj p lvl accu = f (Evaluable.EvalProjectionRef p) lvl accu in
   let accu = Id.Map.fold fvar var_opacity accu in
-  Cmap.fold fcst cst_opacity accu
+  let accu = Cmap.fold fcst cst_opacity accu in
+  PRmap.fold fprj prj_opacity accu
 
-let get_transp_state { var_trstate; cst_trstate; _ } =
-  { TransparentState.tr_var = var_trstate; tr_cst = cst_trstate }
+let get_transp_state { var_trstate; cst_trstate; prj_trstate; _ } =
+  let open TransparentState in
+  { tr_var = var_trstate; tr_cst = cst_trstate ; tr_prj = prj_trstate }
 
-let dep_order l2r k1 k2 = match k1, k2 with
-| RelKey _, RelKey _ -> l2r
-| RelKey _, (VarKey _ | ConstKey _) -> true
-| VarKey _, RelKey _ -> false
-| VarKey _, VarKey _ -> l2r
-| VarKey _, ConstKey _ -> true
-| ConstKey _, (RelKey _ | VarKey _) -> false
-| ConstKey _, ConstKey _ -> l2r
+let dep_order l2r k1 k2 =
+  let open Evaluable in
+  match k1, k2 with
+  | None, None -> l2r
+  | None, _    -> true
+  | Some _, None -> false
+  | Some k1, Some k2 ->
+  match k1, k2 with
+  | EvalVarRef _, EvalVarRef _ -> l2r
+  | EvalVarRef _, (EvalConstRef _ | EvalProjectionRef _) -> true
+  | EvalConstRef _, EvalVarRef _ -> false
+  | EvalConstRef _, EvalProjectionRef _ -> l2r
+  | EvalConstRef _, EvalConstRef _ -> l2r
+  | EvalProjectionRef _, EvalVarRef _ -> false
+  | EvalProjectionRef _, EvalConstRef _ -> l2r
+  | EvalProjectionRef _, EvalProjectionRef _ -> l2r
 
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, use the recommended default. *)
-let oracle_order f o l2r k1 k2 =
-  match get_strategy o f k1, get_strategy o f k2 with
+let oracle_order o l2r k1 k2 =
+  let s1 = match k1 with None -> Expand | Some k1 -> get_strategy o k1 in
+  let s2 = match k2 with None -> Expand | Some k2 -> get_strategy o k2 in
+  match s1, s2 with
   | Expand, Expand -> dep_order l2r k1 k2
   | Expand, (Opaque | Level _) -> true
   | (Opaque | Level _), Expand -> false
@@ -112,5 +140,3 @@ let oracle_order f o l2r k1 k2 =
   | Level n1, Level n2 ->
      if Int.equal n1 n2 then dep_order l2r k1 k2
      else n1 < n2
-
-let get_strategy o = get_strategy o (fun x -> x)

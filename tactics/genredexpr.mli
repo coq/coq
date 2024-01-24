@@ -75,6 +75,6 @@ type 'a and_short_name = 'a * Names.lident option
 
 type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
-type g_cst = Tacred.evaluable_global_reference and_short_name Locus.or_var
+type g_cst = Names.Evaluable.t and_short_name Locus.or_var
 
 type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen

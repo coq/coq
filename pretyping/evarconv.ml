@@ -72,16 +72,41 @@ let coq_unit_judge env sigma =
   | None -> sigma, unit_judge_fallback
 
 let unfold_projection env evd ts p r c =
-  let cst = Projection.constant p in
-    if TransparentState.is_transparent_constant ts cst then
-      Some (mkProj (Projection.unfold p, r, c))
-    else None
+  if TransparentState.is_transparent_projection ts (Projection.repr p) then
+    Some (mkProj (Projection.unfold p, r, c))
+  else None
+
+(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+   expanded, folded primitive projection of name [n] and unfolds the primitive
+   projection. It respects projection transparency of [ts]. *)
+let unfold_projection_under_eta env evd ts n c =
+  let rec go c lams =
+    match EConstr.kind evd c with
+    | Lambda (b, t, c) -> go c ((b,t)::lams)
+    | Proj (p, r, c) when Names.Constant.CanOrd.equal n (Projection.constant p) ->
+      let c = unfold_projection env evd ts p r c in
+      begin
+        match c with
+        | None -> None
+        | Some c ->
+          let f c (b,t) = mkLambda (b,t,c) in
+          Some (List.fold_left f c lams)
+      end
+      | _ -> None
+  in
+  go c []
 
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
   | Const (c, u) ->
-      if TransparentState.is_transparent_constant ts c
-      then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
+      if Structures.PrimitiveProjections.is_transparent_constant ts c then
+        let value = Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u)) in
+        (* If we are unfolding a compatibility constant we want to return the
+           unfolded primitive projection directly since we would like to pretend
+           that the compatibility constant itself does not count as an unfolding
+           (delta) step. *)
+        let unf = Option.bind value (unfold_projection_under_eta env evd ts c) in
+        if Option.has_some unf then unf else value
       else None
   | Rel n ->
       (try match lookup_rel n env with
@@ -170,9 +195,11 @@ let occur_rigidly flags env evd (evk,_) t =
     | Construct _ -> Normal false
     | Ind _ | Sort _ -> Rigid false
     | Proj (p, _, c) ->
-      let cst = Projection.constant p in
-      let rigid = not (TransparentState.is_transparent_constant flags.open_ts cst) in
-        if rigid then aux c
+       let rigid =
+         let p = Projection.repr p in
+         not (TransparentState.is_transparent_projection flags.open_ts p)
+       in
+       if rigid then aux c
         else (* if the evar appears rigidly in c then this elimination
                 cannot reduce and we have a rigid occurrence, otherwise
                 we don't know. *)
@@ -189,7 +216,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
     | Const (c,_) ->
-      if TransparentState.is_transparent_constant flags.open_ts c then Reducible
+      if Structures.PrimitiveProjections.is_transparent_constant flags.open_ts c then Reducible
       else Rigid false
     | Prod (_, b, t) ->
       let b' = aux b and t' = aux t in

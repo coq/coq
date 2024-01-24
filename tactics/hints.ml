@@ -104,7 +104,7 @@ type 'a hint_ast =
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
-  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
+  | Unfold_nth of Evaluable.t (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
 
 
@@ -609,7 +609,7 @@ val set_transparent_state : t -> TransparentState.t -> t
 val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
-val unfolds : t -> Id.Set.t * Cset.t
+val unfolds : t -> Id.Set.t * Cset.t * PRset.t
 val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
 val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
@@ -620,7 +620,7 @@ struct
   type t = {
     hintdb_state : TransparentState.t;
     hintdb_cut : hints_path;
-    hintdb_unfolds : Id.Set.t * Cset.t;
+    hintdb_unfolds : Id.Set.t * Cset.t * PRset.t;
     hintdb_max_id : int;
     use_dn : bool;
     hintdb_map : search_entry GlobRef.Map.t;
@@ -635,7 +635,7 @@ struct
 
   let empty ?name st use_dn = { hintdb_state = st;
                           hintdb_cut = PathEmpty;
-                          hintdb_unfolds = (Id.Set.empty, Cset.empty);
+                          hintdb_unfolds = (Id.Set.empty, Cset.empty, PRset.empty);
                           hintdb_max_id = 0;
                           use_dn = use_dn;
                           hintdb_map = GlobRef.Map.empty;
@@ -742,13 +742,15 @@ struct
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
-          let addunf ts (ids, csts) =
+          let addunf ts (ids, csts, prjs) =
             let open TransparentState in
             match egr with
-            | EvalVarRef id ->
-              { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts)
-            | EvalConstRef cst ->
-              { ts with tr_cst = Cpred.add cst ts.tr_cst }, (ids, Cset.add cst csts)
+            | Evaluable.EvalVarRef id ->
+              { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts, prjs)
+            | Evaluable.EvalConstRef cst ->
+              { ts with tr_cst = Cpred.add cst ts.tr_cst }, (ids, Cset.add cst csts, prjs)
+            | Evaluable.EvalProjectionRef p ->
+              { ts with tr_prj = PRpred.add p ts.tr_prj }, (ids, csts, PRset.add p prjs)
           in
           let state, unfs = addunf db.hintdb_state db.hintdb_unfolds in
             state, { db with hintdb_unfolds = unfs }, true
@@ -1065,8 +1067,9 @@ let add_transparency dbname target b =
     | HintsReferences grs ->
       List.fold_left (fun st gr ->
         match gr with
-        | EvalConstRef c -> { st with tr_cst = (if b then Cpred.add else Cpred.remove) c st.tr_cst }
-        | EvalVarRef v -> { st with tr_var = (if b then Id.Pred.add else Id.Pred.remove) v st.tr_var })
+        | Evaluable.EvalConstRef c -> { st with tr_cst = (if b then Cpred.add else Cpred.remove) c st.tr_cst }
+        | Evaluable.EvalVarRef v -> { st with tr_var = (if b then Id.Pred.add else Id.Pred.remove) v st.tr_var }
+        | Evaluable.EvalProjectionRef p -> { st with tr_prj = (if b then PRpred.add else PRpred.remove) p st.tr_prj } )
         st grs
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
@@ -1113,7 +1116,7 @@ let create_hint_db l n ts b =
 
 type hint_action =
   | AddTransparency of {
-      grefs : evaluable_global_reference hints_transparency_target;
+      grefs : Evaluable.t hints_transparency_target;
       state : bool;
     }
   | AddHints of hint_entry list
@@ -1289,8 +1292,9 @@ let discharge_autohint obj =
       | HintsVariables | HintsConstants -> grefs
       | HintsReferences grs ->
         let filter = function
-        | EvalConstRef c -> true
-        | EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
+        | Evaluable.EvalConstRef c -> true
+        | Evaluable.EvalProjectionRef p -> true
+        | Evaluable.EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
         in
         let grs = List.filter filter grs in
         HintsReferences grs
@@ -1449,8 +1453,8 @@ type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hint_term) list
   | HintsImmediateEntry of hint_term list
   | HintsCutEntry of hints_path
-  | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
+  | HintsUnfoldEntry of Evaluable.t list
+  | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 

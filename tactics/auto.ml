@@ -274,8 +274,9 @@ let hintmap_of env sigma secvars hdc concl =
       else Hint_db.map_auto env sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
-  | Tacred.EvalConstRef _ -> true
-  | Tacred.EvalVarRef v -> try ignore(Environ.lookup_named v env); true with Not_found -> false
+  | Evaluable.EvalConstRef _ -> true
+  | Evaluable.EvalProjectionRef _ -> true
+  | Evaluable.EvalVarRef v -> try ignore(Environ.lookup_named v env); true with Not_found -> false
 
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
 let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption

@@ -267,5 +267,4 @@ val mind_of_delta_kn_senv : safe_environment -> KerName.t -> MutInd.t
 val register_inline : Constant.t -> safe_transformer0
 val register_inductive : inductive -> 'a CPrimitives.prim_ind -> safe_transformer0
 
-val set_strategy :
-  Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0
+val set_strategy : Names.Evaluable.t -> Conv_oracle.level -> safe_transformer0

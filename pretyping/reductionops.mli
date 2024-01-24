@@ -233,7 +233,7 @@ val contract_fix : evar_map -> fixpoint -> constr
 val contract_cofix : evar_map -> cofixpoint -> constr
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
-val is_transparent : Environ.env -> Constant.t tableKey -> bool
+val is_transparent : Environ.env -> Evaluable.t -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 
