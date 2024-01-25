@@ -13,7 +13,7 @@
     Not for the casual user, handle with care and expect undefined behaviours
     otherwise. **)
 
-Require Import Ltac2.Init.
+Require Import Ltac2.Init Ltac2.Std.
 
 Ltac2 Type t.
 (** Dynamically-typed Ltac1 values. *)
@@ -45,3 +45,6 @@ Ltac2 @ external to_ident : t -> ident option := "coq-core.plugins.ltac2_ltac1" 
 
 Ltac2 @ external of_list : t list -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_list".
 Ltac2 @ external to_list : t -> t list option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_list".
+
+Ltac2 @ external of_intro_pattern : intro_pattern -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_intro_pattern".
+Ltac2 @ external to_intro_pattern : t -> intro_pattern option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_intro_pattern".
