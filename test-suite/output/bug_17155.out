@@ -1,12 +1,12 @@
 File "./output/bug_17155.v", line 6, characters 0-23:
 The command has indeed failed with message:
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None
 File "./output/bug_17155.v", line 8, characters 0-23:
 The command has indeed failed with message:
 Backtrace:
 Call M.g
 Call bug_17155.M.f (* local *)
 Prim <coq-core.plugins.ltac2:throw>
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None
 Ltac2 M.g : unit -> 'a
       M.g := fun _ => bug_17155.M.f (* local *) ()
