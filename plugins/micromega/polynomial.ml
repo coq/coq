@@ -1017,6 +1017,12 @@ end
 module WithProof = struct
   type t = (LinPoly.t * op) * ProofFormat.prf_rule
 
+  let repr p = p
+
+  let proof p = snd p
+
+  let polynomial ((p, _), _) = p
+
   (* The comparison ignores proofs on purpose *)
   let compare : t -> t -> int =
    fun ((lp1, o1), _) ((lp2, o2), _) ->
@@ -1064,6 +1070,12 @@ module WithProof = struct
           Printf.printf "mult_error %a [*] %a\n" LinPoly.pp p output
             ((p1, o1), prf1);
         raise InvalidProof )
+
+  let def p op i = ((p, op), ProofFormat.Def i)
+
+  let mkhyp p op i = ((p, op), ProofFormat.Hyp i)
+
+  let square p q = ((p, Ge), ProofFormat.Square q)
 
   let cutting_plane ((p, o), prf) =
     let c, p' = Vect.decomp_cst p in
