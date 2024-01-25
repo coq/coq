@@ -76,18 +76,16 @@ end
 type 'a repr = {
   r_of : 'a -> valexpr;
   r_to : valexpr -> 'a;
-  r_id : bool;
 }
 
 let repr_of r x = r.r_of x
 let repr_to r x = r.r_to x
 
-let make_repr r_of r_to = { r_of; r_to; r_id = false; }
+let make_repr r_of r_to = { r_of; r_to; }
 
 let map_repr f g r = {
   r_of = (fun x -> r.r_of (g x));
   r_to = (fun x -> f (r.r_to x));
-  r_id = false;
 }
 
 (** Dynamic tags *)
@@ -135,7 +133,6 @@ exception LtacError of KerName.t * valexpr array
 let valexpr = {
   r_of = (fun obj -> obj);
   r_to = (fun obj -> obj);
-  r_id = true;
 }
 
 let of_unit () = ValInt 0
@@ -147,7 +144,6 @@ let to_unit = function
 let unit = {
   r_of = of_unit;
   r_to = to_unit;
-  r_id = false;
 }
 
 let of_int n = ValInt n
@@ -158,7 +154,6 @@ let to_int = function
 let int = {
   r_of = of_int;
   r_to = to_int;
-  r_id = false;
 }
 
 let of_bool b = if b then ValInt 0 else ValInt 1
@@ -171,7 +166,6 @@ let to_bool = function
 let bool = {
   r_of = of_bool;
   r_to = to_bool;
-  r_id = false;
 }
 
 let of_char n = ValInt (Char.code n)
@@ -182,7 +176,6 @@ let to_char = function
 let char = {
   r_of = of_char;
   r_to = to_char;
-  r_id = false;
 }
 
 let of_bytes s = ValStr s
@@ -193,7 +186,6 @@ let to_bytes = function
 let bytes = {
   r_of = of_bytes;
   r_to = to_bytes;
-  r_id = false;
 }
 
 let of_string s = of_bytes (Bytes.of_string s)
@@ -201,7 +193,6 @@ let to_string s = Bytes.to_string (to_bytes s)
 let string = {
   r_of = of_string;
   r_to = to_string;
-  r_id = false;
 }
 
 let rec of_list f = function
@@ -216,7 +207,6 @@ let rec to_list f = function
 let list r = {
   r_of = (fun l -> of_list r.r_of l);
   r_to = (fun l -> to_list r.r_to l);
-  r_id = false;
 }
 
 let of_closure cls = ValCls cls
@@ -228,7 +218,6 @@ let to_closure = function
 let closure = {
   r_of = of_closure;
   r_to = to_closure;
-  r_id = false;
 }
 
 let of_ext tag c =
@@ -241,7 +230,6 @@ let to_ext tag = function
 let repr_ext tag = {
   r_of = (fun e -> of_ext tag e);
   r_to = (fun e -> to_ext tag e);
-  r_id = false;
 }
 
 let of_constr c = of_ext val_constr c
@@ -277,7 +265,6 @@ let to_exninfo = to_ext val_exninfo
 let exninfo = {
   r_of = of_exninfo;
   r_to = to_exninfo;
-  r_id = false;
 }
 
 let of_err e = of_ext val_exn e
@@ -300,7 +287,6 @@ let to_exn c = match c with
 let exn = {
   r_of = of_exn;
   r_to = to_exn;
-  r_id = false;
 }
 
 let of_option f = function
@@ -315,7 +301,6 @@ let to_option f = function
 let option r = {
   r_of = (fun l -> of_option r.r_of l);
   r_to = (fun l -> to_option r.r_to l);
-  r_id = false;
 }
 
 let of_pp c = of_ext val_pp c
@@ -334,7 +319,6 @@ let to_pair f g = function
 let pair r0 r1 = {
   r_of = (fun p -> of_pair r0.r_of r1.r_of p);
   r_to = (fun p -> to_pair r0.r_to r1.r_to p);
-  r_id = false;
 }
 
 let of_triple f g h (x, y, z) = ValBlk (0, [|f x; g y; h z|])
@@ -344,7 +328,6 @@ let to_triple f g h = function
 let triple r0 r1 r2 = {
   r_of = (fun p -> of_triple r0.r_of r1.r_of r2.r_of p);
   r_to = (fun p -> to_triple r0.r_to r1.r_to r2.r_to p);
-  r_id = false;
 }
 
 let of_array f vl = ValBlk (0, Array.map f vl)
@@ -354,7 +337,6 @@ let to_array f = function
 let array r = {
   r_of = (fun l -> of_array r.r_of l);
   r_to = (fun l -> to_array r.r_to l);
-  r_id = false;
 }
 
 let of_block (n, args) = ValBlk (n, args)
@@ -365,7 +347,6 @@ let to_block = function
 let block = {
   r_of = of_block;
   r_to = to_block;
-  r_id = false;
 }
 
 let of_open (kn, args) = ValOpn (kn, args)
@@ -377,7 +358,6 @@ let to_open = function
 let open_ = {
   r_of = of_open;
   r_to = to_open;
-  r_id = false;
 }
 
 let of_uint63 n = of_ext val_uint63 n
@@ -386,7 +366,6 @@ let to_uint63 x = to_ext val_uint63 x
 let uint63 = {
   r_of = of_uint63;
   r_to = to_uint63;
-  r_id = false;
 }
 
 let of_float f = of_ext val_float f
@@ -395,7 +374,6 @@ let to_float x = to_ext val_float x
 let float = {
   r_of = of_float;
   r_to = to_float;
-  r_id = false;
 }
 
 let of_constant c = of_ext val_constant c
@@ -418,7 +396,6 @@ let to_reference = let open GlobRef in function
 let reference = {
   r_of = of_reference;
   r_to = to_reference;
-  r_id = false;
 }
 
 type ('a, 'b) fun1 = closure
