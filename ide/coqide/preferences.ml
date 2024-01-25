@@ -965,12 +965,12 @@ let configure ?(apply=(fun () -> ())) parent =
       (string_of_int window_width#get)
   in
 
-  let global_auto_reload = pbool "Enable global auto reload" global_auto_reload in
+  let global_auto_reload = pbool "Check for modified files" global_auto_reload in
   let global_auto_reload_delay =
     string
     ~f:(fun s -> global_auto_reload_delay#set
           (try int_of_string s with _ -> 10000))
-      "Global auto reload delay (ms)"
+      "Modified file check interval (ms)"
       (string_of_int global_auto_reload_delay#get)
   in
 
