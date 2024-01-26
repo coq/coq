@@ -1772,7 +1772,7 @@ Proof.
         | left; assumption ]. }
     red; intro; rewrite H1 in H11; discriminate.
   - apply StepFun_P20.
-    rewrite app_length; apply Nat.neq_0_lt_0; red; intro.
+    rewrite length_app; apply Nat.neq_0_lt_0; red; intro.
     assert (List.length l1 = 0)%nat as H12 by now destruct (List.length l1); inversion H1.
     rewrite H12 in H6; discriminate.
   - unfold constant_D_eq, open_interval; intros;
@@ -1920,7 +1920,7 @@ Proof.
       { apply Nat.lt_succ_lt_pred; rewrite <- Nat.sub_succ_l.
         { apply Nat.add_lt_mono_l with (length l1); rewrite Nat.add_comm, Nat.sub_add.
           { rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-              rewrite app_length in H1; apply -> Nat.succ_lt_mono; assumption. }
+              rewrite length_app in H1; apply -> Nat.succ_lt_mono; assumption. }
           apply Nat.le_trans with (S i); [ apply Nat.succ_le_mono; assumption | apply Nat.le_succ_diag_r ]. }
         apply Nat.succ_le_mono; assumption. }
       assert (H22 := H20 H21); repeat rewrite H22.
@@ -1932,7 +1932,7 @@ Proof.
           rewrite <- Nat.sub_succ_l.
           { apply Nat.add_lt_mono_l with (length l1); rewrite Nat.add_comm, Nat.sub_add.
             { rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-                rewrite app_length in H1; apply -> Nat.succ_lt_mono; assumption. }
+                rewrite length_app in H1; apply -> Nat.succ_lt_mono; assumption. }
             apply Nat.le_trans with (S i); [ apply Nat.succ_le_mono; assumption | apply Nat.le_succ_diag_r ]. }
           apply Nat.succ_le_mono; assumption. }
         elim H23; intro.

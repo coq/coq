@@ -477,7 +477,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
    intros m; set (p:=1); clearbody p; revert m p.
    induction m; simpl; auto; intros.
    rewrite (IHm1 (append p 2)), (IHm2 (append p 3)).
-   destruct o; rewrite app_length; simpl; auto.
+   destruct o; rewrite length_app; simpl; auto.
   Qed.
 
   End CompcertSpec.
