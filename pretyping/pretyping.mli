@@ -58,6 +58,7 @@ type inference_flags = {
   program_mode : bool;
   polymorphic : bool;
   undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
 }
 
 val default_inference_flags : bool -> inference_flags
@@ -155,6 +156,7 @@ type pretype_flags = {
   program_mode : bool;
   use_coercions : bool;
   undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
 }
 
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a

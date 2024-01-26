@@ -238,6 +238,7 @@ type inference_flags = {
   program_mode : bool;
   polymorphic : bool;
   undeclared_evars_patvars: bool;
+  patvars_abstract : bool;
 }
 
 type pretype_flags = {
@@ -246,6 +247,7 @@ type pretype_flags = {
   program_mode : bool;
   use_coercions : bool;
   undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
 }
 
 (* Compute the set of still-undefined initial evars up to restriction
@@ -337,10 +339,10 @@ let allow_all_but_patvars sigma =
   in
   Evarsolve.AllowedEvars.from_pred p
 
-let apply_heuristics ~unify_patvars env sigma =
+let apply_heuristics ~patvars_abstract env sigma =
   (* Resolve eagerly, potentially making wrong choices *)
   let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
-  let flags = if unify_patvars then flags else { flags with allowed_evars = allow_all_but_patvars sigma } in
+  let flags = if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags in
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e -> sigma
 
@@ -404,7 +406,7 @@ let solve_remaining_evars ?hook (flags : inference_flags) env ?initial sigma =
   | Some hook -> apply_inference_hook hook env sigma frozen
   in
   let sigma = if flags.solve_unification_constraints
-    then apply_heuristics ~unify_patvars:(not flags.undeclared_evars_patvars) env sigma
+    then apply_heuristics ~patvars_abstract:flags.patvars_abstract env sigma
     else sigma
   in
   if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen;
@@ -434,10 +436,10 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; undeclared_evars_patvars } env sigma j = function
+let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~unify_patvars:(not undeclared_evars_patvars) !!env sigma j t
+    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract !!env sigma j t
 
 let check_instance subst = function
   | [] -> ()
@@ -647,7 +649,7 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
     let b = Option.map (replace_vars sigma subst) (NamedDecl.get_value decl) in
     let t = replace_vars sigma subst (NamedDecl.get_type decl) in
     let uflags = default_flags_of TransparentState.full in
-    let uflags = if flags.undeclared_evars_patvars then { uflags with allowed_evars = allow_all_but_patvars sigma } else uflags in
+    let uflags = if flags.patvars_abstract then { uflags with allowed_evars = allow_all_but_patvars sigma } else uflags in
     let check_body sigma id c =
       match b, c with
       | Some b, Some c -> begin
@@ -1473,6 +1475,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
     use_coercions = flags.use_coercions;
     poly = flags.polymorphic;
     undeclared_evars_patvars = flags.undeclared_evars_patvars;
+    patvars_abstract = flags.patvars_abstract;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
       | UseTC | UseTCForConv -> true
@@ -1507,6 +1510,7 @@ let default_inference_flags fail = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
+  patvars_abstract = false;
 }
 
 let no_classes_no_fail_inference_flags = {
@@ -1518,6 +1522,7 @@ let no_classes_no_fail_inference_flags = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
+  patvars_abstract = false;
 }
 
 let all_and_fail_flags = default_inference_flags true

@@ -748,12 +748,12 @@ let allow_all_but_patvars sigma =
   in
   Evarsolve.AllowedEvars.from_pred p
 
-let default_flags_of_patvars env sigma ~unify_patvars =
+let default_flags_of_patvars env sigma ~patvars_abstract =
   let flags = default_flags_of env in
-  if unify_patvars then flags else { flags with allowed_evars = allow_all_but_patvars sigma }
+  if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(unify_patvars=true) rigidonly env sigma ?(flags=default_flags_of_patvars env sigma ~unify_patvars) cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(patvars_abstract=false) rigidonly env sigma ?(flags=default_flags_of_patvars env sigma ~patvars_abstract) cj t =
   let (sigma, val', otrace) =
     try
       let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
@@ -785,15 +785,15 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(unify
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars rigidonly env sigma ?flags cj t =
-  try inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars rigidonly env sigma ?flags cj t
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract rigidonly env sigma ?flags cj t =
+  try inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract rigidonly env sigma ?flags cj t
   with e when Option.has_some loc ->
     let _, info as iexn = Exninfo.capture e in
     match Loc.get_loc info with
     | Some _ -> Exninfo.iraise iexn
     | None -> Exninfo.iraise (e, Loc.add_loc info (Option.get loc))
 
-let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars env sigma ?flags =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars false ?flags env sigma
-let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars env sigma ?flags =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?unify_patvars true ?flags env sigma
+let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract false ?flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract true ?flags env sigma
