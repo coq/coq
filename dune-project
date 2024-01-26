@@ -24,7 +24,8 @@
  (depends
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
-  (zarith (>= 1.11)))
+  (zarith (>= 1.11))
+  (conf-linux-libc-dev (= :os "linux")))
  (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
@@ -118,7 +119,9 @@ This package provides the Coq Reference Manual."))
   (coq-core (= :version))
   (coq-stdlib (= :version))
   (coqide-server (= :version))
-  (ounit2 :with-test))
+  (ounit2 :with-test)
+  (conf-python-3 :with-test)
+  (conf-time :with-test))
  (synopsis "The Coq Proof Assistant")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
