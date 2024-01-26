@@ -21,6 +21,23 @@
 (documentation "https://coq.github.io/doc/")
 (version dev)
 
+(package
+ (name coq-perf)
+ (depends conf-linux-libc-dev)
+ (synopsis "The Coq Proof Assistant -- Perf bindings")
+ (description "Coq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes linux perf bindings used for instruction counting in Coq."))
+
 ; Note that we use coq.opam.template to have dune add the correct opam
 ; prefix for configure; also note that we manually add the dune >= 3.6.1
 ; dependency due a dune bug preventing Coq to build in
@@ -33,7 +50,7 @@
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11)))
- (depopts coq-native)
+ (depopts coq-native coq-perf)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

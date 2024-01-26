@@ -7,5 +7,5 @@
  (libraries
   coq-core.boot coq-core.clib coq-core.config
   (select instr.ml from
-   (!coqperf -> instr.noperf.ml)
-   (coqperf -> instr.perf.ml))))
+   (!coq-perf -> instr.noperf.ml)
+   (coq-perf -> instr.perf.ml))))
