@@ -44,6 +44,7 @@ type coqargs_logic_config = {
   impredicative_set : bool;
   indices_matter    : bool;
   type_in_type      : bool;
+  rewrite_rules     : bool;
   toplevel_name     : top;
 }
 

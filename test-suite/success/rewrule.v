@@ -1,4 +1,4 @@
-Set Allow Rewrite Rules.
+(* -*- mode: coq; coq-prog-args: ("-allow-rewrite-rules") -*- *)
 Set Universe Polymorphism.
 Set Printing Universes.
 

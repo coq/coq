@@ -1,3 +1,5 @@
+:SPHINXCOQEXTRAFLAGS: -allow-rewrite-rules
+
 .. _rewrite_rules:
 
 User-defined rewrite rules
@@ -15,17 +17,10 @@ This section describes the extension of Coq's reduction mechanisms with user-def
 as a means to extend definitional equality. It should not be confused with the :ref:`rewrite tactic <rewritingexpressions>`
 or :ref:`setoid rewriting <generalizedrewriting>` which operate on propositional equality and other relations which are defined in Coq.
 
-Rewrite rules need to be enabled, either by passing ``-allow-rewrite-rules``
-to the Coq program or by turning the :flag:`Allow Rewrite Rules` flag on.
+Rewrite rules need to be enabled by passing the option ``-allow-rewrite-rules``
+to the Coq program.
 
-.. flag:: Allow Rewrite Rules
-
-   Enables the use of rewrite rules.
-   It is disabled by default and cannot be disabled once enabled.
-   The command-line flag ``-allow-rewrite-rules`` enables rewrite rules at
-   startup.
-
-   .. exn:: Rewrite rule declaration requires enabling the flag "Allow Rewrite Rules".
+   .. exn:: Rewrite rule declaration requires passing the flag "-allow-rewrite-rules".
       :undocumented:
 
 Symbols
@@ -43,7 +38,6 @@ but they may still reduce using the provided rules, unlike axioms.
 
    .. coqtop:: in
 
-      Set Allow Rewrite Rules.
       Symbol pplus : nat -> nat -> nat.
       Notation "a ++ b" := (pplus a b).
 
@@ -147,7 +141,6 @@ so all inferred constraints from the left-hand side are used for the replacement
 
    .. coqtop:: reset all warn
 
-      Set Allow Rewrite Rules.
       #[universes(polymorphic)] Symbol raise@{q|u|} : forall (A : Type@{q|u}), A.
       Rewrite Rule raise_nat :=
         @{q|u+|+} |- raise@{q|u} (forall (x : ?A), ?P) ==> fun (x : ?A) => raise@{q|u} ?P.
