@@ -571,20 +571,6 @@ let reducible_construct sigma c = match EConstr.kind sigma c with
 | Int _ | Float _ | Array _ (* reduced by primitives *) -> true
 | _ -> false
 
-let reduce_mind_case env sigma f (ci, u, pms, p, iv, (hd, args), lf) =
-  match EConstr.kind sigma hd with
-    | Construct ((_, i as cstr),u) ->
-        let real_cargs = List.skipn ci.ci_npar args in
-        let br = lf.(i - 1) in
-        let ctx = EConstr.expand_branch env sigma u pms cstr br in
-        let br = it_mkLambda_or_LetIn (snd br) ctx in
-        Reduced (applist (br, real_cargs))
-    | CoFix (bodynum,(names,_,_) as cofix) ->
-        let cofix_def = contract_cofix env sigma f cofix in
-        Reduced (mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf))
-    | Int _ | Float _ | Array _ -> NotReducible
-    | _ -> assert false
-
 let match_eval_ref env sigma constr stack =
   match EConstr.kind sigma constr with
   | Const (sp, u) ->
@@ -633,12 +619,13 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Failure _ ->
     None
 
-let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
-  (match EConstr.kind sigma recarg'hd with
+let contract_projection env sigma p ~npars (hd, args) =
+  match EConstr.kind sigma hd with
   | Construct _ ->
     let proj_narg = npars + Projection.arg p in
-    Reduced (List.nth stack' proj_narg, stack)
-  | _ -> NotReducible)
+    Reduced (List.nth args proj_narg)
+  | CoFix _ -> NotReducible (* TODO: see bug #7982 *)
+  | _ -> NotReducible
 
 let rec beta_applist sigma accu c stk = match EConstr.kind sigma c, stk with
 | Lambda (_, _, c), arg :: stk -> beta_applist sigma (arg :: accu) c stk
@@ -749,20 +736,20 @@ let rec red_elim_const ((cache,_,_),_ as cache_reds) env sigma ref u largs =
   in
   let ans = match compute_reference_elimination cache_reds env sigma ref u with
     | EliminationCases (c,n) when nargs >= n ->
-        let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
-        let* ans = special_red_case cache_reds env sigma (EConstr.destCase sigma c') in
-        Reduced ((ans, lrest), nocase)
+        let c', stack = whd_nothing_for_iota env sigma (c, largs) in
+        let* ans = reduce_case cache_reds env sigma (EConstr.destCase sigma c') in
+        Reduced ((ans, stack), nocase)
     | EliminationProj (c,n) when nargs >= n ->
-        let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
-        let* ans = reduce_proj cache_reds env sigma c' in
-        Reduced ((ans, lrest), nocase)
+        let c', stack = whd_nothing_for_iota env sigma (c, largs) in
+        let* ans = reduce_nested_projection cache_reds env sigma c' in
+        Reduced ((ans, stack), nocase)
     | EliminationFix {trigger_min_args; refolding_target; refolding_data}
       when nargs >= trigger_min_args ->
         let (_, midargs as s) = descend cache env sigma refolding_target (ref,u) largs in
-        let d, lrest = whd_nothing_for_iota env sigma s in
+        let d, stack = whd_nothing_for_iota env sigma s in
         let f = refolding_data, midargs in
-        let* (c, rest) = reduce_fix cache_reds env sigma (Some f) (destFix sigma d) lrest in
-        Reduced ((c, rest), nocase)
+        let* c = reduce_fix cache_reds env sigma (Some f) (destFix sigma d) stack in
+        Reduced (c, nocase)
     | NotAnElimination c when unfold_nonelim ->
         Reduced ((whd_betaiotazeta env sigma (applist (c, largs)), []), nocase)
     | _ -> NotReducible
@@ -773,7 +760,7 @@ let rec red_elim_const ((cache,_,_),_ as cache_reds) env sigma ref u largs =
     Reduced ((whd_betaiotazeta env sigma (applist (c, largs)), []), nocase)
   | _ -> ans
 
-and reduce_params allowed_reds env sigma stack l =
+and reduce_params cache_reds env sigma stack l =
   let len = List.length stack in
   let rec redp stack l = match l with
   | [] -> Reduced stack
@@ -781,7 +768,7 @@ and reduce_params allowed_reds env sigma stack l =
     if len <= i then NotReducible
     else
       let arg = List.nth stack i in
-      let* rarg = whd_construct_stack allowed_reds env sigma arg in
+      let* rarg = whd_construct_stack cache_reds env sigma arg in
       match EConstr.kind sigma (fst rarg) with
       | Construct _ | Int _ | Float _ | Array _ ->
         redp (List.assign stack i (applist rarg)) l
@@ -792,7 +779,7 @@ and reduce_params allowed_reds env sigma stack l =
 (* reduce to whd normal form or to an applied constant that does not hide
    a reducible iota/fix/cofix redex (the "simpl" tactic) *)
 
-and whd_simpl_stack allowed_reds env sigma =
+and whd_simpl_stack cache_reds env sigma =
   let rec redrec s =
     let s' = push_app sigma s in
     let (x, stack) = s' in
@@ -805,12 +792,12 @@ and whd_simpl_stack allowed_reds env sigma =
       | App (f,cl) -> assert false (* see push_app above *)
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,u,pms,p,iv,c,lf) ->
-        begin match special_red_case allowed_reds env sigma (ci,u,pms,p,iv,c,lf) with
+        begin match reduce_case cache_reds env sigma (ci,u,pms,p,iv,c,lf) with
         | Reduced c -> redrec (c, stack)
         | NotReducible -> s'
         end
       | Fix fix ->
-        begin match reduce_fix allowed_reds env sigma None fix stack with
+        begin match reduce_fix cache_reds env sigma None fix stack with
         | Reduced s' -> redrec s'
         | NotReducible -> s'
         end
@@ -826,12 +813,12 @@ and whd_simpl_stack allowed_reds env sigma =
                 let l' = List.map_filter (fun i ->
                     let idx = (i - (npars + 1)) in
                     if idx < 0 then None else Some idx) recargs in
-                let* stack = reduce_params allowed_reds env sigma stack l' in
-                let* r = whd_construct_stack allowed_reds env sigma c in
-                reduce_projection env sigma p ~npars r stack
+                let* stack = reduce_params cache_reds env sigma stack l' in
+                let* c = reduce_projection cache_reds env sigma p ~npars c in
+                Reduced (c, stack)
               | _ ->
-                let* r = whd_construct_stack allowed_reds env sigma c in
-                reduce_projection env sigma p ~npars r stack
+                let* c = reduce_projection cache_reds env sigma p ~npars c in
+                Reduced (c, stack)
             else NotReducible
           in
           begin match ans with
@@ -845,7 +832,7 @@ and whd_simpl_stack allowed_reds env sigma =
               List.map_filter_i (fun i a ->
                   match a with CPrimitives.Kwhnf -> Some i | _ -> None)
                 (CPrimitives.kind (Option.get (get_primitive env cst))) in
-            let* stack = reduce_params allowed_reds env sigma stack args in
+            let* stack = reduce_params cache_reds env sigma stack args in
             Reduced (whd_const cst env sigma (applist (x, stack)), [])
         in
         begin match ans with
@@ -857,7 +844,7 @@ and whd_simpl_stack allowed_reds env sigma =
         match match_eval_ref env sigma x stack with
         | Some (ref, u) ->
           let ans =
-             let* sapp, nocase = red_elim_const allowed_reds env sigma ref u stack in
+             let* sapp, nocase = red_elim_const cache_reds env sigma ref u stack in
              let hd, _ as s'' = redrec sapp in
              let rec is_case x = match EConstr.kind sigma x with
                | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
@@ -874,45 +861,60 @@ and whd_simpl_stack allowed_reds env sigma =
   in
   redrec
 
-and reduce_fix allowed_reds env sigma f fix stack =
+and reduce_fix cache_reds env sigma f fix stack =
   match fix_recarg fix stack with
-    | None -> NotReducible
-    | Some (recargnum,recarg) ->
-       let* (recarg'hd,_ as recarg') =
-         whd_construct_stack allowed_reds env sigma recarg in
-        (match EConstr.kind sigma recarg'hd with
-           | Construct _ ->
-             let stack' = List.assign stack recargnum (applist recarg') in
-             Reduced (contract_fix env sigma f fix, stack')
-           | _ -> NotReducible)
+  | None -> NotReducible
+  | Some (recargnum,recarg) ->
+    let* (recarg'hd,_ as recarg') = whd_construct_stack cache_reds env sigma recarg in
+    match EConstr.kind sigma recarg'hd with
+    | Construct _ ->
+      let stack' = List.assign stack recargnum (applist recarg') in
+      Reduced (contract_fix env sigma f fix, stack')
+    | _ -> NotReducible
 
-and reduce_proj allowed_reds env sigma c =
-  let rec redrec s =
-    match EConstr.kind sigma s with
+and reduce_nested_projection cache_reds env sigma c =
+  let rec redrec c =
+    match EConstr.kind sigma c with
     | Proj (proj, _, c) ->
       let c' = match redrec c with NotReducible -> c | Reduced c -> c in
-      let* (constr, cargs) = whd_construct_stack allowed_reds env sigma c' in
-        (match EConstr.kind sigma constr with
-        | Construct _ ->
-          let proj_narg = Projection.npars proj + Projection.arg proj in
-          Reduced (List.nth cargs proj_narg)
-        | _ -> NotReducible)
+      let npars = Projection.npars proj in
+      reduce_projection cache_reds env sigma proj ~npars c'
     | Case (n,u,pms,p,iv,c,brs) ->
       let* c' = redrec c in
       let p = (n,u,pms,p,iv,c',brs) in
-      begin match special_red_case allowed_reds env sigma p with
+      begin match reduce_case cache_reds env sigma p with
       | Reduced c -> Reduced c
-      | NotReducible -> Reduced (mkCase p)
+      | NotReducible -> Reduced (mkCase p) (* Why not NotReducible *)
       end
     | _ -> NotReducible
   in redrec c
 
-and special_red_case allowed_reds env sigma (ci, u, pms, p, iv, c, lf) =
-  let* f, s = whd_construct allowed_reds env sigma (c, []) in
-  reduce_mind_case env sigma f (ci, u, pms, p, iv, s, lf)
+and reduce_projection cache_reds env sigma p ~npars c =
+  let* s = whd_construct_stack cache_reds env sigma c in (* TODO: use cofix refolding *)
+  contract_projection env sigma p ~npars s
 
-and whd_construct_stack allowed_reds env sigma s =
-  let* _, s = whd_construct allowed_reds env sigma (s, []) in
+and reduce_case cache_reds env sigma (ci, u, pms, p, iv, c, lf) =
+  let* f, (hd, args) = whd_construct cache_reds env sigma (c, []) in
+  match EConstr.kind sigma hd with
+  | Construct ((_, i as cstr),u) ->
+    let real_cargs = List.skipn ci.ci_npar args in
+    let br = lf.(i - 1) in
+    let ctx = EConstr.expand_branch env sigma u pms cstr br in
+    let br = it_mkLambda_or_LetIn (snd br) ctx in
+    Reduced (applist (br, real_cargs))
+  | CoFix (bodynum,(names,_,_) as cofix) ->
+    let cofix_def = contract_cofix env sigma f cofix in
+    (* If the cofix_def does not reduce to a constructor, do we
+       really want to say it is Reduced? Consider e.g.:
+       CoInductive stream := cons { hd : bool; tl : stream }.
+       CoFixpoint const (x : bool) := if x then cons x (const x) else cons x (const x).
+       Eval simpl in fun x => (const x).(tl) *)
+    Reduced (mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf))
+  | Int _ | Float _ | Array _ -> NotReducible (* TODO: assert false? *)
+  | _ -> assert false
+
+and whd_construct_stack cache_reds env sigma s =
+  let* _, s = whd_construct cache_reds env sigma (s, []) in
   Reduced s
 
 (* reduce until finding an applied constructor (or primitive value) or fail *)
@@ -977,12 +979,12 @@ let try_red_product env sigma c =
       | Proj (p, _, c) ->
         let* c' =
           match EConstr.kind sigma c with
-          | Construct _ -> Reduced c
+          | Construct _ -> Reduced c (* Add CoFix? *)
           | _ -> redrec env c
         in
         let npars = Projection.npars p in
-        let* s = reduce_projection env sigma p ~npars (whd_betaiotazeta_stack env sigma c') [] in
-        Reduced (simpfun (applist s))
+        let* c = contract_projection env sigma p ~npars (whd_betaiotazeta_stack env sigma c') in
+        Reduced (simpfun c)
       | _ ->
         (match match_eval_ref env sigma x [] with
         | Some (ref, u) ->
@@ -1030,7 +1032,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,p,d,lf) ->
           (try
-             redrec (special_red_case env sigma whd_all (ci,p,d,lf), stack)
+             redrec (reduce_case env sigma whd_all (ci,p,d,lf), stack)
            with Redelimination ->
              s)
       | Fix fix ->
@@ -1088,8 +1090,8 @@ let hnf_constr env sigma c =
 
 (* The "simpl" reduction tactic *)
 
-let whd_simpl_with_reds allowed_reds env sigma c =
-  applist (whd_simpl_stack allowed_reds env sigma (c, []))
+let whd_simpl_with_reds cache_reds env sigma c =
+  applist (whd_simpl_stack cache_reds env sigma (c, []))
 
 let whd_simpl env sigma x =
   whd_simpl_with_reds (make_simpl_cache(), make_simpl_reds env) env sigma x
@@ -1395,7 +1397,7 @@ let one_step_reduce env sigma c =
       | LetIn (_,f,_,cl) -> (Vars.subst1 f cl,stack)
       | Cast (c,_,_) -> redrec (c,stack)
       | Case (ci,u,pms,p,iv,c,lf) ->
-        begin match special_red_case cache_reds env sigma (ci,u,pms,p,iv,c,lf) with
+        begin match reduce_case cache_reds env sigma (ci,u,pms,p,iv,c,lf) with
         | Reduced c -> (c, stack)
         | NotReducible -> raise NotStepReducible
         end
@@ -1404,6 +1406,7 @@ let one_step_reduce env sigma c =
         | Reduced s' -> s'
         | NotReducible -> raise NotStepReducible
         end
+      (* Why not treating Proj? *)
       | _ when isEvalRef env sigma x ->
           let ref,u = destEvalRefU sigma x in
           begin match red_elim_const cache_reds env sigma ref u stack with
