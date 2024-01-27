@@ -3,7 +3,7 @@
 RED="\033[31m"
 RESET="\033[0m"
 
-function redprint
+redprint()
 {
   if [ -t 1 ] && ! [ "$TERM" = dumb ]; then
     printf "$RED%s$RESET\n" "$1"
