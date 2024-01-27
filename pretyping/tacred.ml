@@ -263,13 +263,13 @@ let check_fix_reversibility env sigma ref u labs args minarg refs ((lv,i),_ as f
       let p = destRel (List.nth args k) in
       EliminationFix (n-p+1,(li,n))
 *)
-      EliminationFix {
+      {
         trigger_min_args = max minarg nlam;
         refolding_target = ref;
         refolding_data;
         }
   else
-    EliminationFix {
+      {
         trigger_min_args = max minarg (nlam - nargs + k + 1);
         refolding_target = ref;
         refolding_data;
@@ -344,12 +344,12 @@ let compute_consteval ((cache,_),allowed_reds as cache_reds) env sigma ref u =
           (if nbfix = 1 then
             (* Try to refold to [ref] *)
             let names = [|Some (ref,u)|] in
-            try check_fix_reversibility env sigma ref u all_abs args n_all_abs names fix
+            try EliminationFix (check_fix_reversibility env sigma ref u all_abs args n_all_abs names fix)
             with Elimconst -> NotAnElimination
           else
             (* Try to refold to [lastref] *)
             let last_labs, last_args, names = invert_names cache_reds env sigma lastref lastu names i in
-            try check_fix_reversibility env sigma lastref lastu last_labs last_args n_all_abs names fix
+            try EliminationFix (check_fix_reversibility env sigma lastref lastu last_labs last_args n_all_abs names fix)
             with Elimconst -> NotAnElimination)
       | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases (List.length all_abs)
       | Case (_,_,_,_,_,d,_) -> srec env all_abs lastref lastu true d
