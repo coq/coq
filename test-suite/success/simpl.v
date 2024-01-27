@@ -264,3 +264,50 @@ Goal test_case 2 = true. simpl. match goal with [ |- true = _ ] => idtac end. Ab
 (* REDUCED *)
 
 End IotaTrigger3.
+
+Module Bug4056.
+
+CoInductive stream {A:Type} : Type :=
+  | scons: A->stream->stream.
+
+Definition stream_unfold {A} (s: @ stream A) := match s with
+| scons a s' => (a, scons a s')
+end.
+
+Section A.
+  CoFixpoint inf_stream1 (x:nat) (n:nat) :=
+    scons n (inf_stream1 x (n+x)).
+End A.
+
+Section B.
+  Variable (x:nat).
+  CoFixpoint inf_stream2 (n:nat) :=
+    scons n (inf_stream2 (n+x)).
+End B.
+
+Goal (forall x n, stream_unfold (inf_stream1 x n) = stream_unfold (inf_stream2 x n)).
+(* simpl was exposing the cofix on the rhs but not the lhs *)
+intros. simpl.
+match goal with [ |- (n, scons n (inf_stream1 x (n + x))) = (n, scons n (inf_stream2 x (n + x))) ] => idtac end.
+Abort.
+
+Section C.
+  Variable (x:nat).
+  CoFixpoint mut_stream1 (n:nat) := scons n (mut_stream2 (n+x))
+  with mut_stream2 (n:nat) :=  scons n (mut_stream1 (n+x)).
+End C.
+
+Goal (forall x n, stream_unfold (mut_stream1 x n) = stream_unfold (mut_stream2 x n)).
+intros. simpl.
+match goal with [ |- (n, scons n (mut_stream2 x (n + x))) = (n, scons n (mut_stream1 x (n + x))) ] => idtac end.
+Abort.
+
+Definition inf_stream2_copy n := inf_stream2 n. (* inversible *)
+Definition mut_stream2_copy n := mut_stream2 n. (* inversible only towards mut_stream1/mut_stream2 *)
+
+Goal (forall x n, stream_unfold (inf_stream2_copy x n) = stream_unfold (mut_stream2_copy x n)).
+intros. simpl.
+match goal with [ |- (n, scons n (inf_stream2_copy x (n + x))) = (n, scons n (mut_stream1 x (n + x))) ] => idtac end.
+Abort.
+
+End Bug4056.
