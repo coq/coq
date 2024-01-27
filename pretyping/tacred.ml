@@ -102,7 +102,7 @@ let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
   EConstr.eq_constr sigma (mkEvar (e1, ctx1)) (mkEvar (e2, ctx2))
-| _ -> false
+| (EvalConst _ | EvalVar _ | EvalRel _ | EvalEvar _), _ -> false
 
 let mkEvalRef ref u =
   match ref with
