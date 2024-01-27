@@ -334,7 +334,7 @@ let compute_consteval ((cache,_),allowed_reds as cache_reds) env sigma ref u =
     (* We now know that the initial [ref] evaluates to [fun all_abs => c' args] *)
     (* and that the last visited name in the evaluation is [lastref] *)
     match EConstr.kind sigma c' with
-      | Lambda (id,t,g) when not onlyproj ->
+      | Lambda (id,t,g) ->
           assert (List.is_empty args);
           let open Context.Rel.Declaration in
           srec (push_rel (LocalAssum (id,t)) env) (t::all_abs) lastref lastu onlyproj g
