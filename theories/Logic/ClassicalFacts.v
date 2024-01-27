@@ -34,7 +34,9 @@ Table of contents:
 3.2. Gödel-Dummett axiom and right distributivity of implication over
      disjunction
 
-3 3. Independence of general premises and drinker's paradox
+3.3. Independence of general premises and drinker's paradox
+
+3.4. Relativized independence of general premises and excluded-middle
 
 4. Principles equivalent to classical logic
 
@@ -611,15 +613,30 @@ Qed.
 
 (** ** Independence of general premises and drinker's paradox *)
 
-(** Independence of general premises is the unconstrained, non
-    constructive, version of the Independence of Premises as
-    considered in [[Troelstra73]].
+(** Independence of general premises is the unconstrained
+    (i.e. without the constraint of the premise being negative)
+    version of the Independence of Premises considered in
+    [[Troelstra73]].
 
-    It is a generalization to predicate logic of the right
-    distributivity of implication over disjunction (hence of
-    Gödel-Dummett axiom) whose own constructive form (obtained by a
-    restricting the third formula to be negative) is called
-    Kreisel-Putnam principle [[KreiselPutnam57]].
+    In the context of intuitionistic arithmetic (and actually already
+    in the context of the theory of Boolean values), it generalizes
+    the right distributivity of implication over disjunction (and
+    hence Gödel-Dummett axiom). Note contrastingly that both the usual
+    constrained independence of premises and the right distributivity
+    of implication formula over distributivity with the constraint
+    that the implication is from a negative formula (that is
+    Kreisel-Putnam principle [[KreiselPutnam57]]) preserve the
+    disjunction property.
+
+    In the context of predicate logic, the Independence of general
+    premises is however weaker than the right distributivity of
+    implication over disjunction (hence of Gödel-Dummett axiom) since
+    its restriction to a singleton domain makes it collapse to an
+    intuitionistic propositional tautology while right distributivity
+    of implication over disjunction is definitely not
+    intuitionistically propositionally provable (consider the Kripke
+    model with a root node splitting into an node with C and A and an
+    other node with C and B).
 
     [[KreiselPutnam57]], Georg Kreisel and Hilary Putnam. "Eine
     Unableitsbarkeitsbeweismethode für den intuitionistischen
@@ -631,23 +648,23 @@ Qed.
     344 of Lecture Notes in Mathematics, Springer-Verlag, 1973.
 *)
 
-Definition IndependenceOfGeneralPremises :=
-  forall (A:Type) (P:A -> Prop) (Q:Prop),
+Definition IndependenceOfGeneralPremises A :=
+  forall (P:A -> Prop) (Q:Prop),
     inhabited A -> (Q -> exists x, P x) -> exists x, Q -> P x.
 
 Lemma
   independence_general_premises_right_distr_implication_over_disjunction :
-  IndependenceOfGeneralPremises -> RightDistributivityImplicationOverDisjunction.
+  IndependenceOfGeneralPremises bool -> RightDistributivityImplicationOverDisjunction.
 Proof.
-  intros IP A B C HCAB.
-  destruct (IP bool (fun b => if b then A else B) C true) as ([|],H).
+  intros IGP A B C HCAB.
+  destruct (IGP (fun b => if b then A else B) C true) as ([|],H).
   - intro HC; destruct (HCAB HC); [exists true|exists false]; assumption.
   - left; assumption.
   - right; assumption.
 Qed.
 
 Lemma independence_general_premises_Godel_Dummett :
-  IndependenceOfGeneralPremises -> GodelDummett.
+  IndependenceOfGeneralPremises bool -> GodelDummett.
 Proof.
   destruct Godel_Dummett_iff_right_distr_implication_over_disjunction.
   auto using independence_general_premises_right_distr_implication_over_disjunction.
@@ -655,20 +672,20 @@ Qed.
 
 (** Independence of general premises is equivalent to the drinker's paradox *)
 
-Definition DrinkerParadox :=
-  forall (A:Type) (P:A -> Prop),
+Definition DrinkerParadox A :=
+  forall (P:A -> Prop),
     inhabited A -> exists x, (exists x, P x) -> P x.
 
-Lemma independence_general_premises_drinker :
-  IndependenceOfGeneralPremises <-> DrinkerParadox.
+Lemma independence_general_premises_drinker A :
+  IndependenceOfGeneralPremises A <-> DrinkerParadox A.
 Proof.
   split.
-  - intros IP A P InhA; apply (IP A P (exists x, P x) InhA); intro Hx; exact Hx.
-  - intros Drinker A P Q InhA H; destruct (Drinker A P InhA) as (x,Hx).
+  - intros IGP P InhA; apply (IGP P (exists x, P x) InhA); intro Hx; exact Hx.
+  - intros Drinker P Q InhA H; destruct (Drinker P InhA) as (x,Hx).
     exists x; intro HQ; apply (Hx (H HQ)).
 Qed.
 
-(** Independence of general premises is weaker than (generalized)
+(** Independence of general premises is a consequence of (generalized)
     excluded middle
 
 Remark: generalized excluded middle is preferred here to avoid relying on
@@ -678,13 +695,49 @@ the "ex falso quodlibet" property (i.e. [False -> forall A, A])
 Definition generalized_excluded_middle :=
   forall A B:Prop, A \/ (A -> B).
 
-Lemma excluded_middle_independence_general_premises :
-  generalized_excluded_middle -> DrinkerParadox.
+Lemma excluded_middle_independence_general_premises A :
+  generalized_excluded_middle -> DrinkerParadox A.
 Proof.
-  intros GEM A P x0.
+  intros GEM P x0.
   destruct (GEM (exists x, P x) (P x0)) as [(x,Hx)|Hnot].
   - exists x; intro; exact Hx.
   - exists x0; exact Hnot.
+Qed.
+
+(** Using subtypes to relativize the domain, independence of general
+    premises is equivalent to excluded-middle in the theory of Boolean
+    values (see Kirst and Zeng, 2024) *)
+
+Notation "x .1" := (projT1 x) (at level 1, left associativity, format "x .1").
+Notation "( x ; y )" := (existT _ x y) (at level 0, format "'[' ( x ;  '/  ' y ) ']'").
+
+Definition RelativizedIndependenceOfGeneralPremises A (P : A -> Prop) :=
+  IndependenceOfGeneralPremises {a:A & P a}.
+
+Lemma
+  relativized_independence_general_premises_excluded_middle :
+  (forall P, RelativizedIndependenceOfGeneralPremises bool P) -> excluded_middle.
+Proof.
+  intros RIGP A.
+  destruct (RIGP (fun b => b = true \/ A) (fun b => b.1 = false) A) as ((x,[->|H1]),H2).
+  - exists true. left. reflexivity.
+  - intro HA. exists (false; or_intror HA). reflexivity.
+  - right. intro HA. apply H2 in HA. discriminate.
+  - left. assumption.
+Qed.
+
+(** Similarly, using subtypes, drinker's paradox on Boolean values
+    implies excluded-middile *)
+
+Definition RelativizedDrinkerParadox A (P : A -> Prop) :=
+  DrinkerParadox {a : A & P a}.
+
+Lemma
+  relativized_drinker_paradox_excluded_middle :
+  (forall P, RelativizedDrinkerParadox bool P) -> excluded_middle.
+Proof.
+  intros RDP. apply relativized_independence_general_premises_excluded_middle.
+  intro P. apply independence_general_premises_drinker, RDP.
 Qed.
 
 (** * Axioms equivalent to classical logic *)
