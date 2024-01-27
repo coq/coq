@@ -187,10 +187,10 @@ type fix_evaluation_data = {
   refolding_data : fix_refolding;
 }
 
-type constant_evaluation =
+type constant_elimination =
   | EliminationFix of fix_evaluation_data
-  | EliminationCases of int
-  | EliminationProj of int
+  | EliminationCases of constr * int
+  | EliminationProj of constr * int
   | NotAnElimination
 
 (* [compute_consteval] determines whether f is an "elimination constant"
@@ -231,7 +231,7 @@ let compute_fix_reversibility sigma labs args fix =
          | Rel k ->
              if Vars.noccurn sigma k fix && k <= nlam then
                (* Bound in labs and occurring only in args *)
-               (k, List.nth labs (k-1))
+               (k, snd (List.nth labs (k-1)))
              else
                raise Elimconst
          | _ ->
@@ -241,7 +241,7 @@ let compute_fix_reversibility sigma labs args fix =
     raise Elimconst;
   (* Lambda's that are not used should not depend on those that are
      used and that will thus be different in the recursive calls *)
-  List.iteri (fun i t_i ->
+  List.iteri (fun i (_,t_i) ->
     if not (Int.List.mem (i+1) reversible_rels) then
       let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels sigma t_i)) in
       match List.intersect Int.equal fvs reversible_rels with
@@ -281,7 +281,6 @@ let compute_fix_wrapper ((cache,_),allowed_reds) env sigma ref u =
     | Some c ->
       let labs, ccl = whd_decompose_lambda env sigma c in
       let c, l = whd_stack_gen allowed_reds env sigma ccl in
-      let labs = List.map snd labs in
       assert (isFix sigma c);
       Some (labs, l)
   with Not_found (* Undefined ref *) -> None
@@ -313,7 +312,7 @@ let invert_names allowed_reds env sigma ref u names i =
           | None -> None
           | Some (labs', l') ->
               let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
-              if List.equal eq_constr labs' labs &&
+              if List.equal (fun (_,t) (_,t') -> eq_constr t t') labs' labs &&
                  List.equal eq_constr l l' then Some (ref, u)
               else None in
   labs, l, Array.init (Array.length names) make_name
@@ -329,15 +328,15 @@ let deactivate_delta allowed_reds =
 
 let compute_consteval ((cache,_),allowed_reds as cache_reds) env sigma ref u =
   let allowed_reds_no_delta = deactivate_delta allowed_reds in
-  let rec srec env all_abs lastref lastu onlyproj c =
+  let rec srec env all_abs lastref lastu onlyproj c stk =
     let c', args = whd_stack_gen allowed_reds_no_delta env sigma c in
     (* We now know that the initial [ref] evaluates to [fun all_abs => c' args] *)
     (* and that the last visited name in the evaluation is [lastref] *)
     match EConstr.kind sigma c' with
       | Lambda (id,t,g) ->
-          assert (List.is_empty args);
+          assert (List.is_empty args && Stack.is_empty stk);
           let open Context.Rel.Declaration in
-          srec (push_rel (LocalAssum (id,t)) env) (t::all_abs) lastref lastu onlyproj g
+          srec (push_rel (LocalAssum (id,t)) env) ((id,t)::all_abs) lastref lastu onlyproj g Stack.empty
       | Fix ((lv,i),(names,_,_) as fix) when not onlyproj ->
           let n_all_abs = List.length all_abs in
           let nbfix = Array.length lv in
@@ -351,20 +350,22 @@ let compute_consteval ((cache,_),allowed_reds as cache_reds) env sigma ref u =
             let last_labs, last_args, names = invert_names cache_reds env sigma lastref lastu names i in
             try EliminationFix (check_fix_reversibility env sigma lastref lastu last_labs last_args n_all_abs names fix)
             with Elimconst -> NotAnElimination)
-      | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases (List.length all_abs)
-      | Case (_,_,_,_,_,d,_) -> srec env all_abs lastref lastu true d
-      | Proj (p, _, d) when isRel sigma d -> EliminationProj (List.length all_abs)
+      | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj ->
+          EliminationCases (it_mkLambda (Stack.zip sigma (c',Stack.append_app_list args stk)) all_abs, List.length all_abs)
+      | Case (ci,u,pms,p,iv,d,lf) -> srec env all_abs lastref lastu true d Stack.(Case (mkCaseStk (ci,u,pms,p,iv,lf)) :: append_app_list args stk)
+      | Proj (p, _, d) when isRel sigma d ->
+          EliminationProj (it_mkLambda (Stack.zip sigma (c',Stack.append_app_list args stk)) all_abs, List.length all_abs)
       | _ when isTransparentEvalRef env sigma (RedFlags.red_transparent allowed_reds) c' ->
           (* Continue stepwise unfolding from [c' args] *)
           let ref, u = destEvalRefU sigma c' in
           (match reference_opt_value cache env sigma ref u with
             | None -> NotAnElimination (* e.g. if a rel *)
-            | Some c -> srec env all_abs ref u onlyproj (applist (c, args)))
+            | Some c -> srec env all_abs ref u onlyproj (applist (c, args)) stk)
       | _ -> NotAnElimination
   in
   match reference_opt_value cache env sigma ref u with
     | None -> NotAnElimination
-    | Some c -> srec env [] ref u false c
+    | Some c -> srec env [] ref u false c Stack.empty
 
 let make_simpl_cache () =
   CacheTable.create 12, CacheTable.create 12
@@ -681,13 +682,11 @@ let rec red_elim_const ((cache,_),_ as cache_reds) env sigma ref u largs =
       true)
   in
   let ans = match reference_eval cache_reds env sigma ref u with
-    | EliminationCases n when nargs >= n ->
-        let c = reference_value cache env sigma ref u in
+    | EliminationCases (c,n) when nargs >= n ->
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
         let* ans = special_red_case cache_reds env sigma (EConstr.destCase sigma c') in
         Reduced ((ans, lrest), nocase)
-    | EliminationProj n when nargs >= n ->
-        let c = reference_value cache env sigma ref u in
+    | EliminationProj (c,n) when nargs >= n ->
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
         let* ans = reduce_proj cache_reds env sigma c' in
         Reduced ((ans, lrest), nocase)
