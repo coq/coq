@@ -823,9 +823,10 @@ and reduce_fix allowed_reds env sigma f fix stack =
     | Some (recargnum,recarg) ->
        let* (recarg'hd,_ as recarg') =
          whd_construct_stack allowed_reds env sigma recarg in
-        let stack' = List.assign stack recargnum (applist recarg') in
         (match EConstr.kind sigma recarg'hd with
-           | Construct _ -> Reduced (contract_fix env sigma f fix, stack')
+           | Construct _ ->
+             let stack' = List.assign stack recargnum (applist recarg') in
+             Reduced (contract_fix env sigma f fix, stack')
            | _ -> NotReducible)
 
 and reduce_proj allowed_reds env sigma c =
