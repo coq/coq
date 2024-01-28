@@ -1501,7 +1501,7 @@ let vernac_existing_class id =
 (***********)
 (* Solving *)
 
-let command_focus = Proof.new_focus_kind ()
+let command_focus = Proof.new_focus_kind "command_focus"
 let focus_command_cond = Proof.no_cond command_focus
 
 let vernac_set_end_tac pstate tac =
@@ -2132,7 +2132,7 @@ let vernac_unfocused ~pstate =
 (* "{" focuses on the first goal, "n: {" focuses on the n-th goal
     "}" unfocuses, provided that the proof of the goal has been completed.
 *)
-let subproof_kind = Proof.new_focus_kind ()
+let subproof_kind = Proof.new_focus_kind "subproof"
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln ~pstate =

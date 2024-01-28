@@ -619,7 +619,7 @@ let extend_constr state forpat ng =
   in
   List.fold_left fold ([], state) ng.notgram_prods
 
-let constr_levels = GramState.field ()
+let constr_levels = GramState.field "constr_levels"
 
 let is_disjunctive_pattern_rule ng =
   String.is_sub "( _ | " (snd ng.notgram_notation) 0

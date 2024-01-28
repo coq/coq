@@ -19,7 +19,7 @@ let of_int id = id
 let to_int id = id
 let newer_than id1 id2 = id1 > id2
 
-let state_id_info : (t * t) Exninfo.t = Exninfo.make ()
+let state_id_info : (t * t) Exninfo.t = Exninfo.make "stateid"
 let add exn ~valid id =
   Exninfo.add exn state_id_info (valid, id)
 let get exn = Exninfo.get exn state_id_info

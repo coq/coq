@@ -44,11 +44,7 @@ type 'a focus_condition =
   | CondDone     of bool * 'a focus_kind
   | CondEndStack of        'a focus_kind (* loose_end is false here *)
 
-let next_kind = ref 0
-let new_focus_kind () =
-  let r = !next_kind in
-  incr next_kind;
-  FocusKind.anonymous r
+let new_focus_kind = FocusKind.create
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -273,7 +269,7 @@ let rec maximal_unfocus k p =
 (*** Proof Creation/Termination ***)
 
 (* [end_of_stack] is unfocused by return to close every loose focus. *)
-let end_of_stack_kind = new_focus_kind ()
+let end_of_stack_kind = new_focus_kind "end_of_stack"
 let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind

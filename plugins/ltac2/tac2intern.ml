@@ -35,7 +35,7 @@ let t_pattern = coq_type "pattern"
 let t_bool = coq_type "bool"
 
 let ltac2_env : Tac2typing_env.t Genintern.Store.field =
-  Genintern.Store.field ()
+  Genintern.Store.field "ltac2_env"
 
 let drop_ltac2_env store =
   Genintern.Store.remove store ltac2_env

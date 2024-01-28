@@ -1730,7 +1730,7 @@ let print_mp mp =
 
 let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 
-let hint_trace = Evd.Store.field ()
+let hint_trace = Evd.Store.field "hint_trace"
 
 let log_hint h =
   let open Proofview.Notations in

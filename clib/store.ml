@@ -20,7 +20,7 @@ module type S =
 sig
   type t
   type 'a field
-  val field : unit -> 'a field
+  val field : string -> 'a field
   val empty : t
   val set : t -> 'a field -> 'a -> t
   val get : t -> 'a field -> 'a option
@@ -36,11 +36,7 @@ struct
   type t = Map.t
   type 'a field = 'a Dyn.tag
 
-  let next = ref 0
-  let field () =
-    let f = Dyn.anonymous !next in
-    incr next;
-    f
+  let field = Dyn.create
 
   let empty =
     Map.empty

@@ -1350,12 +1350,13 @@ let unprotecttac =
 module type StateType = sig
   type state
   val init : state
+  val name : string
 end
 
 module MakeState(S : StateType) = struct
 
 let state_field : S.state Proofview_monad.StateStore.field =
-  Proofview_monad.StateStore.field ()
+  Proofview_monad.StateStore.field S.name
 
 (* FIXME: should not inject fresh_state, but initialize it at the beginning *)
 let lift_upd_state upd s =

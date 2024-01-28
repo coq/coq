@@ -99,7 +99,7 @@ val return : ?pid:Names.Id.t -> t -> Evd.evar_map
     of the declarative mode where sub-tactics must be aware of the current
     induction argument. *)
 type 'a focus_kind
-val new_focus_kind : unit -> 'a focus_kind
+val new_focus_kind : string -> 'a focus_kind
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.

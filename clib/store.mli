@@ -19,8 +19,8 @@ sig
   type 'a field
   (** Type of field of such stores *)
 
-  val field : unit -> 'a field
-  (** Create a new field *)
+  val field : string -> 'a field
+  (** Create a new field. See also [Dyn.create]. *)
 
   val empty : t
   (** Empty store *)

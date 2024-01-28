@@ -196,7 +196,7 @@ let err_division_by_zero =
 
 let thaw f = Tac2ffi.apply f [v_unit]
 
-let fatal_flag : unit Exninfo.t = Exninfo.make ()
+let fatal_flag : unit Exninfo.t = Exninfo.make "fatal_flag"
 
 let has_fatal_flag info = match Exninfo.get info fatal_flag with
   | None -> false

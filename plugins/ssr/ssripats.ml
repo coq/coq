@@ -151,6 +151,7 @@ let empty_state = {
 include Ssrcommon.MakeState(struct
   type state = istate
   let init = empty_state
+  let name = "ssripats"
 end)
 
 let print_name_seed env sigma = function
