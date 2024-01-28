@@ -236,6 +236,10 @@ let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
 let constr = repr_ext val_constr
 
+let of_preterm c = of_ext val_preterm c
+let to_preterm c = to_ext val_preterm c
+let preterm = repr_ext val_preterm
+
 let of_cast c = of_ext val_cast c
 let to_cast c = to_ext val_cast c
 let cast = repr_ext val_cast

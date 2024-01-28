@@ -81,6 +81,14 @@ let () =
     Ltac_plugin.Tacinterp.Value.to_constr
 
 let () =
+  define "ltac1_of_preterm" (preterm @-> ret ltac1)
+    Ltac_plugin.Taccoerce.Value.of_uconstr
+
+let () =
+  define "ltac1_to_preterm" (ltac1 @-> ret (option preterm))
+    Ltac_plugin.Taccoerce.Value.to_uconstr
+
+let () =
   define "ltac1_of_ident" (ident @-> ret ltac1)
     Ltac_plugin.Taccoerce.Value.of_ident
 

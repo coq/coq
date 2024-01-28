@@ -40,6 +40,10 @@ Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "coq-core.plugins
 Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_constr".
 Ltac2 @ external to_constr : t -> constr option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_constr".
 
+(** [preterm] is called [uconstr] in Ltac1. *)
+Ltac2 @ external of_preterm : preterm -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_preterm".
+Ltac2 @ external to_preterm : t -> preterm option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_preterm".
+
 Ltac2 @ external of_ident : ident -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_ident".
 Ltac2 @ external to_ident : t -> ident option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_ident".
 

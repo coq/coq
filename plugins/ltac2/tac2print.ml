@@ -831,7 +831,7 @@ let () = register_init "constr" begin fun env sigma c ->
 end
 
 let () = register_init "preterm" begin fun env sigma c ->
-  let c = to_ext val_preterm c in
+  let c = to_preterm c in
   (* XXX should we get the ltac2 env out of the closure and print it too? Maybe with a debug flag? *)
   let c = try Printer.pr_closed_glob_env env sigma c with _ -> str "..." in
   str "preterm:(" ++ c ++ str ")"

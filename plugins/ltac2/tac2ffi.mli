@@ -111,6 +111,10 @@ val of_constr : EConstr.t -> valexpr
 val to_constr : valexpr -> EConstr.t
 val constr : EConstr.t repr
 
+val of_preterm : Ltac_pretype.closed_glob_constr -> valexpr
+val to_preterm : valexpr -> Ltac_pretype.closed_glob_constr
+val preterm : Ltac_pretype.closed_glob_constr repr
+
 val of_cast : Constr.cast_kind -> valexpr
 val to_cast : valexpr -> Constr.cast_kind
 val cast : Constr.cast_kind repr
