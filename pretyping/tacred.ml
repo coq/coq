@@ -711,44 +711,9 @@ let make_hnf_reds env =
    constants by keeping the name of the constants in the recursive calls;
    it fails if no redex is around *)
 
-let rec red_elim_const ((cache,_,_),(behavior, _) as cache_reds) env sigma ref u largs =
-  let open ReductionBehaviour in
+let rec red_elim_const ((cache,_,_),_ as cache_reds) env sigma ref u largs =
   let nargs = List.length largs in
-  let* largs, unfold_anyway, unfold_nonelim, nocase =
-    match recargs behavior ref with
-    | None -> Reduced (largs, false, false, false)
-    | Some NeverUnfold -> NotReducible
-    | Some (UnfoldWhen { nargs = Some n } | UnfoldWhenNoMatch { nargs = Some n })
-      when nargs < n -> NotReducible
-    | Some (UnfoldWhen { recargs = x::l } | UnfoldWhenNoMatch { recargs = x::l })
-      when nargs <= List.fold_left max x l -> NotReducible
-    | Some (UnfoldWhen { recargs; nargs = None }) ->
-      let* params = reduce_params cache_reds env sigma largs recargs in
-      Reduced (params,
-      false,
-      false,
-      false)
-    | Some (UnfoldWhenNoMatch { recargs; nargs = None }) ->
-      let* params = reduce_params cache_reds env sigma largs recargs in
-      Reduced (params,
-      false,
-      false,
-      true)
-    | Some (UnfoldWhen { recargs; nargs = Some n }) ->
-      let is_empty = List.is_empty recargs in
-      let* params = reduce_params cache_reds env sigma largs recargs in
-      Reduced (params,
-      is_empty && nargs >= n,
-      not is_empty && nargs >= n,
-      false)
-    | Some (UnfoldWhenNoMatch { recargs; nargs = Some n }) ->
-      let is_empty = List.is_empty recargs in
-      let* params = reduce_params cache_reds env sigma largs recargs in
-      Reduced (params,
-      is_empty && nargs >= n,
-      not is_empty && nargs >= n,
-      true)
-  in
+  let* largs, unfold_anyway, unfold_nonelim, nocase = get_unfold_flags cache_reds env sigma ref nargs largs in
   let ans = match compute_reference_elimination cache_reds env sigma ref u with
     | EliminationCases (c,n) when nargs >= n ->
         let c', stack = whd_nothing_for_iota env sigma (c, largs) in
@@ -774,6 +739,42 @@ let rec red_elim_const ((cache,_,_),(behavior, _) as cache_reds) env sigma ref u
     let c = reference_value cache env sigma ref u in
     Reduced ((whd_betaiotazeta env sigma (applist (c, largs)), []), nocase)
   | _ -> ans
+
+and get_unfold_flags (_,(behavior,_) as cache_reds) env sigma ref nargs largs =
+  let open ReductionBehaviour in
+  match recargs behavior ref with
+  | None -> Reduced (largs, false, false, false)
+  | Some NeverUnfold -> NotReducible
+  | Some (UnfoldWhen { nargs = Some n } | UnfoldWhenNoMatch { nargs = Some n })
+    when nargs < n -> NotReducible
+  | Some (UnfoldWhen { recargs = x::l } | UnfoldWhenNoMatch { recargs = x::l })
+    when nargs <= List.fold_left max x l -> NotReducible
+  | Some (UnfoldWhen { recargs; nargs = None }) ->
+    let* params = reduce_params cache_reds env sigma largs recargs in
+    Reduced (params,
+    false,
+    false,
+    false)
+  | Some (UnfoldWhenNoMatch { recargs; nargs = None }) ->
+    let* params = reduce_params cache_reds env sigma largs recargs in
+    Reduced (params,
+    false,
+    false,
+    true)
+  | Some (UnfoldWhen { recargs; nargs = Some n }) ->
+    let is_empty = List.is_empty recargs in
+    let* params = reduce_params cache_reds env sigma largs recargs in
+    Reduced (params,
+    is_empty && nargs >= n,
+    not is_empty && nargs >= n,
+    false)
+  | Some (UnfoldWhenNoMatch { recargs; nargs = Some n }) ->
+    let is_empty = List.is_empty recargs in
+    let* params = reduce_params cache_reds env sigma largs recargs in
+    Reduced (params,
+    is_empty && nargs >= n,
+    not is_empty && nargs >= n,
+    true)
 
 and reduce_params cache_reds env sigma stack l =
   let len = List.length stack in
@@ -941,6 +942,8 @@ and whd_construct ((cache,_,_),(_,allowed_reds) as cache_reds) env sigma c =
   let (constr, cargs) = whd_simpl_stack cache_reds env sigma c in
   match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
+    let nargs = List.length cargs in
+    let* cargs, unfold_anyway, unfold_nonelim, nocase = get_unfold_flags cache_reds env sigma ref nargs cargs in
     (match compute_reference_coelimination cache_reds env sigma ref u with
      | CoEliminationConstruct c -> Reduced (None, whd_stack_gen allowed_reds env sigma (applist (c, cargs)))
      | CoEliminationPrimitive c -> Reduced (None, whd_stack_gen allowed_reds env sigma (applist (c, cargs)))
@@ -953,7 +956,9 @@ and whd_construct ((cache,_,_),(_,allowed_reds) as cache_reds) env sigma c =
        (* Now try to get a construct/cofix/prim using the arguments of the constant
           so that possible internal iota-redexes are triggered *)
        whd_construct cache_reds env sigma (c, cargs)
-     | NotACoEliminationConstant -> NotReducible)
+     | NotACoEliminationConstant ->
+       if unfold_anyway || unfold_nonelim (* ?? *) then whd_construct cache_reds env sigma (reference_value cache env sigma ref u, cargs)
+       else NotReducible)
   | None ->
     if reducible_construct sigma constr then Reduced (None, (constr, cargs))
     else NotReducible

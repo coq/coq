@@ -2338,7 +2338,7 @@ Qed.
 Lemma pow_IPR (q p: positive) : IPR (q ^ p) = pow (IPR q) (Pos.to_nat p).
 Proof.
   induction p as [| p IH] using Pos.peano_ind.
-  - now simpl; rewrite Pos.pow_1_r, Rmult_1_r.
+  - now unfold Pos.to_nat; simpl; rewrite Pos.pow_1_r, Rmult_1_r.
   - now rewrite Pos.pow_succ_r, mult_IPR, Pos2Nat.inj_succ; simpl; rewrite IH.
 Qed.
 

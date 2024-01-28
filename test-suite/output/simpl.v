@@ -13,6 +13,8 @@ Show.
 Undo.
 Abort.
 
+(* Simpl never *)
+
 Require Import String.
 Open Scope string_scope.
 Module NonRecursiveDefinition.
