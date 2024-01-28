@@ -619,12 +619,19 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Failure _ ->
     None
 
-let contract_projection env sigma p ~npars (hd, args) =
+let contract_projection env sigma f (p,r) ~npars (hd, args) =
   match EConstr.kind sigma hd with
   | Construct _ ->
     let proj_narg = npars + Projection.arg p in
     Reduced (List.nth args proj_narg)
-  | CoFix _ -> NotReducible (* TODO: see bug #7982 *)
+  | CoFix cofix ->
+    let cofix_def = contract_cofix env sigma f cofix in
+    (* If the cofix_def does not reduce to a constructor, do we
+       really want to say it is Reduced? Consider e.g.:
+       CoInductive stream := cons { hd : bool; tl : stream }.
+       CoFixpoint const (x : bool) := if x then cons x (const x) else cons x (const x).
+       Eval simpl in fun x => (const x).(tl) *)
+    Reduced (mkProj (p, r, applist(cofix_def, args)))
   | _ -> NotReducible
 
 let rec beta_applist sigma accu c stk = match EConstr.kind sigma c, stk with
@@ -801,7 +808,7 @@ and whd_simpl_stack cache_reds env sigma =
         | Reduced s' -> redrec s'
         | NotReducible -> s'
         end
-      | Proj (p, _, c) ->
+      | Proj (p, r, c) ->
         let ans =
            let unf = Projection.unfolded p in
            if unf || is_evaluable env (EvalProjectionRef (Projection.repr p)) then
@@ -814,10 +821,10 @@ and whd_simpl_stack cache_reds env sigma =
                     let idx = (i - (npars + 1)) in
                     if idx < 0 then None else Some idx) recargs in
                 let* stack = reduce_params cache_reds env sigma stack l' in
-                let* c = reduce_projection cache_reds env sigma p ~npars c in
+                let* c = reduce_projection cache_reds env sigma (p,r) ~npars c in
                 Reduced (c, stack)
               | _ ->
-                let* c = reduce_projection cache_reds env sigma p ~npars c in
+                let* c = reduce_projection cache_reds env sigma (p,r) ~npars c in
                 Reduced (c, stack)
             else NotReducible
           in
@@ -875,10 +882,10 @@ and reduce_fix cache_reds env sigma f fix stack =
 and reduce_nested_projection cache_reds env sigma c =
   let rec redrec c =
     match EConstr.kind sigma c with
-    | Proj (proj, _, c) ->
+    | Proj (p, r, c) ->
       let c' = match redrec c with NotReducible -> c | Reduced c -> c in
-      let npars = Projection.npars proj in
-      reduce_projection cache_reds env sigma proj ~npars c'
+      let npars = Projection.npars p in
+      reduce_projection cache_reds env sigma (p,r) ~npars c'
     | Case (n,u,pms,p,iv,c,brs) ->
       let* c' = redrec c in
       let p = (n,u,pms,p,iv,c',brs) in
@@ -890,8 +897,8 @@ and reduce_nested_projection cache_reds env sigma c =
   in redrec c
 
 and reduce_projection cache_reds env sigma p ~npars c =
-  let* s = whd_construct_stack cache_reds env sigma c in (* TODO: use cofix refolding *)
-  contract_projection env sigma p ~npars s
+  let* f, s = whd_construct cache_reds env sigma (c, []) in
+  contract_projection env sigma f p ~npars s
 
 and reduce_case cache_reds env sigma (ci, u, pms, p, iv, c, lf) =
   let* f, (hd, args) = whd_construct cache_reds env sigma (c, []) in
@@ -976,14 +983,14 @@ let try_red_product env sigma c =
       | Case (ci,u,pms,p,iv,d,lf) ->
         let* d = redrec env d in
         Reduced (simpfun (mkCase (ci,u,pms,p,iv,d,lf)))
-      | Proj (p, _, c) ->
+      | Proj (p, r, c) ->
         let* c' =
           match EConstr.kind sigma c with
-          | Construct _ -> Reduced c (* Add CoFix? *)
+          | Construct _ | CoFix _ -> Reduced c
           | _ -> redrec env c
         in
         let npars = Projection.npars p in
-        let* c = contract_projection env sigma p ~npars (whd_betaiotazeta_stack env sigma c') in
+        let* c = contract_projection env sigma None (p,r) ~npars (whd_betaiotazeta_stack env sigma c') in
         Reduced (simpfun c)
       | _ ->
         (match match_eval_ref env sigma x [] with
