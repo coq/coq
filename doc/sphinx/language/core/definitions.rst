@@ -100,8 +100,8 @@ Section :ref:`typing-rules`.
 
    These commands also support the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
-   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated` and
-   :attr:`using` attributes.
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
+   :attr:`warn` and :attr:`using` attributes.
 
    If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
@@ -174,7 +174,7 @@ The basic assertion command is:
    command :cmd:`Guarded`.
 
    This command accepts the :attr:`bypass_check(universes)`,
-   :attr:`bypass_check(guard)`, :attr:`deprecated`, and :attr:`using` attributes.
+   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn`, and :attr:`using` attributes.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:

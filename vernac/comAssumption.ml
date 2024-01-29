@@ -39,7 +39,7 @@ let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
   | UState.Monomorphic_entry _ -> UVars.Instance.empty
 
-let declare_axiom is_coe ~local ~kind ?deprecation typ (univs, ubinders) imps nl {CAst.v=name} =
+let declare_axiom is_coe ~local ~kind ?user_warns typ (univs, ubinders) imps nl {CAst.v=name} =
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -48,7 +48,7 @@ let declare_axiom is_coe ~local ~kind ?deprecation typ (univs, ubinders) imps nl
   let kind = Decls.IsAssumption kind in
   let entry = Declare.parameter_entry ~univs:(univs, ubinders) ?inline:inl typ in
   let decl = Declare.ParameterEntry entry in
-  let kn = Declare.declare_constant ~name ~local ~kind ?deprecation decl in
+  let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.assumption_message name in
@@ -85,7 +85,7 @@ let clear_univs scope univ =
   | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry ~poly:false
   | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry ~poly:true
 
-let declare_assumptions ~scope ~kind ?deprecation univs nl l =
+let declare_assumptions ~scope ~kind ?user_warns univs nl l =
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
       (* NB: here univs are ignored when scope=Discharge *)
       let typ = replace_vars subst typ in
@@ -96,7 +96,7 @@ let declare_assumptions ~scope ~kind ?deprecation univs nl l =
                 declare_variable is_coe ~kind typ univs imps Glob_term.Explicit id;
                 GlobRef.VarRef id.CAst.v, UVars.Instance.empty
               | Locality.Global local ->
-                declare_axiom is_coe ~local ~kind ?deprecation typ univs imps nl id
+                declare_axiom is_coe ~local ~kind ?user_warns typ univs imps nl id
             in
             clear_univs scope univs, (id.CAst.v, Constr.mkRef refu))
           univs idl
@@ -131,7 +131,7 @@ let process_assumptions_udecls ~scope l =
   in
   udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
 
-let do_assumptions ~program_mode ~poly ~scope ~kind ?deprecation nl l =
+let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let udecl, l = process_assumptions_udecls ~scope l in
@@ -174,7 +174,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?deprecation nl l =
      this case too. *)
   let sigma = Evd.restrict_universe_context sigma uvars in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  declare_assumptions ~scope ~kind ?deprecation univs nl l
+  declare_assumptions ~scope ~kind ?user_warns univs nl l
 
 let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl

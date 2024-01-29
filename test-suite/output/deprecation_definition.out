@@ -28,3 +28,14 @@ Warning: Reference depr6 is deprecated. deprecable
 [deprecated-reference,deprecated,default]
 depr6
      : nat -> nat
+File "./output/deprecation_definition.v", line 38, characters 6-11:
+Warning: Reference depr7 is deprecated. deprecable
+[deprecated-reference,deprecated,default]
+File "./output/deprecation_definition.v", line 38, characters 6-11:
+Warning: be careful
+[warn-reference-be-careful-careful,careful,be-careful,warn-reference,user-warn,default]
+File "./output/deprecation_definition.v", line 38, characters 6-11:
+Warning: also about bla
+[warn-reference-careful-careful-bla,careful-bla,careful,warn-reference,user-warn,default]
+depr7
+     : Prop

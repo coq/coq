@@ -21,7 +21,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
    are present, either one may appear first and they must be separated
    by a comma. If they are present, they will be used in the warning
    message, and :n:`since` will also be used in the warning name and
-   categories.
+   categories. Spaces inside :n:`since` are changed to hyphens.
 
    This attribute is supported by the following commands: :cmd:`Ltac`,
    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`, :cmd:`Ltac2`,
@@ -66,6 +66,33 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
      if it breaks.
 
    See :cite:`Zimmermann19`, Section 3.6.3, for more details.
+
+Triggering warning for library objects or library files
+-------------------------------------------------------
+
+You may use the following :term:`attribute` to trigger a warning on a
+notation, definition, axiom, theorem or file.
+
+.. attr:: warn ( note = @string , {? cats = @string } )
+   :name: warn
+
+   The :n:`note` field will be used as the warning message, and
+   :n:`cats` is a comma separated list of categories to be used in the
+   warning name and categories. Leading and trailing spaces in each
+   category are trimmed, whereas internal spaces are changed to
+   hyphens. If both :n:`note` and :n:`cats` are present, either one
+   may appear first and they must be separated by a comma.
+
+   This attribute is supported by the following commands:
+   :cmd:`Definition`, :cmd:`Theorem`,
+   and similar commands.
+
+   It can trigger the following warning:
+
+   .. warn:: @string__note
+
+      :n:`@string__note` is the note. It's common practice to start it
+      with a capital and end it with a period.
 
 .. example:: Deprecating a tactic.
 

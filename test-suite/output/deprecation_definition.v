@@ -30,3 +30,9 @@ Check depr3.
 Check depr4.
 Check depr5.
 Check depr6.
+
+#[deprecated(note="deprecable"),
+  warn(note="be careful", cats="careful, be careful"),
+  warn(note="also about bla", cats="careful, careful bla")]
+Definition depr7 := True.
+Check depr7.

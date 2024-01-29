@@ -114,7 +114,7 @@ let nf_evar_context sigma ctx =
   in
   List.map map ctx
 
-let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?deprecation ?using r measure notation =
+let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_warns ?using r measure notation =
   let open EConstr in
   let open Vars in
   let fix_sub_ref, measure_on_R_ref = try fix_sub_ref (), measure_on_R_ref ()
@@ -278,7 +278,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?depreca
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
-  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags ?user_warns () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
   pm
@@ -290,7 +290,7 @@ let out_def = function
 let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
-let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation ?using fixkind fixl =
+let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
     let env = Global.env () in
@@ -345,16 +345,16 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation 
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 
-let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation ?using l =
+let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?deprecation ?using r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?user_warns ?using r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -380,6 +380,6 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?deprecation ?using l 
       CErrors.user_err
         (str "Well-founded fixpoints not allowed in mutually recursive blocks.")
 
-let do_cofixpoint ~pm ~scope ~poly ?deprecation ?using fixl =
+let do_cofixpoint ~pm ~scope ~poly ?user_warns ?using fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~pm ~scope ~poly ?deprecation ?using Declare.Obls.IsCoFixpoint fixl
+  do_program_recursive ~pm ~scope ~poly ?user_warns ?using Declare.Obls.IsCoFixpoint fixl

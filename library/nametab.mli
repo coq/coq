@@ -104,7 +104,7 @@ type visibility = Until of int | Exactly of int
 
 val map_visibility : (int -> int) -> visibility -> visibility
 
-val push : ?deprecated:Deprecation.t -> visibility -> full_path -> GlobRef.t -> unit
+val push : ?user_warns:UserWarn.t -> visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
@@ -117,6 +117,12 @@ val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
 val is_deprecated_xref : Globnames.extended_global_reference -> Deprecation.t option
 
 val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
+
+(** Deprecation and user warn info *)
+
+val is_warned_xref : Globnames.extended_global_reference -> UserWarn.t option
+
+val warn_user_warn_xref : ?loc:Loc.t -> UserWarn.t -> Globnames.extended_global_reference -> unit
 
 (** {6 The following functions perform globalization of qualified names } *)
 

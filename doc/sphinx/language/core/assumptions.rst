@@ -170,8 +170,8 @@ has type :n:`@type`.
 
    These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
    the global environment. The fact asserted by :n:`@type` (or, equivalently, the existence
-   of an object of this type) is accepted as a postulate.  They accept the :attr:`program`
-   and :attr:`deprecated` attributes.
+   of an object of this type) is accepted as a postulate.  They accept the :attr:`program`,
+   :attr:`deprecated` and :attr:`warn` attributes.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
    are equivalent.  They can take the :attr:`local` :term:`attribute`,
