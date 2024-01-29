@@ -1,4 +1,4 @@
-:SPHINXCOQEXTRAFLAGS: -allow-rewrite-rules
+:COQTOP_ARGS: -allow-rewrite-rules
 
 .. _rewrite_rules:
 
