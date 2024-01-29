@@ -870,7 +870,8 @@ let reduction_equations = tr_cstr_sys "reduction_equations" reduction_equations
 
 open ProofFormat
 
-let xlia red sys =
+let xlia sys =
+  let sys = make_cstr_system sys in
   let compile_prf sys prf =
     let id =
       1
@@ -881,7 +882,7 @@ let xlia red sys =
     Prf (compile_proof (Env.make id) prf)
   in
   try
-    let sys = red sys in
+    let sys = reduction_equations sys in
     match Simplex.integer_solver sys with
     | None -> Unknown
     | Some prf -> compile_prf sys prf
@@ -994,8 +995,7 @@ let lia (prfdepth : int) sys =
       sys
   end;
   let sys = pre_process sys in
-  let sys = make_cstr_system sys in
-  xlia reduction_equations sys
+  xlia sys
 
 let nlia prfdepth sys =
   let sys = develop_constraints prfdepth z_spec sys in
@@ -1005,8 +1005,7 @@ let nlia prfdepth sys =
     List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys
   end;
   if is_linear then
-    xlia reduction_equations
-      (make_cstr_system (pre_process sys))
+    xlia (pre_process sys)
   else
     (*
       let sys1 = elim_every_substitution sys in
@@ -1020,9 +1019,7 @@ let nlia prfdepth sys =
     let bnd1 = bound_monomials sys1 in
     let sys2 = saturate_by_linear_equalities sys1 in
     let sys3 = nlinear_preprocess (rev_concat [bnd1; sys1; sys2]) in
-    let sys4 = make_cstr_system (*sys2@*) sys3 in
-    (* [reduction_equations] is too brutal - there should be some non-linear reasoning  *)
-    xlia reduction_equations sys4
+    xlia sys3
 
 (* For regression testing, if bench = true generate a Coq goal *)
 
