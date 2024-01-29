@@ -459,9 +459,7 @@ let push_cci ?user_warns visibility sp ref =
   push_xref ?user_warns visibility sp (TrueGlobal ref)
 
 (* This is for Syntactic Definitions *)
-let push_abbreviation ?deprecated visibility sp kn =
-  let user_warns = deprecated |>
-    Option.map (fun depr -> UserWarn.{ depr = deprecated; warn = [] }) in
+let push_abbreviation ?user_warns visibility sp kn =
   push_xref ?user_warns visibility sp (Abbrev kn)
 
 let remove_abbreviation sp kn =
@@ -584,10 +582,6 @@ let warn_deprecated_xref ?loc depr = function
 
 let warn_user_warn =
   UserWarn.create_warning ~warning_name_if_no_cats:"warn-reference" ()
-
-let is_deprecated_xref xref : Deprecation.t option =
-  Option.bind (Globnames.ExtRefMap.find_opt xref !the_globwarntab)
-    (fun w -> w.UserWarn.depr)
 
 let is_warned_xref xref : UserWarn.t option = Globnames.ExtRefMap.find_opt xref !the_globwarntab
 

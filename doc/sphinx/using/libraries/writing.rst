@@ -84,7 +84,7 @@ notation, definition, axiom, theorem or file.
    may appear first and they must be separated by a comma.
 
    This attribute is supported by the following commands:
-   :cmd:`Definition`, :cmd:`Theorem`,
+   :cmd:`Notation`, :cmd:`Infix`, :cmd:`Definition`, :cmd:`Theorem`,
    and similar commands.
 
    It can trigger the following warning:

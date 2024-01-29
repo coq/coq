@@ -108,15 +108,9 @@ val push : ?user_warns:UserWarn.t -> visibility -> full_path -> GlobRef.t -> uni
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
+val push_abbreviation : ?user_warns:UserWarn.t -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
-
-(** Deprecation info *)
-
-val is_deprecated_xref : Globnames.extended_global_reference -> Deprecation.t option
-
-val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
 
 (** Deprecation and user warn info *)
 

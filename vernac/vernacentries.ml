@@ -1537,9 +1537,9 @@ let vernac_hints ~atts dbnames h =
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_abbreviation ~atts lid x only_parsing =
-  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
+  let module_local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns) atts) in
   Dumpglob.dump_definition lid false "abbrev";
-  Metasyntax.add_abbreviation ~local:module_local deprecation (Global.env()) lid.v x only_parsing
+  Metasyntax.add_abbreviation ~local:module_local user_warns (Global.env()) lid.v x only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;

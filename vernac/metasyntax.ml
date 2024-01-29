@@ -1037,7 +1037,7 @@ let check_useless_entry_types recvars mainvars etyps =
 type notation_main_data = {
   onlyparsing  : bool;
   onlyprinting : bool;
-  deprecation  : Deprecation.t option;
+  user_warns   : UserWarn.t option;
   entry        : notation_entry;
   format       : unparsing Loc.located list option;
   itemscopes  : (Id.t * scope_name) list;
@@ -1089,7 +1089,7 @@ let set_item_scope ?loc main_data ids sc =
   | (id,_)::_ -> user_err ?loc (str "Notation scope for argument " ++ Id.print id ++ str " can be specified only once.")
   | [] -> { main_data with itemscopes }
 
-let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
+let interp_non_syntax_modifiers ~reserved ~infix ~abbrev user_warns mods =
   let set (main_data,rest) = CAst.with_loc_val (fun ?loc -> function
     | SetOnlyParsing ->
        if not (Option.is_empty main_data.format) then
@@ -1107,7 +1107,7 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
   in
   let main_data =
     {
-      onlyparsing = false; onlyprinting = false; deprecation;
+      onlyparsing = false; onlyprinting = false; user_warns;
       entry = InConstrEntry; format = None; itemscopes = []
     }
   in
@@ -1462,7 +1462,7 @@ type notation_obj = {
   notobj_interp : interpretation;
   notobj_coercion : entry_coercion_kind option;
   notobj_use : notation_use option;
-  notobj_deprecation : Deprecation.t option;
+  notobj_user_warns : UserWarn.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : notation_printing_rules option;
 }
@@ -1485,11 +1485,11 @@ let open_notation i nobj =
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
     let pat = nobj.notobj_interp in
-    let deprecation = nobj.notobj_deprecation in
+    let user_warns = nobj.notobj_user_warns in
     let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
     (* Declare the notation *)
     (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion user_warns
     | None -> ());
     (* Declare specific format if any *)
     (match nobj.notobj_specific_pp_rules with
@@ -1734,7 +1734,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     notobj_use = use;
     notobj_interp = (vars, ac);
     notobj_coercion = coe;
-    notobj_deprecation = main_data.deprecation;
+    notobj_user_warns = main_data.user_warns;
     notobj_notation = df';
     notobj_specific_pp_rules = sy_pp_rules;
   }
@@ -1792,10 +1792,10 @@ let set_notation_for_interpretation env impls (ntn_decl, main_data, notation_sym
   Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Lib.add_leaf (inScope (false,true,sc))) sc
 
-let build_notation_syntax ~local ~infix deprecation ntn_decl =
+let build_notation_syntax ~local ~infix user_warns ntn_decl =
   let { ntn_decl_string = {CAst.loc;v=df}; ntn_decl_modifiers = modifiers; ntn_decl_interp = c } = ntn_decl in
   (* Extract the modifiers not affecting the parsing rule *)
-  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false deprecation modifiers in
+  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false user_warns modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
   let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   (* Add variables on both sides if an infix notation *)
@@ -1819,9 +1819,9 @@ let build_notation_syntax ~local ~infix deprecation ntn_decl =
   in
   main_data, notation_symbols, ntn, syntax_rules, c, df
 
-let add_notation_syntax ~local ~infix deprecation ntn_decl =
+let add_notation_syntax ~local ~infix user_warns ntn_decl =
   (* Build or rebuild the syntax rules *)
-  let main_data, notation_symbols, ntn, syntax_rules, c, df = build_notation_syntax ~local ~infix deprecation ntn_decl in
+  let main_data, notation_symbols, ntn, syntax_rules, c, df = build_notation_syntax ~local ~infix user_warns ntn_decl in
   (* Declare syntax *)
   syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
   let ntn_decl_string = CAst.make ?loc:ntn_decl.ntn_decl_string.CAst.loc df in
@@ -1899,15 +1899,15 @@ let remove_delimiters local scope =
 let add_class_scope local scope where cl =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses (where, cl)))
 
-let interp_abbreviation_modifiers deprecation modl =
-  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true deprecation modl in
+let interp_abbreviation_modifiers user_warns modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true user_warns modl in
   if skipped <> [] then
     (let modifier = List.hd skipped in
     user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
   (mods.onlyparsing, mods.itemscopes)
 
-let add_abbreviation ~local deprecation env ident (vars,c) modl =
-  let (only_parsing, scopes) = interp_abbreviation_modifiers deprecation modl in
+let add_abbreviation ~local user_warns env ident (vars,c) modl =
+  let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
@@ -1930,7 +1930,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
-  Abbreviation.declare_abbreviation ~local deprecation ident ~onlyparsing (vars,pat)
+  Abbreviation.declare_abbreviation ~local user_warns ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Activating/deactivating notations                                  *)

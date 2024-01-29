@@ -3,6 +3,11 @@ Module Syndefs.
 #[deprecated(since = "8.9", note = "Do not use.")]
 Notation foo := Prop.
 
+Fail
+#[deprecated(since = "8.9", note = "Do not use."),
+  deprecated(since = "8.10", note = "Duplicated deprecation.")]
+Notation foo := Prop.
+
 Check foo.
 
 Set Warnings "+deprecated".

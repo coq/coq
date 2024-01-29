@@ -443,8 +443,8 @@ let rec synterp ?loc ~atts v =
       with_module_locality ~atts synterp_reserved_notation ~infix sl;
       EVernacNoop
     | VernacNotation (infix,ntn_decl) ->
-      let local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-      let decl = Metasyntax.add_notation_syntax ~local ~infix deprecation ntn_decl in
+      let local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns) atts) in
+      let decl = Metasyntax.add_notation_syntax ~local ~infix user_warns ntn_decl in
       EVernacNotation { local; decl }
     | VernacDeclareCustomEntry s ->
       with_module_locality ~atts synterp_custom_entry s;

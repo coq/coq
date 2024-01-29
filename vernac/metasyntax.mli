@@ -26,7 +26,7 @@ type notation_interpretation_decl
 val add_notation_syntax :
   local:bool ->
   infix:bool ->
-  Deprecation.t option ->
+  UserWarn.t option ->
   notation_declaration ->
   notation_interpretation_decl
 (** Add syntax rules for a (constr) notation in the environment *)
@@ -63,7 +63,7 @@ val add_reserved_notation :
 
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
-val add_abbreviation : local:bool -> Deprecation.t option -> env ->
+val add_abbreviation : local:bool -> UserWarn.t option -> env ->
   Id.t -> Id.t list * constr_expr -> syntax_modifier CAst.t list -> unit
 
 (** Print the Camlp5 state of a grammar *)

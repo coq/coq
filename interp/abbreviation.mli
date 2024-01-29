@@ -15,7 +15,7 @@ open Globnames
 
 (** Abbreviations. *)
 
-val declare_abbreviation : local:bool -> Deprecation.t option -> Id.t ->
+val declare_abbreviation : local:bool -> UserWarn.t option -> Id.t ->
   onlyparsing:bool -> interpretation -> unit
 
 val search_abbreviation : abbreviation -> interpretation
