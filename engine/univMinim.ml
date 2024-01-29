@@ -315,11 +315,13 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
   let smallles = match (lbound : UGraph.Bound.t) with
     | Prop -> smallles
     | Set when get_set_minimization () ->
-
-      let smallles = Constraints.filter (fun (l,d,r) -> UnivFlex.mem r us) smallles in
+      Constraints.filter (fun (l,d,r) -> UnivFlex.mem r us) smallles
+    | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
+  in
+  let smallles = if get_set_minimization() then
       let fold u accu = if UnivFlex.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
       Level.Set.fold fold above_prop smallles
-    | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
+    else smallles
   in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
