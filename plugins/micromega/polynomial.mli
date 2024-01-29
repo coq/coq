@@ -239,9 +239,6 @@ module ProofFormat : sig
   (* x = z - t, z >= 0, t >= 0 *)
 
   val pr_size : prf_rule -> Q.t
-  val pr_rule_max_def : prf_rule -> int
-  val pr_rule_max_hyp : prf_rule -> int
-  val proof_max_def : proof -> int
   val normalise_proof : int -> proof -> int * proof
   val output_prf_rule : out_channel -> prf_rule -> unit
   val output_proof : out_channel -> proof -> unit

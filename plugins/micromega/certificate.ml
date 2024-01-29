@@ -494,7 +494,8 @@ let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
   max_nb_cstr := compute_max_nb_cstr sys prfdepth;
   let sys = List.map (develop_constraint n_spec) sys in
-  List.mapi (fun i (p, o) -> WithProof.mkhyp (LinPoly.linpol_of_pol p) o i) sys
+  let sys = List.mapi (fun i (p, o) -> WithProof.mkhyp (LinPoly.linpol_of_pol p) o i) sys in
+  ProofFormat.Env.make (List.length sys), sys
 
 let square_of_var i =
   let x = LinPoly.var i in
@@ -537,23 +538,17 @@ let nlinear_preprocess (sys : WithProof.t list) =
 let nlinear_preprocess = tr_sys "nlinear_preprocess" nlinear_preprocess
 
 let nlinear_prover prfdepth sys =
-  let sys = develop_constraints prfdepth q_spec sys in
+  let env, sys = develop_constraints prfdepth q_spec sys in
   let sys1 = elim_simple_linear_equality sys in
   let sys2 = saturate_by_linear_equalities sys1 in
   let sys = nlinear_preprocess sys1 @ sys2 in
   let sys = make_cstr_system sys in
-  let id =
-    List.fold_left
-      (fun acc (_, r) -> max acc (ProofFormat.pr_rule_max_hyp r))
-      0 sys
-  in
-  let env = ProofFormat.Env.make (id + 1) in
   match linear_prover_cstr sys with
   | None -> Unknown
   | Some cert -> Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q env cert)
 
 let linear_prover_with_cert prfdepth sys =
-  let sys = develop_constraints prfdepth q_spec sys in
+  let env, sys = develop_constraints prfdepth q_spec sys in
   (*  let sys = nlinear_preprocess  sys in *)
   let sys = make_cstr_system sys in
   match linear_prover_cstr sys with
@@ -561,7 +556,7 @@ let linear_prover_with_cert prfdepth sys =
   | Some cert ->
     Prf
       (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q
-         (ProofFormat.Env.make (List.length sys))
+         env
          cert)
 
 (* The prover is (probably) incomplete --
@@ -870,16 +865,10 @@ let reduction_equations = tr_cstr_sys "reduction_equations" reduction_equations
 
 open ProofFormat
 
-let xlia sys =
+let xlia env sys =
   let sys = make_cstr_system sys in
   let compile_prf sys prf =
-    let id =
-      1
-      + List.fold_left
-          (fun acc (_, r) -> max acc (ProofFormat.pr_rule_max_hyp r))
-          0 sys
-    in
-    Prf (compile_proof (Env.make id) prf)
+    Prf (compile_proof env prf)
   in
   try
     let sys = reduction_equations sys in
@@ -895,7 +884,7 @@ let gen_bench (tac, prover)  prfdepth sys =
   | None -> ()
   | Some file ->
     let o = open_out (Filename.temp_file ~temp_dir:(Sys.getcwd ()) file ".v") in
-    let sys = develop_constraints prfdepth z_spec sys in
+    let _, sys = develop_constraints prfdepth z_spec sys in
     Printf.fprintf o "Require Import ZArith Lia. Open Scope Z_scope.\n";
     Printf.fprintf o "Goal %a.\n" (LinPoly.pp_goal "Z") (List.map (fun wp -> fst @@ WithProof.repr wp) sys);
     begin
@@ -981,7 +970,7 @@ let pre_process sys =
   sys
 
 let lia (prfdepth : int) sys =
-  let sys = develop_constraints prfdepth z_spec sys in
+  let env, sys = develop_constraints prfdepth z_spec sys in
   if debug then begin
     Printf.fprintf stdout "Input problem\n";
     List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys;
@@ -995,17 +984,17 @@ let lia (prfdepth : int) sys =
       sys
   end;
   let sys = pre_process sys in
-  xlia sys
+  xlia env sys
 
 let nlia prfdepth sys =
-  let sys = develop_constraints prfdepth z_spec sys in
+  let env, sys = develop_constraints prfdepth z_spec sys in
   let is_linear = List.for_all (fun wp -> LinPoly.is_linear @@ WithProof.polynomial wp) sys in
   if debug then begin
     Printf.fprintf stdout "Input problem\n";
     List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys
   end;
   if is_linear then
-    xlia (pre_process sys)
+    xlia env (pre_process sys)
   else
     (*
       let sys1 = elim_every_substitution sys in
@@ -1019,7 +1008,7 @@ let nlia prfdepth sys =
     let bnd1 = bound_monomials sys1 in
     let sys2 = saturate_by_linear_equalities sys1 in
     let sys3 = nlinear_preprocess (rev_concat [bnd1; sys1; sys2]) in
-    xlia sys3
+    xlia env sys3
 
 (* For regression testing, if bench = true generate a Coq goal *)
 
