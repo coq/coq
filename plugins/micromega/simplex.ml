@@ -793,7 +793,7 @@ let integer_solver lp =
   let vr0 = LinPoly.MonT.get_fresh () in
   (* Initialise the proof environment mapping variables of the simplex to their proof. *)
   let l', env =
-    PrfEnv.of_list [] PrfEnv.empty (List.rev_map WithProof.of_cstr lp)
+    PrfEnv.of_list [] PrfEnv.empty (List.rev lp)
   in
   let nb = ref 0 in
   let rec isolve env cr res =
@@ -894,8 +894,7 @@ let integer_solver lp =
 let integer_solver lp =
   nb_pivot := 0;
   if debug then
-    Printf.printf "Input integer solver\n%a\n" WithProof.output_sys
-      (List.map WithProof.of_cstr lp);
+    Printf.printf "Input integer solver\n%a\n" WithProof.output_sys lp;
   match integer_solver lp with
   | None ->
     profile_info := (false, !nb_pivot) :: !profile_info;

@@ -867,15 +867,15 @@ open ProofFormat
 
 let xlia env sys =
   let sys = make_cstr_system sys in
-  let compile_prf sys prf =
-    Prf (compile_proof env prf)
-  in
-  try
-    let sys = reduction_equations sys in
-    match Simplex.integer_solver sys with
+  match reduction_equations sys with
+  | sys ->
+    let sys = List.map WithProof.of_cstr sys in
+    begin match Simplex.integer_solver sys with
     | None -> Unknown
-    | Some prf -> compile_prf sys prf
-  with FoundProof prf -> compile_prf sys (Step (0, prf, Done))
+    | Some prf -> Prf (compile_proof env prf)
+    end
+  | exception FoundProof prf ->
+    Prf (compile_proof env (Step (0, prf, Done)))
 
 
 let gen_bench (tac, prover)  prfdepth sys =

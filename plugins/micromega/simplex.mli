@@ -28,4 +28,4 @@ val find_point : cstr list -> Vect.t option
 val find_unsat_certificate : cstr list -> Vect.t option
 
 val integer_solver :
-  (cstr * ProofFormat.prf_rule) list -> ProofFormat.proof option
+  WithProof.t list -> ProofFormat.proof option
