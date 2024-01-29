@@ -67,6 +67,10 @@ val type_of_inductive_knowing_parameters :
 val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
 (** For squashing. *)
 
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+val is_squashed : mind_specif puniverses -> squash option
+
 val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool

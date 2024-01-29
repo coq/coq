@@ -212,60 +212,75 @@ let explain_reference_variables sigma id c =
   pr_global c ++ strbrk " depends on the variable " ++ Id.print id ++
   strbrk " which is not declared in the context."
 
-let rec pr_disjunction pr = function
-  | [a] -> pr  a
-  | [a;b] -> pr a ++ str " or" ++ spc () ++ pr b
-  | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
-  | [] -> assert false
-
-type arity_error =
-  | NonInformativeToInformative
-  | StrongEliminationOnNonSmallType
-  | WrongArity
-
-let error_elim_explain kp ki =
-  let open Sorts in
-  match kp,ki with
-  | (InType | InSet), InProp -> NonInformativeToInformative
-  | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
-  | _ -> WrongArity
-
 let explain_elim_arity env sigma ind c okinds =
   let open EConstr in
   let env = make_all_name_different env sigma in
-  let pi = pr_inductive env (fst ind) in
+  let mib, mip as specif = Inductive.lookup_mind_specif env (fst ind) in
+  let pi =
+    let pp () = pr_pinductive env sigma ind in
+    match mip.mind_squashed with
+    | None | Some AlwaysSquashed -> pp ()
+    | Some (SometimesSquashed _) ->
+      (* universe instance matters, so print it regardless of Printing Universes *)
+      Flags.with_option Constrextern.print_universes pp ()
+  in
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
-  | Some (pj, sp) ->
-      let kp = Sorts.family sp in
-      let ki = Inductiveops.elim_sort (Inductive.lookup_mind_specif env (fst ind)) in
-      let explanation = error_elim_explain kp ki in
-      let sorts = Inductiveops.sorts_below ki in
-      let pki = Sorts.pr_sort_family ki in
-      let pkp = Sorts.pr_sort_family kp in
-      let explanation =	match explanation with
-        | NonInformativeToInformative ->
-          "proofs can be eliminated only to build proofs"
-        | StrongEliminationOnNonSmallType ->
-          "strong elimination on non-small inductive types leads to paradoxes"
-        | WrongArity ->
-          "wrong arity" in
-      let ppar = match sorts with
-        | [] -> str "at some variable quality"
-        | _ -> pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts
+    | None -> str "ill-formed elimination predicate."
+    | Some (pj, sp) ->
+      let ppt ?(ppunivs=false) () =
+        let pp () = pr_leconstr_env env sigma (mkSort (ESorts.make sp)) in
+        if ppunivs then Flags.with_option Constrextern.print_universes pp ()
+        else pp ()
       in
-      let ppt = pr_leconstr_env env sigma (snd (decompose_prod_decls sigma pj.uj_type)) in
-      hov 0
-        (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
-         str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++
-      fnl () ++
-      hov 0
-        (str "Elimination of an inductive object of sort " ++
-         pki ++ brk(1,0) ++
-         str "is not allowed on a predicate in sort " ++ pkp ++ fnl () ++
-         str "because" ++ spc () ++ str explanation ++ str ".")
-  | None ->
-      str "ill-formed elimination predicate."
+      let squash = Option.get (Inductive.is_squashed (specif, snd ind)) in
+      match squash with
+      | SquashToSet ->
+        let ppt = ppt () in
+        hov 0
+          (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
+           str "while it should be SProp, Prop or Set.") ++
+        fnl () ++
+        hov 0
+          (str "Elimination of an inductive object of sort Set" ++ spc() ++
+           str "is not allowed on a predicate in sort " ++ ppt ++ fnl () ++
+           str "because" ++ spc () ++
+           str "strong elimination on non-small inductive types leads to paradoxes.")
+      | SquashToQuality (QConstant (QSProp | QProp as squashq)) ->
+        let ppt = ppt () in
+        let inds, sorts, explain = match squashq with
+          | QSProp -> "SProp", "SProp", "strict proofs can be eliminated only to build strict proofs"
+          | QProp -> "Prop", "SProp or Prop", "proofs can be eliminated only to build proofs"
+          | QType -> assert false
+        in
+        hov 0
+          (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
+           str "while it should be " ++ str sorts ++ str ".") ++
+        fnl () ++
+        hov 0
+          (str "Elimination of an inductive object of sort " ++ str inds ++ spc() ++
+           str "is not allowed on a predicate in sort " ++ ppt ++ fnl () ++
+           str "because" ++ spc () ++
+           str explain ++ str ".")
+      | SquashToQuality (QConstant QType) ->
+        let ppt = ppt ~ppunivs:true () in
+        hov 0
+          (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
+           str "while it may not be of a variable sort quality.") ++
+        fnl () ++
+        hov 0
+          (str "Elimination of a sort polymorphic inductive object instantiated to sort Type" ++ spc() ++
+           (* NB: this restriction is only for forward compat with possible future sort qualities *)
+           str "is not allowed on a predicate in a variable sort quality.")
+      | SquashToQuality (QVar squashq) ->
+        let ppt = ppt ~ppunivs:true () in
+        hov 0
+          (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
+           str "while it should be in sort quality " ++ pr_evd_qvar sigma squashq ++ str ".") ++
+        fnl () ++
+        hov 0
+          (str "Elimination of a sort polymorphic inductive object instantiated to a variable sort quality" ++ spc() ++
+           str "is only allowed on a predicate in the same sort quality.")
   in
   hov 0 (
     str "Incorrect elimination of" ++ spc () ++ pc ++ spc () ++

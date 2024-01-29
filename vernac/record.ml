@@ -282,6 +282,17 @@ let warn_cannot_define_projection =
   CWarnings.create ~name:"cannot-define-projection" ~category:CWarnings.CoreCategories.records
          (fun msg -> hov 0 msg)
 
+type arity_error =
+  | NonInformativeToInformative
+  | StrongEliminationOnNonSmallType
+
+let error_elim_explain kp ki =
+  let open Sorts in
+  match kp,ki with
+  | (InType | InSet), InProp -> Some NonInformativeToInformative
+  | InType, InSet -> Some StrongEliminationOnNonSmallType (* if Set impredicative *)
+  | _ -> None
+
 (* If a projection is not definable, we throw an error if the user
 asked it to be a coercion or instance. Otherwise, we just print an info
 message. The user might still want to name the field of the record. *)
@@ -293,26 +304,28 @@ let warning_or_error ~info flags indsp err =
            strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
            strbrk " not defined.")
-    | BadTypedProj (fi,_ctx,te) ->
+    | BadTypedProj (fi,env,te) ->
       let err = match te with
         | ElimArity (_, _, Some (_, s)) ->
-          Himsg.error_elim_explain (Sorts.family s)
+          error_elim_explain (Sorts.family s)
             (Inductiveops.elim_sort (Global.lookup_inductive indsp))
-        | _ -> WrongArity
+        | _ -> None
       in
         match err with
-          | NonInformativeToInformative ->
+          | Some NonInformativeToInformative ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is informative and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
-          | StrongEliminationOnNonSmallType ->
+          | Some StrongEliminationOnNonSmallType ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is large and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
-          | WrongArity ->
-              (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
+          | None ->
+            (Id.print fi ++ str " cannot be defined because it is not typable:" ++ spc() ++
+             Himsg.explain_type_error env (Evd.from_env env)
+               (Type_errors.map_ptype_error EConstr.of_constr te))
   in
   if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ~info st;
   warn_cannot_define_projection (hov 0 st)
