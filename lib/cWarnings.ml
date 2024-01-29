@@ -432,6 +432,7 @@ module CoreCategories = struct
   let ssr = make "ssr"
   let syntax = make "syntax"
   let tactics = make "tactics"
+  let user_warn = make "user-warn"
   let vernacular = make "vernacular"
 
 end

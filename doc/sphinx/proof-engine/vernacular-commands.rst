@@ -952,6 +952,7 @@ Controlling display
    `ssr`,
    `syntax`,
    `tactics`,
+   `user-warn`,
    `vernacular`.
 
    .. This list is from lib/cWarnings.ml
