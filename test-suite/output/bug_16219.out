@@ -3,9 +3,9 @@ Closed under the global context
 File "./output/bug_16219.v", line 7, characters 0-76:
 The command has indeed failed with message:
 Incorrect elimination of "e" in the inductive type "squashed_eq":
-the return type has sort "Type" while it should be "SProp".
+the return type has sort "Type" while it should be SProp.
 Elimination of an inductive object of sort SProp
-is not allowed on a predicate in sort Type
-because wrong arity.
+is not allowed on a predicate in sort "Type"
+because strict proofs can be eliminated only to build strict proofs.
 Axioms:
 seq relies on definitional UIP.
