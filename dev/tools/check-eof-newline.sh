@@ -21,7 +21,7 @@ RESET="\033[0m"
 
 function colorprint
 {
-  if [ -t 1 ] && ! [ "$TERM" = dumb ]; then
+  if [ "$COQ_CI_COLOR" ]; then
     printf "$1%s$RESET\n" "$2"
   else
     printf '%s\n' "$2"

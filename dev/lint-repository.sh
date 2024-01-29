@@ -9,6 +9,16 @@
 
 CODE=0
 
+# if COQ_CI_COLOR is set (from the environment) keep it intact (even when it's the empty string)'
+if ! [ "${COQ_CI_COLOR+1}" ]; then
+  # NB: in CI TERM is unset in the environment
+  # when TERM is unset, bash sets it to "dumb" as a bash variable (not exported?)
+  if { [ -t 1 ] && ! [ "$TERM" = dumb ]; } || [ "$CI" ]
+  then export COQ_CI_COLOR=1
+  else export COQ_CI_COLOR=
+  fi
+fi
+
 if [[ $(git log -n 1 --pretty='format:%s') == "[CI merge]"* ]]; then
     # The second parent of bot merges is from the PR, the first is
     # current master
