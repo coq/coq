@@ -1,153 +1,156 @@
-(************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *         Copyright INRIA, CNRS and contributors             *)
-(* <O___,, * (see version control and CREDITS file for authors & dates) *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
 
-module InProg = struct
-  type _ t =
-    | Ignore : unit t
-    | Use : Declare.OblState.t t
+(** [('a,'b,'x) runner] means that any function taking ['a] and
+    returning ['b] and some additional data can be interpreted as a
+    function on a state ['x].
 
-  let cast (type a) (x:Declare.OblState.t) (ty:a t) : a =
-    match ty with
-    | Ignore -> ()
-    | Use -> x
-end
+    The additional return data ['d] is useful when combining runners.
+    We don't need an additional input data as it can just go in the closure.
+*)
+type ('a,'b,'x) runner = { run : 'd. 'x -> ('a -> 'b * 'd) -> 'x * 'd }
 
-module OutProg = struct
-  type _ t =
-    | No : unit t
-    | Yes : Declare.OblState.t t
-    | Push
-    | Pop
 
-  let cast (type a) (x:a) (ty:a t) (orig:Declare.OblState.t NeList.t) : Declare.OblState.t NeList.t  =
-    match ty with
-    | No -> orig
-    | Yes -> NeList.map_head (fun _ -> x) orig
-    | Push -> NeList.push Declare.OblState.empty (Some orig)
-    | Pop -> (match NeList.tail orig with Some tl -> tl | None -> assert false)
-end
+module Prog = struct
 
-module InProof = struct
-  type _ t =
-    | Ignore : unit t
-    | Reject : unit t
-    | Use : Declare.Proof.t t
-    | UseOpt : Declare.Proof.t option t
+  type state = Declare.OblState.t
+  type stack = state NeList.t
 
-  let cast (type a) (x:Declare.Proof.t option) (ty:a t) : a =
-    match x, ty with
-    | _, Ignore -> ()
-    | None, Reject -> ()
-    | Some _, Reject -> CErrors.user_err (Pp.str "Command not supported (Open proofs remain).")
-    | Some x, Use -> x
-    | None, Use -> CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress).")
-    | _, UseOpt -> x
-end
+  type (_,_) t =
+    | Ignore : (unit, unit) t
+    | Modify : (state, state) t
+    | Read : (state, unit) t
+    | Push : (unit, unit) t
+    | Pop : (state, unit) t
 
-module OutProof = struct
-  type _ t =
-    | No : unit t
-    | Close : unit t
-    | Update : Declare.Proof.t t
-    | New : Declare.Proof.t t
+  let runner (type a b) (ty:(a,b) t) : (a,b,stack) runner =
+    { run = fun pm f ->
+      match ty with
+      | Ignore -> let (), v = f () in pm, v
+      | Modify ->
+        let st, pm = NeList.repr pm in
+        let st, v = f st in
+        NeList.of_repr (st,pm), v
+      | Read ->
+        let (), v = f (NeList.head pm) in
+        pm, v
+      | Push ->
+        let (), v = f () in
+        NeList.push Declare.OblState.empty (Some pm), v
+      | Pop ->
+        let st, pm = NeList.repr pm in
+        assert (not (CList.is_empty pm));
+        let (), v = f st in
+        NeList.of_list pm, v
+    }
 
 end
 
-type ('inprog,'outprog,'inproof,'outproof) vernac_type = {
-  inprog : 'inprog InProg.t;
-  outprog : 'outprog InProg.t;
-  inproof : 'inproof InProof.t;
-  outproof : 'outproof OutProof.t;
-}
+module Proof = struct
+  module LStack = Vernacstate.LemmaStack
+
+  type state = Declare.Proof.t
+  type stack = LStack.t option
+
+  type (_,_) t =
+    | Ignore : (unit, unit) t
+    | Modify : (state, state) t
+    | Read : (state, unit) t
+    | ReadOpt : (state option, unit) t
+    | Reject : (unit, unit) t
+    | Close : (state, unit) t
+    | Open : (unit, state) t
+
+  let use = function
+    | None -> CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress).")
+    | Some stack -> LStack.pop stack
+
+  let runner (type a b) (ty:(a,b) t) : (a,b,stack) runner =
+    { run = fun stack f ->
+      match ty with
+      | Ignore -> let (), v = f () in stack, v
+      | Modify ->
+        let p, rest = use stack in
+        let p, v = f p in
+        Some (LStack.push rest p), v
+      | Read ->
+        let p, _ = use stack in
+        let (), v = f p in
+        stack, v
+      | ReadOpt ->
+        let p = Option.map LStack.get_top stack in
+        let (), v = f p in
+        stack, v
+      | Reject ->
+        let () = if Option.has_some stack
+          then CErrors.user_err (Pp.str "Command not supported (Open proofs remain).")
+        in
+        let (), v = f () in
+        stack, v
+      | Close ->
+        let p, rest = use stack in
+        let (), v = f p in
+        rest, v
+      | Open ->
+        let p, v = f () in
+        Some (LStack.push stack p), v
+    }
+
+end
+
+(* lots of messing with tuples in there, can we do better? *)
+let combine_runners (type a b x c d y) (r1:(a,b,x) runner) (r2:(c,d,y) runner)
+  : (a*c, b*d, x*y) runner
+  = { run = fun (x,y) f ->
+      match r1.run x @@ fun x ->
+        match r2.run y @@ fun y ->
+          match f (x,y)
+          with ((b, d), o) -> (d, (b, o))
+        with (y, (b, o)) -> (b, (y, o))
+      with (x, (y, o)) -> ((x, y), o) }
 
 type typed_vernac =
     TypedVernac : {
-      inprog : 'inprog InProg.t;
-      outprog : 'outprog OutProg.t;
-      inproof : 'inproof InProof.t;
-      outproof : 'outproof OutProof.t;
-      run : pm:'inprog -> proof:'inproof -> 'outprog * 'outproof;
+      prog : ('in1, 'out1) Prog.t;
+      proof : ('in2, 'out2) Proof.t;
+      run : pm:'in1 -> proof:'in2 -> 'out1 * 'out2;
     } -> typed_vernac
 
-let vtdefault f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = No;
-                run = (fun ~pm:() ~proof:() ->
-                    let () = f () in
-                    (), ()) }
+let run (TypedVernac { prog; proof; run }) ~(pm:Prog.stack) ~(stack:Proof.stack) =
+  let (pm, stack), () = (combine_runners (Prog.runner prog) (Proof.runner proof)).run (pm,stack)
+      (fun (pm,proof) -> run ~pm ~proof, ())
+  in
+  stack, pm
 
-let vtnoproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Reject; outproof = No;
-                run = (fun ~pm:() ~proof:() ->
-                    let () = f () in
-                    (), ())
-              }
+let typed_vernac prog proof run = TypedVernac { prog; proof; run }
 
-let vtcloseproof f =
-  TypedVernac { inprog = Use; outprog = Yes; inproof = Use; outproof = Close;
-                run = (fun ~pm ~proof ->
-                    let pm = f ~lemma:proof ~pm in
-                    pm, ())
-              }
+let vtdefault f = typed_vernac Prog.Ignore Proof.Ignore
+    (fun ~pm:() ~proof:() -> let () = f () in (), ())
 
-let vtopenproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = New;
-                run = (fun ~pm:() ~proof:() ->
-                    let proof = f () in
-                    (), proof)
-              }
+let vtnoproof f = typed_vernac Prog.Ignore Proof.Reject
+    (fun ~pm:() ~proof:() -> let () = f () in (), ())
 
-let vtmodifyproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = Update;
-                run = (fun ~pm:() ~proof ->
-                    let proof = f ~pstate:proof in
-                    (), proof)
-              }
+let vtcloseproof f = typed_vernac Prog.Modify Proof.Close
+    (fun ~pm ~proof:lemma -> let pm = f ~lemma ~pm in pm, ())
 
-let vtreadproofopt f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = UseOpt; outproof = No;
-                run = (fun ~pm:() ~proof ->
-                    let () = f ~pstate:proof in
-                    (), ())
-              }
+let vtopenproof f = typed_vernac Prog.Ignore Proof.Open
+    (fun ~pm:() ~proof:() -> let proof = f () in (), proof)
 
-let vtreadproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = No;
-                run = (fun ~pm:() ~proof ->
-                    let () = f ~pstate:proof in
-                    (), ())
-              }
+let vtmodifyproof f = typed_vernac Prog.Ignore Proof.Modify
+    (fun ~pm:() ~proof:pstate -> let pstate = f ~pstate in (), pstate)
 
-let vtreadprogram f =
-  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = No;
-                run = (fun ~pm ~proof:() ->
-                    let () = f ~pm in
-                    (), ())
-              }
+let vtreadproofopt f = typed_vernac Prog.Ignore Proof.ReadOpt
+    (fun ~pm:() ~proof:pstate -> let () = f ~pstate in (), ())
 
-let vtmodifyprogram f =
-  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = No;
-                run = (fun ~pm ~proof:() ->
-                    let pm = f ~pm in
-                    pm, ())
-              }
+let vtreadproof f = typed_vernac Prog.Ignore Proof.Read
+    (fun ~pm:() ~proof:pstate -> let () = f ~pstate in (), ())
 
-let vtdeclareprogram f =
-  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = New;
-                run = (fun ~pm ~proof:() ->
-                    let proof = f ~pm in
-                    (), proof)
-              }
+let vtreadprogram f = typed_vernac Prog.Read Proof.Ignore
+    (fun ~pm ~proof:() -> let () = f ~pm in (), ())
 
-let vtopenproofprogram f =
-  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = New;
-                run = (fun ~pm ~proof:() ->
-                    let pm, proof = f ~pm in
-                    pm, proof)
-              }
+let vtmodifyprogram f = typed_vernac Prog.Modify Proof.Ignore
+    (fun ~pm ~proof:() -> let pm = f ~pm in pm, ())
+
+let vtdeclareprogram f = typed_vernac Prog.Read Proof.Open
+    (fun ~pm ~proof:() -> let proof = f ~pm in (), proof)
+
+let vtopenproofprogram f = typed_vernac Prog.Modify Proof.Open
+    (fun ~pm ~proof:() -> f ~pm)

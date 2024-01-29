@@ -9,59 +9,46 @@
 (************************************************************************)
 (** Interpretation of extended vernac phrases. *)
 
-module InProg : sig
-  type _ t =
-    | Ignore : unit t
-    | Use : Declare.OblState.t t
+module Prog : sig
+  type state = Declare.OblState.t
+  type stack = state NeList.t
 
-  val cast : Declare.OblState.t -> 'a t -> 'a
+  type (_,_) t =
+    | Ignore : (unit, unit) t
+    | Modify : (state, state) t
+    | Read : (state, unit) t
+    | Push : (unit, unit) t
+    | Pop : (state, unit) t
 end
 
-module OutProg : sig
-  type _ t =
-    | No : unit t
-    | Yes : Declare.OblState.t t
-    | Push
-    | Pop
+module Proof : sig
+  type state = Declare.Proof.t
 
-  val cast : 'a -> 'a t -> Declare.OblState.t NeList.t -> Declare.OblState.t NeList.t
+  type (_,_) t =
+    | Ignore : (unit, unit) t
+    | Modify : (state, state) t
+    | Read : (state, unit) t
+    | ReadOpt : (state option, unit) t
+    | Reject : (unit, unit) t
+    | Close : (state, unit) t
+    | Open : (unit, state) t
 end
-
-module InProof : sig
-  type _ t =
-    | Ignore : unit t
-    | Reject : unit t
-    | Use : Declare.Proof.t t
-    | UseOpt : Declare.Proof.t option t
-
-  val cast : Declare.Proof.t option -> 'a t -> 'a
-end
-
-module OutProof : sig
-
-  type _ t =
-    | No : unit t
-    | Close : unit t
-    | Update : Declare.Proof.t t
-    | New : Declare.Proof.t t
-
-end
-
-type ('inprog,'outprog,'inproof,'outproof) vernac_type = {
-  inprog : 'inprog InProg.t;
-  outprog : 'outprog InProg.t;
-  inproof : 'inproof InProof.t;
-  outproof : 'outproof OutProof.t;
-}
 
 type typed_vernac =
     TypedVernac : {
-      inprog : 'inprog InProg.t;
-      outprog : 'outprog OutProg.t;
-      inproof : 'inproof InProof.t;
-      outproof : 'outproof OutProof.t;
-      run : pm:'inprog -> proof:'inproof -> 'outprog * 'outproof;
+      prog : ('in1, 'out1) Prog.t;
+      proof : ('in2, 'out2) Proof.t;
+      run : pm:'in1 -> proof:'in2 -> 'out1 * 'out2;
     } -> typed_vernac
+
+val typed_vernac
+  : ('in1, 'out1) Prog.t
+  -> ('in2, 'out2) Proof.t
+  -> (pm:'in1 -> proof:'in2 -> 'out1 * 'out2)
+  -> typed_vernac
+
+val run : typed_vernac -> pm:Prog.stack -> stack:Vernacstate.LemmaStack.t option
+  -> Vernacstate.LemmaStack.t option * Prog.stack
 
 (** Some convenient typed_vernac constructors. Used by coqpp. *)
 
