@@ -121,9 +121,34 @@ and to_or_and_intro_pattern v = match Value.to_block v with
 and to_intro_patterns il =
   Value.to_list to_intro_pattern il
 
-let intro_pattern = make_to_repr to_intro_pattern
+let rec of_intro_pattern = function
+  | IntroForthcoming b -> of_block (0, [|of_bool b|])
+  | IntroNaming pat -> of_block (1, [|of_intro_pattern_naming pat|])
+  | IntroAction act -> of_block (2, [|of_intro_pattern_action act|])
 
-let intro_patterns = make_to_repr to_intro_patterns
+and of_intro_pattern_naming = function
+  | IntroIdentifier id -> of_block (0, [|of_ident id|])
+  | IntroFresh id -> of_block (1, [|of_ident id|])
+  | IntroAnonymous -> of_int 0
+
+and of_intro_pattern_action = function
+  | IntroWildcard -> of_int 0
+  | IntroOrAndPattern op -> of_block (0, [|of_or_and_intro_pattern op|])
+  | IntroInjection inj -> of_block (1, [|of_list of_intro_pattern inj|])
+  | IntroApplyOn (c, ipat) ->
+    let c = repr_of (fun1 unit constr) c in
+    of_block (2, [|c; of_intro_pattern ipat|])
+  | IntroRewrite b -> of_block (3, [|of_bool b|])
+
+and of_or_and_intro_pattern = function
+  | IntroOrPattern ill -> of_block (0, [|of_list of_intro_patterns ill|])
+  | IntroAndPattern il -> of_block (1, [|of_intro_patterns il|])
+
+and of_intro_patterns il = of_list of_intro_pattern il
+
+let intro_pattern = make_repr of_intro_pattern to_intro_pattern
+
+let intro_patterns = make_repr of_intro_patterns to_intro_patterns
 
 let to_destruction_arg v = match Value.to_block v with
 | (0, [| c |]) ->
