@@ -222,14 +222,14 @@ Section Facts.
 
   (** Compatibility with other operations *)
 
-  Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
+  Lemma length_app : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
     intro l; induction l; simpl; auto.
   Qed.
 
   Lemma last_length : forall (l : list A) a, length (l ++ a :: nil) = S (length l).
   Proof.
-    intros ; rewrite app_length ; simpl.
+    intros ; rewrite length_app ; simpl.
     rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
   Qed.
 
@@ -999,17 +999,17 @@ Section ListOps.
     intros. cbn. rewrite in_app_iff, IHl. cbn. tauto.
   Qed.
 
-  Lemma rev_length : forall l, length (rev l) = length l.
+  Lemma length_rev : forall l, length (rev l) = length l.
   Proof.
     intro l; induction l as [|? l IHl];simpl; auto.
-    now rewrite app_length, IHl, Nat.add_comm.
+    now rewrite length_app, IHl, Nat.add_comm.
   Qed.
 
   Lemma rev_nth : forall l d n, n < length l ->
     nth n (rev l) d = nth (length l - S n) l d.
   Proof.
     intros l d; induction l as [|a l IHl] using rev_ind; [easy|].
-    rewrite rev_app_distr, app_length, Nat.add_comm. cbn. intros [|n].
+    rewrite rev_app_distr, length_app, Nat.add_comm. cbn. intros [|n].
     - now rewrite Nat.sub_0_r, nth_middle.
     - intros Hn %Nat.succ_lt_mono.
       rewrite (IHl _ Hn), app_nth1; [reflexivity|].
@@ -1136,7 +1136,7 @@ Section Map.
     intro l; induction l; firstorder (subst; auto).
   Qed.
 
-  Lemma map_length : forall l, length (map l) = length l.
+  Lemma length_map : forall l, length (map l) = length l.
   Proof.
     intro l; induction l; simpl; auto.
   Qed.
@@ -1338,7 +1338,7 @@ Proof.
   intros l n d ln dn Hlen.
   rewrite <- (map_nth (fun m => nth m l d)).
   destruct Hlen.
-  - apply nth_indep. now rewrite map_length.
+  - apply nth_indep. now rewrite length_map.
   - now rewrite (nth_overflow l).
 Qed.
 
@@ -1365,11 +1365,11 @@ Section Fold_Left_Recursor.
 
 End Fold_Left_Recursor.
 
-Lemma fold_left_length :
+Lemma fold_left_S_O :
   forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
   intros A l. induction l as [|? ? IH] using rev_ind; [reflexivity|].
-  now rewrite fold_left_app, app_length, IH, Nat.add_comm.
+  now rewrite fold_left_app, length_app, IH, Nat.add_comm.
 Qed.
 
 (************************************)
@@ -1779,14 +1779,14 @@ End Fold_Right_Recursor.
         + destruct a; destruct (split l); simpl in *; auto.
     Qed.
 
-    Lemma split_length_l : forall (l:list (A*B)),
+    Lemma length_fst_split : forall (l:list (A*B)),
       length (fst (split l)) = length l.
     Proof.
       intro l; induction l as [|a l IHl]; simpl; auto.
       destruct a; destruct (split l); simpl; auto.
     Qed.
 
-    Lemma split_length_r : forall (l:list (A*B)),
+    Lemma length_snd_split : forall (l:list (A*B)),
       length (snd (split l)) = length l.
     Proof.
       intro l; induction l as [|a l IHl]; simpl; auto.
@@ -1845,7 +1845,7 @@ End Fold_Right_Recursor.
         + right; apply IHl with x; auto.
     Qed.
 
-    Lemma combine_length : forall (l:list A)(l':list B),
+    Lemma length_combine : forall (l:list A)(l':list B),
       length (combine l l') = min (length l) (length l').
     Proof.
       intro l; induction l.
@@ -1902,11 +1902,11 @@ End Fold_Right_Recursor.
       intros [[? [[= -> ->] ?]] %in_map_iff|] %in_app_or; tauto.
     Qed.
 
-    Lemma prod_length : forall (l:list A)(l':list B),
+    Lemma length_prod : forall (l:list A)(l':list B),
       length (list_prod l l') = (length l) * (length l').
     Proof.
       intro l; induction l as [|? ? IHl]; simpl; [easy|].
-      intros. now rewrite app_length, map_length, IHl.
+      intros. now rewrite length_app, length_map, IHl.
     Qed.
 
   End ListPairs.
@@ -2238,12 +2238,12 @@ Section Cutting.
       f_equal; auto.
   Qed.
 
-  Lemma firstn_length : forall n l, length (firstn n l) = min n (length l).
+  Lemma length_firstn : forall n l, length (firstn n l) = min n (length l).
   Proof.
     intro n; induction n; intro l; destruct l; simpl; auto.
   Qed.
 
-  Lemma skipn_length n :
+  Lemma length_skipn n :
     forall l, length (skipn n l) = length l - n.
   Proof.
     induction n.
@@ -2259,22 +2259,22 @@ Section Cutting.
       firstn x l = rev (skipn (length l - x) (rev l)).
   Proof.
     intros x l; rewrite <-(firstn_skipn x l) at 3.
-    rewrite rev_app_distr, skipn_app, rev_app_distr, rev_length,
-            skipn_length, Nat.sub_diag; simpl; rewrite rev_involutive.
+    rewrite rev_app_distr, skipn_app, rev_app_distr, length_rev,
+            length_skipn, Nat.sub_diag; simpl; rewrite rev_involutive.
     rewrite <-app_nil_r at 1; f_equal; symmetry; apply length_zero_iff_nil.
-    repeat rewrite rev_length, skipn_length; apply Nat.sub_diag.
+    repeat rewrite length_rev, length_skipn; apply Nat.sub_diag.
   Qed.
 
   Lemma firstn_rev: forall x l,
     firstn x (rev l) = rev (skipn (length l - x) l).
   Proof.
-    now intros x l; rewrite firstn_skipn_rev, rev_involutive, rev_length.
+    now intros x l; rewrite firstn_skipn_rev, rev_involutive, length_rev.
   Qed.
 
   Lemma skipn_rev: forall x l,
       skipn x (rev l) = rev (firstn (length l - x) l).
   Proof.
-    intros x l; rewrite firstn_skipn_rev, rev_involutive, <-rev_length.
+    intros x l; rewrite firstn_skipn_rev, rev_involutive, <-length_rev.
     destruct (Nat.le_ge_cases (length (rev l)) x) as [L | L].
     - rewrite skipn_all2; [apply Nat.sub_0_le in L | trivial].
       now rewrite L, Nat.sub_0_r, skipn_all.
@@ -2337,7 +2337,7 @@ Section Combining.
     Proof.
       intros l.
       apply length_zero_iff_nil.
-      rewrite combine_length. simpl. rewrite Nat.min_0_r.
+      rewrite length_combine. simpl. rewrite Nat.min_0_r.
       reflexivity.
     Qed.
 
@@ -2664,8 +2664,8 @@ Section ReDun.
       inversion_clear Hnd as [|? ? Hnin Hnd'].
       apply (NoDup_Add (Add_app a l1' l2')); split.
       + apply IHl; auto.
-        * rewrite app_length.
-          rewrite app_length in Hlen; simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
+        * rewrite length_app.
+          rewrite length_app in Hlen; simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
           now apply Nat.succ_le_mono.
         * apply (incl_Add_inv (u:= l1' ++ l2')) in Hincl; auto.
           apply Add_app.
@@ -2676,7 +2676,7 @@ Section ReDun.
           apply in_app_or in Hin as [Hin|[->|Hin]]; intuition. }
         apply NoDup_incl_length in Hincl''; [ | now constructor ].
         apply (Nat.nle_succ_diag_l (length l1' + length l2')).
-        rewrite_all app_length.
+        rewrite_all length_app.
         simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
         now transitivity (S (length l)).
   Qed.
@@ -2714,7 +2714,7 @@ Section NatSeq.
     reflexivity.
   Qed.
 
-  Lemma seq_length : forall len start, length (seq start len) = len.
+  Lemma length_seq : forall len start, length (seq start len) = len.
   Proof.
     intro len; induction len; simpl; auto.
   Qed.
@@ -3479,36 +3479,36 @@ simpl; rewrite IHl1.
 apply Nat.add_assoc.
 Qed.
 
-Lemma concat_length A l:
+Lemma length_concat A l:
   length (concat l) = list_sum (map (@length A) l).
 Proof.
   induction l; [reflexivity|].
-  simpl. rewrite app_length.
+  simpl. rewrite length_app.
   f_equal. assumption.
 Qed.
 
-Lemma flat_map_length A B (f: A -> list B) l:
+Lemma length_flat_map A B (f: A -> list B) l:
   length (flat_map f l) = list_sum (map (fun x => length (f x)) l).
 Proof.
-  rewrite flat_map_concat_map, concat_length, map_map. reflexivity.
+  rewrite flat_map_concat_map, length_concat, map_map. reflexivity.
 Qed.
 
 Corollary flat_map_constant_length A B c (f: A -> list B) l:
   (forall x, In x l -> length (f x) = c) -> length (flat_map f l) = (length l) * c.
 Proof.
-  intro H. rewrite flat_map_length.
+  intro H. rewrite length_flat_map.
   induction l as [ | a l IHl ]; [reflexivity|].
   simpl. rewrite IHl, H; [reflexivity | left; reflexivity | ].
   intros x Hx. apply H. right. assumption.
 Qed.
 
-Lemma list_power_length (A B:Type)(l:list A) (l':list B):
+Lemma length_list_power (A B:Type)(l:list A) (l':list B):
     length (list_power l l') = (length l')^(length l).
 Proof.
   induction l as [ | a m IH ]; [reflexivity|].
   cbn. rewrite flat_map_constant_length with (c := length l').
   - rewrite IH. apply Nat.mul_comm.
-  - intros x H. apply map_length.
+  - intros x H. apply length_map.
 Qed.
 
 (** Max of elements of a list of [nat]: [list_max] *)
@@ -3577,10 +3577,10 @@ Global Hint Rewrite
   rev_involutive (* rev (rev l) = l *)
   rev_unit (* rev (l ++ a :: nil) = a :: rev l *)
   map_nth (* nth n (map f l) (f d) = f (nth n l d) *)
-  map_length (* length (map f l) = length l *)
-  seq_length (* length (seq start len) = len *)
-  app_length (* length (l ++ l') = length l + length l' *)
-  rev_length (* length (rev l) = length l *)
+  length_app (* length (map f l) = length l *)
+  length_seq (* length (seq start len) = len *)
+  length_app (* length (l ++ l') = length l + length l' *)
+  length_rev (* length (rev l) = length l *)
   app_nil_r (* l ++ nil = l *)
   : list.
 
@@ -3621,6 +3621,35 @@ Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
 
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
+
+#[deprecated(since = "8.20", note = "Use length_app instead.")]
+Notation app_length := length_app (only parsing).
+#[deprecated(since = "8.20", note = "Use length_rev instead.")]
+Notation rev_length := length_rev (only parsing).
+#[deprecated(since = "8.20", note = "Use length_map instead.")]
+Notation map_length := length_map (only parsing).
+#[deprecated(since = "8.20", note = "Use fold_left_S_O instead.")]
+Notation fold_left_length := fold_left_S_O (only parsing).
+#[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
+Notation split_length_l := length_fst_split (only parsing).
+#[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
+Notation split_length_r := length_snd_split (only parsing).
+#[deprecated(since = "8.20", note = "Use length_combine instead.")]
+Notation combine_length := length_combine (only parsing).
+#[deprecated(since = "8.20", note = "Use length_prod instead.")]
+Notation prod_length := length_prod (only parsing).
+#[deprecated(since = "8.20", note = "Use length_firstn instead.")]
+Notation firstn_length := length_firstn (only parsing).
+#[deprecated(since = "8.20", note = "Use length_skipn instead.")]
+Notation skipn_length := length_skipn (only parsing).
+#[deprecated(since = "8.20", note = "Use length_seq instead.")]
+Notation seq_length := length_seq (only parsing).
+#[deprecated(since = "8.20", note = "Use length_concat instead.")]
+Notation concat_length := length_concat (only parsing).
+#[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
+Notation flat_map_length := length_flat_map (only parsing).
+#[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+Notation list_power_length := length_list_power (only parsing).
 (* end hide *)
 
 

@@ -198,9 +198,9 @@ Section Perm.
     - rewrite (permut_nil (permut_sym H)); auto.
     - destruct (In_split _ _ (permut_cons_In H)) as (h2,(t2,H1)).
       subst l2.
-      rewrite app_length.
+      rewrite length_app.
       simpl; rewrite <- plus_n_Sm; f_equal.
-      rewrite <- app_length.
+      rewrite <- length_app.
       apply IHl1.
       apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.

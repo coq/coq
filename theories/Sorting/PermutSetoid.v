@@ -408,9 +408,9 @@ Proof.
   - assert (H0:=permut_cons_InA H).
     destruct (InA_split H0) as (h2,(b,(t2,(H1,H2)))).
     subst l2.
-    rewrite app_length.
+    rewrite length_app.
     simpl; rewrite <- plus_n_Sm; f_equal.
-    rewrite <- app_length.
+    rewrite <- length_app.
     apply IHl1.
     apply permut_remove_hd with b.
     apply permut_trans with (a::l1); auto.

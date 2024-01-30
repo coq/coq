@@ -999,7 +999,7 @@ Proof.
  destruct (g acc1) as (t2,acc2).
  destruct Hg as (Hg1,Hg2).
   { revert LE. subst.
-    rewrite app_length, <- elements_cardinal. simpl.
+    rewrite length_app, <- elements_cardinal. simpl.
     rewrite Nat.add_succ_r, <- Nat.succ_le_mono.
     apply Nat.add_le_mono_l. }
  rewrite elements_node, <- app_assoc. now subst.
@@ -1041,7 +1041,7 @@ Proof.
  assert (H := treeify_aux_spec (plength l) true l).
  unfold treeify. destruct treeify_aux as (t,acc); simpl in *.
  destruct H as (H,H'). { now rewrite plength_spec. }
- subst l. rewrite plength_spec, app_length, <- elements_cardinal in *.
+ subst l. rewrite plength_spec, length_app, <- elements_cardinal in *.
  destruct acc.
  * now rewrite app_nil_r.
  * exfalso. revert H. simpl.

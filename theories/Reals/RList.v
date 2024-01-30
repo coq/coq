@@ -650,7 +650,7 @@ Proof.
   - intros; reflexivity.
   - intros; rewrite <- (H l2 H0); induction  l2 as [| r1 l2 Hrecl2].
     + elim H0; reflexivity.
-    + do 2 rewrite app_length;
+    + do 2 rewrite length_app;
       replace (length (r :: r0) + length (r1 :: l2))%nat with
         (S (S (length r0 + length l2)));
       [ replace (length r0 + length (r1 :: l2))%nat with
@@ -720,17 +720,17 @@ Proof.
         -- clear r0 H i H0 H1 H2; induction  l1 as [| r0 l1 Hrecl1].
            ++ reflexivity.
            ++ simpl; assumption.
-        -- rewrite app_length; rewrite Nat.add_comm; simpl; apply Nat.lt_succ_diag_r.
+        -- rewrite length_app; rewrite Nat.add_comm; simpl; apply Nat.lt_succ_diag_r.
       * replace (S m - length l1)%nat with (S (S m - S (length l1))).
         -- rewrite H3; simpl;
              replace (S (length l1)) with (length (app l1 (r :: nil))).
            ++ apply (H (app l1 (r :: nil)) i).
-              ** rewrite app_length; rewrite Nat.add_comm; simpl; rewrite <- H3;
+              ** rewrite length_app; rewrite Nat.add_comm; simpl; rewrite <- H3;
                    apply le_n_S; assumption.
-              ** repeat rewrite app_length; simpl; rewrite app_length in H1;
+              ** repeat rewrite length_app; simpl; rewrite length_app in H1;
                    rewrite Nat.add_comm in H1; simpl in H1; rewrite (Nat.add_comm (length l1));
                    simpl; rewrite Nat.add_comm; apply H1.
-           ++ rewrite app_length; rewrite Nat.add_comm; reflexivity.
+           ++ rewrite length_app; rewrite Nat.add_comm; reflexivity.
         -- change (S (m - length l1) = (S m - length l1)%nat);
              symmetry; apply Nat.sub_succ_l; assumption.
     + replace (r :: r0) with (app (r :: nil) r0);

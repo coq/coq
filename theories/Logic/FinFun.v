@@ -157,14 +157,14 @@ Proof.
    destruct L as (N,F).
    assert (I : incl l (map f l)).
    { apply NoDup_length_incl; trivial.
-     - now rewrite map_length.
+     - now rewrite length_map.
      - intros x _. apply F. }
    intros x. apply I, F.
  - clear F d. intros (l,L).
    assert (N : NoDup l). { apply (NoDup_map_inv f), L. }
    assert (I : incl (map f l) l).
    { apply NoDup_length_incl; trivial.
-     - now rewrite map_length.
+     - now rewrite length_map.
      - intros x _. apply L. }
    assert (L' : Listing l).
    { split; trivial.
