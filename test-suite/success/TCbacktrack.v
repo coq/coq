@@ -47,7 +47,7 @@ Module BacktrackGreenCut.
   Unset Typeclasses Unique Solutions.
   Class C (A : Type) := c : A.
 
-  Class D (A : Type) : Type := { c_of_d :> C A }.
+  Class D (A : Type) : Type := { c_of_d :: C A }.
 
   #[export] Instance D1 : D unit.
   Admitted.
@@ -67,9 +67,9 @@ Module BacktrackGreenCut.
 
   Unset Typeclasses Strict Resolution.
   Class Transitive (A : Type) := { trans : True }.
-  Class PreOrder (A : Type) := { preorder_trans :> Transitive A }.
-  Class PartialOrder (A : Type) := { partialorder_trans :> Transitive A }.
-  Class PartialOrder' (A : Type) := { partialorder_trans' :> Transitive A }.
+  Class PreOrder (A : Type) := { preorder_trans :: Transitive A }.
+  Class PartialOrder (A : Type) := { partialorder_trans :: Transitive A }.
+  Class PartialOrder' (A : Type) := { partialorder_trans' :: Transitive A }.
 
   #[export] Instance: PreOrder nat. Admitted.
   #[export] Instance: PartialOrder nat. Admitted.

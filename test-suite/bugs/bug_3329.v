@@ -15,7 +15,7 @@ Definition apD10 {A} {B:A->Type} {f g : forall x, B x} (h:f=g)
   := fun x => match h with idpath => idpath end.
 Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv { equiv_inv : B -> A }.
 Class IsHSet (A : Type) := { _ : False }.
-Class Funext := { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+Class Funext := { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 Record PreCategory :=
   { object :> Type;
     morphism : object -> object -> Type;

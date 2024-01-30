@@ -220,15 +220,15 @@ Section cats.
   
   Class Equivalence T (Eq : Hom T):= 
     {
-      Equivalence_Identity :> Identity Eq ;
-      Equivalence_Inverse :> Inverse Eq ;
-      Equivalence_Composition :> Composition Eq 
+      Equivalence_Identity :: Identity Eq ;
+      Equivalence_Inverse :: Inverse Eq ;
+      Equivalence_Composition :: Composition Eq
     }.
 
   Class EquivalenceType (T : Type) : Type := 
     {
       m2: Hom T;
-      equiv_struct :> Equivalence T m2 }.
+      equiv_struct :: Equivalence T m2 }.
   
   Polymorphic Record cat (T : Type) := 
     { cat_hom : Hom T;

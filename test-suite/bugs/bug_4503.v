@@ -22,7 +22,7 @@ Set Universe Polymorphism.
 Class ILogic@{L} (A : Type@{L}) : Type := mkILogic
 {
   lentails: A -> A -> Prop;
-  lentailsPre:> RelationClasses.PreOrder lentails
+  lentailsPre:: RelationClasses.PreOrder lentails
 }.
 
 

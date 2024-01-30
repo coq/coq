@@ -42,7 +42,7 @@ Definition equiv_path (A B : Type) (p : A = B) : A <~> B
   := BuildEquiv _ _ (transport (fun X:Type => X) p) _.
 
 Class Univalence := {
-  isequiv_equiv_path :> forall (A B : Type), IsEquiv (equiv_path A B)
+  isequiv_equiv_path :: forall (A B : Type), IsEquiv (equiv_path A B)
 }.
 
 Section Univalence.

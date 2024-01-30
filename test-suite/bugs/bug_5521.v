@@ -25,7 +25,7 @@ Class Category := {
 }.
 
 Class Isomorphism `{C : Category} (X Y : @ob C) : Type := {
-  to   :> hom X Y;
+  to   :: hom X Y;
   from :  hom Y X
 
   (* If these two lines are commented out, the rewrite works at the bottom. *)

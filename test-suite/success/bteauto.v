@@ -88,7 +88,7 @@ Qed.
 
 Module Hierarchies.
   Class A := mkA { data : nat }.
-  Class B := mkB { aofb :> A }.
+  Class B := mkB { aofb :: A }.
 
   #[export] Existing Instance mkB.
 

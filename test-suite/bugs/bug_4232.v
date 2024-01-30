@@ -1,7 +1,7 @@
 Require Import Setoid Morphisms Vector.
 
 Class Equiv A := equiv : A -> A -> Prop.
-Class Setoid A `{Equiv A} := setoid_equiv:> Equivalence (equiv).
+Class Setoid A `{Equiv A} := setoid_equiv :: Equivalence (equiv).
 
 Global Declare Instance vec_equiv {A} `{Equiv A} {n}: Equiv (Vector.t A n).
 Global Declare Instance vec_setoid A `{Setoid A} n : Setoid (Vector.t A n).

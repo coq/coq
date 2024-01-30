@@ -10,7 +10,7 @@ Delimit Scope category_scope with category.
 Record PreCategory := { object :> Type ; morphism : object -> object -> Type }.
 Local Open Scope category_scope.
 Class IsIsomorphism {C : PreCategory} {s d} (m : morphism C s d) := { morphism_inverse : morphism C d s }.
-Class Isomorphic {C : PreCategory} s d := { morphism_isomorphic :> @morphism C s d ; isisomorphism_isomorphic :> IsIsomorphism morphism_isomorphic }.
+Class Isomorphic {C : PreCategory} s d := { morphism_isomorphic :: @morphism C s d ; isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic }.
 Coercion morphism_isomorphic : Isomorphic >-> morphism.
 Local Infix "<~=~>" := Isomorphic (at level 70, no associativity) : category_scope.
 Definition idtoiso (C : PreCategory) (x y : C) (H : x = y) : Isomorphic x y := admit.
