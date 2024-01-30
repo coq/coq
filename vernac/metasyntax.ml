@@ -1286,6 +1286,12 @@ let printability level typs vars onlyparsing reversibility = function
      (warn_non_reversible_notation reversibility; true)
     else onlyparsing),None
 
+let warn_closed_notation_not_level_0 =
+  CWarnings.create ~name:"closed-notation-not-level-0" ~category:CWarnings.CoreCategories.parsing
+    (fun () -> strbrk "Closed notations (i.e. starting and ending with a \
+                       terminal symbol) should usually be at level 0 \
+                       (default).")
+
 let find_precedence custom lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
@@ -1334,9 +1340,11 @@ let find_precedence custom lev etyps symbols onlyprint =
           user_err Pp.(str "A left-recursive notation must have an explicit level.")
         else [],Option.get lev)
   | Some (Terminal _) when last_is_terminal () ->
-      if Option.is_empty lev then
-        ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0)
-      else [],Option.get lev
+      begin match lev with
+      | None -> [fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0
+      | Some 0 -> [], 0
+      | Some n -> [fun () -> warn_closed_notation_not_level_0 ()], n
+      end
   | Some _ ->
       if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
       [],Option.get lev
