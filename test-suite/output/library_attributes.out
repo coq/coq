@@ -8,3 +8,6 @@ A library attribute should be at toplevel of the library.
 File "./output/library_attributes.v", line 11, characters 0-69:
 The command has indeed failed with message:
 A library attribute should be at toplevel of the library.
+File "./output/library_attributes.v", line 14, characters 0-71:
+The command has indeed failed with message:
+Library file is already deprecated.

@@ -85,7 +85,8 @@ notation, definition, axiom, theorem or file.
 
    This attribute is supported by the following commands:
    :cmd:`Notation`, :cmd:`Infix`, :cmd:`Definition`, :cmd:`Theorem`,
-   and similar commands.
+   and similar commands. To attach it to a compiled library file, use
+   :cmd:`Attributes`.
 
    It can trigger the following warning:
 
@@ -93,6 +94,15 @@ notation, definition, axiom, theorem or file.
 
       :n:`@string__note` is the note. It's common practice to start it
       with a capital and end it with a period.
+
+      Explicitly :cmd:`Require`\ing a file that has a warn message set
+      using the :cmd:`Attributes` command, triggers a
+      ``warn-library-file`` warning. Requiring such a file, even
+      indirectly through a chain of :cmd:`Require`\s, will produce a
+      ``warn-transitive-library-file`` warning if the :opt:`Warnings`
+      option "warn-transitive-library-file" is set (it is
+      "-warn-transitive-library-file" by default, silencing the
+      warning).
 
 .. example:: Deprecating a tactic.
 

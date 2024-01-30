@@ -132,7 +132,7 @@ let dummy = {
 let synterp_state = ref dummy
 let interp_state = ref ([] : Summary.Interp.frozen library_segment)
 
-let library_info = ref []
+let library_info = ref UserWarn.empty
 
 let contents () = !interp_state
 
@@ -348,7 +348,7 @@ module type LibActions = sig
 
   val drop_objects : frozen -> frozen
 
-  val declare_info : Library_info.t list -> unit
+  val declare_info : Library_info.t -> unit
 
 end
 
@@ -437,7 +437,14 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
     { st with lib_stk = lib_synterp_stk }
 
-  let declare_info info = library_info := !library_info @ info
+  let declare_info info =
+    let open UserWarn in
+    let depr = match !library_info.depr, info.depr with
+      | None, depr | depr, None -> depr
+      | Some _, Some _ ->
+         CErrors.user_err Pp.(str "Library file is already deprecated.") in
+    let warn = !library_info.warn @ info.warn in
+    library_info := { depr; warn }
 
 end
 
@@ -572,7 +579,7 @@ module type StagedLibS = sig
 
   val drop_objects : frozen -> frozen
 
-  val declare_info : Library_info.t list -> unit
+  val declare_info : Library_info.t -> unit
 
 end
 

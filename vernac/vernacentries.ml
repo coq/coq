@@ -69,12 +69,6 @@ module DefAttributes = struct
 
   let clearbody = bool_attribute ~name:"clearbody"
 
-  let make_information deprecated =
-    let open Library_info in
-    match deprecated with
-    | Some depr -> [Deprecation depr]
-    | None -> []
-
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
     let (((((((locality, user_warns), polymorphic), program),
@@ -2094,8 +2088,9 @@ let vernac_register qid r =
 
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
-    let deprecated = Attributes.parse deprecation atts in
-    Lib.Synterp.declare_info (DefAttributes.make_information deprecated)
+    let user_warns = Attributes.parse user_warns atts in
+    let user_warns = Option.default UserWarn.empty user_warns in
+    Lib.Synterp.declare_info user_warns
   else
     user_err (Pp.str "A library attribute should be at toplevel of the library.")
 
