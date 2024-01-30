@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-RED="\033[31m"
+REDBOLD="\033[31;1m"
 RESET="\033[0m"
 
 function redprint
 {
   if [ "$COQ_CI_COLOR" ]; then
-    printf "$RED%s$RESET\n" "$1"
+    printf "$REDBOLD%s$RESET\n" "$1"
   else
     printf '%s\n' "$1"
   fi
