@@ -38,7 +38,9 @@ Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "coq-core.plugins
 (** Conversion functions *)
 
 Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_constr".
+(** Converts an Ltac2 constr into an Ltac1 value. *)
 Ltac2 @ external to_constr : t -> constr option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_constr".
+(** Converts an Ltac1 constr (which includes terms created via open_constr) into an Ltac2 value. *)
 
 (** [preterm] is called [uconstr] in Ltac1. *)
 Ltac2 @ external of_preterm : preterm -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_preterm".
