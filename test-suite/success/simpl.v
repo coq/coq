@@ -311,3 +311,13 @@ match goal with [ |- (n, scons n (inf_stream2_copy x (n + x))) = (n, scons n (mu
 Abort.
 
 End Bug4056.
+
+Module RefoldingOfNeverConstantInArgOfDestructor.
+
+Arguments Nat.add : simpl never.
+Goal forall n, (S n + 1) * n = 0.
+intros. simpl.
+match goal with [ |- n + (n + 1) * n = 0 ] => idtac end.
+Abort.
+
+End RefoldingOfNeverConstantInArgOfDestructor.
