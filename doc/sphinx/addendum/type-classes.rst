@@ -309,10 +309,6 @@ Command summary
    declared rigid during resolution so that the typeclass abstraction is
    maintained.
 
-   The `>` in
-   :token:`record_definition` currently does nothing. In a future version, it will
-   create coercions as it does when used in :cmd:`Record` commands.
-
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)` and :attr:`private(matching)` attributes.
@@ -342,18 +338,9 @@ Command summary
 
          This command has no effect when used on a typeclass.
 
-.. _warn-future-coercion-class-field:
-
-   .. warn:: A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).
-
-      In future versions, :g:`:>` in the :n:`@record_definition` or
-      :n:`@constructor` will declare a :ref:`coercion<coercions>`, as
-      it does for other :cmd:`Record` commands. To eliminate the warning, use
-      :g:`::` instead.
-
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
 
-      Using the ``::`` (or deprecated ``:>``) syntax in the :n:`@record_definition`
+      Using the ``::`` syntax in the :n:`@record_definition`
       or :n:`@constructor` with a right-hand-side that
       is not itself a Class has no effect (apart from emitting this warning).
 

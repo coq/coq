@@ -1,4 +1,5 @@
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
+[cic] : Cic >-> A (reversible)
 [rc] : Rc >-> A (reversible)
 [ric] : Ric >-> A (reversible)
 ric : Ric -> A

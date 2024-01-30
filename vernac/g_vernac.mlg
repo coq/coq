@@ -615,8 +615,8 @@ GRAMMAR EXTEND Gram
         | ":" -> { NoCoercion } ] ]
   ;
   of_type_inst:
-    [ [   ":>" -> { (AddCoercion, BackInstanceWarning) (* replace with NoInstance at end of deprecation phase *) }
-        | ":"; ">" -> { (AddCoercion, BackInstanceWarning) (* replace with NoInstance at end of deprecation phase *) }
+    [ [   ":>" -> { (AddCoercion, NoInstance) }
+        | ":"; ">" -> { (AddCoercion, NoInstance) }
         | "::" -> { (NoCoercion, BackInstance) }
         | "::>" -> { (AddCoercion, BackInstance) }
         | ":" -> { (NoCoercion, NoInstance) } ] ]

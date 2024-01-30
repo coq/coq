@@ -92,7 +92,6 @@ Defining record types
      :n:`:>`
        If specified, the field is declared as a coercion from the record name
        to the class of the field type. See :ref:`coercions`.
-       Note that this currently does something else in :cmd:`Class` commands.
 
      :n:`::`
        If specified, the field is declared a typeclass instance of the class

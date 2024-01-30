@@ -566,7 +566,6 @@ let pr_oc coe ins = match coe, ins with
   | AddCoercion, NoInstance -> str" :>"
   | NoCoercion, BackInstance -> str" ::"
   | AddCoercion, BackInstance -> str" ::>"
-  | _, BackInstanceWarning -> str" :>"  (* remove this line at end of deprecation phase *)
 
 let pr_record_field (x, { rfu_attrs = attr ; rfu_coercion = coe ; rfu_instance = ins ; rfu_priority = pri ; rfu_notation = ntn }) =
   let prx = match x with
