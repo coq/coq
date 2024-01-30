@@ -219,14 +219,16 @@ type simpl_infos = {
   coelim_cache : constant_coelimination CacheTable.t;
   red_behavior : ReductionBehaviour.Db.t;
   main_reds : RedFlags.reds;
+  construct_reds : RedFlags.reds;
 }
 
-let make_simpl_infos (red_behavior, main_reds) = {
+let make_simpl_infos (red_behavior, main_reds, construct_reds) = {
   constant_body_cache = CacheTable.create 12;
   elim_cache = CacheTable.create 12;
   coelim_cache = CacheTable.create 12;
   red_behavior;
   main_reds;
+  construct_reds;
 }
 
 (* [compute_constant_elimination] determines whether f is an "elimination constant"
@@ -421,7 +423,7 @@ let compute_constant_elimination infos env sigma ref u =
     for mutual cofixpoints *)
 
 let compute_constant_coelimination infos env sigma ref u =
-  let allowed_reds_no_delta = deactivate_delta infos.main_reds in
+  let allowed_reds_no_delta = deactivate_delta infos.construct_reds in
   let rec srec env all_abs lastref lastu c =
     let c', args = whd_stack_gen allowed_reds_no_delta env sigma c in
     (* We now know that the initial [ref] evaluates to [fun all_abs => c' args] *)
@@ -450,7 +452,7 @@ let compute_constant_coelimination infos env sigma ref u =
             let last_labs, last_args, names = invert_recursive_names infos env sigma lastref lastu names i in
             try CoEliminationCoFix (check_cofix_reversibility env sigma lastref lastu last_labs last_args n_all_abs names cofix)
             with Elimconst -> NotACoEliminationConstant)
-      | _ when isTransparentEvalRef env sigma (RedFlags.red_transparent infos.main_reds) c' ->
+      | _ when isTransparentEvalRef env sigma (RedFlags.red_transparent infos.construct_reds) c' ->
           (* Continue stepwise unfolding from [c' args] *)
           let ref, u = destEvalRefU sigma c' in
           (match reference_opt_value infos.constant_body_cache env sigma ref u with
@@ -705,17 +707,18 @@ let make_simpl_reds env =
   let behavior = get () in
   let simpl_never = all_never_unfold behavior in
   let transparent_state = Conv_oracle.get_transp_state (Environ.oracle env) in
-  let transparent_state =
+  let transparent_state_never =
     { transparent_state with
       tr_cst = Cpred.diff transparent_state.tr_cst simpl_never
     }
   in
   let reds = no_red in
-  let reds = red_add_transparent reds transparent_state in
   let reds = red_add reds fDELTA in
   let reds = red_add reds fZETA in
   let reds = red_add reds fBETA in
-  behavior, reds
+  let reds = red_add_transparent reds transparent_state in
+  let reds_never = red_add_transparent reds transparent_state_never in
+  behavior, reds_never, reds
 
 let rec descend cache env sigma target (ref,u) args =
   let c = reference_value cache env sigma ref u in
@@ -956,7 +959,9 @@ and whd_construct_stack infos env sigma s =
 (* reduce until finding an applied constructor (or primitive value) or fail *)
 
 and whd_construct infos env sigma c =
-  let (constr, cargs) = whd_simpl_stack infos env sigma c in
+  let (constr, cargs) =
+    let construct_infos = { infos with red_behavior = ReductionBehaviour.Db.empty; main_reds = infos.construct_reds } in
+    whd_simpl_stack construct_infos env sigma c in
   match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
     (match compute_reference_coelimination infos env sigma ref u with
@@ -1430,7 +1435,7 @@ let find_hnf_rectype env sigma t =
 exception NotStepReducible
 
 let one_step_reduce env sigma c =
-  let infos = make_simpl_infos (ReductionBehaviour.Db.empty, RedFlags.betadeltazeta) in
+  let infos = make_simpl_infos (ReductionBehaviour.Db.empty, RedFlags.betadeltazeta, RedFlags.betadeltazeta) in
   let rec redrec (x, stack) =
     match EConstr.kind sigma x with
       | Lambda (n,t,c)  ->
