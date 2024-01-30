@@ -65,9 +65,6 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    This can be used to define a term incrementally,
    in particular by relying on the :tacn:`refine` tactic.
    See :ref:`proof-editing-mode`.
-   The proof should be terminated with :cmd:`Defined`. Using :cmd:`Qed` in
-   Let is deprecated. To get the same effect (hiding the body of the
-   proof), add the :attr:`clearbody` attribute to the Let.
 
 .. attr:: clearbody
 
@@ -78,11 +75,11 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 .. note::
 
    Terminating the proof for a :cmd:`Let` with :cmd:`Qed` produces an opaque side definition.
-   `Let foo : T. tactics. Qed.` is equivalent to
+   `Let foo : T. Proof. tactics. Qed.` is equivalent to
 
    .. coqdoc::
 
-      Lemma foo_subproof : T. tactics. Qed.
+      Lemma foo_subproof : T. Proof. tactics. Qed.
       #[clearbody] Let foo := foo_subproof.
 
 .. cmd:: Context {+ @binder }
