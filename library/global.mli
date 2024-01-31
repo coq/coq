@@ -66,6 +66,9 @@ val add_constraints : Univ.Constraints.t -> unit
 
 val push_context_set : strict:bool -> Univ.ContextSet.t -> unit
 
+(** Extra sort qualities *)
+val push_quality_set : Sorts.QVar.Set.t -> unit
+
 (** Non-interactive modules and module types *)
 
 val add_module :
