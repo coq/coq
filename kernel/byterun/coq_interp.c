@@ -571,20 +571,26 @@ value coq_interprete
       /* We also check for signals */
 #if OCAML_VERSION >= 50000
       if (Caml_check_gc_interrupt(Caml_state)) {
+        Setup_for_gc;
         value res = caml_process_pending_actions_exn();
         Handle_potential_exception(res);
+        Restore_after_gc;
       }
 #elif OCAML_VERSION >= 41000
       if (caml_something_to_do) {
+        Setup_for_gc;
         value res = caml_process_pending_actions_exn();
         Handle_potential_exception(res);
+        Restore_after_gc;
       }
 #else
       if (caml_signals_are_pending) {
         /* If there's a Ctrl-C, we reset the vm */
         intnat sigint = caml_pending_signals[SIGINT];
         if (sigint) { coq_sp = coq_stack_high; }
+        Setup_for_gc;
         caml_process_pending_signals();
+        Restore_after_gc;
         if (sigint) {
           caml_failwith("Coq VM: Fatal error: SIGINT signal detected "
                         "but no exception was raised");
