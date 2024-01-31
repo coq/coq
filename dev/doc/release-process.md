@@ -68,9 +68,6 @@
 ## For each non-preview release ##
 
 - [ ] Modify the version number in the file [`incl/macros.html`](https://github.com/coq/www/blob/master/incl/macros.html) on the website.
-- [ ] Ping `@Zimmi48` to switch the default version of the reference manual on the website.
-  This is done by logging into the server (`vps697916.ovh.net`), editing two `ProxyPass` lines (one for the refman and one for the stdlib doc) with `sudo vim /etc/apache2/sites-available/000-coq.inria.fr.conf`, then running `sudo systemctl reload apache2`.
-  *TODO:* automate this or make it doable through the `www` git repository. See [coq/www#111](https://github.com/coq/www/issues/111) and [coq/www#131](https://github.com/coq/www/issues/131).
 
 ## Only for the final release of each major version ##
 
