@@ -580,7 +580,7 @@ let v_vodigest = v_sum_c ("module_impl",0, [| [|v_string|]; [|v_string;v_string|
 let v_deps = v_array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_flags = v_tuple "flags" [|v_bool|] (* Allow Rewrite Rules *)
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps; v_flags|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_set v_qvar;v_deps; v_flags|]
 
 (** Toplevel structures in a vo (see Cic.mli) *)
 

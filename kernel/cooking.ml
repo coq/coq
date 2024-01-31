@@ -276,10 +276,12 @@ let abstract_named_context expand_info abstr_ausubst hyps =
     let cache = RefTable.create 13 in
     let decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
+      let id = Context.map_annot_relevance (UVars.subst_sort_level_relevance (make_instance_subst abstr_ausubst)) id in
       let b = expand_subst0 cache expand_info abstr_ctx abstr_ausubst b in
       let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
       NamedDecl.LocalDef (id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
+      let id = Context.map_annot_relevance (UVars.subst_sort_level_relevance (make_instance_subst abstr_ausubst)) id in
       let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
       NamedDecl.LocalAssum (id, t)
     in
@@ -388,3 +390,6 @@ let lift_private_mono_univs info a =
 let lift_private_poly_univs info (inst, cstrs) =
   let cstrs = Univ.subst_univs_level_constraints (snd (make_instance_subst info.abstr_info.abstr_ausubst)) cstrs in
   (inst, cstrs)
+
+let lift_relevance info relevance =
+  UVars.subst_sort_level_relevance (make_instance_subst info.abstr_info.abstr_ausubst) relevance

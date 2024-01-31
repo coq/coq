@@ -429,6 +429,10 @@ module UnivTab = Make(FullPath)(Univ.UGlobal)
 type univtab = UnivTab.t
 let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 
+module QualityTab = Make(FullPath)(Sorts.QGlobal)
+type qualitytab = QualityTab.t
+let the_qualitytab = Summary.ref ~name:"qualitytab" (QualityTab.empty : qualitytab)
+
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
@@ -446,6 +450,10 @@ module UnivIdMap = HMap.Make(Univ.UGlobal)
 
 type univrevtab = full_path UnivIdMap.t
 let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevtab)
+
+module QualityIdMap = HMap.Make(Sorts.QGlobal)
+type qualityrevtab = full_path QualityIdMap.t
+let the_qualityrevtab = Summary.ref ~name:"qualityrevtab" (QualityIdMap.empty : qualityrevtab)
 
 (** Module-related nametab *)
 module Modules = struct
@@ -537,6 +545,10 @@ let push_universe vis sp univ =
   the_univtab := UnivTab.push vis sp univ !the_univtab;
   the_univrevtab := UnivIdMap.add univ sp !the_univrevtab
 
+let push_sort vis sp quality =
+  the_qualitytab := QualityTab.push vis sp quality !the_qualitytab;
+  the_qualityrevtab := QualityIdMap.add quality sp !the_qualityrevtab
+
 (* Reverse locate functions ***********************************************)
 
 let path_of_global ref =
@@ -588,6 +600,10 @@ let shortest_qualid_of_modtype ?loc kn =
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
   UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab
+
+let shortest_qualid_of_quality ?loc ctx kn =
+  let sp = QualityIdMap.find kn !the_qualityrevtab in
+  QualityTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_qualitytab
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
@@ -658,6 +674,8 @@ let locate_modtype qid = MPTab.locate qid Modules.(!nametab.modtypetab)
 let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
 
 let locate_universe qid = UnivTab.locate qid !the_univtab
+
+let locate_quality qid = QualityTab.locate qid !the_qualitytab
 
 let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
 
@@ -735,6 +753,8 @@ let exists_module dir = MPDTab.exists dir Modules.(!nametab.modtab)
 let exists_modtype sp = MPTab.exists sp Modules.(!nametab.modtypetab)
 
 let exists_universe kn = UnivTab.exists kn !the_univtab
+
+let exists_sort kn = QualityTab.exists kn !the_qualitytab
 
 (* Source locations *)
 

@@ -49,6 +49,7 @@ module QState : sig
   val collapse : ?except:QVar.Set.t -> t -> t
   val pr : (QVar.t -> Libnames.qualid option) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val of_global : QVar.Set.t -> t
 end =
 struct
 
@@ -73,9 +74,7 @@ let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
 | Some (QVar q) -> repr q m
 | Some (QConstant _ as q) -> q
-| exception Not_found ->
-(*   let () = assert !Flags.in_debugger in *) (* FIXME *)
-  QVar q
+| exception Not_found -> QVar q
 
 let is_above_prop q m = QSet.mem q m.above
 
@@ -176,10 +175,14 @@ let add ~check_fresh ~rigid q m =
 let of_set qs =
   { rigid = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
 
+let of_global qs =
+  { empty with
+    rigid = qs }
+
 (* XXX what about [above]? *)
 let undefined m =
-  let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
-  QMap.domain m
+  let mq = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
+  QMap.domain mq
 
 let collapse_above_prop ~to_prop m =
   let map q v = match v with
@@ -250,10 +253,12 @@ let empty =
     initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
-let make univs =
+let make ~qualities univs =
   { empty with
     universes = univs;
-    initial_universes = univs }
+    initial_universes = univs ;
+    sort_variables = QState.of_global qualities
+  }
 
 let is_empty uctx =
   ContextSet.is_empty uctx.local &&
@@ -272,7 +277,7 @@ let is_rigid_qvar uctx q = QState.is_rigid uctx.sort_variables q
 let qualid_of_qvar_names (bind, (qrev,_)) l =
   try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
   with Not_found | Option.IsNone ->
-    None (* no global qvars *)
+    UnivNames.qualid_of_quality bind l
 
 let qualid_of_level_names (bind, (_,urev)) l =
   try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l urev).uname))
@@ -1170,7 +1175,7 @@ let add_universe ?loc name strict uctx u =
   { uctx with names; local; initial_universes; universes }
 
 let new_sort_variable ?loc ?name uctx =
-  let q = UnivGen.new_sort_global () in
+  let q = UnivGen.fresh_sort_quality () in
   (* don't need to check_fresh as it's guaranteed new *)
   let sort_variables = QState.add ~check_fresh:false ~rigid:(Option.has_some name)
       q uctx.sort_variables
@@ -1195,15 +1200,15 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_forgotten_univ uctx u = add_universe None true uctx u
 
-let make_with_initial_binders univs binders =
-  let uctx = make univs in
+let make_with_initial_binders ~qualities univs binders =
+  let uctx = make ~qualities univs in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders (Environ.universes env) binders
+  make_with_initial_binders ~qualities:(Environ.qualities env) (Environ.universes env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
