@@ -887,6 +887,14 @@ However elimination to `Type` or to a polymorphic sort with `s := Prop` is allow
         : Type@{s|max(u,v)}
         := pair { pr1 : A; pr2 : B pr1 }.
 
+Explicit Sorts
+---------------
+
+Similar to universes, fresh global sorts can be declared with the :cmd:`Sort`.
+
+.. cmd:: Sort {+ @ident }
+         Sorts {+ @ident }
+
 .. _universe-polymorphism-in-sections:
 
 Universe polymorphism and sections
