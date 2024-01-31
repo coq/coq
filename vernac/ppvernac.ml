@@ -973,6 +973,11 @@ let pr_synpure_vernac_expr v =
       hov 2 (keyword "Universe" ++ spc () ++
              prlist_with_sep (fun _ -> str",") pr_lident v)
     )
+  | VernacSort v ->
+    return (
+      hov 2 (keyword "Sort" ++ spc () ++
+             prlist_with_sep (fun _ -> str",") pr_lident v)
+    )
   | VernacConstraint v ->
     return (
       hov 2 (keyword "Constraint" ++ spc () ++
