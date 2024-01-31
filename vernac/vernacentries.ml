@@ -1303,6 +1303,13 @@ let vernac_universe ~poly l =
                   str "use Monomorphic Universe instead.");
   DeclareUniv.do_universe ~poly l
 
+let vernac_sort ~poly l =
+  if poly && not (Lib.sections_are_opened ()) then
+    user_err
+                 (str"Polymorphic sorts can only be declared inside sections, " ++
+                  str "use #[universes(polymorphic=no)] Sort instead.");
+  DeclareUniv.do_sort ~poly l
+
 let vernac_constraint ~poly l =
   if poly && not (Lib.sections_are_opened ()) then
     user_err
@@ -2647,6 +2654,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         vernac_combined_scheme id l ~locmap:(Ind_tables.Locmap.default loc))
   | VernacUniverse l ->
     vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
+
+  | VernacSort l ->
+    vtdefault(fun () -> vernac_sort ~poly:(only_polymorphism atts) l)
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
