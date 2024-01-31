@@ -415,6 +415,7 @@ type nonrec synpure_vernac_expr =
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
+  | VernacSort of lident list
   | VernacConstraint of univ_constraint_expr list
 
   (* Gallina extensions *)

@@ -273,6 +273,8 @@ GRAMMAR EXTEND Gram
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
+      | IDENT "Sort"; l = LIST1 identref -> { VernacSort l }
+      | IDENT "Sorts"; l = LIST1 identref -> { VernacSort l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
   ] ]
   ;

@@ -162,6 +162,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
+    qualities : Sorts.QVar.Set.t ;
     future_cst : (Constant_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
@@ -193,6 +194,7 @@ let empty_environment =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty ;
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -416,6 +418,14 @@ let push_context_set ~strict cst senv =
 
 let add_constraints cst senv =
   push_context_set ~strict:true cst senv
+
+let push_quality_set qs senv =
+  if Sorts.QVar.Set.is_empty qs then senv
+  else
+    { senv with 
+      env = Environ.push_quality_set qs senv.env ;
+      qualities = Sorts.QVar.Set.union qs senv.qualities
+    }
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
@@ -1064,6 +1074,7 @@ let start_mod_modtype ~istype l senv =
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.add_delta_resolver senv.modresolver senv.paramresolver;
     univ = senv.univ;
+    qualities = senv.qualities;
     required = senv.required;
     opaquetab = senv.opaquetab;
     sections = None; (* checked in check_empty_context *)
@@ -1284,6 +1295,7 @@ let start_library dir senv =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty;
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;

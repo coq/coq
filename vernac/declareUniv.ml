@@ -33,6 +33,16 @@ type universe_name_decl = {
   udecl_anon : UGlobal.t list;
 }
 
+type [@warning "-37"] sort_source =
+  | BoundQuality 
+  | UnqualifiedQuality
+
+type sort_name_decl = {
+  sdecl_src : sort_source; (* global sort introduced by some global value *)
+  sdecl_named : (Id.t * Sorts.QVar.t) list;
+  sdecl_anon : Sorts.QVar.t list;
+}
+
 let check_exists_universe sp =
   if Nametab.exists_universe sp then
     raise (AlreadyDeclared (Some "Universe", Libnames.basename sp))
@@ -99,6 +109,69 @@ let input_univ_names (src, l, a) =
   if CList.is_empty l && CList.is_empty a then ()
   else Lib.add_leaf (input_univ_names { udecl_src = src; udecl_named = l; udecl_anon = a })
 
+let check_exists_sort sp =
+  if Nametab.exists_sort sp then
+    raise (AlreadyDeclared (Some "Sort", Libnames.basename sp))
+  else ()
+
+let qualify_sort i dp _src id =
+    i,  Libnames.make_path dp id
+
+let do_sort_name ~check i dp src (id,quality) =
+  let i, sp = qualify_sort i dp src id in
+  if check then check_exists_sort sp;
+  Nametab.push_sort i sp quality 
+
+let get_sort_names decl =
+  let fold accu (id, _) = Id.Set.add id accu in
+  let names = List.fold_left fold Id.Set.empty decl.sdecl_named in
+  (* create fresh names for anonymous qualities *)
+  let fold u ((names, cnt), accu) =
+    let rec aux i =
+      let na = Id.of_string ("q"^(string_of_int i)) in
+      if Id.Set.mem na names then aux (i+1) else (na, i)
+    in
+    let (id, cnt) = aux cnt in
+    ((Id.Set.add id names, cnt + 1), ((id, u) :: accu))
+  in
+  let _, qualities = List.fold_right fold decl.sdecl_anon ((names, 0), decl.sdecl_named) in
+  qualities
+
+let cache_sort_names (prefix, decl) =
+  let depth = Lib.sections_depth () in
+  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
+  let names = get_sort_names decl in
+  List.iter (do_sort_name ~check:true (Nametab.Until 1) dp decl.sdecl_src) names
+
+let load_sort_names i (prefix, decl) =
+  let names = get_sort_names decl in
+  List.iter (do_sort_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir decl.sdecl_src) names
+
+let open_sort_names i (prefix, decl) =
+  let names = get_sort_names decl in
+  List.iter (do_sort_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir decl.sdecl_src) names
+
+let discharge_sort_names decl = 
+  match decl.sdecl_src with
+  | BoundQuality -> None
+  | UnqualifiedQuality -> Some decl
+
+let input_sort_names : sort_name_decl -> Libobject.obj =
+  let open Libobject in
+  declare_named_object_gen
+    { (default_object "Global sort name state") with
+      cache_function = cache_sort_names;
+      load_function = load_sort_names;
+      open_function = simple_open open_sort_names;
+      discharge_function = discharge_sort_names;
+      subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
+      classify_function = (fun a -> Substitute) }
+
+let input_sort_names (src, l, a) =
+  if CList.is_empty l && CList.is_empty a then ()
+  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l; sdecl_anon = a })
+
+
 let label_of = let open GlobRef in function
 | ConstRef c -> Label.to_id @@ Constant.label c
 | IndRef (c,_) -> Label.to_id @@ MutInd.label c
@@ -152,6 +225,18 @@ let do_universe ~poly l =
       UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
     in
     Global.push_section_context ctx
+
+    (* TODO: move to its proper place *)
+let do_sort l =
+  (* let in_section = Lib.sections_are_opened () in *)
+  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global ())) l in
+  let src = UnqualifiedQuality in
+     (* if in_section then BoundQuality else UnqualifiedQuality in *)
+  let () = input_sort_names (src, l, []) in
+  let qs = List.fold_left  (fun qs (_, qv) -> Sorts.QVar.Set.add qv qs)
+    Sorts.QVar.Set.empty l
+  in
+  Global.push_quality_set qs
 
 let do_constraint ~poly l =
   let open Univ in

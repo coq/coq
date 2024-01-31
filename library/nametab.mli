@@ -111,6 +111,7 @@ val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
+val push_sort : visibility -> full_path -> Sorts.QVar.t -> unit
 
 (** Deprecation info *)
 
@@ -173,6 +174,7 @@ val exists_modtype : full_path -> bool
 val exists_module : DirPath.t -> bool
 val exists_dir : DirPath.t -> bool
 val exists_universe : full_path -> bool
+val exists_sort : full_path -> bool
 
 (** {6 These functions locate qualids into full user names } *)
 
