@@ -465,17 +465,17 @@ let use_metas_pattern_unification sigma flags nb l =
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
 
-(* [unfold_projection_under_eta env sigma ts n c] checks if [c] is the eta
+(* [unfold_projection_under_eta env ts n c] checks if [c] is the eta
    expanded, folded primitive projection of name [n] and unfolds the primitive
    projection. It respects projection transparency of [ts]. *)
-let unfold_projection_under_eta env sigma ts n c =
+let unfold_projection_under_eta env ts n c =
   let unfold_projection env ts p r c =
     if TransparentState.is_transparent_projection ts (Projection.repr p) then
-      Some (EConstr.mkProj (Projection.unfold p, r, c))
+      Some (Constr.mkProj (Projection.unfold p, r, c))
     else None
   in
   let rec go c lams =
-    match EConstr.kind sigma c with
+    match Constr.kind c with
     | Lambda (b, t, c) -> go c ((b,t)::lams)
     | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
       let c = unfold_projection env ts p r c in
@@ -483,7 +483,7 @@ let unfold_projection_under_eta env sigma ts n c =
         match c with
         | None -> None
         | Some c ->
-          let f c (b,t) = EConstr.mkLambda (b,t,c) in
+          let f c (b,t) = Constr.mkLambda (b,t,c) in
           Some (List.fold_left f c lams)
       end
     | _ -> None
@@ -496,21 +496,18 @@ type key =
   | IsProj of Projection.t * Sorts.relevance * EConstr.constr
 
 let expand_table_key ts env sigma args = function
-  | ConstKey (cst, u) -> begin
-      let cb = lookup_constant cst env in
-      match cb.const_body with
-      | Def l_body ->
-          let def = subst_instance_constr u (EConstr.of_constr l_body) in
-          (* If we are unfolding a compatibility constant we want to return the
-             unfolded primitive projection directly since we would like to pretend
-             that the compatibility constant itself does not count as an unfolding
-             (delta) step. *)
-          let unf = unfold_projection_under_eta env sigma ts cst def in
-          Some (Option.default def unf, args)
-      | OpaqueDef _ | Undef _ | Primitive _ -> None
-      | Symbol b ->
-          try
-          let r = match Cmap_env.find_opt cst env.symb_pats with Some r -> r | None -> assert false in
+  | ConstKey (c, _ as cst) ->
+      if Structures.PrimitiveProjections.is_transparent_constant ts c then
+        match constant_value_in env cst with
+        (* If we are unfolding a compatibility constant we want to return the
+            unfolded primitive projection directly since we would like to pretend
+            that the compatibility constant itself does not count as an unfolding
+            (delta) step. *)
+        | def ->
+        let unf = unfold_projection_under_eta env ts c def in
+        Some (EConstr.of_constr @@ Option.default def unf, args)
+        | exception NotEvaluableConst (HasRules (u, b, r)) ->
+        begin try
           let sk = Stack.( append_app args empty ) in
           let rhs, stack = Reductionops.apply_rules
             (whd_betaiota_deltazeta_for_iota_state ts env sigma) env sigma (EInstance.make u) r sk
@@ -521,7 +518,9 @@ let expand_table_key ts env sigma args = function
           Some (rhs, args')
         with PatternFailure -> None
         (* TODO: try unfold fix *)
-      end
+        end
+        | exception NotEvaluableConst _ -> None
+      else None
   | VarKey id -> (try named_body id env |> Option.map (fun c -> (EConstr.of_constr c, args)) with Not_found -> None)
   | RelKey _ -> None
 
