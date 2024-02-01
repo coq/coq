@@ -84,7 +84,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: none (no VM in coqchk)
 - fixed in: NONE
 - found by: Dolan, Roux, Melquiond
-- GH issue number: ocaml/ocaml#6385, #13439
+- GH issue number: ocaml/ocaml#6385, coq/coq#13439
 - exploit: ??
 - risk: requires very large number of arguments, fix block size or nested letins
 
@@ -96,7 +96,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: none (no VM or native in coqchk)
 - fixed in: NONE
 - found by: Gaëtan Gilbert, Andres Erbsen
-- GH issue number: #16891
+- GH issue number: coq/coq#16891
 - exploit: requires a memory corruption to craft something that doesn't just SIGSEV
 - risk: could be activated by chance but unlikely to produce anything
         other than SIGSEV outside a deliberate attack
@@ -109,7 +109,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: same
 - fixed in: NONE
 - found by: Pierre-Marie Pédrot
-- GH issue number: #7609
+- GH issue number: coq/coq#7609
 - exploit: see issue (requires a plugin or hand crafted .vo file)
 - risk: low
 
@@ -121,18 +121,18 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: V8.10-NOW
 - fixed in: NONE
 - found by: Gaëtan Gilbert
-- GH issue number: #12439
+- GH issue number: coq/coq#12439
 - exploit: not fully worked out, requires crafted .vo file
 - risk: none (requires crafted .vo file)
 
 #### Print Assumptions + Parameter Inline fails to report some inconsistent flags
 
 - component: module functors
-- introduced: #79
+- introduced: coq/coq#79
 - impacted versions: V8.6-NOW
 - impacted coqchk versions: none
 - found by: Jason Gross
-- GH issue number: #12155
+- GH issue number: coq/coq#12155
 - exploit: see issue
 - risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
 
@@ -143,7 +143,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted versions: V8.11-NOW
 - impacted coqchk versions: none
 - found by: Gaëtan Gilbert
-- GH issue number: #16646
+- GH issue number: coq/coq#16646
 - exploit: see issue
 - risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
 
@@ -199,8 +199,8 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: ?
 - fixed in: master (8a01c3685, 24 Jan 2014, Dénès), v8.4 (8a01c3685, 25 Feb 2014, Dénès), v8.3 (2b3cc4f85, 25 Feb 2014, Dénès), v8.2 (459888488, 25 Feb 2014, Dénès), v8.1 (79aa20872, 25 Feb 2014, Dénès)
 - found by: Dénès
-- exploit: see GH#3211
-- GH issue number: #3211
+- exploit: see coq/coq#3211
+- GH issue number: coq/coq#3211
 - risk: ?
 
 #### bug in Prop<=Set conversion which made Set identifiable with Prop, preventing a proof-irrelevant interpretation of Prop
@@ -228,7 +228,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - fixed in: master/trunk (d4869e059, 2 Oct 2015, Sozeau), v8.4 (40350ef3b, 9 Sep 2015, Sozeau)
 - found by: Dénès
 - exploit: test-suite/bugs/bug_4294.v
-- GH issue number: #4294
+- GH issue number: coq/coq#4294
 - risk: ?
 
 #### universe constraints for module subtyping not stored in vo files
@@ -241,7 +241,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - fixed in: v8.2 (c1d9889), v8.3 (8056d02), v8.4 (a07deb4), trunk (0cd0a3e) Mar 5, 2014, Tassi
 - found by: Tassi by running coqchk on the mathematical components library
 - exploit: requires multiple files, no test provided
-- GH issue number: #3243
+- GH issue number: coq/coq#3243
 - risk: could be exploited by mistake
 
 #### module subtyping disrespected squashing status of inductives
@@ -253,7 +253,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - fixed in: 8.15.1, 8.16
 - found by: Pédrot
 - exploit: see GitHub issue
-- GH issue number: #15838
+- GH issue number: coq/coq#15838
 - risk: unlikely (caught by coqchk, needs Unset Elimination Schemes in the module type)
 
 #### Functor inlining drops universe substitution
@@ -264,7 +264,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: same? not sure if coqchk has a this bug
 - fixed in: V8.8.1, V8.9.0 (#7616)
 - found by: Pierre-Marie Pédrot
-- GH issue number: #7615
+- GH issue number: coq/coq#7615
 - exploit: see issue
 - risk: medium
 
@@ -276,7 +276,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted coqchk versions: same
 - fixed in: V8.19.0
 - found by: Gaëtan Gilbert
-- GH issue number: #18503
+- GH issue number: coq/coq#18503
 - exploit: see issue
 - risk: high if there is a Primitive in a Module Type, otherwise low
 
@@ -303,7 +303,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - fixed in: ec4aa4971f (58e1d0f200 for the checker)
 - found by: Gaëtan Gilbert
 - exploit: test-suite/misc/poly-capture-global-univs
-- GH issue number: #8341
+- GH issue number: coq/coq#8341
 - risk: unlikely to be activated by chance (requires a plugin)
 
 #### template polymorphism not collecting side constraints on the universe level of a parameter
@@ -321,10 +321,10 @@ polymorphism exploiting other ways to generate untracked constraints
   level is in principle possible though)
 - impacted development branches: all from 8.4 to 8.9 at the time of writing and suspectingly also all from 8.1 to 8.4 if a way to create untracked constraints can be found
 - impacted coqchk versions: a priori all (tested with V8.4 and V8.9 which accept the exploit)
-- fixed in: soon in master and V8.10.0 (PR #9918, Aug 2019, Dénès and Sozeau)
+- fixed in: soon in master and V8.10.0 (PR coq/coq#9918, Aug 2019, Dénès and Sozeau)
 - found by: Gilbert using explicit sharing of universes, exploit found for 8.5-8.9 by Pédrot, other variants generating sharing using sections, or using ltac tricks by Sozeau, exploit in 8.4 by Herbelin and Jason Gross by adding new tricks to Sozeau's variants
 - exploit: test-suite/failure/Template.v
-- GH issue number: #9294
+- GH issue number: coq/coq#9294
 - risk: moderate risk to be activated by chance
 
 #### more template polymorphism missing constraints
@@ -343,8 +343,8 @@ fix.
 - fixed in: expected in 8.10.2, 8.11+beta, master (#11128, Nov 2019, Gilbert)
 - found by: Gilbert
 - exploit: test-suite/bugs/bug_11039.v
-- GH issue number: #11039
-- risk: moderate risk (found by investigating #10504)
+- GH issue number: coq/coq#11039
+- risk: moderate risk (found by investigating coq/coq#10504)
 
 #### universe constraints erroneously discarded when forcing an asynchronous proof containing delayed monomorphic constraints inside a universe polymorphic section
 
@@ -353,7 +353,7 @@ fix.
 - impacted released versions: V8.5-V8.10
 - impacted development branches: none
 - impacted coqchk versions: immune
-- fixed in: PR#10664
+- fixed in: coq/coq#10664
 - found by: Pédrot
 - exploit: no test
 - GH issue number: none
@@ -365,7 +365,7 @@ fix.
 - introduced: V8.10 (with the SProp commit 75508769762372043387c67a9abe94e8f940e80a)
 - impacted released versions: V8.10.0 V8.10.1 V8.10.2
 - impacted coqchk versions: same
-- fixed in: PR#11422
+- fixed in: coq/coq#11422
 - found by: Gilbert
 - exploit: see PR (custom application of Hurkens to get around the refreshing at elaboration)
 - GH issue number: see PR
@@ -379,9 +379,9 @@ fix.
 - introduced: V8.12 (73c3b874633d6f6f8af831d4a37d0c1ae52575bc)
 - impacted released versions: V8.12 to V8.15 including patch releases
 - impacted coqchk versions: none
-- fixed in: V8.16 PR#15950 (118ffbc010ce53ebd45baa42edd28335301ca9a5)
+- fixed in: V8.16 coq/coq#15950 (118ffbc010ce53ebd45baa42edd28335301ca9a5)
 - found by: Gilbert and Pédrot
-- exploit: see #15916
+- exploit: see coq/coq#15916
 - risk: could be used inadvertently in developments with complex universe usage, only when using cumulative inductives declared in sections. coqchk still works.
 
 ### Primitive projections
@@ -394,9 +394,9 @@ fix.
 - impacted development branches: none
 - impacted coqchk versions: ?
 - fixed in: trunk/master/v8.5 (ba00867d5, 25 Jul 2016, Sozeau)
-- found by: Sozeau, by analyzing bug report #4876
+- found by: Sozeau, by analyzing bug report coq/coq#4876
 - exploit: to be done (?)
-- GH issue number: #4876
+- GH issue number: coq/coq#4876
 - risk: consequence of bug found by chance, unlikely to be exploited by chance (MS?)
 
 #### records based on primitive projections became possibly recursive without the guard condition being updated
@@ -407,9 +407,9 @@ fix.
 - impacted development branches: none
 - impacted coqchk versions: ?
 - fixed in: trunk/master/v8.5 (120053a50, 4 Mar 2016, Dénès)
-- found by: Dénès exploiting bug #4588
+- found by: Dénès exploiting bug coq/coq#4588
 - exploit: test-suite/bugs/bug_4588.v
-- GH issue number: #4588
+- GH issue number: coq/coq#4588
 - risk: ?
 
 #### incorrect checking of subtyping with algebraic universes
@@ -420,7 +420,7 @@ fix.
 - impacted coqchk versions: same
 - fixed in: V8.8.1, V8.9.0 (#7798)
 - found by: Gaëtan Gilbert
-- GH issue number: #7695
+- GH issue number: coq/coq#7695
 - exploit: see issue
 - risk: needs usage of explicit algebraic universe annotations, coqchk
         may catch through defunctorialization
@@ -450,7 +450,7 @@ fix.
 - fixed in: master/trunk/v8.5 (00894adf6/596a4a525, 26-39 Mar 2015, Grégoire), v8.4 (cd2101a39, 1 Apr 2015, Grégoire), v8.3 (a0c7fc05b, 1 Apr 2015, Grégoire), v8.2 (2c6189f61, 1 Apr 2015, Grégoire), v8.1 (bb877e5b5, 29 Nov 2015, Herbelin, backport)
 - found by: Dénès, Pédrot
 - exploit: test-suite/bugs/bug_4157.v
-- GH issue number: #4157
+- GH issue number: coq/coq#4157
 - risk:
 
 #### wrong universe constraints
@@ -460,10 +460,10 @@ fix.
 - impacted released versions: V8.1-V8.4pl5 unknown, V8.5-V8.5pl3, V8.6-V8.6.1, V8.7.0-V8.7.1
 - impacted development branches: unknown for v8.1-v8.4, none from v8.5
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: master (c9f3a6cbe, 12 Feb 2018, PR#6713, Dénès), v8.7 (c058a4182, 15 Feb 2018, Zimmermann, backport), v8.6 (a2cc54c64, 21 Feb 2018, Herbelin, backport), v8.5 (d4d550d0f, 21 Feb 2018, Herbelin, backport)
+- fixed in: master (c9f3a6cbe, 12 Feb 2018, coq/coq#6713, Dénès), v8.7 (c058a4182, 15 Feb 2018, Zimmermann, backport), v8.6 (a2cc54c64, 21 Feb 2018, Herbelin, backport), v8.5 (d4d550d0f, 21 Feb 2018, Herbelin, backport)
 - found by: Dénès
 - exploit: test-suite/bugs/bug_6677.v
-- GH issue number: #6677
+- GH issue number: coq/coq#6677
 - risk:
 
 #### missing pops in executing 31bit arithmetic
@@ -482,14 +482,14 @@ fix.
 #### primitive integer emulation layer on 32 bits not robust to garbage collection
 
 - component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
-- introduced: master (before v8.10 in GH pull request #6914)
+- introduced: master (before v8.10 in GH pull request coq/coq#6914)
 - impacted released versions: none
 - impacted development branches: v8.10
 - impacted coqchk versions: none (no virtual machine in coqchk)
 - fixed in: 5914313 (v8.10)
 - found by: Roux, Melquiond
 - exploit:
-- GH issue number: #9925
+- GH issue number: coq/coq#9925
 - risk:
 
 #### broken long multiplication primitive integer emulation layer on 32 bits
@@ -502,7 +502,7 @@ fix.
 - fixed in: 4e176a7
 - found by: Soegtrop, Melquiond
 - exploit: test-suite/bugs/bug_11321.v
-- GH issue number: #11321
+- GH issue number: coq/coq#11321
 - risk: critical, as any BigN computation on 32-bit architectures is wrong
 
 #### translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
@@ -524,9 +524,9 @@ fix.
 - introduced: 1 Jun 2018, e1e7888a, ppedrot
 - impacted released versions: 8.9.0
 - impacted coqchk versions: none
-- found by: maximedenes exploiting bug #9684
+- found by: maximedenes exploiting bug coq/coq#9684
 - exploit: test-suite/bugs/bug_9684.v
-- GH issue number: #9684
+- GH issue number: coq/coq#9684
 
 #### incorrect De Bruijn handling when inferring the relevance mark for a lambda
 
@@ -536,7 +536,7 @@ fix.
 - impacted coqchk versions: 8.10.0
 - found by: ppedrot investigating unexpected conversion failures with SProp
 - exploit: test-suite/bugs/bug_10904.v
-- GH issue number: #10904
+- GH issue number: coq/coq#10904
 - risk: none without using -allow-sprop (off by default in 8.10.0),
         otherwise could be exploited by mistake
 
@@ -548,7 +548,7 @@ fix.
 - impacted coqchk versions: none (no virtual machine in coqchk)
 - fixed in: 8.13.0 (#13431)
 - found by: Dolan, Roux, Melquiond
-- GH issue number: ocaml/ocaml#6385, #11170
+- GH issue number: ocaml/ocaml#6385, coq/coq#11170
 - risk: medium, as it can happen for large irreducible applications
 
 #### buffer overflow, arbitrary code execution on floating-point operations
@@ -559,7 +559,7 @@ fix.
 - impacted coqchk versions: none (no virtual machine in coqchk)
 - fixed in: 8.13.1
 - found by: Melquiond
-- GH issue number: #13867
+- GH issue number: coq/coq#13867
 - risk: none, unless using floating-point operations; high otherwise;
         noticeable if activated by chance, since it usually breaks
         control-flow integrity
@@ -572,7 +572,7 @@ fix.
 - impacted coqchk versions: none (no virtual machine in coqchk)
 - fixed in: 8.13.2
 - found by: Melquiond
-- GH issue number: #13998
+- GH issue number: coq/coq#13998
 - risk: none, unless using primitive array operations; systematic otherwise
 
 #### arbitrary code execution on arrays of floating point numbers
@@ -583,7 +583,7 @@ fix.
 - impacted coqchk versions: none (no virtual machine in coqchk)
 - fixed in: 8.14.1
 - found by: Melquiond
-- GH issue number: #15070
+- GH issue number: coq/coq#15070
 - risk: none, unless mixing open terms and primitive floats inside primitive
 - arrays; critical otherwise
 
@@ -595,7 +595,7 @@ fix.
 - impacted coqchk versions: none (no native computation in coqchk)
 - fixed in: 8.16.1
 - found by: Melquiond
-- GH issue number: #16645
+- GH issue number: coq/coq#16645
 - risk: systematic
 
 #### η-expansion of cofixpoints was performed in the wrong environment
@@ -606,7 +606,7 @@ fix.
 - impacted coqchk versions: none (no VM / native computation in coqchk)
 - fixed in: 8.16.1
 - found by: Gaëtan Gilbert and Pierre-Marie Pédrot
-- GH issue number: #16831
+- GH issue number: coq/coq#16831
 - risk: low, as it requires carefully crafted cofixpoints
 
 #### conversion would compare the mutated version of primitive arrays instead of undoing mutation where needed
@@ -618,7 +618,7 @@ fix.
 - fixed in: V8.16.1, V8.17
 - found by: Maxime Buyse and Andres Erbsen
 - exploit: Andres Erbsen
-- GH issue number: #16829
+- GH issue number: coq/coq#16829
 - risk: some if using primitive arrays
 
 #### tactic code could mutate a global cache of values for section variables
@@ -629,7 +629,7 @@ fix.
 - impacted coqchk versions: none (no tactics in coqchk, VM only sees checked terms)
 - fixed in: V8.17.0
 - found by: Gaëtan Gilbert with hint from Pierre-Marie Pédrot
-- GH issue number: #16957
+- GH issue number: coq/coq#16957
 - risk: the full exploitation seems to require "Definition := ltac:()"
         with change_no_check on a section variable in the ltac
 
@@ -641,7 +641,7 @@ fix.
 - impacted coqchk versions: none (no VM in coqchk)
 - fixed in: V8.8.1, V8.9.0
 - found by: Jason Gross
-- GH issue number: #7723
+- GH issue number: coq/coq#7723
 - exploit: see issue
 - risk: ??
 
@@ -655,7 +655,7 @@ fix.
 - impacted coqchk versions: none (no side-effects in the checker)
 - found by: ppedrot
 - exploit: test-suite/bugs/bug_13330.v
-- GH issue number: #13330
+- GH issue number: coq/coq#13330
 - risk: unlikely to be exploited by mistake, requires the use of unsafe tactics
 
 ### Forgetting unsafe flags
@@ -667,7 +667,7 @@ fix.
               technically available earlier through plugins
 - impacted coqchk versions: none (coqchk rejects affected files)
 - found by: Anton Trunov
-- GH issue number: #14317
+- GH issue number: coq/coq#14317
 - risk: low as it needs the use of explicit unsafe flags
 
 ### Conflicts with axioms in library
@@ -713,10 +713,10 @@ fix.
 - component: primitive floating-points
 - introduced: 8.11
 - impacted released versions: 8.11.0, 8.11.1, 8.11.2
-- fixed by fixing the spec: #12484
+- fixed by fixing the spec: coq/coq#12484
 - found by: Pierre Roux
 - exploit: test-suite/bugs/bug_12483.v
-- GH issue number: #12483
+- GH issue number: coq/coq#12483
 - risk: proof of false when using the incorrect axiom
 
 #### Incorrect implementation of SFclassify.
@@ -724,10 +724,10 @@ fix.
 - component: floating-point library
 - introduced: 8.11
 - impacted released versions: 8.11.0-8.15.1
-- fixed by fixing the implementation: #16101
+- fixed by fixing the implementation: coq/coq#16101
 - found by: François Bobot
 - exploit: test-suite/bugs/bug_16096.v
-- GH_issue_number: #16096
+- GH_issue_number: coq/coq#16096
 - risk: proof of false when using the axioms in Floats.Axioms.
 
 #### nativenorm reading back closures as arbitrary floating-point values
@@ -738,7 +738,7 @@ fix.
 - impacted coqchk versions: none (no native computation in coqchk)
 - fixed in: 8.18.0
 - found by: Jason Gross
-- GH issue number: #17871
+- GH issue number: coq/coq#17871
 - risk: proof of false when using primitive floats and native_compute
 
 ### Deserialization
@@ -751,7 +751,7 @@ fix.
 - impacted coqchk versions: same
 - fixed in: 8.19
 - found by: Mario Carneiro
-- GH issue number: N/A (fix pull requests: #18403, #18406)
+- GH issue number: N/A (fix pull requests: coq/coq#18403, coq/coq#18406)
 - risk: can lead to segfaults or arbitrary code execution on crafted .vo files
     (files produced by coqc are fine)
 
@@ -762,7 +762,7 @@ There were otherwise several bugs in beta-releases, from memory, bugs with beta 
 There were otherwise maybe unexploitable kernel bugs, e.g. 2df88d83
 (Require overloading), 0adf0838 ("Univs: uncovered bug in
 strengthening of opaque polymorphic definitions."), 5122a398 (#3746
-about functors), #4346 (casts in VM), a14bef4 (guard condition in
+about functors), coq/coq#4346 (casts in VM), a14bef4 (guard condition in
 8.1), 6ed40a8 ("Georges' bug" with ill-typed lazy machine), and
 various other bugs in 8.0 or 8.1 without knowing if they are critical.
 
