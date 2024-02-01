@@ -526,6 +526,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - introduced: 1 Jun 2018, [e1e7888a](https://github.com/coq/coq/commit/e1e7888ac4519f4b7470cc8469f9fd924514e352), ppedrot
 - impacted released versions: 8.9.0
 - impacted coqchk versions: none
+- fixed in: 8.9.1 coq/coq#9900
 - found by: maximedenes exploiting bug coq/coq#9684
 - exploit: test-suite/bugs/bug_9684.v
 - GH issue number: coq/coq#9684
@@ -536,6 +537,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - introduced: 2019-03-15, [23f84f37c6](https://github.com/coq/coq/commit/23f84f37c674a07e925925b7e0d50d7ee8414093) and [71b9ad8526](https://github.com/coq/coq/commit/71b9ad8526155020c8451dd326a52e391a9a8585), SkySkimmer
 - impacted released versions: 8.10.0
 - impacted coqchk versions: 8.10.0
+- fixed in: 8.10.1 coq/coq#10904
 - found by: ppedrot investigating unexpected conversion failures with SProp
 - exploit: test-suite/bugs/bug_10904.v
 - GH issue number: coq/coq#10904
@@ -655,6 +657,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - introduced: ?
 - impacted released versions: at least from 8.6 to 8.12.0
 - impacted coqchk versions: none (no side-effects in the checker)
+- fixed in: V8.12.1 (coq/coq#13331)
 - found by: ppedrot
 - exploit: test-suite/bugs/bug_13330.v
 - GH issue number: coq/coq#13330
@@ -667,6 +670,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - component: sections
 - introduced: [abab878b8d](https://github.com/coq/coq/commit/abab878b8d8b5ca85a4da688abed68518f0b17bd) (#10291, 8.11), technically available earlier through plugins
 - impacted coqchk versions: none (coqchk rejects affected files)
+- fixed in: 8.14 coq/coq#14395
 - found by: Anton Trunov
 - GH issue number: coq/coq#14317
 - risk: low as it needs the use of explicit unsafe flags
