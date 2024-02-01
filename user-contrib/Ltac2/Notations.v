@@ -96,6 +96,8 @@ Ltac2 Notation do := do0.
 
 Ltac2 Notation once := Control.once.
 
+Ltac2 Notation unshelve := Control.unshelve.
+
 Ltac2 progress0 tac := Control.enter (fun _ => Control.progress tac).
 
 Ltac2 Notation progress := progress0.

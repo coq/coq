@@ -40,6 +40,11 @@ Ltac2 @ external new_goal : evar -> unit := "coq-core.plugins.ltac2" "new_goal".
     already defined in the current state, don't do anything. Panics if the
     evar is not in the current state. *)
 
+Ltac2 @ external unshelve : (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "unshelve".
+(** Runs the closure, then unshelves existential variables added to the
+    shelf by its execution, prepending them to the current goal.
+    Returns the value produced by the closure. *)
+
 Ltac2 @ external progress : (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "progress".
 
 (** Goal inspection *)
