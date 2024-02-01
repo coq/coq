@@ -158,7 +158,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted released versions: V8.3-V8.3pl2, V8.4-V8.4pl4
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: master/trunk/v8.5 (e583a79b5, 22 Nov 2015, Herbelin), v8.4 (525056f1, 22 Nov 2015, Herbelin), v8.3 (4bed0289, 22 Nov 2015, Herbelin)
+- fixed in: master/trunk/v8.5 ([e583a79b5](https://github.com/coq/coq/commit/e583a79b5a0298fd08f34305cc876d5117913e95), 22 Nov 2015, Herbelin), v8.4 ([525056f1](https://github.com/coq/coq/commit/525056f1a630426b78668ab583e228c25b492c35), 22 Nov 2015, Herbelin), v8.3 ([4bed0289](https://github.com/coq/coq/commit/4bed0289d66e6e413ccdea7a33dc747c83bce92e), 22 Nov 2015, Herbelin)
 - found by: Herbelin
 - exploit: test-suite/success/Case22.v
 - GH issue number: ?
@@ -171,7 +171,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted released versions: probably V5-V7, V8.0-V8.0pl4, V8.1-V8.1pl4
 - impacted development branches: v8.0 ?
 - impacted coqchk versions: ?
-- fixed in: master/trunk/v8.2 (ff45afa8, r11646, 2 Dec 2008, Barras), v8.1 (f8e7f273, r11648, 2 Dec 2008, Barras)
+- fixed in: master/trunk/v8.2 ([ff45afa8](https://github.com/coq/coq/commit/ff45afa83a9235cbe33af525b6b0c7985dc7e091), r11646, 2 Dec 2008, Barras), v8.1 ([f8e7f273](https://github.com/coq/coq/commit/f8e7f273f2e6009c3c0f0eee47c33542a6fdf361), r11648, 2 Dec 2008, Barras)
 - found by: Barras
 - exploit: test-suite/failure/guard.v
 - GH issue number: none
@@ -184,7 +184,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted released versions: V8.0-V8.0pl4, V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2, V8.4-V8.4pl4
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: master (9f81e2c36, 10 Apr 2014, Dénès), v8.4 (f50ec9e7d, 11 Apr 2014, Dénès), v8.3 (40c0fe7f4, 11 Apr 2014, Dénès), v8.2 (06d66df8c, 11 Apr 2014, Dénès), v8.1 (977afae90, 11 Apr 2014, Dénès), v8.0 (f1d632992, 29 Nov 2015, Herbelin, backport)
+- fixed in: master ([9f81e2c36](https://github.com/coq/coq/commit/9f81e2c360c2be764e71d21ed7c266ee6e8a88c5), 10 Apr 2014, Dénès), v8.4 ([f50ec9e7d](https://github.com/coq/coq/commit/f50ec9e7dbd082c9a465aedda25427d93e12cabe), 11 Apr 2014, Dénès), v8.3 ([40c0fe7f4](https://github.com/coq/coq/commit/40c0fe7f44b3c99bec5188e01197c8a77348a4ee), 11 Apr 2014, Dénès), v8.2 ([06d66df8c](https://github.com/coq/coq/commit/06d66df8c713307625b1c40c054ca06c00ff74b3), 11 Apr 2014, Dénès), v8.1 ([977afae90](https://github.com/coq/coq/commit/977afae90c4e2aa974232b0c664346db72aadaa3), 11 Apr 2014, Dénès), v8.0 ([f1d632992](https://github.com/coq/coq/commit/f1d632992e33a74b30e79271bd3748d69c5a2152), 29 Nov 2015, Herbelin, backport)
 - found by: Dénès
 - exploit: ?
 - GH issue number: none ?
@@ -193,11 +193,11 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 #### de Bruijn indice bug in computing allowed elimination principle
 
 - component: inductive types, elimination principle
-- introduced: 23 May 2006, 9c2d70b, r8845, Herbelin (part of universe polymorphism)
+- introduced: 23 May 2006, [9c2d70b](https://github.com/coq/coq/commit/9c2d70b91341552e964979ba09d5823cc023a31c), r8845, Herbelin (part of template polymorphism)
 - impacted released versions: V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2, V8.4-V8.4pl4
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: master (8a01c3685, 24 Jan 2014, Dénès), v8.4 (8a01c3685, 25 Feb 2014, Dénès), v8.3 (2b3cc4f85, 25 Feb 2014, Dénès), v8.2 (459888488, 25 Feb 2014, Dénès), v8.1 (79aa20872, 25 Feb 2014, Dénès)
+- fixed in: master ([8a01c3685](https://github.com/coq/coq/commit/8a01c36850353c1875383cbc788cec9c42590b57), 24 Jan 2014, Dénès), v8.4 ([8a01c3685](https://github.com/coq/coq/commit/8a01c36850353c1875383cbc788cec9c42590b57), 25 Feb 2014, Dénès), v8.3 ([2b3cc4f85](https://github.com/coq/coq/commit/2b3cc4f85cc134fe58c21d720851e275e6a77ea0), 25 Feb 2014, Dénès), v8.2 ([459888488](https://github.com/coq/coq/commit/4598884884d6db00c485189e3a3b793b05814928), 25 Feb 2014, Dénès), v8.1 ([79aa20872](https://github.com/coq/coq/commit/79aa208728420747a933f38b3aa101c92f4dcde0), 25 Feb 2014, Dénès)
 - found by: Dénès
 - exploit: see coq/coq#3211
 - GH issue number: coq/coq#3211
@@ -206,11 +206,11 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 #### bug in Prop<=Set conversion which made Set identifiable with Prop, preventing a proof-irrelevant interpretation of Prop
 
 - component: universe subtyping
-- introduced: V8.2 (bba897d5f, 12 May 2008, Herbelin)
+- introduced: V8.2 ([bba897d5f](https://github.com/coq/coq/commit/bba897d5fd964bef0aa10102ef41cee1ac5fc3bb), 12 May 2008, Herbelin)
 - impacted released versions: V8.2-V8.2pl2
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: master/trunk (679801, r13450, 23 Sep 2010, Glondu), v8.3 (309a53f2, r13449, 22 Sep 2010, Glondu), v8.2 (41ea5f08, r14263, 6 Jul 2011, Herbelin, backport)
+- fixed in: master/trunk ([679801](https://github.com/coq/coq/commit/679801623c1f55d0081f952c2094c3572fa39d4f), r13450, 23 Sep 2010, Glondu), v8.3 ([309a53f2](https://github.com/coq/coq/commit/309a53f2e1aa9b2a39654cf5fa23eb632a04c22f), r13449, 22 Sep 2010, Glondu), v8.2 (41ea5f08, r14263, 6 Jul 2011, Herbelin, backport)
 - found by: Georgi Guninski
 - exploit: test-suite/failure/prop_set_proof_irrelevance.v
 - GH issue number: none?
@@ -225,7 +225,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - impacted released versions: V8.3-V8.3pl2, V8.4-V8.4pl6; unclear for V8.2 and previous versions
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: master/trunk (d4869e059, 2 Oct 2015, Sozeau), v8.4 (40350ef3b, 9 Sep 2015, Sozeau)
+- fixed in: master/trunk ([d4869e059](https://github.com/coq/coq/commit/d4869e059bfb73d99e1f5ef1b0a1f0906fa27056), 2 Oct 2015, Sozeau), v8.4 ([40350ef3b](https://github.com/coq/coq/commit/40350ef3b34b0be9d5ceddde772218c2f2dafe32), 9 Sep 2015, Sozeau)
 - found by: Dénès
 - exploit: test-suite/bugs/bug_4294.v
 - GH issue number: coq/coq#4294
@@ -234,11 +234,11 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 #### universe constraints for module subtyping not stored in vo files
 
 - component: modules, universes
-- introduced: presumably 8.2 (b3d3b56)
+- introduced: presumably 8.2 ([b3d3b56](https://github.com/coq/coq/commit/b3d3b566c5b5f34ab518c587f62530abde131be8))
 - impacted released versions: 8.2, 8.3, 8.4
 - impacted development branches: v8.5
 - impacted coqchk versions: none
-- fixed in: v8.2 (c1d9889), v8.3 (8056d02), v8.4 (a07deb4), trunk (0cd0a3e) Mar 5, 2014, Tassi
+- fixed in: v8.2 ([c1d9889](https://github.com/coq/coq/commit/c1d988904483eb1f3a8917ea08fced1240e3844b)), v8.3 (8056d02), v8.4 ([a07deb4](https://github.com/coq/coq/commit/a07deb4eac1d5f886159784ef5d8d006892be547)), trunk ([0cd0a3e](https://github.com/coq/coq/commit/0cd0a3ecdc7f942da153c59369ca3572bd18dd10)) Mar 5, 2014, Tassi
 - found by: Tassi by running coqchk on the mathematical components library
 - exploit: requires multiple files, no test provided
 - GH issue number: coq/coq#3243
@@ -247,7 +247,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 #### module subtyping disrespected squashing status of inductives
 
 - component: modules, universes, inductives
-- introduced: probably 7.4 (12965209478bd99dfbe57f07d5b525e51b903f22)
+- introduced: probably 7.4 ([1296520](https://github.com/coq/coq/commit/12965209478bd99dfbe57f07d5b525e51b903f22))
 - impacted released versions: until 8.15.0
 - impacted coqchk versions: none
 - fixed in: 8.15.1, 8.16
@@ -285,11 +285,11 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 #### issue with two parameters in the same universe level
 
 - component: template polymorphism
-- introduced: 23 May 2006, 9c2d70b, r8845, Herbelin
+- introduced: 23 May 2006, [9c2d70b](https://github.com/coq/coq/commit/9c2d70b91341552e964979ba09d5823cc023a31c), r8845, Herbelin
 - impacted released versions: V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: trunk/master/v8.4 (8082d1faf, 5 Oct 2011, Herbelin), V8.3pl3 (bb582bca2, 5 Oct 2011, Herbelin), v8.2 branch (3333e8d3, 5 Oct 2011, Herbelin), v8.1 branch (a8fc2027, 5 Oct 2011, Herbelin),
+- fixed in: trunk/master/v8.4 ([8082d1faf](https://github.com/coq/coq/commit/8082d1faf85a0ab29f6c144a137791902a4e9c1f), 5 Oct 2011, Herbelin), V8.3pl3 ([bb582bca2](https://github.com/coq/coq/commit/bb582bca2ca3fd94df01aad8d8070f8d129b25b3), 5 Oct 2011, Herbelin), v8.2 branch ([3333e8d3](https://github.com/coq/coq/commit/3333e8d3387b3bc4d3ceb75aad853f8e455af444), 5 Oct 2011, Herbelin), v8.1 branch ([a8fc2027](https://github.com/coq/coq/commit/a8fc2027258e1fb2defd05344e1249374f6e4e19), 5 Oct 2011, Herbelin),
 - found by: Barras
 - exploit: test-suite/failure/inductive.v
 - GH issue number: none
@@ -300,7 +300,7 @@ WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 - component: universe polymorphism
 - impacted released versions: V8.5 to V8.8
 - impacted coqchk versions: V8.5 to V8.9
-- fixed in: ec4aa4971f (58e1d0f200 for the checker)
+- fixed in: [ec4aa4971f](https://github.com/coq/coq/commit/ec4aa4971f7789eeccec2f38f2bb7ec976f87ede) ([58e1d0f200](https://github.com/coq/coq/commit/58e1d0f2006f3243cbf7b57a9858f5119ffea666) for the checker)
 - found by: Gaëtan Gilbert
 - exploit: test-suite/misc/poly-capture-global-univs
 - GH issue number: coq/coq#8341
@@ -313,7 +313,7 @@ polymorphism exploiting other ways to generate untracked constraints
 
 - component: template polymorphism
 - introduced: morally at the introduction of template polymorphism, 23
-- May 2006, 9c2d70b, r8845, Herbelin
+- May 2006, [9c2d70b](https://github.com/coq/coq/commit/9c2d70b91341552e964979ba09d5823cc023a31c), r8845, Herbelin
 - impacted released versions: at least V8.4-V8.4pl6, V8.5-V8.5pl3,
   V8.6-V8.6pl2, V8.7.0-V8.7.1, V8.8.0-V8.8.1, V8.9.0-V8.9.1, in theory
   also V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2 but not exploit found
@@ -321,7 +321,7 @@ polymorphism exploiting other ways to generate untracked constraints
   level is in principle possible though)
 - impacted development branches: all from 8.4 to 8.9 at the time of writing and suspectingly also all from 8.1 to 8.4 if a way to create untracked constraints can be found
 - impacted coqchk versions: a priori all (tested with V8.4 and V8.9 which accept the exploit)
-- fixed in: soon in master and V8.10.0 (PR coq/coq#9918, Aug 2019, Dénès and Sozeau)
+- fixed in: V8.10.0 ([eb3f8225a2](https://github.com/coq/coq/commit/eb3f8225a286aef3a57ad876584b4a927241ff69), PR coq/coq#9918, Aug 2019, Dénès and Sozeau)
 - found by: Gilbert using explicit sharing of universes, exploit found for 8.5-8.9 by Pédrot, other variants generating sharing using sections, or using ltac tricks by Sozeau, exploit in 8.4 by Herbelin and Jason Gross by adding new tricks to Sozeau's variants
 - exploit: test-suite/failure/Template.v
 - GH issue number: coq/coq#9294
@@ -362,7 +362,7 @@ fix.
 #### Set+2 incorrectly simplified to Set+1
 
 - component: algebraic universes
-- introduced: V8.10 (with the SProp commit 75508769762372043387c67a9abe94e8f940e80a)
+- introduced: V8.10 (with the SProp commit [7550876976](https://github.com/coq/coq/commit/75508769762372043387c67a9abe94e8f940e80a))
 - impacted released versions: V8.10.0 V8.10.1 V8.10.2
 - impacted coqchk versions: same
 - fixed in: coq/coq#11422
@@ -376,10 +376,10 @@ fix.
 #### variance inference for section universes ignored use of section universes in inductives and axioms defined before the inductive being inferred
 
 - component: cumulative inductives and sections
-- introduced: V8.12 (73c3b874633d6f6f8af831d4a37d0c1ae52575bc)
+- introduced: V8.12 ([73c3b87463](https://github.com/coq/coq/commit/73c3b874633d6f6f8af831d4a37d0c1ae52575bc))
 - impacted released versions: V8.12 to V8.15 including patch releases
 - impacted coqchk versions: none
-- fixed in: V8.16 coq/coq#15950 (118ffbc010ce53ebd45baa42edd28335301ca9a5)
+- fixed in: V8.16 coq/coq#15950 ([118ffbc010](https://github.com/coq/coq/commit/118ffbc010ce53ebd45baa42edd28335301ca9a5))
 - found by: Gilbert and Pédrot
 - exploit: see coq/coq#15916
 - risk: could be used inadvertently in developments with complex universe usage, only when using cumulative inductives declared in sections. coqchk still works.
@@ -389,11 +389,11 @@ fix.
 #### check of guardedness of extra arguments of primitive projections missing
 
 - component: primitive projections, guard condition
-- introduced: 6 May 2014, a4043608f, Sozeau
+- introduced: 6 May 2014, [a4043608f](https://github.com/coq/coq/commit/a4043608f704f026de7eb5167a109ca48e00c221), Sozeau
 - impacted released versions: V8.5-V8.5pl2,
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: trunk/master/v8.5 (ba00867d5, 25 Jul 2016, Sozeau)
+- fixed in: trunk/master/v8.5 ([ba00867d5](https://github.com/coq/coq/commit/ba00867d515624aee734d998bfbe3880f559d907), 25 Jul 2016, Sozeau)
 - found by: Sozeau, by analyzing bug report coq/coq#4876
 - exploit: to be done (?)
 - GH issue number: coq/coq#4876
@@ -402,11 +402,11 @@ fix.
 #### records based on primitive projections became possibly recursive without the guard condition being updated
 
 - component: primitive projections, guard condition
-- introduced: 10 Sep 2014, 6624459e4, Sozeau (?)
+- introduced: 10 Sep 2014, [6624459e4](https://github.com/coq/coq/commit/6624459e492164b3d189e3518864379ff985bf8c), Sozeau (?)
 - impacted released versions: V8.5
 - impacted development branches: none
 - impacted coqchk versions: ?
-- fixed in: trunk/master/v8.5 (120053a50, 4 Mar 2016, Dénès)
+- fixed in: trunk/master/v8.5 ([120053a50](https://github.com/coq/coq/commit/120053a50f87bd53398eedc887fa5e979f56f112), 4 Mar 2016, Dénès)
 - found by: Dénès exploiting bug coq/coq#4588
 - exploit: test-suite/bugs/bug_4588.v
 - GH issue number: coq/coq#4588
@@ -433,8 +433,8 @@ fix.
 - introduced: prior to V7.0
 - impacted released versions: V8.0-V8.0pl4, V8.1-V8.1pl3
 - impacted development branches: none
-- impacted coqchk versions: (eefe63d52, Barras, 20 May 2008), was in beta-development for 8.2 at this time
-- fixed in: master/trunk/8.2 (f13aaec57/a8b034513, 15 May 2008, Barras), v8.1 (e7611477a, 15 May 2008, Barras), v8.0 (6ed40a8bc, 29 Nov 2016, Herbelin, backport)
+- impacted coqchk versions: ([eefe63d52](https://github.com/coq/coq/commit/eefe63d523b1b4c1b855e0f18e2574f98ff4ae64), Barras, 20 May 2008), was in beta-development for 8.2 at this time
+- fixed in: master/trunk/8.2 ([f13aaec57](https://github.com/coq/coq/commit/f13aaec57df12380323edf450aec14c372422d58) / [a8b034513](https://github.com/coq/coq/commit/a8b034513e0c03ceb7e154949b15f62ac6862f3b), 15 May 2008, Barras), v8.1 ([e7611477a](https://github.com/coq/coq/commit/e7611477a0a0d1b7e8c233330def46a066985cdc), 15 May 2008, Barras), v8.0 ([6ed40a8bc](https://github.com/coq/coq/commit/6ed40a8bc000b0419f3f4731bf83d05ab5062e76), 29 Nov 2016, Herbelin, backport)
 - found by: Gonthier
 - exploit: by Gonthier
 - GH issue number: none
@@ -447,7 +447,7 @@ fix.
 - impacted released versions: V8.1-V8.5pl3, V8.2-V8.2pl2, V8.3-V8.3pl3, V8.4-V8.4pl5
 - impacted development branches: none
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: master/trunk/v8.5 (00894adf6/596a4a525, 26-39 Mar 2015, Grégoire), v8.4 (cd2101a39, 1 Apr 2015, Grégoire), v8.3 (a0c7fc05b, 1 Apr 2015, Grégoire), v8.2 (2c6189f61, 1 Apr 2015, Grégoire), v8.1 (bb877e5b5, 29 Nov 2015, Herbelin, backport)
+- fixed in: master/trunk/v8.5 ([00894adf6](https://github.com/coq/coq/commit/00894adf6fc11f4336a3ece0c347676bbf0b4c11) / [596a4a525](https://github.com/coq/coq/commit/596a4a5251cc50f50bd6d25e36c81341bf65cfed), 26-39 Mar 2015, Grégoire), v8.4 ([cd2101a39](https://github.com/coq/coq/commit/cd2101a39b3b8d58ce569761c905a5baf1dcdc86), 1 Apr 2015, Grégoire), v8.3 ([a0c7fc05b](https://github.com/coq/coq/commit/a0c7fc05b302e38a2869c20f6db1dc376cdb59da), 1 Apr 2015, Grégoire), v8.2 ([2c6189f61](https://github.com/coq/coq/commit/2c6189f61b85bbe1a2a56754c9effc2d7a72f16d), 1 Apr 2015, Grégoire), v8.1 ([bb877e5b5](https://github.com/coq/coq/commit/bb877e5b54678bc34e4362fcf0315224e7c4f4cc), 29 Nov 2015, Herbelin, backport)
 - found by: Dénès, Pédrot
 - exploit: test-suite/bugs/bug_4157.v
 - GH issue number: coq/coq#4157
@@ -460,7 +460,7 @@ fix.
 - impacted released versions: V8.1-V8.4pl5 unknown, V8.5-V8.5pl3, V8.6-V8.6.1, V8.7.0-V8.7.1
 - impacted development branches: unknown for v8.1-v8.4, none from v8.5
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: master (c9f3a6cbe, 12 Feb 2018, coq/coq#6713, Dénès), v8.7 (c058a4182, 15 Feb 2018, Zimmermann, backport), v8.6 (a2cc54c64, 21 Feb 2018, Herbelin, backport), v8.5 (d4d550d0f, 21 Feb 2018, Herbelin, backport)
+- fixed in: master ([c9f3a6cbe](https://github.com/coq/coq/commit/c9f3a6cbe5c410256fe88580019f5c7183bab097), 12 Feb 2018, coq/coq#6713, Dénès), v8.7 ([c058a4182](https://github.com/coq/coq/commit/c058a4182b39460ba2b256c479a1389216c25ca9), 15 Feb 2018, Zimmermann, backport), v8.6 ([a2cc54c64](https://github.com/coq/coq/commit/a2cc54c649c0b13190268cc5d490342d5f0cec10), 21 Feb 2018, Herbelin, backport), v8.5 ([d4d550d0f](https://github.com/coq/coq/commit/d4d550d0f1ae5f4a8d29bbcdf991a2526ab555a6), 21 Feb 2018, Herbelin, backport)
 - found by: Dénès
 - exploit: test-suite/bugs/bug_6677.v
 - GH issue number: coq/coq#6677
@@ -473,7 +473,7 @@ fix.
 - impacted released versions: V8.1-V8.4pl5
 - impacted development branches: v8.1 (probably)
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: master/trunk/v8.5 (a5e04d9dd, 6 Sep 2015, Dénès), v8.4 (d5aa3bf6, 9 Sep 2015, Dénès), v8.3 (5da5d751, 9 Sep 2015, Dénès), v8.2 (369e82d2, 9 Sep 2015, Dénès),
+- fixed in: master/trunk/v8.5 ([a5e04d9dd](https://github.com/coq/coq/commit/a5e04d9dd178b2870b79776e1fbf1a858cdac49d), 6 Sep 2015, Dénès), v8.4 ([d5aa3bf6](https://github.com/coq/coq/commit/d5aa3bf6fc7382e31b6f1bac58b644843d783f13), 9 Sep 2015, Dénès), v8.3 ([5da5d751](https://github.com/coq/coq/commit/5da5d751c92df23ff3f42a04061960b287a4d3ea), 9 Sep 2015, Dénès), v8.2 ([369e82d2](https://github.com/coq/coq/commit/369e82d2cdcd0d66d0c474dc1d062a4fc62aa24a), 9 Sep 2015, Dénès),
 - found by: Catalin Hritcu
 - exploit: lost?
 - GH issue number: ?
@@ -486,7 +486,7 @@ fix.
 - impacted released versions: none
 - impacted development branches: v8.10
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: 5914313 (v8.10)
+- fixed in: [5914313](https://github.com/coq/coq/commit/591431312465291e85fb352a69e947eedeb2e199) (v8.10)
 - found by: Roux, Melquiond
 - exploit:
 - GH issue number: coq/coq#9925
@@ -495,11 +495,11 @@ fix.
 #### broken long multiplication primitive integer emulation layer on 32 bits
 
 - component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
-- introduced: e43b176
+- introduced: [e43b176](https://github.com/coq/coq/commit/e43b1768d0f8399f426b92f4dfe31955daceb1a4)
 - impacted released versions: 8.10.0, 8.10.1, 8.10.2
 - impacted development branches: 8.11
 - impacted coqchk versions: none (no virtual machine in coqchk)
-- fixed in: 4e176a7
+- fixed in: [4e176a7](https://github.com/coq/coq/commit/4e176a7ee4660d505321ca55c5ce70a6c3d50d3b)
 - found by: Soegtrop, Melquiond
 - exploit: test-suite/bugs/bug_11321.v
 - GH issue number: coq/coq#11321
@@ -507,21 +507,23 @@ fix.
 
 #### translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
 
+For instance `α` and `__U03b1_` were the same in the native compiler.
+
 - component: "native" conversion machine (translation to OCaml which compiles to native code)
 - introduced: V8.5
 - impacted released versions: V8.5-V8.5pl1
 - impacted development branches: none
 - impacted coqchk versions: none (no native computation in coqchk)
-- fixed in: master/trunk/v8.6 (244d7a9aa, 19 May 2016, letouzey), v8.5 (088b3161c, 19 May 2016, letouzey),
+- fixed in: master/trunk/v8.6 ([244d7a9aa](https://github.com/coq/coq/commit/244d7a9aafe7ad613dd2095ca3126560cb3ea1d0), 19 May 2016, letouzey), v8.5 ([088b3161c](https://github.com/coq/coq/commit/088b3161c93e46ec2d865fe71a206cee15acd30c), 19 May 2016, letouzey),
 - found by: Letouzey, Dénès
-- exploit: see commit message for 244d7a9aa
+- exploit: see commit message for [244d7a9aa](https://github.com/coq/coq/commit/244d7a9aafe7ad613dd2095ca3126560cb3ea1d0)
 - GH issue number: ?
 - risk:
 
 #### stuck primitive projections computed incorrectly by native_compute
 
 - component: primitive projections, native_compute
-- introduced: 1 Jun 2018, e1e7888a, ppedrot
+- introduced: 1 Jun 2018, [e1e7888a](https://github.com/coq/coq/commit/e1e7888ac4519f4b7470cc8469f9fd924514e352), ppedrot
 - impacted released versions: 8.9.0
 - impacted coqchk versions: none
 - found by: maximedenes exploiting bug coq/coq#9684
@@ -531,7 +533,7 @@ fix.
 #### incorrect De Bruijn handling when inferring the relevance mark for a lambda
 
 - component: lazy machine
-- introduced: 2019-03-15, 23f84f37c674a07e925925b7e0d50d7ee8414093 and 71b9ad8526155020c8451dd326a52e391a9a8585, SkySkimmer
+- introduced: 2019-03-15, [23f84f37c6](https://github.com/coq/coq/commit/23f84f37c674a07e925925b7e0d50d7ee8414093) and [71b9ad8526](https://github.com/coq/coq/commit/71b9ad8526155020c8451dd326a52e391a9a8585), SkySkimmer
 - impacted released versions: 8.10.0
 - impacted coqchk versions: 8.10.0
 - found by: ppedrot investigating unexpected conversion failures with SProp
@@ -663,8 +665,7 @@ fix.
 #### unsafe typing flags used inside a section would not be reported by Print Assumptions after closing the section
 
 - component: sections
-- introduced: abab878b8d8b5ca85a4da688abed68518f0b17bd (#10291, 8.11)
-              technically available earlier through plugins
+- introduced: [abab878b8d](https://github.com/coq/coq/commit/abab878b8d8b5ca85a4da688abed68518f0b17bd) (#10291, 8.11), technically available earlier through plugins
 - impacted coqchk versions: none (coqchk rejects affected files)
 - found by: Anton Trunov
 - GH issue number: coq/coq#14317
@@ -675,10 +676,10 @@ fix.
 #### axiom of description and decidability of equality on real numbers in library Reals was inconsistent with impredicative Set
 
 - component: library of real numbers
-- introduced: 67c75fa01, 20 Jun 2002
+- introduced: [67c75fa01](https://github.com/coq/coq/commit/67c75fa01adbbe1d4e39eff2b930ad168510072c), 20 Jun 2002
 - impacted released versions: 7.3.1, 7.4
 - impacted coqchk versions:
-- fixed by deciding to drop impredicativity of Set: bac707973, 28 Oct 2004
+- fixed by deciding to drop impredicativity of Set: [bac707973](https://github.com/coq/coq/commit/bac707973955ef64eadae24ea01e029a5394626e), 28 Oct 2004
 - found by: Herbelin & Werner
 - exploit: need to find the example again
 - GH issue number: no
@@ -690,7 +691,7 @@ fix.
 - introduced: not a bug per se but an incompatibility discovered late
 - impacted released versions: technically speaking from V6.1 with the introduction of the Sets library which was then inconsistent from the very beginning without we knew it
 - impacted coqchk versions: ?
-- fixed by constraining the guard condition: (9b272a8, ccd7546c 28 Oct 2014, Barras, Dénès)
+- fixed by constraining the guard condition: ([9b272a8](https://github.com/coq/coq/commit/9b272a861bc3263c69b699cd2ac40ab2606543fa), [ccd7546c](https://github.com/coq/coq/commit/ccd7546cd32c8a7901a4234f86aa23b4a7e1a043) 28 Oct 2014, Barras, Dénès)
 - found by: Schepler, Dénès, Azevedo de Amorim
 - exploit: ?
 - GH issue number: none
@@ -702,7 +703,7 @@ fix.
 - introduced: not a bug but a change of intended "model"
 - impacted released versions: strictly before 8.1
 - impacted coqchk versions: ?
-- fixed by constraining singleton elimination: b19397ed8, r9633, 9 Feb 2007, Herbelin
+- fixed by constraining singleton elimination: [b19397ed8](https://github.com/coq/coq/commit/b19397ed88ef8aa1ea1ca228b5d23b94e15f419f), r9633, 9 Feb 2007, Herbelin
 - found by: Benjamin Werner
 - exploit:
 - GH issue number: none
