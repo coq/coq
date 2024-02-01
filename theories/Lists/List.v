@@ -3577,7 +3577,7 @@ Global Hint Rewrite
   rev_involutive (* rev (rev l) = l *)
   rev_unit (* rev (l ++ a :: nil) = a :: rev l *)
   map_nth (* nth n (map f l) (f d) = f (nth n l d) *)
-  length_app (* length (map f l) = length l *)
+  length_map (* length (map f l) = length l *)
   length_seq (* length (seq start len) = len *)
   length_app (* length (l ++ l') = length l + length l' *)
   length_rev (* length (rev l) = length l *)
