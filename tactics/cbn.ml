@@ -70,7 +70,7 @@ module Cst_stack = struct
     | _ -> None
 
   let reference sigma t = match best_cst t with
-    | Some (c, _) when isConst sigma c -> Some (fst (destConst sigma c))
+    | Some (c, params) when isConst sigma c -> Some (fst (destConst sigma c), params)
     | _ -> None
 
   (** [best_replace d cst_l c] makes the best replacement for [d]
@@ -435,7 +435,7 @@ let apply_subst env sigma cst_l t stack =
     f x := t. End M. Definition f := u. and say goodbye to any hope
     of refolding M.f this way ...
 *)
-let magically_constant_of_fixbody env sigma reference bd = function
+let magically_constant_of_fixbody env sigma (reference, params) bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
     let open UnivProblem in
@@ -447,7 +447,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
-        let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
+        let csts = EConstr.eq_constr_universes env sigma (Reductionops.beta_applist sigma (EConstr.of_constr t, params)) bd in
         begin match csts with
           | Some csts ->
             let addqs l r (qs,us) = Sorts.QVar.Map.add l r qs, us in
@@ -472,7 +472,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
                 csts UVars.empty_sort_subst
             in
             let inst = UVars.subst_sort_level_instance subst u in
-            mkConstU (cst, EInstance.make inst)
+            applist (mkConstU (cst, EInstance.make inst), params)
           | None -> bd
         end
 
