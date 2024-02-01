@@ -120,6 +120,7 @@ val ppdelta : Mod_subst.delta_resolver -> unit
 val pp_idpred : Names.Id.Pred.t -> unit
 val pp_cpred : Names.Cpred.t -> unit
 val pp_transparent_state : TransparentState.t -> unit
+val pp_redflags : RedFlags.reds -> unit
 
 val pp_estack_t : Reductionops.Stack.t -> unit
 val pp_state_t : Reductionops.state -> unit

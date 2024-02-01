@@ -41,3 +41,23 @@ let is_transparent_constant ts cst =
 
 let is_transparent_projection ts p =
   PRpred.mem p ts.tr_prj
+
+(* Debugging *)
+
+open Util
+open Pp
+
+let pr_predicate pr_elt (b, elts) =
+  let pr_elts = prlist_with_sep spc pr_elt elts in
+    if b then
+      str"all" ++
+        (if List.is_empty elts then mt () else str" except: " ++ pr_elts)
+    else
+      if List.is_empty elts then str"none" else pr_elts
+
+let pr_cpred p = pr_predicate Names.Constant.print (Cpred.elements p)
+let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
+
+let debug_pr_transparent_state ts =
+  hv 0 (str"VARIABLES: " ++ pr_idpred ts.tr_var ++ spc () ++
+        str"CONSTANTS: " ++ pr_cpred ts.tr_cst)
