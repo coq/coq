@@ -693,6 +693,40 @@ Proof.
  intros. bitwise. apply andb_diag.
 Qed.
 
+Lemma land_even_even : forall a b, land (2 * a) (2 * b) == 2 * (land a b).
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite land_spec, 3!testbit_even_0; reflexivity.
+  - rewrite land_spec, 3!testbit_even_succ, land_spec;
+      [reflexivity | exact (le_0_l _)..].
+Qed.
+
+Lemma land_odd_even : forall a b, land (2 * a + 1) (2 * b) == 2 * (land a b).
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite land_spec, 2!testbit_even_0, testbit_odd_0; reflexivity.
+  - rewrite land_spec, 2!testbit_even_succ, testbit_odd_succ, land_spec;
+      [reflexivity | exact (le_0_l _)..].
+Qed.
+
+Lemma land_even_odd : forall a b, land (2 * a) (2 * b + 1) == 2 * (land a b).
+Proof.
+  intros a b; rewrite (land_comm (2 * a)), (land_comm a).
+  exact (land_odd_even _ _).
+Qed.
+
+Lemma land_odd_odd :
+  forall a b, land (2 * a + 1) (2 * b + 1) == 2 * (land a b) + 1.
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite land_spec, 3!testbit_odd_0; reflexivity.
+  - rewrite land_spec, 3!testbit_odd_succ, land_spec;
+      [reflexivity | exact (le_0_l _)..].
+Qed.
+
 Lemma ldiff_0_l : forall a, ldiff 0 a == 0.
 Proof.
  intros. bitwise. trivial.
