@@ -316,9 +316,10 @@ let defer_output = Comm.defer_output
 
 let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
-  let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
+  let penv = Termops.Internal.print_named_context env sigma in
+  let pc = Printer.pr_econstr_env env sigma concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl () ++ fnl ()
