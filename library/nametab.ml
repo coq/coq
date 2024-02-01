@@ -621,6 +621,8 @@ let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
 
 let locate_universe qid = UnivTab.locate qid !the_univtab
 
+let locate_quality qid = QualityTab.locate qid !the_qualitytab
+
 let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
 
 let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)

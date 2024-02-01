@@ -1231,10 +1231,12 @@ let intern_qvar ~local_univs = function
     match local with
     | Some u -> GQVar u
     | None ->
-      if is_id && local_univs.unb_univs
-      then GLocalQVar (CAst.make ?loc:qid.loc (Name (qualid_basename qid)))
-      else
-        CErrors.user_err ?loc:qid.loc Pp.(str "Undeclared quality " ++ pr_qualid qid ++ str".")
+      try GQVar (Nametab.locate_quality qid)
+      with Not_found ->
+        if is_id && local_univs.unb_univs
+        then GLocalQVar (CAst.make ?loc:qid.loc (Name (qualid_basename qid)))
+        else
+          CErrors.user_err ?loc:qid.loc Pp.(str "Undeclared quality " ++ pr_qualid qid ++ str".")
 
 let intern_quality ~local_univs q =
   match q with

@@ -133,6 +133,7 @@ val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.UGlobal.t
+val locate_quality : qualid -> Sorts.QVar.t
 
 val locate_extended_nowarn : qualid -> Globnames.extended_global_reference
 

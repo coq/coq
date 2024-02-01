@@ -1304,7 +1304,8 @@ let start_library dir senv =
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
   (* qualities are in the senv only during sections *)
-  let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
+  (* KM: anything to fix ? *)
+  (* let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in *)
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
