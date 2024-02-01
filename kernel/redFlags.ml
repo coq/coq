@@ -126,3 +126,19 @@ let betazeta = mkflags [fBETA;fZETA]
 let delta = mkfullflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
+
+(* Debugging *)
+
+open Pp
+
+let debug_pr f =
+  let flags =
+    (if f.r_beta then ["beta"] else []) @
+    (if f.r_delta then ["delta"] else []) @
+    (if f.r_zeta then ["zeta"] else []) @
+    (if f.r_match then ["match"] else []) @
+    (if f.r_fix then ["fix"] else []) @
+    (if f.r_cofix then ["cofix"] else [])
+  in
+  str "[" ++ prlist_with_sep (fun () -> str ",") str flags ++ str "," ++ spc ()
+          ++ str "transparency=[" ++ debug_pr_transparent_state f.r_const ++ str "]]"
