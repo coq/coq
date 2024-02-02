@@ -4511,7 +4511,7 @@ Views and reflection
 
 The bookkeeping facilities presented in Section :ref:`basic_tactics_ssr` are
 crafted to ease simultaneous introductions and generalizations of facts and
-operations of casing, naming, etc. It also a common practice to make a stack
+operations of casing, naming, etc. It is also a common practice to make a stack
 operation immediately followed by an *interpretation* of the fact
 being pushed, that is, to apply a lemma to this fact before passing it
 to a tactic for decomposition, application and so on.
