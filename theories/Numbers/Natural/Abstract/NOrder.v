@@ -260,4 +260,19 @@ Proof.
   intros y _ IH'. apply IH. intros. apply IH'. now split; [apply le_0_l|].
 Defined.
 
+Theorem strong_induction_le {A : t -> Prop} :
+  Proper (eq ==> iff) A ->
+  A 0 -> (forall n, ((forall m, m <= n -> A m) -> A (S n))) -> (forall n, A n).
+Proof.
+  intros H H0 sIH n.
+  enough (forall k, k <= n -> A k) as key. {
+    apply key; exact (le_refl _).
+  }
+  induct n.
+  - intros k ->%le_0_r; exact H0.
+  - intros n I k [Hk%lt_succ_r%I | ->]%lt_eq_cases.
+    + exact Hk.
+    + apply sIH; exact I.
+Qed.
+
 End NOrderProp.
