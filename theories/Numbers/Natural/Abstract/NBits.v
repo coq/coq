@@ -61,6 +61,27 @@ Proof.
  - exists a'. exists true. now simpl.
 Qed.
 
+(** A useful induction lemma to reason on bits *)
+Lemma Even_Odd_induction (A : t -> Prop) : (Proper (eq ==> iff) A) -> A 0 ->
+  (forall n, A n -> A (2 * n) /\ A (2 * n + 1)) -> (forall n, A n).
+Proof.
+  intros H H0 I.
+  apply strong_induction_le; [exact H | exact H0 |].
+  intros n Hm.
+  pose proof (exists_div2 (S n)) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
+  - apply I, Hm, succ_le_mono.
+    rewrite Hmb, add_1_r; apply ->succ_le_mono.
+    rewrite <-(mul_1_l m) at 1; apply mul_le_mono_r.
+    apply lt_le_incl; exact lt_1_2.
+  - rewrite add_0_r; apply I, Hm, succ_le_mono; rewrite Hmb, add_0_r.
+    destruct (zero_or_succ m) as [eq | [k ->]].
+    + rewrite eq, add_0_r, mul_0_r in Hmb; apply neq_succ_0 in Hmb as [].
+    + rewrite <-2!add_1_r, mul_add_distr_l, mul_1_r, <-add_assoc.
+      rewrite <-(mul_1_l k) at 1; apply add_le_mono.
+      * apply mul_le_mono_r, lt_le_incl; exact lt_1_2.
+      * apply eq_le_incl; rewrite two_succ, add_1_r; reflexivity.
+Qed.
+
 (** We can compact [testbit_odd_0] [testbit_even_0]
     [testbit_even_succ] [testbit_odd_succ] in only two lemmas. *)
 
