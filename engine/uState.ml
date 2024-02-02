@@ -1213,7 +1213,7 @@ let check_univ_decl_rev uctx decl =
   let uctx' = UContext.make nas (inst, csts) in
   uctx, uctx'
 
-let check_uctx_impl ?loc uctx uctx' =
+let check_uctx_impl ~fail uctx uctx' =
   let levels, csts = uctx'.local in
   let qvars_diff =
     QVar.Set.diff
@@ -1228,9 +1228,7 @@ let check_uctx_impl ?loc uctx uctx' =
     let grext = ugraph uctx in
     let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) csts in
     if Constraints.is_empty cstrs' then ()
-    else CErrors.user_err ?loc
-        Pp.(str "Universe constraints are not implied by the ones declared: " ++
-            Constraints.pr (pr_uctx_level uctx) cstrs')
+    else fail (Constraints.pr (pr_uctx_level uctx) cstrs')
   in
   ()
 

@@ -243,7 +243,7 @@ val default_univ_decl : universe_decl
    list. *)
 val check_univ_decl : poly:bool -> t -> universe_decl -> named_universes_entry
 val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
-val check_uctx_impl : ?loc:Loc.t -> t -> t -> unit
+val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
 val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 
