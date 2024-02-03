@@ -218,6 +218,10 @@ Goal True.
   let matched_snd := constr:(let 'pair _ x := v in x) in
   constr_eq unfolded_snd matched_snd.
 
+  let unfolded_snd := eval lazy beta delta [snd' snd] in (snd' v) in
+  let matched_snd := constr:(let 'pair _ x := v in x) in
+  constr_eq unfolded_snd matched_snd.
+
 Abort.
 
 Fixpoint split_at {A} (l : list A) (n : nat) : prod (list A) (list A) :=

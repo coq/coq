@@ -59,7 +59,10 @@ let red_add red = function
     { red with r_const = { r with tr_cst = Cpred.add kn r.tr_cst } }
   | PROJ p ->
     let r = red.r_const in
-    { red with r_const = { r with tr_prj = PRpred.add p r.tr_prj } }
+    { red with r_const =
+                 { r with tr_prj = PRpred.add p r.tr_prj;
+                          (* set the constant associated to a projection also transparent *)
+                          tr_cst = Cpred.add (Projection.Repr.constant p) r.tr_cst } }
   | MATCH -> { red with r_match = true }
   | FIX -> { red with r_fix = true }
   | COFIX -> { red with r_cofix = true }
