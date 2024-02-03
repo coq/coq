@@ -382,7 +382,7 @@ sig
   (** Special case of [make] where the user name is canonical.  *)
 
   val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  (** Shortcut for [(make1 (KerName.make ...))] *)
 
   (** Projections *)
 
@@ -453,7 +453,7 @@ sig
   (** Special case of [make] where the user name is canonical.  *)
 
   val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  (** Shortcut for [(make1 (KerName.make ...))] *)
 
   (** Projections *)
 
