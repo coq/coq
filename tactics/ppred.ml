@@ -19,18 +19,25 @@ let pr_with_occurrences prvar pr keyword (occs,c) =
 
 exception ComplexRedFlag
 
+let pr_strength = function Head -> pr_arg str "head" | Norm -> mt ()
+
+let pr_strength_delta pr (strength,b,csts) =
+  pr_strength strength ++
+  (if List.is_empty csts then mt () else
+   (if b then str "-" else mt ()) ++
+   hov 0 (str "[" ++ prlist_with_sep spc pr csts ++ str "]"))
+
 let pr_short_red_flag pr r =
   if not r.rBeta ||  not r.rMatch || not r.rFix || not r.rCofix || not r.rZeta then
     raise ComplexRedFlag
-  else if List.is_empty r.rConst then
-    if r.rDelta then mt () else raise ComplexRedFlag
-  else (if r.rDelta then str "-" else mt ()) ++
-          hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]")
+  else if List.is_empty r.rConst && not r.rDelta then raise ComplexRedFlag
+  else pr_strength_delta pr (r.rStrength, r.rDelta, r.rConst)
 
 let pr_red_flag pr r =
   try pr_short_red_flag pr r
   with ComplexRedFlag ->
-    (if r.rBeta then pr_arg str "beta" else mt ()) ++
+      (pr_strength r.rStrength) ++
+      (if r.rBeta then pr_arg str "beta" else mt ()) ++
       (if r.rMatch && r.rFix && r.rCofix then pr_arg str "iota" else
           (if r.rMatch then pr_arg str "match" else mt ()) ++
           (if r.rFix then pr_arg str "fix" else mt ()) ++

@@ -63,3 +63,4 @@ Ltac foo :=
 
 goal 2 is:
  forall a : nat, a = 0
+Ltac simpl_head := simpl head
