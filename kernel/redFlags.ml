@@ -91,8 +91,8 @@ let red_add_list = List.fold_left red_add
 let red_transparent red = red.r_const
 
 let red_add_transparent red tr =
-  { red with r_const = tr }
-
+  { red with r_const = tr 
+}
 let mkflags = List.fold_left red_add no_red
 
 let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
