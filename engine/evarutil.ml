@@ -477,7 +477,7 @@ let generalize_evar_over_rels sigma (ev,args) =
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
-| EvarTypingBreak of existential
+| EvarTypingBreak of Constr.existential
 | NoCandidatesLeft of Evar.t
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
@@ -498,126 +498,125 @@ let restrict_evar evd evk filter candidates =
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
   | _ -> Evd.restrict evk filter ?candidates evd
 
-let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~global c =
+let rec check_and_clear_in_constr ~is_section_variable env sigma ?(err=OccurHypInSimpleClause None) ids ~global c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
      evars). [global] should be true iff there is some variable of [ids] which
      is a section variable *)
-    match kind c with
+    let open EConstr in
+    match kind sigma c with
       | Var id' ->
-      if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else c
+      if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else sigma
 
       | ( Const _ | Ind _ | Construct _ ) ->
         let () = if global then
           let check id' =
             if Id.Set.mem id' ids then
-              raise (ClearDependencyError (id',err,Some (fst @@ destRef c)))
+              raise (ClearDependencyError (id',err,Some (fst @@ destRef sigma c)))
           in
-          Id.Set.iter check (Environ.vars_of_global env (fst @@ destRef c))
+          Id.Set.iter check (Environ.vars_of_global env (fst @@ destRef sigma c))
         in
-        c
+        sigma
 
-      | Evar (evk,l as ev) ->
-          if Evd.is_defined !evdref evk then
-            (* If evk is already defined we replace it by its definition *)
-            let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
-            let nc = EConstr.Unsafe.to_constr nc in
-            check_and_clear_in_constr ~is_section_variable env evdref err ids ~global nc
-          else
+      | Evar (evk,l) ->
             (* We check for dependencies to elements of ids in the
                evar_info corresponding to e and in the instance of
                arguments. Concurrently, we build a new evar
                corresponding to e where hypotheses of ids have been
                removed *)
-            let evi = Evd.find_undefined !evdref evk in
+            let evi = Evd.find_undefined sigma evk in
             let ctxt = Evd.evar_filtered_context evi in
             let rec fold accu ctxt args = match ctxt, SList.view args with
             | [], Some _ | _ :: _, None -> assert false
             | [], None -> accu
             | h :: ctxt, Some (a, args) ->
-              let (ri, filter) = fold accu ctxt args in
+              let (sigma, rids, filter) = fold accu ctxt args in
               try
-              (* Check if some id to clear occurs in the instance
-                  a of rid in ev and remember the dependency *)
-                let check id = if Id.Set.mem id ids then raise (Depends id) in
-                let a = match a with
-                | None -> Id.Set.singleton (NamedDecl.get_id h)
-                | Some a -> collect_vars !evdref (EConstr.of_constr a)
-                in
-                let () = Id.Set.iter check a in
-              (* Check if some rid to clear in the context of ev
-                  has dependencies in another hyp of the context of ev
-                  and transitively remember the dependency *)
-                let check id _ =
-                  if occur_var_in_decl env !evdref id h
-                  then raise (Depends id)
-                in
-                let () = Id.Map.iter check ri in
-              (* No dependency at all, we can keep this ev's context hyp *)
-                (ri, true::filter)
-              with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter)
+                (* Check for [id] in [ids] and fails to keep [id] if
+                   dependent, or restrict evars mentioning one of [ids] *)
+                let sigma =
+                  let a = match a with
+                    | None -> mkVar (NamedDecl.get_id h) (* an identity binding *)
+                    | Some a -> a in
+                  try check_and_clear_in_constr ~is_section_variable env sigma ids ~global a
+                  with ClearDependencyError (id, _, _) -> raise (Depends id) in
+                (* Check if some rid to clear in the context of ev
+                   has dependencies in another hyp of the context of ev
+                   and transitively remember the dependency *)
+                let sigma =
+                  try
+                    let evar_ids = Id.Map.domain rids in
+                    NamedDecl.fold_constr
+                      (fun c sigma -> check_and_clear_in_constr ~is_section_variable env sigma evar_ids ~global c)
+                      h sigma
+                  with ClearDependencyError (id, _, _) -> raise (Depends (Id.Map.find id rids)) in
+                (* No dependency at all, we can keep this ev's context hyp *)
+                (sigma, rids, true::filter)
+              with Depends id -> (sigma, Id.Map.add (NamedDecl.get_id h) id rids, false::filter)
             in
-            let (rids, filter) = fold (Id.Map.empty, []) ctxt l in
+            let (sigma, rids, filter) = fold (sigma, Id.Map.empty, []) ctxt l in
             (* Check if some rid to clear in the context of ev has dependencies
                in the type of ev and adjust the source of the dependency *)
-            let _nconcl : Constr.t =
+            let sigma =
               try
                 let nids = Id.Map.domain rids in
                 let global = Id.Set.exists is_section_variable nids in
-                let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
-                check_and_clear_in_constr ~is_section_variable env evdref (EvarTypingBreak ev) nids ~global concl
+                let concl = evar_concl evi in
+                let ev = (evk,SList.Skip.map EConstr.Unsafe.to_constr l) in
+                check_and_clear_in_constr ~is_section_variable env sigma ~err:(EvarTypingBreak ev) nids ~global concl
               with ClearDependencyError (rid,err,where) ->
                 raise (ClearDependencyError (Id.Map.find rid rids,err,where)) in
 
-            if Id.Map.is_empty rids then c
+            if Id.Map.is_empty rids then sigma
             else
               let origfilter = Evd.evar_filter evi in
               let filter = Evd.Filter.apply_subfilter origfilter filter in
-              let evd = !evdref in
               let candidates = Evd.evar_candidates evi in
-              let (evd,_) = restrict_evar evd evk filter candidates in
-              evdref := evd;
-              Evd.existential_value0 !evdref ev
+              let (sigma,_) = restrict_evar sigma evk filter candidates in
+              sigma
 
-      | _ -> Constr.map (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) c
+      | _ -> EConstr.fold sigma (fun sigma -> check_and_clear_in_constr ~is_section_variable env sigma ~err ids ~global) sigma c
+
+let is_section_variable id = is_section_variable (Global.env ()) id
+
+let check_and_clear_in_context env sigma global hyps ids =
+  let sigma, _ = List.fold_right (fun decl (sigma, unchanged_tail) ->
+    let removed = Id.Set.mem (NamedDecl.get_id decl) ids in
+    if removed then (sigma, false)
+    else if unchanged_tail then (sigma, true)
+    else
+      let decl = EConstr.of_named_decl decl in
+      let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
+      let f c sigma = check_and_clear_in_constr ~is_section_variable env sigma ~err ids ~global c in
+      let sigma = NamedDecl.fold_constr f decl sigma in
+      (sigma, false))
+    hyps.env_named_ctx
+    (sigma, true)
+  in
+  sigma
 
 let clear_hyps_in_evi_main env sigma hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
-  let evdref = ref sigma in
-  let terms = List.map EConstr.Unsafe.to_constr terms in
-  let is_section_variable id = is_section_variable (Global.env ()) id in
   let global = Id.Set.exists is_section_variable ids in
-  let terms =
-    List.map (check_and_clear_in_constr ~is_section_variable env evdref (OccurHypInSimpleClause None) ids ~global) terms in
-  let nhyps =
-    let check_context decl =
-      let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
-      NamedDecl.map_constr (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) decl
-    in
-    remove_hyps ids check_context hyps
-  in
-  (!evdref, nhyps,List.map EConstr.of_constr terms)
+  let sigma =
+    List.fold_left (fun sigma -> check_and_clear_in_constr ~is_section_variable env sigma ~err:(OccurHypInSimpleClause None) ids ~global) sigma terms in
+  let sigma = check_and_clear_in_context env sigma global hyps ids in
+  sigma, remove_hyps ids hyps
 
-let check_and_clear_in_constr env evd err ids c =
-  let evdref = ref evd in
-  let c = EConstr.Unsafe.to_constr c in
-  let _ : constr = check_and_clear_in_constr
+let check_and_clear_in_constr env sigma err ids c =
+  check_and_clear_in_constr
       ~is_section_variable:(fun _ -> true) ~global:true
-      env evdref err ids c
-  in
-  !evdref
+      env sigma ~err ids c
 
 let clear_hyps_in_evi env sigma hyps concl ids =
-  match clear_hyps_in_evi_main env sigma hyps [concl] ids with
-  | (sigma,nhyps,[nconcl]) -> (sigma,nhyps,nconcl)
-  | _ -> assert false
+  let (sigma,nhyps) = clear_hyps_in_evi_main env sigma hyps [concl] ids in
+  (sigma,nhyps,concl)
 
 let clear_hyps2_in_evi env sigma hyps t concl ids =
-  match clear_hyps_in_evi_main env sigma hyps [t;concl] ids with
-  | (sigma,nhyps,[t;nconcl]) -> (sigma,nhyps,t,nconcl)
-  | _ -> assert false
+  let (sigma,nhyps) = clear_hyps_in_evi_main env sigma hyps [t;concl] ids in
+  (sigma,nhyps,t,concl)
 
 (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
     the current avatar of [g] (for instance [g] was changed by [clear]
