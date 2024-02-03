@@ -179,6 +179,9 @@ module ReductionBehaviour = struct
        in
        hov 2 (str "The reduction tactics " ++ pp_behavior b)
 
+  let unset_never r table =
+    (Cpred.remove r (fst table), snd table)
+
 end
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)

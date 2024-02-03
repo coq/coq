@@ -37,6 +37,7 @@ module ReductionBehaviour : sig
   val get : table -> Constant.t -> t option
   val all_never_unfold : table -> Cpred.t
   val print : table -> Constant.t -> Pp.t
+  val unset_never : Constant.t -> table -> table
   val empty : table
 end
 
