@@ -20,15 +20,9 @@ open Util
 open Locus
 open Genredexpr
 
-let delta_flags (delta, csts) =
-  if delta then FDeltaBut csts else FConst csts
-
 let all_with ~head delta =
-  let all = [FBeta;FMatch;FFix;FCofix;FZeta;delta_flags delta] in
+  let all = [FBeta;FMatch;FFix;FCofix;FZeta;delta] in
   Redops.make_red_flag (if head then FHead :: all else all)
-
-let simpl_flags_with ~head (delta, consts) =
-  (if head then Head else Norm), delta, consts
 
 let int_or_var = Entry.make "int_or_var"
 let nat_or_var = Entry.make "nat_or_var"
@@ -81,14 +75,14 @@ GRAMMAR EXTEND Gram
       | IDENT "fix" -> { [FFix] }
       | IDENT "cofix" -> { [FCofix] }
       | IDENT "zeta" -> { [FZeta] }
-      | IDENT "delta"; d = delta_flag -> { [delta_flags d] }
+      | IDENT "delta"; d = delta_flag -> { [d] }
       | IDENT "head" -> { [FHead] }
     ] ]
   ;
   delta_flag:
-    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { (true, idl) }
-      | "["; idl = LIST1 smart_global; "]" -> { (false, idl) }
-      | -> { (true, []) }
+    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { FDeltaBut idl }
+      | "["; idl = LIST1 smart_global; "]" -> { FConst idl }
+      | -> { FDeltaBut [] }
     ] ]
   ;
   strategy_flag:
@@ -101,7 +95,7 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "red" -> { Red }
       | IDENT "hnf" -> { Hnf }
       | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ];
-        d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (simpl_flags_with ~head:(Option.has_some h) d,po) }
+        d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with ~head:(Option.has_some h) d,po) }
       | IDENT "cbv"; s = strategy_flag -> { Cbv s }
       | IDENT "cbn"; s = strategy_flag -> { Cbn s }
       | IDENT "lazy"; s = strategy_flag -> { Lazy s }

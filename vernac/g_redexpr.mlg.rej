@@ -1,0 +1,29 @@
+--- plugins/ltac/g_tactic.mlg
++++ plugins/ltac/g_tactic.mlg
+@@ -30,10 +30,16 @@ open Locus
+ open Pcoq
+ 
+ 
++let delta_flags (delta, csts) =
++  if delta then FDeltaBut csts else FConst csts
++
+ let all_with ~head delta =
+-  let all = [FBeta;FMatch;FFix;FCofix;FZeta;delta] in
++  let all = [FBeta;FMatch;FFix;FCofix;FZeta;delta_flags delta] in
+   Redops.make_red_flag (if head then FHead :: all else all)
+ 
++let simpl_flags_with ~head (delta, consts) =
++  (if head then Head else Norm), delta, consts
++
+ let err () = raise Gramlib.Stream.Failure
+ 
+ (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
+@@ -683,7 +689,7 @@ GRAMMAR EXTEND Gram
+           { CAst.make ~loc @@ TacAtom (TacReduce (Hnf, cl)) }
+       | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ]; d = delta_flag;
+         po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+-          { CAst.make ~loc @@ TacAtom (TacReduce (Simpl (all_with ~head:(Option.has_some h) d, po), cl)) }
++          { CAst.make ~loc @@ TacAtom (TacReduce (Simpl (simpl_flags_with ~head:(Option.has_some h) d, po), cl)) }
+       | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
+           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv s, cl)) }
+       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->

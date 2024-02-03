@@ -229,11 +229,10 @@ let warn_simpl_unfolding_modifiers =
           Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
 
 let rec eval_red_expr env = function
-| Simpl (f, o) ->
+| Simpl ((_,_,constants as f), o) ->
   let () =
-    if not (simplIsCbn () || List.is_empty f.rConst) then
+    if not (simplIsCbn () || List.is_empty constants) then
       warn_simpl_unfolding_modifiers () in
-  let f = if simplIsCbn () then make_flag env f else f.rStrength, RedFlags.all (* dummy *) in
   Simpl (f, o)
 | Cbv f -> Cbv (make_flag env f)
 | Cbn f -> Cbn (make_flag env f)
@@ -252,11 +251,11 @@ let red_product_exn env sigma c = match red_product env sigma c with
 let reduction_of_red_expr_val = function
   | Red -> (e_red red_product_exn, DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
-  | Simpl ((w,f),o) ->
+  | Simpl ((w,rDelta,rConst),o) ->
     let am = match w, simplIsCbn () with
-      | Norm, true -> Cbn.norm_cbn f
+      | Norm, true -> fun env -> Cbn.norm_cbn (snd (make_flag env { Redops.all_flags with rDelta; rConst })) env
       | Norm, false -> simpl
-      | Head, true -> Cbn.whd_cbn f
+      | Head, true -> fun env -> Cbn.whd_cbn (snd (make_flag env { Redops.all_flags with rDelta; rConst })) env
       | Head, false -> whd_simpl
     in
      (contextualize am o,DEFAULTcast)
@@ -490,8 +489,8 @@ module Intern = struct
     | Cbn f -> Cbn (intern_flag ist f)
     | Lazy f -> Lazy (intern_flag ist f)
     | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
-    | Simpl (f,o) ->
-      Simpl (intern_flag ist f,
+    | Simpl ((strength, b, csts),o) ->
+      Simpl ((strength, b, List.map (intern_evaluable ist) csts),
              Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
@@ -569,10 +568,10 @@ module Interp = struct
           (fun c sigma -> interp_constr_with_occurrences ist env sigma c) l sigma
       in
       sigma , Pattern l_interp
-    | Simpl (f,o) ->
-      sigma , Simpl (interp_flag ist env sigma f,
+    | Simpl ((strength, b, csts),o) ->
+      sigma , Simpl ((strength,b,List.map (interp_evaluable ist env sigma) csts),
                      Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
-    | CbvVm o ->
+     | CbvVm o ->
       sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | CbvNative o ->
       sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
