@@ -93,6 +93,21 @@ let red_transparent red = red.r_const
 let red_add_transparent red tr =
   { red with r_const = tr }
 
+let make_flag_constant = function
+  | Evaluable.EvalVarRef id -> VAR id
+  | Evaluable.EvalConstRef cst -> CONST cst
+  | Evaluable.EvalProjectionRef p -> PROJ p
+
+let red_set_constants red tr (delta, csts) =
+  let csts = List.map make_flag_constant csts in
+  let red = red_add red fDELTA in
+  if delta then (* All but rConst *)
+    let red = red_add_transparent red tr in
+    List.fold_left red_sub red csts
+  else (* Only rConst *)
+    let red = red_add_transparent red TransparentState.empty in
+    List.fold_left red_add red csts
+
 let mkflags = List.fold_left red_add no_red
 
 let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }

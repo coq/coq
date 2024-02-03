@@ -129,14 +129,14 @@ type red_expr_val =
   (constr, Evaluable.t, constr_pattern, strength * RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
-  | Evaluable.EvalVarRef id -> [fVAR id]
+  | Evaluable.EvalVarRef id -> [Evaluable.EvalVarRef id]
   | Evaluable.EvalConstRef sp ->
       begin
         match Structures.PrimitiveProjections.find_opt sp with
-        | None -> [fCONST sp]
-        | Some p -> [fCONST sp; fPROJ p]
+        | None -> Evaluable.[EvalConstRef sp]
+        | Some p -> Evaluable.[EvalConstRef sp; EvalProjectionRef p]
       end
-  | Evaluable.EvalProjectionRef p -> [fPROJ p; fCONST (Projection.Repr.constant p)]
+  | Evaluable.EvalProjectionRef p -> Evaluable.[EvalProjectionRef p; EvalConstRef (Projection.Repr.constant p)]
 
 let make_flag env f =
   let red = no_red in
@@ -145,20 +145,8 @@ let make_flag env f =
   let red = if f.rFix then red_add red fFIX else red in
   let red = if f.rCofix then red_add red fCOFIX else red in
   let red = if f.rZeta then red_add red fZETA else red in
-  let red =
-    if f.rDelta then (* All but rConst *)
-        let red = red_add red fDELTA in
-        let red = red_add_transparent red
-                    (Conv_oracle.get_transp_state (Environ.oracle env)) in
-        List.fold_right
-          (fun v red -> red_sub_list red (make_flag_constant v))
-          f.rConst red
-    else (* Only rConst *)
-        let red = red_add red fDELTA in
-        List.fold_right
-          (fun v red -> red_add_list red (make_flag_constant v))
-          f.rConst red
-  in
+  let tr = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let red = RedFlags.red_set_constants red tr (f.rDelta, (List.map_append make_flag_constant f.rConst)) in
   f.rStrength, red
 
 (* table of custom reductino fonctions, not synchronized,
