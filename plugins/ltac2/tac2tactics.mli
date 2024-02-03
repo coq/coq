@@ -61,7 +61,7 @@ val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
 
 val reduce : Redexpr.red_expr -> clause -> unit tactic
 
-val simpl : GlobRef.t glob_red_flag ->
+val simpl : strength * bool * GlobRef.t list ->
   (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
 
 val cbv : GlobRef.t glob_red_flag -> clause -> unit tactic
@@ -82,7 +82,7 @@ val eval_red : constr -> constr tactic
 
 val eval_hnf : constr -> constr tactic
 
-val eval_simpl : GlobRef.t glob_red_flag ->
+val eval_simpl : strength * bool * GlobRef.t list ->
   (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
 
 val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic

@@ -44,9 +44,7 @@ let () =
 (* We must avoid zeta-converting any "let"s created by the "in" tactical. *)
 
 let tacred_simpl env =
-  let simpl_expr =
-    Genredexpr.(
-      Simpl(Redops.make_red_flag[FBeta;FMatch;FZeta;FDeltaBut []],None)) in
+  let simpl_expr = Genredexpr.(Simpl((Norm,true,[]),None)) in
   let esimpl, _ = Redexpr.reduction_of_red_expr env simpl_expr in
   let esimpl e sigma c =
     let (_,t) = esimpl e sigma c in

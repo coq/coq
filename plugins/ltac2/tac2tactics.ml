@@ -232,12 +232,11 @@ let reduce r cl =
   let cl = mk_clause cl in
   Tactics.reduce r cl
 
-let simpl flags where cl =
+let simpl (strength,delta,constants) where cl =
   let where = Option.map map_pattern_with_occs where in
   let cl = mk_clause cl in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  Tactics.reduce (Simpl (flags, where)) cl
+  Proofview.Monad.List.map get_evaluable_reference constants >>= fun constants ->
+  Tactics.reduce (Simpl ((strength, delta, constants), where)) cl
 
 let cbv flags cl =
   let cl = mk_clause cl in
@@ -295,11 +294,10 @@ let eval_red c =
 let eval_hnf c =
   eval_fun Hnf c
 
-let eval_simpl flags where c =
+let eval_simpl (strength,delta,constants) where c =
   let where = Option.map map_pattern_with_occs where in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  eval_fun (Simpl (flags, where)) c
+  Proofview.Monad.List.map get_evaluable_reference constants >>= fun constants ->
+  eval_fun (Simpl ((strength, delta, constants), where)) c
 
 let eval_cbv flags c =
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->

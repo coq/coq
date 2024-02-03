@@ -974,15 +974,15 @@ let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
-let is_local_flag env flags =
-  if flags.rDelta then false
+let is_local_flag env delta consts =
+  if delta then false
   else
     let check = function
     | Evaluable.EvalVarRef _ -> false
     | Evaluable.EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
     | Evaluable.EvalProjectionRef c -> false (* FIXME *)
     in
-    List.for_all check flags.rConst
+    List.for_all check consts
 
 let is_local_unfold env flags =
   let check (_, c) = match c with
@@ -1006,8 +1006,10 @@ let reduce redexp cl =
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   let reorder = match redexp with
   | Fold _ | Pattern _ -> AnyHypConv
-  | Simpl (flags, _) | Cbv flags | Cbn flags | Lazy flags ->
-    if is_local_flag env flags then LocalHypConv else StableHypConv
+  | Cbv flags | Cbn flags | Lazy flags ->
+    if is_local_flag env flags.rDelta flags.rConst then LocalHypConv else StableHypConv
+  | Simpl ((_,delta,consts), _) ->
+    if is_local_flag env delta consts then LocalHypConv else StableHypConv
   | Unfold flags ->
     if is_local_unfold env flags then LocalHypConv else StableHypConv
   | Red | Hnf | CbvVm _ | CbvNative _ -> StableHypConv

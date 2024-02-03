@@ -18,5 +18,5 @@ val unfold_occ : r_cst Locus.with_occurrences_expr Entry.t
 val ref_or_pattern_occ : (r_cst,r_pat) Util.union Locus.with_occurrences_expr Entry.t
 val occs_nums : Locus.occurrences_expr Entry.t
 val occs : Locus.occurrences_expr Entry.t
-val delta_flag : r_cst red_atom Entry.t
+val delta_flag : (bool * Libnames.qualid Constrexpr.or_by_notation list) Entry.t
 val strategy_flag : r_cst glob_red_flag Entry.t
