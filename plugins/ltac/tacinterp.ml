@@ -765,8 +765,8 @@ let interp_red_expr ist env sigma = function
           (fun c sigma -> interp_constr_with_occurrences ist env sigma c) l sigma
       in
       sigma , Pattern l_interp
-  | Simpl ((strength,b,csts),o) ->
-     sigma , Simpl ((strength,b,List.map (interp_evaluable ist env sigma) csts),
+  | Simpl (f,o) ->
+     sigma , Simpl (interp_flag ist env sigma f,
                     Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvVm o ->
     sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)

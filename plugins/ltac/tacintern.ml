@@ -433,8 +433,8 @@ let intern_red_expr ist = function
   | Cbn f -> Cbn (intern_flag ist f)
   | Lazy f -> Lazy (intern_flag ist f)
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
-  | Simpl ((strength, b, csts),o) ->
-    Simpl ((strength, b, List.map (intern_evaluable ist) csts),
+  | Simpl (f,o) ->
+    Simpl (intern_flag ist f,
            Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)

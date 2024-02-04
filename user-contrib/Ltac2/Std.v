@@ -45,12 +45,6 @@ Ltac2 Type reference := [
 
 Ltac2 Type strength := [ Norm | Head ].
 
-Ltac2 Type simpl_red_flags := {
-  rSimplStrength : strength;
-  rSimplDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
-  rSimplConst : reference list
-}.
-
 Ltac2 Type red_flags := {
   rStrength : strength;
   rBeta : bool;
@@ -163,7 +157,7 @@ Ltac2 @ external induction : evar_flag -> induction_clause list ->
 
 Ltac2 @ external red : clause -> unit := "coq-core.plugins.ltac2" "tac_red".
 Ltac2 @ external hnf : clause -> unit := "coq-core.plugins.ltac2" "tac_hnf".
-Ltac2 @ external simpl : simpl_red_flags -> (pattern * occurrences) option -> clause -> unit := "coq-core.plugins.ltac2" "tac_simpl".
+Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -> unit := "coq-core.plugins.ltac2" "tac_simpl".
 Ltac2 @ external cbv : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbv".
 Ltac2 @ external cbn : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbn".
 Ltac2 @ external lazy : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_lazy".
@@ -176,7 +170,7 @@ Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "c
 Ltac2 @ external eval_red : constr -> constr := "coq-core.plugins.ltac2" "eval_red".
 Ltac2 @ external eval_hnf : constr -> constr := "coq-core.plugins.ltac2" "eval_hnf".
 Ltac2 @ external eval_red : constr -> constr := "coq-core.plugins.ltac2" "eval_red".
-Ltac2 @ external eval_simpl : simpl_red_flags -> (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_simpl".
+Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_simpl".
 Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbv".
 Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbn".
 Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_lazy".

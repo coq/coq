@@ -43,7 +43,7 @@ type 'a glob_red_flag = {
 type ('a, 'b, 'c, 'flags) red_expr_gen0 =
   | Red
   | Hnf
-  | Simpl of (strength * bool * 'b list) * ('b, 'c) Util.union Locus.with_occurrences option
+  | Simpl of 'flags * ('b, 'c) Util.union Locus.with_occurrences option
   | Cbv of 'flags
   | Cbn of 'flags
   | Lazy of 'flags
