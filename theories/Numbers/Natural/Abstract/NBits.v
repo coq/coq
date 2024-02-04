@@ -748,6 +748,27 @@ Proof.
       [reflexivity | exact (le_0_l _)..].
 Qed.
 
+Lemma land_le_l :
+  forall a b, land a b <= a.
+Proof.
+  apply (Even_Odd_induction (fun a => forall b, land a b <= a)).
+  - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
+  - intros b; rewrite land_0_l; exact (le_refl _).
+  - intros a H; split; intros b;
+    pose proof (exists_div2 b) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
+    + rewrite land_even_odd; apply mul_le_mono_l; now apply H.
+    + rewrite add_0_r, land_even_even; apply mul_le_mono_l; now apply H.
+    + rewrite land_odd_odd; apply add_le_mono_r, mul_le_mono_l; now apply H.
+    + rewrite add_0_r, land_odd_even.
+      apply (le_trans _ (2 * a)).
+      * apply mul_le_mono_l; now apply H.
+      * rewrite add_1_r; exact (le_succ_diag_r _).
+Qed.
+
+Lemma land_le_r :
+  forall a b, land a b <= b.
+Proof. intros a b; rewrite land_comm; exact (land_le_l _ _). Qed.
+
 Lemma ldiff_0_l : forall a, ldiff 0 a == 0.
 Proof.
  intros. bitwise. trivial.
