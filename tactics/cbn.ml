@@ -439,8 +439,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
     let open UnivProblem in
-    let cst_mod = KerName.modpath (Constant.user reference) in
-    let cst = Constant.make2 cst_mod (Label.of_id id) in
+    let cst = Constant.change_label reference (Label.of_id id) in
     if not (Environ.mem_constant cst env) then bd
     else
       let (cst, u), ctx = UnivGen.fresh_constant_instance env cst in
