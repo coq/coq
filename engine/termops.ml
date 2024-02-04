@@ -32,9 +32,8 @@ module Internal = struct
   let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
   let set_print_constr f = term_printer := f
 
-  let pr_var_decl env decl =
+  let pr_var_decl env sigma decl =
     let open NamedDecl in
-    let sigma = Evd.from_env env in
     let pbody = match decl with
       | LocalAssum _ ->  mt ()
       | LocalDef (_,c,_) ->
@@ -46,9 +45,8 @@ module Internal = struct
     let ptyp = (str" : " ++ pt) in
     (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
-  let pr_rel_decl env decl =
+  let pr_rel_decl env sigma decl =
     let open RelDecl in
-    let sigma = Evd.from_env env in
     let pbody = match decl with
       | LocalAssum _ -> mt ()
       | LocalDef (_,c,_) ->
@@ -61,29 +59,29 @@ module Internal = struct
     | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
     | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
-  let print_named_context env =
+  let print_named_context env sigma =
     hv 0 (fold_named_context
             (fun env d pps ->
-               pps ++ ws 2 ++ pr_var_decl env d)
+               pps ++ ws 2 ++ pr_var_decl env sigma d)
             env ~init:(mt ()))
 
-  let print_rel_context env =
+  let print_rel_context env sigma =
     hv 0 (fold_rel_context
-            (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
+            (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env sigma d)
             env ~init:(mt ()))
 
-  let print_env env =
+  let print_env env sigma =
     let sign_env =
       fold_named_context
         (fun env d pps ->
-           let pidt =  pr_var_decl env d in
+           let pidt =  pr_var_decl env sigma d in
            (pps ++ fnl () ++ pidt))
         env ~init:(mt ())
     in
     let db_env =
       fold_rel_context
         (fun env d pps ->
-           let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
+           let pnat = pr_rel_decl env sigma d in (pps ++ fnl () ++ pnat))
         env ~init:(mt ())
     in
     (sign_env ++ db_env)
@@ -344,8 +342,7 @@ let pr_evar_constraints sigma pbs =
       str (match pbty with
             | Conversion.CONV -> "=="
             | Conversion.CUMUL -> "<=") ++
-      (* Why do we not print using sigma?? *)
-      spc () ++ Internal.print_kconstr env (Evd.from_env env) t2
+      spc () ++ Internal.print_kconstr env sigma t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 

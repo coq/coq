@@ -1514,8 +1514,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   debug_ho_unification (fun () ->
-     Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
-         str"env evars: " ++ Termops.Internal.print_env env_evar));
+     Pp.(str"rhs env: " ++ Termops.Internal.print_env env_rhs evd ++ fnl () ++
+         str"evar env: " ++ Termops.Internal.print_env env_evar evd));
   let args = Evd.expand_existential evd (evk, args) in
   let args = List.map (nf_evar evd) args in
   let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in

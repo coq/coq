@@ -311,9 +311,9 @@ val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
 val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
 
 (** Printers for contexts *)
-val print_named_context : env -> Pp.t
-val pr_rel_decl : env -> Constr.rel_declaration -> Pp.t
-val print_rel_context : env -> Pp.t
-val print_env : env -> Pp.t
+val print_named_context : env -> Evd.evar_map -> Pp.t
+val pr_rel_decl : env -> Evd.evar_map -> Constr.rel_declaration -> Pp.t
+val print_rel_context : env -> Evd.evar_map -> Pp.t
+val print_env : env -> Evd.evar_map -> Pp.t
 
 end
