@@ -580,6 +580,14 @@ Proof.
  apply div_mod. order'.
 Qed.
 
+Lemma le_div2_diag_l a : div2 a <= a.
+Proof.
+  rewrite (div2_odd a) at 2; rewrite <-(mul_1_l (div2 a)) at 1.
+  apply (le_trans _ (2 * (div2 a))).
+  - apply mul_le_mono_r, lt_le_incl; exact lt_1_2.
+  - exact (le_add_r _ _).
+Qed.
+
 (** Properties of [lxor] and others, directly deduced
     from properties of [xorb] and others. *)
 
@@ -1044,6 +1052,24 @@ Lemma shiftr_ldiff : forall a b n,
  (ldiff a b) >> n == ldiff (a >> n) (b >> n).
 Proof.
  intros. bitwise. now rewrite !shiftr_spec', ldiff_spec.
+Qed.
+
+(** Shifts and order *)
+
+Lemma le_shiftl : forall a n, a <= a << n.
+Proof.
+  intros a n; rewrite shiftl_mul_pow2; rewrite <-(mul_1_r a) at 1.
+  apply mul_le_mono_l.
+  rewrite <-(pow_1_l n); apply pow_le_mono_l, lt_le_incl; exact lt_1_2.
+Qed.
+
+Lemma shiftr_le : forall a n, a >> n <= a.
+Proof.
+  intros a n; rewrite shiftr_div_pow2.
+  apply div_le_upper_bound.
+  - apply pow_nonzero; rewrite two_succ; apply neq_succ_0.
+  - rewrite <-(mul_1_l a) at 1; apply mul_le_mono_r.
+    rewrite <-(pow_1_l n); apply pow_le_mono_l, lt_le_incl; exact lt_1_2.
 Qed.
 
 (** We cannot have a function complementing all bits of a number,
