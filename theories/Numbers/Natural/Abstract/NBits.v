@@ -784,6 +784,63 @@ Proof.
  intros. bitwise. apply andb_negb_r.
 Qed.
 
+Lemma ldiff_even_even : forall a b, ldiff (2 * a) (2 * b) == 2 * (ldiff a b).
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite ldiff_spec, 3!testbit_even_0; reflexivity.
+  - rewrite ldiff_spec, 3!testbit_even_succ, ldiff_spec;
+      [reflexivity | exact (le_0_l _)..].
+Qed.
+
+Lemma ldiff_odd_even :
+  forall a b, ldiff (2 * a + 1) (2 * b) == 2 * (ldiff a b) + 1.
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite ldiff_spec, 2!testbit_odd_0, testbit_even_0; reflexivity.
+  - rewrite ldiff_spec, testbit_even_succ, 2!testbit_odd_succ, ldiff_spec
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_even_odd : forall a b, ldiff (2 * a) (2 * b + 1) == 2 * (ldiff a b).
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite ldiff_spec, testbit_even_0, testbit_odd_0, testbit_even_0;
+      reflexivity.
+  - rewrite ldiff_spec, testbit_odd_succ, 2!testbit_even_succ, ldiff_spec
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_odd_odd :
+  forall a b, ldiff (2 * a + 1) (2 * b + 1) == 2 * (ldiff a b).
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]].
+  - rewrite ldiff_spec, 2!testbit_odd_0, testbit_even_0; reflexivity.
+  - rewrite testbit_even_succ, 2!ldiff_spec, 2!testbit_odd_succ
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_le_l :
+  forall a b, ldiff a b <= a.
+Proof.
+  apply (Even_Odd_induction (fun a => forall b, ldiff a b <= a)).
+  - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
+  - intros b; rewrite ldiff_0_l; exact (le_0_l _).
+  - intros a H; split; intros b;
+    pose proof (exists_div2 b) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
+    + rewrite ldiff_even_odd; apply mul_le_mono_l; exact (H m).
+    + rewrite add_0_r, ldiff_even_even; apply mul_le_mono_l; exact (H m).
+    + rewrite ldiff_odd_odd.
+      apply (le_trans _ (2 * a)).
+      * apply mul_le_mono_l; now apply H.
+      * rewrite add_1_r; exact (le_succ_diag_r _).
+    + rewrite add_0_r, ldiff_odd_even; apply add_le_mono_r, mul_le_mono_l.
+      exact (H m).
+Qed.
+
 Lemma lor_land_distr_l : forall a b c,
  lor (land a b) c == land (lor a c) (lor b c).
 Proof.
