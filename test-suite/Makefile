@@ -308,8 +308,7 @@ unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 # Other generic tests
 #######################################################################
 
-# There is a dependency between those two files
-prerequisite/library_attributes_require.v.log: prerequisite/library_attributes.v.log
+prerequisite/requires_deprecated_library.v.log: prerequisite/deprecated_library.v.log
 
 $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
