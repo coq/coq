@@ -330,20 +330,14 @@ fun a : T => match a with
              | _ => 2
              end
      : T -> nat
-The following notations have been disabled:
-Notation "x + y" := (Nat.add x y) : nat_scope
 Nat.add 0 0
      : nat
 File "./output/Notations5.v", line 414, characters 11-12:
 The command has indeed failed with message:
 The term "0" has type "nat" while it is expected to have type "Type".
-The following notations have been disabled:
-Notation "x + y" := (sum x y) : type_scope
 File "./output/Notations5.v", line 417, characters 11-16:
 The command has indeed failed with message:
 Unknown interpretation for notation "_ + _".
-The following notations have been disabled:
-Notation Notations5.Activation.f x := (Some x)
 Some 0
      : option nat
 File "./output/Notations5.v", line 424, characters 11-12:
