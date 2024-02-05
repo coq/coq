@@ -29,7 +29,7 @@ let interp_search_restriction = function
   | SearchOutside l -> SearchOutside (List.map global_module l)
   | SearchInside l -> SearchInside (List.map global_module l)
 
-let kind_searcher = Decls.(function
+let kind_searcher env = Decls.(function
   (* Kinds referring to the keyword introducing the object *)
   | IsAssumption _
   | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let)
@@ -38,11 +38,11 @@ let kind_searcher = Decls.(function
   (* Kinds referring to the status of the object *)
   | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
     let coercions = Coercionops.coercions () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Coercionops.coe_value gr &&
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Coercionops.coe_value gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
     let canonproj = Structures.CSTable.entries () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Structures.CSTable.solution gr) canonproj)
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
     let schemes = lazy begin
@@ -56,7 +56,7 @@ let kind_searcher = Decls.(function
         | _ -> false)
   | IsDefinition Instance ->
     let instances = Typeclasses.all_instances () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Typeclasses.is_impl gr) instances))
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Typeclasses.is_impl gr) instances))
 
 let interp_constr_pattern env sigma ?(expected_type=Pretyping.WithoutTypeConstraint) c =
   let c = Constrintern.intern_gen expected_type ~pattern_mode:true env sigma c in
@@ -90,7 +90,7 @@ let interp_search_item env sigma =
           ~head:false (fun _ -> true) s sc in
       GlobSearchSubPattern (where,head,Pattern.PRef ref)
   | SearchKind k ->
-     match kind_searcher k with
+     match kind_searcher env k with
      | Inl k -> GlobSearchKind k
      | Inr f -> GlobSearchFilter f
 
