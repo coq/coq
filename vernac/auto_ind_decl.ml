@@ -965,7 +965,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
           let (ind',u as indu),v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
-          in if Ind.CanOrd.equal ind' ind
+          in if Environ.QInd.equal env ind' ind
              then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                let c = get_scheme handle (!bl_scheme_kind_aux ()) ind' in
@@ -1125,13 +1125,14 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
                *)
               Proofview.Goal.enter begin fun gl ->
+                let env = Proofview.Goal.env gl in
                 let concl = Proofview.Goal.concl gl in
                 let sigma = Tacmach.project gl in
                 match EConstr.kind sigma concl with
                 | App (c,ca) -> (
                   match EConstr.kind sigma c with
                   | Ind (indeq, u) ->
-                     if GlobRef.CanOrd.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
+                     if Environ.QGlobRef.equal env (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
                        Tacticals.tclTHEN
                          (do_replace_bl handle ind
