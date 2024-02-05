@@ -65,7 +65,7 @@ let mldep_to_make (base, suff) =
 let string_of_dep ~suffix = let open Dep_info.Dep in
   function
   | Require basename -> [escape basename ^ suffix]
-  | Ml (base,suff) -> mldep_to_make (escape base,suff)
+  | Ml (base,suff) -> mldep_to_make (escape base,byte_suff suff)
   | Other s -> [escape s]
 
 let string_of_dependency_list ~suffix deps =

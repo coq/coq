@@ -9,11 +9,17 @@
 (************************************************************************)
 
 module Dep : sig
+  type ml_kind = Pack | Lib
+  (** Whether a plugin is using -pack (matters for the bytecode file extension).
+      Note that dune (wrapped) is not using -pack. *)
+
+  val byte_suff : ml_kind -> string
+
   type t =
   | Require of string
   (** module basename, to which we later append .vo or .vio or .vos *)
-  | Ml of string * string
-  (** plugin basename and byte extension, resolved from Declare Ml Module *)
+  | Ml of string * ml_kind
+  (** plugin basename and whether it's using -pack, resolved from Declare Ml Module *)
   | Other of string
   (** load, meta, and external dependencies *)
 end

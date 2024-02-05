@@ -9,9 +9,15 @@
 (************************************************************************)
 
 module Dep = struct
+  type ml_kind = Pack | Lib
+
+  let byte_suff = function
+    | Pack -> ".cmo"
+    | Lib -> ".cma"
+
   type t =
   | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
-  | Ml of string * string
+  | Ml of string * ml_kind
   | Other of string (* filenames of dependencies, separated by spaces *)
 end
 
