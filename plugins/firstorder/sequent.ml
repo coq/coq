@@ -58,11 +58,14 @@ end
 
 type h_item = GlobRef.t * Unify.Item.t option
 
+let h_canonize env (hr, item) =
+  (Environ.QGlobRef.canonize env hr, item)
+
 module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    let c = GlobRef.CanOrd.compare id1 id2 in
+    let c = GlobRef.UserOrd.compare id1 id2 in
     if c = 0 then Option.compare Unify.Item.compare co1 co2
     else c
 end
@@ -78,11 +81,11 @@ let cm_add sigma typ nam cm=
   with
       Not_found->CM.add typ [nam] cm
 
-let cm_remove sigma typ nam cm=
+let cm_remove env sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
     let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (GlobRef.CanOrd.equal id nam)) l in
+    let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
       match l0 with
           []->CM.remove typ cm
         | _ ->CM.add typ l0 cm
@@ -107,10 +110,10 @@ let iter_redexes f seq = HP.iter f seq.redexes
 
 let deepen seq={seq with depth=seq.depth-1}
 
-let record item seq={seq with history=History.add item seq.history}
+let record env item seq={seq with history=History.add (h_canonize env item) seq.history}
 
 let lookup env sigma item seq=
-  History.mem item seq.history ||
+  History.mem (h_canonize env item) seq.history ||
   match item with
       (_,None)->false
     | (id,Some i1)->
@@ -121,7 +124,7 @@ let lookup env sigma item seq=
           History.exists p seq.history
 
 let add_concl ~flags env sigma t seq =
-  match build_formula ~flags env sigma Concl GoalId t seq.cnt with
+  match build_formula ~flags env sigma Concl goal_id t seq.cnt with
   | Left f ->
     {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr }
   | Right t ->
@@ -129,7 +132,7 @@ let add_concl ~flags env sigma t seq =
 
 let add_formula ~flags ~hint env sigma id t seq =
   let side = Hyp hint in
-  match build_formula ~flags env sigma side (FormulaId id) t seq.cnt with
+  match build_formula ~flags env sigma side (formula_id env id) t seq.cnt with
   | Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
@@ -154,7 +157,7 @@ let find_goal sigma seq =
   let t = match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t in
   find_left sigma t seq
 
-let rec take_formula sigma seq=
+let rec take_formula env sigma seq=
   let hd = HP.maximum seq.redexes in
   let hp = HP.remove seq.redexes in
   let AnyFormula hd0 = hd in
@@ -163,12 +166,12 @@ let rec take_formula sigma seq=
     let nseq={seq with redexes=hp} in
     begin match seq.gl with
     | GoalTerm t when t == hd0.constr -> hd, nseq
-    | GoalAtom _ | GoalTerm _ -> take_formula sigma nseq (* discarding deprecated goal *)
+    | GoalAtom _ | GoalTerm _ -> take_formula env sigma nseq (* discarding deprecated goal *)
     end
   | FormulaId id ->
       hd,{seq with
             redexes=hp;
-            context=cm_remove sigma hd0.constr id seq.context}
+            context=cm_remove env sigma hd0.constr id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;
