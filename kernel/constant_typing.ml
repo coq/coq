@@ -243,7 +243,7 @@ let infer_opaque ~sec_univs env entry =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_relevance = Sorts.relevance_of_sort typj.utj_type;
+    const_relevance = UVars.subst_sort_level_relevance usubst @@ Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
   }, context
