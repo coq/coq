@@ -477,7 +477,7 @@ let unfold_projection_under_eta env ts n c =
   let rec go c lams =
     match Constr.kind c with
     | Lambda (b, t, c) -> go c ((b,t)::lams)
-    | Proj (p, r, c) when Names.Constant.CanOrd.equal n (Projection.constant p) ->
+    | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
       let c = unfold_projection env ts p r c in
       begin
         match c with
