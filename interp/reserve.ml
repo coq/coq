@@ -17,7 +17,6 @@ open Names
 open Nameops
 open Notation_term
 open Notation_ops
-open Globnames
 
 type key =
   | RefKey of GlobRef.t
@@ -25,8 +24,17 @@ type key =
 
 (** TODO: share code from Notation *)
 
+let canonize_key env k = match k with
+| Oth -> Oth
+| RefKey gr ->
+  let gr' = Environ.QGlobRef.canonize env gr in
+  if gr' == gr then k else RefKey gr'
+
+let mkRefKey env gr =
+  RefKey (Environ.QGlobRef.canonize env gr)
+
 let key_compare k1 k2 = match k1, k2 with
-| RefKey gr1, RefKey gr2 -> GlobRef.CanOrd.compare gr1 gr2
+| RefKey gr1, RefKey gr2 -> GlobRef.UserOrd.compare gr1 gr2
 | RefKey _, Oth -> -1
 | Oth, RefKey _ -> 1
 | Oth, Oth -> 0
@@ -61,26 +69,27 @@ struct
 end
 
 
-let keymap_add key data map =
+let keymap_add env key data map =
+  let key = canonize_key env key in
   let old = try KeyMap.find key map with Not_found -> ReservedSet.empty in
   KeyMap.add key (ReservedSet.add data old) map
 
 let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
 let reserve_revtable = Summary.ref KeyMap.empty ~name:"reserved-type-rev"
 
-let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), Some (List.length args)
+let notation_constr_key env = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
+  | NApp (NRef (ref,_),args) -> mkRefKey env ref, Some (List.length args)
   | NList (_,_,NApp (NRef (ref,_),args),_,_)
-  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | NRef (ref,_) -> RefKey(canonical_gr ref), None
+  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> mkRefKey env ref, Some (List.length args)
+  | NRef (ref,_) -> mkRefKey env ref, None
   | _ -> Oth, None
 
-let add_reserved_type (id,t) =
-  let key = fst (notation_constr_key t) in
+let add_reserved_type env (id,t) =
+  let key = fst (notation_constr_key env t) in
   reserve_table := Id.Map.add id t !reserve_table;
-  reserve_revtable := keymap_add key (id, t) !reserve_revtable
+  reserve_revtable := keymap_add env key (id, t) !reserve_revtable
 
-let declare_reserved_type_binding {CAst.loc;v=id} t =
+let declare_reserved_type_binding env {CAst.loc;v=id} t =
   if not (Id.equal id (root_of_id id)) then
     user_err ?loc
       ((Id.print id ++ str
@@ -90,23 +99,24 @@ let declare_reserved_type_binding {CAst.loc;v=id} t =
     user_err ?loc
     ((Id.print id ++ str " is already bound to a type."))
   with Not_found -> () end;
-  add_reserved_type (id,t)
+  add_reserved_type env (id,t)
 
 let declare_reserved_type idl t =
-  List.iter (fun id -> declare_reserved_type_binding id t) (List.rev idl)
+  let env = Global.env () in
+  List.iter (fun id -> declare_reserved_type_binding env id t) (List.rev idl)
 
 let find_reserved_type id = Id.Map.find (root_of_id id) !reserve_table
 
-let constr_key c =
-  try RefKey (canonical_gr (fst @@ Constr.destRef (fst (Constr.decompose_app c))))
+let constr_key env c =
+  try mkRefKey env (fst @@ Constr.destRef (fst (Constr.decompose_app c)))
   with Constr.DestKO -> Oth
 
 let revert_reserved_type t =
   try
-    let t = EConstr.Unsafe.to_constr t in
-    let reserved = KeyMap.find (constr_key t) !reserve_revtable in
-    let t = EConstr.of_constr t in
     let env = Global.env () in
+    let t = EConstr.Unsafe.to_constr t in
+    let reserved = KeyMap.find (constr_key env t) !reserve_revtable in
+    let t = EConstr.of_constr t in
     let evd = Evd.from_env env in
     let t = Detyping.detype Detyping.Now Id.Set.empty env evd t in
     (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
