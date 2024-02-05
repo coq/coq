@@ -1093,6 +1093,11 @@ Proof.
  intros; unfold ones; now rewrite shiftl_1_l.
 Qed.
 
+Lemma ones_0 : ones 0 == 0.
+Proof.
+  rewrite ones_equiv, pow_0_r, one_succ, pred_succ; reflexivity.
+Qed.
+
 Lemma ones_add : forall n m, ones (m+n) == 2^m * ones n + ones m.
 Proof.
  intros n m. rewrite !ones_equiv.
@@ -1176,6 +1181,17 @@ Qed.
 Lemma lnot_ones : forall n, lnot (ones n) n == 0.
 Proof.
  intros. unfold lnot. apply lxor_nilpotent.
+Qed.
+
+Lemma ones_succ : forall n, ones (S n) == 2 * (ones n) + 1.
+Proof.
+  intros n; rewrite 2!ones_equiv, <-2!sub_1_r, mul_sub_distr_l.
+  rewrite mul_1_r, <-pow_succ_r by (exact (le_0_l _)).
+  apply add_sub_eq_r.
+  rewrite <-add_assoc, add_1_r, two_succ, sub_add; [reflexivity |].
+  rewrite <-(pow_1_r (S 1)) at 1; apply pow_le_mono_r.
+  - exact (neq_succ_0 _).
+  - rewrite one_succ; apply ->succ_le_mono; exact (le_0_l _).
 Qed.
 
 (** Bounded complement and other operations *)
