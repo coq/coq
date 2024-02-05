@@ -128,7 +128,7 @@ sig
   val empty : 'a t
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
-  val equal : ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
+  val equal : env -> ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
     -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
@@ -237,12 +237,12 @@ struct
     if i < j then (l.(j), App (i,l,pred j) :: sk)
     else (l.(j), sk)
 
-  let equal f f_fix f_case sk1 sk2 =
+  let equal env f f_fix f_case sk1 sk2 =
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
-        Constant.CanOrd.equal c1 c2 && UVars.Instance.equal u1 u2
-      | Cst_proj (p1,_), Cst_proj (p2,_) -> Projection.Repr.CanOrd.equal (Projection.repr p1) (Projection.repr p2)
+        QConstant.equal env c1 c2 && UVars.Instance.equal u1 u2
+      | Cst_proj (p1,_), Cst_proj (p2,_) -> QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
       | _, _ -> false
     in
     let rec equal_rec sk1 sk2 =
@@ -255,7 +255,7 @@ struct
       | Case ((ci1,pms1,p1,t1,iv1,a1),_) :: s1, Case ((ci2,pms2,p2,iv2,t2,a2),_) :: s2 ->
         f_case (ci1,pms1,p1,t1,iv1,a1) (ci2,pms2,p2,iv2,t2,a2) && equal_rec s1 s2
       | (Proj (p,_,_)::s1, Proj(p2,_,_)::s2) ->
-        Projection.Repr.CanOrd.equal (Projection.repr p) (Projection.repr p2)
+        QProjection.Repr.equal env (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
       | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
         f_fix f1 f2
@@ -540,7 +540,7 @@ module CredNative = Reductionops.CredNative
 
 let debug_RAKAM = Reductionops.debug_RAKAM
 
-let equal_stacks sigma (x, l) (y, l') =
+let equal_stacks env sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
   let eq_fix a b = f_equal (mkFix a) (mkFix b) in
   let eq_case (ci1, u1, pms1, (p1,_), _, br1) (ci2, u2, pms2, (p2,_), _, br2) =
@@ -548,7 +548,7 @@ let equal_stacks sigma (x, l) (y, l') =
     f_equal (snd p1) (snd p2) &&
     Array.equal (fun (_, c1) (_, c2) -> f_equal c1 c2) br1 br2
   in
-  Stack.equal f_equal eq_fix eq_case l l' && f_equal x y
+  Stack.equal env f_equal eq_fix eq_case l l' && f_equal x y
 
 let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
   let args = Stack.tail ci.ci_npar args in
@@ -639,7 +639,7 @@ let whd_state_gen ?csts flags env sigma =
                     | App (hd, _) -> is_case hd
                     | Case _ -> true
                     | _ -> false in
-                  if equal_stacks sigma (x, app_sk) (tm', sk')
+                  if equal_stacks env sigma (x, app_sk) (tm', sk')
                   || Stack.will_expose_iota sk'
                   || is_case tm'
                   then fold ()
@@ -676,7 +676,7 @@ let whd_state_gen ?csts flags env sigma =
          | None ->
            let stack' = (c, Stack.Proj (p, r, cst_l) :: stack) in
            let stack'', csts = whrec Cst_stack.empty stack' in
-           if equal_stacks sigma stack' stack'' then fold ()
+           if equal_stacks env sigma stack' stack'' then fold ()
            else stack'', csts
          | Some behavior ->
            begin match behavior with
