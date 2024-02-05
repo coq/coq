@@ -64,9 +64,9 @@ let new_sort_id =
   let cnt = ref 0 in
   fun () -> incr cnt; !cnt
 
-let new_sort_global () =
+let new_sort_global id =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
-  Univ.UGlobal.make (Global.current_dirpath ()) s (new_sort_id ())
+  Sorts.QGlobal.make (Global.current_dirpath ()) s id
 
 let fresh_sort_quality () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in

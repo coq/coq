@@ -1,0 +1,5 @@
+-Q . Test
+
+-arg -allow-rewrite-rules
+
+TestSort.v

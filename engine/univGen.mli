@@ -25,7 +25,7 @@ exception UniverseLengthMismatch of univ_length_mismatch
 (** Side-effecting functions creating new universe levels. *)
 
 val new_univ_global : unit -> UGlobal.t
-val new_sort_global : unit -> UGlobal.t
+val new_sort_global : Id.t -> Sorts.QGlobal.t
 val fresh_level : unit -> Level.t
 val fresh_sort_quality : unit -> Sorts.QVar.t
 

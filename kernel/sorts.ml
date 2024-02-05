@@ -14,12 +14,46 @@ type family = InSProp | InProp | InSet | InType | InQSort
 
 let all_families = [InSProp; InProp; InSet; InType; InQSort]
 
+module QGlobal = struct
+  open Names
+
+  type t = {
+    library : DirPath.t;
+    process : string;
+    id : Id.t 
+  }
+
+  let make library process id = { library; process ; id }
+
+  let repr x = (x.library, x.process, x.id)
+
+  let equal u1 u2 =
+    Id.equal u1.id u2.id &&
+    DirPath.equal u1.library u2.library &&
+    String.equal u1.process u2.process
+
+  let hash u = Hashset.Combine.combine3 (Id.hash u.id) (Util.String.hash u.process) (DirPath.hash u.library)
+
+  let compare u1 u2 =
+    let c = Id.compare u1.id u2.id in
+    if c <> 0 then c
+    else
+      let c = DirPath.compare u1.library u2.library in
+      if c <> 0 then c
+      else String.compare u1.process u2.process
+
+  let to_string { library = d; process = s ; id } =
+    DirPath.to_string d ^
+    (if CString.is_empty s then "" else "." ^ s) ^ 
+    "." ^ Id.to_string id
+end
+
 module QVar =
 struct
   type repr =
     | Var of int
     | Unif of string * int
-    | Global of UGlobal.t
+    | Global of QGlobal.t
   type t = repr
 
   let make_var n = Var n
@@ -36,7 +70,7 @@ struct
   let hash = function
     | Var q -> Hashset.Combine.combinesmall 1 q
     | Unif (s,q) -> Hashset.Combine.(combinesmall 2 (combine (CString.hash s) q))
-    | Global id -> Hashset.Combine.combinesmall 3 (UGlobal.hash id)
+    | Global id -> Hashset.Combine.combinesmall 3 (QGlobal.hash id)
 
   module Hstruct = struct
     type nonrec t = t
@@ -53,7 +87,7 @@ struct
       match a, b with
       | Var a, Var b -> Int.equal a b
       | Unif (sa, ia), Unif (sb, ib) -> sa == sb && Int.equal ia ib
-      | Global ida, Global idb -> UGlobal.compare ida idb = 0
+      | Global ida, Global idb -> QGlobal.compare ida idb = 0
       | (Var _ | Unif _| Global _), _ -> false
 
     let hash = hash
@@ -69,7 +103,7 @@ struct
       let c = Int.compare i1 i2 in
       if c <> 0 then c
       else CString.compare s1 s2
-    | Global ida, Global idb -> UGlobal.compare ida idb
+    | Global ida, Global idb -> QGlobal.compare ida idb
     | Var _, (Unif  _ | Global _) -> -1
     | Unif _, Var _ -> 1
     | Unif _, Global _ -> -1
@@ -79,7 +113,7 @@ struct
     | Var a, Var b ->  Int.equal a b
     | Unif (s1,i1), Unif (s2,i2) ->
       Int.equal i1 i2 && CString.equal s1 s2
-    | Global ida, Global idb -> UGlobal.compare ida idb = 0
+    | Global ida, Global idb -> QGlobal.compare ida idb = 0
     | (Var _| Unif _ | Global _), _ -> false
 
   let to_string = function
@@ -87,7 +121,7 @@ struct
     | Unif (s,q) ->
       let s = if CString.is_empty s then "" else s^"." in
       Printf.sprintf "%sα%d" s q
-    | Global id -> Printf.sprintf "γ%s" (UGlobal.to_string id)
+    | Global id -> Printf.sprintf "γ%s" (QGlobal.to_string id)
 
   let raw_pr q = Pp.str (to_string q)
 

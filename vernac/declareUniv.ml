@@ -39,8 +39,7 @@ type [@warning "-37"] sort_source =
 
 type sort_name_decl = {
   sdecl_src : sort_source; (* global sort introduced by some global value *)
-  sdecl_named : (Id.t * UGlobal.t) list;
-  (* sdecl_anon : UGlobal.t list; *)
+  sdecl_named : (Id.t * Sorts.QGlobal.t) list;
 }
 
 let check_exists_universe sp =
@@ -122,37 +121,16 @@ let do_sort_name ~check i dp src (id,quality) =
   if check then check_exists_sort sp;
   Nametab.push_sort i sp quality 
 
-let get_sort_names decl =
-  (* List.map (function (name, id) -> name, Sorts.QVar.make_global id)  *)
-  decl.sdecl_named
-  (* let fold accu (id, _) = Id.Set.add id accu in
-  let names = List.fold_left fold Id.Set.empty decl.sdecl_named in
-  (* create fresh names for anonymous qualities *)
-  let fold u ((names, cnt), accu) =
-    let rec aux i =
-      let na = Id.of_string ("q"^(string_of_int i)) in
-      if Id.Set.mem na names then aux (i+1) else (na, i)
-    in
-    let (id, cnt) = aux cnt in
-    ((Id.Set.add id names, cnt + 1), ((id, u) :: accu))
-  in
-  let named = List.map (function (name, id) -> name, Sorts.QVar.make_global id) decl.sdecl_named in
-  let _, qualities = List.fold_right fold decl.sdecl_anon ((names, 0), named) in
-  qualities *)
-
 let cache_sort_names (prefix, decl) =
   let depth = Lib.sections_depth () in
   let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
-  let names = get_sort_names decl in
-  List.iter (do_sort_name ~check:true (Nametab.Until 1) dp decl.sdecl_src) names
+  List.iter (do_sort_name ~check:true (Nametab.Until 1) dp decl.sdecl_src) decl.sdecl_named
 
 let load_sort_names i (prefix, decl) =
-  let names = get_sort_names decl in
-  List.iter (do_sort_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir decl.sdecl_src) names
+  List.iter (do_sort_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir decl.sdecl_src) decl.sdecl_named
 
 let open_sort_names i (prefix, decl) =
-  let names = get_sort_names decl in
-  List.iter (do_sort_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir decl.sdecl_src) names
+  List.iter (do_sort_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir decl.sdecl_src) decl.sdecl_named
 
 let discharge_sort_names decl = 
   match decl.sdecl_src with
@@ -232,7 +210,7 @@ let do_universe ~poly l =
     (* TODO: move to its proper place *)
 let do_sort l =
   (* let in_section = Lib.sections_are_opened () in *)
-  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global ())) l in
+  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global id)) l in
   let src = UnqualifiedQuality in
      (* if in_section then BoundQuality else UnqualifiedQuality in *)
   let () = input_sort_names (src, l) in

@@ -111,7 +111,7 @@ val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
-val push_sort : visibility -> full_path -> Univ.UGlobal.t -> unit
+val push_sort : visibility -> full_path -> Sorts.QGlobal.t -> unit
 
 (** Deprecation info *)
 
@@ -133,7 +133,7 @@ val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.UGlobal.t
-val locate_quality : qualid -> Univ.UGlobal.t
+val locate_quality : qualid -> Sorts.QGlobal.t
 
 val locate_extended_nowarn : qualid -> Globnames.extended_global_reference
 
