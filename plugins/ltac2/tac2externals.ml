@@ -12,7 +12,7 @@ open Proofview
 open Tac2ffi
 
 (* Local shortcuts. *)
-type v = Tac2ffi.valexpr
+type v = Tac2val.valexpr
 type 'r of_v = v -> 'r
 type 'r to_v = 'r -> v
 type 'a with_env = Environ.env -> Evd.evar_map -> 'a
@@ -68,13 +68,13 @@ let rec interp_spec : type v f. (v,f) spec -> f -> v = fun (S ar) f ->
   | G tr -> Goal.enter_one @@ fun g -> tclUNIT (tr (f g))
   | F (tr,ar) -> fun v -> interp_spec (S ar) (f (tr v))
 
-let rec arity_of : type v f. (v,f) spec -> v Tac2ffi.arity = fun (S ar) ->
+let rec arity_of : type v f. (v,f) spec -> v Tac2val.arity = fun (S ar) ->
   match ar with
-  | F (_, T _) -> Tac2ffi.arity_one
-  | F (_, V _) -> Tac2ffi.arity_one
-  | F (_, E _) -> Tac2ffi.arity_one
-  | F (_, G _) -> Tac2ffi.arity_one
-  | F (_, ar) -> Tac2ffi.arity_suc (arity_of (S ar))
+  | F (_, T _) -> Tac2val.arity_one
+  | F (_, V _) -> Tac2val.arity_one
+  | F (_, E _) -> Tac2val.arity_one
+  | F (_, G _) -> Tac2val.arity_one
+  | F (_, ar) -> Tac2val.arity_suc (arity_of (S ar))
   | _ -> invalid_arg "Tac2def.arity_of: not a function spec"
 
 let define : type v f. _ -> (v,f) spec -> f -> unit = fun n ar v ->
@@ -82,7 +82,7 @@ let define : type v f. _ -> (v,f) spec -> f -> unit = fun n ar v ->
     match ar with
     | S (V tr) -> tr v
     | S (F _) ->
-        let cl = Tac2ffi.mk_closure (arity_of ar) (interp_spec ar v) in
+        let cl = Tac2val.mk_closure (arity_of ar) (interp_spec ar v) in
         Tac2ffi.of_closure cl
     | _ -> invalid_arg "Tac2def.define: not a pure value"
   in

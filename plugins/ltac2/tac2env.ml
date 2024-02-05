@@ -12,7 +12,7 @@ open Util
 open Names
 open Libnames
 open Tac2expr
-open Tac2ffi
+open Tac2val
 
 type global_data = {
   gdata_expr : glb_tacexpr;

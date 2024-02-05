@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Tac2val
 open Tac2ffi
 open Tac2types
 

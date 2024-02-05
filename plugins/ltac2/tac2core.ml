@@ -12,6 +12,7 @@ open Util
 open Pp
 open Names
 open Genarg
+open Tac2val
 open Tac2ffi
 open Tac2env
 open Tac2expr
@@ -194,7 +195,7 @@ let err_division_by_zero =
 
 (** Helper functions *)
 
-let thaw f = Tac2ffi.apply f [v_unit]
+let thaw f = Tac2val.apply f [v_unit]
 
 let fatal_flag : unit Exninfo.t = Exninfo.make "fatal_flag"
 
@@ -352,19 +353,19 @@ let () =
       eval (Pp.app accu pp) args fmt
     | FmtAlpha ->
       let (f, x, args) = pop2 args in
-      Tac2ffi.apply (to_closure f) [of_unit (); x] >>= fun pp ->
+      Tac2val.apply_val f [of_unit (); x] >>= fun pp ->
       eval (Pp.app accu (to_pp pp)) args fmt
   in
   let eval v = eval (Pp.mt ()) v fmt in
   if Int.equal arity 0 then eval []
-  else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
+  else return (Tac2ffi.of_closure (Tac2val.abstract arity eval))
 
 let () =
   define "format_ikfprintf" (closure @-> valexpr @-> format @-> tac valexpr) @@ fun k v fmt ->
   let arity = arity_of_format fmt in
   let eval _args = apply k [v] in
   if Int.equal arity 0 then eval []
-  else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
+  else return (Tac2ffi.of_closure (Tac2val.abstract arity eval))
 
 (** Array *)
 
@@ -974,12 +975,12 @@ let () =
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () =
   define "plus" (closure @-> closure @-> tac valexpr) @@ fun x k ->
-  Proofview.tclOR (thaw x) (fun e -> Tac2ffi.apply k [Tac2ffi.of_exn e])
+  Proofview.tclOR (thaw x) (fun e -> Tac2val.apply k [Tac2ffi.of_exn e])
 
 let () =
   define "plus_bt" (closure @-> closure @-> tac valexpr) @@ fun run handle ->
     Proofview.tclOR (thaw run)
-      (fun e -> Tac2ffi.apply handle [Tac2ffi.of_exn e; of_exninfo (snd e)])
+      (fun e -> Tac2val.apply handle [Tac2ffi.of_exn e; of_exninfo (snd e)])
 
 (** (unit -> 'a) -> 'a *)
 let () =
@@ -1011,7 +1012,7 @@ let () =
   define "case" (closure @-> tac valexpr) @@ fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
-    let k = Tac2ffi.mk_closure arity_one begin fun e ->
+    let k = Tac2val.mk_closure arity_one begin fun e ->
       let (e, info) = Tac2ffi.to_exn e in
       set_bt info >>= fun info ->
       k (e, info)
@@ -1094,7 +1095,7 @@ let () =
   thaw x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.tclWITHHOLES false (Tac2ffi.apply f [ans]) sigma
+  Tacticals.tclWITHHOLES false (Tac2val.apply f [ans]) sigma
 
 let () =
   define "progress" (closure @-> tac valexpr) @@ fun f ->

@@ -13,7 +13,7 @@ open Names
 open Libnames
 open Nametab
 open Tac2expr
-open Tac2ffi
+open Tac2val
 
 (** Ltac2 global environment *)
 
