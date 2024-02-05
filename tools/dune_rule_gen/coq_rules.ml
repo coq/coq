@@ -79,7 +79,13 @@ let path_of_dep ~vo_ext dep =
   let open Coqdeplib.Dep_info in
   let file = match dep with
     | Dep.Require dep -> dep ^ vo_ext
-    | Dep.Ml (dep, _kind)-> dep ^ ".cmxs"
+    | Dep.Ml (dep, kind)->
+      assert (kind == Lib);
+      let suff =
+        if Coq_config.best_compiler = "opt" then ".cmxs"
+        else ".cma"
+      in
+      dep ^ suff
     | Dep.Other dep -> dep
   in
   Path.make file

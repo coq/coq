@@ -39,6 +39,9 @@ val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val vo_version : int32
 
+val best_compiler : string
+(** "opt" if ocamlopt is available, otherwise "byte" *)
+
 (* used in envars for coq_makefile *)
 val all_src_dirs : string list
 

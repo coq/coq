@@ -384,7 +384,7 @@ let print_summary prefs arch camlenv install_dirs browser =
 
 (** * Build the config/coq_config.ml file *)
 
-let write_configml install_prefix camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs o =
+let write_configml ~install_prefix ~camlenv ~coqenv ~caml_flags ~caml_version_nums ~arch ~arch_is_win32 ~hasnatdynlink ~browser ~best_compiler ~prefs o =
   let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
   let { CamlConf.caml_version; _ } = camlenv in
   let pr s = fprintf o s in
@@ -411,6 +411,7 @@ let write_configml install_prefix camlenv coqenv caml_flags caml_version_nums ar
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
+  pr_s "best_compiler" best_compiler;
   pr_s "arch" arch;
   pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" !exe;
@@ -495,7 +496,7 @@ let main () =
   if prefs.interactive then
     print_summary prefs arch camlenv install_dirs browser;
   write_config_file ~file:"config/coq_config.ml"
-    (write_configml install_prefix camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs);
+    (write_configml ~install_prefix ~camlenv ~coqenv ~caml_flags ~caml_version_nums ~arch ~arch_is_win32 ~hasnatdynlink ~browser ~best_compiler ~prefs);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()
