@@ -6,14 +6,14 @@ Call {Control.zero e}
 Prim <coq-core.plugins.ltac2:zero>
 Backtrace:
 
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None
 File "./output/ltac2_bt.v", line 9, characters 2-49:
 The command has indeed failed with message:
 Backtrace:
 Prim <coq-core.plugins.ltac2:plus>
 Call {Control.throw e}
 Prim <coq-core.plugins.ltac2:throw>
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None
 File "./output/ltac2_bt.v", line 10, characters 2-60:
 The command has indeed failed with message:
 Backtrace:
@@ -22,11 +22,11 @@ Call f
 Prim <coq-core.plugins.ltac2:zero>
 Backtrace:
 
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None
 File "./output/ltac2_bt.v", line 11, characters 2-61:
 The command has indeed failed with message:
 Backtrace:
 Prim <coq-core.plugins.ltac2:plus_bt>
 Call f
 Prim <coq-core.plugins.ltac2:zero>
-Uncaught Ltac2 exception: Invalid_argument (None)
+Uncaught Ltac2 exception: Invalid_argument None

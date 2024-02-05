@@ -16,6 +16,6 @@ constr:((fix add (n m : nat) {struct n} : nat :=
 - : constr = constr:(6)
 - : constr = constr:(1 + 2 + 3)
 - : constr = constr:(1 + 2 + 3)
-- : constr list = [constr:(0 <> 0); constr:(0 = 0 -> False);
-constr:((fun P : Prop => P -> False) (0 = 0)); constr:(
-0 <> 0)]
+- : constr list =
+[constr:(0 <> 0); constr:(0 = 0 -> False);
+ constr:((fun P : Prop => P -> False) (0 = 0)); constr:(0 <> 0)]

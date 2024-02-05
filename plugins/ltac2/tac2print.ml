@@ -737,12 +737,14 @@ let register_val_printer kn pr =
 
 open Tac2ffi
 
-let rec pr_valexpr env sigma v t = match kind t with
+let rec pr_valexpr_gen env sigma lvl v t = match kind t with
 | GTypVar _ -> str "<poly>"
 | GTypRef (Other kn, params) ->
   let pr = try Some (KNmap.find kn !printers) with Not_found -> None in
   begin match pr with
-  | Some pr -> pr.val_printer env sigma v params
+  | Some pr ->
+    (* for now assume all printers produce atomic expressions so no need to pass [lvl] *)
+    pr.val_printer env sigma v params
   | None ->
     let n, repr = Tac2env.interp_type kn in
     if KerName.equal kn t_list then
@@ -756,11 +758,15 @@ let rec pr_valexpr env sigma v t = match kind t with
       if Valexpr.is_int v then
         pr_internal_constructor kn (Tac2ffi.to_int v) true
       else
+        let paren = match lvl with
+          | E0 -> paren
+          | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+        in
         let (n, args) = Tac2ffi.to_block v in
         let (id, tpe) = find_constructor n false alg.galg_constructors in
         let knc = change_kn_label kn id in
         let args = pr_constrargs env sigma params args tpe in
-        hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
+        paren (pr_constructor knc ++ spc () ++ args)
     | GTydRec rcd ->
       let (_, args) = Tac2ffi.to_block v in
       pr_record env sigma params args rcd
@@ -768,9 +774,13 @@ let rec pr_valexpr env sigma v t = match kind t with
       begin match Tac2ffi.to_open v with
       | (knc, [||]) -> pr_constructor knc
       | (knc, args) ->
+        let paren = match lvl with
+          | E0 -> paren
+          | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+        in
         let data = Tac2env.interp_constructor knc in
         let args = pr_constrargs env sigma params args data.Tac2env.cdata_args in
-        hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
+        paren (pr_constructor knc ++ spc () ++ args)
       end
   end
 | GTypArrow _ -> str "<fun>"
@@ -778,7 +788,7 @@ let rec pr_valexpr env sigma v t = match kind t with
 | GTypRef (Tuple _, tl) ->
   let blk = Array.to_list (snd (to_block v)) in
   if List.length blk == List.length tl then
-    let prs = List.map2 (fun v t -> pr_valexpr env sigma v t) blk tl in
+    let prs = List.map2 (fun v t -> pr_valexpr_gen env sigma E1 v t) blk tl in
     hv 2 (str "(" ++ prlist_with_sep pr_comma (fun p -> p) prs ++ str ")")
   else
     str "<unknown>"
@@ -788,7 +798,7 @@ and pr_constrargs env sigma params args tpe =
   let tpe = List.map (fun t -> subst_type subst t) tpe in
   let args = Array.to_list args in
   let args = List.combine args tpe in
-  prlist_with_sep pr_comma (fun (v, t) -> pr_valexpr env sigma v t) args
+  pr_sequence (fun (v, t) -> pr_valexpr_gen env sigma E0 v t) args
 
 and pr_record env sigma params args rcd =
   let subst = Array.of_list params in
@@ -797,13 +807,15 @@ and pr_record env sigma params args rcd =
   let args = Array.to_list args in
   let fields = List.combine rcd args in
   let pr_field ((id, t), arg) =
-    Id.print id ++ spc () ++ str ":=" ++ spc () ++ pr_valexpr env sigma arg t
+    Id.print id ++ spc () ++ str ":=" ++ spc () ++ pr_valexpr_gen env sigma E1 arg t
   in
   str "{" ++ spc () ++ prlist_with_sep pr_semicolon pr_field fields ++ spc () ++ str "}"
 
 and pr_val_list env sigma args tpe =
-  let pr v = pr_valexpr env sigma v tpe in
-  str "[" ++ prlist_with_sep pr_semicolon pr args ++ str "]"
+  let pr v = pr_valexpr_gen env sigma E4 v tpe in
+  hov 1 (str "[" ++ prlist_with_sep pr_semicolon pr args ++ str "]")
+
+let pr_valexpr env sigma v t = pr_valexpr_gen env sigma E5 v t
 
 let register_init n f =
   let kn = KerName.make Tac2env.coq_prefix (Label.make n) in
@@ -827,29 +839,29 @@ end
 let () = register_init "constr" begin fun env sigma c ->
   let c = to_constr c in
   let c = try Printer.pr_leconstr_env env sigma c with _ -> str "..." in
-  str "constr:(" ++ c ++ str ")"
+  hov 2 (str "constr:(" ++ c ++ str ")")
 end
 
 let () = register_init "preterm" begin fun env sigma c ->
   let c = to_preterm c in
   (* XXX should we get the ltac2 env out of the closure and print it too? Maybe with a debug flag? *)
   let c = try Printer.pr_closed_glob_env env sigma c with _ -> str "..." in
-  str "preterm:(" ++ c ++ str ")"
+  hov 2 (str "preterm:(" ++ c ++ str ")")
 end
 
 let () = register_init "pattern" begin fun env sigma c ->
   let c = to_pattern c in
   let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
-  str "pat:(" ++ c ++ str ")"
+  hov 2 (str "pat:(" ++ c ++ str ")")
 end
 
 let () = register_init "message" begin fun _ _ pp ->
-  str "message:(" ++ to_pp pp ++ str ")"
+  hov 2 (str "message:(" ++ to_pp pp ++ str ")")
 end
 
 let () = register_init "err" begin fun _ _ e ->
   let e = to_ext val_exn e in
-  str "err:(" ++ CErrors.iprint_no_report e ++ str ")"
+  hov 2 (str "err:(" ++ CErrors.iprint_no_report e ++ str ")")
 end
 
 let () =

@@ -1,3 +1,3 @@
 File "./output/bug_16716.v", line 11, characters 0-55:
 The command has indeed failed with message:
-Uncaught Ltac2 exception: E (constr:(?X4.(r _)))
+Uncaught Ltac2 exception: E constr:(?X4.(r _))
