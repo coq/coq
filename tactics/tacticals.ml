@@ -119,7 +119,7 @@ let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
         begin match Declareops.dest_recarg recarg with
         | Norec | Mrec (RecArgPrim _)  -> true :: rest
         | Mrec (RecArgInd ind) ->
-            if rec_flag && Names.Ind.CanOrd.equal ity ind then true :: true :: rest
+            if rec_flag && Environ.QInd.equal env ity ind then true :: true :: rest
             else true :: rest
         end
     | RelDecl.LocalDef _ :: c, rest -> false :: analrec c rest
