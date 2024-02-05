@@ -39,8 +39,8 @@ type [@warning "-37"] sort_source =
 
 type sort_name_decl = {
   sdecl_src : sort_source; (* global sort introduced by some global value *)
-  sdecl_named : (Id.t * Sorts.QVar.t) list;
-  sdecl_anon : Sorts.QVar.t list;
+  sdecl_named : (Id.t * UGlobal.t) list;
+  (* sdecl_anon : UGlobal.t list; *)
 }
 
 let check_exists_universe sp =
@@ -123,7 +123,9 @@ let do_sort_name ~check i dp src (id,quality) =
   Nametab.push_sort i sp quality 
 
 let get_sort_names decl =
-  let fold accu (id, _) = Id.Set.add id accu in
+  (* List.map (function (name, id) -> name, Sorts.QVar.make_global id)  *)
+  decl.sdecl_named
+  (* let fold accu (id, _) = Id.Set.add id accu in
   let names = List.fold_left fold Id.Set.empty decl.sdecl_named in
   (* create fresh names for anonymous qualities *)
   let fold u ((names, cnt), accu) =
@@ -134,8 +136,9 @@ let get_sort_names decl =
     let (id, cnt) = aux cnt in
     ((Id.Set.add id names, cnt + 1), ((id, u) :: accu))
   in
-  let _, qualities = List.fold_right fold decl.sdecl_anon ((names, 0), decl.sdecl_named) in
-  qualities
+  let named = List.map (function (name, id) -> name, Sorts.QVar.make_global id) decl.sdecl_named in
+  let _, qualities = List.fold_right fold decl.sdecl_anon ((names, 0), named) in
+  qualities *)
 
 let cache_sort_names (prefix, decl) =
   let depth = Lib.sections_depth () in
@@ -167,9 +170,9 @@ let input_sort_names : sort_name_decl -> Libobject.obj =
       subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute) }
 
-let input_sort_names (src, l, a) =
-  if CList.is_empty l && CList.is_empty a then ()
-  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l; sdecl_anon = a })
+let input_sort_names (src, l) =
+  if CList.is_empty l then ()
+  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l; (* sdecl_anon = a *) })
 
 
 let label_of = let open GlobRef in function
@@ -232,8 +235,8 @@ let do_sort l =
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global ())) l in
   let src = UnqualifiedQuality in
      (* if in_section then BoundQuality else UnqualifiedQuality in *)
-  let () = input_sort_names (src, l, []) in
-  let qs = List.fold_left  (fun qs (_, qv) -> Sorts.QVar.Set.add qv qs)
+  let () = input_sort_names (src, l) in
+  let qs = List.fold_left  (fun qs (_, qv) -> Sorts.QVar.(Set.add (make_global qv) qs))
     Sorts.QVar.Set.empty l
   in
   Global.push_quality_set qs

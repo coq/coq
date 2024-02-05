@@ -19,20 +19,24 @@ struct
   type repr =
     | Var of int
     | Unif of string * int
-
+    | Global of UGlobal.t
   type t = repr
 
   let make_var n = Var n
 
   let make_unif s n = Unif (s,n)
 
+  let make_global id = Global id
+
   let var_index = function
     | Var q -> Some q
     | Unif _ -> None
+    | Global _ -> None
 
   let hash = function
     | Var q -> Hashset.Combine.combinesmall 1 q
     | Unif (s,q) -> Hashset.Combine.(combinesmall 2 (combine (CString.hash s) q))
+    | Global id -> Hashset.Combine.combinesmall 3 (UGlobal.hash id)
 
   module Hstruct = struct
     type nonrec t = t
@@ -43,12 +47,14 @@ struct
       | Unif (s,i) as q ->
         let s' = CString.hcons s in
         if s == s' then q else Unif (s',i)
+      | Global _id as q -> q
 
     let eq a b =
       match a, b with
       | Var a, Var b -> Int.equal a b
       | Unif (sa, ia), Unif (sb, ib) -> sa == sb && Int.equal ia ib
-      | (Var _ | Unif _), _ -> false
+      | Global ida, Global idb -> UGlobal.compare ida idb = 0
+      | (Var _ | Unif _| Global _), _ -> false
 
     let hash = hash
   end
@@ -63,20 +69,25 @@ struct
       let c = Int.compare i1 i2 in
       if c <> 0 then c
       else CString.compare s1 s2
-    | Var _, Unif _ -> -1
+    | Global ida, Global idb -> UGlobal.compare ida idb
+    | Var _, (Unif  _ | Global _) -> -1
     | Unif _, Var _ -> 1
+    | Unif _, Global _ -> -1
+    | Global _, (Var _ | Unif _) -> -1
 
   let equal a b = match a, b with
     | Var a, Var b ->  Int.equal a b
     | Unif (s1,i1), Unif (s2,i2) ->
       Int.equal i1 i2 && CString.equal s1 s2
-    | Var _, Unif _ | Unif _, Var _ -> false
+    | Global ida, Global idb -> UGlobal.compare ida idb = 0
+    | (Var _| Unif _ | Global _), _ -> false
 
   let to_string = function
     | Var q -> Printf.sprintf "β%d" q
     | Unif (s,q) ->
       let s = if CString.is_empty s then "" else s^"." in
       Printf.sprintf "%sα%d" s q
+    | Global id -> Printf.sprintf "γ%s" (UGlobal.to_string id)
 
   let raw_pr q = Pp.str (to_string q)
 

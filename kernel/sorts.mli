@@ -22,6 +22,7 @@ sig
 
   val make_var : int -> t
   val make_unif : string -> int -> t
+  val make_global : Univ.UGlobal.t -> t
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
@@ -37,6 +38,7 @@ sig
   type repr =
     | Var of int
     | Unif of string * int
+    | Global of Univ.UGlobal.t
 
   val repr : t -> repr
   val of_repr : repr -> t

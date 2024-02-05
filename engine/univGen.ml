@@ -66,11 +66,15 @@ let new_sort_id =
 
 let new_sort_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
+  Univ.UGlobal.make (Global.current_dirpath ()) s (new_sort_id ())
+
+let fresh_sort_quality () =
+  let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
   Sorts.QVar.make_unif s (new_sort_id ())
 
 let fresh_instance auctx : _ in_sort_context_set =
   let qlen, ulen = AbstractContext.size auctx in
-  let qinst = Array.init qlen (fun _ -> Sorts.Quality.QVar (new_sort_global())) in
+  let qinst = Array.init qlen (fun _ -> Sorts.Quality.QVar (fresh_sort_quality ())) in
   let uinst = Array.init ulen (fun _ -> fresh_level()) in
   let qctx = Array.fold_left (fun qctx q -> match q with
       | Sorts.Quality.QVar q -> Sorts.QVar.Set.add q qctx
@@ -159,7 +163,7 @@ let fresh_universe_context_set_instance ctx =
 let fresh_sort_context_instance ((qs,us),csts) =
   let usubst, (us, csts) = fresh_universe_context_set_instance (us,csts) in
   let qsubst, qs = QVar.Set.fold (fun q (qsubst,qs) ->
-      let q' = new_sort_global () in
+      let q' = fresh_sort_quality () in
       QVar.Map.add q (Sorts.Quality.QVar q') qsubst, QVar.Set.add q' qs)
       qs
       (QVar.Map.empty, QVar.Set.empty)

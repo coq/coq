@@ -1231,7 +1231,7 @@ let intern_qvar ~local_univs = function
     match local with
     | Some u -> GQVar u
     | None ->
-      try GQVar (Nametab.locate_quality qid)
+      try GQVar (Sorts.QVar.make_global (Nametab.locate_quality qid))
       with Not_found ->
         if is_id && local_univs.unb_univs
         then GLocalQVar (CAst.make ?loc:qid.loc (Name (qualid_basename qid)))
