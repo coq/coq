@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
@@ -17,17 +17,15 @@ make clean
 make src/evil_plugin.cmxs
 make src/good_plugin.cmxs
 
-RC=1
-# must fail
-coqc -async-proofs on  -I src -Q theories Marshal theories/evil.v 2> log1 1>&2 || RC=0
-#   for this reason
-grep -q 'Marshalling error' log1 || RC=1
+if coqc -async-proofs on  -I src -Q theories Marshal theories/evil.v 2> log1 1>&2; then
+  >&2 echo "evil.v should have failed with async proofs on"
+  exit 1
+fi
+if ! grep -q 'Marshalling error' log1; then
+  >&2 echo "Missing expected error message in evil.v output"
+  exit 1
+fi
 
-# must work
 coqc -async-proofs off -I src -Q theories Marshal theories/evil.v
 
-# must work
 coqc -async-proofs on  -I src -Q theories Marshal theories/good.v
-
-
-exit $RC
