@@ -708,10 +708,11 @@ open Polynomial
 let pivot v (a, c1, p1) (c2, p2) =
   let {coeffs = v1; op = op1; cst = n1} = c1
   and {coeffs = v2; op = op2; cst = n2} = c2 in
+  let () = assert (op1 == Eq) in
   (* Could factorise gcd... *)
   let xpivot cv1 cv2 =
     ( { coeffs = Vect.add (Vect.mul cv1 v1) (Vect.mul cv2 v2)
-      ; op = opAdd op1 op2
+      ; op = opAdd Eq op2
       ; cst = (n1 */ cv1) +/ (n2 */ cv2) }
     , ProofFormat.add_proof
         (ProofFormat.mul_cst_proof cv1 p1)
@@ -722,13 +723,9 @@ let pivot v (a, c1, p1) (c2, p2) =
   else if Int.equal (Q.sign a * Q.sign b) (-1) then
     let cv1 = Q.abs b and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op1 == Eq then
+  else
     let cv1 = Q.neg (b */ Q.of_int (Q.sign a)) and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op2 == Eq then
-    let cv1 = Q.abs b and cv2 = Q.neg (a */ Q.of_int (Q.sign b)) in
-    Some (xpivot cv1 cv2)
-  else None
 
 let pivot v c1 c2 =
   let res = pivot v c1 c2 in
@@ -752,25 +749,29 @@ let rec ext_gcd a b =
     (t, Z_.sub s (Z_.mul q t))
 
 let extract_coprime (c1, p1) (c2, p2) =
-  if c1.op == Eq && c2.op == Eq then
+  let () = assert (c1.op == Eq) in
+  if c2.op == Eq then
     Vect.exists2
       (fun n1 n2 ->
         Int.equal (Z_.compare (Z_.gcd (Q.num n1) (Q.num n2)) Z_.one) 0)
       c1.coeffs c2.coeffs
   else None
 
-let extract2 pred l =
+let extract_coprime_equation psys =
   let rec xextract2 rl l =
     match l with
     | [] -> (None, rl) (* Did not find *)
-    | e :: l -> (
-      match extract (pred e) l with
-      | None, _ -> xextract2 (e :: rl) l
-      | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l') )
+    | e :: l ->
+      match (fst e).op with
+      | Eq ->
+        begin match extract (extract_coprime e) l with
+        | None, _ -> xextract2 (e :: rl) l
+        | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l')
+        end
+      | Gt | Ge -> xextract2 (e :: rl) l
   in
-  xextract2 [] l
+  xextract2 [] psys
 
-let extract_coprime_equation psys = extract2 extract_coprime psys
 let pivot_sys v (cstr, prf) psys =
   let a = Vect.get v cstr.coeffs in
   if a =/ Q.zero then List.rev psys
@@ -809,7 +810,9 @@ let reduce_unary psys =
   let oeq, sys = extract is_unary_equation psys in
   match oeq with
   | None -> None (* Nothing to do *)
-  | Some (v, pc) -> Some (pivot_sys v pc sys)
+  | Some (v, (cstr, prf)) ->
+    let () = assert (cstr.op == Eq) in
+    Some (pivot_sys v (cstr, prf) sys)
 
 let reduce_var_change psys =
   let rec rel_prime vect =
