@@ -644,6 +644,9 @@ library:ci-cross_crypto:
 library:ci-engine_bench:
   extends: .ci-template
 
+library:ci-ext_lib:
+  extends: .ci-template-flambda
+
 library:ci-fcsl_pcm:
   extends: .ci-template-flambda
   needs:
@@ -777,7 +780,21 @@ library:ci-itree:
   extends: .ci-template-flambda
   needs:
     - build:edge+flambda
+    - library:ci-ext_lib
     - library:ci-paco
+
+library:ci-itree_io:
+  extends: .ci-template-flambda
+  needs:
+    - build:edge+flambda
+    - library:ci-simple_io
+    - library:ci-itree
+
+library:ci-simple_io:
+  extends: .ci-template-flambda
+  needs:
+    - build:edge+flambda
+    - library:ci-ext_lib
 
 library:ci-sf:
   extends: .ci-template
@@ -837,7 +854,7 @@ library:ci-http:
   needs:
   - build:edge+flambda
   - library:ci-menhir
-  - library:ci-itree
+  - library:ci-itree_io
   - plugin:ci-quickchick
 
 # Plugins are by definition the projects that depend on Coq's ML API
@@ -926,6 +943,8 @@ plugin:ci-quickchick:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-ext_lib
+  - library:ci-simple_io
   - library:ci-mathcomp_1
 
 plugin:ci-quickchick_test:
