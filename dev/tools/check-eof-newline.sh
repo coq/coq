@@ -15,13 +15,13 @@ then
    shift
 fi
 
-RED="\033[31m"
+REDBOLD="\033[31m"
 YELLOW="\033[33m"
 RESET="\033[0m"
 
 function colorprint
 {
-  if [ -t 1 ] && ! [ "$TERM" = dumb ]; then
+  if [ "$COQ_CI_COLOR" ]; then
     printf "$1%s$RESET\n" "$2"
   else
     printf '%s\n' "$2"
@@ -41,11 +41,11 @@ for f in "$@"; do
                 echo >> "$f"
                 colorprint "$YELLOW" "Newline appended to file $f!"
             else
-                colorprint "$RED" "File $f is missing a newline and not writable!"
+                colorprint "$REDBOLD" "File $f is missing a newline and not writable!"
                 CODE=1
             fi
         else
-            colorprint "$RED" "No newline at end of file $f!"
+            colorprint "$REDBOLD" "No newline at end of file $f!"
             CODE=1
         fi
     fi
