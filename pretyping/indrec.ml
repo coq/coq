@@ -309,7 +309,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) (mind,tyi) cs rec
               | [] -> None,[]
               | ra::rest ->
                   (match dest_recarg ra with
-                    | Mrec (RecArgInd (mind',j)) -> ((if is_rec && Names.MutInd.CanOrd.equal mind mind' then depPvect.(j) else None),rest)
+                    | Mrec (RecArgInd (mind',j)) -> ((if is_rec && QMutInd.equal env mind mind' then depPvect.(j) else None),rest)
                     | Norec | Mrec (RecArgPrim _) -> (None,rest))
           in
           (match optionpos with
@@ -382,7 +382,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) mind f cstr recargs =
         let optionpos =
           match dest_recarg recarg with
             | Norec | Mrec (RecArgPrim _) -> None
-            | Mrec (RecArgInd (mind',i)) -> if Names.MutInd.CanOrd.equal mind mind' then fvect.(i) else None
+            | Mrec (RecArgInd (mind',i)) -> if QMutInd.equal env mind mind' then fvect.(i) else None
         in
         (match optionpos with
            | None ->
