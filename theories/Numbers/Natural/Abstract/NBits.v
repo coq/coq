@@ -62,7 +62,7 @@ Proof.
 Qed.
 
 (** A useful induction lemma to reason on bits *)
-Lemma Even_Odd_induction (A : t -> Prop) : (Proper (eq ==> iff) A) -> A 0 ->
+Lemma binary_induction (A : t -> Prop) : (Proper (eq ==> iff) A) -> A 0 ->
   (forall n, A n -> A (2 * n) /\ A (2 * n + 1)) -> (forall n, A n).
 Proof.
   intros H H0 I.
@@ -588,6 +588,16 @@ Proof.
   - exact (le_add_r _ _).
 Qed.
 
+Lemma div2_le_upper_bound a q : a <= 2 * q -> div2 a <= q.
+Proof.
+  rewrite div2_div, two_succ; apply div_le_upper_bound; exact (neq_succ_0 _).
+Qed.
+
+Lemma div2_le_lower_bound a q : 2 * q <= a -> q <= div2 a.
+Proof.
+  rewrite div2_div, two_succ; apply div_le_lower_bound; exact (neq_succ_0 _).
+Qed.
+
 (** Properties of [lxor] and others, directly deduced
     from properties of [xorb] and others. *)
 
@@ -722,7 +732,7 @@ Proof.
  intros. bitwise. apply andb_diag.
 Qed.
 
-Lemma land_even_even : forall a b, land (2 * a) (2 * b) == 2 * (land a b).
+Lemma land_even_even : forall a b, land (2 * a) (2 * b) == 2 * land a b.
 Proof.
   intros a b; apply bits_inj; intros m.
   destruct (zero_or_succ m) as [-> | [m' ->]].
@@ -731,7 +741,7 @@ Proof.
       [reflexivity | exact (le_0_l _)..].
 Qed.
 
-Lemma land_odd_even : forall a b, land (2 * a + 1) (2 * b) == 2 * (land a b).
+Lemma land_odd_even : forall a b, land (2 * a + 1) (2 * b) == 2 * land a b.
 Proof.
   intros a b; apply bits_inj; intros m.
   destruct (zero_or_succ m) as [-> | [m' ->]].
@@ -740,7 +750,7 @@ Proof.
       [reflexivity | exact (le_0_l _)..].
 Qed.
 
-Lemma land_even_odd : forall a b, land (2 * a) (2 * b + 1) == 2 * (land a b).
+Lemma land_even_odd : forall a b, land (2 * a) (2 * b + 1) == 2 * land a b.
 Proof.
   intros a b; rewrite (land_comm (2 * a)), (land_comm a).
   exact (land_odd_even _ _).
@@ -759,7 +769,7 @@ Qed.
 Lemma land_le_l :
   forall a b, land a b <= a.
 Proof.
-  apply (Even_Odd_induction (fun a => forall b, land a b <= a)).
+  apply (binary_induction (fun a => forall b, land a b <= a)).
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite land_0_l; exact (le_refl _).
   - intros a H; split; intros b;
@@ -792,7 +802,7 @@ Proof.
  intros. bitwise. apply andb_negb_r.
 Qed.
 
-Lemma ldiff_even_even : forall a b, ldiff (2 * a) (2 * b) == 2 * (ldiff a b).
+Lemma ldiff_even_even : forall a b, ldiff (2 * a) (2 * b) == 2 * ldiff a b.
 Proof.
   intros a b; apply bits_inj; intros m.
   destruct (zero_or_succ m) as [-> | [m' ->]].
@@ -811,7 +821,7 @@ Proof.
       by (exact (le_0_l _)); reflexivity.
 Qed.
 
-Lemma ldiff_even_odd : forall a b, ldiff (2 * a) (2 * b + 1) == 2 * (ldiff a b).
+Lemma ldiff_even_odd : forall a b, ldiff (2 * a) (2 * b + 1) == 2 * ldiff a b.
 Proof.
   intros a b; apply bits_inj; intros m.
   destruct (zero_or_succ m) as [-> | [m' ->]].
@@ -822,7 +832,7 @@ Proof.
 Qed.
 
 Lemma ldiff_odd_odd :
-  forall a b, ldiff (2 * a + 1) (2 * b + 1) == 2 * (ldiff a b).
+  forall a b, ldiff (2 * a + 1) (2 * b + 1) == 2 * ldiff a b.
 Proof.
   intros a b; apply bits_inj; intros m.
   destruct (zero_or_succ m) as [-> | [m' ->]].
@@ -834,7 +844,7 @@ Qed.
 Lemma ldiff_le_l :
   forall a b, ldiff a b <= a.
 Proof.
-  apply (Even_Odd_induction (fun a => forall b, ldiff a b <= a)).
+  apply (binary_induction (fun a => forall b, ldiff a b <= a)).
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite ldiff_0_l; exact (le_0_l _).
   - intros a H; split; intros b;
@@ -1056,14 +1066,14 @@ Qed.
 
 (** Shifts and order *)
 
-Lemma le_shiftl : forall a n, a <= a << n.
+Lemma shiftl_lower_bound : forall a n, a <= a << n.
 Proof.
   intros a n; rewrite shiftl_mul_pow2; rewrite <-(mul_1_r a) at 1.
   apply mul_le_mono_l.
   rewrite <-(pow_1_l n); apply pow_le_mono_l, lt_le_incl; exact lt_1_2.
 Qed.
 
-Lemma shiftr_le : forall a n, a >> n <= a.
+Lemma shiftr_upper_bound : forall a n, a >> n <= a.
 Proof.
   intros a n; rewrite shiftr_div_pow2.
   apply div_le_upper_bound.
