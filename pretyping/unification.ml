@@ -1846,7 +1846,7 @@ let keyed_unify env evd kop =
     | None -> fun _ -> true
     | Some kop ->
       fun cl ->
-        let kc = Keys.constr_key (fun c -> EConstr.kind evd c) cl in
+        let kc = Keys.constr_key env (fun c -> EConstr.kind evd c) cl in
           match kc with
           | None -> false
           | Some kc -> Keys.equiv_keys kop kc
@@ -1982,7 +1982,7 @@ end
    Fails if no match is found *)
 let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let bestexn = ref None in
-  let kop = Keys.constr_key (fun c -> EConstr.kind evd c) op in
+  let kop = Keys.constr_key env (fun c -> EConstr.kind evd c) op in
   let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
     let rec strip_outer_cast c = match AConstr.kind c with
