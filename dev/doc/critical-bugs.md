@@ -1,7 +1,7 @@
 Compilation of critical bugs in stable releases of Coq
 ======================================================
 
-WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
+This file recollects knowledge about critical bugs found in Coq since version 8.0.
 
 <!-- generate using dev/tools/markdown-toc -->
 
