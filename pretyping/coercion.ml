@@ -475,56 +475,37 @@ type delayed_app_body = {
   mutable head : constr;
   mutable rev_args : constr list;
   args_len : int;
-  proj : (Projection.Repr.t * Sorts.relevance) option
 }
 
-let force_app_body ({head;rev_args} as body) =
-  let head = mkApp (head, Array.rev_of_list rev_args) in
+let force_app_body env sigma ({head;rev_args;args_len} as body) =
+  let args = List.rev rev_args in
+  let isproj =
+    let _, head = decompose_lambda_decls sigma head in
+    match kind sigma head with
+    | Proj (p, r, c) -> true
+    | _ -> false in
+  let head = if isproj then beta_applist sigma (head, args) else applist (head, args) in
   body.head <- head;
   body.rev_args <- [];
   head
 
-let push_arg {head;rev_args;args_len;proj} arg =
-  match proj with
-  | None ->
-    {
-      head;
-      rev_args=arg::rev_args;
-      args_len=args_len+1;
-      proj=None;
-    }
-  | Some (p,r) ->
-    let npars = Projection.Repr.npars p in
-    if Int.equal args_len npars then
-      {
-        head = mkProj (Projection.make p false, r, arg);
-        rev_args=[];
-        args_len=0;
-        proj=None;
-      }
-    else
-      {
-        head;
-        rev_args=arg::rev_args;
-        args_len=args_len+1;
-        proj;
-      }
+let push_arg {head;rev_args;args_len} arg =
+  {
+    head;
+    rev_args=arg::rev_args;
+    args_len=args_len+1;
+  }
 
-let start_app_body sigma head =
-  let proj = match EConstr.kind sigma head with
-    | Const (p,u) ->
-      Structures.PrimitiveProjections.find_opt_with_relevance (p,u)
-    | _ -> None
-  in
-  {head; rev_args=[]; args_len=0; proj}
+let start_app_body env sigma head =
+  {head; rev_args=[]; args_len=0}
 
-let reapply_coercions_body sigma trace body =
+let reapply_coercions_body env sigma trace body =
   match trace with
   | IdCoe -> body
   | _ ->
-    let body = force_app_body body in
+    let body = force_app_body env sigma body in
     let body = reapply_coercions sigma trace body in
-    start_app_body sigma body
+    start_app_body env sigma body
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core ~program_mode ?(use_coercions=true) env sigma body typ =
@@ -534,17 +515,17 @@ let inh_app_fun_core ~program_mode ?(use_coercions=true) env sigma body typ =
     try
       if not use_coercions then raise NoCoercion;
       let p = lookup_path_to_fun_from env sigma typ in
-      let body = force_app_body body in
+      let body = force_app_body env sigma body in
       let sigma, body, typ, trace = apply_coercion env sigma p body typ in
-      sigma, start_app_body sigma body, typ, trace
+      sigma, start_app_body env sigma body, typ, trace
     with (Not_found | NoCoercion) as exn ->
       let _, info = Exninfo.capture exn in
       if program_mode then
         try
           let sigma, (coercef, t, trace) = mu env sigma t in
-          let j = {uj_val=force_app_body body; uj_type = typ} in
+          let j = {uj_val=force_app_body env sigma body; uj_type = typ} in
           let sigma, uj_val = app_opt env sigma coercef j.uj_val in
-          (sigma, start_app_body sigma uj_val, t, trace)
+          (sigma, start_app_body env sigma uj_val, t, trace)
         with NoSubtacCoercion | NoCoercion ->
           (sigma,body,typ,IdCoe)
       else Exninfo.iraise (NoCoercion,info)

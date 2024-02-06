@@ -484,7 +484,18 @@ let pretype_global ?loc rigid env evd gr us =
     | None -> evd, None
     | Some l -> instance ?loc evd l
   in
-  Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
+  let sigma, c = Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr in
+  let c =
+    match kind evd c with
+    | Const (cst,u) ->
+      (match Structures.PrimitiveProjections.find_opt_with_relevance (cst,u) with
+       | Some (p,r) ->
+         let npardecls = List.length (lookup_mind (fst (Projection.Repr.inductive p)) !!env).mind_params_ctxt in
+         let ctx, _ = Term.decompose_prod_n_decls (npardecls+1) (Typeops.type_of_constant_in !!env (cst, EInstance.kind evd u)) in
+         it_mkLambda_or_LetIn (mkProj (Projection.make p false, r, mkRel 1)) (EConstr.of_rel_context ctx)
+       | None -> c)
+    | _ -> c in
+  sigma, c
 
 let pretype_ref ?loc sigma env ref us =
   match ref with
@@ -896,7 +907,7 @@ struct
     let rec apply_rec env sigma n body (subs, typ) val_before_bidi candargs bidiargs = function
       | [] ->
         let typ = Vars.esubst Vars.lift_substituend subs typ in
-        let body = Coercion.force_app_body body in
+        let body = Coercion.force_app_body !!env sigma body in
         let resj = { uj_val = body; uj_type = typ } in
         sigma, resj, val_before_bidi, List.rev bidiargs
       | c::rest ->
@@ -915,7 +926,7 @@ struct
           | Prod (na, c1, c2) -> (na, c1, c2)
           | _ ->
             let sigma, hj = pretype empty_tycon env sigma c in
-            let resj = { uj_val = Coercion.force_app_body body; uj_type = typ } in
+            let resj = { uj_val = Coercion.force_app_body !!env sigma body; uj_type = typ } in
             error_cant_apply_not_functional
               ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
           in
@@ -950,7 +961,7 @@ struct
         apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs bidiargs rest
     in
     let typ = (Esubst.subs_id 0, fj.uj_type) in
-    let body = (Coercion.start_app_body sigma fj.uj_val) in
+    let body = (Coercion.start_app_body !!env sigma fj.uj_val) in
     let sigma, resj, val_before_bidi, bidiargs =
       apply_rec env sigma 0 body typ body candargs [] args
     in
@@ -967,13 +978,13 @@ struct
         with Evarconv.UnableToUnify (sigma,e) ->
           raise (PretypeError (!!env,sigma,CannotUnify (newarg,j_val j,Some e)))
       in
-      sigma, Coercion.push_arg (Coercion.reapply_coercions_body sigma trace t) (j_val j)
+      sigma, Coercion.push_arg (Coercion.reapply_coercions_body !!env sigma trace t) (j_val j)
     in
     (* We now refine any arguments whose typing was delayed for
        bidirectionality *)
     let t = val_before_bidi in
     let sigma, t = List.fold_left_i refine_arg nargs_before_bidi (sigma,t) bidiargs in
-    let t = Coercion.force_app_body t in
+    let t = Coercion.force_app_body !!env sigma t in
     (* If we did not get a coercion trace (e.g. with `Program` coercions, we
        replaced user-provided arguments with inferred ones. Otherwise, we apply
        the coercion trace to the user-provided arguments. *)

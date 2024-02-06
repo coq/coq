@@ -80,13 +80,13 @@ val deactivate_hook : name:string -> unit
 
 type delayed_app_body
 
-val start_app_body : evar_map -> constr -> delayed_app_body
+val start_app_body : env -> evar_map -> constr -> delayed_app_body
 
 val push_arg : delayed_app_body -> constr -> delayed_app_body
 
-val force_app_body : delayed_app_body -> constr
+val force_app_body : env -> evar_map -> delayed_app_body -> constr
 
-val reapply_coercions_body : evar_map -> coercion_trace -> delayed_app_body -> delayed_app_body
+val reapply_coercions_body : env -> evar_map -> coercion_trace -> delayed_app_body -> delayed_app_body
 
 (** [inh_app_fun resolve_tc env isevars j] coerces [j] to a function; i.e. it
     inserts a coercion into [j], if needed, in such a way it gets as
