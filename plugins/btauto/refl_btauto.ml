@@ -93,7 +93,7 @@ module Bool = struct
   | Negb of t
   | Ifb of t * t * t
 
-  let quote (env : Env.t) sigma (c : Constr.t) : t =
+  let quote (env : Env.t) genv sigma (c : Constr.t) : t =
     let trueb = Lazy.force trueb in
     let falseb = Lazy.force falseb in
     let andb = Lazy.force andb in
@@ -115,7 +115,7 @@ module Bool = struct
     | Case (info, _, _, _, _, arg, pats) ->
       let is_bool =
         let i = info.ci_ind in
-        Names.Ind.CanOrd.equal i (Lazy.force ind)
+        Environ.QInd.equal genv i (Lazy.force ind)
       in
       if is_bool then
         Ifb ((aux arg), (aux (snd pats.(0))), (aux (snd pats.(1))))
@@ -239,8 +239,8 @@ module Btauto = struct
       | App (c, [|typ; tl; tr|])
           when typ === bool && c === eq ->
           let env = Env.empty () in
-          let fl = Bool.quote env sigma tl in
-          let fr = Bool.quote env sigma tr in
+          let fl = Bool.quote env (Tacmach.pf_env gl) sigma tl in
+          let fr = Bool.quote env (Tacmach.pf_env gl) sigma tr in
           let env = Env.to_list env in
           let fl = reify env fl in
           let fr = reify env fr in
