@@ -181,7 +181,8 @@ let require_file ~prefix ~lib ~export =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
+  let intern = Vernacinterp.fs_intern in
+  Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
   CWarnings.create_in Nativeconv.w_native_disabled
