@@ -139,7 +139,7 @@ sig
   val mkProduct : (Sorts.t * Sorts.t) -> t
   val mkEps : Id.t -> t
   val mkAppli : (t * t) -> t
-  val mkConstructor : cinfo -> t
+  val mkConstructor : Environ.env -> cinfo -> t
 
   val equal : t -> t -> bool
   val constr : t -> constr
@@ -162,7 +162,7 @@ struct
       | Appli (t1', u1'), Appli (t2', u2') -> term_equal t1'.term t2'.term && term_equal u1'.term u2'.term
       | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
         Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
-          Int.equal i1 i2 && Int.equal j1 j2 && Construct.CanOrd.equal c1 c2 (* FIXME check eq? *)
+          Int.equal i1 i2 && Int.equal j1 j2 && Construct.UserOrd.equal c1 c2
       | _ -> false
 
   let equal t1 t2 = term_equal t1.term t2.term
@@ -175,7 +175,7 @@ struct
     | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
     | Eps i -> combine 3 (Id.hash i)
     | Appli (t1', t2') -> combine3 4 (t1'.hash) (t2'.hash)
-    | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (Construct.CanOrd.hash c) i j
+    | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (Construct.UserOrd.hash c) i j
 
   let hash t = t.hash
 
@@ -223,7 +223,10 @@ struct
 
   let mkAppli (t1', t2') = make (Appli (t1', t2'))
 
-  let mkConstructor info = make (Constructor info)
+  let mkConstructor env info =
+    let canon i = Environ.QConstruct.canonize env i in
+    let info = { info with ci_constr = on_fst canon info.ci_constr } in
+    make (Constructor info)
 
   let rec nth_arg t n =
     match t.term with

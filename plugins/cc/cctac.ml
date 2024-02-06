@@ -64,14 +64,11 @@ let rec decompose_term env sigma t =
         ATerm.mkAppli (ATerm.mkAppli (ATerm.mkProduct (sort_a,sort_b),
                     decompose_term env sigma a),
               decompose_term env sigma b)
-    | Construct c ->
-        let (((mind,i_ind),i_con),u)= c in
+    | Construct ((ind, _ as cstr), u) ->
         let u = EInstance.kind sigma u in
-        let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-        let canon_ind = canon_mind,i_ind in
-        let (oib,_)=Global.lookup_inductive (canon_ind) in
-        let nargs=constructor_nallargs env (canon_ind,i_con) in
-          ATerm.mkConstructor {ci_constr= ((canon_ind,i_con),u);
+        let oib = Environ.lookup_mind (fst ind) env in
+        let nargs = constructor_nallargs env cstr in
+        ATerm.mkConstructor env {ci_constr = (cstr, u);
                        ci_arity=nargs;
                        ci_nhyps=nargs-oib.mind_nparams}
     | Ind c ->
