@@ -42,7 +42,7 @@ let has_ref s = CString.Map.mem s !table
 
 let check_ind_ref s ind =
   match CString.Map.find s !table with
-  | GlobRef.IndRef r -> Ind.CanOrd.equal r ind
+  | GlobRef.IndRef r -> Ind.UserOrd.equal r ind
   | _ -> false
   | exception Not_found -> false
 
