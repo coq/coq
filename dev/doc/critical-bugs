@@ -137,6 +137,17 @@ Typing constructions
   GH issue number: none?
   risk: ?
 
+  component: sort polymorphism / proof irrelevance
+  summary: incorrect abstraction of sort variables in relevance marks on opaque constants
+    and lack of checking of relevance marks on constants in coqchk
+  introduced: V8.10 for the coqchk bug, V8.19 for the coqc bug
+  impacted released versions: V8.19.0
+  impacted coqchk: versions: V8.10-V8.19.0
+  fixed in: V8.19.1, V8.20
+  found by: Gaëtan Gilbert
+  exploit / GH issue: #18629
+  risk: low (requires specific plugin code unlikely to be found in non malicious plugin)
+
 Module system
 
   component: modules, universes
