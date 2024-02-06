@@ -209,6 +209,10 @@ let do_universe ~poly l =
 
     (* TODO: move to its proper place *)
 let do_sort l =
+  let () =
+    if Lib.is_modtype () 
+    then CErrors.user_err (Pp.str "Cannot declare global sort qualities in a module type.") 
+  in
   (* let in_section = Lib.sections_are_opened () in *)
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global id)) l in
   let src = UnqualifiedQuality in
