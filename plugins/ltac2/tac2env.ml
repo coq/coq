@@ -129,13 +129,14 @@ module MLMap = Map.Make(ML)
 
 let primitive_map = ref MLMap.empty
 
-let define_primitive name f =
+let define_primitive name ty f =
   let f = match f with
     | ValCls f -> ValCls (annotate_closure (FrPrim name) f)
     | _ -> f
   in
-  primitive_map := MLMap.add name f !primitive_map
-let interp_primitive name = MLMap.find name !primitive_map
+  primitive_map := MLMap.add name (ty, f) !primitive_map
+let interp_primitive name = snd (MLMap.find name !primitive_map)
+let primitive_type name = fst (MLMap.find name !primitive_map)
 
 (** Name management *)
 

@@ -128,8 +128,9 @@ val shortest_qualid_of_projection : ltac_projection -> qualid
 (** This state is not part of the summary, contrarily to the ones above. It is
     intended to be used from ML plugins to register ML-side functions. *)
 
-val define_primitive : ml_tactic_name -> valexpr -> unit
+val define_primitive : ml_tactic_name -> type_scheme option -> valexpr -> unit
 val interp_primitive : ml_tactic_name -> valexpr
+val primitive_type : ml_tactic_name -> type_scheme option
 
 (** {5 ML primitive types} *)
 

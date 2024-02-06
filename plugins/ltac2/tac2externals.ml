@@ -86,4 +86,4 @@ let define : type v f. _ -> (v,f) spec -> f -> unit = fun n ar v ->
         Tac2ffi.of_closure cl
     | _ -> invalid_arg "Tac2def.define: not a pure value"
   in
-  Tac2env.define_primitive n v
+  Tac2env.define_primitive n None v
