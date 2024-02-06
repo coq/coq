@@ -12,5 +12,6 @@
 open Safe_typing
 (*i*)
 
-val import : safe_environment -> Names.Cset.t Names.Cmap.t -> compiled_library -> Univ.ContextSet.t -> vodigest -> safe_environment * Names.Cset.t Names.Cmap.t
-val unsafe_import : safe_environment -> compiled_library -> Univ.ContextSet.t -> vodigest -> safe_environment
+val import : safe_environment -> Names.Cset.t Names.Cmap.t -> compiled_library -> vodigest -> safe_environment * Names.Cset.t Names.Cmap.t
+
+val unsafe_import : safe_environment -> compiled_library -> vodigest -> safe_environment

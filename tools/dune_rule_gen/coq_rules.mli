@@ -71,8 +71,3 @@ val install_rules :
   dir_info :Coq_module.t Dir_info.t
   -> cctx:Context.t
   -> Dune_file.Install.t list Dune_file.Subdir.t list
-
-val vio2vo_rules :
-  dir_info :Coq_module.t Dir_info.t
-  -> cctx:Context.t
-  -> Dune_file.Rule.t list Dune_file.Subdir.t list

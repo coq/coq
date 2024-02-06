@@ -41,7 +41,6 @@ let parse_args () =
   let default = false, false, Coq_module.Rule_type.Regular { native }, [] in
   let split, async, rule, user_flags = if Array.length Sys.argv > 3 then
       match Sys.argv.(3) with
-      | "-vio" -> false, false, Coq_module.Rule_type.Quick, Arg.[A "-vio"]
       | "-async" -> false, true, Coq_module.Rule_type.Regular { native }, Arg.[A "-async-proofs"; A "on"]
       | "-split" -> true, false, Coq_module.Rule_type.Regular { native }, []
       (* Dune will sometimes pass this option as "" *)
@@ -85,15 +84,6 @@ let main () =
 
   List.iter (Dune_file.Subdir.pp ppr fmt) vo_rules;
   List.iter (Dune_file.Subdir.pp ppi fmt) install_rules;
-
-  (* Rules for vio2vo *)
-  begin
-    match rule with
-    | Coq_module.Rule_type.Quick ->
-      let vio2vo_rules = Coq_rules.vio2vo_rules ~dir_info ~cctx in
-      List.iter (Dune_file.Subdir.pp ppr fmt) vio2vo_rules
-    | Coq_module.Rule_type.Regular _ -> ()
-  end;
 
   (* Rules for coqnative (not always setup for now, need to think about this) *)
   begin

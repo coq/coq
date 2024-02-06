@@ -213,7 +213,7 @@ module Context = struct
 end
 
 (* Return flags and deps to inject *)
-let prelude_path ~ext = "Init/Prelude" ^ ext
+let prelude_path = "Init/Prelude.vo"
 
 (* Return extra flags and deps for a concrete file; the case of
    interest is to determine when a file needs [-nonit].  If it
@@ -221,8 +221,6 @@ let prelude_path ~ext = "Init/Prelude" ^ ext
    we can't compute this in Context.make due to the per-file check for
    "Init" *)
 let boot_module_setup ~cctx coq_module =
-  let ext = Coq_module.Rule_type.vo_ext cctx.Context.rule in
-  let prelude_path = prelude_path ~ext in
   match cctx.Context.boot with
   | Boot_type.NoInit -> [Arg.A "-noinit"], []
   | Stdlib ->
@@ -237,7 +235,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let tname, rule = cctx.theory.dirname, cctx.rule in
   (* retrieve deps *)
   let vfile = Coq_module.source coq_module in
-  let vo_ext = Coq_module.Rule_type.vo_ext rule in
+  let vo_ext = ".vo" in
   let vfile_deps = Dep_info.lookup ~dep_info:cctx.dep_info vfile |> List.map (path_of_dep ~vo_ext) in
   (* handle -noinit, inject prelude.vo if needed *)
   let boot_flags, boot_deps = boot_module_setup ~cctx coq_module in
@@ -258,41 +256,8 @@ let module_rule ~(cctx : Context.t) coq_module =
   let updir = Path.(to_string (adjust ~lvl (make "."))) in
   let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
-  let alias = if rule = Coq_module.Rule_type.Quick then Some "vio" else None in
-  { Dune_file.Rule.targets; deps; action; alias }
-
-let vio2vo_rule ~(cctx : Context.t) coq_module =
-  let vfile = Coq_module.source coq_module in
-  let viofile = Path.replace_ext ~ext:".vio" vfile in
-
-  let boot_flags, _boot_deps = boot_module_setup ~cctx coq_module in
-  let flags = Arg.A "-vio2vo" :: boot_flags @ cctx.flags.loadpath in
-
-  (* Non deterministic code in loadpath to pick .vio vs .vo means that
-     we can't really do a parallel build of .v to .vio and .vio to .vo
-
-     We have a race condition due to transitive dependencies not
-     agreeing on the module chosen, it may happen that a module is
-     upgraded to .vo and hence the compilation will boom.
-
-     There are four possible remedies: remove vio, make the vio
-     require deterministic, use a `@vio` alias before the main
-     build, insert a barrier on which all .vio to .vo depend.
-
-     I guess an alias looks fine for CI for the moment.
-  *)
-  (* Adjust paths *)
-  let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
-  let flags = (* flags are relative to the root path *) Arg.List.to_string flags in
-  (* vio2vo doesn't follow normal convention... so we can't use Coq_module.obj_files *)
-  let vofile_base = Path.replace_ext ~ext:".vo" vfile |> Path.basename in
-  let vosfile_base = Path.replace_ext ~ext:".vos" vfile |> Path.basename in
-  let targets = [vofile_base; vosfile_base] in
-  let viofile_base = Path.basename viofile in
-  let updir = Path.(to_string (adjust ~lvl (make "."))) in
-  let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags viofile_base in
   let alias = None in
-  { Dune_file.Rule.targets; deps=[]; action; alias }
+  { Dune_file.Rule.targets; deps; action; alias }
 
 (* Helper for Dir_info to Subdir *)
 let gen_rules ~dir_info ~cctx ~f =
@@ -305,7 +270,6 @@ let gen_rules ~dir_info ~cctx ~f =
 
 (* Has to be called in the current dir *)
 let vo_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:module_rule
-let vio2vo_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:vio2vo_rule
 
 (* rule generation for .vo -> .{cmi,cmxs} *)
 let coqnative_module_rule ~(cctx: Context.t) coq_module =

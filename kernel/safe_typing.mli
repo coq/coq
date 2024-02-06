@@ -12,7 +12,6 @@ open Names
 
 type vodigest =
   | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
-  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
 
 val digest_match : actual:vodigest -> required:vodigest -> bool
 
@@ -237,8 +236,7 @@ val export :
   safe_environment -> DirPath.t ->
     ModPath.t * compiled_library * Nativelib.native_library
 
-(* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
+val import : compiled_library -> vodigest ->
   ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)

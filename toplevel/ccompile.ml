@@ -35,8 +35,6 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let ext_in, ext_out =
      match mode with
      | BuildVo -> ".v", ".vo"
-     | BuildVio -> ".v", ".vio"
-     | Vio2Vo -> ".vio", ".vo"
      | BuildVos -> ".v", ".vos"
      | BuildVok -> ".v", ".vok"
   in
@@ -87,10 +85,10 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       dump_empty_vok();
       Dumpglob.end_dump_glob ()
 
-  | BuildVio | BuildVos ->
+  | BuildVos ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_out; injections;
+          Stm.{ doc_type = VosDoc long_f_dot_out; injections;
               } in
 
       let state = { doc; sid; proof = None; time = Option.map Vernac.make_time_output opts.config.time } in
@@ -100,26 +98,9 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = Vernac.load_vernac ~echo ~check:false ~source ~state long_f_dot_in in
       let state = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs state ~filename:long_f_dot_in;
-      let create_vos = (mode = BuildVos) in
-      (* In .vos production, the output .vos file contains compiled statements.
-         In .vio production, the output .vio file contains compiled statements and suspended proofs. *)
-      let () = Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out in
+      let () = Stm.snapshot_vos ~doc ~output_native_objects ldir long_f_dot_out in
       Stm.reset_task_queue ();
-      (* In .vio production, dump an empty .vos file to indicate that the .vio should be loaded. *)
-      (* EJGA: This is problematic in a vio + vio2vo run, as there is
-         a race with target generation *)
-      if mode = BuildVio then dump_empty_vos();
       ()
-
-  | Vio2Vo ->
-      Flags.async_proofs_worker_id := "Vio2Vo";
-      let sum, lib, univs, tasks, proofs =
-        Library.load_library_todo long_f_dot_in in
-      let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
-      Library.save_library_raw long_f_dot_out sum lib univs proofs;
-      (* Like in direct .vo production, dump an empty .vok file and an empty .vos file. *)
-      dump_empty_vos();
-      create_empty_file (long_f_dot_out ^ "k")
 
 let compile opts stm_opts copts injections ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
