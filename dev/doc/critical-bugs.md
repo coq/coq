@@ -21,6 +21,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [de Bruijn indice bug in checking guard of nested cofixpoints](#de-bruijn-indice-bug-in-checking-guard-of-nested-cofixpoints)
       - [de Bruijn indice bug in computing allowed elimination principle](#de-bruijn-indice-bug-in-computing-allowed-elimination-principle)
       - [bug in Prop<=Set conversion which made Set identifiable with Prop, preventing a proof-irrelevant interpretation of Prop](#bug-in-propset-conversion-which-made-set-identifiable-with-prop-preventing-a-proof-irrelevant-interpretation-of-prop)
+      - [incorrect abstraction of sort variables in relevance marks on opaque constants](#incorrect-abstraction-of-sort-variables-in-relevance-marks-on-opaque-constants)
     - [Module system](#module-system)
       - [missing universe constraints in typing "with" clause of a module type](#missing-universe-constraints-in-typing-with-clause-of-a-module-type)
       - [universe constraints for module subtyping not stored in vo files](#universe-constraints-for-module-subtyping-not-stored-in-vo-files)
@@ -215,6 +216,19 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
 - exploit: test-suite/failure/prop_set_proof_irrelevance.v
 - GH issue number: none?
 - risk: ?
+
+#### incorrect abstraction of sort variables in relevance marks on opaque constants
+
+and lack of checking of relevance marks on constants in coqchk
+
+- component: sort polymorphism / proof irrelevance
+- introduced: V8.10 for the coqchk bug, V8.19 for the coqc bug
+- impacted released versions: V8.19.0
+- impacted coqchk: versions: V8.10-V8.19.0
+- fixed in: V8.19.1, V8.20
+- found by: Gaëtan Gilbert
+- exploit / GH issue: [#18629](https://github.com/coq/coq/issues/18629)
+- risk: low (requires specific plugin code unlikely to be found in non malicious plugin)
 
 ### Module system
 

@@ -31,6 +31,8 @@ let register_opacified_constant env opac kn cb =
   in
   Cmap.add kn wo_body opac
 
+exception BadConstant of Constant.t * Pp.t
+
 let check_constant_declaration env opac kn cb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
   let env = CheckFlags.set_local_flags cb.const_typing_flags env in
@@ -47,7 +49,9 @@ let check_constant_declaration env opac kn cb opacify =
       true, env
   in
   let ty = cb.const_type in
-  let _ = infer_type env ty in
+  let jty = infer_type env ty in
+  if not (Sorts.relevance_equal cb.const_relevance (Sorts.relevance_of_sort jty.utj_type))
+  then raise Pp.(BadConstant (kn, str "incorrect const_relevance"));
   let body, env = match cb.const_body with
     | Undef _ | Primitive _ -> None, env
     | Def c -> Some c, env
