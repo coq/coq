@@ -309,6 +309,9 @@ let explain_exn = function
   | CheckInductive.InductiveMismatch (mind,field) ->
     hov 0 (MutInd.print mind ++ str ": field " ++ str field ++ str " is incorrect.")
 
+  | Mod_checking.BadConstant (cst, why) ->
+    hov 0 (Constant.print cst ++ spc() ++ why)
+
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
                (if s = "" then mt ()
