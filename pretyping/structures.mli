@@ -91,7 +91,7 @@ val compare : t -> t -> int
 val print : t -> Pp.t
 
 (** Return the form of the component of a canonical structure *)
-val of_constr : Environ.env -> Constr.t -> t * int option * Constr.t list
+val of_constr : Evd.evar_map -> EConstr.t -> t * int option * EConstr.t list
 
 end
 
