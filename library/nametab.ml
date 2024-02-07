@@ -393,7 +393,7 @@ type globrevtab = full_path Globnames.ExtRefMap.t
 let the_globrevtab =
   Summary.ref ~name:"globrevtab" (Globnames.ExtRefMap.empty : globrevtab)
 
-let the_globdeprtab = Summary.ref ~name:"globdeprtag" Globnames.ExtRefMap.empty
+let the_globwarntab = Summary.ref ~name:"globwarntag" Globnames.ExtRefMap.empty
 
 type mprevtab = DirPath.t MPmap.t
 
@@ -437,30 +437,30 @@ end
    possibly limited visibility, i.e. Theorem, Lemma, Definition, Axiom,
    Parameter but also Remark and Fact) *)
 
-let push_xref ?deprecated visibility sp xref =
+let push_xref ?user_warns visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
         the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab;
-        deprecated |> Option.iter (fun depr ->
-            the_globdeprtab := Globnames.ExtRefMap.add xref depr !the_globdeprtab)
+        user_warns |> Option.iter (fun warn ->
+            the_globwarntab := Globnames.ExtRefMap.add xref warn !the_globwarntab)
     | Exactly _ ->
       begin
-        assert (Option.is_empty deprecated);
+        assert (Option.is_empty user_warns);
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab
       end
 
 let remove_xref sp xref =
   the_ccitab := ExtRefTab.remove sp !the_ccitab;
   the_globrevtab := Globnames.ExtRefMap.remove xref !the_globrevtab;
-  the_globdeprtab := Globnames.ExtRefMap.remove xref !the_globdeprtab
+  the_globwarntab := Globnames.ExtRefMap.remove xref !the_globwarntab
 
-let push_cci ?deprecated visibility sp ref =
-  push_xref ?deprecated visibility sp (TrueGlobal ref)
+let push_cci ?user_warns visibility sp ref =
+  push_xref ?user_warns visibility sp (TrueGlobal ref)
 
 (* This is for Syntactic Definitions *)
-let push_abbreviation ?deprecated visibility sp kn =
-  push_xref ?deprecated visibility sp (Abbrev kn)
+let push_abbreviation ?user_warns visibility sp kn =
+  push_xref ?user_warns visibility sp (Abbrev kn)
 
 let remove_abbreviation sp kn =
   remove_xref sp (Abbrev kn)
@@ -580,7 +580,15 @@ let warn_deprecated_xref ?loc depr = function
   | Globnames.TrueGlobal ref -> warn_deprecated_ref ?loc (ref, depr)
   | Abbrev a -> warn_deprecated_abbreviation ?loc (a, depr)
 
-let is_deprecated_xref xref = Globnames.ExtRefMap.find_opt xref !the_globdeprtab
+let warn_user_warn =
+  UserWarn.create_warning ~warning_name_if_no_cats:"warn-reference" ()
+
+let is_warned_xref xref : UserWarn.t option = Globnames.ExtRefMap.find_opt xref !the_globwarntab
+
+let warn_user_warn_xref ?loc user_warns xref =
+  user_warns.UserWarn.depr
+    |> Option.iter (fun depr -> warn_deprecated_xref ?loc depr xref);
+  user_warns.UserWarn.warn |> List.iter (warn_user_warn ?loc)
 
 let locate_extended_nowarn qid =
   let xref = ExtRefTab.locate qid !the_ccitab in
@@ -589,10 +597,9 @@ let locate_extended_nowarn qid =
 (* This should be used when abbreviations are allowed *)
 let locate_extended qid =
   let xref = locate_extended_nowarn qid in
-  let depr = is_deprecated_xref xref in
-  let () = depr |> Option.iter (fun depr ->
-      warn_deprecated_xref ?loc:qid.loc depr xref)
-  in
+  let warn = is_warned_xref xref in
+  let () = warn |> Option.iter (fun warn ->
+      warn_user_warn_xref ?loc:qid.loc warn xref) in
   xref
 
 (* This should be used when no abbreviations are expected *)

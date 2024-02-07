@@ -8,10 +8,17 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* This handles attributes associated to a library file *)
+(** This is about warnings triggered from user .v code ("warn" attibute).
+    See cWarnings.mli for the generic warning interface. *)
 
-open Names
+type warn = private { note : string; cats : string }
+(** note and comma separated list of categories *)
 
-type t = UserWarn.t
+type t = { depr : Deprecation.t option; warn : warn list }
 
-val warn_library_info : ?loc:Loc.t -> ?transitive:bool -> DirPath.t -> t -> unit
+val empty : t
+
+val make_warn : note:string -> ?cats:string -> unit -> warn
+
+val create_warning : ?default:CWarnings.status -> warning_name_if_no_cats:string ->
+  unit -> ?loc:Loc.t -> warn -> unit

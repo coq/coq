@@ -22,7 +22,7 @@ open Notationextern
 type abbreviation =
   { abbrev_pattern : interpretation;
     abbrev_onlyparsing : bool;
-    abbrev_deprecation : Deprecation.t option;
+    abbrev_user_warns : UserWarn.t option;
     abbrev_activated : bool; (* Not really necessary in practice *)
   }
 
@@ -43,7 +43,7 @@ let toggle_abbreviation ~on ~use kn =
       | OnlyParsing | ParsingAndPrinting ->
          if on then
            begin
-             Nametab.push_abbreviation ?deprecated:data.abbrev_deprecation (Nametab.Until 1) sp kn;
+             Nametab.push_abbreviation ?user_warns:data.abbrev_user_warns (Nametab.Until 1) sp kn;
              Nametab.push_abbreviation (Nametab.Exactly 1) sp kn
            end
          else
@@ -60,7 +60,7 @@ let load_abbreviation i ((sp,kn),(_local,abbrev)) =
     user_err
       (Id.print (basename sp) ++ str " already exists.");
   add_abbreviation kn sp abbrev;
-  Nametab.push_abbreviation ?deprecated:abbrev.abbrev_deprecation (Nametab.Until i) sp kn
+  Nametab.push_abbreviation ?user_warns:abbrev.abbrev_user_warns (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef (ref,None) ->
@@ -102,11 +102,11 @@ let inAbbreviation : Id.t -> (bool * abbreviation) -> obj =
     subst_function = subst_abbreviation;
     classify_function = classify_abbreviation }
 
-let declare_abbreviation ~local deprecation id ~onlyparsing pat =
+let declare_abbreviation ~local user_warns id ~onlyparsing pat =
   let abbrev =
     { abbrev_pattern = pat;
       abbrev_onlyparsing = onlyparsing;
-      abbrev_deprecation = deprecation;
+      abbrev_user_warns = user_warns;
       abbrev_activated = true;
     }
   in

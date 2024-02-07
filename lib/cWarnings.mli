@@ -121,6 +121,7 @@ module CoreCategories : sig
   val ssr : category
   val syntax : category
   val tactics : category
+  val user_warn : category
   val vernacular : category
 
 end

@@ -289,9 +289,31 @@ let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
     Deprecation.make ~since ()
   | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
     Deprecation.make ~note ()
-  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute")
+  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute.")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]
+
+let user_warn_parser : UserWarn.warn list key_parser = fun ?loc orig args ->
+  let orig = Option.default [] orig in
+  match args with
+  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
+                     {CAst.v="cats", VernacFlagLeaf (FlagString cats)} ]
+  | VernacFlagList [ {CAst.v="cats", VernacFlagLeaf (FlagString cats)};
+                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
+    UserWarn.make_warn ~note ~cats () :: orig
+  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
+    UserWarn.make_warn ~note () :: orig
+  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “warn” attribute.")
+
+let user_warn_warn =
+  attribute_of_list ["warn",user_warn_parser] >>= function
+  | None -> return []
+  | Some l -> return (List.rev l)
+
+let user_warns =
+  (deprecation ++ user_warn_warn) >>= function
+  | None, [] -> return None
+  | depr, warn -> return (Some UserWarn.{ depr; warn })
 
 let only_locality atts = parse locality atts
 

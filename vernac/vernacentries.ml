@@ -56,7 +56,7 @@ module DefAttributes = struct
     locality : bool option;
     polymorphic : bool;
     program : bool;
-    deprecated : Deprecation.t option;
+    user_warns : UserWarn.t option;
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
@@ -69,18 +69,12 @@ module DefAttributes = struct
 
   let clearbody = bool_attribute ~name:"clearbody"
 
-  let make_information deprecated =
-    let open Library_info in
-    match deprecated with
-    | Some depr -> [Deprecation depr]
-    | None -> []
-
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, deprecated), polymorphic), program),
+    let (((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
          reversible), clearbody =
-      parse (locality ++ deprecation ++ polymorphic ++ program ++
+      parse (locality ++ user_warns ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
              reversible ++ clearbody)
         f
@@ -90,7 +84,7 @@ module DefAttributes = struct
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; reversible; clearbody }
+    { polymorphic; program; locality; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -625,7 +619,7 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~deprecation ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?user_warns ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -634,7 +628,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~d
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   begin
     match mut_analysis with
     | RecLemmas.NonMutual thm ->
@@ -687,10 +681,10 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
-  let deprecation = atts.deprecated in
+  let user_warns = atts.user_warns in
   let name = vernac_definition_name lid local in
   start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
-    ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -709,12 +703,12 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
       ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
-      ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
+      ?user_warns:atts.user_warns pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
         ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using
-        ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
+        ?user_warns:atts.user_warns pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -727,7 +721,7 @@ let vernac_start_proof ~atts kind l =
     ~typing_flags:atts.typing_flags
     ~program_mode:atts.program
     ~poly:atts.polymorphic
-    ~scope ~kind:(Decls.IsProof kind) ~deprecation:atts.deprecated ?using:atts.using l
+    ~scope ~kind:(Decls.IsProof kind) ?user_warns:atts.user_warns ?using:atts.using l
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -757,7 +751,7 @@ let vernac_assumption ~atts discharge kind l nl =
             | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   if Option.has_some atts.using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?deprecation:atts.deprecated nl l
+  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?user_warns:atts.user_warns nl l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -1066,7 +1060,7 @@ let vernac_fixpoint_interactive ~atts discharge l =
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
   let typing_flags = atts.typing_flags in
-  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ?deprecation:atts.deprecated l
+  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ?user_warns:atts.user_warns l
   |> vernac_set_used_variables_opt ?using:atts.using
 
 let vernac_fixpoint ~atts ~pm discharge l =
@@ -1076,10 +1070,10 @@ let vernac_fixpoint ~atts ~pm discharge l =
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
     ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l
+      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l
   else
     let () = ComFixpoint.do_fixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l in
+      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
     pm
 
 let vernac_cofixpoint_common ~atts discharge l =
@@ -1537,9 +1531,9 @@ let vernac_hints ~atts dbnames h =
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_abbreviation ~atts lid x only_parsing =
-  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
+  let module_local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns) atts) in
   Dumpglob.dump_definition lid false "abbrev";
-  Metasyntax.add_abbreviation ~local:module_local deprecation (Global.env()) lid.v x only_parsing
+  Metasyntax.add_abbreviation ~local:module_local user_warns (Global.env()) lid.v x only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
@@ -2094,8 +2088,9 @@ let vernac_register qid r =
 
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
-    let deprecated = Attributes.parse deprecation atts in
-    Lib.Synterp.declare_info (DefAttributes.make_information deprecated)
+    let user_warns = Attributes.parse user_warns atts in
+    let user_warns = Option.default UserWarn.empty user_warns in
+    Lib.Synterp.declare_info user_warns
   else
     user_err (Pp.str "A library attribute should be at toplevel of the library.")
 

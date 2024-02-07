@@ -8,4 +8,5 @@ Require TestSuite.deprecated_library.
    that always triggers (even on transitive requires) *)
 Reset Initial.
 Set Warnings "deprecated-transitive-library-file".
+Set Warnings "warn-transitive-library-file".
 Require TestSuite.requires_deprecated_library.

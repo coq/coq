@@ -90,7 +90,7 @@ type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
-  md_info : Library_info.t list;
+  md_info : Library_info.t;
 }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -102,13 +102,13 @@ type library_t = {
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
-  library_info : Library_info.t list;
+  library_info : Library_info.t;
 }
 
 type library_summary = {
   libsum_name : compilation_unit_name;
   libsum_digests : Safe_typing.vodigest;
-  libsum_info : Library_info.t list;
+  libsum_info : Library_info.t;
 }
 
 (* This is a map from names to loaded libraries *)
@@ -285,9 +285,7 @@ let intern_from_file lib_resolver dir =
        DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  List.iter (fun info ->
-      Library_info.warn_library_info ~transitive:true (lsd.md_name,info))
-    lsd.md_info;
+  Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
   lsd, lmd, digest_lmd, univs, digest_u, del_opaque
 
 let rec intern_library ~intern (needed, contents as acc) dir =
@@ -323,8 +321,7 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
 let rec_intern_library ~lib_resolver libs dir =
   let intern dir = intern_from_file lib_resolver dir in
   let m, libs = intern_library ~intern libs dir in
-  List.iter (fun info -> Library_info.warn_library_info (m.libsum_name,info))
-    m.libsum_info;
+  Library_info.warn_library_info m.libsum_name m.libsum_info;
   libs
 
 let native_name_from_filename f =
