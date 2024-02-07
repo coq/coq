@@ -31,9 +31,17 @@ module ReductionBehaviour : sig
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
+  module Db : sig
+    type t
+    val get : unit -> t
+    val empty : t
+    val print : t -> Constant.t -> Pp.t
+    val all_never_unfold : t -> Cpred.t
+  end
+
   val set : local:bool -> Constant.t -> t -> unit
+  val get_from_db : Db.t -> Constant.t -> t option
   val get : Constant.t -> t option
-  val all_never_unfold : unit -> Cpred.t
   val print : Constant.t -> Pp.t
 end
 
