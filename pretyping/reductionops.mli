@@ -60,6 +60,8 @@ module Stack : sig
 
   type case_stk
 
+  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t pcase_invert * EConstr.t pcase_branch array -> case_stk
+
   type member =
   | App of app_node
   | Case of case_stk
