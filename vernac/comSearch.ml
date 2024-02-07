@@ -45,7 +45,15 @@ let kind_searcher = Decls.(function
     Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
-    Inr (fun gr -> Indset.exists (fun c -> GlobRef.CanOrd.equal (GlobRef.IndRef c) gr) schemes)
+    let schemes = lazy begin
+      Indmap.fold (fun _ schemes acc ->
+          CString.Map.fold (fun _ c acc -> Cset.add c acc) schemes acc)
+        schemes Cset.empty
+    end
+    in
+    Inr (function
+        | ConstRef c -> Cset.mem c (Lazy.force schemes)
+        | _ -> false)
   | IsDefinition Instance ->
     let instances = Typeclasses.all_instances () in
     Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Typeclasses.is_impl gr) instances))
