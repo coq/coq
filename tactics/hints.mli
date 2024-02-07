@@ -93,7 +93,7 @@ type hints_path = GlobRef.t hints_path_gen
 
 val normalize_path : hints_path -> hints_path
 val path_matches_epsilon : hints_path -> bool
-val path_derivate : hints_path -> hints_path_atom -> hints_path
+val path_derivate : hints_path -> GlobRef.t option -> hints_path
 val pp_hints_path_gen : ('a -> Pp.t) -> 'a hints_path_gen -> Pp.t
 val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
 val pp_hints_path : hints_path -> Pp.t

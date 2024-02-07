@@ -519,7 +519,12 @@ let rec normalize_path h =
      | q' -> PathSeq (p', q'))
   | _ -> h
 
-let path_derivate hp hint = normalize_path (path_derivate hp hint)
+let path_derivate hp hint =
+  let hint = match hint with
+  | None -> PathAny
+  | Some gr -> PathHints [gr]
+  in
+  normalize_path (path_derivate hp hint)
 
 let pp_hints_path_atom prg a =
   match a with
