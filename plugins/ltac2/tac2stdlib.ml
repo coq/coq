@@ -19,19 +19,23 @@ open Proofview.Notations
 
 module Value = Tac2ffi
 
+module GT = Tac2globals.Types
+
 (** Make a representation with a dummy from function *)
 let make_to_repr f = Tac2ffi.make_repr (fun _ -> assert false) f
 
 let return x = Proofview.tclUNIT x
-let thaw r f = Tac2ffi.app_fun1 f unit r ()
-let uthaw r f = Tac2ffi.app_fun1 (to_fun1 unit r f) unit r ()
-let thunk r = fun1 unit r
+
+let uthaw_ r f = to_fun1 of_unit (repr_to r) f ()
+
+let uthaw (r,t) = typed (uthaw_ r) Types.(!! GT.unit @-> default t)
 
 let to_name c = match Value.to_option Value.to_ident c with
 | None -> Anonymous
 | Some id -> Name id
 
-let name = make_to_repr to_name
+let name_ = make_to_repr to_name
+let name = name_, snd (option ident)
 
 let to_occurrences = function
 | ValInt 0 -> AllOccurrences
@@ -40,7 +44,8 @@ let to_occurrences = function
 | ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list Value.to_int vl)
 | _ -> assert false
 
-let occurrences = make_to_repr to_occurrences
+let occurrences_ = make_to_repr to_occurrences
+let occurrences = typed occurrences_ Types.(!! GT.occurrences)
 
 let to_hyp_location_flag v = match Value.to_int v with
 | 0 -> InHyp
@@ -59,7 +64,8 @@ let to_clause v = match Value.to_tuple v with
   { onhyps = hyps; concl_occs = to_occurrences concl; }
 | _ -> assert false
 
-let clause = make_to_repr to_clause
+let clause_ = make_to_repr to_clause
+let clause = typed clause_ Types.(!! GT.clause)
 
 let to_red_strength = function
   | ValInt 0 -> Norm
@@ -80,7 +86,8 @@ let to_red_flag v = match Value.to_tuple v with
   }
 | _ -> assert false
 
-let red_flags = make_to_repr to_red_flag
+let red_flags_ = make_to_repr to_red_flag
+let red_flags = typed red_flags_ Types.(!! GT.red_flags)
 
 let pattern_with_occs = pair pattern occurrences
 
@@ -107,7 +114,7 @@ and to_intro_pattern_action = function
   let map ipat = to_intro_pattern ipat in
   IntroInjection (Value.to_list map inj)
 | ValBlk (2, [| c; ipat |]) ->
-  let c = Value.to_fun1 Value.unit Value.constr c in
+  let c = Value.to_fun1 of_unit to_constr c in
   IntroApplyOn (c, to_intro_pattern ipat)
 | ValBlk (3, [| b |]) -> IntroRewrite (Value.to_bool b)
 | _ -> assert false
@@ -137,7 +144,7 @@ and of_intro_pattern_action = function
   | IntroOrAndPattern op -> of_block (0, [|of_or_and_intro_pattern op|])
   | IntroInjection inj -> of_block (1, [|of_list of_intro_pattern inj|])
   | IntroApplyOn (c, ipat) ->
-    let c = repr_of (fun1 unit constr) c in
+    let c = of_fun1 to_unit of_constr c in
     of_block (2, [|c; of_intro_pattern ipat|])
   | IntroRewrite b -> of_block (3, [|of_bool b|])
 
@@ -147,19 +154,22 @@ and of_or_and_intro_pattern = function
 
 and of_intro_patterns il = of_list of_intro_pattern il
 
-let intro_pattern = make_repr of_intro_pattern to_intro_pattern
+let intro_pattern_ = make_repr of_intro_pattern to_intro_pattern
 
-let intro_patterns = make_repr of_intro_patterns to_intro_patterns
+let intro_pattern = typed intro_pattern_ Types.(!! GT.intro_pattern)
+
+let intro_patterns = list intro_pattern
 
 let to_destruction_arg v = match Value.to_block v with
 | (0, [| c |]) ->
-  let c = uthaw constr_with_bindings c in
+  let c = uthaw_ (fst constr_with_bindings) c in
   ElimOnConstr c
 | (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
 | (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
 | _ -> assert false
 
-let destruction_arg = make_to_repr to_destruction_arg
+let destruction_arg_ = make_to_repr to_destruction_arg
+let destruction_arg = typed destruction_arg_ Types.(!! GT.destruction_arg)
 
 let to_induction_clause v = match Value.to_tuple v with
 | [| arg; eqn; as_; in_ |] ->
@@ -171,11 +181,12 @@ let to_induction_clause v = match Value.to_tuple v with
 | _ ->
   assert false
 
-let induction_clause = make_to_repr to_induction_clause
+let induction_clause_ = make_to_repr to_induction_clause
+let induction_clause = typed induction_clause_ Types.(!! GT.induction_clause)
 
 let to_assertion v = match Value.to_block v with
 | (0, [| ipat; t; tac |]) ->
-  let to_tac t = Value.to_fun1 Value.unit Value.unit t in
+  let to_tac t = Value.to_fun1 of_unit to_unit t in
   let ipat = Value.to_option to_intro_pattern ipat in
   let t = Value.to_constr t in
   let tac = Value.to_option to_tac tac in
@@ -184,7 +195,8 @@ let to_assertion v = match Value.to_block v with
   AssertValue (Value.to_ident id, Value.to_constr c)
 | _ -> assert false
 
-let assertion = make_to_repr to_assertion
+let assertion_ = make_to_repr to_assertion
+let assertion = typed assertion_ Types.(!! GT.assertion)
 
 let to_multi = function
 | ValBlk (0, [| n |]) -> Precisely (Value.to_int n)
@@ -197,11 +209,12 @@ let to_rewriting v = match Value.to_tuple v with
 | [| orient; repeat; c |] ->
   let orient = Value.to_option Value.to_bool orient in
   let repeat = to_multi repeat in
-  let c = uthaw constr_with_bindings c in
+  let c = uthaw_ (fst constr_with_bindings) c in
   (orient, repeat, c)
 | _ -> assert false
 
-let rewriting = make_to_repr to_rewriting
+let rewriting_ = make_to_repr to_rewriting
+let rewriting = typed rewriting_ Types.(!! GT.rewriting)
 
 let to_debug v = match Value.to_int v with
 | 0 -> Hints.Off
@@ -209,14 +222,16 @@ let to_debug v = match Value.to_int v with
 | 2 -> Hints.Debug
 | _ -> assert false
 
-let debug = make_to_repr to_debug
+let debug_ = make_to_repr to_debug
+let debug = typed debug_ Types.(!! GT.std_debug)
 
 let to_strategy v = match Value.to_int v with
 | 0 -> Class_tactics.Bfs
 | 1 -> Class_tactics.Dfs
 | _ -> assert false
 
-let strategy = make_to_repr to_strategy
+let strategy_ = make_to_repr to_strategy
+let strategy = typed strategy_ Types.(!! GT.std_strategy)
 
 let to_inversion_kind v = match Value.to_int v with
 | 0 -> Inv.SimpleInversion
@@ -224,7 +239,8 @@ let to_inversion_kind v = match Value.to_int v with
 | 2 -> Inv.FullInversionClear
 | _ -> assert false
 
-let inversion_kind = make_to_repr to_inversion_kind
+let inversion_kind_ = make_to_repr to_inversion_kind
+let inversion_kind = typed inversion_kind_ Types.(!! GT.inversion_kind)
 
 let to_move_location = function
 | ValInt 0 -> Logic.MoveFirst
@@ -233,14 +249,10 @@ let to_move_location = function
 | ValBlk (1, [|id|]) -> Logic.MoveBefore (Value.to_ident id)
 | _ -> assert false
 
-let move_location = make_to_repr to_move_location
+let move_location_ = make_to_repr to_move_location
+let move_location = typed move_location_ Types.(!! GT.move_location)
 
-let to_generalize_arg v = match Value.to_tuple v with
-| [| c; occs; na |] ->
-  (Value.to_constr c, to_occurrences occs, to_name na)
-| _ -> assert false
-
-let generalize_arg = make_to_repr to_generalize_arg
+let generalize_arg = triple constr occurrences name
 
 (** Standard tactics sharing their implementation with Ltac1 *)
 
@@ -283,7 +295,7 @@ let () =
     Tac2tactics.assert_
 
 let tac_enough c tac ipat =
-  let tac = Option.map (fun o -> Option.map (fun f -> thaw unit f) o) tac in
+  let tac = Option.map (fun o -> Option.map (fun f -> thaw f) o) tac in
   Tac2tactics.forward false tac ipat c
 let () =
   define "tac_enough"
@@ -298,7 +310,7 @@ let () =
 
 let tac_set ev p cl =
   Proofview.tclEVARMAP >>= fun sigma ->
-  thaw (pair name constr) p >>= fun (na, c) ->
+  thaw p >>= fun (na, c) ->
   Tac2tactics.letin_pat_tac ev None na (Some sigma, c) cl
 let () =
   define "tac_set"
@@ -310,7 +322,7 @@ let tac_remember ev na c eqpat cl =
   match eqpat with
   | IntroNaming eqpat ->
     Proofview.tclEVARMAP >>= fun sigma ->
-    thaw constr c >>= fun c ->
+    thaw c >>= fun c ->
     Tac2tactics.letin_pat_tac ev (Some (true, eqpat)) na (Some sigma, c) cl
   | _ ->
     Tacticals.tclZEROMSG (Pp.str "Invalid pattern for remember")
@@ -431,7 +443,7 @@ let () =
 
 let () =
   define "tac_setoid_rewrite"
-    (bool @-> uthaw constr_with_bindings @--> occurrences @-> option ident @-> tac unit)
+    (typed bool_ Types.(!! GT.orientation) @-> uthaw constr_with_bindings @--> occurrences @-> option ident @-> tac unit)
     Tac2tactics.setoid_rewrite
 
 let () =
@@ -599,7 +611,8 @@ let () =
 
 (** Tactics for [Ltac2/TransparentState.v]. *)
 
-let transparent_state = Tac2ffi.repr_ext Tac2ffi.val_transparent_state
+let transparent_state_ = Tac2ffi.repr_ext Tac2ffi.val_transparent_state
+let transparent_state = typed transparent_state_ Types.(!! GT.transparent_state)
 
 let () =
   define "current_transparent_state"

@@ -41,7 +41,7 @@ val split_with_bindings : evars_flag -> bindings -> unit tactic
 
 val specialize : constr_with_bindings -> intro_pattern option -> unit tactic
 
-val change : Pattern.constr_pattern option -> (constr array, constr) Tac2ffi.fun1 -> clause -> unit tactic
+val change : Pattern.constr_pattern option -> (constr array -> constr Proofview.tactic) -> clause -> unit tactic
 
 val rewrite :
   evars_flag -> rewriting list -> clause -> unit thunk option -> unit tactic

@@ -29,7 +29,7 @@ Ltac2 @ external find_opt : 'k -> ('k, 'v) t -> 'v option := "coq-core.plugins.l
 
 Ltac2 @ external mapi : ('k -> 'v -> 'r) -> ('k, 'v) t -> ('k, 'r) t := "coq-core.plugins.ltac2" "fmap_mapi".
 
-Ltac2 @ external fold : ('k -> 'v -> 'acc) -> ('k, 'v) t -> 'acc -> 'acc := "coq-core.plugins.ltac2" "fmap_fold".
+Ltac2 @ external fold : ('k -> 'v -> 'acc -> 'acc) -> ('k, 'v) t -> 'acc -> 'acc := "coq-core.plugins.ltac2" "fmap_fold".
 
 Ltac2 @ external cardinal : ('k, 'v) t -> int := "coq-core.plugins.ltac2" "fmap_cardinal".
 

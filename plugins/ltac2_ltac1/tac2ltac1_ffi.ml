@@ -8,6 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Standard tactics sharing their implementation with Ltac1 *)
+open Ltac2_plugin
+open Tac2dyn
+open Tac2ffi
+open Names
 
-val intro_pattern : Tac2types.intro_pattern Tac2ffi.repr Tac2ffi.annotated
+let ltac1_t =
+  KerName.make (MPfile (DirPath.make (List.map Id.of_string ["Ltac1";"Ltac2"])))
+    (Label.of_id (Id.of_string "t"))
+
+let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
+
+let ltac1_ = repr_ext val_ltac1
+let of_ltac1 = repr_of ltac1_
+let to_ltac1 = repr_to ltac1_
+let ltac1 = typed ltac1_ Types.(!! ltac1_t)

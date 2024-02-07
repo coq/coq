@@ -8,6 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Standard tactics sharing their implementation with Ltac1 *)
+open Ltac2_plugin
+open Tac2ffi
+open Tac2val
 
-val intro_pattern : Tac2types.intro_pattern Tac2ffi.repr Tac2ffi.annotated
+val to_ltac1 : valexpr -> Geninterp.Val.t
+val of_ltac1 : Geninterp.Val.t -> valexpr
+val ltac1 : Geninterp.Val.t repr annotated

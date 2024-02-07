@@ -17,14 +17,13 @@ open Tac2ffi
 open Tac2expr
 open Proofview.Notations
 open Tac2externals
+open Tac2ltac1_ffi
 
 let ltac2_ltac1_plugin = "coq-core.plugins.ltac2_ltac1"
 
 let pname ?(plugin=ltac2_ltac1_plugin) s = { mltac_plugin = plugin; mltac_tactic = s }
 
 let define ?plugin s = define (pname ?plugin s)
-
-let ltac1 = Tac2ffi.repr_ext Tac2ffi.val_ltac1
 
 let val_tag wit = match val_tag wit with
 | Base t -> t
@@ -69,7 +68,7 @@ and to_intro_pattern_action : Tactypes.delayed_open_constr Tactypes.intro_patter
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       tclUNIT (of_constr c)
     in
-    let c = to_fun1 unit constr (mk_closure_val arity_one (fun _ -> c)) in
+    let c = to_fun1 of_unit to_constr (mk_closure_val arity_one (fun _ -> c)) in
     IntroApplyOn (c, to_intro_pattern ipat)
   | IntroRewrite b -> IntroRewrite b
 

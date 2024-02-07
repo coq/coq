@@ -19,6 +19,8 @@ open Tac2expr
 open Tac2entries.Pltac
 open Proofview.Notations
 
+module GT = Tac2globals.Types
+
 let ltac2_plugin = "coq-core.plugins.ltac2"
 
 let constr_flags =
@@ -72,7 +74,10 @@ let preterm_flags =
 (** Standard values *)
 
 let val_format = Tac2print.val_format
-let format = repr_ext val_format
+let format_ = repr_ext val_format
+let format t1 t2 t3 t4 =
+  typed format_
+    Types.(! GT.format [t1; t2; t3; t4])
 
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 
@@ -125,7 +130,8 @@ let to_relevance = function
     Sorts.RelevanceVar qvar
   | _ -> assert false
 
-let relevance = make_repr of_relevance to_relevance
+let relevance_ = make_repr of_relevance to_relevance
+let relevance = typed relevance_ Types.(!! GT.relevance)
 
 let of_binder b =
   Tac2ffi.of_ext Tac2ffi.val_binder b
@@ -168,13 +174,11 @@ let to_case_invert = let open Constr in function
     CaseInvert {indices}
   | _ -> CErrors.anomaly Pp.(str "unexpected value shape")
 
-let of_result f = function
-| Inl c -> v_blk 0 [|f c|]
-| Inr e -> v_blk 1 [|Tac2ffi.of_exn e|]
+let inductive_ = repr_ext val_inductive
+let inductive = typed inductive_ Types.(!! GT.inductive)
 
-let inductive = repr_ext val_inductive
-
-let projection = repr_ext val_projection
+let projection_ = repr_ext val_projection
+let projection = typed projection_ Types.(!! GT.projection)
 
 (** Stdlib exceptions *)
 
@@ -194,8 +198,6 @@ let err_division_by_zero =
   Tac2interp.LtacError (coq_core "Division_by_zero", [||])
 
 (** Helper functions *)
-
-let thaw f = Tac2val.apply f [v_unit]
 
 let fatal_flag : unit Exninfo.t = Exninfo.make "fatal_flag"
 
@@ -280,35 +282,44 @@ let () =
 let () = define "message_of_ident" (ident @-> ret pp) Id.print
 
 let () =
-  define "message_of_exn" (valexpr @-> eret pp) @@ fun v env sigma ->
+  define "message_of_exn" (valexpr_0 @-> eret pp) @@ fun v env sigma ->
   Tac2print.pr_valexpr env sigma v (GTypRef (Other Core.t_exn, []))
 
 let () = define "message_concat" (pp @-> pp @-> ret pp) Pp.app
 
-let () = define "format_stop" (ret format) []
+let () = define "format_stop" (ret Types.(format any any any any)) []
+
+let format_linear_spec =
+  Types.(format (var 0) (var 1) (var 2) (var 3))
+
+let format_one_arg_spec argty =
+  format_linear_spec
+  @-> ret Types.(format (argty @-> var 0) (var 1) (var 2) (var 3))
 
 let () =
-  define "format_string" (format @-> ret format) @@ fun s ->
+  define "format_string" (format_one_arg_spec Types.(!! GT.string)) @@ fun s ->
   Tac2print.FmtString :: s
 
 let () =
-  define "format_int" (format @-> ret format) @@ fun s ->
+  define "format_int" (format_one_arg_spec Types.(!! GT.int)) @@ fun s ->
   Tac2print.FmtInt :: s
 
 let () =
-  define "format_constr" (format @-> ret format) @@ fun s ->
+  define "format_constr" (format_one_arg_spec Types.(!! GT.constr)) @@ fun s ->
   Tac2print.FmtConstr :: s
 
 let () =
-  define "format_ident" (format @-> ret format) @@ fun s ->
+  define "format_ident" (format_one_arg_spec Types.(!! GT.ident)) @@ fun s ->
   Tac2print.FmtIdent :: s
 
 let () =
-  define "format_literal" (string @-> format @-> ret format) @@ fun lit s ->
+  define "format_literal" (string @-> format_linear_spec @-> ret format_linear_spec) @@ fun lit s ->
   Tac2print.FmtLiteral lit :: s
 
 let () =
-  define "format_alpha" (format @-> ret format) @@ fun s ->
+  define "format_alpha"
+    (format_linear_spec
+     @-> ret Types.(format ((var 1 @-> var 4 @-> var 2) @-> var 4 @-> var 0) (var 1) (var 2) (var 3))) @@ fun s ->
   Tac2print.FmtAlpha :: s
 
 let arity_of_format fmt =
@@ -321,13 +332,16 @@ let arity_of_format fmt =
   List.fold_left fold 0 fmt
 
 let () =
-  define "format_kfprintf" (closure @-> format @-> tac valexpr) @@ fun k fmt ->
+  define "format_kfprintf"
+    (fun1 pp (typed valexpr (Types.var 1))
+     @-> Types.(format (var 0) (!! GT.unit) (!! GT.message) (var 1))
+     @-> tac valexpr_0) @@ fun k fmt ->
   let open Tac2print in
   let pop1 l = match l with [] -> assert false | x :: l -> (x, l) in
   let pop2 l = match l with [] | [_] -> assert false | x :: y :: l -> (x, y, l) in
   let arity = arity_of_format fmt in
   let rec eval accu args fmt = match fmt with
-  | [] -> apply k [of_pp accu]
+  | [] -> k accu
   | tag :: fmt ->
     match tag with
     | FmtLiteral s ->
@@ -361,7 +375,11 @@ let () =
   else return (Tac2ffi.of_closure (Tac2val.abstract arity eval))
 
 let () =
-  define "format_ikfprintf" (closure @-> valexpr @-> format @-> tac valexpr) @@ fun k v fmt ->
+  define "format_ikfprintf"
+    (typed closure Types.(var 1 @-> var 2)
+     @-> typed valexpr (Types.var 1)
+     @-> Types.(format (var 0) (!! GT.unit) (var 1) (var 2))
+     @-> tac valexpr_0) @@ fun k v fmt ->
   let arity = arity_of_format fmt in
   let eval _args = apply k [v] in
   if Int.equal arity 0 then eval []
@@ -369,36 +387,40 @@ let () =
 
 (** Array *)
 
-let () = define "array_empty" (ret valexpr) (v_blk 0 [||])
+(* avoid using "array valexpr_0" to avoid useless Array.map in readers
+   and to avoid making writers write to a copied array *)
+let array_ty_0 = Types.(! GT.array [var 0])
+
+let () = define "array_empty" (ret (typed valexpr array_ty_0)) (v_blk 0 [||])
 
 let () =
-  define "array_make" (int @-> valexpr @-> tac valexpr) @@ fun n x ->
+  define "array_make" (int @-> valexpr_0 @-> tac (typed valexpr array_ty_0)) @@ fun n x ->
   try return (v_blk 0 (Array.make n x)) with Invalid_argument _ -> throw err_outofbounds
 
 let () =
-  define "array_length" (block @-> ret int) @@ fun (_, v) -> Array.length v
+  define "array_length" (typed block array_ty_0 @-> ret int) @@ fun (_, v) -> Array.length v
 
 let () =
-  define "array_set" (block @-> int @-> valexpr @-> tac unit) @@ fun (_, v) n x ->
+  define "array_set" (typed block array_ty_0 @-> int @-> valexpr_0 @-> tac unit) @@ fun (_, v) n x ->
   try Array.set v n x; return () with Invalid_argument _ -> throw err_outofbounds
 
 let () =
-  define "array_get" (block @-> int @-> tac valexpr) @@ fun (_, v) n ->
+  define "array_get" (typed block array_ty_0 @-> int @-> tac @@ valexpr_0) @@ fun (_, v) n ->
   try return (Array.get v n) with Invalid_argument _ -> throw err_outofbounds
 
 let () =
   define "array_blit"
-    (block @-> int @-> block @-> int @-> int @-> tac unit)
+    (typed block array_ty_0 @-> int @-> typed block array_ty_0 @-> int @-> int @-> tac unit)
     @@ fun (_, v0) s0 (_, v1) s1 l ->
   try Array.blit v0 s0 v1 s1 l; return () with Invalid_argument _ ->
   throw err_outofbounds
 
 let () =
-  define "array_fill" (block @-> int @-> int @-> valexpr @-> tac unit) @@ fun (_, d) s l v ->
+  define "array_fill" (typed block array_ty_0 @-> int @-> int @-> valexpr_0 @-> tac unit) @@ fun (_, d) s l v ->
   try Array.fill d s l v; return () with Invalid_argument _ -> throw err_outofbounds
 
 let () =
-  define "array_concat" (list block @-> ret valexpr) @@ fun l ->
+  define "array_concat" (list (typed block array_ty_0) @-> ret (typed valexpr array_ty_0)) @@ fun l ->
   v_blk 0 (Array.concat (List.map snd l))
 
 (** Ident *)
@@ -476,10 +498,9 @@ let () = define "string_compare" (bytes @-> bytes @-> ret int) Bytes.compare
 
 (** constr -> constr *)
 let () =
-  define "constr_type" (constr @-> tac valexpr) @@ fun c ->
+  define "constr_type" (constr @-> tac constr) @@ fun c ->
   let get_type env sigma =
     let (sigma, t) = Typing.type_of env sigma c in
-    let t = Tac2ffi.of_constr t in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
   in
   pf_apply ~catch_exceptions:true get_type
@@ -490,7 +511,7 @@ let () =
   Proofview.tclEVARMAP >>= fun sigma -> return (EConstr.eq_constr sigma c1 c2)
 
 let () =
-  define "constr_kind" (constr @-> eret valexpr) @@ fun c env sigma ->
+  define "constr_kind" (constr @-> eret (typed valexpr Types.(!! GT.constr_kind))) @@ fun c env sigma ->
   let open Constr in
   match EConstr.kind sigma c with
   | Rel n ->
@@ -593,7 +614,7 @@ let () =
     |]
 
 let () =
-  define "constr_make" (valexpr @-> eret constr) @@ fun knd env sigma ->
+  define "constr_make" (typed valexpr Types.(!! GT.constr_kind) @-> eret constr) @@ fun knd env sigma ->
   match Tac2ffi.to_block knd with
   | (0, [|n|]) ->
     let n = Tac2ffi.to_int n in
@@ -681,15 +702,15 @@ let () =
   | _ -> assert false
 
 let () =
-  define "constr_check" (constr @-> tac valexpr) @@ fun c ->
+  define "constr_check" (constr @-> tac @@ result constr) @@ fun c ->
   pf_apply @@ fun env sigma ->
   try
     let (sigma, _) = Typing.type_of env sigma c in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    return (of_result Tac2ffi.of_constr (Inl c))
+    return (Ok c)
   with e when CErrors.noncritical e ->
     let e = Exninfo.capture e in
-    return (of_result Tac2ffi.of_constr (Inr e))
+    return (Error e)
 
 let () =
   define "constr_liftn" (int @-> int @-> constr @-> ret constr)
@@ -715,21 +736,24 @@ let () =
   Proofview.tclEVARMAP >>= fun sigma ->
   return (EConstr.Vars.noccur_between sigma n m c)
 
+let constr_case_ = repr_ext val_case
+let constr_case = typed constr_case_ Types.(!! GT.constr_case)
+
 let () =
-  define "constr_case" (inductive @-> tac valexpr) @@ fun ind ->
+  define "constr_case" (inductive @-> tac constr_case) @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   try
     let ans = Inductiveops.make_case_info env ind Constr.RegularStyle in
-    return (Tac2ffi.of_ext Tac2ffi.val_case ans)
+    return ans
   with e when CErrors.noncritical e ->
     throw err_notfound
 
-let () = define "constr_cast_default" (ret valexpr) (of_cast DEFAULTcast)
-let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
-let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)
+let () = define "constr_cast_default" (ret cast) DEFAULTcast
+let () = define "constr_cast_vm" (ret cast) VMcast
+let () = define "constr_cast_native" (ret cast) NATIVEcast
 
 let () =
-  define "constr_in_context" (ident @-> constr @-> closure @-> tac constr) @@ fun id t c ->
+  define "constr_in_context" (ident @-> constr @-> thunk unit @-> tac constr) @@ fun id t c ->
   Proofview.Goal.goals >>= function
   | [gl] ->
     gl >>= fun gl ->
@@ -766,50 +790,58 @@ let () =
     throw err_notfocussed
 
 (** preterm -> constr *)
-let () = define "constr_flags" (ret (repr_ext val_pretype_flags)) constr_flags
+let pretype_flags_ = repr_ext val_pretype_flags
+let pretype_flags = typed pretype_flags_ Types.(!! GT.pretype_flags)
 
-let () = define "open_constr_flags" (ret (repr_ext val_pretype_flags)) open_constr_use_classes_flags
+let () = define "constr_flags" (ret pretype_flags) constr_flags
 
-let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
+let () = define "open_constr_flags" (ret pretype_flags) open_constr_use_classes_flags
 
-let () = define "expected_oftype" (constr @-> ret (repr_ext val_expected_type)) @@ fun c ->
+let expected_type_ = repr_ext val_expected_type
+let expected_type = typed expected_type_ Types.(!! GT.pretype_expected_type)
+
+let () = define "expected_istype" (ret expected_type) IsType
+
+let () = define "expected_oftype" (constr @-> ret expected_type) @@ fun c ->
   OfType c
 
-let () = define "expected_without_type_constraint" (ret (repr_ext val_expected_type))
-    WithoutTypeConstraint
+let () = define "expected_without_type_constraint" (ret expected_type) WithoutTypeConstraint
 
 let () =
-  define "constr_pretype" (repr_ext val_pretype_flags @-> repr_ext val_expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
+  define "constr_pretype" (pretype_flags @-> expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
   let pretype env sigma =
     let sigma, t = Pretyping.understand_uconstr ~flags ~expected_type env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
   in
   pf_apply ~catch_exceptions:true pretype
 
+let binder_ = repr_ext val_binder
+let binder = typed binder_ Types.(!! GT.binder)
+
 let () =
-  define "constr_binder_make" (option ident @-> constr @-> tac valexpr) @@ fun na ty ->
+  define "constr_binder_make" (option ident @-> constr @-> tac binder) @@ fun na ty ->
   pf_apply @@ fun env sigma ->
   match Retyping.relevance_of_type env sigma ty with
   | rel ->
     let na = match na with None -> Anonymous | Some id -> Name id in
-    return (Tac2ffi.of_ext val_binder (Context.make_annot na rel, ty))
+    return (Context.make_annot na rel, ty)
   | exception (Retyping.RetypeError _ as e) ->
     let e, info = Exninfo.capture e in
     fail ~info (CErrors.UserError Pp.(str "Not a type."))
 
 let () =
   define "constr_binder_unsafe_make"
-    (option ident @-> relevance @-> constr @-> ret valexpr)
+    (option ident @-> relevance @-> constr @-> ret binder)
     @@ fun na rel ty ->
   let na = match na with None -> Anonymous | Some id -> Name id in
-  Tac2ffi.of_ext val_binder (Context.make_annot na rel, ty)
+  (Context.make_annot na rel, ty)
 
 let () =
-  define "constr_binder_name" (repr_ext val_binder @-> ret (option ident)) @@ fun (bnd, _) ->
+  define "constr_binder_name" (binder @-> ret (option ident)) @@ fun (bnd, _) ->
   match bnd.Context.binder_name with Anonymous -> None | Name id -> Some id
 
 let () =
-  define "constr_binder_type" (repr_ext val_binder @-> ret constr) @@ fun (_, ty) -> ty
+  define "constr_binder_type" (binder @-> ret constr) @@ fun (_, ty) -> ty
 
 let () =
   define "constr_has_evar" (constr @-> tac bool) @@ fun c ->
@@ -818,10 +850,12 @@ let () =
 
 (** Extra equalities *)
 
+let meta = typed int_ Types.(!! GT.meta)
+
 let () = define "evar_equal" (evar @-> evar @-> ret bool) Evar.equal
 let () = define "float_equal" (float @-> float @-> ret bool) Float64.equal
 let () = define "uint63_equal" (uint63 @-> uint63 @-> ret bool) Uint63.equal
-let () = define "meta_equal" (int @-> int @-> ret bool) Int.equal
+let () = define "meta_equal" (meta @-> meta @-> ret bool) Int.equal
 let () = define "constr_cast_equal" (cast @-> cast @-> ret bool) Glob_ops.cast_kind_eq
 
 let () =
@@ -829,24 +863,26 @@ let () =
     (constant @-> constant @-> ret bool)
     Constant.UserOrd.equal
 let () =
-  let ty = repr_ext val_case in
-  define "constr_case_equal" (ty @-> ty @-> ret bool) @@ fun x y ->
+  define "constr_case_equal" (constr_case @-> constr_case @-> ret bool) @@ fun x y ->
   Ind.UserOrd.equal x.ci_ind y.ci_ind
 let () =
-  let ty = repr_ext val_constructor in
+  let ty = typed (repr_ext val_constructor) Types.(!! GT.constructor) in
   define "constructor_equal" (ty @-> ty @-> ret bool) Construct.UserOrd.equal
 let () =
   define "projection_equal" (projection @-> projection @-> ret bool) Projection.UserOrd.equal
 
 (** Patterns *)
 
+let matching_context_ = repr_ext val_matching_context
+let matching_context = typed matching_context_ Types.(!! GT.matching_context)
+
 let () =
   define "pattern_empty_context"
-    (ret (repr_ext val_matching_context))
+    (ret matching_context)
     Constr_matching.empty_context
 
 let () =
-  define "pattern_matches" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches" (pattern @-> constr @-> tac (list (pair ident constr))) @@ fun pat c ->
   pf_apply @@ fun env sigma ->
   let ans =
     try Some (Constr_matching.matches env sigma pat c)
@@ -856,35 +892,25 @@ let () =
   | None -> fail err_matchfailure
   | Some ans ->
     let ans = Id.Map.bindings ans in
-    let of_pair (id, c) = Tac2ffi.of_tuple [| Tac2ffi.of_ident id; Tac2ffi.of_constr c |] in
-    return (Tac2ffi.of_list of_pair ans)
+    return ans
   end
 
 let () =
-  define "pattern_matches_subterm" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches_subterm" (pattern @-> constr @-> tac (pair matching_context (list (pair ident constr)))) @@ fun pat c ->
   let open Constr_matching in
-  let rec of_ans s = match IStream.peek s with
+  let rec multireturn s = match IStream.peek s with
   | IStream.Nil -> fail err_matchfailure
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
-    let of_pair (id, c) =
-      Tac2ffi.of_tuple [| Tac2ffi.of_ident id; Tac2ffi.of_constr c |]
-    in
-    let ans =
-      Tac2ffi.of_tuple [|
-        Tac2ffi.of_ext val_matching_context m_ctx;
-        Tac2ffi.of_list of_pair ans;
-      |]
-    in
-    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+    Proofview.tclOR (return (m_ctx,ans)) (fun _ -> multireturn s)
   in
   pf_apply @@ fun env sigma ->
   let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
   let ans = Constr_matching.match_subterm env sigma (Id.Set.empty,pat) c in
-  of_ans ans
+  multireturn ans
 
 let () =
-  define "pattern_matches_vect" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches_vect" (pattern @-> constr @-> tac (array constr)) @@ fun pat c ->
   pf_apply @@ fun env sigma ->
   let ans =
     try Some (Constr_matching.matches env sigma pat c)
@@ -895,37 +921,43 @@ let () =
   | Some ans ->
     let ans = Id.Map.bindings ans in
     let ans = Array.map_of_list snd ans in
-    return (Tac2ffi.of_array Tac2ffi.of_constr ans)
+    return ans
 
 let () =
-  define "pattern_matches_subterm_vect" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches_subterm_vect" (pattern @-> constr @-> tac (pair matching_context (array constr))) @@ fun pat c ->
   let open Constr_matching in
-  let rec of_ans s = match IStream.peek s with
+  let rec multireturn s = match IStream.peek s with
   | IStream.Nil -> fail err_matchfailure
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let ans = Array.map_of_list snd ans in
-    let ans =
-      Tac2ffi.of_tuple [|
-        Tac2ffi.of_ext val_matching_context m_ctx;
-        Tac2ffi.of_array Tac2ffi.of_constr ans;
-      |]
-    in
-    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+    Proofview.tclOR (return (m_ctx, ans)) (fun _ -> multireturn s)
   in
   pf_apply @@ fun env sigma ->
   let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
   let ans = Constr_matching.match_subterm env sigma (Id.Set.empty,pat) c in
-  of_ans ans
+  multireturn ans
 
-let match_pattern = map_repr
+let match_pattern_ = map_repr
     (fun (b,pat) -> if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat)
     (function Tac2match.MatchPattern pat -> (true, pat) | MatchContext pat -> (false, pat))
-    (pair bool pattern)
+    (pair_ bool_ pattern_)
+
+let match_pattern = typed match_pattern_ Types.(tuple [!! GT.match_kind; !! GT.pattern])
+
+let pattern_matches_goal_return_ty =
+  let open Types in
+  let open GT in
+  tuple [! array [!! ident];
+         ! array [!! matching_context];
+         ! array [!! matching_context];
+         ! array [!! constr];
+         !! matching_context]
 
 let () =
   define "pattern_matches_goal"
-    (bool @-> list (pair (option match_pattern) match_pattern) @-> match_pattern @-> tac valexpr)
+    (bool @-> list (pair (option match_pattern) match_pattern) @-> match_pattern
+     @-> tac (typed valexpr pattern_matches_goal_return_ty))
     @@ fun rev hp cp ->
   assert_focussed >>= fun () ->
   Proofview.Goal.enter_one @@ fun gl ->
@@ -947,16 +979,16 @@ let () =
 
 let () =
   define "pattern_instantiate"
-    (repr_ext val_matching_context @-> constr @-> ret constr)
+    (matching_context @-> constr @-> ret constr)
     Constr_matching.instantiate_context
 
 (** Error *)
 
 let () =
-  define "throw" (exn @-> tac valexpr) @@ fun (e, info) -> throw ~info e
+  define "throw" (exn @-> tac valexpr_0) @@ fun (e, info) -> throw ~info e
 
 let () =
-  define "throw_bt" (exn @-> exninfo @-> tac valexpr) @@ fun (e,_) info ->
+  define "throw_bt" (exn @-> exninfo @-> tac valexpr_0) @@ fun (e,_) info ->
     Proofview.tclLIFT (Proofview.NonLogical.raise (e, info))
 
 let () =
@@ -966,64 +998,66 @@ let () =
 
 (** exn -> 'a *)
 let () =
-  define "zero" (exn @-> tac valexpr) @@ fun (e, info) -> fail ~info e
+  define "zero" (exn @-> tac valexpr_0) @@ fun (e, info) -> fail ~info e
 
 let () =
-  define "zero_bt" (exn @-> exninfo @-> tac valexpr) @@ fun (e,_) info ->
+  define "zero_bt" (exn @-> exninfo @-> tac valexpr_0) @@ fun (e,_) info ->
     Proofview.tclZERO ~info e
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () =
-  define "plus" (closure @-> closure @-> tac valexpr) @@ fun x k ->
-  Proofview.tclOR (thaw x) (fun e -> Tac2val.apply k [Tac2ffi.of_exn e])
+  define "plus"
+    (thunk valexpr_0
+     @-> fun1 exn valexpr_0
+     @-> tac valexpr_0) @@ fun x k ->
+  Proofview.tclOR (thaw x) k
 
 let () =
-  define "plus_bt" (closure @-> closure @-> tac valexpr) @@ fun run handle ->
-    Proofview.tclOR (thaw run)
-      (fun e -> Tac2val.apply handle [Tac2ffi.of_exn e; of_exninfo (snd e)])
+  define "plus_bt"
+    (thunk valexpr_0 @-> fun2 exn exninfo valexpr_0 @-> tac valexpr_0) @@ fun run handle ->
+  Proofview.tclOR (thaw run)
+    (fun e -> handle e (snd e))
 
 (** (unit -> 'a) -> 'a *)
 let () =
-  define "once" (closure @-> tac valexpr) @@ fun f ->
+  define "once" (thunk valexpr_0 @-> tac valexpr_0) @@ fun f ->
   Proofview.tclONCE (thaw f)
 
 (** (unit -> unit) list -> unit *)
 let () =
-  define "dispatch" (list closure @-> tac unit) @@ fun l ->
-  let l = List.map (fun f -> Proofview.tclIGNORE (thaw f)) l in
+  define "dispatch" (list (thunk unit) @-> tac unit) @@ fun l ->
+  let l = List.map (fun f -> thaw f) l in
   Proofview.tclDISPATCH l
 
 (** (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit *)
 let () =
-  define "extend" (list closure @-> closure @-> list closure @-> tac unit) @@ fun lft tac rgt ->
-  let lft = List.map (fun f -> Proofview.tclIGNORE (thaw f)) lft in
-  let tac = Proofview.tclIGNORE (thaw tac) in
-  let rgt = List.map (fun f -> Proofview.tclIGNORE (thaw f)) rgt in
+  define "extend" (list (thunk unit) @-> thunk unit @-> list (thunk unit) @-> tac unit) @@ fun lft tac rgt ->
+  let lft = List.map thaw lft in
+  let tac = thaw tac in
+  let rgt = List.map thaw rgt in
   Proofview.tclEXTEND lft tac rgt
 
 (** (unit -> unit) -> unit *)
 let () =
-  define "enter" (closure @-> tac unit) @@ fun f ->
-  let f = Proofview.tclIGNORE (thaw f) in
-  Proofview.tclINDEPENDENT f
+  define "enter" (thunk unit  @-> tac unit) @@ fun f ->
+  Proofview.tclINDEPENDENT (thaw f)
 
 (** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
 let () =
-  define "case" (closure @-> tac valexpr) @@ fun f ->
+  define "case" (thunk valexpr_0 @-> tac (result (pair valexpr_0 (fun1 exn valexpr_0)))) @@ fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
-    let k = Tac2val.mk_closure arity_one begin fun e ->
-      let (e, info) = Tac2ffi.to_exn e in
+    let k (e,info) =
       set_bt info >>= fun info ->
       k (e, info)
-    end in
-    return (v_blk 0 [| Tac2ffi.of_tuple [| x; Tac2ffi.of_closure k |] |])
-  | Proofview.Fail e -> return (v_blk 1 [| Tac2ffi.of_exn e |])
+    in
+    return (Ok (x, k))
+  | Proofview.Fail e -> return (Error e)
   end
 
 (** int -> int -> (unit -> 'a) -> 'a *)
 let () =
-  define "focus" (int @-> int @-> closure @-> tac valexpr) @@ fun i j tac ->
+  define "focus" (int @-> int @-> thunk valexpr_0 @-> tac valexpr_0) @@ fun i j tac ->
   Proofview.tclFOCUS i j (thaw tac)
 
 (** unit -> unit *)
@@ -1058,64 +1092,58 @@ let () =
     (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
 
 let () =
-  define "hyps" (unit @-> tac valexpr) @@ fun _ ->
+  define "hyps" (unit @-> tac (list (triple ident (option constr) constr))) @@ fun _ ->
   pf_apply @@ fun env _ ->
   let open Context in
   let open Named.Declaration in
-  let hyps = List.rev (Environ.named_context env) in
   let map = function
   | LocalAssum (id, t) ->
     let t = EConstr.of_constr t in
-    Tac2ffi.of_tuple [|
-      Tac2ffi.of_ident id.binder_name;
-      Tac2ffi.of_option Tac2ffi.of_constr None;
-      Tac2ffi.of_constr t;
-    |]
+    (id.binder_name, None, t)
   | LocalDef (id, c, t) ->
     let c = EConstr.of_constr c in
     let t = EConstr.of_constr t in
-    Tac2ffi.of_tuple [|
-      Tac2ffi.of_ident id.binder_name;
-      Tac2ffi.of_option Tac2ffi.of_constr (Some c);
-      Tac2ffi.of_constr t;
-    |]
+    (id.binder_name, Some c, t)
   in
-  return (Tac2ffi.of_list map hyps)
+  let hyps = List.rev_map map (Environ.named_context env) in
+  return hyps
 
 (** (unit -> constr) -> unit *)
 let () =
-  define "refine" (closure @-> tac unit) @@ fun c ->
-  let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Tac2ffi.to_constr c) in
+  define "refine" (thunk constr @-> tac unit) @@ fun c ->
+  let c = thaw c >>= fun c -> Proofview.tclUNIT ((), c) in
   Proofview.Goal.enter @@ fun gl ->
   Refine.generic_refine ~typecheck:true c gl
 
 let () =
-  define "with_holes" (closure @-> closure @-> tac valexpr) @@ fun x f ->
+  define "with_holes"
+    (thunk valexpr_0 @-> fun1 valexpr_0 (typed valexpr (Types.var 1))
+     @-> tac (typed valexpr (Types.var 1))) @@ fun x f ->
   Proofview.tclEVARMAP >>= fun sigma0 ->
   thaw x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.tclWITHHOLES false (Tac2val.apply f [ans]) sigma
+  Tacticals.tclWITHHOLES false (f ans) sigma
 
 let () =
-  define "progress" (closure @-> tac valexpr) @@ fun f ->
+  define "progress" (thunk valexpr_0 @-> tac valexpr_0) @@ fun f ->
   Proofview.tclPROGRESS (thaw f)
 
 let () =
-  define "abstract" (option ident @-> closure @-> tac unit) @@ fun id f ->
-  Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f))
+  define "abstract" (option ident @-> thunk unit @-> tac unit) @@ fun id f ->
+  Abstract.tclABSTRACT id (thaw f)
 
 let () =
-  define "time" (option string @-> closure @-> tac valexpr) @@ fun s f ->
+  define "time" (option string @-> thunk valexpr_0 @-> tac valexpr_0) @@ fun s f ->
   Proofview.tclTIME s (thaw f)
 
 let () =
-  define "timeout" (int @-> closure @-> tac valexpr) @@ fun i f ->
+  define "timeout" (int @-> thunk valexpr_0 @-> tac valexpr_0) @@ fun i f ->
     Proofview.tclTIMEOUT i (thaw f)
 
 let () =
-  define "timeoutf" (float @-> closure @-> tac valexpr) @@ fun f64 f ->
-    Proofview.tclTIMEOUTF (Float64.to_float f64) (thaw f)
+  define "timeoutf" (float @-> thunk valexpr_0 @-> tac valexpr_0) @@ fun f64 f ->
+    Proofview.tclTIMEOUTF (Float64.to_float f64) (f())
 
 let () =
   define "check_interrupt" (unit @-> tac unit) @@ fun _ ->
@@ -1123,16 +1151,18 @@ let () =
 
 (** Fresh *)
 
-let () =
-  let ty = repr_ext val_free in
-  define "fresh_free_union" (ty @-> ty @-> ret ty) Id.Set.union
+let free_ = repr_ext val_free
+let free = typed free_ Types.(!! GT.free)
 
 let () =
-  define "fresh_free_of_ids" (list ident @-> ret (repr_ext val_free)) @@ fun ids ->
+  define "fresh_free_union" (free @-> free @-> ret free) Id.Set.union
+
+let () =
+  define "fresh_free_of_ids" (list ident @-> ret free) @@ fun ids ->
   List.fold_right Id.Set.add ids Id.Set.empty
 
 let () =
-  define "fresh_free_of_constr" (constr @-> tac (repr_ext val_free)) @@ fun c ->
+  define "fresh_free_of_constr" (constr @-> tac free) @@ fun c ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let rec fold accu c =
     match EConstr.kind sigma c with
@@ -1142,7 +1172,7 @@ let () =
   return (fold Id.Set.empty c)
 
 let () =
-  define "fresh_fresh" (repr_ext val_free @-> ident @-> ret ident) @@ fun avoid id ->
+  define "fresh_fresh" (free @-> ident @-> ret ident) @@ fun avoid id ->
   Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid)
 
 (** Env *)
@@ -1187,12 +1217,15 @@ let () =
 
 (** Ind *)
 
+let ind_data_ = repr_ext val_ind_data
+let ind_data = typed ind_data_ Types.(!! GT.ind_data)
+
 let () =
   define "ind_equal" (inductive @-> inductive @-> ret bool) Ind.UserOrd.equal
 
 let () =
   define "ind_data"
-    (inductive @-> tac (repr_ext val_ind_data))
+    (inductive @-> tac ind_data)
     @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   if Environ.mem_mind (fst ind) env then
@@ -1200,28 +1233,31 @@ let () =
   else
     throw err_notfound
 
-let () = define "ind_repr" (repr_ext val_ind_data @-> ret inductive) fst
+let () = define "ind_repr" (ind_data @-> ret inductive) fst
 let () = define "ind_index" (inductive @-> ret int) snd
 
 let () =
-  define "ind_nblocks" (repr_ext val_ind_data @-> ret int) @@ fun (_, mib) ->
+  define "ind_nblocks" (ind_data @-> ret int) @@ fun (_, mib) ->
   Array.length mib.Declarations.mind_packets
 
 let () =
-  define "ind_nconstructors" (repr_ext val_ind_data @-> ret int) @@ fun ((_, n), mib) ->
+  define "ind_nconstructors" (ind_data @-> ret int) @@ fun ((_, n), mib) ->
   Array.length Declarations.(mib.mind_packets.(n).mind_consnames)
 
 let () =
   define "ind_get_block"
-    (repr_ext val_ind_data @-> int @-> tac (repr_ext val_ind_data))
+    (ind_data @-> int @-> tac ind_data)
     @@ fun (ind, mib) n ->
   if 0 <= n && n < Array.length mib.Declarations.mind_packets then
     return ((fst ind, n), mib)
   else throw err_notfound
 
+let constructor_ = repr_ext val_constructor
+let constructor = typed constructor_ Types.(!! GT.constructor)
+
 let () =
   define "ind_get_constructor"
-    (repr_ext val_ind_data @-> int @-> tac (repr_ext val_constructor))
+    (ind_data @-> int @-> tac constructor)
     @@ fun ((mind, n), mib) i ->
   let open Declarations in
   let ncons = Array.length mib.mind_packets.(n).mind_consnames in
@@ -1233,18 +1269,18 @@ let () =
 
 let () =
   define "constructor_inductive"
-    (repr_ext val_constructor @-> ret inductive)
+    (constructor @-> ret inductive)
   @@ fun (ind, _) -> ind
 
 let () =
   define "constructor_index"
-    (repr_ext val_constructor @-> ret int)
+    (constructor @-> ret int)
   @@ fun (_, i) ->
   (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
   i-1
 
 let () =
-  define "ind_get_projections" (repr_ext val_ind_data @-> ret (option (array projection)))
+  define "ind_get_projections" (ind_data @-> ret (option (array projection)))
   @@ fun (ind,mib) ->
   Declareops.inductive_make_projections ind mib
   |> Option.map (Array.map (fun (p,_) -> Projection.make p false))
@@ -1283,13 +1319,17 @@ type tagged_map = TaggedMap : (_,_,'map) map_tag * 'map -> tagged_map
 let map_tag_ext : any_map_tag Tac2dyn.Val.tag = Tac2dyn.Val.create "fmap_tag"
 let map_tag_repr = Tac2ffi.repr_ext map_tag_ext
 
+let map_tag_ty t = Types.(! GT.map_tag [t])
+
+let map_tag_0 = typed map_tag_repr (map_tag_ty (Types.var 0))
+
 let set_ext : tagged_set Tac2dyn.Val.tag = Tac2dyn.Val.create "fset"
 let set_repr = Tac2ffi.repr_ext set_ext
-let tag_set tag s = Tac2ffi.repr_of set_repr (TaggedSet (tag,s))
+let tag_set tag s = TaggedSet (tag,s)
 
 let map_ext : tagged_map Tac2dyn.Val.tag = Tac2dyn.Val.create "fmap"
 let map_repr = Tac2ffi.repr_ext map_ext
-let tag_map tag m = Tac2ffi.repr_of map_repr (TaggedMap (tag,m))
+let tag_map tag m = TaggedMap (tag,m)
 
 module type MapType = sig
   (* to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
@@ -1297,11 +1337,14 @@ module type MapType = sig
   module M : CMap.ExtS with type key = S.elt and module Set := S
   type valmap
   val valmap_eq : (valmap, valexpr M.t) Util.eq
-  val repr : S.elt Tac2ffi.repr
+  val repr : S.elt repr
+  val typ : Types.t option
 end
 
+type ('t,'set,'map) maptype = (module MapType with type S.elt = 't and type S.t = 'set and type valmap = 'map)
+
 module MapTypeV = struct
-  type _ t = Map : (module MapType with type S.elt = 't and type S.t = 'set and type valmap = 'map)
+  type _ t = Map : ('t,'set,'map) maptype
     -> ('t * 'set * 'map) t
 end
 
@@ -1309,10 +1352,13 @@ module MapMap = MapTagDyn.Map(MapTypeV)
 
 let maps = ref MapMap.empty
 
-let register_map ?(plugin=ltac2_plugin) ~tag_name x =
+let register_map (type t set map) ?(plugin=ltac2_plugin) ~tag_name (x:(t,set,map) maptype)
+  : (t * set * map) MapTagDyn.tag =
   let tag = MapTagDyn.create (plugin^":"^tag_name) in
   let () = maps := MapMap.add tag (Map x) !maps in
-  let () = define ~plugin tag_name (ret map_tag_repr) (Any tag) in
+  let module X = (val x) in
+  let ty = map_tag_ty (Types.default X.typ) in
+  let () = define ~plugin tag_name (ret (typed map_tag_repr ty)) (Any tag) in
   tag
 
 let get_map (type t s m) (tag:(t,s,m) map_tag)
@@ -1331,7 +1377,7 @@ let assert_map_tag_eq t1 t2 = match map_tag_eq t1 t2 with
 let ident_map_tag : _ map_tag = register_map ~tag_name:"fmap_ident_tag" (module struct
     module S = Id.Set
     module M = Id.Map
-    let repr = Tac2ffi.ident
+    let repr, typ = Tac2ffi.ident
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1339,7 +1385,7 @@ let ident_map_tag : _ map_tag = register_map ~tag_name:"fmap_ident_tag" (module 
 let int_map_tag : _ map_tag = register_map ~tag_name:"fmap_int_tag" (module struct
     module S = Int.Set
     module M = Int.Map
-    let repr = Tac2ffi.int
+    let repr, typ = Tac2ffi.int
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1347,7 +1393,7 @@ let int_map_tag : _ map_tag = register_map ~tag_name:"fmap_int_tag" (module stru
 let string_map_tag : _ map_tag = register_map ~tag_name:"fmap_string_tag" (module struct
     module S = String.Set
     module M = String.Map
-    let repr = Tac2ffi.string
+    let repr, typ = Tac2ffi.string
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1355,7 +1401,7 @@ let string_map_tag : _ map_tag = register_map ~tag_name:"fmap_string_tag" (modul
 let inductive_map_tag : _ map_tag = register_map ~tag_name:"fmap_inductive_tag" (module struct
     module S = Indset_env
     module M = Indmap_env
-    let repr = inductive
+    let repr, typ = inductive
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1363,7 +1409,7 @@ let inductive_map_tag : _ map_tag = register_map ~tag_name:"fmap_inductive_tag" 
 let constructor_map_tag : _ map_tag = register_map ~tag_name:"fmap_constructor_tag" (module struct
     module S = Constrset_env
     module M = Constrmap_env
-    let repr = Tac2ffi.(repr_ext val_constructor)
+    let repr, typ = constructor
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1371,151 +1417,163 @@ let constructor_map_tag : _ map_tag = register_map ~tag_name:"fmap_constructor_t
 let constant_map_tag : _ map_tag = register_map ~tag_name:"fmap_constant_tag" (module struct
     module S = Cset_env
     module M = Cmap_env
-    let repr = Tac2ffi.(repr_ext val_constant)
+    let repr, typ = constant
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
 
+let fset_0 = typed set_repr Types.(! GT.fset [var 0])
+
 let () =
-  define "fset_empty" (map_tag_repr @-> ret valexpr) @@ fun (Any tag) ->
+  define "fset_empty" (map_tag_0 @-> ret fset_0) @@ fun (Any tag) ->
   let (module V) = get_map tag in
   tag_set tag V.S.empty
 
 let () =
-  define "fset_is_empty" (set_repr @-> ret bool) @@ fun (TaggedSet (tag,s)) ->
+  define "fset_is_empty" (fset_0 @-> ret bool) @@ fun (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
   V.S.is_empty s
 
 let () =
-  define "fset_mem" (valexpr @-> set_repr @-> ret bool) @@ fun x (TaggedSet (tag,s)) ->
+  define "fset_mem" (valexpr_0 @-> fset_0 @-> ret bool) @@ fun x (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
   V.S.mem (repr_to V.repr x) s
 
 let () =
-  define "fset_add" (valexpr @-> set_repr @-> ret valexpr) @@ fun x (TaggedSet (tag,s)) ->
+  define "fset_add" (valexpr_0 @-> fset_0 @-> ret fset_0) @@ fun x (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
   tag_set tag (V.S.add (repr_to V.repr x) s)
 
 let () =
-  define "fset_remove" (valexpr @-> set_repr @-> ret valexpr) @@ fun x (TaggedSet (tag,s)) ->
+  define "fset_remove" (valexpr_0 @-> fset_0 @-> ret fset_0) @@ fun x (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
   tag_set tag (V.S.remove (repr_to V.repr x) s)
 
 let () =
-  define "fset_union" (set_repr @-> set_repr @-> ret valexpr)
+  define "fset_union" (fset_0 @-> fset_0 @-> ret fset_0)
     @@ fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
   let Refl = assert_map_tag_eq tag tag' in
   let (module V) = get_map tag in
   tag_set tag (V.S.union s1 s2)
 
 let () =
-  define "fset_inter" (set_repr @-> set_repr @-> ret valexpr)
+  define "fset_inter" (fset_0 @-> fset_0 @-> ret fset_0)
     @@ fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
   let Refl = assert_map_tag_eq tag tag' in
   let (module V) = get_map tag in
   tag_set tag (V.S.inter s1 s2)
 
 let () =
-  define "fset_diff" (set_repr @-> set_repr @-> ret valexpr)
+  define "fset_diff" (fset_0 @-> fset_0 @-> ret fset_0)
     @@ fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
   let Refl = assert_map_tag_eq tag tag' in
   let (module V) = get_map tag in
   tag_set tag (V.S.diff s1 s2)
 
 let () =
-  define "fset_equal" (set_repr @-> set_repr @-> ret bool)
+  define "fset_equal" (fset_0 @-> fset_0 @-> ret bool)
     @@ fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
   let Refl = assert_map_tag_eq tag tag' in
   let (module V) = get_map tag in
   V.S.equal s1 s2
 
 let () =
-  define "fset_subset" (set_repr @-> set_repr @-> ret bool)
+  define "fset_subset" (fset_0 @-> fset_0 @-> ret bool)
     @@ fun (TaggedSet (tag,s1)) (TaggedSet (tag',s2)) ->
   let Refl = assert_map_tag_eq tag tag' in
   let (module V) = get_map tag in
   V.S.subset s1 s2
 
 let () =
-  define "fset_cardinal" (set_repr @-> ret int) @@ fun (TaggedSet (tag,s)) ->
+  define "fset_cardinal" (fset_0 @-> ret int) @@ fun (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
   V.S.cardinal s
 
 let () =
-  define "fset_elements" (set_repr @-> ret valexpr) @@ fun (TaggedSet (tag,s)) ->
+  define "fset_elements" (fset_0 @-> ret (list valexpr_0)) @@ fun (TaggedSet (tag,s)) ->
   let (module V) = get_map tag in
-  Tac2ffi.of_list (repr_of V.repr) (V.S.elements s)
+  List.map (repr_of V.repr) (V.S.elements s)
+
+let fmap_0_1 = typed map_repr Types.(! GT.fmap [var 0; var 1])
 
 let () =
-  define "fmap_empty" (map_tag_repr @-> ret valexpr) @@ fun (Any (tag)) ->
+  define "fmap_empty" (map_tag_0 @-> ret fmap_0_1) @@ fun (Any (tag)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_map tag V.M.empty
 
 let () =
-  define "fmap_is_empty" (map_repr @-> ret bool) @@ fun (TaggedMap (tag,m)) ->
+  define "fmap_is_empty" (fmap_0_1 @-> ret bool) @@ fun (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   V.M.is_empty m
 
 let () =
-  define "fmap_mem" (valexpr @-> map_repr @-> ret bool) @@ fun x (TaggedMap (tag,m)) ->
+  define "fmap_mem" (valexpr_0 @-> fmap_0_1 @-> ret bool) @@ fun x (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   V.M.mem (repr_to V.repr x) m
 
 let () =
-  define "fmap_add" (valexpr @-> valexpr @-> map_repr @-> ret valexpr)
+  define "fmap_add" (valexpr_0 @-> typed valexpr (Types.var 1) @-> fmap_0_1 @-> ret fmap_0_1)
     @@ fun x v (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_map tag (V.M.add (repr_to V.repr x) v m)
 
 let () =
-  define "fmap_remove" (valexpr @-> map_repr @-> ret valexpr)
+  define "fmap_remove" (valexpr_0 @-> fmap_0_1 @-> ret fmap_0_1)
     @@ fun x (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_map tag (V.M.remove (repr_to V.repr x) m)
 
 let () =
-  define "fmap_find_opt" (valexpr @-> map_repr @-> ret (option valexpr))
+  define "fmap_find_opt" (valexpr_0 @-> fmap_0_1 @-> ret (option (typed valexpr (Types.var 1))))
     @@ fun x (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   V.M.find_opt (repr_to V.repr x) m
 
 let () =
-  define "fmap_mapi" (closure @-> map_repr @-> tac valexpr)
+  define "fmap_mapi"
+    (fun2 valexpr_0 (typed valexpr (Types.var 1)) (typed valexpr (Types.var 2))
+     @-> fmap_0_1 @-> tac (typed map_repr Types.(! GT.fmap [var 0; var 2])))
     @@ fun f (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   let module Monadic = V.M.Monad(Proofview.Monad) in
-  Monadic.mapi (fun k v -> apply f [repr_of V.repr k;v]) m >>= fun m ->
+  Monadic.mapi (fun k v -> f (repr_of V.repr k) v) m >>= fun m ->
   return (tag_map tag m)
 
 let () =
-  define "fmap_fold" (closure @-> map_repr @-> valexpr @-> tac valexpr)
+  define "fmap_fold"
+    (fun3 valexpr_0 (typed valexpr (Types.var 1)) (typed valexpr (Types.var 2))
+       (typed valexpr (Types.var 2))
+     @-> fmap_0_1 @-> typed valexpr (Types.var 2) @-> tac (typed valexpr (Types.var 2)))
     @@ fun f (TaggedMap (tag,m)) acc ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   let module Monadic = V.M.Monad(Proofview.Monad) in
-  Monadic.fold (fun k v acc -> apply f [repr_of V.repr k;v;acc]) m acc
+  Monadic.fold (fun k v acc -> f (repr_of V.repr k) v acc) m acc
 
 let () =
-  define "fmap_cardinal" (map_repr @-> ret int) @@ fun (TaggedMap (tag,m)) ->
+  define "fmap_cardinal" (fmap_0_1 @-> ret int) @@ fun (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   V.M.cardinal m
 
 let () =
-  define "fmap_bindings" (map_repr @-> ret valexpr) @@ fun (TaggedMap (tag,m)) ->
+  define "fmap_bindings"
+    (fmap_0_1 @->
+     ret (list (pair (typed valexpr (Types.var 0)) (typed valexpr (Types.var 1)))))
+  @@ fun (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
-  Tac2ffi.(of_list (of_pair (repr_of V.repr) identity) (V.M.bindings m))
+  List.map (fun (k,v) -> repr_of V.repr k, v) (V.M.bindings m)
 
 let () =
-  define "fmap_domain" (map_repr @-> ret valexpr) @@ fun (TaggedMap (tag,m)) ->
+  define "fmap_domain" (fmap_0_1 @-> ret fset_0) @@ fun (TaggedMap (tag,m)) ->
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_set tag (V.M.domain m)

@@ -44,6 +44,7 @@ module type MapType = sig
   type valmap
   val valmap_eq : (valmap, Tac2val.valexpr M.t) Util.eq
   val repr : S.elt Tac2ffi.repr
+  val typ : Tac2ffi.Types.t option
 end
 
 type ('a,'set,'map) map_tag

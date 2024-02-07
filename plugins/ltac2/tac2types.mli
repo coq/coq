@@ -17,7 +17,7 @@ open Proofview
 type evars_flag = bool
 type advanced_flag = bool
 
-type 'a thunk = (unit, 'a) Tac2ffi.fun1
+type 'a thunk = unit -> 'a Proofview.tactic
 
 type quantified_hypothesis = Tactypes.quantified_hypothesis =
 | AnonHyp of int

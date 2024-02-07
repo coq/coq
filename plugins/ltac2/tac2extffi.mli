@@ -11,8 +11,8 @@
 open Tac2ffi
 open Tac2types
 
-val qhyp : quantified_hypothesis repr
+val qhyp : quantified_hypothesis repr annotated
 
-val bindings : bindings repr
+val bindings : bindings repr annotated
 
-val constr_with_bindings : constr_with_bindings repr
+val constr_with_bindings : constr_with_bindings repr annotated

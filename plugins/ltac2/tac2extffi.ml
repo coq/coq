@@ -24,7 +24,8 @@ let to_qhyp v = match Value.to_block v with
 | (1, [| id |]) -> NamedHyp (CAst.make (Value.to_ident id))
 | _ -> assert false
 
-let qhyp = make_to_repr to_qhyp
+let qhyp_ = make_to_repr to_qhyp
+let qhyp = typed qhyp_ Types.(!! Tac2globals.Types.hypothesis)
 
 let to_bindings = function
 | ValInt 0 -> NoBindings
@@ -34,10 +35,7 @@ let to_bindings = function
   ExplicitBindings ((Value.to_list (fun p -> to_pair to_qhyp Value.to_constr p) vl))
 | _ -> assert false
 
-let bindings = make_to_repr to_bindings
+let bindings_ = make_to_repr to_bindings
+let bindings = typed bindings_ Types.(!! Tac2globals.Types.bindings)
 
-let to_constr_with_bindings v = match Value.to_tuple v with
-| [| c; bnd |] -> (Value.to_constr c, to_bindings bnd)
-| _ -> assert false
-
-let constr_with_bindings = make_to_repr to_constr_with_bindings
+let constr_with_bindings = pair constr bindings

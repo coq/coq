@@ -24,36 +24,36 @@ type (_, _) spec
 (** [tac r] is the specification of a tactic (in the tactic monad sense) whose
     return type is specified (and converted into an Ltac2 value) via [r]. *)
 val tac :
-  'r repr ->
+  'r repr annotated ->
   (valexpr tactic, 'r tactic) spec
 
 (** [tac'] is similar to [tac], but only needs a conversion function. *)
 val tac' :
-  ('r -> valexpr) ->
+  ('r -> valexpr) annotated ->
   (valexpr tactic, 'r tactic) spec
 
 (** [ret r] is the specification of a pure tactic (i.e., a tactic defined as a
     pure OCaml value, not needing the tactic monad) whose return type is given
     by [r] (see [tac]). *)
 val ret :
-  'r repr ->
+  'r repr annotated ->
   (valexpr tactic, 'r) spec
 
 (** [ret'] is similar to [ret], but only needs a conversion function. *)
 val ret' :
-  ('r -> valexpr) ->
+  ('r -> valexpr) annotated ->
   (valexpr tactic, 'r) spec
 
 (** [eret] is similar to [ret], but for tactics that can be implemented with a
     pure OCaml value, provided extra arguments [env] and [sigma], computed via
     [tclENV] and [tclEVARMAP]. *)
 val eret :
-  'r repr ->
+  'r repr annotated ->
   (valexpr tactic, Environ.env -> Evd.evar_map -> 'r) spec
 
 (** [eret'] is similar to [eret], but only needs a conversion function. *)
 val eret' :
-  ('r -> valexpr) ->
+  ('r -> valexpr) annotated ->
   (valexpr tactic, Environ.env -> Evd.evar_map -> 'r) spec
 
 (** [gret] is similar to [ret], but for tactics that can be implemented with a
@@ -62,24 +62,24 @@ val eret' :
     of using an Ltac2 value defined with this specification. Indeed, the value
     of [g] is computed using [Goal.enter_one]. *)
 val gret :
-  'r repr ->
+  'r repr annotated ->
   (valexpr tactic, Goal.t -> 'r) spec
 
 (** [gret'] is similar to [gret], but only needs a conversion function. *)
 val gret' :
-  ('r -> valexpr) ->
+  ('r -> valexpr) annotated ->
   (valexpr tactic, Goal.t -> 'r) spec
 
 (** [r @-> s] extends the specification [s] with a closure argument whose type
     is specified by (and converted from an Ltac2 value via) [r]. *)
 val (@->) :
-  'a repr ->
+  'a repr annotated ->
   ('t,'f) spec ->
   (valexpr -> 't, 'a -> 'f) spec
 
 (** [(@-->)] is similar to [(@->)], but only needs a conversion function. *)
 val (@-->) :
-  (valexpr -> 'a) ->
+  (valexpr -> 'a) annotated ->
   ('t,'f) spec ->
   (valexpr -> 't, 'a -> 'f) spec
 

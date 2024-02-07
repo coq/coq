@@ -157,6 +157,8 @@ val interp_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object
 
 (** {5 Absolute paths} *)
 
+(* TODO move this to tac2globals *)
+
 val coq_prefix : ModPath.t
 (** Path where primitive datatypes are defined in Ltac2 plugin. *)
 
