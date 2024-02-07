@@ -14,7 +14,7 @@ open CErrors
 open Names
 open Proofview.Notations
 open Tac2expr
-open Tac2ffi
+open Tac2val
 open Tac2bt
 
 exception LtacError = Tac2ffi.LtacError
@@ -121,7 +121,7 @@ let rec interp (ist : environment) = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.apply (Tac2ffi.to_closure f) args
+  Tac2val.apply_val f args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->

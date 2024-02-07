@@ -13,6 +13,7 @@ open Pp
 open Names
 open Genarg
 open Ltac2_plugin
+open Tac2val
 open Tac2ffi
 open Tac2env
 open Tac2expr
@@ -59,7 +60,7 @@ let () =
   let open Tacexpr in
   let open Locus in
   let k ret =
-    Proofview.tclIGNORE (Tac2ffi.apply k [Tac2ffi.of_ext val_ltac1 ret])
+    Proofview.tclIGNORE (Tac2val.apply k [Tac2ffi.of_ext val_ltac1 ret])
   in
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
@@ -144,7 +145,7 @@ let () =
     if Int.equal len 0 then
       clos []
     else
-      return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
+      return (Tac2ffi.of_closure (Tac2val.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Gensubst.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
   let print env sigma (ids, tac) =
@@ -201,7 +202,7 @@ let () =
     if Int.equal len 0 then
       clos []
     else
-      return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
+      return (Tac2ffi.of_closure (Tac2val.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Gensubst.substitute Tacarg.wit_tactic s tac) in
   let print env sigma (ids, tac) =
@@ -266,7 +267,7 @@ let () =
     let tac = cast_typ typ_ltac2 @@ Id.Map.get tac_id ist.Tacinterp.lfun in
     let arg = Id.Map.get arg_id ist.Tacinterp.lfun in
     let tac = Tac2ffi.to_closure tac in
-    Tac2ffi.apply tac [of_ltac1 arg] >>= fun ans ->
+    Tac2val.apply tac [of_ltac1 arg] >>= fun ans ->
     let ans = Tac2ffi.to_ext val_ltac1 ans in
     Ftactic.return ans
   in
@@ -293,7 +294,7 @@ let ltac2_eval =
     let tac = cast_typ typ_ltac2 tac in
     let tac = Tac2ffi.to_closure tac in
     let args = List.map (fun arg -> Tac2ffi.of_ext val_ltac1 arg) args in
-    Proofview.tclIGNORE (Tac2ffi.apply tac args)
+    Proofview.tclIGNORE (Tac2val.apply tac args)
   in
   let () = Tacenv.register_ml_tactic ml_name [|eval_fun|] in
   { Tacexpr.mltac_name = ml_name; mltac_index = 0 }

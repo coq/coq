@@ -11,6 +11,7 @@
 open Names
 open Genredexpr
 open Tac2expr
+open Tac2val
 open Tac2ffi
 open Tac2types
 open Tac2extffi

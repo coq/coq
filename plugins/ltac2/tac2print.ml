@@ -13,7 +13,6 @@ open Pp
 open Names
 open Tac2expr
 open Tac2env
-open Tac2ffi
 
 let pr_tacref avoid kn =
   try Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac avoid (TacConstant kn))
@@ -728,7 +727,7 @@ let rec kind t = match t with
 | GTypArrow _ | GTypRef (Tuple _, _) -> t
 
 type val_printer =
-  { val_printer : 'a. Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr list -> Pp.t }
+  { val_printer : 'a. Environ.env -> Evd.evar_map -> Tac2val.valexpr -> 'a glb_typexpr list -> Pp.t }
 
 let printers = ref KNmap.empty
 
@@ -755,7 +754,7 @@ let rec pr_valexpr_gen env sigma lvl v t = match kind t with
       (* Shouldn't happen thanks to kind *)
       assert false
     | GTydAlg alg ->
-      if Valexpr.is_int v then
+      if Tac2val.Valexpr.is_int v then
         pr_internal_constructor kn (Tac2ffi.to_int v) true
       else
         let paren = match lvl with

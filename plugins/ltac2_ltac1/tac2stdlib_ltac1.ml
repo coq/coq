@@ -12,6 +12,7 @@ open Util
 open Genarg
 open Geninterp
 open Ltac2_plugin
+open Tac2val
 open Tac2ffi
 open Tac2expr
 open Proofview.Notations

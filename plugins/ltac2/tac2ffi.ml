@@ -9,69 +9,8 @@
 (************************************************************************)
 
 open Util
-open Names
 open Tac2dyn
-open Proofview.Notations
-
-type ('a, _) arity0 =
-| OneAty : ('a, 'a -> 'a Proofview.tactic) arity0
-| AddAty : ('a, 'b) arity0 -> ('a, 'a -> 'b) arity0
-
-type tag = int
-
-type valexpr =
-| ValInt of int
-  (** Immediate integers *)
-| ValBlk of tag * valexpr array
-  (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
-| ValCls of closure
-  (** Closures *)
-| ValOpn of KerName.t * valexpr array
-  (** Open constructors *)
-| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
-  (** Arbitrary data *)
-
-and closure = MLTactic : (valexpr, 'v) arity0 * Tac2expr.frame option * 'v -> closure
-
-let arity_one = OneAty
-let arity_suc a = AddAty a
-
-type 'a arity = (valexpr, 'a) arity0
-
-let mk_closure arity f = MLTactic (arity, None, f)
-
-let mk_closure_val arity f = ValCls (mk_closure arity f)
-
-module Valexpr =
-struct
-
-type t = valexpr
-
-let is_int = function
-| ValInt _ -> true
-| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ -> false
-
-let tag v = match v with
-| ValBlk (n, _) -> n
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
-  CErrors.anomaly (Pp.str "Unexpected value shape")
-
-let field v n = match v with
-| ValBlk (_, v) -> v.(n)
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
-  CErrors.anomaly (Pp.str "Unexpected value shape")
-
-let set_field v n w = match v with
-| ValBlk (_, v) -> v.(n) <- w
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
-  CErrors.anomaly (Pp.str "Unexpected value shape")
-
-let make_block tag v = ValBlk (tag, v)
-let make_int n = ValInt n
-
-end
+open Tac2val
 
 type 'a repr = {
   r_of : 'a -> valexpr;
@@ -126,7 +65,7 @@ match Val.eq tag tag' with
 
 (** Exception *)
 
-exception LtacError of KerName.t * valexpr array
+exception LtacError of Names.KerName.t * valexpr array
 
 (** Conversion functions *)
 
@@ -211,9 +150,7 @@ let list r = {
 
 let of_closure cls = ValCls cls
 
-let to_closure = function
-| ValCls cls -> cls
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ -> assert false
+let to_closure = Tac2val.to_closure
 
 let closure = {
   r_of = of_closure;
@@ -384,13 +321,13 @@ let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
 let constant = repr_ext val_constant
 
-let of_reference = let open GlobRef in function
+let of_reference = let open Names.GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])
 | ConstRef cst -> ValBlk (1, [| of_constant cst |])
 | IndRef ind -> ValBlk (2, [| of_ext val_inductive ind |])
 | ConstructRef cstr -> ValBlk (3, [| of_ext val_constructor cstr |])
 
-let to_reference = let open GlobRef in function
+let to_reference = let open Names.GlobRef in function
 | ValBlk (0, [| id |]) -> VarRef (to_ident id)
 | ValBlk (1, [| cst |]) -> ConstRef (to_constant cst)
 | ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)
@@ -407,53 +344,6 @@ type ('a, 'b) fun1 = closure
 let fun1 (r0 : 'a repr) (r1 : 'b repr) : ('a, 'b) fun1 repr = closure
 let to_fun1 r0 r1 f = to_closure f
 
-let wrap fr tac = match fr with
-  | None -> tac
-  | Some fr -> Tac2bt.with_frame fr tac
-
-let rec apply : type a. a arity -> _ -> a -> valexpr list -> valexpr Proofview.tactic =
-  fun arity fr f args -> match args, arity with
-  | [], arity -> Proofview.tclUNIT (ValCls (MLTactic (arity, fr, f)))
-  (* A few hardcoded cases for efficiency *)
-  | [a0], OneAty -> wrap fr (f a0)
-  | [a0; a1], AddAty OneAty -> wrap fr (f a0 a1)
-  | [a0; a1; a2], AddAty (AddAty OneAty) -> wrap fr (f a0 a1 a2)
-  | [a0; a1; a2; a3], AddAty (AddAty (AddAty OneAty)) -> wrap fr (f a0 a1 a2 a3)
-  (* Generic cases *)
-  | a :: args, OneAty ->
-    wrap fr (f a) >>= fun f ->
-    let MLTactic (arity, fr, f) = to_closure f in
-    apply arity fr f args
-  | a :: args, AddAty arity ->
-    apply arity fr (f a) args
-
-let apply (MLTactic (arity, wrap, f)) args = apply arity wrap f args
-
-let apply_val v args = apply (to_closure v) args
-
-type n_closure =
-| NClosure : 'a arity * (valexpr list -> 'a) -> n_closure
-
-let rec abstract n f =
-  if Int.equal n 1 then NClosure (OneAty, fun accu v -> f (List.rev (v :: accu)))
-  else
-    let NClosure (arity, fe) = abstract (n - 1) f in
-    NClosure (AddAty arity, fun accu v -> fe (v :: accu))
-
-let abstract n f =
-  match n with
-  | 1 -> MLTactic (OneAty, None, fun a -> f [a])
-  | 2 -> MLTactic (AddAty OneAty, None, fun a b -> f [a;b])
-  | 3 -> MLTactic (AddAty (AddAty OneAty), None, fun a b c -> f [a;b;c])
-  | 4 -> MLTactic (AddAty (AddAty (AddAty OneAty)), None, fun a b c d -> f [a;b;c;d])
-  | _ ->
-    let () = assert (n > 0) in
-    let NClosure (arity, f) = abstract n f in
-    MLTactic (arity, None, f [])
-
 let app_fun1 cls r0 r1 x =
+  let open Proofview.Notations in
   apply cls [r0.r_of x] >>= fun v -> Proofview.tclUNIT (r1.r_to v)
-
-let annotate_closure fr (MLTactic (arity, fr0, f)) =
-  assert (Option.is_empty fr0);
-  MLTactic (arity, Some fr, f)
