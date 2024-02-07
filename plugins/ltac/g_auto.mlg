@@ -163,25 +163,6 @@ END
 
 {
 
-let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_qualid
-let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Printer.pr_global
-let glob_hints_path_atom ist = Hints.glob_hints_path_atom
-
-}
-
-ARGUMENT EXTEND hints_path_atom
-  PRINTED BY { pr_hints_path_atom }
-
-  GLOBALIZED BY { glob_hints_path_atom }
-
-  RAW_PRINTED BY { pr_pre_hints_path_atom }
-  GLOB_PRINTED BY { pr_hints_path_atom }
-| [ ne_global_list(g) ] -> { Hints.PathHints g }
-| [ "_" ] -> { Hints.PathAny }
-END
-
-{
-
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_qualid c
 let glob_hints_path ist = Hints.glob_hints_path
@@ -200,7 +181,8 @@ GLOB_PRINTED BY { pr_hints_path }
 | [ "emp" ] -> { Hints.PathEmpty }
 | [ "eps" ] -> { Hints.PathEpsilon }
 | [ hints_path(p) "|" hints_path(q) ] -> { Hints.PathOr (p, q) }
-| [ hints_path_atom(a) ] -> { Hints.PathAtom a }
+| [ ne_global_list(g) ] -> { Hints.PathAtom (Hints.PathHints g) }
+| [ "_" ] -> { Hints.PathAtom Hints.PathAny }
 | [ hints_path(p) hints_path(q) ] -> { Hints.PathSeq (p, q) }
 END
 

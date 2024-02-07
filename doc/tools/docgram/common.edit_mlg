@@ -2366,7 +2366,6 @@ SPLICE: [
 | constr_body
 | reference_or_constr
 | opt_hintbases
-| hints_path_atom
 | opthints
 | scheme
 | fresh_id
