@@ -454,6 +454,8 @@ let rec matches_epsilon = function
   | PathEmpty -> false
   | PathEpsilon -> true
 
+let path_matches_epsilon = matches_epsilon
+
 let rec is_empty = function
   | PathAtom _ -> false
   | PathStar _ -> false

@@ -816,7 +816,7 @@ module Search = struct
         with_shelf res >>= fun (sh, ()) ->
         tclEVARMAP >>= finish sh
       in
-      if path_matches derivs [] then aux e tl
+      if path_matches_epsilon derivs then aux e tl
       else
         ortac
              (with_shelf tac >>= fun s ->
