@@ -163,18 +163,12 @@ END
 
 {
 
-let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_qualid c
-let glob_hints_path ist = Hints.glob_hints_path
+let pr_pre_hints_path c = Hints.pp_hints_path_gen Libnames.pr_qualid c
 
 }
 
-ARGUMENT EXTEND hints_path
-PRINTED BY { pr_hints_path }
-
-GLOBALIZED BY { glob_hints_path }
-RAW_PRINTED BY { pr_pre_hints_path }
-GLOB_PRINTED BY { pr_hints_path }
+VERNAC ARGUMENT EXTEND hints_path
+PRINTED BY { pr_pre_hints_path }
 
 | [ "(" hints_path(p) ")"  ] -> { p }
 | [ hints_path(p) "*" ] -> { Hints.PathStar p }

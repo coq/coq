@@ -94,10 +94,8 @@ type hints_path = GlobRef.t hints_path_gen
 val path_matches_epsilon : hints_path -> bool
 val path_derivate : hints_path -> GlobRef.t option -> hints_path
 val pp_hints_path_gen : ('a -> Pp.t) -> 'a hints_path_gen -> Pp.t
-val pp_hints_path : hints_path -> Pp.t
 val pp_hint_mode : hint_mode -> Pp.t
-val glob_hints_path :
-  Libnames.qualid hints_path_gen -> GlobRef.t hints_path_gen
+val glob_hints_path : pre_hints_path -> hints_path
 
 type mode_match =
   | NoMode
