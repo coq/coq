@@ -183,7 +183,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_type = t;
     const_body_code = None;
     const_universes = univs;
-    const_relevance = r;
+    const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
   }
