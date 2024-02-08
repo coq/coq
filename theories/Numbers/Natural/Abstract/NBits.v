@@ -54,6 +54,9 @@ Local Coercion b2n : bool >-> t.
 Instance b2n_proper : Proper (Logic.eq ==> eq) b2n.
 Proof. solve_proper. Qed.
 
+Lemma b2n_le_1 (b : bool) : b <= 1.
+Proof. destruct b as [|]; [exact (le_refl _) | exact le_0_1]. Qed.
+
 Lemma exists_div2 a : exists a' (b:bool), a == 2*a' + b.
 Proof.
  elim (Even_or_Odd a); [intros (a',H)| intros (a',H)].
@@ -62,24 +65,20 @@ Proof.
 Qed.
 
 (** A useful induction lemma to reason on bits *)
-Lemma binary_induction (A : t -> Prop) : (Proper (eq ==> iff) A) -> A 0 ->
-  (forall n, A n -> A (2 * n) /\ A (2 * n + 1)) -> (forall n, A n).
+Lemma binary_induction (A : t -> Prop) :
+  (Proper (eq ==> iff) A) -> A 0 -> (forall n, A n -> A (2 * n)) ->
+  (forall n, A n -> A (2 * n + 1)) -> (forall n, A n).
 Proof.
-  intros H H0 I.
-  apply strong_induction_le; [exact H | exact H0 |].
-  intros n Hm.
+  intros H H0 I J.
+  apply strong_induction_le; [exact H | exact H0 |]; intros n Hm.
   pose proof (exists_div2 (S n)) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
-  - apply I, Hm, succ_le_mono.
-    rewrite Hmb, add_1_r; apply ->succ_le_mono.
-    rewrite <-(mul_1_l m) at 1; apply mul_le_mono_r.
-    apply lt_le_incl; exact lt_1_2.
-  - rewrite add_0_r; apply I, Hm, succ_le_mono; rewrite Hmb, add_0_r.
-    destruct (zero_or_succ m) as [eq | [k ->]].
-    + rewrite eq, add_0_r, mul_0_r in Hmb; apply neq_succ_0 in Hmb as [].
-    + rewrite <-2!add_1_r, mul_add_distr_l, mul_1_r, <-add_assoc.
-      rewrite <-(mul_1_l k) at 1; apply add_le_mono.
-      * apply mul_le_mono_r, lt_le_incl; exact lt_1_2.
-      * apply eq_le_incl; rewrite two_succ, add_1_r; reflexivity.
+  - apply J, Hm.
+    rewrite add_1_r in Hmb; apply succ_inj in Hmb; rewrite Hmb, two_succ.
+    apply le_mul_l; exact (neq_succ_0 1).
+  - rewrite add_0_r in *; apply I, Hm; apply <-succ_le_mono; rewrite Hmb.
+    rewrite <-(add_1_r), two_succ, mul_succ_l, mul_1_l.
+    apply add_le_mono_l, neq_0_le_1; intros C; rewrite C, mul_0_r in Hmb.
+    exact (neq_succ_0 _ Hmb).
 Qed.
 
 (** We can compact [testbit_odd_0] [testbit_even_0]
@@ -266,6 +265,12 @@ Qed.
 *)
 
 (** Testing bits after division or multiplication by a power of two *)
+
+Lemma testbit_div2 : forall a n, (div2 a).[n] = a.[S n].
+Proof.
+  intros a n; rewrite div2_spec, shiftr_spec, add_1_r by (exact (le_0_l _));
+  reflexivity.
+Qed.
 
 Lemma div2_bits : forall a n, (a/2).[n] = a.[S n].
 Proof.
@@ -580,6 +585,18 @@ Proof.
  apply div_mod. order'.
 Qed.
 
+Lemma div2_even : forall a, div2 (2 * a) == a.
+Proof.
+  intros a; rewrite div2_div, mul_comm, div_mul
+    by (rewrite two_succ; exact (neq_succ_0 _)); reflexivity.
+Qed.
+
+Lemma div2_odd' : forall a, div2 (2 * a + 1) == a.
+Proof.
+  intros a; rewrite div2_div; symmetry; apply (div_unique _ _ _ 1);
+    [exact lt_1_2 | reflexivity].
+Qed.
+
 Lemma le_div2_diag_l a : div2 a <= a.
 Proof.
   rewrite (div2_odd a) at 2; rewrite <-(mul_1_l (div2 a)) at 1.
@@ -732,55 +749,62 @@ Proof.
  intros. bitwise. apply andb_diag.
 Qed.
 
-Lemma land_even_even : forall a b, land (2 * a) (2 * b) == 2 * land a b.
+Lemma land_even_l :
+  forall a b, land (2 * a) b == 2 * (land a (div2 b)).
 Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite land_spec, 3!testbit_even_0; reflexivity.
-  - rewrite land_spec, 3!testbit_even_succ, land_spec;
-      [reflexivity | exact (le_0_l _)..].
+  intros a b; rewrite (div2_odd b) at 1; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite !land_spec.
+  - rewrite 2!testbit_even_0; reflexivity.
+  - rewrite 2!testbit_even_succ, testbit_succ_r, land_spec by exact (le_0_l _).
+    reflexivity.
 Qed.
+
+Lemma land_even_r :
+  forall a b, land a (2 * b) == 2 * (land (div2 a) b).
+Proof.
+  intros a b; rewrite (land_comm a _), (land_comm _ b); exact (land_even_l _ _).
+Qed.
+
+Lemma land_odd_l :
+  forall a b, land (2 * a + 1) b == 2 * (land a (div2 b)) + odd b.
+Proof.
+  intros a b; rewrite (div2_odd b) at 1; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite !land_spec.
+  - rewrite 2!testbit_0_r, testbit_odd_0; reflexivity.
+  - rewrite 2!testbit_succ_r, land_spec, testbit_odd_succ by (exact (le_0_l _)).
+    reflexivity.
+Qed.
+
+Lemma land_odd_r :
+  forall a b, land a (2 * b + 1) == 2 * (land (div2 a) b) + odd a.
+Proof.
+  intros a b; rewrite (land_comm a _), (land_comm _ b); exact (land_odd_l _ _).
+Qed.
+
+Lemma land_even_even : forall a b, land (2 * a) (2 * b) == 2 * land a b.
+Proof. intros a b; rewrite land_even_l, div2_even; reflexivity. Qed.
 
 Lemma land_odd_even : forall a b, land (2 * a + 1) (2 * b) == 2 * land a b.
-Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite land_spec, 2!testbit_even_0, testbit_odd_0; reflexivity.
-  - rewrite land_spec, 2!testbit_even_succ, testbit_odd_succ, land_spec;
-      [reflexivity | exact (le_0_l _)..].
-Qed.
+Proof. intros a b; rewrite land_even_r, div2_odd'; reflexivity. Qed.
 
 Lemma land_even_odd : forall a b, land (2 * a) (2 * b + 1) == 2 * land a b.
-Proof.
-  intros a b; rewrite (land_comm (2 * a)), (land_comm a).
-  exact (land_odd_even _ _).
-Qed.
+Proof. intros a b; rewrite land_even_l, div2_odd'; reflexivity. Qed.
 
 Lemma land_odd_odd :
   forall a b, land (2 * a + 1) (2 * b + 1) == 2 * (land a b) + 1.
 Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite land_spec, 3!testbit_odd_0; reflexivity.
-  - rewrite land_spec, 3!testbit_odd_succ, land_spec;
-      [reflexivity | exact (le_0_l _)..].
+  intros a b; rewrite land_odd_l, div2_odd', odd_succ_double; reflexivity.
 Qed.
 
 Lemma land_le_l :
   forall a b, land a b <= a.
 Proof.
-  apply (binary_induction (fun a => forall b, land a b <= a)).
+  apply (binary_induction (fun a => forall b, _)); [| | intros a H b..].
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite land_0_l; exact (le_refl _).
-  - intros a H; split; intros b;
-    pose proof (exists_div2 b) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
-    + rewrite land_even_odd; apply mul_le_mono_l; now apply H.
-    + rewrite add_0_r, land_even_even; apply mul_le_mono_l; now apply H.
-    + rewrite land_odd_odd; apply add_le_mono_r, mul_le_mono_l; now apply H.
-    + rewrite add_0_r, land_odd_even.
-      apply (le_trans _ (2 * a)).
-      * apply mul_le_mono_l; now apply H.
-      * rewrite add_1_r; exact (le_succ_diag_r _).
+  - rewrite land_even_l; apply mul_le_mono_l; exact (H _).
+  - rewrite land_odd_l; apply add_le_mono;
+      [apply mul_le_mono_l; exact (H _) | exact (b2n_le_1 _)].
 Qed.
 
 Lemma land_le_r :
@@ -802,61 +826,72 @@ Proof.
  intros. bitwise. apply andb_negb_r.
 Qed.
 
-Lemma ldiff_even_even : forall a b, ldiff (2 * a) (2 * b) == 2 * ldiff a b.
+Lemma ldiff_even_l : forall a b, ldiff (2 * a) b == 2 * ldiff a (div2 b).
 Proof.
   intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite ldiff_spec, 3!testbit_even_0; reflexivity.
-  - rewrite ldiff_spec, 3!testbit_even_succ, ldiff_spec;
-      [reflexivity | exact (le_0_l _)..].
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite ldiff_spec.
+  - rewrite 2!testbit_even_0; reflexivity.
+  - rewrite 2!testbit_even_succ, ldiff_spec, testbit_div2
+      by (exact (le_0_l _)); reflexivity.
 Qed.
+
+Lemma ldiff_odd_l :
+  forall a b, ldiff (2 * a + 1) b == 2 * ldiff a (div2 b) + even b.
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite ldiff_spec.
+  - rewrite testbit_odd_0, testbit_0_r, bit0_odd, negb_odd; reflexivity.
+  - rewrite testbit_odd_succ, testbit_succ_r, ldiff_spec, testbit_div2
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_even_r :
+  forall a b, ldiff a (2 * b) == 2 * ldiff (div2 a) b + odd a.
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite ldiff_spec.
+  - rewrite testbit_0_r, testbit_even_0, bit0_odd; simpl; rewrite andb_true_r;
+      reflexivity.
+  - rewrite testbit_succ_r, testbit_even_succ, ldiff_spec, testbit_div2
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_odd_r :
+  forall a b, ldiff a (2 * b + 1) == 2 * ldiff (div2 a) b.
+Proof.
+  intros a b; apply bits_inj; intros m.
+  destruct (zero_or_succ m) as [-> | [m' ->]]; rewrite ldiff_spec.
+  - rewrite testbit_odd_0, testbit_even_0; simpl; rewrite andb_false_r;
+      reflexivity.
+  - rewrite testbit_odd_succ, testbit_even_succ, ldiff_spec, testbit_div2
+      by (exact (le_0_l _)); reflexivity.
+Qed.
+
+Lemma ldiff_even_even : forall a b, ldiff (2 * a) (2 * b) == 2 * ldiff a b.
+Proof. intros a b; rewrite ldiff_even_l, div2_even; reflexivity. Qed.
 
 Lemma ldiff_odd_even :
   forall a b, ldiff (2 * a + 1) (2 * b) == 2 * (ldiff a b) + 1.
 Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite ldiff_spec, 2!testbit_odd_0, testbit_even_0; reflexivity.
-  - rewrite ldiff_spec, testbit_even_succ, 2!testbit_odd_succ, ldiff_spec
-      by (exact (le_0_l _)); reflexivity.
+  intros a b; rewrite ldiff_even_r, div2_odd', odd_succ_double; reflexivity.
 Qed.
 
 Lemma ldiff_even_odd : forall a b, ldiff (2 * a) (2 * b + 1) == 2 * ldiff a b.
-Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite ldiff_spec, testbit_even_0, testbit_odd_0, testbit_even_0;
-      reflexivity.
-  - rewrite ldiff_spec, testbit_odd_succ, 2!testbit_even_succ, ldiff_spec
-      by (exact (le_0_l _)); reflexivity.
-Qed.
+Proof. intros a b; rewrite ldiff_even_l, div2_odd'; reflexivity. Qed.
 
 Lemma ldiff_odd_odd :
   forall a b, ldiff (2 * a + 1) (2 * b + 1) == 2 * ldiff a b.
-Proof.
-  intros a b; apply bits_inj; intros m.
-  destruct (zero_or_succ m) as [-> | [m' ->]].
-  - rewrite ldiff_spec, 2!testbit_odd_0, testbit_even_0; reflexivity.
-  - rewrite testbit_even_succ, 2!ldiff_spec, 2!testbit_odd_succ
-      by (exact (le_0_l _)); reflexivity.
-Qed.
+Proof. intros a b; rewrite ldiff_odd_r, div2_odd'; reflexivity. Qed.
 
 Lemma ldiff_le_l :
   forall a b, ldiff a b <= a.
 Proof.
-  apply (binary_induction (fun a => forall b, ldiff a b <= a)).
+  apply (binary_induction (fun a => forall b, _)); [| | intros a H b..].
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite ldiff_0_l; exact (le_0_l _).
-  - intros a H; split; intros b;
-    pose proof (exists_div2 b) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
-    + rewrite ldiff_even_odd; apply mul_le_mono_l; exact (H m).
-    + rewrite add_0_r, ldiff_even_even; apply mul_le_mono_l; exact (H m).
-    + rewrite ldiff_odd_odd.
-      apply (le_trans _ (2 * a)).
-      * apply mul_le_mono_l; now apply H.
-      * rewrite add_1_r; exact (le_succ_diag_r _).
-    + rewrite add_0_r, ldiff_odd_even; apply add_le_mono_r, mul_le_mono_l.
-      exact (H m).
+  - rewrite ldiff_even_l; apply mul_le_mono_l; exact (H _).
+  - rewrite ldiff_odd_l; apply add_le_mono;
+      [ apply mul_le_mono_l; exact (H _) | exact (b2n_le_1 _)].
 Qed.
 
 Lemma lor_land_distr_l : forall a b c,
@@ -1068,18 +1103,14 @@ Qed.
 
 Lemma shiftl_lower_bound : forall a n, a <= a << n.
 Proof.
-  intros a n; rewrite shiftl_mul_pow2; rewrite <-(mul_1_r a) at 1.
-  apply mul_le_mono_l.
-  rewrite <-(pow_1_l n); apply pow_le_mono_l, lt_le_incl; exact lt_1_2.
+  intros a n; rewrite shiftl_mul_pow2, two_succ; rewrite <-(mul_1_r a) at 1.
+  apply mul_le_mono_l, pow_lower_bound; exact (neq_succ_0 _).
 Qed.
 
 Lemma shiftr_upper_bound : forall a n, a >> n <= a.
 Proof.
-  intros a n; rewrite shiftr_div_pow2.
-  apply div_le_upper_bound.
-  - apply pow_nonzero; rewrite two_succ; apply neq_succ_0.
-  - rewrite <-(mul_1_l a) at 1; apply mul_le_mono_r.
-    rewrite <-(pow_1_l n); apply pow_le_mono_l, lt_le_incl; exact lt_1_2.
+  intros a n; rewrite shiftr_div_pow2, two_succ; apply div_le_upper_bound;
+    [| apply le_mul_l]; apply pow_nonzero; exact (neq_succ_0 _).
 Qed.
 
 (** We cannot have a function complementing all bits of a number,
@@ -1196,12 +1227,11 @@ Qed.
 Lemma ones_succ : forall n, ones (S n) == 2 * (ones n) + 1.
 Proof.
   intros n; rewrite 2!ones_equiv, <-2!sub_1_r, mul_sub_distr_l.
-  rewrite mul_1_r, <-pow_succ_r by (exact (le_0_l _)).
-  apply add_sub_eq_r.
-  rewrite <-add_assoc, add_1_r, two_succ, sub_add; [reflexivity |].
-  rewrite <-(pow_1_r (S 1)) at 1; apply pow_le_mono_r.
-  - exact (neq_succ_0 _).
-  - rewrite one_succ; apply ->succ_le_mono; exact (le_0_l _).
+  rewrite mul_1_r, <-pow_succ_r, two_succ, one_succ by (exact (le_0_l _)).
+  rewrite <-sub_sub_distr, sub_succ, sub_0_r; [reflexivity | |].
+  - apply ->succ_le_mono; exact (le_0_l _).
+  - rewrite <-(pow_1_r (S (S 0))) at 1; apply pow_le_mono_r;
+      [exact (neq_succ_0 _) | exact (le_1_succ _)].
 Qed.
 
 (** Bounded complement and other operations *)

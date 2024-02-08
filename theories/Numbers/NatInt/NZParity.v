@@ -266,4 +266,18 @@ Proof.
  intros. apply odd_add_mul_even. apply even_spec, even_2.
 Qed.
 
+(** Parity of [2 * n] and [2 * n + 1] *)
+
+Lemma even_double : forall n, even (2 * n) = true.
+Proof. intros n; apply even_spec; exists n; reflexivity. Qed.
+
+Lemma odd_double : forall n, odd (2 * n) = false.
+Proof. intros n; rewrite <-(negb_even), even_double; reflexivity. Qed.
+
+Lemma odd_succ_double : forall n, odd (2 * n + 1) = true.
+Proof. intros n; rewrite odd_spec; exists n; reflexivity. Qed.
+
+Lemma even_succ_double : forall n, even (2 * n + 1) = false.
+Proof. intros n; rewrite <-(negb_odd), odd_succ_double; reflexivity. Qed.
+
 End NZParityProp.

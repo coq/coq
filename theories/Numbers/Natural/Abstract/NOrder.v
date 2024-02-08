@@ -50,11 +50,23 @@ Proof.
 intro n; induct n; [apply lt_succ_diag_r | intros n H; now apply lt_lt_succ_r].
 Qed.
 
+Theorem le_1_succ : forall n, 1 <= S n.
+Proof.
+intros n; rewrite one_succ; apply ->succ_le_mono; exact (le_0_l _).
+Qed.
+
 Theorem neq_0_lt_0 : forall n, n ~= 0 <-> 0 < n.
 Proof.
 intro n; cases n.
 - split; intro H; [now elim H | intro; now apply lt_irrefl with 0].
 - intro n; split; intro H; [apply lt_0_succ | apply neq_succ_0].
+Qed.
+
+Theorem neq_0_le_1 : forall n, n ~= 0 <-> 1 <= n.
+Proof.
+intros n; split.
+- intros <-%succ_pred; exact (le_1_succ _).
+- intros H E; rewrite E, one_succ in H; apply (nle_succ_0 0); exact H.
 Qed.
 
 Theorem eq_0_gt_0_cases : forall n, n == 0 \/ 0 < n.
