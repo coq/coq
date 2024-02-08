@@ -45,5 +45,49 @@ else
 fi
 code=$?
 echo 'Aggregating timing log...'
+echo
 python ./tools/make-one-time-file.py --real "$CI_NAME.log"
+if [ "$CI" ] && ! [ $code = 0 ]; then
+  set +x
+
+  escape_re=$(printf '\033%s' '\[[0-9;]+m')
+
+  # File ".*
+  file_re="($escape_re)?"'File ".*\n'
+
+  # OCaml: error message may contain some code extracts starting with the line number,
+  # followed by a line containing "^^^" to point at the columns (possibly colored)
+  codeline_re='([0-9].*\n)*'
+  carets_re="((($escape_re)|[ ^])*\n)?"
+
+  # Error messages may be multiline, but it's hard to find the end
+  # heuristic: if the line ends with ":" or ",", also print the next
+  # (typically if the start of the message got moved to the next line,
+  #  the first line is just "Error:",
+  #  also note that OCaml colors just "Error" but Coq colors the whole "Error:")
+  error_re="($escape_re)?Error(.*[:,]($escape_re)?\n)*.*\n"
+
+  # for some reason when testing with colors on
+  # I also got carriage returns in my output which confused grep, so remove them
+
+  # -P: perl-like
+  # -z: multiline using \0 chars (which is why we have to tr to cleanup the output)
+  # -o: print only matched (otherwise it prints the whole file due to -z)
+
+  # || true: if no error is matched by this pattern, we still want to use the error code from the build
+  < "$CI_NAME.log" tr -d "$(printf '\r')" \
+    | grep -Pzo "$file_re$codeline_re$carets_re$error_re" \
+    | tr -d '\0' > errors \
+    || true
+
+  if [ -s errors ]; then {
+    echo
+    echo "Error list (may be incomplete):"
+    echo
+    cat errors
+  } >&2
+  fi
+  rm errors
+
+fi
 exit $code
