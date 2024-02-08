@@ -29,7 +29,7 @@ let pr_impredicative_set env =
   else str "Theory: Set is predicative"
 
 let pr_rewrite_rules env =
-  if rewrite_rules_allowed env then str "Theory: Rewrite rules are allowed (subject reduction might be broken)"
+  if rewrite_rules_allowed env then str "Theory: Rewrite rules are allowed (consistency, subject reduction, confluence and normalization might be broken)"
   else str "Theory: Rewrite rules are not allowed"
 
 let pr_assumptions ass axs =
