@@ -1042,6 +1042,14 @@ let () =
     Proofview.tclUNIT ()
   else throw err_notfound
 
+let () =
+  define "unshelve" (closure @-> tac valexpr) @@ fun t ->
+  Proofview.with_shelf (thaw t) >>= fun (gls,v) ->
+  let gls = List.map Proofview.with_empty_state gls in
+  Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
+  Proofview.Unsafe.tclSETGOALS (gls @ ogls) >>= fun () ->
+  return v
+
 (** unit -> constr *)
 let () =
   define "goal" (unit @-> tac constr) @@ fun _ ->
