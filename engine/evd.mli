@@ -372,6 +372,8 @@ val rename : Evar.t -> Id.t -> evar_map -> evar_map
 
 val evar_key : Id.t -> evar_map -> Evar.t
 
+val evar_names : evar_map -> Nameops.Fresh.t
+
 val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
 
 val dependent_evar_ident : Evar.t -> evar_map -> Id.t

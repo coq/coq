@@ -406,8 +406,7 @@ let next_evar_name sigma naming = match naming with
 | IntroAnonymous -> None
 | IntroIdentifier id -> Some id
 | IntroFresh id ->
-  let has_name id = try let _ = Evd.evar_key id sigma in true with Not_found -> false in
-  let id = Namegen.next_ident_away_from id has_name in
+  let id = Nameops.Fresh.next id (Evd.evar_names sigma) in
   Some id
 
 (* [new_evar] declares a new existential in an env env with type typ *)
