@@ -1818,7 +1818,7 @@ let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs
   in
   utyp, ubody
 
-let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+let make_univs ~poly ~uctx ~udecl eff (used_univs_typ, typ) (used_univs_body, body) =
   let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
   (* Since the proof is computed now, we can simply have 1 set of
      constraints in which we merge the ones for the body and the ones
@@ -1827,6 +1827,18 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
      TODO: check if restrict is really necessary now. *)
   let uctx = UState.restrict uctx used_univs in
   let utyp = UState.check_univ_decl ~poly uctx udecl in
+  let utyp = match fst utyp with
+    | Polymorphic_entry _ -> utyp
+    | Monomorphic_entry uctx ->
+      (* the constraints from the body may depend on universes from
+         the side effects, so merge it all together.
+         Example failure if we don't is "l1" in test-suite/success/rewrite.v.
+
+         Not sure if it makes more sense to merge them in the ustate
+         before restrict/check_univ_decl or here. Since we only do it
+         when monomorphic it shouldn't really matter. *)
+      Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff)), snd utyp
+  in
   utyp, Univ.ContextSet.empty
 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
@@ -1843,17 +1855,12 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
       (* allow_deferred case *)
-      if not poly &&
-         (keep_body_ucst_separate
-          (* checking is_empty_private_constants prevents an undefined universe anomaly
-             cf test-suite/success/rewrite.v Qed for lemma l1
-             not sure what's going on, there's probably a better way to work *)
-          || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
+      if not poly && keep_body_ucst_separate
       then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
       (* private_poly_univs case *)
       else if poly && opaque && private_poly_univs ()
       then make_univs_private_poly ~poly ~uctx ~udecl t b
-      else make_univs ~poly ~uctx ~udecl t b
+      else make_univs ~poly ~uctx ~udecl eff.Evd.seff_private t b
     in
     definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
