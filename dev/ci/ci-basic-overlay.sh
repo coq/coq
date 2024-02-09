@@ -446,7 +446,7 @@ project deriving "https://github.com/arthuraa/deriving" "master"
 ########################################################################
 # VsCoq
 ########################################################################
-project vscoq "https://github.com/coq-community/vscoq" "coq-master"
+project vscoq "https://github.com/coq-community/vscoq" "main"
 # Contact @rtetley, @gares on github
 
 ########################################################################
