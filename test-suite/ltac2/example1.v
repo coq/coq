@@ -22,6 +22,6 @@ Print Ltac2 get_hyp_by_name.
 
 Goal forall n m, n + m = 0 -> n = 0.
 Proof.
-refine (fun () => '(fun n m H => _)).
+Control.refine (fun () => '(fun n m H => _)).
 let t := get_hyp_by_name @H in Message.print (Message.of_constr t).
 Abort.

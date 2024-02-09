@@ -149,6 +149,9 @@ Module Pretype.
 
     Ltac2 @ external open_constr_flags : t := "coq-core.plugins.ltac2" "open_constr_flags".
     (** Allows new unsolved evars. *)
+
+    Ltac2 @ external no_tc : t -> t := "coq-core.plugins.ltac2" "pretype_flags_no_tc".
+    (** Modify the flags to not allow typeclasses. *)
   End Flags.
 
   Ltac2 Type expected_type.
