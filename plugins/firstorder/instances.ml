@@ -42,7 +42,7 @@ let compare_gr id1 id2 = match id1, id2 with
 | AnyId GoalId, AnyId GoalId -> 0
 | AnyId GoalId, AnyId (FormulaId _) -> 1
 | AnyId (FormulaId _), AnyId GoalId -> -1
-| AnyId (FormulaId id1), AnyId (FormulaId id2) -> GlobRef.CanOrd.compare id1 id2
+| AnyId (FormulaId id1), AnyId (FormulaId id2) -> GlobRef.UserOrd.compare id1 id2
 
 module OrderedInstance=
 struct
@@ -83,13 +83,13 @@ let give_instances env sigma lf seq=
 
 (* collector for the engine *)
 
-let rec collect_quantified sigma seq=
+let rec collect_quantified env sigma seq =
   try
-    let hd,seq1=take_formula sigma seq in
+    let hd, seq1 = take_formula env sigma seq in
     let AnyFormula hd0 = hd in
       (match hd0.pat with
            LeftPattern(Lforall(_,_,_)) | RightPattern(Rexists(_,_,_)) ->
-             let (q,seq2)=collect_quantified sigma seq1 in
+             let (q, seq2) = collect_quantified env sigma seq1 in
                ((hd::q),seq2)
          | _->[],seq)
   with Heap.EmptyHeap -> [],seq
@@ -142,7 +142,7 @@ let left_instance_tac ~flags (inst,id) continue seq=
                 end);
                 introf;
                 tclSOLVE [wrap ~flags 1 false continue
-                            (deepen (record (id,None) seq))]];
+                            (deepen (record env (id,None) seq))]];
             tclTRY assumption]
     | Real (c, _)->
         if lookup env sigma (id,Some c) seq then
@@ -170,7 +170,7 @@ let left_instance_tac ~flags (inst,id) continue seq=
               [special_generalize;
                introf;
                tclSOLVE
-                 [wrap ~flags 1 false continue (deepen (record (id,Some c) seq))]]
+                 [wrap ~flags 1 false continue (deepen (record env (id,Some c) seq))]]
   end
 
 let right_instance_tac ~flags inst continue seq=

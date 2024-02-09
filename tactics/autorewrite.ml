@@ -71,7 +71,7 @@ struct
     | DArray
 
   let compare_ci ci1 ci2 =
-    let c = Ind.CanOrd.compare ci1.ci_ind ci2.ci_ind in
+    let c = Label.compare (MutInd.label @@ fst ci1.ci_ind) (MutInd.label @@ fst ci2.ci_ind) in
     if c = 0 then
       let c = Int.compare ci1.ci_npar ci2.ci_npar in
       if c = 0 then
@@ -87,7 +87,7 @@ struct
   | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
   | DSort, _ -> -1 | _, DSort -> 1
-  | DRef gr1, DRef gr2 -> GlobRef.CanOrd.compare gr1 gr2
+  | DRef gr1, DRef gr2 -> GlobRef.UserOrd.compare gr1 gr2
   | DRef _, _ -> -1 | _, DRef _ -> 1
 
   | DProd, DProd -> 0
@@ -143,7 +143,7 @@ sig
 
   (** [add c i dn] adds the binding [(c,i)] to [dn]. [c] can be a
      closed term or a pattern (with untyped Evars). No Metas accepted *)
-  val add : constr -> ident -> t -> t
+  val add : Environ.env -> constr -> ident -> t -> t
 
   (*
    * High-level primitives describing specific search problems
@@ -174,15 +174,15 @@ struct
   open DTerm
   open TDnet
 
-  let pat_of_constr c : (unit DTerm.t * Constr.t list) option =
+  let pat_of_constr env c : (unit DTerm.t * Constr.t list) option =
     let open GlobRef in
     let rec pat_of_constr c = match Constr.kind c with
     | Rel _          -> Some (DRel, [])
     | Sort _         -> Some (DSort, [])
     | Var i          -> Some (DRef (VarRef i), [])
-    | Const (c,u)    -> Some (DRef (ConstRef c), [])
-    | Ind (i,u)      -> Some (DRef (IndRef i), [])
-    | Construct (c,u)-> Some (DRef (ConstructRef c), [])
+    | Const (c,u)    -> Some (DRef (ConstRef (Environ.QConstant.canonize env c)), [])
+    | Ind (i,u)      -> Some (DRef (IndRef (Environ.QInd.canonize env i)), [])
+    | Construct (c,u)-> Some (DRef (ConstructRef (Environ.QConstruct.canonize env c)), [])
     | Meta _         -> assert false
     | Evar (i,_)     -> None
     | Case (ci,u1,pms1,(c1,_),_iv,c2,ca)     ->
@@ -218,12 +218,12 @@ struct
 
   let empty = TDnet.empty
 
-  let add (c:constr) (id:Ident.t) (dn:t) =
+  let add env (c:constr) (id:Ident.t) (dn:t) =
     (* We used to consider the types of the product as well, but since the dnet
        is only computing an approximation rectified by [filtering] we do not
        anymore. *)
     let (ctx, c) = Term.decompose_prod_decls c in
-    let c = TDnet.pattern pat_of_constr c in
+    let c = TDnet.pattern (fun c -> pat_of_constr env c) c in
     TDnet.add dn c id
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
@@ -283,7 +283,7 @@ let align_prod_letin sigma c a =
   let l1 = CList.firstn lc l in
   n - lc, EConstr.it_mkProd_or_LetIn a l1
 
-  let decomp pat = match pat_of_constr pat with
+  let decomp env pat = match pat_of_constr env pat with
   | None -> Dn.Everything
   | Some (lbl, args) -> Dn.Label (lbl, args)
 
@@ -298,7 +298,7 @@ let align_prod_letin sigma c a =
            with Invalid_argument _ -> 0, c_id in
         if filtering env Evd.empty ctx Conversion.CUMUL whole_c wc then id :: acc
         else acc
-      ) (TDnet.lookup dn decomp dpat) []
+      ) (TDnet.lookup dn (fun c -> decomp env c) dpat) []
 
   let find_all dn = TDnet.lookup dn (fun () -> Everything) ()
 
@@ -466,7 +466,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 let cache_hintrewrite (rbase,lrl) =
   let base = try raw_find_base rbase with Not_found -> empty_rewrite_db in
   let fold accu r = {
-    rdb_hintdn = HintDN.add r.rew_pat r accu.rdb_hintdn;
+    rdb_hintdn = HintDN.add (Global.env ()) r.rew_pat r accu.rdb_hintdn;
     rdb_order = KNmap.add r.rew_id accu.rdb_maxuid accu.rdb_order;
     rdb_maxuid = accu.rdb_maxuid + 1;
   } in

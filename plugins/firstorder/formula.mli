@@ -67,9 +67,12 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type _ identifier =
+type _ identifier = private
 | GoalId : [ `Goal ] identifier
 | FormulaId : GlobRef.t -> [ `Hyp ] identifier
+
+val goal_id : [ `Goal ] identifier
+val formula_id : Environ.env -> GlobRef.t -> [ `Hyp ] identifier
 
 type _ pattern =
 | LeftPattern : left_pattern -> [ `Hyp ] pattern

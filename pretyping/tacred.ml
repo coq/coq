@@ -96,8 +96,8 @@ type evaluable_reference =
   | EvalRel of int
   | EvalEvar of EConstr.existential
 
-let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
-| EvalConst c1, EvalConst c2 -> Constant.CanOrd.equal c1 c2
+let evaluable_reference_eq env sigma r1 r2 = match r1, r2 with
+| EvalConst c1, EvalConst c2 -> QConstant.equal env c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
@@ -699,7 +699,7 @@ let make_simpl_reds env =
 
 let rec descend cache env sigma target (ref,u) args =
   let c = reference_value cache env sigma ref u in
-  if evaluable_reference_eq sigma ref target then
+  if evaluable_reference_eq env sigma ref target then
     (c,args)
   else
     let c', lrest = whd_betalet_stack env sigma (applist (c, args)) in
@@ -1180,10 +1180,10 @@ let contextually byhead occs f env sigma t =
  * n is the number of the next occurrence of name.
  * ol is the occurrence list to find. *)
 
-let match_constr_evaluable_ref sigma c evref =
+let match_constr_evaluable_ref env sigma c evref =
   match EConstr.kind sigma c, evref with
-  | Const (c,u), Evaluable.EvalConstRef c' when Constant.CanOrd.equal c c' -> Some u
-  | Proj (p,_,_), Evaluable.EvalProjectionRef p' when Projection.Repr.CanOrd.equal (Projection.repr p) p' -> Some EInstance.empty
+  | Const (c,u), Evaluable.EvalConstRef c' when QConstant.equal env c c' -> Some u
+  | Proj (p,_,_), Evaluable.EvalProjectionRef p' when QProjection.Repr.equal env (Projection.repr p) p' -> Some EInstance.empty
   | Var id, Evaluable.EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
@@ -1193,7 +1193,7 @@ let substlin env sigma evalref occs c =
   let rec substrec () c =
     if Locusops.occurrences_done !count then c
     else
-      match match_constr_evaluable_ref sigma c evalref with
+      match match_constr_evaluable_ref env sigma c evalref with
       | Some u ->
         let ok, count' = Locusops.update_occurrence_counter !count in
         count := count';

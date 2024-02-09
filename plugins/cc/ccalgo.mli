@@ -29,7 +29,7 @@ sig
   val mkSymb : constr -> t
   val mkProduct : (Sorts.t * Sorts.t) -> t
   val mkAppli : (t * t) -> t
-  val mkConstructor : cinfo -> t
+  val mkConstructor : Environ.env -> cinfo -> t
   val constr : t -> constr
   val nth_arg : t -> int -> t
 end

@@ -365,6 +365,9 @@ sig
 
   module SyntacticOrd : EqType with type t = t
   (** Equality functions using both names, for low-level uses. *)
+
+  val canonize : t -> t
+  (** Returns the canonical version of the name *)
 end
 
 (** {6 Constant Names } *)

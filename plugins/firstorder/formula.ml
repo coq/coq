@@ -217,6 +217,9 @@ type _ identifier =
 | GoalId : [ `Goal ] identifier
 | FormulaId : GlobRef.t -> [ `Hyp ] identifier
 
+let goal_id = GoalId
+let formula_id env gr = FormulaId (Environ.QGlobRef.canonize env gr)
+
 type _ pattern =
 | LeftPattern : left_pattern -> [ `Hyp ] pattern
 | RightPattern : right_pattern -> [ `Goal ] pattern

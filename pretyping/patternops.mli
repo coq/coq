@@ -16,7 +16,7 @@ open EConstr
 
 (** {5 Functions on patterns} *)
 
-val constr_pattern_eq : constr_pattern -> constr_pattern -> bool
+val constr_pattern_eq : Environ.env -> constr_pattern -> constr_pattern -> bool
 
 val subst_pattern : Environ.env -> Evd.evar_map -> substitution -> 'i constr_pattern_r -> 'i constr_pattern_r
 

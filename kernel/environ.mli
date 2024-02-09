@@ -287,6 +287,7 @@ sig
   val equal : env -> t -> t -> bool
   val compare : env -> t -> t -> int
   val hash : env -> t -> int
+  val canonize : env -> t -> t
 end
 
 module QConstant : QNameS with type t = Constant.t

@@ -21,51 +21,51 @@ open Mod_subst
 open Pattern
 open Environ
 
-let case_info_pattern_eq i1 i2 =
+let case_info_pattern_eq env i1 i2 =
   i1.cip_style == i2.cip_style &&
-  Option.equal Ind.CanOrd.equal i1.cip_ind i2.cip_ind &&
+  Option.equal (fun i1 i2 -> QInd.equal env i1 i2) i1.cip_ind i2.cip_ind &&
   i1.cip_extensible == i2.cip_extensible
 
-let rec constr_pattern_eq (p1:constr_pattern) p2 = match p1, p2 with
-| PRef r1, PRef r2 -> GlobRef.CanOrd.equal r1 r2
+let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
+| PRef r1, PRef r2 -> QGlobRef.equal env r1 r2
 | PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
-  Evar.equal ev1 ev2 && List.equal constr_pattern_eq ctx1 ctx2
+  Evar.equal ev1 ev2 && List.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) ctx1 ctx2
 | PRel i1, PRel i2 ->
   Int.equal i1 i2
 | PApp (t1, arg1), PApp (t2, arg2) ->
-  constr_pattern_eq t1 t2 && Array.equal constr_pattern_eq arg1 arg2
+  constr_pattern_eq env t1 t2 && Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) arg1 arg2
 | PSoApp (id1, arg1), PSoApp (id2, arg2) ->
-  Id.equal id1 id2 && List.equal constr_pattern_eq arg1 arg2
+  Id.equal id1 id2 && List.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) arg1 arg2
 | PLambda (v1, t1, b1), PLambda (v2, t2, b2) ->
-  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+  Name.equal v1 v2 && constr_pattern_eq env t1 t2 && constr_pattern_eq env b1 b2
 | PProd (v1, t1, b1), PProd (v2, t2, b2) ->
-  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+  Name.equal v1 v2 && constr_pattern_eq env t1 t2 && constr_pattern_eq env b1 b2
 | PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
-  Name.equal v1 v2 && constr_pattern_eq b1 b2 &&
-  Option.equal constr_pattern_eq t1 t2 && constr_pattern_eq c1 c2
+  Name.equal v1 v2 && constr_pattern_eq env b1 b2 &&
+  Option.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env c1 c2
 | PSort s1, PSort s2 -> Sorts.family_equal s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
-  constr_pattern_eq t1 t2 && constr_pattern_eq l1 l2 && constr_pattern_eq r1 r2
+  constr_pattern_eq env t1 t2 && constr_pattern_eq env l1 l2 && constr_pattern_eq env r1 r2
 | PCase (info1, p1, r1, l1), PCase (info2, p2, r2, l2) ->
-  case_info_pattern_eq info1 info2 &&
-  Option.equal (fun (nas1, p1) (nas2, p2) -> Array.equal Name.equal nas1 nas2 && constr_pattern_eq p1 p2) p1 p2 &&
-  constr_pattern_eq r1 r2 &&
-  List.equal pattern_eq l1 l2
+  case_info_pattern_eq env info1 info2 &&
+  Option.equal (fun (nas1, p1) (nas2, p2) -> Array.equal Name.equal nas1 nas2 && constr_pattern_eq env p1 p2) p1 p2 &&
+  constr_pattern_eq env r1 r2 &&
+  List.equal (fun p1 p2 -> pattern_eq env p1 p2) l1 l2
 | PFix ((ln1,i1),f1), PFix ((ln2,i2),f2) ->
-  Array.equal Int.equal ln1 ln2 && Int.equal i1 i2 && rec_declaration_eq f1 f2
+  Array.equal Int.equal ln1 ln2 && Int.equal i1 i2 && rec_declaration_eq env f1 f2
 | PCoFix (i1,f1), PCoFix (i2,f2) ->
-  Int.equal i1 i2 && rec_declaration_eq f1 f2
+  Int.equal i1 i2 && rec_declaration_eq env f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
-   Projection.CanOrd.equal p1 p2 && constr_pattern_eq t1 t2
+   QProjection.equal env p1 p2 && constr_pattern_eq env t1 t2
 | PInt i1, PInt i2 ->
    Uint63.equal i1 i2
 | PFloat f1, PFloat f2 ->
    Float64.equal f1 f2
 | PArray (t1, def1, ty1), PArray (t2, def2, ty2) ->
-  Array.equal constr_pattern_eq t1 t2 && constr_pattern_eq def1 def2
-  && constr_pattern_eq ty1 ty2
+  Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env def1 def2
+  && constr_pattern_eq env ty1 ty2
 | PUninstantiated _, _ -> .
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
    | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
@@ -73,13 +73,13 @@ let rec constr_pattern_eq (p1:constr_pattern) p2 = match p1, p2 with
    | PFloat _ | PArray _), _ -> false
 (** FIXME: fixpoint and cofixpoint should be relativized to pattern *)
 
-and pattern_eq (i1, j1, p1) (i2, j2, p2) =
-  Int.equal i1 i2 && Array.equal Name.equal j1 j2 && constr_pattern_eq p1 p2
+and pattern_eq env (i1, j1, p1) (i2, j2, p2) =
+  Int.equal i1 i2 && Array.equal Name.equal j1 j2 && constr_pattern_eq env p1 p2
 
-and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
+and rec_declaration_eq env (n1, c1, r1) (n2, c2, r2) =
   Array.equal Name.equal n1 n2 &&
-  Array.equal constr_pattern_eq c1 c2 &&
-  Array.equal constr_pattern_eq r1 r2
+  Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) c1 c2 &&
+  Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) r1 r2
 
 let rec occurn_pattern : 'a. _ -> 'a constr_pattern_r -> _
   = fun (type a) n (p:a constr_pattern_r) -> match p with
@@ -138,6 +138,9 @@ let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Var id -> GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference.")
 
+let mkPRef env gr =
+  PRef (Environ.QGlobRef.canonize env gr)
+
 let pattern_of_constr ~broken env sigma t =
   let t = EConstr.Unsafe.to_constr t in
   let kind = if broken then Constr.kind else fun c -> EConstr.kind_upto sigma c in
@@ -170,9 +173,9 @@ let pattern_of_constr ~broken env sigma t =
          with
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
-    | Const (sp,u)  -> PRef (GlobRef.ConstRef (Constant.make1 (Constant.canonical sp)))
-    | Ind (sp,u)    -> PRef (canonical_gr (GlobRef.IndRef sp))
-    | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
+    | Const (sp,u)  -> mkPRef env (GlobRef.ConstRef sp)
+    | Ind (sp,u)    -> mkPRef env (GlobRef.IndRef sp)
+    | Construct (sp,u) -> mkPRef env (GlobRef.ConstructRef sp)
     | Proj (p, _, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
@@ -586,7 +589,7 @@ and pats_of_glob_branches loc metas vars ind brs =
         true, [] (* ends with _ => _ *)
       | PatCstr((indsp,j),lv,_), _, _ ->
         let () = match ind with
-        | Some sp when Ind.CanOrd.equal sp indsp -> ()
+        | Some sp when Ind.UserOrd.equal sp indsp -> ()
         | _ ->
           err ?loc (Pp.str "All constructors must be in the same inductive type.")
         in

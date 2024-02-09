@@ -34,7 +34,7 @@ module KeyOrdered = struct
 
   let hash gr =
     match gr with
-    | KGlob gr -> 9 + GlobRef.CanOrd.hash gr
+    | KGlob gr -> 9 + GlobRef.UserOrd.hash gr
     | KLam -> 0
     | KLet -> 1
     | KProd -> 2
@@ -49,14 +49,14 @@ module KeyOrdered = struct
 
   let compare gr1 gr2 =
     match gr1, gr2 with
-    | KGlob gr1, KGlob gr2 -> GlobRef.CanOrd.compare gr1 gr2
+    | KGlob gr1, KGlob gr2 -> GlobRef.UserOrd.compare gr1 gr2
     | _, KGlob _ -> -1
     | KGlob _, _ -> 1
     | k, k' -> Int.compare (hash k) (hash k')
 
   let equal k1 k2 =
     match k1, k2 with
-    | KGlob gr1, KGlob gr2 -> GlobRef.CanOrd.equal gr1 gr2
+    | KGlob gr1, KGlob gr2 -> GlobRef.UserOrd.equal gr1 gr2
     | _, KGlob _ -> false
     | KGlob _, _ -> false
     | k, k' -> k == k'
@@ -81,6 +81,8 @@ let equiv_keys k k' =
     try Keyset.mem k' (Keymap.find k !keys)
     with Not_found -> false
 
+let mkKGlob env gr = KGlob (Environ.QGlobRef.canonize env gr)
+
 (** Registration of keys as an object *)
 
 let load_keys _ (ref,ref') =
@@ -91,7 +93,7 @@ let cache_keys o =
 
 let subst_key subst k =
   match k with
-  | KGlob gr -> KGlob (subst_global_reference subst gr)
+  | KGlob gr -> mkKGlob (Global.env ()) (subst_global_reference subst gr)
   | _ -> k
 
 let subst_keys (subst,(k,k')) =
@@ -117,16 +119,16 @@ let inKeys : key_obj -> obj =
 let declare_equiv_keys ref ref' =
   Lib.add_leaf (inKeys (ref,ref'))
 
-let constr_key kind c =
+let constr_key env kind c =
   try
     let rec aux k =
       match kind k with
-      | Const (c, _) -> KGlob (GlobRef.ConstRef c)
-      | Ind (i, u) -> KGlob (GlobRef.IndRef i)
-      | Construct (c,u) -> KGlob (GlobRef.ConstructRef c)
-      | Var id -> KGlob (GlobRef.VarRef id)
+      | Const (c, _) -> mkKGlob env (GlobRef.ConstRef c)
+      | Ind (i, u) -> mkKGlob env (GlobRef.IndRef i)
+      | Construct (c,u) -> mkKGlob env (GlobRef.ConstructRef c)
+      | Var id -> mkKGlob env (GlobRef.VarRef id)
       | App (f, _) -> aux f
-      | Proj (p, _, _) -> KGlob (GlobRef.ConstRef (Projection.constant p))
+      | Proj (p, _, _) -> mkKGlob env (GlobRef.ConstRef (Projection.constant p))
       | Cast (p, _, _) -> aux p
       | Lambda _ -> KLam
       | Prod _ -> KProd

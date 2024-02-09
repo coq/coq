@@ -26,8 +26,8 @@ type term_label =
 | SortLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
-| GRLabel gr1, GRLabel gr2 -> GlobRef.CanOrd.compare gr1 gr2
-| ProjLabel p1, ProjLabel p2 -> Projection.CanOrd.compare p1 p2
+| GRLabel gr1, GRLabel gr2 -> GlobRef.UserOrd.compare gr1 gr2
+| ProjLabel p1, ProjLabel p2 -> Projection.UserOrd.compare p1 p2
 | _ -> Stdlib.compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
@@ -84,9 +84,15 @@ let constr_val_discr env sigma ts t =
     | Proj (p,_,c) -> Label(ProjLabel p, c :: stack)
     | Cast (c,_,_) -> decomp stack c
     | Const (c,_) when evaluable_constant c env ts -> Everything
-    | Const (c,_) -> Label(GRLabel (ConstRef c), stack)
-    | Ind (ind_sp,_) -> Label(GRLabel (IndRef ind_sp), stack)
-    | Construct (cstr_sp,_) -> Label(GRLabel (ConstructRef cstr_sp), stack)
+    | Const (c,_) ->
+      let c = Environ.QConstant.canonize env c in
+      Label(GRLabel (ConstRef c), stack)
+    | Ind (ind_sp,_) ->
+      let ind_sp = Environ.QInd.canonize env ind_sp in
+      Label(GRLabel (IndRef ind_sp), stack)
+    | Construct (cstr_sp,_) ->
+      let cstr_sp = Environ.QConstruct.canonize env cstr_sp in
+      Label(GRLabel (ConstructRef cstr_sp), stack)
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [d; c])
@@ -108,11 +114,15 @@ let constr_pat_discr env ts p =
     | PProj (p,c) when evaluable_projection p env ts -> None
     | PProj (p,c) -> Some (ProjLabel p, c :: stack)
     | PRef ((IndRef _) as ref)
-    | PRef ((ConstructRef _ ) as ref) -> Some (GRLabel ref, stack)
+    | PRef ((ConstructRef _ ) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
     | PRef (VarRef v) when evaluable_named v env ts -> None
     | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
     | PRef (ConstRef c) when evaluable_constant c env ts -> None
-    | PRef ((ConstRef _) as ref) -> Some (GRLabel ref, stack)
+    | PRef ((ConstRef _) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])

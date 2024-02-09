@@ -994,7 +994,7 @@ let print_canonical_projections env sigma grefs =
   let match_proj_gref { CSTable.projection; value; solution } gr =
     QGlobRef.equal env projection gr ||
     begin match value with
-      | ValuePattern.Const_cs y -> GlobRef.CanOrd.equal y gr
+      | ValuePattern.Const_cs y -> QGlobRef.equal env y gr
       | _ -> false
     end ||
     QGlobRef.equal env solution gr

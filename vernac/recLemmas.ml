@@ -70,7 +70,8 @@ let find_mutually_recursive_statements sigma thms =
       | [], _::_ ->
           let () = match same_indccl with
           | ind :: _ ->
-            if List.distinct_f Names.Ind.CanOrd.compare (List.map pi1 ind)
+            let eq i1 i2 = Environ.QInd.compare (Global.env ()) i1 i2 in
+            if List.distinct_f eq (List.map pi1 ind)
             then
               Flags.if_verbose Feedback.msg_info
                 (Pp.strbrk
