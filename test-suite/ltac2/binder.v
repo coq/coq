@@ -9,7 +9,7 @@ match Constr.Unsafe.kind t with
   let b := Constr.Binder.make na u in
   let c := Constr.Unsafe.make (Constr.Unsafe.Prod b t) in
   pose (v := $c);
-  refine '(_ : &v);
+  refine (_ : &v);
   unfold &v
 | _ => fail
 end.

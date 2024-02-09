@@ -147,7 +147,7 @@ Goal 3 = 3 -> 1 = 1 /\ 2 = 2.
   | _ => throw Error
   end.
 
-  refine (fun () => '(eq_refl &X)).
+  Control.refine (fun () => '(eq_refl &X)).
 Qed.
 
 Goal True.
