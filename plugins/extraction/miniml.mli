@@ -131,11 +131,9 @@ and ml_ast =
   | MLparray of ml_ast array * ml_ast
 
 and ml_pattern =
-  | Pcons   of GlobRef.t * ml_pattern list
-  | Ptuple  of ml_pattern list
   | Prel    of int (** Cf. the idents in the branch. [Prel 1] is the last one. *)
   | Pwild
-  | Pusual  of GlobRef.t (** Shortcut for Pcons (r,[Prel n;...;Prel 1]) **)
+  | Pusual  of GlobRef.t (** Eta-expanded constructor **)
 
 (*s ML declarations. *)
 

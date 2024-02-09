@@ -831,8 +831,7 @@ let indref_of_match pv =
   let (_,pat,_) = pv.(0) in
   match pat with
     | Pusual (GlobRef.ConstructRef (ip,_)) -> GlobRef.IndRef ip
-    | Pcons (GlobRef.ConstructRef (ip,_),_) -> GlobRef.IndRef ip
-    | _ -> raise Not_found
+    | Pusual _ | Prel _ | Pwild -> raise Not_found
 
 let is_custom_match pv =
   try Refmap'.mem (indref_of_match pv) !custom_matchs

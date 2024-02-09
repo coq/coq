@@ -179,12 +179,7 @@ and json_one_pat env (ids,p,t) =
   ]
 
 and json_gen_pat ids env = function
-  | Pcons (r, l) -> json_cons_pat r (List.map (json_gen_pat ids env) l)
   | Pusual r -> json_cons_pat r (List.map json_id ids)
-  | Ptuple l -> json_dict [
-      ("what", json_str "pat:tuple");
-      ("items", json_list (List.map (json_gen_pat ids env) l))
-    ]
   | Pwild -> json_dict [("what", json_str "pat:wild")]
   | Prel n -> json_dict [
       ("what", json_str "pat:rel");

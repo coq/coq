@@ -146,8 +146,7 @@ and pp_cons_args env = function
 and pp_one_pat env (ids,p,t) =
   let r = match p with
     | Pusual r -> r
-    | Pcons (r,l) -> r (* cf. the check [is_regular_match] above *)
-    | _ -> assert false
+    | Prel _ | Pwild -> assert false
   in
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let args =

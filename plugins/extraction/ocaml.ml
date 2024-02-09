@@ -197,8 +197,7 @@ let is_bool_patt p s =
   try
     let r = match p with
       | Pusual r -> r
-      | Pcons (r,[]) -> r
-      | _ -> raise Not_found
+      | Prel _ | Pwild -> raise Not_found
     in
     String.equal (find_custom r) s
   with Not_found -> false
@@ -333,7 +332,6 @@ and pp_record_proj par env typ t pv args =
   let fields = record_fields_of_type typ in
   if List.is_empty fields then raise Impossible;
   if not (Int.equal (Array.length pv) 1) then raise Impossible;
-  if has_deep_pattern pv then raise Impossible;
   let (ids,pat,body) = pv.(0) in
   let n = List.length ids in
   let no_patvar a = not (List.exists (ast_occurs_itvl 1 n) a) in
@@ -346,14 +344,8 @@ and pp_record_proj par env typ t pv args =
   let magic =
     match body with MLmagic _ | MLapp(MLmagic _, _) -> true | _ -> false
   in
-  let rec lookup_rel i idx = function
-    | Prel j :: l -> if Int.equal i j then idx else lookup_rel i (idx+1) l
-    | Pwild :: l -> lookup_rel i (idx+1) l
-    | _ -> raise Impossible
-  in
   let r,idx = match pat with
     | Pusual r -> r, n-rel_i
-    | Pcons (r,l) -> r, lookup_rel rel_i 0 l
     | _ -> raise Impossible
   in
   if is_infix r then raise Impossible;
@@ -385,9 +377,7 @@ and pp_cons_pat r ppl =
       pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ pp_boxed_tuple identity ppl
 
 and pp_gen_pat ids env = function
-  | Pcons (r, l) -> pp_cons_pat r (List.map (pp_gen_pat ids env) l)
   | Pusual r -> pp_cons_pat r (List.map Id.print ids)
-  | Ptuple l -> pp_boxed_tuple (pp_gen_pat ids env) l
   | Pwild -> str "_"
   | Prel n -> Id.print (get_db_name n env)
 

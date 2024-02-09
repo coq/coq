@@ -118,8 +118,6 @@ val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : GlobRef.t -> ml_ast -> bool
 
-val is_basic_pattern : ml_pattern -> bool
-val has_deep_pattern : ml_branch array -> bool
 val is_regular_match : ml_branch array -> bool
 
 exception Impossible

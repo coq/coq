@@ -406,15 +406,11 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
   -> false
 
 and eq_ml_pattern p1 p2 = match p1, p2 with
-| Pcons (gr1, p1), Pcons (gr2, p2) ->
-  GlobRef.CanOrd.equal gr1 gr2 && List.equal eq_ml_pattern p1 p2
-| Ptuple p1, Ptuple p2 ->
-  List.equal eq_ml_pattern p1 p2
 | Prel i1, Prel i2 ->
   Int.equal i1 i2
 | Pwild, Pwild -> true
 | Pusual gr1, Pusual gr2 -> GlobRef.CanOrd.equal gr1 gr2
-| _ -> false
+| (Pusual _ | Prel _ | Pwild), _ -> false
 
 and eq_ml_branch (id1, p1, t1) (id2, p2, t2) =
   List.equal eq_ml_ident id1 id2 &&
@@ -659,17 +655,6 @@ let gen_subst v d t =
 
 (*S Operations concerning match patterns *)
 
-let is_basic_pattern = function
-  | Prel _ | Pwild -> true
-  | Pusual _ | Pcons _ | Ptuple _ -> false
-
-let has_deep_pattern br =
-  let deep = function
-    | Pcons (_,l) | Ptuple l -> not (List.for_all is_basic_pattern l)
-    | Pusual _ | Prel _ | Pwild -> false
-  in
-  Array.exists (function (_,pat,_) -> deep pat) br
-
 let is_regular_match br =
   if Array.is_empty br then false (* empty match becomes MLexn *)
   else
@@ -677,12 +662,7 @@ let is_regular_match br =
       let get_r (ids,pat,c) =
         match pat with
           | Pusual r -> r
-          | Pcons (r,l) ->
-            let is_rel i = function Prel j -> Int.equal i j | _ -> false in
-            if not (List.for_all_i is_rel 1 (List.rev l))
-            then raise Impossible;
-            r
-          | _ -> raise Impossible
+          | Prel _ | Pwild -> raise Impossible
       in
       let ind = match get_r br.(0) with
         | GlobRef.ConstructRef (ind,_) -> ind
@@ -867,10 +847,7 @@ let branch_as_fun typ (l,p,c) =
   let nargs = List.length l in
   let cons = match p with
     | Pusual r -> MLcons (typ, r, eta_args nargs)
-    | Pcons (r,pl) ->
-      let pat2rel = function Prel i -> MLrel i | _ -> raise Impossible in
-      MLcons (typ, r, List.map pat2rel pl)
-    | _ -> raise Impossible
+    | Prel _ | Pwild -> raise Impossible
   in
   let rec genrec n = function
     | MLrel i as c ->
@@ -1006,7 +983,7 @@ let rec iota_red i lift br ((typ,r,a) as cons) =
   if i >= Array.length br then raise Impossible;
   let (ids,p,c) = br.(i) in
   match p with
-    | Pusual r' | Pcons (r',_) when not (GlobRef.CanOrd.equal r' r) -> iota_red (i+1) lift br cons
+    | Pusual r' when not (GlobRef.CanOrd.equal r' r) -> iota_red (i+1) lift br cons
     | Pusual r' ->
       let c = named_lams (List.rev ids) c in
       let c = ast_lift lift c
@@ -1016,7 +993,7 @@ let rec iota_red i lift br ((typ,r,a) as cons) =
       let c = ast_lift lift c
       in MLapp(c,[MLcons(typ,r,a)])
     | Pwild when List.is_empty ids -> ast_lift lift c
-    | _ -> raise Impossible (* TODO: handle some more cases *)
+    | Prel _ | Pwild -> raise Impossible (* TODO: handle some more cases *)
 
 (* [iota_gen] is an extension of [iota_red] where we allow to
    traverse matches in the head of the first match *)

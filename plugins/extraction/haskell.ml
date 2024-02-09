@@ -233,9 +233,7 @@ and pp_cons_pat par r ppl =
     (pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ prlist_with_sep spc identity ppl)
 
 and pp_gen_pat par ids env = function
-  | Pcons (r,l) -> pp_cons_pat par r (List.map (pp_gen_pat true ids env) l)
   | Pusual r -> pp_cons_pat par r (List.map Id.print ids)
-  | Ptuple l -> pp_boxed_tuple (pp_gen_pat false ids env) l
   | Pwild -> str "_"
   | Prel n -> Id.print (get_db_name n env)
 

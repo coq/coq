@@ -89,10 +89,8 @@ let type_iter_references do_type t =
   in iter t
 
 let patt_iter_references do_cons p =
-  let rec iter = function
-    | Pcons (r,l) -> do_cons r; List.iter iter l
+  let iter = function
     | Pusual r -> do_cons r
-    | Ptuple l -> List.iter iter l
     | Prel _ | Pwild -> ()
   in iter p
 
