@@ -291,13 +291,14 @@ let match_with_equation env sigma t =
   match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
     (try
-       if Coqlib.check_ind_ref "core.eq.type" ind then
+      let gr = GlobRef.IndRef ind in
+       if Coqlib.check_ref "core.eq.type" gr then
          Some (build_coq_eq_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-       else if Coqlib.check_ind_ref "core.identity.type" ind then
+       else if Coqlib.check_ref "core.identity.type" gr then
          Some (build_coq_identity_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-       else if Coqlib.check_ind_ref "core.JMeq.type" ind then
+       else if Coqlib.check_ref "core.JMeq.type" gr then
          Some (build_coq_jmeq_data()),hdapp,
          HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
        else
