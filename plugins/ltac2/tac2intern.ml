@@ -1089,6 +1089,25 @@ let warn_useless_record_with = CWarnings.create ~name:"ltac2-useless-record-with
         str "All the fields are explicitly listed in this record:" ++
         spc() ++ str "the 'with' clause is useless.")
 
+let expand_notation ?loc el kn =
+  match Tac2env.interp_notation kn with
+  | UntypedNota body ->
+    let el = List.map (fun (pat, e) -> CAst.map (fun na -> CPatVar na) pat, e) el in
+    let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
+    v
+  | TypedNota {nota_prms=prms; nota_argtys=argtys; nota_ty=ty; nota_body=body} ->
+    let argtys, el = List.fold_left_map (fun argtys (na,arg) ->
+        let argty, argtys = match na.CAst.v with
+          | Anonymous -> None, argtys
+          | Name id -> Some (Id.Map.get id argtys), Id.Map.remove id argtys
+        in
+        argtys ,(na, arg, argty))
+        argtys
+        el
+    in
+    assert (Id.Map.is_empty argtys);
+    CAst.make ?loc @@ CTacGlb (prms, el, body, ty)
+
 let rec intern_rec env tycon {loc;v=e} =
   let check et = check ?loc env tycon et in
   match e with
@@ -1185,8 +1204,7 @@ let rec intern_rec env tycon {loc;v=e} =
   if is_rec then intern_let_rec env el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
-  let body = Tac2env.interp_notation kn in
-  let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
+  let v = expand_notation ?loc el kn in
   intern_rec env tycon v
 | CTacCnv (e, tc) ->
   let tc = intern_type env tc in
@@ -1316,6 +1334,28 @@ let rec intern_rec env tycon {loc;v=e} =
   | GlbTacexpr e -> e
   in
   check (e, tpe)
+| CTacGlb (prms, args, body, ty) ->
+  let tysubst = Array.init prms (fun _ -> fresh_id env) in
+  let tysubst i = GTypVar tysubst.(i) in
+  let ty = subst_type tysubst ty in
+  let ty = match tycon with
+    | None -> ty
+    | Some tycon ->
+      let () = unify ?loc env ty tycon in
+      tycon
+  in
+  let args = List.map (fun (na, arg, ty) ->
+      let ty = Option.map (subst_type tysubst) ty in
+      let () = match na.CAst.v, ty with
+        | Anonymous, None | Name _, Some _ -> ()
+        | Anonymous, Some _ | Name _, None -> assert false
+      in
+      let e, _ = intern_rec env ty arg in
+      na.CAst.v, e)
+      args
+  in
+  if CList.is_empty args then body, ty
+  else GTacLet (false, args, body), ty
 
 and intern_rec_with_constraint env e exp =
   let (er, t) = intern_rec env (Some exp) e in
@@ -1602,8 +1642,7 @@ let globalize_gen ~tacext ids tac =
       let bnd = List.map map bnd in
       CAst.make ?loc @@ CTacLet (isrec, bnd, e)
     | CTacSyn (el, kn) ->
-      let body = Tac2env.interp_notation kn in
-      let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
+      let v = expand_notation ?loc el kn in
       globalize ids v
     | CTacCnv (e, t) ->
       let e = globalize ids e in
@@ -1639,6 +1678,9 @@ let globalize_gen ~tacext ids tac =
       let e' = globalize ids e' in
       CAst.make ?loc @@ CTacSet (e, AbsKn p, e')
     | CTacExt (tag, arg) -> tacext ?loc (RawExt (tag, arg))
+    | CTacGlb (prms, args, body, ty) ->
+      let args = List.map (fun (na, arg, ty) -> na, globalize ids arg, ty) args in
+      CAst.make ?loc @@ CTacGlb (prms, args, body, ty)
 
   and globalize_case ids (p, e) =
     (globalize_pattern ids p, globalize ids e)
@@ -1679,6 +1721,35 @@ let globalize ids tac =
 let debug_globalize_allow_ext ids tac =
   let tacext ?loc (RawExt (tag,arg)) = CAst.make ?loc @@ CTacExt (tag,arg) in
   globalize_gen ~tacext ids tac
+
+let { Goptions.get = typed_notations } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Ltac2";"Typed";"Notations"] ~value:true ()
+
+let intern_notation_data ids body =
+  if typed_notations () then
+    let env = empty_env ~strict:true () in
+    let fold id (env,argtys) =
+      let ty = GTypVar (fresh_id env) in
+      let env = push_name (Name id) (monomorphic ty) env in
+      env, Id.Map.add id ty argtys
+    in
+    let env, argtys = Id.Set.fold fold ids (env,Id.Map.empty) in
+    let body, ty = intern_rec env None body in
+    let count = ref 0 in
+    let vars = ref TVar.Map.empty in
+    let argtys = Id.Map.map (fun ty -> normalize env (count, vars) ty) argtys in
+    let ty = normalize env (count, vars) ty in
+    let prms = !count in
+    Tac2env.TypedNota {
+      nota_prms = prms;
+      nota_argtys = argtys;
+      nota_ty = ty;
+      nota_body = body;
+    }
+  else
+    let body = globalize ids body in
+    Tac2env.UntypedNota body
 
 (** Kernel substitution *)
 
@@ -1934,6 +2005,18 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
     let e' = subst_rawexpr subst e in
     let r' = subst_rawexpr subst r in
     if prj' == prj && e' == e && r' == r then t else CAst.make ?loc @@ CTacSet (e', prj', r')
+| CTacGlb (prms, args, body, ty) ->
+  let args' = List.Smart.map (fun (na, arg, ty as o) ->
+      let arg' = subst_rawexpr subst arg in
+      let ty' = Option.Smart.map (subst_type subst) ty in
+      if arg' == arg && ty' == ty then o
+      else (na, arg', ty'))
+      args
+  in
+  let body' = subst_expr subst body in
+  let ty' = subst_type subst ty in
+  if args' == args && body' == body && ty' == ty then t
+  else CAst.make ?loc @@ CTacGlb (prms, args', body', ty')
 | CTacSyn _ | CTacExt _ -> assert false (** Should not be generated by globalization *)
 
 (** Registering *)

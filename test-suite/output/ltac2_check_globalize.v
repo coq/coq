@@ -1,5 +1,7 @@
 Require Import Ltac2.Ltac2.
 
+Unset Ltac2 Typed Notations.
+
 Ltac2 Notation "foo" := ().
 
 Ltac2 Globalize foo.

@@ -1,0 +1,14 @@
+File "./output/ltac2_typed_notations.v", line 5, characters 9-10:
+The command has indeed failed with message:
+This expression has type bool but an expression was expected of type 
+constr
+fun (b : bool) =>
+let c := b in
+let (m : '__α Pattern.constr_matching) :=
+  [(Pattern.MatchPattern, pat:(true),
+    (fun _ => fun (_ : constr array) => true));
+    (Pattern.MatchPattern, pat:(false),
+     (fun _ => fun (_ : constr array) => false))] with 
+  (t : constr) := c in
+Pattern.one_match0 t m
+:'__α : bool

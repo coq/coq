@@ -89,41 +89,6 @@ type atom =
 | AtmInt of int
 | AtmStr of string
 
-(** Tactic expressions *)
-type raw_patexpr_r =
-| CPatVar of Name.t
-| CPatAtm of atom
-| CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
-| CPatRecord of (ltac_projection or_relid * raw_patexpr) list
-| CPatCnv of raw_patexpr * raw_typexpr
-| CPatOr of raw_patexpr list
-| CPatAs of raw_patexpr * lident
-
-and raw_patexpr = raw_patexpr_r CAst.t
-
-type raw_tacexpr_r =
-| CTacAtm of atom
-| CTacRef of tacref or_relid
-| CTacCst of ltac_constructor or_tuple or_relid
-| CTacFun of raw_patexpr list * raw_tacexpr
-| CTacApp of raw_tacexpr * raw_tacexpr list
-| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t
-| CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
-| CTacCnv of raw_tacexpr * raw_typexpr
-| CTacSeq of raw_tacexpr * raw_tacexpr
-| CTacIft of raw_tacexpr * raw_tacexpr * raw_tacexpr
-| CTacCse of raw_tacexpr * raw_taccase list
-| CTacRec of raw_tacexpr option * raw_recexpr
-| CTacPrj of raw_tacexpr * ltac_projection or_relid
-| CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
-| CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r
-
-and raw_tacexpr = raw_tacexpr_r CAst.t
-
-and raw_taccase = raw_patexpr * raw_tacexpr
-
-and raw_recexpr = (ltac_projection or_relid * raw_tacexpr) list
-
 (* We want to generate these easily in the Closed case, otherwise we
    could have the kn in the ctor_data_for_patterns type. Maybe still worth doing?? *)
 type ctor_indx =
@@ -179,6 +144,44 @@ type glb_tacexpr =
 | GTacFullMatch of glb_tacexpr * (glb_pat * glb_tacexpr) list
 | GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name
+
+(** Tactic expressions *)
+type raw_patexpr_r =
+| CPatVar of Name.t
+| CPatAtm of atom
+| CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
+| CPatRecord of (ltac_projection or_relid * raw_patexpr) list
+| CPatCnv of raw_patexpr * raw_typexpr
+| CPatOr of raw_patexpr list
+| CPatAs of raw_patexpr * lident
+
+and raw_patexpr = raw_patexpr_r CAst.t
+
+type raw_tacexpr_r =
+| CTacAtm of atom
+| CTacRef of tacref or_relid
+| CTacCst of ltac_constructor or_tuple or_relid
+| CTacFun of raw_patexpr list * raw_tacexpr
+| CTacApp of raw_tacexpr * raw_tacexpr list
+| CTacSyn of (lname * raw_tacexpr) list * KerName.t
+| CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
+| CTacCnv of raw_tacexpr * raw_typexpr
+| CTacSeq of raw_tacexpr * raw_tacexpr
+| CTacIft of raw_tacexpr * raw_tacexpr * raw_tacexpr
+| CTacCse of raw_tacexpr * raw_taccase list
+| CTacRec of raw_tacexpr option * raw_recexpr
+| CTacPrj of raw_tacexpr * ltac_projection or_relid
+| CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
+| CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r
+| CTacGlb of int * (lname * raw_tacexpr * int glb_typexpr option) list * glb_tacexpr * int glb_typexpr
+(** CTacGlb is essentially an expanded typed notation.
+    Arguments bound with Anonymous have no type constraint. *)
+
+and raw_tacexpr = raw_tacexpr_r CAst.t
+
+and raw_taccase = raw_patexpr * raw_tacexpr
+
+and raw_recexpr = (ltac_projection or_relid * raw_tacexpr) list
 
 (** {5 Parsing & Printing} *)
 

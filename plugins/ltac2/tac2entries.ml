@@ -674,7 +674,7 @@ let perform_notation syn st =
     | Some depr -> deprecated_ltac2_notation ~loc (syn.synext_tok, depr)
     in
     let map (na, e) =
-      ((CAst.make ?loc:e.loc @@ CPatVar na), e)
+      ((CAst.make ?loc:e.loc na), e)
     in
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacSyn (bnd, syn.synext_kn)
@@ -721,8 +721,19 @@ let cache_synext_interp (local,kn,tac) =
 let open_synext_interp i o =
   if Int.equal i 1 then cache_synext_interp o
 
+let subst_notation_data subst = function
+  | Tac2env.UntypedNota body as n ->
+    let body' = Tac2intern.subst_rawexpr subst body in
+    if body' == body then n else UntypedNota body'
+  | TypedNota { nota_prms=prms; nota_argtys=argtys; nota_ty=ty; nota_body=body } as n ->
+    let body' = Tac2intern.subst_expr subst body in
+    let argtys' = Id.Map.Smart.map (subst_type subst) argtys in
+    let ty' = subst_type subst ty in
+    if body' == body && argtys' == argtys && ty' == ty then n
+    else TypedNota {nota_body=body'; nota_argtys=argtys'; nota_ty=ty'; nota_prms=prms}
+
 let subst_synext_interp (subst, (local,kn,tac as o)) =
-  let tac' = Tac2intern.subst_rawexpr subst tac in
+  let tac' = subst_notation_data subst tac in
   let kn' = Mod_subst.subst_kn subst kn in
   if kn' == kn && tac' == tac then o else
   (local, kn', tac')
@@ -730,7 +741,7 @@ let subst_synext_interp (subst, (local,kn,tac as o)) =
 let classify_synext_interp (local,_,_) =
   if local then Dispose else Substitute
 
-let inTac2NotationInterp : (bool*KerName.t*raw_tacexpr) -> obj =
+let inTac2NotationInterp : (bool*KerName.t*Tac2env.notation_data) -> obj =
   declare_object {(default_object "TAC2-NOTATION-INTERP") with
      cache_function  = cache_synext_interp;
      open_function   = simple_open ~cat:ltac2_notation_cat open_synext_interp;
@@ -837,8 +848,8 @@ let register_notation_interpretation = function
     let abbr = { abbr_body = body; abbr_depr = deprecation } in
     Lib.add_leaf (inTac2Abbreviation id abbr)
   | Synext (local,kn,ids,body) ->
-    let body = Tac2intern.globalize ids body in
-    Lib.add_leaf (inTac2NotationInterp (local,kn,body))
+    let data = intern_notation_data ids body in
+    Lib.add_leaf (inTac2NotationInterp (local,kn,data))
 
 type redefinition = {
   redef_kn : ltac_constant;
