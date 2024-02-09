@@ -12,8 +12,7 @@ open Pp
 open Util
 open Names
 open Libnames
-open Constrexpr
-open Constrexpr_ops
+open Glob_term
 open Notation
 
 module CSet = CSet.Make (Constr)
@@ -23,9 +22,7 @@ let mkRef env sigma g =
   let sigma, c = Evd.fresh_global env sigma g in
   sigma, EConstr.Unsafe.to_constr c
 
-let cref q =
-  (* ensure no implicit arguments *)
-  CAst.make (CAppExpl ((q,None),[]))
+let gref q = DAst.make (GRef (q,None))
 
 (** * Number notation *)
 
@@ -48,28 +45,23 @@ let get_constructors ind =
   Array.to_list
     (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
-let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+let q_option () = Coqlib.lib_ref "core.option.type"
 
-let q_option () = qualid_of_ref "core.option.type"
-
-let unsafe_locate_ind q =
-  match Nametab.locate q with
+let unsafe_ref_ind q =
+  match q with
   | GlobRef.IndRef i -> i
   | _ -> raise Not_found
 
 let locate_z () =
   let zn = "num.Z.type" in
   let pn = "num.pos.type" in
-  if Coqlib.has_ref zn && Coqlib.has_ref pn
-  then
-    let q_z = qualid_of_ref zn in
-    let q_pos = qualid_of_ref pn in
+  match Coqlib.lib_ref zn, Coqlib.lib_ref pn with
+  | exception Coqlib.NotFoundRef _ -> None
+  | q_z, q_pos ->
     Some ({
-        z_ty = unsafe_locate_ind q_z;
-        pos_ty = unsafe_locate_ind q_pos;
-    }, cref q_z)
-  else None
+        z_ty = unsafe_ref_ind q_z;
+        pos_ty = unsafe_ref_ind q_pos;
+      }, gref q_z)
 
 let locate_number () =
   let dint = "num.int.type" in
@@ -81,56 +73,49 @@ let locate_number () =
   let int = "num.num_int.type" in
   let uint = "num.num_uint.type" in
   let num = "num.number.type" in
-  if Coqlib.has_ref dint && Coqlib.has_ref duint && Coqlib.has_ref dec
-     && Coqlib.has_ref hint && Coqlib.has_ref huint && Coqlib.has_ref hex
-     && Coqlib.has_ref int && Coqlib.has_ref uint && Coqlib.has_ref num
-  then
-    let q_dint = qualid_of_ref dint in
-    let q_duint = qualid_of_ref duint in
-    let q_dec = qualid_of_ref dec in
-    let q_hint = qualid_of_ref hint in
-    let q_huint = qualid_of_ref huint in
-    let q_hex = qualid_of_ref hex in
-    let q_int = qualid_of_ref int in
-    let q_uint = qualid_of_ref uint in
-    let q_num = qualid_of_ref num in
+  match Coqlib.lib_ref dint, Coqlib.lib_ref duint, Coqlib.lib_ref dec
+        , Coqlib.lib_ref hint, Coqlib.lib_ref huint, Coqlib.lib_ref hex
+        , Coqlib.lib_ref int, Coqlib.lib_ref uint, Coqlib.lib_ref num
+  with
+  | exception Coqlib.NotFoundRef _ -> None
+  | q_dint, q_duint, q_dec, q_hint, q_huint, q_hex, q_int, q_uint, q_num ->
     let int_ty = {
-        dec_int = unsafe_locate_ind q_dint;
-        dec_uint = unsafe_locate_ind q_duint;
-        hex_int = unsafe_locate_ind q_hint;
-        hex_uint = unsafe_locate_ind q_huint;
-        int = unsafe_locate_ind q_int;
-        uint = unsafe_locate_ind q_uint;
-      } in
+      dec_int = unsafe_ref_ind q_dint;
+      dec_uint = unsafe_ref_ind q_duint;
+      hex_int = unsafe_ref_ind q_hint;
+      hex_uint = unsafe_ref_ind q_huint;
+      int = unsafe_ref_ind q_int;
+      uint = unsafe_ref_ind q_uint;
+    } in
     let num_ty = {
-        int = int_ty;
-        decimal = unsafe_locate_ind q_dec;
-        hexadecimal = unsafe_locate_ind q_hex;
-        number = unsafe_locate_ind q_num;
-      } in
-    Some (int_ty, cref q_int, cref q_uint, cref q_dint, cref q_duint,
-          num_ty, cref q_num, cref q_dec)
-  else None
+      int = int_ty;
+      decimal = unsafe_ref_ind q_dec;
+      hexadecimal = unsafe_ref_ind q_hex;
+      number = unsafe_ref_ind q_num;
+    } in
+    Some (int_ty, gref q_int, gref q_uint, gref q_dint, gref q_duint,
+          num_ty, gref q_num, gref q_dec)
+
 
 let locate_int63 () =
-  let int63n = "num.int63.type" in
   let pos_neg_int63n = "num.int63.pos_neg_int63" in
-  if Coqlib.has_ref int63n && Coqlib.has_ref pos_neg_int63n
-  then
-    let q_pos_neg_int63 = qualid_of_ref pos_neg_int63n in
-    Some ({pos_neg_int63_ty = unsafe_locate_ind q_pos_neg_int63},
-          cref q_pos_neg_int63)
-  else None
+  match Coqlib.lib_ref pos_neg_int63n with
+  | exception Coqlib.NotFoundRef _ -> None
+  | pos_neg_int63 ->
+    Some ({pos_neg_int63_ty = unsafe_ref_ind pos_neg_int63},
+          gref pos_neg_int63)
+
 
 let locate_float () =
   let floatn = "num.float.type" in
-  if Coqlib.has_ref floatn then Some (cref (qualid_of_ref floatn))
-  else None
+  match Coqlib.lib_ref floatn with
+  | exception Coqlib.NotFoundRef _ -> None
+  | q_float -> Some (gref q_float)
 
 let has_type env sigma f ty =
-  let c = mkCastC (cref f, Some Constr.DEFAULTcast, ty) in
+  let c = DAst.make @@ GCast (f, Some Constr.DEFAULTcast, ty) in
   let flags = Pretyping.{ all_and_fail_flags with use_coercions = false } in
-  try let _ = Constrintern.interp_constr ~flags env sigma c in true
+  try let _ = Pretyping.understand ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
 let type_error_to f ty =
@@ -394,7 +379,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
 
 type target_type =
   | TargetInd of (inductive * Constr.t option list)
-  | TargetPrim of constr_expr * GlobRef.t list * required_module
+  | TargetPrim of GlobRef.t * GlobRef.t list * required_module
 
 let locate_global_inductive_with_params allow_params qid =
   if not allow_params then raise Not_found else
@@ -430,13 +415,16 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     let floatw = "num.float.float_wrapper" in
     if allow_params && Coqlib.has_ref int63n
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
-    then TargetPrim (cref (qualid_of_ref int63w), [Coqlib.lib_ref int63c],
+    then TargetPrim (Coqlib.lib_ref int63w, [Coqlib.lib_ref int63c],
                      (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
     else if allow_params && Coqlib.has_ref floatn
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
-    then TargetPrim (cref (qualid_of_ref floatw), [Coqlib.lib_ref floatc],
+    then TargetPrim (Coqlib.lib_ref floatw, [Coqlib.lib_ref floatc],
                      (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
+
+let intern_cref env sigma r =
+  Constrintern.intern_constr env sigma (CAst.make @@ Constrexpr.CAppExpl ((r,None),[]))
 
 let vernac_number_notation local ty f g opts scope =
   let rec parse_opts = function
@@ -466,12 +454,14 @@ let vernac_number_notation local ty f g opts scope =
   let tyc_params = locate_global_inductive_or_int63_or_float env (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
-  let cty = cref ty in
-  let app x y = mkAppC (x,[y]) in
+  let cty = intern_cref env sigma ty in
+  let f_name, f = f, intern_cref env sigma f in
+  let g_name, g = g, intern_cref env sigma g in
+  let app x y = DAst.make @@ GApp (x,[y]) in
   let arrow x y =
-    mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
+    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
   in
-  let opt r = app (cref (q_option ())) r in
+  let opt r = app (gref (q_option ())) r in
   (* Check the type of f *)
   let to_kind =
     match num_ty with
@@ -493,10 +483,10 @@ let vernac_number_notation local ty f g opts scope =
     match float_ty with
     | Some cfloat when has_type env sigma f (arrow cfloat cty) -> Float64, Direct
     | Some cfloat when has_type env sigma f (arrow cfloat (opt cty)) -> Float64, Option
-    | _ -> type_error_to f ty
+    | _ -> type_error_to f_name ty
   in
   (* Check the type of g *)
-  let cty = match tyc_params with TargetPrim (c, _, _) -> c | TargetInd _ -> cty in
+  let cty = match tyc_params with TargetPrim (c, _, _) -> gref c | TargetInd _ -> cty in
   let of_kind =
     match num_ty with
     | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
@@ -517,7 +507,7 @@ let vernac_number_notation local ty f g opts scope =
     match float_ty with
     | Some cfloat when has_type env sigma g (arrow cty cfloat) -> Float64, Direct
     | Some cfloat when has_type env sigma g (arrow cty (opt cfloat)) -> Float64, Option
-    | _ -> type_error_of g ty
+    | _ -> type_error_of g_name ty
   in
   let to_post, pt_required, pt_refs = match tyc_params with
     | TargetPrim (_, refs, path) -> [||], path, refs
