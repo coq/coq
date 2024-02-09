@@ -90,4 +90,4 @@ val get_native_string : ml_ast -> string
 val pp_native_string : ml_ast -> Pp.t
 
 (* Registered sig type *)
-val sig_type_ref : unit -> GlobRef.t
+val sig_type_name : string
