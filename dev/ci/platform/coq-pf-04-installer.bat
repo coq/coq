@@ -10,14 +10,14 @@ SET BASH=%CYGROOT%\bin\bash
 
 MKDIR %GITHUB_WORKSPACE%\artifacts
 
-%BASH% --login -c "pwd && ls -la && cd platform && windows/create_installer_windows.sh" || GOTO ErrorExit
+%BASH% --login -c "pwd && ls -la && cd /platform && windows/create_installer_windows.sh" || GOTO ErrorExit
 
 REM Output is in cygwin home; in general the script has a bit of a
 REM mess in terms of using the GITHUB_WORKSPACE sometimes, and the
 REM CYGWIN home some others. I use the path here directly as to avoid
 REM issues with quoting, which in the previous script required some
 REM really obscure code.
-COPY /v /b %CYGROOT%\home\runneradmin\platform\windows_installer\*.exe %GITHUB_WORKSPACE%\artifacts || GOTO ErrorExit
+COPY /v /b %CYGROOT%\platform\windows_installer\*.exe %GITHUB_WORKSPACE%\artifacts || GOTO ErrorExit
 
 GOTO :EOF
 
