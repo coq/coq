@@ -865,6 +865,9 @@ plugin:ci-aac_tactics:
 plugin:ci-atbr:
   extends: .ci-template-flambda
 
+plugin:ci-autosubst_ocaml:
+  extends: .ci-template-flambda
+
 plugin:ci-itauto:
   extends: .ci-template
 
