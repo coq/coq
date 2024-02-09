@@ -27,19 +27,11 @@ Bound to class nat
 "x +_a y" := (Nat.add x y)
 "x + y" := (Nat.add x y)
 "x * y" := (Nat.mul x y)
-The following notations have been disabled:
-Notation "x +_c y" := (Nat.add x y) : nat_scope
 1 +_b 2
      : nat
-The following notations have been disabled:
-Notation "x +_b y" := (Nat.add x y) : nat_scope
 1 +_a 2
      : nat
-The following notations have been disabled for printing:
-Notation "x +_a y" := (Nat.add x y) : nat_scope
 1 + 2
      : nat
-The following notations have been enabled for printing:
-Notation "x +_c y" := (Nat.add x y) : nat_scope
 1 +_c 2
      : nat

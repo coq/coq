@@ -1940,7 +1940,7 @@ let load_notation_toggle _ _ = ()
 let open_notation_toggle _ (local,(on,all,pat)) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  toggle_notations ~on ~all (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
+  toggle_notations ~on ~all ~verbose:(not !Flags.quiet) (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
 
 let cache_notation_toggle o =
   load_notation_toggle 1 o;
