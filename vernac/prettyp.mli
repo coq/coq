@@ -52,7 +52,7 @@ val print_abbreviation : env -> Evd.evar_map -> KerName.t -> Pp.t
 
 val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.full_name_list option -> Pp.t
-val print_impargs : GlobRef.t -> Pp.t
+val print_impargs : env -> GlobRef.t -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
 val print_graph : unit -> Pp.t
@@ -92,7 +92,7 @@ val register_locatable : string -> 'a locatable_info -> unit
     name describing the kind of objects considered and that is added as a
     grammar command prefix for vernacular commands Locate. *)
 
-val print_located_qualid : qualid -> Pp.t
-val print_located_term : qualid -> Pp.t
-val print_located_module : qualid -> Pp.t
-val print_located_other : string -> qualid -> Pp.t
+val print_located_qualid : env -> qualid -> Pp.t
+val print_located_term : env -> qualid -> Pp.t
+val print_located_module : env -> qualid -> Pp.t
+val print_located_other : env -> string -> qualid -> Pp.t

@@ -601,7 +601,7 @@ let () =
   }
 
 let print_located_tactic qid =
-  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac qid)
+  Feedback.msg_notice (Prettyp.print_located_other (Global.env ()) locatable_ltac qid)
 
 let print_ltac id =
  try
