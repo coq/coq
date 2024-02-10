@@ -615,6 +615,24 @@ Proof.
   rewrite div2_div, two_succ; apply div_le_lower_bound; exact (neq_succ_0 _).
 Qed.
 
+Lemma lt_div2_diag_l a : a ~= 0 -> div2 a < a.
+Proof.
+  destruct (zero_or_succ a) as [| [b ->]]; [| clear a]. {
+    intros H'; contradict H'; rewrite H; reflexivity.
+  }
+  destruct (zero_or_succ b) as [| [c ->]]; [| clear b]. {
+    intros _; rewrite H; setoid_replace (S 0) with (2 * 0 + 1)
+      by (rewrite mul_0_r, add_0_l, one_succ; reflexivity).
+    rewrite div2_odd', mul_0_r, add_0_l; exact lt_0_1.
+  }
+  intros _; rewrite (div2_odd (S (S c))) at 2.
+  rewrite <-(mul_1_l (div2 _)) at 1; apply lt_lt_add_r, mul_lt_mono_pos_r;
+    [| exact lt_1_2].
+  apply lt_le_trans with (1 := lt_0_1).
+  apply div2_le_lower_bound; rewrite mul_1_r, two_succ, one_succ.
+  apply ->succ_le_mono; apply ->succ_le_mono; exact (le_0_l _).
+Qed.
+
 (** Properties of [lxor] and others, directly deduced
     from properties of [xorb] and others. *)
 
