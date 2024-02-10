@@ -22,6 +22,7 @@ Register pos_neg_int63 as num.int63.pos_neg_int63.
 Declare Scope uint63_scope.
 Definition id_int : int -> int := fun x => x.
 Record int_wrapper := wrap_int {int_wrap : int}.
+Register int_wrapper as num.int63.int_wrapper.
 Register wrap_int as num.int63.wrap_int.
 Definition printer (x : int_wrapper) : pos_neg_int63 := Pos (int_wrap x).
 Definition parser (x : pos_neg_int63) : option int :=
