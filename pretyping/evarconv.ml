@@ -79,11 +79,11 @@ let unfold_projection env evd ts p r c =
 (* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
    expanded, folded primitive projection of name [n] and unfolds the primitive
    projection. It respects projection transparency of [ts]. *)
-let unfold_projection_under_eta env evd ts n c =
+let unfold_projection_under_eta env evd ts cst c =
   let rec go c lams =
     match EConstr.kind evd c with
     | Lambda (b, t, c) -> go c ((b,t)::lams)
-    | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
+    | Proj (p, r, c) when QConstant.equal env cst (Projection.constant p) ->
       let c = unfold_projection env evd ts p r c in
       begin
         match c with

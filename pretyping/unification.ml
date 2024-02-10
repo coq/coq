@@ -488,7 +488,7 @@ let use_metas_pattern_unification sigma flags nb l =
 (* [unfold_projection_under_eta env ts n c] checks if [c] is the eta
    expanded, folded primitive projection of name [n] and unfolds the primitive
    projection. It respects projection transparency of [ts]. *)
-let unfold_projection_under_eta env ts n c =
+let unfold_projection_under_eta env ts cst c =
   let unfold_projection env ts p r c =
     if TransparentState.is_transparent_projection ts (Projection.repr p) then
       Some (Constr.mkProj (Projection.unfold p, r, c))
@@ -497,7 +497,7 @@ let unfold_projection_under_eta env ts n c =
   let rec go c lams =
     match Constr.kind c with
     | Lambda (b, t, c) -> go c ((b,t)::lams)
-    | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
+    | Proj (p, r, c) when QConstant.equal env cst (Projection.constant p) ->
       let c = unfold_projection env ts p r c in
       begin
         match c with
