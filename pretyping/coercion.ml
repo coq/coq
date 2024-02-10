@@ -44,7 +44,7 @@ let { Goptions.get = get_use_typeclasses_for_conversion } =
 exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
-let apply_coercion_args env sigma isproj bo ty arg arg_ty nparams =
+let apply_coercion_args env sigma make_body ty arg arg_ty nparams =
   let destProd sigma typ =
     match EConstr.kind sigma (whd_all env sigma typ) with
     | Prod (_, c1, c2) -> c1, c2
@@ -62,16 +62,7 @@ let apply_coercion_args env sigma isproj bo ty arg arg_ty nparams =
       try Evarconv.unify_leq_delay env sigma arg_ty c1
       with Evarconv.UnableToUnify _ -> raise NoCoercion in
     sigma, params @ [arg], subst1 arg c2 in
-  let bo, args =
-    match isproj with
-    | None -> bo, args
-    | Some (p,r) ->
-      let npars = Projection.Repr.npars p in
-      let p = Projection.make p false in
-      let args = List.skipn npars args in
-      let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-      mkProj (p, r, hd), tl in
-  sigma, applist (bo, args), params, typ
+  sigma, make_body args, params, typ
 
 (* appliquer le chemin de coercions de patterns p *)
 let apply_pattern_coercion ?loc pat p =
@@ -406,19 +397,32 @@ let apply_coercion env sigma p h hty =
       (fun (j,jty,trace,sigma) i ->
          let isid = i.coe_is_identity in
          let isproj = i.coe_is_projection in
-         let sigma, c = Evd.fresh_global env sigma i.coe_value in
-         let u = instance_of_global_constr sigma c in
-         let isproj = Option.map (fun p -> p, Relevanceops.relevance_of_projection_repr env (p,u)) isproj in
+         let sigma, u, mk_body, mk_trace =
+           match isproj with
+           | None ->
+             let sigma, c = Evd.fresh_global env sigma i.coe_value in
+             let u = instance_of_global_constr sigma c in
+             let mk_body args = applist (c, args) in
+             let mk_trace args = Coe {head=c;args;previous=trace} in
+             sigma, u, mk_body, mk_trace
+           | Some proj ->
+             let (_, u), _ = Inductiveops.find_inductive env sigma jty in
+             let u = EInstance.kind sigma u in
+             let relevance = Relevanceops.relevance_of_projection_repr env (proj, u) in
+             let mk_body args =
+               let npars = Projection.Repr.npars proj in
+               let p = Projection.make proj false in
+               let args = List.skipn npars args in
+               let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
+               applist (mkProj (p, relevance, hd), tl) in
+             let mk_trace args =
+               let args = List.skipn (Projection.Repr.npars proj) args in
+               PrimProjCoe {proj; args; relevance; previous=trace} in
+             sigma, u, mk_body, mk_trace in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
          let sigma, j', args, jty =
-           apply_coercion_args env sigma isproj c typ j jty i.coe_param in
-         let trace =
-           if isid then trace
-           else match isproj with
-           | None -> Coe {head=c;args;previous=trace}
-           | Some (proj,relevance) ->
-             let args = List.skipn (Projection.Repr.npars proj) args in
-             PrimProjCoe {proj; args; relevance; previous=trace } in
+           apply_coercion_args env sigma mk_body typ j jty i.coe_param in
+         let trace = if isid then trace else mk_trace args in
          (if isid then j else j'), jty, trace, sigma)
       (h, hty, IdCoe, sigma) p
   in sigma, j, jty, trace
