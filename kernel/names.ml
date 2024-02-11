@@ -931,7 +931,7 @@ struct
 
   type t = Repr.t * bool
 
-  let make c b = (c, b)
+  let make c _b = (c, false)
 
   let mind (c,_) = Repr.mind c
   let inductive (c,_) = Repr.inductive c
@@ -941,7 +941,6 @@ struct
   let label (c,_) = Repr.label c
   let repr = fst
   let unfolded = snd
-  let unfold (c, b as p) = if b then p else (c, true)
 
   let equal (c, b) (c', b') = Repr.equal c c' && b == b'
 
