@@ -1690,7 +1690,11 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
         end
       |_, ((Stack.App _|Stack.Primitive _) :: _|[]) -> s
   in
-  whrec s
+  let (t, stack) = s in
+  let (t, stack) = apply_subst [] sigma t stack in
+  match kind sigma t with
+  | Proj (p,r,c) -> whrec (c, Stack.Proj (p,r) :: stack)
+  | _ -> whrec s
 
 let find_conclusion env sigma =
   let rec decrec env c =
