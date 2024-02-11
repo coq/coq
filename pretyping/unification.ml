@@ -1145,24 +1145,24 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
             | Some c_l1 ->
                 unirec_rec curenvnb pb opt substn
-                  (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                  (whd_betaiotazeta_proj curenv sigma (mkApp c_l1)) cN
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
                 | Some c_l2 ->
                     unirec_rec curenvnb pb opt substn cM
-                      (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                      (whd_betaiotazeta_proj curenv sigma (mkApp c_l2))
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
         | Some false ->
             (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
             | Some c_l2 ->
                 unirec_rec curenvnb pb opt substn cM
-                  (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                  (whd_betaiotazeta_proj curenv sigma (mkApp c_l2))
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
                 | Some c_l1 ->
                     unirec_rec curenvnb pb opt substn
-                      (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                      (whd_betaiotazeta_proj curenv sigma (mkApp c_l1)) cN
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
 

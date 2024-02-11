@@ -1696,6 +1696,15 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   | Proj (p,r,c) -> whrec (c, Stack.Proj (p,r) :: stack)
   | _ -> whrec s
 
+let whd_betaiotazeta_proj env sigma c =
+  let (c, args as s) = whd_beta_stack env sigma c in
+  let stack = Stack.(append_app_list args empty) in
+  let s =
+    match kind sigma c with
+    | Proj (p,r,c) -> (c, Stack.(Proj (p,r) :: stack))
+    | _ -> (c, stack) in
+  Stack.zip sigma (whd_betaiotazeta_state env sigma s)
+
 let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_all env sigma c in
