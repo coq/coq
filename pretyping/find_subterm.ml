@@ -58,11 +58,9 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 
 exception SubtermUnificationError of subterm_unification_error
 
-type 'a result =  ('a, (EConstr.t * EConstr.t * unification_error) option) Result.t
-
 type 'a testing_function = {
   match_fun : 'a -> EConstr.constr -> ('a, unit) Result.t;
-  merge_fun : 'a -> 'a -> 'a result;
+  merge_fun : 'a -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }
@@ -86,7 +84,7 @@ let replace_term_occ_gen_modulo env sigma like_first test bywhat cl count t =
           (* in case it is nested but not later detected as unconvertible,
              as when matching "id _" in "id (id 0)" *)
           let lastpos = Option.get test.last_found in
-          raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos, None))
+          raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos))
         else match test.merge_fun subst test.testing_state with
         | Result.Ok state ->
           let () = test.testing_state <- state in
@@ -97,14 +95,14 @@ let replace_term_occ_gen_modulo env sigma like_first test bywhat cl count t =
               ignore (subst_below (true, k) t)
           in
           Vars.lift k (bywhat ())
-        | Result.Error e ->
+        | Result.Error () ->
           if like_first then subst_below (nested, k) t
           else
             let lastpos = Option.get test.last_found in
-            raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos, e))
+            raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos))
       else
         subst_below (nested, k) t
-    | Result.Error _ ->
+    | Result.Error () ->
       subst_below (nested, k) t
   and subst_below k t =
     map_constr_with_binders_left_to_right env sigma (fun d (nested, k) -> (nested, k + 1)) substrec k t

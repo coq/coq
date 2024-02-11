@@ -1731,9 +1731,9 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
         let t2 = get_type_of env evd c2 in
         begin match infer_conv ~pb:CONV env evd t1 t2 with
         | Some evd -> Result.Ok (Some (evd, c1, x))
-        | None -> Result.Error None
+        | None -> Result.Error ()
         end
-      | None -> Result.Error None
+      | None -> Result.Error ()
       end
     | Some _, None -> Result.Ok c1
     | None, Some _ -> Result.Ok c2

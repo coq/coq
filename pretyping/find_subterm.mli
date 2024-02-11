@@ -25,11 +25,9 @@ exception SubtermUnificationError of subterm_unification_error
     last_found is used for error messages and it has to be initialized
     with None. *)
 
-type 'a result =  ('a, (constr * constr * unification_error) option) Result.t
-
 type 'a testing_function = {
   match_fun : 'a -> constr -> ('a, unit) Result.t;
-  merge_fun : 'a -> 'a -> 'a result;
+  merge_fun : 'a -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }
