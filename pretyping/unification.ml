@@ -1696,45 +1696,48 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     else default_matching_flags (Option.default Evd.empty pending) in
   let n = Array.length (snd (decompose_app sigma c)) in
   let cgnd = if occur_meta_or_undefined_evar sigma c then NotGround else Ground in
+  let exception NotUnifiable in
   let matching_fun _ t =
     (* make_pattern_test is only ever called with an empty rel context *)
-    if not (EConstr.Vars.closed0 sigma t) then raise (NotUnifiable None);
-    try
+    if not (EConstr.Vars.closed0 sigma t) then Result.Error None
+    else try
       let t',l2 =
         if from_prefix_of_ind then
           (* We check for fully applied subterms of the form "u u1 .. un" *)
           (* of inductive type knowing only a prefix "u u1 .. ui" *)
           let t,l = decompose_app_list sigma t in
           let l1,l2 =
-            try List.chop n l with Failure _ -> raise (NotUnifiable None) in
-          if not (List.for_all (fun c -> Vars.closed0 sigma c) l2) then raise (NotUnifiable None)
-          else
-            applist (t,l1), l2
+            try List.chop n l with Failure _ -> raise NotUnifiable in
+          if not (List.for_all (fun c -> Vars.closed0 sigma c) l2) then raise NotUnifiable
+          else applist (t,l1), l2
         else t, [] in
       let sigma = w_typed_unify env sigma Conversion.CONV flags (c, cgnd) (t', Unknown) in
       let ty = Retyping.get_type_of env sigma t in
-      if not (is_correct_type ty) then raise (NotUnifiable None);
-      Some(sigma, t, l2)
+      if is_correct_type ty then Result.Ok (Some (sigma, t, l2))
+      else Result.Error None
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
-        raise (NotUnifiable (Some (c1,c2,e)))
+      Result.Error (Some (c1, c2, e))
+    | NotUnifiable -> Result.Error None
     (* MS: This is pretty bad, it catches Not_found for example *)
-    | e when CErrors.noncritical e -> raise (NotUnifiable None) in
+    | e when CErrors.noncritical e -> Result.Error None
+  in
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (_,c1,x), Some (evd,c2,_) ->
       begin match infer_conv ~pb:CONV env evd c1 c2 with
       | Some evd ->
-       (let t1 = get_type_of env evd c1 in
+        let t1 = get_type_of env evd c1 in
         let t2 = get_type_of env evd c2 in
-        match infer_conv ~pb:CONV env evd t1 t2 with
-        | Some evd -> Some (evd, c1, x)
-        | None -> raise (NotUnifiable None))
-      | None -> raise (NotUnifiable None)
+        begin match infer_conv ~pb:CONV env evd t1 t2 with
+        | Some evd -> Result.Ok (Some (evd, c1, x))
+        | None -> Result.Error None
+        end
+      | None -> Result.Error None
       end
-    | Some _, None -> c1
-    | None, Some _ -> c2
-    | None, None -> None in
+    | Some _, None -> Result.Ok c1
+    | None, Some _ -> Result.Ok c2
+    | None, None -> Result.Ok None in
   { match_fun = matching_fun; merge_fun = merge_fun;
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with

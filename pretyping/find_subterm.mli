@@ -17,8 +17,6 @@ open EConstr
 (** Finding subterms, possibly up to some unification function,
     possibly at some given occurrences *)
 
-exception NotUnifiable of (constr * constr * unification_error) option
-
 exception SubtermUnificationError of subterm_unification_error
 
 (** A testing function is typically a unification function returning a
@@ -27,9 +25,11 @@ exception SubtermUnificationError of subterm_unification_error
     last_found is used for error messages and it has to be initialized
     with None. *)
 
+type 'a result =  ('a, (constr * constr * unification_error) option) Result.t
+
 type 'a testing_function = {
-  match_fun : 'a -> constr -> 'a;
-  merge_fun : 'a -> 'a -> 'a;
+  match_fun : 'a -> constr -> 'a result;
+  merge_fun : 'a -> 'a -> 'a result;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }

@@ -58,11 +58,11 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 
 exception SubtermUnificationError of subterm_unification_error
 
-exception NotUnifiable of (EConstr.t * EConstr.t * unification_error) option
+type 'a result =  ('a, (EConstr.t * EConstr.t * unification_error) option) Result.t
 
 type 'a testing_function = {
-  match_fun : 'a -> EConstr.constr -> 'a;
-  merge_fun : 'a -> 'a -> 'a;
+  match_fun : 'a -> EConstr.constr -> 'a result;
+  merge_fun : 'a -> 'a -> 'a result;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }
@@ -75,35 +75,41 @@ type 'a testing_function = {
 let replace_term_occ_gen_modulo env sigma like_first test bywhat cl count t =
   let count = ref count in
   let nested = ref false in
-  let add_subst pos t subst =
-    try
-      test.testing_state <- test.merge_fun subst test.testing_state;
-      test.last_found <- Some ((cl,pos),t)
-    with NotUnifiable e when not like_first ->
+  let add_subst pos t subst = match test.merge_fun subst test.testing_state with
+  | Result.Ok state ->
+    test.testing_state <- state;
+    test.last_found <- Some ((cl, pos), t);
+    Result.Ok ()
+  | Result.Error e as err ->
+    if like_first then err
+    else
       let lastpos = Option.get test.last_found in
-     raise (SubtermUnificationError (!nested,((cl,pos),t),lastpos,e)) in
+      raise (SubtermUnificationError (!nested, ((cl, pos), t), lastpos, e))
+  in
   let rec substrec k t =
     if Locusops.occurrences_done !count then t else
-    try
-      let subst = test.match_fun test.testing_state t in
+    match test.match_fun test.testing_state t with
+    | Result.Ok subst ->
       let selected, count' = Locusops.update_occurrence_counter !count in count := count';
       if selected then
         let pos = Locusops.current_occurrence !count in
-        (if !nested then begin
+        let () = if !nested then
           (* in case it is nested but not later detected as unconvertible,
              as when matching "id _" in "id (id 0)" *)
           let lastpos = Option.get test.last_found in
-          raise (SubtermUnificationError (!nested,((cl,pos),t),lastpos,None))
-         end;
-         add_subst pos t subst;
+          raise (SubtermUnificationError (!nested, ((cl, pos), t), lastpos, None))
+        in
+        match add_subst pos t subst with
+        | Result.Ok () ->
          (* Check nested matching subterms *)
          if Locusops.more_specific_occurrences !count then
            begin nested := true; ignore (subst_below k t); nested := false end;
          (* Do the effective substitution *)
-         Vars.lift k (bywhat ()))
+         Vars.lift k (bywhat ())
+        | Result.Error _ -> subst_below k t
       else
         subst_below k t
-    with NotUnifiable _ ->
+    | Result.Error _ ->
       subst_below k t
   and subst_below k t =
     map_constr_with_binders_left_to_right env sigma (fun d k -> k+1) substrec k t
@@ -131,12 +137,12 @@ let replace_term_occ_decl_modulo env evd occs test bywhat d =
 let make_eq_univs_test env evd c =
   { match_fun = (fun evd c' ->
     match EConstr.eq_constr_universes_proj env evd c c' with
-    | None -> raise (NotUnifiable None)
+    | None -> Result.Error None
     | Some cst ->
-        try Evd.add_universe_constraints evd cst
-        with Evd.UniversesDiffer | UGraph.UniverseInconsistency _ -> raise (NotUnifiable None)
+      try Result.Ok (Evd.add_universe_constraints evd cst)
+      with Evd.UniversesDiffer | UGraph.UniverseInconsistency _ -> Result.Error None
     );
-  merge_fun = (fun evd _ -> evd);
+  merge_fun = (fun evd _ -> Result.Ok evd);
   testing_state = evd;
   last_found = None
 }
