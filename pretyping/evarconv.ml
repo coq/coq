@@ -71,31 +71,6 @@ let coq_unit_judge env sigma =
     sigma, make_judge c t
   | None -> sigma, unit_judge_fallback
 
-let unfold_projection env evd ts p r c =
-  if TransparentState.is_transparent_projection ts (Projection.repr p) then
-    Some (mkProj (Projection.unfold p, r, c))
-  else None
-
-(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
-   expanded, folded primitive projection of name [n] and unfolds the primitive
-   projection. It respects projection transparency of [ts]. *)
-let unfold_projection_under_eta env evd ts cst c =
-  let rec go c lams =
-    match EConstr.kind evd c with
-    | Lambda (b, t, c) -> go c ((b,t)::lams)
-    | Proj (p, r, c) when QConstant.equal env cst (Projection.constant p) ->
-      let c = unfold_projection env evd ts p r c in
-      begin
-        match c with
-        | None -> None
-        | Some c ->
-          let f c (b,t) = mkLambda (b,t,c) in
-          Some (List.fold_left f c lams)
-      end
-      | _ -> None
-  in
-  go c []
-
 let eval_flexible_term ts env evd c sk =
   match EConstr.kind evd c with
   | Const (c, u) ->
@@ -104,12 +79,7 @@ let eval_flexible_term ts env evd c sk =
         match cb.const_body with
         | Def l_body ->
             let def = subst_instance_constr u (EConstr.of_constr l_body) in
-            (* If we are unfolding a compatibility constant we want to return the
-               unfolded primitive projection directly since we would like to pretend
-               that the compatibility constant itself does not count as an unfolding
-               (delta) step. *)
-            let unf = unfold_projection_under_eta env evd ts c def in
-            Some (Option.default def unf, sk)
+            Some (def, sk)
         | OpaqueDef _ | Undef _ | Primitive _ -> None
         | Symbol b ->
             try
@@ -134,9 +104,8 @@ let eval_flexible_term ts env evd c sk =
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c, sk)
   | Lambda _ -> Some (c, sk)
-  | Proj (p, r, c) ->
-    if Projection.unfolded p then assert false
-    else unfold_projection env evd ts p r c |> Option.map (fun c -> (c, sk))
+  | Proj (p, _, _) ->
+      if TransparentState.is_transparent_projection ts (Projection.repr p) then Some (c, sk) else None
   | _ -> assert false
 
 type flex_kind_of_term =
