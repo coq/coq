@@ -28,7 +28,7 @@ exception SubtermUnificationError of subterm_unification_error
 type 'a result =  ('a, (constr * constr * unification_error) option) Result.t
 
 type 'a testing_function = {
-  match_fun : 'a -> constr -> 'a result;
+  match_fun : 'a -> constr -> ('a, unit) Result.t;
   merge_fun : 'a -> 'a -> 'a result;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option

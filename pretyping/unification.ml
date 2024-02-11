@@ -1699,7 +1699,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let exception NotUnifiable in
   let matching_fun _ t =
     (* make_pattern_test is only ever called with an empty rel context *)
-    if not (EConstr.Vars.closed0 sigma t) then Result.Error None
+    if not (EConstr.Vars.closed0 sigma t) then Result.Error ()
     else try
       let t',l2 =
         if from_prefix_of_ind then
@@ -1714,13 +1714,13 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
       let sigma = w_typed_unify env sigma Conversion.CONV flags (c, cgnd) (t', Unknown) in
       let ty = Retyping.get_type_of env sigma t in
       if is_correct_type ty then Result.Ok (Some (sigma, t, l2))
-      else Result.Error None
+      else Result.Error ()
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
-      Result.Error (Some (c1, c2, e))
-    | NotUnifiable -> Result.Error None
+      Result.Error ()
+    | NotUnifiable -> Result.Error ()
     (* MS: This is pretty bad, it catches Not_found for example *)
-    | e when CErrors.noncritical e -> Result.Error None
+    | e when CErrors.noncritical e -> Result.Error ()
   in
   let merge_fun c1 c2 =
     match c1, c2 with

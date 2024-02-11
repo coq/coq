@@ -61,7 +61,7 @@ exception SubtermUnificationError of subterm_unification_error
 type 'a result =  ('a, (EConstr.t * EConstr.t * unification_error) option) Result.t
 
 type 'a testing_function = {
-  match_fun : 'a -> EConstr.constr -> 'a result;
+  match_fun : 'a -> EConstr.constr -> ('a, unit) Result.t;
   merge_fun : 'a -> 'a -> 'a result;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
@@ -132,10 +132,10 @@ let replace_term_occ_decl_modulo env evd occs test bywhat d =
 let make_eq_univs_test env evd c =
   { match_fun = (fun evd c' ->
     match EConstr.eq_constr_universes_proj env evd c c' with
-    | None -> Result.Error None
+    | None -> Result.Error ()
     | Some cst ->
       try Result.Ok (Evd.add_universe_constraints evd cst)
-      with Evd.UniversesDiffer | UGraph.UniverseInconsistency _ -> Result.Error None
+      with Evd.UniversesDiffer | UGraph.UniverseInconsistency _ -> Result.Error ()
     );
   merge_fun = (fun evd _ -> Result.Ok evd);
   testing_state = evd;
