@@ -74,47 +74,42 @@ type 'a testing_function = {
 
 let replace_term_occ_gen_modulo env sigma like_first test bywhat cl count t =
   let count = ref count in
-  let nested = ref false in
-  let add_subst pos t subst = match test.merge_fun subst test.testing_state with
-  | Result.Ok state ->
-    test.testing_state <- state;
-    test.last_found <- Some ((cl, pos), t);
-    Result.Ok ()
-  | Result.Error e as err ->
-    if like_first then err
-    else
-      let lastpos = Option.get test.last_found in
-      raise (SubtermUnificationError (!nested, ((cl, pos), t), lastpos, e))
-  in
-  let rec substrec k t =
+  let rec substrec (nested, k) t =
     if Locusops.occurrences_done !count then t else
     match test.match_fun test.testing_state t with
     | Result.Ok subst ->
-      let selected, count' = Locusops.update_occurrence_counter !count in count := count';
+      let selected, count' = Locusops.update_occurrence_counter !count in
+      let () = count := count' in
       if selected then
         let pos = Locusops.current_occurrence !count in
-        let () = if !nested then
+        if nested then
           (* in case it is nested but not later detected as unconvertible,
              as when matching "id _" in "id (id 0)" *)
           let lastpos = Option.get test.last_found in
-          raise (SubtermUnificationError (!nested, ((cl, pos), t), lastpos, None))
-        in
-        match add_subst pos t subst with
-        | Result.Ok () ->
-         (* Check nested matching subterms *)
-         if Locusops.more_specific_occurrences !count then
-           begin nested := true; ignore (subst_below k t); nested := false end;
-         (* Do the effective substitution *)
-         Vars.lift k (bywhat ())
-        | Result.Error _ -> subst_below k t
+          raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos, None))
+        else match test.merge_fun subst test.testing_state with
+        | Result.Ok state ->
+          let () = test.testing_state <- state in
+          let () = test.last_found <- Some ((cl, pos), t) in
+          (* Check nested matching subterms *)
+          let () =
+            if Locusops.more_specific_occurrences !count then
+              ignore (subst_below (true, k) t)
+          in
+          Vars.lift k (bywhat ())
+        | Result.Error e ->
+          if like_first then subst_below (nested, k) t
+          else
+            let lastpos = Option.get test.last_found in
+            raise (SubtermUnificationError (nested, ((cl, pos), t), lastpos, e))
       else
-        subst_below k t
+        subst_below (nested, k) t
     | Result.Error _ ->
-      subst_below k t
+      subst_below (nested, k) t
   and subst_below k t =
-    map_constr_with_binders_left_to_right env sigma (fun d k -> k+1) substrec k t
+    map_constr_with_binders_left_to_right env sigma (fun d (nested, k) -> (nested, k + 1)) substrec k t
   in
-  let t' = substrec 0 t in
+  let t' = substrec (false, 0) t in
   (!count, t')
 
 let replace_term_occ_modulo env evd occs test bywhat t =
