@@ -74,7 +74,7 @@ exception PatternNotFound
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * (evar_map option * constr) * Locus.clause * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * (evar_map option * constr) * Locus.clause
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 type 'r abstraction_result =
