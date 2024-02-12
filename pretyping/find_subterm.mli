@@ -20,8 +20,8 @@ open EConstr
 exception SubtermUnificationError of subterm_unification_error
 
 (** A testing function is typically a unification function returning a
-    substitution or failing with a NotUnifiable error, together with a
-    function to merge substitutions and an initial substitution;
+    substitution or failing with Error, together with a function to merge
+    substitutions and an initial substitution;
     last_found is used for error messages and it has to be initialized
     with None. *)
 
@@ -39,7 +39,7 @@ val make_eq_univs_test : env -> evar_map -> constr -> (evar_map, evar_map) testi
 (** [replace_term_occ_modulo occl test mk c] looks in [c] for subterm
     modulo a testing function [test] and replaces successfully
     matching subterms at the indicated occurrences [occl] with [mk
-    ()]; it turns a NotUnifiable exception raised by the testing
+    ()]; it turns an Error value returned by the [merge_fun]
     function into a SubtermUnificationError. *)
 val replace_term_occ_modulo : env -> evar_map -> occurrences or_like_first ->
   ('a, 'b) testing_function -> (unit -> constr) -> constr -> constr
