@@ -557,7 +557,7 @@ Enabling and disabling notations
       Cannot enable or disable for parsing a notation that was
       originally defined as only printing.
 
-   .. exn:: Found no matching notation to enable or disable.
+   .. warn:: Found no matching notation to enable or disable.
 
       No previously defined notation satisfies the given constraints.
 
