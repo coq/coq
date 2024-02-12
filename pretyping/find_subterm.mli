@@ -25,16 +25,16 @@ exception SubtermUnificationError of subterm_unification_error
     last_found is used for error messages and it has to be initialized
     with None. *)
 
-type 'a testing_function = {
-  match_fun : 'a -> constr -> ('a, unit) Result.t;
-  merge_fun : 'a -> 'a -> ('a, unit) Result.t;
+type ('a, 'b) testing_function = {
+  match_fun : 'a -> constr -> ('b, unit) Result.t;
+  merge_fun : 'b -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }
 
 (** This is the basic testing function, looking for exact matches of a
     closed term *)
-val make_eq_univs_test : env -> evar_map -> constr -> evar_map testing_function
+val make_eq_univs_test : env -> evar_map -> constr -> (evar_map, evar_map) testing_function
 
 (** [replace_term_occ_modulo occl test mk c] looks in [c] for subterm
     modulo a testing function [test] and replaces successfully
@@ -42,14 +42,14 @@ val make_eq_univs_test : env -> evar_map -> constr -> evar_map testing_function
     ()]; it turns a NotUnifiable exception raised by the testing
     function into a SubtermUnificationError. *)
 val replace_term_occ_modulo : env -> evar_map -> occurrences or_like_first ->
-  'a testing_function -> (unit -> constr) -> constr -> constr
+  ('a, 'b) testing_function -> (unit -> constr) -> constr -> constr
 
 (** [replace_term_occ_decl_modulo] is similar to
     [replace_term_occ_modulo] but for a named_declaration. *)
 val replace_term_occ_decl_modulo :
   env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
-  'a testing_function -> (unit -> constr) ->
+  ('a, 'b) testing_function -> (unit -> constr) ->
   named_declaration -> named_declaration
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of

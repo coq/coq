@@ -58,9 +58,9 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 
 exception SubtermUnificationError of subterm_unification_error
 
-type 'a testing_function = {
-  match_fun : 'a -> EConstr.constr -> ('a, unit) Result.t;
-  merge_fun : 'a -> 'a -> ('a, unit) Result.t;
+type ('a, 'b) testing_function = {
+  match_fun : 'a -> EConstr.constr -> ('b, unit) Result.t;
+  merge_fun : 'b -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }

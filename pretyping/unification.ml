@@ -1713,7 +1713,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
         else t, [] in
       let sigma = w_typed_unify env sigma Conversion.CONV flags (c, cgnd) (t', Unknown) in
       let ty = Retyping.get_type_of env sigma t in
-      if is_correct_type ty then Result.Ok (Some (sigma, t, l2))
+      if is_correct_type ty then Result.Ok (sigma, t, l2)
       else Result.Error ()
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
@@ -1722,22 +1722,21 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     (* MS: This is pretty bad, it catches Not_found for example *)
     | e when CErrors.noncritical e -> Result.Error ()
   in
-  let merge_fun c1 c2 =
-    match c1, c2 with
-    | Some (_,c1,x), Some (evd,c2,_) ->
-      begin match infer_conv ~pb:CONV env evd c1 c2 with
-      | Some evd ->
-        let t1 = get_type_of env evd c1 in
-        let t2 = get_type_of env evd c2 in
-        begin match infer_conv ~pb:CONV env evd t1 t2 with
-        | Some evd -> Result.Ok (Some (evd, c1, x))
-        | None -> Result.Error ()
-        end
+  let merge_fun c1 c2 = match c2 with
+  | Some (evd, c2, _) ->
+    let (_, c1, x) = c1 in
+    begin match infer_conv ~pb:CONV env evd c1 c2 with
+    | Some evd ->
+      let t1 = get_type_of env evd c1 in
+      let t2 = get_type_of env evd c2 in
+      begin match infer_conv ~pb:CONV env evd t1 t2 with
+      | Some evd -> Result.Ok (Some (evd, c1, x))
       | None -> Result.Error ()
       end
-    | Some _, None -> Result.Ok c1
-    | None, Some _ -> Result.Ok c2
-    | None, None -> Result.Ok None in
+    | None -> Result.Error ()
+    end
+  | None -> Result.Ok (Some c1)
+  in
   { match_fun = matching_fun; merge_fun = merge_fun;
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
