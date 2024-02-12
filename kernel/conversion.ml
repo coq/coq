@@ -650,7 +650,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
-    | (FFix (((op1, i1),(na1,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
+    | (FFix (((op1, i1),(na1,tys1,cl1)),e1, _), FFix(((op2, i2),(_,tys2,cl2)),e2, _)) ->
         if Int.equal i1 i2 && Array.equal Int.equal op1 op2
         then
           let n = Array.length cl1 in

@@ -232,7 +232,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
     in
     infer_stack infos variances stk
-  | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
+  | FFix ((_,(na,tys,cl)),e,_) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
     let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
     let le = CClosure.usubs_liftn n e in
