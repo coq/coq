@@ -1292,6 +1292,16 @@ let fresh_string_of =
   let count = ref 0 in
   fun root -> count := !count+1; (string_of_int !count)^"_"^root
 
+let glob_prim_constr_key c = match DAst.get c with
+  | GRef (ref, _) -> Some (canonical_gr ref)
+  | GApp (c, _) ->
+    begin match DAst.get c with
+    | GRef (ref, _) -> Some (canonical_gr ref)
+    | _ -> None
+    end
+  | GProj ((cst,_), _, _) -> Some (canonical_gr (GlobRef.ConstRef cst))
+  | _ -> None
+
 let declare_numeral_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
   let uid = fresh_string_of sc in
   register_bignumeral_interpretation uid (interp,uninterp);

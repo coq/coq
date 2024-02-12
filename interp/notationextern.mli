@@ -59,8 +59,6 @@ type notation_applicative_status =
 
 type notation_rule = interp_rule * interpretation * notation_applicative_status
 
-val glob_prim_constr_key : 'a Glob_term.glob_constr_g -> Names.GlobRef.t option
-
 (** Return the possible notations for a given term *)
 val uninterp_notations : 'a glob_constr_g -> notation_rule list
 val uninterp_cases_pattern_notations : 'a cases_pattern_g -> notation_rule list
