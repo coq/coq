@@ -10,6 +10,8 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+Attributes deprecated(since="8.20", note="Use PeanoNat or BinInt instead.").
+
 Require Import Bool. (* To get the orb and negb function *)
 Require Import RelationPairs.
 Require Export NStrongRec.

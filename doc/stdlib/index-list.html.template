@@ -282,8 +282,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NAddOrder.v
     theories/Numbers/Natural/Abstract/NAxioms.v
     theories/Numbers/Natural/Abstract/NBase.v
-    theories/Numbers/Natural/Abstract/NDefOps.v
-    theories/Numbers/Natural/Abstract/NIso.v
     theories/Numbers/Natural/Abstract/NMulOrder.v
     theories/Numbers/Natural/Abstract/NOrder.v
     theories/Numbers/Natural/Abstract/NStrongRec.v

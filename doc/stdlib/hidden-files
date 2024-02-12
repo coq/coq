@@ -104,3 +104,5 @@ theories/Numbers/NatInt/NZDomain.v
 theories/Numbers/Integer/Abstract/ZDivEucl.v
 theories/ZArith/Zeuclid.v
 theories/Arith/Bool_nat.v
+theories/Numbers/Natural/Abstract/NDefOps.v
+theories/Numbers/Natural/Abstract/NIso.v
