@@ -233,12 +233,14 @@ Hint Immediate eq_dep_sym: core.
 
 Section Equivalences.
 
+  Import EqNotations.
+
   Variable U:Type.
 
   (** Invariance by Substitution of Reflexive Equality Proofs *)
 
   Definition Eq_rect_eq_on (p : U) (Q : U -> Type) (x : Q p) :=
-    forall (h : p = p), x = eq_rect p Q x p h.
+    forall (e : p = p), x = rew [Q] e in x.
   Definition Eq_rect_eq := forall p Q x, Eq_rect_eq_on p Q x.
 
   (** Injectivity of Dependent Equality *)
