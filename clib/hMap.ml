@@ -343,7 +343,11 @@ struct
 
   let min_binding _ = assert false (** Cannot be implemented efficiently *)
 
+  let min_binding_opt _ = assert false (** Cannot be implemented efficiently *)
+
   let max_binding _ = assert false (** Cannot be implemented efficiently *)
+
+  let max_binding_opt _ = assert false (** Cannot be implemented efficiently *)
 
   let fold_left _ _ _ = assert false (** Cannot be implemented efficiently *)
 

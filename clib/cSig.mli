@@ -76,7 +76,9 @@ sig
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
+    val min_binding_opt: 'a t -> (key * 'a) option
     val max_binding: 'a t -> (key * 'a)
+    val max_binding_opt: 'a t -> (key * 'a) option
     val choose: 'a t -> (key * 'a)
     val choose_opt: 'a t -> (key * 'a) option
     val split: key -> 'a t -> 'a t * 'a option * 'a t

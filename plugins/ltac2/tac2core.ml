@@ -1528,6 +1528,22 @@ let () =
   let Refl = V.valmap_eq in
   tag_set tag (V.M.domain m)
 
+let () =
+  define "fmap_min_binding" (map_repr @-> ret valexpr)
+    @@ fun (TaggedMap (tag,m)) ->
+  let (module V) = get_map tag in
+  let Refl = V.valmap_eq in
+  let o = V.M.min_binding_opt m in
+  Tac2ffi.(of_option (of_pair (repr_of V.repr) identity)) o
+
+let () =
+  define "fmap_max_binding" (map_repr @-> ret valexpr)
+    @@ fun (TaggedMap (tag,m)) ->
+  let (module V) = get_map tag in
+  let Refl = V.valmap_eq in
+  let o = V.M.max_binding_opt m in
+  Tac2ffi.(of_option (of_pair (repr_of V.repr) identity)) o
+
 (** ML types *)
 
 (** Embed all Ltac2 data into Values *)
