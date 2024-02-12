@@ -57,29 +57,23 @@ val le : t -> t -> bool
 (** The IEEE 754 float comparison.
  * NotComparable is returned if there is a NaN in the arguments *)
 val compare : t -> t -> float_comparison
-[@@ocaml.inline always]
 
 type float_class =
   | PNormal | NNormal | PSubn | NSubn | PZero | NZero | PInf | NInf | NaN
 
 val classify : t -> float_class
-[@@ocaml.inline always]
 
 (** Link with integers *)
 val of_uint63 : Uint63.t -> t
-[@@ocaml.inline always]
 
 val normfr_mantissa : t -> Uint63.t
-[@@ocaml.inline always]
 
 (** Shifted exponent extraction *)
 val eshift : int
 
 val frshiftexp : t -> t * Uint63.t (* float remainder, shifted exponent *)
-[@@ocaml.inline always]
 
 val ldshiftexp : t -> Uint63.t -> t
-[@@ocaml.inline always]
 
 val next_up : t -> t
 
@@ -88,7 +82,6 @@ val next_down : t -> t
 (** Return true if two floats are equal.
  * All NaN values are considered equal. *)
 val equal : t -> t -> bool
-[@@ocaml.inline always]
 
 val hash : t -> int
 
@@ -96,4 +89,3 @@ val hash : t -> int
 val total_compare : t -> t -> int
 
 val is_float64 : Obj.t -> bool
-[@@ocaml.inline always]
