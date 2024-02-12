@@ -2671,6 +2671,11 @@ let toggle_abbreviations ~on found ntn_pattern =
     Abbreviation.toggle_abbreviations ~on ~use:ntn_pattern.use_pattern test
   with Exit -> ()
 
+let warn_nothing_to_enable_or_disable =
+  CWarnings.create ~name:"no-notation-to-enable-or-disable"
+    ~category:CWarnings.CoreCategories.syntax
+    (fun () -> strbrk "Found no matching notation to enable or disable.")
+
 let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
   let found = ref [] in
   (* Deal with (parsing) notations *)
@@ -2688,8 +2693,7 @@ let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
   (* Deal with abbreviations *)
   toggle_abbreviations ~on found ntn_pattern;
   match !found with
-  | [] ->
-    user_err (strbrk "Found no matching notation to enable or disable.")
+  | [] -> warn_nothing_to_enable_or_disable ()
   | _::_::_ when not all ->
     user_err (strbrk "More than one interpretation bound to this notation, confirm with the \"all\" modifier.")
   | _ ->
