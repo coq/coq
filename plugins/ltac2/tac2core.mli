@@ -55,12 +55,16 @@ val map_tag_repr : any_map_tag Tac2ffi.repr
 val set_repr : tagged_set Tac2ffi.repr
 val map_repr : tagged_map Tac2ffi.repr
 
+type ('a,'set,'map) map =
+  (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
+
 val register_map : ?plugin:string -> tag_name:string
-  -> (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
-  -> ('a,'set,'map) map_tag
+  -> ('a,'set,'map) map -> ('a,'set,'map) map_tag
 (** Register a type on which we can use finite sets and maps.
     [tag_name] is the name used for the external to make the
     [Ltac2.FSet.Tags.tag] available. *)
+
+val get_map : ('a,'set,'map) map_tag -> ('a,'set,'map) map
 
 (** Default registered maps *)
 
