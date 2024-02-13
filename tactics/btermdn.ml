@@ -24,6 +24,7 @@ type term_label =
 | ProjLabel of Projection.t
 | ProdLabel
 | SortLabel
+| CaseLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
 | GRLabel gr1, GRLabel gr2 -> GlobRef.UserOrd.compare gr1 gr2
@@ -100,7 +101,12 @@ let constr_val_discr env sigma ts t =
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
-    | Case _ -> Everything (* Overapproximate wildly. TODO: be less brutal. *)
+    | Case (_, _, _, _, _, c, _) ->
+      begin
+        match decomp stack c with
+        | Label _  -> Label(CaseLabel, c :: stack)
+        | _ as result -> result
+      end
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | Array _ -> Nothing
   in
@@ -127,6 +133,12 @@ let constr_pat_discr env ts p =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
     | PSort s when stack = [] -> Some (SortLabel, [])
+    | PCase(_,_,p,_) | PIf(p,_,_) ->
+      begin
+        match decomp stack p with
+        | Some _ -> Some (CaseLabel, [p])
+        | None -> None
+      end
     | _ -> None
   in
   decomp [] (eta_reduce_pat p)
