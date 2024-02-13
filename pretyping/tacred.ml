@@ -1219,11 +1219,20 @@ let string_of_evaluable_ref env = function
 let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let unfold_side_red = RedFlags.(mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA])
 let unfold_red kn =
-  let flag = match kn with
-    | Evaluable.EvalVarRef id -> RedFlags.fVAR id
-    | Evaluable.EvalConstRef kn -> RedFlags.fCONST kn
-    | Evaluable.EvalProjectionRef p -> RedFlags.fPROJ p in
-  RedFlags.mkflags (flag::RedFlags.fDELTA::unfold_side_flags)
+  let open RedFlags in
+  let flags = fDELTA :: unfold_side_flags in
+  let flags = match kn with
+    | Evaluable.EvalVarRef id -> fVAR id :: flags
+    | Evaluable.EvalConstRef sp ->
+      begin
+        match Structures.PrimitiveProjections.find_opt sp with
+        | None -> fCONST sp :: flags
+        | Some p -> fCONST sp :: fPROJ p :: flags
+      end
+    | Evaluable.EvalProjectionRef p ->
+      fPROJ p :: fCONST (Projection.Repr.constant p) :: flags
+  in
+  mkflags flags
 
 let unfold env sigma name c =
   if is_evaluable env name then
