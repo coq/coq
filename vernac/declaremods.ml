@@ -1603,7 +1603,7 @@ let iter_all_interp_segments f =
     List.iter (apply_obj prefix) modobjs.module_substituted_objects;
     List.iter (apply_obj prefix) modobjs.module_keep_objects
   in
-  let apply_nodes (node, os) = List.iter (fun o -> f (Lib.node_prefix node) o) os in
+  let apply_nodes (node, os) = List.iter (fun o -> apply_obj (Lib.node_prefix node) o) os in
   MPmap.iter apply_mod_obj (InterpVisitor.ModObjs.all ());
   List.iter apply_nodes (Lib.contents ())
 

@@ -1,0 +1,12 @@
+bar_1: bar = 1
+First.bar_1: First.bar = 1
+bar: nat
+First.bar: nat
+First.bar_1: First.bar = 1
+bar_1: bar = 1
+bar_1: bar = 1
+bar_1: bar = 1
+one_bar: 1 = bar
+baz_foo: baz tt = foo
+baz: unit -> t
+baz_foo: baz tt = foo
