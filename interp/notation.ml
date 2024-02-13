@@ -1288,31 +1288,15 @@ let enable_prim_token_interpretation infos =
     (the latter inside a [Mltop.declare_cache_obj]).
 *)
 
-let fresh_string_of =
-  let count = ref 0 in
-  fun root -> count := !count+1; (string_of_int !count)^"_"^root
-
-let declare_numeral_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
-  let uid = fresh_string_of sc in
-  register_bignumeral_interpretation uid (interp,uninterp);
-  enable_prim_token_interpretation
-    { pt_local = local;
-      pt_scope = sc;
-      pt_interp_info = Uid uid;
-      pt_required = dir;
-      pt_refs = List.map_filter glob_prim_constr_key patl;
-      pt_in_match = b }
-let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
-  let uid = fresh_string_of sc in
-  register_string_interpretation uid (interp,uninterp);
-  enable_prim_token_interpretation
-    { pt_local = local;
-      pt_scope = sc;
-      pt_interp_info = Uid uid;
-      pt_required = dir;
-      pt_refs = List.map_filter glob_prim_constr_key patl;
-      pt_in_match = b }
-
+let glob_prim_constr_key c = match DAst.get c with
+  | GRef (ref, _) -> Some (canonical_gr ref)
+  | GApp (c, _) ->
+    begin match DAst.get c with
+    | GRef (ref, _) -> Some (canonical_gr ref)
+    | _ -> None
+    end
+  | GProj ((cst,_), _, _) -> Some (canonical_gr (GlobRef.ConstRef cst))
+  | _ -> None
 
 let check_required_module ?loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()

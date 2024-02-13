@@ -207,20 +207,6 @@ type prim_token_infos = {
 
 val enable_prim_token_interpretation : prim_token_infos -> unit
 
-(** Compatibility.
-    Avoid the next two functions, they will now store unnecessary
-    objects in the library segment. Instead, combine
-    [register_*_interpretation] and [enable_prim_token_interpretation]
-    (the latter inside a [Mltop.declare_cache_obj]).
-*)
-
-val declare_numeral_interpreter : ?local:bool -> scope_name -> required_module ->
-  Z.t prim_token_interpreter ->
-  glob_constr list * Z.t prim_token_uninterpreter * bool -> unit
-val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
-  string prim_token_interpreter ->
-  glob_constr list * string prim_token_uninterpreter * bool -> unit
-
 (** Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
