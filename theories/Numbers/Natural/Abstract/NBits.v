@@ -99,6 +99,13 @@ Proof.
  - apply testbit_even_succ, le_0_l.
 Qed.
 
+(** Specification without useless condition on the bit number *)
+Lemma testbit_odd_succ' a n : testbit (2*a+1) (S n) = testbit a n.
+Proof. apply testbit_odd_succ; exact (le_0_l n). Qed.
+
+Lemma testbit_even_succ' a n : testbit (2*a) (S n) = testbit a n.
+Proof. apply testbit_even_succ; exact (le_0_l n). Qed.
+
 (** Alternative characterisations of [testbit] *)
 
 (** This concise equation could have been taken as specification
@@ -573,6 +580,21 @@ Proof.
  intros. rewrite div2_spec, shiftr_div_pow2. now nzsimpl.
 Qed.
 
+Lemma div2_0 : div2 0 == 0.
+Proof.
+  rewrite div2_div, div_0_l by (rewrite two_succ; exact (neq_succ_0 _)).
+  reflexivity.
+Qed.
+
+Lemma div2_1 : div2 1 == 0.
+Proof. rewrite div2_div, div_small by (exact lt_1_2); reflexivity. Qed.
+
+Lemma div2_le_mono : forall a b, a <= b -> div2 a <= div2 b.
+Proof.
+  intros a b H; rewrite 2!div2_div; apply div_le_mono; [| exact H].
+  rewrite two_succ; exact (neq_succ_0 1).
+Qed.
+
 #[global]
 Instance div2_wd : Proper (eq==>eq) div2.
 Proof.
@@ -621,9 +643,7 @@ Proof.
     intros H'; contradict H'; rewrite H; reflexivity.
   }
   destruct (zero_or_succ b) as [| [c ->]]; [| clear b]. {
-    intros _; rewrite H; setoid_replace (S 0) with (2 * 0 + 1)
-      by (rewrite mul_0_r, add_0_l, one_succ; reflexivity).
-    rewrite div2_odd', mul_0_r, add_0_l; exact lt_0_1.
+    intros _; rewrite H, <-one_succ, div2_1; exact lt_0_1.
   }
   intros _; rewrite (div2_odd (S (S c))) at 2.
   rewrite <-(mul_1_l (div2 _)) at 1; apply lt_lt_add_r, mul_lt_mono_pos_r;
@@ -631,6 +651,29 @@ Proof.
   apply lt_le_trans with (1 := lt_0_1).
   apply div2_le_lower_bound; rewrite mul_1_r, two_succ, one_succ.
   apply ->succ_le_mono; apply ->succ_le_mono; exact (le_0_l _).
+Qed.
+
+Lemma le_div2 n : div2 (S n) <= n.
+Proof.
+  destruct (zero_or_succ n) as [-> | [k ->]]; [| clear n]. {
+    rewrite <-one_succ, div2_1; exact (le_0_l 0).
+  }
+  apply div2_le_upper_bound.
+  setoid_replace (2 * (S k)) with (S k + S k); cycle 1. {
+    rewrite two_succ, <-(add_1_r 1), mul_add_distr_r, mul_1_l; reflexivity.
+  }
+  rewrite add_succ_r; apply ->succ_le_mono; exact (le_add_r _ _).
+Qed.
+
+Lemma lt_div2 n : 0 < n -> div2 n < n.
+Proof. intros H%lt_neq%neq_sym; exact (lt_div2_diag_l _ H). Qed.
+
+Lemma div2_decr a n : a <= S n -> div2 a <= n.
+Proof.
+  destruct (zero_or_succ a) as [-> | [b ->]]; [intros _ | clear a]. {
+    rewrite div2_0; exact (le_0_l _).
+  }
+  intros H%div2_le_mono; apply le_trans with (1 := H); exact (le_div2 n).
 Qed.
 
 (** Properties of [lxor] and others, directly deduced
@@ -810,9 +853,7 @@ Proof. intros a b; rewrite land_even_l, div2_odd'; reflexivity. Qed.
 
 Lemma land_odd_odd :
   forall a b, land (2 * a + 1) (2 * b + 1) == 2 * (land a b) + 1.
-Proof.
-  intros a b; rewrite land_odd_l, div2_odd', odd_succ_double; reflexivity.
-Qed.
+Proof. intros a b; rewrite land_odd_l, div2_odd', odd_odd; reflexivity. Qed.
 
 Lemma land_le_l :
   forall a b, land a b <= a.
@@ -890,9 +931,7 @@ Proof. intros a b; rewrite ldiff_even_l, div2_even; reflexivity. Qed.
 
 Lemma ldiff_odd_even :
   forall a b, ldiff (2 * a + 1) (2 * b) == 2 * (ldiff a b) + 1.
-Proof.
-  intros a b; rewrite ldiff_even_r, div2_odd', odd_succ_double; reflexivity.
-Qed.
+Proof. intros a b; rewrite ldiff_even_r, div2_odd', odd_odd; reflexivity. Qed.
 
 Lemma ldiff_even_odd : forall a b, ldiff (2 * a) (2 * b + 1) == 2 * ldiff a b.
 Proof. intros a b; rewrite ldiff_even_l, div2_odd'; reflexivity. Qed.

@@ -624,6 +624,65 @@ Proof. apply le_0_l. Qed.
 
 (** ** Bitwise operations *)
 
+Definition double_S : forall n, double (S n) = S (S (double n))
+                    := fun n => add_succ_r (S n) n.
+
+Definition double_add : forall n m, double (n + m) = double n + double m
+                      := fun n m => add_shuffle1 n m n m.
+
+Lemma double_twice : forall n, double n = 2*n.
+Proof. simpl; intros; now rewrite add_0_r. Qed.
+
+(* We use a Module Type to hide intermediate lemmas we will get from Natural
+   anyway. *)
+Module Type PrivateBitwiseSpec.
+  (* needed to implement Numbers.NatInt.NZBitsSpec *)
+  Parameter testbit_odd_0 : forall a : nat, testbit (add (mul 2 a) 1) 0 = true.
+  Parameter testbit_even_0 : forall a : nat, testbit (mul 2 a) 0 = false.
+  Parameter testbit_odd_succ : forall a n : nat, le 0 n ->
+    testbit (add (mul 2 a) 1) (succ n) = testbit a n.
+  Parameter testbit_even_succ : forall a n : nat, le 0 n ->
+    testbit (mul 2 a) (succ n) = testbit a n.
+  Parameter testbit_neg_r : forall a n : nat, lt n 0 -> testbit a n = false.
+  Parameter shiftr_spec : forall a n m : nat, le 0 m ->
+    testbit (shiftr a n) m = testbit a (add m n).
+  Parameter shiftl_spec_high :
+    forall a n m : nat, le 0 m ->
+    le n m -> testbit (shiftl a n) m = testbit a (sub m n).
+  Parameter shiftl_spec_low :
+    forall a n m : nat, lt m n -> testbit (shiftl a n) m = false.
+  Parameter land_spec :
+    forall a b n : nat, testbit (land a b) n = testbit a n && testbit b n.
+  Parameter lor_spec :
+    forall a b n : nat, testbit (lor a b) n = testbit a n || testbit b n.
+  Parameter ldiff_spec :
+    forall a b n : nat,
+    testbit (ldiff a b) n = testbit a n && negb (testbit b n).
+  Parameter lxor_spec :
+    forall a b n : nat, testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
+  Parameter div2_spec :
+    forall a : nat, eq (div2 a) (shiftr a 1).
+  (* not yet generalized to Numbers.Natural.Abstract *)
+  Parameter div2_double : forall n, div2 (2*n) = n.
+  Parameter div2_succ_double : forall n, div2 (S (2*n)) = n.
+  Parameter div2_bitwise : forall op n a b,
+    div2 (bitwise op (S n) a b) = bitwise op n (div2 a) (div2 b).
+  Parameter odd_bitwise : forall op n a b,
+    odd (bitwise op (S n) a b) = op (odd a) (odd b).
+  Parameter testbit_bitwise_1 : forall op, (forall b, op false b = false) ->
+    forall n m a b, a<=n ->
+    testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
+  Parameter testbit_bitwise_2 : forall op, op false false = false ->
+    forall n m a b, a<=n -> b<=n ->
+    testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
+End PrivateBitwiseSpec.
+
+(* The following module has to be included (it semmes that importing it is not
+   enough to implement NZBitsSpec), therefore it has to be "Private", otherwise,
+   its lemmas will appear twice in [Search]es *)
+
+Module PrivateImplementsBitwiseSpec : PrivateBitwiseSpec.
+
 Lemma div2_double n : div2 (2*n) = n.
 Proof.
   induction n; trivial.
@@ -664,21 +723,15 @@ Proof.
     apply le_trans with a; [ apply le_div2 | trivial ].
 Qed.
 
-Lemma double_twice : forall n, double n = 2*n.
-Proof. simpl; intros; now rewrite add_0_r. Qed.
-
-Definition double_S : forall n, double (S n) = S (S (double n))
-                    := fun n => add_succ_r (S n) n.
-
-Definition double_add : forall n m, double (n + m) = double n + double m
-                      := fun n m => add_shuffle1 n m n m.
-
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_0_l : forall n, testbit 0 n = false.
 Proof. now intro n; induction n. Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_odd_0 a : testbit (2*a+1) 0 = true.
 Proof. unfold testbit; rewrite odd_spec; now exists a. Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_even_0 a : testbit (2*a) 0 = false.
 Proof.
   unfold testbit, odd.
@@ -716,6 +769,7 @@ Proof.
     now apply IHn.
 Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma shiftl_spec_low : forall a n m, m<n ->
   testbit (shiftl a n) m = false.
 Proof.
@@ -731,6 +785,7 @@ Proof.
     now apply succ_le_mono.
 Qed.
 
+(* not yet generalized, part of the interface at this point *)
 Lemma div2_bitwise : forall op n a b,
   div2 (bitwise op (S n) a b) = bitwise op n (div2 a) (div2 b).
 Proof.
@@ -740,6 +795,7 @@ Proof.
   - now rewrite add_0_l, div2_double.
 Qed.
 
+(* not yet generalized, part of the interface at this point *)
 Lemma odd_bitwise : forall op n a b,
   odd (bitwise op (S n) a b) = op (odd a) (odd b).
 Proof.
@@ -752,6 +808,7 @@ Proof.
     rewrite add_0_l; eexists; eauto.
 Qed.
 
+(* not yet generalized, part of the interface at this point *)
 Lemma testbit_bitwise_1 : forall op, (forall b, op false b = false) ->
   forall n m a b, a<=n ->
   testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
@@ -766,6 +823,7 @@ Proof.
       apply IHn; now apply div2_decr.
 Qed.
 
+(* not yet generalized, part of the interface at this point *)
 Lemma testbit_bitwise_2 : forall op, op false false = false ->
   forall n m a b, a<=n -> b<=n ->
   testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
@@ -780,14 +838,17 @@ Proof.
       apply IHn; now apply div2_decr.
 Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma land_spec a b n :
   testbit (land a b) n = testbit a n && testbit b n.
 Proof. unfold land; apply testbit_bitwise_1; trivial. Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma ldiff_spec a b n :
   testbit (ldiff a b) n = testbit a n && negb (testbit b n).
 Proof. unfold ldiff; apply testbit_bitwise_1; trivial. Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma lor_spec a b n :
   testbit (lor a b) n = testbit a n || testbit b n.
 Proof.
@@ -803,6 +864,7 @@ Proof.
     + now apply lt_le_incl in H; rewrite max_l.
 Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma lxor_spec a b n :
   testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
 Proof.
@@ -818,18 +880,29 @@ Proof.
     + now apply lt_le_incl in H; rewrite max_l.
 Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma div2_spec a : div2 a = shiftr a 1.
 Proof. reflexivity. Qed.
 
 (** Aliases with extra dummy hypothesis, to fulfil the interface *)
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Definition testbit_odd_succ a n (_:0<=n) := testbit_odd_succ' a n.
+
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Definition testbit_even_succ a n (_:0<=n) := testbit_even_succ' a n.
+
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_neg_r a n (H:n<0) : testbit a n = false.
 Proof. inversion H. Qed.
 
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Definition shiftl_spec_high a n m (_:0<=m) := shiftl_specif_high a n m.
+
+(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
 Definition shiftr_spec a n m (_:0<=m) := shiftr_specif a n m.
+End PrivateImplementsBitwiseSpec.
+Include PrivateImplementsBitwiseSpec.
 
 Lemma div_0_r a : a / 0 = 0.
 Proof. reflexivity. Qed.
