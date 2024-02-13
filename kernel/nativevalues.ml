@@ -630,6 +630,7 @@ let fabs accu x =
 
 let no_check_feq x y =
   mk_bool (Float64.eq (to_float x) (to_float y))
+[@@ocaml.inline always]
 
 let feq accu x y =
   if is_float x && is_float y then no_check_feq x y
@@ -637,6 +638,7 @@ let feq accu x y =
 
 let no_check_flt x y =
   mk_bool (Float64.lt (to_float x) (to_float y))
+[@@ocaml.inline always]
 
 let flt accu x y =
   if is_float x && is_float y then no_check_flt x y
@@ -644,6 +646,7 @@ let flt accu x y =
 
 let no_check_fle x y =
   mk_bool (Float64.le (to_float x) (to_float y))
+[@@ocaml.inline always]
 
 let fle accu x y =
   if is_float x && is_float y then no_check_fle x y
@@ -667,6 +670,7 @@ let fcompare accu x y =
 
 let no_check_fequal x y =
   mk_bool (Float64.equal (to_float x) (to_float y))
+[@@ocaml.inline always]
 
 let fequal accu x y =
   if is_float x && is_float y then no_check_fequal x y
@@ -794,6 +798,7 @@ let of_parray t = Obj.magic t
 
 let no_check_arraymake n def =
   of_parray (Parray.make (to_uint n) def)
+[@@ocaml.inline always]
 
 let arraymake accu vA n def =
   if is_int n then

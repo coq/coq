@@ -20,7 +20,7 @@ module G = AcyclicGraph.Make(struct
     let compare = Level.compare
 
     let raw_pr = Level.raw_pr
-  end) [@@inlined] (* without inline, +1% ish on HoTT, compcert. See jenkins 594 vs 596 *)
+  end)
 (* Do not include G to make it easier to control universe specific
    code (eg add_universe with a constraint vs G.add with no
    constraint) *)
