@@ -10,6 +10,8 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+Attributes deprecated(since="8.20", note="Please open an issue if this file is useful for you.").
+
 Require Import NBase.
 
 Module Homomorphism (N1 N2 : NAxiomsRecSig).
