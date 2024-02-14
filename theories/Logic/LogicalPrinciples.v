@@ -12,7 +12,7 @@ Import EqNotations.
 
 (** * Extensionality principles *)
 
-(** See [ExtensionalityFacts.v] *)
+(** See #<a href="./Coq.Logic.ExtensionalityFacts.html">ExtensionalityFacts.v</a># %ExtensionalityFacts.v% *)
 
 Definition FunctionalExtensionality :=
   forall A (B : A -> Type), forall (f g : forall x : A, B x),
@@ -27,7 +27,7 @@ Definition PropExtensionality :=
 
 (** * Identification principles *)
 
-(** See [ProofIrrelevanceFacts.v] *)
+(** See #<a href="./Coq.Logic.ProofIrrelevance.html">ProofIrrelevanceFacts.v</a># %ProofIrrelevanceFacts.v% *)
 
 (** ** Identity of proofs *)
 
