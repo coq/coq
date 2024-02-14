@@ -42,10 +42,10 @@ let gen_one_file l =
     | Latex_file _ -> ()
   in
     if (!prefs.header_trailer) then Output.header ();
-    if !prefs.toc then Output.make_toc ();
     List.iter file l;
-    if !prefs.index then Output.make_index();
-    if (!prefs.header_trailer) then Output.trailer ()
+    if (!prefs.header_trailer) then Output.trailer ();
+    if !prefs.toc then Output.make_global_toc ();
+    if !prefs.index then Output.make_index()
 
 let gen_mult_files l =
   let file = function
@@ -54,10 +54,14 @@ let gen_mult_files l =
         let hf = target_full_name m in
         Output.set_module m sub;
           open_out_file hf;
+          set_header_output ();
           if (!prefs.header_trailer) then Output.header ();
           Cpretty.coq_file f m;
+          set_toc_output ();
+          if !prefs.toc then Output.make_local_toc ();
+          set_main_output ();
           if (!prefs.header_trailer) then Output.trailer ();
-          close_out_file()
+          close_out_file ()
     | Latex_file _ -> ()
   in
     List.iter file l;
@@ -75,7 +79,7 @@ let gen_mult_files l =
       page_title := (if !prefs.title <> "" then !prefs.title else "Table of contents");
       if (!prefs.header_trailer) then Output.header ();
       if !prefs.title <> "" then printf "<h1>%s</h1>\n" !prefs.title;
-      Output.make_toc ();
+      Output.make_global_toc ();
       if (!prefs.header_trailer) then Output.trailer ();
       close_out_file()
     end
@@ -122,8 +126,9 @@ let produce_document l =
   List.iter index_module l;
   match !prefs.out_to with
     | StdOut ->
-        Common.out_channel := stdout;
-        gen_one_file l
+        Common.set_stdout ();
+        gen_one_file l;
+        Common.flush_stdout ()
     | File f ->
         open_out_file f;
         gen_one_file l;
