@@ -257,6 +257,10 @@ Include BoolOrderFacts.
 
 Include NBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
+Lemma strong_induction_le (A : nat -> Prop) :
+  A 0 -> (forall n, (forall m, m <= n -> A m) -> A (S n)) -> forall n, A n.
+Proof. apply Private_strong_induction_le; intros x y ->; reflexivity. Qed.
+
 (** ** Power *)
 
 Lemma pow_neg_r a b : b<0 -> a^b = 0.
@@ -913,6 +917,11 @@ Proof. reflexivity. Qed.
 (** Properties of advanced functions (pow, sqrt, log2, ...) *)
 
 Include NExtraPreProp <+ NExtraProp0.
+
+Lemma binary_induction (A : nat -> Prop) :
+  A 0 -> (forall n, A n -> A (2 * n)) -> (forall n, A n -> A (2 * n + 1))
+  -> forall n, A n.
+Proof. apply Private_binary_induction; intros x y ->; reflexivity. Qed.
 
 (** Properties of tail-recursive addition and multiplication *)
 

@@ -272,7 +272,10 @@ Proof.
   intros y _ IH'. apply IH. intros. apply IH'. now split; [apply le_0_l|].
 Defined.
 
-Theorem strong_induction_le {A : t -> Prop} :
+(* This is kept private in order to drop the [Proper] condition in
+   implementations. *)
+(* begin hide *)
+Theorem Private_strong_induction_le {A : t -> Prop} :
   Proper (eq ==> iff) A ->
   A 0 -> (forall n, ((forall m, m <= n -> A m) -> A (S n))) -> (forall n, A n).
 Proof.
@@ -286,5 +289,6 @@ Proof.
     + exact Hk.
     + apply sIH; exact I.
 Qed.
+(* end hide *)
 
 End NOrderProp.
