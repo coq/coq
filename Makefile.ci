@@ -92,6 +92,7 @@ CI_TARGETS= \
     ci-stdlib2 \
     ci-tactician \
     ci-tlc \
+    ci-trakt \
     ci-unimath \
     ci-unicoq \
     ci-verdi_raft \
@@ -144,6 +145,8 @@ ci-hb: ci-elpi
 
 ci-elpi_test: ci-elpi_hb
 ci-hb_test: ci-elpi_hb
+
+ci-trakt: ci-elpi
 
 ci-jasmin: ci-mathcomp_word
 

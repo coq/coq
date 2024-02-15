@@ -530,3 +530,9 @@ project waterproof "https://github.com/impermeable/coq-waterproof" "coq-master"
 ########################################################################
 project autosubst_ocaml "https://github.com/uds-psl/autosubst-ocaml" "master"
 # Contact @yforster on github
+
+########################################################################
+# Trakt
+########################################################################
+project trakt "https://github.com/ecranceMERCE/trakt" "coq-master"
+# Contact @ckeller, @louiseddp on github
