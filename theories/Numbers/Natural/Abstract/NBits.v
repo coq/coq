@@ -64,13 +64,15 @@ Proof.
  - exists a'. exists true. now simpl.
 Qed.
 
-(** A useful induction lemma to reason on bits *)
-Lemma binary_induction (A : t -> Prop) :
+(* This is kept private in order to drop the `Proper` condition in
+   implementations. *)
+(* begin hide *)
+Lemma Private_binary_induction (A : t -> Prop) :
   (Proper (eq ==> iff) A) -> A 0 -> (forall n, A n -> A (2 * n)) ->
   (forall n, A n -> A (2 * n + 1)) -> (forall n, A n).
 Proof.
   intros H H0 I J.
-  apply strong_induction_le; [exact H | exact H0 |]; intros n Hm.
+  apply Private_strong_induction_le; [exact H | exact H0 |]; intros n Hm.
   pose proof (exists_div2 (S n)) as [m [[|] Hmb]]; simpl in Hmb; rewrite Hmb.
   - apply J, Hm.
     rewrite add_1_r in Hmb; apply succ_inj in Hmb; rewrite Hmb, two_succ.
@@ -80,6 +82,7 @@ Proof.
     apply add_le_mono_l, neq_0_le_1; intros C; rewrite C, mul_0_r in Hmb.
     exact (neq_succ_0 _ Hmb).
 Qed.
+(* end hide *)
 
 (** We can compact [testbit_odd_0] [testbit_even_0]
     [testbit_even_succ] [testbit_odd_succ] in only two lemmas. *)
@@ -858,7 +861,7 @@ Proof. intros a b; rewrite land_odd_l, div2_odd', odd_odd; reflexivity. Qed.
 Lemma land_le_l :
   forall a b, land a b <= a.
 Proof.
-  apply (binary_induction (fun a => forall b, _)); [| | intros a H b..].
+  apply (Private_binary_induction (fun a => forall b, _)); [| | intros a H b..].
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite land_0_l; exact (le_refl _).
   - rewrite land_even_l; apply mul_le_mono_l; exact (H _).
@@ -943,7 +946,7 @@ Proof. intros a b; rewrite ldiff_odd_r, div2_odd'; reflexivity. Qed.
 Lemma ldiff_le_l :
   forall a b, ldiff a b <= a.
 Proof.
-  apply (binary_induction (fun a => forall b, _)); [| | intros a H b..].
+  apply (Private_binary_induction (fun a => forall b, _)); [| | intros a H b..].
   - intros x y eq; split; intros H b; [rewrite <-eq | rewrite eq]; now apply H.
   - intros b; rewrite ldiff_0_l; exact (le_0_l _).
   - rewrite ldiff_even_l; apply mul_le_mono_l; exact (H _).
