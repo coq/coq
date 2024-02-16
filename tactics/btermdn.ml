@@ -25,6 +25,7 @@ type term_label =
 | ProdLabel
 | SortLabel
 | CaseLabel
+| LamLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
 | GRLabel gr1, GRLabel gr2 -> GlobRef.UserOrd.compare gr1 gr2
@@ -97,7 +98,8 @@ let constr_val_discr env sigma ts t =
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [d; c])
-    | Lambda _ when Option.is_empty ts && List.is_empty stack -> Nothing
+    | Lambda (_,d,c) when List.is_empty stack ->
+      Label(LamLabel, d :: c :: stack)
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -133,6 +135,8 @@ let constr_pat_discr env ts p =
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PLambda (_,d,c) when List.is_empty stack ->
+      Some (LamLabel, d :: c :: stack)
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
