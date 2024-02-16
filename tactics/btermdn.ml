@@ -104,9 +104,9 @@ let constr_val_discr env sigma ts t =
     | Case (_, _, _, _, _, c, _) ->
       begin
         match decomp stack c with
-        | Label (GRLabel (ConstructRef _), _)  -> Everything (* over-approximating w.r.t. [fMATCH] *)
-        | Label _  -> Label(CaseLabel, c :: stack)
-        | _ as result -> result
+        | Label (GRLabel (ConstructRef _), _) -> Everything (* over-approximating w.r.t. [fMATCH] *)
+        | Label _  | Nothing -> Label(CaseLabel, c :: stack)
+        | Everything -> Everything
       end
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | Array _ -> Nothing
@@ -138,7 +138,7 @@ let constr_pat_discr env ts p =
       begin
         match decomp stack p with
         | Some (GRLabel (ConstructRef _), _) -> None (* over-approximating w.r.t. [fMATCH] *)
-        | Some _ -> Some (CaseLabel, [p])
+        | Some _ -> Some (CaseLabel, p :: stack)
         | None -> None
       end
     | _ -> None
