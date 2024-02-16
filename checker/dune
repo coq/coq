@@ -4,6 +4,7 @@
 ; duplicate module names in the whole build.
 (library
  (name coq_checklib)
+ (public_name coq-core.checklib)
  (synopsis "Coq's Standalone Proof Checker")
  (modules :standard \ coqchk votour)
  (wrapped true)
