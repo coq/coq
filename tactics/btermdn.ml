@@ -80,7 +80,7 @@ let constr_val_discr env sigma ts t =
   (* Should we perform weak βι here? *)
   let open GlobRef in
   let rec decomp stack t =
-    match EConstr.kind sigma t with
+    match EConstr.kind sigma (eta_reduce sigma t) with
     | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
     | Proj (p,_,c) when evaluable_projection p env ts -> Everything
     | Proj (p,_,c) -> Label(ProjLabel p, c :: stack)
@@ -99,7 +99,13 @@ let constr_val_discr env sigma ts t =
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [d; c])
     | Lambda (_,d,c) when List.is_empty stack ->
-      Label(LamLabel, d :: c :: stack)
+      begin
+        (* Check if the [t] could possibly unify with [fun x => f x].
+           Only return [LamLabel] if that is impossible! *)
+        match decomp stack c with
+        | Label _ | Nothing -> Label(LamLabel, d :: c :: stack)
+        | Everything -> Everything
+      end
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -113,12 +119,12 @@ let constr_val_discr env sigma ts t =
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | Array _ -> Nothing
   in
-  decomp [] (eta_reduce sigma t)
+  decomp [] t
 
 let constr_pat_discr env ts p =
   let open GlobRef in
   let rec decomp stack p =
-    match p with
+    match eta_reduce_pat p with
     | PApp (f,args) -> decomp (Array.to_list args @ stack) f
     | PProj (p,c) when evaluable_projection p env ts -> None
     | PProj (p,c) -> Some (ProjLabel p, c :: stack)
@@ -136,7 +142,13 @@ let constr_pat_discr env ts p =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
     | PLambda (_,d,c) when List.is_empty stack ->
-      Some (LamLabel, d :: c :: stack)
+      begin
+        (* Check if the [t] could possibly unify with [fun x => f x].
+           Only return [LamLabel] if that is impossible! *)
+        match decomp stack c with
+        | Some _ -> Some (LamLabel, d :: c :: stack)
+        | None -> None
+      end
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
@@ -147,7 +159,7 @@ let constr_pat_discr env ts p =
       end
     | _ -> None
   in
-  decomp [] (eta_reduce_pat p)
+  decomp [] p
 
 let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then None
