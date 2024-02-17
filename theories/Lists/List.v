@@ -3177,6 +3177,7 @@ Proof.
   apply not_iff_compat, in_flat_map_Exists.
 Qed.
 
+
 Section Forall2.
 
   (** [Forall2]: stating that elements of two lists are pairwise related. *)
@@ -3323,21 +3324,21 @@ Section ForallPairs.
   Qed.
 End ForallPairs.
 
-Lemma ForallOrdPairs_NoDup [A] (l: list A):
-  ForallOrdPairs (fun a b => a <> b) l <-> NoDup l.
+Lemma NoDup_iff_ForallOrdPairs [A] (l: list A):
+  NoDup l <-> ForallOrdPairs (fun a b => a <> b) l.
 Proof.
   split; intro H.
-  - induction H as [|a l H1 H2]; constructor.
-    + rewrite Forall_forall in H1. intro E.
-      contradiction (H1 a E). reflexivity.
-    + assumption.
   - induction H; constructor.
     + apply Forall_forall.
       intros y Hy ->. contradiction.
     + assumption.
+  - induction H as [|a l H1 H2]; constructor.
+    + rewrite Forall_forall in H1. intro E.
+      contradiction (H1 a E). reflexivity.
+    + assumption.
 Qed.
 
-Lemma ForallPairs_inj_map_NoDup [A B] (f: A->B) (l: list A) :
+Lemma NoDup_map_NoDup_ForallPairs [A B] (f: A->B) (l: list A) :
   ForallPairs (fun x y => f x = f y -> x = y) l -> NoDup l -> NoDup (map f l).
 Proof.
   intros Hinj Hl.
