@@ -40,11 +40,6 @@ Qed.
 
 (** Sub and order *)
 
-Theorem lt_0_sub : forall n m, 0 < m - n <-> n < m.
-Proof.
-intros n m. now rewrite (add_lt_mono_r _ _ n), add_0_l, sub_simpl_r.
-Qed.
-
 Notation sub_pos := lt_0_sub (only parsing).
 
 Theorem le_0_sub : forall n m, 0 <= m - n <-> n <= m.
@@ -151,37 +146,22 @@ apply le_lt_trans with (m - p);
 [now apply sub_le_mono_r | now apply sub_lt_mono_l].
 Qed.
 
-Theorem le_lt_sub_lt : forall n m p q, n <= m -> p - n < q - m -> p < q.
-Proof.
-intros n m p q H1 H2. apply (le_lt_add_lt (- m) (- n));
-[now apply -> opp_le_mono | now rewrite 2 add_opp_r].
-Qed.
-
 Theorem lt_le_sub_lt : forall n m p q, n < m -> p - n <= q - m -> p < q.
 Proof.
 intros n m p q H1 H2. apply (lt_le_add_lt (- m) (- n));
 [now apply -> opp_lt_mono | now rewrite 2 add_opp_r].
 Qed.
 
+(* TODO: fix name *)
 Theorem le_le_sub_lt : forall n m p q, n <= m -> p - n <= q - m -> p <= q.
 Proof.
 intros n m p q H1 H2. apply (le_le_add_le (- m) (- n));
 [now apply -> opp_le_mono | now rewrite 2 add_opp_r].
 Qed.
 
-Theorem lt_add_lt_sub_r : forall n m p, n + p < m <-> n < m - p.
-Proof.
-intros n m p. now rewrite (sub_lt_mono_r _ _ p), add_simpl_r.
-Qed.
-
 Theorem le_add_le_sub_r : forall n m p, n + p <= m <-> n <= m - p.
 Proof.
 intros n m p. now rewrite (sub_le_mono_r _ _ p), add_simpl_r.
-Qed.
-
-Theorem lt_add_lt_sub_l : forall n m p, n + p < m <-> p < m - n.
-Proof.
-intros n m p. rewrite add_comm; apply lt_add_lt_sub_r.
 Qed.
 
 Theorem le_add_le_sub_l : forall n m p, n + p <= m <-> p <= m - n.
@@ -194,19 +174,9 @@ Proof.
 intros n m p. now rewrite (add_lt_mono_r _ _ p), sub_simpl_r.
 Qed.
 
-Theorem le_sub_le_add_r : forall n m p, n - p <= m <-> n <= m + p.
-Proof.
-intros n m p. now rewrite (add_le_mono_r _ _ p), sub_simpl_r.
-Qed.
-
 Theorem lt_sub_lt_add_l : forall n m p, n - m < p <-> n < m + p.
 Proof.
 intros n m p. rewrite add_comm; apply lt_sub_lt_add_r.
-Qed.
-
-Theorem le_sub_le_add_l : forall n m p, n - m <= p <-> n <= m + p.
-Proof.
-intros n m p. rewrite add_comm; apply le_sub_le_add_r.
 Qed.
 
 Theorem lt_sub_lt_add : forall n m p q, n - m < p - q <-> n + q < m + p.

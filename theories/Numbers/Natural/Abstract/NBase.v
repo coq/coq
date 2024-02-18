@@ -15,47 +15,46 @@ Require Export NAxioms.
 Require Import NZMulOrder.
 
 Module NBaseProp (Import N : NAxiomsMiniSig').
-(** First, we import all known facts about both natural numbers and integers. *)
+  (** First, we import all known facts about modules implementing [NZAxiomsSig]. *)
 Include NZMulOrderProp N.
 
-(** From [pred_0] and order facts, we can prove that 0 isn't a successor. *)
+(** Now we prove that [NAxiomsMiniSig'] specializes [NZAxioms.IsNatInt]. *)
 
-Theorem neq_succ_0 : forall n, S n ~= 0.
+Lemma Private_succ_pred n : n ~= 0 -> S (P n) == n.
 Proof.
- intros n EQ.
- assert (EQ' := pred_succ n).
- rewrite EQ, pred_0 in EQ'.
- rewrite <- EQ' in EQ.
- now apply (neq_succ_diag_l 0).
+  intros Hn; apply (lt_succ_pred 0), le_neq; split; [| exact (neq_sym _ _ Hn)].
+  destruct (le_gt_cases 0 n) as [I | I%lt_succ_pred]; [exact I | exfalso].
+  rewrite pred_0 in I; apply (neq_succ_diag_l 0); exact I.
 Qed.
 
-Theorem neq_0_succ : forall n, 0 ~= S n.
+Lemma le_pred_l n : P n <= n.
 Proof.
-intro n; apply neq_sym; apply neq_succ_0.
+  destruct (eq_decidable n 0) as [-> | H].
+  - rewrite pred_0; exact (le_refl 0).
+  - apply Private_succ_pred in H; rewrite <-H at 2; exact (le_succ_diag_r _).
 Qed.
 
-(** Next, we show that all numbers are nonnegative and recover regular
-    induction from the bidirectional induction on NZ *)
+Include NZAddOrder.NatIntAddOrderProp N.
+
+Theorem succ_pred n : n ~= 0 -> S (P n) == n.
+Proof. exact (Private_succ_pred n). Qed.
 
 Theorem le_0_l : forall n, 0 <= n.
-Proof.
-intro n; nzinduct n.
-- now apply eq_le_incl.
-- intro n; split.
-  + apply le_le_succ_r.
-  + intro H; apply le_succ_r in H; destruct H as [H | H].
-    * assumption.
-    * symmetry in H; false_hyp H neq_succ_0.
-Qed.
+Proof. exact (Private_nat_le_0_l pred_0). Qed.
+
+Theorem neq_succ_0 : forall n, S n ~= 0.
+Proof. exact (Private_nat_neq_succ_0 pred_0). Qed.
+
+Theorem neq_0_succ : forall n, 0 ~= S n.
+Proof. intros n; apply neq_sym; exact (neq_succ_0 _). Qed.
+
+Theorem zero_or_succ n : n == 0 \/ exists m, n == S m.
+Proof. exact (Private_nat_zero_or_succ pred_0 n). Qed.
 
 Theorem induction :
   forall A : N.t -> Prop, Proper (N.eq==>iff) A ->
     A 0 -> (forall n, A n -> A (S n)) -> forall n, A n.
-Proof.
-intros A A_wd A0 AS n; apply right_induction with 0; try assumption.
-- intros; auto; apply le_0_l.
-- apply le_0_l.
-Qed.
+Proof. exact (Private_nat_induction pred_0). Qed.
 
 (** The theorems [bi_induction], [central_induction] and the tactic [nzinduct]
 refer to bidirectional induction, which is not useful on natural
@@ -76,52 +75,24 @@ Qed.
 Ltac cases n := induction_maker n ltac:(apply case_analysis).
 
 Theorem neq_0 : ~ forall n, n == 0.
-Proof.
-intro H; apply (neq_succ_0 0). apply H.
-Qed.
+Proof. intros H; exact (neq_succ_0 0 (H (S 0))). Qed.
 
 Theorem neq_0_r n : n ~= 0 <-> exists m, n == S m.
 Proof.
-  cases n.
-  - split; intro H;[now elim H | destruct H as [m H];
-    symmetry in H; false_hyp H neq_succ_0].
-  - intro n; split; intro H; [now exists n | apply neq_succ_0].
-Qed.
-
-Theorem zero_or_succ n : n == 0 \/ exists m, n == S m.
-Proof.
-cases n.
-- now left.
-- intro n; right; now exists n.
+  split; [intros H%succ_pred | intros [m ->]; exact (neq_succ_0 _)].
+  exists (P n); symmetry; exact H.
 Qed.
 
 Theorem eq_pred_0 n : P n == 0 <-> n == 0 \/ n == 1.
 Proof.
-cases n.
-- rewrite pred_0. now split; [left|].
-- intro n. rewrite pred_succ.
-  split.
-  + intros H; right. now rewrite H, one_succ.
-  + intros [H|H].
-    * elim (neq_succ_0 _ H).
-    * apply succ_inj_wd. now rewrite <- one_succ.
-Qed.
-
-Theorem succ_pred n : n ~= 0 -> S (P n) == n.
-Proof.
-cases n.
-- intro H; exfalso; now apply H.
-- intros; now rewrite pred_succ.
+  rewrite one_succ; split.
+  - destruct (zero_or_succ n) as [-> | [m ->]]; [intros _; left; reflexivity |].
+    rewrite pred_succ; intros ->; right; reflexivity.
+  - intros [-> | ->]; [exact pred_0 | exact (pred_succ 0)].
 Qed.
 
 Theorem pred_inj n m : n ~= 0 -> m ~= 0 -> P n == P m -> n == m.
-Proof.
-cases n.
-- intros H; exfalso; now apply H.
-- intros n _; cases m.
-  + intros H; exfalso; now apply H.
-  + intros m H2 H3. do 2 rewrite pred_succ in H3. now rewrite H3.
-Qed.
+Proof. intros H%succ_pred K%succ_pred L; rewrite <-H, <-K, L; reflexivity. Qed.
 
 (** The following induction principle is useful for reasoning about, e.g.,
 Fibonacci numbers *)

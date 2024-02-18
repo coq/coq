@@ -329,7 +329,7 @@ End NZOfNatOrd.
 (** For basic operations, we can prove correspondence with
     their counterpart in [nat]. *)
 
-Module NZOfNatOps (Import NZ:NZAxiomsSig').
+Module NZOfNatOps (Import NZ:NZBasicFunsSig').
 Include NZOfNat NZ.
 Local Open Scope ofnat.
 

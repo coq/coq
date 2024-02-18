@@ -25,7 +25,7 @@ Require Import Lia.
     a power of 2.
 *)
 
-Module NZCyclicAxiomsMod (Import Cyclic : CyclicType) <: NZAxiomsSig.
+Module NZCyclicAxiomsMod (Import Cyclic : CyclicType) <: NZBasicFunsSig.
 
 Local Open Scope Z_scope.
 

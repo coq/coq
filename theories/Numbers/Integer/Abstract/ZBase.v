@@ -17,6 +17,14 @@ Require Import NZMulOrder.
 Module ZBaseProp (Import Z : ZAxiomsMiniSig').
 Include NZMulOrderProp Z.
 
+Lemma Private_succ_pred n : n ~= 0 -> S (P n) == n.
+Proof. intros _; exact (succ_pred _). Qed.
+
+Lemma le_pred_l n : P n <= n.
+Proof. rewrite <-(succ_pred n), pred_succ; exact (le_succ_diag_r _). Qed.
+
+Include NZAddOrder.NatIntAddOrderProp Z.
+
 (* Theorems that are true for integers but not for natural numbers *)
 
 Theorem pred_inj : forall n m, P n == P m -> n == m.
