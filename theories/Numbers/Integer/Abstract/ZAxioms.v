@@ -16,7 +16,7 @@ Require Import Bool NZParity NZPow NZSqrt NZLog NZGcd NZDiv NZBits.
 (** We obtain integers by postulating that successor of predecessor
     is identity. *)
 
-Module Type ZAxiom (Import Z : NZAxiomsSig').
+Module Type ZAxiom (Import Z : NZBasicFunsSig').
  Axiom succ_pred : forall n, S (P n) == n.
 End ZAxiom.
 
@@ -34,14 +34,14 @@ End OppNotation.
 
 Module Type Opp' (T:Typ) := Opp T <+ OppNotation T.
 
-Module Type IsOpp (Import Z : NZAxiomsSig')(Import O : Opp' Z).
+Module Type IsOpp (Import Z : NZBasicFunsSig')(Import O : Opp' Z).
 #[global]
  Declare Instance opp_wd : Proper (eq==>eq) opp.
  Axiom opp_0 : - 0 == 0.
  Axiom opp_succ : forall n, - (S n) == P (- n).
 End IsOpp.
 
-Module Type OppCstNotation (Import A : NZAxiomsSig)(Import B : Opp A).
+Module Type OppCstNotation (Import A : NZBasicFunsSig)(Import B : Opp A).
  Notation "- 1" := (opp one).
  Notation "- 2" := (opp two).
 End OppCstNotation.
