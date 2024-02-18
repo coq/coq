@@ -7,7 +7,19 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+
 (** Properties of decidable propositions *)
+
+(** Note: the following definition of [decidable] can be used to
+    express the notion of decidability in computability theory only in
+    an axiom-free Coq (since a proof of [forall n, decidable (P n)],
+    for [P] a countable class of problems, induces by extraction the
+    existence of a (total) recursive algorithm [f] such that [f(n)]
+    evaluates to [true] iff [P n], and since, conversely, a Coq proof
+    of termination of a recursive algorithm deciding [P n] can be
+    extracted in turn into a proof of [forall n, decidable (P n)]). In
+    the presence of axioms such as [Classical_prop.classic], it would
+    take a different meaning. *)
 
 Definition decidable (P:Prop) := P \/ ~ P.
 
