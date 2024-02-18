@@ -2479,6 +2479,20 @@ Section ReDun.
     + now constructor.
   Qed.
 
+  Lemma NoDup_app (l1 l2 : list A):
+    NoDup l1 -> NoDup l2 -> (forall a, In a l1 -> ~ In a l2) ->
+    NoDup (l1 ++ l2).
+  Proof.
+    intros H1 H2 H. induction l1 as [|a l1 IHl1]; [assumption|].
+    apply NoDup_cons_iff in H1 as [].
+    cbn. constructor.
+    - intros H3%in_app_or. destruct H3.
+      + contradiction.
+      + apply (H a); [apply in_eq|assumption].
+    - apply IHl1; [assumption|].
+      intros. apply H, in_cons. assumption.
+  Qed.
+
   Lemma NoDup_app_remove_l l l' : NoDup (l++l') -> NoDup l'.
   Proof.
   induction l as [|a l IHl]; intro H.
@@ -3309,6 +3323,49 @@ Section ForallPairs.
     destruct (ForallOrdPairs_In Hl _ _ Hx Hy); subst; intuition.
   Qed.
 End ForallPairs.
+
+Lemma NoDup_iff_ForallOrdPairs [A] (l: list A):
+  NoDup l <-> ForallOrdPairs (fun a b => a <> b) l.
+Proof.
+  split; intro H.
+  - induction H; constructor.
+    + apply Forall_forall.
+      intros y Hy ->. contradiction.
+    + assumption.
+  - induction H as [|a l H1 H2]; constructor.
+    + rewrite Forall_forall in H1. intro E.
+      contradiction (H1 a E). reflexivity.
+    + assumption.
+Qed.
+
+Lemma NoDup_map_NoDup_ForallPairs [A B] (f: A->B) (l: list A) :
+  ForallPairs (fun x y => f x = f y -> x = y) l -> NoDup l -> NoDup (map f l).
+Proof.
+  intros Hinj Hl.
+  induction Hl as [|x ?? _ IH]; cbn; constructor.
+  - intros [y [??]]%in_map_iff.
+    destruct (Hinj y x); cbn; auto.
+  - apply IH.
+    intros x' y' Hx' Hy'.
+    now apply Hinj; right.
+Qed.
+
+Lemma NoDup_concat [A] (L: list (list A)):
+  Forall (@NoDup A) L ->
+  ForallOrdPairs (fun l1 l2 => forall a, In a l1 -> ~ In a l2) L ->
+  NoDup (concat L).
+Proof.
+  intros H1 H2. induction L as [|l1 L IHL]; [constructor|].
+  cbn. apply NoDup_app.
+  - apply Forall_inv in H1. assumption.
+  - apply IHL.
+    + apply Forall_inv_tail in H1. assumption.
+    + inversion H2. assumption.
+  - intros a aInl1 ainL%in_concat. destruct ainL as [l2 [l2inL ainL2]].
+    inversion H2 as [|l L' H3].
+    rewrite Forall_forall in H3.
+    apply (H3 _ l2inL _ aInl1). assumption.
+Qed.
 
 Section Repeat.
 
