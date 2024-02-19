@@ -1001,6 +1001,10 @@ let () =
   | Proofview.Fail e -> return (v_blk 1 [| Tac2ffi.of_exn e |])
   end
 
+let () =
+  define "numgoals" (unit @-> tac int) @@ fun () ->
+  Proofview.numgoals
+
 (** (unit -> unit) list -> unit *)
 let () =
   define "dispatch" (list closure @-> tac unit) @@ fun l ->

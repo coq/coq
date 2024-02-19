@@ -28,6 +28,9 @@ Ltac2 once_plus (run : unit -> 'a) (handle : exn -> 'a) : 'a :=
 
 (** Proof state manipulation *)
 
+Ltac2 @ external numgoals : unit -> int := "coq-core.plugins.ltac2" "numgoals".
+(** Return the number of goals currently focused. *)
+
 Ltac2 @ external dispatch : (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "dispatch".
 Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "extend".
 Ltac2 @ external enter : (unit -> unit) -> unit := "coq-core.plugins.ltac2" "enter".
