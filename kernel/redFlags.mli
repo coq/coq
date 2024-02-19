@@ -55,6 +55,7 @@ val mkflags : red_kind list -> reds
 
 (** Tests if a reduction kind is set *)
 val red_set : reds -> red_kind -> bool
+[@ocaml.inline always]
 
 (** This tests if the projection is in unfolded state already or is unfodable
     due to delta. *)

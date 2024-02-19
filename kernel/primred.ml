@@ -37,6 +37,11 @@ let add_retroknowledge retro action =
         (match retro.retro_array with
          | None -> { retro with retro_array = Some c }
          | Some c' -> check_same_types typ c c'; retro)
+
+      | PT_blocked ->
+        (match retro.retro_blocked with
+         | None -> { retro with retro_blocked = Some c }
+         | Some c' -> check_same_types typ c c'; retro)
     end
 
   | Register_ind(pit,ind) ->
@@ -138,12 +143,15 @@ module type RedNativeEntries =
     type elem
     type args
     type evd (* will be unit in kernel, evar_map outside *)
+    type lazy_info
     type uinstance
 
     val get : args -> int -> elem
+    val set : args -> int -> elem -> args
     val get_int : evd -> elem -> Uint63.t
     val get_float : evd -> elem -> Float64.t
     val get_parray : evd -> elem -> elem Parray.t
+    val get_blocked : Environ.env -> evd -> elem -> elem option
     val mkInt : env -> Uint63.t -> elem
     val mkFloat : env -> Float64.t -> elem
     val mkBool : env -> bool -> elem
@@ -167,6 +175,10 @@ module type RedNativeEntries =
     val mkNInf : env -> elem
     val mkNaN : env -> elem
     val mkArray : env -> uinstance -> elem Parray.t -> elem -> elem
+
+    val eval_full_lazy : lazy_info -> elem -> elem
+    val eval_id_lazy : lazy_info -> elem -> elem
+    val mkApp : elem -> elem array -> elem
   end
 
 module type RedNative =
@@ -174,20 +186,34 @@ module type RedNative =
    type elem
    type args
    type evd
+   type lazy_info
    type uinstance
-   val red_prim : env -> evd -> CPrimitives.t -> uinstance -> args -> elem option
+
+   type result =
+     | Result of elem
+     | Progress of bool * args (* true = normal form, false = stuck *)
+     | Error
+
+   val red_prim : env -> evd -> lazy_info -> CPrimitives.t -> uinstance -> args -> result
  end
 
 module RedNative (E:RedNativeEntries) :
   RedNative with type elem = E.elem
   with type args = E.args
   with type evd = E.evd
+  with type lazy_info = E.lazy_info
   with type uinstance = E.uinstance =
 struct
   type elem = E.elem
   type args = E.args
   type evd = E.evd
+  type lazy_info = E.lazy_info
   type uinstance = E.uinstance
+
+  type result =
+    | Result of elem
+    | Progress of bool * args (* true = normal form, false = stuck *)
+    | Error
 
   let get_int evd args i = E.get_int evd (E.get args i)
 
@@ -206,196 +232,253 @@ struct
 
   let get_parray evd args i = E.get_parray evd (E.get args i)
 
-  let red_prim_aux env evd op u args =
+  let red_prim_aux env evd lazy_info op u args =
     let open CPrimitives in
     match op with
     | Int63head0 ->
-      let i = get_int1 evd args in E.mkInt env (Uint63.head0 i)
+      let i = get_int1 evd args in
+      Result (E.mkInt env (Uint63.head0 i))
     | Int63tail0 ->
-      let i = get_int1 evd args in E.mkInt env (Uint63.tail0 i)
+      let i = get_int1 evd args in
+      Result (E.mkInt env (Uint63.tail0 i))
     | Int63add ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.add i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.add i1 i2))
     | Int63sub ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.sub i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.sub i1 i2))
     | Int63mul ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.mul i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.mul i1 i2))
     | Int63div ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.div i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.div i1 i2))
     | Int63mod ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.rem i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.rem i1 i2))
     | Int63divs ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.divs i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.divs i1 i2))
     | Int63mods ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.rems i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.rems i1 i2))
     | Int63lsr ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_sr i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.l_sr i1 i2))
     | Int63lsl ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_sl i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.l_sl i1 i2))
     | Int63asr ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.a_sr i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.a_sr i1 i2))
     | Int63land ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_and i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.l_and i1 i2))
     | Int63lor ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_or i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.l_or i1 i2))
     | Int63lxor ->
-      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_xor i1 i2)
+      let i1, i2 = get_int2 evd args in
+      Result (E.mkInt env (Uint63.l_xor i1 i2))
     | Int63addc ->
       let i1, i2 = get_int2 evd args in
       let s = Uint63.add i1 i2 in
-      E.mkCarry env (Uint63.lt s i1) (E.mkInt env s)
+      Result (E.mkCarry env (Uint63.lt s i1) (E.mkInt env s))
     | Int63subc ->
       let i1, i2 = get_int2 evd args in
       let s = Uint63.sub i1 i2 in
-      E.mkCarry env (Uint63.lt i1 i2) (E.mkInt env s)
+      Result (E.mkCarry env (Uint63.lt i1 i2) (E.mkInt env s))
     | Int63addCarryC  ->
       let i1, i2 = get_int2 evd args in
       let s = Uint63.add (Uint63.add i1 i2) (Uint63.of_int 1) in
-      E.mkCarry env (Uint63.le s i1) (E.mkInt env s)
+      Result (E.mkCarry env (Uint63.le s i1) (E.mkInt env s))
     | Int63subCarryC  ->
       let i1, i2 = get_int2 evd args in
       let s = Uint63.sub (Uint63.sub i1 i2) (Uint63.of_int 1) in
-      E.mkCarry env (Uint63.le i1 i2) (E.mkInt env s)
+      Result (E.mkCarry env (Uint63.le i1 i2) (E.mkInt env s))
     | Int63mulc ->
       let i1, i2 = get_int2 evd args in
       let (h, l) = Uint63.mulc i1 i2 in
-      E.mkIntPair env (E.mkInt env h) (E.mkInt env l)
+      Result (E.mkIntPair env (E.mkInt env h) (E.mkInt env l))
     | Int63diveucl ->
       let i1, i2 = get_int2 evd args in
       let q,r = Uint63.div i1 i2, Uint63.rem i1 i2 in
-      E.mkIntPair env (E.mkInt env q) (E.mkInt env r)
+      Result (E.mkIntPair env (E.mkInt env q) (E.mkInt env r))
     | Int63div21 ->
       let i1, i2, i3 = get_int3 evd args in
       let q,r = Uint63.div21 i1 i2 i3 in
-      E.mkIntPair env (E.mkInt env q) (E.mkInt env r)
+      Result (E.mkIntPair env (E.mkInt env q) (E.mkInt env r))
     | Int63addMulDiv ->
       let p, i, j = get_int3 evd args in
-      E.mkInt env
-        (Uint63.l_or
-           (Uint63.l_sl i p)
-           (Uint63.l_sr j (Uint63.sub (Uint63.of_int Uint63.uint_size) p)))
+      Result
+        (E.mkInt env
+          (Uint63.l_or
+             (Uint63.l_sl i p)
+             (Uint63.l_sr j (Uint63.sub (Uint63.of_int Uint63.uint_size) p))))
     | Int63eq ->
       let i1, i2 = get_int2 evd args in
-      E.mkBool env (Uint63.equal i1 i2)
+      Result (E.mkBool env (Uint63.equal i1 i2))
     | Int63lt ->
       let i1, i2 = get_int2 evd args in
-      E.mkBool env (Uint63.lt i1 i2)
+      Result (E.mkBool env (Uint63.lt i1 i2))
     | Int63le ->
       let i1, i2 = get_int2 evd args in
-      E.mkBool env (Uint63.le i1 i2)
+      Result (E.mkBool env (Uint63.le i1 i2))
     | Int63lts ->
       let i1, i2 = get_int2 evd args in
-      E.mkBool env (Uint63.lts i1 i2)
+      Result (E.mkBool env (Uint63.lts i1 i2))
     | Int63les ->
       let i1, i2 = get_int2 evd args in
-      E.mkBool env (Uint63.les i1 i2)
+      Result (E.mkBool env (Uint63.les i1 i2))
     | Int63compare ->
       let i1, i2 = get_int2 evd args in
-      begin match Uint63.compare i1 i2 with
+      Result (
+        match Uint63.compare i1 i2 with
         | x when x < 0 ->  E.mkLt env
         | 0 -> E.mkEq env
-        | _ -> E.mkGt env
-      end
+        | _ -> E.mkGt env)
     | Int63compares ->
       let i1, i2 = get_int2 evd args in
-      begin match Uint63.compares i1 i2 with
+      Result (
+        match Uint63.compares i1 i2 with
         | x when x < 0 ->  E.mkLt env
         | 0 -> E.mkEq env
-        | _ -> E.mkGt env
-      end
+        | _ -> E.mkGt env)
     | Float64opp ->
-      let f = get_float1 evd args in E.mkFloat env (Float64.opp f)
+      let f = get_float1 evd args in
+      Result (E.mkFloat env (Float64.opp f))
     | Float64abs ->
-      let f = get_float1 evd args in E.mkFloat env (Float64.abs f)
+      let f = get_float1 evd args in
+      Result (E.mkFloat env (Float64.abs f))
     | Float64eq ->
       let i1, i2 = get_float2 evd args in
-      E.mkBool env (Float64.eq i1 i2)
+      Result (E.mkBool env (Float64.eq i1 i2))
     | Float64lt ->
       let i1, i2 = get_float2 evd args in
-      E.mkBool env (Float64.lt i1 i2)
+      Result (E.mkBool env (Float64.lt i1 i2))
     | Float64le ->
       let i1, i2 = get_float2 evd args in
-      E.mkBool env (Float64.le i1 i2)
+      Result (E.mkBool env (Float64.le i1 i2))
     | Float64compare ->
       let f1, f2 = get_float2 evd args in
-      (match Float64.compare f1 f2 with
-      | Float64.FEq -> E.mkFEq env
-      | Float64.FLt -> E.mkFLt env
-      | Float64.FGt -> E.mkFGt env
-      | Float64.FNotComparable -> E.mkFNotComparable env)
+      Result (
+        match Float64.compare f1 f2 with
+        | Float64.FEq -> E.mkFEq env
+        | Float64.FLt -> E.mkFLt env
+        | Float64.FGt -> E.mkFGt env
+        | Float64.FNotComparable -> E.mkFNotComparable env)
     | Float64equal ->
       let f1, f2 = get_float2 evd args in
-      E.mkBool env (Float64.equal f1 f2)
+      Result (E.mkBool env (Float64.equal f1 f2))
     | Float64classify ->
       let f = get_float1 evd args in
-      (match Float64.classify f with
-      | Float64.PNormal -> E.mkPNormal env
-      | Float64.NNormal -> E.mkNNormal env
-      | Float64.PSubn -> E.mkPSubn env
-      | Float64.NSubn -> E.mkNSubn env
-      | Float64.PZero -> E.mkPZero env
-      | Float64.NZero -> E.mkNZero env
-      | Float64.PInf -> E.mkPInf env
-      | Float64.NInf -> E.mkNInf env
-      | Float64.NaN -> E.mkNaN env)
+      Result (
+        match Float64.classify f with
+        | Float64.PNormal -> E.mkPNormal env
+        | Float64.NNormal -> E.mkNNormal env
+        | Float64.PSubn -> E.mkPSubn env
+        | Float64.NSubn -> E.mkNSubn env
+        | Float64.PZero -> E.mkPZero env
+        | Float64.NZero -> E.mkNZero env
+        | Float64.PInf -> E.mkPInf env
+        | Float64.NInf -> E.mkNInf env
+        | Float64.NaN -> E.mkNaN env)
     | Float64add ->
-      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.add f1 f2)
+      let f1, f2 = get_float2 evd args in
+      Result (E.mkFloat env (Float64.add f1 f2))
     | Float64sub ->
-      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.sub f1 f2)
+      let f1, f2 = get_float2 evd args in
+      Result (E.mkFloat env (Float64.sub f1 f2))
     | Float64mul ->
-      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.mul f1 f2)
+      let f1, f2 = get_float2 evd args in
+      Result (E.mkFloat env (Float64.mul f1 f2))
     | Float64div ->
-      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.div f1 f2)
+      let f1, f2 = get_float2 evd args in
+      Result (E.mkFloat env (Float64.div f1 f2))
     | Float64sqrt ->
-      let f = get_float1 evd args in E.mkFloat env (Float64.sqrt f)
+      let f = get_float1 evd args in
+      Result (E.mkFloat env (Float64.sqrt f))
     | Float64ofUint63 ->
-      let i = get_int1 evd args in E.mkFloat env (Float64.of_uint63 i)
+      let i = get_int1 evd args in
+      Result (E.mkFloat env (Float64.of_uint63 i))
     | Float64normfr_mantissa ->
-      let f = get_float1 evd args in E.mkInt env (Float64.normfr_mantissa f)
+      let f = get_float1 evd args in
+      Result (E.mkInt env (Float64.normfr_mantissa f))
     | Float64frshiftexp ->
       let f = get_float1 evd args in
       let (m,e) = Float64.frshiftexp f in
-      E.mkFloatIntPair env (E.mkFloat env m) (E.mkInt env e)
+      Result (E.mkFloatIntPair env (E.mkFloat env m) (E.mkInt env e))
     | Float64ldshiftexp ->
       let f = get_float evd args 0 in
       let e = get_int evd args 1 in
-      E.mkFloat env (Float64.ldshiftexp f e)
+      Result (E.mkFloat env (Float64.ldshiftexp f e))
     | Float64next_up ->
-      let f = get_float1 evd args in E.mkFloat env (Float64.next_up f)
+      let f = get_float1 evd args in
+      Result (E.mkFloat env (Float64.next_up f))
     | Float64next_down ->
-      let f = get_float1 evd args in E.mkFloat env (Float64.next_down f)
+      let f = get_float1 evd args in
+      Result (E.mkFloat env (Float64.next_down f))
     | Arraymake ->
       let ty = E.get args 0 in
       let i = get_int evd args 1 in
       let d = E.get args 2 in
-      E.mkArray env u (Parray.make i d) ty
+      Result (E.mkArray env u (Parray.make i d) ty)
     | Arrayget ->
       let t = get_parray evd args 1 in
       let i = get_int evd args 2 in
-      Parray.get t i
+      Result (Parray.get t i)
     | Arraydefault ->
       let t = get_parray evd args 1 in
-      Parray.default t
+      Result (Parray.default t)
     | Arrayset ->
       let ty = E.get args 0 in
       let t = get_parray evd args 1 in
       let i = get_int evd args 2 in
       let a = E.get args 3 in
       let t' = Parray.set t i a in
-      E.mkArray env u t' ty
+      Result (E.mkArray env u t' ty)
     | Arraycopy ->
       let ty = E.get args 0 in
       let t = get_parray evd args 1 in
       let t' = Parray.copy t in
-      E.mkArray env u t' ty
+      Result (E.mkArray env u t' ty)
     | Arraylength ->
       let t = get_parray evd args 1 in
-      E.mkInt env (Parray.length t)
+      Result (E.mkInt env (Parray.length t))
+    (* The primitives below receive special, out-of-band handling in CClosure.
+       They are also handled here for the benefit of all other reduction algorithms. *)
+    | Run ->
+      (* Extract the two relevant arguments. *)
+      let e = E.get args 2 in
+      let k = E.get args 3 in
+      (* Run full lazy reduction (with all flags) on [e]. *)
+      let e = E.eval_full_lazy lazy_info e in
+      (* Have we reached a [block _]? *)
+      begin
+        match E.get_blocked env evd e with
+        | Some t -> Result (E.mkApp k [|t|])
+        | None -> Progress (false, E.set args 2 e)
+      end
+    | Block ->
+      (* Extract the relevant argument. *)
+      let t = E.get args 1 in
+      (* Run full lazy reduction (with NO flags) on [t]. *)
+      let t = E.eval_id_lazy lazy_info t in
+      (* Report that we have a normal form. *)
+      Progress (true, E.set args 1 t)
+    | Unblock ->
+      (* Extract the relevant argument. *)
+      let t = E.get args 1 in
+      (* Run full lazy reduction (with all flags) on [t]. *)
+      let t = E.eval_full_lazy lazy_info t in
+      (* Have we reached a [block _]? *)
+      begin
+        match E.get_blocked env evd t with
+        | Some t -> Result t
+        | None -> Progress (false, E.set args 1 t)
+      end
 
-  let red_prim env evd p u args =
-    try
-      let r =
-        red_prim_aux env evd p u args
-      in Some r
-    with NativeDestKO -> None
+  let red_prim env evd lazy_info p u args =
+    try red_prim_aux env evd lazy_info p u args with NativeDestKO -> Error
 
 end

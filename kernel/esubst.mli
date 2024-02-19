@@ -106,6 +106,10 @@ val is_lift_id : lift -> bool
 *)
 val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
 
+val map_subst : ('a -> 'b) -> 'a subs -> 'b subs
+
+val subs_of_lift : lift -> 'a subs
+
 val eq_lift : lift -> lift -> bool
 (** Equality for lifts *)
 
