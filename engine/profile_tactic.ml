@@ -138,10 +138,22 @@ let rec list_map_is_last f = function
   | [x]     -> [f true x]
   | x :: xs -> f false x :: list_map_is_last f xs
 
-let header =
-  str " tactic                                   local  total   calls       max " ++
+let repeat_str n s =
+  if String.is_empty s then s
+  else
+    let len = String.length s in
+    String.init (n * len) (fun i -> s.[i mod len])
+
+let header_name = " tactic"
+let header_name_width = utf8_length header_name
+
+let header_rest = "┴──────┴──────┴───────┴─────────┘"
+let header_rest_width = utf8_length header_rest
+
+let header name_width =
+  str " tactic" ++ str (String.make (name_width - header_name_width) ' ') ++ str "  local  total   calls       max" ++
   fnl () ++
-  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
+  str (repeat_str name_width "─") ++ str header_rest ++
   fnl ()
 
 module Line = struct
@@ -154,9 +166,9 @@ module Line = struct
     maxtime : float;
   }
 
-  let pr l =
+  let pr ~name_width l =
     h (
-      padr_with '-' 40 (l.prefix ^ l.tac_name ^ " ")
+      padr_with '-' name_width (l.prefix ^ l.tac_name ^ " ")
       ++ padl 7 (format_ratio l.local)
       ++ padl 7 (format_ratio l.total)
       ++ padl 8 (string_of_int l.calls)
@@ -190,10 +202,24 @@ and linearize_table ~filter all_total indent first_level table =
     in
     List.concat (list_map_is_last iter ls)
 
+let get_printing_width = ref (fun () -> Format.pp_get_margin Format.std_formatter ())
+
+let set_get_printing_width f = get_printing_width := f
+let get_printing_width () = !get_printing_width ()
+
 let print_table ~filter all_total table =
   let lines = linearize_table ~filter all_total "" true table in
-  header ++
-  prlist_with_sep fnl Line.pr lines
+  let name_width = List.fold_left (fun acc (l:Line.t) ->
+      max acc (utf8_length (l.prefix ^ l.tac_name)))
+      0
+      lines
+  in
+  let name_width = name_width + 1 (* +1 for a space at the end *) in
+  (* respect Printing Width unless it's so short that we can't print the header correctly *)
+  let name_width = min (get_printing_width() - header_rest_width) name_width in
+  let name_width = max header_name_width name_width in
+  header name_width ++
+  prlist_with_sep fnl (Line.pr ~name_width) lines
 
 let to_string ~filter ~cutoff node =
   let tree = node.children in
@@ -236,7 +262,7 @@ let to_string ~filter ~cutoff node =
     fnl () ++
     fnl () ++
     print_table ~filter all_total flat_tree ++
-    fnl () ++
+    fnl () ++ fnl () ++
     print_table ~filter all_total tree
   in
   msg

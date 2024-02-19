@@ -83,7 +83,11 @@ let get_depth_boxes () = Some (Format.pp_get_max_boxes !std_ft ())
 let set_depth_boxes v =
   Format.pp_set_max_boxes !std_ft (match v with None -> default | Some v -> v)
 
-let get_margin () = Some (Format.pp_get_margin !std_ft ())
+let get_margin0 () = Format.pp_get_margin !std_ft ()
+
+let () = Profile_tactic.set_get_printing_width get_margin0
+
+let get_margin () = Some (get_margin0())
 let set_margin v =
   let v = match v with None -> default_margin | Some v -> v in
   Format.pp_set_margin Format.str_formatter v;
