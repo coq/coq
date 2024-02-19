@@ -950,22 +950,17 @@ let pr_position (cl,pos) =
     | Some (id,Locus.InHypValueOnly) -> str " of the body of hypothesis " ++ Id.print id in
   int pos ++ clpos
 
-let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1),t1) e =
+let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1),t1) =
   if nested then
     str "Found nested occurrences of the pattern at positions " ++
     int pos1 ++ strbrk " and " ++ pr_position (cl2,pos2) ++ str "."
   else
-    let ppreason = match e with
-    | None -> mt()
-    | Some (c1,c2,e) ->
-      explain_unification_error env sigma c1 c2 (Some e)
-    in
     str "Found incompatible occurrences of the pattern" ++ str ":" ++
     spc () ++ str "Matched term " ++ pr_leconstr_env env sigma t2 ++
     strbrk " at position " ++ pr_position (cl2,pos2) ++
     strbrk " is not compatible with matched term " ++
     pr_leconstr_env env sigma t1 ++ strbrk " at position " ++
-    pr_position (cl1,pos1) ++ ppreason ++ str "."
+    pr_position (cl1,pos1) ++ str "."
 
 let pr_constraints printenv env sigma evars cstrs =
   let (ev, evi) = Evar.Map.choose evars in
@@ -1051,7 +1046,7 @@ let rec explain_pretype_error env sigma err =
   | TypingError t -> explain_type_error env sigma t
   | CantApplyBadTypeExplained ((t, rator, randl),error) ->
     explain_cant_apply_bad_type env sigma ~error t rator randl
-  | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
+  | CannotUnifyOccurrences (b,c1,c2) -> explain_cannot_unify_occurrences env sigma b c1 c2
   | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
   | DisallowedSProp -> explain_disallowed_sprop ()
 

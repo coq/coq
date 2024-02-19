@@ -32,7 +32,7 @@ type position = (Id.t * Locus.hyp_location_flag) option
 
 type position_reporting = (position * int) * constr
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting
 
 type type_error = (constr, types) ptype_error
 
