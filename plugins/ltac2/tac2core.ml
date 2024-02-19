@@ -987,6 +987,20 @@ let () =
   define "once" (closure @-> tac valexpr) @@ fun f ->
   Proofview.tclONCE (thaw f)
 
+(** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
+let () =
+  define "case" (closure @-> tac valexpr) @@ fun f ->
+  Proofview.tclCASE (thaw f) >>= begin function
+  | Proofview.Next (x, k) ->
+    let k = Tac2val.mk_closure arity_one begin fun e ->
+      let (e, info) = Tac2ffi.to_exn e in
+      set_bt info >>= fun info ->
+      k (e, info)
+    end in
+    return (v_blk 0 [| Tac2ffi.of_tuple [| x; Tac2ffi.of_closure k |] |])
+  | Proofview.Fail e -> return (v_blk 1 [| Tac2ffi.of_exn e |])
+  end
+
 (** (unit -> unit) list -> unit *)
 let () =
   define "dispatch" (list closure @-> tac unit) @@ fun l ->
@@ -1006,20 +1020,6 @@ let () =
   define "enter" (closure @-> tac unit) @@ fun f ->
   let f = Proofview.tclIGNORE (thaw f) in
   Proofview.tclINDEPENDENT f
-
-(** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
-let () =
-  define "case" (closure @-> tac valexpr) @@ fun f ->
-  Proofview.tclCASE (thaw f) >>= begin function
-  | Proofview.Next (x, k) ->
-    let k = Tac2val.mk_closure arity_one begin fun e ->
-      let (e, info) = Tac2ffi.to_exn e in
-      set_bt info >>= fun info ->
-      k (e, info)
-    end in
-    return (v_blk 0 [| Tac2ffi.of_tuple [| x; Tac2ffi.of_closure k |] |])
-  | Proofview.Fail e -> return (v_blk 1 [| Tac2ffi.of_exn e |])
-  end
 
 (** int -> int -> (unit -> 'a) -> 'a *)
 let () =
