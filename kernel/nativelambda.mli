@@ -7,14 +7,12 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Constr
+
 open Environ
 open Genlambda
 
 (** This file defines the lambda code generation phase of the native compiler *)
 
 type lambda = Nativevalues.t Genlambda.lambda
-
-val is_lazy : constr -> bool
 
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda

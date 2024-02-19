@@ -44,7 +44,6 @@ type 'v lambda =
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
-| Lforce
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
@@ -176,7 +175,6 @@ let rec pp_lam lam =
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")
-  | Lforce -> Pp.str "force"
 
 (*s Constructors *)
 
@@ -280,7 +278,6 @@ let map_lam_with_binders g f n lam =
   | Lproj(p,arg) ->
     let arg' = f n arg in
     if arg == arg' then lam else Lproj(p,arg')
-  | Lforce -> Lforce
 
 (*s Operators on substitution *)
 let lift = subs_lift
@@ -401,7 +398,7 @@ let rec occurrence k kind lam =
       if kind then false else raise Not_found
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ | Lforce -> kind
+  | Lfloat _ -> kind
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -520,7 +517,6 @@ module type S =
 sig
   type value
   val as_value : int -> value lambda array -> value option
-  val get_constant : pconstant -> constant_body -> value lambda
   val check_inductive : inductive -> mutual_inductive_body -> unit
 end
 
@@ -708,8 +704,7 @@ and lambda_of_app cache env sigma f args =
       | Def csubst -> (* TODO optimize if f is a proj and argument is known *)
         if cb.const_inline_code then lambda_of_app cache env sigma csubst args
         else
-          let t = Val.get_constant (kn, u) cb in
-          mkLapp t (lambda_of_args cache env sigma 0 args)
+          mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       | OpaqueDef _ | Undef _ | Symbol _ ->
           mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       end

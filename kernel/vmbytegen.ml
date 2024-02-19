@@ -809,8 +809,6 @@ let rec compile_lam env cenv lam sz cont =
       comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
     end
 
-  | Lforce -> CErrors.anomaly Pp.(str "The VM should not use force")
-
 and compile_get_global env cenv (kn,u) sz cont =
   let () = set_max_stack_size cenv sz in
   if UVars.Instance.is_empty u then

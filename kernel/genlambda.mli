@@ -41,7 +41,6 @@ type 'v lambda =
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
-| Lforce
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
@@ -91,7 +90,6 @@ module type S =
 sig
   type value
   val as_value : int -> value lambda array -> value option
-  val get_constant : pconstant -> Declarations.constant_body -> value lambda
   val check_inductive : inductive -> Declarations.mutual_inductive_body -> unit
 end
 
