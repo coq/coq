@@ -428,7 +428,7 @@ let in_cast_type loc = function
        Alternatively we could use the loc of the meta, or the loc of the innermost cast. *)
     v
 
-let pat_of_raw (type pkind) (kind:pkind pattern_kind) metas vars p =
+let pat_of_raw env (type pkind) (kind:pkind pattern_kind) metas vars p =
 
 let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val (fun ?loc -> function
   | GVar id ->
@@ -437,7 +437,7 @@ let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val 
   | GPatVar (Evar_kinds.FirstOrderPatVar n) ->
       push_meta metas n; PMeta (Some n)
   | GRef (gr,_) ->
-      PRef (canonical_gr gr)
+      PRef (Environ.QGlobRef.canonize env gr)
   (* Hack to avoid rewriting a complete interpretation of patterns *)
   | GApp (c, cl) ->
     begin match DAst.get c with
@@ -611,12 +611,12 @@ and pats_of_glob_branches loc metas vars ind brs =
 
 in pat_of_raw metas vars p
 
-let pattern_of_glob_constr c =
+let pattern_of_glob_constr env c =
   let metas = ref Id.Set.empty in
-  let p = pat_of_raw Any (Metas metas) [] c in
+  let p = pat_of_raw env Any (Metas metas) [] c in
   (!metas, p)
 
-let uninstantiated_pattern_of_glob_constr c =
+let uninstantiated_pattern_of_glob_constr env c =
   let metas = ref Id.Set.empty in
-  let p = pat_of_raw Uninstantiated (Metas metas) [] c in
+  let p = pat_of_raw env Uninstantiated (Metas metas) [] c in
   (!metas, p)

@@ -253,37 +253,30 @@ type equation_kind =
 
 exception NoEquationFound
 
-open Glob_term
-open Evar_kinds
+open Pattern
 
-let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
-let mkGApp f args = DAst.make @@ GApp (f, args)
-let mkGHole = DAst.make @@
-  GHole (GQuestionMark {
-        Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
-  })
-let mkGProd id c1 c2 = DAst.make @@
-  GProd (Name (Id.of_string id), None, Explicit, c1, c2)
-let mkGArrow c1 c2 = DAst.make @@
-  GProd (Anonymous, None, Explicit, c1, c2)
-let mkGVar id = DAst.make @@ GVar (Id.of_string id)
-let mkGPatVar id = DAst.make @@ GPatVar(Evar_kinds.FirstOrderPatVar (Id.of_string id))
-let mkGRef r = DAst.make @@ GRef (Lazy.force r, None)
-let mkGAppRef r args = mkGApp (mkGRef r) args
+let mkPRel n = PRel n
+let mkPApp f args = PApp (f, Array.of_list args)
+let mkPHole = PMeta None
+let mkPProd id c1 c2 = PProd (Name (Id.of_string id), c1, c2)
+let mkPArrow c1 c2 = PProd (Anonymous, c1, c2)
+let mkPPatVar id = PMeta (Some (Id.of_string id))
+let mkPRef r = PRef (lib_ref r)
+let mkPAppRef r args = mkPApp (mkPRef r) args
 
 (** forall x : _, _ x x *)
 let coq_refl_leibniz1_pattern =
-  mkPattern (mkGProd "x" mkGHole (mkGApp mkGHole [mkGVar "x"; mkGVar "x";]))
+  mkPProd "x" mkPHole (mkPApp mkPHole [mkPRel 1; mkPRel 1])
 
 (** forall A:_, forall x:A, _ A x x *)
 let coq_refl_leibniz2_pattern =
-  mkPattern (mkGProd "A" mkGHole (mkGProd "x" (mkGVar "A")
-    (mkGApp mkGHole [mkGVar "A"; mkGVar "x"; mkGVar "x";])))
+  mkPProd "A" mkPHole (mkPProd "x" (mkPRel 1)
+    (mkPApp mkPHole [mkPRel 2; mkPRel 1; mkPRel 1]))
 
 (** forall A:_, forall x:A, _ A x A x *)
 let coq_refl_jm_pattern       =
-  mkPattern (mkGProd "A" mkGHole (mkGProd "x" (mkGVar "A")
-    (mkGApp mkGHole [mkGVar "A"; mkGVar "x"; mkGVar "A"; mkGVar "x";])))
+  mkPProd "A" mkPHole (mkPProd "x" (mkPRel 1)
+    (mkPApp mkPHole [mkPRel 2; mkPRel 1; mkPRel 2; mkPRel 1]))
 
 let match_with_equation env sigma t =
   if not (isApp sigma t) then raise NoEquationFound;
@@ -340,7 +333,7 @@ let is_equality_type env sigma t = Option.has_some (match_with_equality_type env
 (* Arrows/Implication/Negation *)
 
 (** X1 -> X2 **)
-let coq_arrow_pattern = mkPattern (mkGArrow (mkGPatVar "X1") (mkGPatVar "X2"))
+let coq_arrow_pattern = mkPArrow (mkPPatVar "X1") (mkPPatVar "X2")
 
 let match_arrow_pattern env sigma t =
   let result = matches env sigma coq_arrow_pattern t in
@@ -489,7 +482,7 @@ let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern =
-  lazy (mkPattern (mkGAppRef (lazy (lib_ref "core.sig.type")) [mkGPatVar "X1"; mkGPatVar "X2"]))
+  lazy (mkPAppRef "core.sig.type" [mkPPatVar "X1"; mkPPatVar "X2"])
 
 let match_sigma env sigma t =
   match Id.Map.bindings (matches env sigma (Lazy.force coq_sig_pattern) t) with
@@ -507,14 +500,14 @@ let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force coq_sig_pa
 
 let coq_eqdec ~sum ~rev =
   lazy (
-    let eqn = mkGAppRef (lazy (lib_ref "core.eq.type")) (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
-    let args = [eqn; mkGAppRef (lazy (lib_ref "core.not.type")) [eqn]] in
+    let eqn = mkPAppRef "core.eq.type" (List.map mkPPatVar ["X1"; "X2"; "X3"]) in
+    let args = [eqn; mkPAppRef "core.not.type" [eqn]] in
     let args = if rev then List.rev args else args in
-    mkPattern (mkGAppRef sum args)
+    mkPAppRef sum args
   )
 
-let sumbool_type = lazy (lib_ref "core.sumbool.type")
-let or_type = lazy (lib_ref "core.or.type")
+let sumbool_type = "core.sumbool.type"
+let or_type = "core.or.type"
 
 (** [{ ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 }] *)
 let coq_eqdec_inf_pattern = coq_eqdec ~sum:sumbool_type ~rev:false
@@ -539,12 +532,12 @@ let match_eqdec env sigma t =
         false,or_type,matches env sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      eqonleft, Lazy.force op, c1, c2, typ
+      eqonleft, lib_ref op, c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern.")
 
 (* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy (mkPattern (mkGAppRef (lazy (lib_ref "core.not.type")) [mkGHole]))
-let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef (lazy (lib_ref "core.False.type")))))
+let coq_not_pattern = lazy (mkPAppRef "core.not.type" [mkPHole])
+let coq_imp_False_pattern = lazy (mkPArrow mkPHole (mkPRef "core.False.type"))
 
 let is_matching_not env sigma t = is_matching env sigma (Lazy.force coq_not_pattern) t
 let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force coq_imp_False_pattern) t
