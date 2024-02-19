@@ -1310,8 +1310,10 @@ and knht info e t stk =
       let r = usubst_relevance e r in
       if is_irrelevant info r then
         (mk_irrelevant, skip_irrelevant_stack info stk)
-      else
-        knh info { mark = Red; term = FProj (p, r, mk_clos e c) } stk
+      else begin match unfold_projection info p r with
+      | None -> ({ mark = Red; term = FProj (p, r, mk_clos e c) }, stk)
+      | Some s -> knht info e c (s :: stk)
+      end
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
     | CoFix cfx ->
       { mark = Cstr; term = FCoFix (cfx,e) }, stk
