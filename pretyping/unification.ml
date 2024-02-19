@@ -1822,7 +1822,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * (evar_map option * constr) * clause * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * (evar_map option * constr) * clause
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
@@ -1832,10 +1832,10 @@ type 'r abstraction_result =
 
 let make_abstraction env evd ccl abs =
   match abs with
-  | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
+  | AbstractPattern (from_prefix,check,name,c,occs) ->
       make_abstraction_core name
         (make_pattern_test from_prefix check env evd c)
-        env evd (snd c) None occs check_occs ccl
+        env evd (snd c) None occs false ccl
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name
         (make_eq_test env evd c)
