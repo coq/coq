@@ -6,12 +6,7 @@
      : nat
      = S (1 + 2)
      : nat
-     = S
-         ((fix add (n m : nat) {struct n} : nat :=
-             match n with
-             | 0 => m
-             | S p => S (add p m)
-             end) 1 2)
+     = S (1 + 2)
      : nat
      = 4
      : nat

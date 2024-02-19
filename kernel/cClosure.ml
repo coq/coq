@@ -378,8 +378,8 @@ end = struct
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
 
   let expand_global_fixpoint info cst c = match info.i_cache.i_mode with
-  | Reduction -> None
-  | Conversion ->
+  | Conversion -> None
+  | Reduction ->
     let ctx, body = Term.decompose_lambda c in
     match destFix body with
     | fix ->
