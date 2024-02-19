@@ -872,7 +872,6 @@ let give_up =
 
 (** {7 Control primitives} *)
 
-
 module Progress = struct
 
   let eq_constr evd extended_evd =
@@ -913,11 +912,34 @@ module Progress = struct
     eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
     eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
+  let fast_eq_evar_body (type a1 a2) (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
+    let open Evd in
+    match Evd.evar_body e1, Evd.evar_body e2 with
+    | Evar_empty, Evar_empty -> true
+    | Evar_defined _, Evar_defined _ -> true
+    | _ -> false
+
+  let fast_eq_named_context_val ctx1 ctx2 =
+    let c1 = EConstr.named_context_of_val ctx1 in
+    let c2 = EConstr.named_context_of_val ctx2 in
+    let eq_named_declaration d1 d2 = match d1, d2 with
+    | LocalAssum (i1, _), LocalAssum (i2, _) -> Context.eq_annot Names.Id.equal i1 i2
+    | LocalDef (i1, _, _), LocalDef (i2, _, _) -> Context.eq_annot Names.Id.equal i1 i2
+    | _ -> false
+    in
+    List.for_all2eq eq_named_declaration c1 c2
+
+  let fast_eq_evar_info ei1 ei2 =
+    fast_eq_evar_body ei1 ei2 &&
+    fast_eq_named_context_val (Evd.evar_hyps ei1) (Evd.evar_hyps ei2)
+
   (** Equality function on goals *)
   let goal_equal ~evd ~extended_evd evar extended_evar =
     let EvarInfo evi = Evd.find evd evar in
     let EvarInfo extended_evi = Evd.find extended_evd extended_evar in
-    eq_evar_info evd extended_evd evi extended_evi
+    if fast_eq_evar_info evi extended_evi then
+      eq_evar_info evd extended_evd evi extended_evi
+    else false
 
 end
 
