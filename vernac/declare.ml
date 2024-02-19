@@ -1823,6 +1823,9 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
       (* allow_deferred case *)
       if not poly &&
          (keep_body_ucst_separate
+          (* checking is_empty_private_constants prevents an undefined universe anomaly
+             cf test-suite/success/rewrite.v Qed for lemma l1
+             not sure what's going on, there's probably a better way to work *)
           || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
       then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
       (* private_poly_univs case *)
@@ -1928,6 +1931,14 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
+  let sigma, concl =
+    (* FIXME: should be done only if the tactic succeeds *)
+    (* XXX maybe we can fix now that we support evars
+       if close_proof stops caring about is_empty_private_constants we can remove the minimization
+       see #18636 *)
+    let sigma = Evd.minimize_universes sigma in
+    sigma, Evarutil.nf_evar sigma concl
+  in
   let (const, safe, sigma') =
     try build_constant_by_tactic ~warn_incomplete:false ~name ~opaque:Vernacexpr.Transparent ~poly ~sigma ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
