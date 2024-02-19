@@ -7425,3 +7425,49 @@ let to_lower = [
   (0x1F950,0x1F95E), `Delta (0);
   (0x1F980,0x1F991), `Delta (0)
 ];;
+
+let gen_one na (data:(int*int) list) f =
+  Printf.fprintf f "let %s : (int * int) list = Marshal.from_string %S 0\n\n"
+    na
+    (Marshal.to_string data [])
+
+let gen_lower (data:((int * int) * [> `Abs of int | `Delta of int ]) list) f =
+  Printf.fprintf f "let to_lower : ((int * int) * [> `Abs of int | `Delta of int ]) list = Marshal.from_string %S 0" (Marshal.to_string data [])
+
+let gen () =
+  let f = Sys.argv.(1) in
+  let ch = open_out_bin f in
+  gen_one "lu" lu ch;
+  gen_one "ll" ll ch;
+  gen_one "lt" lt ch;
+  gen_one "mn" mn ch;
+  gen_one "mc" mc ch;
+  gen_one "me" me ch;
+  gen_one "nd" nd ch;
+  gen_one "nl" nl ch;
+  gen_one "no" no ch;
+  gen_one "zs" zs ch;
+  gen_one "zl" zl ch;
+  gen_one "zp" zp ch;
+  gen_one "cc" cc ch;
+  gen_one "cf" cf ch;
+  gen_one "cs" cs ch;
+  gen_one "co" co ch;
+  gen_one "cn" cn ch;
+  gen_one "lm" lm ch;
+  gen_one "lo" lo ch;
+  gen_one "pc" pc ch;
+  gen_one "pd" pd ch;
+  gen_one "ps" ps ch;
+  gen_one "pe" pe ch;
+  gen_one "pi" pi ch;
+  gen_one "pf" pf ch;
+  gen_one "po" po ch;
+  gen_one "sm" sm ch;
+  gen_one "sc" sc ch;
+  gen_one "sk" sk ch;
+  gen_one "so" so ch;
+  gen_lower to_lower ch;
+  close_out ch
+
+let () = gen ()
