@@ -1,0 +1,3 @@
+- : pair = C 0 0
+- : pair' = C' (0, 0)
+- : ppair = D (C 0 0)
