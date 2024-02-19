@@ -2017,7 +2017,7 @@ let vernac_print ~pstate =
     Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
-  | PrintImplicit qid -> Prettyp.print_impargs (smart_global qid)
+  | PrintImplicit qid -> Prettyp.print_impargs env (smart_global qid)
   | PrintAssumptions (o,t,r) ->
     (* Prints all the axioms and section variables used by a term *)
       let env = Global.env () in
@@ -2045,17 +2045,19 @@ let vernac_search ~pstate ~atts s gopt r =
   in
   interp_search env sigma s r
 
-let vernac_locate ~pstate = let open Constrexpr in function
-  | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid
-  | LocateTerm {v=AN qid} -> Prettyp.print_located_term qid
+let vernac_locate ~pstate query =
+  let open Constrexpr in
+  let sigma, env = get_current_or_global_context ~pstate in
+  match query with
+  | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid env qid
+  | LocateTerm {v=AN qid} -> Prettyp.print_located_term env qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
-    let sigma, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_glob_constr_env env sigma)) ntn sc
   | LocateLibrary qid -> print_located_library qid
-  | LocateModule qid -> Prettyp.print_located_module qid
-  | LocateOther (s, qid) -> Prettyp.print_located_other s qid
+  | LocateModule qid -> Prettyp.print_located_module env qid
+  | LocateOther (s, qid) -> Prettyp.print_located_other env s qid
   | LocateFile f -> locate_file f
 
 let vernac_register qid r =

@@ -1154,7 +1154,7 @@ let () =
   }
 
 let print_located_tactic qid =
-  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac2 qid)
+  Feedback.msg_notice (Prettyp.print_located_other (Global.env ()) locatable_ltac2 qid)
 
 let print_ltac2 qid =
   if Tac2env.is_constructor qid then

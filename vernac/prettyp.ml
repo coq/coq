@@ -53,8 +53,7 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 
 let print_basename cst = pr_global (GlobRef.ConstRef cst)
 
-let print_ref reduce ref udecl =
-  let env = Global.env () in
+let print_ref env reduce ref udecl =
   let typ, univs = Typeops.type_of_global_in_context env ref in
   let inst = UVars.make_abstract_instance univs in
   let bl = Printer.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
@@ -74,7 +73,7 @@ let print_ref reduce ref udecl =
       mind.Declarations.mind_variance
   in
   let inst =
-    if Global.is_polymorphic ref
+    if Environ.is_polymorphic env ref
     then Printer.pr_universe_instance sigma inst
     else mt ()
   in
@@ -122,20 +121,20 @@ let print_impargs_list prefix l =
             then print_one_impargs_list imps
             else [str "No implicit arguments"]))])]) l)
 
-let need_expansion impl ref =
-  let typ, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
+let need_expansion env impl ref =
+  let typ, _ = Typeops.type_of_global_in_context env ref in
   let ctx = Term.prod_decls typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
       List.exists is_status_implicit lastimpl
 
-let print_impargs ref =
+let print_impargs env ref =
   let impl = implicits_of_global ref in
   let has_impl = not (List.is_empty impl) in
   (* Need to reduce since implicits are computed with products flattened *)
   pr_infos_list
-    ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref None;
+    ([ print_ref env (need_expansion env (select_impargs_size 0 impl) ref) ref None;
        blankline ] @
     (if has_impl then print_impargs_list (mt()) impl
      else [str "No implicit arguments"]))
@@ -167,8 +166,8 @@ let opacity env =
             (Conv_oracle.get_strategy (Environ.oracle env) (Evaluable.EvalConstRef cst))))
   | _ -> None
 
-let print_opacity ref =
-  match opacity (Global.env()) ref with
+let print_opacity env ref =
+  match opacity env ref with
     | None -> []
     | Some s ->
        [pr_global ref ++ str " is " ++
@@ -198,10 +197,10 @@ let pr_template_variables = function
   | [] -> mt ()
   | vars -> str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
 
-let print_polymorphism ref =
-  let poly = Global.is_polymorphic ref in
-  let template_poly = Global.is_template_polymorphic ref in
-  let template_variables = Global.get_template_polymorphic_variables ref in
+let print_polymorphism env ref =
+  let poly = Environ.is_polymorphic env ref in
+  let template_poly = Environ.is_template_polymorphic env ref in
+  let template_variables = Environ.get_template_polymorphic_variables env ref in
   [ pr_global ref ++ str " is " ++
       (if poly then str "universe polymorphic"
        else if template_poly then
@@ -211,8 +210,8 @@ let print_polymorphism ref =
 
 (** Printing type-in-type status *)
 
-let print_type_in_type ref =
-  let unsafe = Global.is_type_in_type ref in
+let print_type_in_type env ref =
+  let unsafe = Environ.is_type_in_type env ref in
   if unsafe then
     [ pr_global ref ++ str " relies on an unsafe universe hierarchy"]
   else []
@@ -228,16 +227,16 @@ let print_primitive_record recflag mipv = function
     [Id.print mipv.(0).mind_typename ++ str" has primitive projections" ++ eta ++ str"."]
   | FakeRecord | NotRecord -> []
 
-let print_primitive ref =
+let print_primitive env ref =
   match ref with
   | GlobRef.IndRef ind ->
-    let mib,_ = Global.lookup_inductive ind in
+    let mib = Environ.lookup_mind (fst ind) env in
       print_primitive_record mib.mind_finite mib.mind_packets mib.mind_record
   | _ -> []
 
 (** Printing arguments status (scopes, implicit, names) *)
 
-let needs_extra_scopes ref scopes =
+let needs_extra_scopes env ref scopes =
   let open Constr in
   let rec aux env t = function
     | [] -> false
@@ -245,7 +244,6 @@ let needs_extra_scopes ref scopes =
       | Prod (na,dom,codom) -> aux (push_rel (RelDecl.LocalAssum (na,dom)) env) codom scopes
       | _ -> true
   in
-  let env = Global.env() in
   let ty, _ctx = Typeops.type_of_global_in_context env ref in
   aux env ty scopes
 
@@ -306,7 +304,7 @@ let rec insert_fake_args volatile bidi impls =
     let f = Option.map pred in
     RealArg hd :: insert_fake_args (f volatile) (f bidi) tl
 
-let print_arguments ref =
+let print_arguments env ref =
   let qid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
   let flags, recargs, nargs_for_red =
     match ref with
@@ -322,11 +320,10 @@ let print_arguments ref =
   let names, not_renamed =
     try Arguments_renaming.arguments_names ref, false
     with Not_found ->
-      let env = Global.env () in
       let ty, _ = Typeops.type_of_global_in_context env ref in
       List.map pi1 (Impargs.compute_implicits_names env (Evd.from_env env) (EConstr.of_constr ty)), true in
   let scopes = Notation.find_arguments_scope ref in
-  let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
+  let flags = if needs_extra_scopes env ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in
   let impls, moreimpls = match impls with
     | (_, impls) :: rest -> impls, rest
@@ -347,14 +344,14 @@ let print_arguments ref =
 
 (** Printing dependencies in section variables *)
 
-let print_section_deps ref =
+let print_section_deps env ref =
   let hyps = let open GlobRef in match ref with
   | VarRef _ -> None
   | ConstRef c ->
-    let bd = Global.lookup_constant c in
+    let bd = Environ.lookup_constant c env in
     Some bd.const_hyps
   | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
-    let mb = Global.lookup_mind mind in
+    let mb = Environ.lookup_mind mind env in
     Some mb.mind_hyps
   in
   let hyps = Option.map (List.filter NamedDecl.is_local_assum) hyps in
@@ -374,19 +371,19 @@ let print_bidi_hints gr =
 
 (** Printing basic information about references (common to Print and About) *)
 
-let print_name_infos ref =
+let print_name_infos env ref =
   let type_info_for_implicit =
-    if need_expansion (select_impargs_size 0 (implicits_of_global ref)) ref then
+    if need_expansion env (select_impargs_size 0 (implicits_of_global ref)) ref then
       (* Need to reduce since implicits are computed with products flattened *)
       [str "Expanded type for implicit arguments";
-       print_ref true ref None; blankline]
+       print_ref env true ref None; blankline]
     else
       [] in
-  print_type_in_type ref @
-  print_primitive ref @
+  print_type_in_type env ref @
+  print_primitive env ref @
   type_info_for_implicit @
-  print_arguments ref @
-  print_section_deps ref @
+  print_arguments env ref @
+  print_section_deps env ref @
   print_if_is_coercion ref
 
 (******************************************)
@@ -430,30 +427,28 @@ let assumptions_for_print lna =
 (*********************)
 (* *)
 
-let print_inductive_args mind mipv =
+let print_inductive_args env mind mipv =
   let flatmapi f v = List.flatten (Array.to_list (Array.mapi f v)) in
   flatmapi
-    (fun i mip -> print_arguments (GlobRef.IndRef (mind,i)) @
-                  flatmapi (fun j _ -> print_arguments (GlobRef.ConstructRef ((mind,i),j+1)))
+    (fun i mip -> print_arguments env (GlobRef.IndRef (mind,i)) @
+                  flatmapi (fun j _ -> print_arguments env (GlobRef.ConstructRef ((mind,i),j+1)))
                     mip.mind_consnames) mipv
 
-let print_inductive mind udecl =
-  let env = Global.env() in
+let print_inductive env mind udecl =
   let mib = Environ.lookup_mind mind env in
   Printmod.pr_mutual_inductive_body env mind mib udecl
 
-let print_inductive_with_infos mind udecl =
-  let env = Global.env() in
+let print_inductive_with_infos env mind udecl =
   let mib = Environ.lookup_mind mind env in
   let mipv = mib.mind_packets in
   Printmod.pr_mutual_inductive_body env mind mib udecl ++
   with_line_skip
     (print_primitive_record mib.mind_finite mipv mib.mind_record @
-     print_inductive_args mind mipv)
+     print_inductive_args env mind mipv)
 
 let print_section_variable_with_infos env sigma id =
   print_named_decl env sigma true id ++
-  with_line_skip (print_name_infos (GlobRef.VarRef id))
+  with_line_skip (print_name_infos env (GlobRef.VarRef id))
 
 let print_body env evd = function
   | Some c  -> pr_lconstr_env ~inctx:true env evd c
@@ -469,8 +464,8 @@ let print_instance sigma cb =
     pr_universe_instance sigma inst
   else mt()
 
-let print_constant with_values with_implicit cst udecl =
-  let cb = Global.lookup_constant cst in
+let print_constant env with_values with_implicit cst udecl =
+  let cb = Environ.lookup_constant cst env in
   let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
   let univs = cb.const_universes in
@@ -478,7 +473,7 @@ let print_constant with_values with_implicit cst udecl =
     UState.of_names
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
-  let env = Global.env () and sigma = Evd.from_ctx uctx in
+  let sigma = Evd.from_ctx uctx in
   let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (ConstRef cst)) else [] in
   let impargs = List.map binding_kind_of_status impargs in
   let pr_ltype = pr_ltype_env env sigma in
@@ -499,16 +494,16 @@ let print_constant with_values with_implicit cst udecl =
       (if with_values then print_typed_body env sigma ~impargs (Some c,typ) else pr_ltype ~impargs typ)++
       Printer.pr_universes sigma univs ?priv)
 
-let print_constant_with_infos cst udecl =
-  print_constant true true cst udecl ++
-  with_line_skip (print_name_infos (GlobRef.ConstRef cst))
+let print_constant_with_infos env cst udecl =
+  print_constant env true true cst udecl ++
+  with_line_skip (print_name_infos env (GlobRef.ConstRef cst))
 
 let print_global_reference env sigma gref udecl =
   let open GlobRef in
   match gref with
-  | ConstRef cst -> print_constant_with_infos cst udecl
-  | IndRef (mind,_) -> print_inductive_with_infos mind udecl
-  | ConstructRef ((mind,_),_) -> print_inductive_with_infos mind udecl
+  | ConstRef cst -> print_constant_with_infos env cst udecl
+  | IndRef (mind,_) -> print_inductive_with_infos env mind udecl
+  | ConstructRef ((mind,_),_) -> print_inductive_with_infos env mind udecl
   | VarRef id -> print_section_variable_with_infos env sigma id
 
 let glob_constr_of_abbreviation kn =
@@ -582,11 +577,11 @@ let print_library_leaf env sigma with_values mp lobj =
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
         let kn = Constant.make2 mp (Label.of_id id) in
-        Some (print_constant with_values false kn None)
+        Some (print_constant env with_values false kn None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
         let kn = MutInd.make2 mp (Label.of_id id) in
-        Some (print_inductive kn None)
+        Some (print_inductive env kn None)
       end @@
       DynHandle.empty
     in
@@ -776,14 +771,14 @@ let locate_any_name qid =
     try String.Map.iter iter !locatable_map; Undefined qid
     with ObjFound obj -> obj
 
-let canonical_info ref =
-  let cref = canonical_gr ref in
+let canonical_info env ref =
+  let cref = QGlobRef.canonize env ref in
   if GlobRef.UserOrd.equal ref cref then mt ()
   else match Nametab.path_of_global cref with
     | path -> spc() ++ str "(syntactically equal to" ++ spc() ++ pr_path path ++ str ")"
     | exception Not_found -> spc() ++ str "(missing canonical, bug?)"
 
-let pr_located_qualid = function
+let pr_located_qualid env = function
   | Term ref ->
       let ref_str = let open GlobRef in match ref with
           ConstRef _ -> "Constant"
@@ -791,7 +786,7 @@ let pr_located_qualid = function
         | ConstructRef _ -> "Constructor"
         | VarRef _ -> "Variable"
       in
-      let extra = canonical_info ref in
+      let extra = canonical_info env ref in
       str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra
   | Abbreviation kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
@@ -902,31 +897,31 @@ let print_notation env sigma entry raw_ntn =
 
 (** Command [About] *)
 
-let print_about_global_reference ?loc ref udecl =
+let print_about_global_reference ?loc env ref udecl =
   pr_infos_list
-   (print_ref false ref udecl :: blankline ::
-    print_polymorphism ref @
-    print_name_infos ref @
+   (print_ref env false ref udecl :: blankline ::
+    print_polymorphism env ref @
+    print_name_infos env ref @
     print_reduction_behaviour ref @
-    print_opacity ref @
+    print_opacity env ref @
     print_bidi_hints ref @
-    [hov 0 (str "Expands to: " ++ pr_located_qualid (Term ref))])
+    [hov 0 (str "Expands to: " ++ pr_located_qualid env (Term ref))])
 
 let print_about_abbreviation env sigma kn =
   let (vars,c) = glob_constr_of_abbreviation kn in
   let pp = match DAst.get c with
-  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_about_global_reference gref None]
+  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_about_global_reference env gref None]
   | _ -> [] in
   print_abbreviation_body env kn (vars,c) ++ fnl () ++
-  hov 0 (str "Expands to: " ++ pr_located_qualid (Abbreviation kn)) ++
+  hov 0 (str "Expands to: " ++ pr_located_qualid env (Abbreviation kn)) ++
   with_line_skip pp
 
 let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
-  | Term ref -> Dumpglob.add_glob ?loc ref; print_about_global_reference ref udecl
+  | Term ref -> Dumpglob.add_glob ?loc ref; print_about_global_reference env ref udecl
   | Abbreviation kn -> v 0 (print_about_abbreviation env sigma kn)
-  | Dir _ | Module _ | ModuleType _ | Undefined _ -> hov 0 (pr_located_qualid k)
+  | Dir _ | Module _ | ModuleType _ | Undefined _ -> hov 0 (pr_located_qualid env k)
   | Other (obj, info) -> hov 0 (info.about obj)
 
 let print_about env sigma na udecl =
@@ -1018,7 +1013,7 @@ let print_canonical_projections env sigma grefs =
 open Typeclasses
 
 let pr_typeclass env t =
-  print_ref false t.cl_impl None
+  print_ref env false t.cl_impl None
 
 let print_typeclasses () =
   let env = Global.env () in
@@ -1029,7 +1024,7 @@ let print_typeclasses () =
 let pr_instance env i =
   (*   print_constant_with_infos i.is_impl *)
   (* lighter *)
-  print_ref false (instance_impl i) None ++
+  print_ref env false (instance_impl i) None ++
   begin match hint_priority i with
   | None -> mt ()
   | Some i -> spc () ++ str "|" ++ spc () ++ int i
@@ -1118,7 +1113,7 @@ type locatable_kind =
   | LocOther of string
   | LocAny
 
-let print_located_qualid name flags qid =
+let print_located_qualid env name flags qid =
   let located = match flags with
   | LocTerm -> locate_term qid
   | LocModule -> locate_modtype qid @ locate_module qid
@@ -1139,14 +1134,14 @@ let print_located_qualid name flags qid =
     | l ->
         prlist_with_sep fnl
         (fun (o,oqid) ->
-          hov 2 (pr_located_qualid o ++
+          hov 2 (pr_located_qualid env o ++
           (if not (qualid_eq oqid qid) then
             spc() ++ str "(shorter name to refer to it in current context is "
             ++ pr_qualid oqid ++ str")"
            else mt ()) ++
           display_alias o)) l
 
-let print_located_term ref = print_located_qualid "term" LocTerm ref
-let print_located_other s ref = print_located_qualid s (LocOther s) ref
-let print_located_module ref = print_located_qualid "module" LocModule ref
-let print_located_qualid ref = print_located_qualid "object" LocAny ref
+let print_located_term env ref = print_located_qualid env "term" LocTerm ref
+let print_located_other env s ref = print_located_qualid env s (LocOther s) ref
+let print_located_module env ref = print_located_qualid env "module" LocModule ref
+let print_located_qualid env ref = print_located_qualid env "object" LocAny ref
