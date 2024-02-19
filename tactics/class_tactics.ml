@@ -710,11 +710,7 @@ module Search = struct
     let idx = ref 1 in
     let foundone = ref false in
     let rec onetac e (tac, pat, b, name, pp) tl =
-      let path = match name with
-      | None -> PathAny
-      | Some gr -> PathHints [gr]
-      in
-      let derivs = path_derivate info.search_cut path in
+      let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         ppdebug 1 (fun () ->
             let idx = if fst ie == NoApplicableHint then pred !idx else !idx in
@@ -816,7 +812,7 @@ module Search = struct
         with_shelf res >>= fun (sh, ()) ->
         tclEVARMAP >>= finish sh
       in
-      if path_matches derivs [] then aux e tl
+      if path_matches_epsilon derivs then aux e tl
       else
         ortac
              (with_shelf tac >>= fun s ->

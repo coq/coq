@@ -2010,18 +2010,14 @@ auto_using: [
 |
 ]
 
-hints_path_atom: [
-| LIST1 global
-| "_"
-]
-
 hints_path: [
 | "(" hints_path ")"
 | hints_path "*"
 | "emp"
 | "eps"
 | hints_path "|" hints_path
-| hints_path_atom
+| LIST1 global
+| "_"
 | hints_path hints_path
 ]
 
