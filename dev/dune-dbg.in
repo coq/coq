@@ -11,6 +11,7 @@ while [[ $# -gt 0 ]]; do
         coqchk)
             shift
             exe=_build/default/checker/coqchk.bc
+            opts+=($(ocamlfind query -recursive -i-format coq-core.checklib))
             break
             ;;
         coqide)
