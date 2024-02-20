@@ -248,17 +248,17 @@ type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
 exception Bad_version_number of magic_number_error
 
-let with_magic_number_check f a =
+let with_magic_number_check ?loc f a =
   try f a
   with
   | Bad_magic_number {filename=fname; actual; expected} ->
-    CErrors.user_err
+    CErrors.user_err ?loc
     (str"File " ++ str fname ++ strbrk" has bad magic number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
   | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
-    CErrors.user_err
+    CErrors.user_err ?loc
     (str"File " ++ str fname ++ strbrk" has bad version number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++

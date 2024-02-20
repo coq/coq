@@ -292,7 +292,7 @@ let synterp_require from export qidl =
   let locate (qid,_) =
     let open Loadpath in
     match locate_qualified_library ?root qid with
-    | Ok (dir,_) -> dir
+    | Ok (dir,_) -> (qid.loc, dir)
     | Error LibUnmappedDir -> Loc.raise ?loc:qid.loc (UnmappedLibrary (root, qid))
     | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
   in
@@ -301,11 +301,11 @@ let synterp_require from export qidl =
   let filenames = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
   Option.iter (fun (export,cats) ->
       let cats = synterp_import_cats cats in
-      List.iter2 (fun m (_,f) ->
+      List.iter2 (fun (_, m) (_, f) ->
           import_module_syntax_with_filter ~export cats (MPfile m) f)
         modrefl qidl)
     export;
-    filenames, modrefl
+    filenames, List.map snd modrefl
 
 (*****************************)
 (* Auxiliary file management *)
