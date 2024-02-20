@@ -384,14 +384,24 @@ val declare_entry
   -> proof_entry
   -> GlobRef.t
 
+(** Declaration of section variables and local definitions *)
+type variable_declaration =
+  | SectionLocalDef of {
+      clearbody : bool;
+      entry : proof_entry;
+    }
+  | SectionLocalAssum of {
+      typ : Constr.types;
+      impl : Glob_term.binding_kind;
+      univs : UState.named_universes_entry;
+    }
+
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
   -> typing_flags:Declarations.typing_flags option
-  -> typ:Constr.types
-  -> impl:Glob_term.binding_kind
-  -> univs:UState.named_universes_entry
+  -> variable_declaration
   -> unit
 
 (** Declaration of global constructions
