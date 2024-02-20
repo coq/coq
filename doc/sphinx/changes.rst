@@ -632,6 +632,68 @@ Extraction
   fixes `#17817 <https://github.com/coq/coq/issues/17817>`_,
   by Hugo Herbelin).
 
+Changes in 8.19.1
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  incorrect abstraction of sort variables for opaque constants
+  leading to an inconsistency
+  (`#18596 <https://github.com/coq/coq/pull/18596>`_
+  and `#18630 <https://github.com/coq/coq/pull/18630>`_,
+  fixes `#18594 <https://github.com/coq/coq/issues/18594>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  memory corruption with :tacn:`vm_compute` (rare but more likely with OCaml 5.1)
+  (`#18599 <https://github.com/coq/coq/pull/18599>`_,
+  by Guillaume Melquiond).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  undeclared universe with multiple uses of :tacn:`abstract`
+  (`#18640 <https://github.com/coq/coq/pull/18640>`_,
+  fixes `#18636 <https://github.com/coq/coq/issues/18636>`_,
+  by Gaëtan Gilbert).
+
+Ltac2 language
+^^^^^^^^^^^^^^
+
+- **Fixed:**
+  incorrect printing of constructor values with multiple arguments,
+  and over-parenthesizing of constructor printing
+  (`#18560 <https://github.com/coq/coq/pull/18560>`_,
+  fixes `#18556 <https://github.com/coq/coq/issues/18556>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  incorrect declared type for `Ltac2.FMap.fold`
+  (`#18649 <https://github.com/coq/coq/pull/18649>`_,
+  fixes `#18635 <https://github.com/coq/coq/issues/18635>`_,
+  by Gaëtan Gilbert).
+
+Infrastructure and dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  missing `conf-` dependencies of the opam packages:
+  `coq-core` depends on `conf-linux-libc-dev` when compiled on linux,
+  and `coq` depends on `conf-python-3` and `conf-time` to run the test suite
+  (`#18565 <https://github.com/coq/coq/pull/18565>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  avoid comitting symlinks to git which caused build failures on some Windows setups
+  (`#18550 <https://github.com/coq/coq/pull/18550>`_,
+  fixes `#18548 <https://github.com/coq/coq/issues/18548>`_,
+  by Gaëtan Gilbert).
 
 Version 8.18
 ------------
