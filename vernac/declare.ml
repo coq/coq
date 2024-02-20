@@ -1960,14 +1960,6 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
-  let sigma, concl =
-    (* FIXME: should be done only if the tactic succeeds *)
-    (* XXX maybe we can fix now that we support evars
-       if close_proof stops caring about is_empty_private_constants we can remove the minimization
-       see #18636 *)
-    let sigma = Evd.minimize_universes sigma in
-    sigma, Evarutil.nf_evar sigma concl
-  in
   let (const, safe, sigma') =
     try build_constant_by_tactic ~warn_incomplete:false ~name ~opaque:Vernacexpr.Transparent ~poly ~sigma ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
