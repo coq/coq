@@ -4,6 +4,8 @@ CONTEXT SUMMARY
 
 * Theory: Set is predicative
   
+* Theory: Rewrite rules are not allowed
+  
 * Axioms: <none>
   
 * Constants/Inductives relying on type-in-type: <none>

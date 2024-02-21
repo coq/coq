@@ -244,7 +244,7 @@ let v_primitive =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]|]
+    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]; [|v_bool|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags"
@@ -341,6 +341,43 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
+let v_instance_mask = Opt (v_pair (Array (Opt Int)) (Array (Opt Int)))
+
+let v_sort_pattern = Sum ("sort_pattern", 3,
+  [|[|Opt Int|];         (* PSType *)
+    [|Opt Int; Opt Int|] (* PSQSort *)
+  |])
+
+let rec v_hpattern = Sum ("head_pattern", 0,
+  [|[|Int|];                      (* PHRel *)
+    [|v_sort_pattern|];           (* PHSort *)
+    [|v_cst; v_instance_mask|];   (* PHSymbol *)
+    [|v_ind; v_instance_mask|];   (* PHInd *)
+    [|v_cons; v_instance_mask|];  (* PHConstr *)
+    [|v_uint63|];                 (* PHInt *)
+    [|Float64|];                  (* PHFloat *)
+    [|Array v_patarg; v_patarg|]; (* PHLambda *)
+    [|Array v_patarg; v_patarg|]; (* PHProd *)
+  |])
+
+and v_elimination = Sum ("pattern_elimination", 0,
+  [|[|Array v_patarg|];                                   (* PEApp *)
+    [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
+    [|v_proj|];                                           (* PEProj *)
+  |])
+
+and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
+
+and v_patarg = Sum ("pattern_argument", 1,
+  [|[|Int|];         (* EHole *)
+    [|v_head_elim|]; (* ERigid *)
+  |])
+
+let v_rewrule = v_tuple "rewrite_rule"
+  [| v_tuple "nvars" [| Int; Int; Int |]; v_pair v_instance_mask (List v_elimination); v_constr |]
+let v_rrb = v_tuple "rewrite_rules_body"
+  [| List (v_pair v_cst v_rewrule) |]
+
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
@@ -352,6 +389,7 @@ let rec v_sfb =
   Sum ("struct_field_body",0,
   [|[|v_cb|];       (* SFBconst *)
     [|v_ind_pack|]; (* SFBmind *)
+    [|v_rrb|];      (* SFBrules *)
     [|v_module|];   (* SFBmodule *)
     [|v_modtype|]   (* SFBmodtype *)
   |])
@@ -380,8 +418,9 @@ and v_modtype =
 
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
+let v_flags = v_tuple "flags" [|v_bool|] (* Allow Rewrite Rules *)
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps; v_flags|]
 
 (** STM objects *)
 

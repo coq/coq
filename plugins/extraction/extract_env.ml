@@ -102,7 +102,7 @@ module Visit : VISIT = struct
 end
 
 let add_field_label mp = function
-  | (lab, (SFBconst _|SFBmind _)) -> Visit.add_kn (KerName.make mp lab)
+  | (lab, (SFBconst _|SFBmind _ | SFBrules _)) -> Visit.add_kn (KerName.make mp lab)
   | (lab, (SFBmodule _|SFBmodtype _)) -> Visit.add_mp_all (MPdot (mp,lab))
 
 let rec add_labels mp = function
@@ -125,7 +125,7 @@ let check_fix env sg cb i =
           | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
           | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
           | _ -> raise Impossible)
-    | Undef _ | OpaqueDef _ | Primitive _ -> raise Impossible
+    | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> raise Impossible
 
 let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
   Array.equal (Context.eq_annot Name.equal) na1 na2 &&
@@ -212,6 +212,9 @@ let rec extract_structure_spec env mp reso = function
       let specs = extract_structure_spec env mp reso msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
+  | (l, SFBrules _) :: msig ->
+      let specs = extract_structure_spec env mp reso msig in
+      specs
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
       let spec = extract_mbody_spec env mb.mod_mp mb in
@@ -314,6 +317,13 @@ let rec extract_structure env mp reso ~all = function
         if (not b) && (logical_decl d) then ms
         else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
+  | (l, SFBrules rrb) :: struc ->
+      let b = List.exists (fun (cst, _) -> Visit.needed_cst cst) rrb.rewrules_rules in
+      let ms = extract_structure env mp reso ~all struc in
+      if all || b then begin
+        List.iter (fun (cst, _) -> Table.add_symbol_rule (ConstRef cst) l) rrb.rewrules_rules;
+        ms
+      end else ms
   | (l,SFBmodule mb) :: struc ->
       let ms = extract_structure env mp reso ~all struc in
       let mp = MPdot (mp,l) in

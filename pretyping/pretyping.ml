@@ -237,6 +237,8 @@ type inference_flags = {
   expand_evars : bool;
   program_mode : bool;
   polymorphic : bool;
+  undeclared_evars_patvars: bool;
+  patvars_abstract : bool;
 }
 
 type pretype_flags = {
@@ -244,6 +246,8 @@ type pretype_flags = {
   resolve_tc : bool;
   program_mode : bool;
   use_coercions : bool;
+  undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
 }
 
 (* Compute the set of still-undefined initial evars up to restriction
@@ -326,9 +330,19 @@ let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen
     else
       sigma) pending sigma
 
-let apply_heuristics env sigma =
+let allow_all_but_patvars sigma =
+  let p evk =
+    try
+      let EvarInfo evi = Evd.find sigma evk in
+      match snd (Evd.evar_source evi) with Evar_kinds.MatchingVar _ -> false | _ -> true
+    with Not_found -> true
+  in
+  Evarsolve.AllowedEvars.from_pred p
+
+let apply_heuristics ~patvars_abstract env sigma =
   (* Resolve eagerly, potentially making wrong choices *)
   let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
+  let flags = if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags in
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e -> sigma
 
@@ -392,7 +406,7 @@ let solve_remaining_evars ?hook (flags : inference_flags) env ?initial sigma =
   | Some hook -> apply_inference_hook hook env sigma frozen
   in
   let sigma = if flags.solve_unification_constraints
-    then apply_heuristics env sigma
+    then apply_heuristics ~patvars_abstract:flags.patvars_abstract env sigma
     else sigma
   in
   if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen;
@@ -422,10 +436,10 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions } env sigma j = function
+let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions !!env sigma j t
+    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract !!env sigma j t
 
 let check_instance subst = function
   | [] -> ()
@@ -634,10 +648,13 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
     let id = NamedDecl.get_id decl in
     let b = Option.map (replace_vars sigma subst) (NamedDecl.get_value decl) in
     let t = replace_vars sigma subst (NamedDecl.get_type decl) in
+    let uflags = default_flags_of TransparentState.full in
+    let uflags = if flags.patvars_abstract then { uflags with allowed_evars = allow_all_but_patvars sigma } else uflags in
     let check_body sigma id c =
       match b, c with
-      | Some b, Some c ->
-         if not (is_conv !!env sigma b c) then
+      | Some b, Some c -> begin
+         try (Evarconv.unify_delay ~flags:uflags !!env sigma b c)
+         with UnableToUnify (sigma, _) ->
            user_err ?loc  (str "Cannot interpret " ++
              pr_existential_key !!env sigma evk ++
              strbrk " in current context: binding for " ++ Id.print id ++
@@ -646,14 +663,16 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
              strbrk " and " ++
              quote (Termops.Internal.print_constr_env !!env sigma c) ++
              str ").")
+         end
       | Some b, None ->
            user_err ?loc  (str "Cannot interpret " ++
              pr_existential_key !!env sigma evk ++
              strbrk " in current context: " ++ Id.print id ++
              strbrk " should be bound to a local definition.")
-      | None, _ -> () in
+      | None, _ -> sigma in
     let check_type sigma id t' =
-      if not (is_conv !!env sigma t t') then
+      try (Evarconv.unify_delay ~flags:uflags !!env sigma t t')
+      with UnableToUnify (sigma, _) ->
         user_err ?loc  (str "Cannot interpret " ++
           pr_existential_key !!env sigma evk ++
           strbrk " in current context: binding for " ++ Id.print id ++
@@ -662,19 +681,19 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
       try
         let c = snd (List.find (fun (CAst.{v=id'},c) -> Id.equal id id') update) in
         let sigma, c = eval_pretyper self ~flags (mk_tycon t) env sigma c in
-        check_body sigma id (Some c.uj_val);
+        let sigma = check_body sigma id (Some c.uj_val) in
         sigma, c.uj_val, List.remove_first (fun (CAst.{v=id'},_) -> Id.equal id id') update
       with Not_found ->
       try
         let (n,b',t') = lookup_rel_id id (rel_context !!env) in
-        check_type sigma id (lift n t');
-        check_body sigma id (Option.map (lift n) b');
+        let sigma = check_type sigma id (lift n t') in
+        let sigma = check_body sigma id (Option.map (lift n) b') in
         sigma, mkRel n, update
       with Not_found ->
       try
         let decl = lookup_named id !!env in
-        check_type sigma id (NamedDecl.get_type decl);
-        check_body sigma id (NamedDecl.get_value decl);
+        let sigma = check_type sigma id (NamedDecl.get_type decl) in
+        let sigma = check_body sigma id (NamedDecl.get_value decl) in
         sigma, mkVar id, update
       with Not_found ->
         user_err ?loc  (str "Cannot interpret " ++
@@ -705,9 +724,17 @@ struct
       (* Ne faudrait-il pas s'assurer que hyps est bien un
          sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let id = interp_ltac_id env id in
-      let evk =
-        try Evd.evar_key id sigma
-        with Not_found -> error_evar_not_found ?loc:locid !!env sigma id in
+      let sigma, evk =
+        match Evd.evar_key id sigma with
+        | evk -> sigma, evk
+        | exception Not_found ->
+            if flags.undeclared_evars_patvars then
+              let k = Evar_kinds.(MatchingVar (FirstOrderPatVar id)) in
+              let sigma, uj_val, _ = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
+              sigma, fst (destEvar sigma uj_val)
+            else
+              error_evar_not_found ?loc:locid !!env sigma id
+      in
       let EvarInfo evi = Evd.find sigma evk in
       let hyps = evar_filtered_context evi in
       let sigma, args = pretype_instance self ~flags env sigma loc hyps evk inst in
@@ -1447,6 +1474,8 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
     program_mode = flags.program_mode;
     use_coercions = flags.use_coercions;
     poly = flags.polymorphic;
+    undeclared_evars_patvars = flags.undeclared_evars_patvars;
+    patvars_abstract = flags.patvars_abstract;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
       | UseTC | UseTCForConv -> true
@@ -1480,6 +1509,8 @@ let default_inference_flags fail = {
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  undeclared_evars_patvars = false;
+  patvars_abstract = false;
 }
 
 let no_classes_no_fail_inference_flags = {
@@ -1490,6 +1521,8 @@ let no_classes_no_fail_inference_flags = {
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  undeclared_evars_patvars = false;
+  patvars_abstract = false;
 }
 
 let all_and_fail_flags = default_inference_flags true

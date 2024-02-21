@@ -38,6 +38,10 @@ sig
 
   val findi : (int -> 'a -> bool) -> 'a array -> int option
 
+  val find2_map : ('a -> 'b -> 'c option) -> 'a array -> 'b array -> 'c option
+  (** First result which is not None, or None;
+      [Failure "Array.find2_map"] if the arrays don't have the same length *)
+
   val hd : 'a array -> 'a
   (** First element of an array, or [Failure "Array.hd"] if empty. *)
 
@@ -68,6 +72,8 @@ sig
     ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'e array -> 'a
   val fold_left2_i :
     (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
+  val fold_left3_i :
+    (int -> 'a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
@@ -81,6 +87,9 @@ sig
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
   val split : ('a * 'b) array -> 'a array * 'b array
+  val split3 : ('a * 'b * 'c) array -> 'a array * 'b array * 'c array
+  val split4 : ('a * 'b * 'c * 'd) array -> 'a array * 'b array * 'c array * 'd array
+  val transpose : 'a array array -> 'a array array
 
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
@@ -103,6 +112,9 @@ sig
 
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   (** Same, folding on the right *)
+
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  (** Same than [fold_left_map] but passing the index of the array *)
 
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   (** Same with two arrays, folding on the left; see also [Smart.fold_left2_map] *)

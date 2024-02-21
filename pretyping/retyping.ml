@@ -354,8 +354,11 @@ let relevance_of_term env sigma c =
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, r, _) -> r
+      | Evar (evk, _) ->
+          let evi = Evd.find_undefined sigma evk in
+          Evd.evar_relevance evi
       | Int _ | Float _ | Array _ -> Sorts.Relevant
-      | Meta _ | Evar _ -> Sorts.Relevant
+      | Meta _ -> Sorts.Relevant
 
     in
     aux Range.empty c

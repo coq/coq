@@ -326,6 +326,17 @@ let map2 f l1 l2 = match l1, l2 with
     cast c
   | _ -> invalid_arg "List.map2"
 
+(* remove when requiring OCaml >= 5.1.0 *)
+let rec concat_map_loop f p = function
+  | [] -> ()
+  | x :: l -> concat_map_loop f (copy p (f x)) l
+
+(* remove when requiring OCaml >= 5.1.0 *)
+let concat_map f l =
+  let dummy = { head = Obj.magic 0; tail = [] } in
+  concat_map_loop f dummy l;
+  dummy.tail
+
 (** Like OCaml [List.mapi] but tail-recursive *)
 
 let rec map_i_loop f i p = function
@@ -383,6 +394,26 @@ let map4 f l1 l2 l3 l4 = match l1, l2, l3, l4 with
     map4_loop f c l1 l2 l3 l4;
     cast c
   | _ -> invalid_arg "List.map4"
+
+let rec map_until_loop f p = function
+  | [] -> []
+  | x :: l as l' ->
+    match f x with
+    | None -> l'
+    | Some fx ->
+      let c = { head = fx; tail = [] } in
+      p.tail <- cast c;
+      map_until_loop f c l
+
+let map_until f = function
+  | [] -> [], []
+  | x :: l as l' ->
+    match f x with
+    | None -> [], l'
+    | Some fx ->
+    let c = { head = fx; tail = [] } in
+    let l = map_until_loop f c l in
+    cast c, l
 
 let rec map_of_array_loop f p a i l =
   if Int.equal i l then ()

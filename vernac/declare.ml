@@ -125,6 +125,12 @@ type primitive_entry = {
   prim_entry_content : CPrimitives.op_or_type;
 }
 
+type symbol_entry = {
+  symb_entry_type : Constr.types;
+  symb_entry_unfold_fix: bool;
+  symb_entry_universes : UState.named_universes_entry;
+}
+
 let default_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty
 let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
@@ -155,10 +161,17 @@ let primitive_entry ?types c = {
   prim_entry_content = c;
 }
 
+let symbol_entry ?(univs=default_named_univ_entry) ~unfold_fix symb_entry_type = {
+  symb_entry_universes = univs;
+  symb_entry_unfold_fix = unfold_fix;
+  symb_entry_type;
+}
+
 type constant_entry =
   | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
+  | SymbolEntry of symbol_entry
 
 let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
 
@@ -424,6 +437,16 @@ let declare_constant_core ~name ~typing_flags cd =
       } in
       let ubinders = (UState.Monomorphic_entry ctx, ubinders) in
       ConstantEntry (Entries.PrimitiveEntry e), false, ubinders, None
+    | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
+      let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
+      let () = Global.push_context_set ~strict:true ctx in
+      let e = {
+        Entries.symb_entry_type = typ;
+        Entries.symb_entry_unfold_fix = un_fix;
+        Entries.symb_entry_universes = univ_entry;
+      } in
+      let ubinders = make_ubinders ctx entry_univs in
+      ConstantEntry (Entries.SymbolEntry e), false, ubinders, None
   in
   let kn = Global.add_constant ?typing_flags name decl in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
@@ -442,7 +465,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
     | OpaqueDef o ->
       let (_, _, _, i) = Opaqueproof.repr o in
       Opaques.declare_defined_opaque ?feedback_id i body
-    | Def _ | Undef _ | Primitive _ -> assert false
+    | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = register_constant kn kind local ?user_warns in
   kn

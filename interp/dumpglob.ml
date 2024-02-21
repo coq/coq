@@ -110,6 +110,7 @@ let type_of_logical_kind = function
       | Proposition
       | Corollary -> "thm")
   | IsPrimitive -> "prim"
+  | IsSymbol -> "symb"
 
 
 (** Data associated to global parameters and constants *)

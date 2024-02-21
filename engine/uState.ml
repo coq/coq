@@ -950,6 +950,11 @@ let restrict_even_binders uctx vars =
   let uctx' = restrict_universe_context ~lbound:uctx.universes_lbound uctx.local vars in
   { uctx with local = uctx' }
 
+let restrict_constraints uctx csts =
+  let levels, _ = uctx.local in
+  let uctx' = { uctx with local = ContextSet.of_set levels; universes = uctx.initial_universes } in
+  add_constraints uctx' csts
+
 type rigid =
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
@@ -1176,6 +1181,57 @@ let minimize uctx =
         universes_lbound = lbound;
         initial_universes = uctx.initial_universes;
         minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
+
+let universe_context_inst_decl decl qvars levels names =
+  let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in
+  let leftus = List.fold_left (fun acc l -> Level.Set.remove l acc) levels decl.univdecl_instance in
+  let () =
+    let unboundus = if decl.univdecl_extensible_instance then Level.Set.empty else leftus in
+    if not (QVar.Set.is_empty leftqs && Level.Set.is_empty unboundus)
+    then error_unbound_universes leftqs unboundus names
+  in
+  let instq = Array.map_of_list (fun q -> Quality.QVar q) decl.univdecl_qualities in
+  let instu = Array.of_list decl.univdecl_instance in
+  let inst = Instance.of_array (instq,instu) in
+  inst
+
+let check_univ_decl_rev uctx decl =
+  let levels, csts = uctx.local in
+  let qvars = QState.undefined uctx.sort_variables in
+  let inst = universe_context_inst_decl decl qvars levels uctx.names in
+  let nas = compute_instance_binders (snd uctx.names) inst in
+  let () =
+    check_implication uctx
+    csts
+    decl.univdecl_constraints
+  in
+  let uctx = fix_undefined_variables uctx in
+  let uctx, csts =
+    if decl.univdecl_extensible_constraints
+    then uctx, csts else restrict_constraints uctx decl.univdecl_constraints, decl.univdecl_constraints
+  in
+  let uctx' = UContext.make nas (inst, csts) in
+  uctx, uctx'
+
+let check_uctx_impl ~fail uctx uctx' =
+  let levels, csts = uctx'.local in
+  let qvars_diff =
+    QVar.Set.diff
+      (QState.undefined uctx'.sort_variables)
+      (QState.undefined uctx.sort_variables)
+  in
+  let levels_diff = Level.Set.diff levels (fst uctx.local) in
+  let () = if not @@ (QVar.Set.is_empty qvars_diff && Level.Set.is_empty levels_diff) then
+    error_unbound_universes qvars_diff levels_diff uctx'.names
+  in
+  let () =
+    let grext = ugraph uctx in
+    let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) csts in
+    if Constraints.is_empty cstrs' then ()
+    else fail (Constraints.pr (pr_uctx_level uctx) cstrs')
+  in
+  ()
+
 
 (* XXX print above_prop too *)
 let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =

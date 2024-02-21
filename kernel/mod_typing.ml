@@ -29,7 +29,7 @@ let rec mp_from_mexpr = function
 
 let is_modular = function
   | SFBmodule _ | SFBmodtype _ -> true
-  | SFBconst _ | SFBmind _ -> false
+  | SFBconst _ | SFBmind _ | SFBrules _ -> false
 
 (** Split a [structure_body] at some label corresponding to
     a modular definition or not. *)
@@ -93,7 +93,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               cst
             | Def c' ->
               infer_gen_conv (cst, ustate) env' wth.w_def c'
-            | Primitive _ ->
+            | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
           in
           cst
@@ -118,7 +118,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
                 try Conversion.conv env' wth.w_def c'
                 with Conversion.NotConvertible -> error_incorrect_with_constraint lab
               end
-            | Primitive _ ->
+            | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
           in
           cst

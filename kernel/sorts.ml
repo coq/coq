@@ -460,3 +460,21 @@ let pr_sort_family = function
   | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")
   | InQSort -> Pp.(str "Type") (* FIXME? *)
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+
+let algebraic = function
+  | Type u -> u
+  | QSort (_, u) -> u
+  | Prop | SProp | Set -> Univ.Universe.type0
+
+let pattern_match ps s qusubst =
+  match ps, s with
+  | PSProp, Prop -> Some qusubst
+  | PSSProp, SProp -> Some qusubst
+  | PSSet, Set -> Some qusubst
+  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Universe.type0 qusubst)
+  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio u qusubst)
+  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (algebraic s))
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> None

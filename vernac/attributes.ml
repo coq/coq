@@ -277,6 +277,9 @@ let template =
   qualify_attribute ukey
     (bool_attribute ~name:"template")
 
+let unfold_fix =
+  enable_attribute ~key:"unfold_fix" ~default:(fun () -> false)
+
 let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
   assert_once ?loc ~name:"deprecation" orig;
   match args with

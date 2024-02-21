@@ -377,35 +377,11 @@ let is_primitive_record (mib,_) =
     [instantiate_context u subst nas ctx] applies both [u] and [subst] to [ctx]
     while replacing names using [nas] (order reversed)
 *)
-let instantiate_context u subst nas ctx =
-  let rec instantiate i ctx = match ctx with
-  | [] -> assert (Int.equal i (-1)); []
-  | LocalAssum (na, ty) :: ctx ->
-    let ctx = instantiate (pred i) ctx in
-    let ty = substnl subst i (subst_instance_constr u ty) in
-    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
-    LocalAssum (na, ty) :: ctx
-  | LocalDef (na, ty, bdy) :: ctx ->
-    let ctx = instantiate (pred i) ctx in
-    let ty = substnl subst i (subst_instance_constr u ty) in
-    let bdy = substnl subst i (subst_instance_constr u bdy) in
-    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
-    LocalDef (na, ty, bdy) :: ctx
-  in
-  instantiate (Array.length nas - 1) ctx
+let instantiate_context = Environ.instantiate_context
 
-let expand_arity (mib, mip) (ind, u) params nas =
-  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let params = Vars.subst_of_rel_context_instance paramdecl params in
-  let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
-  let self =
-    let u = Instance.abstract_instance (Instance.length u) in
-    let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-    mkApp (mkIndU (ind, u), args)
-  in
-  let na = Context.make_annot Anonymous (relevance_of_ind_body mip u)  in
-  let realdecls = LocalAssum (na, self) :: realdecls in
-  instantiate_context u params nas realdecls
+let expand_arity = Environ.expand_arity
+
+let expand_branch_contexts = Environ.expand_branch_contexts
 
 type ('constr,'types) pexpanded_case =
   (case_info * ('constr * Sorts.relevance) * 'constr pcase_invert * 'constr * 'constr array)

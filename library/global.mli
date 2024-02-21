@@ -38,6 +38,8 @@ val set_check_universes : bool -> unit
 val typing_flags : unit -> typing_flags
 val set_allow_sprop : bool -> unit
 val sprop_allowed : unit -> bool
+val set_rewrite_rules_allowed : bool -> unit
+val rewrite_rules_allowed : unit -> bool
 
 (** Variables, Local definitions, constants, inductive types *)
 
@@ -55,6 +57,7 @@ val add_constant :
 val fill_opaque : Safe_typing.opaque_certificate -> unit
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
+val add_rewrite_rules : Id.t -> rewrite_rules_body -> unit
 val add_mind :
   ?typing_flags:typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t

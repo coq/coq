@@ -99,6 +99,8 @@ val projection_info : GlobRef.t -> inductive * int (* arity *)
 val add_info_axiom : GlobRef.t -> unit
 val remove_info_axiom : GlobRef.t -> unit
 val add_log_axiom : GlobRef.t -> unit
+val add_symbol : GlobRef.t -> unit
+val add_symbol_rule : GlobRef.t -> Label.t -> unit
 
 val add_opaque : GlobRef.t -> unit
 val remove_opaque : GlobRef.t -> unit

@@ -220,10 +220,13 @@ let projection_info r = GlobRef.Map.find r !projs
 
 let info_axioms = ref Refset'.empty
 let log_axioms = ref Refset'.empty
-let init_axioms () = info_axioms := Refset'.empty; log_axioms := Refset'.empty
+let symbols = ref Refmap'.empty
+let init_axioms () = info_axioms := Refset'.empty; log_axioms := Refset'.empty; symbols := Refmap'.empty
 let add_info_axiom r = info_axioms := Refset'.add r !info_axioms
 let remove_info_axiom r = info_axioms := Refset'.remove r !info_axioms
 let add_log_axiom r = log_axioms := Refset'.add r !log_axioms
+let add_symbol r = symbols := Refmap'.update r (function Some l -> Some l | _ -> Some []) !symbols
+let add_symbol_rule r l = symbols := Refmap'.update r (function Some lst -> Some (l :: lst) | _ -> Some [l]) !symbols
 
 let opaques = ref Refset'.empty
 let init_opaques () = opaques := Refset'.empty
@@ -323,13 +326,30 @@ let warn_extraction_logical_axiom =
            ++ spc () ++ strbrk "may lead to incorrect or non-terminating ML terms." ++
              fnl ()))
 
+let warn_extraction_symbols =
+  let pp_symb_with_rules (symb, rules) =
+    safe_pr_global symb ++
+    if List.is_empty rules then str " (no rules)" else
+    str ":" ++ spc() ++ prlist_with_sep spc Label.print rules
+  in
+  CWarnings.create ~name:"extraction-symbols" ~category:CWarnings.CoreCategories.extraction
+    (fun symbols ->
+      strbrk ("The following symbols and rules were encountered:") ++ fnl () ++
+      prlist_with_sep fnl pp_symb_with_rules symbols ++ fnl () ++
+      strbrk "The symbols must be realized such that the rewrite rules apply," ++ spc () ++
+      strbrk "or extraction may lead to incorrect or non-terminating ML terms." ++
+      fnl ())
+
 let warning_axioms () =
   let info_axioms = Refset'.elements !info_axioms in
   if not (List.is_empty info_axioms) then
     warn_extraction_axiom_to_realize info_axioms;
   let log_axioms = Refset'.elements !log_axioms in
   if not (List.is_empty log_axioms) then
-    warn_extraction_logical_axiom log_axioms
+    warn_extraction_logical_axiom log_axioms;
+  let symbols = Refmap'.bindings !symbols in
+  if not (List.is_empty symbols) then
+    warn_extraction_symbols symbols
 
 let warn_extraction_opaque_accessed =
   CWarnings.create ~name:"extraction-opaque-accessed" ~category:CWarnings.CoreCategories.extraction

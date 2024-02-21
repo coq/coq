@@ -1798,7 +1798,7 @@ let rec invert_definition unify flags choose imitate_defs
 
 and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (evk,argsv as ev) rhs =
   match EConstr.kind evd rhs with
-  | Evar (evk2,argsv2 as ev2) ->
+  | Evar (evk2,argsv2 as ev2) when is_evar_allowed flags evk2 ->
       if Evar.equal evk evk2 then
         solve_refl ~can_drop:choose
           (test_success unify) flags env evd pbty evk argsv argsv2

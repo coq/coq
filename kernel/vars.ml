@@ -487,6 +487,68 @@ let subst_instance_context s ctx =
         RelDecl.map_constr (subst_instance_constr s) d)
       ctx
 
+let subst_ainstance_constr subst c =
+  if UVars.AInstance.is_empty subst then c
+  else
+    let f u = UVars.subst_ainstance_instance subst u in
+    let rec aux t =
+      let t = if CArray.is_empty (fst (UVars.AInstance.to_array subst)) then t
+        else map_constr_relevance (UVars.subst_ainstance_relevance subst) t
+      in
+      match kind t with
+      | Const (c, u) ->
+       if UVars.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (mkConstU (c, u'))
+      | Ind (i, u) ->
+       if UVars.Instance.is_empty u then t
+       else
+         let u' = f u in
+           if u' == u then t
+           else (mkIndU (i, u'))
+      | Construct (c, u) ->
+       if UVars.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (mkConstructU (c, u'))
+      | Sort s ->
+        let s' = UVars.subst_ainstance_sort subst s in
+        if s' == s then t else mkSort s'
+
+      | Case (ci, u, pms, p, iv, c, br) ->
+        let u' = f u in
+        if u' == u then Constr.map aux t
+        else Constr.map aux (mkCase (ci,u',pms,p,iv,c,br))
+
+      | Array (u,elems,def,ty) ->
+        let u' = f u in
+        let elems' = CArray.Smart.map aux elems in
+        let def' = aux def in
+        let ty' = aux ty in
+        if u == u' && elems == elems' && def == def' && ty == ty' then t
+        else mkArray (u',elems',def',ty')
+
+      | _ -> Constr.map aux t
+    in
+    aux c
+
+let iter_on_instance f fs c =
+  let rec aux c =
+    match kind c with
+    | Const (_, u) | Ind (_, u) | Construct (_,u) -> f u
+    | Sort (Sorts.Type u) -> fs u
+    | Sort (Sorts.QSort (_,u)) -> fs u
+    | Array (u,_,_,_) -> f u;
+      Constr.iter aux c
+    | Case (_, u, _, _, _,_ ,_) -> f u;
+      Constr.iter aux c
+    | _ -> Constr.iter aux c
+  in aux c
+
+
 let add_qvars_and_univs_of_instance (qs,us) u =
   let qs', us' = UVars.Instance.to_array u in
   let qs = Array.fold_left (fun qs q ->

@@ -806,6 +806,8 @@ gallina: [
 | assumption_token inline assum_list
 | assumptions_token inline assum_list
 | def_token ident_decl def_body
+| "Symbol" assum_list
+| "Symbols" assum_list
 | "Let" ident_decl def_body
 | finite_token inductive_or_record_definition
 | inductive_token LIST1 inductive_or_record_definition SEP "with"
@@ -823,6 +825,8 @@ gallina: [
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
+| "Rewrite" "Rule" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| "Rewrite" "Rules" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 ]
 
 register_token: [
@@ -975,6 +979,14 @@ fix_definition: [
 
 cofix_definition: [
 | ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+]
+
+rw_pattern: [
+| lconstr
+]
+
+rewrite_rule: [
+| OPT [ univ_decl "|-" ] rw_pattern "==>" lconstr
 ]
 
 scheme: [
@@ -1396,6 +1408,7 @@ logical_kind: [
 | "Context"
 | extended_def_token
 | "Primitive"
+| "Symbol"
 ]
 
 extended_def_token: [

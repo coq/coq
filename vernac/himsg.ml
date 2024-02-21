@@ -1149,6 +1149,8 @@ let explain_not_match_error = function
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
     str "incompatible variance information"
+  | NoRewriteRulesSubtyping ->
+    strbrk "subtyping for rewrite rule blocks is not supported"
 
 let rec get_submodules acc = function
   | [] -> acc, []
@@ -1559,6 +1561,14 @@ let explain_prim_token_notation_error kind env sigma = function
      pr_constr_env env sigma c ++
      strbrk (" while parsing a "^kind^" notation."))
 
+(* Rewrite rules errors *)
+
+let error_not_allowed_rewrite_rules symb_or_rule =
+  str (match symb_or_rule with Rule -> "Rewrite rule" | Symb -> "Symbol") ++ spc () ++
+  strbrk "declaration requires passing the flag " ++
+  strbrk "\"-allow-rewrite-rules\"."
+
+
 (** Registration of generic errors
     Nota: explain_exn does NOT end with a newline anymore!
 *)
@@ -1626,6 +1636,8 @@ let rec vernac_interp_error_handler = function
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
+  | Environ.RewriteRulesNotAllowed symb_or_rule ->
+    error_not_allowed_rewrite_rules symb_or_rule
   | _ ->
     raise Unhandled
 

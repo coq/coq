@@ -164,6 +164,7 @@ let init_runtime opts =
   Global.set_check_universes (not opts.config.logic.type_in_type);
   Global.set_VM opts.config.enable_VM;
   Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
+  Global.set_rewrite_rules_allowed opts.config.logic.rewrite_rules;
 
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;

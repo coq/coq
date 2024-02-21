@@ -2352,6 +2352,13 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacAssumption ((discharge,kind),nl,l) ->
     vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
 
+  | VernacSymbol l ->
+    vtdefault (fun () ->
+      let unfold_fix, poly =
+        Attributes.(parse Notations.(unfold_fix ++ polymorphic)) atts
+      in
+        ComRewriteRule.do_symbols ~poly ~unfold_fix l)
+
   | VernacInductive (finite, l) ->
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
@@ -2388,6 +2395,11 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
+
+  | VernacAddRewRule (id, c) ->
+    vtdefault (fun () ->
+        unsupported_attributes atts;
+        ComRewriteRule.do_rules id.v c)
 
   (* Gallina extensions *)
 

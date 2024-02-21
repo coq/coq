@@ -125,6 +125,11 @@ val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 val repr_certificate : opaque_certificate ->
   Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
 
+(** {5 Rewrite rules} *)
+
+(** Add a rewrite rule corresponding to the equality witnessed by the constant. *)
+val add_rewrite_rules : Label.t -> Declarations.rewrite_rules_body -> safe_environment -> safe_environment
+
 (** {5 Inductive blocks} *)
 
 (** Adding an inductive type *)
@@ -155,6 +160,7 @@ val add_constraints :
 (* val next_universe : int safe_transformer *)
 
 (** Setting the type theory flavor *)
+val set_rewrite_rules_allowed : bool -> safe_transformer0
 val set_impredicative_set : bool -> safe_transformer0
 val set_indices_matter : bool -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
@@ -229,6 +235,7 @@ type compiled_library
 
 val module_of_library : compiled_library -> Declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
+val check_flags_for_library : compiled_library -> safe_transformer0
 
 val start_library : DirPath.t -> ModPath.t safe_transformer
 

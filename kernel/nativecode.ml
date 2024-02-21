@@ -2254,6 +2254,15 @@ let compile_mind_field mp l acc mb =
   let mind = MutInd.make2 mp l in
   compile_mind mb mind acc
 
+let warn_native_rules =
+  CWarnings.create ~name:"native-rewrite-rules"
+    (fun lbl -> Pp.(str "Cannot translate the following rewrite rules: " ++ Label.print lbl))
+
+let compile_rewrite_rules _env lbl acc rrb =
+  warn_native_rules lbl;
+  ignore rrb; (* TODO *)
+  acc
+
 let mk_open s = Gopen s
 
 let mk_internal_let s code =

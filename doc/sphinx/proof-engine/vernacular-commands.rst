@@ -189,7 +189,7 @@ described elsewhere
 
       .. prodn::
          logical_kind ::= {| @thm_token | @assumption_token }
-         | {| Definition | Example | Context | Primitive }
+         | {| Definition | Example | Context | Primitive | Symbol }
          | {| Coercion | Instance | Scheme | Canonical | SubClass }
          | {| Field | Method }
 

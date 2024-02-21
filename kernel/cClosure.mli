@@ -102,14 +102,20 @@ val usubst_binder : _ UVars.puniverses -> 'a Context.binder_annot -> 'a Context.
 
 val inject : constr -> fconstr
 
+val mk_clos      : usubs -> constr -> fconstr
+val mk_clos_vect : usubs -> constr array -> fconstr array
+
 (** mk_atom: prevents a term from being evaluated *)
 val mk_atom : constr -> fconstr
 
 (** mk_red: makes a reducible term (used in ring) *)
 val mk_red : fterm -> fconstr
 
+val zip : fconstr -> stack -> fconstr
+
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
+val term_of_process : fconstr -> stack -> constr
 val destFLambda :
   (usubs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
 
@@ -200,24 +206,3 @@ val unfold_ref_with_args
 
 (** Hook for Reduction *)
 val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
-
-(***********************************************************************
-  i This is for lazy debug *)
-
-val lift_fconstr      : int -> fconstr -> fconstr
-val lift_fconstr_vect : int -> fconstr array -> fconstr array
-
-val mk_clos      : usubs -> constr -> fconstr
-val mk_clos_vect : usubs -> constr array -> fconstr array
-
-val kni: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
-val knr: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
-val kl : clos_infos -> clos_tab -> fconstr -> constr
-
-val zip : fconstr -> stack -> fconstr
-
-val term_of_process : fconstr -> stack -> constr
-
-val to_constr : lift UVars.puniverses -> fconstr -> constr
-
-(** End of cbn debug section i*)

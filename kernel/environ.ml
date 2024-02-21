@@ -84,9 +84,13 @@ type env = {
   env_qualities : Sorts.QVar.Set.t;
   irr_constants : Sorts.relevance Cmap_env.t;
   irr_inds : Sorts.relevance Indmap_env.t;
+  symb_pats: rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
+  rewrite_rules_allowed: bool;
 }
+type rewrule_not_allowed = Symb | Rule
+exception RewriteRulesNotAllowed of rewrule_not_allowed
 
 let empty_named_context_val = {
   env_named_ctx = [];
@@ -114,8 +118,10 @@ let empty_env = {
   env_qualities = Sorts.QVar.Set.empty;
   irr_constants = Cmap_env.empty;
   irr_inds = Indmap_env.empty;
+  symb_pats = Cmap_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
+  rewrite_rules_allowed = false;
 }
 
 
@@ -218,6 +224,16 @@ let lookup_constant kn env =
 
 let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
+let add_rewrite_rules l env =
+  if not env.rewrite_rules_allowed then raise (RewriteRulesNotAllowed Rule);
+  let add c r = function
+    | None -> anomaly Pp.(str "Trying to add a rule to non-symbol " ++ Constant.print c ++ str".")
+    | Some rs -> Some (r::rs)
+  in
+  { env with
+    symb_pats = List.fold_left (fun symb_pats (c, r) -> Cmap_env.update c (add c r) symb_pats) env.symb_pats l
+  }
+
 (* Mutual Inductives *)
 let lookup_mind_key kn env =
   match Mindmap_env.find_opt kn env.env_globals.Globals.inductives with
@@ -227,6 +243,59 @@ let lookup_mind_key kn env =
 
 let lookup_mind kn env =
   fst (lookup_mind_key kn env)
+
+
+(** {6 Changes of representation of Case nodes} *)
+
+(** Provided:
+    - a universe instance [u]
+    - a term substitution [subst]
+    - name replacements [nas]
+    [instantiate_context u subst nas ctx] applies both [u] and [subst] to [ctx]
+    while replacing names using [nas] (order reversed)
+*)
+let instantiate_context u subst nas ctx =
+  let open Context.Rel.Declaration in
+  let rec instantiate i ctx = match ctx with
+  | [] -> assert (Int.equal i (-1)); []
+  | LocalAssum (na, ty) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    LocalAssum (na, ty) :: ctx
+  | LocalDef (na, ty, bdy) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    let bdy = substnl subst i (subst_instance_constr u bdy) in
+    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    LocalDef (na, ty, bdy) :: ctx
+  in
+  instantiate (Array.length nas - 1) ctx
+
+let expand_arity (mib, mip) (ind, u) params nas =
+  let open Context.Rel.Declaration in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let params = Vars.subst_of_rel_context_instance paramdecl params in
+  let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+  let self =
+    let u = UVars.Instance.abstract_instance (UVars.Instance.length u) in
+    let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+    mkApp (mkIndU (ind, u), args)
+  in
+  let na = Context.make_annot Anonymous (UVars.subst_instance_relevance u mip.mind_relevance)  in
+  let realdecls = LocalAssum (na, self) :: realdecls in
+  instantiate_context u params nas realdecls
+
+let expand_branch_contexts (mib, mip) u params br =
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl params in
+  let build_one_branch i (nas, _) (ctx, _) =
+    let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+    let ctx = instantiate_context u paramsubst nas ctx in
+    ctx
+  in
+  Array.map2_i build_one_branch br mip.mind_nf_lc
+
 
 let mem_mind kn env = Mindmap_env.mem kn env.env_globals.Globals.inductives
 
@@ -474,6 +543,19 @@ let set_allow_sprop b env =
 
 let sprop_allowed env = env.env_typing_flags.sprop_allowed
 
+let allow_rewrite_rules env =
+  (* We need to be safe with reduction machines *)
+  let flags = typing_flags env in
+  let env = set_typing_flags
+    { flags with
+      enable_VM = false;
+      enable_native_compiler = false }
+    env
+  in
+  { env with rewrite_rules_allowed = true }
+
+let rewrite_rules_allowed env = env.rewrite_rules_allowed
+
 (* Global constants *)
 
 let no_link_info = NotLinked
@@ -489,7 +571,14 @@ let add_constant_key kn cb linkinfo env =
     then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
   in
-  { env with irr_constants; env_globals = new_globals }
+  let symb_pats =
+    match cb.const_body with
+    | Symbol _ ->
+      if not env.rewrite_rules_allowed then raise (RewriteRulesNotAllowed Symb);
+      Cmap_env.add kn [] env.symb_pats
+    | _ -> env.symb_pats
+  in
+  { env with irr_constants; symb_pats; env_globals = new_globals }
 
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
@@ -505,6 +594,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of UVars.Instance.t * CPrimitives.t
+  | HasRules of UVars.Instance.t * bool * rewrite_rule list
 
 exception NotEvaluableConst of const_evaluation_result
 
@@ -515,7 +605,7 @@ let constant_value_and_type env (kn, u) =
   let b' = match cb.const_body with
     | Def l_body -> Some (subst_instance_constr u l_body)
     | OpaqueDef _ -> None
-    | Undef _ | Primitive _ -> None
+    | Undef _ | Primitive _ | Symbol _ -> None
   in
   b', subst_instance_constr u cb.const_type, cst
 
@@ -536,6 +626,10 @@ let constant_value_in env (kn,u) =
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+    | Symbol b ->
+        match Cmap_env.find_opt kn env.symb_pats with
+        | Some r -> raise (NotEvaluableConst (HasRules (u, b, r)))
+        | None -> assert false
 
 let constant_opt_value_in env cst =
   try Some (constant_value_in env cst)
@@ -547,12 +641,18 @@ let evaluable_constant kn env =
     match cb.const_body with
     | Def _ -> true
     | OpaqueDef _ -> false
-    | Undef _ | Primitive _ -> false
+    | Undef _ | Primitive _ | Symbol _ -> false
 
 let is_primitive env c =
   let cb = lookup_constant c env in
   match cb.Declarations.const_body with
   | Declarations.Primitive _ -> true
+  | _ -> false
+
+let is_symbol env c =
+  let cb = lookup_constant c env in
+  match cb.Declarations.const_body with
+  | Declarations.Symbol _ -> true
   | _ -> false
 
 let get_primitive env c =

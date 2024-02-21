@@ -203,6 +203,7 @@ let nametab_register_body mp dir (l,body) =
   match body with
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
+    | SFBrules _ -> () (* TODO? *)
     | SFBconst _ ->
       push (Label.to_id l) (GlobRef.ConstRef (Constant.make2 mp l))
     | SFBmind mib ->
@@ -255,6 +256,7 @@ let print_body is_impl extent env mp (l,body) =
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
+    | SFBrules _ -> keyword "Rewrite Rule" ++ spc () ++ name (* TODO: correct? *)
     | SFBconst cb ->
        let ctx = Declareops.constant_polymorphic_context cb in
       (match cb.const_body with

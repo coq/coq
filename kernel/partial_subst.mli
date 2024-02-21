@@ -8,26 +8,22 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Vmbytecodes
-open Vmemitcodes
-open Constr
-open Declarations
-open Environ
 
-(** Should only be used for monomorphic terms *)
-val compile :
-  fail_on_error:bool -> ?universes:int*int ->
-  env -> Genlambda.evars -> constr ->
-  (to_patch * fv) option
-(** init, fun, fv *)
+type ('term, 'quality, 'univ) t
 
-val compile_constant_body : fail_on_error:bool ->
-  env -> universes -> (Constr.t, 'opaque, 'symb) constant_def ->
-  body_code option
+val make : int * int * int -> ('term, 'quality, 'univ) t
 
-(** Shortcut of the previous function used during module strengthening *)
+val add_term : int -> 't -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
+val maybe_add_term : int option -> 't -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
 
-val compile_alias : Names.Constant.t -> body_code
+val add_quality : int -> 'q -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
+val maybe_add_quality : int option -> 'q -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
 
-(** Dump the bytecode after compilation (for debugging purposes) *)
-val dump_bytecode : bool ref
+val add_univ : int -> 'u -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
+val maybe_add_univ : int option -> 'u -> ('t, 'q, 'u) t -> ('t, 'q, 'u) t
+
+val to_arrays : ('t, 'q, 'u) t -> 't array * 'q array * 'u array
+
+val pr :
+    ('t -> Pp.t) -> ('q -> Pp.t) -> ('u -> Pp.t) ->
+    ('t, 'q, 'u) t -> Pp.t

@@ -79,9 +79,15 @@ type env = private {
     In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
   irr_inds : Sorts.relevance Indmap_env.t
 (** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
+  symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
+  rewrite_rules_allowed : bool;
+  (** Allow rewrite rules (breaks e.g. SR) *)
 }
+
+type rewrule_not_allowed = Symb | Rule
+exception RewriteRulesNotAllowed of rewrule_not_allowed
 
 val oracle : env -> Conv_oracle.oracle
 val set_oracle : env -> Conv_oracle.oracle -> env
@@ -202,6 +208,8 @@ val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool
 
+val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
+
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
 val polymorphic_pconstant : pconstant -> env -> bool
@@ -218,6 +226,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of Instance.t * CPrimitives.t
+  | HasRules of Instance.t * bool * rewrite_rule list
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
@@ -235,6 +244,7 @@ val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
 
+val is_symbol : env -> Constant.t -> bool
 val is_primitive : env -> Constant.t -> bool
 val get_primitive : env -> Constant.t -> CPrimitives.t option
 
@@ -278,6 +288,29 @@ val type_in_type_ind : inductive -> env -> bool
 val template_polymorphic_ind : inductive -> env -> bool
 val template_polymorphic_variables : inductive -> env -> Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
+
+(** {6 Changes of representation of Case nodes} *)
+
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_arity : Declarations.mind_specif -> pinductive -> constr array ->
+  Name.t Context.binder_annot array -> rel_context
+
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_branch_contexts : Declarations.mind_specif -> UVars.Instance.t -> constr array ->
+  (Name.t Context.binder_annot array * 'a) array -> rel_context array
+
+(** [instantiate_context u subst nas ctx] applies both [u] and [subst]
+  to [ctx] while replacing names using [nas] (order reversed). In particular,
+  assumes that [ctx] and [nas] have the same length. *)
+val instantiate_context : UVars.Instance.t -> Vars.substl -> Name.t Context.binder_annot array ->
+  rel_context -> rel_context
+
 
 (** {6 Name quotients} *)
 
@@ -345,6 +378,8 @@ val set_impredicative_set : bool -> env -> env
 val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
+val allow_rewrite_rules : env -> env
+val rewrite_rules_allowed : env -> bool
 
 val same_flags : typing_flags -> typing_flags -> bool
 

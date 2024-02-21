@@ -153,7 +153,7 @@ has type :n:`@type`.
 
 .. _Axiom:
 
-.. cmd:: @assumption_token {? Inline {? ( @natural ) } } {| {+ ( @assumpt ) } | @assumpt }
+.. cmd:: @assumption_token {? Inline {? ( @natural ) } } {| @assumpt | {+ ( @assumpt ) } }
    :name: Axiom; Axioms; Conjecture; Conjectures; Hypothesis; Hypotheses; Parameter; Parameters; Variable; Variables
 
    .. insertprodn assumption_token of_type

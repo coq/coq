@@ -78,6 +78,56 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
+  type mask = (int option array * int option array) option
+
+  val pattern_match : mask -> t -> ('term, Quality.t, Universe.t) Partial_subst.t -> ('term, Quality.t, Universe.t) Partial_subst.t
+  (** Pattern matching, as used by the rewrite rules mechanism *)
+end
+
+module AInstance :
+sig
+  type t
+  (** A universe instance represents a vector of argument universes
+      and sort qualities to a polymorphic definition
+      (constant, inductive or constructor). *)
+
+  val empty : t
+  val is_empty : t -> bool
+
+  val of_array : Quality.t array * Universe.t array -> t
+  val to_array : t -> Quality.t array * Universe.t array
+
+  val abstract_instance : int * int -> t
+  (** Instance of the given size made of QVar/Level.var *)
+
+  val append : t -> t -> t
+  (** To concatenate two instances, used for discharge *)
+
+  val equal : t -> t -> bool
+  (** Equality *)
+
+  val length : t -> int * int
+  (** Instance length *)
+
+  val hcons : t -> t
+  (** Hash-consing. *)
+
+  val hash : t -> int
+  (** Hash value *)
+
+  val share : t -> t * int
+  (** Simultaneous hash-consing and hash-value computation *)
+
+  val pr : (QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+  (** Pretty-printing, no comments *)
+
+  val levels : t -> Quality.Set.t * Level.Set.t
+  (** The set of levels in the instance *)
+
+  val subst_fn
+    : (QVar.t -> Quality.t) * (Universe.t -> Universe.t)
+    -> t -> t
+
 end
 
 val eq_sizes : int * int -> int * int -> bool
@@ -218,6 +268,13 @@ val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 val subst_instance_quality : Instance.t -> Sorts.Quality.t -> Sorts.Quality.t
 val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
+val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_level_subst
+
+(** Substitution of instances *)
+val subst_ainstance_instance : AInstance.t -> Instance.t -> Instance.t
+val subst_ainstance_universe : AInstance.t -> Universe.t -> Universe.t
+val subst_ainstance_sort : AInstance.t -> Sorts.t -> Sorts.t
+val subst_ainstance_relevance : AInstance.t -> Sorts.relevance -> Sorts.relevance
 
 val make_instance_subst : Instance.t -> sort_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)

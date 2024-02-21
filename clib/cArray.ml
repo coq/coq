@@ -25,6 +25,7 @@ sig
     'a array -> 'b array -> 'c array -> 'd array -> bool
   val for_all_i : (int -> 'a -> bool) -> int -> 'a array -> bool
   val findi : (int -> 'a -> bool) -> 'a array -> int option
+  val find2_map : ('a -> 'b -> 'c option) -> 'a array -> 'b array -> 'c option
   val hd : 'a array -> 'a
   val tl : 'a array -> 'a array
   val last : 'a array -> 'a
@@ -45,11 +46,16 @@ sig
     ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'e array -> 'a
   val fold_left2_i :
     (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
+  val fold_left3_i :
+    (int -> 'a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
   val split : ('a * 'b) array -> 'a array * 'b array
+  val split3 : ('a * 'b * 'c) array -> 'a array * 'b array * 'c array
+  val split4 : ('a * 'b * 'c * 'd) array -> 'a array * 'b array * 'c array * 'd array
+  val transpose : 'a array array -> 'a array array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
@@ -60,6 +66,7 @@ sig
   val iter3 : ('a -> 'b -> 'c -> unit) -> 'a array -> 'b array -> 'c array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
@@ -189,6 +196,19 @@ let findi (pred: int -> 'a -> bool) (arr: 'a array) : int option =
     None
   with Found i -> Some i
 
+let find2_map (type a) pred arr1 arr2 =
+  let exception Found of a in
+  let n = Array.length arr1 in
+  if not (Array.length arr2 = n) then failwith "Array.find2_map";
+  try
+    for i=0 to n - 1 do
+      match pred (Array.unsafe_get arr1 i) (Array.unsafe_get arr2 i) with
+      | Some r -> raise (Found r)
+      | None -> ()
+    done;
+    None
+  with Found i -> Some i
+
 let hd v =
   match Array.length v with
     | 0 -> failwith "Array.hd"
@@ -279,6 +299,15 @@ let fold_left3 f a v1 v2 v3 =
     invalid_arg "Array.fold_left3";
   fold a 0
 
+let fold_left3_i f a v1 v2 v3 =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n >= lv1 then a else fold (f n a (uget v1 n) (uget v2 n) (uget v3 n)) (succ n)
+  in
+  if Array.length v2 <> lv1 || Array.length v3 <> lv1 then
+    invalid_arg "Array.fold_left3_i";
+  fold a 0
+
 let fold_left4 f a v1 v2 v3 v4 =
   let lv1 = Array.length v1 in
   let rec fold a n =
@@ -335,6 +364,23 @@ let chop n v =
 
 let split v =
   (Array.map fst v, Array.map snd v)
+
+let split3 v =
+  (Array.map (fun (a, _, _) -> a) v,
+   Array.map (fun (_, b, _) -> b) v,
+   Array.map (fun (_, _, c) -> c) v)
+
+let split4 v =
+  (Array.map (fun (a, _, _, _) -> a) v,
+   Array.map (fun (_, b, _, _) -> b) v,
+   Array.map (fun (_, _, c, _) -> c) v,
+   Array.map (fun (_, _, _, d) -> d) v)
+
+let transpose a =
+  let n = Array.length a in
+  if n = 0 then [||] else
+  let n' = Array.length (Array.unsafe_get a 0) in
+  Array.init n' (fun i -> Array.init n (fun j -> a.(j).(i)))
 
 let map2_i f v1 v2 =
   let len1 = Array.length v1 in
@@ -445,6 +491,11 @@ let fold_right2_map f v1 v2 e =
 let fold_left2_map f e v1 v2 =
   let e' = ref e in
   let v' = map2 (fun x1 x2 -> let (e,y) = f !e' x1 x2 in e' := e; y) v1 v2 in
+  (!e',v')
+
+let fold_left_map_i f e v =
+  let e' = ref e in
+  let v' = mapi (fun idx x -> let (e,y) = f idx !e' x in e' := e; y) v in
   (!e',v')
 
 let fold_left2_map_i f e v1 v2 =

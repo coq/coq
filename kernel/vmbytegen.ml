@@ -945,7 +945,7 @@ let compile ~fail_on_error ?universes env sigma c =
 
 let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
-  | Primitive _ -> None
+  | Primitive _ | Symbol _ -> None
   | Def body ->
       let instance_size = UVars.AbstractContext.size (Declareops.universes_context univs) in
       let alias =

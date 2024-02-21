@@ -34,7 +34,8 @@ let kind_searcher env = Decls.(function
   | IsAssumption _
   | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let)
   | IsProof _
-  | IsPrimitive as k -> Inl k
+  | IsPrimitive
+  | IsSymbol as k -> Inl k
   (* Kinds referring to the status of the object *)
   | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
     let coercions = Coercionops.coercions () in

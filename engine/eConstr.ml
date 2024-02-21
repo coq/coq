@@ -271,6 +271,20 @@ let decompose_lambda_decls sigma c =
   in
   lamdec_rec Context.Rel.empty c
 
+let decompose_lambda_n sigma n =
+  if n < 0 then
+    anomaly Pp.(str "decompose_lambda_n: integer parameter must be positive");
+  let rec lamdec_rec l n c =
+    if Int.equal n 0 then (l, c)
+    else
+      match kind sigma c with
+      | Lambda (x, t, c) -> lamdec_rec ((x, t) :: l) (n - 1) c
+      | Cast (c, _, _) -> lamdec_rec l n c
+      | _ ->
+        anomaly Pp.(str "decompose_lambda_n: not enough abstractions")
+  in
+  lamdec_rec [] n
+
 let decompose_lambda_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
@@ -317,6 +331,20 @@ let decompose_prod sigma c =
     | _            -> l,c
   in
   proddec_rec [] c
+
+let decompose_prod_n sigma n =
+  if n < 0 then
+    anomaly Pp.(str "decompose_prod_n: integer parameter must be positive");
+  let rec proddec_rec l n c =
+    if Int.equal n 0 then (l, c)
+    else
+      match kind sigma c with
+      | Prod (x, t, c) -> proddec_rec ((x, t) :: l) (n - 1) c
+      | Cast (c, _, _) -> proddec_rec l n c
+      | _ ->
+        anomaly Pp.(str "decompose_prod_n: not enough products")
+  in
+  proddec_rec [] n
 
 let decompose_prod_decls sigma c =
   let open Rel.Declaration in
@@ -851,6 +879,9 @@ let subst_instance_context subst ctx =
 
 let subst_instance_constr subst c =
   of_constr (Vars.subst_instance_constr subst (to_constr c))
+
+let subst_ainstance_constr subst c =
+  of_constr (Vars.subst_ainstance_constr subst (to_constr c))
 
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =

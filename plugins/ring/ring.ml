@@ -81,7 +81,7 @@ let protect_red map env sigma c =
   let map = lookup_map map env sigma c in
   let rec eval n c = match EConstr.kind sigma c with
   | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)
-  | _ -> EConstr.of_constr @@ kl infos tab (mk_clos_but sigma map n c)
+  | _ -> EConstr.of_constr @@ norm_val infos tab (mk_clos_but sigma map n c)
   in
   eval 0 c
 

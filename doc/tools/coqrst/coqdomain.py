@@ -20,6 +20,7 @@ could imagine extending it.
 
 import os
 import re
+import shlex
 from itertools import chain
 from collections import defaultdict
 
@@ -953,6 +954,10 @@ class CoqtopBlocksTransform(Transform):
         return isinstance(node, nodes.Element) and 'coqtop_options' in node
 
     @staticmethod
+    def is_coqtop_args_field(node):
+        return isinstance(node, nodes.field) and node.children[0].rawsource == 'COQTOP_ARGS'
+
+    @staticmethod
     def split_lines(source):
         r"""Split Coq input into chunks, which may include single- or
         multi-line comments.  Nested comments are not supported.
@@ -1093,7 +1098,9 @@ class CoqtopBlocksTransform(Transform):
         """Add coqtop's responses to a Sphinx AST
 
         Finds nodes to process using is_coqtop_block."""
-        with CoqTop(color=True) as repl:
+        arg_fields = self.document.traverse(CoqtopBlocksTransform.is_coqtop_args_field)
+        additional_args = [arg for field in arg_fields for arg in shlex.split(field.children[1].rawsource)]
+        with CoqTop(color=True, args=additional_args) as repl:
             repl.send_initial_options()
             for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
                 try:

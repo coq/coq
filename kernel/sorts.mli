@@ -181,3 +181,8 @@ val relevance_of_sort_family : family -> relevance
 val debug_print : t -> Pp.t
 
 val pr_sort_family : family -> Pp.t
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+
+val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Universe.t) Partial_subst.t -> ('t, Quality.t, Univ.Universe.t) Partial_subst.t option

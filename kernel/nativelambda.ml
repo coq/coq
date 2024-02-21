@@ -67,7 +67,7 @@ struct
   let check_inductive _ _ = ()
   let get_constant knu cb = match cb.const_body with
   | Def body -> if is_lazy body then mkLapp Lforce [|Lconst knu|] else Lconst knu
-  | Undef _ | OpaqueDef _ | Primitive _ -> assert false
+  | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> assert false
 end
 
 module Lambda = Genlambda.Make(Val)

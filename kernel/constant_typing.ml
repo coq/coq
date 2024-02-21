@@ -171,6 +171,24 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_typing_flags = Environ.typing_flags env;
   }
 
+let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_type } =
+  let env, usubst, _, univs = process_universes env symb_entry_universes in
+  let j = Typeops.infer env symb_entry_type in
+  let r = Typeops.assumption_of_judgment env j in
+  let t = Vars.subst_univs_level_constr usubst j.uj_val in
+  {
+    const_hyps = [];
+    const_univ_hyps = Instance.empty;
+    const_body = Symbol symb_entry_unfold_fix;
+    const_type = t;
+    const_body_code = None;
+    const_universes = univs;
+    const_relevance = UVars.subst_sort_level_relevance usubst r;
+    const_inline_code = false;
+    const_typing_flags = Environ.typing_flags env;
+  }
+
+
 let make_univ_hyps = function
   | None -> Instance.empty
   | Some us -> us
@@ -224,6 +242,7 @@ let infer_definition ~sec_univs env entry =
 
 let infer_constant ~sec_univs env = function
   | PrimitiveEntry entry -> infer_primitive env entry
+  | SymbolEntry entry -> infer_symbol env entry
   | ParameterEntry entry -> infer_parameter ~sec_univs env entry
   | DefinitionEntry entry -> infer_definition ~sec_univs env entry
 

@@ -465,7 +465,7 @@ let use_metas_pattern_unification sigma flags nb l =
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
 
-(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+(* [unfold_projection_under_eta env ts n c] checks if [c] is the eta
    expanded, folded primitive projection of name [n] and unfolds the primitive
    projection. It respects projection transparency of [ts]. *)
 let unfold_projection_under_eta env ts n c =
@@ -495,31 +495,45 @@ type key =
   | IsKey of CClosure.table_key
   | IsProj of Projection.t * Sorts.relevance * EConstr.constr
 
-let expand_table_key ts env = function
-  | ConstKey ((c,u) as cst) ->
-    if Structures.PrimitiveProjections.is_transparent_constant ts c
-      then
-        let value = constant_opt_value_in env cst in
+let expand_table_key ts env sigma args = function
+  | ConstKey (c, _ as cst) ->
+      if Structures.PrimitiveProjections.is_transparent_constant ts c then
+        match constant_value_in env cst with
         (* If we are unfolding a compatibility constant we want to return the
-           unfolded primitive projection directly since we would like to pretend
-           that the compatibility constant itself does not count as an unfolding
-           (delta) step. *)
-        let unf = Option.bind value (unfold_projection_under_eta env ts c) in
-        if Option.has_some unf then unf else value
+            unfolded primitive projection directly since we would like to pretend
+            that the compatibility constant itself does not count as an unfolding
+            (delta) step. *)
+        | def ->
+        let unf = unfold_projection_under_eta env ts c def in
+        Some (EConstr.of_constr @@ Option.default def unf, args)
+        | exception NotEvaluableConst (HasRules (u, b, r)) ->
+        begin try
+          let sk = Stack.( append_app args empty ) in
+          let rhs, stack = Reductionops.apply_rules
+            (whd_betaiota_deltazeta_for_iota_state ts env sigma) env sigma (EInstance.make u) r sk
+          in
+          let args' = Stack.list_of_app_stack stack
+            |> (function Some l -> l | None -> assert false)
+            |> Array.of_list in
+          Some (rhs, args')
+        with PatternFailure -> None
+        (* TODO: try unfold fix *)
+        end
+        | exception NotEvaluableConst _ -> None
       else None
-  | VarKey id -> (try named_body id env with Not_found -> None)
+  | VarKey id -> (try named_body id env |> Option.map (fun c -> (EConstr.of_constr c, args)) with Not_found -> None)
   | RelKey _ -> None
 
 let unfold_projection env p r stk =
   let s = Stack.Proj (p,r) in
   s :: stk
 
-let expand_key ts env sigma = function
-  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key ts env k)
+let expand_key ts env sigma args = function
+  | Some (IsKey k) -> (expand_table_key ts env sigma args k)
   | Some (IsProj (p, r, c)) ->
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
                                (c, unfold_projection env p r []))
-    in if EConstr.eq_constr sigma (EConstr.mkProj (p, r, c)) red then None else Some red
+    in if EConstr.eq_constr sigma (EConstr.mkProj (p, r, c)) red then None else Some (red, args)
   | None -> None
 
 let isApp_or_Proj sigma c =
@@ -1118,27 +1132,27 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         match oracle_order curenv cf1 cf2 with
         | None -> error_cannot_unify curenv sigma (cM,cN)
         | Some true ->
-            (match expand_key flags.modulo_delta curenv sigma cf1 with
-            | Some c ->
+            (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
+            | Some c_l1 ->
                 unirec_rec curenvnb pb opt substn
-                  (whd_betaiotazeta curenv sigma (mkApp(c,l1))) cN
+                  (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
             | None ->
-                (match expand_key flags.modulo_delta curenv sigma cf2 with
-                | Some c ->
+                (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
+                | Some c_l2 ->
                     unirec_rec curenvnb pb opt substn cM
-                      (whd_betaiotazeta curenv sigma (mkApp(c,l2)))
+                      (whd_betaiotazeta curenv sigma (mkApp c_l2))
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
         | Some false ->
-            (match expand_key flags.modulo_delta curenv sigma cf2 with
-            | Some c ->
+            (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
+            | Some c_l2 ->
                 unirec_rec curenvnb pb opt substn cM
-                  (whd_betaiotazeta curenv sigma (mkApp(c,l2)))
+                  (whd_betaiotazeta curenv sigma (mkApp c_l2))
             | None ->
-                (match expand_key flags.modulo_delta curenv sigma cf1 with
-                | Some c ->
+                (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
+                | Some c_l1 ->
                     unirec_rec curenvnb pb opt substn
-                      (whd_betaiotazeta curenv sigma (mkApp(c,l1))) cN
+                      (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
 
