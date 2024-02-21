@@ -74,6 +74,14 @@ let () =
   Tacinterp.val_interp ist tac k
 
 let () =
+  define "ltac1_of_int" (int @-> ret ltac1)
+    Ltac_plugin.Tacinterp.Value.of_int
+
+let () =
+  define "ltac1_to_int" (ltac1 @-> ret (option int))
+    Ltac_plugin.Tacinterp.Value.to_int
+
+let () =
   define "ltac1_of_constr" (constr @-> ret ltac1)
     Ltac_plugin.Tacinterp.Value.of_constr
 
