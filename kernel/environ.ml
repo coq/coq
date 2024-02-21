@@ -339,6 +339,8 @@ let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
 
+let qualities env = env.env_qualities
+
 let empty_context env =
   match env.env_rel_context.env_rel_ctx, env.env_named_context.env_named_ctx with
   | [], [] -> true
@@ -479,6 +481,10 @@ let add_universes_set ~lbound ~strict ctx g =
 
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~lbound:(universes_lbound env) ~strict ctx) env
+
+let push_quality_set qs env =
+  { env with
+    env_qualities = Sorts.QVar.Set.union qs env.env_qualities }
 
 let push_subgraph (levels,csts) env =
   let lbound = universes_lbound env in

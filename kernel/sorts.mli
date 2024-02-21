@@ -14,6 +14,20 @@ type family = InSProp | InProp | InSet | InType | InQSort
 
 val all_families : family list
 
+module QGlobal :
+sig
+
+  type t
+
+  val make : Names.DirPath.t -> string -> Names.Id.t -> t
+  val repr : t -> Names.DirPath.t * string * Names.Id.t
+  val equal : t -> t -> bool
+  val hash : t -> int
+  val compare : t -> t -> int
+  val to_string : t -> string
+
+end
+
 module QVar :
 sig
   type t
@@ -22,6 +36,7 @@ sig
 
   val make_var : int -> t
   val make_unif : string -> int -> t
+  val make_global : QGlobal.t -> t
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
@@ -37,6 +52,7 @@ sig
   type repr =
     | Var of int
     | Unif of string * int
+    | Global of QGlobal.t
 
   val repr : t -> repr
   val of_repr : repr -> t

@@ -123,6 +123,7 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
+  comp_qualities : Sorts.QVar.Set.t;
   comp_deps : library_info array;
   comp_flags : permanent_flags;
 }
@@ -167,6 +168,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
+    qualities : Sorts.QVar.Set.t ;
     future_cst : (Constant_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
@@ -198,6 +200,7 @@ let empty_environment =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty ;
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -425,6 +428,14 @@ let push_context_set ~strict cst senv =
 
 let add_constraints cst senv =
   push_context_set ~strict:true cst senv
+
+let push_quality_set qs senv =
+  if Sorts.QVar.Set.is_empty qs then senv
+  else
+    { senv with 
+      env = Environ.push_quality_set qs senv.env ;
+      qualities = Sorts.QVar.Set.union qs senv.qualities
+    }
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
@@ -1089,6 +1100,7 @@ let start_mod_modtype ~istype l senv =
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.add_delta_resolver senv.modresolver senv.paramresolver;
     univ = senv.univ;
+    qualities = senv.qualities;
     required = senv.required;
     opaquetab = senv.opaquetab;
     sections = None; (* checked in check_empty_context *)
@@ -1312,6 +1324,7 @@ let start_library dir senv =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty;
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;
@@ -1319,8 +1332,6 @@ let start_library dir senv =
 
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
-  (* qualities are in the senv only during sections *)
-  let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
@@ -1344,6 +1355,7 @@ let export ~output_native_objects senv dir =
     comp_name = dir;
     comp_mod = mb;
     comp_univs = senv.univ;
+    comp_qualities = senv.env.Environ.env_qualities ;
     comp_deps = Array.of_list (DPmap.bindings senv.required);
     comp_flags = permanent_flags
   } in
@@ -1364,6 +1376,8 @@ let import lib cst vodigest senv =
       (Univ.ContextSet.union lib.comp_univs cst)
       senv.env
   in
+  (* TODO: something should be refreshed at this point, no ? *)
+  let env = Environ.push_quality_set lib.comp_qualities env in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mb linkinfo env
