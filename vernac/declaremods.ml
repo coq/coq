@@ -465,15 +465,12 @@ and collect_export f (f',mp) (exports,objs as acc) =
   | Some f ->
     let exports' = MPmap.update mp (function
         | None -> Some f
-        | Some f0 -> Some (filter_or f f0))
+        | Some f0 ->
+          let f' = filter_or f f0 in
+          if filter_eq f' f0 then Some f0 else Some f')
         exports
     in
-    (* If the map doesn't change there is nothing new to export.
-
-       It's possible that [filter_and] or [filter_or] mangled precise
-       filters such that we repeat uselessly, but the important
-       [Unfiltered] case is handled correctly.
-    *)
+    (* If the map doesn't change there is nothing new to export. *)
     if exports == exports' then acc
     else
       collect_module (f,mp) (exports', objs)
