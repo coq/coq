@@ -181,27 +181,28 @@ let pr_factorized_constructor pr_rec lvl tpe = function
   | Other (n,cl) ->
   let _, data = Tac2env.interp_type tpe in
   match data with
-    | GTydAlg def ->
-      let paren = match lvl with
-        | E0 ->
-          if List.is_empty cl then fun x -> x else paren
-        | E1 | E2 | E3 | E4 | E5 -> fun x -> x
-      in
-      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
-      let cl = match cl with
-        | [] -> mt ()
-        | _ -> spc () ++ pr_sequence (pr_rec E0) cl
-      in
-      paren (hov 2 (cstr ++ cl))
-    | GTydRec def ->
-      let args = List.combine def cl in
-      let pr_arg ((id, _, _), arg) =
-        let kn = change_kn_label tpe id in
-        pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_rec E1 arg
-      in
-      let args = prlist_with_sep pr_semicolon pr_arg args in
-      hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
-    | (GTydDef _ | GTydOpn) -> assert false
+  | GTydDef None -> str "<abstr>"
+  | GTydAlg def ->
+    let paren = match lvl with
+      | E0 ->
+        if List.is_empty cl then fun x -> x else paren
+      | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+    in
+    let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
+    let cl = match cl with
+      | [] -> mt ()
+      | _ -> spc () ++ pr_sequence (pr_rec E0) cl
+    in
+    paren (hov 2 (cstr ++ cl))
+  | GTydRec def ->
+    let args = List.combine def cl in
+    let pr_arg ((id, _, _), arg) =
+      let kn = change_kn_label tpe id in
+      pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_rec E1 arg
+    in
+    let args = prlist_with_sep pr_semicolon pr_arg args in
+    hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
+  | (GTydDef _ | GTydOpn) -> assert false
 
 let pr_partial_pat_gen =
   let open PartialPat in
@@ -325,23 +326,24 @@ let pr_glbexpr_gen lvl ~avoid c =
     let e = pr_glbexpr E5 avoid e in
     let br = match info with
     | Other kn ->
-      let def = match Tac2env.interp_type kn with
-      | _, GTydAlg { galg_constructors = def } -> def
+      begin match Tac2env.interp_type kn with
+      | _, GTydDef None -> str "<abstr>"
       | _, GTydDef _ | _, GTydRec _ | _, GTydOpn -> assert false
-      in
-      let br = order_branches cst_br ncst_br def in
-      let pr_branch (cstr, vars, p) =
-        let cstr = change_kn_label kn cstr in
-        let cstr = pr_constructor cstr in
-        let avoid = List.fold_left Termops.add_vname avoid vars in
-        let vars = match vars with
-        | [] -> mt ()
-        | _ -> spc () ++ pr_sequence pr_name vars
+      | _, GTydAlg { galg_constructors = def } ->
+        let br = order_branches cst_br ncst_br def in
+        let pr_branch (cstr, vars, p) =
+          let cstr = change_kn_label kn cstr in
+          let cstr = pr_constructor cstr in
+          let avoid = List.fold_left Termops.add_vname avoid vars in
+          let vars = match vars with
+            | [] -> mt ()
+            | _ -> spc () ++ pr_sequence pr_name vars
+          in
+          hov 4 (str "|" ++ spc () ++ hov 0 (cstr ++ vars ++ spc () ++ str "=>") ++ spc () ++
+                 hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
         in
-        hov 4 (str "|" ++ spc () ++ hov 0 (cstr ++ vars ++ spc () ++ str "=>") ++ spc () ++
-          hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
-      in
-      prlist pr_branch br
+        prlist pr_branch br
+      end
     | Tuple n ->
       let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
       let avoid = Array.fold_left Termops.add_vname avoid vars in
@@ -385,26 +387,28 @@ let pr_glbexpr_gen lvl ~avoid c =
     let brs = prlist_with_sep spc pr_one_branch brs in
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ brs ++ spc() ++ str "end")
   | GTacPrj (kn, e, n) ->
-    let def = match Tac2env.interp_type kn with
-    | _, GTydRec def -> def
+    begin  match Tac2env.interp_type kn with
+    | _, GTydDef None -> str "<abstr>"
     | _, GTydDef _ | _, GTydAlg _ | _, GTydOpn -> assert false
-    in
-    let (proj, _, _) = List.nth def n in
-    let proj = change_kn_label kn proj in
-    let proj = pr_projection proj in
-    let e = pr_glbexpr E0 avoid e in
-    hov 0 (e ++ str "." ++ paren proj)
+    | _, GTydRec def ->
+      let (proj, _, _) = List.nth def n in
+      let proj = change_kn_label kn proj in
+      let proj = pr_projection proj in
+      let e = pr_glbexpr E0 avoid e in
+      hov 0 (e ++ str "." ++ paren proj)
+    end
   | GTacSet (kn, e, n, r) ->
-    let def = match Tac2env.interp_type kn with
-    | _, GTydRec def -> def
+    begin match Tac2env.interp_type kn with
+    | _, GTydDef None -> str "<abstr>"
     | _, GTydDef _ | _, GTydAlg _ | _, GTydOpn -> assert false
-    in
-    let (proj, _, _) = List.nth def n in
-    let proj = change_kn_label kn proj in
-    let proj = pr_projection proj in
-    let e = pr_glbexpr E0 avoid e in
-    let r = pr_glbexpr E1 avoid r in
-    hov 0 (e ++ str "." ++ paren proj ++ spc () ++ str ":=" ++ spc () ++ r)
+    | _, GTydRec def ->
+      let (proj, _, _) = List.nth def n in
+      let proj = change_kn_label kn proj in
+      let proj = pr_projection proj in
+      let e = pr_glbexpr E0 avoid e in
+      let r = pr_glbexpr E1 avoid r in
+      hov 0 (e ++ str "." ++ paren proj ++ spc () ++ str ":=" ++ spc () ++ r)
+    end
   | GTacOpn (kn, cl) ->
     let paren = match lvl with
     | E0 -> paren
