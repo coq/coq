@@ -192,6 +192,28 @@ One can define new types with the following commands.
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
 
+.. attr:: abstract
+   :name: abstract
+
+   Types declared with this attribute are made abstract at the end of
+   the current module. This makes it possible to enforce invariants.
+
+   .. example::
+
+      .. coqtop:: in
+
+         Module PositiveInt.
+           #[abstract] Ltac2 Type t := int.
+
+           Ltac2 make (x:int) : t := if Int.le 0 x then x else Control.throw (Invalid_argument None).
+           Ltac2 get (x:t) : int := x.
+         End PositiveInt.
+
+      .. coqtop:: all
+
+         Ltac2 Eval PositiveInt.get (PositiveInt.make 3).
+         Fail Ltac2 Eval PositiveInt.get (PositiveInt.make -1).
+
 .. cmd:: Ltac2 @ external @ident : @ltac2_type := @string__plugin @string__function
    :name: Ltac2 external
 
