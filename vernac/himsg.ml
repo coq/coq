@@ -227,7 +227,7 @@ let explain_elim_arity env sigma ind c okinds =
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
     | None -> str "ill-formed elimination predicate."
-    | Some (pj, sp) ->
+    | Some sp ->
       let ppt ?(ppunivs=false) () =
         let pp () = pr_leconstr_env env sigma (mkSort (ESorts.make sp)) in
         if ppunivs then Flags.with_option Constrextern.print_universes pp ()

@@ -551,8 +551,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
     then error_bad_invert env
   in
   let () = if not (is_allowed_elimination (specif,u) sp) then begin
-    let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-    let kinds = Some (pj, sp) in
+    let kinds = Some sp in
     error_elim_arity env (ind, u') c kinds
   end
   in

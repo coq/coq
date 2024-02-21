@@ -57,8 +57,7 @@ type ('constr, 'types) ptype_error =
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * GlobRef.t
-  | ElimArity of pinductive * 'constr *
-      (('constr, 'types) punsafe_judgment * Sorts.t) option
+  | ElimArity of pinductive * 'constr * Sorts.t option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
@@ -119,8 +118,7 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> Id.t -> GlobRef.t -> 'a
 
 val error_elim_arity :
-  env -> pinductive -> constr ->
-    (unsafe_judgment * Sorts.t) option -> 'a
+  env -> pinductive -> constr -> Sorts.t option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
