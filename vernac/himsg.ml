@@ -224,7 +224,7 @@ let explain_elim_arity env sigma ind c okinds =
       (* universe instance matters, so print it regardless of Printing Universes *)
       Flags.with_option Constrextern.print_universes pp ()
   in
-  let pc = pr_leconstr_env env sigma c in
+  let pc = Option.map (pr_leconstr_env env sigma) c in
   let msg = match okinds with
     | None -> str "ill-formed elimination predicate."
     | Some sp ->
@@ -283,7 +283,8 @@ let explain_elim_arity env sigma ind c okinds =
            str "is only allowed on a predicate in the same sort quality.")
   in
   hov 0 (
-    str "Incorrect elimination of" ++ spc () ++ pc ++ spc () ++
+    str "Incorrect elimination" ++
+    (match pc with None -> mt() | Some pc -> str " of" ++ spc () ++ pc) ++ spc () ++
     str "in the inductive type" ++ spc () ++ quote pi ++ str ":") ++
   fnl () ++ msg
 
@@ -901,7 +902,7 @@ let explain_type_error env sigma err =
   | ReferenceVariables (id,c) ->
       explain_reference_variables sigma id c
   | ElimArity (ind, c, okinds) ->
-      explain_elim_arity env sigma ind c okinds
+      explain_elim_arity env sigma ind (Some c) okinds
   | CaseNotInductive cj ->
       explain_case_not_inductive env sigma cj
   | CaseOnPrivateInd ind -> explain_case_on_private_ind env sigma ind
@@ -1394,12 +1395,6 @@ let error_inductive_missing_constraints (us,ind_univ) =
 
 (* Recursion schemes errors *)
 
-let error_not_allowed_case_analysis env isrec kind i =
-  str (if isrec then "Induction" else "Case analysis") ++
-  strbrk " on sort " ++ pr_sort Evd.empty kind ++
-  strbrk " is not allowed for inductive definition " ++
-  pr_inductive env (fst i) ++ str "."
-
 let error_not_allowed_dependent_analysis env isrec i =
   str "Dependent " ++ str (if isrec then "induction" else "case analysis") ++
   strbrk " is not allowed for inductive definition " ++
@@ -1458,7 +1453,8 @@ let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) 
 
 let explain_recursion_scheme_error env = function
   | NotAllowedCaseAnalysis (isrec,k,i) ->
-      error_not_allowed_case_analysis env isrec k i
+    explain_elim_arity env (Evd.from_env env) i None (Some k)
+      (* error_not_allowed_case_analysis env isrec k i *)
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
   | NotAllowedDependentAnalysis (isrec, i) ->
      error_not_allowed_dependent_analysis env isrec i
