@@ -1422,13 +1422,31 @@ type ('constr, 'stack, 'context) state =
 
 and ('constr, 'stack, 'context) state_next = (('constr, 'stack, 'context) state, bool * 'constr * 'stack) next
 
-
 type ('constr, 'stack, 'context) resume_state =
   { states: 'constr subst_status array; context: 'context; patterns: head_elimination status array; next: ('constr, 'stack, 'context) state }
 
 type ('constr, 'stack, 'context, _) depth =
   | Nil: ('constr * 'stack, 'ret) escape -> ('constr, 'stack, 'context, 'ret) depth
   | Cons: ('constr, 'stack, 'context) resume_state * ('constr, 'stack, 'context, 'ret) depth -> ('constr, 'stack, 'context, 'ret) depth
+
+type 'a reduction = {
+  red_ret : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> ?failed:bool -> (fconstr * stack) -> 'a;
+  red_kni : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> fconstr -> stack -> 'a;
+  red_knit : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr Esubst.subs * UVars.Instance.t) -> Constr.t -> stack -> 'a;
+}
+
+module RedPattern :
+sig
+
+val match_main : 'a reduction -> clos_infos -> Table.t ->
+  pat_state:(fconstr, stack, rel_context, 'a) depth -> fconstr subst_status array -> (fconstr, stack, rel_context) state -> 'a
+
+val match_head : 'a reduction -> clos_infos -> Table.t ->
+  pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr, stack, rel_context) state -> rel_context -> fconstr subst_status array ->
+  head_elimination status array -> fconstr -> stack -> 'a
+
+end =
+struct
 
 let extract_or_kill filter a status =
   let step elim status =
@@ -1473,13 +1491,6 @@ let extract_or_kill4 filter a status =
       | Some (p1, p2, p3, s) -> Check p1, Check p2, Check p3, Live s
   in
   Array.split4 @@ Array.map2 step a status
-
-type 'a reduction = {
-  red_ret : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> ?failed:bool -> (fconstr * stack) -> 'a;
-  red_kni : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> fconstr -> stack -> 'a;
-  red_knit : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr Esubst.subs * UVars.Instance.t) -> Constr.t -> stack -> 'a;
-}
-
 
 let rec match_main : type a. a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, a) depth -> _ -> _ -> a =
   fun red info tab ~pat_state states loc ->
@@ -1743,6 +1754,8 @@ and match_head : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a)
     ignore (zip t stk);
     match_main red info tab ~pat_state states next
 
+end
+
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
   fun info tab ~pat_state m stk ->
@@ -1778,7 +1791,7 @@ let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
               red_knit = knit;
               red_ret = knr_ret;
             } in
-            match_main red info tab ~pat_state states loc
+            RedPattern.match_main red info tab ~pat_state states loc
         | Undef _ | OpaqueDef _ -> (set_ntrl m; knr_ret info tab ~pat_state (m,stk)))
   | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
@@ -1866,7 +1879,7 @@ and knr_ret : type a. _ -> _ -> pat_state: (fconstr, stack, _, a) depth -> ?fail
         red_knit = knit;
         red_ret = knr_ret;
       } in
-      match_head red info tab ~pat_state next context states patterns m stk
+      RedPattern.match_head red info tab ~pat_state next context states patterns m stk
   | Nil b ->
       match b with No -> i | Yes -> if failed then None else Some i
 
@@ -2122,5 +2135,5 @@ let unfold_ref_with_args infos tab fl v =
     in
     let head = { mark = Red; term = FFlex fl } in
     let loc = LocStart { elims; context=[]; head; stack = v; next = Return (unfold_fix, head, v) } in
-    match_main knred (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
+    RedPattern.match_main knred (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
   | Undef _ | OpaqueDef _ | Primitive _ -> None
