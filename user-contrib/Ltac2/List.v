@@ -279,7 +279,7 @@ Ltac2 rev_map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
       end in
   rmap2_f [] ls1 ls2.
 
-Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (a : 'c) (ls1 : 'a list) (ls2 : 'b list) :=
+Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (ls1 : 'a list) (ls2 : 'b list) (a : 'c) :=
   match ls1 with
   | []
     => match ls2 with
@@ -290,11 +290,11 @@ Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (a : 'c) (ls1 : 'a list) (ls2 :
     => match ls2 with
        | [] => Control.throw_invalid_argument "List.fold_right2"
        | l2 :: ls2
-         => f l1 l2 (fold_right2 f a ls1 ls2)
+         => f l1 l2 (fold_right2 f ls1 ls2 a)
        end
   end.
 
-Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a) (ls1 : 'b list) (ls2 : 'c list) (a : 'a) :=
+Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a)  (a : 'a) (ls1 : 'b list) (ls2 : 'c list) :=
   match ls1 with
   | []
     => match ls2 with
@@ -305,7 +305,7 @@ Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a) (ls1 : 'b list) (ls2 : 'c list) 
     => match ls2 with
        | [] => Control.throw_invalid_argument "List.fold_left2"
        | l2 :: ls2
-         => fold_left2 f ls1 ls2 (f a l1 l2)
+         => fold_left2 f (f a l1 l2) ls1 ls2
        end
   end.
 
