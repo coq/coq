@@ -293,8 +293,8 @@ let synterp_require from export qidl =
     let open Loadpath in
     match locate_qualified_library ?root qid with
     | Ok (dir,_) -> dir
-    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
+    | Error LibUnmappedDir -> Loc.raise ?loc:qid.loc (UnmappedLibrary (root, qid))
+    | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
   let lib_resolver = Loadpath.try_locate_absolute_library in

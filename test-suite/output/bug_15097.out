@@ -1,7 +1,7 @@
-File "./output/bug_15097.v", line 1, characters 0-39:
+File "./output/bug_15097.v", line 1, characters 20-38:
 The command has indeed failed with message:
 Cannot find a physical path bound to logical path Coq.Does.Not.Exist.
-File "./output/bug_15097.v", line 2, characters 0-44:
+File "./output/bug_15097.v", line 2, characters 29-43:
 The command has indeed failed with message:
 Cannot find a physical path bound to logical path
 Does.Not.Exist with prefix Coq.
