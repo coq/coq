@@ -1414,7 +1414,7 @@ type ('a, 'b) next =
 
 type (_, _) escape =
   | No:  ('i, 'i) escape
-  | Yes: ('i -> 'ret) * 'ret -> ('i, 'ret) escape
+  | Yes: ('a, 'a option) escape
 
 type ('constr, 'stack, 'context) state =
   | LocStart of { elims: pattern_elimination list status array; context: 'context; head: 'constr; stack: 'stack; next: ('constr, 'stack, 'context) state_next }
@@ -1589,7 +1589,7 @@ and knr_ret : type a. _ -> _ -> pat_state: (fconstr, stack, _, a) depth -> ?fail
       let m, stk = i in
       match_head info tab ~pat_state next context states patterns m stk
   | Nil b ->
-      match b with No -> i | Yes (k1, k2) -> if failed then k2 else k1 i
+      match b with No -> i | Yes -> if failed then None else Some i
 
 (* Computes the weak head normal form of a term *)
 and kni : 'a. _ -> _ -> pat_state: (_, _, _, 'a) depth -> _ -> _ -> 'a =
@@ -1628,7 +1628,7 @@ and case_inversion info tab ci u params indices v =
     if Array.for_all_i check_index 0 indices
     then Some v else None
 
-and match_main : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> 'a =
+and match_main : type a. _ -> _ -> pat_state:(fconstr, stack, _, a) depth -> _ -> _ -> a =
   fun info tab ~pat_state states loc ->
   if Array.for_all (function Dead -> true | Live _ -> false) states then match_kill info tab ~pat_state loc else
   match [@ocaml.warning "-4"] loc with
@@ -1641,7 +1641,7 @@ and match_main : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _
         let rhsu = Vars.subst_ainstance_constr usubst rhs in
         let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
         begin match pat_state with
-        | Nil Yes (k, _) -> k (m', stack)
+        | Nil Yes -> Some (m', stack)
         | _ -> kni info tab ~pat_state m' stack
         end
     | None -> match_elim info tab ~pat_state next context states elims head stack
@@ -2101,5 +2101,5 @@ let unfold_ref_with_args infos tab fl v =
     in
     let head = { mark = Red; term = FFlex fl } in
     let loc = LocStart { elims; context=[]; head; stack = v; next = Return (unfold_fix, head, v) } in
-    match_main (infos_with_reds infos all) tab ~pat_state:(Nil (Yes ((fun x -> Some x), None))) states loc
+    match_main (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
   | Undef _ | OpaqueDef _ | Primitive _ -> None
