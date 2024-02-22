@@ -1438,8 +1438,8 @@ type 'a reduction = {
 module RedPattern :
 sig
 
-val match_main : 'a reduction -> clos_infos -> Table.t ->
-  pat_state:(fconstr, stack, rel_context, 'a) depth -> fconstr subst_status array -> (fconstr, stack, rel_context) state -> 'a
+val match_symbol : 'a reduction -> clos_infos -> Table.t ->
+  pat_state:(fconstr, stack, rel_context, 'a) depth -> table_key -> UVars.Instance.t * bool * rewrite_rule list -> stack -> 'a
 
 val match_head : 'a reduction -> clos_infos -> Table.t ->
   pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr, stack, rel_context) state -> rel_context -> fconstr subst_status array ->
@@ -1754,6 +1754,20 @@ and match_head : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a)
     ignore (zip t stk);
     match_main red info tab ~pat_state states next
 
+let match_symbol red info tab ~pat_state fl (u, b, r) stk =
+  let unfold_fix = b && red_set info.i_flags fFIX in
+  let states, elims = Array.split @@ Array.map
+    (fun r ->
+      let pu, es = r.lhs_pat in
+      let subst = Partial_subst.make r.nvars in
+      let subst = UVars.Instance.pattern_match pu u subst in
+      Live { subst; rhs = r.Declarations.rhs }, Check es
+    ) (Array.of_list r)
+  in
+  let m = { mark = Red; term = FFlex fl } in
+  let loc = LocStart { elims; context=[]; head = m; stack = stk; next = Return (unfold_fix, m, stk) } in
+  match_main red info tab ~pat_state states loc
+
 end
 
 (* Computes a weak head normal form from the result of knh. *)
@@ -1776,22 +1790,12 @@ let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             knr_ret info tab ~pat_state (m, stk)
         | Symbol (u, b, r) ->
-            let unfold_fix = b && red_set info.i_flags fFIX in
-            let states, elims = Array.split @@ Array.map
-              (fun r ->
-                let pu, es = r.lhs_pat in
-                let subst = Partial_subst.make r.nvars in
-                let subst = UVars.Instance.pattern_match pu u subst in
-                Live { subst; rhs = r.Declarations.rhs }, Check es
-              ) (Array.of_list r)
-            in
-            let loc = LocStart { elims; context=[]; head = m; stack = stk; next = Return (unfold_fix, m, stk) } in
-            let red = {
-              red_kni = kni;
-              red_knit = knit;
-              red_ret = knr_ret;
-            } in
-            RedPattern.match_main red info tab ~pat_state states loc
+          let red = {
+            red_kni = kni;
+            red_knit = knit;
+            red_ret = knr_ret;
+          } in
+          RedPattern.match_symbol red info tab ~pat_state fl (u, b, r) stk
         | Undef _ | OpaqueDef _ -> (set_ntrl m; knr_ret info tab ~pat_state (m,stk)))
   | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
@@ -2123,17 +2127,5 @@ let unfold_ref_with_args infos tab fl v =
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
   | Symbol (u, b, r) ->
-    let unfold_fix = b && red_set infos.i_flags fFIX in
-    (* not sure about entirely dropping the transparent state here *)
-    let states, elims = Array.split @@ Array.map
-      (fun r ->
-        let pu, es = r.lhs_pat in
-        let subst = Partial_subst.make r.nvars in
-        let subst = UVars.Instance.pattern_match pu u subst in
-        Live { subst; rhs = r.Declarations.rhs }, Check es
-      ) (Array.of_list r)
-    in
-    let head = { mark = Red; term = FFlex fl } in
-    let loc = LocStart { elims; context=[]; head; stack = v; next = Return (unfold_fix, head, v) } in
-    RedPattern.match_main knred (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
+    RedPattern.match_symbol knred (infos_with_reds infos all) tab ~pat_state:(Nil Yes) fl (u, b, r) v
   | Undef _ | OpaqueDef _ | Primitive _ -> None
