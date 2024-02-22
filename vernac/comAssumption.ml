@@ -32,7 +32,7 @@ let declare_variable is_coe ~kind typ univs imps impl name =
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        r ~local:true ~reversible:true in
+        r ~local:true ~reversible:false in
   (r, UVars.Instance.empty)
 
 let instance_of_univ_entry = function
@@ -59,7 +59,7 @@ let declare_axiom is_coe ~local ~kind ?user_warns typ (univs, ubinders) imps nl 
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
-        gr ~local ~reversible:true in
+        gr ~local ~reversible:false in
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 

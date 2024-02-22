@@ -80,7 +80,7 @@ module DefAttributes = struct
         f
     in
     let using = Option.map Proof_using.using_from_string using in
-    let reversible = Option.default true reversible in
+    let reversible = Option.default false reversible in
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
