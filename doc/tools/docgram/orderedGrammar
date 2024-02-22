@@ -707,6 +707,11 @@ strategy_level: [
 | "transparent"
 ]
 
+proof_kw: [
+| "Proof"
+| "Body"
+]
+
 strategy_level_or_var: [
 | strategy_level
 | ident
@@ -723,6 +728,7 @@ simple_reserv: [
 
 command: [
 | "Goal" type
+| proof_kw
 | "Pwd"
 | "Cd" OPT string
 | "Load" OPT "Verbose" [ string | ident ]
@@ -808,9 +814,8 @@ command: [
 | "Extract" "Inlined" "Constant" qualid "=>" [ ident | string ]      (* extraction plugin *)
 | "Extract" "Inductive" qualid "=>" [ ident | string ] "[" LIST0 [ ident | string ] "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
-| "Proof"
 | "Proof" "Mode" string
-| "Proof" term
+| proof_kw term
 | "Abort" OPT "All"
 | "Admitted"
 | "Qed"
@@ -825,12 +830,11 @@ command: [
 | "Show" "Existentials"
 | "Show" "Universes"
 | "Show" "Conjectures"
-| "Show" "Proof" OPT ( "Diffs" OPT "removed" )
 | "Show" "Intro"
 | "Show" "Intros"
 | "Show" "Match" qualid
 | "Guarded"
-| "Validate" "Proof"
+| "Validate" proof_kw
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]
@@ -872,8 +876,8 @@ command: [
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
-| "Proof" "with" ltac_expr OPT [ "using" section_var_expr ]
-| "Proof" "using" section_var_expr OPT [ "with" ltac_expr ]
+| proof_kw "with" ltac_expr OPT [ "using" section_var_expr ]
+| proof_kw "using" section_var_expr OPT [ "with" ltac_expr ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
@@ -1001,6 +1005,7 @@ command: [
 | "Quit"
 | "BackTo" natural
 | "Show" "Goal" natural "at" natural
+| "Show" proof_kw OPT ( "Diffs" OPT "removed" )
 ]
 
 section_var_expr: [

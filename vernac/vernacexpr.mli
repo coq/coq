@@ -405,7 +405,7 @@ type nonrec synpure_vernac_expr =
   | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr
   | VernacStartTheoremProof of Decls.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
-  | VernacExactProof of constr_expr
+  | VernacExactProof of opacity_flag * constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacSymbol of (ident_decl list * constr_expr) with_coercion list

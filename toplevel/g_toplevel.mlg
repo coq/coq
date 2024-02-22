@@ -14,6 +14,7 @@ DECLARE GLOBAL PLUGIN
 open Pcoq
 open Pcoq.Prim
 open Vernacexpr
+open G_proofs
 
 (* Vernaculars specific to the toplevel *)
 type vernac_toplevel =
@@ -46,7 +47,7 @@ GRAMMAR EXTEND Gram
       (* show a goal for the specified proof state *)
       | test_show_goal; IDENT "Show"; IDENT "Goal"; gid = natural; IDENT "at"; sid = natural; "." ->
           { Some (VernacShowGoal {gid; sid}) }
-      | IDENT "Show"; IDENT "Proof"; IDENT "Diffs"; removed = OPT [ IDENT "removed" -> { () } ]; "." ->
+      | IDENT "Show"; proof_kw; IDENT "Diffs"; removed = OPT [ IDENT "removed" -> { () } ]; "." ->
         { Some (VernacShowProofDiffs
           (if removed = None then Proof_diffs.DiffOn else Proof_diffs.DiffRemoved)) }
       | cmd = Pvernac.Vernac_.main_entry ->

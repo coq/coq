@@ -1328,9 +1328,9 @@ command: [
 | REPLACE "Preterm" "of" identref
 | WITH "Preterm" OPT ( "of" identref )
 | DELETE "Preterm"
-| REPLACE "Proof" "using" section_var_expr "with" Pltac.tactic
-| WITH "Proof" "using" section_subset_expr OPT [ "with" ltac_expr5 ]
-| DELETE "Proof" "using" section_var_expr
+| REPLACE proof_kw "using" section_var_expr "with" Pltac.tactic
+| WITH proof_kw "using" section_subset_expr OPT [ "with" ltac_expr5 ]
+| DELETE proof_kw "using" section_var_expr
 
 (* hide the fact that table names are limited to 2 IDENTs *)
 | REPLACE "Remove" IDENT IDENT LIST1 table_value
@@ -1348,7 +1348,7 @@ command: [
 | REPLACE "Show" "Ltac" "Profile" "CutOff" integer
 | WITH "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | DELETE "Show" "Ltac" "Profile" string
-| DELETE "Show" "Proof"  (* combined with Show Proof Diffs in vernac_toplevel *)
+| DELETE "Show" proof_kw  (* combined with Show Proof Diffs in vernac_toplevel *)
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
@@ -1555,8 +1555,8 @@ vernac_toplevel: [
 | WITH "BackTo" natural
 | REPLACE "Show" "Goal" natural "at" natural "."
 | WITH "Show" "Goal" natural "at" natural
-| REPLACE "Show" "Proof" "Diffs" OPT "removed" "."
-| WITH "Show" "Proof" OPT ( "Diffs" OPT "removed" )
+| REPLACE "Show" proof_kw "Diffs" OPT "removed" "."
+| WITH "Show" proof_kw OPT ( "Diffs" OPT "removed" )
 | DELETE vernac_control
 ]
 

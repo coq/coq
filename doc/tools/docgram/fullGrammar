@@ -482,7 +482,7 @@ vernac_toplevel: [
 | "Quit" "."
 | "BackTo" natural "."
 | test_show_goal "Show" "Goal" natural "at" natural "."
-| "Show" "Proof" "Diffs" OPT "removed" "."
+| "Show" proof_kw "Diffs" OPT "removed" "."
 | Pvernac.Vernac_.main_entry
 ]
 
@@ -491,12 +491,17 @@ opt_hintbases: [
 | ":" LIST1 IDENT
 ]
 
+proof_kw: [
+| "Proof"
+| "Body"
+]
+
 command: [
 | "Goal" lconstr
-| "Proof"
-| "Proof" "using" G_vernac.section_subset_expr
+| proof_kw
+| proof_kw "using" G_vernac.section_subset_expr
 | "Proof" "Mode" string
-| "Proof" lconstr
+| proof_kw lconstr
 | "Abort"
 | "Abort" "All"
 | "Admitted"
@@ -514,16 +519,16 @@ command: [
 | "Unfocused"
 | "Show"
 | "Show" natural
+| "Show" proof_kw
 | "Show" ident
 | "Show" "Existentials"
 | "Show" "Universes"
 | "Show" "Conjectures"
-| "Show" "Proof"
 | "Show" "Intro"
 | "Show" "Intros"
 | "Show" "Match" reference
 | "Guarded"
-| "Validate" "Proof"
+| "Validate" proof_kw
 | "Create" "HintDb" IDENT; [ "discriminated" | ]
 | "Remove" "Hints" LIST1 global opt_hintbases
 | "Hint" hint opt_hintbases
@@ -610,8 +615,8 @@ command: [
 | "Typeclasses" "Transparent" LIST1 reference
 | "Typeclasses" "Opaque" LIST1 reference
 | "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
-| "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
-| "Proof" "using" G_vernac.section_subset_expr "with" Pltac.tactic
+| proof_kw "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
+| proof_kw "using" G_vernac.section_subset_expr "with" Pltac.tactic
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
 | "Print" "Ltac" reference
 | "Locate" "Ltac" reference

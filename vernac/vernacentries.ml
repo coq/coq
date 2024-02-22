@@ -732,11 +732,11 @@ let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
 
 let vernac_abort ~lemma:_ ~pm = pm
 
-let vernac_exact_proof ~lemma ~pm c =
+let vernac_exact_proof ~lemma ~pm opaque c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Declare.Proof.by (Tactics.exact_proof c) lemma in
-  let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque:Opaque ~idopt:None in
+  let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pm
 
@@ -2344,10 +2344,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacStartTheoremProof (k,l) ->
     vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof k l)
-  | VernacExactProof c ->
+  | VernacExactProof (opaque,c) ->
     vtcloseproof (fun ~lemma ->
         unsupported_attributes atts;
-        vernac_exact_proof ~lemma c)
+        vernac_exact_proof ~lemma opaque c)
 
   | VernacAssumption ((discharge,kind),nl,l) ->
     vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)

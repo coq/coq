@@ -859,8 +859,9 @@ let pr_synpure_vernac_expr v =
           | Opaque      -> keyword "Qed")
       | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
     )
-  | VernacExactProof c ->
-    return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))
+  | VernacExactProof (opac, c) ->
+    let proof_kw = match opac with Transparent -> "Body" | Opaque -> "Proof" in
+    return (hov 2 (keyword proof_kw ++ pr_lconstrarg c))
   | VernacAssumption ((discharge,kind),t,l) ->
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =

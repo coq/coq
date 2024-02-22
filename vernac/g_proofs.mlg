@@ -27,6 +27,8 @@ let thm_token = G_vernac.thm_token
 
 let hint = Entry.make "hint"
 
+let proof_kw = Entry.make "proof_kw"
+
 let warn_deprecated_focus =
   CWarnings.create ~name:"deprecated-focus" ~category:Deprecation.Version.v8_8
     Pp.(function
@@ -48,20 +50,23 @@ let warn_deprecated_unfocus =
 
 (* Proof commands *)
 GRAMMAR EXTEND Gram
-  GLOBAL: hint command;
+  GLOBAL: hint command proof_kw;
 
   opt_hintbases:
   [ [ -> { [] }
     | ":"; l = LIST1 [id = IDENT -> { id } ] -> { l } ] ]
   ;
+  proof_kw:
+    [ [ IDENT "Proof" -> { Opaque } | IDENT "Body" -> { Transparent } ] ]
+  ;
   command: TOP
     [ [ IDENT "Goal"; c = lconstr ->
         { VernacSynPure (VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c))) }
-      | IDENT "Proof" -> { VernacSynPure (VernacProof (None,None)) }
-      | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr ->
+      | proof_kw -> { VernacSynPure (VernacProof (None,None)) }
+      | proof_kw; IDENT "using"; l = G_vernac.section_subset_expr ->
           { VernacSynPure (VernacProof (None,Some l)) }
-      | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacSynterp (VernacProofMode mn) }
-      | IDENT "Proof"; c = lconstr -> { VernacSynPure (VernacExactProof c) }
+      | IDENT "Proof"; IDENT "Mode" ; mn = string -> { VernacSynterp (VernacProofMode mn) }
+      | kw = proof_kw; c = lconstr -> { VernacSynPure (VernacExactProof (kw, c)) }
       | IDENT "Abort" -> { VernacSynPure VernacAbort }
       | IDENT "Abort"; IDENT "All" -> { VernacSynPure VernacAbortAll }
       | IDENT "Admitted" -> { VernacSynPure (VernacEndProof Admitted) }
@@ -87,16 +92,16 @@ GRAMMAR EXTEND Gram
       | IDENT "Unfocused" -> { VernacSynPure VernacUnfocused }
       | IDENT "Show" -> { VernacSynPure (VernacShow (ShowGoal OpenSubgoals)) }
       | IDENT "Show"; n = natural -> { VernacSynPure (VernacShow (ShowGoal (NthGoal n))) }
+      | IDENT "Show"; proof_kw -> { VernacSynPure (VernacShow ShowProof) }
       | IDENT "Show"; id = ident -> { VernacSynPure (VernacShow (ShowGoal (GoalId id))) }
       | IDENT "Show"; IDENT "Existentials" -> { VernacSynPure (VernacShow ShowExistentials) }
       | IDENT "Show"; IDENT "Universes" -> { VernacSynPure (VernacShow ShowUniverses) }
       | IDENT "Show"; IDENT "Conjectures" -> { VernacSynPure (VernacShow ShowProofNames) }
-      | IDENT "Show"; IDENT "Proof" -> { VernacSynPure (VernacShow ShowProof) }
       | IDENT "Show"; IDENT "Intro" -> { VernacSynPure (VernacShow (ShowIntros false)) }
       | IDENT "Show"; IDENT "Intros" -> { VernacSynPure (VernacShow (ShowIntros true)) }
       | IDENT "Show"; IDENT "Match"; id = reference -> { VernacSynPure (VernacShow (ShowMatch id)) }
       | IDENT "Guarded" -> { VernacSynPure VernacCheckGuard }
-      | IDENT "Validate"; IDENT "Proof" -> { VernacSynPure VernacValidateProof }
+      | IDENT "Validate"; proof_kw -> { VernacSynPure VernacValidateProof }
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
           id = IDENT ; b = [ IDENT "discriminated" -> { true } | -> { false } ] ->
