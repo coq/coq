@@ -40,11 +40,12 @@ let get_lib_refs () =
 
 let has_ref s = CString.Map.mem s !table
 
-let check_ind_ref s ind =
+let check_ref s gr =
   match CString.Map.find s !table with
-  | GlobRef.IndRef r -> Ind.UserOrd.equal r ind
-  | _ -> false
+  | r -> GlobRef.UserOrd.equal r gr
   | exception Not_found -> false
+
+let check_ind_ref s ind = check_ref s (GlobRef.IndRef ind)
 
 exception NotFoundRef of string
 

@@ -572,7 +572,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 let is_injection_case env sigma c =
   let sigma, cty = Typing.type_of env sigma c in
   let (mind,_) = Tacred.eval_to_quantified_ind env sigma cty in
-  Coqlib.check_ind_ref "core.eq.type" mind
+  Coqlib.check_ref "core.eq.type" (GlobRef.IndRef mind)
 
 let perform_injection c =
   let open Proofview.Notations in
