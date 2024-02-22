@@ -105,6 +105,10 @@ let () =
   define "ltac1_to_list" (ltac1 @-> ret (option (list ltac1)))
     Ltac_plugin.Tacinterp.Value.to_list
 
+let () =
+  define "ltac1_tag_name" (ltac1 @-> ret string) @@ fun (Dyn (tag,_)) ->
+  Geninterp.Val.repr tag
+
 let gtypref kn = GTypRef (Other kn, [])
 
 open Tac2core.Core

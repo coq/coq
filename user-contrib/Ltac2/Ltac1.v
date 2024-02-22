@@ -13,7 +13,7 @@
     Not for the casual user, handle with care and expect undefined behaviours
     otherwise. **)
 
-Require Import Ltac2.Init Ltac2.Std.
+Require Import Ltac2.Init Ltac2.Std Ltac2.Control.
 
 Ltac2 Type t.
 (** Dynamically-typed Ltac1 values. *)
@@ -54,3 +54,9 @@ Ltac2 @ external to_list : t -> t list option := "coq-core.plugins.ltac2_ltac1" 
 
 Ltac2 @ external of_intro_pattern : intro_pattern -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_intro_pattern".
 Ltac2 @ external to_intro_pattern : t -> intro_pattern option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_intro_pattern".
+
+(** Debug information *)
+
+Ltac2 @ external tag_name : t -> string :=  "coq-core.plugins.ltac2_ltac1" "ltac1_tag_name".
+(** Name of the ltac1 value class the argument belongs to. Should be
+    used only for error printing, typically "expected a constr but got a $tag_name". *)
