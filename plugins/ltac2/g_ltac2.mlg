@@ -1030,6 +1030,9 @@ let pr_ltac2_selector s = Pp.(Goal_select.pr_goal_selector s ++ str ":")
 let pr_ltac2_use_default b =
   if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
 
+let subprf = G_vernac.subprf
+let subprf_with_selector = G_vernac.subprf_with_selector
+
 }
 
 VERNAC ARGUMENT EXTEND ltac2_selector PRINTED BY { pr_ltac2_selector }
@@ -1055,7 +1058,9 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: tac2mode;
   tac2mode: TOP
-    [ [ tac = G_vernac.query_command -> { Vernacexpr.VernacSynPure (tac None) } ] ];
+    [ [ p = subprf -> { Vernacexpr.VernacSynPure p }
+      | g = OPT toplevel_selector; p = subprf_with_selector -> { Vernacexpr.VernacSynPure (p g) }
+      ] ];
 END
 
 {

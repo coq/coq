@@ -41,6 +41,7 @@ let search_query = Entry.make "search_query"
 let search_queries = Entry.make "search_queries"
 
 let subprf = Entry.make "subprf"
+let subprf_with_selector = Entry.make "subprf_with_selector"
 
 let quoted_attributes = Entry.make "quoted_attributes"
 let attribute_list = Entry.make "attribute_list"
@@ -92,7 +93,7 @@ let test_id_colon =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: vernac_control quoted_attributes attribute_list gallina_ext noedit_mode subprf;
+  GLOBAL: vernac_control quoted_attributes attribute_list gallina_ext noedit_mode subprf subprf_with_selector;
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
         { add_control_flag ~loc ~flag:ControlTime c }
@@ -164,20 +165,24 @@ GRAMMAR EXTEND Gram
       | g = gallina_ext; "." -> { g }
       | c = command; "." -> { c }
       | c = syntax; "." -> { c }
-      | c = subprf -> { VernacSynPure c }
     ] ]
   ;
   vernac_aux: LAST
     [ [ prfcom = command_entry -> { prfcom } ] ]
   ;
-  noedit_mode:
-    [ [ c = query_command -> { VernacSynPure (c None) } ] ]
+
+  noedit_mode: [ [ c = query_command -> { VernacSynPure (c None) } ] ]
   ;
 
   subprf:
   [ [ s = BULLET -> { VernacBullet (make_bullet s) }
-    | "{" -> { VernacSubproof None }
     | "}" -> { VernacEndSubproof }
+    ] ]
+  ;
+  subprf_with_selector:
+  [ [ "{" -> { fun g -> VernacSubproof g }
+    (* query_command needs to be here to factor with VernacSubproof *)
+    | c = query_command -> { c }
     ] ]
   ;
 
@@ -970,6 +975,45 @@ GRAMMAR EXTEND Gram
 
 END
 
+{
+
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_bracket_ident" begin
+    lk_kw "[" >> lk_ident
+  end
+
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: toplevel_selector goal_selector;
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> { (n, m) }
+      | n = natural -> { (n, n) } ] ]
+  ;
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
+        { let open Goal_select in
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
+  ;
+  goal_selector:
+  [ [ l = range_selector_or_nth -> { l }
+    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
+  ;
+  toplevel_selector:
+    [ [ sel = goal_selector; ":" -> { sel }
+    |   "!"; ":" -> { Goal_select.SelectAlreadyFocused }
+    |   IDENT "all"; ":" -> { Goal_select.SelectAll } ] ]
+  ;
+END
+
 GRAMMAR EXTEND Gram
   GLOBAL: command query_command coercion_class gallina_ext search_query search_queries;
 
@@ -1051,7 +1095,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Remove"; table = IDENT; v = LIST1 table_value ->
           { VernacSynPure (VernacRemoveOption ([table], v)) } ]]
   ;
-  query_command: (* TODO: rapprocher Eval et Check *)
+  query_command:
     [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
           { fun g -> VernacCheckMayEval (Some r, g, c) }
       | IDENT "Compute"; c = lconstr; "." ->
@@ -1381,44 +1425,5 @@ GRAMMAR EXTEND Gram
       | "as"; IDENT "name" -> { Notation_term.AsName }
       | "as"; IDENT "pattern" -> { Notation_term.AsAnyPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
-  ;
-END
-
-{
-
-(* Hack to parse "[ id" without dropping [ *)
-let test_bracket_ident =
-  let open Pcoq.Lookahead in
-  to_entry "test_bracket_ident" begin
-    lk_kw "[" >> lk_ident
-  end
-
-}
-
-GRAMMAR EXTEND Gram
-  GLOBAL: toplevel_selector goal_selector;
-  range_selector:
-    [ [ n = natural ; "-" ; m = natural -> { (n, m) }
-      | n = natural -> { (n, n) } ] ]
-  ;
-  (* We unfold a range selectors list once so that we can make a special case
-   * for a unique SelectNth selector. *)
-  range_selector_or_nth:
-    [ [ n = natural ; "-" ; m = natural;
-        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
-        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
-      | n = natural;
-        l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
-        { let open Goal_select in
-          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
-  ;
-  goal_selector:
-  [ [ l = range_selector_or_nth -> { l }
-    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
-  ;
-  toplevel_selector:
-    [ [ sel = goal_selector; ":" -> { sel }
-    |   "!"; ":" -> { Goal_select.SelectAlreadyFocused }
-    |   IDENT "all"; ":" -> { Goal_select.SelectAll } ] ]
   ;
 END

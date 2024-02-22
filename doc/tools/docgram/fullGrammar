@@ -792,7 +792,6 @@ vernac_aux: [
 | gallina_ext "."
 | command "."
 | syntax "."
-| subprf
 | command_entry
 ]
 
@@ -802,8 +801,12 @@ noedit_mode: [
 
 subprf: [
 | BULLET
-| "{"
 | "}"
+]
+
+subprf_with_selector: [
+| "{"
+| query_command
 ]
 
 gallina: [
@@ -1287,6 +1290,27 @@ simple_reserv: [
 | LIST1 identref ":" lconstr
 ]
 
+range_selector: [
+| natural "-" natural
+| natural
+]
+
+range_selector_or_nth: [
+| natural "-" natural OPT [ "," LIST1 range_selector SEP "," ]
+| natural OPT [ "," LIST1 range_selector SEP "," ]
+]
+
+goal_selector: [
+| range_selector_or_nth
+| test_bracket_ident "[" ident "]"
+]
+
+toplevel_selector: [
+| goal_selector ":"
+| "!" ":"
+| "all" ":"
+]
+
 query_command: [
 | "Eval" red_expr "in" lconstr "."
 | "Compute" lconstr "."
@@ -1546,27 +1570,6 @@ binder_interp: [
 | "as" "name"
 | "as" "pattern"
 | "as" "strict" "pattern"
-]
-
-range_selector: [
-| natural "-" natural
-| natural
-]
-
-range_selector_or_nth: [
-| natural "-" natural OPT [ "," LIST1 range_selector SEP "," ]
-| natural OPT [ "," LIST1 range_selector SEP "," ]
-]
-
-goal_selector: [
-| range_selector_or_nth
-| test_bracket_ident "[" ident "]"
-]
-
-toplevel_selector: [
-| goal_selector ":"
-| "!" ":"
-| "all" ":"
 ]
 
 simple_tactic: [
@@ -2241,8 +2244,8 @@ tactic: [
 ]
 
 tactic_mode: [
-| OPT toplevel_selector G_vernac.query_command
-| OPT toplevel_selector "{"
+| subprf
+| OPT toplevel_selector subprf_with_selector
 | OPT ltac_selector OPT ltac_info tactic ltac_use_default
 | "par" ":" OPT ltac_info tactic ltac_use_default
 ]
@@ -3348,7 +3351,8 @@ ltac2_use_default: [
 tac2mode: [
 | OPT ltac2_selector ltac2_expr6 ltac2_use_default      (* ltac2 plugin *)
 | "par" ":" ltac2_expr6 ltac2_use_default      (* ltac2 plugin *)
-| G_vernac.query_command      (* ltac2 plugin *)
+| subprf      (* ltac2 plugin *)
+| OPT toplevel_selector subprf_with_selector      (* ltac2 plugin *)
 ]
 
 ltac1_expr_in_env: [
