@@ -263,8 +263,10 @@ let rec slot_for_getglobal env sigma kn envcache table =
       | None -> set_global (val_of_constant kn) table
       | Some code ->
         match code with
-        | BCdefined (code, fv) ->
-           let v = eval_to_patch env sigma (code, fv) envcache table in
+        | BCdefined (index, patches) ->
+           let code = Environ.lookup_vm_code index env in
+           let code = (code, patches) in
+           let v = eval_to_patch env sigma code envcache table in
            set_global v table
         | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table
         | BCconstant -> set_global (val_of_constant kn) table
@@ -299,14 +301,14 @@ and slot_for_fv env sigma fv envcache table =
       | Some v -> v
       end
 
-and eval_to_patch env sigma (code, fv) envcache table =
+and eval_to_patch env sigma code envcache table =
   let slots = function
     | Reloc_annot a -> slot_for_annot a table
     | Reloc_const sc -> slot_for_str_cst sc table
     | Reloc_getglobal kn -> slot_for_getglobal env sigma kn envcache table
     | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let tc = patch code slots in
+  let tc, fv = patch code slots in
   let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in

@@ -142,9 +142,9 @@ val body_of_constant_body : indirect_accessor ->
 
 val start_library : DirPath.t -> ModPath.t
 val export : output_native_objects:bool -> DirPath.t ->
-  ModPath.t * Safe_typing.compiled_library * Nativelib.native_library
+  ModPath.t * Safe_typing.compiled_library * Vmlibrary.compiled_library * Nativelib.native_library
 val import :
-  Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
+  Safe_typing.compiled_library -> Univ.ContextSet.t -> Vmlibrary.on_disk -> Safe_typing.vodigest ->
   ModPath.t
 
 (** {6 Misc } *)

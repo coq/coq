@@ -81,6 +81,7 @@ type env = private {
 (** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
   symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
+  vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
   rewrite_rules_allowed : bool;
   (** Allow rewrite rules (breaks e.g. SR) *)
@@ -443,6 +444,13 @@ val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
 val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
+
+(** {5 VM and native} *)
+
+val vm_library : env -> Vmlibrary.t
+val set_vm_library : Vmlibrary.t -> env -> env
+val link_vm_library : Vmlibrary.on_disk -> env -> env
+val lookup_vm_code : Vmlibrary.index -> env -> Vmemitcodes.to_patch
 
 (** Native compiler *)
 val no_link_info : link_info

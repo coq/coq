@@ -56,7 +56,7 @@ let cook_opaque_proofterm info c =
 (********************************)
 (* Discharging constant         *)
 
-let cook_constant env info cb =
+let cook_constant _env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univ_hyps, univs = lift_univs info cb.const_univ_hyps cb.const_universes in
   let cache = create_cache info in
@@ -69,7 +69,6 @@ let cook_constant env info cb =
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   | Symbol _ -> CErrors.anomaly (Pp.str "Symbols cannot be cooked")
   in
-  let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
   let typ = abstract_as_type cache cb.const_type in
   let names = names_info info in
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names)) cb.const_hyps in
@@ -78,7 +77,7 @@ let cook_constant env info cb =
     const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
-    const_body_code = tps;
+    const_body_code = ();
     const_universes = univs;
     const_relevance = cb.const_relevance;
     const_inline_code = cb.const_inline_code;

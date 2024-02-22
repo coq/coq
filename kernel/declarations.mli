@@ -104,14 +104,14 @@ type typing_flags = {
 
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
-type 'opaque pconstant_body = {
+type ('opaque, 'bytecode) pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
     const_univ_hyps : UVars.Instance.t;
     const_body : (Constr.t, 'opaque, bool) constant_def;
                     (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
     const_relevance : Sorts.relevance;
-    const_body_code : Vmemitcodes.body_code option;
+    const_body_code : 'bytecode;
     const_universes : universes;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
@@ -119,7 +119,7 @@ type 'opaque pconstant_body = {
                                            type-checking. *)
 }
 
-type constant_body = Opaqueproof.opaque pconstant_body
+type constant_body = (Opaqueproof.opaque, Vmlibrary.indirect_code option) pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 

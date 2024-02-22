@@ -16,7 +16,7 @@ val cook_opaque_proofterm : cooking_info list ->
   Opaqueproof.opaque_proofterm -> Opaqueproof.opaque_proofterm
 
 val cook_constant :
-  Environ.env -> cooking_info -> constant_body -> constant_body
+  Environ.env -> cooking_info -> constant_body -> (Opaqueproof.opaque, unit) pconstant_body
 
 val cook_inductive :
   cooking_info -> mutual_inductive_body -> mutual_inductive_body

@@ -926,7 +926,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in
-    (to_memory res, Array.of_list fv)
+    to_memory (Array.of_list fv) res
 
 let warn_compile_error =
   CWarnings.create ~name:"bytecode-compiler-failed-compilation" ~category:CWarnings.CoreCategories.bytecode_compiler
@@ -964,7 +964,7 @@ let compile_constant_body ~fail_on_error env univs = function
       | Some kn -> Some (BCalias kn)
       | _ ->
           let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
-          Option.map (fun (code, fv) -> BCdefined (code, fv)) res
+          Option.map (fun code -> BCdefined code) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

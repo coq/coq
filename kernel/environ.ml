@@ -86,6 +86,7 @@ type env = {
   irr_inds : Sorts.relevance Indmap_env.t;
   symb_pats: rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
+  vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
   rewrite_rules_allowed: bool;
 }
@@ -120,6 +121,7 @@ let empty_env = {
   irr_inds = Indmap_env.empty;
   symb_pats = Cmap_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
+  vm_library = Vmlibrary.empty;
   retroknowledge = Retroknowledge.empty;
   rewrite_rules_allowed = false;
 }
@@ -946,6 +948,18 @@ let is_type_in_type env r =
   | ConstRef c -> type_in_type_constant c env
   | IndRef ind -> type_in_type_ind ind env
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
+
+let vm_library env = env.vm_library
+
+let set_vm_library lib env =
+  { env with vm_library = lib }
+
+let link_vm_library lib env =
+  let vm_library = Vmlibrary.link lib env.vm_library in
+  { env with vm_library }
+
+let lookup_vm_code idx env =
+  Vmlibrary.resolve idx env.vm_library
 
 let set_retroknowledge env r = { env with retroknowledge = r }
 

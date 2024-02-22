@@ -60,7 +60,9 @@ type library_t = {
   library_opaques : seg_proofs;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
-  library_extra_univs : Univ.ContextSet.t }
+  library_extra_univs : Univ.ContextSet.t;
+  library_vm : Vmlibrary.on_disk;
+}
 
 module LibraryOrdered =
   struct
@@ -124,12 +126,12 @@ let check_one_lib admit senv (dir,m) =
     if LibrarySet.mem dir admit then
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
-       Safe_checking.unsafe_import (fst senv) md m.library_extra_univs dig),
+       Safe_checking.unsafe_import (fst senv) md m.library_extra_univs m.library_vm dig),
       (snd senv)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
-       Safe_checking.import (fst senv) (snd senv) md m.library_extra_univs dig)
+       Safe_checking.import (fst senv) (snd senv) md m.library_extra_univs  m.library_vm dig)
   in
     register_loaded_library m; senv
 
@@ -284,14 +286,16 @@ type library_disk = {
   md_objects : library_objects;
 }
 
-let mk_library sd md f table digest cst = {
+let mk_library sd md f table digest cst vm = {
   library_name = sd.md_name;
   library_filename = f;
   library_compiled = md.md_compiled;
   library_opaques = table;
   library_deps = sd.md_deps;
   library_digest = digest;
-  library_extra_univs = cst }
+  library_extra_univs = cst;
+  library_vm = vm;
+}
 
 let name_clash_message dir mdir f =
   str ("The file " ^ f ^ " contains library") ++ spc () ++
@@ -326,11 +330,12 @@ let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
 let universes_seg : seg_univ option ObjFile.id = ObjFile.make_id "universes"
 let tasks_seg : Obj.t option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
+let vm_seg = Vmlibrary.vm_segment
 
 let intern_from_file ~intern_mode (dir, f) =
   let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
-  let (sd,md,table,opaque_csts,digest) =
+  let (sd,md,table,opaque_csts,vmlib,digest) =
     try
       (* First pass to read the metadata of the file *)
       let ch = System.with_magic_number_check raw_intern_library f in
@@ -339,6 +344,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let seg_univs = ObjFile.get_segment ch ~segment:universes_seg in
       let seg_tasks = ObjFile.get_segment ch ~segment:tasks_seg in
       let seg_opaque = ObjFile.get_segment ch ~segment:opaques_seg in
+      let seg_vmlib = ObjFile.get_segment ch ~segment:vm_seg in
       let () = ObjFile.close_in ch in
       (* Actually read the data *)
       let ch = open_in_bin f in
@@ -348,6 +354,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let opaque_csts = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
       let tasks = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
       let table = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
+      let vmlib = marshal_in_segment ~validate ~value:Any ~segment:seg_vmlib f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
@@ -371,14 +378,14 @@ let intern_from_file ~intern_mode (dir, f) =
         let open ObjFile in
         if opaque_csts <> None then Safe_typing.Dvivo (seg_md.hash, seg_univs.hash)
         else (Safe_typing.Dvo_or_vi seg_md.hash) in
-      sd,md,table,opaque_csts,digest
+      sd,md,table,opaque_csts,vmlib,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   let extra_cst =
     Option.default Univ.ContextSet.empty
       (Option.map (fun (cs,_) -> cs) opaque_csts) in
-  mk_library sd md f table digest extra_cst
+  mk_library sd md f table digest extra_cst (Vmlibrary.inject vmlib)
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph
