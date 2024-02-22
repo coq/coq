@@ -1474,6 +1474,275 @@ let extract_or_kill4 filter a status =
   in
   Array.split4 @@ Array.map2 step a status
 
+type 'a reduction = {
+  red_ret : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> ?failed:bool -> (fconstr * stack) -> 'a;
+  red_kni : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> fconstr -> stack -> 'a;
+  red_knit : clos_infos -> Table.t -> pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr Esubst.subs * UVars.Instance.t) -> Constr.t -> stack -> 'a;
+}
+
+
+let rec match_main : type a. a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, a) depth -> _ -> _ -> a =
+  fun red info tab ~pat_state states loc ->
+  if Array.for_all (function Dead -> true | Live _ -> false) states then match_kill red info tab ~pat_state loc else
+  match [@ocaml.warning "-4"] loc with
+  | LocStart { elims; context; head; stack; next = Return _ as next } ->
+    begin match Array.find2_map (fun state elim -> match state, elim with Live s, Check [] -> Some s | _ -> None) states elims with
+    | Some { subst; rhs } ->
+        let subst, qsubst, usubst = Partial_subst.to_arrays subst in
+        let subst = Array.fold_right subs_cons subst (subs_id 0) in
+        let usubst = UVars.AInstance.of_array (qsubst, usubst) in
+        let rhsu = Vars.subst_ainstance_constr usubst rhs in
+        let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
+        begin match pat_state with
+        | Nil Yes -> Some (m', stack)
+        | _ -> red.red_kni info tab ~pat_state m' stack
+        end
+    | None -> match_elim red info tab ~pat_state next context states elims head stack
+    end
+  | LocArg { patterns; context; arg; next } ->
+      match_arg red info tab ~pat_state next context states patterns arg
+  | LocStart { elims; context; head; stack; next } ->
+      match_elim red info tab ~pat_state next context states elims head stack
+
+and match_kill : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> 'a =
+  fun red info tab ~pat_state -> function
+  | LocArg { next; _ } -> match_kill red info tab ~pat_state next
+  | LocStart { head; stack; next; _ } ->
+      ignore (zip head stack);
+      match next with
+      | Continue next -> match_kill red info tab ~pat_state next
+      | Return k -> try_unfoldfix red info tab ~pat_state k
+
+and match_endstack : 'a. 'a reduction -> _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
+  fun red info tab ~pat_state states next ->
+  match next with
+  | Continue next -> match_main red info tab ~pat_state states next
+  | Return k ->
+      assert (Array.for_all (function Dead -> true | Live _ -> false) states);
+      try_unfoldfix red info tab ~pat_state k
+
+and try_unfoldfix : 'a. 'a reduction -> _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> 'a =
+  fun red info tab ~pat_state (b, m, stk) ->
+  if not b then red.red_ret info tab ~pat_state ~failed:true (m, stk) else
+  let _, cargs, stack = strip_update_shift_app_red m stk in
+  match [@ocaml.warning "-4"] stack with
+  | Zfix (fx, par) :: s ->
+    let rarg = fapp_stack(m,cargs) in
+    let stk' = par @ append_stack [|rarg|] s in
+    let (fxe,fxbd) = contract_fix_vect fx.term in
+    red.red_knit info tab ~pat_state fxe fxbd stk'
+  | _ -> red.red_ret info tab ~pat_state ~failed:true (m, stk)
+
+and match_elim : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> _ -> 'a =
+  fun red info tab ~pat_state next context states elims head stk ->
+  match stk with
+  | Zapp args :: s ->
+      let pargselims, states = extract_or_kill2 (function [@ocaml.warning "-4"] PEApp pargs :: es, subst -> Some ((pargs, es), subst) | _ -> None) elims states in
+      let na = Array.length args in
+      let np = Array.fold_left (Status.fold_left (fun a (pargs, _) -> min a (Array.length pargs))) na pargselims in
+      let pargs, elims, states =
+        extract_or_kill3 (fun ((pargs, elims), subst) ->
+          let npp = Array.length pargs in
+          if npp == np then Some (pargs, elims, subst) else
+          let fst, lst = Array.chop np pargs in
+          Some (fst, PEApp lst :: elims, subst))
+          pargselims states
+      in
+      let args, rest = Array.chop np args in
+      let head = {mark=neutr head.mark; term=FApp(head, args)} in
+      let stack = if Array.length rest > 0 then Zapp rest :: s else s in
+      let loc = LocStart { elims; context; head; stack; next } in
+      let loc = Array.fold_right2 (fun patterns arg next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array np) pargs)) args loc in
+      match_main red info tab ~pat_state states loc
+  | Zshift k :: s -> match_elim red info tab ~pat_state next context states elims (lift_fconstr k head) s
+  | Zupdate m :: s ->
+      let () = update m head.mark head.term in
+      match_elim red info tab ~pat_state next context states elims head s
+  | ZcaseT (ci, u, pms, (p, r), brs, e) :: s ->
+      let t = FCaseT(ci, u, pms, (p, r), head, brs, e) in
+      let mark = neutr head.mark in
+      let head = {mark; term=t} in
+      let specif = Environ.lookup_mind (fst ci.ci_ind) info.i_cache.i_env in
+      let specif = (specif, specif.mind_packets.(snd ci.ci_ind)) in
+      let ntys_ret = Environ.expand_arity specif (ci.ci_ind, u) pms (fst p) in
+      let ntys_brs = Environ.expand_branch_contexts specif u pms brs in
+      let prets, pbrss, elims, states = extract_or_kill4 (function [@ocaml.warning "-4"]
+      | PECase (pind, pu, pret, pbrs) :: es, psubst ->
+        if not @@ Ind.CanOrd.equal pind ci.ci_ind then None else
+          let subst = UVars.Instance.pattern_match pu u psubst.subst in
+          Some (pret, pbrs, es, { psubst with subst })
+          | _ -> None)
+          elims states
+      in
+      let loc = LocStart { elims; context; head; stack=s; next } in
+      let ntys_ret = subst_context e ntys_ret in
+      let ret = mk_clos (usubs_liftn (Context.Rel.length ntys_ret) e) (snd p) in
+      let brs = Array.map2 (fun ctx br -> subst_context e ctx, mk_clos (usubs_liftn (Context.Rel.length ctx) e) (snd br)) ntys_brs brs in
+      let loc = Array.fold_right2 (fun patterns (ctx, arg) next -> LocArg { patterns; context = ctx @ context; arg; next }) (Array.transpose (Array.map (Status.split_array (Array.length brs)) pbrss)) brs loc in
+      let loc = LocArg { patterns = prets; context = ntys_ret @ context; arg = ret; next = loc } in
+      match_main red info tab ~pat_state states loc
+  | Zproj (proj', r) :: s ->
+      let mark = (neutr head.mark) in
+      let head = {mark; term=FProj(Projection.make proj' true, r, head)} in
+      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+      | PEProj proj :: es, subst ->
+        if not @@ Projection.Repr.CanOrd.equal (Projection.repr proj) proj' then None else
+        Some (es, subst)
+      | _ -> None) elims states
+      in
+      let loc = LocStart { elims; context; head; stack=s; next } in
+      match_main red info tab ~pat_state states loc
+  | Zfix _ :: _ | Zprimitive _ :: _ ->
+      let states = extract_or_kill (fun _ -> None) elims states in
+      ignore (zip head stk);
+      match_endstack red info tab ~pat_state states next
+  | [] ->
+      let states = extract_or_kill (function [], subst -> Some subst | _ -> None) elims states in
+      match_endstack red info tab ~pat_state states next
+
+and match_arg : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> 'a =
+  fun red info tab ~pat_state next context states patterns t ->
+  let match_deeper = ref false in
+  let t' = it_mkLambda_or_LetIn context t in
+  let patterns, states = Array.split @@ Array.map2
+    (function Dead -> fun _ -> Ignore, Dead | (Live ({ subst; _ } as psubst) as state) -> function
+      | Ignore -> Ignore, state
+      | Check EHole i -> Ignore, Live { psubst with subst = Partial_subst.add_term i t' subst }
+      | Check EHoleIgnored -> Ignore, state
+      | Check ERigid p -> match_deeper := true; Check p, state
+    ) states patterns in
+  if !match_deeper then
+    let pat_state = Cons ({ states; context; patterns; next }, pat_state) in
+    red.red_kni info tab ~pat_state t []
+  else
+    match_main red info tab ~pat_state states next
+
+and match_head : 'a. 'a reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> _ -> 'a =
+  fun red info tab ~pat_state next context states patterns t stk ->
+  match [@ocaml.warning "-4"] t.term with
+  | FInd (ind', u) ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHInd (ind, pu), elims), psubst ->
+      if not @@ Ind.CanOrd.equal ind ind' then None else
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FConstruct (constr', u) ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHConstr (constr, pu), elims), psubst ->
+      if not @@ Construct.CanOrd.equal constr constr' then None else
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FAtom t' -> begin match [@ocaml.warning "-4"] kind t' with
+    | Sort s ->
+      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+      | (PHSort ps, elims), psubst ->
+        let subst = Sorts.pattern_match ps s psubst.subst in
+        Option.map (fun subst -> elims, { psubst with subst }) subst
+      | _ -> None) patterns states
+      in
+      let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+      match_main red info tab ~pat_state states loc
+    | Meta _ ->
+      let elims, states = extract_or_kill2 (fun _ -> None) patterns states in
+      let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+      match_main red info tab ~pat_state states loc
+    | _ -> assert false
+    end
+  | FFlex (ConstKey (c', u)) ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHSymbol (c, pu), elims), psubst ->
+      if not @@ Constant.CanOrd.equal c c' then None else
+      let subst = UVars.Instance.pattern_match pu u psubst.subst in
+      Some (elims, { psubst with subst })
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FRel n ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHRel n', elims), psubst ->
+      if not @@ Int.equal n n' then None else
+      Some (elims, psubst)
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FInt i' ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHInt i, elims), psubst ->
+      if not @@ Uint63.equal i i' then None else
+      Some (elims, psubst)
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FFloat f' ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHFloat f, elims), psubst ->
+      if not @@ Float64.equal f f' then None else
+      Some (elims, psubst)
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
+  | FProd (n, ty, body, e) ->
+    let ntys, _ = Term.decompose_prod body in
+    let na = 1 + List.length ntys in
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
+    let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
+    assert (na > 0);
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+        let npp = Array.length ptys in
+        if npp == na then Some (ptys, pbod, elims, psubst) else
+        let fst, lst = Array.chop na ptys in
+        Some (fst, ERigid (PHProd (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
+    in
+
+    let ntys, body = Term.decompose_prod_n (na-1) body in
+    let ctx1 = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
+    let ctx = ctx1 @ [Context.Rel.Declaration.LocalAssum (n, term_of_fconstr ty)] in
+    let ntys'' = List.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) (List.rev ntys) in
+    let tys = Array.of_list (ty :: ntys'') in
+    let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in
+    let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
+    match_main red info tab ~pat_state states loc
+  | FLambda (na, ntys, body, e) ->
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
+    let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
+    assert (na > 0);
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+      let np = Array.length ptys in
+      if np == na then Some (ptys, pbod, elims, psubst) else
+      let fst, lst = Array.chop na ptys in
+      Some (fst, ERigid (PHLambda (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
+    in
+    let ntys, tys' = List.chop na ntys in
+    let body = Term.compose_lam (List.rev tys') body in
+    let ctx = List.rev_map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
+    let tys = Array.of_list ntys in
+    let tys = Array.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) tys in
+    let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in
+    let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
+    match_main red info tab ~pat_state states loc
+  | _ ->
+    let states = extract_or_kill (fun _ -> None) patterns states in
+    ignore (zip t stk);
+    match_main red info tab ~pat_state states next
+
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
   fun info tab ~pat_state m stk ->
@@ -1504,7 +1773,12 @@ let rec knr : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
               ) (Array.of_list r)
             in
             let loc = LocStart { elims; context=[]; head = m; stack = stk; next = Return (unfold_fix, m, stk) } in
-            match_main info tab ~pat_state states loc
+            let red = {
+              red_kni = kni;
+              red_knit = knit;
+              red_ret = knr_ret;
+            } in
+            match_main red info tab ~pat_state states loc
         | Undef _ | OpaqueDef _ -> (set_ntrl m; knr_ret info tab ~pat_state (m,stk)))
   | FConstruct c ->
      let use_match = red_set info.i_flags fMATCH in
@@ -1587,7 +1861,12 @@ and knr_ret : type a. _ -> _ -> pat_state: (fconstr, stack, _, a) depth -> ?fail
   match pat_state with
   | Cons ({ states; context; patterns; next }, pat_state) ->
       let m, stk = i in
-      match_head info tab ~pat_state next context states patterns m stk
+      let red = {
+        red_kni = kni;
+        red_knit = knit;
+        red_ret = knr_ret;
+      } in
+      match_head red info tab ~pat_state next context states patterns m stk
   | Nil b ->
       match b with No -> i | Yes -> if failed then None else Some i
 
@@ -1628,269 +1907,11 @@ and case_inversion info tab ci u params indices v =
     if Array.for_all_i check_index 0 indices
     then Some v else None
 
-and match_main : type a. _ -> _ -> pat_state:(fconstr, stack, _, a) depth -> _ -> _ -> a =
-  fun info tab ~pat_state states loc ->
-  if Array.for_all (function Dead -> true | Live _ -> false) states then match_kill info tab ~pat_state loc else
-  match [@ocaml.warning "-4"] loc with
-  | LocStart { elims; context; head; stack; next = Return _ as next } ->
-    begin match Array.find2_map (fun state elim -> match state, elim with Live s, Check [] -> Some s | _ -> None) states elims with
-    | Some { subst; rhs } ->
-        let subst, qsubst, usubst = Partial_subst.to_arrays subst in
-        let subst = Array.fold_right subs_cons subst (subs_id 0) in
-        let usubst = UVars.AInstance.of_array (qsubst, usubst) in
-        let rhsu = Vars.subst_ainstance_constr usubst rhs in
-        let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
-        begin match pat_state with
-        | Nil Yes -> Some (m', stack)
-        | _ -> kni info tab ~pat_state m' stack
-        end
-    | None -> match_elim info tab ~pat_state next context states elims head stack
-    end
-  | LocArg { patterns; context; arg; next } ->
-      match_arg info tab ~pat_state next context states patterns arg
-  | LocStart { elims; context; head; stack; next } ->
-      match_elim info tab ~pat_state next context states elims head stack
-
-and match_kill : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> 'a =
-  fun info tab ~pat_state -> function
-  | LocArg { next; _ } -> match_kill info tab ~pat_state next
-  | LocStart { head; stack; next; _ } ->
-      ignore (zip head stack);
-      match next with
-      | Continue next -> match_kill info tab ~pat_state next
-      | Return k -> try_unfoldfix info tab ~pat_state k
-
-and match_endstack : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> _ -> 'a =
-  fun info tab ~pat_state states next ->
-  match next with
-  | Continue next -> match_main info tab ~pat_state states next
-  | Return k ->
-      assert (Array.for_all (function Dead -> true | Live _ -> false) states);
-      try_unfoldfix info tab ~pat_state k
-
-and try_unfoldfix : 'a. _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> 'a =
-  fun info tab ~pat_state (b, m, stk) ->
-  if not b then knr_ret info tab ~pat_state ~failed:true (m, stk) else
-  let _, cargs, stack = strip_update_shift_app_red m stk in
-  match [@ocaml.warning "-4"] stack with
-  | Zfix (fx, par) :: s ->
-    let rarg = fapp_stack(m,cargs) in
-    let stk' = par @ append_stack [|rarg|] s in
-    let (fxe,fxbd) = contract_fix_vect fx.term in
-    knit info tab ~pat_state fxe fxbd stk'
-  | _ -> knr_ret info tab ~pat_state ~failed:true (m, stk)
-
-
-and match_elim : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> _ -> 'a =
-  fun info tab ~pat_state next context states elims head stk ->
-  match stk with
-  | Zapp args :: s ->
-      let pargselims, states = extract_or_kill2 (function [@ocaml.warning "-4"] PEApp pargs :: es, subst -> Some ((pargs, es), subst) | _ -> None) elims states in
-      let na = Array.length args in
-      let np = Array.fold_left (Status.fold_left (fun a (pargs, _) -> min a (Array.length pargs))) na pargselims in
-      let pargs, elims, states =
-        extract_or_kill3 (fun ((pargs, elims), subst) ->
-          let npp = Array.length pargs in
-          if npp == np then Some (pargs, elims, subst) else
-          let fst, lst = Array.chop np pargs in
-          Some (fst, PEApp lst :: elims, subst))
-          pargselims states
-      in
-      let args, rest = Array.chop np args in
-      let head = {mark=neutr head.mark; term=FApp(head, args)} in
-      let stack = if Array.length rest > 0 then Zapp rest :: s else s in
-      let loc = LocStart { elims; context; head; stack; next } in
-      let loc = Array.fold_right2 (fun patterns arg next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array np) pargs)) args loc in
-      match_main info tab ~pat_state states loc
-  | Zshift k :: s -> match_elim info tab ~pat_state next context states elims (lift_fconstr k head) s
-  | Zupdate m :: s ->
-      let () = update m head.mark head.term in
-      match_elim info tab ~pat_state next context states elims head s
-  | ZcaseT (ci, u, pms, (p, r), brs, e) :: s ->
-      let t = FCaseT(ci, u, pms, (p, r), head, brs, e) in
-      let mark = neutr head.mark in
-      let head = {mark; term=t} in
-      let specif = Environ.lookup_mind (fst ci.ci_ind) info.i_cache.i_env in
-      let specif = (specif, specif.mind_packets.(snd ci.ci_ind)) in
-      let ntys_ret = Environ.expand_arity specif (ci.ci_ind, u) pms (fst p) in
-      let ntys_brs = Environ.expand_branch_contexts specif u pms brs in
-      let prets, pbrss, elims, states = extract_or_kill4 (function [@ocaml.warning "-4"]
-      | PECase (pind, pu, pret, pbrs) :: es, psubst ->
-        if not @@ Ind.CanOrd.equal pind ci.ci_ind then None else
-          let subst = UVars.Instance.pattern_match pu u psubst.subst in
-          Some (pret, pbrs, es, { psubst with subst })
-          | _ -> None)
-          elims states
-      in
-      let loc = LocStart { elims; context; head; stack=s; next } in
-      let ntys_ret = subst_context e ntys_ret in
-      let ret = mk_clos (usubs_liftn (Context.Rel.length ntys_ret) e) (snd p) in
-      let brs = Array.map2 (fun ctx br -> subst_context e ctx, mk_clos (usubs_liftn (Context.Rel.length ctx) e) (snd br)) ntys_brs brs in
-      let loc = Array.fold_right2 (fun patterns (ctx, arg) next -> LocArg { patterns; context = ctx @ context; arg; next }) (Array.transpose (Array.map (Status.split_array (Array.length brs)) pbrss)) brs loc in
-      let loc = LocArg { patterns = prets; context = ntys_ret @ context; arg = ret; next = loc } in
-      match_main info tab ~pat_state states loc
-  | Zproj (proj', r) :: s ->
-      let mark = (neutr head.mark) in
-      let head = {mark; term=FProj(Projection.make proj' true, r, head)} in
-      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-      | PEProj proj :: es, subst ->
-        if not @@ Projection.Repr.CanOrd.equal (Projection.repr proj) proj' then None else
-        Some (es, subst)
-      | _ -> None) elims states
-      in
-      let loc = LocStart { elims; context; head; stack=s; next } in
-      match_main info tab ~pat_state states loc
-  | Zfix _ :: _ | Zprimitive _ :: _ ->
-      let states = extract_or_kill (fun _ -> None) elims states in
-      ignore (zip head stk);
-      match_endstack info tab ~pat_state states next
-  | [] ->
-      let states = extract_or_kill (function [], subst -> Some subst | _ -> None) elims states in
-      match_endstack info tab ~pat_state states next
-
-
-and match_arg : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> 'a =
-  fun info tab ~pat_state next context states patterns t ->
-  let match_deeper = ref false in
-  let t' = it_mkLambda_or_LetIn context t in
-  let patterns, states = Array.split @@ Array.map2
-    (function Dead -> fun _ -> Ignore, Dead | (Live ({ subst; _ } as psubst) as state) -> function
-      | Ignore -> Ignore, state
-      | Check EHole i -> Ignore, Live { psubst with subst = Partial_subst.add_term i t' subst }
-      | Check EHoleIgnored -> Ignore, state
-      | Check ERigid p -> match_deeper := true; Check p, state
-    ) states patterns in
-  if !match_deeper then
-    let pat_state = Cons ({ states; context; patterns; next }, pat_state) in
-    kni info tab ~pat_state t []
-  else
-    match_main info tab ~pat_state states next
-
-and match_head : 'a. _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> _ -> 'a =
-  fun info tab ~pat_state next context states patterns t stk ->
-  match [@ocaml.warning "-4"] t.term with
-  | FInd (ind', u) ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHInd (ind, pu), elims), psubst ->
-      if not @@ Ind.CanOrd.equal ind ind' then None else
-      let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FConstruct (constr', u) ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHConstr (constr, pu), elims), psubst ->
-      if not @@ Construct.CanOrd.equal constr constr' then None else
-      let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FAtom t' -> begin match [@ocaml.warning "-4"] kind t' with
-    | Sort s ->
-      let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-      | (PHSort ps, elims), psubst ->
-        let subst = Sorts.pattern_match ps s psubst.subst in
-        Option.map (fun subst -> elims, { psubst with subst }) subst
-      | _ -> None) patterns states
-      in
-      let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-      match_main info tab ~pat_state states loc
-    | Meta _ ->
-      let elims, states = extract_or_kill2 (fun _ -> None) patterns states in
-      let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-      match_main info tab ~pat_state states loc
-    | _ -> assert false
-    end
-  | FFlex (ConstKey (c', u)) ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHSymbol (c, pu), elims), psubst ->
-      if not @@ Constant.CanOrd.equal c c' then None else
-      let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FRel n ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHRel n', elims), psubst ->
-      if not @@ Int.equal n n' then None else
-      Some (elims, psubst)
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FInt i' ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHInt i, elims), psubst ->
-      if not @@ Uint63.equal i i' then None else
-      Some (elims, psubst)
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FFloat f' ->
-    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
-    | (PHFloat f, elims), psubst ->
-      if not @@ Float64.equal f f' then None else
-      Some (elims, psubst)
-    | _ -> None) patterns states
-    in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    match_main info tab ~pat_state states loc
-  | FProd (n, ty, body, e) ->
-    let ntys, _ = Term.decompose_prod body in
-    let na = 1 + List.length ntys in
-    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
-    let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
-    assert (na > 0);
-    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
-        let npp = Array.length ptys in
-        if npp == na then Some (ptys, pbod, elims, psubst) else
-        let fst, lst = Array.chop na ptys in
-        Some (fst, ERigid (PHProd (lst, pbod), []), elims, psubst)
-      ) tysbodyelims states
-    in
-
-    let ntys, body = Term.decompose_prod_n (na-1) body in
-    let ctx1 = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
-    let ctx = ctx1 @ [Context.Rel.Declaration.LocalAssum (n, term_of_fconstr ty)] in
-    let ntys'' = List.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) (List.rev ntys) in
-    let tys = Array.of_list (ty :: ntys'') in
-    let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in
-    let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
-    match_main info tab ~pat_state states loc
-  | FLambda (na, ntys, body, e) ->
-    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
-    let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
-    assert (na > 0);
-    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
-      let np = Array.length ptys in
-      if np == na then Some (ptys, pbod, elims, psubst) else
-      let fst, lst = Array.chop na ptys in
-      Some (fst, ERigid (PHLambda (lst, pbod), []), elims, psubst)
-      ) tysbodyelims states
-    in
-    let ntys, tys' = List.chop na ntys in
-    let body = Term.compose_lam (List.rev tys') body in
-    let ctx = List.rev_map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
-    let tys = Array.of_list ntys in
-    let tys = Array.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) tys in
-    let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
-    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in
-    let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
-    match_main info tab ~pat_state states loc
-  | _ ->
-    let states = extract_or_kill (fun _ -> None) patterns states in
-    ignore (zip t stk);
-    match_main info tab ~pat_state states next
+let knred = {
+  red_kni = kni;
+  red_knit = knit;
+  red_ret = knr_ret;
+}
 
 let kni info tab v stk = kni info tab ~pat_state:(Nil No) v stk
 let knit info tab v stk = knit info tab ~pat_state:(Nil No) v stk
@@ -2101,5 +2122,5 @@ let unfold_ref_with_args infos tab fl v =
     in
     let head = { mark = Red; term = FFlex fl } in
     let loc = LocStart { elims; context=[]; head; stack = v; next = Return (unfold_fix, head, v) } in
-    match_main (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
+    match_main knred (infos_with_reds infos all) tab ~pat_state:(Nil Yes) states loc
   | Undef _ | OpaqueDef _ | Primitive _ -> None
