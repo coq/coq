@@ -321,21 +321,20 @@ let attach_modifiers (pref : string preference) ?(filter = Fun.const true) prefi
   in
   pref#connect#changed ~callback:cb
 
+let select_arch m m_mac =
+  (* Gtk's <Primary> maps to <Meta> (i.e. "Command") on Darwin (i.e. Mac),
+    <Control> on other architectures; but sometimes, we want more distinction *)
+  if Coq_config.arch = "Darwin" then m_mac else m
+
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"]
-    (* Note: on Darwin, this will give "<Control><Meta>", i.e. Ctrl and Command; on other
-    architectures, "<Primary>" binds to "<Control>" so it will give "<Control>" alone *)
-    ~init:"<Control><Primary>" ~repr:Repr.(string)
+    ~init:(select_arch "<Alt>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
-let select_arch m m_osx =
-  if Coq_config.arch = "Darwin" then m_osx else m
-
 let modifier_for_display =
   new preference ~name:["modifier_for_display"]
-   (* Note: <Primary> (i.e. <Meta>, i.e. "Command") on Darwin, i.e. MacOS X, but <Alt> elsewhere *)
     ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
