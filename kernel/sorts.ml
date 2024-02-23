@@ -189,6 +189,16 @@ module Quality = struct
   module Set = CSet.Make(Self)
   module Map = CMap.Make(Self)
 
+  type pattern =
+    | PQProp | PQSProp | PQType | PQVar of int option
+
+  let pattern_match ps s qusubst =
+    match ps, s with
+    | PQProp, QConstant QProp -> Some qusubst
+    | PQSProp, QConstant QSProp -> Some qusubst
+    | PQType, QConstant QType -> Some qusubst
+    | PQVar qio, q -> Some (Partial_subst.maybe_add_quality qio q qusubst)
+    | (PQProp | PQSProp | PQType), _ -> None
 end
 
 module QConstraint = struct
