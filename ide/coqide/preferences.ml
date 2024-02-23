@@ -310,11 +310,11 @@ let automatic_tactics =
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
 
-let attach_modifiers (pref : string preference) prefix =
+let attach_modifiers (pref : string preference) ?(filter = Fun.const true) prefix =
   let cb mds =
     let mds = str_to_mod_list mds in
     let change ~path ~key ~modi ~changed =
-      if CString.is_sub prefix path 0 then
+      if CString.is_prefix prefix path && filter path then
         ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
     in
     GtkData.AccelMap.foreach change
@@ -341,12 +341,19 @@ let modifier_for_display =
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
+let printopts_item_names = ref []
+
 let attach_modifiers_callback () =
   (* Tell to propagate changes done in preference menu to accel map *)
   (* To be done after the preferences are loaded *)
+  let printopts_filter path =
+    let after_last_slash_pos = (String.rindex path '/') + 1 in
+    let item_name = String.sub path after_last_slash_pos (String.length path - after_last_slash_pos) in
+    List.mem item_name !printopts_item_names
+  in
+  let _ = attach_modifiers modifier_for_display "<Actions>/View/" ~filter:printopts_filter in
   let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
   let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
-  let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
   let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
   ()
 

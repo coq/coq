@@ -1279,13 +1279,13 @@ let get_shortcut s =
 
 module Opt = Coq.PrintOpt
 
-let toggle_items menu_name l =
-  let f d =
-    let label = d.Opt.label in
+let printopts_items menu_name l =
+  let f Opt.{ label; init; opts } =
     let k, name = get_shortcut label in
     let accel = Option.map ((^) modifier_for_display#get) k in
-    toggle_item name ~label ?accel ~active:d.Opt.init
-      ~callback:(printopts_callback d.Opt.opts)
+    printopts_item_names := name :: !printopts_item_names;
+    toggle_item name ~label ?accel ~active:init
+      ~callback:(printopts_callback opts)
       menu_name
   in
   List.iter f l
@@ -1523,7 +1523,7 @@ let build_ui () =
     item "Show Proof Diffs" ~label:"_Show Proof (with diffs, if set)" ~accel:"<Shift>F2"
       ~callback:MiscMenu.show_proof_diffs;
   ];
-  toggle_items view_menu Coq.PrintOpt.bool_items;
+  printopts_items view_menu Coq.PrintOpt.bool_items;
 
   let navitem (text, label, stock, callback, tooltip, accel) =
     let accel = modifier_for_navigation#get ^ accel in
