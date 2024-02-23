@@ -107,20 +107,24 @@ let update_invtblq1 ~loc evd qold qvar (curvarq, tbl) =
             ++ str" is bound multiple times in the pattern (holes number "
             ++ int k ++ str" and " ++ int curvarq ++ str").")
 
+let safe_quality_pattern_of_quality ~loc evd qsubst stateq q =
+  match Sorts.Quality.(subst (subst_fn qsubst) q) with
+  | QConstant qc -> stateq, PQConstant qc
+  | QVar qv ->
+    let qio = Sorts.QVar.var_index qv in
+    let stateq = Option.fold_right (update_invtblq1 ~loc evd q) qio stateq in
+    stateq, PQVar qio
+
 let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u : state * _ =
   let (q, u) = u |> UVars.Instance.to_array in
-  let stateq, maskq = Array.fold_left_map (fun stateq qold ->
-    let qnew = Sorts.Quality.(var_index @@ subst (subst_fn qsubst) qold) in
-    Option.fold_right (update_invtblq1 ~loc evd qold) qnew stateq, qnew
-  ) stateq q
+  let stateq, maskq = Array.fold_left_map (safe_quality_pattern_of_quality ~loc evd qsubst) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
       let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
       Option.fold_right (update_invtblu1 ~loc ~alg:false evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
-  let mask = if Array.exists Option.has_some maskq || Array.exists Option.has_some masku then Some (maskq, masku) else None in
-  (state, stateq, stateu), mask
+  (state, stateq, stateu), (maskq, masku)
 
 let universe_level_subst_var_index usubst u =
   match Univ.Universe.level u with
@@ -342,6 +346,7 @@ let test_projection_apps env evd ~loc ind args =
 let rec test_pattern_redex env evd ~loc = function
   | PHLambda _, PEApp _ :: _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " beta redex")
   | PHConstr _, (PECase _ | PEProj _) :: _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " iota redex")
+  | PHConstr _, PEApp _ :: (PECase _ | PEProj _) :: _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " iota redex")
   | PHLambda _, _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " lambda pattern")
   | PHConstr (c, _) as head, PEApp args :: elims -> test_projection_apps env evd ~loc (fst c) args; Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
   | head, PEApp args :: elims -> Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
@@ -445,13 +450,13 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
       Pp.(str "Not all sort variables appear in the pattern.")
   end;
 
-  let update_invtbl evd evk n invtbl =
+  let update_invtbl evd evk n =
     let Evd.EvarInfo evi = Evd.find evd evk in
     let vars = Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.instance EConstr.mkVar in
-    Evar.Map.add evk (n, vars) invtbl
+    (n, vars)
   in
 
-  let invtbl = Evar.Map.fold (update_invtbl evd) invtbl Evar.Map.empty in
+  let invtbl = Evar.Map.mapi (update_invtbl evd) invtbl in
 
   (* 3. Read right hand side *)
   (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)

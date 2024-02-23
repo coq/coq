@@ -91,9 +91,9 @@ module Instance : sig
     val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
 
-    type mask = (int option array * int option array) option
+    type mask = Quality.pattern array * int option array
 
-    val pattern_match : mask -> t -> ('term, Quality.t, Universe.t) Partial_subst.t -> ('term, Quality.t, Universe.t) Partial_subst.t
+    val pattern_match : mask -> t -> ('term, Quality.t, Universe.t) Partial_subst.t -> ('term, Quality.t, Universe.t) Partial_subst.t option
 end =
 struct
   type t = Quality.t array * Level.t array
@@ -197,15 +197,13 @@ struct
     CArray.equal Quality.equal xq yq
     && CArray.equal Level.equal xu yu
 
-  type mask = (int option array * int option array) option
+  type mask = Quality.pattern array * int option array
 
   let pattern_match (qmask, umask) (qs, us) tqus =
-    let tqus = Array.fold_left2 (fun tqus mask q -> Partial_subst.maybe_add_quality mask q tqus) tqus qmask qs in
     let tqus = Array.fold_left2 (fun tqus mask u -> Partial_subst.maybe_add_univ mask (Univ.Universe.make u) tqus) tqus umask us in
-    tqus
-
-  let pattern_match pu u tqus =
-    Option.fold_right (fun pu -> pattern_match pu u) pu tqus
+    match Array.fold_left2 (fun tqus mask q -> Quality.pattern_match mask q tqus |> function Some tqs -> tqs | None -> raise_notrace Exit) tqus qmask qs with
+    | tqs -> Some tqs
+    | exception Exit -> None
 end
 
 module AInstance : sig
