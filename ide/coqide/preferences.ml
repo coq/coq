@@ -564,7 +564,7 @@ let show_line_number =
   new preference ~name:["show_line_number"] ~init:false ~repr:Repr.(bool)
 
 let auto_indent =
-  new preference ~name:["auto_indent"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["auto_indent"] ~init:true ~repr:Repr.(bool)
 
 let show_spaces =
   new preference ~name:["show_spaces"] ~init:true ~repr:Repr.(bool)
@@ -582,7 +582,7 @@ let tab_length =
   new preference ~name:["tab_length"] ~init:2 ~repr:Repr.(int)
 
 let highlight_current_line =
-  new preference ~name:["highlight_current_line"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["highlight_current_line"] ~init:true ~repr:Repr.(bool)
 
 let microPG =
   (* Legacy name in preference is "nanoPG" *)
