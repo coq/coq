@@ -383,7 +383,6 @@ let parse_args argv =
 (* XXX: At some point we need to either port the checker to use the
    feedback system or to remove its use completely. *)
 let init_with_argv argv =
-  Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   try
     parse_args argv;

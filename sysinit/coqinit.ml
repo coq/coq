@@ -78,7 +78,8 @@ let init_gc () =
 let init_ocaml () =
   CProfile.init_profile ();
   init_gc ();
-  Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
+  (* Get error message (and backtrace if enabled) on Ctrl-C instead of just exiting the process *)
+  Sys.catch_break true
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
   | None -> ()
