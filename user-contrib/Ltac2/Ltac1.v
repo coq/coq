@@ -37,6 +37,11 @@ Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "coq-core.plugins
 
 (** Conversion functions *)
 
+Ltac2 @ external of_int : int -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_int".
+(** Converts an Ltac2 int into an Ltac1 value. *)
+Ltac2 @ external to_int : t -> int option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_int".
+(** Converts an Ltac1 int into an Ltac2 value. *)
+
 Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_constr".
 (** Converts an Ltac2 constr into an Ltac1 value. *)
 Ltac2 @ external to_constr : t -> constr option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_constr".

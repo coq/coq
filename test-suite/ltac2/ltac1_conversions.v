@@ -28,4 +28,29 @@ Goal nat. (* we need an open goal because ltac1 auto focuses *)
     | _ => Control.throw Assertion_failure
     end.
 
+  Ltac2 Eval
+    ltac1:(
+      let n := numgoals in
+      let t := ltac2:(n |-
+        match Ltac1.to_int n with
+        | Some 1 => ()
+        | _ => Control.throw Assertion_failure
+        end)
+      in
+      t n).
+
+  Fail Ltac2 Eval
+    ltac1:(
+      let n := numgoals in
+      let t := ltac2:(n |-
+        match Ltac1.to_int n with
+        | None => ()
+        | _ => Control.throw Assertion_failure
+        end)
+      in
+      t n).
+
+  Ltac2 Eval
+   ltac1:(n |- do n assert False; [| | |]) (Ltac1.of_int 2).
+
 Abort.
