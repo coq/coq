@@ -8,18 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val reload_timer : Ideutils.timer
-val autosave_timer : Ideutils.timer
+type button_contents =
+| ButtonWithStock of GtkStock.id
+| ButtonWithLabel of string
 
-class type ops =
-object
-  method filename : string option
-  method update_stats : unit
-  method changed_on_disk : bool
-  method reload : ?parent:GWindow.window -> unit -> unit
-  method auto_save : unit
-  method save : string -> bool
-  method saveas : ?parent:GWindow.window -> string -> bool
-end
+val question_box :
+  ?parent:GWindow.window -> ?icon:#GObj.widget -> title:string ->
+  ?buttons:button_contents list -> ?default:int -> string -> int
 
-class fileops : GText.buffer -> string option -> (unit -> unit) -> ops
+val message_box :
+  ?parent:GWindow.window -> ?icon:#GObj.widget -> title:string ->
+  ?ok:button_contents -> string -> unit

@@ -24,6 +24,7 @@ object
   method set_right_margin_position : int -> unit
   method show_right_margin : bool
   method set_show_right_margin : bool -> unit
+  method select_all : unit -> unit
   method comment : unit -> unit
   method uncomment : unit -> unit
   method apply_unicode_binding : unit -> unit

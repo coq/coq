@@ -28,6 +28,7 @@ class type message_view =
       (** same as [add], but with an explicit level instead of [Notice] *)
 
     method debug_prompt : Pp.t -> unit
+    method select_all : unit
     method has_selection : bool
     method get_selected_text : string
     method editable2 : bool

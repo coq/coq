@@ -14,37 +14,39 @@ class finder name (view : GText.view) =
 
   let widget = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Find & Replace (%s)" name) () in
-  let replace_box = GPack.grid (* ~columns:4 ~rows:2 *) ~col_homogeneous:false ~row_homogeneous:false
+  let replace_box = GPack.grid ~col_homogeneous:false ~row_homogeneous:false
     ~packing:widget#add () in
-  let hb = GPack.hbox ~packing:(replace_box#attach
-      ~left:1 ~top:0 (*~expand:`X ~fill:`X*)) () in
+  let hb = GPack.hbox ~packing:(replace_box#attach ~left:1 ~top:0) () in
   let use_regex =
     GButton.check_button ~label:"Regular expression"
       ~packing:(hb#pack ~expand:false ~fill:true ~padding:3) () in
   let use_nocase =
     GButton.check_button ~label:"Case insensitive"
       ~packing:(hb#pack ~expand:false ~fill:true ~padding:3) () in
-  let _ = GMisc.label ~text:"Find:" ~xalign:1.0
-    ~packing:(replace_box#attach
-     (*~xpadding:3 ~ypadding:3*) ~left:0 ~top:1 (*~fill:`X*)) () in
-  let _ = GMisc.label ~text:"Replace:" ~xalign:1.0
-    ~packing:(replace_box#attach
-     (* ~xpadding:3 ~ypadding:3*) ~left:0 ~top:2 (*~fill:`X*)) () in
+  let find_label = GMisc.label ~text:"Find:"
+    ~packing:(replace_box#attach ~left:0 ~top:1) () in
+  let replace_label = GMisc.label ~text:"Replace with:"
+    ~packing:(replace_box#attach ~left:0 ~top:2) () in
+  let () = List.iter (fun label ->
+      label#set_halign `START;
+      label#set_margin_left 4;
+      label#set_margin_right 4;
+    ) [find_label; replace_label] in
   let find_entry = GEdit.entry ~editable:true
-    ~packing:(replace_box#attach
-      (*~xpadding:3 ~ypadding:3*) ~left:1 ~top:1 (*~expand:`X ~fill:`X*)) () in
+    ~packing:(replace_box#attach ~left:1 ~top:1) () in
   let replace_entry = GEdit.entry ~editable:true
-    ~packing:(replace_box#attach
-      (*~xpadding:3 ~ypadding:3*) ~left:1 ~top:2 (*~expand:`X ~fill:`X*)) () in
+    ~packing:(replace_box#attach ~left:1 ~top:2) () in
   let next_button = GButton.button ~label:"_Next" ~use_mnemonic:true
-    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:2 ~top:1) () in
+    ~packing:(replace_box#attach ~left:2 ~top:1) () in
   let previous_button = GButton.button ~label:"_Previous" ~use_mnemonic:true
-    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:3 ~top:1) () in
+    ~packing:(replace_box#attach ~left:3 ~top:1) () in
   let replace_button = GButton.button ~label:"_Replace" ~use_mnemonic:true
-    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:2 ~top:2) () in
+    ~packing:(replace_box#attach ~left:2 ~top:2) () in
   let replace_all_button =
     GButton.button ~label:"Replace _All" ~use_mnemonic:true
-      ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:3 ~top:2) () in
+      ~packing:(replace_box#attach ~left:3 ~top:2) () in
+  let () = List.iter (fun button -> button#set_margin_left 2)
+    [next_button; previous_button; replace_button; replace_all_button] in
 
   object (self)
     val mutable last_found = None
@@ -136,14 +138,17 @@ class finder name (view : GText.view) =
         view#buffer#end_user_action ()
       end
 
-    method private set_not_found () =
-      find_entry#misc#modify_bg [`NORMAL, `NAME "#F7E6E6"];
+    method private set_not_found =
+      find_entry#set_secondary_icon_stock `DELETE;
+      find_entry#set_secondary_icon_tooltip_text "String not found";
 
-    method private set_found () =
-      find_entry#misc#modify_bg [`NORMAL, `NAME "#BAF9CE"]
+    method private set_found =
+      find_entry#set_secondary_icon_stock `FIND;
+      find_entry#set_secondary_icon_tooltip_text "String found";
 
-    method private set_normal () =
-      find_entry#misc#modify_bg [`NORMAL, `NAME "white"]
+    method private set_normal =
+      find_entry#set_secondary_icon_stock (`STOCK "");
+      find_entry#set_secondary_icon_tooltip_text "";
 
     method private find_from backward ?(wrapped=false) (starti : GText.iter) =
       let found =
@@ -157,12 +162,12 @@ class finder name (view : GText.view) =
           self#find_from backward ~wrapped:true view#buffer#end_iter
         else
           let _ = Ideutils.flash_info "String not found" in
-          self#set_not_found ()
+          self#set_not_found
       | Some (start, stop) ->
         let _ = view#buffer#select_range start stop in
         let scroll = `MARK (view#buffer#create_mark stop) in
         let _ = view#scroll_to_mark ~use_align:false scroll in
-        self#set_found ()
+        self#set_found
 
     method find_forward () =
       let starti = view#buffer#get_iter `SEL_BOUND in
@@ -176,6 +181,7 @@ class finder name (view : GText.view) =
 
     method hide () =
       widget#hide;
+      self#set_normal;
       view#coerce#misc#grab_focus ()
 
     method show () =
