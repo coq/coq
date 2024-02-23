@@ -211,7 +211,7 @@ let print_usage_coqtop () =
 let usage () =
   print_usage_coqtop ();
   flush stderr;
-  exit 1
+  exit 0
 
 open Type_errors
 
