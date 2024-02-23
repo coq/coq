@@ -1590,8 +1590,8 @@ and match_elim : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
       | PECase (pind, pu, pret, pbrs) :: es, psubst ->
         if not @@ Ind.CanOrd.equal pind ci.ci_ind then None else
           let subst = UVars.Instance.pattern_match pu u psubst.subst in
-          Some (pret, pbrs, es, { psubst with subst })
-          | _ -> None)
+          Option.map (fun subst -> (pret, pbrs, es, { psubst with subst })) subst
+      | _ -> None)
           elims states
       in
       let loc = LocStart { elims; context; head; stack=s; next } in
@@ -1645,7 +1645,7 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     | (PHInd (ind, pu), elims), psubst ->
       if not @@ Ind.CanOrd.equal ind ind' then None else
       let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
+      Option.map (fun subst -> elims, { psubst with subst }) subst
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
@@ -1655,7 +1655,7 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     | (PHConstr (constr, pu), elims), psubst ->
       if not @@ Construct.CanOrd.equal constr constr' then None else
       let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
+      Option.map (fun subst -> elims, { psubst with subst }) subst
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
@@ -1681,7 +1681,7 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     | (PHSymbol (c, pu), elims), psubst ->
       if not @@ Constant.CanOrd.equal c c' then None else
       let subst = UVars.Instance.pattern_match pu u psubst.subst in
-      Some (elims, { psubst with subst })
+      Option.map (fun subst -> elims, { psubst with subst }) subst
     | _ -> None) patterns states
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
@@ -1770,7 +1770,9 @@ let match_symbol red info tab ~pat_state fl (u, b, r) stk =
       let pu, es = r.lhs_pat in
       let subst = Partial_subst.make r.nvars in
       let subst = UVars.Instance.pattern_match pu u subst in
-      Live { subst; rhs = r.Declarations.rhs }, Check es
+      match subst with
+      | Some subst -> Live { subst; rhs = r.Declarations.rhs }, Check es
+      | None -> Dead, Ignore
     ) (Array.of_list r)
   in
   let m = { mark = Red; term = FFlex fl } in
