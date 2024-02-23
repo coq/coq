@@ -117,9 +117,12 @@ let make_coqtop_args fname =
         (* at initialization of coqtop (see #10286) *)
         (* If the file name is a valid identifier, use it as toplevel name; *)
         (* otherwise the default “Top” will be used. *)
-        match Unicode.ident_refutation (Filename.chop_extension (Filename.basename fname)) with
-        | Some _ -> args
-        | None -> "-topfile"::fname::args
+        try
+          match Unicode.ident_refutation (Filename.chop_extension (Filename.basename fname)) with
+          | Some _ -> args
+          | None -> "-topfile"::fname::args
+        with Invalid_argument _ ->
+          failwith "CoqIDE cannot open files which do not have an extension in their filename."
   in
   proj, args
 
@@ -130,16 +133,15 @@ let load_file_cb : (string -> unit) ref = ref ignore
 let drop_received context ~x ~y data ~info ~time =
   if data#format = 8 then begin
     let files = Str.split (Str.regexp "\r?\n") data#data in
-    let path = Str.regexp "^file://\\(.*\\)$" in
     List.iter (fun f ->
-      if Str.string_match path f 0 then
-        !load_file_cb (Str.matched_group 1 f)
+      let _, f = Glib.Convert.filename_from_uri f in
+      !load_file_cb f;
     ) files;
     context#finish ~success:true ~del:false ~time
   end else context#finish ~success:false ~del:false ~time
 
 let drop_targets = [
-  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0}
+  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0 }
 ]
 
 let set_drag (w : GObj.drag_ops) =
@@ -309,7 +311,7 @@ let select_and_save ?parent ~saveas ?filename sn =
       let ok = do_save f in
       confirm_save ok;
       if ok then begin
-        sn.tab_label#set_text (Filename.basename f);
+        sn.tab_label#set_text (Filename.remove_extension (Filename.basename f));
         sn.abs_file_name <- Some (Session.to_abs_file_name f);
         (* copying local breakpoints to other sessions seems pointless
            for a "save as" because the saved file needs to be compiled
@@ -345,7 +347,7 @@ let check_quit ?parent saveall =
       ~default:0
       ~icon:(warn_image ())#coerce
       ?parent
-      "There are unsaved buffers"
+      "There are unsaved buffers."
     in
     match answ with
       | 1 -> saveall ()
@@ -434,11 +436,11 @@ let saveall _ =
 
 let () = Coq.save_all := saveall
 
-let revert_all ?parent _ =
+let reload_all ?parent _ =
   List.iter
     (fun sn -> if sn.fileops#changed_on_disk then begin
         clear_all_bpts sn;
-        sn.fileops#revert ?parent ()
+        sn.fileops#reload ?parent ()
       end)
     notebook#pages
 
@@ -556,12 +558,12 @@ end
 
 (** Timers *)
 
-let reset_revert_timer () =
-  FileOps.revert_timer.kill ();
-  if global_auto_revert#get then
-    FileOps.revert_timer.run
-      ~ms:global_auto_revert_delay#get
-      ~callback:(fun () -> File.revert_all (); true)
+let reset_reload_timer () =
+  FileOps.reload_timer.kill ();
+  if global_auto_reload#get then
+    FileOps.reload_timer.run
+      ~ms:global_auto_reload_delay#get
+      ~callback:(fun () -> File.reload_all (); true)
 
 let reset_autosave_timer () =
   let autosave sn = try sn.fileops#auto_save with _ -> () in
@@ -598,7 +600,7 @@ let editor ?parent sn =
       File.save ();
       let f = Filename.quote f in
       let cmd = Util.subst_command_placeholder cmd_editor#get f in
-      run_command ignore (fun _ -> sn.fileops#revert ?parent ()) cmd
+      run_command ignore (fun _ -> sn.fileops#reload ?parent ()) cmd
 
 let editor ?parent = cb_on_current_term (editor ?parent)
 
@@ -1464,7 +1466,7 @@ let build_ui () =
           with e ->
             flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;
-        reset_revert_timer ());
+        reset_reload_timer ());
   ];
 
   menu view_menu [
@@ -1766,7 +1768,7 @@ let make_scratch_buffer () =
 
 let main files =
   let w = build_ui () in
-  reset_revert_timer ();
+  reset_reload_timer ();
   reset_autosave_timer ();
   (match files with
     | [] -> make_scratch_buffer ()

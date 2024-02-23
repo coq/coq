@@ -273,11 +273,11 @@ let source_language =
 let source_style =
   new preference ~name:["source_style"] ~init:"coq_style" ~repr:Repr.(string)
 
-let global_auto_revert =
-  new preference ~name:["global_auto_revert"] ~init:false ~repr:Repr.(bool)
+let global_auto_reload =
+  new preference ~name:["global_auto_reload"] ~init:false ~repr:Repr.(bool)
 
-let global_auto_revert_delay =
-  new preference ~name:["global_auto_revert_delay"] ~init:10000 ~repr:Repr.(int)
+let global_auto_reload_delay =
+  new preference ~name:["global_auto_reload_delay"] ~init:10000 ~repr:Repr.(int)
 
 let auto_save =
   new preference ~name:["auto_save"] ~init:true ~repr:Repr.(bool)
@@ -965,13 +965,13 @@ let configure ?(apply=(fun () -> ())) parent =
       (string_of_int window_width#get)
   in
 
-  let global_auto_revert = pbool "Enable global auto revert" global_auto_revert in
-  let global_auto_revert_delay =
+  let global_auto_reload = pbool "Check for modified files" global_auto_reload in
+  let global_auto_reload_delay =
     string
-    ~f:(fun s -> global_auto_revert_delay#set
+    ~f:(fun s -> global_auto_reload_delay#set
           (try int_of_string s with _ -> 10000))
-      "Global auto revert delay (ms)"
-      (string_of_int global_auto_revert_delay#get)
+      "Modified file check interval (ms)"
+      (string_of_int global_auto_reload_delay#get)
   in
 
   let auto_save = pbool "Enable auto save" auto_save in
@@ -1128,7 +1128,7 @@ let configure ?(apply=(fun () -> ())) parent =
              [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
-             [global_auto_revert;global_auto_revert_delay;
+             [global_auto_reload;global_auto_reload_delay;
               auto_save; auto_save_delay; (* auto_save_name*)
               encodings; line_ending;
              ]);
