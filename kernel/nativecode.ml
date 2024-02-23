@@ -57,6 +57,15 @@ let is_lazy t =
   | App _ | LetIn _ | Case _ | Proj _ -> true
   | _ -> false
 
+let is_lazy_constant cb =
+  (* Bound universes are turned into lambda-abstractions *)
+  UVars.AbstractContext.is_constant (Declareops.constant_polymorphic_context cb) &&
+  (* So are context variables *)
+  List.is_empty cb.const_hyps &&
+  match cb.const_body with
+  | Def body -> is_lazy body
+  | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> false
+
 type prefix = string
 
 (* Linked code location utilities *)
@@ -74,9 +83,7 @@ let get_const_prefix env c =
 
 let get_const_lazy env c =
   let cb = Environ.lookup_constant c env in
-  match cb.const_body with
-  | Def body -> is_lazy body
-  | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> false
+  is_lazy_constant cb
 
 (** Global names **)
 type gname =
@@ -2077,12 +2084,12 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id, [||]))::auxdefs
 
 let compile_constant env sigma con cb =
-    let no_univs = (0,0) = UVars.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
+    let no_univs = UVars.AbstractContext.is_constant (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let code = lambda_of_constr env sigma t in
       debug_native_compiler (fun () -> Pp.str "Generated lambda code");
-      let is_lazy = is_lazy t in
+      let is_lazy = is_lazy_constant cb in
       let wrap t = if is_lazy then MLprimitive (Lazy, [|t|]) else t in
       let l = Constant.label con in
       let auxdefs,code =
@@ -2138,7 +2145,7 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-        if (UVars.AbstractContext.size u) = (0,0) then
+        if UVars.AbstractContext.is_constant u then
           [|get_ind_code j; ml_empty_instance|]
         else [|get_ind_code j|]
       in
