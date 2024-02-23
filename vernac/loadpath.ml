@@ -36,7 +36,7 @@ let anomaly_too_many_paths path =
   CErrors.anomaly Pp.(str "Several logical paths are associated with" ++ spc () ++ str path ++ str ".")
 
 let find_load_path phys_dir =
-  let phys_dir = CUnix.canonical_path_name phys_dir in
+  let phys_dir = CUnix.canonical_dir phys_dir in
   let filter p = String.equal p.path_physical phys_dir in
   let paths = List.filter filter !load_paths in
   match paths with
@@ -95,7 +95,7 @@ let warn_overriding_logical_loadpath =
                ; DP.print coq_path]))
 
 let add_load_path root phys_path coq_path ~implicit =
-  let phys_path = CUnix.canonical_path_name phys_path in
+  let phys_path = CUnix.canonical_dir phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
     path_logical = coq_path;

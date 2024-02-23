@@ -48,7 +48,7 @@ let use_suffix prefix suffix =
   then suffix
   else Filename.concat prefix suffix
 
-let canonical_path_name p =
+let canonical_dir p =
   let current = Sys.getcwd () in
   try
     Sys.chdir p;
@@ -60,7 +60,7 @@ let canonical_path_name p =
     Filename.concat current p
 
 let coqbin =
-  canonical_path_name (Filename.dirname Sys.executable_name)
+  canonical_dir (Filename.dirname Sys.executable_name)
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)

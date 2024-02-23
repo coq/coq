@@ -218,7 +218,7 @@ let process_cmd_line ~warning_fn orig_dir parse_extra proj args =
   let mk_path d =
     let p = CUnix.correct_path d orig_dir in
     { path = CUnix.remove_path_dot (post_canonize p);
-      canonical_path = CUnix.canonical_path_name p } in
+      canonical_path = CUnix.canonical_dir p } in
   let rec aux proj = function
   | [] -> proj
   | "-impredicative-set" :: _ ->
