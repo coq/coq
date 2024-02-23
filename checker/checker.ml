@@ -208,10 +208,10 @@ let print_usage = print_usage_channel stderr
 let print_usage_coqtop () =
   print_usage "Usage: coqchk <options> modules\n\n"
 
-let usage () =
+let usage exitcode =
   print_usage_coqtop ();
   flush stderr;
-  exit 0
+  exit exitcode
 
 open Type_errors
 
@@ -347,7 +347,7 @@ let parse_args argv =
       parse rem
 
     | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
-    | ("-Q"|"-R") :: ([] | [_]) -> usage ()
+    | ("-Q"|"-R") :: ([] | [_]) -> usage 1
 
     | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 
@@ -357,7 +357,7 @@ let parse_args argv =
       print_endline coqlib;
       exit 0
 
-    | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
+    | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage 0
 
     | ("-v"|"--version") :: _ -> version ()
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
@@ -365,10 +365,10 @@ let parse_args argv =
         Check_stat.output_context := true; parse rem
 
     | "-admit" :: s :: rem -> add_admit s; parse rem
-    | "-admit" :: [] -> usage ()
+    | "-admit" :: [] -> usage 1
 
     | "-norec" :: s :: rem -> add_norec s; parse rem
-    | "-norec" :: [] -> usage ()
+    | "-norec" :: [] -> usage 1
 
     | "-silent" :: rem ->
         Flags.quiet := true; parse rem
