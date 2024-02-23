@@ -168,8 +168,8 @@ let compile_library (code, symb) fn =
   let header = mk_library_header symb in
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
-  let dirname = Filename.dirname fn in
-  let dirname = dirname / !output_dir in
+  let dirname =
+    if Filename.is_relative !output_dir then Filename.dirname fn / !output_dir else !output_dir in
   let () =
     try Unix.mkdir dirname 0o755
     with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
