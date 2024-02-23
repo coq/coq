@@ -52,10 +52,12 @@ let fresh_lname n =
   incr lname_ctr;
   { lname = n; luid = !lname_ctr }
 
-let is_lazy t =
-  match Constr.kind t with
-  | App _ | LetIn _ | Case _ | Proj _ -> true
-  | _ -> false
+let rec is_lazy t = match Constr.kind t with
+| App _ | LetIn _ | Case _ | Proj _ -> true
+| Cast (c,_, _) -> is_lazy c
+| Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ | Int _
+| Float _ | Prod _ | Lambda _ | Evar _ | Fix _ | CoFix _ | Array _ ->
+  false
 
 let is_lazy_constant cb =
   (* Bound universes are turned into lambda-abstractions *)
