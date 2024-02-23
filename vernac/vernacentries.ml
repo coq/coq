@@ -745,12 +745,6 @@ let vernac_exact_proof ~lemma ~pm c =
 let vernac_assumption ~atts discharge kind l inline =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  List.iter (fun (is_coe,(idl,c)) ->
-    if Dumpglob.dump () then
-      List.iter (fun (lid, _) ->
-          match scope with
-            | Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   if Option.has_some atts.using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?user_warns:atts.user_warns ~inline l
@@ -1482,9 +1476,9 @@ let vernac_declare_instance ~atts id bl inst pri =
   in
   Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
 
-let vernac_context ~atts sup =
+let vernac_context ~atts ctx =
   let program_mode, poly = Attributes.(parse (Notations.(program ++ polymorphic))) atts in
-  ComAssumption.do_context ~program_mode ~poly sup
+  ComAssumption.do_context ~program_mode ~poly ctx
 
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in

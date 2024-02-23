@@ -204,6 +204,12 @@ let interp_context_gen ~program_mode ~kind ~share ~autoimp_enable ~coercions env
    sigma, ctx
 
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
+  let sec = Lib.sections_are_opened () in
+  if Dumpglob.dump () then begin
+    List.iter (fun (_,(idl,_)) ->
+      List.iter (fun (lid, _) ->
+          let ty = if sec then "var" else "ax" in
+          Dumpglob.dump_definition lid sec ty) idl) l end;
   let env = Global.env () in
   let udecl, l = match scope with
     | Locality.Global import_behavior -> process_assumptions_udecls l
