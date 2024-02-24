@@ -258,27 +258,27 @@ let v_vm_reloc_table = Array (v_pair Int Int)
 
 let v_vm_annot_switch = v_tuple "vm_annot_switch" [|v_vm_reloc_table; v_bool; Int|]
 
-let v_vm_structured_constant = v_sum "vm_structured_constant" 0 [|
-    [|v_sort|];
-    [|v_ind|];
-    [|Fail "Const_evar"|];
-    [|Int|];
-    [|v_instance|];
-    [|Any|]; (* contains a Vmvalues.value *)
-    [|v_uint63|];
-    [|Float64|];
-  |]
-
 let v_vm_caml_prim = v_enum "vm_caml_prim" 6
 
-let v_reloc_info = v_sum "vm_reloc_info" 0 [|
-    [|v_vm_annot_switch|];
-    [|v_vm_structured_constant|];
+let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
+  [|v_sort|];
+  [|Fail "Evar"|];
+  [|Int|];
+  [|v_instance|];
+  [|Any|]; (* contains a Vmvalues.value *)
+  [|v_uint63|];
+  [|Float64|];
+  [|v_vm_annot_switch|];
+  [|v_vm_caml_prim|];
+|]
+
+let v_reloc = v_sum "vm_reloc" 0 [|
+    [|v_ind|];
     [|v_cst|];
-    [|v_vm_caml_prim|];
+    [|Int|];
   |]
 
-let v_vm_patches = v_tuple "vm_patches" [|Array v_reloc_info|]
+let v_vm_patches = v_tuple "vm_patches" [|Array v_reloc|]
 
 let v_vm_pbody_code index =
   v_sum "pbody_code" 1 [|
@@ -301,7 +301,7 @@ let v_vm_fv = Array v_vm_fv_elem
 
 let v_vm_positions = String
 
-let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positions|]
+let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positions; Array v_non_subst_reloc|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
