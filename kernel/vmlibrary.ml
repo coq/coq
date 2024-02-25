@@ -105,15 +105,19 @@ let create code tab =
 
 end
 
-type compiled_library = VmTable.t
-type on_disk = DirPath.t * VmTable.t Delayed.t
+type compiled_library = {
+  lib_dp : DirPath.t;
+  lib_data : to_patch array;
+}
+
+type on_disk = DirPath.t * compiled_library Delayed.t
 
 let inject lib =
-  (lib.VmTable.table_dir, Delayed.return lib)
+  (lib.lib_dp, Delayed.return lib)
 
 type t = {
   local : VmTable.t;
-  foreign : VmTable.t Delayed.t DPmap.t;
+  foreign : compiled_library Delayed.t DPmap.t;
 }
 
 type index = VmTable.index
@@ -134,7 +138,7 @@ let add code lib =
   let lib = { lib with local = tab } in
   lib, idx
 
-let vm_segment : VmTable.t ObjFile.id = ObjFile.make_id "vmlibrary"
+let vm_segment : compiled_library ObjFile.id = ObjFile.make_id "vmlibrary"
 
 let load dp ~file ch =
   (dp, Delayed.make ~file ~segment:vm_segment ch : on_disk)
@@ -143,21 +147,25 @@ let link (dp, m) libs =
   let () = assert (not @@ DPmap.mem dp libs.foreign) in
   { libs with foreign = DPmap.add dp m libs.foreign }
 
+let missing_index dp i =
+  CErrors.anomaly Pp.(str "Missing VM index " ++ int i ++
+    str " in library " ++ DirPath.print dp)
+
 let resolve (dp, i) libs =
-  let tab =
-    if DirPath.equal dp libs.local.VmTable.table_dir then
-      libs.local
-    else match DPmap.find dp libs.foreign with
-    | tab -> Delayed.eval tab
-    | exception Not_found ->
-      CErrors.anomaly Pp.(str "Missing VM table for library " ++
-        DirPath.print dp)
-  in
-  match Int.Map.find i tab.VmTable.table_val with
-  | v -> v
+  if DirPath.equal dp libs.local.VmTable.table_dir then
+    match Int.Map.find i libs.local.VmTable.table_val with
+    | v -> v
+    | exception Not_found -> missing_index dp i
+  else match DPmap.find dp libs.foreign with
+  | tab ->
+    let tab = Delayed.eval tab in
+    tab.lib_data.(i)
   | exception Not_found ->
-    CErrors.anomaly Pp.(str "Missing VM index " ++ int i ++
-      str " in library " ++ DirPath.print dp)
+    CErrors.anomaly Pp.(str "Missing VM table for library " ++
+      DirPath.print dp)
 
 let export lib =
-  lib.local
+  let local = lib.local in
+  let init i = Int.Map.find i local.VmTable.table_val in
+  let data = Array.init local.VmTable.table_len init in
+  { lib_dp = local.VmTable.table_dir; lib_data = data }
