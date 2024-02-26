@@ -44,7 +44,24 @@ let { Goptions.get = get_use_typeclasses_for_conversion } =
 exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
-let apply_coercion_args env sigma make_body ty arg arg_ty nparams =
+type coercion_head =
+  | PrimProj of Constant.t * EInstance.t * Projection.t * Sorts.relevance
+  | ConstrHead of EConstr.t
+
+let mkAppOrProj (head, args) =
+  match head with
+  | PrimProj (cst, u, p, r) ->
+    let npars = Projection.npars p in
+    if Array.length args > npars then
+      let args = Array.skipn npars args in
+      let arg, args = Array.sep_first args in
+      mkApp (mkProj (p, r, arg), args)
+    else
+      mkApp (mkConstU (cst, u), args)
+  | ConstrHead c ->
+      mkApp (c, args)
+
+let apply_coercion_args env sigma head ty arg arg_ty nparams =
   let destProd sigma typ =
     match EConstr.kind sigma (whd_all env sigma typ) with
     | Prod (_, c1, c2) -> c1, c2
@@ -62,7 +79,7 @@ let apply_coercion_args env sigma make_body ty arg arg_ty nparams =
       try Evarconv.unify_leq_delay env sigma arg_ty c1
       with Evarconv.UnableToUnify _ -> raise NoCoercion in
     sigma, params @ [arg], subst1 arg c2 in
-  sigma, make_body args, params, typ
+  sigma, mkAppOrProj (head, Array.of_list args), params, typ
 
 (* appliquer le chemin de coercions de patterns p *)
 let apply_pattern_coercion ?loc pat p =
@@ -350,14 +367,8 @@ let saturate_evd env sigma =
 
 type coercion_trace =
   | IdCoe
-  | PrimProjCoe of {
-      proj : Projection.Repr.t;
-      relevance : Sorts.relevance;
-      args : econstr list;
-      previous : coercion_trace;
-    }
   | Coe of {
-      head : econstr;
+      head : coercion_head;
       args : econstr list;
       previous : coercion_trace;
     }
@@ -370,15 +381,10 @@ let empty_coercion_trace = IdCoe
 let rec reapply_coercions sigma trace c = match trace with
   | IdCoe -> c
   | ReplaceCoe c -> c
-  | PrimProjCoe { proj; relevance; args; previous } ->
-    let c = reapply_coercions sigma previous c in
-    let args = args@[c] in
-    let head, args = match args with [] -> assert false | hd :: tl -> hd, tl in
-    applist (mkProj (Projection.make proj false, relevance, head), args)
   | Coe {head; args; previous} ->
     let c = reapply_coercions sigma previous c in
-    let args = args@[c] in
-    applist (head, args)
+    let args = Array.of_list (args@[c]) in
+    mkAppOrProj (head, args)
   | ProdCoe { na; ty; dom; body } ->
     let x = reapply_coercions sigma dom (mkRel 1) in
     let c = beta_applist sigma (lift 1 c, [x]) in
@@ -396,33 +402,20 @@ let apply_coercion env sigma p h hty =
     List.fold_left
       (fun (j,jty,trace,sigma) i ->
          let isid = i.coe_is_identity in
-         let isproj = i.coe_is_projection in
-         let sigma, u, mk_body, mk_trace =
-           match isproj with
-           | None ->
-             let sigma, c = Evd.fresh_global env sigma i.coe_value in
+         let sigma, head, u =
+           match i.coe_value with
+           | CoeRef gref ->
+             let sigma, c = Evd.fresh_global env sigma gref in
              let u = instance_of_global_constr sigma c in
-             let mk_body args = applist (c, args) in
-             let mk_trace args = Coe {head=c;args;previous=trace} in
-             sigma, u, mk_body, mk_trace
-           | Some proj ->
+             sigma, ConstrHead c, u
+           | CoeProj (cst, proj) ->
              let (_, u), _ = Inductiveops.find_inductive env sigma jty in
              let u = EInstance.kind sigma u in
-             let relevance = Relevanceops.relevance_of_projection_repr env (proj, u) in
-             let mk_body args =
-               let npars = Projection.Repr.npars proj in
-               let p = Projection.make proj false in
-               let args = List.skipn npars args in
-               let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-               applist (mkProj (p, relevance, hd), tl) in
-             let mk_trace args =
-               let args = List.skipn (Projection.Repr.npars proj) args in
-               PrimProjCoe {proj; args; relevance; previous=trace} in
-             sigma, u, mk_body, mk_trace in
+             let relevance = Relevanceops.relevance_of_projection env (proj, u) in
+             sigma, PrimProj (cst, EInstance.make u, proj, relevance), u in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
-         let sigma, j', args, jty =
-           apply_coercion_args env sigma mk_body typ j jty i.coe_param in
-         let trace = if isid then trace else mk_trace args in
+         let sigma, j', args, jty = apply_coercion_args env sigma head typ j jty i.coe_param in
+         let trace = if isid then trace else Coe {head;args;previous=trace} in
          (if isid then j else j'), jty, trace, sigma)
       (h, hty, IdCoe, sigma) p
   in sigma, j, jty, trace
@@ -451,7 +444,7 @@ let mu env sigma t =
                    app_opt env sigma
                      f (mkApp (p1, [| u; p; x |]))),
            ct,
-           Coe {head=p1; args=[u;p]; previous=trace})
+           Coe {head=ConstrHead p1; args=[u;p]; previous=trace})
       | None -> sigma, (None, v, IdCoe)
   in aux t
 
@@ -476,51 +469,34 @@ let unify_product env sigma typ =
 (* Invariant: if [proj] is [Some] then [args_len < npars]
      (and always [args_len = length rev_args + length args in head]) *)
 type delayed_app_body = {
-  mutable head : constr;
+  mutable head : coercion_head;
   mutable rev_args : constr list;
   args_len : int;
-  proj : (Projection.Repr.t * Sorts.relevance) option
 }
 
 let force_app_body ({head;rev_args} as body) =
-  let head = mkApp (head, Array.rev_of_list rev_args) in
-  body.head <- head;
+  let head = mkAppOrProj (head, Array.rev_of_list rev_args) in
+  body.head <- ConstrHead head;
   body.rev_args <- [];
   head
 
-let push_arg {head;rev_args;args_len;proj} arg =
-  match proj with
-  | None ->
-    {
-      head;
-      rev_args=arg::rev_args;
-      args_len=args_len+1;
-      proj=None;
-    }
-  | Some (p,r) ->
-    let npars = Projection.Repr.npars p in
-    if Int.equal args_len npars then
-      {
-        head = mkProj (Projection.make p false, r, arg);
-        rev_args=[];
-        args_len=0;
-        proj=None;
-      }
-    else
-      {
-        head;
-        rev_args=arg::rev_args;
-        args_len=args_len+1;
-        proj;
-      }
+let push_arg {head;rev_args;args_len} arg =
+  {
+    head;
+    rev_args=arg::rev_args;
+    args_len=args_len+1;
+  }
 
 let start_app_body sigma head =
-  let proj = match EConstr.kind sigma head with
-    | Const (p,u) ->
-      Structures.PrimitiveProjections.find_opt_with_relevance (p,u)
-    | _ -> None
+  let head = match EConstr.kind sigma head with
+    | Const (cst,u) ->
+      (match Structures.PrimitiveProjections.find_opt_with_relevance (cst,u) with
+      | Some (p, r) -> PrimProj (cst, u, Projection.make p false, r)
+      | None -> ConstrHead head)
+    | _ ->
+      ConstrHead head
   in
-  {head; rev_args=[]; args_len=0; proj}
+  {head; rev_args=[]; args_len=0}
 
 let reapply_coercions_body sigma trace body =
   match trace with

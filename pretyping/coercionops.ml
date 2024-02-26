@@ -62,13 +62,20 @@ type coe_typ = GlobRef.t
 
 module CoeTypMap = GlobRef.Map_env
 
+type coe_value =
+  | CoeRef of GlobRef.t
+  | CoeProj of Constant.t * Projection.t
+
+let global_reference_of_coe_value = function
+  | CoeRef gref -> gref
+  | CoeProj (cst, _) -> GlobRef.ConstRef cst
+
 type coe_info_typ = {
-  coe_value : GlobRef.t;
+  coe_value : coe_value;
   coe_typ : Constr.t;
   coe_local : bool;
   coe_reversible : bool;
   coe_is_identity : bool;
-  coe_is_projection : Projection.Repr.t option;
   coe_source : cl_typ;
   coe_target : cl_typ;
   coe_param : int;
@@ -209,6 +216,10 @@ let subst_cl_typ env subst ct = match ct with
        to declare any term as a coercion *)
 let subst_coe_typ subst t = subst_global_reference subst t
 
+let subst_coe_value subst = function
+  | CoeRef gref -> CoeRef (subst_global_reference subst gref)
+  | CoeProj (cst, p) -> CoeProj (Mod_subst.subst_constant subst cst, subst_proj subst p)
+
 (* class_of : Term.constr -> int *)
 
 let class_of env sigma t =
@@ -282,7 +293,7 @@ let lookup_path_to_sort_from env sigma s =
 
 let get_coercion_constructor env coe =
   let evd = Evd.from_env env in
-  let evd, c = Evd.fresh_global env evd coe.coe_value in
+  let evd, c = Evd.fresh_global env evd (global_reference_of_coe_value coe.coe_value) in
   let c = fst (Reductionops.whd_all_stack env evd c) in
   match EConstr.kind evd c with
   | Constr.Construct (c, _) ->
@@ -414,16 +425,12 @@ let add_coercion_in_graph env sigma ?(update=false) ic =
 
 let subst_coercion subst c =
   let env = Global.env () in
-  let coe = subst_coe_typ subst c.coe_value in
+  let coe = subst_coe_value subst c.coe_value in
   let typ = subst_mps subst c.coe_typ in
   let cls = subst_cl_typ env subst c.coe_source in
   let clt = subst_cl_typ env subst c.coe_target in
-  let clp = Option.Smart.map (subst_proj_repr subst) c.coe_is_projection in
-  if c.coe_value == coe && c.coe_source == cls && c.coe_target == clt &&
-     c.coe_is_projection == clp
-  then c
-  else { c with coe_value = coe; coe_typ = typ; coe_source = cls; coe_target = clt;
-                coe_is_projection = clp; }
+  if c.coe_value == coe && c.coe_source == cls && c.coe_target == clt then c
+  else { c with coe_value = coe; coe_typ = typ; coe_source = cls; coe_target = clt }
 
 (* Computation of the class arity *)
 
@@ -455,7 +462,7 @@ let add_class env sigma cl =
 let declare_coercion env sigma ?update c =
   let () = add_class env sigma c.coe_source in
   let () = add_class env sigma c.coe_target in
-  let () = add_coercion c.coe_value c in
+  let () = add_coercion (global_reference_of_coe_value c.coe_value) c in
   add_coercion_in_graph env sigma ?update c
 
 (* For printing purpose *)

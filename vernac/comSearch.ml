@@ -39,7 +39,7 @@ let kind_searcher env = Decls.(function
   (* Kinds referring to the status of the object *)
   | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
     let coercions = Coercionops.coercions () in
-    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Coercionops.coe_value gr &&
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env Coercionops.(global_reference_of_coe_value c.coe_value) gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
     let canonproj = Structures.CSTable.entries () in

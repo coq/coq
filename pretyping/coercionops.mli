@@ -34,14 +34,20 @@ val cl_typ_ord : cl_typ -> cl_typ -> int
 (** This is the type of coercion kinds *)
 type coe_typ = GlobRef.t
 
+(** This is the type of coercion value kinds *)
+type coe_value =
+  | CoeRef of GlobRef.t
+  | CoeProj of Constant.t * Projection.t
+
+val global_reference_of_coe_value : coe_value -> GlobRef.t
+
 (** This is the type of infos for declared coercions *)
 type coe_info_typ = {
-  coe_value : GlobRef.t;
+  coe_value : coe_value;
   coe_typ : Constr.t;
   coe_local : bool;
   coe_reversible : bool;
   coe_is_identity : bool;
-  coe_is_projection : Projection.Repr.t option;
   coe_source : cl_typ;
   coe_target : cl_typ;
   coe_param : int;

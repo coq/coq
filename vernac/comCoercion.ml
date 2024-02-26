@@ -235,21 +235,31 @@ let open_coercion i o =
   if Int.equal i 1 then
     cache_coercion o
 
+let discharge_coe_value = function
+  | CoeRef _ as x -> x
+  | CoeProj (cst, p) -> CoeProj (cst, Projection.make (Lib.discharge_proj_repr (Projection.repr p)) (Projection.unfolded p))
+
+let section_instance_of_coe_value = function
+  | CoeRef gref -> Lib.section_instance gref
+  | CoeProj (cst, p) -> Lib.section_instance (GlobRef.ConstRef cst)
+
 let discharge_coercion c =
   if c.coe_local then None
   else
     let n =
-      try Array.length (Lib.section_instance c.coe_value)
+      try Array.length (section_instance_of_coe_value c.coe_value)
       with Not_found -> 0
     in
-    let nc = { c with
-      coe_param = n + c.coe_param;
-      coe_is_projection = Option.map Lib.discharge_proj_repr c.coe_is_projection;
-    } in
+    let coe_value = discharge_coe_value c.coe_value in
+    let nc = { c with coe_param = n + c.coe_param; coe_value } in
     Some nc
 
+let type_of_coe_value = function
+  | CoeRef gref -> fst (Typeops.type_of_global_in_context (Global.env ()) gref)
+  | CoeProj (cst, _) -> fst (Typeops.type_of_global_in_context (Global.env ()) (ConstRef cst))
+
 let rebuild_coercion c =
-  { c with coe_typ = fst (Typeops.type_of_global_in_context (Global.env ()) c.coe_value) }
+  { c with coe_typ = type_of_coe_value c.coe_value }
 
 let classify_coercion obj =
   if obj.coe_local then Dispose else Substitute
@@ -266,18 +276,20 @@ let inCoercion : coe_info_typ -> obj =
     rebuild_function = rebuild_coercion }
 
 let declare_coercion coef typ ?(local = false) ~reversible ~isid ~src:cls ~target:clt ~params:ps () =
-  let isproj =
+  let coe_value =
     match coef with
-    | GlobRef.ConstRef c -> Structures.PrimitiveProjections.find_opt c
-    | _ -> None
+    | GlobRef.ConstRef cst ->
+      (match Structures.PrimitiveProjections.find_opt cst with
+      | None -> CoeRef coef
+      | Some p -> CoeProj (cst, Projection.make p false))
+    | _ -> CoeRef coef
   in
   let c = {
-    coe_value = coef;
+    coe_value;
     coe_typ = typ;
     coe_local = local;
     coe_reversible = reversible;
     coe_is_identity = isid;
-    coe_is_projection = isproj;
     coe_source = cls;
     coe_target = clt;
     coe_param = ps;

@@ -979,7 +979,7 @@ let inspect env sigma depth =
 
 open Coercionops
 
-let print_coercion_value v = Printer.pr_global v.coe_value
+let print_coercion_value v = Printer.pr_global (global_reference_of_coe_value v.coe_value)
 
 let print_path ((i,j),p) =
   hov 2 (

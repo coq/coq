@@ -1586,9 +1586,9 @@ let path_convertible env sigma cl p q =
         (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@
         List.fold_left
           (fun t ic ->
-             mkGApp (mkGRef ic.coe_value,
+             mkGApp (mkGRef (global_reference_of_coe_value ic.coe_value),
                      List.make ic.coe_param (mkGHole ()) @ [t]))
-          (mkGApp (mkGRef ic.coe_value, List.map mkGVar names))
+          (mkGApp (mkGRef (global_reference_of_coe_value ic.coe_value), List.map mkGVar names))
           p'
     | [] ->
       (* identity function for the class [i]. *)
