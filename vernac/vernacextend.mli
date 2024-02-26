@@ -146,7 +146,7 @@ type 'a vernac_argument = {
 }
 
 val vernac_argument_extend : plugin:string -> name:string -> 'a vernac_argument ->
-  ('a, unit, unit) Genarg.genarg_type * 'a Pcoq.Entry.t
+  'a Genarg.vernac_genarg_type * 'a Pcoq.Entry.t
 
 (** {5 STM classifiers} *)
 val get_vernac_classifier : Vernacexpr.extend_name -> classifier

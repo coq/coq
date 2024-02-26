@@ -48,8 +48,7 @@ val function_fix_definition :
   Vernacexpr.fixpoint_expr Loc.located Pcoq.Entry.t
 
 val wit_fun_scheme_arg :
-  (Names.Id.t * Libnames.qualid * Sorts.family, unit, unit)
-  Genarg.genarg_type
+  (Names.Id.t * Libnames.qualid * Sorts.family) Genarg.vernac_genarg_type
 
 val fun_scheme_arg :
   (Names.Id.t * Libnames.qualid * Sorts.family) Pcoq.Entry.t
