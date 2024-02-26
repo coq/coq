@@ -573,7 +573,8 @@ let tag_var = tag Tag.variable
       pr_case_type pr po
 
   let pr_proj pr pr_app unfolded a f l =
-    hov 0 (pr (Some lproj) (LevelLe lproj) a ++ cut() ++ str ".(" ++ pr_app pr no_after f l ++ str ")")
+    let pr_unfolded a = if unfolded then str "|" ++ a ++ str "|" else a in
+    hov 0 (pr (Some lproj) (LevelLe lproj) a ++ cut() ++ str ".(" ++ pr_unfolded (pr_app pr no_after f l) ++ str ")")
 
   let pr_appexpl pr lev_after (f,us) l =
     let pargs = match l with
