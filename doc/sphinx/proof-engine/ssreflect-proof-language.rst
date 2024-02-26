@@ -3459,7 +3459,7 @@ to (universally) quantify over the parameters of a subset of rules (as
 there is special code that will omit unnecessary quantifiers for rules
 that can be syntactically extracted). It is also possible to reverse
 the direction of a rule subset, using a special dedicated syntax: the
-tactic rewrite ``(=~ multi1)`` is equivalent to ``rewrite multi1_rev``.
+tactic rewrite ``(=^~ multi1)`` is equivalent to ``rewrite multi1_rev``.
 
 .. example::
 
