@@ -20,7 +20,7 @@ val fun_ind_using :
 val wit_with_names :
   (Constrexpr.constr_expr Tactypes.intro_pattern_expr CAst.t option,
    Genintern.glob_constr_and_expr Tactypes.intro_pattern_expr CAst.t option,
-   Ltac_plugin.Tacexpr.intro_pattern option)
+   Tactypes.intro_pattern option)
   Genarg.genarg_type
 
 val with_names :

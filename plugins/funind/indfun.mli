@@ -12,5 +12,5 @@ val functional_induction :
      bool
   -> EConstr.constr
   -> (EConstr.constr * EConstr.constr Tactypes.bindings) option
-  -> Ltac_plugin.Tacexpr.or_and_intro_pattern option
+  -> Tactypes.or_and_intro_pattern option
   -> unit Proofview.tactic

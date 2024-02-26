@@ -2,6 +2,6 @@
  (name extraction_plugin)
  (public_name coq-core.plugins.extraction)
  (synopsis "Coq's extraction plugin")
- (libraries coq-core.plugins.ltac))
+ (libraries coq-core.vernac))
 
 (coq.pp (modules g_extraction))
