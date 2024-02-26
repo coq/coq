@@ -51,7 +51,12 @@ sig
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
+  val lastn : int -> 'a array -> 'a array
   val chop : int -> 'a array -> 'a array * 'a array
+  val firstn : int -> 'a array -> 'a array
+  val skipn : int -> 'a array -> 'a array
+  val sep_first : 'a array -> 'a * 'a array
+  val sep_last : 'a array -> 'a * 'a array
   val split : ('a * 'b) array -> 'a array * 'b array
   val split3 : ('a * 'b * 'c) array -> 'a array * 'b array * 'c array
   val split4 : ('a * 'b * 'c * 'd) array -> 'a array * 'b array * 'c array * 'd array
@@ -357,10 +362,35 @@ let map_of_list f l =
     let () = fill 1 ans l in
     ans
 
+let lastn n v =
+  let vlen = Array.length v in
+  if n > vlen then failwith "Array.lastn";
+  Array.sub v (vlen - n) n
+
 let chop n v =
   let vlen = Array.length v in
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
+
+let firstn n v =
+  let vlen = Array.length v in
+  if n > vlen then failwith "Array.firstn";
+  Array.sub v 0 n
+
+let skipn n v =
+  let vlen = Array.length v in
+  if n > vlen then failwith "Array.skipn";
+  Array.sub v n (vlen - n)
+
+let sep_first v =
+  let vlen = Array.length v in
+  if vlen = 0 then failwith "Array.sep_first";
+  (v.(0), Array.sub v 1 (vlen-1))
+
+let sep_last v =
+  let vlen = Array.length v in
+  if vlen = 0 then failwith "Array.sep_last";
+  (v.(vlen-1), Array.sub v 0 (vlen-1))
 
 let split v =
   (Array.map fst v, Array.map snd v)
