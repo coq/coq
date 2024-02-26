@@ -1989,9 +1989,9 @@ let rec add_args id new_args =
       CApp
         ( add_args id new_args b
         , List.map (fun (e, o) -> (add_args id new_args e, o)) bl )
-    | CProj (expl, f, bl, b) ->
+    | CProj ((unfolded, expl), f, bl, b) ->
       CProj
-        (expl, f
+        ((unfolded, expl), f
         , List.map (fun (e, o) -> (add_args id new_args e, o)) bl
         , add_args id new_args b)
     | CCases (sty, b_option, cel, cal) ->

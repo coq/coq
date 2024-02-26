@@ -577,7 +577,7 @@ type pretyper = {
   pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
-  pretype_proj : pretyper -> (Constant.t * glob_instance option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_proj : pretyper -> (Projection.t * Constant.t * glob_instance option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_prod : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_letin : pretyper -> Name.t * glob_constr * glob_constr option * glob_constr -> unsafe_judgment pretype_fun;
@@ -866,22 +866,18 @@ struct
     let sigma, j = pretype_sort ?loc sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
-  let pretype_app self (f, args) =
+  let pretype_args self floc body f_is_ref ftyp args =
     fun ?loc ~flags tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
-    let sigma, fj = pretype empty_tycon env sigma f in
-    let floc = loc_of_glob_constr f in
     let length = List.length args in
     let nargs_before_bidi =
       if Option.is_empty tycon then length
       (* We apply bidirectionality hints only if an expected type is specified *)
       else
       (* if `f` is a global, we retrieve bidirectionality hints *)
-        try
-          let (gr,_) = destRef sigma fj.uj_val in
-          Option.default length @@ get_bidirectionality_hint gr
-        with DestKO ->
-          length
+        match f_is_ref with
+        | Some gr -> Option.default length @@ get_bidirectionality_hint gr
+        | None -> length
     in
     let candargs =
       (* Bidirectional typechecking hint:
@@ -891,20 +887,19 @@ struct
          constructors and is orthogonal to bidirectionality hints. However, we
          could probably factorize both by providing default bidirectionality hints
          for constructors corresponding to their number of parameters. *)
-      if flags.program_mode && length > 0 && isConstruct sigma fj.uj_val then
-        match tycon with
-        | None -> []
-        | Some ty ->
-          let ((ind, i), u) = destConstruct sigma fj.uj_val in
+      if flags.program_mode && length > 0 then
+        match tycon, f_is_ref with
+        | Some ty, Some (ConstructRef (ind, i)) ->
           let npars = inductive_nparams !!env ind in
           if Int.equal npars 0 then []
           else
-            try
+            (try
               let IndType (indf, args) = find_rectype !!env sigma ty in
               let ((ind',u'),pars) = dest_ind_family indf in
               if QInd.equal !!env ind ind' then List.map EConstr.of_constr pars
               else (* Let the usual code throw an error *) []
-            with Not_found -> []
+            with Not_found -> [])
+        | _, _ -> []
       else []
     in
     let refresh_template env sigma resj =
@@ -976,8 +971,7 @@ struct
         let val_before_bidi = if bidi then val_before_bidi else body in
         apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs bidiargs rest
     in
-    let typ = (Esubst.subs_id 0, fj.uj_type) in
-    let body = (Coercion.start_app_body sigma fj.uj_val) in
+    let typ = (Esubst.subs_id 0, ftyp) in
     let sigma, resj, val_before_bidi, bidiargs =
       apply_rec env sigma 0 body typ body candargs [] args
     in
@@ -1014,10 +1008,24 @@ struct
     in
     (sigma, resj)
 
-  let pretype_proj self ((f,us), args, c) =
+  let pretype_app self (f, args) =
     fun ?loc ~flags tycon env sigma ->
-    pretype_app self (DAst.make ?loc (GRef (GlobRef.ConstRef f,us)), args @ [c])
-      ?loc ~flags tycon env sigma
+    let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
+    let sigma, fj = pretype empty_tycon env sigma f in
+    let floc = loc_of_glob_constr f in
+    let body = Coercion.(start_app_body sigma fj.uj_val) in
+    let f_is_ref = try let (gr,_) = destRef sigma fj.uj_val in Some gr with DestKO -> None in
+    pretype_args self floc body f_is_ref fj.uj_type args ?loc ~flags tycon env sigma
+
+  let pretype_proj self ((p,f,us), args, c) =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, fj = pretype_ref self (GlobRef.ConstRef f, us) ?loc ~flags empty_tycon env sigma in (* TODO: loc *) (* TODO: does not transit via the constant *)
+    let _, us = destConst sigma fj.uj_val in
+    let u = EConstr.Unsafe.to_instance us in
+    let r = Relevanceops.relevance_of_projection_repr (Global.env()) (Projection.repr p,u) in
+    let body = Coercion.(start_proj_body sigma (p,r,f,us)) in
+    let f_is_ref = Some (GlobRef.ConstRef f) in
+    pretype_args self loc body f_is_ref fj.uj_type (args @ [c]) ?loc ~flags tycon env sigma
 
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~flags tycon env sigma ->

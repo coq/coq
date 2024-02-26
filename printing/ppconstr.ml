@@ -572,7 +572,7 @@ let tag_var = tag Tag.variable
       | _ -> mt ()) ++
       pr_case_type pr po
 
-  let pr_proj pr pr_app a f l =
+  let pr_proj pr pr_app unfolded a f l =
     hov 0 (pr (Some lproj) (LevelLe lproj) a ++ cut() ++ str ".(" ++ pr_app pr no_after f l ++ str ")")
 
   let pr_appexpl pr lev_after (f,us) l =
@@ -702,11 +702,11 @@ let tag_var = tag Tag.variable
                    ++ keyword "in") ++
               pr spc lev_after ltop b))
           lletin
-      | CProj (true,(f,us),l,c) ->
+      | CProj ((unfolded,true),(f,us),l,c) ->
         let l = List.map (function (c,None) -> c | _ -> assert false) l in
-        return (fun lev_after -> pr_proj (pr mt) pr_appexpl c (f,us) l) lproj
-      | CProj (false,(f,us),l,c) ->
-        return (fun lev_after -> pr_proj (pr mt) pr_app c (CAst.make (CRef (f,us))) l) lproj
+        return (fun lev_after -> pr_proj (pr mt) pr_appexpl unfolded c (f,us) l) lproj
+      | CProj ((unfolded,false),(f,us),l,c) ->
+        return (fun lev_after -> pr_proj (pr mt) pr_app unfolded c (CAst.make (CRef (f,us))) l) lproj
       | CAppExpl ((qid,us),[t])
       | CApp ({v = CRef(qid,us)},[t,None])
           when qualid_is_ident qid && Id.equal (qualid_basename qid) Notation_ops.ldots_var ->

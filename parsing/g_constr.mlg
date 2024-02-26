@@ -194,10 +194,10 @@ GRAMMAR EXTEND Gram
     | "8" [ ]
     | "1" LEFTA
       [ c = term; ".("; f = global; i = univ_annot; args = LIST0 arg; ")" ->
-        { CAst.make ~loc @@ CProj(false, (f,i), args, c) }
+        { CAst.make ~loc @@ CProj((false,false), (f,i), args, c) }
       | c = term; ".("; "@"; f = global; i = univ_annot;
         args = LIST0 (term LEVEL "9"); ")" ->
-        { CAst.make ~loc @@ CProj(true, (f,i), List.map (fun a -> (a,None)) args, c) }
+        { CAst.make ~loc @@ CProj((false,true), (f,i), List.map (fun a -> (a,None)) args, c) }
       | c = term; "%"; key = IDENT ->
         { CAst.make ~loc @@ CDelimiters (DelimUnboundedScope,key,c) }
       | c = term; "%_"; key = IDENT ->

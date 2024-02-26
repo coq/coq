@@ -200,7 +200,8 @@ let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
     gn1 == gn2 (* Only thing sensible *)
   | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
     f c1 c2 && Option.equal cast_kind_eq k1 k2 && f t1 t2
-  | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
+  | GProj ((p1, cst1, u1), args1, c1), GProj ((p2, cst2, u2), args2, c2) ->
+    (* TODO : compare p1 et p2 *)
     GlobRef.(CanOrd.equal (ConstRef cst1) (ConstRef cst2)) &&
     Option.equal instance_eq u1 u2 &&
     List.equal f args1 args2 && f c1 c2

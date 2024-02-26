@@ -84,6 +84,8 @@ type delayed_app_body
 
 val start_app_body : evar_map -> constr -> delayed_app_body
 
+val start_proj_body : evar_map -> Projection.t * Sorts.relevance * Constant.t * EInstance.t -> delayed_app_body
+
 val push_arg : delayed_app_body -> constr -> delayed_app_body
 
 val force_app_body : delayed_app_body -> constr

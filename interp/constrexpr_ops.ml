@@ -215,7 +215,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq e1 e2 &&
         List.equal args_eq al1 al2
       | CProj(e1,(p1,u1),al1,c1), CProj(e2,(p2,u2),al2,c2) ->
-        e1 = (e2:bool) &&
+        e1 = (e2 : bool * bool) &&
         qualid_eq p1 p2 &&
         eq_universes u1 u2 &&
         List.equal args_eq al1 al2 &&

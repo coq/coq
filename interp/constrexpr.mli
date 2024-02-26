@@ -102,6 +102,8 @@ type binder_kind =
 
 type explicit_flag = bool (** true = with "@" *)
 
+type unfolded_flag = bool (** true = unfolded *)
+
 type delimiter_depth = DelimOnlyTmpScope | DelimUnboundedScope
 (** shallow (%_) vs. deep (%) scope opening *)
 
@@ -143,7 +145,7 @@ and constr_expr_r =
   | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
   | CAppExpl of (qualid * instance_expr option) * constr_expr list
   | CApp     of constr_expr * (constr_expr * explicitation CAst.t option) list
-  | CProj    of explicit_flag * (qualid * instance_expr option)
+  | CProj    of (unfolded_flag * explicit_flag) * (qualid * instance_expr option)
               * (constr_expr * explicitation CAst.t option) list * constr_expr
   | CRecord  of (qualid * constr_expr) list
 

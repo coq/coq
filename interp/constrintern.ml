@@ -1304,8 +1304,8 @@ let find_appl_head_data env (_,ntnvars) c =
        List.skipn_at_least n scopes
     | _ -> [],[]
     end
-  | GProj ((cst,_), l, c) ->
-      let ref = GlobRef.ConstRef cst in
+  | GProj ((_,cst,_), l, c) ->
+      let ref = GlobRef.ConstRef cst in (* TODO: attach implicit args to Projection *)
       let n = List.length l + 1 in
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
@@ -2079,10 +2079,10 @@ let set_hole_implicit i b c =
     let loc = r.CAst.loc in
     begin match DAst.get r with
     | GRef (r, _) -> loc, r
-    | GProj ((cst,_), _, _) -> (* Improve: *) loc, GlobRef.ConstRef cst
+    | GProj ((_,cst,_), _, _) -> (* Improve: *) loc, GlobRef.ConstRef cst
     | _ -> anomaly (Pp.str "Only refs have implicits.")
     end
-  | GProj ((cst,_), _, _) -> loc, GlobRef.ConstRef cst
+  | GProj ((_,cst,_), _, _) -> loc, GlobRef.ConstRef cst
   | GVar id -> loc, GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Only refs have implicits.") in
   Loc.tag ?loc (GImplicitArg (r,i,b))
@@ -2274,8 +2274,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           | DelimOnlyTmpScope -> {env with tmp_scope = [sc]}
           | DelimUnboundedScope -> {env with tmp_scope = []; scopes = sc :: env.scopes} in
         intern env e
-    | CProj (expl, f, args, c) ->
-        intern_proj ?loc env expl f args c []
+    | CProj ((unfolded, expl), f, args, c) ->
+        intern_proj_syntax ?loc env unfolded expl f args c []
     | CAppExpl ((ref,us), args) ->
         let f,args =
           let args = List.map (fun a -> (a,None)) args in
@@ -2291,8 +2291,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CApp (f, args) ->
         begin match f.CAst.v with
          (* t.(f args') args *)
-        | CProj (expl, (ref,us), args', c) ->
-          intern_proj ?loc:f.CAst.loc env expl (ref,us) args' c args
+        | CProj ((unfolded, expl), (ref,us), args', c) ->
+          intern_proj_syntax ?loc:f.CAst.loc env unfolded expl (ref,us) args' c args
         | CRef (ref,us) ->
           let f, args = intern_applied_reference ~isproj:false intern env
             (Environ.named_context_val globalenv) lvar us args ref in
@@ -2563,7 +2563,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       (Id.Set.empty,Id.Map.empty,[]), None in
     (tm',(na.CAst.v, typ)), extra_id, match_td
 
-  and intern_proj ?loc env expl (qid,us) args1 c args2 =
+  and intern_proj_syntax ?loc env unfolded expl (qid,us) args1 c args2 =
     let f,args1 =
       intern_applied_reference ~isproj:true intern env
         (Environ.named_context_val globalenv) lvar us args1 qid
@@ -2588,11 +2588,18 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                            str (String.plural n " explicit parameter") ++ str ".")
       in
       let subscopes1, subscopes2 = List.chop (nexpectedparams + 1) subscopes in
-      let c,args1 = List.sep_last (intern_impargs f env imps1 subscopes1 (args1@[c,None])) in
-      let p = DAst.make ?loc (GProj ((p,us),args0@args1,c)) in
+      let args1_c = intern_impargs f env imps1 subscopes1 (args1@[c,None]) in
+      let p =
+        match Structures.PrimitiveProjections.find_opt p with
+        | Some proj ->
+          let c, args1 = List.sep_last args1_c in
+          DAst.make ?loc (GProj ((Projection.make proj unfolded,p,us),args0@args1,c))
+        | None ->
+          DAst.make ?loc (GApp (DAst.make ?loc (GRef (ConstRef p, us)), args0@args1_c)) in
       let args2 = intern_impargs p env imps2 subscopes2 args2 in
       smart_gapp p loc args2
-    | None ->
+    | None | exception Not_found ->
+      if unfolded then user_err ?loc (str "Notation \"r.(|p|)\" is only for primitive projections.");
       (* Tolerate a use of t.(f) notation for an ordinary application until a decision is taken about it *)
       if expl then intern env (CAst.make ?loc (CAppExpl ((qid,us), List.map fst args1@c::List.map fst args2)))
       else intern env (CAst.make ?loc (CApp ((CAst.make ?loc:qid.CAst.loc (CRef (qid,us))), args1@(c,None)::args2)))

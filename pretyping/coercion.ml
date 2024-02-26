@@ -489,7 +489,7 @@ let push_arg {head;rev_args;args_len} arg =
 
 let start_app_body sigma head =
   let head = match EConstr.kind sigma head with
-    | Const (cst,u) ->
+    | Const (cst,u) -> (* TODO, move this directly to constrintern.ml?? *)
       (match Structures.PrimitiveProjections.find_opt_with_relevance (cst,u) with
       | Some (p, r) -> PrimProj (cst, u, Projection.make p false, r)
       | None -> ConstrHead head)
@@ -497,6 +497,9 @@ let start_app_body sigma head =
       ConstrHead head
   in
   {head; rev_args=[]; args_len=0}
+
+let start_proj_body sigma (p, r, cst, u) =
+  {head = PrimProj (cst, u, p, r); rev_args=[]; args_len=0}
 
 let reapply_coercions_body sigma trace body =
   match trace with
