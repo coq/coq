@@ -92,7 +92,7 @@ type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
 exception Bad_version_number of magic_number_error
 
-val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
+val with_magic_number_check : ?loc:Loc.t -> ('a -> 'b) -> 'a -> 'b
 
 (** big-endian encoding and decoding of int32 (4 btyes) and int64 (8 bytes) *)
 

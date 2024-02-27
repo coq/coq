@@ -27,7 +27,7 @@ val require_library_from_dirpath : library_t list -> unit
 
 val require_library_syntax_from_dirpath
   :  lib_resolver:(DirPath.t -> CUnix.physical_path)
-  -> DirPath.t list
+  -> DirPath.t Loc.located list
   -> library_t list
 
 (** {6 Start the compilation of a library } *)

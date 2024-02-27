@@ -21,9 +21,9 @@ open Libobject
 let raw_extern_library f =
   ObjFile.open_out ~file:f
 
-let raw_intern_library f =
-  System.with_magic_number_check
-    (fun file -> ObjFile.open_in ~file) f
+let raw_intern_library ?loc f =
+  System.with_magic_number_check ?loc
+   (fun file -> ObjFile.open_in ~file) f
 
 (************************************************************************)
 (** Serialized objects loaded on-the-fly *)
@@ -271,10 +271,10 @@ let tasks_seg () : (Opaqueproof.opaque_handle option, 'doc) tasks option ObjFile
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
-let intern_from_file lib_resolver dir =
+let intern_from_file ?loc lib_resolver dir =
   let f = lib_resolver dir in
   Feedback.feedback(Feedback.FileDependency (Some f, DirPath.to_string dir));
-  let ch = raw_intern_library f in
+  let ch = raw_intern_library f ?loc in
   let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
   let univs, digest_u = ObjFile.marshal_in_segment ch ~segment:universes_seg in
@@ -285,7 +285,7 @@ let intern_from_file lib_resolver dir =
   register_library_filename lsd.md_name f;
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   if not (DirPath.equal dir lsd.md_name) then
-    user_err
+    user_err ?loc
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
@@ -323,8 +323,8 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
   in
   libs
 
-let rec_intern_library ~lib_resolver libs dir =
-  let intern dir = intern_from_file lib_resolver dir in
+let rec_intern_library ~lib_resolver libs (loc, dir) =
+  let intern dir = intern_from_file ?loc lib_resolver dir in
   let m, libs = intern_library ~intern libs dir in
   Library_info.warn_library_info m.libsum_name m.libsum_info;
   libs
