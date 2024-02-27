@@ -1012,24 +1012,24 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   and unify_app (curenv, nb as curenvnb) pb opt (substn : subst0) cM f1 l1 cN f2 l2 =
     let sigma = substn.subst_sigma in
     try
-      let needs_expansion p c' =
+      let needs_expansion p c' l' n =
         match EConstr.kind sigma c' with
         | Meta _ -> true
         | Evar _ -> true
-        | Const (c, u) -> Environ.QConstant.equal env c (Projection.constant p)
+        | Const (c, u) -> Environ.QConstant.equal env c (Projection.constant p) && Array.length l' = n + 1
         | _ -> false
       in
-      let expand_proj c c' l =
+      let expand_proj c c' l l' =
         match EConstr.kind sigma c with
-        | Proj (p, _, t) when not (Projection.unfolded p) && needs_expansion p c' ->
+        | Proj (p, _, t) when not (Projection.unfolded p) && needs_expansion p c' l' (Projection.npars p) ->
           (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
            with RetypeError _ -> (* Unification can be called on ill-typed terms, due
                                      to FO and eta in particular, fail gracefully in that case *)
              (c, l))
         | _ -> (c, l)
       in
-      let f1, l1 = expand_proj f1 f2 l1 in
-      let f2, l2 = expand_proj f2 f1 l2 in
+      let f1, l1 = expand_proj f1 f2 l1 l2 in
+      let f2, l2 = expand_proj f2 f1 l2 l1 in
       let opta = {opt with at_top = true; with_types = false} in
       let optf = {opt with at_top = true; with_types = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
