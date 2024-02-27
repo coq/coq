@@ -15,6 +15,7 @@ CI_TARGETS= \
     ci-async_test \
     ci-atbr \
     ci-autosubst \
+    ci-autosubst_ocaml \
     ci-bbv \
     ci-bedrock2 \
     ci-bignums \

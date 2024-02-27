@@ -524,3 +524,9 @@ project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
 ########################################################################
 project waterproof "https://github.com/impermeable/coq-waterproof" "coq-master"
 # Contact @jellooo038, @jim-portegies on github
+
+########################################################################
+# Autosubst (2) OCaml
+########################################################################
+project autosubst_ocaml "https://github.com/uds-psl/autosubst-ocaml" "master"
+# Contact @yforster on github
