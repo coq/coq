@@ -1265,7 +1265,7 @@ let make_goal_of_formula gl dexpr form =
       (Env.elements props)
   in
   let var_name_pos =
-    List.map2 (fun (idx, _) (id, _) -> (id, idx)) vars_idx vars_n
+    List.fold_left2 (fun acc (idx, _) (id, _) -> (id, idx) :: acc) [] vars_idx vars_n
   in
   let dump_expr i e =
     let rec dump_expr = function
@@ -1364,7 +1364,7 @@ let make_goal_of_formula gl dexpr form =
          (List.map (fun (x, y) -> (Name.Name x, y)) vars_n)
          (xdump_prop (List.length vars_n) 0 form))
   , List.rev props_n
-  , List.rev var_name_pos
+  , var_name_pos
   , form' )
 
 (**
@@ -1659,11 +1659,11 @@ let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) re
     in
     is_sublist eq (Lazy.force hyps) new_cl
   in
-  let map cl prf =
+  let map acc cl prf =
     let hyps = lazy (selecti (prover.hyps prf) cl) in
-    hyps, cl, prf
+    (hyps, cl, prf) :: acc
   in
-  let cnf_res = List.map2 map cnf_ff res in
+  let cnf_res = List.rev (List.fold_left2 map [] cnf_ff res) in
   (* we get pairs clause * proof *)
   if debug then begin
     Printf.printf "CNFRES\n";
@@ -1805,10 +1805,14 @@ let formula_hyps_concl hyps concl =
   res
  *)
 
-let rec fold_trace f accu = function
-  | Micromega.Null -> accu
-  | Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
-  | Micromega.Push (x, t) -> fold_trace f (f accu x) t
+let rec fold_trace f accu tr =
+  let open Micromega in
+  match tr with
+  | Null -> accu
+  | Push (x, t) -> fold_trace f (f accu x) t
+  | Merge (Null, t2) -> fold_trace f accu t2
+  | Merge (Push (x, t1), t2) -> fold_trace f (f accu x) (Merge (t1, t2))
+  | Merge (Merge (t1, t2), t3) -> fold_trace f accu (Merge (t1, Merge (t2, t3)))
 
 let micromega_tauto ?(abstract=true) pre_process cnf spec prover
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
@@ -1824,8 +1828,8 @@ let micromega_tauto ?(abstract=true) pre_process cnf spec prover
   | Prf res ->
     (*Printf.printf "\nList %i" (List.length `res); *)
     let deps =
-      List.fold_left
-        (fun s (cl, prf) ->
+      List.fold_left2
+        (fun s cl prf ->
           let tags =
             ISet.fold
               (fun i s ->
@@ -1837,7 +1841,7 @@ let micromega_tauto ?(abstract=true) pre_process cnf spec prover
           in
           TagSet.union s tags)
         (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
-        (List.combine cnf_ff res)
+        cnf_ff res
     in
     let ff' = if abstract then abstract_formula deps ff else ff in
     let pre_ff' = pre_process mt ff' in
