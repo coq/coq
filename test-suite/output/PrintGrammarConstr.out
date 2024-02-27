@@ -52,6 +52,8 @@ Entry term is
 | "1" LEFTA
   [ SELF; ".("; "@"; global; univ_annot; LIST0 (term LEVEL "9"); ")"
   | SELF; ".("; global; univ_annot; LIST0 arg; ")"
+  | SELF; ".(|"; "@"; global; univ_annot; LIST0 (term LEVEL "9"); "|)"
+  | SELF; ".(|"; global; univ_annot; LIST0 arg; "|)"
   | SELF; "%"; IDENT
   | SELF; "%_"; IDENT ]
 | "0" LEFTA

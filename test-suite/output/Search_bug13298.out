@@ -1,1 +1,1 @@
-snd: forall c : c, fst c = 0
+snd: forall c : c, c.(fst) = 0
