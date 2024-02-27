@@ -21,9 +21,9 @@ Ltac solve_nat := autorewrite with app_rws in *; cbn in *; lia.
 Notation "| x |" := (length x) (at level 11, no associativity, format "'|' x '|'").
 
 Definition split_acc (ls : list nat) : forall acc1 acc2,
-    (|acc1| = |acc2| \/ |acc1| = S (|acc2|)) ->
+    ( |acc1| = |acc2| \/ |acc1| = S (|acc2| )) ->
     { lss : list nat * list nat |
-      let '(ls1, ls2) := lss in |ls1++ls2| = |ls++acc1++acc2| /\ (|ls1| = |ls2| \/ |ls1| = S (|ls2|))}.
+      let '(ls1, ls2) := lss in |ls1++ls2| = |ls++acc1++acc2| /\ ( |ls1| = |ls2| \/ |ls1| = S ( |ls2| ))}.
 Proof.
   induction ls as [|a ls IHls]. all:intros acc1 acc2 H.
   { exists (acc1, acc2). cbn. intuition reflexivity. }
@@ -33,7 +33,7 @@ Defined.
 
 Definition join(ls : list nat) : { rls : list nat | |rls| = |ls| }.
 Proof.
-  wfinduction (|ls|) on ls as IH.
+  wfinduction ( |ls| ) on ls as IH.
   case (split_acc ls [] []). 1:solve_nat.
   intros (ls1 & ls2) (H1 & H2).
   destruct ls2 as [|a ls2].
