@@ -122,3 +122,17 @@ Arguments Alias.eq_ind [A]%type_scope x P%function_scope f y e
 Alias.eq_ind is transparent
 Expands to: Constant PrintInfos.Alias.eq_ind (syntactically equal to
 Coq.Init.Logic.eq_ind)
+fst : forall A B : Type, prod A B -> A
+
+fst is not universe polymorphic
+fst is a projection of prod
+Arguments fst (A B)%type_scope p
+fst is transparent
+Expands to: Constant PrintInfos.AboutProj.fst
+fst : forall A B : Type, prod A B -> A
+
+fst is not universe polymorphic
+fst is a primitive projection of prod
+Arguments fst (A B)%type_scope p
+fst is transparent
+Expands to: Constant PrintInfos.AboutPrimProj.fst

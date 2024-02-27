@@ -52,3 +52,14 @@ Module Alias := Logic.
 About Alias.eq.
 About Alias.eq_refl.
 About Alias.eq_ind.
+
+Module AboutProj.
+Record prod A B := { fst:A ; snd:B }.
+About fst.
+End AboutProj.
+
+Module AboutPrimProj.
+Set Primitive Projections.
+Record prod A B := { fst:A ; snd:B }.
+About fst.
+End AboutPrimProj.

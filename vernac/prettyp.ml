@@ -208,6 +208,22 @@ let print_polymorphism env ref =
          ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
        else str "not universe polymorphic") ]
 
+(** Print projection status *)
+
+let print_projection env ref =
+  match ref with
+  | GlobRef.ConstRef cst ->
+    begin
+      match Structures.PrimitiveProjections.find_opt cst with
+      | Some p -> [pr_global ref ++ str " is a primitive projection of " ++ pr_global (IndRef (Projection.Repr.inductive p))]
+      | None ->
+      try
+        let ind = (Structures.Structure.find_from_projection cst).name in
+        [pr_global ref ++ str " is a projection of " ++ pr_global (IndRef ind)]
+      with Not_found -> []
+    end
+  | _ -> []
+
 (** Printing type-in-type status *)
 
 let print_type_in_type env ref =
@@ -904,6 +920,7 @@ let print_about_global_reference ?loc env ref udecl =
   pr_infos_list
    (print_ref env false ref udecl :: blankline ::
     print_polymorphism env ref @
+    print_projection env ref @
     print_name_infos env ref @
     print_reduction_behaviour ref @
     print_opacity env ref @
