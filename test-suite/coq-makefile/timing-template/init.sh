@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
 
-#set -x
+set -x
 set -e
-
-# tools
-TTOOLSDIR="$COQPREFIX/lib/coq-core/tools"
-
-export make_both_time_files="$TTOOLSDIR"/make-both-time-files.py
-export make_one_time_file="$TTOOLSDIR"/make-one-time-file.py
-export make_both_single_timing_files="$TTOOLSDIR"/make-both-single-timing-files.py
 
 # native stack overflows too easily, see eg
 # https://gitlab.com/coq/coq/-/jobs/3250939810
@@ -20,35 +13,6 @@ export COQEXTRAFLAGS='-native-compiler no'
 
 MAKEFLAGS=
 
-cd precomputed-time-tests
-./run.sh || exit $?
-
-cd ../error
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-if make pretty-timed TGTS="all" -j1; then
-    echo "Error: make pretty-timed should have failed"
-    exit 1
-fi
-
-cd ../aggregate
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-make pretty-timed TGTS="all" -j1 || exit $?
-
-cd ../before
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-make make-pretty-timed-before TGTS="all" -j1 || exit $?
-
-cd ../after
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-make make-pretty-timed-after TGTS="all" -j1 || exit $?
-rm -f time-of-build-before.log
-make print-pretty-timed-diff TIMING_SORT_BY=diff TIME_OF_BUILD_BEFORE_FILE=../before/time-of-build-before.log
-cp ../before/time-of-build-before.log ./
-make print-pretty-timed-diff TIMING_SORT_BY=diff || exit $?
 
 INFINITY="∞"
 INFINITY_REPLACEMENT="+.%" # assume that if the before time is zero, we expected the time to increase
@@ -73,45 +37,3 @@ TO_SED_IN_PER_LINE=(
     -e s'/  */ /g' # Sometimes 0 will show up as 0m00.s, sometimes it'll end up being more like 0m00.001s; we must strip out the spaces that result from left-aligning numbers of different widths based on how many digits Coq's [-time] gives
     -e s'/^ *//g' # the number of leading spaces can differ, e.g., as in the difference between ' 0m13.53s' vs '0m13.582s'
     )
-
-for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
-  for ext in "" .desired; do
-    sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" ${file}${ext} > ${file}${ext}.processed
-  done
-  echo "cat $file"
-  cat "$file"
-  echo
-  diff -u $file.desired.processed $file.processed || exit $?
-done
-
-cd ../per-file-before
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-make all TIMING=before -j2 || exit $?
-
-cd ../per-file-after
-coq_makefile -f _CoqProject -o Makefile
-make cleanall
-make all TIMING=after -j2 || exit $?
-
-find ../per-file-before/ -name "*.before-timing" -exec 'cp' '{}' './' ';'
-make all.timing.diff -j2 || exit $?
-echo "cat A.v.before-timing"
-cat A.v.before-timing
-echo
-echo "cat A.v.after-timing"
-cat A.v.after-timing
-echo
-echo "cat A.v.timing.diff"
-cat A.v.timing.diff
-echo
-
-file=A.v.timing.diff
-
-for ext in "" .desired; do
-    sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_LINE[@]}" < "${file}${ext}" | sort > "${file}${ext}.processed"
-done
-
-diff -u "$file.desired.processed" "$file.processed" || exit $?
-
-exit 0

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
-set -e
+. ../template/init.sh
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 

@@ -171,7 +171,7 @@ VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coq
   coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile precomputed-time-tests tools $(UNIT_TESTS)
 
 # EJGA: This seems dangerous as first target...
 .csdp.cache: .csdp.cache.test-suite
@@ -268,6 +268,7 @@ summary:
 	  $(call summary_dir, "Output tests with coqchk", output-coqchk); \
 	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
+	  $(call summary_dir, "Precomputed time tests", precomputed-time-tests); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
@@ -747,16 +748,17 @@ coqwc/%.v.log : coqwc/%.v
 	  rm $$tmpoutput; \
 	} > "$@"
 
-# coq_makefile
+# coq_makefile and precomputed time tests
 
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
+precomputed-time-tests: $(patsubst %/run.sh,%.log,$(wildcard precomputed-time-tests/*/run.sh))
 
-coq-makefile/%.log : coq-makefile/%/run.sh
-	@echo "TEST      coq-makefile/$*"
+$(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh precomputed-time-tests/*/run.sh)): %.log: %/run.sh
+	@echo "TEST      $*"
 	$(HIDE)(\
 	  export COQBIN=$(BIN);\
 	  export COQPREFIX=$(COQPREFIX);\
-	  cd coq-makefile/$* && \
+	  cd $* && \
 	  $(call WITH_TIMER,$@,bash run.sh 2>&1,../../$@.time); \
 	if [ $$? = 0 ]; then \
 	    echo $(log_success); \
