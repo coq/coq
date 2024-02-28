@@ -556,11 +556,6 @@ let bound_names_rdata { DataR.fields; _ } : Id.Set.t =
   let add_names names field = add_bound_names_constr names (RelDecl.get_type field) in
   List.fold_left add_names Id.Set.empty fields
 
-(** Pick a variable name for a record, avoiding names bound in its fields. *)
-let data_name id rdata =
-  let name = Id.of_string (Unicode.lowercase_first_char (Id.to_string id)) in
-  Namegen.next_ident_away name (bound_names_rdata rdata)
-
 (** Main record declaration part:
 
    The entry point is [definition_structure], which will match on the
@@ -635,6 +630,11 @@ let kind_class =
   let open Vernacexpr in
   function Class true -> DefClass | Class false -> RecordClass
   | Inductive_kw | CoInductive | Variant | Record | Structure -> NotClass
+
+(** Pick a variable name for a record, avoiding names bound in its fields. *)
+let canonical_inhabitant_id ~isclass ind_id =
+  if isclass then ind_id
+  else Id.of_string (Unicode.lowercase_first_char (Id.to_string ind_id))
 
 let check_priorities kind records =
   let open Vernacexpr in
@@ -744,10 +744,11 @@ let pre_process_structure ?(definitional=false) udecl kind ~poly (records : Ast.
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
     let proj_flags = List.map (fun (_, rf) -> check_proj_flags kind rf) cfs in
     let inhabitant_id =
-      match default_inhabitant_id, kind_class kind with
-      | None, NotClass -> data_name name.CAst.v rdata
-      | None, _ -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
-      | Some n, _ -> n
+      match default_inhabitant_id with
+      | Some n -> n
+      | None ->
+        let canonical_inhabitant_id = canonical_inhabitant_id ~isclass:(kind_class kind != NotClass) name.CAst.v in
+        Namegen.next_ident_away canonical_inhabitant_id (bound_names_rdata rdata)
     in
     let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
     if kind_class kind <> NotClass then begin
