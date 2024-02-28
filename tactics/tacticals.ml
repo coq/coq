@@ -435,24 +435,42 @@ let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =
   tclMAPDELAYEDWITHHOLES accept_unresolved_holes [fun _ _ -> (sigma,())] (fun () -> tac)
   but with value not necessarily in unit *)
 
+let with_holes_check ~sigma_initial ~sigma =
+  tclEVARMAP >>= fun sigma_final ->
+  tclENV >>= fun env ->
+  try
+    let () = check_evars env sigma_final sigma sigma_initial in
+    tclUNIT ()
+  with e when CErrors.noncritical e ->
+    let e, info = Exninfo.capture e in
+    tclZERO ~info e
+
+let tclRUNWITHHOLES accept_unresolved_holes tac0 tac =
+  if accept_unresolved_holes then tac0 >>= tac
+  else
+    tclEVARMAP >>= fun sigma_initial ->
+    tac0 >>= fun v ->
+    tclEVARMAP >>= fun sigma ->
+    if sigma == sigma_initial then tac v
+    else
+      tac v >>= fun v ->
+      with_holes_check ~sigma_initial ~sigma <*>
+      tclUNIT v
+
 let tclWITHHOLES accept_unresolved_holes tac sigma =
   tclEVARMAP >>= fun sigma_initial ->
-    if sigma == sigma_initial then tac
-    else
-      let check_evars_if x =
-        if not accept_unresolved_holes then
-          tclEVARMAP >>= fun sigma_final ->
-            tclENV >>= fun env ->
-              try
-                let () = check_evars env sigma_final sigma sigma_initial in
-                tclUNIT x
-              with e when CErrors.noncritical e ->
-                let e, info = Exninfo.capture e in
-                tclZERO ~info e
-        else
-          tclUNIT x
-      in
-      Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
+  if sigma == sigma_initial then tac
+  else
+    Proofview.Unsafe.tclEVARS sigma <*>
+    tac >>= fun v ->
+    (if accept_unresolved_holes then tclUNIT () else with_holes_check ~sigma_initial ~sigma) <*>
+    tclUNIT v
+
+let tactic_of_delayed d =
+  Proofview.Goal.enter_one ~__LOC__ @@ fun gl ->
+  let sigma, v = pf_apply d gl in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  tclUNIT v
 
 let tclDELAYEDWITHHOLES check x tac =
   Proofview.Goal.enter begin fun gl ->

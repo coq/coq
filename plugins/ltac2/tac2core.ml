@@ -1131,11 +1131,7 @@ let () =
 
 let () =
   define "with_holes" (closure @-> closure @-> tac valexpr) @@ fun x f ->
-  Proofview.tclEVARMAP >>= fun sigma0 ->
-  thaw x >>= fun ans ->
-  Proofview.tclEVARMAP >>= fun sigma ->
-  Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.tclWITHHOLES false (Tac2val.apply f [ans]) sigma
+  Tacticals.tclRUNWITHHOLES false (thaw x) (fun ans -> Tac2val.apply f [ans])
 
 let () =
   define "progress" (closure @-> tac valexpr) @@ fun f ->

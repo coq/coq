@@ -104,7 +104,7 @@ let intros_patterns ev ipat =
 let apply adv ev cb cl =
   let map c =
     let c = thaw constr_with_bindings c >>= fun p -> return (mk_with_bindings p) in
-    None, CAst.make (delayed_of_tactic c)
+    None, CAst.make c
   in
   let cb = List.map map cb in
   match cl with
