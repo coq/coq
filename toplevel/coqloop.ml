@@ -519,7 +519,6 @@ let loop ~opts ~state =
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
   (* Initialize buffer *)
-  Sys.catch_break true;
   reset_input_buffer state.Vernac.State.doc stdin top_buffer;
   (* Call the main loop *)
   let _ : Vernac.State.t = vernac_loop ~state in
