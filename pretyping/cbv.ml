@@ -518,7 +518,6 @@ let rec norm_head info env t stack =
   | Proj (p, r, c) ->
     let p' =
       if red_set info.reds (fPROJ (Projection.repr p))
-        && red_set info.reds fBETA
       then Projection.unfold p
       else p
     in
