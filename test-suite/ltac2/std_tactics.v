@@ -118,3 +118,7 @@ Goal bool -> 2 = 2.
   intros b%lem'.
   destruct b.
 Qed.
+
+Goal nat.
+  Std.apply true false [fun () => Control.plus (fun () => 'I) (fun _ => '0), Std.NoBindings] None.
+Qed.
