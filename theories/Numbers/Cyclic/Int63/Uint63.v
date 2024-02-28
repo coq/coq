@@ -1455,7 +1455,6 @@ Proof.
      * replace (φ j + Φ (WW ih il) / φ j)%Z with
          (1 * 2 + ((φ j - 2) + Φ (WW ih il) / φ j)) by lia.
        rewrite Z_div_plus_full_l; auto with zarith.
-       assert (0 <= (φ j - 2 + Φ (WW ih il) / φ j) / 2) ; auto with zarith.
      * apply sqrt_test_false; auto with zarith.
    + apply sqrt_main; auto with zarith.
  - contradict Hij; apply Zle_not_lt.
