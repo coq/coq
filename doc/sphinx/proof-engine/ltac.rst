@@ -1741,8 +1741,9 @@ amount of time:
 .. tacn:: timeout @nat_or_var @ltac_expr3
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
-   ``v`` is applied normally, except that it is interrupted after :n:`@nat_or_var` seconds
-   if it is still running. In this case the outcome is a failure.
+   ``v`` is applied but only its first success is used (as with :tacn:`once`),
+   and it is interrupted after :n:`@nat_or_var` seconds if it is still running.
+   If it is interrupted the outcome is a failure.
 
    :tacn:`timeout` is an :token:`l3_tactic`.
 
@@ -1753,8 +1754,7 @@ amount of time:
       may fail on a slow one. The converse is even possible if you combine a
       timeout with some other tacticals. This tactical is hence proposed only
       for convenience during debugging or other development phases, we strongly
-      advise you to not leave any timeout in final scripts. Note also that
-      this tactical isn’t available on the native Windows port of Coq.
+      advise you to not leave any timeout in final scripts.
 
 Timing a tactic
 ~~~~~~~~~~~~~~~
