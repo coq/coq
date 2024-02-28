@@ -679,6 +679,7 @@ let warn_future_coercion_class_constructor =
    (c.f., https://github.com/coq/coq/pull/16230 ) *)
 let warn_future_coercion_class_field =
   CWarnings.create ~name:"future-coercion-class-field" ~category:Deprecation.Version.v8_17
+    ~default:CWarnings.AsError
     Pp.(fun definitional ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
     ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.18). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
