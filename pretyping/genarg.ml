@@ -80,6 +80,8 @@ let pr_argument_type (ArgumentType t) = pr_genarg_type t
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision *)
 
+type 'a vernac_genarg_type = ('a, Util.Empty.t, Util.Empty.t) genarg_type
+
 (* Dynamics but tagged by a type expression *)
 
 type rlevel = [ `rlevel ]

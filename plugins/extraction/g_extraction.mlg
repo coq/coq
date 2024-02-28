@@ -20,19 +20,17 @@ DECLARE PLUGIN "coq-core.plugins.extraction"
 
 (* ML names *)
 
-open Ltac_plugin
 open Stdarg
 open Pp
 open Names
 open Table
 open Extract_env
 
-let pr_mlname _ _ _ s = spc () ++ qs s
+let pr_mlname s = spc () ++ qs s
 
 }
 
-ARGUMENT EXTEND mlname
-  TYPED AS string
+VERNAC ARGUMENT EXTEND mlname
   PRINTED BY { pr_mlname }
 | [ preident(id) ] -> { id }
 | [ string(s) ] -> { s }
@@ -40,13 +38,13 @@ END
 
 {
 
-let pr_int_or_id _ _ _ = function
+let pr_int_or_id = function
   | ArgInt i -> int i
   | ArgId id -> Id.print id
 
 }
 
-ARGUMENT EXTEND int_or_id
+VERNAC ARGUMENT EXTEND int_or_id
   PRINTED BY { pr_int_or_id }
 | [ preident(id) ] -> { ArgId (Id.of_string id) }
 | [ integer(i) ] -> { ArgInt i }
