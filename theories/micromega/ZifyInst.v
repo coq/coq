@@ -119,6 +119,17 @@ Instance Op_Z_abs_nat : UnOp  Z.abs_nat :=
   { TUOp := Z.abs ; TUOpInj := Zabs2Nat.id_abs }.
 Add Zify UnOp Op_Z_abs_nat.
 
+#[global]
+Instance Op_nat_div2 : UnOp Nat.div2 :=
+  { TUOp x := x / 2 ;
+    TUOpInj x := ltac:(now rewrite Nat2Z.inj_div2, Z.div2_div) }.
+Add Zify UnOp Op_nat_div2.
+
+#[global]
+Instance Op_nat_double : UnOp Nat.double :=
+  {| TUOp := Z.double ; TUOpInj := Nat2Z.inj_double |}.
+Add Zify UnOp Op_nat_double.
+
 (** Support for positive *)
 
 #[global]
