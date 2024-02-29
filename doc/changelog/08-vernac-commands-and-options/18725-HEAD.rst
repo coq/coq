@@ -1,0 +1,4 @@
+- **Changed:**
+  When a name is a projection, :cmd:`About` and :cmd:`Print` now indicate it
+  (`#18725 <https://github.com/coq/coq/pull/18725>`_,
+  by Hugo Herbelin).
