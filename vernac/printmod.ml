@@ -119,7 +119,7 @@ let print_one_inductive env sigma isrecord mib ((_,i) as ind) =
   let args = Context.Rel.instance_list mkRel 0 params in
   let arity = hnf_prod_applist_decls env nparamdecls (build_ind_type ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
-  let cstrtypes = Array.map (fun c -> hnf_prod_applist_decls env nparamdecls c args) cstrtypes in
+  let cstrtypes = Array.map (fun c -> snd (Term.decompose_prod_n_decls nparamdecls c)) cstrtypes in
   if isrecord then assert (Array.length cstrtypes = 1);
   let inst =
     if Declareops.inductive_is_polymorphic mib then
