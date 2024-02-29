@@ -33,9 +33,10 @@ Notation "x * y" := (Nat.mul x y) : nat_scope
 File "./output/activation.v", line 12, characters 0-22:
 The command has indeed failed with message:
 No notation provided.
-File "./output/activation.v", line 15, characters 0-24:
+File "./output/activation.v", line 16, characters 0-24:
 The command has indeed failed with message:
 Found no matching notation to enable or disable.
+[no-notation-to-enable-or-disable,syntax,default]
 The following notations have been disabled:
 Notation activation.Abbrev.f w := (S w)
 The following notations have been enabled:
@@ -46,7 +47,7 @@ a
      : Type
 The following notations have been disabled:
 Notation activation.Abbrev.a := Prop
-File "./output/activation.v", line 24, characters 11-12:
+File "./output/activation.v", line 26, characters 11-12:
 The command has indeed failed with message:
 The reference a was not found in the current environment.
 Prop
@@ -68,6 +69,7 @@ The following notations have been enabled:
 Notation activation.Abbrev.x := 0
 0
      : nat
-File "./output/activation.v", line 44, characters 0-49:
+File "./output/activation.v", line 47, characters 0-49:
 The command has indeed failed with message:
 Found no matching notation to enable or disable.
+[no-notation-to-enable-or-disable,syntax,default]
