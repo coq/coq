@@ -558,6 +558,7 @@ Enabling and disabling notations
       originally defined as only printing.
 
    .. warn:: Found no matching notation to enable or disable.
+      :name: Found no matching notation to enable or disable
 
       No previously defined notation satisfies the given constraints.
 

@@ -654,6 +654,14 @@ Kernel
   (`#18599 <https://github.com/coq/coq/pull/18599>`_,
   by Guillaume Melquiond).
 
+Notations
+^^^^^^^^^
+
+- **Changed:**
+  :warn:`Found no matching notation to enable or disable` is a warning instead of an error
+  (`#18670 <https://github.com/coq/coq/pull/18670>`_,
+  by Pierre Roux).
+
 Tactics
 ^^^^^^^
 
