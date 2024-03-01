@@ -523,7 +523,8 @@ let warn_using_current_directory =
        Pp.(strbrk
              "Setting extraction output directory by default to \"" ++ str s ++ strbrk "\". Use \"" ++
            str "Set Extraction Output Directory" ++
-           strbrk "\" to set a different directory for extracted files to appear in."))
+           strbrk "\" or command line option \"-output-directory\" to " ++
+           strbrk "set a different directory for extracted files to appear in."))
 
 let output_directory_key = ["Extraction"; "Output"; "Directory"]
 
@@ -532,13 +533,12 @@ let { Goptions.get = output_directory } =
     ~key:output_directory_key ()
 
 let output_directory () =
-  match output_directory () with
-  | Some dir ->
+  match output_directory (), !Flags.output_directory with
+  | Some dir, _ | None, Some dir ->
       (* Ensure that the directory exists *)
       System.mkdir dir;
       dir
-      (* CErrors.user_err Pp.(str "Extraction output directory " ++ str dir ++ str " does not exist.") *)
-  | None ->
+  | None, None ->
     let pwd = Sys.getcwd () in
     warn_using_current_directory pwd;
     (* Note: in case of error in the caller of output_directory, the effect of the setting will be undo *)

@@ -490,8 +490,10 @@ Additional settings
 
 .. opt:: Extraction Output Directory @string
 
-   Sets the directory where extracted files will be written.
-   The default is the current directory, which can be displayed with :cmd:`Pwd`.
+   Sets the directory where extracted files will be written. If not set,
+   files will be written to the directory specified by the command line
+   option :n:`-output-directory`, if set (see :ref:`command-line-options`) and
+   otherwise, the current directory.  Use :cmd:`Pwd` to display the current directory.
 
 Differences between Coq and ML type systems
 ----------------------------------------------

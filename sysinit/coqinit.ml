@@ -171,6 +171,9 @@ let init_runtime opts =
   Nativelib.output_dir := opts.config.native_output_dir;
   Nativelib.include_dirs := opts.config.native_include_dirs;
 
+  (* Default output dir *)
+  Flags.output_directory := opts.config.output_directory;
+
   (* Paths for loading stuff *)
   init_load_paths opts;
 

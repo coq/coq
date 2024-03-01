@@ -66,6 +66,7 @@ type coqargs_config = {
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
+  output_directory : CUnix.physical_path option;
   time        : time_config option;
   profile : string option;
   print_emacs : bool;
@@ -123,6 +124,7 @@ let default_config = {
   native_compiler = default_native;
   native_output_dir = ".coq-native";
   native_include_dirs = [];
+  output_directory = None;
   time         = None;
   profile = None;
   print_emacs  = false;
@@ -381,6 +383,11 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-native-output-dir" ->
       let native_output_dir = next () in
       { oval with config = { oval.config with native_output_dir } }
+
+    |"-output-dir" | "-output-directory" ->
+      let dir = next () in
+      let dir = if Filename.is_relative dir then Filename.concat (Sys.getcwd ()) dir else dir in
+      { oval with config = { oval.config with output_directory = Some dir } }
 
     |"-nI" ->
       let include_dir = next () in

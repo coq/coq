@@ -401,7 +401,10 @@ let print_err_exn any =
   std_logger ?pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
-  let channel = open_out (String.concat "." [fname; "out"]) in
+  let fname = String.concat "." [fname; "out"] in
+  let fullfname = System.get_output_path fname in
+  System.mkdir (Filename.dirname fullfname);
+  let channel = open_out fullfname in
   let old_fmt = !std_ft, !err_ft, !deep_ft in
   let new_ft = Format.formatter_of_out_channel channel in
   set_gp new_ft (get_gp !std_ft);

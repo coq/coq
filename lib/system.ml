@@ -225,6 +225,21 @@ let is_in_system_path filename =
     warn_path_not_found ();
     false
 
+let warn_using_current_directory =
+  CWarnings.create ~name:"default-output-directory" ~category:CWarnings.CoreCategories.filesystem
+    Pp.(fun s ->
+           strbrk "Output directory is unset, using \"" ++ str s ++ str "\"." ++ spc () ++
+           strbrk "Use command line option \"-output-directory to set a default directory.")
+
+let get_output_path filename =
+  if not (Filename.is_relative filename) then filename
+  else match !Flags.output_directory with
+  | None ->
+    let pwd = Sys.getcwd () in
+    warn_using_current_directory pwd;
+    Filename.concat pwd filename
+  | Some dir -> Filename.concat dir filename
+
 let error_corrupted file s =
   CErrors.user_err (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
