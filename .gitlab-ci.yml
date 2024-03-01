@@ -600,6 +600,11 @@ library:ci-bedrock2:
   extends: .ci-template-flambda
   variables:
     NJOBS: "1"
+  needs:
+  - build:edge+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
   timeout: 2h
 
 library:ci-category_theory:
@@ -642,6 +647,9 @@ library:ci-coquelicot:
   - build:edge+flambda
   - library:ci-mathcomp
 
+library:ci-coqutil:
+  extends: .ci-template-flambda
+
 library:ci-cross_crypto:
   extends: .ci-template
 
@@ -665,6 +673,8 @@ library:ci-fiat_crypto:
   - build:edge+flambda
   - library:ci-coqprime
   - library:ci-bedrock2
+  - library:ci-coqutil
+  - library:ci-rupicola
   - plugin:ci-bignums
   - plugin:ci-rewriter
   timeout: 3h
@@ -688,6 +698,9 @@ library:ci-fiat_crypto_ocaml:
     paths: [] # These artifacts would go over the size limit
 
 library:ci-flocq:
+  extends: .ci-template-flambda
+
+library:ci-kami:
   extends: .ci-template-flambda
 
 library:ci-menhir:
@@ -978,6 +991,19 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+
+library:ci-riscv_coq:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-coqutil
+
+library:ci-rupicola:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-bedrock2
+  - library:ci-coqutil
 
 plugin:ci-serapi:
   extends: .ci-template-flambda

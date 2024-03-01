@@ -27,6 +27,7 @@ CI_TARGETS= \
     ci-coq_dpdgraph \
     ci-coqtail \
     ci-coquelicot \
+    ci-coqutil \
     ci-corn \
     ci-cross_crypto \
     ci-coq_library_undecidability \
@@ -58,6 +59,7 @@ CI_TARGETS= \
     ci-itree_io \
     ci-jasmin \
     ci-json \
+    ci-kami \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-math_classes \
@@ -83,6 +85,8 @@ CI_TARGETS= \
     ci-reduction_effects \
     ci-relation_algebra \
     ci-rewriter \
+    ci-riscv_coq \
+    ci-rupicola \
     ci-serapi \
     ci-serapi_test \
     ci-sf \
@@ -128,7 +132,10 @@ ci-coq_library_undecidability: ci-metacoq
 
 ci-mtac2: ci-unicoq
 
-ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2
+ci-riscv_coq: ci-coqutil
+ci-bedrock2: ci-coqutil ci-riscv_coq ci-kami
+ci-rupicola: ci-bedrock2 ci-coqutil
+ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2 ci-coqutil ci-rupicola
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-fourcolor: ci-mathcomp
