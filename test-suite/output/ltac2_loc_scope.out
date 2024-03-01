@@ -1,0 +1,11 @@
+- : location option * unit =
+(Some <loc: File "./output/ltac2_loc_scope.v", line 5, characters 26-28>, ())
+Ltac2 foo : unit -> location option * unit
+      foo :=
+        fun _ =>
+        let t :=
+          Some
+            <loc:
+              File "./output/ltac2_loc_scope.v", line 5, characters 26-28>,
+            () in
+        t

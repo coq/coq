@@ -18,6 +18,7 @@ open Tac2qexpr
 
 (** Generic arguments *)
 
+let wit_loc = Arg.create "loc"
 let wit_pattern = Arg.create "pattern"
 let wit_reference = Arg.create "reference"
 let wit_ident = Arg.create "ident"
@@ -86,6 +87,8 @@ let of_option ?loc f opt = match opt with
 
 let inj_wit ?loc wit x =
   CAst.make ?loc @@ CTacExt (wit, x)
+
+let of_loc loc = inj_wit ~loc wit_loc loc
 
 let of_variable {loc;v=id} =
   let qid = Libnames.qualid_of_ident ?loc id in

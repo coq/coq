@@ -85,6 +85,10 @@ val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 val ident : Id.t repr
 
+val of_loc : Loc.t -> valexpr
+val to_loc : valexpr -> Loc.t
+val loc : Loc.t repr
+
 val of_closure : closure -> valexpr
 val to_closure : valexpr -> closure
 val closure : closure repr

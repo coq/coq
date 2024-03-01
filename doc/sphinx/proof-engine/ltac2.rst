@@ -1420,6 +1420,9 @@ Metasyntactic operations that can be applied to other syntactic classes are:
     omitting :token:`ltac2_scope`\s that are :token:`string`\s.
     `self` and `next` are not permitted within `seq`.
 
+  :n:`located(@ltac2_scope)`
+     Parses the :token:`ltac2_scope` and adds the location of what was parsed to the result.
+
 The following classes represent nonterminals with some special handling.  The
 table further down lists the classes that that are handled plainly.
 
