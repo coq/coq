@@ -842,7 +842,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
     let cstr = (rsp, 1) in
     let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id proj_flags implfs fields in
     let build = GlobRef.ConstructRef cstr in
-    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~reversible:true in
+    let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~reversible:false in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
     GlobRef.IndRef rsp
