@@ -12,7 +12,7 @@ rm -rf "$SAVEDIR"
 mkdir "$SAVEDIR"
 
 FAILED=$(mktemp)
-find . '(' -name '*.log' -exec grep -q -F "Error!" '{}' ';' -print0 ')' > "$FAILED"
+grep -F 'Error!' -r . -lZ --include="*.log" > "$FAILED"
 
 rsync -a --from0 --files-from="$FAILED" . "$SAVEDIR"
 cp summary.log "$SAVEDIR"/
