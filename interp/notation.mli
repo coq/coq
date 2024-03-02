@@ -229,6 +229,8 @@ val availability_of_prim_token :
 
 (** {6 Declare and interpret back and forth a notation } *)
 
+val warning_overridden_name : string
+
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int

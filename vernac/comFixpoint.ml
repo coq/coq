@@ -290,12 +290,8 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typin
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns ~ntns () in
-  let lemma =
-    Declare.Proof.start_mutual_with_initialization ~info
-      evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None in
-  (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
-  lemma
+  Declare.Proof.start_mutual_with_initialization ~info
+    evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None
 
 let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)

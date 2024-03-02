@@ -1687,8 +1687,16 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
        to thms, once Info.t is more refined this won't be necessary *)
     let typ = EConstr.of_constr typ in
     let lemma = start_proof_core ~name ~typ ~pinfo sigma in
-    map lemma ~f:(fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
+    let lemma = map lemma ~f:(fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) in
+    let () =
+      (* Temporary declaration of notations for the time of the proofs *)
+      let ntn_env =
+        (* We simulate the goal context in which the fixpoint bodies have to be proved (exact relevance does not matter) *)
+        let make_decl CInfo.{name; typ} = Context.Named.Declaration.LocalAssum (Context.annotR name, typ) in
+        Environ.push_named_context (List.map make_decl cinfo) (Global.env()) in
+      List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
+    lemma
 
 let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
@@ -2104,7 +2112,14 @@ end = struct
       Internal.map_entry_body entry
         ~f:(guess_decreasing env possible_indexes)
     in
-    List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
+    let refs = List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo in
+    let () =
+      (* We override the temporary notations used while proving, now using the global names *)
+      let local = pinfo.info.scope=Locality.Discharge in
+      CWarnings.with_warn ("-"^Notation.warning_overridden_name)
+        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) pinfo.info.ntns
+    in
+    refs
 
   let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in

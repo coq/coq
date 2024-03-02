@@ -406,3 +406,13 @@ Fixpoint f (n : nat) :=
   end.
 
 End WithLateCaseReduction.
+
+Module NtnInteractiveFixpoint.
+
+Reserved Notation "# n" (at level 2, right associativity).
+Fixpoint f (n:nat) : nat where "# n" := (f n).
+exact (match n with 0 => 0 | S n => # n end).
+Defined.
+Check eq_refl : # 0 = f 0.
+
+End NtnInteractiveFixpoint.
