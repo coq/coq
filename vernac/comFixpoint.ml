@@ -126,6 +126,7 @@ let find_rec_annot bl ctx na =
 
 let interp_fix_context ~program_mode ~cofix env sigma fix =
   let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma fix.Vernacexpr.binders in
+  if not cofix && Context.Rel.nhyps ctx = 0 then CErrors.user_err Pp.(str "A fixpoint needs at least one parameter.");
   let annot = Option.map (find_rec_annot fix.Vernacexpr.binders ctx) fix.Vernacexpr.rec_order in
   sigma, ((env', ctx), (impl_env, imps), annot)
 
