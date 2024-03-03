@@ -2092,12 +2092,9 @@ end = struct
     | _ -> assert false
 
   let update_mutual_entry i entry uctx typ =
-    (* if i = 0 , we don't touch the type; this is for compat
-       but not clear it is the right thing to do.
-    *)
     { entry with
       proof_entry_body = Future.chain entry.proof_entry_body (fun ((body, uctx), eff) -> ((select_body i body, uctx), eff));
-      proof_entry_type = if i > 0 then Some (UState.nf_universes uctx typ) else entry.proof_entry_type }
+      proof_entry_type = Some (UState.nf_universes uctx typ) }
 
   let declare_possibly_mutual_definitions ~pinfo ~uctx ~entry =
     let entries = match pinfo.Proof_info.possible_guard with
