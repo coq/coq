@@ -2072,7 +2072,7 @@ module MutualEntry : sig
     -> univs:UState.named_universes_entry
     -> Names.GlobRef.t list
 
-  val declare_mutdef
+  val declare_possibly_mutual_definitions
     (* Common to all recthms *)
     : pinfo:Proof_info.t
     -> uctx:UState.t
@@ -2081,7 +2081,7 @@ module MutualEntry : sig
 
 end = struct
 
-  (* XXX: Refactor this with the code in [Declare.declare_mutdef] *)
+  (* XXX: Refactor this with the code in [Declare.declare_possibly_mutual_definitions] *)
   let guess_decreasing env possible_guard ((body, ctx), eff) =
     let open Constr in
     match Constr.kind body with
@@ -2091,43 +2091,30 @@ end = struct
       (body, ctx), eff
     | _ -> assert false
 
-  let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
-    let { Proof_info.info; possible_guard; _ } = pinfo in
-    let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
+  let update_mutual_entry i entry uctx typ =
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
     *)
-    let pe =
-      if i > 0 && Option.has_some possible_guard
-      then
-        let typ = UState.nf_universes uctx typ in
-        Internal.map_entry_type pe ~f:(fun _ -> Some typ)
-      else pe
-    in
-    (* We when possible_guard was [] in the previous step we should not
-       substitute the body *)
-    let pe = match possible_guard with
-      | None -> pe
-      | _ ->
-        Internal.map_entry_body pe
-          ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
-    in
-    declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx pe
+    { entry with
+      proof_entry_body = Future.chain entry.proof_entry_body (fun ((body, uctx), eff) -> ((select_body i body, uctx), eff));
+      proof_entry_type = if i > 0 then Some (UState.nf_universes uctx typ) else entry.proof_entry_type }
 
-  let declare_mutdef ~pinfo ~uctx ~entry =
-    let pe = match pinfo.Proof_info.possible_guard with
+  let declare_possibly_mutual_definitions ~pinfo ~uctx ~entry =
+    let entries = match pinfo.Proof_info.possible_guard with
     | None ->
       (* Not a recursive statement *)
-      entry
-    | Some possible_indexes ->
+      [entry]
+    | Some possible_guard ->
       (* Try all combinations... not optimal *)
       let env = Global.env() in
       let typing_flags = pinfo.Proof_info.info.Info.typing_flags in
       let env = Environ.update_typing_flags ?typing_flags env in
-      Internal.map_entry_body entry
-        ~f:(guess_decreasing env possible_indexes)
+      let entry = Internal.map_entry_body entry ~f:(guess_decreasing env possible_guard) in
+      List.map_i (fun i CInfo.{typ} -> update_mutual_entry i entry uctx typ) 0 pinfo.Proof_info.cinfo
     in
-    let refs = List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo in
+    let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } } = pinfo in
+    let refs = List.map2 (fun CInfo.{name; impargs} ->
+        declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) pinfo.Proof_info.cinfo entries in
     let () =
       (* We override the temporary notations used while proving, now using the global names *)
       let local = pinfo.info.scope=Locality.Discharge in
@@ -2279,7 +2266,7 @@ let finalize_proof ~pm proof_obj proof_info =
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
     let entry, uctx = check_single_entry proof_obj "Proof.save" in
-    pm, MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info
+    pm, MutualEntry.declare_possibly_mutual_definitions ~entry ~uctx ~pinfo:proof_info
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     let entry = Internal.pmap_entry_body ~f:Future.force entry in
