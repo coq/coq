@@ -200,3 +200,19 @@ Module NoCasts.
   End Tele.
 
 End NoCasts.
+
+(* Testing that we find coherent surrounding stacks for CS problems. *)
+Module ExtraArgs.
+  Structure Fun := {apply : nat -> nat}.
+
+  Canonical S_Fun := {| apply := S |}.
+  Check eq_refl : apply _ = S.
+  Check eq_refl : apply _ 0 = S 0.
+
+  Canonical generic_Fun (f : nat -> nat) := {| apply := f |}.
+  Set Debug "unification".
+  Set Printing All.
+  Check fun (f : nat -> nat) => eq_refl : apply _ = f.
+  Check fun (f : nat -> nat) => eq_refl : apply _ 0 = f 0.
+
+End ExtraArgs.
