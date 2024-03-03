@@ -79,7 +79,6 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
-    -> ?using:Proof_using.t
     -> unit
     -> 'constr t
 
@@ -113,6 +112,7 @@ module Info : sig
     -> ?typing_flags:Declarations.typing_flags
     -> ?user_warns : UserWarn.t
     -> ?ntns : Metasyntax.notation_interpretation_decl list
+    -> ?using:Proof_using.t
     -> unit
     -> t
 
