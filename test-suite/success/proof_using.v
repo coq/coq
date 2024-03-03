@@ -225,6 +225,12 @@ Fixpoint f1 (n:nat) : nat :=
 with f2 (n:nat) : m = m :=
   match n with 0 => eq_refl | S n => match f1 n with 0 => eq_refl | S _ => eq_refl end end.
 
+#[using="Type"]
+Fixpoint f1' (n:nat) : nat with f2' (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match f2' n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match f1' n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
 CoInductive Stream : Set := Cons : Stream -> Stream.
 
 #[using="e"]
@@ -242,6 +248,7 @@ Check eq_refl : a' 0 (eq_refl 0) = 0.
 Check eq_refl : f 10 (eq_refl 10) 2 = 0.
 Check eq_refl : f' 10 (eq_refl 10) 2 = 0.
 Check eq_refl : f1 10 2 = 1.
+Check eq_refl : f1' 10 2 = 1.
 Check g 0 eq_refl : Stream.
 Check g' 0 eq_refl : Stream.
 
