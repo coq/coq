@@ -259,7 +259,7 @@ let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 
-let build_recthms ~indexes ?using fixnames fixtypes fiximps =
+let build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps =
   let fix_kind, cofix = match indexes with
     | Some indexes -> Decls.Fixpoint, false
     | None -> Decls.CoFixpoint, true
@@ -268,7 +268,7 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
     List.map3 (fun name typ (ctx,impargs,_) ->
         let env = Global.env() in
         let evd = Evd.from_env env in
-        let terms = [EConstr.of_constr typ] in
+        let terms = List.map EConstr.of_constr (fixtypes @ List.map_filter (fun x -> x) fixdefs) in
         let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
         let args = List.map Context.Rel.Declaration.get_name ctx in
         Declare.CInfo.make ~name ~typ ~args ~impargs ?using ()
@@ -277,7 +277,7 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
   fix_kind, cofix, thms
 
 let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
-  let fix_kind, cofix, thms = build_recthms ~indexes fixnames fixtypes fiximps in
+  let fix_kind, cofix, thms = build_recthms ~indexes fixnames fixdefs fixtypes fiximps in
   let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
@@ -287,7 +287,7 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typin
 
 let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
-  let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixtypes fiximps in
+  let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in

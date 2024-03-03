@@ -237,7 +237,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let terms = [def; typ] in
+    let terms = List.map_filter (fun x -> x) fixdefs @ fixtypes in
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
