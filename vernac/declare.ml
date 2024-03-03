@@ -750,11 +750,12 @@ let select_body i t =
   | CoFix (0,decls) -> mkCoFix (i,decls)
   | _ -> assert false
 
-let mutual_make_bodies env ~typing_flags ~fixitems ~rec_declaration ~possible_guard =
+let make_mutual_bodies env ~typing_flags ~rec_declaration ~possible_guard =
   let env = Environ.update_typing_flags ?typing_flags env in
   let body, indexes = make_recursive_body env possible_guard rec_declaration in
   let vars = Vars.universes_of_constr body in
-  let fixdecls = CList.map_i (fun i _ -> select_body i body) 0 fixitems in
+  let nfix = Array.length (pi1 rec_declaration) in
+  let fixdecls = List.init nfix (fun i -> select_body i body) in
   vars, fixdecls, indexes
 
 let prepare_recursive_declaration fixitems (fixdefs,fixrs) =
@@ -768,8 +769,7 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
   let rec_declaration = prepare_recursive_declaration cinfo bodies in
-  let vars, fixdecls, indexes =
-    mutual_make_bodies env ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_guard in
+  let vars, fixdecls, indexes = make_mutual_bodies env ~typing_flags ~rec_declaration ~possible_guard in
   let uctx = UState.restrict uctx vars in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   let evd = Evd.from_env env in
