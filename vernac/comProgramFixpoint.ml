@@ -273,7 +273,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
   let using =
-    let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
+    let terms = [EConstr.of_constr evars_typ] in
     Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
   in
   let uctx = Evd.evar_universe_context sigma in
@@ -305,7 +305,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let terms = [def; typ] in
+    let terms = fixtypes in
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in

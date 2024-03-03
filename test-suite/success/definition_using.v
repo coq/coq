@@ -80,3 +80,14 @@ End B.
 Check c8 : forall a, c1 a = true -> bogus.
 Check c9 : forall a, c1 a = true -> bogus.
 Check c10: bogus -> bogus.
+
+Module ProgramFixpoint.
+
+Section S.
+Variables a : nat.
+#[using="Type", warning="-non-recursive"]
+Program Fixpoint b (n:nat) : nat := (fun _ => 0) a.
+End S.
+Check b 0 : nat.
+
+End ProgramFixpoint.
