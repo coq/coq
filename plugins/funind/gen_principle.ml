@@ -415,7 +415,8 @@ let register_struct is_rec fixpoint_exprl =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    ComFixpoint.do_fixpoint ~poly:false fixpoint_exprl;
+    let p = ComFixpoint.do_fixpoint ~poly:false fixpoint_exprl in
+    assert (Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->

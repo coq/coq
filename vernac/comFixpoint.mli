@@ -15,45 +15,25 @@ open Vernacexpr
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
-val do_fixpoint_interactive
-  : scope:Locality.definition_scope
-  -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
-  -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
-  -> Declare.Proof.t
-
 val do_fixpoint
-   : ?scope:Locality.definition_scope
-   -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
-  -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
-  -> unit
-
-val do_cofixpoint_interactive
-  : scope:Locality.definition_scope
+  : ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
-  -> cofixpoint_expr list
-  -> Declare.Proof.t
+  -> fixpoint_expr list
+  -> Declare.Proof.t option
 
 val do_cofixpoint
-  : scope:Locality.definition_scope
+  : ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
-  -> unit
+  -> Declare.Proof.t option
 
 (************************************************************************)
 (** Internal API  *)
