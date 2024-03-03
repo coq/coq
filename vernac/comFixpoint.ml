@@ -170,7 +170,7 @@ let fix_proto sigma =
 let fix_proto_relevance = EConstr.ERelevance.relevant
 (* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
 
-let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
+let interp_recursive_evars env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
   let open Context.Named.Declaration in
   let open EConstr in
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
@@ -242,13 +242,13 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
 (* XXX: Unify with interp_recursive  *)
-let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
+let interp_recursive ?(check_recursivity=true) ?typing_flags ~cofix l :
   ( (Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
     UState.universe_decl * UState.t *
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,_,pl,evd),fix,info = interp_recursive env ~program_mode:false ~cofix l in
+  let (env,_,pl,evd),fix,info = interp_recursive_evars env ~program_mode:false ~cofix l in
   if check_recursivity then check_recursive ~isfix:(not cofix) env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
   let uctx,fix = ground_fixpoint env evd fix in
@@ -267,7 +267,7 @@ let build_recthms ~indexes fixnames fixtypes fiximps =
   in
   fix_kind, possible_guard, thms
 
-let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
+let declare_recursive ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   let fix_kind, possible_guard, cinfo = build_recthms ~indexes fixnames fixtypes fiximps in
   let kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
@@ -315,12 +315,12 @@ let do_fixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fixl :
       Vernacexpr.{ fix
                    with rec_order = adjust_rec_order ~structonly:true fix.binders fix.rec_order }) fixl in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let (_, _, _, info as fix) = interp_fixpoint ~cofix:false ?typing_flags fixl in
+  let (_, _, _, info as fix) = interp_recursive ~cofix:false ?typing_flags fixl in
   let possible_indexes = List.map compute_possible_guardness_evidences info in
-  declare_fixpoint_generic ~indexes:possible_indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns
+  declare_recursive ~indexes:possible_indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns
 
-let do_cofixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixl =
-   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
-   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let cofix, ntns = interp_fixpoint ~cofix:true fixl, ntns in
-  declare_fixpoint_generic ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns
+let do_cofixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fixl : Vernacexpr.cofixpoint_expr list) =
+  let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
+  let cofix, ntns = interp_recursive ~cofix:true fixl, ntns in
+  declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns

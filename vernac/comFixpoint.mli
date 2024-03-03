@@ -51,7 +51,7 @@ val adjust_rec_order
 type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr option list * 'types list
 
 (** Exported for Program *)
-val interp_recursive :
+val interp_recursive_evars :
   Environ.env ->
   (* Misc arguments *)
   program_mode:bool -> cofix:bool ->
@@ -66,7 +66,7 @@ val interp_recursive :
 
 (** Exported for Funind *)
 
-val interp_fixpoint
+val interp_recursive
   :  ?check_recursivity:bool
   -> ?typing_flags:Declarations.typing_flags
   -> cofix:bool
