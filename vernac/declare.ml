@@ -57,13 +57,11 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
-    ; using : Proof_using.t option
-    (** Explicit declaration of section variables used by the constant *)
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) ?using () =
-    { name; typ; args; impargs; using }
+  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
+    { name; typ; args; impargs }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -87,14 +85,16 @@ module Info = struct
     ; typing_flags : Declarations.typing_flags option
     ; user_warns : UserWarn.t option
     ; ntns : Metasyntax.notation_interpretation_decl list
+    ; using : Proof_using.t option
+    (** Explicit declaration of section variables used by the constant *)
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
-      ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns }
+      ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) ?using () =
+    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; using }
 
 end
 
@@ -746,13 +746,13 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
     vars, fixdecls, None
 
 let declare_mutually_recursive ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_indexes =
-  let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
+  let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; using; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx = UState.restrict uctx vars in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   let csts = CList.map2
-      (fun CInfo.{ name; typ; impargs; using } body ->
+      (fun CInfo.{ name; typ; impargs } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo fixdecls
@@ -817,8 +817,8 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
-  let { CInfo.name; impargs; typ; using; _ } = cinfo in
-  let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
+  let { CInfo.name; impargs; typ; _ } = cinfo in
+  let entry, uctx = prepare_definition ~info ~opaque ?using:info.using ~body ~typ sigma in
   let { Info.scope; clearbody; kind; hook; typing_flags; user_warns; ntns; _ } = info in
   let gref = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
   List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) (Global.env ())) ntns;
@@ -952,7 +952,7 @@ module ProgramDecl = struct
     let set_uctx ~uctx prg = {prg with prg_uctx = uctx}
     let get_poly prg = prg.prg_info.Info.poly
     let get_obligations prg = prg.prg_obligations
-    let get_using prg = prg.prg_cinfo.CInfo.using
+    let get_using prg = prg.prg_info.Info.using
   end
 end
 
@@ -1274,7 +1274,7 @@ let declare_mutual_definition ~pm l =
     in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in
-    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs, x.prg_cinfo.CInfo.using) in
+    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs) in
     let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
     (def, oblsubst)
   in
@@ -1288,11 +1288,11 @@ let declare_mutual_definition ~pm l =
   (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixdefs, fixrs, fixtypes, fixitems =
     List.fold_right2
-      (fun (d, r, typ, impargs, using) name (a1, a2, a3, a4) ->
+      (fun (d, r, typ, impargs) name (a1, a2, a3, a4) ->
         ( d :: a1
         , r :: a2
         , typ :: a3
-        , (CInfo.make ~name ~typ ~impargs ?using ()) :: a4 ))
+        , (CInfo.make ~name ~typ ~impargs ()) :: a4 ))
       defs first.prg_deps ([], [], [], [])
   in
   let fixkind = Option.get first.prg_fixkind in
@@ -1536,7 +1536,6 @@ end
 
 type t =
   { endline_tactic : Genarg.glob_generic_argument option
-  ; using : Id.Set.t option
   ; proof : Proof.t
   ; initial_euctx : UState.t
   (** The initial universe context (for the statement) *)
@@ -1594,7 +1593,6 @@ let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
   ; endline_tactic = None
-  ; using = None
   ; initial_euctx
   ; pinfo
   }
@@ -1619,7 +1617,6 @@ let start_dependent ~info ~name ~proof_ending goals =
   let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
   { proof
   ; endline_tactic = None
-  ; using = None
   ; initial_euctx
   ; pinfo
   }
@@ -1692,7 +1689,7 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
       List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
     lemma
 
-let get_used_variables pf = pf.using
+let get_used_variables pf = pf.pinfo.Proof_info.info.Info.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
 let get_recnames pf =
   if Option.has_some pf.pinfo.Proof_info.compute_guard then
@@ -1722,9 +1719,9 @@ let set_used_variables ps ~using =
        else (ctx, all_safe) in
   let ctx, _ =
     Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
-  if not (Option.is_empty ps.using) then
+  if not (Option.is_empty ps.pinfo.info.using) then
     CErrors.user_err Pp.(str "Used section variables can be declared only once");
-  ctx, { ps with using = Some (Context.Named.to_vars ctx) }
+  ctx, { ps with pinfo = { ps.pinfo with info = { ps.pinfo.info with using = Some (Context.Named.to_vars ctx) } } }
 
 let get_open_goals ps =
   let Proof.{ goals; stack; sigma } = Proof.data ps.proof in
@@ -1848,8 +1845,8 @@ let make_univs ~poly ~uctx ~udecl eff (used_univs_typ, typ) (used_univs_body, bo
 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
-  let { using; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
+  let { proof; initial_euctx; pinfo } = ps in
+  let { Proof_info.info = { Info.udecl; using } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
   let elist, uctx = prepare_proof ?warn_incomplete ~unsafe_typ ps in
@@ -1875,8 +1872,8 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
-  let { using; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
+  let { proof; initial_euctx; pinfo } = ps in
+  let { Proof_info.info = { Info.udecl; using } } = pinfo in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
 
   (* We don't allow poly = true in this path *)
@@ -2509,9 +2506,9 @@ let solve_obligation ?check_final prg num tac =
     Proof_ending.End_obligation {name; num; auto; check_final}
   in
   let using = Internal.get_using prg in
-  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ?using () in
+  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
   let poly = Internal.get_poly prg in
-  let info = Info.make ~kind ~poly () in
+  let info = Info.make ~kind ~poly ?using () in
   let lemma = Proof.start_core ~cinfo ~info ~proof_ending evd  in
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in

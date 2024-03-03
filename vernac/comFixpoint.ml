@@ -266,32 +266,33 @@ let build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps =
   in
   let thms =
     List.map3 (fun name typ (ctx,impargs,_) ->
-        let env = Global.env() in
-        let evd = Evd.from_env env in
-        let terms = List.map EConstr.of_constr (fixtypes @ List.map_filter (fun x -> x) fixdefs) in
-        let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
         let args = List.map Context.Rel.Declaration.get_name ctx in
-        Declare.CInfo.make ~name ~typ ~args ~impargs ?using ()
+        Declare.CInfo.make ~name ~typ ~args ~impargs ()
       ) fixnames fixtypes fiximps
   in
-  fix_kind, cofix, thms
+  let using =
+    let env = Global.env() in
+    let evd = Evd.from_env env in
+    let terms = List.map EConstr.of_constr (fixtypes @ List.map_filter (fun x -> x) fixdefs) in
+    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
+  fix_kind, cofix, thms, using
 
-let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
-  let fix_kind, cofix, thms = build_recthms ~indexes fixnames fixdefs fixtypes fiximps in
+let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
+  let fix_kind, cofix, thms, using = build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps in
   let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
-  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns ~ntns () in
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns ~ntns ?using () in
   Declare.Proof.start_mutual_with_initialization ~info
     evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None
 
 let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
-  let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps in
+  let fix_kind, cofix, fixitems, using = build_recthms ~indexes ?using fixnames fixdefs fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
-  let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns ?using () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
     Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
@@ -331,9 +332,9 @@ let do_fixpoint_common ?typing_flags (fixl : Vernacexpr.fixpoint_expr list) =
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false ?typing_flags fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
-let do_fixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns l : Declare.Proof.t =
+let do_fixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l : Declare.Proof.t =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common ?typing_flags l in
-  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns fix ntns in
+  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns in
   lemma
 
 let do_fixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
@@ -345,9 +346,9 @@ let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   interp_fixpoint ~cofix:true fixl, ntns
 
-let do_cofixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns l =
+let do_cofixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let cofix, ntns = do_cofixpoint_common l in
-  let lemma = declare_fixpoint_interactive_generic ~scope ?clearbody ~poly ?typing_flags ?user_warns cofix ntns in
+  let lemma = declare_fixpoint_interactive_generic ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns in
   lemma
 
 let do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
