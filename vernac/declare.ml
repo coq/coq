@@ -2097,12 +2097,12 @@ end = struct
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
     *)
-    let pe, ubind =
+    let pe =
       if i > 0 && Option.has_some possible_guard
       then
         let typ = UState.nf_universes uctx typ in
-        Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
-      else pe, UState.universe_binders uctx
+        Internal.map_entry_type pe ~f:(fun _ -> Some typ)
+      else pe
     in
     (* We when possible_guard was [] in the previous step we should not
        substitute the body *)
