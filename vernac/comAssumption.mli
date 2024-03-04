@@ -14,25 +14,7 @@ open Constrexpr
 
 (** {6 Parameters/Assumptions} *)
 
-val interp_assumption
-  :  program_mode:bool
-  -> Environ.env
-  -> Evd.evar_map
-  -> Constrintern.internalization_env
-  -> Constrexpr.local_binder_expr list
-  -> constr_expr
-  -> Evd.evar_map * EConstr.t * Impargs.manual_implicits
-
-val do_assumptions
-  :  program_mode:bool
-  -> poly:bool
-  -> scope:Locality.definition_scope
-  -> kind:Decls.assumption_object_kind
-  -> ?user_warns:UserWarn.t
-  -> inline:Declaremods.inline
-  -> (ident_decl list * constr_expr) with_coercion list
-  -> unit
-
+(** Declaration of a local assumption (Variable/Hypothesis) *)
 val declare_variable
   :  coe:coercion_flag
   -> kind:Decls.assumption_object_kind
@@ -43,9 +25,10 @@ val declare_variable
   -> Constr.types
   -> GlobRef.t * UVars.Instance.t
 
+(** Declaration of a local construction (Variable/Hypothesis/Let) *)
 val declare_local
   :  coe:coercion_flag
-  -> try_assum_as_instance:bool
+  -> try_assum_as_instance:bool (* true = declare a variable of type a class as an instance *)
   -> kind:Decls.logical_kind
   -> univs:UState.named_universes_entry
   -> impargs:Impargs.manual_implicits
@@ -53,8 +36,9 @@ val declare_local
   -> name:variable
   -> Constr.constr option
   -> Constr.types
-  -> Names.GlobRef.t * UVars.Instance.t
+  -> GlobRef.t * UVars.Instance.t
 
+(** Declaration of a global assumption (Axiom/Parameter) *)
 val declare_axiom
   :  coe:coercion_flag
   -> local:Locality.import_status
@@ -67,9 +51,10 @@ val declare_axiom
   -> Constr.types
   -> GlobRef.t * UVars.Instance.t
 
+(** Declaration of a global construction (Axiom/Parameter/Definition) *)
 val declare_global
   :  coe:coercion_flag
-  -> try_assum_as_instance:bool
+  -> try_assum_as_instance:bool (* true = declare a parameter of type a class as an instance *)
   -> local:Locality.import_status
   -> kind:Decls.logical_kind
   -> ?user_warns:UserWarn.t
@@ -81,13 +66,33 @@ val declare_global
   -> Constr.types
   -> GlobRef.t * UVars.Instance.t
 
-(** Context command *)
+(** Interpret the commands Variable/Hypothesis/Axiom/Parameter *)
+val do_assumptions
+  :  program_mode:bool
+  -> poly:bool
+  -> scope:Locality.definition_scope
+  -> kind:Decls.assumption_object_kind
+  -> ?user_warns:UserWarn.t
+  -> inline:Declaremods.inline
+  -> (ident_decl list * constr_expr) with_coercion list
+  -> unit
 
+(** Interpret the command Context *)
 val do_context
   :  program_mode:bool
   -> poly:bool
   -> local_binder_expr list
   -> unit
+
+(** Interpret a declaration of the form [binders |- typ] as a type *)
+val interp_assumption
+  :  program_mode:bool
+  -> Environ.env
+  -> Evd.evar_map
+  -> Constrintern.internalization_env
+  -> Constrexpr.local_binder_expr list
+  -> constr_expr
+  -> Evd.evar_map * EConstr.types * Impargs.manual_implicits
 
 (** The first half of the context command, returning the declarations
     in the same order as [Context], using de Bruijn indices (used by Elpi) *)
