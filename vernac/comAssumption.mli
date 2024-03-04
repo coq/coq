@@ -15,7 +15,7 @@ open Constrexpr
 (** {6 Parameters/Assumptions} *)
 
 val interp_assumption
-  : program_mode:bool
+  :  program_mode:bool
   -> Environ.env
   -> Evd.evar_map
   -> Constrintern.internalization_env
@@ -29,56 +29,56 @@ val do_assumptions
   -> scope:Locality.definition_scope
   -> kind:Decls.assumption_object_kind
   -> ?user_warns:UserWarn.t
-  -> Declaremods.inline
+  -> inline:Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
   -> unit
 
 val declare_variable
-  : coercion_flag
+  :  coe:coercion_flag
   -> kind:Decls.assumption_object_kind
+  -> univs:UState.named_universes_entry
+  -> impargs:Impargs.manual_implicits
+  -> impl:Glob_term.binding_kind
+  -> name:variable
   -> Constr.types
-  -> UState.named_universes_entry
-  -> Impargs.manual_implicits
-  -> Glob_term.binding_kind
-  -> variable
   -> GlobRef.t * UVars.Instance.t
 
 val declare_local
-  : coercion_flag
+  :  coe:coercion_flag
   -> try_assum_as_instance:bool
   -> kind:Decls.logical_kind
+  -> univs:UState.named_universes_entry
+  -> impargs:Impargs.manual_implicits
+  -> impl:Glob_term.binding_kind
+  -> name:variable
   -> Constr.constr option
   -> Constr.types
-  -> UState.named_universes_entry
-  -> Impargs.manual_implicits
-  -> Glob_term.binding_kind
-  -> variable
   -> Names.GlobRef.t * UVars.Instance.t
 
 val declare_axiom
-  : coercion_flag
+  :  coe:coercion_flag
   -> local:Locality.import_status
   -> kind:Decls.assumption_object_kind
   -> ?user_warns:UserWarn.t
+  -> univs:UState.named_universes_entry
+  -> impargs:Impargs.manual_implicits
+  -> inline:Declaremods.inline
+  -> name:variable
   -> Constr.types
-  -> UState.named_universes_entry
-  -> Impargs.manual_implicits
-  -> Declaremods.inline
-  -> variable
   -> GlobRef.t * UVars.Instance.t
 
 val declare_global
-  : coercion_flag
+  :  coe:coercion_flag
   -> try_assum_as_instance:bool
   -> local:Locality.import_status
   -> kind:Decls.logical_kind
   -> ?user_warns:UserWarn.t
+  -> univs:UState.named_universes_entry
+  -> impargs:Impargs.manual_implicits
+  -> inline:Declaremods.inline
+  -> name:variable
   -> Constr.constr option
   -> Constr.types
-  -> UState.universes_entry * UnivNames.universe_binders
-  -> Impargs.manual_implicits
-  -> Declaremods.inline
-  -> variable
   -> GlobRef.t * UVars.Instance.t
 
 (** Context command *)
