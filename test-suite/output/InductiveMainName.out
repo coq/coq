@@ -1,18 +1,26 @@
 bar : foo -> nat
 
 bar is not universe polymorphic
+bar is a projection of foo
 Arguments bar id
 bar is transparent
 Expands to: Constant InductiveMainName.bar
 bar' : foo' -> nat
 
 bar' is not universe polymorphic
+bar' is a projection of foo'
 Arguments bar' {id'}
 bar' is transparent
 Expands to: Constant InductiveMainName.bar'
 bar'' : foo'' -> foo''
 
 bar'' is not universe polymorphic
+bar'' is a projection of foo''
 Arguments bar'' id''
 bar'' is transparent
 Expands to: Constant InductiveMainName.bar''
+Record foo''' : Set := Build_foo''' { bar''' : nat } as id.
+
+foo''' has primitive projections with eta conversion.
+Arguments Build_foo''' bar'''%nat_scope
+Arguments bar''' id

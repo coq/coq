@@ -208,6 +208,22 @@ let print_polymorphism env ref =
          ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
        else str "not universe polymorphic") ]
 
+(** Print projection status *)
+
+let print_projection env ref =
+  match ref with
+  | GlobRef.ConstRef cst ->
+    begin
+      match Structures.PrimitiveProjections.find_opt cst with
+      | Some p -> [pr_global ref ++ str " is a primitive projection of " ++ pr_global (IndRef (Projection.Repr.inductive p))]
+      | None ->
+      try
+        let ind = (Structures.Structure.find_from_projection cst).name in
+        [pr_global ref ++ str " is a projection of " ++ pr_global (IndRef ind)]
+      with Not_found -> []
+    end
+  | _ -> []
+
 (** Printing type-in-type status *)
 
 let print_type_in_type env ref =
@@ -380,6 +396,7 @@ let print_name_infos env ref =
     else
       [] in
   print_type_in_type env ref @
+  print_projection env ref @
   print_primitive env ref @
   type_info_for_implicit @
   print_arguments env ref @
@@ -427,12 +444,23 @@ let assumptions_for_print lna =
 (*********************)
 (* *)
 
-let print_inductive_args env mind mipv =
+let print_inductive_args env mind mib =
   let flatmapi f v = List.flatten (Array.to_list (Array.mapi f v)) in
+  let mips =
+    (* We don't use the PrimRecord field as it misses the projections corresponding to local definition *)
+    try
+      Array.mapi (fun i mip ->
+          let projs = Option.List.flatten (Structures.Structure.find_projections (mind,i)) in
+          (mip.mind_consnames, Array.of_list projs)) mib.mind_packets
+    with
+      Not_found (* find_projections *) ->
+      Array.map (fun mip -> (mip.mind_consnames,[||])) mib.mind_packets in
   flatmapi
-    (fun i mip -> print_arguments env (GlobRef.IndRef (mind,i)) @
-                  flatmapi (fun j _ -> print_arguments env (GlobRef.ConstructRef ((mind,i),j+1)))
-                    mip.mind_consnames) mipv
+    (fun i (constructs, projs) ->
+       print_arguments env (GlobRef.IndRef (mind,i)) @
+       flatmapi (fun j _ -> print_arguments env (GlobRef.ConstructRef ((mind,i),j+1))) constructs @
+       flatmapi (fun _ cst -> print_arguments env (GlobRef.ConstRef cst)) projs)
+    mips
 
 let print_inductive env mind udecl =
   let mib = Environ.lookup_mind mind env in
@@ -444,7 +472,7 @@ let print_inductive_with_infos env mind udecl =
   Printmod.pr_mutual_inductive_body env mind mib udecl ++
   with_line_skip
     (print_primitive_record mib.mind_finite mipv mib.mind_record @
-     print_inductive_args env mind mipv)
+     print_inductive_args env mind mib)
 
 let print_section_variable_with_infos env sigma id =
   print_named_decl env sigma true id ++
@@ -501,7 +529,10 @@ let print_constant_with_infos env cst udecl =
 let print_global_reference env sigma gref udecl =
   let open GlobRef in
   match gref with
-  | ConstRef cst -> print_constant_with_infos env cst udecl
+  | ConstRef cst ->
+    (match Structures.PrimitiveProjections.find_opt cst with
+     | Some p -> print_inductive_with_infos env (fst (Projection.Repr.inductive p)) udecl
+     | None -> print_constant_with_infos env cst udecl)
   | IndRef (mind,_) -> print_inductive_with_infos env mind udecl
   | ConstructRef ((mind,_),_) -> print_inductive_with_infos env mind udecl
   | VarRef id -> print_section_variable_with_infos env sigma id
