@@ -289,13 +289,9 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typin
   let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
-  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns () in
-  let lemma =
-    Declare.Proof.start_mutual_with_initialization ~info
-      evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None in
-  (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
-  lemma
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns ~ntns () in
+  Declare.Proof.start_mutual_with_initialization ~info
+    evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None
 
 let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
@@ -303,11 +299,11 @@ let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?use
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
-  let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
     Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
-      ~possible_indexes:indexes ~ntns ~rec_declaration
+      ~possible_indexes:indexes ~rec_declaration
   in
   ()
 

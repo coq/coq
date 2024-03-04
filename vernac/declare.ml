@@ -86,14 +86,15 @@ module Info = struct
     ; hook : Hook.t option
     ; typing_flags : Declarations.typing_flags option
     ; user_warns : UserWarn.t option
+    ; ntns : Metasyntax.notation_interpretation_decl list
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
-      ?(clearbody=false) ?hook ?typing_flags ?user_warns () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns }
+      ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
+    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns }
 
 end
 
@@ -744,8 +745,8 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
-let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
-  let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
+let declare_mutually_recursive_core ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
+  let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -899,13 +900,12 @@ module ProgramDecl = struct
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
     ; prg_fixkind : fixpoint_kind option
-    ; prg_notations : Metasyntax.notation_interpretation_decl list
     ; prg_reduce : constr -> constr
     }
 
   open Obligation
 
-  let make ~info ~cinfo ~opaque ~ntns ~reduce ~deps ~uctx ~body ~fixpoint_kind ?obl_hook obls =
+  let make ~info ~cinfo ~opaque ~reduce ~deps ~uctx ~body ~fixpoint_kind ?obl_hook obls =
     let obls', body =
       match body with
       | None ->
@@ -942,7 +942,6 @@ module ProgramDecl = struct
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_fixkind = fixpoint_kind
-    ; prg_notations = ntns
     ; prg_reduce = reduce }
 
   let show prg =
@@ -1315,7 +1314,7 @@ let declare_mutual_definition ~pm l =
   in
   (* Declare the recursive definitions *)
   let kns =
-    declare_mutually_recursive_core ~info:first.prg_info ~ntns:first.prg_notations
+    declare_mutually_recursive_core ~info:first.prg_info
       ~uctx:first.prg_uctx ~rec_declaration ~possible_indexes ~opaque:first.prg_opaque
       ~restrict_ucontext:false ~cinfo:fixitems ()
   in
@@ -1688,8 +1687,16 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
        to thms, once Info.t is more refined this won't be necessary *)
     let typ = EConstr.of_constr typ in
     let lemma = start_proof_core ~name ~typ ~pinfo sigma in
-    map lemma ~f:(fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
+    let lemma = map lemma ~f:(fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) in
+    let () =
+      (* Temporary declaration of notations for the time of the proofs *)
+      let ntn_env =
+        (* We simulate the goal context in which the fixpoint bodies have to be proved (exact relevance does not matter) *)
+        let make_decl CInfo.{name; typ} = Context.Named.Declaration.LocalAssum (Context.annotR name, typ) in
+        Environ.push_named_context (List.map make_decl cinfo) (Global.env()) in
+      List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
+    lemma
 
 let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
@@ -2105,7 +2112,14 @@ end = struct
       Internal.map_entry_body entry
         ~f:(guess_decreasing env possible_indexes)
     in
-    List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
+    let refs = List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo in
+    let () =
+      (* We override the temporary notations used while proving, now using the global names *)
+      let local = pinfo.info.scope=Locality.Discharge in
+      CWarnings.with_warn ("-"^Notation.warning_overridden_name)
+        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) pinfo.info.ntns
+    in
+    refs
 
   let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
@@ -2589,7 +2603,7 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) obls =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let prg =
-    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None ?obl_hook obls
+    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~deps:[] ~fixpoint_kind:None ?obl_hook obls
   in
   let name = CInfo.get_name cinfo in
   let {obls;_} = Internal.get_obligations prg in
@@ -2608,7 +2622,7 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
     | _ -> pm, res
 
 let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
-    ?tactic ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
+    ?tactic ?(reduce = reduce) ?(opaque = false) fixkind =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let deps = List.map (fun (ci,_,_) -> CInfo.get_name ci) l in
   let pm =
@@ -2616,7 +2630,7 @@ let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
       (fun pm (cinfo, b, obls) ->
         let prg =
           ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
-            ~fixpoint_kind:(Some fixkind) ~ntns ~reduce ?obl_hook obls
+            ~fixpoint_kind:(Some fixkind) ~reduce ?obl_hook obls
         in
         State.add pm (CInfo.get_name cinfo) prg)
       pm l

@@ -112,6 +112,7 @@ module Info : sig
     (** Callback to be executed after saving the constant *)
     -> ?typing_flags:Declarations.typing_flags
     -> ?user_warns : UserWarn.t
+    -> ?ntns : Metasyntax.notation_interpretation_decl list
     -> unit
     -> t
 
@@ -136,7 +137,6 @@ val declare_mutually_recursive
   : info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
-  -> ntns:Metasyntax.notation_interpretation_decl list
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
@@ -568,7 +568,6 @@ val add_mutual_definitions :
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
-  -> ntns:Metasyntax.notation_interpretation_decl list
   -> fixpoint_kind
   -> OblState.t
 

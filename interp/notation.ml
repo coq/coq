@@ -1369,9 +1369,11 @@ let pr_optional_scope = function
   | LastLonelyNotation -> mt ()
   | NotationInScope scope -> spc () ++ strbrk "in scope" ++ spc () ++ str scope
 
+let warning_overridden_name = "notation-overridden"
+
 let w_nota_overridden =
   CWarnings.create_warning
-    ~from:[CWarnings.CoreCategories.parsing] ~name:"notation-overridden" ()
+    ~from:[CWarnings.CoreCategories.parsing] ~name:warning_overridden_name ()
 
 let warn_notation_overridden =
   CWarnings.create_in w_nota_overridden
