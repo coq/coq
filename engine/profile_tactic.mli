@@ -82,3 +82,6 @@ type treenode = {
 (* Returns the profiling results known by the current process *)
 val get_local_profiling_results : unit -> treenode
 val feedback_results : treenode -> unit
+
+val set_get_printing_width : (unit -> int) -> unit
+(** Internal hook *)

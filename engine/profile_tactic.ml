@@ -129,48 +129,97 @@ let format_ratio x = (Printf.sprintf "%.1f%%" (100. *. x))
 let padl n s = ws (max 0 (n - utf8_length s)) ++ str s
 let padr_with c n s =
   let ulength = utf8_length s in
-  str (utf8_sub s 0 n) ++ str (String.make (max 0 (n - ulength)) c)
+  if Int.equal n ulength then str s
+  else if n < ulength then str (utf8_sub s 0 n)
+  else str s ++ str (String.make (n - ulength) c)
 
-let rec list_iter_is_last f = function
+let rec list_map_is_last f = function
   | []      -> []
   | [x]     -> [f true x]
-  | x :: xs -> f false x :: list_iter_is_last f xs
+  | x :: xs -> f false x :: list_map_is_last f xs
 
-let header =
-  str " tactic                                   local  total   calls       max " ++
+let repeat_str n s =
+  if String.is_empty s then s
+  else
+    let len = String.length s in
+    String.init (n * len) (fun i -> s.[i mod len])
+
+let header_name = " tactic"
+let header_name_width = utf8_length header_name
+
+let header_rest = "┴──────┴──────┴───────┴─────────┘"
+let header_rest_width = utf8_length header_rest
+
+let header name_width =
+  str " tactic" ++ str (String.make (name_width - header_name_width) ' ') ++ str "  local  total   calls       max" ++
   fnl () ++
-  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
+  str (repeat_str name_width "─") ++ str header_rest ++
   fnl ()
 
-let rec print_node ~filter all_total indent prefix (s, e) =
-  h (
-    padr_with '-' 40 (prefix ^ s ^ " ")
-    ++ padl 7 (format_ratio (e.local /. all_total))
-    ++ padl 7 (format_ratio (e.total /. all_total))
-    ++ padl 8 (string_of_int e.ncalls)
-    ++ padl 10 (format_sec (e.max_total))
-  ) ++
-  fnl () ++
-  print_table ~filter all_total indent false e.children
+module Line = struct
+  type t = {
+    prefix : string;
+    tac_name : string;
+    local : float;
+    total : float;
+    calls : int;
+    maxtime : float;
+  }
 
-and print_table ~filter all_total indent first_level table =
+  let pr ~name_width l =
+    h (
+      padr_with '-' name_width (l.prefix ^ l.tac_name ^ " ")
+      ++ padl 7 (format_ratio l.local)
+      ++ padl 7 (format_ratio l.total)
+      ++ padl 8 (string_of_int l.calls)
+      ++ padl 10 (format_sec l.maxtime))
+end
+
+let rec linearize_node ~filter all_total indent prefix (s, e) =
+  { Line.prefix; tac_name=s;
+    local = (e.local /. all_total);
+    total = (e.total /. all_total);
+    calls = e.ncalls;
+    maxtime = e.max_total;
+  } :: linearize_table ~filter all_total indent false e.children
+
+and linearize_table ~filter all_total indent first_level table =
   let fold _ n l =
     let s, total = n.name, n.total in
     if filter s total then (s, n) :: l else l in
   let ls = M.fold fold table [] in
   match ls with
   | [s, n] when not first_level ->
-     v 0 (print_node ~filter all_total indent (indent ^ "└") (s, n))
+    linearize_node ~filter all_total indent (indent ^ "└") (s, n)
   | _ ->
     let ls =
       List.sort (fun (_, { total = s1 }) (_, { total = s2}) ->
-                   compare s2 s1) ls in
+          compare s2 s1) ls in
     let iter is_last =
-     let sep0 = if first_level then "" else if is_last then "  " else " │" in
-     let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
-     print_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
+      let sep0 = if first_level then "" else if is_last then "  " else " │" in
+      let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
+      linearize_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
     in
-    prlist (fun pr -> pr) (list_iter_is_last iter ls)
+    List.concat (list_map_is_last iter ls)
+
+let get_printing_width = ref (fun () -> Format.pp_get_margin Format.std_formatter ())
+
+let set_get_printing_width f = get_printing_width := f
+let get_printing_width () = !get_printing_width ()
+
+let print_table ~filter all_total table =
+  let lines = linearize_table ~filter all_total "" true table in
+  let name_width = List.fold_left (fun acc (l:Line.t) ->
+      max acc (utf8_length (l.prefix ^ l.tac_name)))
+      0
+      lines
+  in
+  let name_width = name_width + 1 (* +1 for a space at the end *) in
+  (* respect Printing Width unless it's so short that we can't print the header correctly *)
+  let name_width = min (get_printing_width() - header_rest_width) name_width in
+  let name_width = max header_name_width name_width in
+  header name_width ++
+  prlist_with_sep fnl (Line.pr ~name_width) lines
 
 let to_string ~filter ~cutoff node =
   let tree = node.children in
@@ -212,11 +261,9 @@ let to_string ~filter ~cutoff node =
     h (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
     fnl () ++
-    header ++
-    print_table ~filter all_total "" true flat_tree ++
-    fnl () ++
-    header ++
-    print_table ~filter all_total "" true tree
+    print_table ~filter all_total flat_tree ++
+    fnl () ++ fnl () ++
+    print_table ~filter all_total tree
   in
   msg
 
