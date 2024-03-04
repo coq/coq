@@ -1646,9 +1646,13 @@ let make_generic_printing_rules reserved main_data ntn sd =
       (* No intent to define a format, we reuse the existing generic rules *)
       Some rules
     | _ ->
-      let rules' = make_rule (make_pp_rule level sd.pp_syntax_data main_data.format) in
-      check_reserved_format ntn rules rules'.notation_printing_rules;
-      Some rules'
+      if not reserved && main_data.onlyprinting then
+        (* No intent to define a generic format *)
+        Some rules
+      else
+        let rules' = make_rule (make_pp_rule level sd.pp_syntax_data main_data.format) in
+        let () = check_reserved_format ntn rules rules'.notation_printing_rules in
+        Some rules'
   with Not_found ->
     Some (make_rule (make_pp_rule level sd.pp_syntax_data main_data.format))
 

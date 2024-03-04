@@ -91,7 +91,7 @@ In this case, no spaces are allowed in the symbol.  Also, if the
 symbol starts with a double quote, it must be surrounded with single
 quotes to prevent confusion with the beginning of a string symbol.
 
-A notation binds a syntactic expression to a term. Unless the parser
+A notation binds a syntactic expression to a term, called its :gdef:`interpretation`. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
 expression (such as through :cmd:`Reserved Notation` or for notations
 that contain only literals), explicit precedences and
@@ -100,7 +100,7 @@ associativity rules have to be given.
 .. note::
 
    The right-hand side of a notation is interpreted at the time the notation is
-   given. In particular, disambiguation of constants, :ref:`implicit arguments
+   given. Disambiguation of constants, :ref:`implicit arguments
    <ImplicitArguments>` and other notations are resolved at the
    time of the declaration of the notation. The right-hand side is
    currently typed only at use time but this may change in the future.
@@ -304,7 +304,8 @@ The second, more powerful control on printing is by using :n:`@syntax_modifier`\
        (IF_then_else True False True)
        (IF_then_else True False True)).
 
-A *format* is an extension of the string denoting the notation with
+A *format* tells how to control the indentation and line breaks when printing
+a notation. It is a string extending the notation with
 the possible following elements delimited by single quotes:
 
 - tokens of the form ``'/ '`` are translated into breaking points.  If
@@ -352,13 +353,11 @@ at the time of use of the notation.
    If a given notation string occurs only in ``only printing`` rules,
    the parser is not modified at all.
 
-   To a given notation string and scope can be attached at most one
-   notation with both parsing and printing or with only
-   parsing. Contrastingly, an arbitrary number of ``only printing``
-   notations differing in their right-hand sides but only a unique
-   right-hand side can be attached to a given string and
-   scope. Obviously, expressions printed by means of such extra
-   printing rules will not be reparsed to the same form.
+   Notations used for parsing, that is notations not restricted with
+   the ``only printing`` modifier, can have only a single
+   interpretation per scope. On the other side, notations marked with
+   ``only printing`` can have multiple associated interpretations,
+   even in the same scope.
 
 .. note::
 
