@@ -52,6 +52,22 @@ let fresh_lname n =
   incr lname_ctr;
   { lname = n; luid = !lname_ctr }
 
+let rec is_lazy t = match Constr.kind t with
+| App _ | LetIn _ | Case _ | Proj _ -> true
+| Cast (c,_, _) -> is_lazy c
+| Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ | Int _
+| Float _ | Prod _ | Lambda _ | Evar _ | Fix _ | CoFix _ | Array _ ->
+  false
+
+let is_lazy_constant cb =
+  (* Bound universes are turned into lambda-abstractions *)
+  UVars.AbstractContext.is_constant (Declareops.constant_polymorphic_context cb) &&
+  (* So are context variables *)
+  List.is_empty cb.const_hyps &&
+  match cb.const_body with
+  | Def body -> is_lazy body
+  | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> false
+
 type prefix = string
 
 (* Linked code location utilities *)
@@ -66,6 +82,10 @@ let get_const_prefix env c =
    match !nameref with
    | NotLinked -> ""
    | Linked s -> s
+
+let get_const_lazy env c =
+  let cb = Environ.lookup_constant c env in
+  is_lazy_constant cb
 
 (** Global names **)
 type gname =
@@ -865,16 +885,18 @@ type env =
       env_named : (Id.t * mllambda) list ref;
       env_univ : lname option;
       env_const_prefix : Constant.t -> prefix;
+      env_const_lazy : Constant.t -> bool;
       env_mind_prefix : MutInd.t -> prefix;
     }
 
-let empty_env univ get_const get_mind =
+let empty_env univ get_const const_lazy get_mind =
   { env_rel = [];
     env_bound = 0;
     env_urel = ref [];
     env_named = ref [];
     env_univ = univ;
     env_const_prefix = get_const;
+    env_const_lazy = const_lazy;
     env_mind_prefix = get_mind;
   }
 
@@ -1225,7 +1247,9 @@ let compile_prim env decl cond paux =
   | Lconst (c, u) ->
      let prefix = env.env_const_prefix c in
      let args = ml_of_instance env.env_univ u in
-     mkMLapp (MLglobal(Gconstant (prefix, c))) args
+     let ans = mkMLapp (MLglobal(Gconstant (prefix, c))) args in
+     if env.env_const_lazy c then MLapp (MLglobal (Ginternal "Lazy.force"), [|ans|])
+     else ans
   | Lproj (p, c) ->
     let ind = Projection.Repr.inductive p in
     let i = Projection.Repr.arg p in
@@ -1252,14 +1276,14 @@ let compile_prim env decl cond paux =
           asw_finite = knd <> CoFinite;
           asw_prefix = env.env_mind_prefix (fst ci.ci_ind);
       } in
-      let env_p = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
+      let env_p = empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix in
       let pn = fresh_gpred l in
       let mlp = ml_of_lam env_p l p in
       let mlp = generalize_fv env_p mlp in
       let (pfvn,pfvr) = !(env_p.env_named), !(env_p.env_urel) in
       let pn = push_global_let pn mlp in
       (* Compilation of the case *)
-      let env_c = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
+      let env_c = empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix in
       let a_uid = fresh_lname Anonymous in
       let la_uid = MLlocal a_uid in
       (* compilation of branches *)
@@ -1313,7 +1337,7 @@ let compile_prim env decl cond paux =
            start
       *)
       (* Compilation of type *)
-      let env_t = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
+      let env_t = empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix in
       let ml_t = Array.map (ml_of_lam env_t l) tt in
       let params_t = fv_params env_t in
       let args_t = fv_args env !(env_t.env_named) !(env_t.env_urel) in
@@ -1322,7 +1346,7 @@ let compile_prim env decl cond paux =
       let mk_type = MLapp(MLglobal gft, args_t) in
       (* Compilation of norm_i *)
       let ndef = Array.length ids in
-      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_mind_prefix) ids in
+      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
       let mk_let _envi (id,def) t = MLlet (id,def,t) in
@@ -1380,7 +1404,7 @@ let compile_prim env decl cond paux =
       MLletrec(Array.mapi mkrec lf, lf_args.(start))
   | Lcofix (start, (ids, tt, tb)) ->
       (* Compilation of type *)
-      let env_t = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
+      let env_t = empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix in
       let ml_t = Array.map (ml_of_lam env_t l) tt in
       let params_t = fv_params env_t in
       let args_t = fv_args env !(env_t.env_named) !(env_t.env_urel) in
@@ -1389,7 +1413,7 @@ let compile_prim env decl cond paux =
       let mk_type = MLapp(MLglobal gft, args_t) in
       (* Compilation of norm_i *)
       let ndef = Array.length ids in
-      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_mind_prefix) ids in
+      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_const_lazy env.env_mind_prefix) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
       let ml_of_fix i body =
@@ -1473,10 +1497,9 @@ let compile_prim env decl cond paux =
      let prefix = env.env_mind_prefix (fst ind) in
      let uargs = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal (Gind (prefix, ind))) uargs
-  | Lforce -> MLglobal (Ginternal "Lazy.force")
 
-let mllambda_of_lambda univ constpref mindpref auxdefs l t =
-  let env = empty_env univ constpref mindpref in
+let mllambda_of_lambda univ constpref constlazy mindpref auxdefs l t =
+  let env = empty_env univ constpref constlazy mindpref in
   global_stack := auxdefs;
   let ml = ml_of_lam env l t in
   let fv_rel = !(env.env_urel) in
@@ -2008,8 +2031,9 @@ let pp_global fmt g =
 (** Compilation of elements in environment **)
 let rec compile_with_fv ?(wrap = fun t -> t) env sigma univ auxdefs l t =
   let const_prefix c = get_const_prefix env c in
+  let const_lazy = get_const_lazy env in
   let mind_prefix c = get_mind_prefix env c in
-  let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda univ const_prefix mind_prefix auxdefs l t in
+  let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda univ const_prefix const_lazy mind_prefix auxdefs l t in
   let ml = wrap ml in
   if List.is_empty fv_named && List.is_empty fv_rel then (auxdefs,ml)
   else apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml
@@ -2062,12 +2086,12 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id, [||]))::auxdefs
 
 let compile_constant env sigma con cb =
-    let no_univs = (0,0) = UVars.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
+    let no_univs = UVars.AbstractContext.is_constant (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let code = lambda_of_constr env sigma t in
       debug_native_compiler (fun () -> Pp.str "Generated lambda code");
-      let is_lazy = is_lazy t in
+      let is_lazy = is_lazy_constant cb in
       let wrap t = if is_lazy then MLprimitive (Lazy, [|t|]) else t in
       let l = Constant.label con in
       let auxdefs,code =
@@ -2123,7 +2147,7 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-        if (UVars.AbstractContext.size u) = (0,0) then
+        if UVars.AbstractContext.is_constant u then
           [|get_ind_code j; ml_empty_instance|]
         else [|get_ind_code j|]
       in
