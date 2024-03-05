@@ -511,7 +511,8 @@ module PrfEnv = struct
   let rec of_list acc env l =
     match l with
     | [] -> (acc, env)
-    | (((lp, op), prf) as wp) :: l -> (
+    | wp :: l -> (
+      let ((lp, op), prf) = WithProof.repr wp in
       match op with
       | Gt -> raise Strict (* Should be eliminated earlier *)
       | Ge ->
@@ -523,7 +524,8 @@ module PrfEnv = struct
         let f1, env = register wp env in
         let wp' = WithProof.neg wp in
         let f2, env = register wp' env in
-        of_list ((f1, lp) :: (f2, fst (fst wp')) :: acc) env l )
+        let (lp', _), _ = WithProof.repr wp' in
+        of_list ((f1, lp) :: (f2, lp') :: acc) env l )
 
   let map f env = IMap.map f env
 end
@@ -552,9 +554,9 @@ let make_certificate env l =
   Vect.normalise
     (Vect.fold
        (fun acc x n ->
-         let _, prf = PrfEnv.find x env in
+         let wp = PrfEnv.find x env in
          ProofFormat.(
-           match prf with
+           match WithProof.proof wp with
            | Hyp i -> Vect.set i n acc
            | MulC (_, Hyp i) -> Vect.set i (Q.neg n) acc
            | _ -> failwith "make_certificate: invalid proof"))
@@ -571,14 +573,16 @@ open Polynomial
 open ProofFormat
 
 let make_farkas_certificate (env : PrfEnv.t) v =
-  Vect.fold
-    (fun acc x n -> add_proof acc (mul_cst_proof n (snd (PrfEnv.find x env))))
-    Zero v
+  let fold acc x n =
+    let wp = PrfEnv.find x env in
+    add_proof acc (mul_cst_proof n (WithProof.proof wp))
+  in
+  Vect.fold fold Zero v
 
 let make_farkas_proof (env : PrfEnv.t) v =
   Vect.fold
     (fun wp x n ->
-      WithProof.addition wp (WithProof.mult (Vect.cst n) (PrfEnv.find x env)))
+      WithProof.addition wp (WithProof.mul_cst n (PrfEnv.find x env)))
     WithProof.zero v
 
 let frac_num n = n -/ Q.floor n
@@ -653,13 +657,13 @@ let cut env rmin sol (rst : Restricted.t) tbl (x, v) =
           Printf.printf "%s: This is not a cutting plane for %a\n%a:" p
             LinPoly.pp_var x WithProof.output c;
         None
-      | Some (v, prf) ->
+      | Some wp ->
         if debug then (
           Printf.printf "%s: This is a cutting plane for %a:" p LinPoly.pp_var x;
           Printf.printf "(viol %f) %a\n"
-            (Q.to_float (violation sol (fst v)))
-            WithProof.output (v, prf) );
-        Some (x, (v, prf))
+            (Q.to_float (violation sol (WithProof.polynomial wp)))
+            WithProof.output wp);
+        Some (x, wp)
     in
     match check_cutting_plane lcut with
     | Some r -> Hit r
@@ -700,9 +704,9 @@ let find_cut nb env u sol rst tbl =
       (fun x v acc -> merge_result_old acc (cut env u sol rst tbl) (x, v))
       tbl Forget
   else
-    let lt (_, ((v1, _), p1)) (_, ((v2, _), p2)) =
+    let lt (_, wp1) (_, wp2) =
       (*violation sol v1 >/ violation sol v2*)
-      ProofFormat.pr_size p1 </ ProofFormat.pr_size p2
+      ProofFormat.pr_size (WithProof.proof wp1) </ ProofFormat.pr_size  (WithProof.proof wp2)
     in
     IMap.fold
       (fun x v acc -> merge_best lt acc (cut env u sol rst tbl (x, v)))
@@ -713,7 +717,7 @@ let find_split env tbl rst =
     let v, n =
       let n, _ = Vect.decomp_cst v in
       if Restricted.is_restricted x rst then
-        let n', v = Vect.decomp_cst (fst (fst (PrfEnv.find x env))) in
+        let n', v = Vect.decomp_cst @@ WithProof.polynomial @@ PrfEnv.find x env in
         (v, n -/ n')
       else (Vect.set x Q.one Vect.null, n)
     in
@@ -753,19 +757,18 @@ let eliminate_variable (bounded, env, tbl) x =
   let tv = var_of_vect t in
   (* x = z - t *)
   let xdef = Vect.add z (Vect.uminus t) in
-  let xp = ((Vect.set x Q.one (Vect.uminus xdef), Eq), Def vr) in
-  let zp = ((z, Ge), Def zv) in
-  let tp = ((t, Ge), Def tv) in
+  let xp = WithProof.def (Vect.set x Q.one (Vect.uminus xdef)) Eq vr in
+  let zp = WithProof.def z Ge zv in
+  let tp = WithProof.def t Ge tv in
   (* Pivot the current tableau using xdef *)
   let tbl = IMap.map (fun v -> Vect.subst x xdef v) tbl in
   (* Pivot the proof environment *)
   let env =
     PrfEnv.map
       (fun lp ->
-        let (v, o), p = lp in
-        let ai = Vect.get x v in
+        let ai = Vect.get x (WithProof.polynomial lp) in
         if ai =/ Q.zero then lp
-        else WithProof.addition (WithProof.mult (Vect.cst (Q.neg ai)) xp) lp)
+        else WithProof.addition (WithProof.mul_cst (Q.neg ai) xp) lp)
       env
   in
   (* Add the variables to the environment *)
@@ -790,7 +793,7 @@ let integer_solver lp =
   let vr0 = LinPoly.MonT.get_fresh () in
   (* Initialise the proof environment mapping variables of the simplex to their proof. *)
   let l', env =
-    PrfEnv.of_list [] PrfEnv.empty (List.rev_map WithProof.of_cstr lp)
+    PrfEnv.of_list [] PrfEnv.empty (List.rev lp)
   in
   let nb = ref 0 in
   let rec isolve env cr res =
@@ -815,8 +818,8 @@ let integer_solver lp =
           None (* There is no hope, there should be an integer solution *)
         | Some (v, s) -> (
           let vr = LinPoly.MonT.get_fresh () in
-          let wp1 = ((v, Ge), Def vr) in
-          let wp2 = ((Vect.mul Q.minus_one v, Ge), Def vr) in
+          let wp1 = WithProof.def v Ge vr in
+          let wp2 = WithProof.def (Vect.mul Q.minus_one v) Ge vr in
           match (WithProof.cutting_plane wp1, WithProof.cutting_plane wp2) with
           | None, _ | _, None ->
             failwith "Error: splitting over an integer variable"
@@ -825,11 +828,11 @@ let integer_solver lp =
               Printf.fprintf stdout "Splitting over (%s) %a:%a or %a \n"
                 (Q.to_string s) LinPoly.pp_var vr WithProof.output wp1
                 WithProof.output wp2;
-            let v1', v2' = (fst (fst wp1), fst (fst wp2)) in
+            let v1', v2' = (WithProof.polynomial wp1, WithProof.polynomial wp2) in
             if debug then
               Printf.fprintf stdout "Solving with %a\n" LinPoly.pp v1';
             let res1 = insert_row vr v1' (Restricted.set_exc vr rst) tbl in
-            let prf1 = isolve (IMap.add vr ((v1', Ge), Def vr) env) cr res1 in
+            let prf1 = isolve (IMap.add vr (WithProof.def v1' Ge vr) env) cr res1 in
             match prf1 with
             | None -> None
             | Some prf1 ->
@@ -840,7 +843,7 @@ let integer_solver lp =
                   Printf.fprintf stdout "Solving with %a\n" Vect.pp v2';
                 let res2 = insert_row vr v2' (Restricted.set_exc vr rst) tbl in
                 let prf2 =
-                  isolve (IMap.add vr ((v2', Ge), Def vr) env) cr res2
+                  isolve (IMap.add vr (WithProof.def v2' Ge vr) env) cr res2
                 in
                 match prf2 with
                 | None -> None
@@ -850,7 +853,8 @@ let integer_solver lp =
         match find_cut (!nb mod 2) env cr (*x*) sol rst tbl with
         | Forget ->
           None (* There is no hope, there should be an integer solution *)
-        | Hit (cr, ((v, op), cut)) -> (
+        | Hit (cr, wp) -> (
+          let (v, op), cut = WithProof.repr wp in
           let vr = LinPoly.MonT.get_fresh () in
           if op = Eq then
             (* This is a contradiction *)
@@ -858,7 +862,7 @@ let integer_solver lp =
           else
             let res = insert_row vr v (Restricted.set_exc vr rst) tbl in
             let prf =
-              isolve (IMap.add vr ((v, op), Def vr) env) (Some cr) res
+              isolve (IMap.add vr (WithProof.def v op vr) env) (Some cr) res
             in
             match prf with
             | None -> None
@@ -890,8 +894,7 @@ let integer_solver lp =
 let integer_solver lp =
   nb_pivot := 0;
   if debug then
-    Printf.printf "Input integer solver\n%a\n" WithProof.output_sys
-      (List.map WithProof.of_cstr lp);
+    Printf.printf "Input integer solver\n%a\n" WithProof.output_sys lp;
   match integer_solver lp with
   | None ->
     profile_info := (false, !nb_pivot) :: !profile_info;
