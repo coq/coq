@@ -464,3 +464,12 @@ Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
 
 Definition nonpoly := @poly True Logic.I.
 Definition check := nonpoly@{}.
+
+Module ProgramFixpoint.
+
+  Local Set Universe Polymorphism.
+  Program Fixpoint f@{u} (A:Type@{u}) (n:nat) : Type@{u} :=
+    match n with 0 => A | S n => f (A->A) n end.
+  Check f@{Set}. (* Check that it depends on only one universe *)
+
+End ProgramFixpoint.
