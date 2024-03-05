@@ -294,17 +294,15 @@ module Stm = struct
      for evar / metas to be global among proofs *)
   type nonrec pstate =
     LemmaStack.t option *
-    int *                                   (* Evarutil.meta_counter_summary_tag *)
-    int                                     (* Evd.evar_counter_summary_tag *)
+    int                                    (* Evarutil.meta_counter_summary_tag *)
 
   (* Parts of the system state that are morally part of the proof state *)
   let pstate { interp = { lemmas; system }} =
     let st = System.Interp.Stm.summary system in
     lemmas,
-    Summary.Interp.project_from_summary st Evarutil.meta_counter_summary_tag,
-    Summary.Interp.project_from_summary st Evd.evar_counter_summary_tag
+    Summary.Interp.project_from_summary st Evarutil.meta_counter_summary_tag
 
-  let set_pstate ({ interp = { lemmas; system } } as s) (pstate,c1,c2) =
+  let set_pstate ({ interp = { lemmas; system } } as s) (pstate,c1) =
     { s with interp = { s.interp with
       lemmas =
         Declare_.copy_terminators ~src:s.interp.lemmas ~tgt:pstate
@@ -313,7 +311,6 @@ module Stm = struct
           begin
             let st = System.Interp.Stm.summary s.interp.system in
             let st = Summary.Interp.modify_summary st Evarutil.meta_counter_summary_tag c1 in
-            let st = Summary.Interp.modify_summary st Evd.evar_counter_summary_tag c2 in
             st
           end
       }
@@ -324,7 +321,6 @@ module Stm = struct
     let system = interp.system in
     let st = System.Interp.Stm.summary system in
     let st = Summary.Interp.remove_from_summary st Evarutil.meta_counter_summary_tag in
-    let st = Summary.Interp.remove_from_summary st Evd.evar_counter_summary_tag in
     System.Synterp.Stm.summary synterp.system, System.Synterp.Stm.lib synterp.system,
       st, System.Interp.Stm.lib system
 

@@ -662,6 +662,7 @@ end
 
 type evar_map = {
   (* Existential variables *)
+  evar_counter : int; (* invariant: evar_counter > all known evars *)
   defn_evars : defined evar_info EvMap.t;
   undf_evars : undefined evar_info EvMap.t;
   evar_names : EvNames.t;
@@ -766,7 +767,19 @@ let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c
 let rename evk id evd =
   { evd with evar_names = EvNames.rename evk id evd.evar_names }
 
-let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_info) = match i.evar_body with
+let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
+
+let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_info) =
+  let d =
+    if d.evar_counter <= Evar.repr e then
+      { d with evar_counter = Evar.repr e + 1 }
+    else begin
+      (* this branch can be taken with [undefine] and generally [add] (eg as used in ssr) *)
+      assert (not (mem d e));
+      d
+    end
+  in
+  match i.evar_body with
 | Evar_empty ->
   let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   let evar_flags =
@@ -857,12 +870,6 @@ let remove_evar_flags evk evar_flags =
 
 (** New evars *)
 
-let evar_counter_summary_name = "evar counter"
-
-(* Generator of existential names *)
-let evar_ctr, evar_counter_summary_tag = Summary.ref_tag 0 ~name:evar_counter_summary_name
-let new_untyped_evar () = incr evar_ctr; Evar.unsafe_of_int !evar_ctr
-
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let remove d e =
@@ -887,8 +894,6 @@ let undefine sigma e concl =
 let find_defined d e = EvMap.find_opt e d.defn_evars
 
 let find_undefined d e = EvMap.find e d.undf_evars
-
-let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
 
@@ -1020,6 +1025,7 @@ let empty_side_effects = {
 }
 
 let empty = {
+  evar_counter = 1;
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
   universes  = UState.empty;
@@ -1393,7 +1399,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
   }
   in
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
-  let newevk = new_untyped_evar () in
+  let newevk = Evar.unsafe_of_int evd.evar_counter in
   let evd = add_with_name evd ?name ?typeclass_candidate newevk evi in
   let evd =
     if principal then declare_principal_goal newevk evd
@@ -1448,7 +1454,7 @@ let define_with_evar evk body evd =
    and typeclass flags. *)
 
 let restrict evk filter ?candidates ?src evd =
-  let evk' = new_untyped_evar () in
+  let evk' = Evar.unsafe_of_int evd.evar_counter in
   let evar_info = EvMap.find evk evd.undf_evars in
   let len = Range.length evar_info.evar_hyps.env_named_idx in
   let id_inst = Filter.filter_slist filter (SList.defaultn len SList.empty) in
@@ -1474,8 +1480,11 @@ let restrict evk filter ?candidates ?src evd =
   | None -> candidate_evars
   | Some _ -> Evar.Set.add evk' candidate_evars
   in
-  let evd = { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names; evar_flags; candidate_evars }
+  let evd =
+    { evd with
+      evar_counter = evd.evar_counter + 1;
+      undf_evars = EvMap.add evk' evar_info' undf_evars;
+      defn_evars; last_mods; evar_names; evar_flags; candidate_evars }
   in
   (* Mark new evar as future goal, removing previous one,
     circumventing Proofview.advance but making Proof.run_tactic catch these. *)
@@ -1494,6 +1503,7 @@ let update_source evd evk src =
 (** We use this function to overcome OCaml compiler limitations and to prevent
     the use of costly in-place modifications. *)
 let set_metas evd metas = {
+  evar_counter = evd.evar_counter;
   defn_evars = evd.defn_evars;
   undf_evars = evd.undf_evars;
   universes  = evd.universes;

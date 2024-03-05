@@ -68,7 +68,7 @@ goal 3 is:
 goal 4 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5:?Q; in current goal: ?X5)
+(dependent evars: ?X2:?P, ?X3:?Q; in current goal: ?X3)
 
 p14 < 1 focused goal (shelved: 2)
   
@@ -79,7 +79,7 @@ p14 < 1 focused goal (shelved: 2)
   ============================
   ?Q -> P4
 
-(dependent evars: ?X4:?P, ?X5:?Q; in current goal: ?X5)
+(dependent evars: ?X2:?P, ?X3:?Q; in current goal: ?X3)
 
 p14 < This subproof is complete, but there are some unfocused goals.
 Try unfocusing with "}".
@@ -93,7 +93,7 @@ goal 2 is:
 goal 3 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal:)
+(dependent evars: ?X2:?P, ?X3 using ?X8 ?X9, ?X8 using ?X9, ?X9:?P0; in current goal:)
 
 p14 < 3 focused goals (shelved: 2)
   
@@ -109,7 +109,7 @@ goal 2 is:
 goal 3 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal: ?X4 ?X5 ?X10 ?X11)
+(dependent evars: ?X2:?P, ?X3 using ?X8 ?X9, ?X8 using ?X9, ?X9:?P0; in current goal: ?X2 ?X3 ?X8 ?X9)
 
 p14 < 
 Coq < 
