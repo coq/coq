@@ -416,3 +416,9 @@ Defined.
 Check eq_refl : # 0 = f 0.
 
 End NtnInteractiveFixpoint.
+
+Module NoArgumentFixpoint.
+
+Fail Fixpoint f : nat. (* was an anomaly at some time *)
+
+End NoArgumentFixpoint.
