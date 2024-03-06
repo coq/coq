@@ -19,7 +19,7 @@ val do_fixpoint :
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
+  -> fixpoints_expr
   -> Declare.OblState.t
 
 val do_cofixpoint :
@@ -30,5 +30,16 @@ val do_cofixpoint :
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
-  -> cofixpoint_expr list
+  -> cofixpoints_expr
+  -> Declare.OblState.t
+
+val do_mutually_recursive :
+     pm:Declare.OblState.t
+  -> scope:Locality.definition_scope
+  -> ?clearbody:bool
+  -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
+  -> ?user_warns:UserWarn.t
+  -> ?using:Vernacexpr.section_subset_expr
+  -> recursives_expr
   -> Declare.OblState.t

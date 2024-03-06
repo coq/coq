@@ -1044,22 +1044,22 @@ let vernac_fixpoint_common ~atts discharge l =
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
-let vernac_fixpoint ~pm ~atts discharge l =
+let vernac_fixpoint ~pm ~atts discharge (rec_order,fixl as fix) =
   let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts discharge l in
+  let scope = vernac_fixpoint_common ~atts discharge fixl in
   let typing_flags = atts.typing_flags in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
     if opens then
       CErrors.user_err Pp.(str"Program Fixpoint requires a body.")
     else
       let pm = ComProgramFixpoint.do_fixpoint ~pm:(Option.get pm) ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-          ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
+          ?typing_flags ?user_warns:atts.user_warns ?using:atts.using fix in
       Some pm, None
   else
-    let proof = ComFixpoint.do_fixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
+    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CFixRecOrder rec_order, fixl) in
     pm, proof
 
 let vernac_cofixpoint_common ~atts discharge l =
@@ -1080,8 +1080,8 @@ let vernac_cofixpoint ~pm ~atts discharge l =
         ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
       Some pm, None
   else
-    let proof = ComFixpoint.do_cofixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
+    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CCoFixRecOrder, l) in
     pm, proof
 
 let vernac_scheme l =
@@ -2353,7 +2353,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
     (if opens then
       vtopenproof (fun () ->
         let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:None) discharge l in
