@@ -105,23 +105,23 @@ let rect_scheme_kind_from_type =
     (fun env _ x -> build_induction_scheme_in_type env false InType x)
 
 let rect_scheme_kind_from_prop =
-  declare_individual_scheme_object "rect" ~aux:"rect_from_prop"
+  declare_individual_scheme_object ~suff:"rect" "rect_from_prop"
     (fun env _ x -> build_induction_scheme_in_type env false InType x)
 
 let rect_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "rect" ~aux:"rect_from_type"
+  declare_individual_scheme_object ~suff:"rect" "rect_from_type"
     (fun env _ x -> build_induction_scheme_in_type env true InType x)
 
 let rec_scheme_kind_from_type =
-  declare_individual_scheme_object "rec_nodep" ~aux:"rec_nodep_from_type"
+  declare_individual_scheme_object ~suff:"rec_nodep" "rec_nodep_from_type"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
 
 let rec_scheme_kind_from_prop =
-  declare_individual_scheme_object "rec" ~aux:"rec_from_prop"
+  declare_individual_scheme_object ~suff:"rec" "rec_from_prop"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
 
 let rec_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "rec" ~aux:"rec_from_type"
+  declare_individual_scheme_object ~suff:"rec" "rec_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)
 
 let ind_scheme_kind_from_type =
@@ -133,19 +133,19 @@ let sind_scheme_kind_from_type =
   (fun env _ x -> build_induction_scheme_in_type env false InSProp x)
 
 let ind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "ind" ~aux:"ind_from_type"
+  declare_individual_scheme_object ~suff:"ind" "ind_from_type"
   (optimize_non_type_induction_scheme rec_dep_scheme_kind_from_type true InProp)
 
 let sind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "sind" ~aux:"sind_from_type"
+  declare_individual_scheme_object ~suff:"sind" "sind_from_type"
   (fun env _ x -> build_induction_scheme_in_type env true InSProp x)
 
 let ind_scheme_kind_from_prop =
-  declare_individual_scheme_object "ind" ~aux:"ind_from_prop"
+  declare_individual_scheme_object ~suff:"ind" "ind_from_prop"
   (optimize_non_type_induction_scheme rec_scheme_kind_from_prop false InProp)
 
 let sind_scheme_kind_from_prop =
-  declare_individual_scheme_object "sind" ~aux:"sind_from_prop"
+  declare_individual_scheme_object ~suff:"sind" "sind_from_prop"
   (fun env _ x -> build_induction_scheme_in_type env false InSProp x)
 
 let nondep_elim_scheme from_kind to_kind =
@@ -173,11 +173,11 @@ let case_scheme_kind_from_type =
   (fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
 
 let case_scheme_kind_from_prop =
-  declare_individual_scheme_object "case" ~aux:"case_from_prop"
+  declare_individual_scheme_object ~suff:"case" "case_from_prop"
   (fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
 
 let case_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "case" ~aux:"case_from_type"
+  declare_individual_scheme_object ~suff:"case" "case_from_type"
   (fun env _ x -> build_case_analysis_scheme_in_type env true InType x)
 
 let case_dep_scheme_kind_from_type_in_prop =

@@ -35,24 +35,24 @@ type individual_scheme_object_function =
    are not safe to be used by plugins as their effects won't be undone
    on backtracking.
 
-    The first string argument is used as the suffix (after a "_") for
-    the name of generated schemes with no explicit names. It is also
-    the default value of [aux].
+    In [declare_X_scheme_object key ?suff ?deps f], [key] is the name
+    of the scheme kind. It must be unique across the Coq process's
+    lifetime. It is used to generate [scheme_kind] in a marshal-stable
+    way and as the scheme name in Register Scheme.
 
-    [aux] must be unique: across the Coq process's lifetime
-    [declare_*_scheme_object] may be called at most once with a given
-    [aux]. It is used to generate [scheme_kind] in a marshal-stable
-    way and otherwise unused.
+    [suff] defaults to [key], generated schemes which aren't given an
+    explicit name will be named "ind_suff" where "ind" is the
+    inductive's name.
 *)
 
 val declare_mutual_scheme_object : string ->
+  ?suff:string ->
   ?deps:(Environ.env -> MutInd.t -> scheme_dependency list) ->
-  ?aux:string ->
   mutual_scheme_object_function -> mutual scheme_kind
 
 val declare_individual_scheme_object : string ->
+  ?suff:string ->
   ?deps:(Environ.env -> inductive -> scheme_dependency list) ->
-  ?aux:string ->
   individual_scheme_object_function ->
   individual scheme_kind
 

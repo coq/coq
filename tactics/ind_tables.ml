@@ -18,9 +18,8 @@ open Names
 open Nameops
 open Declarations
 open Constr
-open CErrors
 open Util
-open Pp
+
 
 (**********************************************************************)
 (* Registering schemes in the environment *)
@@ -53,26 +52,24 @@ type scheme_object_function =
 let scheme_object_table =
   (Hashtbl.create 17 : (string, string * scheme_object_function) Hashtbl.t)
 
-let declare_scheme_object s aux f =
+let declare_scheme_object key ?(suff=key) f =
   let () =
-    if not (Id.is_valid ("ind" ^ s)) then
-      user_err Pp.(str ("Illegal induction scheme suffix: " ^ s))
+    if not (Id.is_valid ("ind_" ^ suff)) then
+      CErrors.user_err Pp.(str ("Illegal induction scheme suffix: " ^ suff))
   in
-  let key = Option.default s aux in
-  try
-    let _ = Hashtbl.find scheme_object_table key in
-(*    let aux_msg = if aux="" then "" else " (with key "^aux^")" in*)
-    user_err
-      (str "Scheme object " ++ str key ++ str " already declared.")
-  with Not_found ->
-    Hashtbl.add scheme_object_table key (s,f);
+  if Hashtbl.mem scheme_object_table key then
+    CErrors.user_err
+      Pp.(str "Scheme object " ++ str key ++ str " already declared.")
+  else begin
+    Hashtbl.add scheme_object_table key (suff,f);
     key
+  end
 
-let declare_mutual_scheme_object s ?deps ?aux f =
-  declare_scheme_object s aux (MutualSchemeFunction (f, deps))
+let declare_mutual_scheme_object key ?suff ?deps f =
+  declare_scheme_object key ?suff (MutualSchemeFunction (f, deps))
 
-let declare_individual_scheme_object s ?deps ?aux f =
-  declare_scheme_object s aux (IndividualSchemeFunction (f, deps))
+let declare_individual_scheme_object key ?suff ?deps f =
+  declare_scheme_object key ?suff (IndividualSchemeFunction (f, deps))
 
 let is_declared_scheme_object key = Hashtbl.mem scheme_object_table key
 
