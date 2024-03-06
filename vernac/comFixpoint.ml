@@ -105,15 +105,15 @@ let check_true_recursivity env evd ~isfix fixl =
     | [x,Inr []] -> warn_non_recursive (x,isfix)
     | _ -> ()
 
-let extract_decreasing_argument ~structonly { CAst.v = v; _ } =
+let extract_decreasing_argument ~structonly { CAst.v = v; loc } =
   let open Constrexpr in
   match v with
   | CStructRec na -> na
   | (CWfRec (na,_) | CMeasureRec (Some na,_,_)) when not structonly -> na
   | CMeasureRec (None,_,_) when not structonly ->
-    CErrors.user_err Pp.(str "Decreasing argument must be specified in measure clause.")
+    CErrors.user_err ?loc Pp.(str "Decreasing argument must be specified in measure clause.")
   | _ ->
-    CErrors.user_err Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
+    CErrors.user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
 
 (* This is a special case: if there's only one binder, we pick it as
    the recursive argument if none is provided. *)
@@ -130,9 +130,9 @@ let adjust_rec_order ~structonly binders rec_order =
 
 (* Interpret the index of a recursion order annotation *)
 exception Found of int
-let find_rec_annot ~structonly Vernacexpr.{binders} (_, ctx) = function
+let find_rec_annot ~structonly Vernacexpr.{fname={CAst.loc}; binders} (_, ctx) = function
   | None ->
-    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err Pp.(str "A fixpoint needs at least one parameter.");
+    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
     List.interval 0 (Context.Rel.nhyps ctx - 1)
   | Some fix_order ->
     let na = adjust_rec_order ~structonly binders fix_order in
