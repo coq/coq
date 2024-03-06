@@ -631,10 +631,10 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
     let thm = Declare.CInfo.to_constr evd thm in
     let evd = post_check_evd ~udecl ~poly evd in
     Declare.Proof.start_with_initialization ~info ~cinfo:thm ?using evd
-  | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
+  | RecLemmas.Mutual { mutual_info; cinfo } ->
     let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
     let evd = post_check_evd ~udecl ~poly evd in
-    Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info ?using (Some possible_guards)
+    Declare.Proof.start_mutual_with_initialization ~info ~cinfo ~mutual_info ?using evd
 
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->

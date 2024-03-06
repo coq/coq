@@ -70,34 +70,51 @@ open Inductiveops
 
 (************************************************************************)
 
-(* An auxiliary function for searching for fixpoint guard indexes *)
+(* An auxiliary function for searching for fixpoint guard indices *)
 
-exception Found of int array
+(* Tells the possible indices liable to guard a fixpoint *)
+type possible_fix_indices = int list list
+
+(* Tells if possibly a cofixpoint or a fixpoint over the given list of possible indices *)
+type possible_guard = {
+  possibly_cofix : bool;
+  possible_fix_indices : possible_fix_indices;
+} (* Note: if no fix indices are given, it has to be a cofix *)
+
+exception Found of int array option
 
 let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   (Array.map EConstr.Unsafe.to_binder_annot nas, Array.map inj cs, Array.map inj ts)
 
-let search_guard ?loc ?evars env possible_indexes fixdefs =
-  (* Standard situation with only one possibility for each fix. *)
-  (* We treat it separately in order to get proper error msg. *)
+let search_guard ?loc ?evars env {possibly_cofix; possible_fix_indices} fixdefs =
   let is_singleton = function [_] -> true | _ -> false in
-  if List.for_all is_singleton possible_indexes then
-    let indexes = Array.of_list (List.map List.hd possible_indexes) in
-    let fix = ((indexes, 0),fixdefs) in
-    (try check_fix ?evars env fix
-     with reraise ->
-       let (e, info) = Exninfo.capture reraise in
-       let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
-       Exninfo.iraise (e, info));
-    indexes
+  let one_fix_possibility = List.for_all is_singleton possible_fix_indices in
+  if one_fix_possibility && not possibly_cofix then
+    let indexes = Array.of_list (List.map List.hd possible_fix_indices) in
+    let fix = ((indexes, 0), fixdefs) in
+    try let () = check_fix ?evars env fix in Some indexes
+    with reraise ->
+      let (e, info) = Exninfo.capture reraise in
+      let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
+      Exninfo.iraise (e, info)
   else
+    let zero_fix_possibility = List.for_all List.is_empty possible_fix_indices in
+    if zero_fix_possibility && possibly_cofix then
+      (* Maybe can we skip this check since it will be done in the kernel again *)
+      let cofix = (0, fixdefs) in
+      try let () = check_cofix ?evars env cofix in None
+      with reraise ->
+        let (e, info) = Exninfo.capture reraise in
+        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
+        Exninfo.iraise (e, info)
+    else
     (* we now search recursively among all combinations *)
-    let combinations = List.combinations possible_indexes in
-    if List.is_empty combinations then
-      user_err ?loc (Pp.str "A fixpoint needs at least one parameter.");
-    (try
-       List.iter
+    let combinations = List.combinations possible_fix_indices in
+    let flags = { (typing_flags env) with Declarations.check_guarded = true } in
+    let env = Environ.set_typing_flags flags env in
+    try
+       let () = List.iter
          (fun l ->
             let indexes = Array.of_list l in
             let fix = ((indexes, 0),fixdefs) in
@@ -108,14 +125,20 @@ let search_guard ?loc ?evars env possible_indexes fixdefs =
                error when totality is assumed but the strutural argument is
                not specified. *)
             try
-              let flags = { (typing_flags env) with Declarations.check_guarded = true } in
-              let env = Environ.set_typing_flags flags env in
-              check_fix ?evars env fix; raise (Found indexes)
+              let () = check_fix ?evars env fix in raise (Found (Some indexes))
             with TypeError _ -> ())
-          combinations;
+          combinations in
+       let () =
+         if possibly_cofix then
+           (* Maybe can we skip this check since it will be done in the kernel again *)
+           try let () = check_cofix env (0, fixdefs) in raise (Found None)
+           with TypeError _ -> () in
        let errmsg = "Cannot guess decreasing argument of fix." in
-         user_err ?loc (Pp.str errmsg)
-     with Found indexes -> indexes)
+       user_err ?loc (Pp.str errmsg)
+     with Found indexes -> indexes
+
+let search_fix_guard ?loc ?evars env possible_fix_indices fixdefs =
+  Option.get (search_guard ?loc ?evars env {possibly_cofix=false; possible_fix_indices} fixdefs)
 
 let esearch_guard ?loc env sigma indexes fix =
   (* not sure if we still need to nf_fix when calling search_guard with ~evars
@@ -127,6 +150,9 @@ let esearch_guard ?loc env sigma indexes fix =
   try search_guard ?loc ~evars env indexes fix
   with TypeError (env,err) ->
     raise (PretypeError (env,sigma,TypingError (of_type_error err)))
+
+let esearch_fix_guard ?loc env sigma possible_fix_indices fix =
+  Option.get (esearch_guard ?loc env sigma {possibly_cofix=false; possible_fix_indices} fix)
 
 (* To force universe name declaration before use *)
 
@@ -844,7 +870,7 @@ struct
                  but doing it properly involves delta-reduction, and it finally
                  doesn't seem worth the effort (except for huge mutual
                  fixpoints ?) *)
-          let possible_indexes =
+          let possible_fix_indices =
             Array.to_list (Array.mapi
                              (fun i annot -> match annot with
                              | Some n -> [n]
@@ -852,7 +878,7 @@ struct
            vn)
           in
           let fixdecls = (names,ftys,fdefs) in
-          let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
+          let indexes = esearch_fix_guard ?loc !!env sigma possible_fix_indices fixdecls in
           make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
         | GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in

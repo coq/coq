@@ -58,7 +58,7 @@ let find_mutually_recursive_statements sigma thms =
       List.cartesians_filter (fun hyp oks ->
         if List.for_all (of_same_mutind hyp) oks
         then Some (hyp::oks) else None) [] inds_hyps in
-    let ordered_inds,finite,guard =
+    let possible_guard =
       match ordered_same_indccl, common_same_indhyp with
       | indccl::rest, _ ->
           assert (List.is_empty rest);
@@ -66,7 +66,7 @@ let find_mutually_recursive_statements sigma thms =
           if not (List.is_empty common_same_indhyp) then
             Flags.if_verbose Feedback.msg_info (Pp.str "Assuming mutual coinductive statements.");
           flush_all ();
-          indccl, true, []
+          Pretyping.{possibly_cofix = true; possible_fix_indices = []}
       | [], _::_ ->
           let () = match same_indccl with
           | ind :: _ ->
@@ -80,22 +80,21 @@ let find_mutually_recursive_statements sigma thms =
             flush_all ()
           | _ -> ()
           in
-          let possible_guards = List.map (List.map pi3) inds_hyps in
+          let possible_fix_indices = List.map (List.map pi3) inds_hyps in
           (* assume the largest indices as possible *)
-          List.last common_same_indhyp, false, possible_guards
+          Pretyping.{possibly_cofix = false; possible_fix_indices}
       | _, [] ->
         CErrors.user_err Pp.(str
             ("Cannot find common (mutual) inductive premises or coinductive" ^
              " conclusions in the statements."))
     in
-    (finite,guard,None), ordered_inds
+    (possible_guard, None)
 
 type mutual_info =
   | NonMutual of EConstr.t Declare.CInfo.t
   | Mutual of
       { mutual_info : Declare.Proof.mutual_info
       ; cinfo : EConstr.t Declare.CInfo.t list
-      ; possible_guards : int list
       }
 
 let look_for_possibly_mutual_statements sigma thms : mutual_info =
@@ -106,7 +105,6 @@ let look_for_possibly_mutual_statements sigma thms : mutual_info =
   | _::_ as thms ->
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)
-    let recguard,ordered_inds = find_mutually_recursive_statements sigma thms in
-    let cinfo = List.map pi2 ordered_inds in
-    Mutual { mutual_info = recguard; cinfo; possible_guards = List.map (fun (_,_,i) -> succ i) ordered_inds }
+    let mutual_info = find_mutually_recursive_statements sigma thms in
+    Mutual { mutual_info; cinfo = thms }
   | [] -> CErrors.anomaly (Pp.str "Empty list of theorems.")
