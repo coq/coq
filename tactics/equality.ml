@@ -1004,11 +1004,8 @@ let gen_absurdity id =
 *)
 
 let ind_scheme_of_eq lbeq to_kind =
-  Proofview.tclENV >>= fun env ->
-  let (mib,mip) = Inductive.lookup_mind_specif env (destIndRef lbeq.eq) in
-  let from_kind = inductive_sort_family mip in
   (* use ind rather than case by compatibility *)
-  let kind = Elimschemes.nondep_elim_scheme from_kind to_kind in
+  let kind = Elimschemes.elim_scheme ~dep:false ~to_kind in
   find_scheme kind (destIndRef lbeq.eq) >>= fun c ->
   Proofview.tclUNIT (GlobRef.ConstRef c)
 
