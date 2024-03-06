@@ -948,18 +948,19 @@ let fold_match ?(force=false) env sigma c =
         it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk =
+      (* not sure how correct this is *)
       if sortp == Sorts.InProp then
         if sortc == Sorts.InProp then
-          if dep then case_dep_scheme_kind_from_prop
-          else case_scheme_kind_from_prop
+          if dep then case_dep
+          else case_nodep
         else (
           if dep
-          then case_dep_scheme_kind_from_type_in_prop
-          else case_scheme_kind_from_type)
+          then casep_dep
+          else case_nodep (* should this be casep_nodep? *))
       else ((* sortc <> InProp by typing *)
         if dep
-        then case_dep_scheme_kind_from_type
-        else case_scheme_kind_from_type)
+        then case_dep
+        else case_nodep)
     in
     match Ind_tables.lookup_scheme sk ci.ci_ind with
     | Some cst ->

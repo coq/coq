@@ -199,37 +199,25 @@ let declare_beq_scheme ?locmap mi = declare_beq_scheme_with ?locmap [] mi
 let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
   let kind = Inductive.inductive_sort_family mip in
-  let dep =
-    if kind == InProp then case_scheme_kind_from_prop
+  let dep, suff =
+    if kind == InProp then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
-      case_scheme_kind_from_type
-    else case_dep_scheme_kind_from_type in
+      case_nodep, None
+    else case_dep, Some "case" in
+  let id = match suff with
+    | None -> None
+    | Some suff ->
+      (* the auto generated eliminator may be called "case" instead of eg "case_nodep" *)
+      Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
+  in
   let kelim = Inductiveops.elim_sort (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
   if Sorts.family_leq InType kelim then
-    define_individual_scheme ?loc dep None ind
+    define_individual_scheme ?loc dep id ind
 
 (* Induction/recursion schemes *)
-
-let kinds_from_prop =
-  [InType,rect_scheme_kind_from_prop;
-   InProp,ind_scheme_kind_from_prop;
-   InSet,rec_scheme_kind_from_prop;
-   InSProp,sind_scheme_kind_from_prop]
-
-let kinds_from_type =
-  [InType,rect_dep_scheme_kind_from_type;
-   InProp,ind_dep_scheme_kind_from_type;
-   InSet,rec_dep_scheme_kind_from_type;
-   InSProp,sind_dep_scheme_kind_from_type]
-
-let nondep_kinds_from_type =
-  [InType,rect_scheme_kind_from_type;
-   InProp,ind_scheme_kind_from_type;
-   InSet,rec_scheme_kind_from_type;
-   InSProp,sind_scheme_kind_from_type]
 
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
@@ -241,13 +229,28 @@ let declare_one_induction_scheme ?loc ind =
     else List.filter (fun s -> s <> InSProp) kelim
   in
   let elims =
-    List.map_filter (fun (sort,kind) ->
-        if List.mem_f Sorts.family_equal sort kelim then Some kind else None)
-      (if from_prop then kinds_from_prop
-       else if depelim then kinds_from_type
-       else nondep_kinds_from_type)
+    List.filter (fun (sort,_) -> List.mem_f Sorts.family_equal sort kelim)
+      (* NB: the order is important, it makes it so that _rec is
+         defined using _rect but _ind is not. *)
+      [(InType, "rect");
+       (InProp, "ind");
+       (InSet, "rec");
+       (InSProp, "sind")]
   in
-  List.iter (fun kind -> define_individual_scheme ?loc kind None ind)
+  let elims = List.map (fun (to_kind,dflt_suff) ->
+      if from_prop then elim_scheme ~dep:false ~to_kind, Some dflt_suff
+      else if depelim then elim_scheme ~dep:true ~to_kind, Some dflt_suff
+      else elim_scheme ~dep:false ~to_kind, None)
+      elims
+  in
+  List.iter (fun (kind, suff) ->
+      let id = match suff with
+        | None -> None
+        | Some suff ->
+          (* the auto generated eliminator may be called "rect" instead of eg "rect_dep" *)
+          Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
+      in
+      define_individual_scheme ?loc kind id ind)
     elims
 
 let declare_induction_schemes ?(locmap=Locmap.default None) kn =
