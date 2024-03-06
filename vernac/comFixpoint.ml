@@ -181,18 +181,7 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let all_universes =
-    List.fold_right (fun sfe acc ->
-        match sfe.Vernacexpr.univs , acc with
-        | None , acc -> acc
-        | x , None -> x
-        | Some ls , Some us ->
-          let open UState in
-          let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
-           if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
-             CErrors.user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
-           Some us) fixl None in
-  let sigma, decl = interp_univ_decl_opt env all_universes in
+  let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
   let sigma, (fixctxs, fiximppairs, fixannots) =
     on_snd List.split3 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma ~cofix) sigma fixl in

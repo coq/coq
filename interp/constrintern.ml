@@ -3008,3 +3008,18 @@ let interp_univ_decl_opt env l =
 let interp_cumul_univ_decl_opt env = function
   | None -> Evd.from_env env, UState.default_univ_decl, [| |]
   | Some decl -> interp_cumul_univ_decl env decl
+
+let interp_mutual_univ_decl_opt env udecls =
+  let udecl =
+    List.fold_right (fun udecl acc ->
+      match udecl , acc with
+      | None , acc -> acc
+      | x , None -> x
+      | Some ls , Some us ->
+        let open UState in
+        let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
+        if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
+          CErrors.user_err Pp.(str "Mutual definitions should all have the same universe binders.");
+        Some us) udecls None
+  in
+  interp_univ_decl_opt env udecl

@@ -625,8 +625,8 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let decl = fst (List.hd thms) in
-  let evd, udecl = Constrintern.interp_univ_decl_opt env0 (snd decl) in
+  let udecls = List.map (fun ((_,univs),_) -> univs) thms in
+  let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
