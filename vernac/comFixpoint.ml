@@ -223,9 +223,7 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
       List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (fun c -> Evarutil.nf_evar sigma c) fixtypes in
-  let fiximps = List.map3
-    (fun ctximps cclimps (_,ctx) -> ctximps@cclimps)
-    fixctximps fixcclimps fixctxs in
+  let fiximps = List.map2 (fun ctximps cclimps -> ctximps@cclimps) fixctximps fixcclimps in
   let sigma, rec_sign =
     List.fold_left3
       (fun (sigma, env') id r t ->
