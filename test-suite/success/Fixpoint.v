@@ -466,3 +466,18 @@ exact
 Defined.
 
 End FixpointRelevance.
+
+Module ClearFixBody.
+
+CoInductive Stream : Set := Cons : nat -> Stream -> Stream.
+
+Section S.
+#[clearbody] Let CoFixpoint f : Stream := Cons 1 f.
+#[clearbody] Let Fixpoint g n := match n with 0 => 0 | S n => g n end.
+Goal True.
+Fail Check eq_refl : f = cofix f := Cons 1 f.
+Fail Check eq_refl : g = fix g n := match n with 0 => 0 | S n => g n end.
+Abort.
+End S.
+
+End ClearFixBody.

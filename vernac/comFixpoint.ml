@@ -356,11 +356,11 @@ let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   interp_fixpoint ~cofix:true fixl, ntns
 
-let do_cofixpoint_interactive ~scope ~poly ?user_warns l =
+let do_cofixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns l =
   let cofix, ntns = do_cofixpoint_common l in
-  let lemma = declare_fixpoint_interactive_generic ~scope ~poly ?user_warns cofix ntns in
+  let lemma = declare_fixpoint_interactive_generic ~scope ?clearbody ~poly ?typing_flags ?user_warns cofix ntns in
   lemma
 
-let do_cofixpoint ~scope ~poly ?user_warns ?using l =
+let do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let cofix, ntns = do_cofixpoint_common l in
-  declare_fixpoint_generic ~scope ~poly ?user_warns ?using cofix ntns
+  declare_fixpoint_generic ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns

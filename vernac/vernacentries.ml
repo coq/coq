@@ -1094,10 +1094,13 @@ let vernac_cofixpoint_interactive ~atts discharge l =
 let vernac_cofixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts discharge l in
+  let typing_flags = atts.typing_flags in
   if atts.program then
-    ComProgramFixpoint.do_cofixpoint ~pm ~scope ~poly:atts.polymorphic ?using:atts.using l
+    ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l
   else
-    let () = ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic ?using:atts.using l in
+    let () = ComFixpoint.do_cofixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
     pm
 
 let vernac_scheme l =
