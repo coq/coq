@@ -35,6 +35,9 @@ val clear_bidirectionality_hint : GlobRef.t -> unit
 val search_guard :
   ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
 
+val esearch_guard :
+  ?loc:Loc.t -> env -> evar_map -> int list list -> EConstr.rec_declaration -> int array
+
 type typing_constraint =
   | IsType (** Necessarily a type *)
   | OfType of types (** A term of the expected type *)
