@@ -161,9 +161,45 @@ let constr_pat_discr env ts p =
   in
   decomp [] p
 
+let constr_pat_discr_syntactic env p =
+  let open GlobRef in
+  let rec decomp stack p =
+    match eta_reduce_pat p with
+    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+    | PProj (p,c) -> Some (ProjLabel p, c :: stack)
+    | PRef ((IndRef _) as ref)
+    | PRef ((ConstructRef _ ) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
+    | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
+    | PRef ((ConstRef _) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
+    | PVar v -> Some (GRLabel (VarRef v), stack)
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PLambda (_,d,c) when List.is_empty stack ->
+      begin
+        (* Check if the [t] could possibly unify with [fun x => f x].
+           Only return [LamLabel] if that is impossible! *)
+        match decomp stack c with
+        | Some _ -> Some (LamLabel, d :: c :: stack)
+        | None -> None
+      end
+    | PSort s when stack = [] -> Some (SortLabel, [])
+    | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, p :: stack)
+    | _ -> None
+  in
+  decomp [] p
+
 let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then None
   else match constr_pat_discr env st t with
+  | None -> None
+  | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
+
+let bounded_constr_pat_discr_syntactic env (t,depth) =
+  if Int.equal depth 0 then None
+  else match constr_pat_discr_syntactic env t with
   | None -> None
   | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
@@ -192,6 +228,9 @@ struct
 
   let pattern env st pat =
     Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
+
+  let pattern_syntactic env pat =
+    Dn.pattern (bounded_constr_pat_discr_syntactic env) (pat, !dnet_depth)
 
   let constr_pattern env sigma st pat =
     let mk p = match bounded_constr_val_discr env st sigma p with
