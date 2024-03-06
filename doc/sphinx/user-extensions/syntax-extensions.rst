@@ -2437,7 +2437,7 @@ The following errors apply to both string and number notations:
    The following example parses and prints natural numbers between
    :g:`0` and :g:`n-1` as terms of type :g:`Fin.t n`.
 
-   .. coqtop:: all reset
+   .. coqtop:: all reset warn
 
       Require Import Vector.
       Print Fin.t.

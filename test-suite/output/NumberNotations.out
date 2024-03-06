@@ -305,6 +305,10 @@ This might yield ill typed terms when using the notation.
 File "./output/NumberNotations.v", line 589, characters 0-146:
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
+File "./output/NumberNotations.v", line 636, characters 0-15:
+Warning: Using Vector.t is known to be technically difficult, see
+<https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.
+[warn-library-file-stdlib-vector,stdlib-vector,warn-library-file,user-warn,default]
 File "./output/NumberNotations.v", line 665, characters 21-23:
 Warning: Type of I1 seems incompatible with the type of Fin.F1.
 Expected type is: (nat -> I) instead of I.

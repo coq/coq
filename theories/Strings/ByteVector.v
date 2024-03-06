@@ -10,6 +10,7 @@
 
 (* This file is deprecated since 8.19, use list Coq.Init.Byte.byte. *)
 Local Set Warnings "-deprecated".
+Local Set Warnings "-stdlib-vector".
 
 Require Import Ascii Basics Bvector String Vector.
 Export VectorNotations.

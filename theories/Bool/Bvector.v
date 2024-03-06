@@ -8,9 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** N.B.: Using this encoding of bit vectors is discouraged.
+See <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>. *)
+Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.").
+
 (** Bit vectors. Contribution by Jean Duprat (ENS Lyon). *)
 
 Require Export Bool Sumbool.
+#[local] Set Warnings "-stdlib-vector".
 Require Vector.
 Export Vector.VectorNotations.
 
