@@ -534,7 +534,7 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lint i -> compile_structured_constant cenv (Const_b0 i) sz cont
 
-  | Lval v -> compile_structured_constant cenv (Const_val v) sz cont
+  | Lval v -> compile_structured_constant cenv (Const_val (get_lval v)) sz cont
 
   | Luint i -> compile_structured_constant cenv (Const_uint i) sz cont
 

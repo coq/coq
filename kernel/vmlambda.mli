@@ -11,7 +11,10 @@
 open Vmvalues
 open Environ
 
-type lambda = structured_values Genlambda.lambda
+type lval
+type lambda = lval Genlambda.lambda
+
+val get_lval : lval -> structured_values
 
 val lambda_of_constr : optimize:bool -> env -> Genlambda.evars -> Constr.t -> lambda
 
