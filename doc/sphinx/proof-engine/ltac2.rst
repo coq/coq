@@ -1601,10 +1601,11 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. insertprodn ltac2_simple_intropattern ltac2_equality_intropattern
 
 .. prodn::
-   ltac2_simple_intropattern ::= @ltac2_naming_intropattern
-   | _
-   | @ltac2_or_and_intropattern
+   ltac2_simple_intropattern ::= @ltac2_simple_intropattern_closed {* % @term0 }
+   ltac2_simple_intropattern_closed ::= @ltac2_or_and_intropattern
    | @ltac2_equality_intropattern
+   | _
+   | @ltac2_naming_intropattern
    ltac2_naming_intropattern ::= ?@ident
    | ?$ @ident
    | ?

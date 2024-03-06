@@ -105,6 +105,7 @@ RENAME: [
 RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
+| Constr.term0 term0
 | Constr.global global
 | Constr.lconstr lconstr
 | Constr.cpattern cpattern
@@ -2408,7 +2409,6 @@ SPLICE: [
 | syntax_modifiers
 | array_elems
 | G_LTAC2_input_fun
-| ltac2_simple_intropattern_closed
 | ltac2_with_bindings
 | int_or_id
 | fun_ind_using

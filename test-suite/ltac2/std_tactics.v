@@ -104,3 +104,17 @@ Proof.
   setoid_rewrite H with (y := y) at 1.
   reflexivity.
 Qed.
+
+
+(* view intro patterns *)
+Axiom lem : forall x:nat, bool -> x = x.
+
+Axiom lem' : 3 = 3 -> False.
+
+Goal bool -> 2 = 2.
+  Fail intros a%lem.
+  eintros a%lem.
+  revert a.
+  intros b%lem'.
+  destruct b.
+Qed.

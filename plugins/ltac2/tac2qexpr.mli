@@ -47,7 +47,7 @@ and intro_pattern_action_r =
 | QIntroWildcard
 | QIntroOrAndPattern of or_and_intro_pattern
 | QIntroInjection of intro_pattern list CAst.t
-(* | QIntroApplyOn of Empty.t (** Not implemented yet *) *)
+| QIntroApplyOn of Constrexpr.constr_expr * intro_pattern
 | QIntroRewrite of bool
 and or_and_intro_pattern_r =
 | QIntroOrPattern of intro_pattern list CAst.t list
