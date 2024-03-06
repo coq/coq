@@ -1031,6 +1031,8 @@ let destArity sigma =
   in
   prodec_rec []
 
+type rec_declaration = (constr, types) Constr.prec_declaration
+
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
 let push_rec_types d e = push_rec_types (cast_rec_decl unsafe_eq d) e
