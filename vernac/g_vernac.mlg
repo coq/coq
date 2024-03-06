@@ -270,9 +270,9 @@ GRAMMAR EXTEND Gram
       | f = inductive_token; indl = LIST1 inductive_or_record_definition SEP "with" ->
           { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
-          { VernacFixpoint (NoDischarge, recs) }
+          { VernacFixpoint (NoDischarge, List.split recs) }
       | IDENT "Let"; "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
-          { VernacFixpoint (DoDischarge, recs) }
+          { VernacFixpoint (DoDischarge, List.split recs) }
       | "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (NoDischarge, corecs) }
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
@@ -503,13 +503,13 @@ GRAMMAR EXTEND Gram
         rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
           { let binders, rec_order = bl in
-            {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
+            ((rec_order : Constrexpr.fixpoint_order_expr option), {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations})
           } ] ]
   ;
   cofix_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
-        { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
+        { {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations}
         } ]]
   ;
   (* Rewrite Rules *)

@@ -213,12 +213,11 @@ let out_def = function
 let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
-let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using kind fixl =
-  let cofix = kind = Decls.CoFixpoint in
-  let (env, rec_sign, udecl, evd), fix, info =
+let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) =
+  let (env, rec_sign, udecl, evd), fix, info, kind, possible_guard =
     let env = Global.env () in
     let env = Environ.update_typing_flags ?typing_flags env in
-    interp_recursive_evars env ~cofix ~program_mode:true fixl
+    interp_recursive_evars env ~program_mode:true (false, rec_order) fixl
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)
@@ -236,13 +235,10 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
         (List.length rec_sign) ~deps def typ in
     (def, evars, typ)
   in
-  let fiximps = List.map pi2 info in
+  let fiximps = List.map snd info in
   let fixdefs = List.map out_def fixdefs in
   let bodies, obls, typs = List.split3 (List.map4 collect_evars fixnames fixdefs fixtypes fiximps) in
   let cinfo = List.map3 (fun name typ impargs -> Declare.CInfo.make ~name ~typ ~impargs ()) fixnames typs fiximps in
-  let possible_guard =
-    if cofix then Pretyping.{possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) info}
-    else Pretyping.{possibly_cofix = false; possible_fix_indices = List.map ComFixpoint.compute_possible_guardness_evidences info} in
   let () =
     (* An early check of guardedness before working on the obligations *)
     let fixdecls =
@@ -258,9 +254,8 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns () in
   Declare.Obls.add_mutual_definitions ~pm ~info ~cinfo ~opaque:false ~uctx ~bodies ~possible_guard ?using obls
 
-let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
-  let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
-    match g, l with
+let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fix_order, l) =
+  match fix_order, l with
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
@@ -280,16 +275,17 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
         build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
-    | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
-      let annots = List.map (fun fix ->
-          Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
-      let kind = Decls.Fixpoint in
-      let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using kind l
+    | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) fix_order ->
+      do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder fix_order, l)
     | _, _ ->
       CErrors.user_err
         (str "Well-founded fixpoints not allowed in mutually recursive blocks.")
 
 let do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixl =
-  let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using Decls.CoFixpoint fixl
+  do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, fixl)
+
+let do_mutually_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, l) =
+  Vernacexpr.(match rec_order with
+  | CFixRecOrder fix_order -> do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fix_order, l)
+  | CCoFixRecOrder -> do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
+  | CUnknownRecOrder -> user_err Pp.(strbrk "Automatic detection of fix/cofix not implemented for Program."))

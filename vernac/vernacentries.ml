@@ -1086,22 +1086,22 @@ let vernac_fixpoint_common ~atts l =
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_fixpoint ~atts ~pm l =
+let vernac_fixpoint ~atts ~pm (rec_order,fixl as fix) =
   let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts l in
+  let scope = vernac_fixpoint_common ~atts fixl in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
     atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
   if program_mode then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
     if opens then
       CErrors.user_err Pp.(str"Program Fixpoint requires a body.")
     else
       let pm = Option.get pm in
-      let pm = ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+      let pm = ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix in
       Some pm, None
   else
-    let proof = ComFixpoint.do_fixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl) in
     pm, proof
 
 let vernac_cofixpoint_common ~atts l =
@@ -1125,7 +1125,7 @@ let vernac_cofixpoint ~atts ~pm l =
       let pm = ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
       Some pm, None
   else
-    let proof = ComFixpoint.do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, l) in
     pm, proof
 
 let vernac_scheme l =
@@ -2455,7 +2455,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
     let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->

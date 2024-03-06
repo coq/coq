@@ -152,24 +152,14 @@ and rebuild_nal aux bk bl' nal typ =
 
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
-let recompute_binder_list fixpoint_exprl =
-  let fixl =
-    List.map
-      (fun fix ->
-        Vernacexpr.
-          { fix with
-            rec_order =
-              ComFixpoint.adjust_rec_order ~structonly:false fix.binders
-                fix.rec_order })
-      fixpoint_exprl
-  in
-  let (_, _, _, typel), _, ctx, _ =
-    ComFixpoint.interp_recursive ~check_recursivity:false ~cofix:false fixl
+let recompute_binder_list (rec_order, fixpoint_exprl) =
+  let _, _, ((_, _, _, typel), _, uctx, _) =
+    ComFixpoint.interp_recursive ~check_recursivity:false (false, CFixRecOrder rec_order) fixpoint_exprl
   in
   let constr_expr_typel =
     with_full_print
       (List.map (fun c ->
-           Constrextern.extern_constr (Global.env ()) (Evd.from_ctx ctx)
+           Constrextern.extern_constr (Global.env ()) (Evd.from_ctx uctx)
              (EConstr.of_constr c)))
       typel
   in
@@ -387,7 +377,7 @@ let generate_principle (evd : Evd.evar_map ref) pconstants on_error is_general
     end
   with e when CErrors.noncritical e -> on_error names e
 
-let register_struct is_rec fixpoint_exprl =
+let register_struct is_rec (rec_order, fixpoint_exprl) =
   let open EConstr in
   match fixpoint_exprl with
   | [{Vernacexpr.fname; univs; binders; rtype; body_def}] when not is_rec ->
@@ -416,7 +406,7 @@ let register_struct is_rec fixpoint_exprl =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    let p = ComFixpoint.do_fixpoint ~poly:false fixpoint_exprl in
+    let p = ComFixpoint.do_mutually_recursive ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
     assert (Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left
@@ -1748,20 +1738,18 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt
     using_lemmas args ret_type body
 
 let do_generate_principle_aux pconstants on_error register_built
-    interactive_proof fixpoint_exprl : Declare.Proof.t option =
+    interactive_proof (rec_order, fixpoint_exprl as fix) : Declare.Proof.t option =
   List.iter
     (fun {Vernacexpr.notations} ->
       if not (List.is_empty notations) then
         CErrors.user_err (Pp.str "Function does not support notations for now"))
     fixpoint_exprl;
   let lemma, _is_struct =
-    match fixpoint_exprl with
-    | [ ( { Vernacexpr.rec_order =
-              Some {CAst.v = Constrexpr.CWfRec (wf_x, wf_rel)} } as
-        fixpoint_expr ) ] ->
+    match rec_order with
+    | [ Some { CAst.v = Constrexpr.CWfRec (wf_x, wf_rel) } ] ->
       let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
           fixpoint_expr ) =
-        match recompute_binder_list [fixpoint_expr] with
+        match recompute_binder_list fix with
         | [e] -> e
         | _ -> assert false
       in
@@ -1785,12 +1773,10 @@ let do_generate_principle_aux pconstants on_error register_built
             wf_x.CAst.v using_lemmas binders rtype body pre_hook
         , false )
       else (None, false)
-    | [ ( { Vernacexpr.rec_order =
-              Some {CAst.v = Constrexpr.CMeasureRec (wf_x, wf_mes, wf_rel_opt)}
-          } as fixpoint_expr ) ] ->
+    | [ Some { CAst.v = Constrexpr.CMeasureRec (wf_x, wf_mes, wf_rel_opt) } ] ->
       let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
           fixpoint_expr ) =
-        match recompute_binder_list [fixpoint_expr] with
+        match recompute_binder_list fix with
         | [e] -> e
         | _ -> assert false
       in
@@ -1818,16 +1804,14 @@ let do_generate_principle_aux pconstants on_error register_built
     | _ ->
       List.iter
         (function
-          | {Vernacexpr.rec_order} -> (
-            match rec_order with
-            | Some {CAst.v = Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _} ->
+            | Some { CAst.v = (Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _) } ->
               CErrors.user_err
                 (Pp.str
                    "Cannot use mutual definition with well-founded recursion \
                     or measure")
-            | _ -> () ))
-        fixpoint_exprl;
-      let fixpoint_exprl = recompute_binder_list fixpoint_exprl in
+            | _ -> () )
+        rec_order;
+      let fixpoint_exprl = recompute_binder_list fix in
       let fix_names =
         List.map (function {Vernacexpr.fname} -> fname.CAst.v) fixpoint_exprl
       in
@@ -1835,7 +1819,7 @@ let do_generate_principle_aux pconstants on_error register_built
       let recdefs, _rec_impls = build_newrecursive fixpoint_exprl in
       let is_rec = List.exists (is_rec fix_names) recdefs in
       let lemma, evd, pconstants =
-        if register_built then register_struct is_rec fixpoint_exprl
+        if register_built then register_struct is_rec (rec_order, fixpoint_exprl)
         else (None, Evd.from_env (Global.env ()), pconstants)
       in
       let evd = ref evd in
@@ -2103,9 +2087,9 @@ let make_graph (f_ref : GlobRef.t) =
                      nal_tas)
               in
               let b' = add_args id.CAst.v new_args b in
+              Some (CAst.make (CStructRec (CAst.make rec_id))),
               { Vernacexpr.fname = id
               ; univs = None
-              ; rec_order = Some (CAst.make (CStructRec (CAst.make rec_id)))
               ; binders = nal_tas @ bl
               ; rtype = t
               ; body_def = Some b'
@@ -2115,15 +2099,15 @@ let make_graph (f_ref : GlobRef.t) =
         l
       | _ ->
         let fname = CAst.make (Label.to_id (Constant.label c)) in
-        [ { Vernacexpr.fname
+        [ None, { Vernacexpr.fname
           ; univs = None
-          ; rec_order = None
           ; binders = nal_tas
           ; rtype = t
           ; body_def = Some b
           ; notations = [] } ]
     in
     let mp = Constant.modpath c in
+    let expr_list = List.split expr_list in
     let pstate =
       do_generate_principle_aux [(c, UVars.Instance.empty)] error_error false
         false expr_list
@@ -2133,7 +2117,7 @@ let make_graph (f_ref : GlobRef.t) =
     List.iter
       (fun {Vernacexpr.fname = {CAst.v = id}} ->
         add_Function false (Constant.make2 mp (Label.of_id id)))
-      expr_list
+      (snd expr_list)
 
 (* *************** statically typed entrypoints ************************* *)
 
