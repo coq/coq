@@ -31,6 +31,7 @@ sig
   type pattern
 
   val pattern : Environ.env -> TransparentState.t option -> constr_pattern -> pattern
+  val pattern_syntactic : Environ.env -> constr_pattern -> pattern
   val constr_pattern : Environ.env -> Evd.evar_map -> TransparentState.t option -> EConstr.t -> pattern
 
   val empty : t

@@ -153,6 +153,7 @@ type hint = {
 type hint_pattern =
 | DefaultPattern
 | ConstrPattern of constr_pattern
+| SyntacticPattern of constr_pattern
 
 type 'a with_metadata =
   { pri     : int
@@ -286,6 +287,7 @@ struct
   let add0 env sigma st p v dn =
     let p = match p with
     | ConstrPattern p -> Bnet.pattern env st p
+    | SyntacticPattern p -> Bnet.pattern_syntactic env p
     | DefaultPattern ->
       let c = get_default_pattern (snd v).code.obj in
       Bnet.constr_pattern env sigma st c
@@ -1003,7 +1005,7 @@ let make_extern pri pat tacast =
   in
   (hdconstr,
    { pri = pri;
-     pat = Option.map (fun p -> ConstrPattern p) pat;
+     pat = Option.map (fun p -> SyntacticPattern p) pat;
      name = None;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
@@ -1227,6 +1229,9 @@ let subst_autohint (subst, obj) =
     | ConstrPattern p as p0 ->
       let p' = subst_pattern env sigma subst p in
       if p' == p then p0 else ConstrPattern p'
+    | SyntacticPattern p as p0 ->
+      let p' = subst_pattern env sigma subst p in
+      if p' == p then p0 else SyntacticPattern p'
     in
     let pat' = Option.Smart.map subst_hint_pattern data.pat in
     let code' = match data.code.obj with
@@ -1625,7 +1630,7 @@ let pr_hint env sigma h = match h.obj with
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = match p.pat with
   | None -> mt ()
-  | Some (ConstrPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
+  | Some (ConstrPattern p | SyntacticPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
   | Some DefaultPattern -> str", pattern " ++ pr_leconstr_env env sigma (get_default_pattern v.code.obj)
   in
   (pr_hint env sigma v.code ++ str"(level " ++ int v.pri ++ pr_pat v
@@ -1832,7 +1837,7 @@ struct
   let database (h : t) = h.db
   let pattern (h : t) = match h.pat with
   | None -> None
-  | Some (ConstrPattern p) -> Some p
+  | Some (ConstrPattern p | SyntacticPattern p) -> Some p
   | Some DefaultPattern -> None
   let run (h : t) k = run_hint h.code k
   let print env sigma (h : t) = pr_hint env sigma h.code
