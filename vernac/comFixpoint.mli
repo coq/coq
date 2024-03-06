@@ -44,7 +44,7 @@ val do_cofixpoint
 val adjust_rec_order
   :  structonly:bool
   -> Constrexpr.local_binder_expr list
-  -> Constrexpr.recursion_order_expr option
+  -> Constrexpr.fixpoint_order_expr option
   -> lident option
 
 (** names / relevance / defs / types *)

@@ -182,7 +182,7 @@ type 'a fix_expr_gen =
   ; notations : notation_declaration list
   }
 
-type fixpoint_expr = recursion_order_expr option fix_expr_gen
+type fixpoint_expr = fixpoint_order_expr option fix_expr_gen
 type cofixpoint_expr = unit fix_expr_gen
 
 type local_decl_expr =
