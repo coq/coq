@@ -131,15 +131,13 @@ val declare_definition
   -> Evd.evar_map
   -> GlobRef.t
 
-type lemma_possible_guards = int list list
-
 val declare_mutually_recursive
   : info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:lemma_possible_guards option
+  -> possible_guard:Pretyping.possible_guard
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
@@ -210,7 +208,7 @@ module Proof : sig
     -> Evd.evar_map
     -> t
 
-  type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
+  type mutual_info = Pretyping.possible_guard * Constr.t option list option
 
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
   val start_mutual_with_initialization
@@ -218,7 +216,6 @@ module Proof : sig
     -> cinfo:Constr.t CInfo.t list
     -> mutual_info:mutual_info
     -> Evd.evar_map
-    -> int list option
     -> t
 
   (** Qed a proof  *)
@@ -560,15 +557,15 @@ val add_definition :
 (** Start a [Program Fixpoint] declaration, similar to the above,
    except it takes a list now. *)
 val add_mutual_definitions :
-     (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
-  -> pm:OblState.t
+     pm:OblState.t
   -> info:Info.t
   -> ?obl_hook: OblState.t Hook.g
   -> uctx:UState.t
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
-  -> fixpoint_kind
+  -> possible_guard:Pretyping.possible_guard
+  -> (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
   -> OblState.t
 
 (** Implementation of the [Obligation] command *)

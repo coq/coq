@@ -13,7 +13,6 @@ type mutual_info =
   | Mutual of
       { mutual_info : Declare.Proof.mutual_info
       ; cinfo : EConstr.t Declare.CInfo.t list
-      ; possible_guards : int list
       }
 
 val look_for_possibly_mutual_statements
