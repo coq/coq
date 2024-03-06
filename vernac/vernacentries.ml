@@ -631,8 +631,8 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
     let thm = Declare.CInfo.to_constr evd thm in
     let evd = post_check_evd ~udecl ~poly evd in
     Declare.Proof.start_with_initialization ~info ~cinfo:thm ?using evd
-  | RecLemmas.Mutual { mutual_info; cinfo } ->
-    let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
+  | RecLemmas.Mutual mutual_info ->
+    let cinfo = List.map (Declare.CInfo.to_constr evd) thms in
     let evd = post_check_evd ~udecl ~poly evd in
     Declare.Proof.start_mutual_with_initialization ~info ~cinfo ~mutual_info ?using evd
 

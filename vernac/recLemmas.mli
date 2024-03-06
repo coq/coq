@@ -10,10 +10,7 @@
 
 type mutual_info =
   | NonMutual of EConstr.t Declare.CInfo.t
-  | Mutual of
-      { mutual_info : Declare.Proof.mutual_info
-      ; cinfo : EConstr.t Declare.CInfo.t list
-      }
+  | Mutual of Declare.Proof.mutual_info
 
 val look_for_possibly_mutual_statements
   :  Evd.evar_map

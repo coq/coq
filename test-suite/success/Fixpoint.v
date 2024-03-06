@@ -564,3 +564,28 @@ match t with
 end.
 
 End Wish16040.
+
+Module TheoremWith.
+
+CoInductive Stream : Set := Cons : nat -> Stream -> Stream.
+
+(* Support for mutually recursive theorems in non-mutual types *)
+Theorem a : Stream with b : Stream.
+Proof.
+apply (Cons 0), b.
+apply (Cons 0), a.
+Defined.
+
+Theorem c (n:nat) : Stream with d (n:nat) : Stream. (* corecursive *)
+Proof.
+apply (Cons n), (d n).
+apply (Cons n), (c n).
+Defined.
+
+Theorem c' (n:nat) : Stream with d' (n:nat) : Stream. (* recursive *)
+Proof.
+destruct n as [|n']. apply a. apply (d' n').
+destruct n as [|n']. apply a. apply (c' n').
+Defined.
+
+End TheoremWith.
