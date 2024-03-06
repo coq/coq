@@ -328,4 +328,4 @@ let do_cofixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fixl
   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let cofix, ntns = interp_recursive ~cofix:true fixl, ntns in
-  declare_recursive ?scope ~poly ?user_warns ?using cofix ntns
+  declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns
