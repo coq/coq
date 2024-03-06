@@ -672,10 +672,7 @@ library:ci-fiat_crypto:
   needs:
   - build:edge+flambda
   - library:ci-coqprime
-  - library:ci-bedrock2
-  - library:ci-coqutil
   - library:ci-rupicola
-  - plugin:ci-bignums
   - plugin:ci-rewriter
   timeout: 3h
 
@@ -690,9 +687,6 @@ library:ci-fiat_crypto_ocaml:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
   - library:ci-fiat_crypto
   artifacts:
     paths: [] # These artifacts would go over the size limit
@@ -1003,7 +997,6 @@ library:ci-rupicola:
   needs:
   - build:edge+flambda
   - library:ci-bedrock2
-  - library:ci-coqutil
 
 plugin:ci-serapi:
   extends: .ci-template-flambda
