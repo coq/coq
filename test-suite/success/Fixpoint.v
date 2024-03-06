@@ -422,3 +422,47 @@ Module NoArgumentFixpoint.
 Fail Fixpoint f : nat. (* was an anomaly at some time *)
 
 End NoArgumentFixpoint.
+
+Module FixpointRelevance.
+
+(* Check that the recursive reference to a fixpoint name has correct
+   relevance, in different execution paths *)
+
+Inductive STrue : SProp := SI.
+Inductive seq (a:STrue) : STrue -> SProp := srefl : seq a a.
+Fixpoint g1 (n:nat) : STrue :=
+  match n with
+  | 0 => SI
+  | S n => let x := srefl (g1 n) : seq (g1 n) (g2 n) in g2 n
+  end
+with g2 (n:nat) : STrue :=
+  match n with
+  | 0 => SI
+  | S n => let x := srefl (g1 n) : seq (g1 n) (g2 n) in g1 n
+  end.
+Fixpoint h1 (n:nat) : STrue with h2 (n:nat) : STrue.
+exact
+ (match n with
+  | 0 => SI
+  | S n => let x := srefl (h1 n) : seq (h1 n) (h2 n) in h2 n
+  end).
+exact
+ (match n with
+  | 0 => SI
+  | S n => let x := srefl (h1 n) : seq (h1 n) (h2 n) in h1 n
+  end).
+Defined.
+Theorem k1 (n:nat) : STrue with k2 (n:nat) : STrue.
+exact
+ (match n with
+  | 0 => SI
+  | S n => let x := srefl (k1 n) : seq (k1 n) (k2 n) in k2 n
+  end).
+exact
+ (match n with
+  | 0 => SI
+  | S n => let x := srefl (k1 n) : seq (k1 n) (k2 n) in k1 n
+  end).
+Defined.
+
+End FixpointRelevance.
