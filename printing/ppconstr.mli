@@ -36,7 +36,7 @@ val pr_sort_expr : sort_expr -> Pp.t
 val pr_guard_annot
   :  (constr_expr -> Pp.t)
   -> local_binder_expr list
-  -> recursion_order_expr option
+  -> fixpoint_order_expr option
   -> Pp.t
 
 val pr_record : string -> string -> ('a -> Pp.t) -> 'a list -> Pp.t
