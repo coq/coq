@@ -32,11 +32,15 @@ val clear_bidirectionality_hint : GlobRef.t -> unit
 
 (** An auxiliary function for searching for fixpoint guard indexes *)
 
+type possible_guard =
+  bool (* true if can be a cofixpoint *) *
+  int list list (* list of non-empty lists of possible indices if can be a fixpoint *)
+
 val search_guard :
-  ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
+  ?loc:Loc.t -> env -> possible_guard -> Constr.rec_declaration -> int array option
 
 val esearch_guard :
-  ?loc:Loc.t -> env -> evar_map -> int list list -> EConstr.rec_declaration -> int array
+  ?loc:Loc.t -> env -> evar_map -> possible_guard -> EConstr.rec_declaration -> int array option
 
 type typing_constraint =
   | IsType (** Necessarily a type *)
