@@ -193,10 +193,18 @@ type ('constr, 'types, 'r) recursive_preentry =
 
 (* Wellfounded definition *)
 
-let fix_proto sigma =
-  Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto")
-let fix_proto_relevance = EConstr.ERelevance.relevant
-(* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
+let encapsulate env sigma r t =
+  (* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
+  let fix_proto sigma =
+    Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto") in
+  let fix_proto_relevance = EConstr.ERelevance.relevant in
+  let sigma, sort = Typing.type_of ~refresh:true env sigma t in
+  try
+    let sigma, h_term = fix_proto sigma in
+    let app = EConstr.mkApp (h_term, [|sort; t|]) in
+    let sigma, app = Typing.solve_evars env sigma app in
+    sigma, fix_proto_relevance, app
+  with e when CErrors.noncritical e -> sigma, r, t
 
 let interp_recursive_evars env ~program_mode rec_order fixl =
   let open Context.Named.Declaration in
@@ -221,17 +229,8 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let sigma, rec_sign =
     List.fold_left3
       (fun (sigma, env') id r t ->
-         if program_mode then
-           let sigma, sort = Typing.type_of ~refresh:true env sigma t in
-           let sigma, fixprot =
-             try
-               let sigma, h_term = fix_proto sigma in
-               let app = mkApp (h_term, [|sort; t|]) in
-               Typing.solve_evars env sigma app
-             with e when CErrors.noncritical e -> sigma, t
-           in
-           sigma, LocalAssum (Context.make_annot id fix_proto_relevance, fixprot) :: env'
-         else sigma, LocalAssum (Context.make_annot id r, t) :: env')
+         let sigma, r, t = if program_mode then encapsulate env sigma r t else sigma, r, t in
+         sigma, LocalAssum (Context.make_annot id r, t) :: env')
       (sigma,[]) fixnames fixrs fixtypes
   in
   let env_rec = push_named_context rec_sign env in
