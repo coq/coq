@@ -130,7 +130,7 @@ let adjust_rec_order ~structonly binders rec_order =
 
 (* Interpret the index of a recursion order annotation *)
 exception Found of int
-let find_rec_annot ~structonly Vernacexpr.{fname={CAst.loc}; binders} (_, ctx) = function
+let find_rec_annot ~structonly Vernacexpr.{fname={CAst.loc}; binders} ctx = function
   | None ->
     if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
     List.interval 0 (Context.Rel.nhyps ctx - 1)
@@ -169,22 +169,22 @@ let interp_rec_annot fixl ctxl (structonly, rec_order) =
 
 let interp_fix_context ~program_mode env sigma {Vernacexpr.binders} =
   let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma binders in
-  sigma, ((env', ctx), (impl_env, imps))
+  sigma, (env', ctx, (impl_env, imps))
 
-let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
+let interp_fix_ccl ~program_mode sigma impls env fix =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let sigma, (c, impl) = interp_type_evars_impls ~flags ~impls env sigma fix.Vernacexpr.rtype in
   let r = Retyping.relevance_of_type env sigma c in
   sigma, (c, r, impl)
 
-let interp_fix_body ~program_mode env_rec sigma impls (_,ctx) fix ccl =
+let interp_fix_body ~program_mode env_rec sigma impls ctx fix ccl =
   let open EConstr in
   Option.cata (fun body ->
     let env = push_rel_context ctx env_rec in
     let sigma, body = interp_casted_constr_evars ~program_mode env sigma ~impls body ccl in
     sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) fix.Vernacexpr.body_def
 
-let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
+let build_fix_type ctx ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
 (* Jump over let-bindings. *)
 
@@ -213,14 +213,14 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
 
   (* Interp arities allowing for unresolved types *)
   let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
-  let sigma, (fixctxs, fiximppairs) =
-    on_snd List.split @@
+  let sigma, (fixenv, fixctxs, fiximppairs) =
+    on_snd List.split3 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
   let fixkind, fixannot = interp_rec_annot fixl fixctxs rec_order in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
-      List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixctxs fixl in
+      List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixenv fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (fun c -> Evarutil.nf_evar sigma c) fixtypes in
   let fiximps = List.map2 (fun ctximps cclimps -> ctximps@cclimps) fixctximps fixcclimps in
@@ -249,7 +249,6 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env_rec sigma in
   let sigma = Evd.minimize_universes sigma in
-  let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
   (env,rec_sign,decl,sigma), (fixnames,fixrs,fixdefs,fixtypes), List.combine fixctxs fiximps, fixkind, fixannot
