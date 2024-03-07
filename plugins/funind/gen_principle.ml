@@ -153,7 +153,7 @@ and rebuild_nal aux bk bl' nal typ =
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (rec_order, fixpoint_exprl) =
-  let _, _, ((_, _, _, typel), _, uctx, _) =
+  let ((_, _, _, typel, _, _), _, _, _), uctx =
     ComFixpoint.interp_recursive ~check_recursivity:false (false, CFixRecOrder rec_order) fixpoint_exprl
   in
   let constr_expr_typel =

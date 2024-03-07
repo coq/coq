@@ -214,7 +214,7 @@ let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
 let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) =
-  let (env, rec_sign, udecl, evd), fix, info, kind, possible_guard =
+  let (env, rec_sign, evd), fix =
     let env = Global.env () in
     let env = Environ.update_typing_flags ?typing_flags env in
     interp_recursive_evars env ~program_mode:true (false, rec_order) fixl
@@ -224,7 +224,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
-  let (fixnames,fixrs,fixdefs,fixtypes) = fix in
+  let ((fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps),kind,possible_guard,udecl) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
     let def = nf_evar evd def in
@@ -235,7 +235,6 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
         (List.length rec_sign) ~deps def typ in
     (def, evars, typ)
   in
-  let fiximps = List.map snd info in
   let fixdefs = List.map out_def fixdefs in
   let bodies, obls, typs = List.split3 (List.map4 collect_evars fixnames fixdefs fixtypes fiximps) in
   let cinfo = List.map3 (fun name typ impargs -> Declare.CInfo.make ~name ~typ ~impargs ()) fixnames typs fiximps in
