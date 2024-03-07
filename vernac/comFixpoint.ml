@@ -172,6 +172,8 @@ type ('constr, 'types) recursive_preentry =
 
 let fix_proto sigma =
   Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto")
+let fix_proto_relevance = Sorts.Relevant
+(* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
 
 let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
   let open Context.Named.Declaration in
@@ -204,8 +206,8 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
     (fun ctximps cclimps (_,ctx) -> ctximps@cclimps)
     fixctximps fixcclimps fixctxs in
   let sigma, rec_sign =
-    List.fold_left2
-      (fun (sigma, env') id t ->
+    List.fold_left3
+      (fun (sigma, env') id r t ->
          if program_mode then
            let sigma, sort = Typing.type_of ~refresh:true env sigma t in
            let sigma, fixprot =
@@ -215,9 +217,9 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
                Typing.solve_evars env sigma app
              with e when CErrors.noncritical e -> sigma, t
            in
-           sigma, LocalAssum (Context.make_annot id Sorts.Relevant,fixprot) :: env'
-         else sigma, LocalAssum (Context.make_annot id Sorts.Relevant,t) :: env')
-      (sigma,[]) fixnames fixtypes
+           sigma, LocalAssum (Context.make_annot id fix_proto_relevance, fixprot) :: env'
+         else sigma, LocalAssum (Context.make_annot id r, t) :: env')
+      (sigma,[]) fixnames fixrs fixtypes
   in
   let env_rec = push_named_context rec_sign env in
 
