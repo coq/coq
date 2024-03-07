@@ -277,22 +277,21 @@ let interp_recursive ?(check_recursivity=true) ?typing_flags rec_order l :
   let uctx = Evd.evar_universe_context evd in
   (fix,isfix,possible_guards,decl),uctx
 
-let build_recthms ?using fixnames fixtypes fixctxs fiximps =
-  let thms =
-    List.map4 (fun name typ ctx impargs ->
-        let args = List.map Context.Rel.Declaration.get_name ctx in
-        Declare.CInfo.make ~name ~typ ~args ~impargs ()
-      ) fixnames fixtypes fixctxs fiximps
-  in
-  let using =
+let make_using ?using fixnames fixdefs fixtypes =
     let env = Global.env() in
     let evd = Evd.from_env env in
     let terms = List.map EConstr.of_constr fixtypes in
-    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
-  thms, using
+    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using
+
+let build_recthms fixnames fixtypes fixctxs fiximps =
+  List.map4 (fun name typ ctx impargs ->
+      let args = List.map Context.Rel.Declaration.get_name ctx in
+      Declare.CInfo.make ~name ~typ ~args ~impargs ()
+    ) fixnames fixtypes fixctxs fiximps
 
 let declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps),fix_kind,possible_guard,udecl) ~uctx ntns =
-  let fixitems, using = build_recthms ?using fixnames fixtypes fixctxs fiximps in
+  let fixitems = build_recthms fixnames fixtypes fixctxs fiximps in
+  let using = make_using ?using fixnames fixdefs fixtypes in
   let kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns ?using () in
   try
