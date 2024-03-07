@@ -188,7 +188,8 @@ let build_fix_type sigma ctx ccl =
 (* Jump over let-bindings. *)
 
 type ('constr, 'types) recursive_preentry =
-  Id.t list * Sorts.relevance list * 'constr option list * 'types list
+  (Id.t list * Sorts.relevance list * 'constr option list * 'types list * EConstr.rel_context list * Impargs.manual_implicits list) *
+  Decls.definition_object_kind * Pretyping.possible_guard * UState.universe_decl
 
 (* Wellfounded definition *)
 
@@ -248,40 +249,40 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let sigma = Evd.minimize_universes sigma in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,decl,sigma), (fixnames,fixrs,fixdefs,fixtypes), List.combine fixctxs fiximps, fixkind, fixannot
+  let fix = (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps) in
+  (env, rec_sign, sigma), (fix, fixkind, fixannot, decl)
 
-let check_recursive ~isfix env evd (fixnames,_,fixdefs,_) =
+let check_recursive ~isfix env evd (fixnames,_,fixdefs,_,_,_) =
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_true_recursivity env evd ~isfix (List.combine fixnames fixdefs)
   end
 
-let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
+let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps) =
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let fixrs = List.map (fun r -> Evarutil.nf_relevance evd r) fixrs in
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
-  Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
+  (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps)
 
 (* XXX: Unify with interp_recursive  *)
 let interp_recursive ?(check_recursivity=true) ?typing_flags rec_order l :
-  Decls.definition_object_kind * Pretyping.possible_guard * ((Constr.t, Constr.types) recursive_preentry *
-    UState.universe_decl * UState.t *
-    (EConstr.rel_context * Impargs.manual_implicits) list) =
+  (Constr.t, Constr.types) recursive_preentry * UState.t =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,_,pl,evd),fix,info,isfix,possible_guards = interp_recursive_evars env ~program_mode:false rec_order l in
+  let (env,_,evd),(fix,isfix,possible_guards,decl) = interp_recursive_evars env ~program_mode:false rec_order l in
   if check_recursivity then check_recursive ~isfix env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
-  let uctx,fix = ground_fixpoint env evd fix in
-  isfix, possible_guards, (fix,pl,uctx,info)
+  let fix = ground_fixpoint env evd fix in
+  let uctx = Evd.evar_universe_context evd in
+  (fix,isfix,possible_guards,decl),uctx
 
-let build_recthms ?using fixnames fixtypes fiximps =
+let build_recthms ?using fixnames fixtypes fixctxs fiximps =
   let thms =
-    List.map3 (fun name typ (ctx,impargs) ->
+    List.map4 (fun name typ ctx impargs ->
         let args = List.map Context.Rel.Declaration.get_name ctx in
         Declare.CInfo.make ~name ~typ ~args ~impargs ()
-      ) fixnames fixtypes fiximps
+      ) fixnames fixtypes fixctxs fiximps
   in
   let using =
     let env = Global.env() in
@@ -290,8 +291,8 @@ let build_recthms ?using fixnames fixtypes fiximps =
     Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
   thms, using
 
-let declare_recursive ~fix_kind ~possible_guard ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
-  let fixitems, using = build_recthms ?using fixnames fixtypes fiximps in
+let declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps),fix_kind,possible_guard,udecl) ~uctx ntns =
+  let fixitems, using = build_recthms ?using fixnames fixtypes fixctxs fiximps in
   let kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns ?using () in
   try
@@ -311,5 +312,5 @@ let declare_recursive ~fix_kind ~possible_guard ?scope ?clearbody ~poly ?typing_
 
 let do_mutually_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) : Declare.Proof.t option =
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let fix_kind, possible_guard, fix = interp_recursive ?typing_flags (true, rec_order) fixl in
-  declare_recursive ~fix_kind ~possible_guard ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns
+  let fix, uctx = interp_recursive ?typing_flags (true, rec_order) fixl in
+  declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ~uctx ntns
