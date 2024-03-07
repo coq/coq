@@ -29,8 +29,10 @@ val do_mutually_recursive
 (** Internal API  *)
 (************************************************************************)
 
-(** names / relevance / defs / types *)
-type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr option list * 'types list
+(** names / relevance / defs / types / contexts / implicit args / struct annotations / universe decl *)
+type ('constr, 'types, 'r) recursive_preentry =
+  (Id.t list * 'r list * 'constr option list * 'types list * EConstr.rel_context list * Impargs.manual_implicits list) *
+  Decls.definition_object_kind * Pretyping.possible_guard * UState.universe_decl
 
 (** Exported for Program *)
 val interp_recursive_evars :
@@ -41,11 +43,9 @@ val interp_recursive_evars :
   bool * recursion_order_expr ->
   recursive_expr_gen list ->
   (* env / signature / univs / evar_map *)
-  (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
+  (Environ.env * EConstr.named_context * Evd.evar_map) *
   (* names / defs / types *)
-  (EConstr.t, EConstr.types, EConstr.ERelevance.t) recursive_preentry *
-  (* ctx per mutual def / implicits / struct annotations *)
-  (EConstr.rel_context * Impargs.manual_implicits) list * Decls.definition_object_kind * Pretyping.possible_guard
+  (EConstr.t, EConstr.types, EConstr.ERelevance.t) recursive_preentry
 
 (** Exported for Funind *)
 
@@ -54,7 +54,4 @@ val interp_recursive
   -> ?typing_flags:Declarations.typing_flags
   -> bool * Vernacexpr.recursion_order_expr
   -> recursive_expr_gen list
-  -> Decls.definition_object_kind * Pretyping.possible_guard *
-     ((Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
-      UState.universe_decl * UState.t *
-      (EConstr.rel_context * Impargs.manual_implicits) list)
+  -> (Constr.t, Constr.types, Sorts.relevance) recursive_preentry * UState.t
