@@ -21,7 +21,6 @@ open Nameops
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
-open Evarutil
 open Context.Rel.Declaration
 open ComFixpoint
 
@@ -210,48 +209,10 @@ let out_def = function
   | Some def -> def
   | None -> user_err Pp.(str "Program Fixpoint needs defined bodies.")
 
-let collect_evars_of_term evd c ty =
-  Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
-
-let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) =
-  let (env, rec_sign, evd), fix =
-    let env = Global.env () in
-    let env = Environ.update_typing_flags ?typing_flags env in
-    interp_recursive_evars env ~program_mode:true (false, rec_order) fixl
-  in
-    (* Program-specific code *)
-    (* Get the interesting evars, those that were not instantiated *)
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
-    (* Solve remaining evars *)
-  let evd = nf_evar_map_undefined evd in
-  let ((fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps),kind,possible_guard,udecl) = fix in
-  let collect_evars name def typ impargs =
-    (* Generalize by the recursive prototypes  *)
-    let def = nf_evar evd def in
-    let typ = nf_evar evd typ in
-    let deps = collect_evars_of_term evd def typ in
-    let evars, _, def, typ =
-      RetrieveObl.retrieve_obligations env name evd
-        (List.length rec_sign) ~deps def typ in
-    (def, evars, typ)
-  in
-  let fixdefs = List.map out_def fixdefs in
-  let bodies, obls, typs = List.split3 (List.map4 collect_evars fixnames fixdefs fixtypes fiximps) in
-  let cinfo = List.map3 (fun name typ impargs -> Declare.CInfo.make ~name ~typ ~impargs ()) fixnames typs fiximps in
-  let () =
-    (* An early check of guardedness before working on the obligations *)
-    let fixdecls =
-      Array.of_list (List.map2 (fun x r -> make_annot (Name x) r) fixnames fixrs),
-      Array.of_list fixtypes,
-      Array.of_list fixdefs
-    in
-    ignore (Pretyping.esearch_guard env evd possible_guard fixdecls)
-  in
-  let uctx = Evd.evar_universe_context evd in
-  let kind = Decls.(IsDefinition kind) in
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns () in
-  Declare.Obls.add_mutual_definitions ~pm ~info ~cinfo ~opaque:false ~uctx ~bodies ~possible_guard ?using obls
+let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixl =
+  let pm, proof = do_mutually_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixl in
+  assert (Option.is_empty proof);
+  Option.get pm
 
 let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fix_order, l) =
   match fix_order, l with

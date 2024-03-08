@@ -1101,7 +1101,9 @@ let vernac_fixpoint ~atts ~pm (rec_order,fixl as fix) =
       let pm = ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix in
       Some pm, None
   else
-    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl) in
+    let pm', proof =
+      ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl) in
+    assert (Option.is_empty pm');
     pm, proof
 
 let vernac_cofixpoint_common ~atts l =
@@ -1125,7 +1127,9 @@ let vernac_cofixpoint ~atts ~pm l =
       let pm = ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
       Some pm, None
   else
-    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, l) in
+    let pm', proof =
+      ComFixpoint.do_mutually_recursive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, l) in
+    assert (Option.is_empty pm');
     pm, proof
 
 let vernac_scheme l =
