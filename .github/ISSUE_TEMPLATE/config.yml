@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Coq Zulip Chat
+    url: https://coq.zulipchat.com
+    about: For casual and high traffic discussions. You can ask questions about Coq (#Coq users) or questions about Coq internals (#Coq devs & plugin devs). There are also many streams dedicated to external Coq projects.
+  - name: Coq Discourse Forum
+    url: https://coq.discourse.group
+    about: Our official, multilingual forum, for more structured and easy to search discussions. You can also ask about Coq or internals here, and this is the place to send any announcements.
+  - name: Proof Assistants Stack Exchange
+    url: https://proofassistants.stackexchange.com
+    about: For questions about Coq, Lean, Agda, Isabelle, etc. This is a Q&A site, where numerous Coq users are available to answer questions, but this is not an official Coq forum.
