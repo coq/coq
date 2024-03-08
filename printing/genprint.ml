@@ -118,7 +118,7 @@ struct
   let name = "printer"
   let default wit = match wit with
   | ExtraArg tag ->
-    let name = ArgT.repr tag in
+    let name = try ArgT.repr tag with Assert_failure _ when !Flags.in_debugger -> "UNKNOWN" in
     let printer = {
       raw = (fun _ -> PrinterBasic (fun env sigma -> str "<genarg:" ++ str name ++ str ">"));
       glb = (fun _ -> PrinterBasic (fun env sigma -> str "<genarg:" ++ str name ++ str ">"));
