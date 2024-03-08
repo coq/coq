@@ -1058,8 +1058,10 @@ let vernac_fixpoint ~pm ~atts discharge (rec_order,fixl as fix) =
           ?typing_flags ?user_warns:atts.user_warns ?using:atts.using fix in
       Some pm, None
   else
-    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CFixRecOrder rec_order, fixl) in
+    let pm', proof =
+      ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CFixRecOrder rec_order, fixl) in
+    assert (Option.is_empty pm');
     pm, proof
 
 let vernac_cofixpoint_common ~atts discharge l =
@@ -1080,8 +1082,9 @@ let vernac_cofixpoint ~pm ~atts discharge l =
         ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
       Some pm, None
   else
-    let proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+    let pm', proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
         ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CCoFixRecOrder, l) in
+    assert (Option.is_empty pm');
     pm, proof
 
 let vernac_scheme l =
