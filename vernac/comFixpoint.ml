@@ -208,6 +208,16 @@ let encapsulate env sigma r t =
     sigma, fix_proto_relevance, app
   with e when CErrors.noncritical e -> sigma, r, t
 
+type ('constr, 'relevance) fix_data = {
+  fixnames : Names.Id.t list;
+  fixrs    : 'relevance list;
+  fixdefs  : 'constr option list;
+  fixtypes : 'constr list;
+  fixctxs  :  EConstr.rel_context list;
+  fiximps  : (Names.Name.t * bool) option CAst.t list list;
+  fixntns  : Metasyntax.notation_interpretation_decl list;
+}
+
 let interp_recursive_evars env ~program_mode rec_order fixl =
   let open Context.Named.Declaration in
   let open EConstr in
@@ -218,7 +228,7 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let sigma, (fixenv, fixctxs, fixctximpenvs, fixctximps) =
     on_snd List.split4 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
-  let fixkind, fixannot = interp_rec_annot fixl fixctxs rec_order in
+  let fixkind, possible_guard = interp_rec_annot fixl fixctxs rec_order in
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
       List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixenv fixl in
@@ -237,10 +247,10 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let impls = compute_internalization_env env sigma Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
+  let fixntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let sigma, fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
-      let notations = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations) fixl in
-      List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
+      List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) fixntns;
       List.fold_left4_map
         (fun sigma fixctximpenv -> interp_fix_body ~program_mode env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
         sigma fixctximpenvs fixctxs fixl fixccls)
@@ -251,60 +261,105 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let sigma = Evd.minimize_universes sigma in
 
   (* Build the fix declaration block *)
-  let fix = (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps) in
-  (env, rec_sign, sigma), (fix, fixkind, fixannot, decl)
+  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns} in
+  (env, rec_sign, sigma), (fix, fixkind, possible_guard, decl)
 
-let check_recursive ~isfix env evd (fixnames,_,fixdefs,_,_,_) =
+let check_recursive ~isfix env evd {fixnames;fixdefs} =
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_true_recursivity env evd ~isfix (List.combine fixnames fixdefs)
   end
 
-let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps) =
+let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns} =
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let fixrs = List.map (fun r -> EConstr.ERelevance.kind evd r) fixrs in
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
-  (fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps)
+  {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns}
 
-(* XXX: Unify with interp_recursive  *)
-let interp_recursive ?(check_recursivity=true) ?typing_flags rec_order l :
-  (Constr.t, Constr.types, Sorts.relevance) recursive_preentry * UState.t =
+(** For Funind *)
+
+let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
-  let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,_,evd),(fix,isfix,possible_guards,decl) = interp_recursive_evars env ~program_mode:false rec_order l in
-  if check_recursivity then check_recursive ~isfix env evd fix;
-  let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
-  let fix = ground_fixpoint env evd fix in
-  let uctx = Evd.evar_universe_context evd in
-  (fix,isfix,possible_guards,decl),uctx
+  let (_, _, sigma),(fix, _, _, _) = interp_recursive_evars env ~program_mode:false (false, CFixRecOrder rec_order) fixpoint_exprl in
+  let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
+  let typel = (ground_fixpoint env sigma fix).fixtypes in
+  let uctx = Evd.evar_universe_context sigma in
+  typel, uctx
 
-let build_recthms fixnames fixtypes fixctxs fiximps =
+let build_recthms {fixnames;fixtypes;fixctxs;fiximps} =
   List.map4 (fun name typ ctx impargs ->
       let args = List.map Context.Rel.Declaration.get_name ctx in
       Declare.CInfo.make ~name ~typ ~args ~impargs ()
     ) fixnames fixtypes fixctxs fiximps
 
-let declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes,fixctxs,fiximps),fix_kind,possible_guard,udecl) ~uctx ntns =
-  let cinfo = build_recthms fixnames fixtypes fixctxs fiximps in
-  let kind = Decls.IsDefinition fix_kind in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
-  match Option.List.map (fun x -> x) fixdefs with
-  | Some fixdefs ->
-    (* All bodies are defined *)
-    let _ : GlobRef.t list =
-      Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
-        ~possible_guard ~bodies:(fixdefs,fixrs) ?using ()
-    in
-    None
-  | None ->
-    (* At least one undefined body *)
-    let evd = Evd.from_ctx uctx in
-    let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
-      ~bodies:fixdefs ~possible_guard ?using evd in
-    Some lemma
+let collect_evars_of_term evd c ty =
+  Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
-let do_mutually_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) : Declare.Proof.t option =
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let fix, uctx = interp_recursive ?typing_flags (true, rec_order) fixl in
-  declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ~uctx ntns
+let out_def = function
+  | Some def -> def
+  | None -> CErrors.user_err Pp.(str "Program Fixpoint needs defined bodies.")
+
+let collect_evars env sigma rec_sign name def typ =
+  (* Generalize by the recursive prototypes  *)
+  let deps = collect_evars_of_term sigma def typ in
+  let evars, _, def, typ =
+    RetrieveObl.retrieve_obligations env name sigma
+      (List.length rec_sign) ~deps def typ in
+  (Some def, typ, evars)
+
+let finish_program env sigma rec_sign possible_guard {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns} =
+  (* Get the interesting evars, those that were not instantiated *)
+  let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env sigma in
+  (* Solve remaining evars *)
+  let sigma = Evarutil.nf_evar_map_undefined sigma in
+  let fixdefs = List.map out_def fixdefs in
+  (* An early check of guardedness before working on the obligations *)
+  let () =
+    let fixdecls =
+      Array.of_list (List.map2 (fun x r -> Context.make_annot (Name x) r) fixnames fixrs),
+      Array.of_list fixtypes,
+      Array.of_list fixdefs
+    in
+    ignore (Pretyping.esearch_guard env sigma possible_guard fixdecls) in
+  let fixdefs, fixtypes, obls = List.split3 (List.map3 (collect_evars env sigma rec_sign) fixnames fixdefs fixtypes) in
+  let fixrs = List.map (EConstr.ERelevance.kind sigma) fixrs in
+  sigma, {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns}, obls
+
+let finish_regular env sigma fix =
+  let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
+  sigma, ground_fixpoint env sigma fix, []
+
+let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl)
+  : Declare.OblState.t option * Declare.Proof.t option =
+  let env = Global.env () in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_recursive_evars env ~program_mode:(Option.has_some pm) (true, rec_order) fixl in
+  check_recursive ~isfix env sigma fix;
+  let kind = Decls.IsDefinition isfix in
+  let sigma, ({fixdefs=bodies;fixrs} as fix), obls =
+    match pm with
+    | Some pm -> finish_program env sigma rec_sign possible_guard fix
+    | None -> finish_regular env sigma fix in
+  let uctx = Evd.evar_universe_context sigma in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns:fix.fixntns () in
+  let cinfo = build_recthms fix in
+  match pm with
+  | Some pm ->
+    let bodies = List.map Option.get bodies in
+    Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None
+  | None ->
+    try
+      let bodies = List.map Option.get bodies in
+      (* All bodies are defined *)
+      let _ : GlobRef.t list =
+        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
+          ~possible_guard ~bodies:(bodies,fixrs) ?using ()
+      in
+      None, None
+    with Option.IsNone ->
+      (* At least one undefined body *)
+      let evd = Evd.from_ctx uctx in
+      let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
+          ~bodies ~possible_guard ?using evd in
+      None, Some lemma
