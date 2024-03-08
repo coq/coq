@@ -1,0 +1,12 @@
+File "./output/non_reversible_notation.v", line 2, characters 0-31:
+Warning: This notation contains Ltac expressions:
+it will not be used for printing. [non-reversible-notation,parsing,default]
+File "./output/non_reversible_notation.v", line 4, characters 0-27:
+Warning: This notation contains volatile casts:
+it will not be used for printing. [non-reversible-notation,parsing,default]
+1
+     : nat
+2
+     : nat
+baz
+     : nat

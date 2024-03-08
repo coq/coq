@@ -1,4 +1,4 @@
 File "./output/bug_17708.v", line 1, characters 0-35:
-Warning: This notation contains Ltac expressions: it will not be used for
-printing. [non-reversible-notation,parsing,default]
+Warning: This notation contains Ltac expressions:
+it will not be used for printing. [non-reversible-notation,parsing,default]
 Ltac foo := exact ltac:(exact 0)
