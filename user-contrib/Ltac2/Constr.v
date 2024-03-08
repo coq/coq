@@ -73,6 +73,12 @@ Ltac2 Type kind := [
 
 Ltac2 @ external kind : constr -> kind := "coq-core.plugins.ltac2" "constr_kind".
 
+Ltac2 rec kind_nocast c :=
+  match kind c with
+  | Cast c _ _ => kind_nocast c
+  | k => k
+  end.
+
 Ltac2 @ external make : kind -> constr := "coq-core.plugins.ltac2" "constr_make".
 
 Ltac2 @ external check : constr -> constr result := "coq-core.plugins.ltac2" "constr_check".
