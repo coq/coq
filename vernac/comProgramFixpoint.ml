@@ -204,8 +204,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
   let using =
-    let terms = [EConstr.of_constr evars_typ] in
-    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
+    let types = [EConstr.of_constr evars_typ] in
+    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~types) using
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
@@ -250,8 +250,8 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let fixdefs = List.map out_def fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
   let using =
-    let terms = fixtypes in
-    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
+    let types = fixtypes in
+    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~types) using in
   let () = if not cofix then begin
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
       (* XXX: are we allowed to have evars here? *)

@@ -273,8 +273,8 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
   let using =
     let env = Global.env() in
     let evd = Evd.from_env env in
-    let terms = List.map EConstr.of_constr fixtypes in
-    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
+    let types = List.map EConstr.of_constr fixtypes in
+    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~types) using in
   fix_kind, cofix, thms, using
 
 let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =

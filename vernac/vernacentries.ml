@@ -592,8 +592,8 @@ let vernac_set_used_variables pstate using : Declare.Proof.t =
   let sigma, _ = Declare.Proof.get_current_context pstate in
   let fixnames = Declare.Proof.get_recnames pstate in
   let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-  let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
-  let using = Proof_using.definition_using env sigma ~fixnames ~using ~terms in
+  let types = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
+  let using = Proof_using.definition_using env sigma ~fixnames ~using ~types in
   let _, pstate = Declare.Proof.set_used_variables pstate ~using in
   pstate
 
@@ -636,8 +636,8 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let using =
-    let terms = List.map Declare.CInfo.get_typ thms in
-    Option.map (fun using -> Proof_using.definition_using env0 evd ~fixnames:[] ~using ~terms) using in
+    let types = List.map Declare.CInfo.get_typ thms in
+    Option.map (fun using -> Proof_using.definition_using env0 evd ~fixnames:[] ~using ~types) using in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ?using () in
   match mut_analysis with
     | RecLemmas.NonMutual thm ->
