@@ -753,7 +753,7 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_guard 
   let fixdecls = CList.map_i (fun i _ -> select_body i body) 0 fixitems in
   vars, fixdecls, indexes
 
-let declare_mutually_recursive ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_guard =
+let declare_mutual_definition ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_guard =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; using; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_guard in
@@ -1276,7 +1276,7 @@ let declare_mutual_definition ~pm l =
   let rec_declaration = (Array.map2 Context.make_annot namevec rvec, arrrec, recvec) in
   (* Declare the recursive definitions *)
   let kns =
-    declare_mutually_recursive ~info:first.prg_info
+    declare_mutual_definition ~info:first.prg_info
       ~uctx:first.prg_uctx ~rec_declaration ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems
   in
