@@ -20,7 +20,7 @@ val definition_using
   -> Evd.evar_map
   -> fixnames:Names.Id.t list (* names of fixpoint occurring recursively, if any *)
   -> using:Vernacexpr.section_subset_expr
-  -> terms:EConstr.constr list
+  -> types:EConstr.constr list (* to interpret the "Type" value *)
   -> t
 
 val name_set : Names.Id.t -> Vernacexpr.section_subset_expr -> unit
