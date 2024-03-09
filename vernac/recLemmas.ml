@@ -63,11 +63,11 @@ let find_mutually_recursive_statements sigma thms =
       CErrors.user_err Pp.(str
          ("Cannot find common (mutual) inductive premises or coinductive" ^
           " conclusions in the statements."));
-    (Pretyping.{possibly_cofix; possible_fix_indices}, None)
+    Pretyping.{possibly_cofix; possible_fix_indices}
 
 type mutual_info =
   | NonMutual of EConstr.t Declare.CInfo.t
-  | Mutual of Declare.Proof.mutual_info
+  | Mutual of Pretyping.possible_guard
 
 let look_for_possibly_mutual_statements sigma thms : mutual_info =
   match thms with

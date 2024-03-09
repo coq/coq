@@ -212,13 +212,12 @@ module Proof : sig
     -> Evd.evar_map
     -> t
 
-  type mutual_info = Pretyping.possible_guard * Constr.t option list option
-
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
   val start_mutual_with_initialization
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> mutual_info:mutual_info
+    -> ?init_terms:Constr.t option list
+    -> possible_guard:Pretyping.possible_guard
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
