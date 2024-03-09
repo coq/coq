@@ -202,17 +202,17 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by the Lemma vernaculars *)
-  val start_with_initialization
+  val start_definition_with_initialization
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t
     -> Evd.evar_map
     -> t
 
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
-  val start_mutual_with_initialization
+  val start_mutual_definition_with_initialization
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> ?init_terms:Constr.t option list
+    -> ?bodies:Constr.t option list
     -> possible_guard:Pretyping.possible_guard
     -> Evd.evar_map
     -> t
