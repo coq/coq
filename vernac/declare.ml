@@ -1606,7 +1606,7 @@ let rec_tac_initializer (maybecofix, indices) thms =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_with_initialization ~info ~cinfo sigma =
+let start_definition_with_initialization ~info ~cinfo sigma =
   let { CInfo.name; typ; args } = cinfo in
   let init_tac = Tactics.auto_intros_tac args in
   let pinfo = Proof_info.make ~cinfo:[cinfo] ~info () in
@@ -1614,18 +1614,18 @@ let start_with_initialization ~info ~cinfo sigma =
   map lemma ~f:(fun p ->
       pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
-let start_mutual_with_initialization ~info ~cinfo ?init_terms ~possible_guard sigma =
+let start_mutual_definition_with_initialization ~info ~cinfo ?bodies ~possible_guard sigma =
   let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
   let init_tac =
     let rec_tac = rec_tac_initializer possible_guard cinfo in
     let term_tac =
-      match init_terms with
+      match bodies with
       | None ->
         List.map intro_tac cinfo
-      | Some init_terms ->
+      | Some bodies ->
         (* This is the case for hybrid proof mode / definition
            fixpoint, where terms for some constants are given with := *)
-        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) init_terms in
+        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) bodies in
         List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
     in
     Tacticals.tclTHENS rec_tac term_tac
