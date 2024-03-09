@@ -757,7 +757,7 @@ let mutual_make_bodies env ~typing_flags ~fixitems ~rec_declaration ~possible_gu
   let fixdecls = CList.map_i (fun i _ -> select_body i body) 0 fixitems in
   vars, fixdecls, indexes
 
-let declare_mutually_recursive ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_guard ?using () =
+let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_guard ?using () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
   let vars, fixdecls, indexes =
@@ -1297,7 +1297,7 @@ let declare_definition ~pm prg =
   let pm = progmap_remove pm prg in
   pm, kn
 
-let declare_mutual_definition ~pm l =
+let declare_mutual_definitions ~pm l =
   let len = List.length l in
   let first = List.hd l in
   let defobl x =
@@ -1330,7 +1330,7 @@ let declare_mutual_definition ~pm l =
   let rec_declaration = (Array.map2 Context.make_annot namevec rvec, arrrec, recvec) in
   (* Declare the recursive definitions *)
   let kns =
-    declare_mutually_recursive ~info:first.prg_info
+    declare_mutual_definitions ~info:first.prg_info
       ~uctx:first.prg_uctx ~rec_declaration ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems ?using:first.prg_using ()
   in
@@ -1361,7 +1361,7 @@ let update_obls ~pm prg obls rem =
         List.map (fun x -> CEphemeron.get (ProgMap.find x pm)) prg'.prg_deps
       in
       if List.for_all (fun x -> obligations_solved x) progs then
-        let pm, kn = declare_mutual_definition ~pm progs in
+        let pm, kn = declare_mutual_definitions ~pm progs in
         pm, Defined kn
       else pm, Dependent
 

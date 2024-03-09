@@ -288,7 +288,7 @@ let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?use
   let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
-    Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
+    Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
       ~possible_guard ~rec_declaration ?using ()
   in
   ()

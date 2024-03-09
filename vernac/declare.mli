@@ -131,7 +131,7 @@ val declare_definition
   -> Evd.evar_map
   -> GlobRef.t
 
-val declare_mutually_recursive
+val declare_mutual_definitions
   : info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
