@@ -1628,12 +1628,9 @@ let start_with_initialization ~info ~cinfo sigma =
   map lemma ~f:(fun p ->
       pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
-type mutual_info = Pretyping.possible_guard * Constr.t option list option
-
-let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma =
+let start_mutual_with_initialization ~info ~cinfo ?init_terms ~possible_guard sigma =
   let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
-  let init_tac, possible_guard =
-    let (possible_guard,init_terms) = mutual_info in
+  let init_tac =
     let rec_tac = rec_tac_initializer possible_guard cinfo in
     let term_tac =
       match init_terms with
@@ -1645,7 +1642,7 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma =
         let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) init_terms in
         List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
     in
-    Tacticals.tclTHENS rec_tac term_tac, possible_guard
+    Tacticals.tclTHENS rec_tac term_tac
   in
   match cinfo with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
@@ -2588,7 +2585,7 @@ let add_mutual_definitions ~pm ~info ?obl_hook ~uctx
       (fun pm (cinfo, b, obls) ->
         let prg =
           ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
-            ~possible_guard:(Some possible_guard) ~reduce ?obl_hook obls
+            ~possible_guard ~reduce ?obl_hook obls
         in
         State.add pm (CInfo.get_name cinfo) prg)
       pm l
