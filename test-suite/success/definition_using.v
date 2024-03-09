@@ -80,3 +80,43 @@ End B.
 Check c8 : forall a, c1 a = true -> bogus.
 Check c9 : forall a, c1 a = true -> bogus.
 Check c10: bogus -> bogus.
+
+Module TypeBehavior.
+
+Section S.
+Variables a : nat.
+#[using="Type", warning="-non-recursive"]
+Program Fixpoint b1 (n:nat) : nat := (fun _ => 0) a.
+Program Fixpoint b2 (n:nat) : (fun X _ => X) nat a := 0.
+Program Fixpoint b3 (n:nat) : (fun X _ => X) nat a := (fun _ => 0) a.
+Program Definition c1 : nat := (fun _ => 0) a.
+Program Definition c2 : (fun X _ => X) nat a := 0.
+Program Definition c3 : (fun X _ => X) nat a := (fun _ => 0) a.
+Fixpoint d1 (n:nat) : nat := (fun _ => 0) a.
+Fixpoint d2 (n:nat) : (fun X _ => X) nat a := 0.
+Fixpoint d3 (n:nat) : (fun X _ => X) nat a := (fun _ => 0) a.
+Definition e1 : nat := (fun _ => 0) a.
+Definition e2 : (fun X _ => X) nat a := 0.
+Definition e3 : (fun X _ => X) nat a := (fun _ => 0) a.
+End S.
+(* Not clear what is most expected below... *)
+
+(* Dependency in a with Program Fixpoint: the body is not reduced. *)
+Check b1 0 0 : nat.
+(* No dependency in a with Program Fixpoint, because both body and type are beta-reduced *)
+(* Why there is a difference with b1 is not clear *)
+Check b2 0 : nat.
+Check b3 0 : nat.
+(* With Program Definition, type is beta-reduced but not the body *)
+Check c1 0 : nat.
+Check c2 : nat.
+Check c3 0 : nat.
+(* With Definition/Fixpoint, neither body nor type are beta-reduced *)
+Check d1 0 0 : nat.
+Check d2 0 0 : nat.
+Check d3 0 0 : nat.
+Check e1 0 : nat.
+Check e2 0 : nat.
+Check e3 0 : nat.
+
+End TypeBehavior.
