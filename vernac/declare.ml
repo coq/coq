@@ -2540,11 +2540,11 @@ let msg_generating_obl name obls =
        info ++ str ", generating " ++ int len ++
        str (String.plural len " obligation"))
 
-let add_definition ~pm ~info ~cinfo ?obl_hook ?term ~uctx
-    ?tactic ?(reduce = reduce) ?(opaque = false) obls =
+let add_definition ~pm ~info ~cinfo ~opaque ~uctx ~body
+    ?tactic ?(reduce = reduce) ?obl_hook obls =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let prg =
-    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~deps:[] ~possible_guard:None ?obl_hook obls
+    ProgramDecl.make ~info ~cinfo ~body:(Some body) ~opaque ~uctx ~reduce ~deps:[] ~possible_guard:None ?obl_hook obls
   in
   let name = CInfo.get_name cinfo in
   let {obls;_} = Internal.get_obligations prg in
@@ -2562,19 +2562,19 @@ let add_definition ~pm ~info ~cinfo ?obl_hook ?term ~uctx
       pm, res
     | _ -> pm, res
 
-let add_mutual_definitions ~pm ~info ~cinfo ?obl_hook ~uctx
-    ?tactic ?(reduce = reduce) ?(opaque = false) ~possible_guard l =
+let add_mutual_definitions ~pm ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard
+    ?tactic ?(reduce = reduce) ?obl_hook obls =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let deps = List.map CInfo.get_name cinfo in
   let pm =
-    List.fold_left2
-      (fun pm cinfo (body, obls) ->
+    List.fold_left3
+      (fun pm cinfo body obls ->
         let prg =
           ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some body) ~uctx ~deps
             ~possible_guard:(Some possible_guard) ~reduce ?obl_hook obls
         in
         State.add pm (CInfo.get_name cinfo) prg)
-      pm cinfo l
+      pm cinfo bodies obls
   in
   let pm, _defined =
     List.fold_left

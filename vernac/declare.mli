@@ -132,7 +132,7 @@ val declare_definition
   -> GlobRef.t
 
 val declare_mutual_definition
-  : info:Info.t
+  :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
@@ -542,12 +542,12 @@ val add_definition :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t
-  -> ?obl_hook: OblState.t Hook.g
-  -> ?term:Constr.t
+  -> opaque:bool
   -> uctx:UState.t
+  -> body:Constr.t
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
+  -> ?obl_hook: OblState.t Hook.g
   -> RetrieveObl.obligation_info
   -> OblState.t * progress
 
@@ -559,13 +559,14 @@ val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t list
-  -> ?obl_hook: OblState.t Hook.g
+  -> opaque:bool
   -> uctx:UState.t
+  -> bodies:Constr.t list
+  -> possible_guard:Pretyping.possible_guard
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
-  -> possible_guard:Pretyping.possible_guard
-  -> (Constr.t * RetrieveObl.obligation_info) list
+  -> ?obl_hook: OblState.t Hook.g
+  -> RetrieveObl.obligation_info list
   -> OblState.t
 
 (** Implementation of the [Obligation] command *)
