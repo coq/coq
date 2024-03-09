@@ -136,7 +136,7 @@ val declare_mutual_definitions
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
-  -> rec_declaration:Constr.rec_declaration
+  -> bodies:(Constr.t list * Sorts.relevance list)
   -> possible_guard:Pretyping.possible_guard
   -> ?using:Vernacexpr.section_subset_expr
   -> unit

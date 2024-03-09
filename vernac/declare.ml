@@ -757,9 +757,17 @@ let mutual_make_bodies env ~typing_flags ~fixitems ~rec_declaration ~possible_gu
   let fixdecls = CList.map_i (fun i _ -> select_body i body) 0 fixitems in
   vars, fixdecls, indexes
 
-let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_guard ?using () =
+let prepare_recursive_declaration fixitems (fixdefs,fixrs) =
+  let fixnames = List.map (fun CInfo.{name} -> name) fixitems in
+  let names = List.map2 (fun CInfo.{name} r -> Context.make_annot (Name name) r) fixitems fixrs in
+  let fixtypes = List.map (fun CInfo.{typ} -> typ) fixitems in
+  let defs = List.map (Vars.subst_vars (List.rev fixnames)) fixdefs in
+  (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
+
+let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard ?using () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
+  let rec_declaration = prepare_recursive_declaration cinfo bodies in
   let vars, fixdecls, indexes =
     mutual_make_bodies env ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_guard in
   let uctx = UState.restrict uctx vars in
@@ -1321,17 +1329,13 @@ let declare_mutual_definitions ~pm l =
   in
   let defs, obls = List.split (List.map defobl l) in
   let obls = List.flatten obls in
-  let fixitems = List.map2 (fun (d, r, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+  let fixitems = List.map2 (fun (d, relevance, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixrs, fixtypes, _ = List.split4 defs in
   let possible_guard = Option.get first.prg_possible_guard in
-  let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
-  let rvec = Array.of_list fixrs in
-  let namevec = Array.of_list (List.map (fun x -> Name x.prg_cinfo.CInfo.name) l) in
-  let rec_declaration = (Array.map2 Context.make_annot namevec rvec, arrrec, recvec) in
   (* Declare the recursive definitions *)
   let kns =
     declare_mutual_definitions ~info:first.prg_info
-      ~uctx:first.prg_uctx ~rec_declaration ~possible_guard ~opaque:first.prg_opaque
+      ~uctx:first.prg_uctx ~bodies:(fixdefs, fixrs) ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems ?using:first.prg_using ()
   in
   (* Only for the first constant *)

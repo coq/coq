@@ -145,11 +145,6 @@ let interp_fix_body ~program_mode env_rec sigma impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
-let prepare_recursive_declaration fixnames fixrs fixtypes fixdefs =
-  let defs = List.map (Vars.subst_vars (List.rev fixnames)) fixdefs in
-  let names = List.map2 (fun id r -> Context.make_annot (Name id) r) fixnames fixrs in
-  (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
-
 (* Jump over let-bindings. *)
 
 let compute_possible_guardness_evidences (ctx,_,recindex) =
@@ -283,13 +278,12 @@ let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?use
   (* We shortcut the proof process *)
   let fix_kind, possible_guard, fixitems = build_recthms ~indexes fixnames fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
-  let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
     Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
-      ~possible_guard ~rec_declaration ?using ()
+      ~possible_guard ~bodies:(fixdefs,fixrs) ?using ()
   in
   ()
 
