@@ -205,7 +205,7 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by the Lemma vernaculars *)
-  val start_with_initialization
+  val start_definition
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t
     -> ?using:Vernacexpr.section_subset_expr
@@ -213,10 +213,10 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
-  val start_mutual_with_initialization
+  val start_mutual_definitions
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> ?init_terms:Constr.t option list
+    -> ?bodies:Constr.t option list
     -> possible_guard:Pretyping.possible_guard
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map

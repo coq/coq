@@ -271,8 +271,8 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ?clearbody ~poly ?typin
   let fix_kind, possible_guard, thms = build_recthms ~indexes fixnames fixtypes fiximps in
   let evd = Evd.from_ctx ctx in
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags ?user_warns ~ntns () in
-    Declare.Proof.start_mutual_with_initialization ~info ~cinfo:thms
-      ~init_terms:fixdefs ~possible_guard ?using evd
+    Declare.Proof.start_mutual_definitions ~info ~cinfo:thms
+      ~bodies:fixdefs ~possible_guard ?using evd
 
 let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
