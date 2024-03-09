@@ -234,12 +234,12 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evd
         (List.length rec_sign) ~deps def typ in
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-    (cinfo, def, evars)
+    (def, evars), typ
   in
   let fiximps = List.map pi2 info in
   let fixdefs = List.map out_def fixdefs in
-  let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
+  let defs, typs = List.split (List.map4 collect_evars fixnames fixdefs fixtypes fiximps) in
+  let cinfo = List.map3 (fun name typ impargs -> Declare.CInfo.make ~name ~typ ~impargs ()) fixnames typs fiximps in
   let possible_guard =
     if cofix then Pretyping.{possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) info}
     else Pretyping.{possibly_cofix = false; possible_fix_indices = List.map ComFixpoint.compute_possible_guardness_evidences info} in
@@ -256,7 +256,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let kind = Decls.(IsDefinition kind) in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns () in
-  Declare.Obls.add_mutual_definitions ~pm ~info ~uctx ?using ~possible_guard defs
+  Declare.Obls.add_mutual_definitions ~pm ~info ~cinfo ~uctx ?using ~possible_guard defs
 
 let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in

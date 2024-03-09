@@ -536,8 +536,8 @@ val prepare_obligations
    also register [c] with the kernel. *)
 val add_definition :
      pm:OblState.t
-  -> cinfo:Constr.types CInfo.t
   -> info:Info.t
+  -> cinfo:Constr.types CInfo.t
   -> ?obl_hook: OblState.t Hook.g
   -> ?term:Constr.t
   -> uctx:UState.t
@@ -555,6 +555,7 @@ val add_definition :
 val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
+  -> cinfo:Constr.types CInfo.t list
   -> ?obl_hook: OblState.t Hook.g
   -> uctx:UState.t
   -> ?tactic:unit Proofview.tactic
@@ -562,7 +563,7 @@ val add_mutual_definitions :
   -> ?opaque:bool
   -> ?using:Vernacexpr.section_subset_expr
   -> possible_guard:Pretyping.possible_guard
-  -> (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
+  -> (Constr.t * RetrieveObl.obligation_info) list
   -> OblState.t
 
 (** Implementation of the [Obligation] command *)

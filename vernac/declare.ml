@@ -2627,7 +2627,7 @@ let msg_generating_obl name obls =
        info ++ str ", generating " ++ int len ++
        str (String.plural len " obligation"))
 
-let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
+let add_definition ~pm ~info ~cinfo ?obl_hook ?term ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) ?using obls =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let prg =
@@ -2649,22 +2649,22 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
       pm, res
     | _ -> pm, res
 
-let add_mutual_definitions ~pm ~info ?obl_hook ~uctx
+let add_mutual_definitions ~pm ~info ~cinfo ?obl_hook ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) ?using ~possible_guard l =
   let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
-  let deps = List.map (fun (ci,_,_) -> CInfo.get_name ci) l in
+  let deps = List.map CInfo.get_name cinfo in
   let pm =
     (* EJGA: Note that here we duplicate the using declaration for all
        the new entries in the obligation map, that seems the right
        thing to do? *)
-    List.fold_left
-      (fun pm (cinfo, b, obls) ->
+    List.fold_left2
+      (fun pm cinfo (body, obls) ->
         let prg =
-          ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
+          ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some body) ~uctx ~deps
             ~possible_guard:(Some possible_guard) ~reduce ?obl_hook ?using obls
         in
         State.add pm (CInfo.get_name cinfo) prg)
-      pm l
+      pm cinfo l
   in
   let pm, _defined =
     List.fold_left
