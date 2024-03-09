@@ -136,7 +136,7 @@ val declare_mutual_definition
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
-  -> rec_declaration:Constr.rec_declaration
+  -> bodies:(Constr.t list * Sorts.relevance list)
   -> possible_guard:Pretyping.possible_guard
   -> Names.GlobRef.t list
 
