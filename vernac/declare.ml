@@ -1319,23 +1319,10 @@ let declare_mutual_definition ~pm l =
     let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
     (def, oblsubst)
   in
-  let defs, obls =
-    List.fold_right
-      (fun x (defs, obls) ->
-        let xdef, xobls = defobl x in
-        (xdef :: defs, xobls @ obls))
-      l ([], [])
-  in
-  (*   let fixdefs = List.map reduce_fix fixdefs in *)
-  let fixdefs, fixrs, fixtypes, fixitems =
-    List.fold_right2
-      (fun (d, r, typ, impargs) name (a1, a2, a3, a4) ->
-        ( d :: a1
-        , r :: a2
-        , typ :: a3
-        , (CInfo.make ~name ~typ ~impargs ()) :: a4 ))
-      defs first.prg_deps ([], [], [], [])
-  in
+  let defs, obls = List.split (List.map defobl l) in
+  let obls = List.flatten obls in
+  let fixitems = List.map2 (fun (d, r, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+  let fixdefs, fixrs, fixtypes, _ = List.split4 defs in
   let possible_guard = Option.get first.prg_possible_guard in
   let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
   let rvec = Array.of_list fixrs in
