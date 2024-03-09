@@ -72,19 +72,23 @@ let evaluable_named id env ts =
 let evaluable_projection p _env ts =
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts (Projection.repr p))
 
+type constr_res = (term_label * partial_constr list) lookup_res
+and partial_constr =
+  | Constr of EConstr.t
+  | PartialConstr of constr_res
+
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
    this specification. TODO: try to make them follow the spec. *)
-
-let constr_val_discr env sigma ts t =
+let constr_val_discr env sigma ts t : constr_res =
   (* Should we perform weak βι here? *)
   let open GlobRef in
-  let rec decomp stack t =
+  let rec decomp_aux (stack : partial_constr list) (t : EConstr.t) : constr_res =
     match EConstr.kind sigma (eta_reduce sigma t) with
-    | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
+    | App (f,l) -> decomp_aux (Array.fold_right (fun a l -> Constr a::l) l stack) f
     | Proj (p,_,c) when evaluable_projection p env ts -> Everything
-    | Proj (p,_,c) -> Label(ProjLabel p, c :: stack)
-    | Cast (c,_,_) -> decomp stack c
+    | Proj (p,_,c) -> Label(ProjLabel p, Constr c :: stack)
+    | Cast (c,_,_) -> decomp_aux stack c
     | Const (c,_) when evaluable_constant c env ts -> Everything
     | Const (c,_) ->
       let c = Environ.QConstant.canonize env c in
@@ -97,13 +101,14 @@ let constr_val_discr env sigma ts t =
       Label(GRLabel (ConstructRef cstr_sp), stack)
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
-    | Prod (n,d,c) -> Label(ProdLabel, [d; c])
+    | Prod (n,d,c) -> Label(ProdLabel, [Constr d; Constr c])
     | Lambda (_,d,c) when List.is_empty stack ->
       begin
         (* Check if the [t] could possibly unify with [fun x => f x].
            Only return [LamLabel] if that is impossible! *)
-        match decomp stack c with
-        | Label _ | Nothing -> Label(LamLabel, d :: c :: stack)
+        match decomp_aux stack c with
+        | Label (_, _) as res -> Label(LamLabel, Constr d :: PartialConstr res :: stack)
+        | Nothing as res -> Label(LamLabel, Constr d :: PartialConstr res :: stack)
         | Everything -> Everything
       end
     | Lambda _ -> Everything
@@ -111,23 +116,33 @@ let constr_val_discr env sigma ts t =
     | Evar _ -> Everything
     | Case (_, _, _, _, _, c, _) ->
       begin
-        match decomp stack c with
+        match decomp_aux stack c with
         | Label (GRLabel (ConstructRef _), _) -> Everything (* over-approximating w.r.t. [fMATCH] *)
-        | Label _  | Nothing -> Label(CaseLabel, c :: stack)
+        | (Label _ | Nothing) as res -> Label(CaseLabel, PartialConstr res :: stack)
         | Everything -> Everything
       end
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | Array _ -> Nothing
+  and decomp (stack : partial_constr list) (t : partial_constr) : constr_res =
+    match t with
+    | Constr t -> decomp_aux stack t
+    | PartialConstr res -> res
   in
   decomp [] t
 
-let constr_pat_discr env ts p =
+
+type pat_res = (term_label * partial_pat list) option
+and partial_pat =
+  | Pattern of constr_pattern
+  | PartialPat of pat_res
+
+let constr_pat_discr env ts p : pat_res =
   let open GlobRef in
-  let rec decomp stack p =
+  let rec decomp_aux (stack : partial_pat list) (p : constr_pattern) : pat_res =
     match eta_reduce_pat p with
-    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+    | PApp (f,args) -> decomp_aux ((List.map (fun p -> Pattern p) @@ Array.to_list args) @ stack) f
     | PProj (p,c) when evaluable_projection p env ts -> None
-    | PProj (p,c) -> Some (ProjLabel p, c :: stack)
+    | PProj (p,c) -> Some (ProjLabel p, Pattern c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
@@ -140,33 +155,37 @@ let constr_pat_discr env ts p =
       Some (GRLabel ref, stack)
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
-    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
     | PLambda (_,d,c) when List.is_empty stack ->
       begin
         (* Check if the [t] could possibly unify with [fun x => f x].
            Only return [LamLabel] if that is impossible! *)
-        match decomp stack c with
-        | Some _ -> Some (LamLabel, d :: c :: stack)
+        match decomp_aux stack c with
+        | Some _ as res -> Some (LamLabel, Pattern d :: PartialPat res :: stack)
         | None -> None
       end
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
-        match decomp stack p with
+        match decomp_aux stack p with
         | Some (GRLabel (ConstructRef _), _) -> None (* over-approximating w.r.t. [fMATCH] *)
-        | Some _ -> Some (CaseLabel, p :: stack)
+        | Some _ as res -> Some (CaseLabel, PartialPat res :: stack)
         | None -> None
       end
     | _ -> None
+  and decomp (stack : partial_pat list) (t : partial_pat) : pat_res =
+    match t with
+    | Pattern p -> decomp_aux stack p
+    | PartialPat res -> res
   in
   decomp [] p
 
 let constr_pat_discr_syntactic env p =
   let open GlobRef in
-  let rec decomp stack p =
+  let rec decomp_aux (stack : partial_pat list) (p : constr_pattern) : pat_res =
     match eta_reduce_pat p with
-    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
-    | PProj (p,c) -> Some (ProjLabel p, c :: stack)
+    | PApp (f,args) -> decomp_aux ((List.map (fun p -> Pattern p) @@ Array.to_list args) @ stack) f
+    | PProj (p,c) -> Some (ProjLabel p, Pattern c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
@@ -176,18 +195,22 @@ let constr_pat_discr_syntactic env p =
       let ref = Environ.QGlobRef.canonize env ref in
       Some (GRLabel ref, stack)
     | PVar v -> Some (GRLabel (VarRef v), stack)
-    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
     | PLambda (_,d,c) when List.is_empty stack ->
       begin
         (* Check if the [t] could possibly unify with [fun x => f x].
            Only return [LamLabel] if that is impossible! *)
-        match decomp stack c with
-        | Some _ -> Some (LamLabel, d :: c :: stack)
+        match decomp_aux stack c with
+        | Some _ as res -> Some (LamLabel, Pattern d :: PartialPat res :: stack)
         | None -> None
       end
     | PSort s when stack = [] -> Some (SortLabel, [])
-    | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, p :: stack)
+    | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, Pattern p :: stack)
     | _ -> None
+  and decomp (stack : partial_pat list) (t : partial_pat) : pat_res =
+    match t with
+    | Pattern p -> decomp_aux stack p
+    | PartialPat res -> res
   in
   decomp [] p
 
@@ -227,23 +250,23 @@ struct
   type pattern = Dn.pattern
 
   let pattern env st pat =
-    Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
+    Dn.pattern (bounded_constr_pat_discr env st) (Pattern pat, !dnet_depth)
 
   let pattern_syntactic env pat =
-    Dn.pattern (bounded_constr_pat_discr_syntactic env) (pat, !dnet_depth)
+    Dn.pattern (bounded_constr_pat_discr_syntactic env) (Pattern pat, !dnet_depth)
 
   let constr_pattern env sigma st pat =
     let mk p = match bounded_constr_val_discr env st sigma p with
     | Label l -> Some l
     | Everything | Nothing -> None
     in
-    Dn.pattern mk (pat, !dnet_depth)
+    Dn.pattern mk (Constr pat, !dnet_depth)
 
   let empty = Dn.empty
   let add = Dn.add
   let rmv = Dn.rmv
 
   let lookup env sigma st dn t =
-    Dn.lookup dn (bounded_constr_val_discr env st sigma) (t,!dnet_depth)
+    Dn.lookup dn (bounded_constr_val_discr env st sigma) (Constr t,!dnet_depth)
 
 end
