@@ -228,8 +228,8 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
-    let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
+    let def = nf_evar evd def in
+    let typ = nf_evar evd typ in
     let deps = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evd

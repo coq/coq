@@ -1306,7 +1306,6 @@ let declare_definition ~pm prg =
   pm, kn
 
 let declare_mutual_definitions ~pm l =
-  let len = List.length l in
   let first = List.hd l in
   let defobl x =
     let oblsubst = obligation_substitution true x in
@@ -1314,12 +1313,8 @@ let declare_mutual_definitions ~pm l =
     let env = Global.env () in
     let sigma = Evd.from_ctx x.prg_uctx in
     let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
-    let term =
-      snd (Reductionops.whd_decompose_lambda_n env sigma len (EConstr.of_constr subs))
-    in
-    let typ =
-      snd (Reductionops.whd_decompose_prod_n env sigma len (EConstr.of_constr typ))
-    in
+    let term = EConstr.of_constr subs in
+    let typ = EConstr.of_constr typ in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in
     let r = EConstr.ERelevance.kind sigma r in
