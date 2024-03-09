@@ -311,12 +311,13 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evd
         (List.length rec_sign) ~deps def typ in
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-    (cinfo, def, evars)
+    (def, evars), typ
   in
   let fiximps = List.map pi2 info in
   let fixdefs = List.map out_def fixdefs in
-  let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
+  let defs, typs = List.split (List.map4 collect_evars fixnames fixdefs fixtypes fiximps) in
+  let cinfo = List.map3 (fun name typ impargs -> Declare.CInfo.make ~name ~typ ~impargs ()) fixnames typs fiximps in
+
   let using =
     let terms = fixdefs @ fixtypes in
     Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
@@ -336,7 +337,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let kind = Decls.(IsDefinition kind) in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns ?using () in
-  Declare.Obls.add_mutual_definitions ~pm ~info ~uctx ~possible_guard defs
+  Declare.Obls.add_mutual_definitions ~pm ~info ~cinfo ~uctx ~possible_guard defs
 
 let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
