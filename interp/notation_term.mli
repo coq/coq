@@ -110,7 +110,12 @@ type interpretation =
     (Id.t * (extended_subscopes * notation_var_binders * notation_var_instance_type)) list *
     notation_constr
 
-type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t list
+type forgetfulness = { forget_ltac : bool; forget_volatile_cast : bool }
+
+type reversibility_status =
+  | APrioriReversible
+  | Forgetful of forgetfulness
+  | NonInjective of Id.t list
 
 type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;

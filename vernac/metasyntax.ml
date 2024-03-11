@@ -1230,10 +1230,18 @@ let warn_notation_bound_to_variable =
 
 let warn_non_reversible_notation =
   CWarnings.create ~name:"non-reversible-notation" ~category:CWarnings.CoreCategories.parsing
-         (function
+         (function[@warning "+9"]
           | APrioriReversible -> assert false
-          | HasLtac ->
-             strbrk "This notation contains Ltac expressions: it will not be used for printing."
+          | Forgetful {
+              forget_ltac=ltac;
+              forget_volatile_cast=cast;
+            } ->
+            let what = (if ltac then ["Ltac expressions"] else [])
+                       @ (if cast then ["volatile casts"] else [])
+            in
+            strbrk "This notation contains " ++
+            prlist_with_sep (fun () -> strbrk " and ") str what ++ str ":" ++ spc() ++
+            str "it will not be used for printing."
           | NonInjective ids ->
              let n = List.length ids in
              strbrk (String.plural n "Variable") ++ spc () ++ pr_enum Id.print ids ++ spc () ++

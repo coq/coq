@@ -643,7 +643,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
 
 let notation_constr_and_vars_of_glob_constr recvars a =
   let found = ref { vars = []; recursive_term_vars = []; recursive_binders_vars = [] } in
-  let has_ltac = ref false in
+  let forgetful = ref { forget_ltac = false; forget_volatile_cast = false } in
   (* Turn a glob_constr into a notation_constr by first trying to find a recursive pattern *)
   let rec aux c =
     let keepfound = !found in
@@ -697,12 +697,14 @@ let notation_constr_and_vars_of_glob_constr recvars a =
            user_err Pp.(str "Binders marked as implicit not allowed in notations.");
          add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
-  | GCast (c,k,t) -> NCast (aux c, k, aux t)
+  | GCast (c,k,t) ->
+    if Option.is_empty k then forgetful := { !forgetful with forget_volatile_cast = true };
+    NCast (aux c, k, aux t)
   | GSort s -> NSort s
   | GInt i -> NInt i
   | GFloat f -> NFloat f
   | GHole w -> NHole w
-  | GGenarg arg -> has_ltac := true; NGenarg arg
+  | GGenarg arg -> forgetful := { !forgetful with forget_ltac = true }; NGenarg arg
   | GRef (r,u) -> NRef (r,u)
   | GArray (_u,t,def,ty) -> NArray (Array.map aux t, aux def, aux ty)
   | GEvar _ | GPatVar _ ->
@@ -714,7 +716,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   in
   let t = aux a in
   (* Side effect *)
-  t, !found, !has_ltac
+  t, !found, !forgetful
 
 let check_variables_and_reversibility nenv
   { vars = found; recursive_term_vars = foundrec; recursive_binders_vars = foundrecbinding } =
@@ -763,11 +765,15 @@ let check_variables_and_reversibility nenv
   Id.Map.iter check_type vars;
   List.rev !injective
 
+let[@warning "+9"] is_forgetful { forget_ltac; forget_volatile_cast } =
+  forget_ltac || forget_volatile_cast
+
 let notation_constr_of_glob_constr nenv a =
   let recvars = Id.Map.bindings nenv.ninterp_rec_vars in
-  let a, found, has_ltac = notation_constr_and_vars_of_glob_constr recvars a in
+  let a, found, forgetful = notation_constr_and_vars_of_glob_constr recvars a in
   let injective = check_variables_and_reversibility nenv found in
-  let status = if has_ltac then HasLtac else match injective with
+  let status = if is_forgetful forgetful then Forgetful forgetful
+    else match injective with
   | [] -> APrioriReversible
   | l -> NonInjective l in
   a, status
