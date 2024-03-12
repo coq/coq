@@ -43,3 +43,10 @@ let combine_related_data data =
           else die "Mismatch between %s and %s (measurement %d)\n" fname0 fname (i+1))
       in
       loc0, data)
+
+let read_whole_file f =
+  let sourcelen = (Unix.stat f).st_size in
+  let ch = try open_in f with Sys_error e -> die "Could not open %s: %s" f e in
+  let s = really_input_string ch sourcelen in
+  close_in ch;
+  s

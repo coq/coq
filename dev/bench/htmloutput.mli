@@ -8,23 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type char_loc = {
-  start_char : int;
-  stop_char : int;
-}
+(** A measurement, with the original printed string and an exact rational representation *)
+type measure = { str: string; q: Q.t; }
 
-val same_char_locs : char_loc -> char_loc -> bool
+val output : out_channel -> vname:string ->
+  data_files:string array ->
+  (BenchUtil.source_loc * measure array) array -> unit
 
-type source_loc = {
-  chars : char_loc;
-  line : int;
-  text : string;
-}
-
-val same_source_locs : source_loc -> source_loc -> bool
-
-val combine_related_data : (string * (source_loc * 'a) array) array -> (source_loc * 'a array) array
-(** Combine data from multiple files about the same source, ensuring
-    that the locations do not have inconsistencies. *)
-
-val read_whole_file : string -> string
+val max_data_count : int
+(** Max length supported for the inner [measure array]. *)

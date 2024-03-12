@@ -15,7 +15,7 @@
 
 (library
  (name benchlib)
- (modules benchUtil sourcehandler timelogparser)
+ (modules benchUtil sourcehandler timelogparser htmloutput)
  (libraries unix str clib zarith))
 
 (executable
