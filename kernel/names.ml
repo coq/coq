@@ -921,7 +921,9 @@ struct
       let ind = fst p.proj_ind in
       let ind' = f ind in
       if ind == ind' then p
-      else {p with proj_ind = (ind',snd p.proj_ind)}
+      else
+        let proj_name = KerPair.change_label ind' (label p) in
+        {p with proj_ind = (ind',snd p.proj_ind); proj_name}
 
     let to_string p = Constant.to_string (constant p)
     let print p = Constant.print (constant p)
