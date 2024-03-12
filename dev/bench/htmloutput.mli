@@ -8,12 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** A measurement, with the original printed string and an exact rational representation *)
-type measure = { str: string; q: Q.t; }
-
 val output : out_channel -> vname:string ->
   data_files:string array ->
-  (BenchUtil.source_loc * measure array) array -> unit
+  (BenchUtil.source_loc * BenchUtil.measure array) array -> unit
 
 val max_data_count : int
 (** Max length supported for the inner [measure array]. *)

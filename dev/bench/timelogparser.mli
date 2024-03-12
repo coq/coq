@@ -8,6 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type raw_time = { timestr : string }
-
-val parse : file:string -> (BenchUtil.char_loc * raw_time) list
+val parse : file:string -> (BenchUtil.char_loc * BenchUtil.measure) list

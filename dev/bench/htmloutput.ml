@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open BenchUtil
+
 let colors = [|"#F08080"; "#EEE8AA"; "#98FB98"|]
 
 let max_data_count = Array.length colors
@@ -22,8 +24,6 @@ let htmlescape =
     | _ -> assert false
   in
   fun s -> Str.global_substitute r subst s
-
-type measure = { str: string; q: Q.t; }
 
 let percentage ~max:m v =
   Q.to_float Q.(v * of_int 100 / m)
@@ -112,7 +112,7 @@ let line_id fmt l =
   end
 in
 
-let () = all_data |> Array.iteri (fun j ((loc:BenchUtil.source_loc),time) ->
+let () = all_data |> Array.iteri (fun j (loc,time) ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 

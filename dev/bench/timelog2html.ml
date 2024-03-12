@@ -27,18 +27,13 @@ let source = BenchUtil.read_whole_file vfile
 
 let file_data data_file =
   let data = Timelogparser.parse ~file:data_file in
-  let data = data |> List.map (fun (loc,{Timelogparser.timestr}) ->
-      loc, { Htmloutput.str = timestr; q = Q.of_string timestr })
-  in
   data_file, CArray.of_list data
 
 let all_data = Array.map file_data data_files
 
 let all_data = BenchUtil.combine_related_data all_data
 
-let dummy_measure = { Htmloutput.str="0"; q=Q.zero; }
-
-let dummy = Array.make (Array.length data_files) dummy_measure
+let dummy = Array.make (Array.length data_files) BenchUtil.dummy_measure
 
 let all_data = Array.of_list (Sourcehandler.join_to_source ~dummy ~source (Array.to_list all_data))
 

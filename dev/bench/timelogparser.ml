@@ -10,8 +10,6 @@
 
 open BenchUtil
 
-type raw_time = { timestr : string }
-
 let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
 
 let rec parse_loop filech acc =
@@ -25,7 +23,7 @@ let rec parse_loop filech acc =
       let b = int_of_string @@ Str.matched_group 1 l
       and e = int_of_string @@ Str.matched_group 2 l
       and t = Str.matched_group 3 l in
-      let v = { start_char = b; stop_char = e; }, { timestr = t } in
+      let v = { start_char = b; stop_char = e; }, { str = t; q = Q.of_string t } in
       parse_loop filech (v :: acc)
 
 let parse ~file =

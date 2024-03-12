@@ -23,6 +23,10 @@ type source_loc = {
 
 let same_char_locs a b = a.start_char = b.start_char && a.stop_char = b.stop_char
 
+type measure = { str: string; q: Q.t; }
+
+let dummy_measure = { str="0"; q=Q.zero; }
+
 let combine_related_data data =
   let nvals = Array.length (snd (data.(0))) in
   let fname0, data0 = data.(0) in

@@ -19,6 +19,11 @@ type source_loc = {
   text : string;
 }
 
+(** A measurement, with the original printed string and an exact rational representation *)
+type measure = { str: string; q: Q.t; }
+
+val dummy_measure : measure
+
 val combine_related_data : (string * (char_loc * 'a) array) array -> (char_loc * 'a array) array
 (** Combine data from multiple files about the same source, ensuring
     that the locations do not have inconsistencies. *)
