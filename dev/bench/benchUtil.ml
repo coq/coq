@@ -23,9 +23,6 @@ type source_loc = {
 
 let same_char_locs a b = a.start_char = b.start_char && a.stop_char = b.stop_char
 
-(* [line] and [text] are derived data using the same [source] so no need to check them *)
-let same_source_locs a b = same_char_locs a.chars b.chars
-
 let combine_related_data data =
   let nvals = Array.length (snd (data.(0))) in
   let fname0, data0 = data.(0) in
@@ -39,7 +36,7 @@ let combine_related_data data =
       let loc0, _ = data0.(i) in
       let data = data |> Array.map (fun (fname, fdata) ->
           let floc, v = fdata.(i) in
-          if same_source_locs loc0 floc then v
+          if same_char_locs loc0 floc then v
           else die "Mismatch between %s and %s (measurement %d)\n" fname0 fname (i+1))
       in
       loc0, data)

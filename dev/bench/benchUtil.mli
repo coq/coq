@@ -13,17 +13,13 @@ type char_loc = {
   stop_char : int;
 }
 
-val same_char_locs : char_loc -> char_loc -> bool
-
 type source_loc = {
   chars : char_loc;
   line : int;
   text : string;
 }
 
-val same_source_locs : source_loc -> source_loc -> bool
-
-val combine_related_data : (string * (source_loc * 'a) array) array -> (source_loc * 'a array) array
+val combine_related_data : (string * (char_loc * 'a) array) array -> (char_loc * 'a array) array
 (** Combine data from multiple files about the same source, ensuring
     that the locations do not have inconsistencies. *)
 

@@ -25,20 +25,22 @@ let data_files = Array.sub Sys.argv 2 (Array.length Sys.argv - 2)
 
 let source = BenchUtil.read_whole_file vfile
 
-let dummy = { Htmloutput.str="0"; q=Q.zero; }
-
 let file_data data_file =
   let data = Timelogparser.parse ~file:data_file in
   let data = data |> List.map (fun (loc,{Timelogparser.timestr}) ->
       loc, { Htmloutput.str = timestr; q = Q.of_string timestr })
   in
-  (* XXX should we join_to_source after combine_related_data? *)
-  let data = Sourcehandler.join_to_source ~dummy ~source data in
   data_file, CArray.of_list data
 
 let all_data = Array.map file_data data_files
 
 let all_data = BenchUtil.combine_related_data all_data
+
+let dummy_measure = { Htmloutput.str="0"; q=Q.zero; }
+
+let dummy = Array.make (Array.length data_files) dummy_measure
+
+let all_data = Array.of_list (Sourcehandler.join_to_source ~dummy ~source (Array.to_list all_data))
 
 let vname = Filename.basename vfile
 
