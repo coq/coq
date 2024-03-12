@@ -171,12 +171,16 @@ before_script:
     - cd _install_ci || exit 0
     - find lib/coq/ -name '*.vo' -fprint0 vofiles
     - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
+    - xargs -0 --arg-file=vofiles bin/coqchk -o -bytecode-compiler yes -m -coqlib lib/coq/ > ../coqchk-vm.log 2>&1 || touch coqchk-vm.failed
     - tail -n 1000 ../coqchk.log # the log is too big for gitlab so pipe to a file and display the tail
+    - tail -n 100 ../coqchk-vm.log # the log is too big for gitlab so pipe to a file and display the tail
     - "[ ! -f coqchk.failed ]" # needs quoting for yml syntax reasons
+    - "[ ! -f coqchk-vm.failed ]" # needs quoting for yml syntax reasons
   artifacts:
     name: "$CI_JOB_NAME.logs"
     paths:
       - coqchk.log
+      - coqchk-vm.log
     expire_in: 2 months
 
 # This template defaults to "needs: build:base"
