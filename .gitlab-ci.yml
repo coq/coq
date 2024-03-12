@@ -667,7 +667,6 @@ library:ci-fiat_crypto:
 
 library:ci-fiat_crypto_legacy:
   extends: .ci-template-flambda
-  allow_failure: true # See https://github.com/coq/coq/wiki/Coq-Call-2020-06-24#adding-back-fiat-crypto-legacy
   timeout: 1h 30min
 
 # We cannot use flambda due to
