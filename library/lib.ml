@@ -682,10 +682,12 @@ let end_compilation dir =
 
 (** Compatibility layer *)
 let init () =
+  NewProfile.profile "Lib.init" (fun () ->
   Synterp.init ();
   Interp.init ();
   Summary.Synterp.init_summaries ();
-  Summary.Interp.init_summaries ()
+  Summary.Interp.init_summaries ())
+    ()
 
 let open_section id =
   Synterp.open_section id;

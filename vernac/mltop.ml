@@ -257,10 +257,12 @@ let load_module x = match !load with
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
+  NewProfile.profile "add_ml_dir" (fun () ->
   match !load with
     | WithTop t -> t.add_dir s; keep_copy_mlpath s
     | WithoutTop when has_dynlink -> keep_copy_mlpath s
-    | _ -> ()
+    | _ -> ())
+    ()
 
 (** Is the ML code of the standard library placed into loadable plugins
     or statically compiled into coqtop ? For the moment this choice is

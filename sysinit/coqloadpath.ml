@@ -89,3 +89,8 @@ let init_load_path ~coqenv =
     List.concat misc_vo
   in
   ml_loadpath, vo_loadpath
+
+let init_load_path ~coqenv =
+  NewProfile.profile "Coqloadpath.init_load_path" (fun () ->
+      init_load_path ~coqenv)
+    ()

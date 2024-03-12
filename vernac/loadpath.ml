@@ -272,6 +272,11 @@ let locate_qualified_library ?root qid :
       Ok (library, file)
     | Error _ as e -> e
 
+let locate_qualified_library ?root qid =
+  NewProfile.profile "locate_qualified_library" (fun () ->
+      locate_qualified_library ?root qid)
+    ()
+
 let error_unmapped_dir qid =
   let prefix, _ = Libnames.repr_qualid qid in
   CErrors.user_err
@@ -360,3 +365,15 @@ let add_vo_path lp =
     add_load_path root unix_path ~implicit lp.coq_path
   else
     warn_cannot_open_path unix_path
+
+let json_path p = [
+  "unix_path", `String p.unix_path;
+  "implicit", `String (string_of_bool p.implicit);
+  "has_ml", `String (string_of_bool p.has_ml);
+  "recursive", `String (string_of_bool p.recursive);
+]
+
+let add_vo_path p =
+  NewProfile.profile "add_vo_path" ~args:(fun () -> json_path p) (fun () ->
+      add_vo_path p)
+    ()

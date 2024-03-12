@@ -1473,13 +1473,14 @@ let register_library dir (objs:library_objects) =
   SynterpVisitor.do_module SynterpVisitor.load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
 let import_modules ~export mpl =
+NewProfile.profile "Synterp.import" (fun () ->
   let _,objs = SynterpVisitor.collect_modules mpl (MPmap.empty, []) in
   List.iter (fun (f,o) -> SynterpVisitor.open_object f 1 o) objs;
   match export with
   | Lib.Import -> ()
   | Lib.Export ->
     let entry = ExportObject { mpl } in
-    Lib.Synterp.add_leaf_entry entry
+    Lib.Synterp.add_leaf_entry entry) ()
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]
@@ -1565,13 +1566,14 @@ let register_library dir cenv (objs:library_objects) digest univ vmtab =
   InterpVisitor.do_module InterpVisitor.load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
 let import_modules ~export mpl =
+NewProfile.profile "Interp.import" (fun () ->
   let _,objs = InterpVisitor.collect_modules mpl (MPmap.empty, []) in
   List.iter (fun (f,o) -> InterpVisitor.open_object f 1 o) objs;
   match export with
   | Lib.Import -> ()
   | Lib.Export ->
     let entry = ExportObject { mpl } in
-    Lib.Interp.add_leaf_entry entry
+    Lib.Interp.add_leaf_entry entry) ()
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]

@@ -293,6 +293,12 @@ let intern_from_file ?loc lib_resolver dir =
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
   lsd, lmd, digest_lmd, univs, digest_u, del_opaque, vmlib
 
+let intern_from_file ?loc reso dir =
+  NewProfile.profile "intern_from_file"
+    ~args:(fun () -> ["dp", `String (DirPath.to_string dir)]) (fun () ->
+      intern_from_file ?loc reso dir)
+    ()
+
 let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
   try find_library dir, acc
@@ -352,6 +358,8 @@ let native_name_from_filename f =
 *)
 
 let register_library m =
+  NewProfile.profile "register_library"
+    ~args:(fun () -> ["libname", `String (DirPath.to_string m.library_name)]) (fun () ->
   let l = m.library_data in
   Declaremods.Interp.register_library
     m.library_name
@@ -361,14 +369,17 @@ let register_library m =
     m.library_extra_univs
     m.library_vm
   ;
-  register_native_library m.library_name
+  register_native_library m.library_name) ()
 
 let register_library_syntax m =
+  NewProfile.profile "register_library_syntax"
+    ~args:(fun () -> ["libname", `String (DirPath.to_string m.library_name)]) (fun () ->
   let l = m.library_data in
   Declaremods.Synterp.register_library
     m.library_name
     l.md_syntax_objects;
-  register_loaded_library (mk_summary m)
+  register_loaded_library (mk_summary m))
+    ()
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in

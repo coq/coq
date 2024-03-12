@@ -307,6 +307,11 @@ let synterp_require from export qidl =
     export;
     filenames, List.map snd modrefl
 
+let synterp_require from export qidl =
+  NewProfile.profile "synterp_require" (fun () ->
+      synterp_require from export qidl)
+    ()
+
 (*****************************)
 (* Auxiliary file management *)
 

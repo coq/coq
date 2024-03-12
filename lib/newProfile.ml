@@ -92,6 +92,8 @@ let gettimeopt = function
 let prtime t =
   Format.sprintf "%.0f" (t *. 1E6)
 
+(* NewProfile should be fairly early in the linking order so we
+   probably don't miss much before this gettime call *)
 let global_start = gettime()
 let global_start_stat = Gc.quick_stat()
 let global_start_count = Ok Int64.zero
@@ -214,14 +216,14 @@ let init { output } =
   accu := Some { ch = output; sums = [] };
   f "{ \"traceEvents\": [\n";
   enter ~time:global_start "process" ();
-  enter ~time:global_start "init" ();
+  enter ~time:global_start "before_profiler_init" ();
   let iend = Instr.read_counter () in
   let mend = Gc.quick_stat () in
   let args =
     make_instr_diff ~istart:global_start_count ~iend @
     make_mem_diff ~mstart:global_start_stat ~mend
   in
-  leave "init" ~args ()
+  leave "before_profiler_init" ~args ()
 
 let pause () =
   let v = !accu in

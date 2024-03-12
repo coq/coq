@@ -142,7 +142,10 @@ let init_load_paths opts =
   let env_ocamlpath = ml_path @ env_ocamlpath in
   let ocamlpathsep = if Sys.unix then ":" else ";" in
   let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
-  Findlib.init ~env_ocamlpath ()
+  NewProfile.profile "Findlib.init" (fun () -> Findlib.init ~env_ocamlpath ()) ()
+
+let init_load_paths opts =
+  NewProfile.profile "init_load_paths" (fun () -> init_load_paths opts) ()
 
 let init_profile ~file =
   let ch = open_out file in
@@ -186,7 +189,9 @@ let require_file ~prefix ~lib ~export =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
+  NewProfile.profile "injection require" (fun () ->
+      Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll])
+    ()
 
 let warn_no_native_compiler =
   CWarnings.create_in Nativeconv.w_native_disabled
