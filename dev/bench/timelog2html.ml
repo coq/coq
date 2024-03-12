@@ -13,7 +13,7 @@ open Benchlib
 let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr fmt
 
 let usage () = die "Usage: %s VFILE TIMEFILES\n\n%a\n" Sys.argv.(0)
-    (fun fmt len -> Printf.fprintf fmt "(Only up to %d time files are supported.)" len)
+    (fun fmt len -> Printf.fprintf fmt "(1 to %d time files are supported.)" len)
     Htmloutput.max_data_count
 
 let () = if Array.length Sys.argv < 3 ||
