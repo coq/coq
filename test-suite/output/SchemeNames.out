@@ -1,12 +1,24 @@
 File "./output/SchemeNames.v", line 14, characters 2-47:
 The command has indeed failed with message:
-Induction on sort Prop is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Prop" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Prop"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 15, characters 2-46:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Set" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Set"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 16, characters 2-47:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Type" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Type"
+because strict proofs can be eliminated only to build strict proofs.
 fooSProp_inds :
 forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
 
@@ -16,13 +28,25 @@ fooSProp_inds is transparent
 Expands to: Constant SchemeNames.fooSProp_inds
 File "./output/SchemeNames.v", line 23, characters 2-48:
 The command has indeed failed with message:
-Induction on sort Prop is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Prop" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Prop"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 24, characters 2-47:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Set" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Set"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 25, characters 2-48:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Type" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Type"
+because strict proofs can be eliminated only to build strict proofs.
 fooSProp_inds_nodep : forall P : SProp, P -> P -> fooSProp -> P
 
 fooSProp_inds_nodep is not universe polymorphic
@@ -31,13 +55,25 @@ fooSProp_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_inds_nodep
 File "./output/SchemeNames.v", line 32, characters 2-49:
 The command has indeed failed with message:
-Induction on sort Prop is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Prop" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Prop"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 33, characters 2-48:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Set" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Set"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 34, characters 2-49:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Type" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Type"
+because strict proofs can be eliminated only to build strict proofs.
 fooSProp_cases :
 forall P : fooSProp -> SProp, P aSP -> P bSP -> forall f1 : fooSProp, P f1
 
@@ -47,13 +83,25 @@ fooSProp_cases is transparent
 Expands to: Constant SchemeNames.fooSProp_cases
 File "./output/SchemeNames.v", line 41, characters 2-42:
 The command has indeed failed with message:
-Induction on sort Prop is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Prop" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Prop"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 42, characters 2-41:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Set" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Set"
+because strict proofs can be eliminated only to build strict proofs.
 File "./output/SchemeNames.v", line 43, characters 2-42:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooSProp.
+Incorrect elimination in the inductive type "fooSProp":
+the return type has sort "Type" while it should be SProp.
+Elimination of an inductive object of sort SProp
+is not allowed on a predicate in sort "Type"
+because strict proofs can be eliminated only to build strict proofs.
 fooSProp_cases_nodep : forall P : SProp, P -> P -> fooSProp -> P
 
 fooSProp_cases_nodep is not universe polymorphic
@@ -66,10 +114,18 @@ Cannot extract computational content from proposition
 "fooSProp".
 File "./output/SchemeNames.v", line 61, characters 2-45:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Set" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Set"
+because proofs can be eliminated only to build proofs.
 File "./output/SchemeNames.v", line 62, characters 2-46:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Type" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
 fooProp_inds_dep :
 forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
 
@@ -86,10 +142,18 @@ fooProp_ind_dep is transparent
 Expands to: Constant SchemeNames.fooProp_ind_dep
 File "./output/SchemeNames.v", line 71, characters 2-46:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Set" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Set"
+because proofs can be eliminated only to build proofs.
 File "./output/SchemeNames.v", line 72, characters 2-47:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Type" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
 fooProp_inds : forall P : SProp, P -> P -> fooProp -> P
 
 fooProp_inds is not universe polymorphic
@@ -104,10 +168,18 @@ fooProp_ind is transparent
 Expands to: Constant SchemeNames.fooProp_ind
 File "./output/SchemeNames.v", line 81, characters 2-47:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Set" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Set"
+because proofs can be eliminated only to build proofs.
 File "./output/SchemeNames.v", line 82, characters 2-48:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Type" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
 fooProp_cases_dep :
 forall P : fooProp -> SProp, P aP -> P bP -> forall f1 : fooProp, P f1
 
@@ -124,10 +196,18 @@ fooProp_case_dep is transparent
 Expands to: Constant SchemeNames.fooProp_case_dep
 File "./output/SchemeNames.v", line 91, characters 2-40:
 The command has indeed failed with message:
-Induction on sort Set is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Set" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Set"
+because proofs can be eliminated only to build proofs.
 File "./output/SchemeNames.v", line 92, characters 2-41:
 The command has indeed failed with message:
-Induction on sort Type is not allowed for inductive definition fooProp.
+Incorrect elimination in the inductive type "fooProp":
+the return type has sort "Type" while it should be SProp or Prop.
+Elimination of an inductive object of sort Prop
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
 fooProp_cases : forall P : SProp, P -> P -> fooProp -> P
 
 fooProp_cases is not universe polymorphic

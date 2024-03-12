@@ -306,7 +306,7 @@ let warning_or_error ~info flags indsp err =
            strbrk " not defined.")
     | BadTypedProj (fi,env,te) ->
       let err = match te with
-        | ElimArity (_, _, Some (_, s)) ->
+        | ElimArity (_, _, Some s) ->
           error_elim_explain (Sorts.family s)
             (Inductiveops.elim_sort (Global.lookup_inductive indsp))
         | _ -> None
