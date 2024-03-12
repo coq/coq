@@ -23,4 +23,4 @@
  (public_name coqtimelog2html)
  (package coq-core)
  (modules timelog2html)
- (libraries unix str clib zarith benchlib))
+ (libraries benchlib))
