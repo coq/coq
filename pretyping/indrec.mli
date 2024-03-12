@@ -65,16 +65,6 @@ val build_mutual_induction_scheme :
   env -> evar_map -> ?force_mutual:bool ->
   (pinductive * dep_flag * Sorts.family) list -> evar_map * constr list
 
-(** Scheme combinators *)
-
-(** [weaken_sort_scheme env sigma eq s n c t] derives by subtyping from [c:t]
-   whose conclusion is quantified on [Type i] at position [n] of [t] a
-   scheme quantified on sort [s]. [set] asks for [s] be declared equal to [i],
-  otherwise just less or equal to [i]. *)
-
-val weaken_sort_scheme : env -> evar_map -> bool -> EConstr.ESorts.t -> int -> constr -> types ->
-  evar_map * types * constr
-
 (** Recursor names utilities *)
 
 val lookup_eliminator : env -> inductive -> Sorts.family -> GlobRef.t

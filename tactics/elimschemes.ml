@@ -24,12 +24,60 @@ open Ind_tables
 
 (* Induction/recursion schemes *)
 
-let optimize_non_type_induction_scheme kind dep sort env _handle ind =
+let build_induction_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
+  let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
+  let sigma, c = build_induction_scheme env sigma pind dep sort in
+    c, Evd.evar_universe_context sigma
+
+(**********************************************************************)
+(* [modify_sort_scheme s rec] replaces the sort of the scheme
+   [rec] by [s] *)
+
+let change_sort_arity sort =
+  let rec drec a = match kind a with
+    | Cast (c,_,_) -> drec c
+    | Prod (n,t,c) -> let s, c' = drec c in s, mkProd (n, t, c')
+    | LetIn (n,b,t,c) -> let s, c' = drec c in s, mkLetIn (n,b,t,c')
+    | Sort s -> s, mkSort sort
+    | _ -> assert false
+  in
+    drec
+
+
+(** [weaken_sort_scheme env sigma s n c t] derives by subtyping from [c:t]
+   whose conclusion is quantified on [Type i] at position [n] of [t] a
+   scheme quantified on sort [s]. [s] is declared less or equal to [i]. *)
+let weaken_sort_scheme env evd sort npars term ty =
+  let open Context.Rel.Declaration in
+  let evdref = ref evd in
+  let rec drec ctx np elim =
+    match kind elim with
+      | Prod (n,t,c) ->
+          let ctx = LocalAssum (n, t) :: ctx in
+          if Int.equal np 0 then
+            let osort, t' = change_sort_arity (EConstr.ESorts.kind !evdref sort) t in
+              evdref := (if false then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort (EConstr.ESorts.make osort);
+              mkProd (n, t', c),
+              mkLambda (n, t', mkApp(term, Context.Rel.instance mkRel 0 ctx))
+          else
+            let c',term' = drec ctx (np-1) c in
+            mkProd (n, t, c'), mkLambda (n, t, term')
+      | LetIn (n,b,t,c) ->
+        let ctx = LocalDef (n, b, t) :: ctx in
+        let c',term' = drec ctx np c in
+        mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
+      | _ -> CErrors.anomaly ~label:"weaken_sort_scheme" (Pp.str "wrong elimination type.")
+  in
+  let ty, term = drec [] npars ty in
+    !evdref, ty, term
+
+let optimize_non_type_induction_scheme kind dep sort env _handle ind =
   (* This non-local call to [lookup_scheme] is fine since we do not use it on a
      dependency generated on the fly. *)
   match lookup_scheme kind ind with
   | Some cte ->
+    let sigma = Evd.from_env env in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
@@ -46,19 +94,11 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
       else
         mib.mind_nparams in
     let sigma, sort = Evd.fresh_sort_in_family sigma sort in
-    let sigma, t', c' = weaken_sort_scheme env sigma false sort npars c t in
+    let sigma, t', c' = weaken_sort_scheme env sigma sort npars c t in
     let sigma = Evd.minimize_universes sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.evar_universe_context sigma)
   | None ->
-    let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
-    let sigma, c = build_induction_scheme env sigma pind dep sort in
-      (c, Evd.evar_universe_context sigma)
-
-let build_induction_scheme_in_type env dep sort ind =
-  let sigma = Evd.from_env env in
-  let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
-  let sigma, c = build_induction_scheme env sigma pind dep sort in
-    c, Evd.evar_universe_context sigma
+    build_induction_scheme_in_type env dep sort ind
 
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
