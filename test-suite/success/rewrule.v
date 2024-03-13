@@ -5,10 +5,10 @@ Symbol pplus : nat -> nat -> nat.
 Notation "a ++ b" := (pplus a b).
 
 Rewrite Rules plus_rew :=
-| ?n ++ 0 ==> ?n
-| ?n ++ S ?n' ==> S (?n ++ ?n')
-| 0 ++ ?n ==> ?n
-| S ?n ++ ?n' ==> S (?n ++ ?n').
+| ?n ++ 0 >-> ?n
+| ?n ++ S ?n' >-> S (?n ++ ?n')
+| 0 ++ ?n >-> ?n
+| S ?n ++ ?n' >-> S (?n ++ ?n').
 
 Check eq_refl : 5 ++ 10 = 15.
 Check (fun _ _ => eq_refl) : forall n n', 2 + n ++ 3 + n' = 5 + (n ++ n').
@@ -23,34 +23,34 @@ Eval simpl in fun n n' => 2 + n ++ 3 + n'. (* Does not reduce *)
 #[unfold_fix] Symbol raise : forall P: Type, P.
 
 Rewrite Rules raise_rew :=
-  raise (forall (x : ?A), ?P) ==> fun x => raise ?P
+  raise (forall (x : ?A), ?P) >-> fun x => raise ?P
 
-| raise (?A * ?B) ==> (raise ?A, raise ?B)
+| raise (?A * ?B) >-> (raise ?A, raise ?B)
 
-| raise unit ==> tt
+| raise unit >-> tt
 
 | match raise bool as b return ?P with
     true => _ | false => _
-  end ==> raise ?P@{b := raise bool}
+  end >-> raise ?P@{b := raise bool}
 
 | match raise nat as n return ?P with
     0 => ?p | S n => ?p'
-  end ==> raise ?P@{n := raise nat}
+  end >-> raise ?P@{n := raise nat}
 
 | match raise (@eq ?A ?a ?b) as e in _ = b return ?P with
   | eq_refl => _
-  end ==> raise ?P@{b := _; e := raise (?a = ?b)}
+  end >-> raise ?P@{b := _; e := raise (?a = ?b)}
 
 | match raise (list ?A) as l return ?P with
   | nil => _ | cons _ _ => _
-  end ==> raise ?P@{l := raise (list ?A)}
+  end >-> raise ?P@{l := raise (list ?A)}
 
 | match raise False as e return ?P with
-  end ==> raise ?P@{e := raise False}
+  end >-> raise ?P@{e := raise False}
 
 | match raise (?A + ?B) as e return ?P with
   | inl _ => _ | inr _ => _
-  end ==> raise ?P@{e := raise (?A + ?B)}.
+  end >-> raise ?P@{e := raise (?A + ?B)}.
 (* There is currently no way to write these rules without the universe inconcistency *)
 
 Eval simpl in match raise bool with true | false => 0 end. (* Does not reduce *)
@@ -74,43 +74,43 @@ Universe idu.
 #[unfold_fix, universes(polymorphic)] Symbol id@{q| |} : forall A : Type@{q|idu}, A -> A.
 
 Rewrite Rules id_rew :=
-| @{q|u+|+} |- id _ Type@{q|u} ==> Type@{q|u}
+| @{q|u+|+} |- id _ Type@{q|u} >-> Type@{q|u}
 
-| @{q|u+|+} |- id Type@{q|u} (forall (x : ?A), ?P) ==> forall x, id Type@{q|u} ?P
-| id (forall x, ?P) (fun (x : ?A) => ?f) ==> fun (x : ?A) => id ?P ?f
+| @{q|u+|+} |- id Type@{q|u} (forall (x : ?A), ?P) >-> forall x, id Type@{q|u} ?P
+| id (forall (x : ?A), ?P) ?f >-> fun (x : ?A) => id ?P (?f x)
 
-| @{u+} |- id Type@{u} (?A * ?B)%type ==> (id Type@{u} ?A * id Type@{u} ?B)%type
-| id (?A * ?B) (?a, ?b) ==> (id _ ?a, id _ ?b)
+| @{u+} |- id Type@{u} (?A * ?B)%type >-> (id Type@{u} ?A * id Type@{u} ?B)%type
+| id (?A * ?B) (?a, ?b) >-> (id _ ?a, id _ ?b)
 
-| id _ unit ==> unit
-| id _ tt ==> tt
+| id _ unit >-> unit
+| id _ tt >-> tt
 
-| id _ nat ==> nat
-| id _ 0 ==> 0
-| id _ (S ?n) ==> S (id _ ?n)
-| id _ (fun (n : ?A) => S ?n) ==> fun n => S (id _ ?n)
-| id (primprod ?A ?B) {| fst := ?a; snd := ?b |} ==> {| fst := id _ ?a; snd := id _ ?b |}.
+| id _ nat >-> nat
+| id _ 0 >-> 0
+| id _ (S ?n) >-> S (id _ ?n)
+| id _ (fun (n : ?A) => S ?n) >-> fun n => S (id _ ?n)
+| id (primprod ?A ?B) {| fst := ?a; snd := ?b |} >-> {| fst := id _ ?a; snd := id _ ?b |}.
 
-Fail Rewrite Rule id_rew_fail := Datatypes.id _ ?x ==> ?x. (* Subterm not recognised as pattern: Datatypes.id *)
-Fail Rewrite Rule id_rew_fail := 0 ==> 0. (* Head head-pattern is not a symbol. *)
-Fail Rewrite Rule id_rew_fail := id _ (?x ?y) ==> ?x ?y. (* Subterm not recognised as pattern: ?x *)
-Fail Rewrite Rule id_rew_fail := id _ _ ==> ?x. (* Unknown existential variable. *)
-Fail Rewrite Rule id_rew_fail := @{u} |- id _ ?x ==> ?x. (* Not all universe level variables appear in the pattern. *)
-Fail Rewrite Rule id_rew_fail := id _ (?x, ?x) ==> ?x. (* Variable ?x is bound multiple times in the pattern (holes number 1 and 2). *)
-Fail Rewrite Rule id_rew_fail := @{u+} |- id _ (Type@{u}, Type@{u}) ==> ?x. (* Universe variable u is bound multiple times in the pattern (holes number 0 and 1). *)
-Fail Rewrite Rule id_rew_fail := id _ (?x, ?y) ==> (?x, ?y). (* The replacement term contains unresolved implicit arguments: (?x, ?y) *)
-Fail Rewrite Rule id_rew_fail := id _ Type ==> Type. (* Universe rewrule.xxx is unbound. *)
-Fail Rewrite Rule id_rew_fail := id _ (forall x, ?P) ==> ?P. (* Cannot interpret ?P in current context: no binding for x. *)
+Fail Rewrite Rule id_rew_fail := Datatypes.id _ ?x >-> ?x. (* Subterm not recognised as pattern: Datatypes.id *)
+Fail Rewrite Rule id_rew_fail := 0 >-> 0. (* Head head-pattern is not a symbol. *)
+Fail Rewrite Rule id_rew_fail := id _ (?x ?y) >-> ?x ?y. (* Subterm not recognised as pattern: ?x *)
+Fail Rewrite Rule id_rew_fail := id _ _ >-> ?x. (* Unknown existential variable. *)
+Fail Rewrite Rule id_rew_fail := @{u} |- id _ ?x >-> ?x. (* Not all universe level variables appear in the pattern. *)
+Fail Rewrite Rule id_rew_fail := id _ (?x, ?x) >-> ?x. (* Variable ?x is bound multiple times in the pattern (holes number 1 and 2). *)
+Fail Rewrite Rule id_rew_fail := @{u+} |- id _ (Type@{u}, Type@{u}) >-> ?x. (* Universe variable u is bound multiple times in the pattern (holes number 0 and 1). *)
+Fail Rewrite Rule id_rew_fail := id _ (?x, ?y) >-> (?x, ?y). (* The replacement term contains unresolved implicit arguments: (?x, ?y) *)
+Fail Rewrite Rule id_rew_fail := id _ Type >-> Type. (* Universe rewrule.xxx is unbound. *)
+Fail Rewrite Rule id_rew_fail := id _ (forall x, ?P) >-> ?P. (* Cannot interpret ?P in current context: no binding for x. *)
 
 
 Symbol idS : forall (A : SProp), A -> A.
 Inductive unitS : SProp := ttS.
-Rewrite Rule id_rew' := idS _ ttS ==> ttS.
+Rewrite Rule id_rew' := idS _ ttS >-> ttS.
 (* Warning: This subpattern is irrelevant and can never be matched against. *)
 
 Symbol vararity : forall n, (fix f n := match n with 0 => unit | S n => unit -> f n end) n.
 Check vararity (4 + _) tt tt tt _.
-Rewrite Rule vararity_rew := id _ (vararity _) ==> 0.
+Rewrite Rule vararity_rew := id _ (vararity _) >-> 0.
 (* Warning: This subpattern has a yet unknown type, which may be a product type, but pattern-matching is not done modulo eta, so this rule may not trigger at required times *)
 
 Module MLTTmap.
@@ -118,10 +118,10 @@ Module MLTTmap.
 Symbol map : forall A B, (A -> B) -> list A -> list B.
 
 Rewrite Rule map_rew :=
-| map _ _ (fun x => x) ?l ==> ?l
-| map _ ?C ?f (map ?A _ ?g ?l) ==> map ?A ?C (fun x => ?f (?g x)) ?l
-| map ?A ?B ?f (@nil _) ==> @nil ?B
-| map ?A ?B ?f (@cons _ ?a ?l) ==> @cons ?B (?f ?a) (map _ _ ?f ?l).
+| map _ _ (fun x => x) ?l >-> ?l
+| map _ ?C ?f (map ?A _ ?g ?l) >-> map ?A ?C (fun x => ?f (?g x)) ?l
+| map ?A ?B ?f (@nil _) >-> @nil ?B
+| map ?A ?B ?f (@cons _ ?a ?l) >-> @cons ?B (?f ?a) (map _ _ ?f ?l).
 
 Definition idA {A: Type} := fun (x : A) => x.
 
@@ -137,13 +137,13 @@ End MLTTmap.
 
 (* Example where ignore holes are necessary *)
 Symbol J : forall (A : Type) (a : A) (P : A -> Type), P a -> forall (a' : A), @eq A a a' -> P a'.
-Rewrite Rule a := J _ _ _ ?H _ (@eq_refl _ _) ==> ?H.
+Rewrite Rule a := J _ _ _ ?H _ (@eq_refl _ _) >-> ?H.
 
 
 Module omega.
 (* Example of a broken extension *)
 #[unfold_fix] Symbol omega : nat.
-Rewrite Rule omega_rew := match omega with S n => ?P | 0 => _ end ==> ?P@{n := omega}.
+Rewrite Rule omega_rew := match omega with S n => ?P | 0 => _ end >-> ?P@{n := omega}.
 Theorem omega_spec : S omega = omega.
 Proof.
   symmetry.
@@ -176,7 +176,7 @@ Fixpoint f s : False := f match s with T s' => s' end.
 Fixpoint g s : False := match s with T s' => g s' end.
 
 Rewrite Rule raise_rew_stream :=
-| match raise _ as s return ?P with T _ => _ end ==> raise ?P@{s := raise _}.
+| match raise _ as s return ?P with T _ => _ end >-> raise ?P@{s := raise _}.
 
 Goal forall s, f s = g s.
   unfold f, g.
@@ -194,7 +194,7 @@ Symbol id : forall A, A -> A.
 Axioms (aa ee : nat).
 Inductive A := C (a := aa) (b : unit) (c := (a, b)) (d : True) (e := ee).
 
-Rewrite Rule raise_rew_C := match raise _ with C a b c d e => id (_ * _) ?P end ==> ?P@{a := _; b := raise _; c := _; d := raise _; e := _}.
+Rewrite Rule raise_rew_C := match raise _ with C a b c d e => id (_ * _) ?P end >-> ?P@{a := _; b := raise _; c := _; d := raise _; e := _}.
 
 Eval lazy  in match raise _ with C a b c d e => id _ (a, b, c, d, e) end.
 Eval cbv   in match raise _ with C a b c d e => id _ (a, b, c, d, e) end.
@@ -206,8 +206,8 @@ End context.
 Symbol Devil : bool -> bool.
 
 Rewrite Rule devil :=
-| Devil ?b ==> false
-| Devil true ==> true.
+| Devil ?b >-> false
+| Devil true >-> true.
 
 Lemma Devil_false b : Devil b = false.
 Proof. reflexivity. Defined.
@@ -252,7 +252,7 @@ Defined.
 Universe u.
 Symbol idTy@{i} : Type@{i} -> Type@{u}.
 
-Rewrite Rule idTy_id := idTy ?t ==> ?t.
+Rewrite Rule idTy_id := idTy ?t >-> ?t.
 (* Warning: This rewrite rule breaks subject reduction (universe inconsistency). *)
 
 Definition U : Type@{u} := idTy Type@{u}.
