@@ -1735,6 +1735,8 @@ let rec invert_definition unify flags choose imitate_defs
           let evd =
              (* Try now to invert args in terms of args' *)
             try
+              if not @@ is_evar_allowed flags evk' then
+                raise (CannotProject (evd, ev''));
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
               let evi = Evd.find_undefined evd evk' in
               let evd = Evd.define evk' body evd in
