@@ -378,11 +378,16 @@ let v_rewrule = v_tuple "rewrite_rule"
 let v_rrb = v_tuple "rewrite_rules_body"
   [| List (v_pair v_cst v_rewrule) |]
 
+let v_module_with_decl = v_sum "with_declaration" 0 [|
+    [|List v_id; v_mp|];
+    [|List v_id; v_pair v_constr (Opt v_abs_context)|];
+  |]
+
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
     [|v_mae;v_mp|];   (* SEBapply *)
-    [|v_mae; Any|]  (* SEBwith *)
+    [|v_mae; v_module_with_decl|]  (* SEBwith *)
   |])
 
 let rec v_sfb =
