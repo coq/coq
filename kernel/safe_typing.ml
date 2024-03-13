@@ -300,8 +300,8 @@ sig
 
   val universes : t -> Univ.ContextSet.t
 
-  (** Checks whether [dst] is a valid extension of [src] *)
-  val check : src:t -> dst:t -> bool
+  (** Checks whether [dst] is a valid extension of [src], possibly adding universes and constraints. *)
+  val safe_extend : src:t -> dst:t -> t option
 end =
 struct
 
@@ -319,12 +319,11 @@ let is_suffix l suf = match l with
 | [] -> false
 | _ :: l -> l == suf
 
-let is_subset (s1, cst1) (s2, cst2) =
-  Univ.Level.Set.subset s1 s2 && Univ.Constraints.subset cst1 cst2
-
-let check ~src ~dst =
-  is_suffix dst.certif_struc src.certif_struc &&
-  is_subset src.certif_univs dst.certif_univs
+let safe_extend ~src ~dst =
+  if is_suffix dst.certif_struc src.certif_struc then
+    Some { certif_struc = dst.certif_struc;
+           certif_univs = Univ.ContextSet.union src.certif_univs dst.certif_univs }
+  else None
 
 let universes c = c.certif_univs
 
@@ -336,9 +335,9 @@ type side_effect = {
   seff_body : (Constr.t, Vmemitcodes.body_code option) Declarations.pconstant_body;
   seff_univs : Univ.ContextSet.t;
 }
-(* Invariant: For any senv, if [Certificate.check senv seff_certif] then
-  senv where univs := Certificate.universes seff_certif] +
-  (c.seff_constant -> seff_body) is well-formed. *)
+(* Invariant: For any senv, if [Certificate.safe_extend senv seff_certif] returns [Some certif'] then
+   [senv + Certificate.universes certif' + (c.seff_constant -> seff_body)] is well-formed
+   (if no univ inconsistency). *)
 
 module SideEffects :
 sig
@@ -757,7 +756,7 @@ let warn_failed_cert = CWarnings.create ~name:"failed-abstract-certificate"
 
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct.
-   Returns the number of effects that can be trusted. *)
+   Returns the universes needed to trust the side effects (None if they can't be trusted). *)
 let check_signatures senv sl =
   let curmb = Certificate.make senv in
   let is_direct_ancestor accu (kn, mb) =
@@ -766,12 +765,9 @@ let check_signatures senv sl =
     | Some curmb ->
         try
           let mb = CEphemeron.get mb in
-          if Certificate.check ~src:curmb ~dst:mb
-          then Some mb
-          else begin
-            warn_failed_cert kn;
-            None
-          end
+          let mb = Certificate.safe_extend ~src:curmb ~dst:mb in
+          let () = if Option.is_empty mb then warn_failed_cert kn in
+          mb
         with CEphemeron.InvalidKey -> None in
   let sl = List.fold_left is_direct_ancestor (Some curmb) sl in
   match sl with
