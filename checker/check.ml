@@ -354,7 +354,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let opaque_csts = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
       let tasks = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
       let table = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
-      let vmlib = marshal_in_segment ~validate ~value:Any ~segment:seg_vmlib f ch in
+      let vmlib = marshal_in_segment ~validate ~value:Values.v_vmlib ~segment:seg_vmlib f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in

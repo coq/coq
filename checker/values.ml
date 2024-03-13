@@ -254,13 +254,64 @@ let v_typing_flags =
 
 let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 
+let v_vm_reloc_table = Array (v_pair Int Int)
+
+let v_vm_annot_switch = v_tuple "vm_annot_switch" [|v_vm_reloc_table; v_bool; Int|]
+
+let v_vm_structured_constant = v_sum "vm_structured_constant" 0 [|
+    [|v_sort|];
+    [|v_ind|];
+    [|Fail "Const_evar"|];
+    [|Int|];
+    [|v_quality|];
+    [|v_level|];
+    [|v_instance|];
+    [|Any|]; (* contains a Vmvalues.value *)
+    [|v_uint63|];
+    [|Float64|];
+  |]
+
+let v_vm_caml_prim = v_enum "vm_caml_prim" 6
+
+let v_reloc_info = v_sum "vm_reloc_info" 0 [|
+    [|v_vm_annot_switch|];
+    [|v_vm_structured_constant|];
+    [|v_cst|];
+    [|v_vm_caml_prim|];
+  |]
+
+let v_vm_patches = v_tuple "vm_patches" [|Array v_reloc_info|]
+
+let v_vm_pbody_code index =
+  v_sum "pbody_code" 1 [|
+    [|v_pair index v_vm_patches|];
+    [|v_cst|];
+  |]
+
+let v_vm_index = v_pair v_dp Int
+
+let v_vm_indirect_code = v_vm_pbody_code v_vm_index
+
+let v_vm_emitcodes = String
+
+let v_vm_fv_elem = v_sum "vm_fv_elem" 0 [|
+    [|v_id|];
+    [|Int|]
+  |]
+
+let v_vm_fv = Array v_vm_fv_elem
+
+let v_vm_positions = String
+
+let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positions|]
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_instance;
     v_cst_def;
     v_constr;
     v_relevance;
-    Any;
+    Opt v_vm_indirect_code;
     v_univs;
     v_bool;
     v_typing_flags|]
@@ -301,7 +352,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     v_relevance;
     Int;
     Int;
-    Any|]
+    v_vm_reloc_table|]
 
 let v_finite = v_enum "recursivity_kind" 3
 
@@ -466,3 +517,5 @@ let v_delayed_universes =
 let v_opaquetable = Array (Opt (v_pair v_constr v_delayed_universes))
 let v_univopaques =
   Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))
+
+let v_vmlib = v_tuple "vmlibrary" [|v_dp; Array v_vm_to_patch|]
