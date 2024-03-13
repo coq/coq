@@ -684,7 +684,7 @@ let inline_side_effects env body side_eff =
   in
   (* CAVEAT: we assure that most recent effects come first *)
   let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
-  let sigs = List.rev_map (fun e -> e.seff_certif) side_eff in
+  let sigs = List.rev_map (fun e -> e.seff_constant, e.seff_certif) side_eff in
   (** Most recent side-effects first in side_eff *)
   if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs, 0)
   else
@@ -748,12 +748,19 @@ let inline_private_constants env ((body, ctx), side_eff) =
   let ctx' = Univ.ContextSet.union ctx ctx' in
   (body, ctx')
 
+let warn_failed_cert = CWarnings.create ~name:"failed-abstract-certificate"
+    ~category:CWarnings.CoreCategories.tactics ~default:CWarnings.Disabled
+    Pp.(fun kn ->
+        str "Certificate for private constant " ++
+        Label.print (Constant.label kn) ++
+        str " failed.")
+
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct.
    Returns the number of effects that can be trusted. *)
 let check_signatures senv sl =
   let curmb = Certificate.make senv in
-  let is_direct_ancestor accu mb =
+  let is_direct_ancestor accu (kn, mb) =
     match accu with
     | None -> None
     | Some curmb ->
@@ -761,11 +768,15 @@ let check_signatures senv sl =
           let mb = CEphemeron.get mb in
           if Certificate.check ~src:curmb ~dst:mb
           then Some mb
-          else None
+          else begin
+            warn_failed_cert kn;
+            None
+          end
         with CEphemeron.InvalidKey -> None in
   let sl = List.fold_left is_direct_ancestor (Some curmb) sl in
   match sl with
-  | None -> None
+  | None ->
+    None
   | Some mb ->
     let univs = Certificate.universes mb in
     Some (Univ.ContextSet.diff univs senv.univ)
@@ -832,7 +843,7 @@ let export_side_effects senv eff =
   let not_exists e = not (Environ.mem_constant e.seff_constant env) in
   let aux (acc,sl) e =
     if not (not_exists e) then acc, sl
-    else e :: acc, e.seff_certif :: sl in
+    else e :: acc, (e.seff_constant, e.seff_certif) :: sl in
   let seff, signatures = List.fold_left aux ([],[]) (SideEffects.repr eff) in
   let trusted = check_signatures senv signatures in
   let push_seff env eff =
