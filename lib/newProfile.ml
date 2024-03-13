@@ -109,6 +109,19 @@ let enter ?time name ?args () =
   enter_sums ~time ();
   duration ~time name "B" ?args ()
 
+let add_subtime name dur =
+  if is_profiling() then
+    let accu = Option.get !accu in
+    match accu.sums with
+    | [] -> assert false
+    | (start, sum) :: rest ->
+      let sum = CString.Map.update name (function
+          | None -> Some (dur, 1)
+          | Some (dur', cnt) -> Some (dur +. dur', cnt+1))
+          sum
+      in
+      accu.sums <- (start,sum) :: rest
+
 let leave_sums ?time name () =
   let accu = Option.get !accu in
   let time = gettimeopt time in

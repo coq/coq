@@ -25,6 +25,8 @@ val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> '
     produce additional annotations.
 *)
 
+val add_subtime : string -> float -> unit
+
 val is_profiling : unit -> bool
 
 type settings =

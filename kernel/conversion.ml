@@ -366,6 +366,18 @@ let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 w
     compare_under (e1, u1) c1 (e2, u2) c2
   | _ -> false
 
+(* we want to avoid double counting wasted time, eg with
+
+X (Y Z) == X (Y Z')
+
+spend x time doing Z == Z'; fail
+spend y time doing reduced Y Z == Y Z'; fail
+spend z time doing reduced X (Y Z) == X (Y Z'); succeed
+
+we want to report wasted time = x + y
+*)
+let wasted_time = ref []
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
@@ -429,14 +441,37 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
-      (try
+      (let before_waste  = Unix.gettimeofday() in
+       let () = wasted_time := 0. :: !wasted_time in
+        try
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          let () = if irr_flex infos.cnv_inf fl1 then raise NotConvertible (* trigger the fallback *) in
-         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+         let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
+         let () = match !wasted_time with
+           | [] | [_] -> assert false
+           | current :: next :: rest ->
+             wasted_time := (current +. next) :: rest
+         in
+         cuniv
        with NotConvertible | UGraph.UniverseInconsistency _ ->
+        let after_waste = Unix.gettimeofday() in
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
+        let () = match !wasted_time with
+          | [] | [_] -> assert false
+          | current :: next :: rest ->
+            (* [current] is the time wasted while trying to do this first order approximation
+               [next] is time wasted in the context *)
+            begin match r1, r2 with
+            | None, None ->
+              (* doing the first order approximation was required *)
+              wasted_time := (current +. next) :: rest
+            | Some _, _ | _, Some _ ->
+              (* we wasted our time doing first order approximation and should have reduced :( *)
+              wasted_time := (next +. (after_waste -. before_waste)) :: rest
+            end
+        in
         match r1, r2 with
         | None, None -> raise NotConvertible
         | Some t1, Some t2 ->
@@ -884,7 +919,14 @@ let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
         lft_tab = create_tab ();
         rgt_tab = create_tab ();
       } in
-      ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
+      wasted_time := [0.];
+      let univs = ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs in
+      let () = match !wasted_time with
+        | [t] -> wasted_time := [];
+          NewProfile.add_subtime "wasted conversion time" t
+        | _ -> assert false
+      in
+      univs)
     ()
 
 let check_eq univs u u' =
@@ -921,12 +963,14 @@ let () =
     try
       let univs = info_univs infos in
       let infos = { cnv_inf = infos; lft_tab = tab; rgt_tab = tab; } in
+      let () = wasted_time := 0. :: !wasted_time in
       let univs', _ = ccnv CONV false infos el_id el_id a b
           (univs, checked_universes)
       in
       assert (univs==univs');
+      wasted_time := List.tl !wasted_time;
       true
-      with NotConvertible -> false
+      with NotConvertible -> begin wasted_time := List.tl !wasted_time; false end
   in
   CClosure.set_conv conv
 
