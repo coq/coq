@@ -301,6 +301,8 @@ are now available through the dot notation.
      :cmd:`Reserved Notation`), scope controls (:cmd:`Delimit Scope`,
      :cmd:`Bind Scope`, :cmd:`Open Scope`) but not :ref:`Abbreviations`.
 
+   - ``options`` for :ref:`flags-options-tables`
+
    - ``ltac.notations`` corresponding to :cmd:`Tactic Notation`.
 
    - ``ltac2.notations`` corresponding to :cmd:`Ltac2 Notation`
