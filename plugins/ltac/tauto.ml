@@ -248,6 +248,15 @@ let tauto_power_flags = {
   strict_unit = false
 }
 
+let pp_flags flags =
+  let open Pp in
+  if flags == tauto_uniform_unit_flags then str "<tauto uniform flags>"
+  else if flags == tauto_power_flags then str "<tauto power flags>"
+  else str "<unknown tauto flags>"
+
+let () = Genprint.register_val_print0 tag_tauto_flags (fun flags ->
+    TopPrinterBasic (fun () -> pp_flags flags))
+
 let with_flags flags _ ist =
   let f = CAst.make @@ Id.of_string "f" in
   let x = CAst.make @@ Id.of_string "x" in
