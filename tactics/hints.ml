@@ -1298,12 +1298,15 @@ let discharge_autohint obj =
       let grefs = match grefs with
       | HintsVariables | HintsConstants -> grefs
       | HintsReferences grs ->
-        let filter = function
-        | Evaluable.EvalConstRef c -> true
-        | Evaluable.EvalProjectionRef p -> true
-        | Evaluable.EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
+        let filter e = match e with
+        | Evaluable.EvalConstRef c -> Some e
+        | Evaluable.EvalProjectionRef p ->
+          let p = Lib.discharge_proj_repr p in
+          Some (Evaluable.EvalProjectionRef p)
+        | Evaluable.EvalVarRef id ->
+          if Lib.is_in_section (GlobRef.VarRef id) then None else Some e
         in
-        let grs = List.filter filter grs in
+        let grs = List.filter_map filter grs in
         HintsReferences grs
       in
       AddTransparency { grefs; state }
