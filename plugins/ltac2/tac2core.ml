@@ -1869,7 +1869,7 @@ let () =
   let pr_glb (ids, e) =
     let ids =
       if List.is_empty ids then mt ()
-      else pr_sequence Id.print ids ++ str " |- "
+      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
     in
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
@@ -1886,7 +1886,7 @@ let () =
     let ids =
       let ids = Id.Set.elements ids in
       if List.is_empty ids then mt ()
-      else pr_sequence Id.print ids ++ str " |- "
+      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
     in
     (* FIXME avoid set
        eg "Ltac2 bla foo := constr:(ltac2:(foo X.foo))"

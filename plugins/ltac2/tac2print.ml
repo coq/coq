@@ -16,10 +16,10 @@ open Tac2env
 
 let pr_tacref avoid kn =
   try Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac avoid (TacConstant kn))
-  with Not_found when KNmap.mem kn (Tac2env.globals()) ->
+  with Not_found when !Flags.in_debugger || KNmap.mem kn (Tac2env.globals()) ->
     str (ModPath.to_string (KerName.modpath kn))
     ++ str"." ++ Label.print (KerName.label kn)
-    ++ str " (* local *)"
+    ++ if !Flags.in_debugger then mt() else str " (* local *)"
 
 (** Utils *)
 
