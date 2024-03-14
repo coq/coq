@@ -6,7 +6,7 @@ Set Primitive Projections.
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
 Notation pr1 := projT1.
-Notation "x .1" := (pr1 x) (at level 3, format "x '.1'") : fibration_scope.
+Notation "x .1" := (pr1 x) : fibration_scope.
 Axiom ap : forall {A B:Type} (f:A -> B) {x y:A} (p:x = y), f x = f y.
 Class IsEquiv {A B : Type} (f : A -> B) := { equiv_inv : B -> A }.
 Record Equiv A B := { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }.

@@ -11,8 +11,8 @@ Tactic Notation "etransitivity" open_constr(y) :=
 Tactic Notation "etransitivity" := etransitivity _.
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
-Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
-Notation "x .2" := (projT2 x) (at level 3) : fibration_scope.
+Notation "x .1" := (projT1 x) : fibration_scope.
+Notation "x .2" := (projT2 x) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.
 Arguments idpath {A a} , [A] a.
 Definition concat {A : Type} {x y z : A} (p : x = y) (q : y = z) : x = z := match p, q with idpath, idpath => idpath end.

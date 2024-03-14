@@ -225,8 +225,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (** Parsing / printing declarations. *)
-Reserved Notation "p .1" (at level 2, left associativity, format "p .1").
-Reserved Notation "p .2" (at level 2, left associativity, format "p .2").
 Reserved Notation "f ^~ y" (at level 10, y at level 8, no associativity,
   format "f ^~  y").
 Reserved Notation "@^~ x" (at level 10, x at level 8, no associativity,

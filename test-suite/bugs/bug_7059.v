@@ -14,8 +14,8 @@ Notation "( x ; y )" := (existT _ x y) : core_scope.
 Notation "( x ; y ; z )" := (x ; (y ; z)) : core_scope.
 Notation pr1 := (@projT1 _ _).
 Notation pr2 := (@projT2 _ _).
-Notation "x .1" := (@projT1 _ _ x) (at level 3, format "x '.1'") : core_scope.
-Notation "x .2" := (@projT2 _ _ x) (at level 3, format "x '.2'") : core_scope.
+Notation "x .1" := (@projT1 _ _ x) : core_scope.
+Notation "x .2" := (@projT2 _ _ x) : core_scope.
 Notation "'exists' x .. y , P"
   := (sigT (fun x => .. (sigT (fun y => P)) ..))
        (at level 200, x binder, y binder, right associativity) : type_scope.

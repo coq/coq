@@ -22,8 +22,8 @@ Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
 Notation pr1 := projT1.
 Notation pr2 := projT2.
-Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
-Notation "x .2" := (projT2 x) (at level 3) : fibration_scope.
+Notation "x .1" := (projT1 x) : fibration_scope.
+Notation "x .2" := (projT2 x) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a.
 Arguments idpath {A a} , [A] a.
 Arguments paths_rect [A] a P f y p : rename.

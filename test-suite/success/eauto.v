@@ -99,8 +99,8 @@ Module NTabareau.
 
 Set Typeclasses Dependency Order.
 Unset Typeclasses Iterative Deepening.
-Notation "x .1" := (projT1 x) (at level 3).
-Notation "x .2" := (projT2 x) (at level 3).
+Notation "x .1" := (projT1 x).
+Notation "x .2" := (projT2 x).
 
 Parameter myType: Type. 
 
@@ -141,8 +141,8 @@ Module NTabareauClasses.
 
 Set Typeclasses Dependency Order.
 Unset Typeclasses Iterative Deepening.
-Notation "x .1" := (projT1 x) (at level 3).
-Notation "x .2" := (projT2 x) (at level 3).
+Notation "x .1" := (projT1 x).
+Notation "x .2" := (projT2 x).
 
 Parameter myType: Type. 
 Existing Class myType.

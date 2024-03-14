@@ -5,8 +5,8 @@ Set Primitive Projections.
 Set Implicit Arguments.
 Record sigT {A} P := existT { pr1 : A ; pr2 : P pr1 }.
 Notation "{ x : A & P }" := (sigT (A := A) (fun x : A => P)) : type_scope.
-Notation "x .1" := (pr1 x) (at level 3, format "x '.1'").
-Notation "x .2" := (pr2 x) (at level 3, format "x '.2'").
+Notation "x .1" := (pr1 x).
+Notation "x .2" := (pr2 x).
 Record Equiv A B := { equiv_fun :> A -> B }.
 Notation "A <~> B" := (Equiv A B) (at level 85).
 Inductive Bool : Type := true | false.

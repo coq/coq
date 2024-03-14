@@ -3,7 +3,7 @@ Set Primitive Projections.
 Axiom admit : forall {T}, T.
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
-Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
+Notation "x .1" := (projT1 x) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.
 Set Implicit Arguments.
 Delimit Scope category_scope with category.

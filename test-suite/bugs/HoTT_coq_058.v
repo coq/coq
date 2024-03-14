@@ -4,7 +4,7 @@ Set Universe Polymorphism.
 Notation idmap := (fun x => x).
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
-Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
+Notation "x .1" := (projT1 x) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
 Arguments idpath {A a} , [A] a.
