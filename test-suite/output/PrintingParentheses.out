@@ -6,7 +6,10 @@ nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
   (eq_refl : ((0 * m) + 0) = (0 * (S m)))
   (fun (p : nat) (H : ((p * m) + p) = (p * (S m))) =>
    (let n0 := p * (S m) in
-    match H in (_ = n1) return (((m + (p * m)) + (S p)) = (S (m + n1))) with
+    match
+      H :- ((p * m) + p) = n0 in (_ = n1)
+      return (((m + (p * m)) + (S p)) = (S (m + n1)))
+    with
     | eq_refl =>
         eq_ind (S ((m + (p * m)) + p))
           (fun n1 : nat => n1 = (S (m + ((p * m) + p))))
