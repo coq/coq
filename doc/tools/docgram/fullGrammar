@@ -3026,7 +3026,7 @@ nonsimple_intropattern: [
 ]
 
 G_LTAC2_simple_intropattern: [
-| G_LTAC2_simple_intropattern_closed      (* ltac2 plugin *)
+| G_LTAC2_simple_intropattern_closed LIST0 [ "%" Constr.term0 ]      (* ltac2 plugin *)
 ]
 
 G_LTAC2_simple_intropattern_closed: [

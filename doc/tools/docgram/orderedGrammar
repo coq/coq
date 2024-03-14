@@ -1157,10 +1157,14 @@ q_intropattern: [
 ]
 
 ltac2_simple_intropattern: [
-| ltac2_naming_intropattern      (* ltac2 plugin *)
-| "_"      (* ltac2 plugin *)
+| ltac2_simple_intropattern_closed LIST0 [ "%" term0 ]      (* ltac2 plugin *)
+]
+
+ltac2_simple_intropattern_closed: [
 | ltac2_or_and_intropattern      (* ltac2 plugin *)
 | ltac2_equality_intropattern      (* ltac2 plugin *)
+| "_"      (* ltac2 plugin *)
+| ltac2_naming_intropattern      (* ltac2 plugin *)
 ]
 
 ltac2_naming_intropattern: [

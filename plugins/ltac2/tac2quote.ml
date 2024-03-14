@@ -176,6 +176,8 @@ and of_intro_pattern_action {loc;v=pat} = match pat with
   std_constructor ?loc "IntroOrAndPattern" [of_or_and_intro_pattern pat]
 | QIntroInjection il ->
   std_constructor ?loc "IntroInjection" [of_intro_patterns il]
+| QIntroApplyOn (c, i) ->
+  std_constructor ?loc "IntroApplyOn" [thunk @@ of_open_constr c; of_intro_pattern i]
 | QIntroRewrite b ->
   std_constructor ?loc "IntroRewrite" [of_bool ?loc b]
 

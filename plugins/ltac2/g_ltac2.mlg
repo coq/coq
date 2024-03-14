@@ -570,10 +570,14 @@ GRAMMAR EXTEND Gram
       | "**" -> { CAst.make ~loc @@ QIntroForthcoming false } ] ]
   ;
   simple_intropattern:
-    [ [ pat = simple_intropattern_closed ->
-(*         l = LIST0 ["%"; c = term LEVEL "0" -> c] -> *)
-        (** TODO: handle %pat *)
-        { pat }
+    [ [ pat = simple_intropattern_closed;
+        l = LIST0 [ "%"; c = Constr.term LEVEL "0" -> { c } ] ->
+        { let mk c pat =
+            CAst.make ~loc @@ QIntroAction
+              (CAst.make ~loc @@ QIntroApplyOn (c, pat))
+          in
+          List.fold_right mk l pat
+        }
     ] ]
   ;
   simple_intropattern_closed:
