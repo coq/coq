@@ -367,7 +367,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?using
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?user_warns ?using
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
@@ -375,11 +375,11 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
       let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?using fixkind l
+      do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixkind l
     | _, _ ->
       CErrors.user_err
         (str "Well-founded fixpoints not allowed in mutually recursive blocks.")
 
-let do_cofixpoint ~pm ~scope ~poly ?user_warns ?using fixl =
+let do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~pm ~scope ~poly ?user_warns ?using Declare.Obls.IsCoFixpoint fixl
+  do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using Declare.Obls.IsCoFixpoint fixl

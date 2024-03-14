@@ -36,14 +36,18 @@ val do_fixpoint
 
 val do_cofixpoint_interactive
   : scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> cofixpoint_expr list
   -> Declare.Proof.t
 
 val do_cofixpoint
   : scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list

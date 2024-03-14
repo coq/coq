@@ -25,7 +25,9 @@ val do_fixpoint :
 val do_cofixpoint :
      pm:Declare.OblState.t
   -> scope:Locality.definition_scope
+  -> ?clearbody:bool
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
