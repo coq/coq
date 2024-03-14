@@ -139,6 +139,8 @@ module type ExtS = sig
     type t = {
       estate : EState.t;
       kwstate : keyword_state;
+      recover : bool;
+      has_non_assoc : bool;
     }
   end
 
@@ -191,19 +193,6 @@ type 'a ty_entry = {
   etag : 'a DMap.onetag;
 }
 
-and 'a ty_desc =
-| Dlevels of 'a ty_level list
-| Dparser of (L.keyword_state -> 'a parser_t)
-
-and 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
-
-and ('trecs, 'trecp, 'a) ty_rec_level = {
-  assoc : g_assoc;
-  lname : string option;
-  lsuffix : ('a, 'trecs, 'a -> Loc.t -> 'a) ty_tree;
-  lprefix : ('a, 'trecp, Loc.t -> 'a) ty_tree;
-}
-
 and ('self, 'trec, 'a) ty_symbol =
 | Stoken : 'c pattern -> ('self, norec, 'c) ty_symbol
 | Stokens : ty_pattern list -> ('self, norec, unit) ty_symbol
@@ -234,6 +223,19 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   brother : ('self, 'trecb, 'r) ty_tree;
 }
 
+type ('trecs, 'trecp, 'a) ty_rec_level = {
+  assoc : g_assoc;
+  lname : string option;
+  lsuffix : ('a, 'trecs, 'a -> Loc.t -> 'a) ty_tree;
+  lprefix : ('a, 'trecp, Loc.t -> 'a) ty_tree;
+}
+
+type 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
+
+type 'a ty_desc =
+| Dlevels of 'a ty_level list
+| Dparser of (L.keyword_state -> 'a parser_t)
+
 (** The closures are built by partially applying the parsing functions
     to [edesc] but without depending on the state (so when we update
     an entry we don't need to update closures in unrelated entries).
@@ -244,7 +246,7 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
 type ('t,'a) entry_data = {
   edesc : 'a ty_desc;
   estart : 't -> int -> 'a parser_t;
-  econtinue : 't -> int -> int -> 'a -> 'a parser_t;
+  econtinue : 't -> int option -> int -> int -> 'a -> 'a parser_t;
 }
 
 module rec EState : DMap.MapS
@@ -255,11 +257,15 @@ and GState : sig
   type t = {
     estate : EState.t;
     kwstate : L.keyword_state;
+    recover : bool;
+    has_non_assoc : bool;
   }
 end = struct
   type t = {
     estate : EState.t;
     kwstate : L.keyword_state;
+    recover : bool;
+    has_non_assoc : bool;
   }
 end
 open GState
@@ -1149,6 +1155,40 @@ let top_tree : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> (s, tr, a) ty_tr
       Node (NoRec3, {node = top_symb entry s; brother = bro; son = son})
   | LocAct (_, _) -> raise Stream.Failure | DeadEnd -> raise Stream.Failure
 
+let warn_tolerance =
+  CWarnings.create ~name:"level-tolerance" ~category:CWarnings.CoreCategories.parsing
+    Pp.(fun (cur_lev,top_lev) ->
+        let f = function None -> "<unknown>" | Some s -> s in
+        strbrk "Tolerating this expression at level " ++ str (f cur_lev) ++
+        strbrk " while it is expected to be at level " ++ str (f top_lev) ++ str "." ++
+        strbrk " This tolerance will be eventually removed." ++
+        strbrk " Insert parentheses or try to lower the level at which the top symbol of this expression is parsed.")
+
+type capsule = Capsule : 's ty_entry * ('s, 't, 'a) ty_symbol -> capsule
+
+let get_node : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> capsule
+  = fun entry -> function
+    | Node (MayRec3, {node = s; brother = bro; son = son}) -> Capsule (entry, s)
+    | Node (NoRec3, {node = s; brother = bro; son = son}) -> Capsule (entry, s)
+    | _ -> assert false
+
+let warn_recover nlevn alevn (Capsule (entry, s)) gstate bp strm__ =
+  let ep = LStream.count strm__ in
+  let loc = LStream.interval_loc bp ep strm__ in
+  try
+    let find_lev levn = function
+      | Dlevels levs -> let Level levs = List.nth levs levn in levs.lname
+      | _ -> raise Exit in
+    let rec find_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> _ = fun entry -> function
+      | Sself -> let levs = (get_entry gstate.estate entry).edesc in find_lev alevn levs, find_lev 0 levs
+      | Snext -> let levs = (get_entry gstate.estate entry).edesc in find_lev nlevn levs, find_lev 0 levs
+      | Snterml (e, levn) -> Some levn, find_lev 0 (get_entry gstate.estate e).edesc
+      | Slist1sep (s, sep, b) -> find_symb entry s
+      | _ -> assert false in
+    let cur_lev, top_lev = find_symb entry s in
+    warn_tolerance ~loc (cur_lev,top_lev)
+  with Exit -> ()
+
 let skip_if_empty bp p strm =
   if LStream.count strm == bp then fun a -> p strm
   else raise Stream.Failure
@@ -1163,8 +1203,8 @@ let empty_entry ename levn strm =
 let start_parser_of_entry gstate entry levn (strm:_ LStream.t) =
   (get_entry gstate.estate entry).estart gstate levn strm
 
-let continue_parser_of_entry gstate entry levn bp a (strm:_ LStream.t) =
-  (get_entry gstate.estate entry).econtinue gstate levn bp a strm
+let continue_parser_of_entry gstate entry levfrom levn bp a (strm:_ LStream.t) =
+  (get_entry gstate.estate entry).econtinue gstate levfrom levn bp a strm
 
 (**
   nlevn: level for Snext
@@ -1232,6 +1272,15 @@ and parser_cont : type s tr tr' a r.
     (* Recover from a success on [s] with result [a] followed by a
         failure on [son] in a rule of the form [a = s; son] *)
     try
+      (* Discard the rule if what has been consumed before failing is
+         the empty sequence (due to some OPT or LIST0); example:
+         « OPT "!"; ident » fails to see an ident and the OPT was resolved
+         into the empty sequence, with application e.g. to being able to
+         safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
+      skip_if_empty bp (fun (strm__ : _ LStream.t) -> raise Stream.Failure)
+        strm__
+    with Stream.Failure ->
+    try
       (* Try to replay the son with the top occurrence of NEXT (by
          default at level nlevn) and trailing SELF (by default at alevn)
          replaced with self at top level;
@@ -1240,18 +1289,14 @@ and parser_cont : type s tr tr' a r.
          « SELF; "\/"; same-entry-at-top-level » with application e.g. to
          accept "A \/ forall x, x = x" w/o requiring the expected
          parentheses as in "A \/ (forall x, x = x)". *)
-      parser_of_tree entry nlevn alevn (top_tree entry son) gstate strm__
+      if gstate.recover then
+        let a = parser_of_tree entry nlevn alevn (top_tree entry son) gstate strm__ in
+        warn_recover nlevn alevn (get_node entry son) gstate bp strm__;
+        a
+      else
+        raise Stream.Failure
     with
       Stream.Failure ->
-      try
-        (* Discard the rule if what has been consumed before failing is
-           the empty sequence (due to some OPT or LIST0); example:
-           « OPT "!"; ident » fails to see an ident and the OPT was resolved
-           into the empty sequence, with application e.g. to being able to
-           safely write « LIST1 [ OPT "!"; id = ident -> id] ». *)
-        skip_if_empty bp (fun (strm__ : _ LStream.t) -> raise Stream.Failure)
-          strm__
-      with Stream.Failure ->
         (* In case of success on just SELF, NEXT or an explicit call to
            a subentry followed by a failure on the rest (son), retry
            parsing as if this entry had been called at its toplevel;
@@ -1259,13 +1304,19 @@ and parser_cont : type s tr tr' a r.
            is retried with « "{"; same-entry-at-top-level; "}" », allowing
            e.g. to parse « {1 + 1} » while « {(1 + 1)} » would
            have been expected according to the level. *)
+      if gstate.recover then
         let p1 = parser_of_tree entry nlevn alevn son in
-        let a = continue_parser_of_entry gstate (entry_of_symb entry s) 0 bp a strm__ in
+        let a = continue_parser_of_entry gstate (entry_of_symb entry s) None 0 bp a strm__ in
         let act =
           try p1 gstate strm__ with
             Stream.Failure -> raise (Error (tree_failed entry a s son))
         in
-        fun _ -> act a
+        fun _ ->
+          warn_recover nlevn alevn (Capsule (entry, s)) gstate bp strm__;
+          act a
+
+      else
+        raise (Stream.Error (tree_failed entry a s son))
 
 (** [parser_of_token_list] attempts to look-ahead an arbitrary-long
 finite sequence of tokens. E.g., in
@@ -1310,7 +1361,14 @@ and parser_of_token_list : type s tr lt r.
          match
            try Some (ps gstate strm) with Stream.Failure ->
            (* Tolerance: retry w/o granting the level constraint (see recover) *)
-           try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) with Stream.Failure -> None
+           if gstate.recover then
+             try
+               let bp = LStream.count strm in
+               let a = Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) in
+               warn_recover nlevn alevn (get_node entry tree) gstate bp strm; a
+             with Stream.Failure -> None
+           else
+             None
          with
          | Some act -> act
          | None -> raise (TokenListFailed (entry, last_a, (Stoken last_tok), tree))
@@ -1532,7 +1590,7 @@ let rec start_parser_of_levels entry clevn =
                  let act = p2 gstate strm__ in
                  let ep = LStream.count strm__ in
                  let a = act (LStream.interval_loc bp ep strm__) in
-                 continue_parser_of_entry gstate entry levn bp a strm)
+                 continue_parser_of_entry gstate entry (Some clevn) levn bp a strm)
           | _ ->
               fun gstate levn strm ->
                 if levn > clevn then
@@ -1545,7 +1603,7 @@ let rec start_parser_of_levels entry clevn =
                     Some act ->
                       let ep = LStream.count strm__ in
                       let a = act (LStream.interval_loc bp ep strm__) in
-                      continue_parser_of_entry gstate entry levn bp a strm
+                      continue_parser_of_entry gstate entry (Some clevn) levn bp a strm
                   | _ -> p1 gstate levn strm__
 
 (** [continue_parser_of_levels entry clevn levels levn bp a strm] goes
@@ -1561,7 +1619,7 @@ let rec start_parser_of_levels entry clevn =
 *)
 let rec continue_parser_of_levels entry clevn =
   function
-    [] -> (fun _gstate levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure)
+    [] -> (fun _gstate levfrom levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure)
   | Level lev :: levs ->
       let p1 = continue_parser_of_levels entry (succ clevn) levs in
       match lev.lsuffix with
@@ -1573,27 +1631,36 @@ let rec continue_parser_of_levels entry clevn =
             | RightA -> clevn
           in
           let p2 = parser_of_tree entry (succ clevn) alevn tree in
-          fun gstate levn bp a strm ->
+          fun gstate levfrom levn bp a strm ->
+            (* Apply the lsuffix continuation if the level is in the interval [levn;levfrom] *)
             if levn > clevn then
               (* Skip rules before [levn] *)
-              p1 gstate levn bp a strm
+              p1 gstate levfrom levn bp a strm
+            else if (not gstate.recover && match levfrom with Some levfrom -> levfrom < clevn | None -> false) then
+              raise Stream.Failure
             else
               let (strm__ : _ LStream.t) = strm in
-              try p1 gstate levn bp a strm__ with
+              try p1 gstate levfrom levn bp a strm__ with
                 Stream.Failure ->
                   let act = p2 gstate strm__ in
                   let ep = LStream.count strm__ in
                   let a = act a (LStream.interval_loc bp ep strm__) in
-                  continue_parser_of_entry gstate entry levn bp a strm
+                  if gstate.has_non_assoc && lev.assoc = NonA then
+                    if clevn = levn then
+                      a
+                    else
+                      continue_parser_of_entry gstate entry (Some (clevn-1)) levn bp a strm
+                  else
+                    continue_parser_of_entry gstate entry (Some clevn) levn bp a strm
 
 let make_continue_parser_of_entry entry desc =
   match desc with
-  | Dlevels [] -> (fun _ _ _ _ (_ : _ LStream.t) -> raise Stream.Failure)
+  | Dlevels [] -> (fun _ _ _ _ _ (_ : _ LStream.t) -> raise Stream.Failure)
   | Dlevels elev ->
     let p = lazy (continue_parser_of_levels entry 0 elev) in
-    (fun gstate levn bp a (strm__ : _ LStream.t) ->
-       try Lazy.force p gstate levn bp a strm__ with Stream.Failure -> a)
-  | Dparser p -> fun gstate levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure
+    (fun gstate levfrom levn bp a (strm__ : _ LStream.t) ->
+       try Lazy.force p gstate levfrom levn bp a strm__ with Stream.Failure -> a)
+  | Dparser p -> fun gstate levfrom levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure
 
 let make_start_parser_of_entry entry desc =
   match desc with
@@ -1716,7 +1783,7 @@ module Entry = struct
     let estate = add_entry otag estate e {
         edesc = Dlevels [];
         estart = empty_entry n;
-        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+        econtinue = (fun _ _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
       }
     in
     estate, e
@@ -1731,7 +1798,7 @@ module Entry = struct
     let e, otag = fresh n in
     let estate = add_entry otag estate e {
         estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
-        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+        econtinue = (fun _ _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
         edesc = Dparser p;
       }
     in
@@ -1881,7 +1948,7 @@ module Unsafe = struct
   let clear_entry estate e =
     modify_entry estate e (fun data -> {
           estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+          econtinue = (fun _ _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           edesc = match data.edesc with
             | Dlevels _ -> Dlevels []
             | Dparser _ -> data.edesc;
