@@ -610,6 +610,7 @@ let tag_var = tag Tag.variable
 
   let pr_cast = let open Constr in function
     | Some DEFAULTcast -> str ":"
+    | Some REVERSEcast -> str ":-"
     | Some VMcast-> str "<:"
     | Some NATIVEcast -> str "<<:"
     | None -> str ":>"
