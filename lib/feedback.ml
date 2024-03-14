@@ -17,6 +17,13 @@ type level =
   | Warning
   | Error
 
+let pp_lvl fmt lvl = let open Format in match lvl with
+  | Error   -> fprintf fmt "Error: "
+  | Info    -> fprintf fmt "Info: "
+  | Debug   -> fprintf fmt "Debug: "
+  | Warning -> fprintf fmt "Warning: "
+  | Notice  -> fprintf fmt ""
+
 type doc_id = int
 type route_id = int
 
@@ -73,8 +80,13 @@ let feedback ?did ?id ?route what =
      doc_id   = Option.default !doc_id did;
      span_id  = Option.default !span_id id;
   } in
-  if !warn_no_listeners && Hashtbl.length feeders = 0 then
+  if !warn_no_listeners && Hashtbl.length feeders = 0 then begin
     Format.eprintf "Warning, feedback message received but no listener to handle it!@\n%!";
+    match m.contents with
+    | Message (lvl,_,msg) ->
+      Format.eprintf "%a%a" pp_lvl lvl Pp.pp_with msg
+    | _ -> ()
+  end ;
   Hashtbl.iter (fun _ f -> f m) feeders
 
 (* Logging messages *)
@@ -90,13 +102,6 @@ let msg_debug   ?loc x = feedback_logger ?loc Debug x
 (* Helper for tools willing to understand only the messages *)
 let console_feedback_listener fmt =
   let open Format in
-  let pp_lvl fmt lvl = match lvl with
-    | Error   -> fprintf fmt "Error: "
-    | Info    -> fprintf fmt "Info: "
-    | Debug   -> fprintf fmt "Debug: "
-    | Warning -> fprintf fmt "Warning: "
-    | Notice  -> fprintf fmt ""
-  in
   let pp_loc fmt loc = let open Loc in match loc with
     | None     -> fprintf fmt ""
     | Some loc ->
