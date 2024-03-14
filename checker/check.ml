@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pp
-open CErrors
 open Util
 open Names
 
@@ -149,7 +148,7 @@ let find_logical_path phys_dir =
   match List.filter2 (fun p d -> p = phys_dir) physical logical with
   | _,[dir] -> dir
   | _,[] -> default_root_prefix
-  | _,l -> anomaly (Pp.str ("Two logical paths are associated to "^phys_dir^"."))
+  | _,l -> CErrors.anomaly (Pp.str ("Two logical paths are associated to "^phys_dir^"."))
 
 let remove_load_path dir =
   let physical, logical = !load_paths in
@@ -181,7 +180,7 @@ let add_load_path (phys_path,coq_path) =
             end
       | _,[] ->
           load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
-      | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
+      | _ -> CErrors.anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
 
 let load_paths_of_dir_path dir =
   let physical, logical = !load_paths in
@@ -227,13 +226,13 @@ let locate_qualified_library qid =
 
 let error_unmapped_dir qid =
   let prefix = qid.dirpath in
-  user_err
+  CErrors.user_err
     (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
      str "no physical path bound to" ++ spc () ++ pr_dirlist prefix
      ++ str "." ++ fnl ())
 
 let error_lib_not_found qid =
-  user_err
+  CErrors.user_err
     (str "Cannot find library " ++ pr_path qid ++ str " in loadpath.")
 
 let try_locate_absolute_library dir =
@@ -317,7 +316,7 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
         let () = if not (String.equal digest segment.ObjFile.hash) then raise_notrace Exit in
         v
       with _ ->
-        user_err (str "Corrupted file " ++ quote (str f))
+        CErrors.user_err (str "Corrupted file " ++ quote (str f))
     in
     let () = Validate.validate value v in
     let v = Analyze.instantiate v in
@@ -361,15 +360,15 @@ let intern_from_file ~intern_mode (dir, f) =
       let () = close_in ch in
       let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
-        user_err
+        CErrors.user_err
           (name_clash_message dir sd.md_name f);
       if tasks <> None then
-        user_err
+        CErrors.user_err
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Flags.if_verbose chk_pp (str " (was a vio file) ");
       Option.iter (fun (_,b) -> if not b then
-        user_err
+        CErrors.user_err
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
       end;
