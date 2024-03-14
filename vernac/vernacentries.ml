@@ -1830,7 +1830,12 @@ let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> Evaluable.EvalConstRef sp
+      | GlobRef.ConstRef sp ->
+          begin
+            match Structures.PrimitiveProjections.find_opt sp with
+            | None -> Evaluable.EvalConstRef sp
+            | Some p -> Evaluable.EvalProjectionRef p
+          end
       | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
