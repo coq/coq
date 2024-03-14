@@ -42,11 +42,13 @@ module ValMap = ValTMap (struct type 'a t = 'a -> top_printer_result end)
 
 let print0_val_map = ref ValMap.empty
 
-let find_print_val_fun tag =
-  try ValMap.find tag !print0_val_map
-  with Not_found ->
-    let msg s = Pp.(str "print function not found for a value interpreted as " ++ str s ++ str ".") in
-    CErrors.anomaly (msg (Val.repr tag))
+let find_print_val_fun tag v =
+  match ValMap.find tag !print0_val_map with
+  | f -> f v
+  | exception Not_found ->
+    (* opening Pp shadows "tag" *)
+    let the_tag = tag in
+    TopPrinterBasic Pp.(fun () -> str "<no printer for " ++ str (Val.repr the_tag) ++ str ">")
 
 let generic_val_print v =
   let Val.Dyn (tag,v) = v in
