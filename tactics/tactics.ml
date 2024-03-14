@@ -315,6 +315,42 @@ let convert_concl ~cast ~check ty k =
     end
   end
 
+let map_instance sigma f evk args =
+  let rec map ctx args = match ctx, SList.view args with
+  | [], None -> SList.empty
+  | decl :: ctx, Some (Some c, rem) ->
+    let c' = f c in
+    let rem' = map ctx rem in
+    if c' == c && rem' == rem then args
+    else if Constr.isVarId (NamedDecl.get_id decl) c' then SList.default rem'
+    else SList.cons c' rem'
+  | decl :: ctx, Some (None, rem) ->
+    let c = Constr.mkVar (NamedDecl.get_id decl) in
+    let c' = f c in
+    let rem' = map ctx rem in
+    if c' == c && rem' == rem then args
+    (* different from the one in econstr! *)
+    else if Constr.isVarId (NamedDecl.get_id decl) c' then SList.default rem'
+    else SList.cons c' rem'
+  | [], Some _ | _ :: _, None -> assert false
+  in
+  let EvarInfo evi = Evd.find sigma evk in
+  let ctx = Evd.evar_filtered_context evi in
+  map ctx args
+
+let with_reverse_casts env env' sigma c =
+  let map c =
+    let id = Constr.destVar c in
+    let d = Environ.lookup_named id env in
+    let d' = Environ.lookup_named id env' in
+    if EConstr.eq_constr sigma (EConstr.of_constr (NamedDecl.get_type d)) (EConstr.of_constr (NamedDecl.get_type d'))
+    then c
+    else Constr.(mkCast (c, REVERSEcast, NamedDecl.get_type d'))
+  in
+  let ev, l = Constr.destEvar (EConstr.Unsafe.to_constr c) in
+  let l = map_instance sigma map ev l  in
+  EConstr.of_constr @@ Constr.mkEvar (ev,l)
+
 let convert_hyp ~check ~reorder d =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -323,7 +359,9 @@ let convert_hyp ~check ~reorder d =
     let sign = convert_hyp ~check ~reorder env sigma d in
     let env = reset_with_named_context sign env in
     Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ty
+      let sigma, c = Evarutil.new_evar env sigma ~principal:true ty in
+      let c = with_reverse_casts (Proofview.Goal.env gl) env sigma c in
+      sigma, c
     end
   end
 
@@ -829,7 +867,9 @@ let e_change_in_hyps ~check ~reorder f args = match args with
     Proofview.Unsafe.tclEVARS sigma
     <*>
     Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ty
+      let sigma, c = Evarutil.new_evar env sigma ~principal:true ty in
+      let c = with_reverse_casts (Proofview.Goal.env gl) env sigma c in
+      sigma, c
     end
   end
 
