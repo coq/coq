@@ -386,12 +386,6 @@ let intern_from_file ~intern_mode (dir, f) =
       (Option.map (fun (cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst (Vmlibrary.inject vmlib)
 
-let get_deps (dir, f) =
-  try LibraryMap.find dir !depgraph
-  with Not_found ->
-    let _ = intern_from_file ~intern_mode:Dep (dir,f) in
-    LibraryMap.find dir !depgraph
-
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)
 let rec intern_library ~intern_mode seen (dir, f) needed =
@@ -416,7 +410,11 @@ let rec fold_deps seen ff (dir,f) (s,acc) =
   if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
   if LibrarySet.mem dir s then (s,acc)
   else
-    let deps = get_deps (dir,f) in
+    let deps = match LibraryMap.find_opt dir !depgraph with
+      | Some deps -> deps
+      | None ->
+        CErrors.anomaly Pp.(str "missing dep when computing closure (" ++ DirPath.print dir ++ str ")")
+    in
     let deps = Array.map (fun (d,_) -> try_locate_absolute_library d) deps in
     let seen' = LibrarySet.add dir seen in
     let (s',acc') = Array.fold_right (fold_deps seen' ff) deps (s,acc) in
