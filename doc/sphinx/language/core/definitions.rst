@@ -28,8 +28,9 @@ for :n:`let @ident := fun {+ @binder} => @term__1 in @term__2`.
 
 .. index::
    single: ... : ... (type cast)
-   single: ... <: ...
-   single: ... <<: ...
+   single: ... <: ... (VM type cast)
+   single: ... <<: ... (native compute type cast)
+   single: ... :> ... (volatile type cast)
 
 .. _type-cast:
 
