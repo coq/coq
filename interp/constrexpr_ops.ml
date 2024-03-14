@@ -647,7 +647,7 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CCast (p,Some Constr.DEFAULTcast, t) ->
     CPatCast (coerce_to_cases_pattern_expr p,t)
   | CLambdaN _ | CProdN _ | CSort _ | CLetIn _ | CGeneralization _
-  | CRef (_, Some _) | CCast (_, (Some (VMcast|NATIVEcast) | None), _)
+  | CRef (_, Some _) | CCast (_, (Some (REVERSEcast|VMcast|NATIVEcast) | None), _)
   | CFix _ | CCoFix _ | CApp _ | CProj _ | CCases _ | CLetTuple _ | CIf _
   | CPatVar _ | CEvar _
   | CNotation (_,_,(_,_,_,_::_))

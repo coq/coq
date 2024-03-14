@@ -953,4 +953,7 @@ let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) univs t1 
 let default_conv cv_pb env t1 t2 =
     gen_conv cv_pb env t1 t2
 
+let reverse_conv cv_pb env t1 t2 =
+  gen_conv ~l2r:true cv_pb env t1 t2
+
 let default_conv_leq = default_conv CUMUL

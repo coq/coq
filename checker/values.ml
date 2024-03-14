@@ -129,7 +129,7 @@ let v_caseinfo =
   let v_cprint = v_tuple "case_printing" [|v_boollist;Array v_boollist;v_cstyle|] in
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
-let v_cast = v_enum "cast_kind" 3
+let v_cast = v_enum "cast_kind" 4
 
 let v_proj_repr = v_tuple "projection_repr" [|v_ind;Int;Int;v_cst|]
 let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]

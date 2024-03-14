@@ -67,5 +67,6 @@ val generic_conv : conv_pb -> l2r:bool
   -> TransparentState.t -> env -> ?evars:CClosure.evar_handler
   -> 'a generic_conversion_function
 
-val default_conv     : conv_pb -> types kernel_conversion_function
+val default_conv : conv_pb -> types kernel_conversion_function
+val reverse_conv : conv_pb -> types kernel_conversion_function
 val default_conv_leq : types kernel_conversion_function

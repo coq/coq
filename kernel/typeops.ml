@@ -386,6 +386,8 @@ let check_cast env c ct k expected_type =
       Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
       default_conv CUMUL env ct expected_type
+    | REVERSEcast ->
+      reverse_conv CUMUL env ct expected_type
     | NATIVEcast ->
       let sigma = Genlambda.empty_evars env in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
