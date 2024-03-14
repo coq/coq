@@ -18,6 +18,7 @@ let import senv opac clib univs vmtab digest =
   let env = push_context_set ~strict:true (Safe_typing.univs_of_library clib) env in
   let env = push_context_set ~strict:true univs env in
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
+  let env = Environ.link_vm_library vmtab env in
   let opac = Mod_checking.check_module env opac mb.mod_mp mb in
   let (_,senv) = Safe_typing.import clib univs vmtab digest senv in senv, opac
 
