@@ -107,7 +107,7 @@ let clear_univs scope univ =
   match scope, univ with
   | Locality.Global _, (UState.Polymorphic_entry _, _ as univs) -> univs
   | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry false
-  | _, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
+  | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
 
 let context_subst subst (id,b,t,infos) =
   id, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, infos
