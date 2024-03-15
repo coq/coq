@@ -59,7 +59,6 @@ let instance_of_univ_entry = function
     - with implicit arguments
     - with inlining for functor application
     - with named universes *)
-
 let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name body typ =
   let (uentry, ubinders) = univs in
   let inl = let open Declaremods in match inline with
