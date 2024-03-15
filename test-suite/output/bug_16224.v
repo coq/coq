@@ -6,8 +6,6 @@ Class Cn := { cn : A }.
 
 Record Rc := { rc :> A }.
 
-Class Cc := { cc :> A }.
-
 Record Ri := { ri :: A }.
 
 Class Ci := { ci :: A }.

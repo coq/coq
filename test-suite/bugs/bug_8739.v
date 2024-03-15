@@ -16,7 +16,7 @@ Notation "x → y" := (x -> y)
 
 Class Setoid A := {
   equiv : crelation A;
-  setoid_equiv :> Equivalence equiv
+  setoid_equiv :: Equivalence equiv
 }.
 
 Notation "f ≈ g" := (equiv f g) (at level 79) : category_theory_scope.
@@ -28,13 +28,13 @@ Class Category := {
 
   uhom := Type : Type;
   hom : obj -> obj -> uhom where "a ~> b" := (hom a b);
-  homset :> ∀ X Y, Setoid (X ~> Y);
+  homset :: ∀ X Y, Setoid (X ~> Y);
 
   id {x} : x ~> x;
   compose {x y z} (f: y ~> z) (g : x ~> y) : x ~> z
     where "f ∘ g" := (compose f g);
 
-  compose_respects x y z :>
+  compose_respects x y z ::
     Proper (equiv ==> equiv ==> equiv) (@compose x y z);
 
   dom {x y} (f: x ~> y) := x;
@@ -69,7 +69,7 @@ Open Scope morphism_scope.
 Context {C : Category}.
 
 Class Isomorphism (x y : C) : Type := {
-  to   :> x ~> y;
+  to   :: x ~> y;
   from :  y ~> x;
 
   iso_to_from : to ∘ from ≈ id;

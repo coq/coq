@@ -61,7 +61,7 @@ Notation Contr := (IsTrunc minus_two).
 Notation IsHSet := (IsTrunc 0).
 
 Class Funext :=
-  { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+  { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 Global Instance contr_forall `{Funext} `{P : A -> Type} `{forall a, Contr (P a)}
 : Contr (forall a, P a) | 100.
 admit.

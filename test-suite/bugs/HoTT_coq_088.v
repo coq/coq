@@ -35,7 +35,7 @@ Definition equiv_path (A B : Type) (p : A = B) : Equiv A B.
 Admitted.
 
 Class Univalence := {
-  isequiv_equiv_path :> forall (A B : Type), IsEquiv (equiv_path A B)
+  isequiv_equiv_path :: forall (A B : Type), IsEquiv (equiv_path A B)
 }.
 
 Definition ua_downward_closed `{Univalence} : Univalence.

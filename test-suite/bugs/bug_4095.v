@@ -12,7 +12,7 @@ Class ILogicOps Frm := { lentails: relation Frm;
                          land: Frm -> Frm -> Frm;
                          lor: Frm -> Frm -> Frm }.
 Infix "|--"  := lentails (at level 79, no associativity).
-Class ILogic Frm {ILOps: ILogicOps Frm} := { lentailsPre:> PreOrder lentails }.
+Class ILogic Frm {ILOps: ILogicOps Frm} := { lentailsPre :: PreOrder lentails }.
 Definition lequiv `{ILogic Frm} P Q := P |-- Q /\ Q |-- P.
 Infix "-|-"  := lequiv (at level 85, no associativity).
 #[export] Instance lequiv_inverse_lentails `{ILogic Frm} {inverse} : subrelation lequiv (inverse lentails) := admit.

@@ -131,7 +131,7 @@ Import Coq.Classes.Morphisms.
 Module Export StringLike.
   Class StringLike {Char : Type} :=
     {
-      String :> Type;
+      String :: Type;
       is_char : String -> Char -> bool;
       length : String -> nat;
       take : nat -> String -> String;
@@ -154,11 +154,11 @@ Module Export StringLike.
       singleton_unique : forall s ch ch', s ~= [ ch ] -> s ~= [ ch' ] -> ch = ch';
       length_singleton : forall s ch, s ~= [ ch ] -> length s = 1;
       bool_eq_char : forall s s' ch, s ~= [ ch ] -> s' ~= [ ch ] -> s =s s';
-      is_char_Proper :> Proper (beq ==> eq ==> eq) is_char;
-      length_Proper :> Proper (beq ==> eq) length;
-      take_Proper :> Proper (eq ==> beq ==> beq) take;
-      drop_Proper :> Proper (eq ==> beq ==> beq) drop;
-      bool_eq_Equivalence :> Equivalence beq;
+      is_char_Proper :: Proper (beq ==> eq ==> eq) is_char;
+      length_Proper :: Proper (beq ==> eq) length;
+      take_Proper :: Proper (eq ==> beq ==> beq) take;
+      drop_Proper :: Proper (eq ==> beq ==> beq) drop;
+      bool_eq_Equivalence :: Equivalence beq;
       bool_eq_empty : forall str str', length str = 0 -> length str' = 0 -> str =s str';
       take_short_length : forall str n, n <= length str -> length (take n str) = n;
       take_long : forall str n, length str <= n -> take n str =s str;
@@ -340,7 +340,7 @@ Section general.
   Context {Char} {HSL : StringLike Char} {G : grammar Char}.
 
   Class boolean_parser_dataT :=
-    { predata :> parser_computational_predataT;
+    { predata :: parser_computational_predataT;
       split_string_for_production
       : item Char -> production Char -> String -> list nat }.
 

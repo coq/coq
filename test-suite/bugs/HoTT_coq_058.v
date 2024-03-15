@@ -30,7 +30,7 @@ Local Open Scope equiv_scope.
 
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
 
-Class Funext := { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+Class Funext := { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 
 Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) :
   (forall x, f x = g x) -> f = g

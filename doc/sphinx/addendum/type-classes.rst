@@ -248,7 +248,7 @@ the implicit arguments mechanism if available, as shown in the example.
 Substructures
 ~~~~~~~~~~~~~
 
-.. index:: :> (substructure)
+.. index:: :: (substructure)
 
 Substructures are components of a typeclass which are themselves instances of a
 typeclass. They often arise when using typeclasses for logical properties, e.g.:

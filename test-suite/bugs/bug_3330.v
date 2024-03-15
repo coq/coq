@@ -132,7 +132,7 @@ Class IsTrunc (n : trunc_index) (A : Type) : Type :=
 Notation IsHSet := (IsTrunc 0).
 
 Class Funext :=
-  { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+  { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 
 Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) :
   f == g -> f = g
@@ -357,8 +357,8 @@ Class IsIsomorphism {C : PreCategory} {s d} (m : morphism C s d) :=
 
 Class Isomorphic {C : PreCategory} s d :=
   {
-    morphism_isomorphic :> morphism C s d;
-    isisomorphism_isomorphic :> IsIsomorphism morphism_isomorphic
+    morphism_isomorphic :: morphism C s d;
+    isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic
   }.
 
 Module Export CategoryMorphismsNotations.

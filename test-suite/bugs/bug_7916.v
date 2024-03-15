@@ -166,7 +166,7 @@ Module Iris.
    Global Arguments decide _ {_} : simpl never, assert.
 
    Class RelDecision {A B} (R : A → B → Prop) :=
-     decide_rel x y :> Decision (R x y).
+     decide_rel x y :: Decision (R x y).
    Notation EqDecision A := (RelDecision (=@{A})).
 
    Class Inj {A B} (R : relation A) (S : relation B) (f : A → B) : Prop :=

@@ -6,7 +6,7 @@ Notation vector := Vector.t.
 Notation Vcons n t := (@Vector.cons _ n _ t). 
 
 Class Equiv A := equiv : A -> A -> Prop.
-Class Setoid A `{Equiv A} := setoid_equiv:> Equivalence (equiv).
+Class Setoid A `{Equiv A} := setoid_equiv :: Equivalence (equiv).
 
 #[export] Instance vecequiv A `{Equiv A} n : Equiv (vector A n).
 admit.

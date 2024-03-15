@@ -74,7 +74,7 @@ Notation IsHProp := (IsTrunc minus_one).
 Notation IsHSet := (IsTrunc 0).
 
 Class Funext :=
-  { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+  { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 
 Definition concat_pV {A : Type} {x y : A} (p : x = y) :
   p @ p^ = 1
@@ -136,7 +136,7 @@ Definition equiv_path (A B : Type) (p : A = B) : A <~> B
   := BuildEquiv _ _ (transport (fun X:Type => X) p) _.
 
 Class Univalence := {
-                     isequiv_equiv_path :> forall (A B : Type), IsEquiv (equiv_path A B)
+                     isequiv_equiv_path :: forall (A B : Type), IsEquiv (equiv_path A B)
                    }.
 
 Section Univalence.

@@ -51,7 +51,7 @@ Local Coercion is_true : bool >-> Sortclass.
 Module Export StringLike.
   Class StringLike {Char : Type} :=
     {
-      String :> Type;
+      String :: Type;
       is_char : String -> Char -> bool;
       length : String -> nat;
       take : nat -> String -> String;
@@ -76,11 +76,11 @@ Module Export StringLike.
       unsafe_get_correct : forall n s ch, get n s = Some ch -> unsafe_get n s = ch;
       length_singleton : forall s ch, s ~= [ ch ] -> length s = 1;
       bool_eq_char : forall s s' ch, s ~= [ ch ] -> s' ~= [ ch ] -> s =s s';
-      is_char_Proper :> Proper (beq ==> eq ==> eq) is_char;
-      length_Proper :> Proper (beq ==> eq) length;
-      take_Proper :> Proper (eq ==> beq ==> beq) take;
-      drop_Proper :> Proper (eq ==> beq ==> beq) drop;
-      bool_eq_Equivalence :> Equivalence beq;
+      is_char_Proper :: Proper (beq ==> eq ==> eq) is_char;
+      length_Proper :: Proper (beq ==> eq) length;
+      take_Proper :: Proper (eq ==> beq ==> beq) take;
+      drop_Proper :: Proper (eq ==> beq ==> beq) drop;
+      bool_eq_Equivalence :: Equivalence beq;
       bool_eq_empty : forall str str', length str = 0 -> length str' = 0 -> str =s str';
       take_short_length : forall str n, n <= length str -> length (take n str) = n;
       take_long : forall str n, length str <= n -> take n str =s str;
@@ -211,8 +211,8 @@ Section recursive_descent_parser.
       : item Char -> production Char -> String -> list nat }.
 
   Class boolean_parser_dataT :=
-    { predata :> parser_computational_predataT;
-      split_data :> split_dataT }.
+    { predata :: parser_computational_predataT;
+      split_data :: split_dataT }.
 End recursive_descent_parser.
 
 End BaseTypes.

@@ -193,7 +193,7 @@ Notation "'return' t" := (unit t).
 (* Test correct handling of existentials and defined fields. *)
 
 Class A `(e: T) := { a := True }.
-Class B `(e_: T) := { e := e_; sg_ass :> A e }.
+Class B `(e_: T) := { e := e_; sg_ass :: A e }.
 
 (* Set Typeclasses Debug. *)
 (* Set Typeclasses Debug Verbosity 2. *)
@@ -206,7 +206,7 @@ Goal forall `{B T}, Prop.
   intros. refine (@a _ _ _).
 Defined.
 
-Class B' `(e_: T) := { e' := e_; sg_ass' :> A e_ }.
+Class B' `(e_: T) := { e' := e_; sg_ass' :: A e_ }.
 
 Goal forall `{B' T}, a.
   intros. exact I.

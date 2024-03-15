@@ -266,7 +266,7 @@ Notation "'Exists' x .. y , p" :=
   (lexists (fun x => .. (lexists (fun y => p)) .. )) (at level 78, x binder, y binder, right associativity).
 
 Class ILogic Frm {ILOps: ILogicOps Frm} := {
-                                            lentailsPre:> PreOrder lentails;
+                                            lentailsPre :: PreOrder lentails;
                                             ltrueR: forall C, C |-- ltrue;
                                             lfalseL: forall C, lfalse |-- C;
                                             lforallL: forall T x (P: T -> Frm) C, P x |-- C -> lforall P |-- C;
