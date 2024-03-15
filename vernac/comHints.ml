@@ -132,6 +132,7 @@ let interp_hints ~poly h =
   let ft = function
     | HintsVariables -> HintsVariables
     | HintsConstants -> HintsConstants
+    | HintsProjections -> HintsProjections
     | HintsReferences lhints -> HintsReferences (List.map fr lhints)
   in
   let fp = Constrintern.intern_constr_pattern (Global.env ()) in
