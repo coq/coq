@@ -26,7 +26,6 @@ module NamedDecl = Context.Named.Declaration
     - with implicit arguments (impls)
     - with implicit status for discharge (impl)
     - virtually with named universes *)
-
 let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name body typ =
   let decl = match body with
     | None ->
