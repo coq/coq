@@ -1712,12 +1712,15 @@ let pr_hint_db_env env sigma db =
     in
     Hint_db.fold fold db (mt ())
   in
-  let { TransparentState.tr_var = ids; tr_cst = csts } = Hint_db.transparent_state db in
+  let { TransparentState.tr_var = ids; tr_cst = csts; tr_prj = ps } =
+    Hint_db.transparent_state db
+  in
   hov 0
     ((if Hint_db.use_dn db then str"Discriminated database"
       else str"Non-discriminated database")) ++ fnl () ++
   hov 2 (str"Unfoldable variable definitions: " ++ pr_idpred ids) ++ fnl () ++
   hov 2 (str"Unfoldable constant definitions: " ++ pr_cpred csts) ++ fnl () ++
+  hov 2 (str"Unfoldable projection definitions: " ++ pr_prpred ps) ++ fnl () ++
   hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
   content
 
