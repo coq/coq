@@ -97,6 +97,10 @@ let projection_nparams cst = (Cmap.find cst !projection_table).nparams
 
 let is_projection cst = Cmap.mem cst !projection_table
 
+let projection_number env cst =
+  let s = find_from_projection cst in
+  CList.index (Option.equal (Environ.QConstant.equal env)) (Some cst) (List.map (fun x -> x.proj_body) s.projections) - 1
+
 end
 
 (************************************************************************)
@@ -395,6 +399,18 @@ let is_open_canonical_projection env sigma c =
       not (isConstruct sigma hd)
     with Failure _ -> false
   with Not_found -> false
+
+let print env sigma s =
+  let pr_econstr = Termops.Internal.debug_print_constr sigma in
+  let pr_econstr_list l = Pp.(str "[ " ++ prlist_with_sep (fun () -> str "; ") pr_econstr l ++ str " ]") in
+  Pp.(str "{ constant = " ++ pr_econstr s.constant ++ cut () ++
+     str "abstractions_ty = " ++ pr_econstr_list s.abstractions_ty ++ cut () ++
+     str "body = " ++ pr_econstr s.body ++ cut () ++
+     str "nparams = " ++ int s.nparams ++ cut () ++
+     str "params = " ++ pr_econstr_list s.params ++ cut () ++
+     str "cvalue_abstractions = " ++ pr_opt int s.cvalue_abstraction ++ cut () ++
+     str "cvalue_arguments = " ++ pr_econstr_list s.cvalue_arguments ++ cut () ++
+     str "}")
 
 end
 
