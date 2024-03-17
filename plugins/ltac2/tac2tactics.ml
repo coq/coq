@@ -29,6 +29,7 @@ let tactic_infer_flags with_evar = Pretyping.{
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 (** FIXME: export a better interface in Tactics *)

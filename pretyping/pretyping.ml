@@ -217,14 +217,46 @@ let glob_quality ?loc evd = let open Sorts.Quality in function
     let evd, q = glob_qvar ?loc evd q in
     evd, QVar q
 
-let sort ?loc sigma (q, l) = match l with
+type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
+
+type use_typeclasses = NoUseTC | UseTCForConv | UseTC
+
+type inference_flags = {
+  use_coercions : bool;
+  use_typeclasses : use_typeclasses;
+  solve_unification_constraints : bool;
+  fail_evar : bool;
+  expand_evars : bool;
+  program_mode : bool;
+  polymorphic : bool;
+  undeclared_evars_patvars: bool;
+  patvars_abstract : bool;
+  unconstrained_sorts : bool;
+}
+
+type pretype_flags = {
+  poly : bool;
+  resolve_tc : bool;
+  program_mode : bool;
+  use_coercions : bool;
+  undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
+  unconstrained_sorts : bool;
+}
+
+let sort ?loc ~flags sigma (q, l) = match l with
 | UNamed [] -> assert false
 | UNamed [GSProp, 0] -> assert (Option.is_empty q); sigma, ESorts.sprop
 | UNamed [GProp, 0] -> assert (Option.is_empty q); sigma, ESorts.prop
+| UNamed [GSet, 0] when Option.is_empty q -> sigma, ESorts.set
 | UNamed ((u, n) :: us) ->
   let open Pp in
   let sigma, q = match q with
-    | None -> sigma, None
+    | None ->
+      if flags.unconstrained_sorts then
+        let sigma, q = new_quality_variable ?loc sigma in
+        sigma, Some q
+      else sigma, None
     | Some q ->
       let sigma, q = glob_qvar ?loc sigma q in
       sigma, Some q
@@ -257,7 +289,11 @@ let sort ?loc sigma (q, l) = match l with
   sigma, ESorts.make s
 | UAnonymous {rigid} ->
   let sigma, q = match q with
-    | None -> sigma, None
+    | None ->
+      if flags.unconstrained_sorts then
+        let sigma, q = new_quality_variable ?loc sigma in
+        sigma, Some q
+      else sigma, None
     | Some q ->
       let sigma, q = glob_qvar ?loc sigma q in
       sigma, Some q
@@ -269,31 +305,6 @@ let sort ?loc sigma (q, l) = match l with
     | Some q -> Sorts.qsort q u
   in
   sigma, ESorts.make s
-
-type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
-
-type use_typeclasses = NoUseTC | UseTCForConv | UseTC
-
-type inference_flags = {
-  use_coercions : bool;
-  use_typeclasses : use_typeclasses;
-  solve_unification_constraints : bool;
-  fail_evar : bool;
-  expand_evars : bool;
-  program_mode : bool;
-  polymorphic : bool;
-  undeclared_evars_patvars: bool;
-  patvars_abstract : bool;
-}
-
-type pretype_flags = {
-  poly : bool;
-  resolve_tc : bool;
-  program_mode : bool;
-  use_coercions : bool;
-  undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
-}
 
 (* Compute the set of still-undefined initial evars up to restriction
    (e.g. clearing) and the set of yet-unsolved evars freshly created
@@ -576,8 +587,8 @@ let judge_of_sort ?loc evd s =
   in
     evd, judge
 
-let pretype_sort ?loc sigma s =
-  let sigma, s = sort ?loc sigma s in
+let pretype_sort ?loc ~flags sigma s =
+  let sigma, s = sort ?loc ~flags sigma s in
   judge_of_sort ?loc sigma s
 
 let new_typed_evar env sigma ?naming ~src tycon =
@@ -895,7 +906,7 @@ struct
 
   let pretype_sort self s =
     fun ?loc ~flags tycon env sigma ->
-    let sigma, j = pretype_sort ?loc sigma s in
+    let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
   let pretype_app self (f, args) =
@@ -1504,6 +1515,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
     poly = flags.polymorphic;
     undeclared_evars_patvars = flags.undeclared_evars_patvars;
     patvars_abstract = flags.patvars_abstract;
+    unconstrained_sorts = flags.unconstrained_sorts;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
       | UseTC | UseTCForConv -> true
@@ -1539,6 +1551,7 @@ let default_inference_flags fail = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let no_classes_no_fail_inference_flags = {
@@ -1551,6 +1564,7 @@ let no_classes_no_fail_inference_flags = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let all_and_fail_flags = default_inference_flags true

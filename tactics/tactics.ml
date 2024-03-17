@@ -1345,6 +1345,7 @@ let tactic_infer_flags with_evar = Pretyping.{
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
