@@ -109,6 +109,8 @@ val simple_open : ?cat:category -> ('i -> 'a -> unit) ->
    behaviour. When [cat:None], can be opened by Unfiltered, but also
    by Filtered with a negative set. *)
 
+val filter_eq : open_filter -> open_filter -> bool
+
 val filter_and : open_filter -> open_filter -> open_filter option
 (** Returns [None] when the intersection is empty. *)
 

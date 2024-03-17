@@ -50,6 +50,11 @@ let in_filter ~cat f =
 
 let simple_open ?cat f filter i o = if in_filter ~cat filter then f i o
 
+let filter_eq f1 f2 = match f1, f2 with
+  | Unfiltered, Unfiltered -> true
+  | Unfiltered, _ | _, Unfiltered -> false
+  | Filtered f1, Filtered f2 -> CString.Pred.equal f1 f2
+
 let filter_and f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Some f
   | Filtered f1, Filtered f2 ->
