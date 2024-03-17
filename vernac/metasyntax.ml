@@ -88,7 +88,14 @@ let is_known = let open Pcoq.Entry in function
     | [] -> None
     | entries -> Some entries
 
-let full_grammar () = Pcoq.Entry.accumulate_in [Any Pvernac.Vernac_.vernac_control]
+let full_grammar () =
+  let open Pvernac.Vernac_ in
+  let open Pcoq.Entry in
+  let proof_modes = List.map (fun (_,e) -> Any e)
+      (CString.Map.bindings (Pvernac.list_proof_modes()))
+  in
+  let entries = (Any vernac_control) :: (Any noedit_mode) :: proof_modes in
+  Pcoq.Entry.accumulate_in entries
 
 let same_entry (Pcoq.Entry.Any e) (Pcoq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
 

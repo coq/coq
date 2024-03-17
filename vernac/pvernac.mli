@@ -53,3 +53,4 @@ val main_entry : proof_mode option -> vernac_control option Entry.t
 val register_proof_mode : string -> Vernacexpr.vernac_expr Entry.t -> proof_mode
 val lookup_proof_mode : string -> proof_mode option
 val proof_mode_to_string : proof_mode -> string
+val list_proof_modes : unit -> Vernacexpr.vernac_expr Entry.t CString.Map.t
