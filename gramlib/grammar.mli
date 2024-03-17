@@ -66,7 +66,7 @@ module type S = sig
     val is_empty : 'a t -> bool with_estate
 
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : 'a t -> any_t list CString.Map.t with_estate
+    val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig

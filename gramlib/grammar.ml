@@ -66,7 +66,7 @@ module type S = sig
     val print : Format.formatter -> 'a t -> unit with_estate
     val is_empty : 'a t -> bool with_estate
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : 'a t -> any_t list CString.Map.t with_estate
+    val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
@@ -1776,21 +1776,22 @@ module Entry = struct
 
   let same_entry (Any e) (Any e') = Option.has_some (eq_entry e e')
 
-  let accumulate_in e estate =
-    let initial = Any e in
-    let todo = ref [initial] in
-    let visited = ref (String.Map.singleton (name e) [initial]) in
+  let accumulate_in initial estate =
+    let add_visited visited (Any e as any) =
+      String.Map.update e.ename (function
+          | None -> Some [any]
+          | Some vl as v ->
+            if List.mem_f same_entry any vl then v else Some (any :: vl))
+        visited
+    in
+    let todo = ref initial in
+    let visited = List.fold_left add_visited String.Map.empty initial in
+    let visited = ref visited in
     while not (List.is_empty !todo) do
       let Any e = List.hd !todo in
       todo := List.tl !todo;
       iter_in estate (fun (Any e as any) ->
-          let visited' = String.Map.update e.ename (function
-              | None -> Some [any]
-              | Some vl as v ->
-                let any = any in
-                if List.mem_f same_entry any vl then v else Some (any :: vl))
-              !visited
-          in
+          let visited' = add_visited !visited any in
           if not (!visited == visited') then begin
             visited := visited';
             todo := any :: !todo

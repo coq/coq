@@ -88,7 +88,7 @@ let is_known = let open Pcoq.Entry in function
     | [] -> None
     | entries -> Some entries
 
-let full_grammar () = Pcoq.Entry.accumulate_in Pvernac.Vernac_.vernac_control
+let full_grammar () = Pcoq.Entry.accumulate_in [Any Pvernac.Vernac_.vernac_control]
 
 let same_entry (Pcoq.Entry.Any e) (Pcoq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
 
