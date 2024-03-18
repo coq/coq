@@ -315,41 +315,37 @@ let convert_concl ~cast ~check ty k =
     end
   end
 
-let map_instance sigma f evk args =
-  let rec map ctx args = match ctx, SList.view args with
-  | [], None -> SList.empty
-  | decl :: ctx, Some (Some c, rem) ->
-    let c' = f c in
-    let rem' = map ctx rem in
-    if c' == c && rem' == rem then args
-    else if Constr.isVarId (NamedDecl.get_id decl) c' then SList.default rem'
-    else SList.cons c' rem'
-  | decl :: ctx, Some (None, rem) ->
-    let c = Constr.mkVar (NamedDecl.get_id decl) in
-    let c' = f c in
-    let rem' = map ctx rem in
-    if c' == c && rem' == rem then args
-    (* different from the one in econstr! *)
-    else if Constr.isVarId (NamedDecl.get_id decl) c' then SList.default rem'
-    else SList.cons c' rem'
-  | [], Some _ | _ :: _, None -> assert false
-  in
-  let EvarInfo evi = Evd.find sigma evk in
-  let ctx = Evd.evar_filtered_context evi in
-  map ctx args
-
 let with_reverse_casts env env' sigma c =
-  let map c =
-    let id = Constr.destVar c in
-    let d = Environ.lookup_named id env in
-    let d' = Environ.lookup_named id env' in
-    if EConstr.eq_constr sigma (EConstr.of_constr (NamedDecl.get_type d)) (EConstr.of_constr (NamedDecl.get_type d'))
-    then c
-    else Constr.(mkCast (c, REVERSEcast, NamedDecl.get_type d'))
+  let ev, l = EConstr.destEvar sigma c in
+  let () = match l with
+    | Nil | Default (_, Nil) -> ()
+    | _ -> assert false
   in
-  let ev, l = Constr.destEvar (EConstr.Unsafe.to_constr c) in
-  let l = map_instance sigma map ev l  in
-  EConstr.of_constr @@ Constr.mkEvar (ev,l)
+  let rec remake_instance acc k = function
+    | [] -> acc
+    | false :: rest -> remake_instance (SList.default acc) k rest
+    | true :: rest -> remake_instance (SList.cons (mkRel k) acc) (k-1) rest
+  in
+  let rec aux (k,bnd) env' =
+    match env' with
+    | [] -> mkEvar (ev, remake_instance SList.empty k (List.rev bnd))
+    | d' :: env' ->
+      let na = NamedDecl.get_annot d' in
+      let id = NamedDecl.get_id d' in
+      let t' = NamedDecl.get_type d' in
+      let t = NamedDecl.get_type (EConstr.lookup_named id env) in
+      (* is_section_variable: inserting letins for section variables
+         can produce spurious dependencies on them *)
+      if is_section_variable (Global.env()) id
+      || EConstr.eq_constr sigma t t'
+      then aux (k,false::bnd) env'
+      else
+        let na = Context.map_annot (fun x -> Name x) na in
+        let c = aux (k+1,true::bnd) env' in
+        (* unfortunately we have to repeat the type *)
+        mkLetIn (na, mkCast (mkVar id, REVERSEcast, t'), t', c)
+  in
+  aux (0,[]) (List.rev (EConstr.named_context env'))
 
 let convert_hyp ~check ~reorder d =
   Proofview.Goal.enter begin fun gl ->
