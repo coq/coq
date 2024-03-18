@@ -137,8 +137,9 @@ let intern_ind_arity env sigma ind =
   let template_syntax = if pseudo_poly then SyntaxAllowsTemplatePoly else SyntaxNoTemplatePoly in
   (constr_loc ind.ind_arity, c, impls, template_syntax)
 
-let pretype_ind_arity env sigma (loc, c, impls, template_syntax) =
-  let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
+let pretype_ind_arity ~unconstrained_sorts env sigma (loc, c, impls, template_syntax) =
+  let flags = { Pretyping.all_no_fail_flags with unconstrained_sorts } in
+  let sigma,t = understand_tcc ~flags env sigma ~expected_type:IsType c in
   match Reductionops.sort_of_arity env sigma t with
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
@@ -458,14 +459,14 @@ let check_param = function
 | CLocalPattern {CAst.loc} ->
   Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
-let restrict_inductive_universes sigma ctx_params arities constructors =
+let restrict_inductive_universes ~lbound sigma ctx_params arities constructors =
   let merge_universes_of_constr c =
     Univ.Level.Set.union (snd (EConstr.universes_of_constr sigma (EConstr.of_constr c))) in
   let uvars = Univ.Level.Set.empty in
   let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
   let uvars = List.fold_right merge_universes_of_constr arities uvars in
   let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
-  Evd.restrict_universe_context sigma uvars
+  Evd.restrict_universe_context ~lbound sigma uvars
 
 let check_trivial_variances variances =
   Array.iter (function
@@ -496,11 +497,12 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       constructors
   in
   let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma arities ctor_args in
-  let sigma = Evd.minimize_universes sigma in
+  let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
+  let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
-  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
+  let sigma = restrict_inductive_universes ~lbound sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
   (* Build the inductive entries *)
@@ -538,12 +540,12 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   in
   default_dep_elim, mind_ent, binders, ctx
 
-let interp_params env udecl uparamsl paramsl =
+let interp_params ~unconstrained_sorts env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
-    interp_context_evars ~program_mode:false env sigma uparamsl in
+    interp_context_evars ~program_mode:false ~unconstrained_sorts env sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
-    interp_context_evars ~program_mode:false ~impl_env:uimpls env_uparams sigma paramsl
+    interp_context_evars ~program_mode:false ~unconstrained_sorts ~impl_env:uimpls env_uparams sigma paramsl
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   sigma, env_params, (ctx_params, env_uparams, ctx_uparams,
@@ -586,16 +588,17 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let indnames = List.map (fun ind -> ind.ind_name) indl in
   let ninds = List.length indl in
 
+  (* In case of template polymorphism, we need to compute more constraints *)
+  let unconstrained_sorts = not poly in
+
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
-    (* In case of template polymorphism, we need to compute more constraints *)
-    let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
-    interp_params env0 udecl uparamsl paramsl
+    interp_params ~unconstrained_sorts env0 udecl uparamsl paramsl
   in
 
   (* Interpret the arities *)
   let arities = List.map (intern_ind_arity env_params sigma) indl in
 
-  let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
+  let sigma, arities = List.fold_left_map (pretype_ind_arity ~unconstrained_sorts env_params) sigma arities in
   let arities, relevances, template_syntax, indimpls = List.split4 arities in
 
   let lift_ctx n ctx =

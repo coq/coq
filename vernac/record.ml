@@ -158,7 +158,7 @@ let is_sort_variable sigma s =
       then Some l
       else None
 
-let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
+let build_type_telescope ~unconstrained_sorts newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
     let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
     sigma, (EConstr.mkSort s, s)
@@ -170,7 +170,11 @@ let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
   | Some t ->
     let env = EConstr.push_rel_context newps env0 in
     let impls = Constrintern.empty_internalization_env in
-    let sigma, s = Constrintern.interp_type_evars ~program_mode:false env sigma ~impls t in
+    let sigma, s =
+      let t = Constrintern.intern_gen IsType ~impls env sigma t in
+      let flags = { Pretyping.all_no_fail_flags with program_mode = false; unconstrained_sorts } in
+      Pretyping.understand_tcc ~flags env sigma ~expected_type:IsType t
+    in
     let sred = Reductionops.whd_allnolet env sigma s in
     (match EConstr.kind sigma sred with
      | Sort s' -> (sigma, (s, s'))
@@ -213,13 +217,13 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
      any Set <= i constraint for universes that might actually be instantiated with Prop. *)
   let is_template =
     List.exists (fun { DataI.arity; _} -> Option.cata check_anonymous_type true arity) records in
-  let env0 = if not poly && not def && is_template then Environ.set_universes_lbound env0 UGraph.Bound.Prop else env0 in
+  let unconstrained_sorts = not poly && not def && is_template in
   let sigma, decl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named ps in
   let sigma, (impls_env, ((_env1,newps), imps)) =
-    Constrintern.interp_context_evars ~program_mode:false env0 sigma ps in
+    Constrintern.interp_context_evars ~program_mode:false ~unconstrained_sorts env0 sigma ps in
   let sigma, typs =
-    List.fold_left_map (build_type_telescope newps env0) sigma records in
+    List.fold_left_map (build_type_telescope ~unconstrained_sorts newps env0) sigma records in
   let typs, aritysorts = List.split typs in
   let arities = List.map (fun typ -> EConstr.it_mkProd_or_LetIn typ newps) typs in
   let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort s) aritysorts in
@@ -249,9 +253,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       sigma, List.combine default_dep_elim typs
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
+  let lbound = if unconstrained_sorts then UGraph.Bound.Prop else UGraph.Bound.Set in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
-    let sigma = Evd.minimize_universes sigma in
+    let sigma = Evd.minimize_universes ~lbound sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
       let _, varsc = EConstr.universes_of_constr sigma c in
@@ -268,7 +273,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       { DataR.arity; default_dep_elim; implfs; fields }
     in
     let ans = List.map2 map data typs in
-    let sigma = Evd.restrict_universe_context sigma !uvars in
+    let sigma = Evd.restrict_universe_context ~lbound sigma !uvars in
     sigma, (newps, ans)
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in
