@@ -29,6 +29,7 @@
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11))
+  yojson
   (conf-linux-libc-dev (= :os "linux")))
  (depopts rocq-native memprof-limits memtrace)
  (synopsis "The Rocq Proof Assistant -- Core Binaries and Tools")
