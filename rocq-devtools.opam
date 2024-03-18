@@ -25,6 +25,7 @@ bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
   "rocq-runtime" {= version}
+  "yojson"
   "odoc" {with-doc}
 ]
 build: [

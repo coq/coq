@@ -56,7 +56,8 @@ prelude, now living in the rocq-core package."))
 (package
  (name rocq-devtools)
  (depends
-  (rocq-runtime (= :version)))
+  (rocq-runtime (= :version))
+   yojson)
  (synopsis "Development tools for Rocq")
  (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
