@@ -916,7 +916,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
               ; tclMAP
                   (fun id ->
                     tclTRY
-                      (unfold_in_hyp
+                      (unfold_in_hyp ~cast:false
                          [ ( Locus.AllOccurrences
                            , Evaluable.EvalVarRef (destVar sigma args.(1)) ) ]
                          (destVar sigma args.(1), Locus.InHyp)))
@@ -935,7 +935,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
               ; tclMAP
                   (fun id ->
                     tclTRY
-                      (unfold_in_hyp
+                      (unfold_in_hyp ~cast:false
                          [ ( Locus.AllOccurrences
                            , Evaluable.EvalVarRef (destVar sigma args.(2)) ) ]
                          (destVar sigma args.(2), Locus.InHyp)))
