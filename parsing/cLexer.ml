@@ -391,7 +391,7 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current_comment in
-  (if !Flags.beautify && Buffer.length current_comment > 0 &&
+  (if !Flags.record_comments && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
