@@ -367,25 +367,15 @@ let comm_loc bp = match !comment_begin with
 let comments = ref []
 let current_comment = Buffer.create 8192
 
-(* between_commands is used to parse bullets and { and } differently depending on the context.
-   (also used in comment_stop but not sure this is important) *)
-let between_commands = ref true
-
 let real_push_char c = Buffer.add_char current_comment c
 
 let push_string s = Buffer.add_string current_comment s
-
-let null_comment s =
-  let rec null i =
-    i<0 || (List.mem s.[i] [' ';'\t';'\n';'\r'] && null (i-1)) in
-  null (String.length s - 1)
 
 let dbg = CDebug.create ~name:"comment-lexing" ()
 
 let comment_stop ep =
   let current_s = Buffer.contents current_comment in
-  (if !Flags.record_comments && Buffer.length current_comment > 0 &&
-    (!between_commands || not(null_comment current_s)) then
+  (if !Flags.record_comments && Buffer.length current_comment > 0 then
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
@@ -631,6 +621,9 @@ let parse_after_qmark ~diff_mode ttree loc bp s =
   | Utf8Token _ -> fst (process_chars ~diff_mode ttree loc bp ['?'] s)
 
 (* Parse a token in a char stream *)
+
+(* between_commands is used to parse bullets and { and } differently depending on the context. *)
+let between_commands = ref true
 
 let rec next_token ~diff_mode ttree loc s =
   let bp = Stream.count s in
