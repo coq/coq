@@ -54,6 +54,8 @@ val projection_nparams : Names.Constant.t -> int
 val is_projection : Names.Constant.t -> bool
 
 val projection_number : Environ.env -> Names.Constant.t -> int
+(** [projection_number env p] returns the position of the projection p in
+    the structure it corresponds to, counting from 0. *)
 
 end
 

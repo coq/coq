@@ -99,7 +99,8 @@ let is_projection cst = Cmap.mem cst !projection_table
 
 let projection_number env cst =
   let s = find_from_projection cst in
-  CList.index (Option.equal (Environ.QConstant.equal env)) (Some cst) (List.map (fun x -> x.proj_body) s.projections) - 1
+  CList.index0 (Option.equal (Environ.QConstant.equal env)) (Some cst)
+    (List.map (fun x -> x.proj_body) s.projections)
 
 end
 

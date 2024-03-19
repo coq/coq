@@ -892,11 +892,7 @@ let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
 
-let undefined_evars d = EvMap.domain d.undf_evars
-
 let defined_map d = d.defn_evars
-
-let defined_evars d = EvMap.domain d.defn_evars
 
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
