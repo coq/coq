@@ -951,24 +951,27 @@ struct
 
   module SyntacticOrd = struct
     type nonrec t = t
-    let compare (c, b) (c', b') =
-      if b = b' then Repr.SyntacticOrd.compare c c' else -1
+    let compare (p, b) (p', b') =
+      let c = Bool.compare b b' in
+      if c <> 0 then c else Repr.SyntacticOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.SyntacticOrd.equal c c'
     let hash (c, b) = (if b then 0 else 1) + Repr.SyntacticOrd.hash c
   end
   module CanOrd = struct
     type nonrec t = t
-    let compare (c, b) (c', b') =
-      if b = b' then Repr.CanOrd.compare c c' else -1
+    let compare (p, b) (p', b') =
+      let c = Bool.compare b b' in
+      if c <> 0 then c else Repr.CanOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.CanOrd.equal c c'
     let hash (c, b) = (if b then 0 else 1) + Repr.CanOrd.hash c
   end
   module UserOrd = struct
     type nonrec t = t
-    let compare (c, b) (c', b') =
-      if b = b' then Repr.UserOrd.compare c c' else -1
+    let compare (p, b) (p', b') =
+      let c = Bool.compare b b' in
+      if c <> 0 then c else Repr.UserOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.UserOrd.equal c c'
     let hash (c, b) = (if b then 0 else 1) + Repr.UserOrd.hash c
@@ -992,9 +995,9 @@ struct
 
   let hcons = Hashcons.simple_hcons HashProjection.generate HashProjection.hcons Repr.hcons
 
-  let compare (c, b) (c', b') =
-    if b == b' then Repr.compare c c'
-    else if b then 1 else -1
+  let compare (p, b) (p', b') =
+    let c = Bool.compare b b' in
+    if c <> 0 then c else Repr.compare p p'
 
   let map f (c, b as x) =
     let c' = Repr.map f c in
