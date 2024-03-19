@@ -1110,7 +1110,7 @@ let compute_bl_tact handle ind lnamesparrec nparrec =
               Tacticals.tclTRY (
                   Tacticals.tclORELSE reflexivity my_discr_tac
                 );
-              simpl_in_hyp (freshz,Locus.InHyp);
+              simpl_in_hyp ~cast:false (freshz,Locus.InHyp);
               (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                *)

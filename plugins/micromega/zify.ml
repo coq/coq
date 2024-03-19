@@ -1340,7 +1340,7 @@ let trans_hyp h t0 prfp =
         let env = Tacmach.pf_env gl in
         let evd = Tacmach.project gl in
         let t' = Reductionops.nf_betaiota env evd t' in
-        Tactics.change_in_hyp ~check:true None
+        Tactics.change_in_hyp ~cast:false ~check:true None
           (Tactics.make_change_arg t')
           (h, Locus.InHypTypeOnly))
   | TProof (t', prf) ->

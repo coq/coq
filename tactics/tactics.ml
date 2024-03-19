@@ -347,7 +347,7 @@ let with_reverse_casts env env' sigma c =
   in
   aux (0,[]) (List.rev (EConstr.named_context env'))
 
-let convert_hyp ~check ~reorder d =
+let convert_hyp ~cast ~check ~reorder d =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
@@ -356,7 +356,7 @@ let convert_hyp ~check ~reorder d =
     let env = reset_with_named_context sign env in
     Refine.refine ~typecheck:false begin fun sigma ->
       let sigma, c = Evarutil.new_evar env sigma ~principal:true ty in
-      let c = with_reverse_casts (Proofview.Goal.env gl) env sigma c in
+      let c = if cast then with_reverse_casts (Proofview.Goal.env gl) env sigma c else c in
       sigma, c
     end
   end
@@ -798,13 +798,13 @@ let e_change_in_concl ~cast ~check (redfun, sty) =
     (convert_concl ~cast ~check c' sty)
   end
 
-let e_change_in_hyp ~check ~reorder redfun (id,where) =
+let e_change_in_hyp ~cast ~check ~reorder redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let hyp = Tacmach.pf_get_hyp id gl in
     let (sigma, c) = e_pf_change_decl redfun where (Proofview.Goal.env gl) sigma hyp in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_hyp ~check ~reorder c)
+    (convert_hyp ~cast ~check ~reorder c)
   end
 
 type hyp_conversion =
@@ -879,12 +879,12 @@ let e_reduct_in_hyp ~check ~reorder redfun (id, where) =
   let redfun _ env sigma c = redfun env sigma c in
   e_change_in_hyp ~check ~reorder redfun (id, where)
 
-let reduct_in_hyp ~check ~reorder redfun (id, where) =
+let reduct_in_hyp ~cast ~check ~reorder redfun (id, where) =
   let redfun _ env sigma c = (sigma, redfun env sigma c) in
-  e_change_in_hyp ~check ~reorder redfun (id, where)
+  e_change_in_hyp ~cast ~check ~reorder redfun (id, where)
 
 let e_reduct_option ~check redfun = function
-  | Some id -> e_reduct_in_hyp ~check ~reorder:check (fst redfun) id
+  | Some id -> e_reduct_in_hyp ~cast:true ~check ~reorder:check (fst redfun) id
   | None    -> e_change_in_concl ~cast:true ~check redfun
 
 let reduct_option ~check (redfun, sty) where =
@@ -954,9 +954,9 @@ let change_in_concl ~check occl t =
   e_change_in_concl ~cast:false ~check:false
     ((change_on_subterm ~check Conversion.CUMUL false t occl),DEFAULTcast)
 
-let change_in_hyp ~check occl t id  =
+let change_in_hyp ~cast ~check occl t id  =
   (* Same as above *)
-  e_change_in_hyp ~check:false ~reorder:check (fun x -> change_on_subterm ~check Conversion.CONV x t occl) id
+  e_change_in_hyp ~cast ~check:false ~reorder:check (fun x -> change_on_subterm ~check Conversion.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -1006,7 +1006,7 @@ let normalise_in_hyp    = reduct_in_hyp ~check:false ~reorder:false compute
 let normalise_option    = reduct_option ~check:false (compute,DEFAULTcast)
 let normalise_vm_in_concl = reduct_in_concl ~cast:true ~check:false (Redexpr.cbv_vm,VMcast)
 let unfold_in_concl loccname = reduct_in_concl ~cast:true ~check:false (unfoldn loccname,DEFAULTcast)
-let unfold_in_hyp   loccname = reduct_in_hyp ~check:false ~reorder:false (unfoldn loccname)
+let unfold_in_hyp ~cast loccname = reduct_in_hyp ~cast ~check:false ~reorder:false (unfoldn loccname)
 let unfold_option   loccname = reduct_option ~check:false (unfoldn loccname,DEFAULTcast)
 let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
 
@@ -2763,7 +2763,8 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       [ Proofview.Unsafe.tclEVARS sigma;
         convert_concl ~cast:false ~check:false newcl DEFAULTcast;
         intro_gen (NamingMustBe (CAst.make id)) (decode_hyp lastlhyp) ~force:true ~dep:false;
-        Tacticals.tclMAP (convert_hyp ~check:false ~reorder:false) depdecls;
+        (* XXX not sure we want to cast here *)
+        Tacticals.tclMAP (convert_hyp ~cast:false ~check:false ~reorder:false) depdecls;
         eq_tac ]
   end
 
@@ -3088,7 +3089,7 @@ let unfold_body x =
   Tacticals.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
   let rfun _ _ c = replace_vars sigma [x, xval] c in
-  let reducth h = reduct_in_hyp ~check:false ~reorder:false rfun h in
+  let reducth h = reduct_in_hyp ~cast:false ~check:false ~reorder:false rfun h in
   let reductc = reduct_in_concl ~cast:false ~check:false (rfun, DEFAULTcast) in
   Tacticals.tclTHENLIST [Tacticals.tclMAP reducth hl; reductc]
   end

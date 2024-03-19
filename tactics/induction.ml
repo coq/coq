@@ -1191,7 +1191,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   Tacticals.tclTHENLIST [
     Proofview.Unsafe.tclEVARS sigma;
     letins;
-    Tactics.change_in_hyp ~check:false None (Tactics.make_change_arg t) (hyp0, InHypTypeOnly);
+    Tactics.change_in_hyp ~cast:false ~check:false None (Tactics.make_change_arg t) (hyp0, InHypTypeOnly);
     apply_induction_in_context with_evars inhyps elim_info avoid names
   ]
   end

@@ -481,7 +481,7 @@ let autounfold_one db cl =
   in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp ~check:true None (make_change_arg c') hyp
+      | Some hyp -> change_in_hyp ~cast:false ~check:true None (make_change_arg c') hyp
       | None -> convert_concl ~cast:false ~check:false c' DEFAULTcast
     else
       let info = Exninfo.reify () in
