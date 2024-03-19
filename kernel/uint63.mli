@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t
+type t [@@immediate64]
 
 val uint_size : int
 val maxuint31 : t
