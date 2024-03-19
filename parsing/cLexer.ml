@@ -380,6 +380,8 @@ let null_comment s =
     i<0 || (List.mem s.[i] [' ';'\t';'\n';'\r'] && null (i-1)) in
   null (String.length s - 1)
 
+let dbg = CDebug.create ~name:"comment-lexing" ()
+
 let comment_stop ep =
   let current_s = Buffer.contents current_comment in
   (if !Flags.record_comments && Buffer.length current_comment > 0 &&
@@ -392,6 +394,9 @@ let comment_stop ep =
              ++ str current_s ++str"' ending at  "
              ++ int ep);
           ep-1 in
+    dbg Pp.(fun () ->
+        str "comment at chars " ++ int bp ++ str "-" ++ int ep ++ str ":" ++ fnl() ++
+        str current_s);
     comments := ((bp,ep),current_s) :: !comments);
   Buffer.clear current_comment;
   comment_begin := None
