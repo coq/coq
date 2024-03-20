@@ -451,8 +451,9 @@ OCaml code with C code, the linker needs to know
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
 
-   Here, the extracted external definition will be
-   ``external f : int -> int -> int = "f_impl"``.
+   Here, the extracted external definition will be:
+
+   ``external f : int -> int -> int = "f_impl"``
 
    .. caution::
 
