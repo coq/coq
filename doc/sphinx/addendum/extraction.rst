@@ -442,6 +442,18 @@ OCaml code with C code, the linker needs to know
 
    ``external`` :n:`@qualid` ``: ML type =`` ":n:`@string`".
 
+   For example:
+
+   .. coqtop:: in
+
+      Require Extraction.
+      Require Coq.extraction.ExtrOcamlNatInt.
+      Axiom f : nat -> nat -> nat.
+      Extract Foreign Constant f => "f_impl".
+
+   Here, the extracted external definition will be
+   ``external f : int -> int -> int = "f_impl"``.
+
    .. caution::
 
       * The external function name :n:`@string` is not checked in any way.
