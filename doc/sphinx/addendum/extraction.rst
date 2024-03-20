@@ -295,6 +295,28 @@ what ML term corresponds to a given axiom.
         Axiom Y : Set -> Set -> Set.
         Extract Constant Y "'a" "'b" => " 'a * 'b ".
 
+   .. note::
+      The extraction recognizes whether the realized axiom
+      should become a ML type constant or a ML object declaration. For example:
+
+      .. coqtop:: in
+
+         Axiom X:Set.
+         Axiom x:X.
+         Extract Constant X => "int".
+         Extract Constant x => "0".
+
+   .. caution:: It is the responsibility of the user to ensure that the ML
+      terms given to realize the axioms do have the expected types. In
+      fact, the strings containing realizing code are just copied to the
+      extracted files.
+
+   .. exn:: The term @qualid is already defined as foreign custom constant.
+
+      The :n:`@qualid` was previously used in a
+      :cmd:`Extract Foreign Constant` command. Using :cmd:`Extract Inlined Constant`
+      for :n:`@qualid` would override this command.
+
 
 .. cmd:: Extract Inlined Constant @qualid => {| @ident | @string }
 
@@ -305,26 +327,6 @@ what ML term corresponds to a given axiom.
       This command is sugar for an :cmd:`Extract Constant` followed
       by a :cmd:`Extraction Inline`. Hence a :cmd:`Reset Extraction Inline`
       will have an effect on the realized and inlined axiom.
-
-   .. caution:: It is the responsibility of the user to ensure that the ML
-      terms given to realize the axioms do have the expected types. In
-      fact, the strings containing realizing code are just copied to the
-      extracted files. The extraction recognizes whether the realized axiom
-      should become a ML type constant or a ML object declaration. For example:
-
-   .. exn:: The term @qualid is already defined as foreign custom constant.
-
-      The :n:`@qualid` was previously used in a
-      :cmd:`Extract Foreign Constant` command. Using :cmd:`Extract Inlined Constant`
-      for :n:`@qualid` would override this command.
-
-
-.. coqtop:: in
-
-   Axiom X:Set.
-   Axiom x:X.
-   Extract Constant X => "int".
-   Extract Constant x => "0".
 
 Realizing an axiom via :cmd:`Extract Constant` is only useful in the
 case of an informative axiom (of sort ``Type`` or ``Set``). A logical axiom
