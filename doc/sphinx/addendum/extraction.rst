@@ -471,7 +471,8 @@ OCaml code with C code, the linker needs to know
    specified by :n:`@qualid`, a constant ML function will be generated that
    registers :n:`@qualid` as callback, callable by :n:`@string`.
    This is done by declaring a function
-   ``let _ = Callback.register`` :n:`@string` :n:`@qualid`
+   ``let _ = Callback.register`` :n:`@string` :n:`@qualid`.
+
    This expression signals OCaml that the given ML function :n:`@qualid` shall be
    accessible via the alias :n:`@string`, when calling from C/C++.
    If no alias is specified, it is set to the string representation of :n:`@qualid`.
