@@ -456,7 +456,7 @@ OCaml code with C code, the linker needs to know
 
    .. exn:: Extract Foreign Constant is supported only for functions.
 
-      This error is thrown if @qualid is of sort ``Type`` and external functions only
+      This error is thrown if :n:`@qualid` is of sort ``Type`` and external functions only
       work for functions.
 
    .. exn:: The term @qualid is already defined as inline custom constant.
@@ -471,7 +471,7 @@ OCaml code with C code, the linker needs to know
    specified by :n:`@qualid`, a constant ML function will be generated that
    registers :n:`@qualid` as callback, callable by :n:`@string`.
    This is done by declaring a function
-   ``let _ = Callback.register "@string" @qualid``
+   ``let _ = Callback.register`` :n:`@string` :n:`@qualid`
    This expression signals OCaml that the given ML function :n:`@qualid` shall be
    accessible via the alias :n:`@string`, when calling from C/C++.
    If no alias is specified, it is set to the string representation of :n:`@qualid`.
