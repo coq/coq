@@ -107,50 +107,64 @@ let combine_runners (type a b x c d y) (r1:(a,b,x) runner) (r2:(c,d,y) runner)
         with (y, (b, o)) -> (b, (y, o))
       with (x, (y, o)) -> ((x, y), o) }
 
+type ('prog,'proof) state_gen = {
+  prog : 'prog;
+  proof : 'proof;
+}
+
+let tuple { prog; proof } = prog, proof
+let untuple (prog, proof) = { prog; proof }
+
+type no_state = (unit, unit) state_gen
+let no_state = { prog = (); proof = () }
+
+let ignore_state = { prog = Prog.Ignore; proof = Proof.Ignore }
+
 type typed_vernac =
     TypedVernac : {
-      prog : ('in1, 'out1) Prog.t;
-      proof : ('in2, 'out2) Proof.t;
-      run : pm:'in1 -> proof:'in2 -> 'out1 * 'out2;
+      spec : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t) state_gen;
+      run : ('inprog, 'inproof) state_gen -> ('outprog, 'outproof) state_gen;
     } -> typed_vernac
 
-let run (TypedVernac { prog; proof; run }) ~(pm:Prog.stack) ~(stack:Proof.stack) =
-  let (pm, stack), () = (combine_runners (Prog.runner prog) (Proof.runner proof)).run (pm,stack)
-      (fun (pm,proof) -> run ~pm ~proof, ())
+type full_state = (Prog.stack,Vernacstate.LemmaStack.t option) state_gen
+
+let run (TypedVernac { spec = { prog; proof }; run }) (st:full_state) : full_state =
+  let st, () = (combine_runners (Prog.runner prog) (Proof.runner proof)).run (tuple st)
+      (fun st -> tuple @@ run @@ untuple st, ())
   in
-  stack, pm
+  untuple st
 
-let typed_vernac prog proof run = TypedVernac { prog; proof; run }
+let typed_vernac spec run = TypedVernac { spec; run }
 
-let vtdefault f = typed_vernac Prog.Ignore Proof.Ignore
-    (fun ~pm:() ~proof:() -> let () = f () in (), ())
+let vtdefault f = typed_vernac ignore_state
+    (fun (_:no_state) -> let () = f () in no_state)
 
-let vtnoproof f = typed_vernac Prog.Ignore Proof.Reject
-    (fun ~pm:() ~proof:() -> let () = f () in (), ())
+let vtnoproof f = typed_vernac { ignore_state with proof = Reject }
+    (fun (_:no_state) -> let () = f () in no_state)
 
-let vtcloseproof f = typed_vernac Prog.Modify Proof.Close
-    (fun ~pm ~proof:lemma -> let pm = f ~lemma ~pm in pm, ())
+let vtcloseproof f = typed_vernac { prog = Modify; proof = Close }
+    (fun {prog; proof} -> let prog = f ~lemma:proof ~pm:prog in { no_state with prog })
 
-let vtopenproof f = typed_vernac Prog.Ignore Proof.Open
-    (fun ~pm:() ~proof:() -> let proof = f () in (), proof)
+let vtopenproof f = typed_vernac { ignore_state with proof = Open }
+    (fun (_:no_state) -> let proof = f () in { no_state with proof })
 
-let vtmodifyproof f = typed_vernac Prog.Ignore Proof.Modify
-    (fun ~pm:() ~proof:pstate -> let pstate = f ~pstate in (), pstate)
+let vtmodifyproof f = typed_vernac { ignore_state with proof = Modify }
+    (fun {proof} -> let proof = f ~pstate:proof in { no_state with proof })
 
-let vtreadproofopt f = typed_vernac Prog.Ignore Proof.ReadOpt
-    (fun ~pm:() ~proof:pstate -> let () = f ~pstate in (), ())
+let vtreadproofopt f = typed_vernac { ignore_state with proof = ReadOpt }
+    (fun {proof} -> let () = f ~pstate:proof in no_state)
 
-let vtreadproof f = typed_vernac Prog.Ignore Proof.Read
-    (fun ~pm:() ~proof:pstate -> let () = f ~pstate in (), ())
+let vtreadproof f = typed_vernac { ignore_state with proof = Read }
+    (fun {proof} -> let () = f ~pstate:proof in no_state)
 
-let vtreadprogram f = typed_vernac Prog.Read Proof.Ignore
-    (fun ~pm ~proof:() -> let () = f ~pm in (), ())
+let vtreadprogram f = typed_vernac { ignore_state with prog = Read }
+    (fun {prog} -> let () = f ~pm:prog in no_state)
 
-let vtmodifyprogram f = typed_vernac Prog.Modify Proof.Ignore
-    (fun ~pm ~proof:() -> let pm = f ~pm in pm, ())
+let vtmodifyprogram f = typed_vernac { ignore_state with prog = Modify }
+    (fun {prog} -> let prog = f ~pm:prog in { no_state with prog })
 
-let vtdeclareprogram f = typed_vernac Prog.Read Proof.Open
-    (fun ~pm ~proof:() -> let proof = f ~pm in (), proof)
+let vtdeclareprogram f = typed_vernac { prog = Read; proof = Open }
+    (fun {prog} -> let proof = f ~pm:prog in { no_state with proof })
 
-let vtopenproofprogram f = typed_vernac Prog.Modify Proof.Open
-    (fun ~pm ~proof:() -> f ~pm)
+let vtopenproofprogram f = typed_vernac { prog = Modify; proof = Open }
+    (fun {prog} -> let prog, proof = f ~pm:prog in {prog;proof})

@@ -1373,19 +1373,19 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   | _ -> assert false
 
 let vernac_end_segment lid =
-  Vernactypes.typed_vernac Pop ReadOpt
-    (fun ~pm ~proof ->
-       let () = vernac_end_segment ~pm ~proof lid in
-       (), ())
+  Vernactypes.typed_vernac { prog=Pop; proof=ReadOpt; }
+    (fun {proof; prog} ->
+       let () = vernac_end_segment ~pm:prog ~proof lid in
+       Vernactypes.no_state)
 
 let vernac_begin_segment ~interactive f =
   let open Vernactypes in
   let proof = Proof.(if interactive then Reject else Ignore) in
   let prog = Prog.(if interactive then Push else Ignore) in
-  typed_vernac prog proof
-    (fun ~pm ~proof ->
+  typed_vernac { prog; proof; }
+    (fun (_:no_state) ->
        let () = f () in
-       (), ())
+       no_state)
 
 (* Libraries *)
 
