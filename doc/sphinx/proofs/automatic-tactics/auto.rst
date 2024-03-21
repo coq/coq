@@ -505,10 +505,10 @@ Creating Hints
       .. exn:: Cannot coerce @qualid to an evaluable reference.
          :undocumented:
 
-   .. cmd:: Hint {| Constants | Variables } {| Transparent | Opaque } {? : {+ @ident } }
-      :name: Hint Constants; Hint Variables
+   .. cmd:: Hint {| Constants | Projections | Variables } {| Transparent | Opaque } {? : {+ @ident } }
+      :name: Hint Constants; Hint Projections; Hint Variables
 
-      Sets the transparency flag for constants or variables for the specified hint
+      Sets the transparency flag for constants, projections or variables for the specified hint
       databases.
       These flags affect the unification of hints in the database.
       We advise using this just after a :cmd:`Create HintDb` command.

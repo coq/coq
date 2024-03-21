@@ -23,10 +23,12 @@ hint: [
 | WITH "Resolve" [ "->" | "<-" ] LIST1 global OPT natural
 | DELETE "Resolve" "<-" LIST1 global OPT natural
 | REPLACE "Variables" "Transparent"
-| WITH [ "Constants" | "Variables" ] [ "Transparent" | "Opaque" ]
+| WITH [ "Constants" | "Projections" | "Variables" ] [ "Transparent" | "Opaque" ]
 | DELETE "Variables" "Opaque"
 | DELETE "Constants" "Transparent"
 | DELETE "Constants" "Opaque"
+| DELETE "Projections" "Transparent"
+| DELETE "Projections" "Opaque"
 | REPLACE "Transparent" LIST1 global
 | WITH [ "Transparent" | "Opaque" ] LIST1 global
 | DELETE "Opaque" LIST1 global
