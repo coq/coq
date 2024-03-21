@@ -481,3 +481,17 @@ Abort.
 End S.
 
 End ClearFixBody.
+
+Module TheoremWithUnivs.
+
+Fail Fixpoint f@{u} (n:nat) : nat with g@{v} (n:nat) : nat.
+Fail Theorem f@{u} (n:nat) : nat with g@{v} (n:nat) : nat.
+Fail CoFixpoint f@{u} (n:nat) : Stream 0 with g@{v} (n:nat) : Stream 0.
+Succeed Fixpoint f@{u} (n:nat) : nat with g@{u} (n:nat) : nat.
+Succeed Theorem f@{u} (n:nat) : nat with g@{u} (n:nat) : nat.
+Succeed CoFixpoint f@{u} (n:nat) : Stream 0 with g@{u} (n:nat) : Stream 0.
+Succeed Fixpoint f@{u} (n:nat) : nat with g (n:nat) : nat. (* Accepted *)
+Succeed Theorem f@{u} (n:nat) : nat with g (n:nat) : nat. (* Accepted *)
+Succeed CoFixpoint f@{u} (n:nat) : Stream 0 with g (n:nat) : Stream 0. (* Accepted *)
+
+End TheoremWithUnivs.
