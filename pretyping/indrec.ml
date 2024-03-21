@@ -138,25 +138,27 @@ let build_branch_type env sigma dep p cs =
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
 
-let check_valid_elimination env (ind, u as pind) ~dep kind =
+let check_valid_elimination env sigma (ind, u as pind) ~dep s =
   let specif = Inductive.lookup_mind_specif env ind in
   let () =
     if dep && not (Inductiveops.has_dependent_elim specif) then
       raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
   in
   let () = check_privacy_block specif in
-  if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
+  (* XXX maybe need to EInstance.kind too? *)
+  let s = EConstr.ESorts.kind sigma s in
+  if not @@ Inductive.is_allowed_elimination (specif,u) s then
     raise
       (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+          (env, NotAllowedCaseAnalysis (false, s, pind)))
 
-let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
-  let () = check_valid_elimination env pind ~dep kind in
+let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
+  let () = check_valid_elimination env sigma pind ~dep s in
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
-  let relevance = Sorts.relevance_of_sort_family kind in
+  let relevance = Retyping.relevance_of_sort sigma s in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
@@ -164,7 +166,6 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
   let env = RelEnv.make env in
   let env' = RelEnv.push_rel_context lnamespar env in
 
-  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
   let typP = make_arity !!env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
   let nameP = make_name env' "P" Sorts.Relevant in
@@ -498,7 +499,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             in
 
             (* body of i-th component of the mutual fixpoint *)
-            let target_relevance = Sorts.relevance_of_sort_family target_sort in
+            let target_relevance = Retyping.relevance_of_sort sigma target_sort in
             let deftyi =
               let ci = make_case_info !!env indi RegularStyle in
               let concl = applist (mkRel (dect+j+ndepar),pargs) in
@@ -558,7 +559,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                 type_rec_branch
                   true dep !!env !evdref (vargs,depPvec,i+j) indi cs recarg
               in
-              let r_0 = Sorts.relevance_of_sort_family sfam in
+              let r_0 = Retyping.relevance_of_sort sigma sfam in
               let namef = make_name env "f" r_0 in
                 mkLambda (namef, p_0,
                   (onerec (RelEnv.push_rel (LocalAssum (namef,p_0)) env)) (j+1))
@@ -567,12 +568,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
           makefix i listdepkind
     in
     let rec put_arity env i = function
-      | ((indi,u),_,_,dep,kinds)::rest ->
+      | ((indi,u),_,_,dep,s)::rest ->
           let indf = make_ind_family ((indi,u), Context.Rel.instance_list mkRel i lnamesparrec) in
-          let s =
-            let sigma, res = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg !evdref kinds in
-            evdref := sigma; res
-          in
           let typP = make_arity !!env !evdref dep indf s in
           let typP = EConstr.Unsafe.to_constr typP in
           let nameP = make_name env "P" Sorts.Relevant in
@@ -626,13 +623,13 @@ let build_case_analysis_scheme_default env sigma pity kind =
 (* Check inductive types only occurs once
 (otherwise we obtain a meaning less scheme) *)
 
-let check_arities env listdepkind =
+let check_arities env sigma listdepkind =
   let _ = List.fold_left
-    (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
-       let kelim = elim_sort (mibi,mipi) in
-       if not (Sorts.family_leq kind kelim) then raise
+     (fun ln (((_,ni as mind),u),mibi,mipi,dep,s) ->
+         let s = (EConstr.ESorts.kind sigma s) in
+       if not @@ Inductive.is_allowed_elimination ((mibi,mipi),u) s then raise
          (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
+          (env, NotAllowedCaseAnalysis (true, s,(mind,u))))
        else if Int.List.mem ni ln then raise
          (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)
@@ -657,7 +654,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
                 raise (RecursionSchemeError (env, NotMutualInScheme (mind,mind'))))
            lrecspec)
       in
-      let _ = check_arities env listdepkind in
+      let _ = check_arities env sigma listdepkind in
       mis_make_indrec env sigma ~force_mutual listdepkind mib u
   | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types.")
 
