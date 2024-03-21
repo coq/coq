@@ -3,4 +3,6 @@
  (package coq-stdlib)
  (synopsis "Ltac2 tactic language")
  (flags -w -deprecated-native-compiler-option)
- (plugins coq-core.plugins.ltac2))
+ (plugins
+   coq-core.plugins.ltac2_ltac1
+   coq-core.plugins.ltac2))
