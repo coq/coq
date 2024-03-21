@@ -97,45 +97,50 @@ Module Z.
   Ltac quot_rem_to_equations' := repeat quot_rem_to_equations_step.
   Ltac divide_to_equations' := repeat divide_to_equations_step.
   Ltac euclidean_division_equations_cleanup :=
-    repeat match goal with
-           | [ H : ?x = ?x -> ?Q |- _ ] => specialize (H eq_refl)
-           | [ H : ?x <> ?x -> _ |- _ ] => clear H
-           | [ H : ?x < ?x -> _ |- _ ] => clear H
-           | [ H : ?T -> ?Q, H' : ?T |- _ ] => specialize (H H')
-           | [ H : ?T -> _, H' : ~?T |- _ ] => clear H
-           | [ H : ~?T -> _, H' : ?T |- _ ] => clear H
-           | [ H : ?A -> ?x = ?x -> ?Q |- _ ] => specialize (fun a => H a eq_refl)
-           | [ H : ?A -> ?x <> ?x -> _ |- _ ] => clear H
-           | [ H : ?A -> ?x < ?x -> _ |- _ ] => clear H
-           | [ H : ?A -> ?B -> ?Q, H' : ?B |- _ ] => specialize (fun a => H a H')
-           | [ H : ?A -> ?B -> _, H' : ~?B |- _ ] => clear H
-           | [ H : ?A -> ~?B -> _, H' : ?B |- _ ] => clear H
-           | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
-           | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
-           | [ H : ?A -> 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
-           | [ H : ?A -> ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
-           | [ H : 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H
-           | [ H : ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H
-           | [ H : ?A -> 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H
-           | [ H : ?A -> ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H
-           | [ H : 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H
-           | [ H : ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H
-           | [ H : ?A -> 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H
-           | [ H : ?A -> ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H
-           | [ H : 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x (eq_sym pf)))
-           | [ H : ?A -> 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl 0 x (eq_sym pf)))
-           | [ H : ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x pf))
-           | [ H : ?A -> ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl x 0 pf))
-           | [ H : ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H
-           | [ H : ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H
-           | [ H : ?A -> ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H
-           | [ H : ?A -> ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H
-           | [ H : ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
-           | [ H : ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
-           | [ H : ?A -> ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
-           | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
-           | [ H : 0 <= ?x < _ |- _ ] => destruct H
-           end.
+    repeat
+      (repeat match goal with
+         | [ H : 0 <= ?x < _ |- _ ] => destruct H
+         end;
+       repeat match goal with
+         | [ H : ?x <> ?x -> _ |- _ ] => clear H
+         | [ H : ?x < ?x -> _ |- _ ] => clear H
+         | [ H : ?T -> _, H' : ~?T |- _ ] => clear H
+         | [ H : ~?T -> _, H' : ?T |- _ ] => clear H
+         | [ H : ?A -> ?x <> ?x -> _ |- _ ] => clear H
+         | [ H : ?A -> ?x < ?x -> _ |- _ ] => clear H
+         | [ H : ?A -> ?B -> _, H' : ~?B |- _ ] => clear H
+         | [ H : ?A -> ~?B -> _, H' : ?B |- _ ] => clear H
+         | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
+         | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
+         | [ H : ?A -> 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
+         | [ H : ?A -> ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
+         | [ H : 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H
+         | [ H : ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H
+         | [ H : ?A -> 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H
+         | [ H : ?A -> ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H
+         | [ H : 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H
+         | [ H : ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H
+         | [ H : ?A -> 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H
+         | [ H : ?A -> ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H
+         | [ H : ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H
+         | [ H : ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H
+         | [ H : ?A -> ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H
+         | [ H : ?A -> ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H
+         | [ H : ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
+         | [ H : ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
+         | [ H : ?A -> ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H
+         | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H
+         end;
+       repeat match goal with
+         | [ H : ?x = ?x -> ?Q |- _ ] => specialize (H eq_refl)
+         | [ H : ?T -> ?Q, H' : ?T |- _ ] => specialize (H H')
+         | [ H : ?A -> ?x = ?x -> ?Q |- _ ] => specialize (fun a => H a eq_refl)
+         | [ H : ?A -> ?B -> ?Q, H' : ?B |- _ ] => specialize (fun a => H a H')
+         | [ H : 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x (eq_sym pf)))
+         | [ H : ?A -> 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl 0 x (eq_sym pf)))
+         | [ H : ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x pf))
+         | [ H : ?A -> ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl x 0 pf))
+         end).
   (** poses [x = y \/ x <> y] unless that is redundant or contradictory *)
   Ltac euclidean_division_equations_pose_eq_fact x y :=
     assert_fails constr_eq x y;
