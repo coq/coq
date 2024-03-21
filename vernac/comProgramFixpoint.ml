@@ -66,8 +66,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
-  let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
-  let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
+  let flags = Pretyping.{ all_no_fail_flags with program_mode = true } in
+  let sigma, (top_arity, arityimpls) = interp_type_evars_impls ~flags top_env sigma arityc in
   let sigma, letbinders, { telescope_type = argtyp; telescope_value = make } =
     telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
@@ -114,13 +114,14 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfa] in
   let intern_fun_binder = LocalAssum (make_annot (Name (add_suffix recname "'")) Sorts.Relevant,
                                       intern_fun_arity_prod) in
+  let recproofid = Id.of_string "recproof" in
   let sigma, curry_fun =
     let wfpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
     let sigma, intro = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
-    let lam = LocalAssum (make_annot (Name (Id.of_string "recproof")) Sorts.Relevant, rcurry) in
+    let lam = LocalAssum (make_annot (Name recproofid) Sorts.Relevant, rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
     let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
     sigma, LocalDef (make_annot (Name recname) Sorts.Relevant, body, ty)
@@ -129,18 +130,19 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   let lift_lets = lift_rel_context 1 letbinders in
   let sigma, intern_body =
     let ctx = LocalAssum (make_annot (Name recname) Sorts.Relevant, get_type curry_fun) :: binders_rel in
+    let impl = CAst.make (Some (Name recproofid, true)) in
+    let newimpls = impls @ impl :: arityimpls in
+    let dummy_decl =
+      (* Ensure the measure argument does not contribute to the computation of automatic implicit arguments *)
+      LocalAssum (make_annot (Name recproofid) Sorts.Relevant, mkProp) in
+    let full_arity = it_mkProd_or_LetIn top_arity (dummy_decl :: binders_rel) in
     let interning_data =
       Constrintern.compute_internalization_data env sigma recname
-        Constrintern.Recursive full_arity impls
-    in
-    let impl = Some Impargs.{
-      impl_pos = (Name (Id.of_string "recproof"), 1, None);
-      impl_expl = Manual;
-      impl_max = true;
-      impl_force = false;
-    } in
-    let newimpls = Id.Map.singleton recname
-        (Constrintern.extend_internalization_data interning_data impl []) in
+        Constrintern.Recursive full_arity newimpls in
+    let interning_data =
+      (* Force the obligation status of "recproof" *)
+      set_obligation_internalization_data recproofid interning_data in
+    let newimpls = Id.Map.singleton recname interning_data in
     interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)
   in
