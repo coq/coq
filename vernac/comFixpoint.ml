@@ -275,7 +275,8 @@ let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fix
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns}
 
-(* XXX: Unify with interp_recursive  *)
+(** For Funind *)
+
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
   let (_, _, sigma),(fix, _, _, _) = interp_recursive_evars env ~program_mode:false (false, CFixRecOrder rec_order) fixpoint_exprl in
