@@ -141,6 +141,9 @@ module Name : sig
   val cons : Name.t -> Id.t list -> Id.t list
   (** [cons na l] returns [id::l] if [na] is [Name id] and [l] otherwise. *)
 
+  val add : Name.t -> Id.Set.t -> Id.Set.t
+  (** [add na l] returns [Id.Set.add id l] if [na] is [Name id] and [l] otherwise. *)
+
   val to_option : Name.t -> Id.t option
   (** [to_option Anonymous] is [None] and [to_option (Name id)] is [Some id] *)
 

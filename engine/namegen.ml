@@ -175,8 +175,10 @@ let hdchar env sigma c =
   in
   hdrec 0 c
 
+let hd_ident env sigma a = Id.of_string (hdchar env sigma a)
+
 let id_of_name_using_hdchar env sigma a = function
-  | Anonymous -> Id.of_string (hdchar env sigma a)
+  | Anonymous -> hd_ident env sigma a
   | Name id   -> id
 
 let named_hd env sigma a = function
@@ -268,6 +270,10 @@ let next_ident_away_from_post_mangling id bad =
 let next_ident_away_from id bad =
   let id = mangle_id id in
   next_ident_away_from_post_mangling id bad
+
+let next_canonical_ident id avoid =
+  let rec name_rec id = if Id.Set.mem id avoid then name_rec (increment_subscript id) else id in
+  name_rec id
 
 (* Restart subscript from x0 if name starts with xN, or x00 if name
    starts with x0N, etc *)

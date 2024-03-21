@@ -5,7 +5,8 @@ ex_intro (P:=fun _ : nat => True) (x:=0) I
 d2 = fun x : nat => d1 (y:=x)
      : forall [x x0 : nat], x0 = x -> x0 = x
 
-Arguments d2 [x x]%nat_scope h
+Arguments d2 [x x0]%nat_scope h
+  (where some original arguments have been renamed)
 map id (1 :: nil)
      : list nat
 map id' (1 :: nil)
