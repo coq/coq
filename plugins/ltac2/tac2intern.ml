@@ -1115,7 +1115,11 @@ let warn_unused_variables = CWarnings.create ~name:"ltac2-unused-variable"
 let check_unused_variables ?loc env to_name bnd =
   let unused = List.filter_map (fun bnd -> match to_name bnd with
       | Anonymous -> None
-      | Name id -> if is_used_var id env then None else Some id)
+      | Name id ->
+        if CString.is_prefix "_" (Id.to_string id)
+        || is_used_var id env
+        then None
+        else Some id)
       bnd
   in
   if CList.is_empty unused then ()

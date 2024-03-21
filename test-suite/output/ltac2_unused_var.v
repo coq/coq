@@ -4,7 +4,7 @@ Ltac2 foo1 x := ().
 
 Ltac2 foo2 x := fun y => ().
 
-(* we also warn on _ prefixed variable unlike ocaml *)
+(* we don't warn on _ prefixed variable *)
 Ltac2 foo3 _x := ().
 
 Ltac2 Notation "foo4" x(constr) := ().
