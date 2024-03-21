@@ -181,7 +181,8 @@
         <context id="toplevel-command" style-ref="vernac-keyword">
           <keyword>Add</keyword>
           <keyword>Load</keyword>
-          <keyword>(Print|Reset)\%{space}+Extraction\%{space}+(Inline|Blacklist)</keyword>
+          <keyword>(Print|Reset)\%{space}+Extraction\%{space}+(Inline|Blacklist|Callback)</keyword>
+          <keyword>Print\%{space}+Extraction\%{space}+Foreign</keyword>
           <keyword>Comments</keyword>
           <keyword>Solve\%{space}Obligation</keyword>
           <keyword>(Uns|S)et(\%{space}\%{ident})+</keyword>
@@ -222,6 +223,7 @@
           <keyword>Implicit\%{space}Arguments</keyword>
           <keyword>Include</keyword>
           <keyword>Extract\%{space}((Inlined\%{space})?Constant|Inductive)</keyword>
+          <keyword>Extract\%{space}Foreign\%{space}Constant</keyword>
           <include>
             <context sub-pattern="1" style-ref="vernac-keyword"/>
             <context sub-pattern="qua" style-ref="identifier"/>
@@ -235,6 +237,7 @@
           <keyword>Import</keyword>
           <keyword>Export</keyword>
           <keyword>((Recursive|Separate)\%{space})?Extraction(\%{space}(Library|(No)?Inline|Blacklist))?</keyword>
+          <keyword>Extract\%{space}Callback</keyword>
           <include>
             <context sub-pattern="1" style-ref="vernac-keyword"/>
             <context sub-pattern="qua_list" style-ref="identifier"/>

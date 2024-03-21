@@ -662,6 +662,25 @@ let inline_table = Summary.ref empty_inline_table ~name:"ExtrInline"
 
 let to_inline r = Refset'.mem r (fst !inline_table)
 
+(* Extension for supporting foreign function call extraction. *)
+
+let empty_foreign_set = Refset'.empty
+
+let foreign_set = Summary.ref empty_foreign_set ~name:"ExtrForeign"
+
+let to_foreign r = Refset'.mem r !foreign_set
+
+(* End of Extension for supporting foreign function call extraction. *)
+
+(* Extension for supporting callback registration extraction. *)
+
+(* A map from qualid to string opt (alias) *)
+let empty_callback_map = Refmap'.empty
+
+let callback_map = Summary.ref empty_callback_map ~name:"ExtrCallback"
+
+(* End of Extension for supporting callback registration extraction. *)
+
 let to_keep r = Refset'.mem r (snd !inline_table)
 
 let add_inline_entries b l =
@@ -671,6 +690,13 @@ let add_inline_entries b l =
   (List.fold_right (f b) l i),
   (List.fold_right (f (not b)) l k)
 
+let add_foreign_entries l =
+  foreign_set := List.fold_right (Refset'.add) l !foreign_set
+
+(* Adds the qualid_ref and alias opt to the callback_map. *)
+let add_callback_entry alias_opt qualid_ref =
+  callback_map := Refmap'.add qualid_ref alias_opt !callback_map
+
 (* Registration of operations for rollback. *)
 
 let inline_extraction : bool * GlobRef.t list -> obj =
@@ -678,6 +704,20 @@ let inline_extraction : bool * GlobRef.t list -> obj =
     ~cache:(fun (b,l) -> add_inline_entries b l)
     ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l))))
     ~discharge:(fun x -> Some x)
+
+let foreign_extraction : GlobRef.t list -> obj =
+  declare_object @@ superglobal_object "Extraction Foreign"
+    ~cache:(fun l -> add_foreign_entries l)
+    ~subst:(Some (fun (s,l) -> (List.map (fun x -> fst (subst_global s x)) l)))
+    ~discharge:(fun x -> Some x)
+
+let callback_extraction : string option * GlobRef.t -> obj =
+  declare_object @@ superglobal_object "Extraction Callback"
+    ~cache:(fun (alias, x) -> add_callback_entry alias x)
+    ~subst:(Some (fun (s,(alias, x)) -> (alias, (fst (subst_global s x)))))
+    ~discharge:(fun x -> Some x)
+
+
 
 (* Grammar entries. *)
 
@@ -710,7 +750,21 @@ let reset_inline : unit -> obj =
     ~cache:(fun () -> inline_table := empty_inline_table)
     ~subst:None
 
+let reset_foreign : unit -> obj =
+  declare_object @@ superglobal_object_nodischarge "Reset Extraction Foreign"
+    ~cache:(fun () -> foreign_set := empty_foreign_set)
+    ~subst:None
+
+let reset_callback : unit -> obj =
+  declare_object @@ superglobal_object_nodischarge "Reset Extraction Callback"
+    ~cache:(fun () -> callback_map := empty_callback_map)
+    ~subst:None
+
 let reset_extraction_inline () = Lib.add_leaf (reset_inline ())
+
+let reset_extraction_foreign () = Lib.add_leaf (reset_foreign ())
+
+let reset_extraction_callback () = Lib.add_leaf (reset_callback ())
 
 (*s Extraction Implicit *)
 
@@ -837,6 +891,10 @@ let is_custom r = Refmap'.mem r !customs
 
 let is_inline_custom r = (is_custom r) && (to_inline r)
 
+let is_foreign_custom r = (is_custom r) && (to_foreign r)
+
+let find_callback r = Refmap'.find r !callback_map
+
 let find_custom r = snd (Refmap'.find r !customs)
 
 let find_type_custom r = Refmap'.find r !customs
@@ -861,6 +919,26 @@ let is_custom_match pv =
 let find_custom_match pv =
   Refmap'.find (indref_of_match pv) !custom_matchs
 
+(* Printing entries *)
+
+let print_constref_extractions ref_set val_lookup_f section_str =
+  let i'= Refset'.filter (function GlobRef.ConstRef _ -> true | _ -> false) ref_set in
+      (str section_str ++ fnl () ++
+       Refset'.fold
+         (fun r p ->
+            (p ++ str "  " ++ safe_pr_long_global r ++ str " => \"" ++ str (val_lookup_f r) ++ str "\"" ++ fnl ())) i' (mt ())
+       )
+
+let print_extraction_foreign () =
+  print_constref_extractions !foreign_set (find_custom) "Extraction Foreign Constant:"
+
+let print_extraction_callback () =
+  let keys = Refmap'.domain !callback_map in
+  print_constref_extractions keys (fun r ->
+    match find_callback r with
+     | None   -> "no custom alias"
+     | Some s -> s) "Extraction Callbacks for Constants:"
+
 (* Registration of operations for rollback. *)
 
 let in_customs : GlobRef.t * string list * string -> obj =
@@ -875,7 +953,17 @@ let in_custom_matchs : GlobRef.t * string -> obj =
 
 (* Grammar entries. *)
 
-let extract_constant_inline inline r ids s =
+let extract_callback optstr x =
+  if lang () != Ocaml then
+      CErrors.user_err (Pp.str "Extract Callback is supported only for OCaml extraction.");
+
+  let qualid_ref = Smartlocate.global_with_alias x in
+  match qualid_ref with
+      (* Add the alias and qualid_ref to callback extraction.*)
+    | GlobRef.ConstRef _ -> Lib.add_leaf (callback_extraction (optstr, qualid_ref))
+    | _                  -> error_constant ?loc:x.CAst.loc qualid_ref
+
+let extract_constant_generic r ids s arity_handler (is_redef, redef_msg) extr_type =
   check_inside_section ();
   let g = Smartlocate.global_with_alias r in
   match g with
@@ -883,14 +971,29 @@ let extract_constant_inline inline r ids s =
         let env = Global.env () in
         let typ, _ = Typeops.type_of_global_in_context env (GlobRef.ConstRef kn) in
         let typ = Reduction.whd_all env typ in
-        if Reduction.is_arity env typ
-          then begin
-            let nargs = Hook.get use_type_scheme_nb_args env typ in
-            if not (Int.equal (List.length ids) nargs) then error_axiom_scheme ?loc:r.CAst.loc g nargs
-          end;
-        Lib.add_leaf (inline_extraction (inline,[g]));
-        Lib.add_leaf (in_customs (g,ids,s))
+        if Reduction.is_arity env typ then arity_handler env typ g;
+        if is_redef g then
+          CErrors.user_err ((str "The term ") ++ safe_pr_long_global g ++ (str " is already defined as ")
+            ++ (str redef_msg) ++ (str " custom constant."));
+        Lib.add_leaf (extr_type g);
+        Lib.add_leaf (in_customs (g,ids,s));
     | _ -> error_constant ?loc:r.CAst.loc g
+
+let extract_constant_inline inline r ids s =
+  let arity_handler env typ g =
+    let nargs = Hook.get use_type_scheme_nb_args env typ in
+    if not (Int.equal (List.length ids) nargs) then error_axiom_scheme ?loc:r.CAst.loc g nargs
+  in
+  extract_constant_generic r ids s (arity_handler) (is_foreign_custom, "foreign") (fun g -> inline_extraction (inline,[g]))
+
+(* const_name : qualid -> replacement : string*)
+let extract_constant_foreign r s =
+  if lang () != Ocaml then
+      CErrors.user_err (Pp.str "Extract Foreign Constant is supported only for OCaml extraction.");
+  let arity_handler env typ g =
+      CErrors.user_err (Pp.str "Extract Foreign Constant is supported only for functions.")
+  in
+  extract_constant_generic r [] s (arity_handler) (is_inline_custom, "inline") (fun g -> foreign_extraction [g])
 
 
 let extract_inductive r s l optstr =

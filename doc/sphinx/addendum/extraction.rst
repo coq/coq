@@ -295,6 +295,21 @@ what ML term corresponds to a given axiom.
         Axiom Y : Set -> Set -> Set.
         Extract Constant Y "'a" "'b" => " 'a * 'b ".
 
+   .. note::
+      The extraction recognizes whether the realized axiom
+      should become a ML type constant or a ML object declaration. For example:
+
+      .. coqtop:: in
+
+         Axiom X:Set.
+         Axiom x:X.
+         Extract Constant X => "int".
+         Extract Constant x => "0".
+
+   .. caution:: It is the responsibility of the user to ensure that the ML
+      terms given to realize the axioms do have the expected types. In
+      fact, the strings containing realizing code are just copied to the
+      extracted files.
 
 .. cmd:: Extract Inlined Constant @qualid => {| @ident | @string }
 
@@ -306,18 +321,12 @@ what ML term corresponds to a given axiom.
       by a :cmd:`Extraction Inline`. Hence a :cmd:`Reset Extraction Inline`
       will have an effect on the realized and inlined axiom.
 
-.. caution:: It is the responsibility of the user to ensure that the ML
-   terms given to realize the axioms do have the expected types. In
-   fact, the strings containing realizing code are just copied to the
-   extracted files. The extraction recognizes whether the realized axiom
-   should become a ML type constant or a ML object declaration. For example:
+   .. exn:: The term @qualid is already defined as foreign custom constant.
 
-.. coqtop:: in
+      The :n:`@qualid` was previously used in a
+      :cmd:`Extract Foreign Constant` command. Using :cmd:`Extract Inlined Constant`
+      for :n:`@qualid` would override this command.
 
-   Axiom X:Set.
-   Axiom x:X.
-   Extract Constant X => "int".
-   Extract Constant x => "0".
 
 Realizing an axiom via :cmd:`Extract Constant` is only useful in the
 case of an informative axiom (of sort ``Type`` or ``Set``). A logical axiom
@@ -369,25 +378,25 @@ native boolean type instead of the Coq one. The syntax is the following:
      into OCaml ``int``, the code to be provided has type:
      ``(unit->'a)->(int->'a)->int->'a``.
 
-.. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
+   .. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
 
-  * The ML code provided by the user is currently **not** checked at all by
-    extraction, even for syntax errors.
+     * The ML code provided by the user is currently **not** checked at all by
+       extraction, even for syntax errors.
 
-  * Extracting an inductive type to a pre-existing ML inductive type
-    is quite sound. But extracting to a general type (by providing an
-    ad-hoc pattern matching) will often **not** be fully rigorously
-    correct. For instance, when extracting ``nat`` to OCaml ``int``,
-    it is theoretically possible to build ``nat`` values that are
-    larger than OCaml ``max_int``. It is the user's responsibility to
-    be sure that no overflow or other bad events occur in practice.
+     * Extracting an inductive type to a pre-existing ML inductive type
+       is quite sound. But extracting to a general type (by providing an
+       ad-hoc pattern matching) will often **not** be fully rigorously
+       correct. For instance, when extracting ``nat`` to OCaml ``int``,
+       it is theoretically possible to build ``nat`` values that are
+       larger than OCaml ``max_int``. It is the user's responsibility to
+       be sure that no overflow or other bad events occur in practice.
 
-  * Translating an inductive type to an arbitrary ML type does **not**
-    magically improve the asymptotic complexity of functions, even if the
-    ML type is an efficient representation. For instance, when extracting
-    ``nat`` to OCaml ``int``, the function ``Nat.mul`` stays quadratic.
-    It might be interesting to associate this translation with
-    some specific :cmd:`Extract Constant` when primitive counterparts exist.
+     * Translating an inductive type to an arbitrary ML type does **not**
+       magically improve the asymptotic complexity of functions, even if the
+       ML type is an efficient representation. For instance, when extracting
+       ``nat`` to OCaml ``int``, the function ``Nat.mul`` stays quadratic.
+       It might be interesting to associate this translation with
+       some specific :cmd:`Extract Constant` when primitive counterparts exist.
 
 Typical examples are the following:
 
@@ -415,6 +424,112 @@ As an example of translation to a non-inductive datatype, let's turn
 .. coqtop:: in
 
    Extract Inductive nat => int [ "0" "succ" ] "(fun fO fS n -> if n=0 then fO () else fS (n-1))".
+
+Generating FFI Code
+~~~~~~~~~~~~~~~~~~~
+
+The plugin provides mechanisms to generate only OCaml code to
+interface the generated OCaml code with C programs. In order to link compiled
+OCaml code with C code, the linker needs to know
+
+   * which C functions will be called by the ML code (external)
+   * which ML functions shall be accessible by the C code (callbacks)
+
+.. cmd:: Extract Foreign Constant @qualid => @string
+
+   Like :cmd:`Extract Constant`, except that the referenced ML terms
+   will be declared in the form
+
+   ``external`` :n:`@qualid` ``: ML type =`` ":n:`@string`".
+
+   For example:
+
+   .. coqtop:: in
+
+      Require Extraction.
+      Require Coq.extraction.ExtrOcamlNatInt.
+      Axiom f : nat -> nat -> nat.
+      Extract Foreign Constant f => "f_impl".
+
+   Here, the extracted external definition will be:
+
+   ``external f : int -> int -> int = "f_impl"``
+
+   .. caution::
+
+      * The external function name :n:`@string` is not checked in any way.
+
+      * The user must ensure that the C functions given to realize the axioms have
+        the expected or compatible types. In fact, the strings containing realizing
+        code are just copied to the extracted files.
+
+   .. exn:: Extract Foreign Constant is supported only for OCaml extraction.
+
+      Foreign function calls are only supported for OCaml.
+
+   .. exn:: Extract Foreign Constant is supported only for functions.
+
+      This error is thrown if :n:`@qualid` is of sort ``Type`` as external functions only
+      work for functions.
+
+   .. exn:: The term @qualid is already defined as inline custom constant.
+
+      The :n:`@qualid` was previously used in a
+      :cmd:`Extract Inlined Constant` command. Using :cmd:`Extract Foreign Constant`
+      for :n:`@qualid` would override this command.
+
+.. cmd:: Extract Callback {? @string } @qualid
+
+   This command makes sure that after extracting the :term:`constants <constant>`
+   specified by :n:`@qualid`, a constant ML function will be generated that
+   registers :n:`@qualid` as callback, callable by :n:`@string`.
+   This is done by declaring a function
+   ``let _ = Callback.register`` ":n:`@string`" :n:`@qualid`.
+
+   This expression signals OCaml that the given ML function :n:`@qualid` shall be
+   accessible via the alias :n:`@string`, when calling from C/C++.
+   If no alias is specified, it is set to the string representation of :n:`@qualid`.
+
+   .. caution::
+      * The optional alias :n:`@string` is currently **not** checked in any way.
+
+      * The user must ensure that the callback aliases are
+        unique, i.e. when multiple modules expose a callback, the user should make
+        sure that no two :n:`@qualid` share the same alias.
+
+   .. note::
+      Using Extract Callback has no impact on the rest of the synthesised code since
+      it is an additional declaration. Thus, there is no impact on the correctness
+      and type safety of the generated code.
+
+   .. exn:: Extract Callback is supported only for OCaml extraction.
+
+      The callback registration mechanism ``Callback.register`` is specific
+      to OCaml. Thus, the command is only usable when extracting OCaml code.
+
+.. cmd:: Print Extraction Foreign
+
+   Prints the current set of custom foreign functions
+   declared by the command :cmd:`Extract Foreign Constant` together with its
+   associated foreign ML function name.
+
+.. .. cmd:: Reset Extraction Foreign
+
+..   Resets the set of custom externals
+..   declared by the command :cmd:`Extract Foreign Constant`.
+
+.. cmd:: Print Extraction Callback
+
+   Prints the map of callbacks
+   declared by the command :cmd:`Extract Callback`,
+   showing the :token:`qualid` and callback alias
+   :token:`string` (if specified) for each callback.
+
+.. cmd:: Reset Extraction Callback
+
+   Resets the the map recording the callbacks
+   declared by the command :cmd:`Extract Callback`.
+
 
 Avoiding conflicts with existing filenames
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

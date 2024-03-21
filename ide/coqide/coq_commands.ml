@@ -43,6 +43,8 @@ let commands = [
    "End Silent.";
    "Eval";
    "Extract Constant";
+   "Extract Foreign Constant";
+   "Extract Callback";
    "Extract Inductive";
    "Extraction Inline";
    "Extraction Language";
@@ -99,6 +101,8 @@ let commands = [
    "Require Export";
    "Require Import";
    "Reset Extraction Inline";
+(*   "Reset Extraction Foreign";*)
+   "Reset Extraction Callback";
    ];
   [  "Scheme";
      "Section";
@@ -169,6 +173,8 @@ let state_preserving = [
   "Print Coercion Paths";
   "Print Coercions";
   "Print Extraction Inline";
+  "Print Extraction External";
+  "Print Extraction Callback";
   "Print Grammar";
   "Print Graph";
   "Print Hint";
