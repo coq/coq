@@ -7,6 +7,7 @@
  ; (mode native)
  (boot)
  (plugins
+   coq-core.plugins.ltac2_ltac1
    coq-core.plugins.ltac
    coq-core.plugins.tauto
 
