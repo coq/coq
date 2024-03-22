@@ -119,7 +119,8 @@ let rec interp_expr ?loc ~atts ~st c =
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
     let stack = st.Vernacstate.interp.lemmas in
     let program = st.Vernacstate.interp.program in
-    interp_typed_vernac ~pm:program ~stack fv
+    let {Vernactypes.prog; proof} = interp_typed_vernac fv { prog=program; proof=stack; } in
+    proof, prog
 
 and vernac_load ~verbosely entries =
   (* Note that no proof should be open here, so the state here is just token for now *)

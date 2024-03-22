@@ -34,21 +34,32 @@ module Proof : sig
     | Open : (unit, state) t
 end
 
+type ('prog,'proof) state_gen = {
+  prog : 'prog;
+  proof : 'proof;
+}
+
+type no_state = (unit, unit) state_gen
+val no_state : no_state
+(** Useful for patterns like [{ no_state with proof = newproof }] when
+    modifying a subset of the state. *)
+
+val ignore_state : ((unit, unit) Prog.t, (unit, unit) Proof.t) state_gen
+
 type typed_vernac =
     TypedVernac : {
-      prog : ('in1, 'out1) Prog.t;
-      proof : ('in2, 'out2) Proof.t;
-      run : pm:'in1 -> proof:'in2 -> 'out1 * 'out2;
+      spec : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t) state_gen;
+      run : ('inprog, 'inproof) state_gen -> ('outprog, 'outproof) state_gen;
     } -> typed_vernac
 
 val typed_vernac
-  : ('in1, 'out1) Prog.t
-  -> ('in2, 'out2) Proof.t
-  -> (pm:'in1 -> proof:'in2 -> 'out1 * 'out2)
+  : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t) state_gen
+  -> (('inprog, 'inproof) state_gen -> ('outprog, 'outproof) state_gen)
   -> typed_vernac
 
-val run : typed_vernac -> pm:Prog.stack -> stack:Vernacstate.LemmaStack.t option
-  -> Vernacstate.LemmaStack.t option * Prog.stack
+type full_state = (Prog.stack,Vernacstate.LemmaStack.t option) state_gen
+
+val run : typed_vernac -> full_state -> full_state
 
 (** Some convenient typed_vernac constructors. Used by coqpp. *)
 
