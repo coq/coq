@@ -310,9 +310,8 @@ let compute_instance_binders (qrev,urev) inst =
   Array.map qmap qinst, Array.map umap uinst
 
 let context uctx =
-  let (_, rbinders) = uctx.names in
   let qvars = QState.undefined uctx.sort_variables in
-  UContext.of_context_set (compute_instance_binders rbinders) qvars uctx.local
+  UContext.of_context_set (compute_instance_binders (snd uctx.names)) qvars uctx.local
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders
 
@@ -873,6 +872,7 @@ let check_implication uctx cstrs cstrs' =
           Constraints.pr (pr_uctx_level uctx) cstrs')
 
 let check_mono_univ_decl uctx decl =
+  (* Note: if [decl] is [default_univ_decl], behave like [uctx.local] *)
   let () =
     if not (List.is_empty decl.univdecl_qualities)
     || not (QVar.Set.is_empty (QState.undefined uctx.sort_variables))
@@ -893,6 +893,7 @@ let check_mono_univ_decl uctx decl =
   end
 
 let check_poly_univ_decl uctx decl =
+  (* Note: if [decl] is [default_univ_decl], behave like [context uctx] *)
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
   let inst = universe_context_inst decl qvars levels uctx.names in
@@ -909,15 +910,11 @@ let check_poly_univ_decl uctx decl =
   uctx
 
 let check_univ_decl ~poly uctx decl =
+  let (binders, _) = uctx.names in
   let entry =
-    if not poly then
-      let ctx = check_mono_univ_decl uctx decl in
-      Monomorphic_entry ctx
-    else
-      let ctx = check_poly_univ_decl uctx decl in
-      Polymorphic_entry ctx
-  in
-  entry, fst uctx.names
+    if poly then Polymorphic_entry (check_poly_univ_decl uctx decl)
+    else Monomorphic_entry (check_mono_univ_decl uctx decl) in
+  entry, binders
 
 let is_bound l lbound = match lbound with
   | UGraph.Bound.Prop -> false

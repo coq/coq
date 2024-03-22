@@ -742,18 +742,12 @@ let vernac_exact_proof ~lemma ~pm c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pm
 
-let vernac_assumption ~atts discharge kind l nl =
+let vernac_assumption ~atts discharge kind l inline =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  List.iter (fun (is_coe,(idl,c)) ->
-    if Dumpglob.dump () then
-      List.iter (fun (lid, _) ->
-          match scope with
-            | Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   if Option.has_some atts.using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?user_warns:atts.user_warns nl l
+  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?user_warns:atts.user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -1484,6 +1478,10 @@ let vernac_declare_instance ~atts id bl inst pri =
     Attributes.(parse (Notations.(program ++ Classes.instance_locality ++ polymorphic))) atts
   in
   Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
+
+let vernac_context ~atts ctx =
+  let program_mode, poly = Attributes.(parse (Notations.(program ++ polymorphic))) atts in
+  ComAssumption.do_context ~program_mode ~poly ctx
 
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in
@@ -2445,8 +2443,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
-
+    vtdefault(fun () -> vernac_context ~atts sup)
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
 

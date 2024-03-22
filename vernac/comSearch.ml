@@ -32,7 +32,7 @@ let interp_search_restriction = function
 let kind_searcher env = Decls.(function
   (* Kinds referring to the keyword introducing the object *)
   | IsAssumption _
-  | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let)
+  | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let | LetContext)
   | IsProof _
   | IsPrimitive
   | IsSymbol as k -> Inl k

@@ -37,6 +37,7 @@ type definition_object_kind =
   | Instance
   | Method
   | Let
+  | LetContext
 
 type assumption_object_kind = Definitional | Logical | Conjectural | Context
 

@@ -768,6 +768,8 @@ let warn_let_as_axiom =
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
+(* Declare an assumption when not in a section: Parameter/Axiom but also
+   Variable/Hypothesis seen as Local Parameter/Axiom *)
 let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified

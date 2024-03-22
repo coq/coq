@@ -698,9 +698,9 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 type manual_implicits = (Name.t * bool) option CAst.t list
 
-let compute_implicits_with_manual env sigma typ enriching l =
+let compute_implicits_with_manual env sigma ?(silent=true) typ enriching l =
   let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
-  set_manual_implicits true !implicit_args enriching autoimpls l
+  set_manual_implicits silent !implicit_args enriching autoimpls l
 
 let check_inclusion l =
   (* Check strict inclusion *)
