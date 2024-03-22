@@ -26,11 +26,12 @@ if ! [ "${COQ_CI_COLOR+1}" ]; then
   fi
 fi
 
+# we don't want to block commands on user interaction
+export GIT_PAGER=
 if [ "$COQ_CI_COLOR" = 1 ] && command -v script > /dev/null; then
   # prevent piping from disabling auto colors / enable auto colors in CI
     if [ "$CI" ]; then
       export TERM=xterm-color
-      export GIT_PAGER=
     fi
     if [ "$OSTYPE" = darwin ]; then
         script -q /dev/null bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
