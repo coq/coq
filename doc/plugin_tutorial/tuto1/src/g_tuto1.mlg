@@ -167,14 +167,18 @@ END
  *
  * Simple_print contains simple_body_access, which shows how to look up
  * a global reference.
+ *
+ * It needs the ability to access the body of opaque constants, which is given by STATE opaque_access.
+ * This makes the expected type of the implementation be
+ * [opaque_access:Global.indirect_accessor -> unit] instead of [unit].
  *)
-VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY STATE opaque_access
 | [ "MyPrint" reference(r) ] ->
-   {
+   { fun ~opaque_access ->
      let env = Global.env () in
      let sigma = Evd.from_env env in
      try
-       let t = Simple_print.simple_body_access (Nametab.global r) in
+       let t = Simple_print.simple_body_access ~opaque_access (Nametab.global r) in
        Feedback.msg_notice (Printer.pr_econstr_env env sigma t)
      with Failure s ->
        CErrors.user_err (str s)
@@ -193,10 +197,12 @@ END
  *
  * Inside of simple_body_access, note that it uses Global.env (),
  * which refreshes the environment before looking up the term.
+ *
+ * [![opaque_access]] is equivalent to [STATE opaque_access] but is specific to that parsing rule.
  *)
 VERNAC COMMAND EXTEND DefineLookup CLASSIFIED AS SIDEFF
-| #[ poly = Attributes.polymorphic ] [ "DefineLookup" ident(i) ":=" constr(e) ] ->
-   {
+| #[ poly = Attributes.polymorphic ] ![opaque_access] [ "DefineLookup" ident(i) ":=" constr(e) ] ->
+   { fun ~opaque_access ->
      let env = Global.env () in
      let sigma = Evd.from_env env in
      let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
@@ -205,7 +211,7 @@ VERNAC COMMAND EXTEND DefineLookup CLASSIFIED AS SIDEFF
      Feedback.msg_notice (print r);
      let env = Global.env () in
      let sigma = Evd.from_env env in
-     let t = Simple_print.simple_body_access r in
+     let t = Simple_print.simple_body_access ~opaque_access r in
      let print t = strbrk "Found " ++ Printer.pr_econstr_env env sigma t in
      Feedback.msg_notice (print t)
    }

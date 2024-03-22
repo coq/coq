@@ -58,8 +58,6 @@ let pr_language = function
   | Scheme -> str "Scheme"
   | JSON -> str "JSON"
 
-let access = Library.indirect_accessor[@@warning "-3"]
-
 }
 
 VERNAC ARGUMENT EXTEND language
@@ -72,35 +70,35 @@ END
 
 (* Extraction commands *)
 
-VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY STATE opaque_access
 (* Extraction in the Coq toplevel *)
-| [ "Extraction" global(x) ] -> { simple_extraction access x }
-| [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction access None l }
+| [ "Extraction" global(x) ] -> { simple_extraction x }
+| [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction None l }
 
 (* Monolithic extraction to a file *)
 | [ "Extraction" string(f) ne_global_list(l) ]
-  -> { full_extraction access (Some f) l }
+  -> { full_extraction (Some f) l }
 
 (* Extraction to a temporary file and OCaml compilation *)
 | [ "Extraction" "TestCompile" ne_global_list(l) ]
-  -> { extract_and_compile access l }
+  -> { extract_and_compile l }
 END
 
-VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY STATE opaque_access
 (* Same, with content split in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
-  -> { separate_extraction access l }
+  -> { separate_extraction l }
 END
 
 (* Modular extraction (one Coq library = one ML module) *)
-VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Extraction" "Library" identref(m) ]
-  -> { extraction_library access false m }
+  -> { extraction_library false m }
 END
 
-VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Recursive" "Extraction" "Library" identref(m) ]
-  -> { extraction_library access true m }
+  -> { extraction_library true m }
 END
 
 (* Target Language *)
