@@ -123,7 +123,7 @@ type aast = {
 }
 let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr_vernac expr)
 
-(* Commands piercing opaque *)
+(* Commands piercing opaque (probably should be using the vernactypes system instead) *)
 let may_pierce_opaque = function
   | VernacSynPure (VernacPrint _) -> true
   | VernacSynterp (VernacExtend ({ ext_plugin = "coq-core.plugins.extraction" }, _)) -> true
