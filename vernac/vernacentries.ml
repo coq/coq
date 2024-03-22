@@ -1983,9 +1983,9 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
 let vernac_print ~pstate =
   let sigma, env = get_current_or_global_context ~pstate in
   function
-  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
+  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags env)
   | PrintTables -> print_tables ()
-  | PrintFullContext-> Prettyp.print_full_context_typ env sigma
+  | PrintFullContext -> Prettyp.print_full_context_typ env sigma
   | PrintSectionContext qid -> Prettyp.print_sec_context_typ env sigma qid
   | PrintInspect n -> Prettyp.inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
@@ -2034,7 +2034,6 @@ let vernac_print ~pstate =
   | PrintImplicit qid -> Prettyp.print_impargs env (smart_global qid)
   | PrintAssumptions (o,t,r) ->
     (* Prints all the axioms and section variables used by a term *)
-      let env = Global.env () in
       let gr = smart_global r in
       let cstr, _ = UnivGen.fresh_global_instance env gr in
       let st = Conv_oracle.get_transp_state (Environ.oracle env) in
