@@ -13,19 +13,19 @@
 open Names
 open Libnames
 
-val simple_extraction : Global.indirect_accessor -> qualid -> unit
-val full_extraction : Global.indirect_accessor -> string option -> qualid list -> unit
-val separate_extraction : Global.indirect_accessor -> qualid list -> unit
-val extraction_library : Global.indirect_accessor -> bool -> lident -> unit
+val simple_extraction : opaque_access:Global.indirect_accessor -> qualid -> unit
+val full_extraction : opaque_access:Global.indirect_accessor -> string option -> qualid list -> unit
+val separate_extraction : opaque_access:Global.indirect_accessor -> qualid list -> unit
+val extraction_library : opaque_access:Global.indirect_accessor -> bool -> lident -> unit
 
 (* For the test-suite : extraction to a temporary file + ocamlc on it *)
 
-val extract_and_compile : Global.indirect_accessor -> qualid list -> unit
+val extract_and_compile : opaque_access:Global.indirect_accessor -> qualid list -> unit
 
 (* For debug / external output via coqtop.byte + Drop : *)
 
 val mono_environment :
- Global.indirect_accessor -> GlobRef.t list -> ModPath.t list -> Miniml.ml_structure
+ opaque_access:Global.indirect_accessor -> GlobRef.t list -> ModPath.t list -> Miniml.ml_structure
 
 (* Used by the Relation Extraction plugin *)
 
@@ -35,7 +35,7 @@ val print_one_decl :
 (* Used by Extraction Compute *)
 
 val structure_for_compute :
-  Global.indirect_accessor -> Environ.env -> Evd.evar_map -> EConstr.t ->
+  opaque_access:Global.indirect_accessor -> Environ.env -> Evd.evar_map -> EConstr.t ->
     Miniml.ml_decl list * Miniml.ml_ast * Miniml.ml_type
 
 (* Show the extraction of the current ongoing proof *)

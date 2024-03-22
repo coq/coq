@@ -416,7 +416,7 @@ and extract_module access env mp ~all mb =
   { ml_mod_expr = impl;
     ml_mod_type = typ }
 
-let mono_environment access refs mpl =
+let mono_environment ~opaque_access refs mpl =
   Visit.reset ();
   List.iter Visit.add_ref refs;
   List.iter Visit.add_mp_all mpl;
@@ -424,7 +424,7 @@ let mono_environment access refs mpl =
   let l = List.rev (environment_until None) in
   List.rev_map
     (fun (mp,struc) ->
-      mp, extract_structure access env mp no_delta ~all:(Visit.needed_mp_all mp) struc)
+      mp, extract_structure opaque_access env mp no_delta ~all:(Visit.needed_mp_all mp) struc)
     l
 
 (**************************************)
@@ -625,24 +625,24 @@ let rec locate_ref = function
     extracting to a file with the command:
     \verb!Extraction "file"! [qualid1] ... [qualidn]. *)
 
-let full_extr access f (refs,mps) =
+let full_extr opaque_access f (refs,mps) =
   init false false;
   List.iter (fun mp -> if is_modfile mp then error_MPfile_as_mod mp true) mps;
-  let struc = optimize_struct (refs,mps) (mono_environment access refs mps) in
+  let struc = optimize_struct (refs,mps) (mono_environment ~opaque_access refs mps) in
   warns ();
   print_structure_to_file (mono_filename f) false struc;
   reset ()
 
-let full_extraction access f lr =
-  full_extr access f (locate_ref lr)
+let full_extraction ~opaque_access f lr =
+  full_extr opaque_access f (locate_ref lr)
 
 (*s Separate extraction is similar to recursive extraction, with the output
    decomposed in many files, one per Coq .v file *)
 
-let separate_extraction access lr =
+let separate_extraction ~opaque_access lr =
   init true false;
   let refs,mps = locate_ref lr in
-  let struc = optimize_struct (refs,mps) (mono_environment access refs mps) in
+  let struc = optimize_struct (refs,mps) (mono_environment ~opaque_access refs mps) in
   let () = List.iter (function
     | MPfile _, _ -> ()
     | (MPdot _ | MPbound _), _ ->
@@ -661,12 +661,12 @@ let separate_extraction access lr =
 (*s Simple extraction in the Coq toplevel. The vernacular command
     is \verb!Extraction! [qualid]. *)
 
-let simple_extraction access r =
+let simple_extraction ~opaque_access r =
   match locate_ref [r] with
-  | ([], [mp]) as p -> full_extr access None p
+  | ([], [mp]) as p -> full_extr opaque_access None p
   | [r],[] ->
       init false false;
-      let struc = optimize_struct ([r],[]) (mono_environment access [r] []) in
+      let struc = optimize_struct ([r],[]) (mono_environment ~opaque_access [r] []) in
       let d = get_decl_in_structure r struc in
       warns ();
       let flag =
@@ -682,7 +682,7 @@ let simple_extraction access r =
 (*s (Recursive) Extraction of a library. The vernacular command is
   \verb!(Recursive) Extraction Library! [M]. *)
 
-let extraction_library access is_rec CAst.{loc;v=m} =
+let extraction_library ~opaque_access is_rec CAst.{loc;v=m} =
   init true true;
   let dir_m =
     let q = qualid_of_ident m in
@@ -693,7 +693,7 @@ let extraction_library access is_rec CAst.{loc;v=m} =
   let l = List.rev (environment_until (Some dir_m)) in
   let select l (mp,struc) =
     if Visit.needed_mp mp
-    then (mp, extract_structure access env mp no_delta ~all:true struc) :: l
+    then (mp, extract_structure opaque_access env mp no_delta ~all:true struc) :: l
     else l
   in
   let struc = List.fold_left select [] l in
@@ -722,7 +722,7 @@ let flatten_structure struc =
   and flatten_elems l = List.flatten (List.map flatten_elem l)
   in flatten_elems (List.flatten (List.map snd struc))
 
-let structure_for_compute access env sg c =
+let structure_for_compute ~opaque_access env sg c =
   init false false ~compute:true;
   let ast, mlt = Extraction.extract_constr env sg c in
   let ast = Mlutil.normalize ast in
@@ -730,7 +730,7 @@ let structure_for_compute access env sg c =
   let add_ref r = refs := GlobRef.Set.add r !refs in
   let () = ast_iter_references add_ref add_ref add_ref ast in
   let refs = GlobRef.Set.elements !refs in
-  let struc = optimize_struct (refs,[]) (mono_environment access refs []) in
+  let struc = optimize_struct (refs,[]) (mono_environment ~opaque_access refs []) in
   (flatten_structure struc), ast, mlt
 
 (* For the test-suite :
@@ -759,11 +759,11 @@ let compile f =
 let remove f =
   if Sys.file_exists f then Sys.remove f
 
-let extract_and_compile access l =
+let extract_and_compile ~opaque_access l =
   if lang () != Ocaml then
     CErrors.user_err (Pp.str "This command only works with OCaml extraction");
   let f = Filename.temp_file "testextraction" ".ml" in
-  let () = full_extraction access (Some f) l in
+  let () = full_extraction ~opaque_access (Some f) l in
   let () = compile f in
   let () = remove f; remove (f^"i") in
   let base = Filename.chop_suffix f ".ml" in
