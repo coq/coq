@@ -51,10 +51,11 @@ let nf_evar_context sigma ctx =
   in
   List.map map ctx
 
-let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_warns ?using r measure notation =
+let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typing_flags ?user_warns ?using r measure notations =
   let open EConstr in
   let open Vars in
   let open Combinators in
+  let ntns = List.map Metasyntax.prepare_where_notation notations in
   let fix_sub_ref, measure_on_R_ref = try fix_sub_ref (), measure_on_R_ref ()
     with NotFoundRef r ->
       CErrors.user_err
@@ -63,7 +64,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   in
   let env = Global.env() in
   let sigma, udecl = interp_univ_decl_opt env pl in
-  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
+  let sigma, (impls_env, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
   let flags = Pretyping.{ all_no_fail_flags with program_mode = true } in
@@ -142,9 +143,13 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
     let interning_data =
       (* Force the obligation status of "recproof" *)
       set_obligation_internalization_data recproofid interning_data in
-    let newimpls = Id.Map.singleton recname interning_data in
-    interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
-      ~impls:newimpls body (lift 1 top_arity)
+    let newimpls = Id.Map.add recname interning_data impls_env in
+    Metasyntax.with_syntax_protection (fun () ->
+        let env_ctx = push_rel_context ctx env in
+        List.iter (Metasyntax.set_notation_for_interpretation env_ctx newimpls) ntns;
+        interp_casted_constr_evars ~program_mode:true env_ctx sigma
+          ~impls:newimpls body (lift 1 top_arity))
+      ()
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (make_annot (Name argname) Sorts.Relevant, argtyp, top_arity_let) in
@@ -206,7 +211,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
-  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags ?user_warns () in
+  let kind = Decls.(IsDefinition Fixpoint) in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ~hook ?typing_flags ?user_warns ~ntns () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
   pm
@@ -282,7 +288,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?user_warns ?using r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns ?using r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -295,7 +301,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?user_warns ?using
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns ?using
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->

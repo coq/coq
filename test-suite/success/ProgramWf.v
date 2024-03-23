@@ -118,3 +118,29 @@ Program Fixpoint f n {B} (b:B) {measure n} : forall {A}, A -> A * B :=
   end.
 
 End FurtherArguments.
+
+Module Notations.
+
+Reserved Notation "[ x ]".
+Program Fixpoint zero (n : nat) {measure n} : nat -> nat :=
+  match n with
+    | 0 => fun _ => 0
+    | S n' => [ n' ]
+  end
+
+where "[ n ]" := (zero n).
+
+Check eq_refl : ([ 0 ] 0) = 0.
+
+Reserved Notation "[[ x | y ]]".
+Program Fixpoint zero' (n : nat) {measure n} : nat -> nat :=
+  match n with
+    | 0 => fun _ => 0
+    | S n' => fun a => [[ n' | a ]]
+  end
+
+where "[[ n | p ]]" := (zero' n p).
+
+Check eq_refl : [[ 0 | 0 ]] = 0.
+
+End Notations.
