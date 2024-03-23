@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pp
-open CErrors
 open Util
 open Names
 
@@ -149,7 +148,7 @@ let find_logical_path phys_dir =
   match List.filter2 (fun p d -> p = phys_dir) physical logical with
   | _,[dir] -> dir
   | _,[] -> default_root_prefix
-  | _,l -> anomaly (Pp.str ("Two logical paths are associated to "^phys_dir^"."))
+  | _,l -> CErrors.anomaly (Pp.str ("Two logical paths are associated to "^phys_dir^"."))
 
 let remove_load_path dir =
   let physical, logical = !load_paths in
@@ -181,7 +180,7 @@ let add_load_path (phys_path,coq_path) =
             end
       | _,[] ->
           load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
-      | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
+      | _ -> CErrors.anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
 
 let load_paths_of_dir_path dir =
   let physical, logical = !load_paths in
@@ -227,13 +226,13 @@ let locate_qualified_library qid =
 
 let error_unmapped_dir qid =
   let prefix = qid.dirpath in
-  user_err
+  CErrors.user_err
     (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
      str "no physical path bound to" ++ spc () ++ pr_dirlist prefix
      ++ str "." ++ fnl ())
 
 let error_lib_not_found qid =
-  user_err
+  CErrors.user_err
     (str "Cannot find library " ++ pr_path qid ++ str " in loadpath.")
 
 let try_locate_absolute_library dir =
@@ -317,7 +316,7 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
         let () = if not (String.equal digest segment.ObjFile.hash) then raise_notrace Exit in
         v
       with _ ->
-        user_err (str "Corrupted file " ++ quote (str f))
+        CErrors.user_err (str "Corrupted file " ++ quote (str f))
     in
     let () = Validate.validate value v in
     let v = Analyze.instantiate v in
@@ -332,7 +331,7 @@ let tasks_seg : Obj.t option ObjFile.id = ObjFile.make_id "tasks"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg = Vmlibrary.vm_segment
 
-let intern_from_file ~intern_mode (dir, f) =
+let intern_from_file ~intern_mode ~enable_VM (dir, f) =
   let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,vmlib,digest) =
@@ -354,22 +353,25 @@ let intern_from_file ~intern_mode (dir, f) =
       let opaque_csts = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
       let tasks = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
       let table = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
-      let vmlib = marshal_in_segment ~validate ~value:Any ~segment:seg_vmlib f ch in
+      let vmlib = if enable_VM
+        then marshal_in_segment ~validate ~value:Values.v_vmlib ~segment:seg_vmlib f ch
+        else Vmlibrary.(export (set_path dir empty))
+      in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
       let () = close_in ch in
       let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
-        user_err
+        CErrors.user_err
           (name_clash_message dir sd.md_name f);
       if tasks <> None then
-        user_err
+        CErrors.user_err
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Flags.if_verbose chk_pp (str " (was a vio file) ");
       Option.iter (fun (_,b) -> if not b then
-        user_err
+        CErrors.user_err
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
       end;
@@ -387,15 +389,9 @@ let intern_from_file ~intern_mode (dir, f) =
       (Option.map (fun (cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst (Vmlibrary.inject vmlib)
 
-let get_deps (dir, f) =
-  try LibraryMap.find dir !depgraph
-  with Not_found ->
-    let _ = intern_from_file ~intern_mode:Dep (dir,f) in
-    LibraryMap.find dir !depgraph
-
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)
-let rec intern_library ~intern_mode seen (dir, f) needed =
+let rec intern_library ~intern_mode ~enable_VM seen (dir, f) needed =
   if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
   (* Look if in the current logical environment *)
   try let _ = find_library dir in needed
@@ -404,20 +400,24 @@ let rec intern_library ~intern_mode seen (dir, f) needed =
   if List.mem_assoc_f DirPath.equal dir needed then needed
   else
     (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-    let m = intern_from_file ~intern_mode (dir,f) in
+    let m = intern_from_file ~intern_mode ~enable_VM (dir,f) in
     let seen' = LibrarySet.add dir seen in
     let deps =
       Array.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps
     in
     let intern_mode = match intern_mode with Rec -> Rec | Root | Dep -> Dep in
-    (dir,m) :: Array.fold_right (intern_library ~intern_mode seen') deps needed
+    (dir,m) :: Array.fold_right (intern_library ~intern_mode ~enable_VM seen') deps needed
 
 (* Compute the reflexive transitive dependency closure *)
 let rec fold_deps seen ff (dir,f) (s,acc) =
   if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
   if LibrarySet.mem dir s then (s,acc)
   else
-    let deps = get_deps (dir,f) in
+    let deps = match LibraryMap.find_opt dir !depgraph with
+      | Some deps -> deps
+      | None ->
+        CErrors.anomaly Pp.(str "missing dep when computing closure (" ++ DirPath.print dir ++ str ")")
+    in
     let deps = Array.map (fun (d,_) -> try_locate_absolute_library d) deps in
     let seen' = LibrarySet.add dir seen in
     let (s',acc') = Array.fold_right (fold_deps seen' ff) deps (s,acc) in
@@ -430,11 +430,12 @@ let fold_deps_list ff modl acc =
   snd (fold_deps_list LibrarySet.empty ff modl (LibrarySet.empty,acc))
 
 let recheck_library senv ~norec ~admit ~check =
+  let enable_VM = (Environ.typing_flags (Safe_typing.env_of_safe_env senv)).enable_VM in
   let ml = List.map try_locate_qualified_library check in
   let nrl = List.map try_locate_qualified_library norec in
   let al =  List.map try_locate_qualified_library admit in
-  let needed = List.fold_right (intern_library ~intern_mode:Rec LibrarySet.empty) ml [] in
-  let needed = List.fold_right (intern_library ~intern_mode:Root LibrarySet.empty) nrl needed in
+  let needed = List.fold_right (intern_library ~intern_mode:Rec ~enable_VM LibrarySet.empty) ml [] in
+  let needed = List.fold_right (intern_library ~intern_mode:Root ~enable_VM LibrarySet.empty) nrl needed in
   let needed = List.rev needed in
   (* first compute the closure of norec, remove closure of check,
      add closure of admit, and finally remove norec and check *)
