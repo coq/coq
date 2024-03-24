@@ -105,67 +105,76 @@ let check_true_recursivity env evd ~isfix fixl =
     | [x,Inr []] -> warn_non_recursive (x,isfix)
     | _ -> ()
 
-let extract_decreasing_argument ~structonly { CAst.v = v; loc } =
-  let open Constrexpr in
-  match v with
-  | CStructRec na -> na
-  | (CWfRec (na,_) | CMeasureRec (Some na,_,_)) when not structonly -> na
-  | CMeasureRec (None,_,_) when not structonly ->
-    CErrors.user_err ?loc Pp.(str "Decreasing argument must be specified in measure clause.")
-  | _ ->
-    CErrors.user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
-
-(* This is a special case: if there's only one binder, we pick it as
-   the recursive argument if none is provided. *)
-let adjust_rec_order ~structonly binders rec_order =
-  let rec_order =
-      match binders, rec_order with
-      | [CLocalAssum([{ CAst.v = Name x }],_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-      | [CLocalDef({ CAst.v = Name x },_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-      | _, x -> x
-  in
-  extract_decreasing_argument ~structonly rec_order
-
-(* Interpret the index of a recursion order annotation *)
-exception Found of int
-let find_rec_annot ~structonly Vernacexpr.{fname={CAst.loc}; binders} ctx = function
-  | None ->
-    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
-    List.interval 0 (Context.Rel.nhyps ctx - 1)
-  | Some fix_order ->
-    let na = adjust_rec_order ~structonly binders fix_order in
-    let name = Name na.CAst.v in
-    try
-      Context.Rel.fold_outside (fun decl n ->
+let position_of_argument ctx binders na =
+  let exception Found of int in
+  let name = Name na.CAst.v in
+  try
+    Context.Rel.fold_outside (fun decl n ->
         match Context.Rel.Declaration.(get_value decl, Name.equal (get_name decl) name) with
         | None, true -> raise (Found n)
         | Some _, true ->
-            let loc = List.find_map (fun id -> if Name.equal name id.CAst.v then Some id.CAst.loc else None) (Constrexpr_ops.names_of_local_binders binders) in
-            let loc = Option.default na.CAst.loc loc in
-            CErrors.user_err ?loc
-              (Name.print name ++ str" must be a proper parameter and not a local definition.")
+          let loc = List.find_map (fun id -> if Name.equal name id.CAst.v then Some id.CAst.loc else None) (Constrexpr_ops.names_of_local_binders binders) in
+          let loc = Option.default na.CAst.loc loc in
+          CErrors.user_err ?loc
+            (Name.print name ++ str" must be a proper parameter and not a local definition.")
         | None, false -> n + 1
         | Some _, false -> n (* let-ins don't count *))
-        ~init:0 ctx |> ignore;
-      CErrors.user_err ?loc:na.loc
-        (str "No parameter named " ++ Id.print na.v ++ str".");
-    with
-      Found k -> [k]
+      ~init:0 ctx |> ignore;
+    CErrors.user_err ?loc:na.loc
+      (str "No parameter named " ++ Id.print na.v ++ str".");
+  with
+    Found k -> k
 
-let interp_rec_annot fixl ctxl (structonly, rec_order) =
+let make_qref s = Libnames.qualid_of_string s
+let lt_ref = make_qref "Init.Peano.lt"
+
+(* Interpret the index of a recursion order annotation *)
+let find_rec_annot ~program_mode ~function_mode Vernacexpr.{fname={CAst.loc}; binders} ctx = function
+  | None ->
+    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
+    None, List.interval 0 (Context.Rel.nhyps ctx - 1)
+  | Some CAst.{v=rec_order;loc} ->
+    let default_order r = Option.default (CAst.make @@ CRef (lt_ref,None)) r in
+    match rec_order with
+    | CStructRec na -> None, [position_of_argument ctx binders na]
+    | CMeasureRec _ | CWfRec _ when not (program_mode || function_mode) ->
+      CErrors.user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
+    | CWfRec (na,r) ->
+      if program_mode then Some (r, Constrexpr_ops.mkIdentC na.CAst.v), [] (* useless: will use Fix_sub *)
+      else if function_mode then None, []
+      else assert false
+    | CMeasureRec (na, mes, rfel) ->
+      if program_mode then
+        let r = match na, rfel with
+          | Some id, None ->
+            let loc = id.CAst.loc in
+            CAst.make ?loc @@ CRef (Libnames.qualid_of_ident ?loc id.CAst.v,None)
+          | Some _, Some _ -> CErrors.user_err ?loc Pp.(str"Measure takes only two arguments in Program Fixpoint.")
+          | None, rfel -> default_order rfel in
+        Some (r, mes), [] (* useless: will use Fix_sub *)
+      else if function_mode then
+        let _ = match binders, na with
+          | [CLocalDef({ CAst.v = Name id },_,_,_) | CLocalAssum([{ CAst.v = Name id }],_,_,_)], None -> ()
+          | _, None -> CErrors.user_err ?loc Pp.(str "Decreasing argument must be specified in measure clause.")
+          | _, Some na -> (* check that the name exists *) ignore (position_of_argument ctx binders na) in
+        (* Dummy *) None, []
+      else
+        assert false
+
+let interp_rec_annot ~program_mode ~function_mode fixl ctxl rec_order =
   let open Pretyping in
-  match rec_order with
-  (* If recursive argument was not given by user, we try all args.
-     An earlier approach was to look only for inductive arguments,
-     but doing it properly involves delta-reduction, and it finally
-     doesn't seem to worth the effort (except for huge mutual
-     fixpoints ?) *)
-  | CFixRecOrder fix_orders -> Decls.Fixpoint, {possibly_cofix = false; possible_fix_indices = List.map3 (find_rec_annot ~structonly) fixl ctxl fix_orders}
-  | CCoFixRecOrder -> Decls.CoFixpoint, {possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixl}
-  | CUnknownRecOrder -> Decls.Definition, {possibly_cofix = true; possible_fix_indices = List.map2 (fun fix ctx -> find_rec_annot ~structonly fix ctx None) fixl ctxl}
-(*  | CNoRecOrder -> (false, [])*)
+  let fixkind, (possibly_cofix, fixwf_guard) =
+    match rec_order with
+    (* If recursive argument was not given by user, we try all args.
+       An earlier approach was to look only for inductive arguments,
+       but doing it properly involves delta-reduction, and it finally
+       doesn't seem to worth the effort (except for huge mutual
+       fixpoints ?) *)
+    | CFixRecOrder fix_orders -> Decls.Fixpoint, (false, List.map3 (find_rec_annot ~program_mode ~function_mode) fixl ctxl fix_orders)
+    | CCoFixRecOrder -> Decls.CoFixpoint, (true, List.map (fun _ -> (None, [])) fixl)
+    | CUnknownRecOrder -> Decls.Definition, (true, List.map2 (fun fix ctx -> find_rec_annot ~program_mode ~function_mode fix ctx None) fixl ctxl) in
+  let fixwf, possible_fix_indices = List.split fixwf_guard in
+  (fixkind, fixwf, {possibly_cofix; possible_fix_indices})
 
 let interp_fix_context ~program_mode env sigma {Vernacexpr.binders} =
   let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma binders in
@@ -218,7 +227,13 @@ type ('constr, 'relevance) fix_data = {
   fixntns  : Metasyntax.notation_interpretation_decl list;
 }
 
-let interp_recursive_evars env ~program_mode rec_order fixl =
+let recproofid = Id.of_string "recproof"
+
+let imp_of_wf = function
+  | None -> []
+  | Some _ -> [CAst.make (Some (Name recproofid, true))]
+
+let interp_recursive_evars env ~program_mode ~function_mode rec_order fixl =
   let open Context.Named.Declaration in
   let open EConstr in
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
@@ -228,12 +243,12 @@ let interp_recursive_evars env ~program_mode rec_order fixl =
   let sigma, (fixenv, fixctxs, fixctximpenvs, fixctximps) =
     on_snd List.split4 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
-  let fixkind, possible_guard = interp_rec_annot fixl fixctxs rec_order in
+  let fixkind, fixwfs, possible_guard = interp_rec_annot ~program_mode ~function_mode fixl fixctxs rec_order in
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
       List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixenv fixl in
   let fixtypes = List.map2 (build_fix_type sigma) fixctxs fixccls in
-  let fiximps = List.map2 (fun ctximps cclimps -> ctximps@cclimps) fixctximps fixcclimps in
+  let fiximps = List.map3 (fun ctximps wf cclimps -> ctximps @ imp_of_wf wf @ cclimps) fixctximps fixwfs fixcclimps in
   let sigma, rec_sign =
     List.fold_left3
       (fun (sigma, env') id r t ->
@@ -281,7 +296,7 @@ let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fix
 
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
-  let (_, _, sigma),(fix, _, _, _) = interp_recursive_evars env ~program_mode:false (false, CFixRecOrder rec_order) fixpoint_exprl in
+  let (_, _, sigma),(fix, _, _, _) = interp_recursive_evars ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
@@ -333,7 +348,7 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_recursive_evars env ~program_mode:(Option.has_some pm) (true, rec_order) fixl in
+  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_recursive_evars env ~program_mode:(Option.has_some pm) ~function_mode:false rec_order fixl in
   check_recursive ~isfix env sigma fix;
   let kind = Decls.IsDefinition isfix in
   let sigma, ({fixdefs=bodies;fixrs;fixtypes} as fix), obls =
