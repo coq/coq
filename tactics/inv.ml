@@ -137,10 +137,11 @@ let make_inv_predicate env evd indf realargs id status concl =
         let eq_term = eqdata.Coqlib.eq in
         let eq = evd_comb1 (Evd.fresh_global env) evd eq_term in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
-        let eqns = (make_annot Anonymous Sorts.Relevant, lift n eqn) :: eqns in
         let refl_term = eqdata.Coqlib.refl in
         let refl_term = evd_comb1 (Evd.fresh_global env) evd refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
+        let r = Retyping.relevance_of_term env !evd refl in
+        let eqns = (make_annot Anonymous r, lift n eqn) :: eqns in
         let _ = evd_comb1 (Typing.type_of env) evd refl in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
