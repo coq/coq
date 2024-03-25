@@ -175,6 +175,7 @@ before_script:
     - "[ ! -f coqchk.failed ]" # needs quoting for yml syntax reasons
   artifacts:
     name: "$CI_JOB_NAME.logs"
+    when: always
     paths:
       - coqchk.log
     expire_in: 2 months
