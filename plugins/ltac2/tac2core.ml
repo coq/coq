@@ -1837,7 +1837,11 @@ let warn_missing_notation_variable =
         str ", if used in Ltac2 code in the notation an error will be produced.")
 
 let () =
-  let subs avoid globs (ids, tac) =
+  let subs avoid globs (ids, tac as orig) =
+    if Id.Set.is_empty ids then
+      (* closed tactic *)
+      orig
+    else
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
       let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in

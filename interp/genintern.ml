@@ -101,6 +101,6 @@ let generic_intern_pat ?loc ist (GenArg (Rawwit wit, v)) =
 let substitute_notation = NtnSubst.obj
 let register_ntn_subst0 = NtnSubst.register0
 
-let generic_substitute_notation avoid env (GenArg (Glbwit wit, v)) =
-  let v = substitute_notation wit avoid env v in
-  in_gen (glbwit wit) v
+let generic_substitute_notation avoid env (GenArg (Glbwit wit, v) as orig) =
+  let v' = substitute_notation wit avoid env v in
+  if v' == v then orig else in_gen (glbwit wit) v'
