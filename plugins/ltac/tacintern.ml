@@ -297,30 +297,25 @@ let intern_destruction_arg ist = function
       else
         clear,ElimOnIdent (make ?loc id)
 
-let short_name strict qid =
-  if qualid_is_ident qid && not strict then
-    Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  else None
-
-let evalref_of_globref ?loc ?short = function
+let evalref_of_globref ?loc = function
   | GlobRef.ConstRef cst ->
-      begin
-        match Structures.PrimitiveProjections.find_opt cst with
-        | None -> ArgArg (Evaluable.EvalConstRef cst, short)
-        | Some p -> ArgArg (Evaluable.EvalProjectionRef p, short)
-      end
-  | GlobRef.VarRef id -> ArgArg (Evaluable.EvalVarRef id, short)
+    begin
+      match Structures.PrimitiveProjections.find_opt cst with
+      | None -> Evaluable.EvalConstRef cst
+      | Some p -> Evaluable.EvalProjectionRef p
+    end
+  | GlobRef.VarRef id -> Evaluable.EvalVarRef id
   | r ->
     let tpe = match r with
-    | GlobRef.IndRef _ -> "inductive"
-    | GlobRef.ConstructRef _ -> "constructor"
-    | (GlobRef.VarRef _ | GlobRef.ConstRef _) -> assert false
+      | GlobRef.IndRef _ -> "inductive"
+      | GlobRef.ConstructRef _ -> "constructor"
+      | (GlobRef.VarRef _ | GlobRef.ConstRef _) -> assert false
     in
     user_err ?loc (str "Cannot turn" ++ spc () ++ str tpe ++ spc () ++
-      Nametab.pr_global_env Id.Set.empty r ++ spc () ++
-      str "into an evaluable reference.")
+                   Nametab.pr_global_env Id.Set.empty r ++ spc () ++
+                   str "into an evaluable reference.")
 
-let evalref_of_globref ?loc ?short r =
+let evalref_of_globref ?loc r =
   let () =
     (* only dump section variables not proof context variables
        (broken if variables got renamed) *)
@@ -330,20 +325,26 @@ let evalref_of_globref ?loc ?short r =
     in
     if not is_proof_variable then Dumpglob.add_glob ?loc r
   in
-  evalref_of_globref ?loc ?short r
+  evalref_of_globref ?loc r
 
 let intern_evaluable ist = function
   | {v=AN qid} ->
     begin match intern_global_reference ist qid with
     | ArgVar _ as v -> v
     | ArgArg (loc, r) ->
-      let short = short_name ist.strict_check qid in
-      evalref_of_globref ?loc ?short r
+      let short =
+        if qualid_is_ident qid && not ist.strict_check then
+          Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
+        else None
+      in
+      let r = evalref_of_globref ?loc r in
+      ArgArg (r, short)
     end
   | {v=ByNotation (ntn,sc);loc} ->
     let check = GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) in
     let r = Notation.interp_notation_as_global_reference ?loc ~head:true check ntn sc in
-    evalref_of_globref ?loc r
+    let r = evalref_of_globref ?loc r in
+    ArgArg (r, None)
 
 let intern_smart_global ist = function
   | {v=AN r} -> intern_global_reference ist r
@@ -411,10 +412,10 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       let c = Constrintern.interp_reference sign r in
       match DAst.get c with
       | GRef (r,None) ->
-          Inl (evalref_of_globref r)
+          Inl (ArgArg (evalref_of_globref r, None))
       | GVar id ->
           let r = evalref_of_globref (GlobRef.VarRef id) in
-          Inl r
+          Inl (ArgArg (r, None))
       | _ ->
           let bound_names = Glob_ops.bound_glob_vars c in
           Inr (bound_names,(c,None),dummy_pat) in
