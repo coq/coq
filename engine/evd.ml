@@ -948,20 +948,17 @@ let mkLEvar sigma (evk, args) =
   let args = List.fold_right2 fold (evar_filtered_context evi) args SList.empty in
   mkEvar (evk, args)
 
+let is_relevance_irrelevant sigma r =
+  match UState.nf_relevance sigma.universes r with
+  | Irrelevant -> true
+  | Relevant | RelevanceVar _ -> false
+
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
-  let qvar_irrelevant q = match UState.nf_qvar sigma.universes q with
-  | QConstant QSProp -> true
-  | QConstant QProp | QConstant QType | QVar _ -> false
-  in
+  let qvar_irrelevant q = is_relevance_irrelevant sigma (Sorts.RelevanceVar q) in
   let evar_irrelevant (evk, _) = match find sigma evk with
-  | EvarInfo evi ->
-    begin match evi.evar_relevance with
-    | Sorts.Relevant -> false
-    | Sorts.Irrelevant -> true
-    | Sorts.RelevanceVar q -> qvar_irrelevant q
-    end
-  | exception Not_found -> true
+  | EvarInfo evi -> is_relevance_irrelevant sigma evi.evar_relevance
+  | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
   { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
