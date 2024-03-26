@@ -49,7 +49,7 @@ let () = CErrors.register_handler (function
                spc () ++ str "to an evaluable reference.")
     | _ -> None)
 
-let error_not_evaluable r = raise (NotEvaluableRef r)
+let error_not_evaluable ?loc r = Loc.raise ?loc (NotEvaluableRef r)
 
 let is_evaluable_const env cst =
   is_transparent env (Evaluable.EvalConstRef cst) && evaluable_constant cst env
@@ -74,6 +74,16 @@ let value_of_evaluable_ref env evref u =
     env |> lookup_named id |> NamedDecl.get_value |> Option.get
   | Evaluable.EvalProjectionRef _ ->
     assert false (* TODO *)
+
+let soft_evaluable_of_global_reference ?loc = function
+  | GlobRef.ConstRef cst ->
+    begin
+      match Structures.PrimitiveProjections.find_opt cst with
+      | None -> Evaluable.EvalConstRef cst
+      | Some p -> Evaluable.EvalProjectionRef p
+    end
+  | GlobRef.VarRef id -> Evaluable.EvalVarRef id
+  | r -> error_not_evaluable ?loc r
 
 let evaluable_of_global_reference env = function
   | GlobRef.ConstRef cst when is_evaluable_const env cst ->
