@@ -129,10 +129,12 @@ let make_inv_predicate env evd indf realargs id status concl =
         let (xi, ti) = compute_eqn env' !evd nhyps n ai in
         let (lhs,eqnty,rhs) =
           if closed0 !evd ti then
+            (* shortcut *)
             (xi,ti,ai)
           else
-            let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
-              evd := sigma; res
+            let open Combinators in
+            let sigma, {telescope_value; telescope_type}, default_value = make_iterated_tuple env' !evd ~default:ai xi ti in
+              evd := sigma; telescope_value, telescope_type, default_value
         in
         let eq_term = eqdata.Coqlib.eq in
         let eq = evd_comb1 (Evd.fresh_global env) evd eq_term in

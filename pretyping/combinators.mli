@@ -31,3 +31,21 @@ type telescope = {
 }
 
 val telescope : env -> evar_map -> rel_context -> evar_map * rel_context * telescope
+
+(** [make_iterated_tuple env sigma ~default c] encapsulates [c] (of
+    inferred type [C]) and its free variables [x1,...,xn] into a
+    right-associated nested tuple in a [sigT]-type. It returns:
+    - the nested type [{x1:A1 & ... {xn:An & ... C} ... }]
+    - the tuple [(existsT _ x1 ... (existsT _ xn c) ...)]
+    - an alternative tuple [(existsT _ x1 ... (existsT _ xn default) ...)];
+      if [default] has not the right type, it fails.
+*)
+
+val make_iterated_tuple : env -> evar_map -> default:constr -> constr -> types -> evar_map * telescope * constr
+
+(** [make_selector env sigma ~pos ~special ~default c] constructs a
+    case-split on [c] (assumed of inductive type), with the [pos]-th
+    branch returning [special], and all the other branch returning
+    [default]. *)
+
+val make_selector : env -> evar_map -> pos:int -> special:constr -> default:constr -> constr -> types -> constr
