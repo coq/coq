@@ -77,4 +77,4 @@ type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
 type g_cst = Evaluable.t and_short_name Locus.or_var
 
-type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen
+type glob_red_expr = (g_trm, g_cst, g_trm) red_expr_gen

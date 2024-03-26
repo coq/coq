@@ -103,7 +103,7 @@ let subst_glob_red_expr subst =
   Redops.map_red_expr_gen
     (subst_glob_constr subst)
     (subst_evaluable subst)
-    (subst_glob_constr_or_pattern subst)
+    (subst_glob_constr subst)
 
 let subst_raw_may_eval subst = function
   | ConstrEval (r,c) -> ConstrEval (subst_glob_red_expr subst r,subst_glob_constr subst c)
@@ -156,7 +156,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_glob_red_expr subst r, cl)
   | TacChange (check,op,c,cl) ->
-      TacChange (check,Option.map (subst_glob_constr_or_pattern subst) op,
+      TacChange (check,Option.map (subst_glob_constr subst) op,
         subst_glob_constr subst c, cl)
 
   (* Equality and inversion *)

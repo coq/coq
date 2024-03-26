@@ -122,8 +122,8 @@ type 'a gen_atomic_tactic_expr =
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
 
   (* Conversion *)
-  | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
-  | TacChange of check_flag * 'pat option * 'dtrm * 'nam clause_expr
+  | TacReduce of ('trm,'cst,'rpat) red_expr_gen * 'nam clause_expr
+  | TacChange of check_flag * 'rpat option * 'dtrm * 'nam clause_expr
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
@@ -141,6 +141,7 @@ constraint 'a = <
     term:'trm;
     dterm: 'dtrm;
     pattern:'pat;
+    red_pattern:'rpat;
     constant:'cst;
     reference:'ref;
     name:'nam;
@@ -152,7 +153,7 @@ constraint 'a = <
 
 type 'a gen_tactic_arg =
   | TacGeneric     of string option * 'lev generic_argument
-  | ConstrMayEval  of ('trm,'cst,'pat) may_eval
+  | ConstrMayEval  of ('trm,'cst,'rpat) may_eval
   | Reference      of 'ref
   | TacCall    of ('ref * 'a gen_tactic_arg list) CAst.t
   | TacFreshId of string or_var list
@@ -164,6 +165,7 @@ constraint 'a = <
     term:'trm;
     dterm: 'dtrm;
     pattern:'pat;
+    red_pattern:'rpat;
     constant:'cst;
     reference:'ref;
     name:'nam;
@@ -240,6 +242,7 @@ constraint 'a = <
     term:'t;
     dterm: 'dtrm;
     pattern:'p;
+    red_pattern:'rp;
     constant:'c;
     reference:'r;
     name:'n;
@@ -254,6 +257,7 @@ constraint 'a = <
     term:'t;
     dterm: 'dtrm;
     pattern:'p;
+    red_pattern:'rp;
     constant:'c;
     reference:'r;
     name:'n;
@@ -268,6 +272,7 @@ constraint 'a = <
     term:'t;
     dterm: 'dtrm;
     pattern:'p;
+    red_pattern:'rp;
     constant:'c;
     reference:'r;
     name:'n;
@@ -287,6 +292,7 @@ type g_dispatch =  <
     term:g_trm;
     dterm:g_trm;
     pattern:g_pat;
+    red_pattern:g_trm;
     constant:g_cst;
     reference:g_ref;
     name:g_nam;
@@ -313,6 +319,7 @@ type r_dispatch =  <
     term:r_trm;
     dterm:r_trm;
     pattern:r_pat;
+    red_pattern:r_pat;
     constant:r_cst;
     reference:r_ref;
     name:r_nam;
@@ -341,6 +348,7 @@ type t_dispatch =  <
     term:t_trm;
     dterm:g_trm;
     pattern:t_pat;
+    red_pattern:t_pat;
     constant:t_cst;
     reference:t_ref;
     name:t_nam;

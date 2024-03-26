@@ -3,6 +3,7 @@
  (public_name coq-core.plugins.ltac)
  (synopsis "Coq's LTAC tactic language")
  (modules :standard \ tauto)
+ (modules_without_implementation tacexpr)
  (libraries coq-core.vernac))
 
 (library
