@@ -11,7 +11,6 @@
 open Pp
 open CErrors
 open CAst
-open Pattern
 open Genredexpr
 open Glob_term
 open Util
@@ -354,25 +353,22 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let bound_names = Glob_ops.bound_glob_vars glob in
   metas,(bound_names,c,pat)
 
-let dummy_pat = PRel 0
-
 let intern_typed_pattern ist p =
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a glob_constr only *)
-  let metas,pat =
+  let metas =
     if ist.strict_check then
       let ltacvars = {
           Constrintern.ltac_vars = ist.ltacvars;
           ltac_bound = Id.Set.empty;
           ltac_extra = ist.extra;
         } in
-      Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~ltacvars p
+      fst @@ Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~ltacvars p
     else
-      Id.Set.empty, dummy_pat in
-  let (glob,_ as c) = intern_constr_gen true false ist p in
-  let bound_names = Glob_ops.bound_glob_vars glob in
-  metas,(bound_names,c,pat)
+      Id.Set.empty in
+  let c = intern_constr_gen true false ist p in
+  metas,c
 
 let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   let interp_ref r =
@@ -399,8 +395,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
           let r = evalref_of_globref (GlobRef.VarRef id) in
           Inl (ArgArg (r, None))
       | _ ->
-          let bound_names = Glob_ops.bound_glob_vars c in
-          Inr (bound_names,(c,None),dummy_pat) in
+          Inr (c,None) in
   (l, match p with
   | Inl r -> interp_ref r
   | Inr { v = CAppExpl((r,None),[]) } ->

@@ -682,7 +682,7 @@ let interp_open_constr_with_classes ?(expected_type=WithoutTypeConstraint) ist e
 let interp_pure_open_constr ist =
   interp_gen WithoutTypeConstraint ist false pure_open_constr_flags
 
-let interp_typed_pattern ist env sigma (_,c,_) =
+let interp_typed_pattern ist env sigma c =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   (* FIXME: it is necessary to be unsafe here because of the way we handle

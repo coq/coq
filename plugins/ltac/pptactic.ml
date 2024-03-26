@@ -652,6 +652,7 @@ let pr_goal_selector ~toplevel s =
     pr_constr    : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_lconstr   : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_dconstr   : Environ.env -> Evd.evar_map -> 'dtrm -> Pp.t;
+    pr_red_pattern   : Environ.env -> Evd.evar_map -> 'rpat -> Pp.t;
     pr_pattern   : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_lpattern  : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_constant  : 'cst -> Pp.t;
@@ -666,6 +667,7 @@ let pr_goal_selector ~toplevel s =
       term      :'trm;
       dterm     :'dtrm;
       pattern   :'pat;
+      red_pattern :'rpat;
       constant  :'cst;
       reference :'ref;
       name      :'nam;
@@ -677,7 +679,7 @@ let pr_goal_selector ~toplevel s =
       let pr_with_bindings = pr_with_bindings (pr.pr_constr env sigma) (pr.pr_lconstr env sigma) in
       let pr_with_bindings_arg_full = pr_with_bindings_arg in
       let pr_with_bindings_arg = pr_with_bindings_arg (pr.pr_constr env sigma) (pr.pr_lconstr env sigma) in
-      let pr_red_expr = pr_red_expr env sigma (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_pattern) in
+      let pr_red_expr = pr_red_expr env sigma (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_red_pattern) in
 
       let _pr_constrarg c = spc () ++ pr.pr_constr env sigma c in
       let pr_lconstrarg c = spc () ++ pr.pr_lconstr env sigma c in
@@ -828,7 +830,7 @@ let pr_goal_selector ~toplevel s =
                   None ->
                     mt ()
                 | Some p ->
-                  pr.pr_pattern env sigma p ++ spc ()
+                  pr.pr_red_pattern env sigma p ++ spc ()
                   ++ keyword "with" ++ spc ()
             ) ++ pr.pr_dconstr env sigma c ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) h
           )
@@ -1028,7 +1030,7 @@ let pr_goal_selector ~toplevel s =
             | TacArg (ConstrMayEval (ConstrTerm c)) ->
               keyword "constr:" ++ pr.pr_constr env sigma c, latom
             | TacArg (ConstrMayEval c) ->
-              pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
+              pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_red_pattern c, leval
             | TacArg (TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg (TacGeneric (isquot,arg)) ->
@@ -1056,7 +1058,7 @@ let pr_goal_selector ~toplevel s =
           | Reference r ->
             pr.pr_reference r
           | ConstrMayEval c ->
-            pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
+            pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_red_pattern c
           | TacFreshId l ->
             keyword "fresh" ++ pr_fresh_ids l
           | TacPretype c ->
@@ -1086,6 +1088,7 @@ let pr_goal_selector ~toplevel s =
       pr_constr = pr_constr_expr;
       pr_dconstr = pr_constr_expr;
       pr_lconstr = pr_lconstr_expr;
+      pr_red_pattern = pr_constr_expr;
       pr_pattern = pr_constr_pattern_expr;
       pr_lpattern = pr_lconstr_pattern_expr;
       pr_constant = pr_or_by_notation pr_qualid;
@@ -1116,6 +1119,7 @@ let pr_goal_selector ~toplevel s =
         pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
+        pr_red_pattern = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env sigma));
@@ -1151,6 +1155,7 @@ let pr_goal_selector ~toplevel s =
         pr_constr = pr_econstr_env;
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = pr_leconstr_env;
+        pr_red_pattern = pr_constr_pattern_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
         pr_constant = pr_evaluable_reference_env env;
@@ -1354,7 +1359,7 @@ let () =
                   ((fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma),
                    (fun env sigma -> pr_and_constr_expr @@ pr_lglob_constr_pptac env sigma),
                    pr_or_var (pr_and_short_name pr_evaluable_reference),
-                   (fun env sigma -> pr_pat_and_constr_expr @@ pr_glob_constr_pptac env sigma))))
+                   (fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma))))
     pr_red_expr_env
   ;
   register_basic_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
