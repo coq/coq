@@ -232,18 +232,17 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
   let sigma, def = Typing.solve_evars env sigma def in
-  let sigma = Evd.collapse_sort_variables sigma in
   let sigma = Evarutil.nf_evar_map sigma in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context sigma binders_rel in
   let binders = nf_evar_context sigma binders in
   let top_arity = Evarutil.nf_evar sigma top_arity in
+  let make = Evarutil.nf_evar sigma make in
   let hook, recname, typ =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
-      (* XXX: Mutating the evar_map in the hook! *)
-      (* XXX: Likely the sigma is out of date when the hook is called .... *)
-      let hook sigma { Declare.Hook.S.dref; _ } =
+      let hook { Declare.Hook.S.dref; uctx; _ } =
+        let sigma = Evd.from_ctx uctx in
         let sigma, h_body = Evd.fresh_global (Global.env ()) sigma dref in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
@@ -261,13 +260,12 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
       hook, name, typ
     else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook sigma { Declare.Hook.S.dref; _ } =
+      let hook { Declare.Hook.S.dref; _ } =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false dref impls
       in hook, recname, typ
   in
-  (* XXX: Capturing sigma here... bad bad *)
-  let hook = Declare.Hook.make (hook sigma) in
+  let hook = Declare.Hook.make hook in
   RetrieveObl.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
