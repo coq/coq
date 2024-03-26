@@ -145,10 +145,14 @@ let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
   (* XXX we could use memprof to get sampling stats instead?
      eg stats about how much of the allocation was collected
      in the same span vs how much survived it *)
-  let major = mend.major_words -. mstart.major_words in
-  let minor = mend.minor_words -. mstart.minor_words in
-  let pp tdiff = `String (Format.sprintf "%.3G w" tdiff) in
-  [("major",pp major); ("minor", pp minor)]
+  let major_words = mend.major_words -. mstart.major_words in
+  let minor_words = mend.minor_words -. mstart.minor_words in
+  let major_collect = mend.major_collections - mstart.major_collections in
+  let minor_collect = mend.minor_collections - mstart.minor_collections in
+  let ppf tdiff = `String (Format.sprintf "%.3G w" tdiff) in
+  let ppi i = `Intlit (string_of_int i) in
+  [("major_words",ppf major_words); ("minor_words", ppf minor_words);
+   ("major_collect", ppi major_collect); ("minor_collect", ppi minor_collect); ]
 
 let make_instr_diff ~istart ~iend =
   match System.instructions_between ~c_start:istart ~c_end:iend with
