@@ -127,7 +127,7 @@ Add Zify UnOp Op_nat_div2.
 
 #[global]
 Instance Op_nat_double : UnOp Nat.double :=
-  {| TUOp := Z.double ; TUOpInj := Nat2Z.inj_double |}.
+  {| TUOp := Z.mul 2 ; TUOpInj := Nat2Z.inj_double |}.
 Add Zify UnOp Op_nat_double.
 
 (** Support for positive *)
