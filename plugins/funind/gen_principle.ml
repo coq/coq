@@ -1302,7 +1302,6 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
   let this_block_funs =
     Array.map (fun (c, _) -> (c, snd first_fun)) this_block_funs_indexes
   in
-  let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
@@ -1314,7 +1313,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
     List.map
       (fun idx ->
         let ind = (first_fun_kn, idx) in
-        ((ind, snd first_fun), true, prop_sort))
+        ((ind, snd first_fun), true, EConstr.ESorts.prop))
       funs_indexes
   in
   let sigma, schemes = Indrec.build_mutual_induction_scheme env !evd ind_list in
@@ -1539,12 +1538,14 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
       let ((kn, _) as graph_ind), u = destInd !evd graphs_constr.(0) in
       let mib, _mip = Global.lookup_inductive graph_ind in
       let sigma, scheme =
-        Indrec.build_mutual_induction_scheme (Global.env ()) !evd
-          (Array.to_list
-             (Array.mapi
-                (fun i _ ->
-                  (((kn, i), EInstance.kind !evd u), true, Sorts.InType))
-                mib.Declarations.mind_packets))
+        let sigma, inds = CArray.fold_left_map_i (fun i sigma _ ->
+            let sigma, s = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma InType in
+            sigma, (((kn, i), EInstance.kind sigma u), true, s))
+            !evd
+            mib.mind_packets
+        in
+        Indrec.build_mutual_induction_scheme (Global.env ()) sigma
+          (Array.to_list inds)
       in
       let schemes = Array.of_list scheme in
       let proving_tac =
@@ -2217,7 +2218,6 @@ let build_case_scheme fa =
   let this_block_funs =
     Array.map (fun (c, _) -> (c, u)) this_block_funs_indexes
   in
-  let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
@@ -2225,7 +2225,7 @@ let build_case_scheme fa =
   in
   let ind, sf =
     let ind = (first_fun_kn, funs_indexes) in
-    ((ind, UVars.Instance.empty) (*FIXME*), prop_sort)
+    ((ind, UVars.Instance.empty) (*FIXME*), EConstr.ESorts.prop)
   in
   let sigma, scheme =
     Indrec.build_case_analysis_scheme_default env sigma ind sf

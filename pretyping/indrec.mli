@@ -26,7 +26,7 @@ exception RecursionSchemeError of env * recursion_scheme_error
 
 type dep_flag = bool
 
-(** Build a case analysis elimination scheme in some sort family *)
+(** Build a case analysis elimination scheme in some sort *)
 
 type case_analysis = private {
   case_params : EConstr.rel_context;
@@ -37,33 +37,31 @@ type case_analysis = private {
   case_type : EConstr.t;
 }
 
-val check_valid_elimination : env -> pinductive -> dep:bool -> Sorts.family -> unit
+val check_valid_elimination : env -> evar_map -> pinductive -> dep:bool -> EConstr.ESorts.t -> unit
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
 val default_case_analysis_dependence : env -> inductive -> bool
 
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
-  dep_flag -> Sorts.family -> evar_map * case_analysis
+  dep_flag -> EConstr.ESorts.t -> evar_map * case_analysis
 
 (** Build a dependent case elimination predicate unless type is in Prop
    or is a recursive record with primitive projections. *)
 
 val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      Sorts.family -> evar_map * case_analysis
+      EConstr.ESorts.t -> evar_map * case_analysis
 
-(** Builds a recursive induction scheme (Peano-induction style) in the same
-   sort family as the inductive family; it is dependent if not in Prop
-   or a recursive record with primitive projections.  *)
+(** Builds a recursive induction scheme (Peano-induction style) in the given sort.  *)
 
 val build_induction_scheme : env -> evar_map -> pinductive ->
-      dep_flag -> Sorts.family -> evar_map * constr
+      dep_flag -> EConstr.ESorts.t -> evar_map * constr
 
 (** Builds mutual (recursive) induction schemes *)
 
 val build_mutual_induction_scheme :
   env -> evar_map -> ?force_mutual:bool ->
-  (pinductive * dep_flag * Sorts.family) list -> evar_map * constr list
+  (pinductive * dep_flag * EConstr.ESorts.t) list -> evar_map * constr list
 
 (** Recursor names utilities *)
 

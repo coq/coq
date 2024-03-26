@@ -391,7 +391,8 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
               evd, (ind,u), Some u
          | Some ui -> evd, (ind, ui), inst
        in
-          (evd, (indu,dep,sort) :: l, inst))
+       let evd, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid evd sort in
+       (evd, (indu,dep,sort) :: l, inst))
     l (Evd.from_env env,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec in
