@@ -547,7 +547,7 @@ let output_directory () =
 
 (*s Extraction AccessOpaque *)
 
-let access_opaque = my_bool_option "AccessOpaque" true
+let access_opaque = my_bool_option "AccessOpaque" false
 
 (*s Extraction AutoInline *)
 
