@@ -308,35 +308,11 @@ let evalref_of_globref ?loc r =
   in
   Tacred.soft_evaluable_of_global_reference ?loc r
 
-let intern_evaluable ist = function
-  | {v=AN qid} ->
-    begin match intern_global_reference ist qid with
-    | ArgVar _ as v -> v
-    | ArgArg (loc, r) ->
-      let short =
-        if qualid_is_ident qid && not ist.strict_check then
-          Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-        else None
-      in
-      let r = evalref_of_globref ?loc r in
-      ArgArg (r, short)
-    end
-  | {v=ByNotation (ntn,sc);loc} ->
-    let check = GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) in
-    let r = Notation.interp_notation_as_global_reference ?loc ~head:true check ntn sc in
-    let r = evalref_of_globref ?loc r in
-    ArgArg (r, None)
-
 let intern_smart_global ist = function
   | {v=AN r} -> intern_global_reference ist r
   | {v=ByNotation (ntn,sc);loc} ->
       ArgArg (loc, (Notation.interp_notation_as_global_reference ?loc ~head:true
         GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc))
-
-let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
-
-let intern_flag ist red =
-  { red with rConst = List.map (intern_evaluable ist) red.rConst }
 
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
@@ -370,53 +346,36 @@ let intern_typed_pattern ist p =
   let c = intern_constr_gen true false ist p in
   metas,c
 
-let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
-  let interp_ref r =
-    try Inl (intern_evaluable ist r)
-    with e when CErrors.noncritical e ->
-      (* Compatibility. In practice, this means that the code above
-         is useless. Still the idea of having either an evaluable
-         ref or a pattern seems interesting, with "head" reduction
-         in case of an evaluable ref, and "strong" reduction in the
-         subterm matched when a pattern *)
-      let r = match r with
-      | {v=AN r} -> r
-      | {loc} -> (qualid_of_path ?loc (Nametab.path_of_global (smart_global r))) in
-      let sign = {
-        Constrintern.ltac_vars = ist.ltacvars;
-        ltac_bound = Id.Set.empty;
-        ltac_extra = ist.extra;
-      } in
-      let c = Constrintern.interp_reference sign r in
-      match DAst.get c with
-      | GRef (r,None) ->
-          Inl (ArgArg (evalref_of_globref r, None))
-      | GVar id ->
-          let r = evalref_of_globref (GlobRef.VarRef id) in
-          Inl (ArgArg (r, None))
-      | _ ->
-          Inr (c,None) in
-  (l, match p with
-  | Inl r -> interp_ref r
-  | Inr { v = CAppExpl((r,None),[]) } ->
-      (* We interpret similarly @ref and ref *)
-      interp_ref (make @@ AN r)
-  | Inr c ->
-      Inr (snd (intern_typed_pattern ist c)))
+let intern_local_evalref ist qid =
+  if qualid_is_ident qid && find_var (qualid_basename qid) ist then
+    Some (ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid))
+  else if qualid_is_ident qid && find_hyp (qualid_basename qid) ist then
+    let id = qualid_basename qid in
+    let loc = qid.loc in
+    let r = GlobRef.VarRef id in
+    let r = evalref_of_globref ?loc r in
+    let short = if ist.strict_check then None else Some (CAst.make ?loc id) in
+    Some (ArgArg (r, short))
+  else None
 
-let intern_red_expr ist = function
-  | Unfold l -> Unfold (List.map (intern_unfold ist) l)
-  | Fold l -> Fold (List.map (intern_constr ist) l)
-  | Cbv f -> Cbv (intern_flag ist f)
-  | Cbn f -> Cbn (intern_flag ist f)
-  | Lazy f -> Lazy (intern_flag ist f)
-  | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
-  | Simpl (f,o) ->
-    Simpl (intern_flag ist f,
-           Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | (Red | Hnf | ExtraRedExpr _ as r ) -> r
+let intern_red_expr ist r =
+  let ltac_sign = {
+    Constrintern.ltac_vars = ist.ltacvars;
+    ltac_bound = Id.Set.empty;
+    ltac_extra = ist.extra;
+  }
+  in
+  let ist = {
+    Redexpr.Intern.strict_check = ist.strict_check;
+    local_ref = intern_local_evalref ist;
+    global_ref = (fun ?short r -> ArgArg (r, short));
+    intern_constr = intern_constr ist;
+    ltac_sign;
+    pattern_of_glob = (fun c -> (c, None));
+    intern_pattern = (fun c -> snd @@ intern_typed_pattern ist c);
+  }
+  in
+  Redexpr.Intern.intern_red_expr ist r
 
 let intern_hyp_list ist = List.map (intern_hyp ist)
 

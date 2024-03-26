@@ -58,3 +58,24 @@ val cbv_vm : reduction_function
 val subst_red_expr : Mod_subst.substitution -> red_expr -> red_expr
 
 val wit_red_expr : (raw_red_expr, glob_red_expr, red_expr) Genarg.genarg_type
+
+module Intern : sig
+  open Libnames
+  open Constrexpr
+  open Names
+
+  type ('constr,'ref,'pat) intern_env = {
+    strict_check : bool;
+    local_ref : qualid -> 'ref option;
+    global_ref : ?short:lident -> Evaluable.t -> 'ref;
+    intern_constr : constr_expr -> 'constr;
+    ltac_sign : Constrintern.ltac_sign;
+    intern_pattern : constr_expr -> 'pat;
+    pattern_of_glob : Glob_term.glob_constr -> 'pat;
+  }
+
+  val intern_red_expr : ('a,'b,'c) intern_env -> raw_red_expr -> ('a,'b,'c) red_expr_gen
+
+  val from_env : Environ.env -> (Glob_term.glob_constr, Evaluable.t, Glob_term.glob_constr) intern_env
+
+end
