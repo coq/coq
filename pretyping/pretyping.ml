@@ -828,9 +828,7 @@ struct
                     uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         sigma ctxtv vdef in
       let sigma = Typing.check_type_fixpoint ?loc !!env sigma names ftys vdefj in
-      let nf c = nf_evar sigma c in
-      let ftys = Array.map nf ftys in (* FIXME *)
-      let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
+      let fdefs = Array.map j_val vdefj in
       let fixj = match fixkind with
         | GFix (vn,i) ->
               (* First, let's find the guard indexes. *)
@@ -967,7 +965,7 @@ struct
               | exception Evarconv.UnableToUnify (sigma,e) ->
                 raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
               | sigma ->
-                sigma, args, nf_evar sigma (j_val hj)
+                sigma, args, (j_val hj)
             end
         in
         let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
@@ -1185,7 +1183,7 @@ struct
           (match po with
           | Some p ->
             let sigma, pj = pretype_type empty_valcon env_p sigma p in
-            let ccl = nf_evar sigma pj.utj_val in
+            let ccl = pj.utj_val in
             let p = it_mkLambda_or_LetIn ccl psign' in
             let inst =
               (Array.map_to_list EConstr.of_constr cs.cs_concl_realargs)
@@ -1203,7 +1201,7 @@ struct
           | None ->
             let tycon = lift_tycon cs.cs_nargs tycon in
             let sigma, fj = pretype tycon env_f sigma d in
-            let ccl = nf_evar sigma fj.uj_type in
+            let ccl = fj.uj_type in
             let ccl =
               if noccur_between sigma 1 cs.cs_nargs ccl then
                 lift (- cs.cs_nargs) ccl
@@ -1254,8 +1252,7 @@ struct
       let sigma, pred, p = match po with
         | Some p ->
           let sigma, pj = eval_type_pretyper self ~flags empty_valcon env_p sigma p in
-          let ccl = nf_evar sigma pj.utj_val in
-          let pred = it_mkLambda_or_LetIn ccl psign in
+          let pred = it_mkLambda_or_LetIn pj.utj_val psign in
           let typ = lift (- nar) (beta_applist sigma (pred,[cj.uj_val])) in
           sigma, pred, typ
         | None ->
@@ -1264,8 +1261,6 @@ struct
             | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.CasesType false)
           in
           sigma, it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
-      let pred = nf_evar sigma pred in
-      let p = nf_evar sigma p in
       let f sigma cs b =
         let n = Context.Rel.length cs.cs_args in
         let pi = lift n pred in (* liftn n 2 pred ? *)
@@ -1282,7 +1277,6 @@ struct
       let sigma, b2 = f sigma cstrs.(1) b2 in
       let v =
         let ind,_ = dest_ind_family indf in
-        let pred = nf_evar sigma pred in
         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
         let ci = make_case_info !!env (fst ind) IfStyle in
         mkCase (EConstr.contract_case !!env sigma
@@ -1300,26 +1294,22 @@ struct
       let sigma, tj = eval_type_pretyper self ~flags empty_valcon env sigma t in
       let sigma, tval = Evarsolve.refresh_universes
           ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
-      let tval = nf_evar sigma tval in
       let (sigma, cj), tval = match k with
         | Some VMcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
-          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
-          begin match Reductionops.vm_infer_conv !!env sigma cty tval with
+          begin match Reductionops.vm_infer_conv !!env sigma cj.uj_type tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
               error_actual_type ?loc !!env sigma cj tval
-                (ConversionFailed (!!env,cty,tval))
+                (ConversionFailed (!!env, cj.uj_type, tval))
           end
         | Some NATIVEcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
-          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
-          begin
-            match Reductionops.native_infer_conv !!env sigma cty tval with
+          begin match Reductionops.native_infer_conv !!env sigma cj.uj_type tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
               error_actual_type ?loc !!env sigma cj tval
-                (ConversionFailed (!!env,cty,tval))
+                (ConversionFailed (!!env, cj.uj_type, tval))
           end
         | None | Some DEFAULTcast ->
           pretype (mk_tycon tval) env sigma c, tval
