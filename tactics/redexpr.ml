@@ -378,3 +378,135 @@ let make0 ?dyn name =
   wit
 
 let wit_red_expr = make0 "redexpr"
+
+module Intern = struct
+  open CAst
+  open Constrexpr
+  open Libnames
+
+  let evalref_of_globref ?loc r =
+    let () =
+      (* only dump section variables not proof context variables
+         (broken if variables got renamed) *)
+      let is_proof_variable = match r with
+        | GlobRef.VarRef x -> (try ignore (Global.lookup_named x); false with Not_found -> true)
+        | _ -> false
+      in
+      if not is_proof_variable then Dumpglob.add_glob ?loc r
+    in
+    Tacred.soft_evaluable_of_global_reference ?loc r
+
+  type ('constr,'ref,'pat) intern_env = {
+    strict_check : bool;
+    local_ref : qualid -> 'ref option;
+    global_ref : ?short:lident -> Evaluable.t -> 'ref;
+    intern_constr : constr_expr -> 'constr;
+    ltac_sign : Constrintern.ltac_sign;
+    intern_pattern : constr_expr -> 'pat;
+    pattern_of_glob : Glob_term.glob_constr -> 'pat;
+  }
+
+  let intern_global_reference ist qid =
+    match ist.local_ref qid with
+    | Some v -> v
+    | None ->
+      let r =
+        try Smartlocate.locate_global_with_alias ~head:true qid
+        with
+        | Not_found as exn ->
+          if not ist.strict_check && qualid_is_ident qid then
+            let id = qualid_basename qid in
+            GlobRef.VarRef id
+          else
+            let _, info = Exninfo.capture exn in
+            Nametab.error_global_not_found ~info qid
+      in
+      let short =
+        if qualid_is_ident qid && not ist.strict_check then
+          Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
+        else None
+      in
+      let r = evalref_of_globref ?loc:qid.loc r in
+      ist.global_ref ?short r
+
+  let intern_evaluable ist = function
+    | {v=AN qid} -> intern_global_reference ist qid
+    | {v=ByNotation (ntn,sc);loc} ->
+      let check = GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) in
+      let r = Notation.interp_notation_as_global_reference ?loc ~head:true check ntn sc in
+      let r = evalref_of_globref ?loc r in
+      ist.global_ref r
+
+  let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
+    let interp_ref r =
+      try Inl (intern_evaluable ist r)
+      with e when CErrors.noncritical e ->
+        (* Compatibility. In practice, this means that the code above
+           is useless. Still the idea of having either an evaluable
+           ref or a pattern seems interesting, with "head" reduction
+           in case of an evaluable ref, and "strong" reduction in the
+           subterm matched when a pattern *)
+        let r = match r with
+          | {CAst.v=AN r} -> r
+          | {loc} -> (qualid_of_path ?loc (Nametab.path_of_global (Smartlocate.smart_global r))) in
+        let loc = r.loc in
+        let c = Constrintern.interp_reference ist.ltac_sign r in
+        match DAst.get c with
+        | GRef (r,None) ->
+          let r = evalref_of_globref ?loc r in
+          Inl (ist.global_ref r)
+        | GVar id ->
+          let r = evalref_of_globref (GlobRef.VarRef id) in
+          Inl (ist.global_ref r)
+        | _ ->
+          Inr (ist.pattern_of_glob c)
+    in
+    let p = match p with
+      | Inl r -> interp_ref r
+      | Inr { v = CAppExpl((r,None),[]) } ->
+        (* We interpret similarly @ref and ref *)
+        interp_ref (make @@ AN r)
+      | Inr c ->
+        Inr (ist.intern_pattern c)
+    in
+    (l, p)
+
+  let intern_constr_with_occurrences ist (l,c) = (l,ist.intern_constr c)
+
+  let intern_flag ist red =
+    { red with rConst = List.map (intern_evaluable ist) red.rConst }
+
+  let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
+
+  let intern_red_expr ist = function
+    | Unfold l -> Unfold (List.map (intern_unfold ist) l)
+    | Fold l -> Fold (List.map ist.intern_constr l)
+    | Cbv f -> Cbv (intern_flag ist f)
+    | Cbn f -> Cbn (intern_flag ist f)
+    | Lazy f -> Lazy (intern_flag ist f)
+    | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
+    | Simpl (f,o) ->
+      Simpl (intern_flag ist f,
+             Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | (Red | Hnf | ExtraRedExpr _ as r ) -> r
+
+  let intern_constr env c =
+    Constrintern.intern_gen WithoutTypeConstraint ~strict_check:true env (Evd.from_env env) c
+
+  let intern_pattern env c =
+    Constrintern.intern_gen WithoutTypeConstraint ~strict_check:true ~pattern_mode:true
+      env (Evd.from_env env) c
+
+  let from_env env = {
+    strict_check = true;
+    local_ref = (fun _ -> None);
+    global_ref = (fun ?short:_ r -> r);
+    intern_constr = intern_constr env;
+    ltac_sign = Constrintern.empty_ltac_sign;
+    pattern_of_glob = (fun c -> c);
+    intern_pattern = intern_pattern env;
+  }
+
+end
