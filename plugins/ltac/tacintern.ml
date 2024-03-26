@@ -374,18 +374,18 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
 
 let dummy_pat = PRel 0
 
-let intern_typed_pattern ist ~as_type ~ltacvars p =
+let intern_typed_pattern ist p =
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a glob_constr only *)
   let metas,pat =
     if ist.strict_check then
       let ltacvars = {
-          Constrintern.ltac_vars = ltacvars;
+          Constrintern.ltac_vars = ist.ltacvars;
           ltac_bound = Id.Set.empty;
           ltac_extra = ist.extra;
         } in
-      Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~as_type ~ltacvars p
+      Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~ltacvars p
     else
       Id.Set.empty, dummy_pat in
   let (glob,_ as c) = intern_constr_gen true false ist p in
@@ -425,7 +425,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       (* We interpret similarly @ref and ref *)
       interp_ref (make @@ AN r)
   | Inr c ->
-      Inr (snd (intern_typed_pattern ist ~as_type:false ~ltacvars:ist.ltacvars c)))
+      Inr (snd (intern_typed_pattern ist c)))
 
 let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
@@ -576,9 +576,8 @@ let rec intern_atomic lf ist x =
          then intern_type ist c else intern_constr ist c),
         clause_app (intern_hyp_location ist) cl)
   | TacChange (check,Some p,c,cl) ->
-      let { ltacvars } = ist in
-      let metas,pat = intern_typed_pattern ist ~as_type:false ~ltacvars p in
-      let ltacvars = Id.Set.union ltacvars metas in
+      let metas,pat = intern_typed_pattern ist p in
+      let ltacvars = Id.Set.union ist.ltacvars metas in
       let ist' = { ist with ltacvars } in
       TacChange (check,Some pat,intern_constr ist' c,
         clause_app (intern_hyp_location ist) cl)
