@@ -39,6 +39,29 @@ function project {
 
 }
 
+# subproject <name> <parent project> <submodulefolder> <submodule giturl> <submodule branch>
+# In the case of nested submodules, each subproject should be declared
+# a subproject of its immediate parent, to ensure overlays are applied
+# in the right order
+function subproject {
+  local var_parent_project=${1}_CI_PARENT_PROJECT
+  local var_submodule_folder=${1}_CI_SUBMODULE_FOLDER
+  local var_submodule_giturl=${1}_CI_SUBMODULE_GITURL
+  local var_submodule_branch=${1}_CI_SUBMODULE_BRANCH
+  local parent_project=$2
+  local submodule_folder=$3
+  local submodule_giturl=$4
+  local submodule_branch=$5
+
+  # register the project in the list of projects
+  projects[${#projects[*]}]=$1
+
+  : "${!var_parent_project:=$parent_project}"
+  : "${!var_submodule_folder:=$submodule_folder}"
+  : "${!var_submodule_giturl:=$submodule_giturl}"
+  : "${!var_submodule_branch:=$submodule_branch}"
+}
+
 ########################################################################
 # MathComp
 ########################################################################
@@ -178,16 +201,27 @@ project fiat_parsers "https://github.com/mit-plv/fiat" "master"
 # Contact @JasonGross on github
 
 ########################################################################
+# fiat_crypto_legacy
+########################################################################
+project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
+# Contact @JasonGross on github
+
+########################################################################
 # fiat_crypto
 ########################################################################
 project fiat_crypto "https://github.com/mit-plv/fiat-crypto" "master"
 # Contact @andres-erbsen, @JasonGross on github
 
-########################################################################
-# fiat_crypto_legacy
-########################################################################
-project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
-# Contact @JasonGross on github
+# bedrock2, coqutil, rupicola, kami, riscv_coq
+# fiat-crypto is not guaranteed to build with the latest version of
+# bedrock2, so we use the pinned version of bedrock2 for fiat-crypto
+# overlays do not have to follow suite
+subproject rupicola fiat_crypto "rupicola" "https://github.com/mit-plv/rupicola" "master"
+subproject bedrock2 rupicola "bedrock2" "https://github.com/mit-plv/bedrock2" "master"
+subproject coqutil bedrock2 "deps/coqutil" "https://github.com/mit-plv/coqutil" "master"
+subproject kami bedrock2 "deps/kami" "https://github.com/mit-plv/kami" "rv32i"
+subproject riscv_coq bedrock2 "deps/riscv-coq" "https://github.com/mit-plv/riscv-coq" "master"
+# Contact @samuelgruetter, @andres-erbsen on github
 
 ########################################################################
 # coq_dpdgraph
@@ -224,12 +258,6 @@ project coqprime "https://github.com/thery/coqprime" "master"
 ########################################################################
 project bbv "https://github.com/mit-plv/bbv" "master"
 # Contact @JasonGross, @samuelgruetter on github
-
-########################################################################
-# bedrock2
-########################################################################
-project bedrock2 "https://github.com/mit-plv/bedrock2" "tested"
-# Contact @samuelgruetter, @andres-erbsen on github
 
 ########################################################################
 # Coinduction

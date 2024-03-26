@@ -193,6 +193,9 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
+    exclude: # reduce artifact size
+      - _build_ci/**/.git # exclude .git directory itself as well
+      - _build_ci/**/.git/**/*
     when: always
   needs:
     - build:base
@@ -597,6 +600,11 @@ library:ci-bedrock2:
   extends: .ci-template-flambda
   variables:
     NJOBS: "1"
+  needs:
+  - build:edge+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
   timeout: 2h
 
 library:ci-category_theory:
@@ -639,6 +647,9 @@ library:ci-coquelicot:
   - build:edge+flambda
   - library:ci-mathcomp
 
+library:ci-coqutil:
+  extends: .ci-template-flambda
+
 library:ci-cross_crypto:
   extends: .ci-template
 
@@ -661,8 +672,7 @@ library:ci-fiat_crypto:
   needs:
   - build:edge+flambda
   - library:ci-coqprime
-  - library:ci-bedrock2
-  - plugin:ci-bignums
+  - library:ci-rupicola
   - plugin:ci-rewriter
   timeout: 3h
 
@@ -677,14 +687,14 @@ library:ci-fiat_crypto_ocaml:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
   - library:ci-fiat_crypto
   artifacts:
     paths: [] # These artifacts would go over the size limit
 
 library:ci-flocq:
+  extends: .ci-template-flambda
+
+library:ci-kami:
   extends: .ci-template-flambda
 
 library:ci-menhir:
@@ -975,6 +985,18 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+
+library:ci-riscv_coq:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-coqutil
+
+library:ci-rupicola:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-bedrock2
 
 plugin:ci-serapi:
   extends: .ci-template-flambda
