@@ -297,24 +297,6 @@ let intern_destruction_arg ist = function
       else
         clear,ElimOnIdent (make ?loc id)
 
-let evalref_of_globref ?loc = function
-  | GlobRef.ConstRef cst ->
-    begin
-      match Structures.PrimitiveProjections.find_opt cst with
-      | None -> Evaluable.EvalConstRef cst
-      | Some p -> Evaluable.EvalProjectionRef p
-    end
-  | GlobRef.VarRef id -> Evaluable.EvalVarRef id
-  | r ->
-    let tpe = match r with
-      | GlobRef.IndRef _ -> "inductive"
-      | GlobRef.ConstructRef _ -> "constructor"
-      | (GlobRef.VarRef _ | GlobRef.ConstRef _) -> assert false
-    in
-    user_err ?loc (str "Cannot turn" ++ spc () ++ str tpe ++ spc () ++
-                   Nametab.pr_global_env Id.Set.empty r ++ spc () ++
-                   str "into an evaluable reference.")
-
 let evalref_of_globref ?loc r =
   let () =
     (* only dump section variables not proof context variables
@@ -325,7 +307,7 @@ let evalref_of_globref ?loc r =
     in
     if not is_proof_variable then Dumpglob.add_glob ?loc r
   in
-  evalref_of_globref ?loc r
+  Tacred.soft_evaluable_of_global_reference ?loc r
 
 let intern_evaluable ist = function
   | {v=AN qid} ->
