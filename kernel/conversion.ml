@@ -418,7 +418,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let m = reloc_rel m el2 in
         let rn = Range.get (info_relevances infos.cnv_inf) (n - 1) in
         let rm = Range.get (info_relevances infos.cnv_inf) (m - 1) in
-        if rn == Sorts.Irrelevant && rm == Sorts.Irrelevant then
+        if is_irrelevant infos.cnv_inf rn && is_irrelevant infos.cnv_inf rm then
           let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
           let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -731,7 +731,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FRel n1, FIrrelevant) ->
       let n1 = reloc_rel n1 (el_stack lft1 v1) in
       let r1 = Range.get (info_relevances infos.cnv_inf) (n1 - 1) in
-      if r1 == Sorts.Irrelevant then
+      if is_irrelevant infos.cnv_inf r1 then
         let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v1 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
@@ -739,7 +739,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FIrrelevant, FRel n2) ->
       let n2 = reloc_rel n2 (el_stack lft2 v2) in
       let r2 = Range.get (info_relevances infos.cnv_inf) (n2 - 1) in
-      if r2 == Sorts.Irrelevant then
+      if is_irrelevant infos.cnv_inf r2 then
         let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible

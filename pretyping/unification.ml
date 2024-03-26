@@ -736,8 +736,8 @@ let eta_constructor_app env sigma f l1 term =
 
 (* If the terms are irrelevant, check that they have the same type. *)
 let careful_infer_conv ~pb ~ts env sigma m n =
-  if Retyping.relevance_of_term env sigma m == Sorts.Irrelevant &&
-     Retyping.relevance_of_term env sigma n == Sorts.Irrelevant
+  if Retyping.is_term_irrelevant env sigma m &&
+     Retyping.is_term_irrelevant env sigma n
   then
     let tm = Retyping.get_type_of env sigma m in
     let tn = Retyping.get_type_of env sigma n in
