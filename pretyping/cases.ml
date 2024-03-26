@@ -389,15 +389,14 @@ let coerce_row ~program_mode typing_fun env sigma pats (tomatch,(na,indopt)) =
   let sigma, tycon, realnames = find_tomatch_tycon !!env sigma loc indopt in
   let sigma, j = typing_fun tycon env sigma tomatch in
   let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) ~program_mode !!env sigma j in
-  let typ = nf_evar sigma j.uj_type in
   let env = make_return_predicate_ltac_lvar env sigma na tomatch j.uj_val in
   let sigma, t =
     if realnames = None && pats <> [] && List.for_all is_patvar pats then
-      sigma, NotInd (None,typ)
+      sigma, NotInd (None, j.uj_type)
     else
-    try sigma, try_find_ind !!env sigma typ realnames
+    try sigma, try_find_ind !!env sigma j.uj_type realnames
     with Not_found ->
-      unify_tomatch_with_patterns !!env sigma loc typ pats realnames
+      unify_tomatch_with_patterns !!env sigma loc j.uj_type pats realnames
   in
   ((env, sigma), (j.uj_val,t))
 
@@ -1207,7 +1206,6 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = map_constr (fun c -> nf_evar evd c) d in
       let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl evd (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch evd k) brs then
@@ -1296,7 +1294,7 @@ let rec generalize_problem names sigma pb = function
 let build_leaf sigma pb =
   let used, rhs = extract_rhs pb in
   let sigma, j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env sigma rhs.it in
-  used, sigma, j_nf_evar sigma j
+  used, sigma, j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
 (* spiwack: the [initial] argument keeps track whether the branch is a
@@ -2185,8 +2183,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let sigma = List.fold_left check_elim_sort sigma
           (expected_elimination_sorts !!env sigma tomatchs)
       in
-      let predccl = nf_evar sigma predcclj.uj_val in
-      [sigma, predccl, building_arsign]
+      [sigma, predcclj.uj_val, building_arsign]
   in
   List.map
     (fun (sigma,pred,arsign) ->
@@ -2733,8 +2730,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
     let tycon = it_mkProd_wo_LetIn tycon tomatchs_lets in
     let j =
       { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
-        (* XXX: is this normalization needed? *)
-        uj_type = Evarutil.nf_evar sigma tycon; }
+        uj_type = tycon; }
     in sigma, j
 
 (**************************************************************************)
