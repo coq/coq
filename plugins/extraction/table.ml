@@ -354,6 +354,7 @@ let warning_axioms () =
 let warn_extraction_opaque_accessed =
   CWarnings.create ~name:"extraction-opaque-accessed" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction is currently set to bypass opacity, " ++
+                  strbrk "this will become an unrecoverable error soon," ++
                   strbrk "the following opaque constant bodies have been accessed :" ++
                   lst ++ str "." ++ fnl ())
 
@@ -361,9 +362,7 @@ let warn_extraction_opaque_as_axiom =
   CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction now honors the opacity constraints by default, " ++
          strbrk "the following opaque constants have been extracted as axioms :" ++
-         lst ++ str "." ++ fnl () ++
-         strbrk "If necessary, use \"Set Extraction AccessOpaque\" to change this."
-         ++ fnl ())
+         lst ++ str ".")
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
@@ -547,7 +546,7 @@ let output_directory () =
 
 (*s Extraction AccessOpaque *)
 
-let access_opaque = my_bool_option "AccessOpaque" true
+let access_opaque = my_bool_option "AccessOpaque" false
 
 (*s Extraction AutoInline *)
 
