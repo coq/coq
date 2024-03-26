@@ -13,7 +13,7 @@ open Pcoq
 type proof_mode = string
 
 (* Tactic parsing modes *)
-let register_proof_mode, find_proof_mode, lookup_proof_mode =
+let register_proof_mode, find_proof_mode, lookup_proof_mode, list_proof_modes =
   let proof_mode : (string, Vernacexpr.vernac_expr Entry.t) Hashtbl.t =
     Hashtbl.create 19 in
   let register_proof_mode ename e = Hashtbl.add proof_mode ename e; ename in
@@ -25,7 +25,10 @@ let register_proof_mode, find_proof_mode, lookup_proof_mode =
     if Hashtbl.mem proof_mode name then Some name
     else None
   in
-  register_proof_mode, find_proof_mode, lookup_proof_mode
+  let list_proof_modes () =
+    Hashtbl.fold CString.Map.add proof_mode CString.Map.empty
+  in
+  register_proof_mode, find_proof_mode, lookup_proof_mode, list_proof_modes
 
 let proof_mode_to_string name = name
 
