@@ -648,6 +648,9 @@ val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val quality_of_name : evar_map -> Id.t -> Sorts.QVar.t
 
+val is_relevance_irrelevant : evar_map -> Sorts.relevance -> bool
+(** Whether the relevance is irrelevant modulo qstate *)
+
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t

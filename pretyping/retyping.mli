@@ -61,3 +61,5 @@ val relevance_of_term : env -> evar_map -> constr -> Sorts.relevance
 val relevance_of_type : env -> evar_map -> types -> Sorts.relevance
 val relevance_of_sort : evar_map -> ESorts.t -> Sorts.relevance
 val relevance_of_sort_family : evar_map -> Sorts.family -> Sorts.relevance
+
+val is_term_irrelevant : env -> Evd.evar_map -> Evd.econstr -> bool

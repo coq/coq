@@ -364,6 +364,10 @@ let relevance_of_term env sigma c =
     aux Range.empty c
   else Sorts.Relevant
 
+let is_term_irrelevant env sigma c =
+  let r = relevance_of_term env sigma c in
+  Evd.is_relevance_irrelevant sigma r
+
 let relevance_of_type env sigma t =
   let s = get_sort_of env sigma t in
   ESorts.relevance_of_sort sigma s
