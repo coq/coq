@@ -61,13 +61,15 @@ let for_extraargs = ()
 
 let goal_selector = G_vernac.goal_selector
 let toplevel_selector = G_vernac.toplevel_selector
+let subprf = G_vernac.subprf
+let subprf_with_selector = G_vernac.subprf_with_selector
 
 }
 
 GRAMMAR EXTEND Gram
   GLOBAL: tactic tacdef_body ltac_expr tactic_value command hint
           tactic_mode constr_may_eval constr_eval
-          term;
+          term subprf subprf_with_selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 (OPT ltac_expr) SEP "|" ->
@@ -282,10 +284,10 @@ GRAMMAR EXTEND Gram
   tactic:
     [ [ tac = ltac_expr -> { tac } ] ]
   ;
-
   tactic_mode:
-    [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> { Vernacexpr.VernacSynPure (tac g) }
-      | g = OPT toplevel_selector; "{" -> { Vernacexpr.VernacSynPure (Vernacexpr.VernacSubproof g) } ] ]
+    [ [ p = subprf -> { Vernacexpr.VernacSynPure p }
+      | g = OPT toplevel_selector; p = subprf_with_selector -> { Vernacexpr.VernacSynPure (p g) }
+      ] ]
   ;
   command: TOP
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic;

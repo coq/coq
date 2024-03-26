@@ -18,6 +18,7 @@ val search_queries :
     Pcoq.Entry.t
 
 val subprf : Vernacexpr.synpure_vernac_expr Pcoq.Entry.t
+val subprf_with_selector : (Goal_select.t option -> Vernacexpr.synpure_vernac_expr) Pcoq.Entry.t
 
 val quoted_attributes : Attributes.vernac_flags Pcoq.Entry.t
 

@@ -109,7 +109,6 @@ RENAME: [
 | Constr.global global
 | Constr.lconstr lconstr
 | Constr.cpattern cpattern
-| G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_var_expr
 | Prim.ident ident
 | Prim.reference reference
@@ -1736,22 +1735,33 @@ let_clause: [
 | WITH name  ":=" ltac_expr5
 ]
 
+subprf_with_selector: [
+| DELETE query_command
+]
+
+SPLICE: [
+| subprf_with_selector
+]
+
 tactic_mode: [
 (* todo: make sure to document this production! *)
 (* deleting to allow splicing query_command into command *)
-| DELETE OPT toplevel_selector query_command
 | DELETE OPT ltac_selector OPT ltac_info tactic ltac_use_default
 | DELETE "par" ":" OPT ltac_info tactic ltac_use_default
 (* Ignore attributes (none apply) and "...". *)
 | ltac_info tactic
 | MOVETO command ltac_info tactic
-| DELETE command
+| MOVETO simple_tactic subprf
 | REPLACE OPT toplevel_selector "{"
 (* semantically restricted *)
 | WITH OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | MOVETO simple_tactic OPT ( [ natural | "[" ident "]" ] ":" ) "{"
-| DELETE simple_tactic
+| DELETE command
 | DELETENT
+]
+
+SPLICE: [
+| subprf
 ]
 
 ltac2_scope: [
@@ -1805,7 +1815,6 @@ vernac_aux: [
 | DELETE gallina_ext "."
 | DELETE syntax "."
 | DELETE command_entry
-| DELETE subprf
 | DELETENT
 ]
 
@@ -2147,16 +2156,6 @@ simple_binding: [
 | REPLACE "(" identref ":=" lconstr ")"
 | WITH "(" [ ident | natural ] ":=" lconstr ")"
 | DELETE "(" natural ":=" lconstr ")"
-]
-
-
-subprf: [
-| MOVEALLBUT simple_tactic
-| "{" (* should be removed.  See https://github.com/coq/coq/issues/12004 *)
-]
-
-subprf: [
-| DELETENT
 ]
 
 ltac2_expr: [
@@ -2532,7 +2531,6 @@ REACHABLE: [
 NOTINRSTS: [
 | command
 | control_command
-| query_command
 | simple_tactic
 | hints_regexp (* manually inserted *)
 | REACHABLE

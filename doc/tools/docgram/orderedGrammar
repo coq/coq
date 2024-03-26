@@ -201,7 +201,6 @@ REACHABLE: [
 NOTINRSTS: [
 | command
 | control_command
-| query_command
 | simple_tactic
 | hints_regexp
 | REACHABLE
