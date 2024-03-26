@@ -56,15 +56,14 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let sigma, udecl = interp_univ_decl_opt env pl in
   let sigma, (impls_env, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
-  let top_env = push_rel_context binders_rel env in
+  let binders_env = push_rel_context binders_rel env in
   let flags = Pretyping.{ all_no_fail_flags with program_mode = true } in
-  let sigma, (top_arity, arityimpls) = interp_type_evars_impls ~flags top_env sigma arityc in
+  let sigma, (top_arity, arityimpls) = interp_type_evars_impls ~flags binders_env sigma arityc in
   let sigma, letbinders, { telescope_type = argtyp; telescope_value = make } =
     telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (make_annot (Name argname) ERelevance.relevant, argtyp) in
   let binders = letbinders @ [arg] in
-  let binders_env = push_rel_context binders_rel env in
   let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
   let relargty = Hipattern.is_homogeneous_relation ?loc:(constr_loc r) env sigma rel in
   let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
@@ -83,15 +82,10 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let sigma, wf_term = well_founded sigma in
   let wf_proof = mkApp (wf_term, [| argtyp ; wf_rel |]) in
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
-  let wfarg sigma len =
-    let sigma, ss_term = mkSubset sigma (Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel (len + 1))) in
+  let sigma, wfa =
+    let sigma, ss_term = mkSubset sigma (Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel 2)) in
     sigma, LocalAssum (make_annot (Name argid') ERelevance.relevant, ss_term)
   in
-  let sigma, intern_bl =
-    let sigma, wfa = wfarg sigma 1 in
-    sigma, wfa :: [arg]
-  in
-  let _intern_env = push_rel_context intern_bl env in
   let sigma, proj = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.proj1 in
   let wfargpred = mkLambda (make_annot (Name argid') ERelevance.relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
@@ -99,9 +93,6 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   in
   let top_arity_let = it_mkLambda_or_LetIn top_arity letbinders in
   let intern_arity = substl [projection] top_arity_let in
-  (* substitute the projection of wfarg for something,
-     now intern_arity is in wfarg :: arg *)
-  let sigma, wfa = wfarg sigma 1 in
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfa] in
   let intern_fun_binder = LocalAssum (make_annot (Name (add_suffix recname "'")) ERelevance.relevant,
                                       intern_fun_arity_prod) in
