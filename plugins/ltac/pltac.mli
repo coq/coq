@@ -26,7 +26,6 @@ val constr_eval : (constr_expr,qualid or_by_notation,constr_expr,int Locus.or_va
 val uconstr : constr_expr Entry.t
 val quantified_hypothesis : quantified_hypothesis Entry.t
 val destruction_arg : constr_expr with_bindings Tactics.destruction_arg Entry.t
-val int_or_var : int Locus.or_var Entry.t
 val nat_or_var : int Locus.or_var Entry.t
 val simple_tactic : raw_tactic_expr Entry.t
 val simple_intropattern : constr_expr intro_pattern_expr CAst.t Entry.t

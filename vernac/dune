@@ -8,4 +8,4 @@
  ; (private_modules comProgramFixpoint egramcoq)
  (libraries tactics parsing findlib.dynload))
 
-(coq.pp (modules g_proofs g_vernac))
+(coq.pp (modules g_proofs g_vernac g_redexpr))

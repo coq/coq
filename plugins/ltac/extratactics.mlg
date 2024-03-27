@@ -15,7 +15,6 @@ open Genarg
 open Stdarg
 open Tacarg
 open Extraargs
-open Pltac
 open Mod_subst
 open Names
 open CErrors
@@ -25,6 +24,7 @@ open Tactypes
 open Proofview.Notations
 open Attributes
 open Vernacextend
+open G_redexpr
 
 }
 
