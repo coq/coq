@@ -49,7 +49,7 @@ let load_vos_libraries = ref false
 let xml_debug = ref false
 
 let in_debugger = ref false
-let in_toplevel = ref false
+let in_ml_toplevel = ref false
 
 let raw_print = ref false
 
