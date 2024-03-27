@@ -157,6 +157,7 @@ type pretype_flags = {
   use_coercions : bool;
   undeclared_evars_patvars : bool;
   patvars_abstract : bool;
+  expand_evars : bool;
 }
 
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
