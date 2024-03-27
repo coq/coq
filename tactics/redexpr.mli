@@ -17,15 +17,16 @@ open Genredexpr
 open Reductionops
 open Locus
 
-type red_expr = (constr, Evaluable.t, constr_pattern) red_expr_gen
+type red_expr = (constr, Evaluable.t, constr_pattern, int) red_expr_gen
 
 type red_expr_val
 
-val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
+val out_occurrences : occurrences_expr -> occurrences
+val out_with_occurrences : 'a with_occurrences_expr -> 'a with_occurrences
 
 val eval_red_expr : Environ.env -> red_expr -> red_expr_val
 
-val reduction_of_red_expr_val : ?occs:(Locus.occurrences_expr * int) ->
+val reduction_of_red_expr_val : ?occs:(Locus.occurrences * int) ->
   red_expr_val -> e_reduction_function * cast_kind
 
 (** Composition of {!reduction_of_red_expr_val} with {!eval_red_expr} *)
@@ -74,7 +75,7 @@ module Intern : sig
     pattern_of_glob : Glob_term.glob_constr -> 'pat;
   }
 
-  val intern_red_expr : ('a,'b,'c) intern_env -> raw_red_expr -> ('a,'b,'c) red_expr_gen
+  val intern_red_expr : ('a,'b,'c) intern_env -> raw_red_expr -> ('a,'b,'c, int Locus.or_var) red_expr_gen
 
   val from_env : Environ.env -> (Glob_term.glob_constr, Evaluable.t, Glob_term.glob_constr) intern_env
 

@@ -95,14 +95,19 @@ val pr_goal_selector : toplevel:bool -> Goal_select.t -> Pp.t
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 val pr_with_occurrences :
-  ('a -> Pp.t) -> 'a Locus.with_occurrences -> Pp.t
+  ('v -> Pp.t) -> ('a -> Pp.t) -> 'v Locus.occurrences_gen * 'a -> Pp.t
 val pr_red_expr : env -> Evd.evar_map ->
-  (env -> Evd.evar_map -> 'a -> Pp.t) * (env -> Evd.evar_map -> 'a -> Pp.t) * ('b -> Pp.t) * (env -> Evd.evar_map -> 'c -> Pp.t) ->
-  ('a,'b,'c) Genredexpr.red_expr_gen -> Pp.t
+  (env -> Evd.evar_map -> 'a -> Pp.t) *
+  (env -> Evd.evar_map -> 'a -> Pp.t) *
+  ('b -> Pp.t) *
+  (env -> Evd.evar_map -> 'c -> Pp.t) *
+  ('occvar -> Pp.t) ->
+  ('a,'b,'c,'occvar) Genredexpr.red_expr_gen -> Pp.t
 val pr_may_eval :
   env -> Evd.evar_map ->
   (env -> Evd.evar_map -> 'a -> Pp.t) -> (env -> Evd.evar_map -> 'a -> Pp.t) -> ('b -> Pp.t) ->
-  (env -> Evd.evar_map -> 'c -> Pp.t) -> ('a,'b,'c) Genredexpr.may_eval -> Pp.t
+  (env -> Evd.evar_map -> 'c -> Pp.t) -> ('occvar -> Pp.t) ->
+  ('a,'b,'c,'occvar) Genredexpr.may_eval -> Pp.t
 
 val pr_and_short_name : ('a -> Pp.t) -> 'a Genredexpr.and_short_name -> Pp.t
 
