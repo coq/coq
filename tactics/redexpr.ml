@@ -600,3 +600,7 @@ module Interp = struct
   }
 
 end
+
+let interp_redexp_no_ltac env sigma r =
+  let r = Intern.(intern_red_expr (from_env env) r) in
+  Interp.(interp_red_expr without_ltac) env sigma r

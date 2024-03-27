@@ -25,9 +25,6 @@ open Synterp
 
 module NamedDecl = Context.Named.Declaration
 
-(** TODO: make this function independent of Ltac *)
-let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
-
 (* Utility functions, at some point they should all disappear and
    instead enviroment/state selection should be done at the Vernac DSL
    level. *)
@@ -710,7 +707,7 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
     | Some r ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
-      Some (snd (Hook.get f_interp_redexp env sigma r)) in
+      Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
@@ -1895,7 +1892,7 @@ let check_may_eval env sigma redexp rc =
   let sigma, c = match redexp with
     | None -> sigma, c
     | Some r ->
-      let sigma, r = Hook.get f_interp_redexp env sigma r in
+      let sigma, r = Redexpr.interp_redexp_no_ltac env sigma r in
       let r, _ = Redexpr.reduction_of_red_expr env r in
       let sigma, c = r env sigma c in
       sigma, c
@@ -1919,7 +1916,7 @@ let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Redexpr.declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
+  Redexpr.declare_red_expr local s (snd (Redexpr.interp_redexp_no_ltac env sigma r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
