@@ -186,6 +186,10 @@ val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd 
 (** Like [List.fold_left] but for 3 lists; raise [Invalid_argument _] if
     not all lists of the same size *)
 
+val fold_left4 : ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a
+(** Like [List.fold_left] but for 4 lists; raise [Invalid_argument _] if
+    not all lists of the same size *)
+
 val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
 (** Fold sets, i.e. lists up to order; the folding function tells
     when elements match by returning a value and raising the given
@@ -211,6 +215,9 @@ val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c li
 
 val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
 (** Same with four lists, folding on the left *)
+
+val fold_left5_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'f list -> 'a * 'r list
+(** Same with five lists, folding on the left *)
 
 (** {6 Splitting} *)
 
