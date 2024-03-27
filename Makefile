@@ -52,7 +52,7 @@ help:
 	@echo "  Note: these targets produce a developer build, not suitable"
 	@echo "        for distribution to end-users or install"
 	@echo ""
-	@echo " To run an \$$app \\in {coqc,coqtop,coqbyte,coqide}:"
+	@echo " To run an \$$app \\in {coqc,coqtop,coqtop.byte,coqide}:"
 	@echo ""
 	@echo "  - use 'dune exec -- dev/shim/\$$app args'"
 	@echo "    Example: 'dune exec -- dev/shim/coqc file.v'"

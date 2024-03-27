@@ -40,10 +40,10 @@
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} -nI \"$(dirname \"$0\")\"/%{project_root}/kernel/.kernel.objs/byte \"$@\"'")
     (run chmod +x %{targets})))))
 
-; coqbyte
+; coqtop.byte
 
 (alias
- (name coqbyte-prelude)
+ (name coqtop.byte-prelude)
  (deps
   %{project_root}/theories/Init/Prelude.vo
   %{bin:coqtop.byte}
@@ -73,8 +73,8 @@
   %{lib:coq-core.plugins.ltac:ltac_plugin.cma}))
 
 (rule
- (targets coqbyte)
- (deps (alias coqbyte-prelude))
+ (targets coqtop.byte)
+ (deps (alias coqtop.byte-prelude))
  (action
   (with-stdout-to %{targets}
    (progn
