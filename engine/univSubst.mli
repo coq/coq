@@ -25,9 +25,6 @@ val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 
 val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
 
-val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
-  'a Context.binder_annot -> 'a Context.binder_annot
-
 (** Full universes substitutions into terms *)
 
 val map_universes_opt_subst_with_binders

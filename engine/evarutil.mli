@@ -136,6 +136,7 @@ val tj_nf_evar :
 
 val nf_named_context_evar : evar_map -> Constr.named_context -> Constr.named_context
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context
+val nf_rel_context_evar_with_relevance : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
 val nf_evar_info : evar_map -> 'a evar_info -> 'a evar_info
