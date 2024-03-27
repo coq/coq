@@ -453,11 +453,17 @@ let interp_evaluable ist env sigma = function
         Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)
 
 (* Interprets an hypothesis name *)
-let interp_occurrences ist occs =
+let interp_occurrences_expr ist occs =
   Locusops.occurrences_map (interp_int_or_var_list ist) occs
 
+let interp_occurrences ist occs =
+  (* XXX we should be able to interp directly to occurrences
+     but hyp clauses still use occurrences_expr *)
+  let occs = interp_occurrences_expr ist occs in
+  Redexpr.out_occurrences occs
+
 let interp_hyp_location ist env sigma ((occs,id),hl) =
-  ((interp_occurrences ist occs,interp_hyp ist env sigma id),hl)
+  ((interp_occurrences_expr ist occs,interp_hyp ist env sigma id),hl)
 
 let interp_hyp_location_list_as_list ist env sigma ((occs,id),hl as x) =
   match occs,hl with
@@ -471,7 +477,7 @@ let interp_hyp_location_list ist env sigma l =
 
 let interp_clause ist env sigma { onhyps=ol; concl_occs=occs } : clause =
   { onhyps=Option.map (interp_hyp_location_list ist env sigma) ol;
-    concl_occs=interp_occurrences ist occs }
+    concl_occs=interp_occurrences_expr ist occs }
 
 (* Interpretation of constructions *)
 

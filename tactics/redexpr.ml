@@ -123,10 +123,10 @@ let set_strategy local str =
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
-type red_expr = (constr, Evaluable.t, constr_pattern) red_expr_gen
+type red_expr = (constr, Evaluable.t, constr_pattern, int) red_expr_gen
 
 type red_expr_val =
-  (constr, Evaluable.t, constr_pattern, strength * RedFlags.reds) red_expr_gen0
+  (constr, Evaluable.t, constr_pattern, int, strength * RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
   | Evaluable.EvalVarRef id -> [fVAR id]
@@ -194,8 +194,7 @@ let out_arg = function
   | Locus.ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable.")
   | Locus.ArgArg x -> x
 
-let out_occurrences occs =
-  let occs = Locusops.occurrences_map (List.map out_arg) occs in
+let check_occurrences occs =
   match occs with
   | Locus.OnlyOccurrences (n::_ as nl) when n < 0 ->
      Locus.AllOccurrencesBut (List.map abs nl)
@@ -204,6 +203,10 @@ let out_occurrences occs =
   | Locus.OnlyOccurrences _ | Locus.AllOccurrencesBut _ | Locus.NoOccurrences
   | Locus.AllOccurrences | Locus.AtLeastOneOccurrence -> occs
 
+let out_occurrences occs =
+  let occs = Locusops.occurrences_map (List.map out_arg) occs in
+  check_occurrences occs
+
 let out_with_occurrences (occs,c) =
   (out_occurrences occs, c)
 
@@ -211,7 +214,7 @@ let e_red f env evm c = evm, f env evm c
 
 let contextualize f = function
   | Some (occs,c) ->
-      let l = out_occurrences occs in
+      let l = check_occurrences occs in
       let b,c = match c with
         | Inl r -> true,PRef (global_of_evaluable_reference r)
         | Inr c -> false,c in
@@ -263,9 +266,9 @@ let reduction_of_red_expr_val = function
   | Lazy (w,f) ->
     let redf = match w with Norm -> clos_norm_flags | Head -> clos_whd_flags in
     (e_red (redf f),DEFAULTcast)
-  | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
+  | Unfold ubinds -> (e_red (unfoldn (List.map (on_fst check_occurrences) ubinds)),DEFAULTcast)
   | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
-  | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
+  | Pattern lp -> (pattern_occs (List.map (on_fst check_occurrences) lp),DEFAULTcast)
   | ExtraRedExpr s ->
       (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->

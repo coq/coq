@@ -997,7 +997,7 @@ let is_local_unfold env flags =
 let reduce redexp cl =
   let trace env sigma =
     let open Printer in
-    let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env) in
+    let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env, int) in
     Pp.(hov 2 (Ppred.pr_red_expr_env env sigma pr str redexp))
   in
   Proofview.Goal.enter begin fun gl ->
@@ -1020,11 +1020,13 @@ let reduce redexp cl =
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
+    let occs = Redexpr.out_occurrences occs in
     let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     e_change_in_concl ~cast:true ~check redfun
   end
   <*>
   let f (id, occs, where) =
+    let occs = Redexpr.out_occurrences occs in
     let (redfun, _) = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
