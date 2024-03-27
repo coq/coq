@@ -80,3 +80,23 @@ module Intern : sig
   val from_env : Environ.env -> (Glob_term.glob_constr, Evaluable.t, Glob_term.glob_constr) intern_env
 
 end
+
+module Interp : sig
+  open Names
+
+  type ('constr,'evref,'pat) interp_env = {
+    interp_occurrence_var : lident -> int list;
+    interp_constr : Environ.env -> Evd.evar_map -> 'constr -> Evd.evar_map * EConstr.constr;
+    interp_constr_list : Environ.env -> Evd.evar_map -> 'constr -> Evd.evar_map * EConstr.constr list;
+    interp_evaluable : Environ.env -> Evd.evar_map -> 'evref -> Evaluable.t;
+    interp_pattern : Environ.env -> Evd.evar_map -> 'pat -> constr_pattern;
+    interp_evaluable_or_pattern : Environ.env -> Evd.evar_map
+      -> 'evref -> (Evaluable.t, constr_pattern) Util.union
+  }
+
+  val interp_red_expr : ('constr,'evref,'pat) interp_env -> Environ.env -> Evd.evar_map
+    -> ('constr,'evref,'pat, int Locus.or_var) red_expr_gen -> Evd.evar_map * red_expr
+
+  val without_ltac : (Glob_term.glob_constr, Evaluable.t, Glob_term.glob_constr) interp_env
+
+end
