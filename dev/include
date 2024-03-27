@@ -2,7 +2,7 @@
 
 (* Typical usage :
 
-   $ dune exec -- dev/shim/coqbyte
+   $ dune exec -- dev/shim/coqtop.byte
    Coq < Drop.
    # #use "include";;
 
