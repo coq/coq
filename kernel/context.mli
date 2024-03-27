@@ -33,6 +33,8 @@ val map_annot : ('a -> 'b) -> 'a binder_annot -> 'b binder_annot
 
 val make_annot : 'a -> Sorts.relevance -> 'a binder_annot
 
+val map_binder_relevance : (Sorts.relevance -> Sorts.relevance) -> 'a binder_annot -> 'a binder_annot
+
 val binder_name : 'a binder_annot -> 'a
 val binder_relevance : 'a binder_annot -> Sorts.relevance
 
@@ -108,8 +110,14 @@ sig
     (** Map all terms in a given declaration. *)
     val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
+    (** Map all terms in a given declaration. *)
+    val map_constr_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
     (** Map all terms, with an heterogeneous function. *)
     val map_constr_het : ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
+
+    (** Map all terms, with an heterogeneous function. *)
+    val map_constr_het_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
 
     (** Perform a given action on all terms in a given declaration. *)
     val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
@@ -149,6 +157,9 @@ sig
 
   (** Map all terms in a given rel-context. *)
   val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+  (** Map all terms in a given rel-context. *)
+  val map_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
   (** Map all terms in a given named-context. *)
   val map_het : ('c -> 'd) -> ('c, 'c) pt -> ('d, 'd) pt
@@ -262,8 +273,14 @@ sig
     (** Map all terms in a given declaration. *)
     val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
+    (** Map all terms in a given declaration. *)
+    val map_constr_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
     (** Map all terms, with an heterogeneous function. *)
     val map_constr_het : ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
+
+    (** Map all terms, with an heterogeneous function. *)
+    val map_constr_het_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
 
     (** Perform a given action on all terms in a given declaration. *)
     val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
@@ -309,6 +326,9 @@ sig
 
   (** Map all terms in a given named-context. *)
   val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+  (** Map all terms in a given rel-context. *)
+  val map_with_relevance : (Sorts.relevance -> Sorts.relevance) -> ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
   (** Map all terms in a given named-context. *)
   val map_het : ('c -> 'd) -> ('c, 'c) pt -> ('d, 'd) pt
