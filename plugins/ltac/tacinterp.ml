@@ -2162,11 +2162,6 @@ let val_interp ist tac k = Ftactic.run (val_interp ist tac) k
 
 let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
-let interp_redexp env sigma r =
-  let ist = default_ist () in
-  let gist = Genintern.empty_glob_sign ~strict:true env in
-  interp_red_expr ist env sigma (intern_red_expr gist r)
-
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
@@ -2210,5 +2205,3 @@ let () =
       optkey   = ["Ltac"; "Backtrace"];
       optread  = (fun () -> !log_trace);
       optwrite = (fun b -> log_trace := b) }
-
-let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp

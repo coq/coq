@@ -100,3 +100,5 @@ module Interp : sig
   val without_ltac : (Glob_term.glob_constr, Evaluable.t, Glob_term.glob_constr) interp_env
 
 end
+
+val interp_redexp_no_ltac : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
