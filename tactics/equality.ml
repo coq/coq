@@ -534,16 +534,21 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
            do_hyps
 
 let apply_special_clear_request clear_flag f =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.project gl in
-    let env = Proofview.Goal.env gl in
-    try
-      let (sigma, (c, bl)) = f env sigma in
-      let c = try Some (destVar sigma c) with DestKO -> None in
-      apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
-    with
-      e when noncritical e -> tclIDTAC
-  end
+  (* Ideally we would not need this shortcut to avoid uselessly running [f]
+     and instead [general_multi_rewrite] would keep the information of which ids we used. *)
+  if not @@ (Option.default (use_clear_hyp_by_default ()) clear_flag)
+  then Proofview.tclUNIT ()
+  else
+    Proofview.Goal.enter begin fun gl ->
+      let sigma = Tacmach.project gl in
+      let env = Proofview.Goal.env gl in
+      try
+        let (sigma, (c, bl)) = f env sigma in
+        let c = try Some (destVar sigma c) with DestKO -> None in
+        apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
+      with
+        e when noncritical e -> tclIDTAC
+    end
 
 type multi =
   | Precisely of int
