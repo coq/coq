@@ -189,7 +189,7 @@ let pf_e gl s =
 
 (* Set usual printing since the global env is available from the tracer *)
 let _ = Flags.in_debugger := false
-let _ = Flags.in_toplevel := true
+let _ = Flags.in_ml_toplevel := true
 let _ = Constrextern.set_extern_reference
   (fun ?loc _ r -> Nametab.shortest_qualid_of_global ?loc Id.Set.empty r);;
 

@@ -894,7 +894,7 @@ let free_rels_and_unqualified_refs sigma t =
           let dir, id = Libnames.repr_qualid short in
           let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
           (gseen, vseen, ids)
-        with Not_found when !Flags.in_debugger || !Flags.in_toplevel ->
+        with Not_found when !Flags.in_debugger || !Flags.in_ml_toplevel ->
           accu
       end else
         accu
