@@ -1856,13 +1856,7 @@ module MiniEConstr = struct
   let unsafe_to_named_decl d = d
   let of_rel_decl d = d
   let unsafe_to_rel_decl d = d
-  let to_rel_decl sigma d = match d with
-  | RelDecl.LocalAssum (na, t) ->
-    let na = UnivSubst.nf_binder_annot (fun r -> UState.nf_relevance sigma.universes r) na in
-    RelDecl.LocalAssum (na, to_constr sigma t)
-  | RelDecl.LocalDef (na, c, t) ->
-    let na = UnivSubst.nf_binder_annot (fun r -> UState.nf_relevance sigma.universes r) na in
-    RelDecl.LocalDef (na, to_constr sigma c, to_constr sigma t)
+  let to_rel_decl sigma d = RelDecl.map_constr_het_with_relevance (UState.nf_relevance sigma.universes) (to_constr sigma) d
 
   let of_named_context d = d
   let of_rel_context d = d
