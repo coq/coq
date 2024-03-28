@@ -251,7 +251,7 @@ let register_side_effect (c, body, role) =
   let () = register_constant c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
   match role with
   | None -> ()
-  | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind [|ind,c|]
+  | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind (ind,c)
 
 let get_roles export eff =
   let map (c, body) =

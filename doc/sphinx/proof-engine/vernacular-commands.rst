@@ -1168,7 +1168,21 @@ Exposing constants to OCaml libraries
    .. seealso:: :ref:`primitive-integers`
 
 .. cmd:: Print Registered
-   :undocumented:
+
+   List the currently registered constants.
+
+.. cmd:: Register Scheme @qualid__1 as @qualid__2 for @qualid__3
+
+   Make the constant :n:`@qualid__1` accessible to the "scheme"
+   mechanism for scheme kind :n:`@qualid__2` and inductive
+   :n:`@qualid__3`.
+
+.. cmd:: Print Registered Schemes
+
+   List the currently registered schemes.
+
+   This can be useful to find information about the (currently
+   undocumented) scheme kinds.
 
 Inlining hints for the fast reduction machines
 ``````````````````````````````````````````````

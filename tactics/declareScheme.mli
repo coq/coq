@@ -10,6 +10,6 @@
 
 open Names
 
-val declare_scheme : string -> (inductive * Constant.t) array -> unit
+val declare_scheme : string -> (inductive * Constant.t) -> unit
 val lookup_scheme : string -> inductive -> Constant.t
 val all_schemes : unit -> Constant.t CString.Map.t Indmap.t
