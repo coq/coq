@@ -66,8 +66,7 @@ type tacdef = {
   tacdef_deprecation : Deprecation.t option;
 }
 
-let perform_tacdef visibility ((sp, kn), def) =
-  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
+let define_tacdef ((_,kn), def) =
   let data = {
     Tac2env.gdata_expr = def.tacdef_expr;
     gdata_type = def.tacdef_type;
@@ -76,18 +75,21 @@ let perform_tacdef visibility ((sp, kn), def) =
   } in
   Tac2env.define_global kn data
 
-let load_tacdef i obj = perform_tacdef (Until i) obj
-let open_tacdef i obj = perform_tacdef (Exactly i) obj
+let push_tacdef visibility ((sp, kn), def) =
+  if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn)
 
-let cache_tacdef ((sp, kn), def) =
-  let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
-  let data = {
-    Tac2env.gdata_expr = def.tacdef_expr;
-    gdata_type = def.tacdef_type;
-    gdata_mutable = def.tacdef_mutable;
-    gdata_deprecation = def.tacdef_deprecation;
-  } in
-  Tac2env.define_global kn data
+let load_tacdef i obj =
+  push_tacdef (Until i) obj;
+  define_tacdef obj
+
+let open_tacdef i obj = push_tacdef (Exactly i) obj
+
+(* Not sure if it's correct that we don't "open", do Until 1 and
+   Exactly 1 have the same effect? *)
+let cache_tacdef ((sp, kn), def as obj) =
+  (* unconditional unlike push_tacdef *)
+  Tac2env.push_ltac (Until 1) sp (TacConstant kn);
+  define_tacdef obj
 
 let subst_tacdef (subst, def) =
   let expr' = subst_expr subst def.tacdef_expr in

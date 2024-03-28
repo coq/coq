@@ -99,3 +99,80 @@ Ltac2 Set quy as self := fun n =>
                            end.
 Ltac2 Eval (assert_eq (quy (S (S O))) (S (S (S O)))).
 Ltac2 Eval (assert_eq (quy (S (S (S O)))) (S (S (S (S (S (S O))))))).
+
+(*******************************
+
+      module interactions
+
+********************************)
+
+Ltac2 assert_eq_int x y := Control.assert_true (Int.equal x y).
+
+Module Orig.
+  Ltac2 mutable x () := 0.
+End Orig.
+
+Ltac2 Eval assert_eq_int (Orig.x()) 0.
+
+Module Change1.
+  Ltac2 Set Orig.x as y := fun () => Int.add (y()) 1.
+  Ltac2 Eval assert_eq_int (Orig.x()) 1.
+End Change1.
+
+(* mutation is export not global by default *)
+Ltac2 Eval assert_eq_int (Orig.x()) 0.
+
+Module Change2.
+  Ltac2 Set Orig.x as y := fun () => Int.add 5 (Int.mul (y()) 2).
+End Change2.
+
+Module Test1.
+  Import Change1.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 1.
+
+  Import Change2.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 7.
+End Test1.
+
+Module Test2.
+  Import Change2.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 5.
+
+  Import Change1.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 6.
+
+  (* repeating imports with "as" causes accumulation (!) *)
+  Import Change1.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 7.
+
+  Import Change1 Change1.
+
+  (* Import doesn't deduplicate / assume idempotence (may change in the future?) *)
+  Ltac2 Eval assert_eq_int (Orig.x()) 9.
+
+  Import Orig.
+
+  (* Importing the original definition does not act as a redefinition to the original value *)
+  Ltac2 Eval assert_eq_int (Orig.x()) 9.
+End Test2.
+
+Module E1. Export Change1. End E1.
+Module E2. Export Change1. End E2.
+Module E3.
+  Export E1.
+  Export E2.
+
+  Ltac2 Eval assert_eq_int (Orig.x()) 2.
+End E3.
+
+Module Test3.
+  Import E3.
+
+  (* Import/Export does assume idempotence (!) Change1 only got imported once. *)
+  Ltac2 Eval assert_eq_int (Orig.x()) 1.
+End Test3.
