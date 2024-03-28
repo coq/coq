@@ -29,9 +29,14 @@ val set_prompt : (unit -> string) -> unit
 (** Toplevel feedback printer. *)
 val coqloop_feed : Feedback.feedback -> unit
 
-(** Last document seen after `Drop` *)
-val drop_last_doc : Vernac.State.t option ref
-val drop_args : Coqargs.t option ref
+(** State tracked while in the OCaml toplevel *)
+val ml_toplevel_state : Vernac.State.t option ref
+
+(** Whether the "include" file was already run at least once *)
+val ml_toplevel_include_ran : bool ref
+
+(** The main loop *)
+val loop : state:Vernac.State.t -> Vernac.State.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
-val loop : opts:Coqargs.t -> state:Vernac.State.t -> unit
+val run : opts:Coqargs.t -> state:Vernac.State.t -> unit

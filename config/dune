@@ -2,8 +2,17 @@
  (name config)
  (synopsis "Coq Configuration Variables")
  (public_name coq-core.config)
- (modules :standard \ list_plugins)
+ (modules coq_config)
  (wrapped false))
+
+(library
+ (name byte_config)
+ (synopsis "Coq Configuration Variables (for bytecode only)")
+ (public_name coq-core.config.byte)
+ (modules coq_byte_config)
+ (wrapped false)
+ (libraries compiler-libs.toplevel)
+ (modes byte))
 
 (executable (name list_plugins) (modules list_plugins))
 (rule (targets plugin_list)
@@ -13,7 +22,7 @@
 ; Dune doesn't use configure's output, but it is still necessary for
 ; some Coq files to work; will be fixed in the future.
 (rule
- (targets coq_config.ml coq_config.py dune.c_flags)
+ (targets coq_config.ml coq_byte_config.ml coq_config.py dune.c_flags)
  (mode fallback)
  (deps
    %{project_root}/dev/ocamldebug-coq.run

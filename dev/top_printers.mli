@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Printers for the ocaml toplevel. *)
+(** Printers for the OCaml toplevel. *)
 
 val pp : Pp.t -> unit
 val pP : Pp.t -> unit (* with surrounding box *)
@@ -34,7 +34,7 @@ val ppqualid : Libnames.qualid -> unit
 
 val ppscheme : 'a Ind_tables.scheme_kind -> unit
 
-val pprecarg : Declarations.recarg -> Pp.t
+val pprecarg : Declarations.recarg -> unit
 val ppwf_paths : Declarations.recarg Rtree.t -> unit
 
 val pr_evar : Evar.t -> Pp.t
@@ -195,3 +195,6 @@ val ppgenarginfo : Geninterp.Val.t -> unit
 val ppgenargargt : ('a, 'b, 'c) Genarg.ArgT.tag -> unit
 
 val ppist : Geninterp.interp_sign -> unit
+
+val raw_string_of_ref : ?loc:Loc.t -> Names.Id.Set.t -> Names.GlobRef.t -> Libnames.qualid
+val short_string_of_ref : ?loc:Loc.t -> Names.Id.Set.t -> Names.GlobRef.t -> Libnames.qualid

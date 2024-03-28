@@ -18,17 +18,12 @@ let ppripos (ri,pos) =
   );
    print_flush ()
 
-let print_vfix () = print_string "vfix"
-let print_vfix_app () = print_string "vfix_app"
-let print_vswith () = print_string "switch"
-
 let ppsort = function
   | SProp -> print_string "SProp"
   | Set -> print_string "Set"
   | Prop -> print_string "Prop"
-  | Type u -> print_string "Type"
-
-
+  | Type _ -> print_string "Type"
+  | QSort _ -> print_string "QSort"
 
 let print_idkey idk =
   match idk with
@@ -77,7 +72,7 @@ and ppwhd whd =
   match whd with
   | Vprod _ -> print_string "product"
   | Vfun _ -> print_string "function"
-  | Vfix _ -> print_vfix()
+  | Vfix _ -> print_string "vfix"
   | Vcofix _ -> print_string "cofix"
   | Vconst i -> print_string "C(";print_int i;print_string")"
   | Vblock b -> ppvblock b

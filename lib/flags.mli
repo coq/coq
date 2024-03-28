@@ -42,7 +42,7 @@ val load_vos_libraries : bool ref
 (** Debug flags *)
 val xml_debug : bool ref
 val in_debugger : bool ref
-val in_toplevel : bool ref
+val in_ml_toplevel : bool ref
 
 (* Used to check stages are used correctly. *)
 val in_synterp_phase : bool ref

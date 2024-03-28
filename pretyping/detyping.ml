@@ -900,7 +900,7 @@ and detype_r d flags avoid env sigma t =
           GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
                 (args @ [detype d flags avoid env sigma c]))
         in
-        if !Flags.in_debugger || !Flags.in_toplevel
+        if !Flags.in_debugger || !Flags.in_ml_toplevel
            || not (print_primproj_params ())
         then noparams ()
         else begin

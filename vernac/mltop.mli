@@ -38,8 +38,8 @@ type toplevel =
   (** Load a cmxs / cmo module, used by the native compiler to load objects *)
   ; add_dir  : string -> unit
   (** Adds a dir to the module search path *)
-  ; ml_loop  : unit -> unit
-  (** Implementation of Drop *)
+  ; ml_loop  : ?init_file:string -> unit -> unit
+  (** Run the OCaml toplevel with given addtitional initialisation file *)
   }
 
 (** Sets and initializes a toplevel (if any) *)
@@ -55,7 +55,7 @@ val remove : unit -> unit
 val is_ocaml_top : unit -> bool
 
 (** Starts the Ocaml toplevel loop *)
-val ocaml_toploop : unit -> unit
+val ocaml_toploop : ?init_file:string -> unit -> unit
 
 (** {5 ML Dynlink} *)
 

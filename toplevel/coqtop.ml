@@ -173,7 +173,7 @@ let get_native_name s =
 
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
-  | Interactive -> Coqloop.loop ~opts ~state;
+  | Interactive -> Coqloop.run ~opts ~state;
   | Query PrintTags -> Colors.print_style_tags color_mode; exit 0
   | Query (PrintModUid sl) ->
       let s = String.concat " " (List.map get_native_name sl) in
