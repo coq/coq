@@ -145,10 +145,38 @@ Module Pretype.
     Ltac2 Type t.
 
     Ltac2 @ external constr_flags : t := "coq-core.plugins.ltac2" "constr_flags".
-    (** Does not allow new unsolved evars. *)
+    (** The flags used by constr:(). *)
 
-    Ltac2 @ external open_constr_flags : t := "coq-core.plugins.ltac2" "open_constr_flags".
-    (** Allows new unsolved evars. *)
+    Ltac2 @external set_use_coercions : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_use_coercions".
+    (** Use coercions during pretyping. [true] in [constr_flags]. *)
+
+    Ltac2 @external set_use_typeclasses : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_use_typeclasses".
+    (** Run typeclass inference at the end of pretyping and when
+        needed according to flag "Typeclass Resolution For Conversion".
+        [true] in [constr_flags]. *)
+
+    Ltac2 @external set_allow_evars : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_allow_evars".
+    (** Allow pretyping to produce new unresolved evars.
+        [false] in [constr_flags]. *)
+
+    Ltac2 @external set_nf_evars : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_nf_evars".
+    (** Evar-normalize the result of pretyping. This should not impact
+        anything other than performance.
+        [true] in [constr_flags]. *)
+
+    Ltac2 Notation open_constr_flags_with_tc :=
+      set_nf_evars false (set_allow_evars true constr_flags).
+
+    Ltac2 Notation open_constr_flags_no_tc :=
+      set_use_typeclasses false open_constr_flags_with_tc.
+    (** The flags used by open_constr:() and its alias [']. *)
+
+    #[deprecated(since="8.20", note="use open_constr_flags_with_tc (or no_tc as desired)")]
+    Ltac2 Notation open_constr_flags := open_constr_flags_with_tc.
   End Flags.
 
   Ltac2 Type expected_type.

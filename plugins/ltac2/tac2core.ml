@@ -35,20 +35,6 @@ let constr_flags =
     patvars_abstract = false;
   }
 
-let open_constr_use_classes_flags =
-  let open Pretyping in
-  {
-  use_coercions = true;
-  use_typeclasses = Pretyping.UseTC;
-  solve_unification_constraints = true;
-  fail_evar = false;
-  expand_evars = true;
-  program_mode = false;
-  polymorphic = false;
-  undeclared_evars_patvars = false;
-  patvars_abstract = false;
-  }
-
 let open_constr_no_classes_flags =
   let open Pretyping in
   {
@@ -774,9 +760,30 @@ let () =
     throw err_notfocussed
 
 (** preterm -> constr *)
-let () = define "constr_flags" (ret (repr_ext val_pretype_flags)) constr_flags
 
-let () = define "open_constr_flags" (ret (repr_ext val_pretype_flags)) open_constr_use_classes_flags
+let pretype_flags = repr_ext val_pretype_flags
+
+let () = define "constr_flags" (ret pretype_flags) constr_flags
+
+let () =
+  define "pretype_flags_set_use_coercions"
+    (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
+  { flags with use_coercions = b }
+
+let () =
+  define "pretype_flags_set_use_typeclasses"
+    (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
+  { flags with use_typeclasses = if b then UseTC else NoUseTC }
+
+let () =
+  define "pretype_flags_set_allow_evars"
+    (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
+  { flags with fail_evar = not b }
+
+let () =
+  define "pretype_flags_set_nf_evars"
+    (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
+  { flags with expand_evars = b }
 
 let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
 
@@ -787,7 +794,7 @@ let () = define "expected_without_type_constraint" (ret (repr_ext val_expected_t
     WithoutTypeConstraint
 
 let () =
-  define "constr_pretype" (repr_ext val_pretype_flags @-> repr_ext val_expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
+  define "constr_pretype" (pretype_flags @-> repr_ext val_expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
   let pretype env sigma =
     let sigma, t = Pretyping.understand_uconstr ~flags ~expected_type env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
