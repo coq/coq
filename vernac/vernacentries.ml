@@ -1044,48 +1044,42 @@ let vernac_fixpoint_common ~atts discharge l =
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
-let vernac_fixpoint ~pm ~atts discharge (rec_order,fixl as fix) =
+let with_program program_mode f pm =
+  if program_mode then
+    f pm
+  else
+    let pm', proof = f None in
+    assert (Option.is_empty pm');
+    pm, proof
+
+let vernac_fixpoint ~pm ~atts discharge (rec_order,fixl) =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts discharge fixl in
   let typing_flags = atts.typing_flags in
-  if atts.program then
-    (* XXX: Switch to the attribute system and match on ~atts *)
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
-    if opens then
-      CErrors.user_err Pp.(str"Program Fixpoint requires a body.")
-    else
-      let pm = ComProgramFixpoint.do_fixpoint ~pm:(Option.get pm) ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-          ?typing_flags ?user_warns:atts.user_warns ?using:atts.using fix in
-      Some pm, None
-  else
-    let pm', proof =
-      ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CFixRecOrder rec_order, fixl) in
-    assert (Option.is_empty pm');
-    pm, proof
+  let () =
+    if atts.program then
+      (* XXX: Switch to the attribute system and match on ~atts *)
+      let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
+      if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
+  with_program atts.program (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+    ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CFixRecOrder rec_order, fixl)) pm
 
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
-let vernac_cofixpoint ~pm ~atts discharge l =
+let vernac_cofixpoint ~pm ~atts discharge cofixl =
   let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts discharge l in
+  let scope = vernac_cofixpoint_common ~atts discharge cofixl in
   let typing_flags = atts.typing_flags in
-  if atts.program then
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
-    if opens then
-      CErrors.user_err Pp.(str"Program CoFixpoint requires a body.")
-    else
-      let pm = ComProgramFixpoint.do_cofixpoint ~pm:(Option.get pm) ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
-      Some pm, None
-  else
-    let pm', proof = ComFixpoint.do_mutually_recursive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CCoFixRecOrder, l) in
-    assert (Option.is_empty pm');
-    pm, proof
+  let () =
+    if atts.program then
+      let opens = List.exists (fun { body_def } -> Option.is_empty body_def) cofixl in
+      if opens then
+        CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
+  with_program atts.program (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
+      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using (CCoFixRecOrder, cofixl)) pm 
 
 let vernac_scheme l =
   if Dumpglob.dump () then
