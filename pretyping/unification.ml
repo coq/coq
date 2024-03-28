@@ -1192,9 +1192,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             if match n with Some n -> Int.equal m n | None -> false then
                 (evd,t2::ks, m-1)
             else
-              let mv = new_meta () in
-              let evd' = meta_declare mv (substl ks b) evd in
-              (evd', mkMeta mv :: ks, m - 1))
+              let evd', ev = Evarutil.new_evar (fst curenvnb) evd (substl ks b) in
+              (evd', ev :: ks, m - 1))
           (sigma,[],List.length bs) bs
       in
       try
