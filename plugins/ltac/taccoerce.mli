@@ -88,7 +88,7 @@ val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypo
 
 val coerce_to_decl_or_quant_hyp : Evd.evar_map -> Value.t -> quantified_hypothesis
 
-val coerce_to_int_or_var_list : Value.t -> int Locus.or_var list
+val coerce_to_int_list : Value.t -> int list
 
 (** {5 Missing generic arguments} *)
 

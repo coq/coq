@@ -74,12 +74,7 @@ let warn_deprecated_hint_constr =
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?
  *)
-let soft_evaluable =
-  let open GlobRef in
-  function
-  | ConstRef c -> Evaluable.EvalConstRef c
-  | VarRef id -> Evaluable.EvalVarRef id
-  | (IndRef _ | ConstructRef _) as r -> Tacred.error_not_evaluable r
+let soft_evaluable = Tacred.soft_evaluable_of_global_reference
 
 let interp_hints ~poly h =
   let env = Global.env () in
@@ -89,7 +84,7 @@ let interp_hints ~poly h =
     Dumpglob.add_glob ?loc:r.CAst.loc gr;
     gr
   in
-  let fr r = soft_evaluable (fref r) in
+  let fr r = soft_evaluable ?loc:r.CAst.loc (fref r) in
   let fi c =
     let open Hints in
     let open Vernacexpr in

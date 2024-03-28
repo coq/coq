@@ -14,7 +14,7 @@ endif
 DOC_MLGS := \
 	parsing/g_constr.mlg parsing/g_prim.mlg \
 	toplevel/g_toplevel.mlg \
-	vernac/g_proofs.mlg  vernac/g_vernac.mlg \
+	vernac/g_proofs.mlg vernac/g_redexpr.mlg vernac/g_vernac.mlg \
 	plugins/btauto/g_btauto.mlg \
 	plugins/cc/g_congruence.mlg \
 	plugins/derive/g_derive.mlg \

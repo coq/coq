@@ -2,9 +2,8 @@ open Util
 open Pp
 open Locus
 open Genredexpr
-open Pputils
 
-let pr_with_occurrences pr keyword (occs,c) =
+let pr_with_occurrences prvar pr keyword (occs,c) =
   match occs with
     | AtLeastOneOccurrence -> hov 1 (pr c ++ spc () ++ keyword "at" ++ str" +")
     | AllOccurrences ->
@@ -13,10 +12,10 @@ let pr_with_occurrences pr keyword (occs,c) =
       failwith "pr_with_occurrences: no occurrences"
     | OnlyOccurrences nl ->
       hov 1 (pr c ++ spc () ++ keyword "at" ++ spc () ++
-                hov 0 (prlist_with_sep spc (pr_or_var int) nl))
+                hov 0 (prlist_with_sep spc prvar nl))
     | AllOccurrencesBut nl ->
       hov 1 (pr c ++ spc () ++ keyword "at" ++ str" - " ++
-                hov 0 (prlist_with_sep spc (pr_or_var int) nl))
+                hov 0 (prlist_with_sep spc prvar nl))
 
 exception ComplexRedFlag
 
@@ -48,11 +47,11 @@ let pr_union pr1 pr2 = function
   | Inl a -> pr1 a
   | Inr b -> pr2 b
 
-let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
+let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern,prvar) keyword = function
   | Red -> keyword "red"
   | Hnf -> keyword "hnf"
   | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
-                    ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern) keyword) o
+                    ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
   | Cbv f ->
     if f.rBeta && f.rMatch && f.rFix && f.rCofix &&
           f.rZeta && f.rDelta && List.is_empty f.rConst then
@@ -65,18 +64,18 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
     hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
   | Unfold l ->
     hov 1 (keyword "unfold" ++ spc() ++
-              prlist_with_sep pr_comma (pr_with_occurrences pr_ref keyword) l)
+              prlist_with_sep pr_comma (pr_with_occurrences prvar pr_ref keyword) l)
   | Fold l -> hov 1 (keyword "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
     hov 1 (keyword "pattern" ++
-              pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr keyword)) l)
+              pr_arg (prlist_with_sep pr_comma (pr_with_occurrences prvar pr_constr keyword)) l)
 
   | ExtraRedExpr s ->
     str s
   | CbvVm o ->
-    keyword "vm_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern) keyword) o
+    keyword "vm_compute" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
   | CbvNative o ->
-    keyword "native_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern) keyword) o
+    keyword "native_compute" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
 
-let pr_red_expr_env env sigma (pr_constr,pr_lconstr,pr_ref,pr_pattern) =
-  pr_red_expr (pr_constr env sigma, pr_lconstr env sigma, pr_ref, pr_pattern env sigma)
+let pr_red_expr_env env sigma (pr_constr,pr_lconstr,pr_ref,pr_pattern,prvar) =
+  pr_red_expr (pr_constr env sigma, pr_lconstr env sigma, pr_ref, pr_pattern env sigma,prvar)

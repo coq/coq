@@ -235,8 +235,7 @@ let new_generalize_gen_let lconstr =
   end
 
 let generalize_gen lconstr =
-  generalize_gen_let (List.map (fun (occs_c,na) ->
-    let (occs,c) = Redexpr.out_with_occurrences occs_c in
+  generalize_gen_let (List.map (fun ((occs,c),na) ->
     (occs,c,None),na) lconstr)
 
 let new_generalize_gen lconstr =
