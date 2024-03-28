@@ -1,3 +1,5 @@
+#directory "+compiler-libs";;
+
 #directory "_build/default/lib/.lib.objs/byte/";;
 #directory "_build/default/clib/.clib.objs/byte/";;
 #directory "_build/default/kernel/.kernel.objs/byte/";;

@@ -5,9 +5,9 @@ Debugging from Coq toplevel using OCaml toplevel
 2. Access OCaml toplevel using vernacular command `Drop.`
 3. Use `#trace` to tell which function(s) to trace,
    or type any other OCaml toplevel commands or OCaml expressions
-4. Go back to Coq toplevel with `#quit;;` or `go ();;`
+4. Go back to Coq toplevel with `#quit;;` or `#go;;`
 5. Test your Coq command and observe the result of tracing your functions
-6. Freely switch from Coq to OCaml toplevels with `Drop.` and `#quit;;`/`go ();;`
+6. Freely switch from Coq to OCaml toplevels with `Drop.` and `#quit;;`/`#go;;`
 
 > [!NOTE]
 > To access plugin modules in the OCaml toplevel, you have to
