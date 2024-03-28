@@ -1,5 +1,4 @@
-(* File to include to get some Coq facilities under the ocaml toplevel.
-   This file is loaded by include *)
+(* File included to get some Coq facilities under the OCaml toplevel. *)
 
 #use "top_printers.ml";;
 #use "vm_printers.ml";;
@@ -32,125 +31,15 @@
 #install_printer  (* loc *) pploc;;
 #install_printer  (* substitution *) ppsubst;;
 
-(* Open main files *)
-
-open Names
-open Term
-open Vars
-open Context
-open Typeops
-open Constant_typing
-open Univ
-open Inductive
-open Indtypes
-open Cooking
-open CClosure
-open Reduction
-open Safe_typing
-open Declare
-open Declaremods
-open Impargs
-open Libnames
-open Globnames
-open Nametab
-open Library
-
-open Cases
-open Pattern
-open Patternops
-open Cbv
-open Coercionops
-open Arguments_renaming
-open Pretyping
-open Cbv
-open Coercionops
-open Clenv
-open Constr_matching
-open Glob_term
-open Glob_ops
-open Coercion
-open Structures
-open Detyping
-open Reductionops
-open Evarconv
-open Retyping
-open Evarutil
-open Evarsolve
-open Tacred
-open Evd
-open Termops
-open Namegen
-open Indrec
-open Typing
-open Inductiveops
-open Locusops
-open Find_subterm
-open Unification
-open Nativenorm
-open Typeclasses
-open Typeclasses_errors
-open Vnorm
-
-open Constrextern
-open Constrintern
-open Coqlib
-open Genarg
-open Modintern
-open Notation
-open Ppextend
-open Reserve
-open Abbreviation
-open Constrexpr
-open Constrexpr_ops
-open Notation_term
-open Notation_ops
-open Prettyp
-open Search
-
-open Logic
-open Proof
-open Proof_using
-open Redexpr
-open Tacmach
-
-open Hints
-open Auto
-open Autorewrite
-open Contradiction
-open Eauto
-open Elim
-open Equality
-open Hipattern
-open Inv
-open Ltac_plugin.Leminv
-open Tacticals
-open Tactics
-open Eqschemes
-
-open ComCoercion
-open ComDefinition
-open Indschemes
-open Ind_tables
-open Auto_ind_decl
-open Coqtop
-open Himsg
-open Metasyntax
-open Mltop
-open Record
-open Coqloop
-open Vernacentries
-open Vernacextend
-open Vernac
-
 (* Various utilities *)
 
-let qid = Libnames.qualid_of_string;;
+let qid = Libnames.qualid_of_string
 
 (* parsing of terms *)
 
-let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
-let parse_vernac = Pcoq.parse_string Pvernac.Vernac_.vernac_control;;
-let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
+let parse_constr = Pcoq.parse_string Pcoq.Constr.constr
+let parse_vernac = Pcoq.parse_string Pvernac.Vernac_.vernac_control
+let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic
 
 (* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)
@@ -158,7 +47,7 @@ let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
 let e s =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Constrintern.intern_constr env sigma (parse_constr s);;
+  Constrintern.intern_constr env sigma (parse_constr s)
 
 (* build a term of type constr with type-checking and resolution of 
    implicit syntax *)
@@ -166,16 +55,16 @@ let e s =
 let constr_of_string s = 
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Constrintern.interp_constr env sigma (parse_constr s);;
+  Constrintern.interp_constr env sigma (parse_constr s)
 
 (* get the body of a constant *)
 
-open Declarations;;
-open Declareops;;
+open Declarations
+open Declareops
 
 let constbody_of_string s =
   let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
-  Option.get (Global.body_of_constant_body Library.indirect_accessor b);;
+  Option.get (Global.body_of_constant_body Library.indirect_accessor b)
 
 (* Get the current goal *)
 (*
@@ -184,8 +73,9 @@ let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
 let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
 let current_goal () = get_nth_goal 1;;
 *)
+
 let pf_e gl s = 
-  Constrintern.interp_constr (pf_env gl) (project gl) (parse_constr s);;
+  Constrintern.interp_constr (Tacmach.pf_env gl) (Tacmach.project gl) (parse_constr s)
 
 (* Set usual printing since the global env is available from the tracer *)
 let _ = Flags.in_debugger := false
@@ -197,9 +87,5 @@ let go () = Coqloop.(loop ~opts:Option.(get !drop_args) ~state:Option.(get !drop
 
 let _ =
  print_string
-   ("\n\tOcaml toplevel with Coq printers and utilities (use go();; to exit)\n\n");
+   ("\n\tOcaml toplevel with Coq printers and utilities (use go ();; to exit)\n\n");
  flush_all()
-
-(* Local Variables: *)
-(* mode: tuareg *)
-(* End: *)
