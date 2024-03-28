@@ -45,4 +45,21 @@ Section Wf_Transitive_Closure.
     unfold well_founded; auto with sets.
   Defined.
 
+  Lemma wf_clos_trans_inverse_rel (B : Type) (Q : relation B) (F : B -> A -> Prop) :
+    well_founded R ->
+    (forall b, exists a, F b a) ->
+    (forall b1 b2 a1, Q b2 b1 -> F b1 a1 -> exists a2, F b2 a2 /\ trans_clos a2 a1) ->
+    well_founded Q.
+  Proof.
+    intros HR Hintro Hstep b.
+    destruct (Hintro b) as [a H].
+    revert b H.
+    induction (wf_clos_trans HR a) as [a _ IH].
+    intros b Hba.
+    constructor.
+    intros b' Hb'b.
+    destruct (Hstep _ _ _ Hb'b Hba) as [? [??]].
+    eapply IH; eassumption.
+  Defined.
+
 End Wf_Transitive_Closure.
