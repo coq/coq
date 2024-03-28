@@ -20,6 +20,7 @@ open Context
 open Libnames
 open Globnames
 open Impargs
+open Evar_kinds
 open Glob_term
 open Glob_ops
 open Patternops
@@ -347,20 +348,27 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, None, bk, t, 
 
 let warn_shadowed_implicit_name =
   CWarnings.create ~name:"shadowed-implicit-name" ~category:CWarnings.CoreCategories.syntax
-    Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
+    Pp.(fun (na,id) -> str "Renaming shadowed implicit argument name to " ++ Id.print id ++ str ".")
 
-let exists_name na l =
-  match na with
-  | Name id -> List.exists (function Some { impl_pos = (Name id', _, _) } -> Id.equal id id' | _ -> false) l
-  | _ -> false
+let exists_id id l =
+  List.exists (function Some { impl_pos = { arg_explicitation = ByName (id', _) } } -> Id.equal id id' | _ -> false) l
 
 let build_impls ?loc n bk na acc =
   let impl_status max =
-    let na =
-      if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
-      else na in
+    let id =
+      match na with
+      | Name id ->
+        if exists_id id acc then
+          let avoid = Id.Set.of_list (List.map_filter (function Some { impl_pos = { arg_explicitation = ByName (id,_) } } -> Some id | _ -> None) acc) in
+          let id = next_name_away na avoid in
+          begin warn_shadowed_implicit_name ?loc (na,id); id end
+        else id
+      | Anonymous ->
+        (* Unable to know before completion of type-checking that a name is dependent *)
+        user_err ?loc (str "Local implicit argument requires a name.")
+    in
     Some {
-      impl_pos = (na, n, (*TODO, enhancement: compute dependency*) None);
+      impl_pos = { arg_explicitation = ByName (id,None); arg_absolute_pos = n };
       impl_expl = Manual;
       impl_max = max;
       impl_force = true
@@ -2088,10 +2096,10 @@ let set_hole_implicit i b c =
   Loc.tag ?loc (GImplicitArg (r,i,b))
 
 let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
+  List.exists (fun imp -> is_status_implicit imp && match_implicit imp (ExplByName id))
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (Name id, _, _) } -> Some id | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = { arg_explicitation = ByName (id,_) } } -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2100,7 +2108,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function Some { impl_pos = (_, _, Some n) } -> Some n | _ -> None) imps in
+  let l = List.map_filter (function Some { impl_pos = { arg_explicitation = ByNonDepPos n } } -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2608,7 +2616,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       match (impl,rargs) with
       | (imp::impl', rargs) when is_status_implicit imp ->
           begin try
-            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit imp pos) eargs in
+            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit ~warn:false imp pos) eargs in
             intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
           with Not_found ->
           if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
@@ -2624,8 +2632,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
       | (imp::impl', []) ->
           if not (List.is_empty eargs) then
-            (let pr_position = function ExplByName id -> Id.print id | ExplByPos n -> str "position " ++ int n in
-            let (pos,(loc,_)) = List.hd eargs in
+            (let (pos,(loc,_)) = List.hd eargs in
                user_err ?loc (str "Not enough non implicit \
             arguments to accept the argument bound to " ++
                  pr_position pos ++ str"."));

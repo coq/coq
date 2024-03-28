@@ -83,7 +83,7 @@ type binding_kind = Explicit | MaxImplicit | NonMaxImplicit
 type relevance_info = glob_relevance option
 
 type glob_evar_kind = Evar_kinds.glob_evar_kind =
-  | GImplicitArg of GlobRef.t * (int * Id.t option) * bool (** Force inference *)
+  | GImplicitArg of GlobRef.t * (int * Evar_kinds.explicitation option) * bool (** Force inference *)
   | GBinderType of Name.t
   | GNamedHole of bool (* fresh? *) * Id.t (* coming from some ?[id] syntax *)
   | GQuestionMark of Evar_kinds.question_mark

@@ -133,12 +133,12 @@ Section D. Global Arguments eq [A] _ _. End D.
 (* Gives a warning and make the second x anonymous *)
 (* Isn't the name "arg_1" a bit fragile though? *)
 
-Check fun f : forall {x:nat} {x:bool} (x:unit), unit => f (x:=1) (arg_2:=true) tt.
+Check fun f : forall {x:nat} {x:bool} (x:unit), unit => f (x:=1) (x0:=true) tt.
 
 (* Check the existence of a shadowing warning *)
 
 Set Warnings "+syntax".
-Fail Check fun f : forall {x:nat} {x:bool} (x:unit), unit => f (x:=1) (arg_2:=true) tt.
+Fail Check fun f : forall {x:nat} {x:bool} (x:unit), unit => f (x:=1) (x0:=true) tt.
 Set Warnings "syntax".
 
 (* Test failure when implicit arguments are mentioned in subterms
@@ -155,7 +155,7 @@ Check let f := fun [x:nat] y => y=true in f false.
 
 (* Isn't the name "arg_1" a bit fragile, here? *)
 
-Check fun f : forall {_:nat}, nat => f (arg_1:=0).
+Check fun f : forall {n:nat}, nat => f (n:=0).
 
 (* This test was wrongly warning/failing at some time *)
 

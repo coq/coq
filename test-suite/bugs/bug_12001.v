@@ -13,8 +13,8 @@ Fail Arguments bar a a0 : assert.
 (* This definition caused an anomaly in a version of this PR
 without the change to prepare_implicits *)
 Set Implicit Arguments.
-Definition foo (_ : nat) (_ : @eq nat ltac:(assumption) 2) : True := I.
-Fail Check foo (H := 2).
+Definition foo (x : nat) (_ : @eq nat ltac:(assumption) 2) : True := I.
+Check foo (x := 2).
 
 Definition baz (a b : nat) := b.
 Arguments baz a {b}.

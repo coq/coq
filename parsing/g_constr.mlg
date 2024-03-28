@@ -16,6 +16,7 @@ open Names
 open Constr
 open Libnames
 open Glob_term
+open Evar_kinds
 open Constrexpr
 open Constrexpr_ops
 open Util

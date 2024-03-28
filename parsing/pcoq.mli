@@ -199,7 +199,7 @@ module Constr :
     val binders_fixannot : (local_binder_expr list * recursion_order_expr option) Entry.t
     val typeclass_constraint : (lname * bool * constr_expr) Entry.t
     val record_declaration : constr_expr Entry.t
-    val arg : (constr_expr * explicitation CAst.t option) Entry.t
+    val arg : (constr_expr * Evar_kinds.explicitation CAst.t option) Entry.t
     val type_cstr : constr_expr Entry.t
   end
 

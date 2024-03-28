@@ -17,8 +17,8 @@ The command has indeed failed with message:
 Cannot infer ?T in the partial instance "?T -> nat" found for the type of f.
 File "./output/Errors.v", line 35, characters 22-24:
 The command has indeed failed with message:
-Cannot infer ?T in the partial instance "?T -> nat" found for the implicit
-parameter A of id whose type is "Type".
+Cannot infer ?T in the partial instance "?T -> nat" found for
+the implicit parameter A of id whose type is "Type".
 File "./output/Errors.v", line 36, characters 17-18:
 The command has indeed failed with message:
 Cannot infer ?T in the partial instance "forall x : nat, ?T" found for the
