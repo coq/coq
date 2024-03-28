@@ -8,6 +8,7 @@
  (synopsis "Coq's Standalone Proof Checker")
  (modules :standard \ coqchk votour)
  (wrapped true)
+ (instrumentation (backend bisect_ppx))
  (libraries coq-core.boot coq-core.kernel))
 
 (executable
@@ -18,6 +19,7 @@
  (package coq-core)
  (modules coqchk)
  (flags :standard -open Coq_checklib)
+ (instrumentation (backend bisect_ppx))
  (libraries coq_checklib))
 
 (executable

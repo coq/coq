@@ -338,7 +338,7 @@ let token s =
   many (some isspace) ++ word s ++ many (some isspace) >> fun ((_, t), _) -> t
 
 let decimal =
-  let ( || ) = parser_or in
+  let ( ||| ) = parser_or in
   let numeral = some isnum in
   let decimalint = atleast 1 numeral >> o Q.of_string implode in
   let decimalfrac =
@@ -349,8 +349,8 @@ let decimal =
     decimalint ++ possibly (a "." ++ decimalfrac >> snd)
     >> function h, [x] -> h +/ x | h, _ -> h
   in
-  let signed prs = a "-" ++ prs >> o Q.neg snd || a "+" ++ prs >> snd || prs in
-  let exponent = (a "e" || a "E") ++ signed decimalint >> snd in
+  let signed prs = (a "-" ++ prs >> o Q.neg snd) ||| (a "+" ++ prs >> snd) ||| prs in
+  let exponent = (a "e" ||| a "E") ++ signed decimalint >> snd in
   signed decimalsig ++ possibly exponent
   >> function h, [x] -> h */ Q.power 10 x | h, _ -> h
 
@@ -363,13 +363,13 @@ let mkparser p s =
 (* ------------------------------------------------------------------------- *)
 
 let _parse_sdpaoutput, parse_csdpoutput =
-  let ( || ) = parser_or in
+  let ( ||| ) = parser_or in
   let vector =
     token "{" ++ listof decimal (token ",") "decimal" ++ token "}"
     >> fun ((_, v), _) -> vector_of_list v
   in
   let rec skipupto dscr prs inp =
-    (dscr ++ prs >> snd || some (fun c -> true) ++ skipupto dscr prs >> snd) inp
+    ((dscr ++ prs >> snd) ||| (some (fun c -> true) ++ skipupto dscr prs >> snd)) inp
   in
   let ignore inp = ((), []) in
   let sdpaoutput =

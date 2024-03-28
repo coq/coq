@@ -4,4 +4,5 @@
  (public_name coq-core.interp)
  (wrapped false)
  (modules_without_implementation constrexpr notation_term)
+ (instrumentation (backend bisect_ppx))
  (libraries zarith pretyping gramlib))
