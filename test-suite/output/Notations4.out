@@ -32,6 +32,11 @@ match e with
 | _ => [e + e]
 end
      : Expr -> Expr
+File "./output/Notations4.v", line 61, characters 0-56:
+Warning: Notation "_" in custom expr was already used.
+[notation-overridden,parsing]
+True
+     : Prop
 [(1 + 1)]
      : Expr
 myAnd1 True True
@@ -62,16 +67,16 @@ where
       |- Type] (pat, p0, p cannot be used)
 fun '{| |} => true
      : R -> bool
-File "./output/Notations4.v", line 149, characters 82-85:
+File "./output/Notations4.v", line 154, characters 82-85:
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
-File "./output/Notations4.v", line 153, characters 76-78:
+File "./output/Notations4.v", line 158, characters 76-78:
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
-File "./output/Notations4.v", line 157, characters 78-81:
+File "./output/Notations4.v", line 162, characters 78-81:
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
-File "./output/Notations4.v", line 161, characters 52-55:
+File "./output/Notations4.v", line 166, characters 52-55:
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 Entry custom:expr is
@@ -86,18 +91,18 @@ fun x : nat => [x]
      : nat -> nat
 ∀ x : nat, x = x
      : Prop
-File "./output/Notations4.v", line 195, characters 0-160:
+File "./output/Notations4.v", line 200, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
 in scope type_scope. [notation-incompatible-format,parsing,default]
 ∀x : nat,x = x
      : Prop
-File "./output/Notations4.v", line 208, characters 0-60:
+File "./output/Notations4.v", line 213, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
-[notation-incompatible-format,parsing,default]
-File "./output/Notations4.v", line 212, characters 0-64:
+[notation-incompatible-format,parsing]
+File "./output/Notations4.v", line 217, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
-[notation-incompatible-format,parsing,default]
-File "./output/Notations4.v", line 217, characters 0-62:
+[notation-incompatible-format,parsing]
+File "./output/Notations4.v", line 222, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
 format. [notation-incompatible-format,parsing,default]
 3  %%  4
@@ -106,10 +111,10 @@ format. [notation-incompatible-format,parsing,default]
      : nat
 3   %%   4
      : nat
-File "./output/Notations4.v", line 245, characters 47-59:
+File "./output/Notations4.v", line 250, characters 47-59:
 Warning: The format modifier is irrelevant for only-parsing rules.
-[irrelevant-format-only-parsing,parsing,default]
-File "./output/Notations4.v", line 249, characters 36-48:
+[irrelevant-format-only-parsing,parsing]
+File "./output/Notations4.v", line 254, characters 36-48:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing,default]
 fun x : nat => U (S x)
@@ -120,9 +125,8 @@ fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
-File "./output/Notations4.v", line 266, characters 0-30:
-Warning: Notation "_ :=: _" was already used.
-[notation-overridden,parsing,default]
+File "./output/Notations4.v", line 271, characters 0-30:
+Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
 0 :=: 0
      : Prop
 fun x : nat => <{ x; (S x) }>
@@ -137,49 +141,49 @@ exists p : nat, ▢_p (p >= 1)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 336, characters 17-20:
+File "./output/Notations4.v", line 341, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a variable name was expected.
-File "./output/Notations4.v", line 337, characters 17-18:
+File "./output/Notations4.v", line 342, characters 17-18:
 The command has indeed failed with message:
 Found a constructor while a variable name was expected.
-File "./output/Notations4.v", line 339, characters 17-18:
+File "./output/Notations4.v", line 344, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a variable name was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 ▢_n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 352, characters 17-20:
+File "./output/Notations4.v", line 357, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 355, characters 17-18:
+File "./output/Notations4.v", line 360, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
      : Prop
 pseudo_force n (fun n : nat => n >= 1)
      : Prop
-File "./output/Notations4.v", line 368, characters 17-20:
+File "./output/Notations4.v", line 373, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 ▢_tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 371, characters 17-18:
+File "./output/Notations4.v", line 376, characters 17-18:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 exists x y : nat, myforce (x, y) (x >= 1 /\ y >= 2)
      : Prop
 myforce n (n >= 1)
      : Prop
-File "./output/Notations4.v", line 383, characters 21-24:
+File "./output/Notations4.v", line 388, characters 21-24:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 myforce tt (tt = tt)
      : Prop
-File "./output/Notations4.v", line 386, characters 21-22:
+File "./output/Notations4.v", line 391, characters 21-22:
 The command has indeed failed with message:
 Found a constant while a pattern was expected.
 id nat
@@ -188,7 +192,7 @@ fun a : bool => id a
      : bool -> bool
 fun nat : bool => id nat
      : bool -> bool
-File "./output/Notations4.v", line 398, characters 17-20:
+File "./output/Notations4.v", line 403, characters 17-20:
 The command has indeed failed with message:
 Found an inductive type while a pattern was expected.
 !! nat, nat = true
@@ -217,7 +221,7 @@ Found an inductive type while a pattern was expected.
      : Type
 ## (x, _) (x = 0)
      : Prop
-File "./output/Notations4.v", line 494, characters 21-30:
+File "./output/Notations4.v", line 499, characters 21-30:
 The command has indeed failed with message:
 Unexpected type constraint in notation already providing a type constraint.
 ## '(x, y) (x + y = 0)
@@ -250,12 +254,12 @@ where
 ?A : [ |- Type]
 0
      : nat
-File "./output/Notations4.v", line 544, characters 0-78:
+File "./output/Notations4.v", line 549, characters 0-78:
 The command has indeed failed with message:
 Notation "func _ .. _ , _" is already defined at level 200 with arguments
 binder, constr at next level while it is now required to be at level 200
 with arguments constr, constr at next level.
-File "./output/Notations4.v", line 549, characters 0-57:
+File "./output/Notations4.v", line 554, characters 0-57:
 The command has indeed failed with message:
 Notation "[[ _ ]]" is already defined at level 0 with arguments custom foo
 while it is now required to be at level 0 with arguments custom bar.
