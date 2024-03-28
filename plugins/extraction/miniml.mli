@@ -175,7 +175,7 @@ type ml_structure_elem =
 and ml_module_expr =
   | MEident of ModPath.t
   | MEfunctor of MBId.t * ml_module_type * ml_module_expr
-  | MEstruct of ModPath.t * ml_module_structure
+  | MEstruct of ModPath.t * bool * ml_module_structure
   | MEapply of ml_module_expr * ml_module_expr
 
 and ml_module_structure = (Label.t * ml_structure_elem) list

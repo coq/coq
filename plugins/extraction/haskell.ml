@@ -382,7 +382,7 @@ let rec pp_structure_elem = function
       (* for the moment we simply discard module type *)
 
 and pp_module_expr = function
-  | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
+  | MEstruct (mp,_,sel) -> prlist_strict pp_structure_elem sel
   | MEfunctor _ -> mt ()
       (* for the moment we simply discard unapplied functors *)
   | MEident _ | MEapply _ -> assert false
