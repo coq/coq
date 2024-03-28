@@ -98,9 +98,9 @@ val occur_existential : Evd.evar_map -> constr -> bool
 val occur_meta_or_existential : Evd.evar_map -> constr -> bool
 val occur_metavariable : Evd.evar_map -> metavariable -> constr -> bool
 val occur_evar : Evd.evar_map -> Evar.t -> constr -> bool
-val occur_var : env -> Evd.evar_map -> Id.t -> constr -> bool
+val occur_var : env -> Evd.evar_map -> ?skip_evar:bool -> Id.t -> constr -> bool
 val occur_var_indirectly : env -> Evd.evar_map -> Id.t -> constr -> GlobRef.t option
-val occur_var_in_decl : env -> Evd.evar_map -> Id.t -> named_declaration -> bool
+val occur_var_in_decl : env -> Evd.evar_map -> ?skip_evar:bool -> Id.t -> named_declaration -> bool
 val occur_vars : env -> Evd.evar_map -> Id.Set.t -> constr -> bool
 val occur_vars_in_decl : env -> Evd.evar_map -> Id.Set.t -> named_declaration -> bool
 

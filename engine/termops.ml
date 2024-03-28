@@ -827,11 +827,13 @@ let occur_in_global env id constr =
   let vars = vars_of_global env constr in
   Id.Set.mem id vars
 
-let occur_var env sigma id c =
+let occur_var env sigma ?(skip_evar=false) id c =
   let rec occur_rec c =
     match EConstr.destRef sigma c with
     | gr, _ -> if occur_in_global env id gr then raise Occur
-    | exception DestKO -> EConstr.iter sigma occur_rec c
+    | exception DestKO ->
+      if not (skip_evar && EConstr.isEvar sigma c) then
+        EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
@@ -856,8 +858,8 @@ let occur_var_indirectly env sigma id c =
   in
   try occur_rec c; None with OccurInGlobal gr -> Some gr
 
-let occur_var_in_decl env sigma hyp decl =
-  NamedDecl.exists (occur_var env sigma hyp) decl
+let occur_var_in_decl env sigma ?skip_evar hyp decl =
+  NamedDecl.exists (occur_var env sigma ?skip_evar hyp) decl
 
 let occur_vars_in_decl env sigma hyps decl =
   NamedDecl.exists (occur_vars env sigma hyps) decl
