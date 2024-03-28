@@ -273,12 +273,12 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
   let using =
-    let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
-    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
+    let types = [EConstr.of_constr evars_typ] in
+    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~types) using
   in
   let uctx = Evd.evar_universe_context sigma in
-  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
-  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
+  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags ?user_warns ?using () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
   pm
@@ -305,20 +305,21 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let terms = [def; typ] in
-    let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
     let deps = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evd
         (List.length rec_sign) ~deps def typ in
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     (cinfo, def, evars)
   in
   let fiximps = List.map pi2 info in
   let fixdefs = List.map out_def fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
+  let using =
+    let types = fixtypes in
+    Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~types) using in
   let () = if not cofix then begin
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
       (* XXX: are we allowed to have evars here? *)
@@ -345,7 +346,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns () in
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns ?using () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx fixkind
 
 let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
