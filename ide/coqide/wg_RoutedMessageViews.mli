@@ -12,6 +12,7 @@ class type message_views_router = object
   method route : int -> Wg_MessageView.message_view
   method default_route : Wg_MessageView.message_view
 
+  method select_all : unit -> unit
   method has_selection : bool
   method get_selected_text : string
 

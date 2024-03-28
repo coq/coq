@@ -50,6 +50,7 @@ val list_tags : unit -> tag preference Util.String.Map.t
 val get_unicode_bindings_local_file : unit -> string option
 val get_unicode_bindings_default_file : unit -> string option
 
+val printopts_item_names : string list ref
 
 val cmd_coqtop : string option preference
 val cmd_coqc : string preference

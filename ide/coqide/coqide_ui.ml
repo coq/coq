@@ -52,6 +52,7 @@ let init () =
 \n    <menuitem action='Undo' />\
 \n    <menuitem action='Redo' />\
 \n    <separator />\
+\n    <menuitem action='Select All' />\
 \n    <menuitem action='Cut' />\
 \n    <menuitem action='Copy' />\
 \n    <menuitem action='Paste' />\
@@ -98,9 +99,11 @@ let init () =
 \n    <menuitem action='Forward' />\
 \n    <menuitem action='Backward' />\
 \n    <menuitem action='Run to cursor' />\
-\n    <menuitem action='Run to end' />\
-\n    <menuitem action='Interrupt' />\
 \n    <menuitem action='Reset' />\
+\n    <menuitem action='Run to end' />\
+\n    <menuitem action='Fully check' />\
+\n    <menuitem action='Interrupt' />\
+\n    <separator/>\
 \n    <menuitem action='Previous' />\
 \n    <menuitem action='Next' />\
 \n  </menu>\
@@ -145,6 +148,7 @@ let init () =
 \n    <menuitem action='Step in' />\
 \n    <menuitem action='Step out' />\
 \n    <menuitem action='Break' />\
+\n    <separator/>\
 \n    <menuitem action='Show debug panel' />\
 \n  </menu>\
 \n  <menu action='Windows'>\
@@ -160,15 +164,18 @@ let init () =
 \n  </menu>\
 \n</menubar>\
 \n<toolbar name='CoqIDE ToolBar'>\
+\n  <toolitem action='Open' />\
 \n  <toolitem action='Save' />\
 \n  <toolitem action='Close buffer' />\
+\n  <separator />\
 \n  <toolitem action='Forward' />\
 \n  <toolitem action='Backward' />\
 \n  <toolitem action='Run to cursor' />\
-\n  <toolitem action='Run to end' />\
-\n  <toolitem action='Force' />\
-\n  <toolitem action='Interrupt' />\
 \n  <toolitem action='Reset' />\
+\n  <toolitem action='Run to end' />\
+\n  <toolitem action='Fully check' />\
+\n  <toolitem action='Interrupt' />\
+\n  <separator/>\
 \n  <toolitem action='Previous' />\
 \n  <toolitem action='Next' />\
 \n</toolbar>\

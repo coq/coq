@@ -12,6 +12,7 @@ class type message_views_router = object
   method route : int -> Wg_MessageView.message_view
   method default_route : Wg_MessageView.message_view
 
+  method select_all : unit -> unit
   method has_selection : bool
   method get_selected_text : string
 
@@ -34,6 +35,8 @@ object
   method register_route i mv = Hashtbl.add route_table i mv
 
   method delete_route i = Hashtbl.remove route_table i
+
+  method select_all () = Hashtbl.iter (fun _ v -> v#select_all ()) route_table
 
   method has_selection =
     Hashtbl.fold (fun _ v -> (||) v#has_selection) route_table false

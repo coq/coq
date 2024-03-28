@@ -110,7 +110,7 @@ let rec filter_coq_opts args =
 
 and asks_for_coqtop args =
   let pb_mes = GWindow.message_dialog
-    ~message:"Failed to load coqidetop. Reset the preference to default ?"
+    ~message:"Failed to load coqidetop. Reset the preference to default?"
     ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
   match pb_mes#run () with
     | `YES ->
@@ -672,7 +672,7 @@ struct
     { opts = [universes]; init = false; label = "Display _universe levels" };
     { opts = [all_basic;existential;universes]; init = false;
       label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" };
+    { opts = [unfocused]; init = false; label = "Display un_focused goals" };
     { opts = [goal_names]; init = false; label = "Display _goal names" };
     { opts = [record]; init = true; label = "Use _record syntax" };
     { opts = [synth]; init = true; label = "Hide _synthesizable types" }
