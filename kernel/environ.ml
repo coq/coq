@@ -893,8 +893,8 @@ let apply_to_hyp ctxt id f =
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
-(* To be used in Logic.clear_hyps *)
-let remove_hyps ids check_context ctxt =
+(* To be used in Evarutil.clear_hyps *)
+let remove_hyps ids ctxt =
   let rec remove_hyps ids ctxt =
     if Id.Set.is_empty ids then ctxt, false
     else match match_named_context_val ctxt with
@@ -903,17 +903,15 @@ let remove_hyps ids check_context ctxt =
       let id0 = Context.Named.Declaration.get_id d in
       let removed = Id.Set.mem id0 ids in
       let ids = if removed then Id.Set.remove id0 ids else ids in
-      let (ans, seen) = remove_hyps ids rctxt in
-      if removed then (ans, true)
+      let (rctxt', seen) = remove_hyps ids rctxt in
+      if removed then (rctxt', true)
       else if not seen then ctxt, false
       else
-        let rctxt' = ans in
-        let d' = check_context d in
-        if d == d' && rctxt == rctxt' then
-          ctxt, true
-        else push_named_context_val d' rctxt', true
+        if rctxt == rctxt' then ctxt, true
+        else push_named_context_val d rctxt', true
   in
-  fst (remove_hyps ids ctxt)
+  let ids, _ = remove_hyps ids ctxt in
+  ids
 
 (* A general request *)
 
