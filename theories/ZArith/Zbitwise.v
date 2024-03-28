@@ -1,4 +1,4 @@
-Require Import BinInt Lia Btauto. Local Open Scope Z_scope.
+Require Import Nbitwise BinInt Lia Btauto. Local Open Scope Z_scope.
 Import (ltac.notations) BinInt.Z.
 
 Module Z.
@@ -174,5 +174,19 @@ Qed.
 
 Lemma sub_2landn_lxor x y : 2*(x.&.~y) - x.^y = x - y.
 Proof. rewrite <-sub_lor_l_same_r, <-sub_lor_land. pose (add_lor_land x y). lia. Qed.
+
+Lemma testbit_neqb0 n (Hn : 0 <= n) x (Hx : -2^n <= x < 2^n) :
+  Z.testbit (Z.lor x (- x)) n = negb (Z.eqb x 0).
+Proof.
+  destruct (Z.eqb_spec x 0); cbn [negb].
+  { subst. rewrite Z.bits_0. trivial. }
+  rewrite Z.lor_spec, Bool.orb_true_iff, 2 Z.testbit_true by trivial.
+  set (h := 2^n) in *; assert (0 < h) by (apply Z.pow_pos_nonneg; lia).
+  assert ((x/h = 0 \/ x/h = -1) /\ (-x/h = 1 \/ -x/h = 0 \/ -x/h = -1));
+    (PreOmega.Z.to_euclidean_division_equations; nia).
+Qed.
+
+Lemma ones_succ n (H : Z.le 0 n) : Z.ones (Z.succ n) = Z.succ_double (Z.ones n).
+Proof. rewrite 2Z.ones_equiv, Z.pow_succ_r; lia. Qed.
 
 End Z.
