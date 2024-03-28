@@ -100,6 +100,7 @@ let t_list = coq_core "list"
 let t_constr = coq_core "constr"
 let t_preterm = coq_core "preterm"
 let t_pattern = coq_core "pattern"
+let t_loc = coq_core "location"
 let t_ident = coq_core "ident"
 let t_option = coq_core "option"
 let t_exn = coq_core "exn"
@@ -1619,6 +1620,19 @@ let () =
   define_ml_object Tac2quote.wit_ident obj
 
 let () =
+  let interp _ loc = return (Tac2ffi.of_loc loc) in
+  let print _ _ loc = hov 2 (str "<loc:" ++ spc() ++ Loc.pr loc ++ str ">") in
+  let obj = {
+    ml_intern = (fun _ _ id -> GlbVal id, gtypref t_loc);
+    ml_interp = interp;
+    ml_subst = (fun _ id -> id);
+    ml_print = print;
+    ml_raw_print = print;
+  } in
+  define_ml_object Tac2quote.wit_loc obj
+
+
+let () =
   let intern self {Genintern.ltacvars=lfun; genv=env; extra; intern_sign=_; strict_check} c =
     let sigma = Evd.from_env env in
     let ltacvars = {
@@ -1948,6 +1962,18 @@ let () = add_scope "terminal" begin function
   let scope = Pcoq.Symbol.token (Pcoq.terminal s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "terminal" arg
+end
+
+let () = add_scope "located" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let act l =
+    let e = act l in
+    let loc = e.loc in
+    Tac2quote.(of_tuple ?loc [of_option ?loc of_loc loc; e])
+  in
+  Tac2entries.ScopeRule (scope, act)
+| arg -> scope_fail "located" arg
 end
 
 let () = add_scope "list0" begin function

@@ -858,6 +858,11 @@ let () = register_init "string" begin fun _ _ s ->
   Pp.quote (str s)
 end
 
+let () = register_init "location" begin fun _ _ loc ->
+  let loc = to_loc loc in
+  hov 2 (str "<loc:" ++ spc() ++ Loc.pr loc ++ str ">")
+end
+
 let () = register_init "ident" begin fun _ _ id ->
   let id = to_ident id in
   str "@" ++ Id.print id

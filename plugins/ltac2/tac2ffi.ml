@@ -29,6 +29,7 @@ let map_repr f g r = {
 
 (** Dynamic tags *)
 
+let val_loc = Val.create "loc"
 let val_exn = Val.create "exn"
 let val_exninfo = Val.create "exninfo"
 let val_constr = Val.create "constr"
@@ -184,6 +185,10 @@ let cast = repr_ext val_cast
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
 let ident = repr_ext val_ident
+
+let of_loc c = of_ext val_loc c
+let to_loc c = to_ext val_loc c
+let loc = repr_ext val_loc
 
 let of_pattern c = of_ext val_pattern c
 let to_pattern c = to_ext val_pattern c

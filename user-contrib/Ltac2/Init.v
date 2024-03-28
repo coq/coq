@@ -37,6 +37,9 @@ Ltac2 Type constr.
 Ltac2 Type preterm.
 Ltac2 Type binder.
 
+Ltac2 Type location.
+(** Code location in a .v file. *)
+
 Ltac2 Type message.
 Ltac2 Type ('a, 'b, 'c, 'd) format.
 Ltac2 Type exn := [ .. ].
