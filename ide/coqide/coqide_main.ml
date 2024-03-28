@@ -52,6 +52,7 @@ let load_prefs () =
   Preferences.load_pref ~warn:(fun ~delay -> Ideutils.flash_info ~delay)
 
 let () =
+  Exninfo.record_backtrace true;
   Ideutils.push_info ("Ready"^ if Preferences.microPG#get then ", [μPG]" else "");
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in

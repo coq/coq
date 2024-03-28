@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Preferences
+open Ideutils
 
 (** A session is a script buffer + proof + messages,
     interacting with a coqtop, and a few other elements around *)
@@ -179,7 +180,8 @@ let set_buffer_handlers
       else if it#has_tag Tags.Script.error_bg then aux it it#backward_char
       else None in
     aux it it#copy in
-  let insert_cb it s = if String.length s = 0 then () else begin
+  let insert_cb it s = exc @@ fun () -> if String.length s = 0 then () else begin
+(*    let _ = List.hd [] in*)
     if misc () then Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let () = update_prev it in
     let iter =

@@ -61,10 +61,6 @@ val seq : unit task -> 'a task -> 'a task
 
 (** {5 Coqtop process management} *)
 
-type reset_kind = Planned | Unexpected
-(** A reset may occur accidentally or voluntarily, so we discriminate between
-    these. *)
-
 val is_computing : coqtop -> bool
 (** Check if coqtop is computing, i.e. already has a current task *)
 
@@ -219,8 +215,6 @@ val check_connection : string list -> unit
 val interrupter : (int -> unit) ref
 val breaker : (int -> unit) ref
 val send_break : coqtop -> unit
-
-val save_all : (unit -> unit) ref
 
 (* Flags to be used for ideslave *)
 val ideslave_coqtop_flags : string option ref
