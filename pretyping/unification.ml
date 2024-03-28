@@ -686,7 +686,7 @@ let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst
     else UnivProblem.Set.empty
 
 let rec is_neutral env sigma ts t =
-  let (f, l) = decompose_app sigma t in
+  let (f, _) = decompose_app sigma t in
     match EConstr.kind sigma f with
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
@@ -697,11 +697,12 @@ let rec is_neutral env sigma ts t =
       not (is_transparent env (Evaluable.EvalVarRef id)) ||
       not (TransparentState.is_transparent_variable ts id)
     | Rel n -> true
+    | Cast (c, _, _) -> is_neutral env sigma ts c
     | Evar _ | Meta _ -> true
     | Case (_, _, _, _, _, c, _) -> is_neutral env sigma ts c
     | Proj (p, _, c) -> is_neutral env sigma ts c
     | Lambda _ | LetIn _ | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> false
-    | Sort _ | Cast (_, _, _) | Prod (_, _, _) | Ind _ -> false (* Really? *)
+    | Sort _ | Prod (_, _, _) | Ind _ -> false (* Really? *)
     | Fix _ -> false (* This is an approximation *)
     | App _ -> assert false
 
