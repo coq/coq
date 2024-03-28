@@ -17,7 +17,7 @@ open Tac2expr
 val register_ltac : ?deprecation:Deprecation.t -> ?local:bool -> ?mut:bool -> rec_flag ->
   (Names.lname * raw_tacexpr) list -> unit
 
-val register_type : ?local:bool -> rec_flag ->
+val register_type : ?local:bool -> ?abstract:bool -> rec_flag ->
   (qualid * redef_flag * raw_quant_typedef) list -> unit
 
 val register_primitive : ?deprecation:Deprecation.t -> ?local:bool ->
