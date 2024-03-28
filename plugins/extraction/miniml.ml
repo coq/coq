@@ -169,8 +169,8 @@ and ml_module_sig = (Label.t * ml_specif) list
 
 type ml_structure_elem =
   | SEdecl of ml_decl
-  | SEmodule of ml_module
-  | SEmodtype of ml_module_type
+  | SEmodule of ModPath.t * ml_module
+  | SEmodtype of ModPath.t * ml_module_type
 
 and ml_module_expr =
   | MEident of ModPath.t
@@ -182,7 +182,7 @@ and ml_module_structure = (Label.t * ml_structure_elem) list
 
 and ml_module =
     { ml_mod_expr : ml_module_expr;
-      ml_mod_type : ml_module_type }
+      ml_mod_type : ml_module_type option }
 
 (* NB: we do not translate the [mod_equiv] field, since [mod_equiv = mp]
    implies that [mod_expr = MEBident mp]. Same with [msb_equiv]. *)

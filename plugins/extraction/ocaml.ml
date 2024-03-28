@@ -507,9 +507,9 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   else fnl () ++ v 0 (prvecti pp_constructor ctyps)
 
 let pp_logical_ind packet =
-  pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++
+  pp_comment (Id.print packet.ip_typename ++ str ": logical inductive") ++
   fnl () ++
-  pp_comment (str "with constructors : " ++
+  pp_comment (str "with constructors: " ++
               prvect_with_sep spc Id.print packet.ip_consnames) ++
   fnl ()
 
@@ -731,11 +731,13 @@ let rec pp_structure_elem = function
       | Some ren ->
          v 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
          fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
-  | (l,SEmodule m) ->
+  | (l,SEmodule (_,m)) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
         if Common.get_phase () == Pre then
-          str ": " ++ pp_module_type [] m.ml_mod_type
+          match m.ml_mod_type with
+          | None -> mt ()
+          | Some mt -> str ": " ++ pp_module_type [] mt
         else mt ()
       in
       let def = pp_module_expr [] m.ml_mod_expr in
@@ -746,7 +748,7 @@ let rec pp_structure_elem = function
       (match Common.get_duplicate (top_visible_mp ()) l with
        | Some ren -> fnl () ++ str ("module "^ren^" = ") ++ name
        | None -> mt ())
-  | (l,SEmodtype m) ->
+  | (l,SEmodtype (_,m)) ->
       let def = pp_module_type [] m in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " =" ++ fnl () ++ def) ++

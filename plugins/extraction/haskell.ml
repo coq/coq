@@ -278,8 +278,8 @@ and pp_function env f t =
 
 let pp_logical_ind packet =
   pp_bracket_comment
-    (Id.print packet.ip_typename ++ str " : logical inductive" ++ fnl () ++
-     str "with constructors : " ++ prvect_with_sep spc Id.print packet.ip_consnames)
+    (Id.print packet.ip_typename ++ str ": logical inductive" ++ fnl () ++
+     str "with constructors: " ++ prvect_with_sep spc Id.print packet.ip_consnames)
 
 let pp_singleton kn packet =
   let name = pp_global Type (GlobRef.IndRef (kn,0)) in
@@ -377,8 +377,8 @@ let pp_decl = function
 
 let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
-  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
-  | (l,SEmodtype m) -> mt ()
+  | (l,SEmodule (_,m)) -> pp_module_expr m.ml_mod_expr
+  | (l,SEmodtype (_,m)) -> mt ()
       (* for the moment we simply discard module type *)
 
 and pp_module_expr = function

@@ -13,11 +13,6 @@ module Case1 =
  struct
   type coq_rec = { f : bool }
 
-  (** val f : bool -> coq_rec -> bool **)
-
-  let f _ r =
-    r.f
-
   (** val silly : bool -> coq_rec -> __ **)
 
   let silly x b =
@@ -29,11 +24,6 @@ module Case1 =
 module Case2 =
  struct
   type coq_rec = { f : (bool -> bool) }
-
-  (** val f : bool -> coq_rec -> bool -> bool **)
-
-  let f _ r =
-    r.f
 
   (** val silly : bool -> coq_rec -> __ **)
 
