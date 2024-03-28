@@ -169,7 +169,7 @@ val register_inductive : inductive -> 'a CPrimitives.prim_ind -> unit
 
 (** {6 Oracle } *)
 
-val set_strategy : Evaluable.t -> Conv_oracle.level -> unit
+val set_strategy : Conv_oracle.evaluable -> Conv_oracle.level -> unit
 
 (** {6 Conversion settings } *)
 

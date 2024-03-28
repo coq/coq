@@ -569,13 +569,13 @@ let key_of env sigma b flags f =
 
 
 let translate_key = function
-  | ConstKey (cst,u) -> Some (Evaluable.EvalConstRef cst)
-  | VarKey id -> Some (Evaluable.EvalVarRef id)
+  | ConstKey (cst,u) -> Some (Conv_oracle.EvalConstRef cst)
+  | VarKey id -> Some (Conv_oracle.EvalVarRef id)
   | RelKey _ -> None
 
 let translate_key = function
   | IsKey k -> translate_key k
-  | IsProj (p, _, _) -> Some (Evaluable.EvalProjectionRef (Projection.repr p))
+  | IsProj (p, _, _) -> Some (Conv_oracle.EvalProjectionRef (Projection.repr p))
 
 let oracle_order env cf1 cf2 =
   match cf1 with
