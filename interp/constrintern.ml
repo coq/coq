@@ -174,10 +174,18 @@ let compute_internalization_data env sigma ?silent id ty typ impl =
   let impl = compute_implicits_with_manual env sigma ?silent typ (is_implicit_args()) impl in
   (ty, impl, compute_arguments_scope env sigma typ, var_uid id)
 
-let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
-  List.fold_left3
-    (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma id ty typ impl) map)
-    impls
+let compute_internalization_env env sigma ?(impls=empty_internalization_env) ?force ty names =
+  let force = match force with None -> List.map (fun _ -> Id.Set.empty) names | Some l -> l in
+  let f force_ids = function {impl_pos=(na,_,_)} as impl ->
+  match na with
+  | Name id when Id.Set.mem id force_ids -> {impl with impl_force = false}
+  | _ -> impl in
+  List.fold_left4
+    (fun map id force_ids typ impl ->
+       let (ty, impls, scopes, uid) = compute_internalization_data env sigma id ty typ impl in
+       let impls = List.map (Option.map (f force_ids)) impls in
+       Id.Map.add id (ty, impls, scopes, uid) map)
+    impls names force
 
 let set_obligation_internalization_data recname (r, impls, scopes, uid) =
   let f =
