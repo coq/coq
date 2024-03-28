@@ -33,8 +33,24 @@ Ltac2 Notation "sprintf" fmt(format) := Message.Format.kfprintf (fun m => Messag
 
 Ltac2 Eval
   let m := FMap.empty FSet.Tags.string_tag in
+  match FMap.min_binding m with
+  | None => ()
+  | Some _ => ensure false
+  end;
+  match FMap.max_binding m with
+  | None => ()
+  | Some _ => ensure false
+  end;
   let m := FMap.add "one" 1 m in
   let m := FMap.add "two" 2 m in
+  match FMap.min_binding m with
+  | None => ensure false
+  | Some (k, v) => ensure (String.equal k "one"); ensure (Int.equal v 1)
+  end;
+  match FMap.max_binding m with
+  | None => ensure false
+  | Some (k, v) => ensure (String.equal k "two"); ensure (Int.equal v 2)
+  end;
   let m := FMap.add "three" 3 m in
   let m := FMap.add "four" 4 m in
   let m := FMap.mapi (fun s i => sprintf "%s=%i" s i) m in
