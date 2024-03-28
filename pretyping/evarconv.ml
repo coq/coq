@@ -629,8 +629,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
             (whd_nored_state env evd (term2,Stack.empty))
         with
         | UnifFailure _ as x ->
-           if Retyping.relevance_of_term env evd term1 == Sorts.Irrelevant ||
-              Retyping.relevance_of_term env evd term2 == Sorts.Irrelevant
+           if Retyping.is_term_irrelevant env evd term1 ||
+              Retyping.is_term_irrelevant env evd term2
            then Success evd
            else x
         | Success _ as x -> x
