@@ -296,12 +296,9 @@ let find_rec_annot ~program_mode ~function_mode Vernacexpr.{fname={CAst.loc}; bi
     let default_order r = Option.default (CAst.make @@ CRef (lt_ref,None)) r in
     match rec_order with
     | CStructRec na -> None, [position_of_argument ctx binders na]
-    | CMeasureRec _ | CWfRec _ when not (program_mode || function_mode) ->
-      CErrors.user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
     | CWfRec (na,r) ->
       if function_mode then None, []
-      else if program_mode then Some (r, Constrexpr_ops.mkIdentC na.CAst.v), [] (* useless: will use Fix_sub *)
-      else assert false
+      else Some (r, Constrexpr_ops.mkIdentC na.CAst.v), [] (* useless for Program: will use Fix_sub *)
     | CMeasureRec (na, mes, rfel) ->
       if function_mode then
         let _ = match binders, na with
@@ -309,16 +306,14 @@ let find_rec_annot ~program_mode ~function_mode Vernacexpr.{fname={CAst.loc}; bi
           | _, None -> CErrors.user_err ?loc Pp.(str "Decreasing argument must be specified in measure clause.")
           | _, Some na -> (* check that the name exists *) ignore (position_of_argument ctx binders na) in
         (* Dummy *) None, []
-      else if program_mode then
+      else
         let r = match na, rfel with
           | Some id, None ->
             let loc = id.CAst.loc in
             CAst.make ?loc @@ CRef (Libnames.qualid_of_ident ?loc id.CAst.v,None)
-          | Some _, Some _ -> CErrors.user_err ?loc Pp.(str"Measure takes only two arguments in Program Fixpoint.")
+          | Some _, Some _ -> CErrors.user_err ?loc Pp.(str"Measure takes three arguments only in Function.")
           | None, rfel -> default_order rfel in
         Some (r, mes), [] (* useless: will use Fix_sub *)
-      else
-        assert false
 
 let interp_rec_annot ~program_mode ~function_mode fixl ctxl rec_order =
   let open Pretyping in
@@ -406,7 +401,10 @@ let interp_wf ~program_mode env sigma recname ctx ccl = function
         let extradecl = RelDecl.LocalAssum (make_annot (Name recproofid) ERelevance.relevant, applied_rel_measure) in
         sigma, true, extradecl
       else
-        assert false (* see interp_rec_annot *)
+        let sigma, wf_term = well_founded sigma in
+        let applied_wf = mkApp (wf_term, [| relargty; rel; measure |]) in
+        let extradecl = RelDecl.LocalAssum (make_annot (Name recproofid) ERelevance.relevant, applied_wf) in
+        sigma, false, extradecl
     in
     sigma, ((after, [extradecl]), Some (extradecl, rel, relargty, measure), [impl])
 
