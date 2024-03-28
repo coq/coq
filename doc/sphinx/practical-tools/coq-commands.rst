@@ -36,7 +36,7 @@ the byte-code version.
 The byte-code toplevel is based on an OCaml toplevel (to
 allow dynamic linking of tactics). You can switch to the OCaml toplevel
 with the command ``Drop.``, and come back to the Coq
-toplevel with the command ``Coqloop.loop();;``.
+toplevel with the command ``go ();;``.
 
 .. flag:: Coqtop Exit On Error
 

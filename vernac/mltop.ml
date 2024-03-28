@@ -207,8 +207,8 @@ type toplevel =
   (** Load a cmxs / cmo module, used by the native compiler to load objects *)
   ; add_dir  : string -> unit
   (** Adds a dir to the module search path *)
-  ; ml_loop  : unit -> unit
-  (** Implementation of Drop *)
+  ; ml_loop  : ?init_file:string -> unit -> unit
+  (** Run the OCaml toplevel with given initialisation file *)
   }
 
 (* Determines the behaviour of Coq with respect to ML files (compiled
@@ -240,9 +240,9 @@ let is_ocaml_top () =
 let has_dynlink = Coq_config.has_natdynlink || not Sys.(backend_type = Native)
 
 (* Runs the toplevel loop of Ocaml *)
-let ocaml_toploop () =
+let ocaml_toploop ?init_file () =
   match !load with
-    | WithTop t -> t.ml_loop ()
+    | WithTop t -> t.ml_loop ?init_file ()
     | _ -> ()
 
 let ml_load p =

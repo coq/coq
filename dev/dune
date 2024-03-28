@@ -12,7 +12,7 @@
   (deps
     dune-dbg.in
     ../checker/coqchk.bc
-    ../topbin/coqc_bin.bc
+    ../topbin/coqc_byte_bin.bc
     ../topbin/coqnative_bin.bc
     ../ide/coqide/coqide_main.bc
     ../tools/coqdep/coqdep.bc
