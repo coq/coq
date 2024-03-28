@@ -1615,6 +1615,26 @@ let decomp_tuple_term env sigma c t =
     in [((ex,exty),inner_code)]::iterated_decomp
   in decomprec (mkRel 1) c t
 
+(* Variant of {!Termops.subst_term} that also checks whether the term was changed *)
+let subst_term sigma c t =
+  let arity = Array.length (snd (EConstr.decompose_app sigma c)) in
+  let cache = ref Int.Map.empty in
+  let changed = ref false in
+  let eq sigma k t =
+    let c =
+      try Int.Map.find k !cache
+      with Not_found ->
+        let c = EConstr.Vars.lift k c in
+        let () = cache := Int.Map.add k c !cache in
+        c
+    in
+    let ans = EConstr.eq_constr sigma c t in
+    let () = if ans then changed := true in
+    ans
+  in
+  let t = replace_term_gen sigma eq arity (mkRel 1) t in
+  !changed, t
+
 let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let typ = get_type_of env sigma dep_pair1 in
   (* We find all possible decompositions *)
@@ -1629,24 +1649,39 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list,_ = List.split decomp2 in
   (* We build the expected goal *)
-  let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term sigma e body) in
-  let abst_B = List.fold_right fold e1_list body in
-  let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
-  (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
-  let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
-  let sigma =
-    (* FIXME: this should be enforced before. We only have to check the last
-       projection, since all previous ones mention a prefix of the subtypes. *)
-    let env = push_rel (Rel.Declaration.LocalAssum (anonR, typ)) env in
-    let sigma, _ = Typing.type_of env sigma (List.last proj_list) in
-    sigma
+  let fold (e, t) (accu, body) =
+    let changed, body = subst_term sigma e body in
+    let body = lambda_create env sigma (Sorts.Relevant, t, body) in
+    (accu || changed, body)
   in
-  let pred_body = Vars.substl (List.rev proj_list) abst_B in
-  let body = mkApp (lambda_create env sigma (Sorts.Relevant,typ,pred_body),[|dep_pair1|]) in
-  let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
-  (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
-  let expected_goal = nf_betaiota env sigma expected_goal in
-  (sigma, (body, expected_goal))
+  let changed, abst_B = List.fold_right fold e1_list (false, body) in
+  if not changed then None
+  else
+    let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
+    (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
+    let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
+    let sigma =
+      (* FIXME: this should be enforced before. We only have to check the last
+        projection, since all previous ones mention a prefix of the subtypes. *)
+      let env = push_rel (Rel.Declaration.LocalAssum (anonR, typ)) env in
+      let sigma, _ = Typing.type_of env sigma (List.last proj_list) in
+      sigma
+    in
+    let pred_body = Vars.substl (List.rev proj_list) abst_B in
+    let body = mkApp (lambda_create env sigma (Sorts.Relevant,typ,pred_body),[|dep_pair1|]) in
+    let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
+    (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
+    let expected_goal = nf_betaiota env sigma expected_goal in
+    Some (sigma, (body, expected_goal))
+
+let dummy_assert t =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let (sigma, ev) = Evarutil.new_evar env sigma t in
+  let ngl = Proofview_monad.with_empty_state (fst @@ EConstr.destEvar sigma ev) in
+  Proofview.Unsafe.tclEVARS sigma <*> Proofview.Unsafe.tclNEWGOALS [ngl]
+  end
 
 (* Like "replace" but decompose dependent equalities                      *)
 (* i.e. if equality is "exists t v = exists u w", and goal is "phi(t,u)", *)
@@ -1660,14 +1695,16 @@ let cutSubstInConcl l2r eqn =
   let (lbeq,u,(t,e1,e2)) = pf_apply find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
-  let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
-  tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-  (tclTHENFIRST
-    (tclTHENLIST [
-       (change_concl typ); (* Put in pattern form *)
-       (replace_core onConcl l2r eqn)
-    ])
-    (change_concl expected)) (* Put in normalized form *)
+  match subst_tuple_term env sigma e1 e2 typ with
+  | None -> dummy_assert eqn
+  | Some (sigma, (typ, expected)) ->
+    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (tclTHENFIRST
+      (tclTHENLIST [
+        (change_concl typ); (* Put in pattern form *)
+        (replace_core onConcl l2r eqn)
+      ])
+      (change_concl expected)) (* Put in normalized form *)
   end
 
 let cutSubstInHyp l2r eqn id =
@@ -1677,14 +1714,16 @@ let cutSubstInHyp l2r eqn id =
   let (lbeq,u,(t,e1,e2)) = pf_apply find_eq_data_decompose gl eqn in
   let typ = pf_get_hyp_typ id gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
-  let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
-  tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (tclTHENFIRST
-    (tclTHENLIST [
-       (change_in_hyp ~check:true None (make_change_arg typ) (id,InHypTypeOnly));
-       (replace_core (onHyp id) l2r eqn)
-    ])
-    (change_in_hyp ~check:true None (make_change_arg expected) (id,InHypTypeOnly)))
+  match subst_tuple_term env sigma e1 e2 typ with
+  | None -> dummy_assert eqn
+  | Some (sigma, (typ, expected)) ->
+    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+      (tclTHENFIRST
+      (tclTHENLIST [
+        (change_in_hyp ~check:true None (make_change_arg typ) (id,InHypTypeOnly));
+        (replace_core (onHyp id) l2r eqn)
+      ])
+      (change_in_hyp ~check:true None (make_change_arg expected) (id,InHypTypeOnly)))
   end
 
 let try_rewrite tac =
