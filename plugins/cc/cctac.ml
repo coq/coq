@@ -252,7 +252,7 @@ let fresh_id env id =
 
 let build_projection env sigma intype (cstr : pconstructor) special default =
   let ci = (snd (fst cstr)) in
-  let body=Equality.build_selector env sigma ci (mkRel 1) intype special default in
+  let body = Combinators.make_selector env sigma ~pos:ci ~special ~default (mkRel 1) intype in
   let id = fresh_id env (Id.of_string "t") in
   sigma, mkLambda (make_annot (Name id) Sorts.Relevant, intype, body)
 

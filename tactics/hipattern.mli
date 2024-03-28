@@ -149,3 +149,6 @@ val match_eqdec : Environ.env -> evar_map -> constr -> bool * GlobRef.t * constr
 (** Match a negation *)
 val is_matching_not : Environ.env -> evar_map -> constr -> bool
 val is_matching_imp_False : Environ.env -> evar_map -> constr -> bool
+
+(** Test if a homogeneous relation (in Prop) and, if so, returns the domain *)
+val is_homogeneous_relation : ?loc:Loc.t -> Environ.env -> evar_map -> constr -> types
