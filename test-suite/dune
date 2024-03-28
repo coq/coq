@@ -26,14 +26,6 @@
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
    ../sysinit/coqargs.ml
-   ; For the misc/printers.sh test
-   ../dev/ml_toplevel/incdir_dune
-   ../dev/ml_toplevel/base_includedev/include_printers
-   ../dev/ml_toplevel/inc_ltac_dune
-   ../dev/ml_toplevel/include_printers
-   ../dev/ml_toplevel/include
-   ../dev/top_printers.ml
-   ../dev/vm_printers.ml
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
