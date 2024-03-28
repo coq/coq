@@ -370,6 +370,9 @@ Qed.
 
 Include NBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
+Lemma strong_induction_le (A : N -> Prop) :
+  A 0 -> (forall n, (forall m, m <= n -> A m) -> A (succ n)) -> forall n, A n.
+Proof. apply Private_strong_induction_le; intros x y ->; reflexivity. Qed.
 
 (** Properties of [double] and [succ_double] *)
 

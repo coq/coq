@@ -130,6 +130,23 @@ intros n m; double_induct n m.
 - intros n m H. rewrite <- succ_le_mono. now rewrite sub_succ.
 Qed.
 
+Theorem sub_pred_l : forall n m, P n - m == P (n - m).
+Proof.
+intros n m; destruct (zero_or_succ n) as [-> | [k ->]].
+- rewrite pred_0, sub_0_l, pred_0; reflexivity.
+- rewrite pred_succ; destruct (lt_ge_cases k m) as [H | H].
+  + pose proof H as H'. apply lt_le_incl in H' as ->%sub_0_le.
+    apply le_succ_l, sub_0_le in H as ->; rewrite pred_0; reflexivity.
+  + rewrite sub_succ_l, pred_succ by (exact H); reflexivity.
+Qed.
+
+Theorem sub_pred_r : forall n m, m ~= 0 -> m <= n -> n - P m == S (n - m).
+Proof.
+intros n m H H'; destruct (zero_or_succ m) as [[]%H | [k Hk]]; rewrite Hk in *.
+rewrite pred_succ, sub_succ_r, succ_pred; [reflexivity |].
+apply sub_gt, le_succ_l; exact H'.
+Qed.
+
 Theorem sub_add_le : forall n m, n <= n - m + m.
 Proof.
 intros n m.
@@ -232,6 +249,22 @@ Lemma sub_le_mono_l : forall n m p, n <= m -> p-m <= p-n.
 Proof.
  intros n m p. rewrite le_sub_le_add_r.
  transitivity (p-n+n); [ apply sub_add_le | now apply add_le_mono_l].
+Qed.
+
+Theorem sub_sub_distr :
+  forall n m p, p <= m -> m <= n -> n - (m - p) == (n - m) + p.
+Proof.
+  intros n m p; revert n m; induct p.
+  - intros n m _ _; rewrite add_0_r, sub_0_r; reflexivity.
+  - intros p IH n m H1 H2; rewrite add_succ_r.
+    destruct (zero_or_succ m) as [Hm | [k Hk]].
+    + contradict H1; rewrite Hm; exact (nle_succ_0 _).
+    + rewrite Hk in *; clear m Hk; rewrite sub_succ; apply <-succ_le_mono in H1.
+      assert (n - k ~= 0) as ne by (apply sub_gt, le_succ_l; exact H2).
+      rewrite sub_succ_r, add_pred_l by (exact ne).
+      rewrite succ_pred by (intros [[]%ne _]%eq_add_0).
+      apply IH with (1 := H1), le_trans with (2 := H2).
+      exact (le_succ_diag_r _).
 Qed.
 
 (** Sub and mul *)

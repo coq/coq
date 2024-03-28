@@ -46,6 +46,17 @@ Proof.
   - assumption.
 Qed.
 
+Theorem le_mul_l : forall n m, m ~= 0 -> n <= m * n.
+Proof.
+  intros n m D%neq_0_le_1; rewrite <-(mul_1_l n) at 1.
+  apply mul_le_mono_r; exact D.
+Qed.
+
+Theorem le_mul_r : forall n m, m ~= 0 -> n <= n * m.
+Proof.
+  intros n m; rewrite mul_comm; exact (le_mul_l _ _).
+Qed.
+
 Theorem mul_lt_mono : forall n m p q, n < m -> p < q -> n * p < m * q.
 Proof.
 intros; apply mul_lt_mono_nonneg; try assumption; apply le_0_l.
