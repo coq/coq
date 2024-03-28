@@ -86,13 +86,16 @@ let push_section_context c = globalize0 (Safe_typing.push_section_context c)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set ~strict c = globalize0 (Safe_typing.push_context_set ~strict c)
 
+let typing_flags () = Environ.typing_flags (env ())
+
 let set_impredicative_set c = globalize0 (Safe_typing.set_impredicative_set c)
 let set_indices_matter b = globalize0 (Safe_typing.set_indices_matter b)
 let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)
 let set_check_guarded c = globalize0 (Safe_typing.set_check_guarded c)
 let set_check_positive c = globalize0 (Safe_typing.set_check_positive c)
 let set_check_universes c = globalize0 (Safe_typing.set_check_universes c)
-let typing_flags () = Environ.typing_flags (env ())
+let set_cumulative_prop c =
+  globalize0 (Safe_typing.set_typing_flags {(typing_flags()) with cumulative_prop = c})
 let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
 let set_rewrite_rules_allowed b = globalize0 (Safe_typing.set_rewrite_rules_allowed b)
