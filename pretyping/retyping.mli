@@ -18,9 +18,6 @@ open EConstr
    either produces a wrong result or raise an anomaly. Use with care.
    It doesn't handle predicative universes too. *)
 
-(** The "polyprop" optional argument is used by the extraction to
-    disable "Prop-polymorphism", cf comment in [inductive.ml] *)
-
 (** The "lax" optional argument provides a relaxed version of
     [get_type_of] that won't raise any anomaly but RetypeError instead *)
 
@@ -28,17 +25,17 @@ type retype_error
 exception RetypeError of retype_error
 
 val get_type_of :
-  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
+  ?lax:bool -> env -> evar_map -> constr -> types
 
 (** No-evar version of [get_type_of] *)
-val get_type_of_constr : ?polyprop:bool -> ?lax:bool
+val get_type_of_constr : ?lax:bool
   -> env -> ?uctx:UState.t -> Constr.t -> Constr.types
 
 val get_sort_of :
-  ?polyprop:bool -> env -> evar_map -> types -> ESorts.t
+  env -> evar_map -> types -> ESorts.t
 
 val get_sort_family_of :
-  ?polyprop:bool -> env -> evar_map -> types -> Sorts.family
+  env -> evar_map -> types -> Sorts.family
 
 (** Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment

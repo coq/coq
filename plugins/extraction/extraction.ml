@@ -18,7 +18,6 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
-open Inductive
 open Inductiveops
 open Namegen
 open Miniml
@@ -32,18 +31,11 @@ exception I of inductive_kind
 (* A set of all fixpoint functions currently being extracted *)
 let current_fixpoints = ref ([] : Constant.t list)
 
-(* NB: In OCaml, [type_of] and [get_of] might raise
-   [SingletonInductiveBecomeProp]. This exception will be caught
-   in late wrappers around the exported functions of this file,
-   in order to display the location of the issue. *)
-
 let type_of env sg c =
-  let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env sg (Termops.strip_outer_cast sg c)
+  Retyping.get_type_of env sg (Termops.strip_outer_cast sg c)
 
 let sort_of env sg c =
-  let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env sg (Termops.strip_outer_cast sg c)
+  Retyping.get_sort_family_of env sg (Termops.strip_outer_cast sg c)
 
 (*S Generation of flags and signatures. *)
 
@@ -76,12 +68,15 @@ let info_of_family = function
 
 let info_of_sort s = info_of_family (Sorts.family s)
 
-let rec flag_of_type env sg t : flag =
+let rec rich_flag_of_type env sg t =
   let t = whd_all env sg t in
   match EConstr.kind sg t with
-    | Prod (x,t,c) -> flag_of_type (EConstr.push_rel (LocalAssum (x,t)) env) sg c
-    | Sort s -> (info_of_sort (EConstr.ESorts.kind sg s),TypeScheme)
-    | _ -> (info_of_family (sort_of env sg t),Default)
+    | Prod (x,t,c) -> rich_flag_of_type (EConstr.push_rel (LocalAssum (x,t)) env) sg c
+    | Sort s -> (info_of_sort (EConstr.ESorts.kind sg s),TypeScheme,true)
+    | _ -> (info_of_family (sort_of env sg t),Default,Termops.is_template_polymorphic_ind env sg t)
+
+let flag_of_type env sg t : flag =
+  let (x,y,_) = rich_flag_of_type env sg t in (x,y)
 
 (*s Two particular cases of [flag_of_type]. *)
 
@@ -92,9 +87,9 @@ let is_default env sg t = match flag_of_type env sg t with
 exception NotDefault of kill_reason
 
 let check_default env sg t =
-  match flag_of_type env sg t with
-    | _,TypeScheme -> raise (NotDefault Ktype)
-    | Logic,_ -> raise (NotDefault Kprop)
+  match rich_flag_of_type env sg t with
+    | _,TypeScheme,_ -> raise (NotDefault Ktype)
+    | Logic,_,false -> raise (NotDefault Kprop)
     | _ -> ()
 
 let is_info_scheme env sg t = match flag_of_type env sg t with
@@ -467,11 +462,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   match lookup_ind kn mib with
   | Some ml_ind -> ml_ind
   | None ->
-     try
-       extract_really_ind env kn mib
-     with SingletonInductiveBecomesProp id ->
-       (* TODO : which inductive is concerned in the block ? *)
-       error_singleton_become_prop id (Some (GlobRef.IndRef (kn,0)))
+     extract_really_ind env kn mib
 
 (* Then the real function *)
 
@@ -653,6 +644,107 @@ let type2sign env = type_to_sign (mlt_env env)
 let type_expunge env = type_expunge (mlt_env env)
 let type_expunge_from_sign env = type_expunge_from_sign (mlt_env env)
 
+(*s Coercions. *)
+
+let apply_coercion f x =
+  match f with
+  | None -> x
+  | Some f -> f x
+
+let eta_expand x ft fu =
+  match ft, fu with
+  | None, None -> None
+  | _ ->
+    let arg = apply_coercion ft (MLrel 1) in
+    Some (fun y ->
+        MLlam (Tmp (id_of_name x.binder_name),
+               apply_coercion fu (MLapp (ast_lift 1 y, [arg]))))
+
+let rec coerce_prop_down env sg t mlt =
+  let t = whd_all env sg t in
+  match EConstr.kind sg t, mlt with
+    | Prod (x,t,u), Tarr (mlt,mlu) ->
+      let env' = EConstr.push_rel (LocalAssum (x,t)) env in
+      let ft = coerce_prop_up env sg t mlt in
+      let fu = coerce_prop_down env' sg u mlu in
+      eta_expand x ft fu
+    | App (f,_), Tdummy Kprop when
+        Termops.is_template_polymorphic_ind env sg f &&
+        info_of_family (sort_of env sg t) = Logic ->
+      (* Coercing from a sort-polymorphic inductive type to Prop; we
+         forget the structure (e.g. a pair of proofs) of the type *)
+      Some (fun _ -> MLdummy Kprop)
+    | _ ->
+      None
+
+and coerce_prop_up env sg t mlt =
+  let t = whd_all env sg t in
+  match EConstr.kind sg t, mlt with
+    | Prod (x,t,u), Tarr (mlt,mlu) ->
+      let env' = EConstr.push_rel (LocalAssum (x,t)) env in
+      let ft = coerce_prop_down env sg t mlt in
+      let fu = coerce_prop_up env' sg u mlu in
+      eta_expand x ft fu
+    | App (f,_), Tdummy Kprop when
+        Termops.is_template_polymorphic_ind env sg f &&
+        info_of_family (sort_of env sg t) = Logic ->
+      (* Coercing from Prop to a sort-polymorphic inductive type
+         smashed in Prop; we reveal the inner structure of the type *)
+      coerce_ind_up env sg t mlt
+    | _ ->
+      None
+
+and coerce_ind_up env sg t mlt =
+  let ind = Inductiveops.find_rectype env sg t in
+  let indf,_ = Inductiveops.dest_ind_type ind in
+  let ((mind,_ as ind),_),_ = Inductiveops.dest_ind_family indf in
+  match Inductiveops.get_constructors env indf with
+  | [||] -> None (* empty type *)
+  | [|{Inductiveops.cs_args=ctx;Inductiveops.cs_cstr}|] ->
+    let mlind = extract_ind env (MutInd.make1 (MutInd.canonical mind)) in
+    if mlind.ind_kind == Singleton then
+      None (* Constructor is inlined *)
+    else
+      let f d =
+        let rec aux env = function
+          | LocalAssum (x,t) as decl :: ctx -> apply_coercion (coerce_prop_up env sg t mlt) d :: aux (EConstr.push_rel decl env) ctx
+          | LocalDef _ as decl :: ctx -> aux (EConstr.push_rel decl env) ctx
+          | [] -> [] in
+        let n = Inductiveops.inductive_nparams env ind in
+        let typ = Tglob(GlobRef.IndRef ind, List.make n (Tdummy Kprop)) in
+        MLcons (typ, GlobRef.ConstructRef (fst cs_cstr), aux env (EConstr.of_rel_context ctx)) in
+      Some f
+  | _ -> assert false
+
+let try_insert_coercion env sg t mlt d =
+  let mlt = type_expand (fun _ -> None) mlt in
+  (* Should we use a let to preserve the evaluation order? *)
+  apply_coercion (coerce_prop_down env sg t mlt) d
+
+let rec coerce_from_dummy_prop env mlt =
+  let mlt = type_expand (fun _ -> None) mlt in
+  match mlt with
+    | Tarr (_,mlt) -> MLlam (Dummy, coerce_from_dummy_prop env mlt)
+    | Tglob (GlobRef.IndRef ind,args) ->
+      (* Coercing from Prop to a sort-polymorphic inductive type
+         smashed in Prop; we reveal the inner structure of the type *)
+      coerce_ind_from_dummy_prop env ind args
+    | Tdummy Kprop -> MLdummy Kprop
+    | _ -> put_magic (mlt,Tdummy Kprop) (MLdummy Kprop)
+
+and coerce_ind_from_dummy_prop env (mind,i as ind) args =
+  let mlind = extract_ind env (MutInd.make1 (MutInd.canonical mind)) in
+  match mlind.ind_packets.(i).ip_types with
+  | [||] -> MLdummy Kprop (* empty type *)
+  | [|mlts|] ->
+    let f mlt = coerce_from_dummy_prop env (type_subst_list args mlt) in
+    let mlts = List.filter (fun t -> match type_expand (fun _ -> None) t with Tdummy _ -> false | _ -> true) mlts in
+    if mlind.ind_kind == Singleton then
+      (assert (List.length mlts = 1); f (List.hd mlts))
+    else
+      MLcons (Tglob (GlobRef.IndRef ind,args), GlobRef.ConstructRef (ind,1), List.map f mlts)
+  | _ -> assert false
+
 (*s Extraction of the type of a constant. *)
 
 let record_constant_type env sg kn opt_typ =
@@ -698,7 +790,7 @@ let rec extract_term env sg mle mlt c args =
                let b = new_meta () in
                (* If [mlt] cannot be unified with an arrow type, then magic! *)
                let magic = needs_magic (mlt, Tarr (a, b)) in
-               let d' = extract_term env' sg (Mlenv.push_type mle a) b d [] in
+               let d' = extract_maybe_term env' sg (Mlenv.push_type mle a) b d in
                put_magic_if magic (MLlam (id, d')))
     | LetIn (n, c1, t1, c2) ->
         let id = map_annot id_of_name n in
@@ -752,11 +844,7 @@ let rec extract_term env sg mle mlt c args =
     | Evar _ | Meta _ -> MLaxiom
     | Var v ->
        (* Only during Show Extraction *)
-       let open Context.Named.Declaration in
-       let ty = match EConstr.lookup_named v env with
-         | LocalAssum (_,ty) -> ty
-         | LocalDef (_,_,ty) -> ty
-       in
+       let ty = Context.Named.Declaration.get_type (EConstr.lookup_named v env) in
        let vty = extract_type env sg [] 0 ty [] in
        let extract_var mlt = put_magic (mlt,vty) (MLglob (GlobRef.VarRef v)) in
        extract_app env sg mle mlt extract_var args
@@ -773,10 +861,16 @@ let rec extract_term env sg mle mlt c args =
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *)
 
 and extract_maybe_term env sg mle mlt c =
-  try check_default env sg (type_of env sg c);
-    extract_term env sg mle mlt c []
-  with NotDefault d ->
-    put_magic (mlt, Tdummy d) (MLdummy d)
+  let t = type_of env sg c in
+  try
+    let _ = check_default env sg t in
+    let d = extract_term env sg mle mlt c [] in
+    try_insert_coercion env sg t mlt d
+  with
+  | NotDefault Ktype ->
+    put_magic (mlt, Tdummy Ktype) (MLdummy Ktype)
+  | NotDefault Kprop ->
+    coerce_from_dummy_prop env mlt
 
 (*s Generic way to deal with an application. *)
 
@@ -787,8 +881,10 @@ and extract_maybe_term env sg mle mlt c =
 and extract_app env sg mle mlt mk_head args =
   let metas = List.map new_meta args in
   let type_head = type_recomp (metas, mlt) in
+  (* First instantiate the meta using the head *)
+  let head = mk_head type_head in
   let mlargs = List.map2 (extract_maybe_term env sg mle) metas args in
-  mlapp (mk_head type_head) mlargs
+  mlapp head mlargs
 
 (*s Auxiliary function used to extract arguments of constant or constructor. *)
 
@@ -1096,13 +1192,12 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   in
   for i = 0 to n-1 do
     if info_of_family (sort_of env sg ti.(i)) != Logic then
-      try
+      begin
         let e,t = extract_std_constant env sg vkn.(i)
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in
         terms.(i) <- e;
-        types.(i) <- t;
-      with SingletonInductiveBecomesProp id ->
-        error_singleton_become_prop id (Some (GlobRef.ConstRef vkn.(i)))
+        types.(i) <- t
+      end
   done;
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
@@ -1133,8 +1228,7 @@ let extract_constant env kn cb =
     let e,t = extract_std_constant env sg kn c typ in
     Dterm (r,e,t)
   in
-  try
-    match flag_of_type env sg typ with
+  match flag_of_type env sg typ with
     | (Logic,TypeScheme) -> warn_log ();
         let s,vl = type_sign_vl env sg typ in
         Dtype (r, vl, Tdummy Ktype)
@@ -1167,15 +1261,12 @@ let extract_constant env kn cb =
             add_opaque r;
             if access_opaque () then mk_def (get_opaque env c)
             else mk_ax ())
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_constant_spec env kn cb =
   let sg = Evd.from_env env in
   let r = GlobRef.ConstRef kn in
   let typ = EConstr.of_constr cb.const_type in
-  try
-    match flag_of_type env sg typ with
+  match flag_of_type env sg typ with
     | (Logic, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
         Stype (r, vl, Some (Tdummy Ktype))
@@ -1192,34 +1283,26 @@ let extract_constant_spec env kn cb =
     | (Info, Default) ->
         let t = snd (record_constant_type env sg kn (Some typ)) in
         Sval (r, type_expunge env t)
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_with_type env sg c =
-  try
-    let typ = type_of env sg c in
-    match flag_of_type env sg typ with
+  let typ = type_of env sg c in
+  match flag_of_type env sg typ with
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
         let db = db_from_sign s in
         let t = extract_type_scheme env sg db c (List.length s) in
         Some (vl, t)
-    | _ -> None
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
+    | (Info, Default) | (Logic, _) -> None
 
 let extract_constr env sg c =
   reset_meta_count ();
-  try
-    let typ = type_of env sg c in
-    match flag_of_type env sg typ with
+  let typ = type_of env sg c in
+  match flag_of_type env sg typ with
     | (_,TypeScheme) -> MLdummy Ktype, Tdummy Ktype
     | (Logic,_) -> MLdummy Kprop, Tdummy Kprop
     | (Info,Default) ->
        let mlt = extract_type env sg [] 1 typ [] in
        extract_term env sg Mlenv.empty mlt c [], mlt
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
 
 let extract_inductive env kn =
   let ind = extract_ind env kn in

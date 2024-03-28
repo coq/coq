@@ -161,7 +161,7 @@ module Mlenv = struct
 
   let empty = { env = []; free = Metaset.empty }
 
-  (* [get] returns a instantiated copy of the n-th most recently added
+  (* [get] returns an instantiated copy of the n-th most recently added
      type in the environment. *)
 
   let get mle n =
