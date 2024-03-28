@@ -445,6 +445,22 @@ Proof. exact: unlock. Qed.
 (**  Notation to trigger Coq elaboration to fill the holes **)
 Notation "[ 'elaborate' x ]" := (ltac:(refine x)) (only parsing).
 
+(**  The internal lemmas for the have tactics.  **)
+
+Lemma ssr_have
+  (Plemma : Prop)  (Pgoal : Prop)
+  (step : Plemma) (rest : Plemma -> Pgoal) : Pgoal.
+Proof. exact: rest step. Qed.
+
+Register ssr_have as plugins.ssreflect.ssr_have.
+
+Polymorphic Lemma ssr_have_upoly@{s1 s2|u1 u2|}
+  (Plemma : Type@{s1|u1})  (Pgoal : Type@{s2|u2})
+  (step : Plemma) (rest : Plemma -> Pgoal) : Pgoal.
+Proof. exact: rest step. Qed.
+
+Register ssr_have_upoly as plugins.ssreflect.ssr_have_upoly.
+
 (**  Internal N-ary congruence lemmas for the congr tactic.  **)
 
 Fixpoint nary_congruence_statement (n : nat)
