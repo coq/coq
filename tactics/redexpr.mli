@@ -57,11 +57,4 @@ val cbv_vm : reduction_function
    names appearing in [c] *)
 val subst_red_expr : Mod_subst.substitution -> red_expr -> red_expr
 
-open Constrexpr
-open Libnames
-
-val wit_red_expr :
-  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-   (Genintern.glob_constr_and_expr,Evaluable.t and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
-   (EConstr.t,Evaluable.t,Pattern.constr_pattern) red_expr_gen)
-    Genarg.genarg_type
+val wit_red_expr : (raw_red_expr, glob_red_expr, red_expr) Genarg.genarg_type
