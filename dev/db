@@ -27,6 +27,8 @@ load_printer toplevel.cma
 
 load_printer ltac_plugin.cma
 load_printer ltac2_plugin.cma
-load_printer top_printers.cma
+
+load_printer dev.cma
+load_printer debugger_support.cma
 
 source top_printers.dbg

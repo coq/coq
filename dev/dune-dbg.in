@@ -46,4 +46,4 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-ocamldebug "${opts[@]}" $(ocamlfind query -recursive -i-format coq-core.top_printers) $(ocamlfind query -i-format -descendants coq-core.vernac) -I +threads -I dev $exe "$@"
+ocamldebug "${opts[@]}" $(ocamlfind query -recursive -i-format coq-core.dev) $(ocamlfind query -i-format -descendants coq-core.vernac) -I +threads -I dev $exe "$@"
