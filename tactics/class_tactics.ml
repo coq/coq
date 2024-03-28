@@ -137,7 +137,7 @@ let auto_core_unif_flags st allowed_evars = {
   allowed_evars;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
-  modulo_eta = false;
+  modulo_eta = true;
 }
 
 let auto_unif_flags ?(allowed_evars = Evarsolve.AllowedEvars.all) st =
