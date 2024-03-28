@@ -16,7 +16,7 @@ val pr_set_entry_type : ('a -> Pp.t) -> 'a Extend.constr_entry_key_gen -> Pp.t
 val pr_syntax_modifier : Vernacexpr.syntax_modifier CAst.t -> Pp.t
 
 (** Prints a fixpoint body *)
-val pr_rec_definition : Vernacexpr.fixpoint_expr -> Pp.t
+val pr_rec_definition : Constrexpr.fixpoint_order_expr option * Vernacexpr.recursive_expr_gen -> Pp.t
 
 (** Prints a scheme *)
 val pr_onescheme : Names.lident option * Vernacexpr.scheme -> Pp.t

@@ -492,7 +492,13 @@ let rec fold_left4 f accu l1 l2 l3 l4 =
   match (l1, l2, l3, l4) with
   | ([], [], [], []) -> accu
   | (a1 :: l1, a2 :: l2, a3 :: l3, a4 :: l4) -> fold_left4 f (f accu a1 a2 a3 a4) l1 l2 l3 l4
-  | (_,_, _, _) -> invalid_arg "List.fold_left4"
+  | (_, _, _, _) -> invalid_arg "List.fold_left4"
+
+let rec fold_left5 f accu l1 l2 l3 l4 l5 =
+  match (l1, l2, l3, l4, l5) with
+  | ([], [], [], [], []) -> accu
+  | (a1 :: l1, a2 :: l2, a3 :: l3, a4 :: l4, a5 :: l5) -> fold_left5 f (f accu a1 a2 a3 a4 a5) l1 l2 l3 l4 l5
+  | (_, _, _, _, _) -> invalid_arg "List.fold_left5"
 
 (* [fold_right_and_left f [a1;...;an] hd =
    f (f (... (f (f hd
@@ -567,6 +573,10 @@ let fold_left3_map f e l l' l'' =
 let fold_left4_map f e l1 l2 l3 l4 =
   on_snd List.rev @@
   fold_left4 (fun (e,l) x1 x2 x3 x4 -> let (e,y) = f e x1 x2 x3 x4 in (e,y::l)) (e,[]) l1 l2 l3 l4
+
+let fold_left5_map f e l1 l2 l3 l4 l5 =
+  on_snd List.rev @@
+  fold_left5 (fun (e,l) x1 x2 x3 x4 x5 -> let (e,y) = f e x1 x2 x3 x4 x5 in (e,y::l)) (e,[]) l1 l2 l3 l4 l5
 
 (** {6 Splitting} *)
 

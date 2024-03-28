@@ -83,6 +83,9 @@ let nf_named_context_evar sigma ctx =
 let nf_rel_context_evar sigma ctx =
   Context.Rel.map (nf_evar sigma) ctx
 
+let nf_rel_context_evar_with_relevance sigma ctx =
+  Context.Rel.map_with_relevance (nf_relevance sigma) (nf_evar sigma) ctx
+
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
   let rel' = nf_rel_context_evar sigma (EConstr.rel_context env) in

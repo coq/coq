@@ -255,10 +255,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       c
     in
     let nf_rel r = Evarutil.nf_relevance sigma r in
-    let map_decl = function
-    | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
-    | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
-    in
+    let map_decl = RelDecl.map_constr_het_with_relevance nf_rel nf in
     let newps = List.map map_decl newps in
     let map (implfs, fields) typ =
       let fields = List.map map_decl fields in

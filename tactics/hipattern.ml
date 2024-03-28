@@ -546,3 +546,17 @@ let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force coq_im
 (* Remark: patterns that have references to the standard library must
    be evaluated lazily (i.e. at the time they are used, not a the time
    coqtop starts) *)
+
+let is_homogeneous_relation ?loc env sigma rel =
+  let relty = Retyping.get_type_of env sigma rel in
+  let error () =
+    user_err ?loc
+      (Printer.pr_econstr_env env sigma rel ++ str " is not a homogeneous binary relation.")
+  in
+  let ctx, ar =
+    try Reductionops.whd_decompose_prod_n env sigma 2 relty
+    with Invalid_argument _ -> error () in
+  match ctx, EConstr.kind sigma ar with
+  | [(_,t); (_,u)], Sort s
+    when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
+  | _, _ -> error ()

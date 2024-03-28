@@ -118,7 +118,7 @@ let classify_vernac e =
       let ids = List.map (fun (({v=i}, _), _) -> i) l in
       let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
       VtStartProof (guarantee,ids)
-    | VernacFixpoint (discharge,l) ->
+    | VernacFixpoint (discharge,(_,l)) ->
       let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
          if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity

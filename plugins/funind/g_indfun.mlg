@@ -173,14 +173,12 @@ let () =
 
 let is_proof_termination_interactively_checked recsl =
   List.exists (function
-  | _,( Vernacexpr.{ rec_order = Some { CAst.v = CMeasureRec _ } }
-      | Vernacexpr.{ rec_order = Some { CAst.v = CWfRec _} }) -> true
-  | _, Vernacexpr.{ rec_order = Some { CAst.v = CStructRec _ } }
-  | _, Vernacexpr.{ rec_order = None } -> false) recsl
+  | _, ( Some { CAst.v = (CMeasureRec _ | CWfRec _) }, _ ) -> true
+  | _, ( ( Some { CAst.v = CStructRec _ } | None), _) -> false) recsl
 
 let classify_as_Fixpoint recsl =
  Vernac_classifier.classify_vernac
-    (Vernacexpr.(CAst.make @@ { control = []; attrs = []; expr = VernacSynPure (VernacFixpoint(NoDischarge, List.map snd recsl))}))
+    (Vernacexpr.(CAst.make @@ { control = []; attrs = []; expr = VernacSynPure (VernacFixpoint(NoDischarge, List.split (List.map snd recsl)))}))
 
 let classify_funind recsl =
   match classify_as_Fixpoint recsl with
@@ -213,11 +211,11 @@ VERNAC COMMAND EXTEND Function STATE CUSTOM
     if is_interactive recsl then
       Vernactypes.vtopenproof (fun () ->
           CWarnings.with_warn warn
-            Gen_principle.do_generate_principle_interactive (List.map snd recsl))
+            Gen_principle.do_generate_principle_interactive (List.split (List.map snd recsl)))
     else
       Vernactypes.vtdefault (fun () ->
           CWarnings.with_warn warn
-            Gen_principle.do_generate_principle (List.map snd recsl))
+            Gen_principle.do_generate_principle (List.split (List.map snd recsl)))
   }
 END
 

@@ -126,8 +126,8 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using
   in
   let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns ?using () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
@@ -149,9 +149,9 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
     interp_definition ~program_mode:true env evd empty_internalization_env bl red_option c ctypopt
   in
   let using = definition_using env evd ~body ~types ~using in
-  let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
+  let body, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
-    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
-    Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns ?using () in
+    Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx obls
   in pm
