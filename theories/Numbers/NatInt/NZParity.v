@@ -12,7 +12,7 @@ Require Import Bool NZAxioms NZMulOrder.
 
 (** Parity functions *)
 
-Module Type NZParity (Import A : NZAxiomsSig').
+Module Type NZParity (Import A : NZBasicFunsSig').
  Parameter Inline even odd : t -> bool.
  Definition Even n := exists m, n == 2*m.
  Definition Odd n := exists m, n == 2*m+1.
