@@ -687,7 +687,9 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
 exception PatternFailure
 
 let match_einstance sigma pu u psubst =
-  UVars.Instance.pattern_match pu (EInstance.kind sigma u) psubst
+  match UVars.Instance.pattern_match pu (EInstance.kind sigma u) psubst with
+  | Some psubst -> psubst
+  | None -> raise PatternFailure
 
 let match_sort ps s psubst =
   match Sorts.pattern_match ps s psubst with

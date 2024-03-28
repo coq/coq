@@ -86,6 +86,10 @@ module Quality : sig
 
   module Map : CMap.ExtS with type key = t and module Set := Set
 
+  type pattern =
+    PQProp | PQSProp | PQType | PQVar of int option
+
+  val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
 end
 
 module QConstraint : sig
