@@ -101,10 +101,8 @@ Definition e3 : (fun X _ => X) nat a := (fun _ => 0) a.
 End S.
 (* Not clear what is most expected below... *)
 
-(* Dependency in a with Program Fixpoint: the body is not reduced. *)
-Check b1 0 0 : nat.
 (* No dependency in a with Program Fixpoint, because both body and type are beta-reduced *)
-(* Why there is a difference with b1 is not clear *)
+Check b1 0 : nat.
 Check b2 0 : nat.
 Check b3 0 : nat.
 (* With Program Definition, type is beta-reduced but not the body *)
