@@ -395,7 +395,7 @@ let parse_args ~usage ~init arglist : t * string list =
 
     (* Options with zero arg *)
     |"-test-mode" -> Synterp.test_mode := true; oval
-    |"-beautify" -> Flags.beautify := true; oval
+    |"-beautify" -> Flags.beautify := true; Flags.record_comments := true; oval
     |"-config"|"--config" -> set_query oval PrintConfig
 
     |"-bt" -> add_set_debug oval "backtrace"

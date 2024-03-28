@@ -143,7 +143,7 @@ let pr_import_module (m,f) =
   | ImportNames ns -> surround (prlist_with_sep pr_comma pr_one_import_filter_name ns)
 
 let sep_end = function
-  | VernacSynPure (VernacBullet _ | VernacSubproof _ | VernacEndSubproof) -> str""
+  | VernacSynPure (VernacBullet _ | VernacSubproof _ | VernacEndSubproof) -> mt()
   | _ -> str"."
 
 let sep = fun _ -> spc()

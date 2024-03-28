@@ -183,9 +183,10 @@ let set_formatter_translator ch =
   ft
 
 let pr_new_syntax ?loc ft_beautify ocom =
+  let loc = Option.append loc (Option.bind ocom (fun x -> x.CAst.loc)) in
   let loc = Option.cata Loc.unloc (0,0) loc in
   let before = comment (Pputils.extract_comments (fst loc)) in
-  let com = Option.cata Ppvernac.pr_vernac (mt ()) ocom in
+  let com = Option.cata (fun com -> Ppvernac.pr_vernac com ++ fnl()) (mt ()) ocom in
   let after = comment (Pputils.extract_comments (snd loc)) in
   if !Flags.beautify_file then
     (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
