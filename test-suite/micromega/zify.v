@@ -143,7 +143,13 @@ Proof.
   lia.
 Qed.
 
+Goal forall n, Nat.double n = n + n.
+Proof. lia. Qed.
+
 Open Scope Z_scope.
+
+Goal forall n, Z.of_nat (Nat.div2 n) = Z.of_nat n / 2.
+Proof. lia. Qed.
 
 Goal forall p,
     False ->

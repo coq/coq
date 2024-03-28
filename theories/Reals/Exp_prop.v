@@ -324,10 +324,11 @@ Proof.
     apply Rmult_le_reg_l with (Rsqr (INR (Nat.div2 (S N)))).
     { apply Rsqr_pos_lt.
       apply not_O_INR; red; intro.
-      lia. }
+      PreOmega.zify; PreOmega.Z.to_euclidean_division_equations; lia. }
     repeat rewrite <- Rmult_assoc.
     rewrite Rinv_r.
-    2:{ unfold Rsqr; apply prod_neq_R0; apply not_O_INR;lia. }
+    2:{ unfold Rsqr; apply prod_neq_R0; apply not_O_INR;
+      PreOmega.zify; PreOmega.Z.to_euclidean_division_equations; lia. }
     rewrite Rmult_1_l.
     change 4 with (Rsqr 2).
     rewrite <- Rsqr_mult.

@@ -768,6 +768,12 @@ Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_pow, N2Z.inj_pow.
 Qed.
 
+Lemma inj_div2 n : Z.of_nat (Nat.div2 n) = Z.div2 (Z.of_nat n).
+Proof. rewrite Nat.div2_div, Z.div2_div, inj_div; trivial. Qed.
+
+Lemma inj_double n : Z.of_nat (Nat.double n) = Z.double (Z.of_nat n).
+Proof. rewrite Nat.double_twice, Z.double_spec, inj_mul; trivial. Qed.
+
 End Nat2Z.
 
 Module Z2Nat.
