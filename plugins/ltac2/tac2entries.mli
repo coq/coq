@@ -47,6 +47,8 @@ val register_scope : Id.t -> scope_interpretation -> unit
 val parse_scope : sexpr -> scope_rule
 (** Use this to interpret the subscopes for interpretation functions *)
 
+val ltac2_notation_cat : Libobject.category
+
 (** {5 Inspecting} *)
 
 val print_located_tactic : Libnames.qualid -> unit
