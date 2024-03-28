@@ -182,12 +182,6 @@ are now available through the dot notation.
    Including multiple modules in a single :cmd:`Include` is equivalent to including each module
    in a separate :cmd:`Include` command.
 
-.. cmd:: Include Type {+<+ @module_type_inl }
-
-   .. deprecated:: 8.3
-
-      Use :cmd:`Include` instead.
-
 .. cmd:: Declare Module {? {| Import | Export } {? @import_categories } } @ident {* @module_binder } : @module_type_inl
 
    Declares a module :token:`ident` of type :token:`module_type_inl`.
