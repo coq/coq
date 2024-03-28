@@ -47,6 +47,9 @@ val red_sub_list : reds -> red_kind list -> reds
 (** Adds a reduction kind to a set *)
 val red_add_transparent : reds -> TransparentState.t -> reds
 
+(** Set delta-reduction (true = all from transparent state minus the list; false = only the list) *)
+val red_set_constants : reds -> TransparentState.t -> bool * Names.Evaluable.t list -> reds
+
 (** Retrieve the transparent state of the reduction flags *)
 val red_transparent : reds -> TransparentState.t
 
@@ -71,3 +74,7 @@ val betazeta : reds
 val delta : reds
 val zeta : reds
 val nored : reds
+
+(* Debugging *)
+
+val debug_pr : reds -> Pp.t

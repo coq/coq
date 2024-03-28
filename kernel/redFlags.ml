@@ -93,6 +93,21 @@ let red_transparent red = red.r_const
 let red_add_transparent red tr =
   { red with r_const = tr }
 
+let make_flag_constant = function
+  | Evaluable.EvalVarRef id -> VAR id
+  | Evaluable.EvalConstRef cst -> CONST cst
+  | Evaluable.EvalProjectionRef p -> PROJ p
+
+let red_set_constants red tr (delta, csts) =
+  let csts = List.map make_flag_constant csts in
+  let red = red_add red fDELTA in
+  if delta then (* All but rConst *)
+    let red = red_add_transparent red tr in
+    List.fold_left red_sub red csts
+  else (* Only rConst *)
+    let red = red_add_transparent red TransparentState.empty in
+    List.fold_left red_add red csts
+
 let mkflags = List.fold_left red_add no_red
 
 let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
@@ -126,3 +141,19 @@ let betazeta = mkflags [fBETA;fZETA]
 let delta = mkfullflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
+
+(* Debugging *)
+
+open Pp
+
+let debug_pr f =
+  let flags =
+    (if f.r_beta then ["beta"] else []) @
+    (if f.r_delta then ["delta"] else []) @
+    (if f.r_zeta then ["zeta"] else []) @
+    (if f.r_match then ["match"] else []) @
+    (if f.r_fix then ["fix"] else []) @
+    (if f.r_cofix then ["cofix"] else [])
+  in
+  str "[" ++ prlist_with_sep (fun () -> str ",") str flags ++ str "," ++ spc ()
+          ++ str "transparency=[" ++ debug_pr_transparent_state f.r_const ++ str "]]"

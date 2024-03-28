@@ -129,14 +129,14 @@ type red_expr_val =
   (constr, Evaluable.t, constr_pattern, strength * RedFlags.reds) red_expr_gen0
 
 let make_flag_constant = function
-  | Evaluable.EvalVarRef id -> [fVAR id]
+  | Evaluable.EvalVarRef id -> [Evaluable.EvalVarRef id]
   | Evaluable.EvalConstRef sp ->
       begin
         match Structures.PrimitiveProjections.find_opt sp with
-        | None -> [fCONST sp]
-        | Some p -> [fCONST sp; fPROJ p]
+        | None -> Evaluable.[EvalConstRef sp]
+        | Some p -> Evaluable.[EvalConstRef sp; EvalProjectionRef p]
       end
-  | Evaluable.EvalProjectionRef p -> [fPROJ p; fCONST (Projection.Repr.constant p)]
+  | Evaluable.EvalProjectionRef p -> Evaluable.[EvalProjectionRef p; EvalConstRef (Projection.Repr.constant p)]
 
 let make_flag env f =
   let red = no_red in
@@ -145,21 +145,13 @@ let make_flag env f =
   let red = if f.rFix then red_add red fFIX else red in
   let red = if f.rCofix then red_add red fCOFIX else red in
   let red = if f.rZeta then red_add red fZETA else red in
-  let red =
-    if f.rDelta then (* All but rConst *)
-        let red = red_add red fDELTA in
-        let red = red_add_transparent red
-                    (Conv_oracle.get_transp_state (Environ.oracle env)) in
-        List.fold_right
-          (fun v red -> red_sub_list red (make_flag_constant v))
-          f.rConst red
-    else (* Only rConst *)
-        let red = red_add red fDELTA in
-        List.fold_right
-          (fun v red -> red_add_list red (make_flag_constant v))
-          f.rConst red
-  in
+  let tr = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let red = RedFlags.red_set_constants red tr (f.rDelta, (List.map_append make_flag_constant f.rConst)) in
   f.rStrength, red
+
+let constants_of_flag f =
+  let (b, csts) = Cpred.elements (RedFlags.red_transparent f).tr_cst in
+  (b, List.map (fun cst -> Evaluable.EvalConstRef cst) csts)
 
 (* table of custom reductino fonctions, not synchronized,
    filled via ML calls to [declare_reduction] *)
@@ -218,18 +210,8 @@ let contextualize f = function
       e_red (contextually b (l,c) (fun _ -> f))
   | None -> e_red f
 
-let warn_simpl_unfolding_modifiers =
-  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:CWarnings.CoreCategories.tactics
-         (fun () ->
-          Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
-
 let rec eval_red_expr env = function
-| Simpl (f, o) ->
-  let () =
-    if not (simplIsCbn () || List.is_empty f.rConst) then
-      warn_simpl_unfolding_modifiers () in
-  let f = if simplIsCbn () then make_flag env f else f.rStrength, RedFlags.all (* dummy *) in
-  Simpl (f, o)
+| Simpl (f, o) -> Simpl (make_flag env f, o)
 | Cbv f -> Cbv (make_flag env f)
 | Cbn f -> Cbn (make_flag env f)
 | Lazy f -> Lazy (make_flag env f)
@@ -250,16 +232,16 @@ let reduction_of_red_expr_val = function
   | Simpl ((w,f),o) ->
     let am = match w, simplIsCbn () with
       | Norm, true -> Cbn.norm_cbn f
-      | Norm, false -> simpl
+      | Norm, false -> simpl_with_constants (constants_of_flag f)
       | Head, true -> Cbn.whd_cbn f
-      | Head, false -> whd_simpl
+      | Head, false -> whd_simpl_with_constants (constants_of_flag f)
     in
      (contextualize am o,DEFAULTcast)
   | Cbv (Norm, f) -> (e_red (cbv_norm_flags ~strong:true f),DEFAULTcast)
   | Cbv (Head, f) -> (e_red (cbv_norm_flags ~strong:false f),DEFAULTcast)
   | Cbn (w,f) ->
-    let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
-     (e_red (cbn f), DEFAULTcast)
+    let cbn = match w with Norm -> Cbn.norm_cbn f | Head -> Cbn.whd_cbn f in
+     (e_red cbn, DEFAULTcast)
   | Lazy (w,f) ->
     let redf = match w with Norm -> clos_norm_flags | Head -> clos_whd_flags in
     (e_red (redf f),DEFAULTcast)
