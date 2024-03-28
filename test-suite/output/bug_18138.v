@@ -4,6 +4,7 @@ Module Import M.
   Ltac2 foo := ().
 End M.
 
+#[warnings="-ltac2-unused-variable"]
 Ltac2 bar foo := M.foo.
 
 Print bar.

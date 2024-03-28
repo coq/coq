@@ -48,6 +48,8 @@ val mem_var : Id.t -> t -> bool
 
 val find_var : Id.t -> t -> mix_type_scheme
 
+val is_used_var : Id.t -> t -> bool
+
 val bound_vars : t -> Id.Set.t
 
 val get_variable0 : (Id.t -> bool) -> tacref or_relid -> tacref Locus.or_var

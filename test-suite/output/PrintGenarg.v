@@ -7,7 +7,7 @@ Print foo.
 Require Import Ltac2.Ltac2.
 
 Ltac2 bar () :=
-  let x := open_constr:(ltac2:(exact 0)) in
+  let _ := open_constr:(ltac2:(exact 0)) in
   ().
 
 Print bar.

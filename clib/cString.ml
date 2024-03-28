@@ -23,6 +23,7 @@ sig
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
+  val lplural : _ list -> string -> string
   val conjugate_verb_to_be : int -> string
   val ordinal : int -> string
   val is_sub : string -> string -> int -> bool
@@ -139,6 +140,11 @@ let is_suffix p s =
   is_sub p s (String.length s - String.length p)
 
 let plural n s = if n<>1 then s^"s" else s
+
+let lplural l s =
+  match l with
+  | [_] -> s
+  | _ -> s^"s"
 
 let conjugate_verb_to_be n = if n<>1 then "are" else "is"
 

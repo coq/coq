@@ -1,0 +1,26 @@
+File "./output/ltac2_unused_var.v", line 3, characters 6-18:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 5, characters 16-27:
+Warning: Unused variable: y. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 5, characters 6-27:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 10, characters 0-38:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 16, characters 17-23:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 18, characters 16-40:
+Warning: Unused variable: y. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 20, characters 16-56:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 22, characters 16-43:
+Warning: Unused variable: b. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 24, characters 15-32:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 26, characters 23-26:
+Warning: Unused variables: x y. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 28, characters 23-26:
+Warning: Unused variable: y. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 30, characters 18-55:
+Warning: Unused variable: y. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 42, characters 37-39:
+Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]

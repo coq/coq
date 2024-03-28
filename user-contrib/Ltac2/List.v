@@ -71,19 +71,19 @@ Ltac2 cons (x : 'a) (xs : 'a list) :=
 Ltac2 hd_opt (ls : 'a list) :=
   match ls with
   | [] => None
-  | x :: xs => Some x
+  | x :: _ => Some x
   end.
 
 Ltac2 hd (ls : 'a list) :=
   match ls with
   | [] => Control.throw_invalid_argument "List.hd"
-  | x :: xs => x
+  | x :: _ => x
   end.
 
 Ltac2 tl (ls : 'a list) :=
   match ls with
   | [] => []
-  | x :: xs => xs
+  | _ :: xs => xs
   end.
 
 Ltac2 dest (xs : 'a list) : 'a * 'a list :=
@@ -332,7 +332,7 @@ Ltac2 rec for_all2_aux (on_length_mismatch : 'a list -> 'b list -> bool) f xs ys
   match xs with
   | [] => match ys with
           | [] => true
-          | y :: ys' => on_length_mismatch xs ys
+          | _ :: _ => on_length_mismatch xs ys
           end
   | x :: xs'
     => match ys with
@@ -352,7 +352,7 @@ Ltac2 rec exist2 f xs ys :=
   match xs with
   | [] => match ys with
           | [] => false
-          | y :: ys' => Control.throw_invalid_argument "List.exist2"
+          | _ :: _ => Control.throw_invalid_argument "List.exist2"
           end
   | x :: xs'
     => match ys with
@@ -473,7 +473,7 @@ Ltac2 rec skipn (n : int) (ls : 'a list) :=
   | false
     => match ls with
        | [] => Control.throw_out_of_bounds "List.skipn"
-       | x :: xs
+       | _ :: xs
          => skipn (Int.sub n 1) xs
        end
   end.

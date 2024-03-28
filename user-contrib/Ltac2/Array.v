@@ -75,8 +75,8 @@ Ltac2 init (l : int) (f : int->'a) :=
   end.
 
 Ltac2 make_matrix (sx : int) (sy : int) (v : 'a) :=
-  let init1 i := v in
-  let initr i := init sy init1 in
+  let init1 _ := v in
+  let initr _ := init sy init1 in
   init sx initr.
 
 Ltac2 copy a := lowlevel_sub a 0 (length a).
@@ -175,7 +175,7 @@ Ltac2 of_list (ls : 'a list) :=
     end in
   match ls with
   | [] => empty
-  | hd::tl =>
+  | hd :: _ =>
       let anew := make (list_length ls) hd in
       of_list_aux ls anew 0;
       anew

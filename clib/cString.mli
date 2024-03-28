@@ -51,6 +51,9 @@ sig
   val plural : int -> string -> string
   (** [plural n s] adds a optional 's' to the [s] when [2 <= n]. *)
 
+  val lplural : _ list -> string -> string
+  (** [lplural l s] is [plural (List.length l) s]. *)
+
   val conjugate_verb_to_be : int -> string
   (** [conjugate_verb_to_be] returns "is" when [n=1] and "are" otherwise *)
 

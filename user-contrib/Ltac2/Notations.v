@@ -246,7 +246,7 @@ match cl with
 end.
 
 Ltac2 pose0 ev p :=
-  enter_h ev (fun ev (na, p) => Std.pose na p) p.
+  enter_h ev (fun _ (na, p) => Std.pose na p) p.
 
 Ltac2 Notation "pose" p(thunk(pose)) :=
   pose0 false p.
