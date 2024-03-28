@@ -142,7 +142,7 @@ let print_impargs env ref =
 (** Printing reduction behavior *)
 
 let print_reduction_behaviour = function
-  | GlobRef.ConstRef ref -> let p = Reductionops.ReductionBehaviour.print ref in if Pp.ismt p then [] else [p]
+  | GlobRef.ConstRef ref -> let p = Reductionops.ReductionBehaviour.(print (table ()) ref) in if Pp.ismt p then [] else [p]
   | _ -> []
 
 (** Printing opacity status *)
@@ -325,7 +325,7 @@ let print_arguments env ref =
   let flags, recargs, nargs_for_red =
     match ref with
     | ConstRef ref ->
-      begin match Reductionops.ReductionBehaviour.get ref with
+      begin match Reductionops.ReductionBehaviour.(get (table ()) ref) with
       | None -> [], [], None
       | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
       | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
