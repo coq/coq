@@ -12,7 +12,7 @@
    Each instance is registered using a Add 'class' 'name_of_instance'.
  *)
 
-Require Import Arith BinInt BinNat Znat Nnat.
+Require Import Arith Zdiv BinInt BinNat Znat Nnat.
 Require Import ZifyClasses.
 Declare ML Module "zify_plugin:coq-core.plugins.zify".
 Local Open Scope Z_scope.
@@ -118,6 +118,21 @@ Add Zify CstOp Op_O.
 Instance Op_Z_abs_nat : UnOp  Z.abs_nat :=
   { TUOp := Z.abs ; TUOpInj := Zabs2Nat.id_abs }.
 Add Zify UnOp Op_Z_abs_nat.
+
+#[global]
+Instance Op_mod : BinOp Nat.modulo :=
+  {| TBOp := Z.modulo ; TBOpInj := Nat2Z.inj_mod |}.
+Add Zify BinOp Op_mod.
+
+#[global]
+Instance Op_div : BinOp Nat.div :=
+  {| TBOp := Z.div ; TBOpInj := Nat2Z.inj_div |}.
+Add Zify BinOp Op_div.
+
+#[global]
+Instance Op_pow : BinOp Nat.pow :=
+  {| TBOp := Z.pow ; TBOpInj := Nat2Z.inj_pow |}.
+Add Zify BinOp Op_pow.
 
 (** Support for positive *)
 
@@ -635,5 +650,25 @@ Instance SatPowNonneg : Saturate Z.pow :=
     PRes _ _ r := 0 <= r;
     SatOk a b Ha _ := @Z.pow_nonneg a b Ha }.
 Add Zify Saturate SatPowNonneg.
+
+#[global]
+Instance SatDiv : Saturate Z.div :=
+  {|
+    PArg1 := fun x => 0 <= x;
+    PArg2 := fun y => 0 <= y;
+    PRes  := fun _ _ r => 0 <= r;
+    SatOk := Z_div_nonneg_nonneg
+  |}.
+Add Zify Saturate SatDiv.
+
+#[global]
+Instance SatMod : Saturate Z.modulo :=
+  {|
+    PArg1 := fun x => 0 <= x;
+    PArg2 := fun y => 0 <= y;
+    PRes  := fun _ _ r => 0 <= r;
+    SatOk := Z_mod_nonneg_nonneg
+  |}.
+Add Zify Saturate SatMod.
 
 (* TODO #14736 for compatibility only, should be removed after deprecation *)
