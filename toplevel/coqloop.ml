@@ -410,6 +410,7 @@ let show_proof_diff_cmd ~state diff_opt =
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
 let ml_toplevel_state = ref None
+let ml_toplevel_include_ran = ref false
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)

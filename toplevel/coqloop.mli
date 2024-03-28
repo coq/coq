@@ -32,6 +32,9 @@ val coqloop_feed : Feedback.feedback -> unit
 (** State tracked while in the OCaml toplevel *)
 val ml_toplevel_state : Vernac.State.t option ref
 
+(** Whether the "include" file was already run at least once *)
+val ml_toplevel_include_ran : bool ref
+
 (** The main loop *)
 val loop : state:Vernac.State.t -> Vernac.State.t
 

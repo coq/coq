@@ -10,5 +10,5 @@ f=$(mktemp)
 # if there's an issue in `include_utilities`, `#go;;` won't be mentioned
 # if there's an issue in `include_printers`, it will be an undefined printer
 if ! grep -q -F '#go;;' "$f" ||
-        grep -q -E 'Error|Unbound' "$f";
+        grep -q -E -i 'Error|Unbound|Anomaly' "$f";
 then exit 1; fi

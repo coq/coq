@@ -1,5 +1,26 @@
 (* The main file included in the OCaml toplevel. *)
 
 #use "ml_toplevel/include_directories";;
-#use "ml_toplevel/include_utilities";;
 #use "ml_toplevel/include_printers";;
+#use "ml_toplevel/include_utilities";;
+
+let go () =
+  Flags.with_option
+    Toploop.may_trace
+    (fun () -> Coqloop.ml_toplevel_state := Some (Coqloop.loop ~state:(Option.get !Coqloop.ml_toplevel_state)))
+    ();
+  print_newline ()
+
+let () =
+  if not !Coqloop.ml_toplevel_include_ran then
+    Toploop.add_directive
+      "go"
+      (Toploop.Directive_none go)
+      Toploop.{section="Coq"; doc="Run Coq toplevel loop"}
+
+let _ =
+  print_newline ();
+  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `#go;;` if `#trace` was used)"
+
+let _ =
+  Coqloop.ml_toplevel_include_ran := true

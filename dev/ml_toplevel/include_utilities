@@ -1,40 +1,5 @@
 (* File included to get some Coq facilities under the OCaml toplevel. *)
 
-#use "top_printers.ml";;
-#use "vm_printers.ml";;
-
-#install_printer  (* identifier *) ppid;;
-#install_printer  (* identifier *) ppidset;;
-#install_printer  (* Intset.t *) ppintset;;
-#install_printer  (* label *) pplab;;
-#install_printer  (* mod_bound_id *) ppmbid;;
-#install_printer  (* dir_path *) ppdir;;
-#install_printer  (* module_path *) ppmp;;
-#install_printer  (* section_path *)  ppsp;;
-#install_printer  (* qualid *)  ppqualid;;
-#install_printer  (* kernel_name *) ppkn;;
-#install_printer  (* constant *) ppcon;;
-#install_printer  (* projection *) ppproj;;
-#install_printer  (* projection *) ppprojrepr;;
-#install_printer  (* recarg *)  pprecarg;;
-#install_printer  (* recarg Rtree.t *)  ppwf_paths;;
-#install_printer  (* constr *)  print_pure_constr;;
-#install_printer  (* patch *) ppripos;;
-#install_printer  (* values *) ppvalues;;
-#install_printer  (* Idpred.t *) pp_idpred;;
-#install_printer  (* Cpred.t *) pp_cpred;;
-#install_printer ppzipper;;
-#install_printer ppstack;;
-#install_printer ppatom;;
-#install_printer ppwhd;;
-#install_printer ppvblock;;
-#install_printer  (* loc *) pploc;;
-#install_printer  (* substitution *) ppsubst;;
-
-(* Various utilities *)
-
-let qid = Libnames.qualid_of_string
-
 (* parsing of terms *)
 
 let parse_constr = Pcoq.parse_string Pcoq.Constr.constr
@@ -59,11 +24,8 @@ let constr_of_string s =
 
 (* get the body of a constant *)
 
-open Declarations
-open Declareops
-
 let constbody_of_string s =
-  let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
+  let b = Global.lookup_constant (Nametab.locate_constant (Libnames.qualid_of_string s)) in
   Option.get (Global.body_of_constant_body Library.indirect_accessor b)
 
 (* Get the current goal *)
@@ -76,20 +38,3 @@ let current_goal () = get_nth_goal 1;;
 
 let pf_e gl s = 
   Constrintern.interp_constr (Tacmach.pf_env gl) (Tacmach.project gl) (parse_constr s)
-
-let go () =
-  Flags.with_option
-    Toploop.may_trace
-    (fun () -> Coqloop.ml_toplevel_state := Some (Coqloop.loop ~state:(Option.get !Coqloop.ml_toplevel_state)))
-    ();
-  print_newline ()
-
-let () =
-  Toploop.add_directive
-    "go"
-    (Toploop.Directive_none go)
-    Toploop.{section="Coq"; doc="Run Coq toplevel loop"}
-
-let _ =
-  print_newline ();
-  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `#go;;` if `#trace` was used)"

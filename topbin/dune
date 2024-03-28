@@ -15,7 +15,7 @@
  (public_name coqtop.byte)
  (package coq-core)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel coq-core.config.byte coq-core.toplevel findlib.top)
+ (libraries compiler-libs.toplevel coq-core.config.byte coq-core.toplevel coq-core.dev findlib.top)
  (modes byte))
 
 (executable

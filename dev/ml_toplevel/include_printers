@@ -1,62 +1,91 @@
-#install_printer  (* pp_stdcmds *) pp;;
-#install_printer  (* pattern *) pppattern;;
-#install_printer  (* glob_constr *) ppglob_constr;;
-#install_printer  (* open constr *) ppopenconstr;;
-#install_printer  (* constr *) ppconstr;;
-#install_printer  (* econstr *) ppeconstr;;
-#install_printer  (* constraints *)  ppconstraints;;
-#install_printer  (* univ constraints *)  ppuniverseconstraints;;
-#install_printer  (* universe *)  ppuni;;
-#install_printer  (* universes *)  ppuniverses;;
-#install_printer  (* univ level *) ppuni_level;;
-#install_printer  (* sort variable *) ppqvar;;
-#install_printer  (* univ context *) ppuniverse_context;;
-#install_printer  (* univ context *) ppaucontext;;
-#install_printer  (* univ context future *) ppuniverse_context_future;;
-#install_printer  (* univ context set *) ppuniverse_context_set;;
-#install_printer  (* qvar set *) ppqvarset;;
-#install_printer  (* univ set *) ppuniverse_set;;
-#install_printer  (* univ instance *) ppuniverse_instance;;
-#install_printer  (* univ ainstance *) ppuniverse_ainstance;;
-#install_printer  (* univ subst *) ppuniverse_subst;;
-#install_printer  (* univ full subst *) ppuniverse_level_subst;;
-#install_printer ppqvar_subst;;
-#install_printer  (* univ opt subst *) ppuniverse_opt_subst;;
-#install_printer  (* evar univ ctx *) ppevar_universe_context;;
-#install_printer  (* cclosure partial_subst *) pp_partialfsubst;;
-#install_printer  (* reductionops partial_subst *) pp_partialsubst;;
-#install_printer  (* inductive *) ppind;;
-#install_printer  (* 'a scheme_kind *) ppscheme;;
-#install_printer  (* type_judgement *) pptype;;
-#install_printer  (* judgement *) ppj;;
-#install_printer  (* id set *) ppidset;;
-#install_printer  (* int set *) ppintset;;
-#install_printer  (* id set *) ppidmapgen;;
-#install_printer  (* int set *) ppintmapgen;;
+#install_printer (* identifier *) Top_printers.ppid;;
+#install_printer (* identifier *) Top_printers.ppidset;;
+#install_printer (* Intset.t *) Top_printers.ppintset;;
+#install_printer (* label *) Top_printers.pplab;;
+#install_printer (* mod_bound_id *) Top_printers.ppmbid;;
+#install_printer (* dir_path *) Top_printers.ppdir;;
+#install_printer (* module_path *) Top_printers.ppmp;;
+#install_printer (* section_path *) Top_printers.ppsp;;
+#install_printer (* qualid *) Top_printers.ppqualid;;
+#install_printer (* kernel_name *) Top_printers.ppkn;;
+#install_printer (* constant *) Top_printers.ppcon;;
+#install_printer (* projection *) Top_printers.ppproj;;
+#install_printer (* projection *) Top_printers.ppprojrepr;;
+#install_printer (* recarg *) Top_printers.pprecarg;;
+#install_printer (* recarg Rtree.t *) Top_printers.ppwf_paths;;
+#install_printer (* constr *) Top_printers.print_pure_constr;;
+#install_printer (* Idpred.t *) Top_printers.pp_idpred;;
+#install_printer (* Cpred.t *) Top_printers.pp_cpred;;
+#install_printer (* loc *) Top_printers.pploc;;
+#install_printer (* substitution *) Top_printers.ppsubst;;
 
-(*#install_printer  (* hint_db *)  print_hint_db;;*)
-(*#install_printer  (* hints_path *)  pphintspath;;*)
-#install_printer  (* goal *)  ppgoal;;
-#install_printer  ppgoal_with_state;;
-(*#install_printer  (* sigma goal *)  ppsigmagoal;;*)
-#install_printer  (* proof *)  pproof;;
-#install_printer  (* proofview *)  ppproofview;;
-#install_printer  (* metaset.t *) ppmetas;;
-#install_printer  (* evar *)  ppevar;;
-#install_printer  (* evar_map *)  ppevm;;
-#install_printer  (* Evar.Set.t *) ppexistentialset;;
-#install_printer  (* clenv *) ppclenv;;
-#install_printer  (* env *) ppenv;;
-#install_printer  (* Hint_db.t *) pphintdb;;
-#install_printer  (* named_context_val *) ppnamedcontextval;;
+#install_printer (* pp_stdcmds *) Top_printers.pp;;
+#install_printer (* pattern *) Top_printers.pppattern;;
+#install_printer (* glob_constr *) Top_printers.ppglob_constr;;
+#install_printer (* open constr *) Top_printers.ppopenconstr;;
+#install_printer (* constr *) Top_printers.ppconstr;;
+#install_printer (* econstr *) Top_printers.ppeconstr;;
+#install_printer (* constraints *) Top_printers.ppconstraints;;
+#install_printer (* univ constraints *) Top_printers.ppuniverseconstraints;;
+#install_printer (* universe *) Top_printers.ppuni;;
+#install_printer (* universes *) Top_printers.ppuniverses;;
+#install_printer (* univ level *) Top_printers.ppuni_level;;
+#install_printer (* sort variable *) Top_printers.ppqvar;;
+#install_printer (* univ context *) Top_printers.ppuniverse_context;;
+#install_printer (* univ context *) Top_printers.ppaucontext;;
+#install_printer (* univ context future *) Top_printers.ppuniverse_context_future;;
+#install_printer (* univ context set *) Top_printers.ppuniverse_context_set;;
+#install_printer (* qvar set *) Top_printers.ppqvarset;;
+#install_printer (* univ set *) Top_printers.ppuniverse_set;;
+#install_printer (* univ instance *) Top_printers.ppuniverse_instance;;
+#install_printer (* univ ainstance *) Top_printers.ppuniverse_ainstance;;
+#install_printer (* univ subst *) Top_printers.ppuniverse_subst;;
+#install_printer (* univ full subst *) Top_printers.ppuniverse_level_subst;;
+#install_printer Top_printers.ppqvar_subst;;
+#install_printer (* univ opt subst *) Top_printers.ppuniverse_opt_subst;;
+#install_printer (* evar univ ctx *) Top_printers.ppevar_universe_context;;
+#install_printer (* cclosure partial_subst *) Top_printers.pp_partialfsubst;;
+#install_printer (* reductionops partial_subst *) Top_printers.pp_partialsubst;;
+#install_printer (* inductive *) Top_printers.ppind;;
+#install_printer (* 'a scheme_kind *) Top_printers.ppscheme;;
+#install_printer (* type_judgement *) Top_printers.pptype;;
+#install_printer (* judgement *) Top_printers.ppj;;
+#install_printer (* id set *) Top_printers.ppidset;;
+#install_printer (* int set *) Top_printers.ppintset;;
+#install_printer (* id set *) Top_printers.ppidmapgen;;
+#install_printer (* int set *) Top_printers.ppintmapgen;;
 
-#install_printer  (* tactic *) pptac;;
-#install_printer  (* object *) ppobj;;
-#install_printer  (* global_reference *) ppglobal;;
-#install_printer  (* generic_argument *) pp_generic_argument;;
+(* #install_printer (* hint_db *) Top_printers.print_hint_db;; *)
+(* #install_printer (* hints_path *) Top_printers.pphintspath;; *)
+#install_printer (* goal *) Top_printers.ppgoal;;
+#install_printer  Top_printers.ppgoal_with_state;;
+(* #install_printer (* sigma goal *) Top_printers.ppsigmagoal;; *)
+#install_printer (* proof *) Top_printers.pproof;;
+#install_printer (* proofview *) Top_printers.ppproofview;;
+#install_printer (* metaset.t *) Top_printers.ppmetas;;
+#install_printer (* evar *) Top_printers.ppevar;;
+#install_printer (* evar_map *) Top_printers.ppevm;;
+#install_printer (* Evar.Set.t *) Top_printers.ppexistentialset;;
+#install_printer (* clenv *) Top_printers.ppclenv;;
+#install_printer (* env *) Top_printers.ppenv;;
+#install_printer (* Hint_db.t *) Top_printers.pphintdb;;
+#install_printer (* named_context_val *) Top_printers.ppnamedcontextval;;
 
-#install_printer  (* fconstr *) ppfconstr;;
+#install_printer (* tactic *) Top_printers.pptac;;
+#install_printer (* object *) Top_printers.ppobj;;
+#install_printer (* global_reference *) Top_printers.ppglobal;;
+#install_printer (* generic_argument *) Top_printers.pp_generic_argument;;
 
-#install_printer  (* fsubst *) ppfsubst;;
+#install_printer (* fconstr *) Top_printers.ppfconstr;;
 
-#install_printer (* Future.computation *) ppfuture;;
+#install_printer (* fsubst *) Top_printers.ppfsubst;;
+
+#install_printer (* Future.computation *) Top_printers.ppfuture;;
+
+#install_printer (* patch *) Vm_printers.ppripos;;
+#install_printer (* values *) Vm_printers.ppvalues;;
+#install_printer Vm_printers.ppzipper;;
+#install_printer Vm_printers.ppstack;;
+#install_printer Vm_printers.ppatom;;
+#install_printer Vm_printers.ppwhd;;
+#install_printer Vm_printers.ppvblock;;
