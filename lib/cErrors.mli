@@ -16,6 +16,39 @@
 val push : exn -> Exninfo.iexn
 [@@ocaml.deprecated "please use [Exninfo.capture]"]
 
+(** {6 Error registration API} *)
+
+module ErrorKind : sig
+  type t = Anomaly | Regular
+end
+
+module type S = sig
+  type t
+  val print : t -> Pp.t
+  val doc : Pp.t
+  val kind : ErrorKind.t
+end
+
+module type E = sig
+  type t
+  type exn += E of t
+end
+
+module type S0 = sig
+  val print : Pp.t
+  val doc : Pp.t
+  val kind : ErrorKind.t
+end
+
+module type E0 = sig
+  type exn += E
+end
+
+module CoqError : sig
+  module Make0 (X : S0) : E0
+  module Make (X : S) : E with type t = X.t
+end
+
 (** {6 Generic errors.}
 
  [Anomaly] is used for system errors and [UserError] for the
