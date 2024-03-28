@@ -638,18 +638,25 @@ type krule =
   (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.Rule.t *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
-let rec get_rule (tok : scope_rule token list) : krule = match tok with
+let keyword_needed dft_kw_need = function
+  | TacTerm _ :: _ -> false
+  | TacNonTerm _ :: _ -> true
+  | [] -> dft_kw_need
+
+let rec get_rule dft_kw_need (tok : scope_rule token list) : krule = match tok with
 | [] -> KRule (Pcoq.Rule.stop, fun k loc -> k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
-  let KRule (rule, act) = get_rule tok in
+  let KRule (rule, act) = get_rule true tok in
   let rule = Pcoq.Rule.next rule scope in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
-  let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.(Rule.next rule (Symbol.token (Pcoq.terminal t))) in
+  let KRule (rule, act) = get_rule dft_kw_need tok in
   let act k _ = act k in
-  KRule (rule, act)
+  let parse_as_numeral = if keyword_needed dft_kw_need tok then None else NumTok.Unsigned.parse_string t in
+  match parse_as_numeral with
+  | None -> KRule (Pcoq.(Rule.next rule (Symbol.token (Pcoq.terminal t))), act)
+  | Some n -> KRule (Pcoq.(Rule.next rule (Symbol.token (Tok.PNUMBER (Some n)))), act)
 
 let deprecated_ltac2_notation =
   Deprecation.create_warning
@@ -667,7 +674,7 @@ let get_reinit = function
 
 let perform_notation syn st =
   let tok = List.rev_map ParseToken.parse_token syn.synext_tok in
-  let KRule (rule, act) = get_rule tok in
+  let KRule (rule, act) = get_rule (syn.synext_lev > 0) tok in
   let mk loc args =
     let () = match syn.synext_depr with
     | None -> ()
