@@ -118,3 +118,10 @@ Goal bool -> 2 = 2.
   intros b%lem'.
   destruct b.
 Qed.
+
+(* change_constr *)
+
+Goal 2 + 3 = 5.
+  Std.change_constr '(2 + 3) '(3 + 2) Std.default_clause.
+  match! goal with [ |- 3 + 2 = 5 ] => () end.
+Abort.
