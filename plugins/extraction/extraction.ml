@@ -400,9 +400,10 @@ let rec extract_type env sg db j c args =
         extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
     | Proj (p,r,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
-       if Projection.unfolded p then Tunknown
-       else
-         extract_type env sg db j (EConstr.mkProj (Projection.unfold p, r, t)) args
+       let c, args = Reductionops.whd_stack_gen RedFlags.(red_add betaiotazeta (fPROJ (Projection.repr p))) env sg (EConstr.applist (c,args)) in
+       (match EConstr.kind sg c with
+       | Proj (p',_,_) when QProjection.equal env p p' -> Tunknown
+       | _ -> extract_type env sg db j c args)
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Evar _ | Meta _ -> Taxiom (* only possible during Show Extraction *)
     | Var v ->
