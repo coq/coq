@@ -11,3 +11,5 @@
 val thm_token : Decls.theorem_kind Pcoq.Entry.t
 
 val hint : Vernacexpr.hints_expr Pcoq.Entry.t
+
+val proof_kw : Vernacexpr.opacity_flag Pcoq.Entry.t
