@@ -21,3 +21,9 @@ subst.
 Show.
 trivial.
 Qed.
+
+Lemma test(k f: nat)(E: k = f)(A: k < 3)(B: 3 < k): False.
+subst k.
+(* In 8.15, `subst k` would flip the order of A and B *)
+Show.
+Abort.
