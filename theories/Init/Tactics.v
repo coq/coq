@@ -340,3 +340,11 @@ Create HintDb rewrite discriminated.
 #[global]
 Hint Variables Opaque : rewrite.
 Create HintDb typeclass_instances discriminated.
+
+(** A variant of [apply] using [refine], doing as much conversion as necessary. *)
+
+Ltac rapply p :=
+  (** before we try to add more underscores, first ensure that adding such underscores is valid *)
+  (assert_succeeds (idtac; let __ := open_constr:(p _) in idtac);
+   rapply uconstr:(p _))
+  || refine p.

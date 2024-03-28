@@ -995,9 +995,6 @@ Applying theorems
       :n:`@one_term` to arbitrarily many arguments without getting a type
       error, :tacn:`rapply` will loop.
 
-      Note that you must :n:`Require Import Coq.Program.Tactics` to
-      use :tacn:`rapply`.
-
    .. tacn:: simple apply {+, @one_term_with_bindings } {? @in_hyp_as }
 
       Behaves like :tacn:`apply` but it reasons modulo conversion only on subterms

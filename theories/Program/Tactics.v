@@ -170,14 +170,6 @@ Ltac on_application f tac T :=
     | context [f ?x] => tac (f x)
   end.
 
-(** A variant of [apply] using [refine], doing as much conversion as necessary. *)
-
-Ltac rapply p :=
-  (** before we try to add more underscores, first ensure that adding such underscores is valid *)
-  (assert_succeeds (idtac; let __ := open_constr:(p _) in idtac);
-   rapply uconstr:(p _))
-  || refine p.
-
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
 Ltac on_call f tac :=
