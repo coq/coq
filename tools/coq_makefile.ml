@@ -395,7 +395,7 @@ let parse_extra f r opts = match f, r with
   | _ -> None
 
 let destination_of { ml_includes; q_includes; r_includes; } file =
-  let file_dir = CUnix.canonical_path_name (Filename.dirname file) in
+  let file_dir = CUnix.canonical_dir (Filename.dirname file) in
   let includes = q_includes @ r_includes in
   let mk_destination logic canonical_path =
     Filename.concat

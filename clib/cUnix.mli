@@ -11,7 +11,8 @@
 (** {5 System utilities} *)
 
 type physical_path = string
-type load_path = physical_path list
+type physical_dir_path = string
+type load_path = physical_dir_path list
 
 val physical_path_of_string : string -> physical_path
 val string_of_physical_path : physical_path -> string
@@ -19,7 +20,10 @@ val string_of_physical_path : physical_path -> string
 (** Escape what has to be escaped (e.g. surround with quotes if with spaces) *)
 val escaped_string_of_physical_path : physical_path -> string
 
-val canonical_path_name : string -> string
+(** Return the absolute name corresponding to a directory, as given by
+    chdir in this directory, working from the current directory if the
+    name is relative *)
+val canonical_dir : physical_dir_path -> physical_dir_path
 
 (** Remove all initial "./" in a path *)
 val remove_path_dot : string -> string
@@ -27,18 +31,18 @@ val remove_path_dot : string -> string
 (** If a path [p] starts with the current directory $PWD then
     [strip_path p] returns the sub-path relative to $PWD.
     Any leading "./" are also removed from the result. *)
-val strip_path : string -> string
+val strip_path : physical_path -> physical_path
 
 (** correct_path f dir = dir/f if f is relative *)
-val correct_path : string -> string -> string
+val correct_path : physical_path -> physical_dir_path -> physical_path
 
 val path_to_list : string -> string list
 
 (** [make_suffix file suf] catenate [file] with [suf] when
     [file] does not already end with [suf]. *)
-val make_suffix : string -> string -> string
+val make_suffix : physical_path -> string -> physical_path
 
-val file_readable_p : string -> bool
+val file_readable_p : physical_path -> bool
 
 (** {6 Executing commands } *)
 
@@ -47,7 +51,7 @@ val file_readable_p : string -> bool
     is called on each elements read on stdout or stderr. *)
 
 val run_command :
-  ?hook:(bytes->unit) -> string -> Unix.process_status * string
+  ?hook:(bytes->unit) -> physical_path -> Unix.process_status * string
 
 (** [sys_command] launches program [prog] with arguments [args].
     It behaves like [Sys.command], except that we rely on
@@ -56,14 +60,14 @@ val run_command :
     (against whitespace or other funny chars in paths), hence no need
     to care about the different quoting conventions of /bin/sh and cmd.exe. *)
 
-val sys_command : string -> string list -> Unix.process_status
+val sys_command : physical_path -> string list -> Unix.process_status
 
 (** A version of [Unix.waitpid] immune to EINTR exceptions *)
 
 val waitpid_non_intr : int -> Unix.process_status
 
 (** Check if two file names refer to the same (existing) file *)
-val same_file : string -> string -> bool
+val same_file : physical_path -> physical_path -> bool
 
 (** Like [Stdlib.Filename.temp_file] but producing a directory. *)
-val mktemp_dir : ?temp_dir:string -> string -> string -> string
+val mktemp_dir : ?temp_dir:physical_dir_path -> string -> string -> physical_dir_path

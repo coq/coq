@@ -1820,7 +1820,7 @@ let read_coqide_args argv =
     |"-f" :: file :: args ->
       if project_files <> None then
         (output_string stderr "Error: multiple -f options"; exit 1);
-      let d = CUnix.canonical_path_name (Filename.dirname file) in
+      let d = CUnix.canonical_dir (Filename.dirname file) in
       let warning_fn x = Format.eprintf "%s@\n%!" x in
       let p = CoqProject_file.read_project_file ~warning_fn file in
       filter_coqtop coqtop (Some (d,p)) bindings_files out args

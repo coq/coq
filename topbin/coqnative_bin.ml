@@ -34,14 +34,14 @@ let add_load_path (phys_path,coq_path) =
   if CDebug.(get_flag misc) then
     Feedback.msg_notice (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
-  let phys_path = CUnix.canonical_path_name phys_path in
+  let phys_path = CUnix.canonical_dir phys_path in
   let physical, logical = !load_paths in
     match List.filter2 (fun p d -> p = phys_path) physical logical with
       | _,[dir] ->
           if coq_path <> dir
             (* If this is not the default -I . to coqtop *)
             && not
-            (phys_path = CUnix.canonical_path_name Filename.current_dir_name
+            (phys_path = CUnix.canonical_dir Filename.current_dir_name
                 && coq_path = default_root_prefix)
           then
             begin

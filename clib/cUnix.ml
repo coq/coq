@@ -11,6 +11,7 @@
 (* Files and load path. *)
 
 type physical_path = string
+type physical_dir_path = string
 type load_path = physical_path list
 
 let physical_path_of_string s = s
@@ -60,7 +61,7 @@ let strip_path p =
   else
     remove_path_dot p
 
-let canonical_path_name p =
+let canonical_dir p =
   let current = Sys.getcwd () in
   try
     Sys.chdir p;
@@ -68,8 +69,11 @@ let canonical_path_name p =
     Sys.chdir current;
     p'
   with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    current ^ dirsep ^ strip_path p
+    if Filename.is_relative p then
+      (* We give up to find a canonical name and just simplify it... *)
+      current ^ dirsep ^ strip_path p
+    else
+      p
 
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
@@ -118,7 +122,7 @@ let sys_command prog args =
   let pid = Unix.create_process prog argv Unix.stdin Unix.stdout Unix.stderr in
   waitpid_non_intr pid
 
-(*
+(**
   checks if two file names refer to the same (existing) file by
   comparing their device and inode.
   It seems that under Windows, inode is always 0, so we cannot

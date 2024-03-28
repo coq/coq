@@ -32,7 +32,7 @@ open Pp
 (* This path is where we look for .cmo/.cmxs using the legacy method *)
 let coq_mlpath_copy = ref [Sys.getcwd ()]
 let keep_copy_mlpath path =
-  let cpath = CUnix.canonical_path_name path in
+  let cpath = CUnix.canonical_dir path in
   let filter path' = not (String.equal cpath path') in
   coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
 
