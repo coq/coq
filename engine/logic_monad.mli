@@ -74,6 +74,10 @@ module NonLogical : sig
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
+
+  (** [catch_more t cond inj] catches any exception [e] satisfying [cond e].
+      We wrap [e] into [Exception] when passing to [inj] *)
+  val catch_more : 'a t -> (exn -> bool) -> (Exninfo.iexn -> 'a t) -> 'a t
   val timeout : float -> 'a t -> 'a option t
 
   (** Construct a monadified side-effect. Exceptions raised by the argument are
@@ -152,6 +156,8 @@ module BackState : sig
 
   val run : ('a, 'i, 'o, 'e) t -> 'i -> ('a * 'o, 'e) reified
 
+  val catch_system : ('a, 'i, 'o, 'e) t  -> (exn -> bool) -> (Exninfo.iexn -> 'e) -> ('a, 'i, 'o, 'e) t
+
 end
 
 (** The monad is parametrised in the types of state, environment and
@@ -207,6 +213,8 @@ module Logical (P:Param) : sig
   val repr : 'a reified -> ('a, 'a reified_, Exninfo.iexn) list_view_ NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
+
+  val catch_system : 'a t -> (exn -> bool) -> 'a t
 
   module Unsafe :
   sig

@@ -715,3 +715,12 @@ TACTIC EXTEND with_strategy
   with_set_strategy [(v, q)] (Tacinterp.tactic_of_value ist tac)
 }
 END
+
+TACTIC EXTEND catch_stack_overflow
+| [ "catch_stack_overflow" tactic3(tac) ] -> {
+  Proofview.tclCATCHSYSTEM (Tacinterp.tactic_of_value ist tac)
+    (function
+      | Stack_overflow -> true
+      | _ -> false)
+}
+END

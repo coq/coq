@@ -260,6 +260,8 @@ let tclTHEN = Proof.(>>)
     the returned value. *)
 let tclIGNORE = Proof.ignore
 
+let tclCATCHSYSTEM = Proof.catch_system
+
 module Monad = Proof
 
 

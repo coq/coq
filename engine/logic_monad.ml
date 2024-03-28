@@ -92,6 +92,12 @@ struct
         let (src, info) = Exninfo.capture src in
         h (e, info) ()
 
+  let catch_more = fun s cond h -> ();
+    fun () -> try s ()
+      with e when cond e ->
+        let (e, info) = Exninfo.capture e in
+        h (Exception e, info) ()
+
   let read_line = fun () -> try read_line () with e ->
     let (e, info) = Exninfo.capture e in
     raise (e,info) ()
@@ -195,7 +201,7 @@ struct
 
   let (>>) m f =
     { iolist = fun s nil cons ->
-      m.iolist s nil (fun () s next -> f.iolist s next cons) }
+          m.iolist s nil (fun () s next -> f.iolist s next cons) }
 
   let map f m =
     { iolist = fun s nil cons -> m.iolist s nil (fun x s next -> cons (f x) s next) }
@@ -211,6 +217,10 @@ struct
 
   let lift m =
     { iolist = fun s nil cons -> NonLogical.(m >>= fun x -> cons x s nil) }
+
+  let catch_system m cond f =
+    { iolist = fun s nil cons ->
+          NonLogical.catch_more (m.iolist s nil cons) cond (fun x -> nil (f x)) }
 
   (** State related *)
 
@@ -349,6 +359,7 @@ struct
   let break = BackState.break
   let split = BackState.split
   let repr = BackState.repr
+  let catch_system t cond = BackState.catch_system t cond (fun x -> x)
 
   (** State related. We specialize them here to ensure soundness (for reader and
       writer) and efficiency. *)
