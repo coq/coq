@@ -644,14 +644,14 @@ GRAMMAR EXTEND Gram
     [ [ (* Interactive module declaration *)
         IDENT "Module"; export = export_token; id = identref;
         bl = LIST0 module_binder; sign = of_module_type;
-        body = is_module_expr ->
+        body = module_body ->
           { VernacSynterp (VernacDefineModule (export, id, bl, sign, body)) }
       | IDENT "Module"; "Type"; id = identref;
         bl = LIST0 module_binder; sign = check_module_types;
-        body = is_module_type ->
+        body = module_body ->
           { VernacSynterp (VernacDeclareModuleType (id, bl, sign, body)) }
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
-        bl = LIST0 module_binder; ":"; mty = module_type_inl ->
+        bl = LIST0 module_binder; ":"; mty = module_expr_inl ->
           { VernacSynterp (VernacDeclareModule (export, id, bl, mty)) }
       (* Section beginning *)
       | IDENT "Section"; id = identref -> { VernacSynterp (VernacBeginSection id) }
@@ -679,11 +679,11 @@ GRAMMAR EXTEND Gram
         { VernacSynterp (VernacImport ((Import,cats),qidl)) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacImport ((Export,cats),qidl)) }
-      | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
-          { VernacSynterp (VernacInclude(e::l)) }
-      | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-         { warn_deprecated_include_type ~loc ();
-        VernacSynterp (VernacInclude(e::l)) } ] ]
+      | IDENT "Include"; l = LIST1 module_expr_inl SEP "<+" ->
+          { VernacSynterp (VernacInclude l) }
+      | IDENT "Include"; "Type"; l = LIST1 module_expr_inl SEP "<+" ->
+          { warn_deprecated_include_type ~loc ();
+            VernacSynterp (VernacInclude l) } ] ]
   ;
   import_categories:
   [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
@@ -703,28 +703,18 @@ GRAMMAR EXTEND Gram
       | IDENT "Export"; cats = OPT import_categories -> { Some (Export,cats) }
       |  -> { None } ] ]
   ;
-  ext_module_type:
-    [ [ "<+"; mty = module_type_inl -> { mty } ] ]
-  ;
-  ext_module_expr:
-    [ [ "<+"; mexpr = module_expr_inl -> { mexpr } ] ]
-  ;
   check_module_type:
-    [ [ "<:"; mty = module_type_inl -> { mty } ] ]
+    [ [ "<:"; mty = module_expr_inl -> { mty } ] ]
   ;
   check_module_types:
     [ [ mtys = LIST0 check_module_type -> { mtys } ] ]
   ;
   of_module_type:
-    [ [ ":"; mty = module_type_inl -> { Enforce mty }
+    [ [ ":"; mty = module_expr_inl -> { Enforce mty }
       | mtys = check_module_types -> { Check mtys } ] ]
   ;
-  is_module_type:
-    [ [ ":="; mty = module_type_inl ; l = LIST0 ext_module_type -> { (mty::l) }
-      | -> { [] } ] ]
-  ;
-  is_module_expr:
-    [ [ ":="; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> { (mexpr::l) }
+  module_body:
+    [ [ ":="; l = LIST1 module_expr_inl SEP "<+" -> { l }
       | -> { [] } ] ]
   ;
   functor_app_annot:
@@ -738,19 +728,17 @@ GRAMMAR EXTEND Gram
     [ [ "!"; me = module_expr -> { (me,NoInline) }
       | me = module_expr; a = functor_app_annot -> { (me,a) } ] ]
   ;
-  module_type_inl:
-    [ [ "!"; me = module_type -> { (me,NoInline) }
-      | me = module_type; a = functor_app_annot -> { (me,a) } ] ]
-  ;
   (* Module binder  *)
   module_binder:
     [ [ "("; export = export_token; idl = LIST1 identref; ":";
-         mty = module_type_inl; ")" -> { (export,idl,mty) } ] ]
+         mty = module_expr_inl; ")" -> { (export,idl,mty) } ] ]
   ;
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> { CAst.make ~loc @@ CMident me }
       | me1 = module_expr; me2 = module_expr_atom -> { CAst.make ~loc @@ CMapply (me1,me2) }
+      | me = module_expr; "with"; decl = with_declaration ->
+          { CAst.make ~loc @@ CMwith (me,decl) }
       ] ]
   ;
   module_expr_atom:
@@ -761,15 +749,6 @@ GRAMMAR EXTEND Gram
           { CWith_Definition (fqid,udecl,c) }
       | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
           { CWith_Module (fqid,qid) }
-      ] ]
-  ;
-  module_type:
-    [ [ qid = qualid -> { CAst.make ~loc @@ CMident qid }
-      | "("; mt = module_type; ")" -> { mt }
-      | mty = module_type; me = module_expr_atom ->
-          { CAst.make ~loc @@ CMapply (mty,me) }
-      | mty = module_type; "with"; decl = with_declaration ->
-          { CAst.make ~loc @@ CMwith (mty,decl) }
       ] ]
   ;
   (* Proof using *)
