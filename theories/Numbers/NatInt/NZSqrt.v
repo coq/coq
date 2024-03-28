@@ -547,6 +547,9 @@ Proof.
    apply sqrt_le_mono, succ_le_mono. rewrite 2 (lt_succ_pred 0); order.
 Qed.
 
+#[export] Instance _sqrt_up_le_mono: Proper (le ==> le) sqrt_up.
+Proof. simpl_relation. now apply sqrt_up_le_mono. Qed.
+
 (** No reverse result for <=, consider for instance √°3 <= √°2 *)
 
 Lemma sqrt_up_lt_cancel : forall a b, √°a < √°b -> a < b.

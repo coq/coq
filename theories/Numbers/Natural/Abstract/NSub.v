@@ -228,11 +228,17 @@ Proof.
  - apply sub_add_le.
 Qed.
 
+#[export] Instance _sub_le_mono_r: Proper (le ==> eq ==> le) sub.
+Proof. intros x x' Hx y y' Hy. rewrite Hy. now apply sub_le_mono_r. Qed.
+
 Lemma sub_le_mono_l : forall n m p, n <= m -> p-m <= p-n.
 Proof.
  intros n m p. rewrite le_sub_le_add_r.
  transitivity (p-n+n); [ apply sub_add_le | now apply add_le_mono_l].
 Qed.
+
+#[export] Instance _sub_le_mono_l: Proper (eq ==> le --> le) sub.
+Proof. intros x x' Hx y y' Hy. rewrite Hx. now apply sub_le_mono_l. Qed.
 
 (** Sub and mul *)
 
