@@ -154,12 +154,18 @@ type hint_pattern =
 | DefaultPattern
 | ConstrPattern of constr_pattern
 
+type matching_mode =
+| SyntacticMatching
+| TransparencyMatching
+
 type 'a with_metadata =
-  { pri     : int
+  { pri      : int
   (** A number lower is higher priority *)
-  ; pat     : hint_pattern option
+  ; pat      : hint_pattern option
   (** A pattern for the concl of the Goal *)
-  ; name    : GlobRef.t option
+  ; matching : matching_mode
+  (** A mode determining how to interpret pat *)
+  ; name     : GlobRef.t option
   (** A potential name to refer to the hint *)
   ; db : string option
   (** The database from which the hint comes *)
@@ -282,9 +288,14 @@ struct
 
   let build st data = ref (Build (st, data))
 
-  let add0 env sigma st p v dn =
+  let add0 env sigma st p m v dn =
     let p = match p with
-    | ConstrPattern p -> Bnet.pattern env st p
+    | ConstrPattern p ->
+      begin
+        match m with
+        | TransparencyMatching -> Bnet.pattern env st p
+        | SyntacticMatching -> Bnet.pattern_syntactic env p
+      end
     | DefaultPattern ->
       let c = get_default_pattern (snd v).code.obj in
       Bnet.constr_pattern env sigma st c
@@ -295,11 +306,11 @@ struct
   | Bnet dn -> dn
   | Diff ((p, v), rem) ->
     let st, dn = force env sigma rem in
-    let dn = add0 env sigma st p v dn in
+    let dn = add0 env sigma st p (snd v).matching v dn in
     let () = net := (Bnet (st, dn)) in
     st, dn
   | Build (st, data) ->
-    let fold dn v = add0 env sigma st (Option.get (snd v).pat) v dn in
+    let fold dn v = add0 env sigma st (Option.get (snd v).pat) (snd v).matching v dn in
     let ans = List.fold_left fold Bnet.empty data in
     let () = net := Bnet (st, ans) in
     st, ans
@@ -891,7 +902,9 @@ let make_exact_entry env sigma info ?name (c, cty, ctx) =
         in
         let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = 0 } in
         (Some hd,
-         { pri; pat = Some pat; name;
+         { pri; pat = Some pat;
+           matching = TransparencyMatching;
+           name;
            db = None; secvars;
            code = with_uid (Give_exact h); })
 
@@ -920,15 +933,16 @@ let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
     | None -> DefaultPattern
     in
     let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = hyps; } in
+    let matching = TransparencyMatching in
     if Int.equal nmiss 0 then
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; matching; name;
          db = None;
          secvars;
          code = with_uid (Res_pf h); })
     else
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; matching; name;
          db = None; secvars;
          code = with_uid (ERes_pf h); })
   | _ -> failwith "make_apply_entry"
@@ -986,6 +1000,7 @@ let make_unfold eref =
   (Some g,
    { pri = 4;
      pat = None;
+     matching = SyntacticMatching;   (* Unused but morally the right mode *)
      name = Some g;
      db = None;
      secvars = secvars_of_global (Global.env ()) g;
@@ -1003,6 +1018,7 @@ let make_extern pri pat tacast =
   (hdconstr,
    { pri = pri;
      pat = Option.map (fun p -> ConstrPattern p) pat;
+     matching = SyntacticMatching;
      name = None;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
@@ -1030,6 +1046,7 @@ let make_trivial env sigma r =
   (Some hd,
    { pri=1;
      pat = Some DefaultPattern;
+     matching = TransparencyMatching;
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
