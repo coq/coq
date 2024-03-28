@@ -354,7 +354,7 @@ let coerce_itf ?loc env sigma v t c1 =
   app_coercion env sigma coercion v
 
 let saturate_evd env sigma =
-  Typeclasses.resolve_typeclasses
+  Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db
     ~filter:Typeclasses.no_goals ~fail:false env sigma
 
 type coercion_trace =

@@ -765,7 +765,7 @@ open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) ~db clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
@@ -773,7 +773,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let sigma =
       if with_classes then
         let sigma =
-          Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+          Typeclasses.resolve_typeclasses ~db ~filter:Typeclasses.all_evars
             ~fail:(not with_evars) clenv.env sigma
         in
         (* After an apply, all the subgoals including those dependent shelved ones are in
@@ -847,7 +847,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
     in
     PrimitiveEta args
 
-let case_pf ?(with_evars=false) ~dep (indarg, typ) =
+let case_pf ?(with_evars=false) ~db ~dep (indarg, typ) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -903,7 +903,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   (* After an apply, all the subgoals including those dependent shelved ones are in
     the hands of the user and resolution won't be called implicitely on them. *)
   let sigma =
-    Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+    Typeclasses.resolve_typeclasses ~db ~filter:Typeclasses.all_evars
       ~fail:(not with_evars) env sigma
   in
   let sigma = Typeclasses.make_unresolvables (fun x -> true) sigma in

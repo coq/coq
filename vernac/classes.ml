@@ -20,7 +20,6 @@ open Globnames
 open Constrintern
 open Constrexpr
 open Context.Rel.Declaration
-open Class_tactics
 open Libobject
 
 module RelDecl = Context.Rel.Declaration
@@ -428,9 +427,10 @@ let do_instance_subst_constructor_and_ty subst k u ctx =
 
 let do_instance_resolve_TC termtype sigma env =
   let sigma = Evarutil.nf_evar_map sigma in
-  let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
+  let db = Typeclasses.typeclasses_db in
+  let sigma = Typeclasses.resolve_typeclasses ~db ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
   (* Try resolving fields that are typeclasses automatically. *)
-  let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
+  let sigma = Typeclasses.resolve_typeclasses ~db ~filter:Typeclasses.all_evars ~fail:false env sigma in
   let sigma = Evarutil.nf_evar_map_undefined sigma in
   (* Beware of this step, it is required as to minimize universes. *)
   let sigma = Evd.minimize_universes sigma in
@@ -555,7 +555,7 @@ let interp_instance_context ~program_mode env ctx pl tclass =
       cl_context (args, [])
   in
   let sigma = Evarutil.nf_evar_map sigma in
-  let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
+  let sigma = resolve_typeclasses ~db:Typeclasses.typeclasses_db ~filter:Typeclasses.all_evars ~fail:true env sigma in
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
 let new_instance_common ~program_mode env instid ctx cl =

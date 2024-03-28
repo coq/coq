@@ -46,7 +46,7 @@ let redex_of_pattern_tc env p =
   | None -> CErrors.anomaly (str "pattern without redex.")
   | Some (sigma, e) -> sigma, e
   in
-  let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+  let sigma = Typeclasses.resolve_typeclasses ~db:Typeclasses.typeclasses_db ~fail:false env sigma in
   Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =

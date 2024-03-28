@@ -24,7 +24,7 @@ type elim_kind = Case of bool | Elim
 (* c should be of type A1->.. An->B with B an inductive definition *)
 let general_elim_using mk_elim (ind, u, args) id = match mk_elim with
 | Case dep ->
-  Clenv.case_pf ~dep (mkVar id, mkApp (mkIndU (ind, u), args))
+  Clenv.case_pf ~db:Typeclasses.typeclasses_db ~dep (mkVar id, mkApp (mkIndU (ind, u), args))
 | Elim ->
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -38,7 +38,7 @@ let general_elim_using mk_elim (ind, u, args) id = match mk_elim with
     let elimclause = Clenv.mk_clenv_from env sigma (elim, elimt) in
     let indmv = List.last (Clenv.clenv_arguments elimclause) in
     let elimclause = Clenv.clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-    Clenv.res_pf ~flags elimclause
+    Clenv.res_pf ~db:Typeclasses.typeclasses_db ~flags elimclause
   end
 
 (* computing the case/elim combinators *)

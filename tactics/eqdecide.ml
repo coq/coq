@@ -216,7 +216,7 @@ let elim_type dty rectype a1 a2 =
   in
   let elimt = Retyping.get_type_of env sigma elimc in
   let clause = Clenv.mk_clenv_from env sigma (elimc, elimt) in
-  Proofview.Unsafe.tclEVARS sigma <*> Clenv.res_pf clause ~with_evars:false
+  Proofview.Unsafe.tclEVARS sigma <*> Clenv.res_pf ~db:Typeclasses.typeclasses_db clause ~with_evars:false
   end
 
 let rec solveArg hyps dty largs rargs = match largs, rargs with

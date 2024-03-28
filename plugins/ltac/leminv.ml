@@ -266,7 +266,7 @@ let lemInv id c =
   in
   try
     let clause = Clenv.clenv_instantiate mv clause (EConstr.mkVar id, Typing.type_of_variable env id) in
-    Clenv.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
+    Clenv.res_pf ~db:Typeclasses.typeclasses_db clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | Failure _ | UserError _ ->
          user_err

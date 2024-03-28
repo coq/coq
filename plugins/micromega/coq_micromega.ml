@@ -393,7 +393,7 @@ let is_declared_term env evd t =
     let typ = Retyping.get_type_of env evd t in
     try
       ignore
-        (Typeclasses.resolve_one_typeclass env evd
+        (Typeclasses.resolve_one_typeclass ~db:Typeclasses.typeclasses_db env evd
            (EConstr.mkApp (Lazy.force coq_DeclaredConstant, [|typ; t|])));
       true
     with Not_found -> false )

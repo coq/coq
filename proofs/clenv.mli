@@ -70,8 +70,8 @@ val clenv_push_prod : clausenv -> (metavariable * bool * clausenv) option
 (** {6 Clenv tactics} *)
 
 val unify : ?flags:unify_flags -> cv_pb:Conversion.conv_pb -> constr -> unit Proofview.tactic
-val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
-val case_pf : ?with_evars:bool ->
+val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> db:string -> clausenv -> unit Proofview.tactic
+val case_pf : ?with_evars:bool -> db:string ->
   dep:bool -> (constr * types) -> unit Proofview.tactic
 
 val clenv_pose_dependent_evars : ?with_evars:bool -> clausenv -> clausenv
