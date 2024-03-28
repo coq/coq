@@ -89,11 +89,11 @@ Module SsrSyntax.
  Arguments of application-style notations (at level 10) should be declared
  at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
 
-Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)" (at level 8).
-Reserved Notation "(* 69 *)" (at level 69).
+Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)".
+Reserved Notation "(* 69 *)".
 
 (**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
-Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)" (at level 8).
+Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)".
 
 Reserved Notation "<hidden n >" (at level 0, n at level 0,
   format "<hidden  n >").

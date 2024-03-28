@@ -287,7 +287,7 @@ Reserved Notation "{ 'mono' f : x y /~ a }" (at level 0, f at level 99,
   x name, y name, format "{ 'mono'  f  :  x  y  /~  a }").
 
 Reserved Notation "@ 'id' T" (at level 10, T at level 8, format "@ 'id'  T").
-Reserved Notation "@ 'sval'" (at level 10, format "@ 'sval'").
+Reserved Notation "@ 'sval'" (format "@ 'sval'").
 
 (**
  Syntax for defining auxiliary recursive function.
