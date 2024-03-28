@@ -640,17 +640,6 @@ module Internal = struct
   let set_opacity ~opaque entry =
     { entry with proof_entry_opaque = opaque }
 
-  let rec decompose len c t accu =
-    let open Constr in
-    let open Context.Rel.Declaration in
-    if len = 0 then (c, t, accu)
-    else match kind c, kind t with
-      | Lambda (na, u, c), Prod (_, _, t) ->
-        decompose (pred len) c t (LocalAssum (na, u) :: accu)
-      | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
-        decompose (pred len) c t (LocalDef (na, b, u) :: accu)
-      | _ -> assert false
-
   let rec shrink ctx sign c t accu =
     let open Constr in
     let open Vars in
@@ -677,7 +666,7 @@ module Internal = struct
       | Some t -> t
     in
     let ((body, uctx), eff) = const.proof_entry_body in
-    let (body, typ, ctx) = decompose (List.length sign) body typ [] in
+    let (ctx, body, typ) = Term.decompose_lambda_prod_n_decls (List.length sign) body typ in
     let (body, typ, args) = shrink ctx sign body typ [] in
     { const with
       proof_entry_body = ((body, uctx), eff)
