@@ -70,7 +70,8 @@
   %{lib:coq-core.plugins.tauto:tauto_plugin.cma}
   %{lib:coq-core.plugins.cc:cc_plugin.cma}
   %{lib:coq-core.plugins.firstorder:firstorder_plugin.cma}
-  %{lib:coq-core.plugins.ltac:ltac_plugin.cma}))
+  %{lib:coq-core.plugins.ltac:ltac_plugin.cma}
+  (alias %{project_root}/dev/ml_toplevel_files)))
 
 (rule
  (targets coqtop.byte)

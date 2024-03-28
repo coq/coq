@@ -43,3 +43,28 @@
     %{lib:coq-core.top_printers:top_printers.cma}
     %{lib:coq-core.top_printers:../META})
   (action (copy dune-dbg.in dune-dbg)))
+
+(alias
+ (name ml_toplevel_files)
+ (deps
+  (glob_files top_printers.*)
+  (glob_files vm_printers.*)
+  (glob_files ml_toplevel/**)))
+
+(install
+ (section lib)
+ (package coq-core)
+ (files
+  (top_printers.mli as dev/top_printers.mli)
+  (top_printers.ml as dev/top_printers.ml)
+  (vm_printers.ml as dev/vm_printers.ml)
+  (ml_toplevel/include as dev/ml_toplevel/include)
+  (ml_toplevel/include_directories as dev/ml_toplevel/include_directories)
+  (ml_toplevel/include_printers as dev/ml_toplevel/include_printers)
+  (ml_toplevel/include_utilities as dev/ml_toplevel/include_utilities)))
+; TODO: the above can be written as follow:
+;         (files
+;          (glob_files (top_printers.* with_prefix dev))
+;          (glob_files (vm_printers.* with_prefix dev))
+;          (glob_files (ml_toplevel/** with_prefix dev)))
+;       , but this is only possible with dune language 3.11 or later
