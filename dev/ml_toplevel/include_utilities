@@ -84,6 +84,12 @@ let go () =
     ();
   print_newline ()
 
+let () =
+  Toploop.add_directive
+    "go"
+    (Toploop.Directive_none go)
+    Toploop.{section="Coq"; doc="Run Coq toplevel loop"}
+
 let _ =
   print_newline ();
-  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `go ();;` if `#trace` was used)"
+  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `#go;;` if `#trace` was used)"
