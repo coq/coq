@@ -227,8 +227,6 @@ The following commands should work:
 ```
 dune exec -- dev/shim/coqtop.byte
 > Drop.
-# #directory "dev";;
-# #use "include";;
 ```
 
 ## Compositionality, developer and release modes.

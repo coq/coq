@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         coqc)
             shift
-            exe=_build/default/topbin/coqc_bin.bc
+            exe=_build/default/topbin/coqc_byte_bin.bc
             break
             ;;
         coqtop)

@@ -55,6 +55,7 @@ _build_ci
 _install_ci
 config/Makefile
 config/coq_config.ml
+config/coq_byte_config.ml
 config/coq_config.py
 config/dune.c_flags
 ide/coqide/config.ml

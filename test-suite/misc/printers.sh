@@ -4,7 +4,7 @@ command -v "${BIN}coqtop.byte" || { echo "Missing coqtop.byte"; exit 1; }
 
 f=$(mktemp)
 {
-    printf 'Drop.\n#directory "../dev";;\n#use "ml_toplevel/include";;\n#quit;;\n' | "${BIN}coqtop.byte" -q
+    printf 'Drop.\ngo ();;\nQuit.\n' | "${BIN}coqtop.byte" -q
 } 2>&1 | tee "$f"
 
 # if there's an issue in `include_utilities`, 'go' won't be defined

@@ -77,15 +77,13 @@ let current_goal () = get_nth_goal 1;;
 let pf_e gl s = 
   Constrintern.interp_constr (Tacmach.pf_env gl) (Tacmach.project gl) (parse_constr s)
 
-(* Set usual printing since the global env is available from the tracer *)
-let _ = Flags.in_debugger := false
-let _ = Flags.in_ml_toplevel := true
-let _ = Constrextern.set_extern_reference
-  (fun ?loc _ r -> Nametab.shortest_qualid_of_global ?loc Id.Set.empty r);;
-
-let go () = Coqloop.(loop ~opts:Option.(get !drop_args) ~state:Option.(get !drop_last_doc))
+let go () =
+  Flags.with_option
+    Toploop.may_trace
+    (fun () -> Coqloop.ml_toplevel_state := Some (Coqloop.loop ~state:(Option.get !Coqloop.ml_toplevel_state)))
+    ();
+  print_newline ()
 
 let _ =
- print_string
-   ("\n\tOcaml toplevel with Coq printers and utilities (use go ();; to exit)\n\n");
- flush_all()
+  print_newline ();
+  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `go ();;` if `#trace` was used)"

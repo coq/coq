@@ -74,6 +74,7 @@ before_script:
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
+      - config/coq_byte_config.ml
       - config/dune.c_flags
     expire_in: 1 month
   script:
@@ -330,6 +331,7 @@ build:base+async:
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
+      - config/coq_byte_config.ml
       - config/dune.c_flags
       - dmesg.txt
   timeout: 1h 30min
