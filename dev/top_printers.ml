@@ -24,11 +24,14 @@ open Context
 open Genarg
 open Clenv
 
-let () = Flags.in_debugger := true
-let () = Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true
-let () = Detyping.print_universes := true
-let () = Goptions.set_bool_option_value ["Printing";"Matching"] false
-let () = Goptions.set_bool_option_value ["Printing";"Sort";"Qualities"] true
+let () =
+  if not !Flags.in_ml_toplevel then begin
+    Flags.in_debugger := true;
+    Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true;
+    Detyping.print_universes := true;
+    Goptions.set_bool_option_value ["Printing";"Matching"] false;
+    Goptions.set_bool_option_value ["Printing";"Sort";"Qualities"] true
+  end
 
 let with_env_evm f x =
   let env = Global.env() in
@@ -698,8 +701,11 @@ let short_string_of_ref ?loc _ = let open GlobRef in function
         [Label.to_id (MutInd.label kn);Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 
-(* Anticipate that printers can be used from ocamldebug and that
-   pretty-printer should not make calls to the global env since ocamldebug
-   runs in a different process and does not have the proper env at hand *)
-let () = Constrextern.set_extern_reference
-  (if !rawdebug then raw_string_of_ref else short_string_of_ref)
+let () =
+  if not !Flags.in_ml_toplevel then begin
+    (* Anticipate that printers can be used from ocamldebug and that
+      pretty-printer should not make calls to the global env since ocamldebug
+      runs in a different process and does not have the proper env at hand *)
+    Constrextern.set_extern_reference
+      (if !rawdebug then raw_string_of_ref else short_string_of_ref)
+  end
