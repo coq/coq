@@ -78,6 +78,7 @@ type hint_mode =
 type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
+  | HintsProjections
   | HintsReferences of 'a list
 
 type 'a hints_path_gen =

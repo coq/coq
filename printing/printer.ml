@@ -514,9 +514,12 @@ let pr_cpred p =
 
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
+let pr_prpred p = pr_predicate Projection.Repr.print (PRpred.elements p)
+
 let pr_transparent_state ts =
   hv 0 (str"VARIABLES: " ++ pr_idpred ts.TransparentState.tr_var ++ fnl () ++
-        str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
+        str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl () ++
+        str"PROJECTIONS: " ++ pr_prpred ts.TransparentState.tr_prj ++ fnl ())
 
 let goal_repr sigma g =
   let EvarInfo evi = Evd.find sigma g in

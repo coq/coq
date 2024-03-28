@@ -77,7 +77,12 @@ let warn_deprecated_hint_constr =
 let soft_evaluable =
   let open GlobRef in
   function
-  | ConstRef c -> Evaluable.EvalConstRef c
+  | ConstRef c ->
+    begin
+      match Structures.PrimitiveProjections.find_opt c with
+      | None -> Evaluable.EvalConstRef c
+      | Some p -> Evaluable.EvalProjectionRef p
+    end
   | VarRef id -> Evaluable.EvalVarRef id
   | (IndRef _ | ConstructRef _) as r -> Tacred.error_not_evaluable r
 
@@ -127,6 +132,7 @@ let interp_hints ~poly h =
   let ft = function
     | HintsVariables -> HintsVariables
     | HintsConstants -> HintsConstants
+    | HintsProjections -> HintsProjections
     | HintsReferences lhints -> HintsReferences (List.map fr lhints)
   in
   let fp = Constrintern.intern_constr_pattern (Global.env ()) in

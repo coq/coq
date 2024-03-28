@@ -122,6 +122,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Variables"; IDENT "Opaque" -> { HintsTransparency (HintsVariables, false) }
       | IDENT "Constants"; IDENT "Transparent" -> { HintsTransparency (HintsConstants, true) }
       | IDENT "Constants"; IDENT "Opaque" -> { HintsTransparency (HintsConstants, false) }
+      | IDENT "Projections"; IDENT "Transparent" -> { HintsTransparency (HintsProjections, true) }
+      | IDENT "Projections"; IDENT "Opaque" -> { HintsTransparency (HintsProjections, false) }
       | IDENT "Transparent"; lc = LIST1 global -> { HintsTransparency (HintsReferences lc, true) }
       | IDENT "Opaque"; lc = LIST1 global -> { HintsTransparency (HintsReferences lc, false) }
       | IDENT "Mode"; l = global; m = mode -> { HintsMode (l, m) }
