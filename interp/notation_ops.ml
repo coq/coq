@@ -196,7 +196,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
     (* it had to be a single iteration of iter1 *)
     aux vars renaming tail1 t2
   | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
-  | NProj ((cst1,u1), l1, a1), NProj ((cst2,u2), l2, a2)
+  | NProj ((p1,cst1,u1), l1, a1), NProj ((p2,cst2,u2), l2, a2) (* TODO p1, p2 redundancy *)
     when GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances lt strictly_lt u1 u2 ->
     List.iter2 (aux vars renaming) l1 l2; aux vars renaming a1 a2
   | NLambda (na1, t1, u1), NLambda (na2, t2, u2)
@@ -818,14 +818,15 @@ let rec subst_notation_constr subst bound raw =
         if r' == r && rl' == rl then raw else
           NApp(r',rl')
 
-  | NProj ((cst,u),rl,r) ->
+  | NProj ((p,cst,u),rl,r) ->
       let ref = GlobRef.ConstRef cst in
       let ref',t = subst_global subst ref in
+      let p' = subst_proj subst p in
       assert (t = None);
       let rl' = List.Smart.map (subst_notation_constr subst bound) rl
       and r' = subst_notation_constr subst bound r in
-        if ref' == ref && rl' == rl && r' == r then raw else
-          NProj ((destConstRef ref',u),rl',r')
+        if p == p' && ref' == ref && rl' == rl && r' == r then raw else
+          NProj ((p',destConstRef ref',u),rl',r')
 
   | NList (id1,id2,r1,r2,b) ->
       let r1' = subst_notation_constr subst bound r1
@@ -1498,9 +1499,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 && eta_well_typed f2 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_hd u alp metas sigma f1 f2) l1 l2
-  | GProj ((cst1,u1),l1,a1), NProj ((cst2,u2),l2,a2) when GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
+  | GProj ((p1,cst1,u1),l1,a1), NProj ((p2,cst2,u2),l2,a2) when (* TODO p1=p2, even if derived from cst1,cst2 *) GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
      match_in u alp metas (List.fold_left2 (match_in u alp metas) sigma l1 l2) a1 a2
-  | GApp (f1,l1), NProj ((cst2,u2),l2,a2) ->
+  | GApp (f1,l1), NProj ((p2,cst2,u2),l2,a2) ->
      (match DAst.get f1 with
      | GRef (r1,u1) when GlobRef.CanOrd.equal r1 (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 &&
          List.length l1 = List.length l2 + 1 ->

@@ -870,7 +870,7 @@ and detype_r d flags avoid env sigma t =
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
     | Proj (p,_,c) ->
-      if Projection.unfolded p && print_unfolded_primproj_asmatch () then
+      if Projection.unfolded p && print_unfolded_primproj_asmatch () then (* TODO: keep or remove? *)
         let c = detype d flags avoid env sigma c in
         let id = Label.to_id @@ Projection.label p in
         let nargs, parg =
@@ -897,8 +897,8 @@ and detype_r d flags avoid env sigma t =
           let pars = Projection.npars p in
           let hole = DAst.make @@ GHole (GInternalHole) in
           let args = List.make pars hole in
-          GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
-                (args @ [detype d flags avoid env sigma c]))
+          GProj ((p, Projection.constant p, None),
+                args, detype d flags avoid env sigma c)
         in
         if !Flags.in_debugger || !Flags.in_toplevel
            || not (print_primproj_params ())
@@ -1178,14 +1178,14 @@ let rec subst_glob_constr env subst = DAst.map (function
         if r' == r && rl' == rl then raw else
           GApp(r',rl')
 
-  | GProj ((cst,u),rl,r) as raw ->
+  | GProj ((p,cst,u),rl,r) as raw ->
       let rl' = List.Smart.map (subst_glob_constr env subst) rl
       and r' = subst_glob_constr env subst r in
       let ref = GlobRef.ConstRef cst in
       let ref',t = subst_global subst ref in
       assert (t = None); (* projection *)
         if ref' == ref && rl' == rl && r' == r then raw else
-          GProj((destConstRef ref',u),rl',r')
+          GProj((p,destConstRef ref',u),rl',r')
 
   | GLambda (n,r,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 and r2' = subst_glob_constr env subst r2 in

@@ -43,5 +43,5 @@ match 0 with
 | 0 | _ => 0
 end
      : nat
-fun v : (* Relevant *) R => p v
+fun v : (* Relevant *) R => v.(p)
      : R -> nat

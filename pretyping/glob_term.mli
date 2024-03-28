@@ -115,7 +115,7 @@ type 'a glob_constr_r =
   | GHole of glob_evar_kind
   | GGenarg of Genarg.glob_generic_argument
   | GCast of 'a glob_constr_g * Constr.cast_kind option * 'a glob_constr_g
-  | GProj of (Constant.t * glob_instance option) * 'a glob_constr_g list * 'a glob_constr_g
+  | GProj of (Projection.t * Constant.t * glob_instance option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
   | GFloat of Float64.t
   | GArray of glob_instance option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g

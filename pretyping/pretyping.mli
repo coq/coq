@@ -167,7 +167,7 @@ type pretyper = {
   pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
-  pretype_proj : pretyper -> (Constant.t * glob_instance option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_proj : pretyper -> (Projection.t * Constant.t * glob_instance option) * glob_constr list * glob_constr -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_prod : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_letin : pretyper -> Name.t * glob_constr * glob_constr option * glob_constr -> unsafe_judgment pretype_fun;

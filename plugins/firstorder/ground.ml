@@ -18,7 +18,7 @@ open Tacticals
 
 let get_flags qflag =
   let open TransparentState in
-  let f accu coe = match coe.Coercionops.coe_value with
+  let f accu coe = match Coercionops.(global_reference_of_coe_value coe.coe_value) with
     | Names.GlobRef.ConstRef kn -> { accu with tr_cst = Names.Cpred.remove kn accu.tr_cst }
     | _ -> accu
   in

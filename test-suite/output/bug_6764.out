@@ -1,6 +1,6 @@
-forall f : foo, ■ f = ■ f
+forall f : foo, f.(foo_n) = f.(foo_n)
      : Prop
-forall f : foo, ■ f = ■ f
+forall f : foo, f.(foo_n) = f.(foo_n)
      : Prop
 fun x : T => %% x
      : T -> nat

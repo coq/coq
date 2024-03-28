@@ -2,7 +2,7 @@ fun S : store => S.(store_funcs)
      : store -> host_func
 a =
 fun A : Type =>
-let B := A in fun (C : Type) (u : U A C) => (A, B, C, c _ _ u)
+let B := A in fun (C : Type) (u : U A C) => (A, B, C, u.(c _ _))
      : forall A : Type,
        let B := A in
        forall C : Type, U A C -> Type * Type * Type * (B * A * C)

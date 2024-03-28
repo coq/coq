@@ -611,7 +611,7 @@ let adjust_implicit_arguments inctx n args impl =
     | [], _ -> []
   in exprec (args,impl)
 
-let extern_projection inctx f nexpectedparams args impl =
+let extern_projection inctx unfolded f nexpectedparams args impl =
   let (args1,args2) = List.chop (nexpectedparams + 1) args in
   let nextraargs = List.length args2 in
   let (impl1,impl2) = impargs_for_proj ~nexpectedparams ~nextraargs impl in
@@ -620,7 +620,7 @@ let extern_projection inctx f nexpectedparams args impl =
   let args2 = adjust_implicit_arguments inctx n args2 impl2 in
   let (c1,expl), args1 = List.sep_last args1 in
   assert (expl = None);
-  let c = CProj (false,f,args1,c1) in
+  let c = CProj ((unfolded,false),f,args1,c1) in
   if args2 = [] then c else CApp (CAst.make c, args2)
 
 let is_start_implicit = function
@@ -691,7 +691,7 @@ let extern_applied_ref inctx impl (cf,f) us args =
     match ip with
     | Some i ->
       (* [t.(f args1) args2] projection-style notation *)
-      extern_projection inctx (f,us) (i-1) args impl
+      extern_projection inctx false (f,us) (i-1) args impl
     | None ->
       let args = adjust_implicit_arguments inctx n args impl in
       if args = [] then ref else CApp (r, args)
@@ -703,7 +703,7 @@ let extern_applied_ref inctx impl (cf,f) us args =
        let args = List.map (fun c -> (c,None)) args in
        let args1, args2 = List.chop n args in
        let (c1,_), args1 = List.sep_last args1 in
-       let c = CProj (true, (f,us), args1, c1) in
+       let c = CProj ((false,true),(f,us), args1, c1) in
        if args2 = [] then c else CApp (CAst.make c, args2)
     | _ ->
        CAppExpl ((f,us), args)
@@ -1357,7 +1357,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
       with
           No_match -> extern_notation inctx allscopes vars t rules
 
-and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
+and extern_applied_proj inctx scopes vars (p,cst,us) params c extraargs =
   let ref = GlobRef.ConstRef cst in
   let subscopes = find_arguments_scope ref in
   let nparams = List.length params in
@@ -1367,7 +1367,8 @@ and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
   let imps = select_stronger_impargs (implicits_of_global ref) in
   let f = extern_reference (fst vars) ref in
   let us = extern_instance (snd vars) us in
-  extern_projection inctx (f,us) nparams args imps
+  let unfolded = Projection.unfolded p in
+  extern_projection inctx unfolded (f,us) nparams args imps
 
 let extern_glob_constr vars c =
   extern false ((constr_some_level,None),([],[])) vars c

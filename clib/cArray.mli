@@ -82,9 +82,31 @@ sig
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   (** Composition of [map] and [of_list]. *)
 
+  val lastn : int -> 'a array -> 'a array
+  (** [lastn n a] returns the [n] last elements of [a]. It raises
+      [Failure _] if [n] is less than 0 or larger than the length of [a] *)
+
   val chop : int -> 'a array -> 'a array * 'a array
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
+
+  val firstn : int -> 'a array -> 'a array
+  (** [firstn n a] Returns the [n] first elements of [a]. It raises
+      [Failure _] if [n] negative or too large. This is the first part
+      of [chop]. *)
+
+  val skipn : int -> 'a array -> 'a array
+  (** [skipn n a] drops the [n] first elements of [a]. It raises
+      [Failure _] if [n] is less than 0 or larger than the length of [a].
+      This is the second part of [chop]. *)
+
+  val sep_first : 'a array -> 'a * 'a array
+  (** [sep_first [|v0;...;vn|]] returns [(v0,[|v1;...;vn|])].
+      It raises [Failure _] if the array is empty. *)
+
+  val sep_last : 'a array -> 'a * 'a array
+  (** [sep_last [|v0;...;vn|]] returns [(vn,[|v0;...;vn-1|])].
+      It raises [Failure _] if the array is empty. *)
 
   val split : ('a * 'b) array -> 'a array * 'b array
   val split3 : ('a * 'b * 'c) array -> 'a array * 'b array * 'c array
