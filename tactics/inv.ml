@@ -117,11 +117,16 @@ let make_inv_predicate env evd indf realargs id status concl =
   (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
-  let eqdata =
-    try Coqlib.build_coq_eq_data ()
+  let eq_term, refl_term =
+    try Coqlib.lib_ref "core.eq.type", Coqlib.lib_ref "core.eq.refl"
     with Coqlib.NotFoundRef _ ->
-    try Coqlib.build_coq_identity_data ()
-    with Coqlib.NotFoundRef _ -> user_err (str "No registered equality.") in
+    try Coqlib.lib_ref "core.identity.type", Coqlib.lib_ref "core.identity.refl"
+    with Coqlib.NotFoundRef _ ->
+      user_err (str "No registered equality" ++ spc() ++
+                hov 1
+                  (str "(needs \"core.eq.type\" and \"core.eq.refl\"" ++ spc() ++
+                   str "or \"core.identity.type\" and \"core.identy.refl\")."))
+  in
   let rec build_concl eqns args n = function
     | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
@@ -134,10 +139,8 @@ let make_inv_predicate env evd indf realargs id status concl =
             let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
               evd := sigma; res
         in
-        let eq_term = eqdata.Coqlib.eq in
         let eq = evd_comb1 (Evd.fresh_global env) evd eq_term in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
-        let refl_term = eqdata.Coqlib.refl in
         let refl_term = evd_comb1 (Evd.fresh_global env) evd refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
         let r = Retyping.relevance_of_term env !evd refl in
