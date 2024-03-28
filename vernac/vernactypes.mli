@@ -34,32 +34,50 @@ module Proof : sig
     | Open : (unit, state) t
 end
 
-type ('prog,'proof) state_gen = {
+module OpaqueAccess : sig
+  type _ t =
+    | Ignore : unit t
+    | Access : Global.indirect_accessor t
+end
+
+type ('prog,'proof,'opaque_access) state_gen = {
   prog : 'prog;
   proof : 'proof;
+  opaque_access : 'opaque_access;
 }
 
-type no_state = (unit, unit) state_gen
+type no_state = (unit, unit, unit) state_gen
 val no_state : no_state
 (** Useful for patterns like [{ no_state with proof = newproof }] when
     modifying a subset of the state. *)
 
-val ignore_state : ((unit, unit) Prog.t, (unit, unit) Proof.t) state_gen
+val ignore_state : ((unit, unit) Prog.t, (unit, unit) Proof.t, unit OpaqueAccess.t) state_gen
 
-type typed_vernac =
+type 'r typed_vernac_gen =
     TypedVernac : {
-      spec : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t) state_gen;
-      run : ('inprog, 'inproof) state_gen -> ('outprog, 'outproof) state_gen;
-    } -> typed_vernac
+      spec : (('inprog, 'outprog) Prog.t,
+              ('inproof, 'outproof) Proof.t,
+              'inaccess OpaqueAccess.t) state_gen;
+      run : ('inprog, 'inproof, 'inaccess) state_gen -> ('outprog, 'outproof, unit) state_gen * 'r;
+    } -> 'r typed_vernac_gen
+
+type typed_vernac = unit typed_vernac_gen
+
+val typed_vernac_gen
+  : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t, 'inaccess OpaqueAccess.t) state_gen
+  -> (('inprog, 'inproof, 'inaccess) state_gen -> ('outprog, 'outproof, unit) state_gen * 'r)
+  -> 'r typed_vernac_gen
+
+val map_typed_vernac : ('a -> 'b) -> 'a typed_vernac_gen -> 'b typed_vernac_gen
 
 val typed_vernac
-  : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t) state_gen
-  -> (('inprog, 'inproof) state_gen -> ('outprog, 'outproof) state_gen)
+  : (('inprog, 'outprog) Prog.t, ('inproof, 'outproof) Proof.t, 'inaccess OpaqueAccess.t) state_gen
+  -> (('inprog, 'inproof, 'inaccess) state_gen -> ('outprog, 'outproof, unit) state_gen)
   -> typed_vernac
 
-type full_state = (Prog.stack,Vernacstate.LemmaStack.t option) state_gen
+type full_state = (Prog.stack, Vernacstate.LemmaStack.t option, unit) state_gen
 
-val run : typed_vernac -> full_state -> full_state
+val run : 'r typed_vernac_gen -> full_state -> full_state * 'r
 
 (** Some convenient typed_vernac constructors. Used by coqpp. *)
 
@@ -74,3 +92,4 @@ val vtreadprogram : (pm:Declare.OblState.t -> unit) -> typed_vernac
 val vtmodifyprogram : (pm:Declare.OblState.t -> Declare.OblState.t) -> typed_vernac
 val vtdeclareprogram : (pm:Declare.OblState.t -> Declare.Proof.t) -> typed_vernac
 val vtopenproofprogram : (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t) -> typed_vernac
+val vtopaqueaccess : (opaque_access:Global.indirect_accessor -> unit) -> typed_vernac

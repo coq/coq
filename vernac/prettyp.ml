@@ -478,12 +478,8 @@ let print_section_variable_with_infos env sigma id =
   print_named_decl env sigma true id ++
   with_line_skip (print_name_infos env (GlobRef.VarRef id))
 
-let print_body env evd = function
-  | Some c  -> pr_lconstr_env ~inctx:true env evd c
-  | None -> (str"<no body>")
-
 let print_typed_body env evd ~impargs (val_0,typ) =
-  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd ~impargs typ)
+  (pr_lconstr_env ~inctx:true env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd ~impargs typ)
 
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
@@ -492,14 +488,28 @@ let print_instance sigma cb =
     pr_universe_instance sigma inst
   else mt()
 
-let print_constant env with_values with_implicit cst udecl =
+let print_constant env ~with_values with_implicit cst udecl =
   let cb = Environ.lookup_constant cst env in
-  let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
   let univs = cb.const_universes in
   let uctx =
     UState.of_names
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
+  in
+  let val_0 = match cb.const_body with
+    (* XXX print something for primitives? for symbols? *)
+      | Undef _ | Symbol _ | Primitive _ -> None
+      | Def c -> Some ((if Option.has_some with_values then Some c else None), None)
+      | OpaqueDef o ->
+        match with_values with
+        | None -> Some (None, None)
+        | Some access ->
+          let c, priv = Global.force_proof access o in
+          let priv = match priv with
+            | PrivateMonomorphic () -> None
+            | PrivatePolymorphic priv -> Some priv
+          in
+          Some (Some c, priv)
   in
   let sigma = Evd.from_ctx uctx in
   let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (ConstRef cst)) else [] in
@@ -512,27 +522,23 @@ let print_constant env with_values with_implicit cst udecl =
         print_basename cst ++ print_instance sigma cb ++ str " :" ++ spc () ++ pr_ltype ~impargs typ ++
         str" ]" ++
         Printer.pr_universes sigma univs
-    | Some (c, priv, ctx) ->
-      let priv = match priv with
-      | Opaqueproof.PrivateMonomorphic () -> None
-      | Opaqueproof.PrivatePolymorphic ctx -> Some ctx
-      in
+    | Some (optbody, priv) ->
       print_basename cst ++ print_instance sigma cb ++
-      str (if with_values then " =" else " :") ++ spc() ++
-      (if with_values then print_typed_body env sigma ~impargs (Some c,typ) else pr_ltype ~impargs typ)++
+      str (if Option.has_some optbody then " =" else " :") ++ spc() ++
+      (match optbody with Some c-> print_typed_body env sigma ~impargs (c,typ) | None -> pr_ltype ~impargs typ)++
       Printer.pr_universes sigma univs ?priv)
 
-let print_constant_with_infos env cst udecl =
-  print_constant env true true cst udecl ++
+let print_constant_with_infos env access cst udecl =
+  print_constant env ~with_values:(Some access) true cst udecl ++
   with_line_skip (print_name_infos env (GlobRef.ConstRef cst))
 
-let print_global_reference env sigma gref udecl =
+let print_global_reference access env sigma gref udecl =
   let open GlobRef in
   match gref with
   | ConstRef cst ->
     (match Structures.PrimitiveProjections.find_opt cst with
      | Some p -> print_inductive_with_infos env (fst (Projection.Repr.inductive p)) udecl
-     | None -> print_constant_with_infos env cst udecl)
+     | None -> print_constant_with_infos env access cst udecl)
   | IndRef (mind,_) -> print_inductive_with_infos env mind udecl
   | ConstructRef ((mind,_),_) -> print_inductive_with_infos env mind udecl
   | VarRef id -> print_section_variable_with_infos env sigma id
@@ -553,10 +559,10 @@ let print_abbreviation_body env kn (vars,c) =
          Abbreviation.toggle_abbreviation ~on:false ~use:ParsingAndPrinting kn;
          pr_glob_constr_env env (Evd.from_env env) c) ())
 
-let print_abbreviation env sigma kn =
+let print_abbreviation access env sigma kn =
   let (vars,c) = glob_constr_of_abbreviation kn in
   let pp = match DAst.get c with
-  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_global_reference env sigma gref None]
+  | GRef (gref,_udecl) -> (* TODO: don't drop universes? *) [print_global_reference access env sigma gref None]
   | _ -> [] in
   print_abbreviation_body env kn (vars,c) ++
   with_line_skip pp
@@ -597,7 +603,7 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    no reason that an object in the stack corresponds to a user-facing
    declaration. It may have been so at the time this was written, but this
    needs to be done in a more principled way. *)
-let print_library_leaf env sigma with_values mp lobj =
+let print_library_leaf env sigma ~with_values mp lobj =
   match lobj with
   | AtomicObject o ->
     let handler =
@@ -608,7 +614,7 @@ let print_library_leaf env sigma with_values mp lobj =
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
         let kn = Constant.make2 mp (Label.of_id id) in
-        Some (print_constant env with_values false kn None)
+        Some (print_constant env ~with_values false kn None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
         let kn = MutInd.make2 mp (Label.of_id id) in
@@ -618,7 +624,7 @@ let print_library_leaf env sigma with_values mp lobj =
     in
     handle handler o
   | ModuleObject (id,_) ->
-    Some (Printmod.print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
+    Some (Printmod.print_module ~with_body:(Option.has_some with_values) (MPdot (mp,Label.of_id id)))
   | ModuleTypeObject (id,_) ->
     Some (print_modtype (MPdot (mp, Label.of_id id)))
   | IncludeObject _ | KeepObject _ | ExportObject _ -> None
@@ -627,12 +633,12 @@ let decr = Option.map ((+) (-1))
 
 let is_done = Option.equal Int.equal (Some 0)
 
-let print_leaves env sigma with_values mp n leaves =
+let print_leaves env sigma ~with_values mp n leaves =
   let rec prec n = function
     | [] -> n, []
     | o :: rest ->
       if is_done n then n, []
-      else begin match print_library_leaf env sigma with_values mp o with
+      else begin match print_library_leaf env sigma ~with_values mp o with
         | Some pp ->
           let n, prest = prec (decr n) rest in
           n, pp :: prest
@@ -642,23 +648,23 @@ let print_leaves env sigma with_values mp n leaves =
   let n, l = prec n leaves in
   n, v 0 (pr_sequence (fun x -> x) (List.rev l))
 
-let print_context env sigma with_values =
+let print_context env sigma ~with_values =
   let rec prec n = function
     | [] -> mt()
     | (node, leaves) :: rest ->
       if is_done n then mt()
       else
         let mp = (Lib.node_prefix node).Nametab.obj_mp in
-        let n, pleaves = print_leaves env sigma with_values mp n leaves in
+        let n, pleaves = print_leaves env sigma ~with_values mp n leaves in
         if is_done n then pleaves
         else prec n rest ++ pleaves
   in
   prec
 
-let print_full_context env sigma =
-  print_context env sigma true None (Lib.contents ())
+let print_full_context access env sigma =
+  print_context env sigma ~with_values:(Some access) None (Lib.contents ())
 let print_full_context_typ env sigma = (* Command [Print All] *)
-  print_context env sigma false None (Lib.contents ())
+  print_context env sigma ~with_values:None None (Lib.contents ())
 
 (** Command line [-output-context] *)
 
@@ -669,7 +675,7 @@ let handleF h (Libobject.Dyn.Dyn (tag, o)) = match DynHandleF.find tag h with
   | exception Not_found -> mt ()
 
 (* TODO: see the comment for {!print_leaf_entry} *)
-let print_full_pure_atomic env sigma mp lobj =
+let print_full_pure_atomic access env sigma mp lobj =
   let handler =
     DynHandleF.add Declare.Internal.Constant.tag begin fun (id,_) ->
       let kn = KerName.make mp (Label.of_id id) in
@@ -685,7 +691,7 @@ let print_full_pure_atomic env sigma mp lobj =
           str "Theorem " ++ print_basename con ++ cut () ++
           str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
           str "Proof " ++ pr_lconstr_env env sigma
-            (fst (Global.force_proof Library.indirect_accessor lc))
+            (fst (Global.force_proof access lc))
         | Def c ->
           str "Definition " ++ print_basename con ++ cut () ++
           str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++
@@ -709,8 +715,8 @@ let print_full_pure_atomic env sigma mp lobj =
   in
   handleF handler lobj
 
-let print_full_pure_leaf env sigma mp = function
-  | AtomicObject lobj -> print_full_pure_atomic env sigma mp lobj
+let print_full_pure_leaf access env sigma mp = function
+  | AtomicObject lobj -> print_full_pure_atomic access env sigma mp lobj
   | ModuleObject (id, _) ->
     (* TODO: make it reparsable *)
     print_module (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
@@ -719,11 +725,11 @@ let print_full_pure_leaf env sigma mp = function
     print_modtype (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()
   | _ -> mt()
 
-let print_full_pure_context env sigma =
+let print_full_pure_context access env sigma =
   let rec prec = function
     | (node,leaves)::rest ->
       let mp = (Lib.node_prefix node).Nametab.obj_mp in
-      let pp = Pp.prlist (print_full_pure_leaf env sigma mp) leaves in
+      let pp = Pp.prlist (print_full_pure_leaf access env sigma mp) leaves in
       prec rest ++ pp
   | [] -> mt ()
   in
@@ -751,11 +757,11 @@ let read_sec_context qid =
   let cxt = Lib.contents () in
   List.rev (get_cxt [] cxt)
 
-let print_sec_context env sigma sec =
-  print_context env sigma true None (read_sec_context sec)
+let print_sec_context access env sigma sec =
+  print_context env sigma ~with_values:(Some access) None (read_sec_context sec)
 
 let print_sec_context_typ env sigma sec =
-  print_context env sigma false None (read_sec_context sec)
+  print_context env sigma ~with_values:None None (read_sec_context sec)
 
 (** Command [Print] *)
 
@@ -849,11 +855,11 @@ let maybe_error_reject_univ_decl na udecl =
     (* TODO Print na somehow *)
     user_err (str "This object does not support universe names.")
 
-let print_any_name env sigma na udecl =
+let print_any_name access env sigma na udecl =
   maybe_error_reject_univ_decl na udecl;
   match na with
-  | Term gref -> print_global_reference env sigma gref udecl
-  | Abbreviation kn -> print_abbreviation env sigma kn
+  | Term gref -> print_global_reference access env sigma gref udecl
+  | Abbreviation kn -> print_abbreviation access env sigma kn
   | Module mp -> print_module mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
@@ -877,14 +883,14 @@ let print_notation_interpretation env sigma (entry,ntn) df sc c =
       Notation.toggle_notations ~on:false ~all:false ~verbose:false (pr_glob_constr_env env sigma) filter;
       hov 0 (str "Notation" ++ spc () ++ Notation_ops.pr_notation_info (pr_glob_constr_env env sigma) df (snd c))) ()
 
-let print_name env sigma na udecl =
+let print_name access env sigma na udecl =
   match na with
   | {loc; v=Constrexpr.ByNotation (ntn,sc)} ->
     let ntn, df, sc, c, ref = Notation.interp_notation_as_global_reference_expanded ?loc ~head:false (fun _ -> true) ntn sc in
     print_notation_interpretation env sigma ntn df (Some sc) c ++ fnl () ++ fnl () ++
-    print_any_name env sigma (Term ref) udecl
+    print_any_name access env sigma (Term ref) udecl
   | {loc; v=Constrexpr.AN ref} ->
-    print_any_name env sigma (locate_any_name ref) udecl
+    print_any_name access env sigma (locate_any_name ref) udecl
 
 (** Command [Print Notation] *)
 
@@ -970,7 +976,7 @@ let print_about env sigma na udecl =
 (* Command [Inspect], for debug *)
 
 let inspect env sigma depth =
-  print_context env sigma false (Some depth) (Lib.contents ())
+  print_context env sigma ~with_values:None (Some depth) (Lib.contents ())
 
 (*************************************************************************)
 (* Pretty-printing functions coming from classops.ml                     *)

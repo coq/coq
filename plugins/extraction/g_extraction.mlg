@@ -70,7 +70,7 @@ END
 
 (* Extraction commands *)
 
-VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY STATE opaque_access
 (* Extraction in the Coq toplevel *)
 | [ "Extraction" global(x) ] -> { simple_extraction x }
 | [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction None l }
@@ -84,19 +84,19 @@ VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
   -> { extract_and_compile l }
 END
 
-VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY STATE opaque_access
 (* Same, with content split in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
   -> { separate_extraction l }
 END
 
 (* Modular extraction (one Coq library = one ML module) *)
-VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Extraction" "Library" identref(m) ]
   -> { extraction_library false m }
 END
 
-VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Recursive" "Extraction" "Library" identref(m) ]
   -> { extraction_library true m }
 END

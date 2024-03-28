@@ -13,8 +13,6 @@ open Synterp
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
-let interp_typed_vernac = Vernactypes.run
-
 (* Timeout *)
 let vernac_timeout ~timeout (f : 'a -> 'b) (x : 'a) : 'b =
   match Control.timeout timeout f x with
@@ -119,7 +117,12 @@ let rec interp_expr ?loc ~atts ~st c =
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
     let stack = st.Vernacstate.interp.lemmas in
     let program = st.Vernacstate.interp.program in
-    let {Vernactypes.prog; proof} = interp_typed_vernac fv { prog=program; proof=stack; } in
+    let {Vernactypes.prog; proof; opaque_access=(); }, () = Vernactypes.run fv {
+        prog=program;
+        proof=stack;
+        opaque_access=();
+      }
+    in
     proof, prog
 
 and vernac_load ~verbosely entries =
