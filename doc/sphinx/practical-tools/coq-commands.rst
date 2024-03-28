@@ -635,6 +635,10 @@ Command-line options ``-Q``, ``-R``, ``-where`` and ``-impredicative-set`` are s
 by ``coqchk`` and have the same meaning as for ``coqtop``. As there is no notion of
 relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
 
+:-dir *dir*:
+   Check `.vo` files in the given directory (skipping files
+   and directories starting with `.`)
+
 :-norec *module*: Check *module* but do not check its dependencies.
 :-admit *module*: Do not check *module* and any of its dependencies,
   unless explicitly required.
