@@ -19,7 +19,7 @@ Section Bar.
 (* Have fun with context capture *)
 Notation "[ x ]" := ltac2:(
   let c () := Constr.pretype x in
-  refine constr:(forall n : nat, n = ltac2:(Notations.exact0 true c))
+  refine (forall n : nat, n = ltac2:(Notations.exact0 true c))
 ).
 
 Goal forall n : nat, [ n ].

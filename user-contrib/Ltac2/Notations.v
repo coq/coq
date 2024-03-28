@@ -520,7 +520,25 @@ Ltac2 Notation "clear" ids(list0(ident)) := clear0 ids.
 Ltac2 Notation "clear" "-" ids(list1(ident)) := Std.keep ids.
 Ltac2 Notation clear := clear.
 
-Ltac2 Notation refine := Control.refine.
+Ltac2 refine0 simple with_classes c :=
+  Control.enter (fun () =>
+    Control.refine (fun () =>
+      let flags := Constr.Pretype.Flags.open_constr_flags in
+      let flags := if with_classes then flags else Constr.Pretype.Flags.no_tc flags in
+      Constr.Pretype.pretype flags (Constr.Pretype.expected_oftype (Control.goal()))
+        c);
+    if simple then ()
+    else
+      (* ltac1 does lazy beta iota before shelve_unifiable, should we? *)
+      Control.shelve_unifiable ()).
+
+Ltac2 Notation "refine" c(preterm) := refine0 false true c.
+
+Ltac2 Notation "simple" "refine" c(preterm) := refine0 true true c.
+
+Ltac2 Notation "notypeclasses" "refine" c(preterm) := refine0 false false c.
+
+Ltac2 Notation "simple" "notypeclasses" "refine" c(preterm) := refine0 true false c.
 
 (** extratactics *)
 

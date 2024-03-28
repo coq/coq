@@ -42,7 +42,7 @@ let open_constr_use_classes_flags =
   use_typeclasses = Pretyping.UseTC;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = true;
+  expand_evars = false;
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
@@ -774,9 +774,14 @@ let () =
     throw err_notfocussed
 
 (** preterm -> constr *)
-let () = define "constr_flags" (ret (repr_ext val_pretype_flags)) constr_flags
+let pretype_flags = repr_ext val_pretype_flags
 
-let () = define "open_constr_flags" (ret (repr_ext val_pretype_flags)) open_constr_use_classes_flags
+let () = define "constr_flags" (ret pretype_flags) constr_flags
+
+let () = define "open_constr_flags" (ret pretype_flags) open_constr_use_classes_flags
+
+let () = define "pretype_flags_no_tc" (pretype_flags @-> ret pretype_flags) @@ fun flags ->
+  { flags with use_typeclasses = NoUseTC }
 
 let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
 
