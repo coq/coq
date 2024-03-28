@@ -52,7 +52,6 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 .. cmd:: Let @ident_decl @def_body
          Let Fixpoint @fix_definition {* with @fix_definition }
          Let CoFixpoint @cofix_definition {* with @cofix_definition }
-   :name: Let; Let Fixpoint; Let CoFixpoint
 
    These are similar to :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`, except that
    the declared :term:`constant` is local to the current section.
