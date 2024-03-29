@@ -14,6 +14,7 @@ open Univ
 open UVars
 open Declarations
 open Environ
+open CClosure
 
 (** {6 Extracting an inductive type from a construction } *)
 
@@ -23,9 +24,9 @@ open Environ
    only a coinductive type.
    They raise [Not_found] if not convertible to a recursive type. *)
 
-val find_rectype     : env -> types -> pinductive * constr list
-val find_inductive   : env -> types -> pinductive * constr list
-val find_coinductive : env -> types -> pinductive * constr list
+val find_rectype     : ?evars:evar_handler -> env -> types -> pinductive * constr list
+val find_inductive   : ?evars:evar_handler -> env -> types -> pinductive * constr list
+val find_coinductive : ?evars:evar_handler -> env -> types -> pinductive * constr list
 
 (** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
@@ -155,8 +156,8 @@ val is_primitive_positive_container : env -> Constant.t -> bool
 
 (** When [chk] is false, the guard condition is not actually
     checked. *)
-val check_fix : env -> fixpoint -> unit
-val check_cofix : env -> cofixpoint -> unit
+val check_fix : ?evars:evar_handler -> env -> fixpoint -> unit
+val check_cofix : ?evars:evar_handler -> env -> cofixpoint -> unit
 
 (** {6 Support for sort-polymorphic inductive types } *)
 
