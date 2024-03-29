@@ -288,9 +288,12 @@ let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
       end
     | Some (SquashToQuality indq) -> quality_leq (EConstr.ESorts.quality sigma s) indq
 
+(* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
   if Option.is_empty mip.mind_squashed then Sorts.InType
-  else Inductive.inductive_sort_family mip
+  else match mip.mind_arity with
+    | TemplateArity _ -> assert false (* never squashed *)
+    | RegularArity s -> Sorts.family s.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
   let specif = Inductive.lookup_mind_specif env ind in

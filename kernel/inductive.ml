@@ -304,12 +304,6 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (* Get type of inductive, with parameters instantiated *)
 
-(* XXX questionable for sort poly inductives *)
-let inductive_sort_family mip =
-  match mip.mind_arity with
-  | RegularArity s -> Sorts.family s.mind_sort
-  | TemplateArity _ -> Sorts.InType
-
 let quality_leq q q' =
   let open Sorts.Quality in
   match q, q' with

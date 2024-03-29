@@ -399,47 +399,46 @@ let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
     (fun () -> Pp.str "This inductive type has no template universes.")
 
+type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
+
 let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
 match user_template, univ_entry with
 | Some false, UState.Monomorphic_entry uctx ->
-  Monomorphic_ind_entry, uctx
+  DefaultElim, Monomorphic_ind_entry, uctx
 | Some false, UState.Polymorphic_entry uctx ->
-  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+  DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | Some true, UState.Monomorphic_entry uctx ->
   let template_universes = template_polymorphism_candidate uctx ctx_params entry concl in
   let template, global = split_universe_context template_universes uctx in
   let () = if Univ.Level.Set.is_empty (fst template) then warn_no_template_universe () in
-  Template_ind_entry template, global
+  DefaultElim, Template_ind_entry template, global
 | Some true, UState.Polymorphic_entry _ ->
   user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
 | None, UState.Polymorphic_entry uctx ->
-  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+  DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | None, UState.Monomorphic_entry uctx ->
   (* Heuristic: the user has not written Prop explicitly in the return
       arity, but inference has decided to lower it to Prop. *)
-  let templatearity =
+  let lowered_prop =
     if Term.isArity entry.mind_entry_arity then
       let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
       if Sorts.is_prop s then match concl with
-      | None | Some (Type _ | Set)-> true
+      | None | Some (Type _ | Set) -> true
       | Some Prop -> false
       | Some SProp | Some (QSort _) -> assert false
       else false
     else false
   in
-  if templatearity then
-    let template = should_auto_template entry.mind_entry_typename true in
-    (* Dummy template inductive. Matters for the shape of the induction principle *)
-    if template then Template_ind_entry Univ.ContextSet.empty, uctx
-    else Monomorphic_ind_entry, uctx
+  if lowered_prop then
+    PropButDepElim, Monomorphic_ind_entry, uctx
   else
     let template_candidate = template_polymorphism_candidate uctx ctx_params entry concl in
     let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
     let template = should_auto_template entry.mind_entry_typename has_template in
     if template then
       let template, global = split_universe_context template_candidate uctx in
-      Template_ind_entry template, global
-    else Monomorphic_ind_entry, uctx
+      DefaultElim, Template_ind_entry template, global
+    else DefaultElim, Monomorphic_ind_entry, uctx
 
 let check_param = function
 | CLocalDef (na, _, _, _) -> check_named na
@@ -503,7 +502,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities constructors
   in
-  let univ_entry, ctx = match entries, arityconcl with
+  let default_dep_elim, univ_entry, ctx = match entries, arityconcl with
   | [entry], [concl] ->
     compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
   | _ ->
@@ -512,8 +511,8 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
     | _ -> ()
     in
     match univ_entry with
-    | UState.Monomorphic_entry ctx -> Monomorphic_ind_entry, ctx
-    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    | UState.Monomorphic_entry ctx -> DefaultElim, Monomorphic_ind_entry, ctx
+    | UState.Polymorphic_entry uctx -> DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
   in
   let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)
@@ -527,7 +526,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       mind_entry_variance = variance;
     }
   in
-  mind_ent, binders, ctx
+  default_dep_elim, mind_ent, binders, ctx
 
 let interp_params env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
@@ -657,8 +656,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
             userimpls @ impls) cimpls)
       indimpls cimpls
   in
-  let mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
-  (mie, binders, impls, ctx)
+  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  (default_dep_elim, mie, binders, impls, ctx)
 
 
 (* Very syntactical equality *)
@@ -708,6 +707,7 @@ module Mind_decl = struct
 
 type t = {
   mie : Entries.mutual_inductive_entry;
+  default_dep_elim : default_dep_elim;
   nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
@@ -738,14 +738,14 @@ let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_
       | NonUniformParameters -> ([], params, indl), None
   in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
+  let default_dep_elim, mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
   let open Mind_decl in
-  { mie; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
+  { mie; default_dep_elim; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
 
 let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let open Mind_decl in
   let env = Global.env () in
-  let { mie; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
+  let { mie; default_dep_elim; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
     interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite in
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
@@ -756,7 +756,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   (* Declare the global universes *)
   Global.push_context_set ~strict:true uctx;
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags ~indlocs mie binders implicits);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ~default_dep_elim ?typing_flags ~indlocs mie binders implicits);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)

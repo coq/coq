@@ -137,9 +137,6 @@ val build_branches_type :
   pinductive -> mutual_inductive_body * one_inductive_body ->
     constr list -> constr -> types array
 
-(** Return the arity of an inductive type *)
-val inductive_sort_family : one_inductive_body -> Sorts.family
-
 (** Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
 val check_case_info : env -> pinductive -> case_info -> unit

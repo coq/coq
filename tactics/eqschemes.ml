@@ -200,7 +200,7 @@ let build_sym_scheme env _handle ind =
     get_sym_eq_data env indu in
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.instance mkRel n mib.mind_params_ctxt) in
-  let inds = inductive_sort_family mip in
+  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
   let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
@@ -263,7 +263,7 @@ let build_sym_involutive_scheme env handle ind =
   let eq,eqrefl,ctx = get_coq_eq env ctx in
   let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.instance mkRel n paramsctxt) in
-  let inds = inductive_sort_family mip in
+  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
@@ -379,7 +379,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.instance mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let inds = inductive_sort_family mip in
+  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
@@ -497,7 +497,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.instance mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let inds = inductive_sort_family mip in
+  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
@@ -592,7 +592,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.instance mkRel n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
-  let inds = inductive_sort_family mip in
+  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
   let indr = Sorts.relevance_of_sort_family inds in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in

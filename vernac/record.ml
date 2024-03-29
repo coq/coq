@@ -574,6 +574,7 @@ let bound_names_rdata { DataR.fields; _ } : Id.Set.t =
 module Record_decl = struct
   type t = {
     mie : Entries.mutual_inductive_entry;
+    default_dep_elim : DeclareInd.default_dep_elim;
     records : Data.t list;
     primitive_proj : bool;
     impls : DeclareInd.one_inductive_impls list;
@@ -784,7 +785,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block data in
-  let ind_univs, global_univ_decls = match blocks, data with
+  let default_dep_elim, ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
     let env_ar_params = Environ.push_rel_context params (Global.env ()) in
     let concl = Some (snd (Reduction.dest_arity env_ar_params data.rdata.arity)) in
@@ -795,8 +796,8 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
     | Some false | None ->
       match univs with
-      | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
-      | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
+      | UState.Polymorphic_entry uctx -> DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+      | UState.Monomorphic_entry uctx -> DefaultElim, Monomorphic_ind_entry, uctx
     end
   in
   let primitive =
@@ -822,7 +823,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   in
   let impls = List.map (fun _ -> impargs, []) data in
   let open Record_decl in
-  { mie; primitive_proj; impls; globnames; global_univ_decls; projunivs;
+  { mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs;
     ubinders; projections_kind; poly; records = data;
     indlocs;
   }
@@ -834,10 +835,10 @@ let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj fini
     pre_process_structure udecl kind ~poly records in
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
-let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
+let declare_structure { Record_decl.mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
   Option.iter (Global.push_context_set ~strict:true) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
-      ~primitive_expected:primitive_proj ~indlocs
+      ~primitive_expected:primitive_proj ~indlocs ~default_dep_elim
   in
   let map i { Data.is_coercion; proj_flags; rdata = { DataR.implfs; fields; _}; inhabitant_id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)

@@ -70,3 +70,11 @@ val elimination_suffix : Sorts.family -> string
 val make_elimination_ident : Id.t -> Sorts.family -> Id.t
 
 val case_suffix : string
+
+(** Default dependence of eliminations for Prop inductives *)
+
+val declare_prop_but_default_dependent_elim : inductive -> unit
+
+val is_prop_but_default_dependent_elim : inductive -> bool
+
+val pseudo_sort_family_for_elim : inductive -> Declarations.one_inductive_body -> Sorts.family

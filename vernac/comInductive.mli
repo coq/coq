@@ -46,6 +46,7 @@ module Mind_decl : sig
 (** inductive_expr at the constr level *)
 type t = {
   mie : Entries.mutual_inductive_entry;
+  default_dep_elim : DeclareInd.default_dep_elim;
   nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
@@ -89,7 +90,7 @@ val interp_mutual_inductive_constr
   -> poly:bool
   -> private_ind:bool
   -> finite:Declarations.recursivity_kind
-  -> Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
+  -> DeclareInd.default_dep_elim * Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
 
 (************************************************************************)
 (** Internal API, exported for Record                                   *)
@@ -102,7 +103,7 @@ val compute_template_inductive
   -> univ_entry:UState.universes_entry
   -> Entries.one_inductive_entry
   -> Sorts.t option
-  -> Entries.inductive_universes_entry * Univ.ContextSet.t
+  -> DeclareInd.default_dep_elim * Entries.inductive_universes_entry * Univ.ContextSet.t
 (** [compute_template_inductive] computes whether an inductive can be template
     polymorphic. *)
 
