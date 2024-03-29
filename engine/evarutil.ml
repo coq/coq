@@ -78,10 +78,10 @@ let nf_relevance sigma r =
   UState.nf_relevance (Evd.evar_universe_context sigma) r
 
 let nf_named_context_evar sigma ctx =
-  Context.Named.map (nf_evars_universes sigma) ctx
+  Context.Named.map_with_relevance (nf_relevance sigma) (nf_evars_universes sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map (nf_evar sigma) ctx
+  Context.Rel.map_with_relevance (nf_relevance sigma) (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
