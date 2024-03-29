@@ -10,9 +10,7 @@
 
 (*i*)
 open Names
-open Evd
 open EConstr
-open Environ
 open Ind_tables
 open Locus
 open Tactypes
@@ -85,9 +83,6 @@ val simpleInjClause : inj_flags option -> evars_flag ->
 val dEq : keep_proofs:(bool option) -> evars_flag -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 val dEqThen : keep_proofs:(bool option) -> evars_flag -> (int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
-val make_iterated_tuple :
-  env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
-
 (* The family cutRewriteIn expect an equality statement *)
 val cutRewriteInHyp : bool -> types -> Id.t -> unit Proofview.tactic
 val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
@@ -118,8 +113,3 @@ val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 val replace_term : bool option -> constr -> clause -> unit Proofview.tactic
 
 val set_eq_dec_scheme_kind : mutual scheme_kind -> unit
-
-(* [build_selector env sigma i c t u v] matches on [c] of
-   type [t] and returns [u] in branch [i] and [v] on other branches *)
-val build_selector : env -> evar_map -> int -> constr -> types ->
-  constr -> constr -> constr

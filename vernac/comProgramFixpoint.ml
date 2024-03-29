@@ -11,7 +11,6 @@
 open Pp
 open CErrors
 open Util
-open Constr
 open Context
 open Declare
 open Names
@@ -43,68 +42,6 @@ let mkSubset sigma name typ prop =
 let make_qref s = qualid_of_string s
 let lt_ref = make_qref "Init.Peano.lt"
 
-type family = SPropF | PropF | TypeF
-let family_of_sort_family = let open Sorts in function
-    | InSProp -> SPropF
-    | InProp -> PropF
-    | InSet | InType | InQSort -> TypeF
-
-let get_sigmatypes sigma ~sort ~predsort =
-  let open EConstr in
-  let which, sigsort = match predsort, sort with
-    | SPropF, _ | _, SPropF ->
-      user_err Pp.(str "SProp arguments not supported by Program Fixpoint yet.")
-    | PropF, PropF -> "ex", PropF
-    | PropF, TypeF -> "sig", TypeF
-    | TypeF, (PropF|TypeF) -> "sigT", TypeF
-  in
-  let sigma, ty = Evd.fresh_global (Global.env ()) sigma (lib_ref ("core."^which^".type")) in
-  let uinstance = snd (destRef sigma ty) in
-  let intro = mkRef (lib_ref ("core."^which^".intro"), uinstance) in
-  let p1 = mkRef (lib_ref ("core."^which^".proj1"), uinstance) in
-  let p2 = mkRef (lib_ref ("core."^which^".proj2"), uinstance) in
-  sigma, ty, intro, p1, p2, sigsort
-
-let rec telescope sigma l =
-  let open EConstr in
-  let open Vars in
-  match l with
-  | [] -> assert false
-  | [LocalAssum (n, t), _] ->
-    sigma, t, [LocalDef (n, mkRel 1, t)], mkRel 1
-  | (LocalAssum (n, t), tsort) :: tl ->
-      let sigma, ty, _tysort, tys, (k, constr) =
-        List.fold_left
-          (fun (sigma, ty, tysort, tys, (k, constr)) (decl,sort) ->
-            let t = RelDecl.get_type decl in
-            let pred = mkLambda (RelDecl.get_annot decl, t, ty) in
-            let sigma, ty, intro, p1, p2, sigsort = get_sigmatypes sigma ~predsort:tysort ~sort in
-            let sigty = mkApp (ty, [|t; pred|]) in
-            let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
-              (sigma, sigty, sigsort, (pred, p1, p2) :: tys, (succ k, intro)))
-          (sigma, t, tsort, [], (2, mkRel 1)) tl
-      in
-      let sigma, last, subst = List.fold_right2
-        (fun (pred,p1,p2) (decl,_) (sigma, prev, subst) ->
-          let t = RelDecl.get_type decl in
-          let proj1 = applist (p1, [t; pred; prev]) in
-          let proj2 = applist (p2, [t; pred; prev]) in
-            (sigma, lift 1 proj2, LocalDef (get_annot decl, proj1, t) :: subst))
-        (List.rev tys) tl (sigma, mkRel 1, [])
-      in sigma, ty, (LocalDef (n, last, t) :: subst), constr
-
-  | (LocalDef (n, b, t), _) :: tl ->
-    let sigma, ty, subst, term = telescope sigma tl in
-    sigma, ty, (LocalDef (n, b, t) :: subst), lift 1 term
-
-let telescope env sigma l =
-  let l, _ = List.fold_right_map (fun d env ->
-      let s = Retyping.get_sort_family_of env sigma (RelDecl.get_type d) in
-      let env = EConstr.push_rel d env in
-      (d, family_of_sort_family s), env) l env
-  in
-  telescope sigma l
-
 let nf_evar_context sigma ctx =
   let nf c = Evarutil.nf_evar sigma c in
   let nfa na = UnivSubst.nf_binder_annot (fun r -> Evarutil.nf_relevance sigma r) na in
@@ -117,6 +54,7 @@ let nf_evar_context sigma ctx =
 let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_warns ?using r measure notation =
   let open EConstr in
   let open Vars in
+  let open Combinators in
   let fix_sub_ref, measure_on_R_ref = try fix_sub_ref (), measure_on_R_ref ()
     with NotFoundRef r ->
       CErrors.user_err
@@ -130,26 +68,14 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?user_wa
   let top_env = push_rel_context binders_rel env in
   let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
-  let sigma, argtyp, letbinders, make = telescope env sigma binders_rel in
+  let sigma, letbinders, { telescope_type = argtyp; telescope_value = make } =
+    telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (make_annot (Name argname) Sorts.Relevant, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
-  let relty = Retyping.get_type_of env sigma rel in
-  let relargty =
-    let error () =
-      user_err ?loc:(constr_loc r)
-        (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
-    in
-    let ctx, ar =
-      try Reductionops.whd_decompose_prod_n env sigma 2 relty
-      with Invalid_argument _ -> error () in
-    match ctx, EConstr.kind sigma ar with
-      | [(_,t); (_,u)], Sort s
-        when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
-      | _, _ -> error ()
-  in
+  let relargty = Hipattern.is_homogeneous_relation ?loc:(constr_loc r) env sigma rel in
   let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
   let sigma, wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
