@@ -196,12 +196,30 @@ let check_subtype univs ctxT ctx =
     check_constraints cst univs
   else false
 
+
+(** Qualities *)
+
+let check_eq_qualities ?qnorm q1 q2 =
+  let open Sorts.Quality in
+  match q1, q2, qnorm with
+  | QConstant qc, QConstant qc', _ -> Constants.equal qc qc'
+  | QVar q, QConstant _, Some qnorm -> equal (qnorm q) q2
+  | QConstant _, QVar q, Some qnorm -> equal q1 (qnorm q)
+  | QVar q, QVar q', Some qnorm -> equal (qnorm q) (qnorm q')
+  | QVar q, QVar q', None -> Sorts.QVar.equal q q'
+  | QConstant _, QVar _, None | QVar _, QConstant _, None -> false
+
+let check_qconstraint ?qnorm (u, Sorts.QConstraint.(Equal | Leq), v) =
+  check_eq_qualities ?qnorm u v
+
+let check_qconstraints ?qnorm csts = Sorts.QConstraints.for_all (check_qconstraint ?qnorm) csts
+
 (** Instances *)
 
-let check_eq_instances g t1 t2 =
+let check_eq_instances ?qnorm g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal (check_eq_qualities ?qnorm) qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph
@@ -222,28 +240,64 @@ let get_algebraic = function
 | Set -> Universe.type0
 | Type u | QSort (_, u) -> u
 
-let check_eq_sort ugraph s1 s2 = match s1, s2 with
+let wrap_qnorm ?qnorm q =
+  match qnorm with
+  | None -> None
+  | Some qnorm ->
+    match qnorm q with
+    | Sorts.Quality.QVar q' when Sorts.QVar.equal q q' -> None
+    | q' -> Some q'
+
+let rec check_eq_sort ?qnorm ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| QSort (q1, u1), QSort (q2, u2) ->
+  begin match wrap_qnorm ?qnorm q1, wrap_qnorm ?qnorm q2 with
+  | None, None -> QVar.equal q1 q2 && check_eq ugraph u1 u2
+  | Some q1, None -> check_eq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) s2
+  | None, Some q2 -> check_eq_sort ?qnorm ugraph s1 (Sorts.sort_of_quality_universe q2 u2)
+  | Some q1, Some q2 -> check_eq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) (Sorts.sort_of_quality_universe q2 u2)
+  end
+| QSort (q1, u1), _ ->
+  begin match wrap_qnorm ?qnorm q1 with
+  | None -> type_in_type ugraph && (match s2 with SProp | Prop -> true | _ -> false)
+  | Some q1 -> check_eq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) s2
+  end
+| _, QSort (q2, u2) ->
+  begin match wrap_qnorm ?qnorm q2 with
+  | None -> type_in_type ugraph && (match s1 with SProp | Prop -> true | _ -> false)
+  | Some q2 -> check_eq_sort ?qnorm ugraph s1 (Sorts.sort_of_quality_universe q2 u2)
+  end
 | (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
   type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_eq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_eq ugraph u1 u2
-| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
-let check_leq_sort ugraph s1 s2 = match s1, s2 with
+
+let rec check_leq_sort ?qnorm ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| QSort (q1, u1), QSort (q2, u2) ->
+  begin match wrap_qnorm ?qnorm q1, wrap_qnorm ?qnorm q2 with
+  | None, None -> QVar.equal q1 q2 && check_eq ugraph u1 u2
+  | Some q1, None -> check_leq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) s2
+  | None, Some q2 -> check_leq_sort ?qnorm ugraph s1 (Sorts.sort_of_quality_universe q2 u2)
+  | Some q1, Some q2 -> check_leq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) (Sorts.sort_of_quality_universe q2 u2)
+  end
+| QSort (q1, u1), _ ->
+  begin match wrap_qnorm ?qnorm q1 with
+  | None -> type_in_type ugraph && (match s2 with SProp | Prop -> true | _ -> false)
+  | Some q1 -> check_leq_sort ?qnorm ugraph (Sorts.sort_of_quality_universe q1 u1) s2
+  end
+| _, QSort (q2, u2) ->
+  begin match wrap_qnorm ?qnorm q2 with
+  | None -> type_in_type ugraph && (match s1 with SProp | Prop -> true | _ -> false)
+  | Some q2 -> check_leq_sort ?qnorm ugraph s1 (Sorts.sort_of_quality_universe q2 u2)
+  end
 | (SProp, _) -> type_in_type ugraph
 | (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
-| (Prop, QSort _) -> false
 | (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_leq ugraph u1 u2
-| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
 (** Pretty-printing *)
 

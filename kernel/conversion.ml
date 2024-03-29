@@ -887,48 +887,51 @@ let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
       ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
     ()
 
-let check_eq univs u u' =
-  if not (UGraph.check_eq_sort univs u u') then raise NotConvertible
+let check_eq ?qnorm univs u u' =
+  if not (UGraph.check_eq_sort ?qnorm univs u u') then raise NotConvertible
 
-let check_leq univs u u' =
-  if not (UGraph.check_leq_sort univs u u') then raise NotConvertible
+let check_leq ?qnorm univs u u' =
+  if not (UGraph.check_leq_sort ?qnorm univs u u') then raise NotConvertible
 
-let check_sort_cmp_universes pb s0 s1 univs =
+let check_sort_cmp_universes ?qnorm pb s0 s1 univs =
   match pb with
-  | CUMUL -> check_leq univs s0 s1
-  | CONV -> check_eq univs s0 s1
+  | CUMUL -> check_leq ?qnorm univs s0 s1
+  | CONV -> check_eq ?qnorm univs s0 s1
 
-let checked_sort_cmp_universes _env pb s0 s1 univs =
-  check_sort_cmp_universes pb s0 s1 univs; univs
+let checked_sort_cmp_universes ?qnorm _env pb s0 s1 univs =
+  check_sort_cmp_universes ?qnorm pb s0 s1 univs; univs
 
-let check_convert_instances ~flex:_ u u' univs =
-  if UGraph.check_eq_instances univs u u' then univs
+let check_convert_instances ?qnorm ~flex:_ u u' univs =
+  if UGraph.check_eq_instances ?qnorm univs u u' then univs
   else raise NotConvertible
 
 (* general conversion and inference functions *)
-let check_inductive_instances cv_pb variance u1 u2 univs =
+let check_inductive_instances ?qnorm cv_pb variance u1 u2 univs =
   let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if Sorts.QConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then univs
+  if UGraph.check_qconstraints ?qnorm qcsts && (UGraph.check_constraints ucsts univs) then univs
   else raise NotConvertible
 
-let checked_universes =
-  { compare_sorts = checked_sort_cmp_universes;
-    compare_instances = check_convert_instances;
-    compare_cumul_instances = check_inductive_instances; }
+let checked_universes qnorm =
+  { compare_sorts = checked_sort_cmp_universes ?qnorm;
+    compare_instances = check_convert_instances ?qnorm;
+    compare_cumul_instances = check_inductive_instances ?qnorm; }
 
 let () =
   let conv infos tab a b =
     try
       let univs = info_univs infos in
+      let qnorm = info_qnorm infos in
       let infos = { cnv_inf = infos; lft_tab = tab; rgt_tab = tab; } in
       let univs', _ = ccnv CONV false infos el_id el_id a b
-          (univs, checked_universes)
+          (univs, checked_universes (Some qnorm))
       in
       assert (univs==univs');
       true
       with NotConvertible -> false
   in
   CClosure.set_conv conv
+
+let checked_universes = checked_universes None
 
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler env) t1 t2 =
   let univs = Environ.universes env in

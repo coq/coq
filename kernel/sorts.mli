@@ -161,6 +161,7 @@ val family_equal : family -> family -> bool
 val family_leq : family -> family -> bool
 
 val sort_of_univ : Univ.Universe.t -> t
+val sort_of_quality_universe : Quality.t -> Univ.Universe.t -> t
 
 val levels : t -> Univ.Level.Set.t
 

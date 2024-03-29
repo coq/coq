@@ -279,6 +279,14 @@ let qsort q u = QSort (q, u)
 let sort_of_univ u =
   if Universe.is_type0 u then set else Type u
 
+let sort_of_quality_universe q u =
+  let open Quality in
+  match q with
+  | QVar q -> qsort q u
+  | QConstant QSProp -> sprop
+  | QConstant QProp -> prop
+  | QConstant QType -> sort_of_univ u
+
 let compare s1 s2 =
   if s1 == s2 then 0 else
     match s1, s2 with
