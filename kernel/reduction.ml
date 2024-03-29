@@ -194,18 +194,3 @@ let eta_expand env t ty =
   let t = Term.applistc (Vars.lift d t) eta_args in
   let t = Term.it_mkLambda_or_LetIn t (List.firstn d ctxt) in
   Term.it_mkLambda_or_LetIn t ctxt'
-
-(* Deprecated *)
-
-let dest_prod       = whd_decompose_prod
-let dest_prod_assum = whd_decompose_prod_decls
-let dest_lam        = whd_decompose_lambda
-let dest_lam_assum  = whd_decompose_lambda_decls
-
-(* Re-deprecated in 8.19 *)
-
-let hnf_decompose_prod           = whd_decompose_prod
-let hnf_decompose_prod_decls     = whd_decompose_prod_decls
-let hnf_decompose_lambda         = whd_decompose_lambda
-let hnf_decompose_lambda_decls   = whd_decompose_lambda_decls
-let hnf_decompose_lambda_n_decls = whd_decompose_lambda_n_assum

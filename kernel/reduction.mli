@@ -61,27 +61,3 @@ val dest_arity : env -> types -> Term.arity (* raises NotArity if not an arity *
 val is_arity   : env -> types -> bool
 
 val eta_expand : env -> constr -> types -> constr
-
-(** Deprecated *)
-
-val dest_prod       : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val dest_prod_assum : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
-val dest_lam        : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
-val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda_assum] instead."]
-
-(** Re-deprecated in 8.19 *)
-
-val hnf_decompose_prod           : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val hnf_decompose_prod_decls     : env -> types -> Constr.rel_context * types
-[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
-val hnf_decompose_lambda         : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
-val hnf_decompose_lambda_decls   : env -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda_decls] instead."]
-val hnf_decompose_lambda_n_decls : env -> int -> constr -> Constr.rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda_n_assum] instead."]
