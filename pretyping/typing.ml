@@ -282,12 +282,12 @@ let judge_of_cast env sigma cj k tj =
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
-  check_fix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+  check_fix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 let check_cofix env sigma pcofix =
   let inj c = EConstr.to_constr sigma c in
   let (idx, (ids, cs, ts)) = pcofix in
-  check_cofix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+  check_cofix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 (* The typing machine with universes and existential variables. *)
 
