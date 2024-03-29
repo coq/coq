@@ -104,7 +104,7 @@ val type_of_global_in_context : env -> GlobRef.t -> types * UVars.AbstractContex
 (** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> ?evars:constr CClosure.evar_handler ->
+val check_hyps_inclusion : env -> ?evars:CClosure.evar_handler ->
   GlobRef.t -> Constr.named_context -> unit
 
 (** Types for primitives *)

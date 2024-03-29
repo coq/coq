@@ -19,7 +19,7 @@ exception NotConvertible
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:constr CClosure.evar_handler ->
+  ?evars:CClosure.evar_handler ->
   'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL
@@ -64,7 +64,7 @@ val conv_leq : types extended_conversion_function
   [UniverseInconsistency] in addition to [NotConvertible] (for better error
   messages). *)
 val generic_conv : conv_pb -> l2r:bool
-  -> TransparentState.t -> env -> ?evars:constr CClosure.evar_handler
+  -> TransparentState.t -> env -> ?evars:CClosure.evar_handler
   -> 'a generic_conversion_function
 
 val default_conv     : conv_pb -> types kernel_conversion_function
