@@ -637,7 +637,7 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
         Constrintern.interp_context_evars ~program_mode env0 evd bl
       in
       let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
-      let flags = Pretyping.{ all_and_fail_flags with program_mode } in
+      let flags = Pretyping.{ all_no_fail_flags with program_mode } in
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let typ = EConstr.it_mkProd_or_LetIn t' ctx in
@@ -655,6 +655,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let typs, thms = List.split thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
+  Pretyping.check_evars_are_solved ~program_mode env0 evd;
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl typs;
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
