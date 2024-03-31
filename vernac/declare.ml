@@ -1536,6 +1536,7 @@ module Proof_ending = struct
 end
 
 (* Alias *)
+module Proof_ = Proof
 module Proof = struct
 
 module Proof_info = struct
@@ -2749,6 +2750,27 @@ let next_obligation ~pm ?(final=false) name tac =
 let check_program_libraries () =
   Coqlib.check_required_library Coqlib.datatypes_module_name;
   Coqlib.check_required_library ["Coq";"Init";"Specif"]
+
+let program_inference_hook env sigma ev =
+  let tac = !default_tactic in
+  let evi = Evd.find_undefined sigma ev in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let env = Evd.evar_filtered_env env evi in
+  try
+    let concl = Evd.evar_concl evi in
+    if not (Evarutil.is_ground_env sigma env &&
+            Evarutil.is_ground_term sigma concl)
+    then None
+    else
+      let c, sigma =
+        Proof_.refine_by_tactic ~name:(Id.of_string "program_subproof")
+          ~poly:false env sigma concl (Tacticals.tclSOLVE [tac])
+      in
+      Some (sigma, c)
+  with
+  | (Proof.OpenProof _ as e | Logic_monad.TacticFailure e) when CErrors.noncritical e ->
+    CErrors.user_err Pp.(str "The statement obligations could not be resolved \
+                      automatically, write a statement definition first.")
 
 (* aliases *)
 let prepare_obligations = prepare_obligations
