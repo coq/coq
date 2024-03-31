@@ -610,14 +610,11 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
 let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
-  let inference_hook = if program_mode then Some Declare.Obls.program_inference_hook else None in
   List.fold_left_map (fun evd ((id, _), (bl, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
         Constrintern.interp_context_evars ~program_mode env0 evd bl
       in
       let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
-      let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-      let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let typ = EConstr.it_mkProd_or_LetIn t' ctx in
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') () in
@@ -632,6 +629,9 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let typs, thms = List.split thms in
+  let evd =
+    let inference_hook = if program_mode then Some Declare.Obls.program_inference_hook else None in
+    Pretyping.solve_remaining_evars ?hook:inference_hook flags env0 evd in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   Pretyping.check_evars_are_solved ~program_mode env0 evd;
