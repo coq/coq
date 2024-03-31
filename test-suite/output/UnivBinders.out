@@ -120,7 +120,7 @@ Universe instance length is 0 but should be 1.
 File "./output/UnivBinders.v", line 106, characters 0-30:
 The command has indeed failed with message:
 This object does not support universe names.
-File "./output/UnivBinders.v", line 110, characters 0-49:
+File "./output/UnivBinders.v", line 110, characters 0-50:
 The command has indeed failed with message:
 Cannot enforce v < u because u < gU < gV < v
 insec@{v} = Type@{uu} -> Type@{v}

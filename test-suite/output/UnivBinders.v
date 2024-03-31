@@ -107,7 +107,7 @@ Fail Print Coq.Init.Logic@{E}.
 
 (* Nice error when constraints are impossible. *)
 Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
-Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
+Fail Lemma foo'@{u v|u < gU, gV < v, v < u} : nat.
 
 Section SomeSec.
   Universe uu.
