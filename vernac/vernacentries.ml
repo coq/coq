@@ -606,31 +606,10 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
-let program_inference_hook env sigma ev =
-  let tac = !Declare.Obls.default_tactic in
-  let evi = Evd.find_undefined sigma ev in
-  let evi = Evarutil.nf_evar_info sigma evi in
-  let env = Evd.evar_filtered_env env evi in
-  try
-    let concl = Evd.evar_concl evi in
-    if not (Evarutil.is_ground_env sigma env &&
-            Evarutil.is_ground_term sigma concl)
-    then None
-    else
-      let c, sigma =
-        Proof.refine_by_tactic ~name:(Id.of_string "program_subproof")
-          ~poly:false env sigma concl (Tacticals.tclSOLVE [tac])
-      in
-      Some (sigma, c)
-  with
-  | Logic_monad.TacticFailure e when noncritical e ->
-    user_err Pp.(str "The statement obligations could not be resolved \
-                      automatically, write a statement definition first.")
-
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
 let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
-  let inference_hook = if program_mode then Some program_inference_hook else None in
+  let inference_hook = if program_mode then Some Declare.Obls.program_inference_hook else None in
   List.fold_left_map (fun evd ((id, _), (bl, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
         Constrintern.interp_context_evars ~program_mode env0 evd bl

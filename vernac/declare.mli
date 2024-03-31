@@ -593,6 +593,8 @@ val admit_obligations : pm:OblState.t -> Names.Id.t option -> OblState.t
 
 val check_program_libraries : unit -> unit
 
+val program_inference_hook : Environ.env -> Evd.evar_map -> Evar.t -> (Evd.evar_map * EConstr.t) option
+
 end
 
 val is_local_constant : Constant.t -> bool
