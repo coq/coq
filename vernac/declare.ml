@@ -1160,11 +1160,12 @@ module State = struct
 end
 
 (* In all cases, the use of the map is read-only so we don't expose the ref *)
-let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
+let map_non_empty_keys is_empty m =
+  ProgMap.fold (fun k prg l -> if is_empty prg then l else k :: l) m []
 
-let check_solved_obligations ~pm ~what_for : unit =
+let check_solved_obligations is_empty ~pm ~what_for : unit =
   if not (ProgMap.is_empty pm) then
-    let keys = map_keys pm in
+    let keys = map_non_empty_keys is_empty pm in
     let have_string = if Int.equal (List.length keys) 1 then " has " else " have " in
     CErrors.user_err
       Pp.(
@@ -2702,7 +2703,12 @@ let check_program_libraries () =
 
 (* aliases *)
 let prepare_obligation = prepare_obligation
-let check_solved_obligations = Obls_.check_solved_obligations
+let check_solved_obligations =
+  let is_empty prg =
+    let obls = (Internal.get_obligations (CEphemeron.get prg)).obls in
+    let is_open x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
+    Array.exists is_open obls in
+  Obls_.check_solved_obligations is_empty
 type fixpoint_kind = Obls_.fixpoint_kind =
   | IsFixpoint of lident option list | IsCoFixpoint
 type nonrec progress = progress =
