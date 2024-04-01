@@ -479,7 +479,7 @@ Ltac2 exact1 ev c :=
   Control.enter (fun () =>
     let c :=
       Constr.Pretype.pretype
-        (if ev then Constr.Pretype.Flags.open_constr_flags else Constr.Pretype.Flags.constr_flags)
+        (if ev then Constr.Pretype.Flags.open_constr_flags_with_tc else Constr.Pretype.Flags.constr_flags)
         (Constr.Pretype.expected_oftype (Control.goal()))
         c
     in
