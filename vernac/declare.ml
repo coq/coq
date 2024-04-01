@@ -2684,7 +2684,10 @@ let next_obligation ~pm ?(final=false) n tac =
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
     | Some i -> i
-    | None -> CErrors.anomaly (Pp.str "Could not find a solvable obligation.")
+    | None ->
+      match n with
+      | None -> CErrors.anomaly (Pp.str "Could not find a solvable obligation.")
+      | Some n -> CErrors.user_err (str "No more obligations for " ++ Id.print n ++ str ".")
   in
   let check_final = if not final then None
     else match n with
