@@ -262,6 +262,15 @@ let build_wellfounded env sigma poly udecl recname ctx body ccl impls rel_measur
   sigma, recname_func, body, typ, impls, obls, hook
 
 (*********************************)
+(* Misc *)
+
+(* Early check of compatibility of the udecl *)
+let check_univ_decl_early ~poly sigma udecl bodies types =
+  let vars = List.fold_left (Option.fold_left (fun acc b -> Univ.Level.Set.union acc (CVars.universes_of_constr b))) Univ.Level.Set.empty bodies in
+  let vars = List.fold_left (fun acc b -> Univ.Level.Set.union acc (CVars.universes_of_constr b)) vars types in
+  ignore (UState.check_univ_decl ~poly (UState.restrict (Evd.evar_universe_context sigma) vars) udecl)
+
+(*********************************)
 (* Interpretation of Co/Fixpoint *)
 
 let make_qref s = Libnames.qualid_of_string s
@@ -555,11 +564,13 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
     match pm with
     | Some pm -> finish_obligations env sigma rec_sign possible_guard poly udecl fix
     | None -> finish_regular env sigma fix in
+  let sigma = if poly then sigma else Evd.fix_undefined_variables sigma in (* ?? *)
   let uctx = Evd.evar_universe_context sigma in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?hook ?typing_flags ?user_warns ~ntns:fix.fixntns () in
   let cinfo = build_recthms fix in
   match pm with
   | Some pm ->
+    check_univ_decl_early ~poly sigma udecl bodies fix.fixtypes;
     (match fixwfs, bodies, cinfo, obls with
     | [Some _], [Some body], [cinfo], [obls] ->
       (* Program Fixpoint wf/measure *)
@@ -580,7 +591,7 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
       None, None
     with Option.IsNone ->
       (* At least one undefined body *)
-      let evd = Evd.from_ctx uctx in
+      check_univ_decl_early ~poly sigma udecl bodies fix.fixtypes;
       let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
-          ~bodies ~possible_guard ?using evd in
+          ~bodies ~possible_guard ?using sigma in
       None, Some lemma
