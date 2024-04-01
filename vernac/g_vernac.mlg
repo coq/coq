@@ -282,6 +282,8 @@ GRAMMAR EXTEND Gram
               l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
       | IDENT "Register"; g = global; "as"; quid = qualid ->
           { VernacRegister(g, RegisterCoqlib quid) }
+      | IDENT "Register"; IDENT "Scheme"; g = global; "as"; qid = qualid; IDENT "for"; g' = global ->
+        { VernacRegister(g, RegisterScheme {inductive = g'; scheme_kind = qid}) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
       | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
@@ -1166,6 +1168,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Strategy"; qid = smart_global -> { PrintStrategy (Some qid) }
       | IDENT "Strategies" -> { PrintStrategy None }
       | IDENT "Registered" -> { PrintRegistered }
+      | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
     ] ]
   ;
   printunivs_subgraph:

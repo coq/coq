@@ -771,6 +771,7 @@ command: [
 | "Print" "Strategy" reference
 | "Print" "Strategies"
 | "Print" "Registered"
+| "Print" "Registered" "Schemes"
 | "Print" OPT "Term" reference OPT univ_name_list
 | "Print" "Module" "Type" qualid
 | "Print" "Module" qualid
@@ -913,6 +914,7 @@ command: [
 | "Scheme" OPT "Boolean" "Equality" "for" reference
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
+| "Register" "Scheme" qualid "as" qualid "for" qualid
 | "Register" "Inline" qualid
 | "Primitive" ident_decl OPT [ ":" term ] ":=" "#" ident
 | "Universe" LIST1 ident

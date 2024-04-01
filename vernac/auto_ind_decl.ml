@@ -852,7 +852,7 @@ let build_beq_scheme env handle kn =
   res, uctx
 
 let beq_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_beq"
+  Ind_tables.declare_mutual_scheme_object "beq"
   ~deps:build_beq_scheme_deps
   build_beq_scheme
 
@@ -1182,7 +1182,7 @@ let make_bl_scheme_deps env ind =
   Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let bl_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_dec_bl"
+  Ind_tables.declare_mutual_scheme_object "dec_bl"
   ~deps:make_bl_scheme_deps
   make_bl_scheme
 
@@ -1313,7 +1313,7 @@ let make_lb_scheme_deps env ind =
   Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let lb_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_dec_lb"
+  Ind_tables.declare_mutual_scheme_object "dec_lb"
   ~deps:make_lb_scheme_deps
   make_lb_scheme
 
@@ -1494,7 +1494,7 @@ let make_eq_decidability env handle mind =
   ([|ans|], ctx)
 
 let eq_dec_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_eq_dec"
+  Ind_tables.declare_mutual_scheme_object "eq_dec"
   ~deps:(fun _ ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
   make_eq_decidability
 
