@@ -1130,6 +1130,13 @@ let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
 let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes decl
 
+let check_univ_decl_early ~poly sigma udecl terms =
+  let vars = List.fold_left (fun acc b -> Univ.Level.Set.union acc (Vars.universes_of_constr b)) Univ.Level.Set.empty terms in
+  let uctx = evar_universe_context sigma in
+  let uctx = UState.collapse_sort_variables uctx in
+  let uctx = UState.restrict uctx vars in
+  ignore (UState.check_univ_decl ~poly uctx udecl)
+
 let restrict_universe_context ?lbound evd vars =
   { evd with universes = UState.restrict ?lbound evd.universes vars }
 

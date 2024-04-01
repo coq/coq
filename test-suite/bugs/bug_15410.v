@@ -1,3 +1,4 @@
 Require Program.Tactics.
 
-Fail Program Definition foo@{u} : Type@{u} := _.
+Program Definition foo@{u} : Type@{u} := _.
+Next Obligation. exact nat. Qed.

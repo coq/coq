@@ -640,21 +640,10 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let flags = Pretyping.{ all_and_fail_flags with program_mode } in
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
-      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
-          ~args:ids ~impargs:(imps @ imps') () in
-      evd, thm)
+      let typ = EConstr.it_mkProd_or_LetIn t' ctx in
+      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') () in
+      evd, (EConstr.to_constr evd typ, thm))
     evd thms
-
-(* Checks done in start_lemma_com *)
-let post_check_evd ~udecl ~poly evd =
-  let () =
-    if not UState.(udecl.univdecl_extensible_instance &&
-                   udecl.univdecl_extensible_constraints) then
-      ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
-  if poly then evd
-  else (* We fix the variables to ensure they won't be lowered to Set *)
-    Evd.fix_undefined_variables evd
 
 let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?user_warns ?using ?hook thms =
   let env0 = Global.env () in
@@ -663,17 +652,18 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let udecls = List.map (fun ((_,univs),_) -> univs) thms in
   let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
+  let typs, thms = List.split thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
+  Evd.check_univ_decl_early ~poly evd udecl typs;
+  let evd = if poly then evd else Evd.fix_undefined_variables evd in
   match mut_analysis with
   | RecLemmas.NonMutual thm ->
     let thm = Declare.CInfo.to_constr evd thm in
-    let evd = post_check_evd ~udecl ~poly evd in
     Declare.Proof.start_definition ~info ~cinfo:thm ?using evd
   | RecLemmas.Mutual possible_guard ->
     let cinfo = List.map (Declare.CInfo.to_constr evd) thms in
-    let evd = post_check_evd ~udecl ~poly evd in
     Declare.Proof.start_mutual_definitions ~info ~cinfo ~possible_guard ?using evd
 
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function

@@ -153,11 +153,11 @@ and rebuild_nal aux bk bl' nal typ =
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (rec_order, fixpoint_exprl) =
-  let typel, uctx = ComFixpoint.interp_fixpoint_short rec_order fixpoint_exprl in
+  let typel, sigma = ComFixpoint.interp_fixpoint_short rec_order fixpoint_exprl in
   let constr_expr_typel =
     with_full_print
       (List.map (fun c ->
-           Constrextern.extern_constr (Global.env ()) (Evd.from_ctx uctx)
+           Constrextern.extern_constr (Global.env ()) sigma
              (EConstr.of_constr c)))
       typel
   in

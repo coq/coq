@@ -40,4 +40,4 @@ type ('constr, 'types, 'r) recursive_preentry =
 val interp_fixpoint_short
   :  Constrexpr.fixpoint_order_expr option list
   -> recursive_expr_gen list
-  -> Constr.types list * UState.t
+  -> Constr.types list * Evd.evar_map

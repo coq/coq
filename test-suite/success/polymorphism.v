@@ -180,6 +180,7 @@ Module binders.
   Abort.
 
   Fail Lemma bar@{u v | } : let x := (fun x => x) : Type@{u} -> Type@{v} in nat.
+  Fail Fixpoint fbar@{u v | } (n:nat) : let x := (fun x => x) : Type@{u} in nat.
 
   Lemma bar@{i j| i < j} : Type@{j}.
   Proof.
@@ -473,3 +474,52 @@ Module ProgramFixpoint.
   Check f@{Set}. (* Check that it depends on only one universe *)
 
 End ProgramFixpoint.
+
+Module EarlyPolyUniverseDeclarationCheck.
+
+  Local Set Universe Polymorphism.
+
+  Fail Definition f@{u} n : match n return Type@{v} with 0 => Type@{u} | _ => Type@{u} end.
+
+  Definition f@{u v} n : match n return Type@{v} with 0 => Type@{u} | _ => Type@{u} end.
+  exact (match n with 0 => nat | _ => nat end).
+  Defined.
+
+  Program Fixpoint f'@{u} (A:Type@{u}) (n:nat) : Type@{u} :=
+    match n with 0 => _ | S n => f' (A->A) n end.
+  Next Obligation. exact nat. Defined.
+
+  Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+    match n with 0 => _ | S n => f'' (Type->A) n end.
+
+  Local Set Universe Polymorphism.
+  Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+    match n with 0 => _ | S n => f'' (A->A) n end.
+  Next Obligation. Show. exact nat. Defined.
+  Next Obligation. Show. Admitted.
+
+End EarlyPolyUniverseDeclarationCheck.
+
+Module EarlyMonoUniverseDeclarationCheck.
+
+  Local Unset Universe Polymorphism.
+
+  Fail Definition f@{u} n : match n return Type@{v} with 0 => Type@{u} | _ => Type@{u} end.
+
+  Definition f@{u v} n : match n return Type@{v} with 0 => Type@{u} | _ => Type@{u} end.
+  exact (match n with 0 => nat | _ => nat end).
+  Defined.
+
+  Program Fixpoint f'@{u} (A:Type@{u}) (n:nat) : Type@{u} :=
+    match n with 0 => _ | S n => f' (A->A) n end.
+  Next Obligation. exact nat. Defined.
+
+  Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+    match n with 0 => _ | S n => f'' (Type->A) n end.
+
+  Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+    match n with 0 => _ | S n => f'' (A->A) n end.
+  Next Obligation. Show. exact nat. Defined.
+  Next Obligation. Show. Admitted.
+
+End EarlyMonoUniverseDeclarationCheck.
