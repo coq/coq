@@ -2595,7 +2595,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and intern_impargs head env allimps subscopes args =
     let eargs, rargs = extract_explicit_arg allimps args in
     if !parsing_explicit then
-      if List.is_empty eargs then intern_args env subscopes rargs
+      if List.is_empty eargs then intern_args head env 0 allimps subscopes rargs
       else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
     else
     let rec aux n imps subscopes eargs rargs =
@@ -2625,7 +2625,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           []
       | ([], rargs) ->
           assert (List.is_empty eargs);
-          intern_args env subscopes rargs
+          intern_args head env n [] subscopes rargs
     in aux 1 allimps subscopes eargs rargs
 
   and apply_impargs env loc c args =
@@ -2643,15 +2643,22 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | _ -> DAst.make ?loc:(Loc.merge_opt (loc_of_glob_constr f) loc) @@ GApp (f, l)
 
   and apply_args env loc hd args =
-    let _, _, subscopes = find_appl_head_data env lvar hd in
-    smart_gapp hd loc (intern_args env subscopes args)
+    let head, impls, subscopes = find_appl_head_data env lvar hd in
+    let imps = select_impargs_size (List.length args) impls in
+    smart_gapp hd loc (intern_args head env 0 imps subscopes args)
 
-  and intern_args env subscopes = function
-    | [] -> []
-    | a::args ->
-      let (enva,subscopes) = apply_scope_env env subscopes in
-      let a = intern_no_implicit enva a in
-      a :: intern_args env subscopes args
+  and intern_args head env n imps subscopes args =
+    match imps with
+    | imp :: imps when is_status_implicit imp && not (force_inference_of imp) ->
+      let (_enva,subscopes) = apply_scope_env env subscopes in
+      set_hole_implicit n None imp head :: intern_args head env (n+1) imps subscopes args
+    | _ -> match args with
+      | [] -> []
+      | a::args ->
+        let (enva,subscopes) = apply_scope_env env subscopes in
+        let imps = match imps with [] -> [] | _ :: imps -> imps in
+        let a = intern_no_implicit enva a in
+        a :: intern_args head env (n+1) imps subscopes args
 
   in
   NewProfile.profile "intern" (fun () ->
