@@ -578,10 +578,11 @@ let program_inference_hook env sigma ev =
             Evarutil.is_ground_term sigma concl)
     then None
     else
-      let c, _, _, _, ctx =
-        Declare.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
+      let c, sigma =
+        Proof.refine_by_tactic ~name:(Id.of_string "program_subproof")
+          ~poly:false env sigma concl (Tacticals.tclSOLVE [tac])
       in
-      Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
+      Some (sigma, c)
   with
   | Logic_monad.TacticFailure e when noncritical e ->
     user_err Pp.(str "The statement obligations could not be resolved \
