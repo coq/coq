@@ -53,7 +53,7 @@ type fterm =
   | FArray of UVars.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * usubs
-  | FIrrelevant
+  | FIrrelevant of constr
   | FLOCKED
 
 (***********************************************************************
@@ -174,7 +174,7 @@ val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 val whd_stack :
   clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 
-val skip_irrelevant_stack : clos_infos -> stack -> stack
+val skip_irrelevant_stack : clos_infos -> fconstr -> stack -> stack
 
 val eta_expand_stack : clos_infos -> Name.t Context.binder_annot -> stack -> stack
 

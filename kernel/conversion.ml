@@ -419,8 +419,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let rn = Range.get (info_relevances infos.cnv_inf) (n - 1) in
         let rm = Range.get (info_relevances infos.cnv_inf) (m - 1) in
         if is_irrelevant infos.cnv_inf rn && is_irrelevant infos.cnv_inf rm then
-          let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
-          let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
+          let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf hd1 v2 in
+          let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf hd2 v2 in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else if Int.equal n m then
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -728,23 +728,23 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
-    | (FRel n1, FIrrelevant) ->
+    | (FRel n1, FIrrelevant _) ->
       let n1 = reloc_rel n1 (el_stack lft1 v1) in
       let r1 = Range.get (info_relevances infos.cnv_inf) (n1 - 1) in
       if is_irrelevant infos.cnv_inf r1 then
-        let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v1 in
+        let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf hd1 v1 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
-    | (FIrrelevant, FRel n2) ->
+    | (FIrrelevant _, FRel n2) ->
       let n2 = reloc_rel n2 (el_stack lft2 v2) in
       let r2 = Range.get (info_relevances infos.cnv_inf) (n2 - 1) in
       if is_irrelevant infos.cnv_inf r2 then
-        let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
+        let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf hd2 v2 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
-    | FIrrelevant, FIrrelevant ->
+    | FIrrelevant _, FIrrelevant _ ->
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
@@ -753,7 +753,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
-       | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant), _ -> raise NotConvertible
+       | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in

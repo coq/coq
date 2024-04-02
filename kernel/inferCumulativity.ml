@@ -261,7 +261,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
 
   (* Removed by whnf *)
   | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
-  | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
+  | FIrrelevant _ -> assert false (* TODO: use create_conv_infos below and use it? *)
 
 and infer_stack infos variances (stk:CClosure.stack) =
   match stk with
