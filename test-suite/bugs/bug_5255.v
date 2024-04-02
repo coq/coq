@@ -4,7 +4,7 @@ Section foo.
 End foo.
 
 Module Type Foo.
-  Context (x := 1).
+  #[local] Definition x := 1.
   Definition foo : x = 1 := eq_refl.
 End Foo.
 
@@ -19,6 +19,6 @@ Section bar.
 End bar.
 
 Module Type Bar.
-  Context (x := tt).
+  #[local] Definition x := tt.
   Definition bar : eq x tt := eq_refl _ _.
 End Bar.

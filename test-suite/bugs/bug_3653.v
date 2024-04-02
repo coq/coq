@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
 Require Setoid.
 
-Variables P Q : forall {T : Set}, T -> Prop.
+Parameters P Q : forall {T : Set}, T -> Prop.
 
 Lemma rule{T : Set}{x : T} : Q x <-> P x. admit. Qed.
 

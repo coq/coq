@@ -5,7 +5,7 @@ Module Type S.
 Record A0 : Type :=  (* Type_i' *)
   i0 {X0 : Type; R0 : X0 -> X0 -> Prop}. (* X0: Type_j' *)
 
-Variable i0' : forall X0 : Type, (X0 -> X0 -> Prop) -> A0.
+Parameter i0' : forall X0 : Type, (X0 -> X0 -> Prop) -> A0.
 
 End S.
 

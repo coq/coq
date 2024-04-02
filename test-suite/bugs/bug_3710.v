@@ -41,7 +41,7 @@ Definition functor_category (C D : PreCategory) : PreCategory.
 Defined.
 Local Notation "C -> D" := (functor_category C D) : category_scope.
 Definition NaturalIsomorphism (C D : PreCategory) F G : Type := @Isomorphic (C -> D) F G.
-Context `{P : PreCategory -> Type}.
+#[warning="context-outside-section"] Context `{P : PreCategory -> Type}.
 Local Notation cat := (@sub_pre_cat P).
 Goal forall (s d d' : cat) (m1 : morphism cat d d') (m2 : morphism cat s d),
        NaturalIsomorphism (m1 o m2) (m1 o m2)%functor.

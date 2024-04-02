@@ -68,8 +68,8 @@ Section hom_functor.
 End hom_functor.
 Local Open Scope category_scope.
 Local Open Scope functor_scope.
-Context `{Funext}.
-Variable D : PreCategory.
+#[warning="context-outside-section"] Context `{Funext}.
+Parameter D : PreCategory.
 Set Printing Universes.
 Check hom_functor D o 1.
 (* Toplevel input, characters 20-44:

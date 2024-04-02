@@ -30,22 +30,22 @@ let make_non_locality = function Some false -> false | _ -> true
 
 let make_locality = function Some true -> true | _ -> false
 
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:CWarnings.CoreCategories.vernacular
-    Pp.(fun () ->
-        Pp.strbrk "Interpreting this declaration as if " ++
-        strbrk "a global declaration prefixed by \"Local\", " ++
-        strbrk "i.e. as a global declaration which shall not be " ++
-        strbrk "available without qualification when imported.")
+let warn_declaration_outside_section =
+  CWarnings.create ~name:"declaration-outside-section"
+    ~category:CWarnings.CoreCategories.vernacular
+    ~default:CWarnings.AsError
+    Pp.(fun (unexpected_thing, replacement) ->
+        strbrk "Use of " ++ str unexpected_thing
+        ++ strbrk " outside sections behaves as " ++ str replacement ++ str ".")
 
-let enforce_locality_exp locality_flag discharge =
+let enforce_locality_exp locality_flag discharge deprecated_thing replacement =
   let open Vernacexpr in
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)
   | None, NoDischarge -> Global ImportDefaultBehavior
   | None, DoDischarge when not (Lib.sections_are_opened ()) ->
      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
-     warn_local_declaration ();
+     warn_declaration_outside_section (deprecated_thing, replacement);
      Global ImportNeedQualified
   | None, DoDischarge -> Discharge
   | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")

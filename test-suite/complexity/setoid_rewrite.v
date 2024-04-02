@@ -3,7 +3,7 @@
 
 Require Import Setoid.
 
-Variable f : nat -> Prop.
+Parameter f : nat -> Prop.
 
 Goal forall U:Prop, f 100 <-> U.
 intros U.

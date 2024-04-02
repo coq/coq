@@ -35,7 +35,7 @@ Section cofe_mixin.
   Lemma equiv_dist x y : x ≡ y <-> forall n, x ={n}= y.
 Admitted.
 End cofe_mixin.
-  Context {A : cofeT}.
+  #[warning="context-outside-section"] Context {A : cofeT}.
   Global Instance cofe_equivalence : Equivalence ((≡) : relation A).
   Proof.
     split.

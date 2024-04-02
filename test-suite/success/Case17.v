@@ -5,9 +5,9 @@
 
 Require Import List.
 
-Variable parse_rel : list bool -> list bool -> nat -> Prop.
+Parameter parse_rel : list bool -> list bool -> nat -> Prop.
 
-Variables (l0 : list bool)
+Parameter (l0 : list bool)
   (rec :
      forall l' : list bool,
      length l' <= S (length l0) ->

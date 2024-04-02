@@ -108,10 +108,10 @@ Section unit.
                                     Contr_internal { g : morphism D (F c) d & G _1 g o T c = f }
     }.
 End unit.
-Variable C : PreCategory.
-Variable D : PreCategory.
-Variable F : Functor C D.
-Variable G : Functor D C.
+Parameter C : PreCategory.
+Parameter D : PreCategory.
+Parameter F : Functor C D.
+Parameter G : Functor D C.
 
 Definition zig__of__adjunction_unit
            (A : AdjunctionUnit F G)

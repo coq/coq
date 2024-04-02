@@ -150,7 +150,7 @@ case E: (1 + 1) (2 + _) / specP=> [a b c defa defb defc].
 match goal with |- b * a.+4 = c + c => subst; done | _ => fail end.
 Qed.
 
-Variables (T : Type) (tr : T -> T).
+Parameters (T : Type) (tr : T -> T).
 
 Inductive exec (cf0 cf1 : T) : seq T -> Prop :=
 | exec_step : tr cf0 = cf1 -> exec cf0 cf1 [::]

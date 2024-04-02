@@ -13,7 +13,7 @@
 Require Import ssreflect.
 
 
-Variables P G : Prop.
+Parameters P G : Prop.
 
 Lemma test1 : (P -> G) -> P -> G.
 Proof.

@@ -57,9 +57,9 @@ Section Functor.
 End Functor.
 Arguments morphism_of [C%_category] [D%_category] F%_functor [s%_object d%_object] m%_morphism : rename, simpl nomatch.
 
-Variables C1 C2 D : PreCategory.
+Parameter C1 C2 D : PreCategory.
 
-Variable F : Functor (C1 * C2) D.
+Parameter F : Functor (C1 * C2) D.
 
 Lemma foo (c1:C1) (x : object C2)
   : @morphism_of _ _ F

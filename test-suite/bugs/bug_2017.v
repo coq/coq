@@ -5,9 +5,9 @@
 
 Set Implicit Arguments.
 
-Variable choose : forall(P : bool -> Prop)(H : exists x, P x), bool.
+Parameter choose : forall(P : bool -> Prop)(H : exists x, P x), bool.
 
-Variable H : exists x : bool, True.
+Parameter H : exists x : bool, True.
 
 Definition coef :=
 match Some true	with

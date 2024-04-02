@@ -60,7 +60,7 @@ Module BacktrackGreenCut.
       in dependent cases. Check by adding an unresolvable constraint.
    *)
 
-  Variable f : D unit -> C bool -> True.
+  Parameter f : D unit -> C bool -> True.
   Fail Definition foo := f _ _.
 
   Fail Definition foo' := let y := _ : D unit in let x := _ : C bool in f _ x.
@@ -76,7 +76,7 @@ Module BacktrackGreenCut.
 
   Class NoInst (A : Type) := {}.
 
-  Variable foo : forall `{ T : Transitive nat } `{ NoInst (let x:=@trans _ T in nat) }, nat.
+  Parameter foo : forall `{ T : Transitive nat } `{ NoInst (let x:=@trans _ T in nat) }, nat.
 
   Fail Definition bar := foo.
 

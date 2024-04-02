@@ -165,7 +165,7 @@ Module ImplicitArgumentsPrimToken.
 (* Check that implicit arguments of number notations are taken into account *)
 
 Class T (A:Type).
-Context (a:T nat).
+Parameter (a:T nat).
 Axiom f : forall A, T A -> A.
 Arguments f {A} {_}.
 Notation "0" := f.

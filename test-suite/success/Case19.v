@@ -2,8 +2,8 @@
    universe (issued by template polymorphism) being sent by
    pretyping to the kernel (bug #1182) *)
 
-Variable T : Type.
-Variable x : nat*nat.
+Parameter T : Type.
+Parameter x : nat*nat.
 
 Check let (_, _) := x in sigT (fun _ : T => nat).
 

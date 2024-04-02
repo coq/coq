@@ -1,4 +1,4 @@
-Variables S1 S2 : Set.
+Parameter S1 S2 : Set.
 
 Goal @eq Type S1 S2 -> @eq Type S1 S2.
 intro H.

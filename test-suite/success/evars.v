@@ -1,7 +1,7 @@
 
 (* The "?" of cons and eq should be inferred *)
-Variable list : Set -> Set.
-Variable cons : forall T : Set, T -> list T -> list T.
+Parameter list : Set -> Set.
+Parameter cons : forall T : Set, T -> list T -> list T.
 Check (forall n : list nat, exists l : _, (exists x : _, n = cons _ x l)).
 
 (* Examples provided by Eduardo Gimenez *)

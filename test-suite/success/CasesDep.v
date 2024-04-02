@@ -226,11 +226,11 @@ Module Sig.
 Record Signature : Type :=
   {Sigma : DSetoid; Arity : Map (Set_of Sigma) (Set_of Dposint)}.
 
-Variable S : Signature.
+Parameter S : Signature.
 
 
 
-Variable Var : DSetoid.
+Parameter Var : DSetoid.
 
 Inductive TERM : Type :=
   | var : elem (Set_of Var) -> TERM
