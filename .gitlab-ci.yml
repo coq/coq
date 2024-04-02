@@ -282,8 +282,8 @@ docker-boot:
   except:
     variables:
       - $SKIP_DOCKER == "true"
-  tags:
-    - docker
+  extends: .auto-use-docker-tags
+  timeout: 2h
 
 build:base:
   extends: .build-template
