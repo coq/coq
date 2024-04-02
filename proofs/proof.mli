@@ -214,7 +214,7 @@ val refine_by_tactic
   -> Evd.evar_map
   -> EConstr.types
   -> unit Proofview.tactic
-  -> Constr.constr * Evd.evar_map
+  -> EConstr.constr * Evd.evar_map
 (** A variant of the above function that handles open terms as well.
     Caveat: all effects are purged in the returned term at the end, but other
     evars solved by side-effects are NOT purged, so that unexpected failures may
