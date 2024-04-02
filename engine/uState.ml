@@ -1030,11 +1030,21 @@ let demote_seff_univs univs uctx =
 
 let demote_global_univs env uctx =
   let env_ugraph = Environ.universes env in
-  let global_univs = UGraph.domain env_ugraph in
-  let global_constraints, _ = UGraph.constraints_of_universes env_ugraph in
-  let promoted_uctx =
-    ContextSet.(of_set global_univs |> add_constraints global_constraints) in
-  { uctx with local = ContextSet.diff uctx.local promoted_uctx }
+  let mem_univ u ugraph = match UGraph.check_declared_universes ugraph (Level.Set.singleton u) with
+  | () -> true
+  | exception (UGraph.UndeclaredLevel _) -> false
+  in
+  let mem_constraints (u, _, v as cst) ugraph =
+    mem_univ u ugraph && mem_univ v ugraph && UGraph.check_constraint ugraph cst
+  in
+  let filter_univs u = not (mem_univ u env_ugraph) in
+  let filter_constraints cst = not (mem_constraints cst env_ugraph) in
+  let (local_univs, local_constraints) = uctx.local in
+  (* local_univs minus univs(env_ugraph) *)
+  let new_univs = Level.Set.filter filter_univs local_univs in
+  (* local_constraints minus constraints(env_ugraph) *)
+  let new_constraints = Constraints.filter filter_constraints local_constraints in
+  { uctx with local = (new_univs, new_constraints) }
 
 let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
