@@ -544,6 +544,21 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
   ans, sigma
 
+(* Prevent side effects from leaking out, cf #13324
+   It would be nicer if side effects were contained in the evar map
+   (also then we may be able to avoid inlining them here)
+   but that requires more extensive change.
+   Same thing for Declare.solve_by_tac. *)
+let refine_by_tactic ~name ~poly env sigma ty tac =
+  let sum = Summary.Interp.freeze_summaries () in
+  let lib = Lib.Interp.freeze () in
+  let res : _ * _ = refine_by_tactic ~name ~poly env sigma ty tac in
+  (* evar creation is the only effect which is allowed to escape *)
+  let sum = Summary.Interp.remove_from_summary sum Evd.evar_counter_summary_tag in
+  let () = Lib.Interp.unfreeze lib in
+  let () = Summary.Interp.unfreeze_summaries ~partial:true sum in
+  res
+
 let get_goal_context_gen pf i =
   let { sigma; goals } = data pf in
   let goal = try List.nth goals (i-1) with Failure _ -> raise (NoSuchGoal None) in

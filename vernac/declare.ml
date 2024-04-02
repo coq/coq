@@ -2407,9 +2407,15 @@ let solve_by_tac prg obls i tac =
   let poly = Internal.get_poly prg in
   (* the status of [build_by_tactic] is dropped. *)
   try
+    (* Prevent side effects from leaking, cf #13324
+       Same thing for Proof.refine_by_tactic. *)
+    let sum = Summary.Interp.freeze_summaries () in
+    let lib = Lib.Interp.freeze () in
     let env = Global.env () in
     let body, types, _univs, _, uctx =
       build_by_tactic env ~uctx ~poly ~typ:(EConstr.of_constr obl.obl_type) tac in
+    let () = Lib.Interp.unfreeze lib in
+    let () = Summary.Interp.unfreeze_summaries sum in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with
