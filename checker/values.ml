@@ -135,12 +135,14 @@ let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 let v_uint63 =
   if Sys.word_size == 64 then Int else Int64
 
+let v_evar = Int
+
 let rec v_constr =
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
     [|v_id|]; (* Var *)
     [|Fail "Meta"|]; (* Meta *)
-    [|Fail "Evar"|]; (* Evar *)
+    [|v_pair v_evar Any|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_binder_annot v_name;v_constr;v_constr|]; (* Prod *)
@@ -389,9 +391,9 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
-let v_puniv = Opt Int
+let v_puniv = v_pair v_level v_bool
 
-let v_pqvar = Opt Int
+let v_pqvar = v_pair v_qvar v_bool
 let v_quality_pattern = v_sum "quality_pattern" 0 [|[|v_pqvar|];[|v_constant_quality|]|]
 
 let v_instance_mask = v_pair (Array v_quality_pattern) (Array v_puniv)
@@ -401,36 +403,62 @@ let v_sort_pattern = Sum ("sort_pattern", 3,
     [|v_pqvar; v_puniv|] (* PSQSort *)
   |])
 
-let rec v_hpattern = Sum ("head_pattern", 0,
-  [|[|Int|];                      (* PHRel *)
-    [|v_sort_pattern|];           (* PHSort *)
-    [|v_cst; v_instance_mask|];   (* PHSymbol *)
-    [|v_ind; v_instance_mask|];   (* PHInd *)
-    [|v_cons; v_instance_mask|];  (* PHConstr *)
-    [|v_uint63|];                 (* PHInt *)
-    [|Float64|];                  (* PHFloat *)
-    [|String|];                   (* PHString *)
-    [|Array v_patarg; v_patarg|]; (* PHLambda *)
-    [|Array v_patarg; v_patarg|]; (* PHProd *)
+let v_sort_annot = v_pair v_qvar v_level
+let v_evar_annot = v_tuple "evar_annot" [|v_evar; v_qvar; v_level|]
+
+let v_ind_annot = v_tuple "ind_annot" [|Array v_qvar; Array v_level; Array v_evar; |]
+
+let rec v_pattern = Sum ("pattern", 0,
+  [|[|Int|];                      (* PRel *)
+    [|v_sort_pattern|];           (* PSort *)
+    [|v_cst; v_instance_mask|];   (* PSymbol *)
+    [|v_ind; v_instance_mask|];   (* PInd *)
+    [|v_cons; v_instance_mask|];  (* PConstr *)
+    [|v_uint63|];                 (* PInt *)
+    [|Float64|];                  (* PFloat *)
+    [|String|];                   (* PString *)
+    [|v_name; v_argpat; v_sort_annot; v_pattern|]; (* PLambda *)
+    [|v_name; v_argpat; v_sort_annot; v_argpat; v_sort_annot|]; (* PProd *)
+    [|v_pattern; v_argpat; v_evar_annot; v_evar_annot |]; (* PApp *)
+    [|v_pattern; v_ind; v_ind_annot; v_case_ret; Array v_annotated_argpat |]; (* PCase *)
+    [|v_pattern; v_proj; v_ind_annot|]; (* PProj *)
   |])
 
-and v_elimination = Sum ("pattern_elimination", 0,
-  [|[|Array v_patarg|];                                   (* PEApp *)
-    [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
-    [|v_proj|];                                           (* PEProj *)
+and v_annotated_argpat = Tuple ("*000", [|Array v_name; v_argpat|])
+and v_case_ret = Tuple ("*00000", [|v_annotated_argpat; v_sort_annot|])
+
+and v_argpat = Sum ("arg_pattern", 0,
+  [|[|v_evar; v_name|];  (* PVar *)
+    [|v_pattern|];       (* Pat *)
   |])
 
-and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
 
-and v_patarg = Sum ("pattern_argument", 1,
-  [|[|Int|];         (* EHole *)
-    [|v_head_elim|]; (* ERigid *)
+let v_evar_map = v_map v_evar
+  (v_tuple "evar_map" [|
+    v_rctxt;
+    v_constr;
+    v_relevance;
+    v_name;
   |])
+
+let v_rrinfo = v_tuple "rewrite_rule_info"
+  [|v_map v_qvar v_bool;    (* qualities *)
+    v_hmap v_level v_bool;  (* univs *)
+    List v_evar;            (* evars *)
+    v_map v_qvar v_quality; (* qgraph *)
+    v_set v_qvar;           (* qabove_prop *)
+    v_cstrs;                (* ucstrs *)
+    v_evar_map;             (* evar_map *)
+    v_map v_evar v_constr;  (* evar_defs *)
+    |]
 
 let v_rewrule = v_tuple "rewrite_rule"
-  [| v_tuple "nvars" [| Int; Int; Int |]; v_pair v_instance_mask (List v_elimination); v_constr |]
+  [|v_pattern;        (* pattern *)
+    v_constr;     (* replacement *)
+    v_rrinfo|]    (* rewrite_rule_info *)
+
 let v_rrb = v_tuple "rewrite_rules_body"
-  [| List (v_pair v_cst v_rewrule) |]
+  [| List v_rewrule |]
 
 let v_module_with_decl = v_sum "with_declaration" 0 [|
     [|List v_id; v_mp|];

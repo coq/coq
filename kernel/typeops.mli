@@ -24,11 +24,18 @@ open Environ
     When typechecking a term it may be updated to fix relevance marks.
    Do not discard the result. *)
 
-val infer      : env -> constr       -> unsafe_judgment
-val infer_type : env -> types        -> unsafe_type_judgment
+type evar_handler = {
+  evar_types: constr pexistential -> types;
+  under_typing: bool;
+}
+
+val default_evar_handler : evar_handler
+
+val infer      : env -> ?sigma:evar_handler -> constr       -> unsafe_judgment
+val infer_type : env -> ?sigma:evar_handler -> types        -> unsafe_type_judgment
 
 val check_context :
-  env -> Constr.rel_context -> env * Constr.rel_context
+  env -> ?sigma:evar_handler -> Constr.rel_context -> env * Constr.rel_context
 
 (** {6 Basic operations of the typing machine. } *)
 
@@ -40,7 +47,7 @@ val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
 (** {6 Type of sorts. } *)
 val type1 : types
-val type_of_sort : Sorts.t -> types
+val type_of_sort : ?under_typing:bool -> Sorts.t -> types
 val judge_of_prop : unsafe_judgment
 val judge_of_set  : unsafe_judgment
 val judge_of_type           : Universe.t -> unsafe_judgment
@@ -71,8 +78,8 @@ val judge_of_apply :
 (*     -> unsafe_judgment *)
 
 (** {6 Type of a product. } *)
-val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t binder_annot -> Sorts.t -> Sorts.t -> types
+val sort_of_product : env -> ?under_typing:bool -> Sorts.t -> Sorts.t -> Sorts.t
+val type_of_product : env -> ?under_typing:bool -> Name.t binder_annot -> Sorts.t -> Sorts.t -> types
 (* val judge_of_product : *)
 (*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
 (*     -> unsafe_judgment *)
@@ -128,3 +135,5 @@ val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> 
 val should_invert_case : env -> Sorts.relevance -> case_info -> bool
 (** Matches must be annotated with the indices when going from SProp to non SProp
     (implies 1 or 0 constructors). *)
+
+val type_of : env -> evar_handler -> CClosure.evar_handler -> types -> types

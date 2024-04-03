@@ -82,7 +82,7 @@ type inference_flags = {
   program_mode : bool;
   polymorphic : bool;
   undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
+  rrpat_evars_abstract : bool;
   unconstrained_sorts : bool;
 }
 
@@ -181,7 +181,7 @@ type pretype_flags = {
   program_mode : bool;
   use_coercions : bool;
   undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
+  rrpat_evars_abstract : bool;
   unconstrained_sorts : bool;
 }
 
@@ -222,3 +222,5 @@ val default_pretyper : pretyper
 (** Coq vanilla pretyper. *)
 
 val eval_pretyper : pretyper -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
+
+val eval_pretyper_pattern : env -> evar_map -> glob_constr -> evar_map * Declarations.rewrite_rule_info * Declarations.pattern * Environ.unsafe_judgment

@@ -83,7 +83,7 @@ type env = {
   env_qualities : Sorts.QVar.Set.t;
   irr_constants : Sorts.relevance Cmap_env.t;
   irr_inds : Sorts.relevance Indmap_env.t;
-  symb_pats: rewrite_rule list Cmap_env.t;
+  symb_pats: machine_rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
@@ -480,6 +480,10 @@ let push_context_set ?(strict=false) ctx env =
 let push_floating_context_set ctx env =
   map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false ctx) env
 
+let push_floating_full_context_set ((qs, us), cstrs) env =
+  let env = { env with env_qualities = Sorts.QVar.Set.union qs env.env_qualities } in
+  map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false (us, cstrs)) env
+
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false v g) levels g in
@@ -593,7 +597,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of UVars.Instance.t * CPrimitives.t
-  | HasRules of UVars.Instance.t * bool * rewrite_rule list
+  | HasRules of UVars.Instance.t * bool * machine_rewrite_rule list
 
 exception NotEvaluableConst of const_evaluation_result
 

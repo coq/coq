@@ -44,9 +44,12 @@ module QState : sig
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
-  val collapse : t -> t
+  val collapse : ?except:QVar.Set.t -> t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val restrict : t -> QVar.Set.t -> t
+  val check_constraint : t -> QConstraint.t -> bool
+  val to_qconstraints : t -> QConstraints.t
 end =
 struct
 
@@ -177,9 +180,15 @@ let undefined m =
   let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
   QMap.domain m
 
-let collapse m =
+let restrict m qvars =
+  let qvars = QSet.union qvars m.named in
+  { named = m.named;
+    qmap = QMap.filter (fun qv _ -> QSet.mem qv qvars) m.qmap;
+    above = QSet.inter m.above qvars }
+
+let collapse ?(except=QVar.Set.empty) m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.named || QSet.mem q except then None else Some (QConstant QType)
   | Some _ -> v
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
@@ -198,6 +207,28 @@ let pr prqvar { qmap; above; named } =
   in
   h (prlist_with_sep fnl (fun (u, v) -> prqvar u ++ prbody u v) (QMap.bindings qmap))
 
+let check_constraint m (q1, c, q2) =
+  match nf_quality m q1, nf_quality m q2 with
+  | QConstant QType, QConstant QType
+  | QConstant QProp, QConstant QProp
+  | QConstant QSProp, QConstant QSProp -> true
+  | QConstant QProp, QVar q when c == QConstraint.Leq ->
+      QSet.mem q m.above
+  | QVar q, QConstant QType when c == QConstraint.Leq ->
+      QSet.mem q m.above
+  | QVar qv1, QVar qv2 -> QVar.equal qv1 qv2
+  | _ -> false
+
+let to_qconstraints m =
+  let qcstrs = QConstraints.empty in
+  let qcstrs = QMap.fold (fun qv q qcstrs ->
+    match q with
+    | Some q -> QConstraints.(add (QVar qv, Equal, q) qcstrs)
+    | None -> qcstrs)
+    m.qmap qcstrs
+  in
+  let qcstrs = QSet.fold (fun qv qcstrs -> QConstraints.(add (QConstant QProp, Leq, QVar qv) qcstrs)) m.above qcstrs in
+  qcstrs
 end
 
 module UPairSet = UnivMinim.UPairSet
@@ -944,6 +975,9 @@ let restrict ?lbound uctx vars =
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
+let restrict_sort_variables uctx qvars =
+  { uctx with sort_variables = QState.restrict uctx.sort_variables qvars }
+
 let restrict_even_binders ?lbound uctx vars =
   let vars = Level.Set.union vars uctx.seff_univs in
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
@@ -1169,8 +1203,8 @@ let normalize_variables uctx =
 let fix_undefined_variables uctx =
   { uctx with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables }
 
-let collapse_sort_variables uctx =
-  { uctx with sort_variables = QState.collapse uctx.sort_variables }
+let collapse_sort_variables ?except uctx =
+  { uctx with sort_variables = QState.collapse ?except uctx.sort_variables }
 
 let minimize ?(lbound = UGraph.Bound.Set) uctx =
   let open UnivMinim in
@@ -1232,6 +1266,12 @@ let check_uctx_impl ~fail uctx uctx' =
   let levels_diff = Level.Set.diff levels (fst uctx.local) in
   let () = if not @@ (QVar.Set.is_empty qvars_diff && Level.Set.is_empty levels_diff) then
     error_unbound_universes qvars_diff levels_diff uctx'.names
+  in
+  let () =
+    let qcstrs = QState.to_qconstraints uctx'.sort_variables in
+    let qcstrs' = QConstraints.filter (fun c -> not (QState.check_constraint uctx.sort_variables c)) qcstrs in
+    if QConstraints.is_empty qcstrs' then ()
+    else fail (QConstraints.pr (pr_uctx_qvar uctx) qcstrs')
   in
   let () =
     let grext = ugraph uctx in

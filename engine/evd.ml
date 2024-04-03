@@ -932,13 +932,14 @@ let is_relevance_irrelevant sigma r =
 
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
+  let qnorm q = UState.nf_qvar sigma.universes q in
   let qvar_irrelevant q = is_relevance_irrelevant sigma (Sorts.RelevanceVar q) in
   let evar_irrelevant (evk, _) = match find sigma evk with
   | EvarInfo evi -> is_relevance_irrelevant sigma evi.evar_relevance
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qnorm; qvar_irrelevant }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with
@@ -1133,6 +1134,9 @@ let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes 
 let restrict_universe_context ?lbound evd vars =
   { evd with universes = UState.restrict ?lbound evd.universes vars }
 
+let restrict_sort_variables evd vars =
+  { evd with universes = UState.restrict_sort_variables evd.universes vars }
+
 let universe_subst evd =
   UState.subst evd.universes
 
@@ -1274,12 +1278,12 @@ let nf_univ_variables evd =
   let uctx = UState.normalize_variables evd.universes in
   {evd with universes = uctx}
 
-let collapse_sort_variables evd =
-  let universes = UState.collapse_sort_variables evd.universes in
+let collapse_sort_variables ?except evd =
+  let universes = UState.collapse_sort_variables ?except evd.universes in
   { evd with universes }
 
-let minimize_universes ?lbound evd =
-  let uctx' = UState.collapse_sort_variables evd.universes in
+let minimize_universes ?lbound ?except_qvars:except evd =
+  let uctx' = UState.collapse_sort_variables ?except evd.universes in
   let uctx' = UState.normalize_variables uctx' in
   let uctx' = UState.minimize ?lbound uctx' in
   {evd with universes = uctx'}
