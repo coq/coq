@@ -1010,7 +1010,7 @@ let it_mkNamedProd_wo_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd
 let rec isArity sigma c =
   match kind sigma c with
   | Prod (_,_,c)    -> isArity sigma c
-  | LetIn (_,b,_,c) -> isArity sigma (Vars.subst1 b c)
+  | LetIn (_,_,_,c) -> isArity sigma c
   | Cast (c,_,_)      -> isArity sigma c
   | Sort _          -> true
   | _               -> false
