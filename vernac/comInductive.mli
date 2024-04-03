@@ -98,7 +98,6 @@ val interp_mutual_inductive_constr
 
 val compute_template_inductive
   : user_template:bool option
-  -> env_ar_params:Environ.env
   -> ctx_params:(Constr.constr, Constr.constr) Context.Rel.Declaration.pt list
   -> univ_entry:UState.universes_entry
   -> Entries.one_inductive_entry

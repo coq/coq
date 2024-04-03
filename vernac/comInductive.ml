@@ -417,7 +417,7 @@ let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
     (fun () -> Pp.str "This inductive type has no template universes.")
 
-let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
+let compute_template_inductive ~user_template ~ctx_params ~univ_entry entry concl =
 match user_template, univ_entry with
 | Some false, UState.Monomorphic_entry uctx ->
   Monomorphic_ind_entry, uctx
@@ -437,7 +437,7 @@ match user_template, univ_entry with
       arity, but inference has decided to lower it to Prop. *)
   let lowered_prop =
     if Term.isArity entry.mind_entry_arity then
-      let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
+      let (_, s) = Term.destArity entry.mind_entry_arity in
       if Sorts.is_prop s then match concl with
       | None | Some (Type _ | Set) -> true
       | Some Prop -> false
@@ -521,7 +521,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   in
   let univ_entry, ctx = match entries, arityconcl with
   | [entry], [concl] ->
-    compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
+    compute_template_inductive ~user_template:template ~ctx_params ~univ_entry entry concl
   | _ ->
     let () = match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
