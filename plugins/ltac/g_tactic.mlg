@@ -198,11 +198,6 @@ let deprecated_conversion_at_with =
     ~name:"conversion_at_with" ~category:Deprecation.Version.v8_14
     (fun () -> Pp.str "The syntax [at ... with ...] is deprecated. Use [with ... at ...] instead.")
 
-let deprecated_clear_modifier =
-  CWarnings.create
-    ~name:"deprecated-clear-modifier" ~category:Deprecation.Version.v8_17
-    (fun () -> Pp.strbrk "The undocumented clear modifier \">\" is deprecated. Open an issue at https://github.com/coq/coq/issues/new if you actually depend on this feature in your work.")
-
 (* Auxiliary grammar rules *)
 
 open Pvernac.Vernac_
@@ -240,10 +235,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   constr_with_bindings_arg:
-    [ [ ">"; c = constr_with_bindings ->
-      { deprecated_clear_modifier (); (* 8.17 *)
-        (Some true,c) }
-      | c = constr_with_bindings -> { (None,c) } ] ]
+    [ [ c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
     [ [ id = ident -> { NamedHyp (CAst.make ~loc id) }
