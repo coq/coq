@@ -103,3 +103,44 @@ Qed.
 Program Fixpoint check_n'  (n : nat) (m : {m:nat | m = n}) (p : nat) (q:{q : nat | q = p})
   {measure (p - n)} : nat :=
   _.
+Module FurtherArguments.
+
+Program Fixpoint zero (n : nat) {measure n} : nat -> nat :=
+  match n with
+    | 0 => fun _ => 0
+    | S n' => zero n'
+  end.
+
+Program Fixpoint f n {B} (b:B) {measure n} : forall {A}, A -> A * B :=
+  match n with
+  | 0 => fun A a => (a, b)
+  | S n => fun A a => f n b a
+  end.
+
+End FurtherArguments.
+
+Module Notations.
+
+Reserved Notation "[ x ]".
+Program Fixpoint zero (n : nat) {measure n} : nat -> nat :=
+  match n with
+    | 0 => fun _ => 0
+    | S n' => [ n' ]
+  end
+
+where "[ n ]" := (zero n).
+
+Check eq_refl : ([ 0 ] 0) = 0.
+
+Reserved Notation "[[ x | y ]]".
+Program Fixpoint zero' (n : nat) {measure n} : nat -> nat :=
+  match n with
+    | 0 => fun _ => 0
+    | S n' => fun a => [[ n' | a ]]
+  end
+
+where "[[ n | p ]]" := (zero' n p).
+
+Check eq_refl : [[ 0 | 0 ]] = 0.
+
+End Notations.

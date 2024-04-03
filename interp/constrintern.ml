@@ -179,8 +179,15 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty 
     (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma id ty typ impl) map)
     impls
 
-let extend_internalization_data (r, impls, scopes, uid) impl scope =
-  (r, impls@[impl], scopes@[scope], uid)
+let set_obligation_internalization_data recname (r, impls, scopes, uid) =
+  let f =
+    function {impl_pos=(na,_,_)} as impl ->
+      if Name.equal na (Name recname)
+      then {impl with impl_force = false}
+      else impl
+  in
+  let impls = List.map (Option.map f) impls in
+  (r, impls, scopes, uid)
 
 let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
   let (_, impls, _, _) = Id.Map.find id int_env in impls
