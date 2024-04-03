@@ -202,6 +202,52 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
+let prop_lowering_candidates evd inds =
+  let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
+
+  (* handle automatic lowering to Prop
+     We repeatedly add information about which inductives should not be Prop
+     until no more progress can be made
+  *)
+  let is_prop_candidate_arity (raw_arity,(_,s),indices,ctors) =
+    less_than_2 ctors
+    && EConstr.isArity evd raw_arity
+    && is_flexible_sort evd s
+    && not (Evd.check_leq evd ESorts.set s)
+  in
+  let candidates = List.filter_map (fun (_,(_,s),_,_ as ind) ->
+      if is_prop_candidate_arity ind then Some s else None)
+      inds
+  in
+
+  let in_candidates s candidates = List.mem_f (ESorts.equal evd) s candidates in
+  let is_prop_candidate_size candidates (_,_,indices,ctors) =
+    List.for_all
+      (List.for_all (fun s -> match ESorts.kind evd s with
+           | SProp | Prop -> true
+           | Set -> false
+           | Type _ | QSort _ ->
+             not (Evd.check_leq evd ESorts.set s)
+             && in_candidates s candidates))
+      (Option.List.cons indices ctors)
+  in
+  let rec spread_nonprop candidates =
+    let (changed, candidates) = List.fold_left
+        (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
+           if is_prop_candidate_size candidates ind
+           then acc (* still a Prop candidate *)
+           else if in_candidates s candidates
+           then (true, List.remove (ESorts.equal evd) s candidates)
+           else acc)
+        (false,candidates)
+        inds
+    in
+    if changed then spread_nonprop candidates
+    else candidates
+  in
+  let candidates = spread_nonprop candidates in
+  candidates
+
 let include_constructor_argument env evd ~ctor_sort ~inductive_sort =
   (* We ignore the quality when comparing the sorts: it has an impact
      on squashing in the kernel but cannot cause a universe error. *)
@@ -249,41 +295,7 @@ let inductive_levels env evd arities ctors =
       inds
   in
 
-  (* handle automatic lowering to Prop
-     We repeatedly add information about which inductives should not be Prop
-     until no more progress can be made
-  *)
-  let in_candidates s candidates = List.mem_f (ESorts.equal evd) s candidates in
-  let is_prop_candidate candidates (raw_arity,(_,s),indices,ctors) =
-    less_than_2 ctors
-    && EConstr.isArity evd raw_arity
-    && is_flexible_sort evd s
-    && not (Evd.check_leq evd ESorts.set s)
-    && List.for_all
-      (List.for_all (fun s -> match ESorts.kind evd s with
-           | SProp | Prop -> true
-           | Set -> false
-           | Type _ | QSort _ ->
-             not (Evd.check_leq evd ESorts.set s)
-             && in_candidates s candidates))
-      (Option.List.cons indices ctors)
-  in
-  let rec spread_nonprop candidates =
-    let (changed, candidates) = List.fold_left
-        (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
-           if is_prop_candidate candidates ind
-           then acc (* still a Prop candidate *)
-           else if in_candidates s candidates
-           then (true, List.remove (ESorts.equal evd) s candidates)
-           else acc)
-        (false,candidates)
-        inds
-    in
-    if changed then spread_nonprop candidates
-    else candidates
-  in
-  let candidates = List.map (fun (_,(_,s),_,_) -> s) inds in
-  let candidates = spread_nonprop candidates in
+  let candidates = prop_lowering_candidates evd inds in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
@@ -296,11 +308,12 @@ let inductive_levels env evd arities ctors =
 
      Perhaps someday we can stop lowering these explicit ": Type". *)
   let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors as ind) ->
-      if in_candidates s candidates then
+      if List.mem_f (ESorts.equal evd) s candidates then
         (mkArity (ctx, ESorts.prop),(ctx,ESorts.prop),indices,ctors)
       else ind)
       inds
   in
+
   (* Add constraints from constructor arguments and indices.
      We must do this after Prop lowering as otherwise we risk unifying sorts
      eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
