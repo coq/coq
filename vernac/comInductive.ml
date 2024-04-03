@@ -248,12 +248,13 @@ let inductive_levels env evd arities ctors =
         (raw_arity,arity,indices,ctors))
       inds
   in
+
   (* handle automatic lowering to Prop
      We repeatedly add information about which inductives should not be Prop
      until no more progress can be made
   *)
-  let in_candidates evd s candidates = List.mem_f (ESorts.equal evd) s candidates in
-  let is_prop_candidate evd candidates (raw_arity,(_,s),indices,ctors) =
+  let in_candidates s candidates = List.mem_f (ESorts.equal evd) s candidates in
+  let is_prop_candidate candidates (raw_arity,(_,s),indices,ctors) =
     less_than_2 ctors
     && EConstr.isArity evd raw_arity
     && is_flexible_sort evd s
@@ -264,25 +265,25 @@ let inductive_levels env evd arities ctors =
            | Set -> false
            | Type _ | QSort _ ->
              not (Evd.check_leq evd ESorts.set s)
-             && in_candidates evd s candidates))
+             && in_candidates s candidates))
       (Option.List.cons indices ctors)
   in
-  let rec spread_nonprop evd candidates =
+  let rec spread_nonprop candidates =
     let (changed, candidates) = List.fold_left
         (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
-           if is_prop_candidate evd candidates ind
+           if is_prop_candidate candidates ind
            then acc (* still a Prop candidate *)
-           else if in_candidates evd s candidates
+           else if in_candidates s candidates
            then (true, List.remove (ESorts.equal evd) s candidates)
            else acc)
         (false,candidates)
         inds
     in
-    if changed then spread_nonprop evd candidates
-    else evd, candidates
+    if changed then spread_nonprop candidates
+    else candidates
   in
   let candidates = List.map (fun (_,(_,s),_,_) -> s) inds in
-  let evd, candidates = spread_nonprop evd candidates in
+  let candidates = spread_nonprop candidates in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
@@ -295,7 +296,7 @@ let inductive_levels env evd arities ctors =
 
      Perhaps someday we can stop lowering these explicit ": Type". *)
   let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors as ind) ->
-      if in_candidates evd s candidates then
+      if in_candidates s candidates then
         (mkArity (ctx, ESorts.prop),(ctx,ESorts.prop),indices,ctors)
       else ind)
       inds
