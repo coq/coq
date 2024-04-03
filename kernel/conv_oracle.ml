@@ -52,20 +52,25 @@ let empty = {
   prj_trstate = PRpred.full;
 }
 
+type evaluable =
+  | EvalVarRef of Id.t
+  | EvalConstRef of Constant.t
+  | EvalProjectionRef of Projection.Repr.t
+
 let get_strategy { var_opacity; cst_opacity; prj_opacity; _ } = function
-  | Evaluable.EvalVarRef id ->
+  | EvalVarRef id ->
       (try Id.Map.find id var_opacity
       with Not_found -> default)
-  | Evaluable.EvalConstRef c ->
+  | EvalConstRef c ->
       (try Cmap.find c cst_opacity
       with Not_found -> default)
-  | Evaluable.EvalProjectionRef p ->
+  | EvalProjectionRef p ->
       (try PRmap.find p prj_opacity
       with Not_found -> default)
 
 let set_strategy ({var_opacity; cst_opacity; prj_opacity; _} as oracle) k l =
   match k with
-  | Evaluable.EvalVarRef id ->
+  | EvalVarRef id ->
     let var_opacity =
       if is_default l then Id.Map.remove id var_opacity
       else Id.Map.add id l var_opacity
@@ -75,7 +80,7 @@ let set_strategy ({var_opacity; cst_opacity; prj_opacity; _} as oracle) k l =
     | _ -> Id.Pred.add id oracle.var_trstate
     in
     { oracle with var_opacity; var_trstate; }
-  | Evaluable.EvalConstRef c ->
+  | EvalConstRef c ->
     let cst_opacity =
       if is_default l then Cmap.remove c cst_opacity
       else Cmap.add c l cst_opacity
@@ -85,7 +90,7 @@ let set_strategy ({var_opacity; cst_opacity; prj_opacity; _} as oracle) k l =
     | _ -> Cpred.add c oracle.cst_trstate
     in
     { oracle with cst_opacity; cst_trstate; }
-  | Evaluable.EvalProjectionRef p ->
+  | EvalProjectionRef p ->
     let prj_opacity =
       if is_default l then PRmap.remove p prj_opacity
       else PRmap.add p l prj_opacity
@@ -97,9 +102,9 @@ let set_strategy ({var_opacity; cst_opacity; prj_opacity; _} as oracle) k l =
     {oracle with prj_opacity; prj_trstate}
 
 let fold_strategy f {var_opacity; cst_opacity; prj_opacity; _} accu =
-  let fvar id lvl accu = f (Evaluable.EvalVarRef id) lvl accu in
-  let fcst cst lvl accu = f (Evaluable.EvalConstRef cst) lvl accu in
-  let fprj p lvl accu = f (Evaluable.EvalProjectionRef p) lvl accu in
+  let fvar id lvl accu = f (EvalVarRef id) lvl accu in
+  let fcst cst lvl accu = f (EvalConstRef cst) lvl accu in
+  let fprj p lvl accu = f (EvalProjectionRef p) lvl accu in
   let accu = Id.Map.fold fvar var_opacity accu in
   let accu = Cmap.fold fcst cst_opacity accu in
   PRmap.fold fprj prj_opacity accu
@@ -109,7 +114,6 @@ let get_transp_state { var_trstate; cst_trstate; prj_trstate; _ } =
   { tr_var = var_trstate; tr_cst = cst_trstate ; tr_prj = prj_trstate }
 
 let dep_order l2r k1 k2 =
-  let open Evaluable in
   match k1, k2 with
   | None, None -> l2r
   | None, _    -> true

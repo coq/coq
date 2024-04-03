@@ -1132,7 +1132,7 @@ let nf_all env sigma =
 (********************************************************************)
 
 let is_transparent e k =
-  match Conv_oracle.get_strategy (Environ.oracle e) k with
+  match Conv_oracle.get_strategy (Environ.oracle e) (Evaluable.to_kevaluable k) with
   | Conv_oracle.Opaque -> false
   | _ -> true
 

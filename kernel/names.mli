@@ -697,17 +697,3 @@ type lname = Name.t CAst.t
 type lstring = string CAst.t
 
 val lident_eq : lident -> lident -> bool
-
-(** Evaluable references (whose transparency can be controlled) *)
-
-module Evaluable : sig
-  type t =
-    | EvalVarRef of Id.t
-    | EvalConstRef of Constant.t
-    | EvalProjectionRef of Projection.Repr.t
-
-  val map : (Id.t -> Id.t) -> (Constant.t -> Constant.t) ->
-    (Projection.Repr.t -> Projection.Repr.t) -> t -> t
-
-  val equal : t -> t -> bool
-end

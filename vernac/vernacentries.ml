@@ -279,9 +279,9 @@ let print_strategy r =
   match r with
   | None ->
     let fold key lvl (vacc, cacc, pacc) = match key with
-    | Evaluable.EvalVarRef id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc, pacc)
-    | Evaluable.EvalConstRef cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc, pacc)
-    | Evaluable.EvalProjectionRef p -> (vacc, cacc, (GlobRef.ConstRef (Projection.Repr.constant p), lvl) :: pacc)
+    | Conv_oracle.EvalVarRef id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc, pacc)
+    | Conv_oracle.EvalConstRef cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc, pacc)
+    | Conv_oracle.EvalProjectionRef p -> (vacc, cacc, (GlobRef.ConstRef (Projection.Repr.constant p), lvl) :: pacc)
     in
     let var_lvl, cst_lvl, prj_lvl = fold_strategy fold oracle ([], [], []) in
     let var_msg =
@@ -307,7 +307,7 @@ let print_strategy r =
     | ConstRef cst -> Evaluable.EvalConstRef cst
     | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable.")
     in
-    let lvl = get_strategy oracle key in
+    let lvl = get_strategy oracle (Evaluable.to_kevaluable key) in
     pr_strategy (r, lvl)
 
 let print_registered () =
