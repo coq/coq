@@ -593,7 +593,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
     mkApp (mkConstructUi(indu,1),Context.Rel.instance mkRel n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
   let inds = Indrec.pseudo_sort_family_for_elim ind mip in
-  let indr = Sorts.relevance_of_sort_family inds in
+  let indr = Inductive.relevance_of_ind_body mip u in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
   let varP,_ = fresh env (Id.of_string "P") avoid in
