@@ -52,21 +52,28 @@ let fresh_lname n =
   incr lname_ctr;
   { lname = n; luid = !lname_ctr }
 
-let rec is_lazy t = match Constr.kind t with
-| App _ | LetIn _ | Case _ | Proj _ -> true
-| Cast (c,_, _) -> is_lazy c
-| Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ | Int _
-| Float _ | Prod _ | Lambda _ | Evar _ | Fix _ | CoFix _ | Array _ ->
-  false
+let rec is_lazy env t =
+  match Constr.kind t with
+  | App _ | LetIn _ | Case _ | Proj _ -> true
+  | Array (_, t, d, _) -> Array.exists (fun t -> is_lazy env t) t || is_lazy env d
+  | Cast (c, _, _) | Prod (_, c, _) -> is_lazy env c
+  | Const (c, _) -> get_const_lazy env c
+  | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _ | Int _
+  | Float _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
+    false
 
-let is_lazy_constant cb =
+and is_lazy_constant env cb =
   (* Bound universes are turned into lambda-abstractions *)
   UVars.AbstractContext.is_constant (Declareops.constant_polymorphic_context cb) &&
   (* So are context variables *)
   List.is_empty cb.const_hyps &&
   match cb.const_body with
-  | Def body -> is_lazy body
+  | Def body -> is_lazy env body
   | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> false
+
+and get_const_lazy env c =
+  let cb = Environ.lookup_constant c env in
+  is_lazy_constant env cb
 
 type prefix = string
 
@@ -82,10 +89,6 @@ let get_const_prefix env c =
    match !nameref with
    | NotLinked -> ""
    | Linked s -> s
-
-let get_const_lazy env c =
-  let cb = Environ.lookup_constant c env in
-  is_lazy_constant cb
 
 (** Global names **)
 type gname =
@@ -2091,7 +2094,7 @@ let compile_constant env sigma con cb =
     | Def t ->
       let code = lambda_of_constr env sigma t in
       debug_native_compiler (fun () -> Pp.str "Generated lambda code");
-      let is_lazy = is_lazy_constant cb in
+      let is_lazy = is_lazy_constant env cb in
       let wrap t = if is_lazy then MLprimitive (Lazy, [|t|]) else t in
       let l = Constant.label con in
       let auxdefs,code =
