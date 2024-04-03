@@ -79,7 +79,6 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
-    -> ?using:Proof_using.t
     -> unit
     -> 'constr t
 
@@ -128,6 +127,7 @@ val declare_definition
   -> cinfo:EConstr.t option CInfo.t
   -> opaque:bool
   -> body:EConstr.t
+  -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
   -> GlobRef.t
 
@@ -140,6 +140,8 @@ val declare_mutually_recursive
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
+  -> ?using:Vernacexpr.section_subset_expr
+  -> unit
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
@@ -183,6 +185,7 @@ module Proof : sig
   val start
     :  info:Info.t
     -> cinfo:EConstr.t CInfo.t
+    -> ?using:Id.Set.t
     -> Evd.evar_map
     -> t
 
@@ -207,6 +210,7 @@ module Proof : sig
   val start_with_initialization
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t
+    -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
 
@@ -217,6 +221,7 @@ module Proof : sig
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
     -> mutual_info:mutual_info
+    -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> int list option
     -> t
@@ -260,7 +265,7 @@ module Proof : sig
 
   (** Sets the section variables assumed by the proof, returns its closure
    * (w.r.t. type dependencies and let-ins covered by it) *)
-  val set_used_variables : t -> using:Proof_using.t -> Constr.named_context * t
+  val set_proof_using : t -> Vernacexpr.section_subset_expr -> Constr.named_context * t
 
   (** Gets the set of variables declared to be used by the proof. None means
       no "Proof using" or #[using] was given *)
@@ -276,9 +281,6 @@ module Proof : sig
   val update_sigma_univs : UGraph.t -> t -> t
 
   val get_open_goals : t -> int
-
-  (** Gets the set of mutual theorem names being currently built, if any *)
-  val get_recnames : t -> Id.t list
 
   (** Helpers to obtain proof state when in an interactive proof *)
 
@@ -545,6 +547,7 @@ val add_definition :
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
+  -> ?using:Vernacexpr.section_subset_expr
   -> RetrieveObl.obligation_info
   -> OblState.t * progress
 
@@ -561,6 +564,7 @@ val add_mutual_definitions :
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
+  -> ?using:Vernacexpr.section_subset_expr
   -> fixpoint_kind
   -> OblState.t
 

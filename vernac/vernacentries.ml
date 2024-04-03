@@ -66,6 +66,7 @@ module DefAttributes = struct
 
   let clearbody = bool_attribute ~name:"clearbody"
 
+  (* [XXX] EJGA: coercion is unused here *)
   let parse ?(coercion=false) ?(discharge=NoDischarge) f =
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
     let (((((((locality, user_warns), polymorphic), program),
@@ -377,6 +378,7 @@ let dump_universes_gen prl g s =
     close ();
     Exninfo.iraise reraise
 
+(* [XXX] EGJA: loc unused here *)
 let universe_subgraph ?loc kept univ =
   let open Univ in
   let parse q =
@@ -586,21 +588,6 @@ let program_inference_hook env sigma ev =
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
-let vernac_set_used_variables pstate using : Declare.Proof.t =
-  let env = Global.env () in
-  let sigma, _ = Declare.Proof.get_current_context pstate in
-  let fixnames = Declare.Proof.get_recnames pstate in
-  let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-  let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
-  let using = Proof_using.definition_using env sigma ~fixnames ~using ~terms in
-  let _, pstate = Declare.Proof.set_used_variables pstate ~using in
-  pstate
-
-let vernac_set_used_variables_opt ?using pstate =
-  match using with
-  | None -> pstate
-  | Some expr -> vernac_set_used_variables pstate expr
-
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
 let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
@@ -639,19 +626,15 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
-  begin
-    match mut_analysis with
-    | RecLemmas.NonMutual thm ->
-      let thm = Declare.CInfo.to_constr evd thm in
-      let evd = post_check_evd ~udecl ~poly evd in
-      Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
-    | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
-      let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
-      let evd = post_check_evd ~udecl ~poly evd in
-      Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info (Some possible_guards)
-  end
-  (* XXX: This should be handled in start_with_initialization, see duplicate using in declare.ml *)
-  |> vernac_set_used_variables_opt ?using
+  match mut_analysis with
+  | RecLemmas.NonMutual thm ->
+    let thm = Declare.CInfo.to_constr evd thm in
+    let evd = post_check_evd ~udecl ~poly evd in
+    Declare.Proof.start_with_initialization ~info ~cinfo:thm ?using evd
+  | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
+    let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
+    let evd = post_check_evd ~udecl ~poly evd in
+    Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info ?using (Some possible_guards)
 
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->
@@ -687,22 +670,22 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~reversible:atts.reversible kind in
-  let program_mode = atts.program in
-  let poly = atts.polymorphic in
-  let typing_flags = atts.typing_flags in
-  let user_warns = atts.user_warns in
-  let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
-    ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook [(name, pl), (bl, t)]
+  let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let scope = enforce_locality_exp local discharge in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
+  let name = vernac_definition_name lid scope in
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~reversible:atts.reversible in
-  let program_mode = atts.program in
-  let typing_flags = atts.typing_flags in
+  let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let scope = enforce_locality_exp local discharge in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
     | None -> None
@@ -713,27 +696,29 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
-      ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
-      ?user_warns:atts.user_warns pl bl red_option c typ_opt ?hook
+      ?clearbody ~poly ?typing_flags ~scope ~kind
+      ?user_warns ?using pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using
-        ?user_warns:atts.user_warns pl bl red_option c typ_opt ?hook in
+        ?clearbody ~poly ?typing_flags ~scope ~kind
+        ?user_warns ?using pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
+  let local, poly, program_mode, user_warns, typing_flags, using =
+    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
+  let scope = enforce_locality_exp local NoDischarge in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
-    ~typing_flags:atts.typing_flags
-    ~program_mode:atts.program
-    ~poly:atts.polymorphic
-    ~scope ~kind:(Decls.IsProof kind) ?user_warns:atts.user_warns ?using:atts.using l
+    ~typing_flags
+    ~program_mode
+    ~poly
+    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using l
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -754,10 +739,12 @@ let vernac_exact_proof ~lemma ~pm c =
 
 let vernac_assumption ~atts discharge kind l inline =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality discharge in
-  if Option.has_some atts.using then
+  let local, poly, program_mode, using, user_warns =
+    atts.locality, atts.polymorphic, atts.program, atts.using, atts.user_warns in
+  let scope = enforce_locality_exp local discharge in
+  if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?user_warns:atts.user_warns ~inline l
+  ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -812,6 +799,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
+(* [XXX] EGJA: several arguments not used here *)
 let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
@@ -1029,6 +1017,7 @@ let dump_inductive indl_for_glob decl =
         | _ -> ())
       indl_for_glob;
     match decl with
+    (* [XXX] EJGA: only [records] used here *)
     | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
       let dump_glob_proj (x, _) = match x with
         | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
@@ -1067,21 +1056,21 @@ let vernac_fixpoint_interactive ~atts discharge l =
   let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
-  let typing_flags = atts.typing_flags in
-  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ?user_warns:atts.user_warns l
-  |> vernac_set_used_variables_opt ?using:atts.using
+  (* Eventually make this into a more structured record *)
+  let poly, user_warns, typing_flags, using, clearbody =
+    atts.polymorphic, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
 
 let vernac_fixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts discharge l in
-  let typing_flags = atts.typing_flags in
-  if atts.program then
+  let poly, typing_flags, program_mode, clearbody, using, user_warns =
+    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  if program_mode then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l
+    ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
   else
-    let () = ComFixpoint.do_fixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
+    let () = ComFixpoint.do_fixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
     pm
 
 let vernac_cofixpoint_common ~atts discharge l =
@@ -1096,19 +1085,18 @@ let vernac_cofixpoint_interactive ~atts discharge l =
   let scope = vernac_cofixpoint_common ~atts discharge l in
   if atts.program then
     CErrors.user_err Pp.(str"Program CoFixpoint requires a body.");
-  vernac_set_used_variables_opt ?using:atts.using
-    (ComFixpoint.do_cofixpoint_interactive ~scope ~poly:atts.polymorphic l)
+  let poly, using = atts.polymorphic, atts.using in
+  ComFixpoint.do_cofixpoint_interactive ~scope ~poly ?using l
 
 let vernac_cofixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts discharge l in
-  let typing_flags = atts.typing_flags in
+  let poly, typing_flags, using, clearbody, user_warns =
+    atts.polymorphic, atts.typing_flags, atts.using, atts.clearbody, atts.user_warns in
   if atts.program then
-    ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l
+    ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
   else
-    let () = ComFixpoint.do_cofixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-        ?typing_flags ?user_warns:atts.user_warns ?using:atts.using l in
+    let () = ComFixpoint.do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
     pm
 
 let vernac_scheme l =
@@ -1120,6 +1108,7 @@ let vernac_scheme l =
 let vernac_scheme_equality ?locmap sch id =
   Indschemes.do_scheme_equality ?locmap sch id
 
+(* [XXX] locmap unused here *)
 let vernac_combined_scheme lid l ~locmap =
   (* XXX why does this take idents and not qualids *)
   let l = List.map (fun id -> match qualid_global (qualid_of_ident ?loc:id.loc id.v) with
@@ -1161,6 +1150,7 @@ let importable_extended_global_of_path ?loc path =
     else Some ref
   | ref -> Some ref
 
+(* [XXX] n unused here *)
 let add_subnames_of ?loc len n ns full_n ref =
   let open GlobRef in
   let add1 r ns = (len, Globnames.TrueGlobal r) :: ns in
@@ -2306,7 +2296,8 @@ let vernac_proof pstate tac using =
   let usings = if Option.is_empty using then "using:no" else "using:yes" in
   Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
   let pstate = Option.fold_left vernac_set_end_tac pstate tac in
-  let pstate = Option.fold_left vernac_set_used_variables pstate using in
+  let set_proof_using ps using = Declare.Proof.set_proof_using ps using |> snd in
+  let pstate = Option.fold_left set_proof_using pstate using in
   pstate
 
 let translate_vernac_synterp ?loc ~atts v = let open Vernactypes in match v with

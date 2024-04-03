@@ -111,10 +111,6 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
 
-let definition_using env evd ~body ~types ~using =
-  let terms = Option.List.cons types [body] in
-  Option.map (fun using -> Proof_using.definition_using env evd ~fixnames:[] ~using ~terms) using
-
 let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
@@ -124,12 +120,11 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
   let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
   let _ : Names.GlobRef.t =
-    Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
+    Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
   in ()
 
 let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
@@ -148,10 +143,9 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
   let evd, (body, types), impargs =
     interp_definition ~program_mode:true env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = definition_using env evd ~body ~types ~using in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
-    Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
+    Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx ?using obls
   in pm
