@@ -266,6 +266,8 @@ let include_constructor_argument env evd ~ctor_sort ~inductive_sort =
     let mk u = ESorts.make (Sorts.sort_of_univ u) in
     Evd.set_leq_sort env evd (mk uctor) (mk uind)
 
+type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
+
 let inductive_levels env evd arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
@@ -307,10 +309,12 @@ let inductive_levels env evd arities ctors =
      as "Type" doesn't produce a qvar.
 
      Perhaps someday we can stop lowering these explicit ": Type". *)
-  let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors as ind) ->
+  let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors) ->
       if List.mem_f (ESorts.equal evd) s candidates then
-        (mkArity (ctx, ESorts.prop),(ctx,ESorts.prop),indices,ctors)
-      else ind)
+        (* NB: is_prop_candidate requires is_flexible_sort
+           so in this branch we know s <> Prop *)
+        ((PropButDepElim, mkArity (ctx, ESorts.prop)),ESorts.prop,indices,ctors)
+      else ((DefaultElim, raw_arity), s, indices, ctors))
       inds
   in
 
@@ -319,7 +323,7 @@ let inductive_levels env evd arities ctors =
      eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
      then ESorts.equal would make us believe that the constructor argument is a lowering candidate.
   *)
-  let evd = List.fold_left (fun evd (_,(_,s),indices,ctors) ->
+  let evd = List.fold_left (fun evd (_,s,indices,ctors) ->
       if is_impredicative_sort evd s then evd
       else List.fold_left
           (List.fold_left (fun evd ctor_sort ->
@@ -328,7 +332,7 @@ let inductive_levels env evd arities ctors =
       evd inds
   in
   let arities = List.map (fun (arity,_,_,_) -> arity) inds in
-  evd, arities
+  evd, List.split arities
 
 (** Template poly ***)
 
@@ -413,23 +417,21 @@ let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
     (fun () -> Pp.str "This inductive type has no template universes.")
 
-type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
-
 let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
 match user_template, univ_entry with
 | Some false, UState.Monomorphic_entry uctx ->
-  DefaultElim, Monomorphic_ind_entry, uctx
+  Monomorphic_ind_entry, uctx
 | Some false, UState.Polymorphic_entry uctx ->
-  DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | Some true, UState.Monomorphic_entry uctx ->
   let template_universes = template_polymorphism_candidate uctx ctx_params entry concl in
   let template, global = split_universe_context template_universes uctx in
   let () = if Univ.Level.Set.is_empty (fst template) then warn_no_template_universe () in
-  DefaultElim, Template_ind_entry template, global
+  Template_ind_entry template, global
 | Some true, UState.Polymorphic_entry _ ->
   user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
 | None, UState.Polymorphic_entry uctx ->
-  DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | None, UState.Monomorphic_entry uctx ->
   (* Heuristic: the user has not written Prop explicitly in the return
       arity, but inference has decided to lower it to Prop. *)
@@ -444,15 +446,16 @@ match user_template, univ_entry with
     else false
   in
   if lowered_prop then
-    PropButDepElim, Monomorphic_ind_entry, uctx
+    (* here concl = Type@{u} so can't yet remove this branch *)
+    Monomorphic_ind_entry, uctx
   else
     let template_candidate = template_polymorphism_candidate uctx ctx_params entry concl in
     let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
     let template = should_auto_template entry.mind_entry_typename has_template in
     if template then
       let template, global = split_universe_context template_candidate uctx in
-      DefaultElim, Template_ind_entry template, global
-    else DefaultElim, Monomorphic_ind_entry, uctx
+      Template_ind_entry template, global
+    else Monomorphic_ind_entry, uctx
 
 let check_param = function
 | CLocalDef (na, _, _, _) -> check_named na
@@ -498,7 +501,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         tys)
       constructors
   in
-  let sigma, arities = inductive_levels env_ar_params sigma arities ctor_args in
+  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma arities ctor_args in
   let sigma = Evd.minimize_universes sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
@@ -516,7 +519,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities constructors
   in
-  let default_dep_elim, univ_entry, ctx = match entries, arityconcl with
+  let univ_entry, ctx = match entries, arityconcl with
   | [entry], [concl] ->
     compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
   | _ ->
@@ -525,8 +528,8 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
     | _ -> ()
     in
     match univ_entry with
-    | UState.Monomorphic_entry ctx -> DefaultElim, Monomorphic_ind_entry, ctx
-    | UState.Polymorphic_entry uctx -> DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    | UState.Monomorphic_entry ctx -> Monomorphic_ind_entry, ctx
+    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
   in
   let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)
@@ -721,7 +724,7 @@ module Mind_decl = struct
 
 type t = {
   mie : Entries.mutual_inductive_entry;
-  default_dep_elim : default_dep_elim;
+  default_dep_elim : default_dep_elim list;
   nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;

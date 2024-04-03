@@ -121,6 +121,7 @@ end
 module DataR = struct
   type t =
     { arity : Constr.t
+    ; default_dep_elim : DeclareInd.default_dep_elim
     ; implfs : Impargs.manual_implicits list
     ; fields : Constr.rel_declaration list
     }
@@ -183,6 +184,7 @@ type tc_result =
   * Constr.rel_context
   * DataR.t list
 
+(* returned DefaultElim value will eventually be discarded *)
 let def_class_levels ~def env_ar sigma aritysorts ctors =
   let s, ctor = match aritysorts, ctors with
     | [s], [_,ctor] -> begin match ctor with
@@ -199,9 +201,9 @@ let def_class_levels ~def env_ar sigma aritysorts ctors =
   then (* We assume that the level in aritysort is not constrained
           and clear it, if it is flexible *)
     let sigma = Evd.set_eq_sort env_ar sigma EConstr.ESorts.set s in
-    (sigma, [EConstr.mkProp])
+    (sigma, [DeclareInd.DefaultElim, EConstr.mkProp])
   else
-    sigma, [EConstr.mkSort s]
+    sigma, [DefaultElim, EConstr.mkSort s]
 
 (* ps = parameter list *)
 let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_result =
@@ -241,7 +243,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     if def then def_class_levels ~def env_ar sigma aritysorts data
     else (* each inductive has one constructor *)
       let ctors = List.map (fun (_,newfs) -> [newfs]) data in
-      ComInductive.Internal.inductive_levels env_ar sigma typs ctors
+      let sigma, (default_dep_elim, typs) =
+        ComInductive.Internal.inductive_levels env_ar sigma typs ctors
+      in
+      sigma, List.combine default_dep_elim typs
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let sigma, (newps, ans) =
@@ -260,10 +265,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
     in
     let newps = List.map map_decl newps in
-    let map (implfs, fields) typ =
+    let map (implfs, fields) (default_dep_elim, typ) =
       let fields = List.map map_decl fields in
       let arity = nf typ in
-      { DataR.arity; implfs; fields }
+      { DataR.arity; default_dep_elim; implfs; fields }
     in
     let ans = List.map2 map data typs in
     let sigma = Evd.restrict_universe_context sigma !uvars in
@@ -574,7 +579,7 @@ let bound_names_rdata { DataR.fields; _ } : Id.Set.t =
 module Record_decl = struct
   type t = {
     mie : Entries.mutual_inductive_entry;
-    default_dep_elim : DeclareInd.default_dep_elim;
+    default_dep_elim : DeclareInd.default_dep_elim list;
     records : Data.t list;
     primitive_proj : bool;
     impls : DeclareInd.one_inductive_impls list;
@@ -785,7 +790,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block data in
-  let default_dep_elim, ind_univs, global_univ_decls = match blocks, data with
+  let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
     let env_ar_params = Environ.push_rel_context params (Global.env ()) in
     let concl = Some (snd (Reduction.dest_arity env_ar_params data.rdata.arity)) in
@@ -796,8 +801,8 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
     | Some false | None ->
       match univs with
-      | UState.Polymorphic_entry uctx -> DefaultElim, Polymorphic_ind_entry uctx, Univ.ContextSet.empty
-      | UState.Monomorphic_entry uctx -> DefaultElim, Monomorphic_ind_entry, uctx
+      | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+      | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
     end
   in
   let primitive =
@@ -822,6 +827,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
     }
   in
   let impls = List.map (fun _ -> impargs, []) data in
+  let default_dep_elim = List.map (fun d -> d.Data.rdata.default_dep_elim) data in
   let open Record_decl in
   { mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs;
     ubinders; projections_kind; poly; records = data;

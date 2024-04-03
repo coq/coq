@@ -147,7 +147,7 @@ type one_inductive_impls =
 
 type default_dep_elim = DefaultElim | PropButDepElim
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) ?(default_dep_elim=DefaultElim) mie ubinders impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) ?default_dep_elim mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -179,13 +179,15 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
         constrimpls)
     impls;
   let () = match default_dep_elim with
-    | DefaultElim -> ()
-    | PropButDepElim ->
-      List.iteri (fun i _ ->
-          (* XXX maybe the API should have a default_dep_elim per inductive
-             instead of for the whole block *)
-          Indrec.declare_prop_but_default_dependent_elim (mind,i))
-        mie.mind_entry_inds
+    | None -> ()
+    | Some defaults ->
+      List.iteri (fun i -> function
+          | DefaultElim -> ()
+          | PropButDepElim ->
+            (* XXX maybe the API should have a default_dep_elim per inductive
+               instead of for the whole block *)
+            Indrec.declare_prop_but_default_dependent_elim (mind,i))
+        defaults
   in
   Flags.if_verbose Feedback.msg_info (minductive_message names);
   let locmap = Ind_tables.Locmap.make mind indlocs in
