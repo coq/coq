@@ -18,11 +18,17 @@ type command =
 | CmdParent
 | CmdChild of int
 | CmdSort
+| CmdList
 | CmdHelp
 | CmdExit
 
 let help () =
-  Printf.printf "Help\n<n>\tenter the <n>-th child\nu\tgo up 1 level\ns\tsort\nx\texit\n\n%!"
+  Printf.printf "Help\n\
+  <n>\tenter the <n>-th child\n\
+  u\tgo up 1 level\n\
+  s\tsort\n\
+  l\ttreat current node as a list\n\
+  x\texit\n\n%!"
 
 let quit () =
   Printf.printf "\nGoodbye!\n%!";
@@ -36,6 +42,7 @@ let rec read_num max =
   | "s" -> CmdSort
   | "x" -> CmdExit
   | "h" -> CmdHelp
+  | "l" -> CmdList
   | _ ->
     match int_of_string l with
     | v ->
@@ -342,6 +349,7 @@ and read_command v o pos children =
       let () = Array.sort sort sorted in
       let () = print_state v o pos sorted in
       read_command v o pos children
+    | CmdList -> visit (List Any) o pos
     | CmdHelp ->
       let () = help () in
       read_command v o pos children
@@ -479,7 +487,7 @@ let visit_vo f =
        let () = Visit.init () in
        let typ = try List.assoc seg.name known_segments with Not_found -> Any in
        Visit.visit typ o []
-    | CmdParent | CmdSort -> ()
+    | CmdParent | CmdSort | CmdList -> ()
     | CmdHelp ->
       help ()
     | CmdExit ->
