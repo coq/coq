@@ -792,10 +792,9 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   let blocks = List.mapi mk_block data in
   let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
-    let env_ar_params = Environ.push_rel_context params (Global.env ()) in
-    let concl = Some (snd (Reduction.dest_arity env_ar_params data.rdata.arity)) in
     ComInductive.compute_template_inductive ~user_template:template
-      ~ctx_params:params ~univ_entry:univs entry concl
+      ~ctx_params:params ~univ_entry:univs entry
+      (if Term.isArity entry.mind_entry_arity then SyntaxAllowsTemplatePoly else SyntaxNoTemplatePoly)
   | _ ->
     begin match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
