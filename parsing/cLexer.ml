@@ -747,6 +747,12 @@ let rec next_token ~diff_mode ttree loc s =
             between_commands := false;
             (EOI, set_loc_pos loc bp (bp+1))
 
+(* Reify exceptions for next_token, it would be really nice if we
+   could actually delimit what this function raises, for now Error.E *)
+let next_token ~diff_mode ttree loc s : (Tok.t * Loc.t, Exninfo.iexn) Result.t =
+  let f (diff_mode, ttree, loc, s) = next_token ~diff_mode ttree loc s in
+  CErrors.to_result ~f (diff_mode, ttree, loc, s)
+
 (** {6 The lexer of Coq} *)
 
 module MakeLexer (Diff : sig val mode : bool end)
@@ -764,9 +770,19 @@ module MakeLexer (Diff : sig val mode : bool end)
     let cur_loc = ref loc in
     Gramlib.LStream.from ~loc
       (fun ttree ->
-         let (tok, loc) = next_token ~diff_mode:Diff.mode ttree !cur_loc cs in
-         cur_loc := after loc;
-         Some (tok,loc))
+         match next_token ~diff_mode:Diff.mode ttree !cur_loc cs with
+         | Ok (tok, loc) ->
+           cur_loc := after loc;
+           Some (tok,loc)
+         | Error (exn, info) ->
+           (* If the error contains the location of the failing token,
+              we still need to update [cur_loc] as to resume parsing
+              correctly after the error. See
+              https://github.com/ejgallego/coq-lsp/issues/633 for an
+              example. *)
+           let loc = Loc.get_loc info in
+           Option.iter (fun loc -> cur_loc := after loc) loc;
+           Exninfo.iraise (exn, info))
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
 
