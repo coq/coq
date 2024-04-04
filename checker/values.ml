@@ -392,11 +392,16 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
-let v_instance_mask = Opt (v_pair (Array (Opt Int)) (Array (Opt Int)))
+let v_puniv = Opt Int
+
+let v_pqvar = Opt Int
+let v_quality_pattern = v_sum "quality_pattern" 0 [|[|v_pqvar|];[|v_constant_quality|]|]
+
+let v_instance_mask = v_pair (Array v_quality_pattern) (Array v_puniv)
 
 let v_sort_pattern = Sum ("sort_pattern", 3,
-  [|[|Opt Int|];         (* PSType *)
-    [|Opt Int; Opt Int|] (* PSQSort *)
+  [|[|v_puniv|];         (* PSType *)
+    [|v_pqvar; v_puniv|] (* PSQSort *)
   |])
 
 let rec v_hpattern = Sum ("head_pattern", 0,

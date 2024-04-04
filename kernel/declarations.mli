@@ -291,6 +291,9 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 Rewrite rules } *)
 
+type quality_pattern = Sorts.Quality.pattern =
+  | PQVar of int option | PQConstant of Sorts.Quality.constant
+
 type instance_mask = UVars.Instance.mask
 
 type sort_pattern = Sorts.pattern =

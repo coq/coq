@@ -81,12 +81,18 @@ let check_constant_declaration env opac kn cb opacify =
   let opac = check_constant_declaration env opac kn cb opacify in
   Environ.add_constant kn cb env, opac
 
-let check_instance_mask udecl umask lincheck =
+let check_quality_mask env qmask lincheck =
+  let open Sorts.Quality in
+  match qmask with
+  | PQConstant QSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
+  | PQConstant (QProp | QType) -> lincheck
+  | PQVar qio -> Partial_subst.maybe_add_quality qio () lincheck
+
+let check_instance_mask env udecl umask lincheck =
   match udecl, umask with
-    | _, None -> lincheck
-    | Monomorphic, Some ([||], [||]) -> lincheck
-    | Polymorphic uctx, Some (qmask, umask) ->
-        let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_quality mask () lincheck) lincheck qmask in
+    | Monomorphic, ([||], [||]) -> lincheck
+    | Polymorphic uctx, (qmask, umask) ->
+        let lincheck = Array.fold_left_i (fun i lincheck mask -> check_quality_mask env mask lincheck) lincheck qmask in
         let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_univ mask () lincheck) lincheck umask in
         if (Array.length qmask, Array.length umask) <> UVars.AbstractContext.size uctx then CErrors.anomaly Pp.(str "Bad univ mask length.");
         lincheck
@@ -99,7 +105,7 @@ and get_holes_profiles_elim env nargs ndecls lincheck = function
   | PEApp args -> Array.fold_left (get_holes_profiles_parg env nargs ndecls) lincheck args
   | PECase (ind, u, ret, brs) ->
       let mib, mip = Inductive.lookup_mind_specif env ind in
-      let lincheck = check_instance_mask mib.mind_universes u lincheck in
+      let lincheck = check_instance_mask env mib.mind_universes u lincheck in
       let lincheck = get_holes_profiles_parg env (nargs + mip.mind_nrealargs + 1) (ndecls + mip.mind_nrealdecls + 1) lincheck ret in
       Array.fold_left3 (fun lincheck nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b) lincheck) lincheck mip.mind_consnrealargs mip.mind_consnrealdecls brs
   | PEProj proj ->
@@ -117,13 +123,13 @@ and get_holes_profiles_head env nargs ndecls lincheck = function
   | PHRel n -> if n <= ndecls then lincheck else Type_errors.error_unbound_rel env n
   | PHSymbol (c, u) ->
       let cb = lookup_constant c env in
-      check_instance_mask cb.const_universes u lincheck
+      check_instance_mask env cb.const_universes u lincheck
   | PHConstr (c, u) ->
       let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in
-      check_instance_mask mib.mind_universes u lincheck
+      check_instance_mask env mib.mind_universes u lincheck
   | PHInd (ind, u) ->
       let (mib, _) = Inductive.lookup_mind_specif env ind in
-      check_instance_mask mib.mind_universes u lincheck
+      check_instance_mask env mib.mind_universes u lincheck
   | PHInt _  | PHFloat _ -> lincheck
   | PHSort PSSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
   | PHSort PSType io -> Partial_subst.maybe_add_univ io () lincheck
@@ -162,7 +168,7 @@ let check_rewrite_rule env lab i (symb, rule) =
     | _ -> ignore @@ invalid_arg "Rule defined on non-symbol"
   in
   let lincheck = Partial_subst.make nvars in
-  let lincheck = check_instance_mask symb_cb.const_universes (fst lhs_pat) lincheck in
+  let lincheck = check_instance_mask env symb_cb.const_universes (fst lhs_pat) lincheck in
   let lincheck = get_holes_profiles env 0 0 lincheck (snd lhs_pat) in
   let holes_profile, _, _ = Partial_subst.to_arrays lincheck in
   let () = check_rhs env holes_profile rhs in
