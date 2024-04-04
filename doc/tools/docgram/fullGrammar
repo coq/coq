@@ -2364,7 +2364,6 @@ destruction_arg: [
 ]
 
 constr_with_bindings_arg: [
-| ">" constr_with_bindings
 | constr_with_bindings
 ]
 
