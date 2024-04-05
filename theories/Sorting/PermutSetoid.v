@@ -236,7 +236,7 @@ Lemma permut_remove_hd :
   forall l l1 l2 a,
     permutation (a :: l) (l1 ++ a :: l2) -> permutation l (l1 ++ l2).
 Proof.
-  eauto using permut_remove_hd_eq, Equivalence_Reflexive.
+  eauto using permut_remove_hd_eq, (Equivalence_Reflexive (R := eqA)).
 Qed.
 
 Fact if_eqA_else : forall a a' (B:Type)(b b':B),
@@ -499,7 +499,7 @@ Proof.
   - apply permut_cons; auto using Equivalence_Reflexive.
   - change (x :: y :: l) with ([x] ++ y :: l);
       apply permut_add_cons_inside; simpl;
-      apply permut_cons_eq; auto using Equivalence_Reflexive, permut_refl.
+      apply permut_cons_eq; auto using (Equivalence_Reflexive (R := eqA)), permut_refl.
   - apply permut_trans with l'; trivial.
 Qed.
 

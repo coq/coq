@@ -1546,11 +1546,16 @@ let hint_globref gr = IsGlobRef gr
 let hint_constr (c, diff) = IsConstr (c, diff)
 
 let expand_constructor_hints env sigma lems =
-  List.map_append (fun (evd,lem) ->
-    match EConstr.kind sigma lem with
+  List.map_append (fun lem ->
+    let evd, lem = lem env sigma in
+    let lem0 = drop_extra_implicit_args evd lem in
+    match EConstr.kind evd lem0 with
     | Ind (ind,u) ->
         List.init (nconstructors env ind)
                   (fun i -> IsGlobRef (GlobRef.ConstructRef ((ind,i+1))))
+    | Const (cst, _) -> [IsGlobRef (GlobRef.ConstRef cst)]
+    | Var id -> [IsGlobRef (GlobRef.VarRef id)]
+    | Construct (cstr, _) -> [IsGlobRef (GlobRef.ConstructRef cstr)]
     | _ ->
       let (c, ctx) = prepare_hint env sigma (evd,lem) in
       let ctx = if UnivGen.is_empty_sort_context ctx then None else Some ctx in
@@ -1564,8 +1569,6 @@ let constructor_hints env sigma eapply lems =
       make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
 let make_local_hint_db env sigma ts eapply lems =
-  let map c = c env sigma in
-  let lems = List.map map lems in
   let sign = EConstr.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core")
