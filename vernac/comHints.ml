@@ -76,6 +76,15 @@ let warn_deprecated_hint_constr =
  *)
 let soft_evaluable = Tacred.soft_evaluable_of_global_reference
 
+(* Slightly more lenient global hint syntax for backwards compatibility *)
+let rectify_hint_constr h = match h with
+| Vernacexpr.HintsReference _ -> h
+| Vernacexpr.HintsConstr c ->
+  let open Constrexpr in
+  match c.CAst.v with
+  | CAppExpl ((qid, None), []) -> Vernacexpr.HintsReference qid
+  | _ -> Vernacexpr.HintsConstr c
+
 let interp_hints ~poly h =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -88,7 +97,7 @@ let interp_hints ~poly h =
   let fi c =
     let open Hints in
     let open Vernacexpr in
-    match c with
+    match rectify_hint_constr c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
       (hint_globref gr)
