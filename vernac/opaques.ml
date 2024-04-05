@@ -97,10 +97,6 @@ let get_current_opaque i =
     | OpaqueValue pf -> Some pf
     | OpaqueCertif cert ->
       let c, ctx = Safe_typing.repr_certificate (Future.force cert) in
-      let ctx = match ctx with
-      | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
-      | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
-      in
       Some (c, ctx)
   with Not_found -> None
 
@@ -145,10 +141,6 @@ let dump ?(except=Future.UUIDSet.empty) () =
     | None -> None
     | Some cert ->
       let (c, priv) = Safe_typing.repr_certificate cert in
-      let priv = match priv with
-      | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
-      | Opaqueproof.PrivatePolymorphic _ as p -> p
-      in
       Some (c, priv)
     in
     let () = opaque_table.(i) <- c in

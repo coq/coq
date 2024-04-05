@@ -412,7 +412,10 @@ Section Logic_lemmas.
   Qed.
 
   Section equality.
-    Variables A B : Type.
+    (* XXX maybe we should have separate univs for A and B *)
+    Universe equality_u.
+
+    Variables A B : Type@{equality_u}.
     Variable f : A -> B.
     Variables x y z : A.
 
@@ -548,8 +551,9 @@ End EqNotations.
 Import EqNotations.
 
 Section equality_dep.
-  Variable A : Type.
-  Variable B : A -> Type.
+  Universes f_equal_dep_u0 f_equal_dep_u1.
+  Variable A : Type@{f_equal_dep_u0}.
+  Variable B : A -> Type@{f_equal_dep_u1}.
   Variable f : forall x, B x.
   Variables x y : A.
 
