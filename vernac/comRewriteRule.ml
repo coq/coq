@@ -67,7 +67,7 @@ open Util
 open Constr
 open Declarations
 
-type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * bool list * int Int.Map.t)
+type state = (int * int Evar.Map.t) * (int * int Int.Map.t) * (int * int Int.Map.t)
 
 let rec is_rel_inst k = function
   | SList.Nil -> true
@@ -85,8 +85,8 @@ let update_invtbl ~loc env evd evk (curvar, tbl) =
           ++ str" is bound multiple times in the pattern (holes number "
           ++ int k ++ str" and " ++ int curvar ++ str")."))
 
-let update_invtblu1 ~loc ~(alg:bool) evd lvlold lvl (curvaru, alg_vars, tbl) =
-  succ curvaru, alg :: alg_vars, tbl |> Int.Map.update lvl @@ function
+let update_invtblu1 ~loc evd lvlold lvl (curvaru, tbl) =
+  succ curvaru, tbl |> Int.Map.update lvl @@ function
     | None -> Some curvaru
     | Some k as c when k = curvaru -> c
     | Some k ->
@@ -121,7 +121,7 @@ let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u :
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
       let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
-      Option.fold_right (update_invtblu1 ~loc ~alg:false evd lvlold) lvlnew stateu, lvlnew
+      Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
   (state, stateq, stateu), (maskq, masku)
@@ -140,7 +140,7 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
       begin match universe_level_subst_var_index usubst u with
       | None -> state, PSType None
       | Some (lvlold, lvl) ->
-        (st, sq, update_invtblu1 ~loc ~alg:true evd lvlold lvl su), PSType (Some lvl)
+        (st, sq, update_invtblu1 ~loc evd lvlold lvl su), PSType (Some lvl)
       end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
@@ -153,7 +153,7 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
       in
       let su, ba =
         match universe_level_subst_var_index usubst u with
-        | Some (lvlold, lvl) -> update_invtblu1 ~loc ~alg:true evd lvlold lvl su, Some lvl
+        | Some (lvlold, lvl) -> update_invtblu1 ~loc evd lvlold lvl su, Some lvl
         | None -> su, None
       in
       (st, sq, su), PSQSort (bq, ba)
@@ -429,10 +429,9 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
     UVars.make_instance_subst inst
   in
 
-  let ((nvars', invtbl), (nvarqs', invtblq), (nvarus', alg_vars, invtblu)), (head_pat, elims) =
-    safe_pattern_of_constr ~loc:lhs_loc env evd usubst 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, [], Int.Map.empty)) (EConstr.Unsafe.to_constr lhs)
+  let ((nvars', invtbl), (nvarqs', invtblq), (nvarus', invtblu)), (head_pat, elims) =
+    safe_pattern_of_constr ~loc:lhs_loc env evd usubst 0 ((1, Evar.Map.empty), (0, Int.Map.empty), (0, Int.Map.empty)) (EConstr.Unsafe.to_constr lhs)
   in
-  let alg_vars = Array.rev_of_list alg_vars in
   let () = test_pattern_redex env evd ~loc:lhs_loc (head_pat, elims) in
 
   let head_symbol, head_umask = match head_pat with PHSymbol (symb, mask) -> symb, mask | _ ->
@@ -508,7 +507,6 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
           CErrors.user_err ?loc:rhs_loc
             Pp.(str "Sort variable " ++ Termops.pr_evd_qvar evd q ++ str " appears in the replacement but does not appear in the pattern.")
   in
-  let test_quality = function Sorts.Quality.QVar q -> test_qvar q | QConstant _ -> () in
 
   let test_level ?(alg_ok=false) lvl =
     match Univ.Level.var_index lvl with
@@ -516,10 +514,6 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
         CErrors.user_err ?loc:rhs_loc
           Pp.(str "Universe level variable " ++ Termops.pr_evd_level evd lvl ++ str " appears in the replacement but does not appear in the pattern.")
     | Some n when n < 0 || n > nvarus' -> CErrors.anomaly Pp.(str "Unknown universe level variable in rewrite rule")
-    | Some n when not alg_ok && alg_vars.(n) ->
-        let prelvl = Univ.Level.Map.bindings (snd usubst) |> List.find (fun (i, a) -> Univ.Level.equal a lvl) |> fst in
-        CErrors.user_err ?loc:rhs_loc
-          Pp.(str "Algebraic universe variable " ++ Termops.pr_evd_level evd prelvl ++ str " appears in the replacement as a universe level variable.")
     | Some _ -> ()
     | None ->
         try UGraph.check_declared_universes (Environ.universes env) (Univ.Level.Set.singleton lvl)
@@ -528,12 +522,11 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
             Pp.(str "Universe level " ++ Termops.pr_evd_level evd lvl ++ str " appears in the replacement but does not appear in the pattern.")
   in
 
-  let test_universe u =
-    let alg_ok = Option.has_some @@ Option.bind (Univ.Universe.level u) Univ.Level.var_index in
-    Univ.Level.Set.iter (test_level ~alg_ok) (Univ.Universe.levels u)
+  let () =
+    let qs, us = Vars.sort_and_universes_of_constr rhs in
+    Sorts.QVar.Set.iter test_qvar qs;
+    Univ.Level.Set.iter test_level us
   in
-
-  let () = Vars.iter_on_instance (fun u -> let qs, us = UVars.Instance.to_array u in Array.iter test_quality qs; Array.iter test_level us) test_universe rhs in
 
   head_symbol, { nvars = (nvars' - 1, nvarqs', nvarus'); lhs_pat = head_umask, elims; rhs }
 

@@ -472,17 +472,22 @@ let pr_sort_family = function
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
-let algebraic = function
-  | Type u -> u
-  | QSort (_, u) -> u
-  | Prop | SProp | Set -> Univ.Universe.type0
+let extract_level u =
+  match Universe.level u with
+  | Some l -> l
+  | None -> CErrors.anomaly Pp.(str "Tried to extract level of an algebraic universe")
+
+let extract_sort_level = function
+  | Type u
+  | QSort (_, u) -> extract_level u
+  | Prop | SProp | Set -> Univ.Level.set
 
 let pattern_match ps s qusubst =
   match ps, s with
   | PSProp, Prop -> Some qusubst
   | PSSProp, SProp -> Some qusubst
   | PSSet, Set -> Some qusubst
-  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Universe.type0 qusubst)
-  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio u qusubst)
-  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (algebraic s))
+  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Level.set qusubst)
+  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
+  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None

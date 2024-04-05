@@ -883,8 +883,8 @@ and cbv_apply_rules info env u r stk =
       let psubst, stk = cbv_apply_rule info env [] psubst elims stk in
       let subst, qsubst, usubst = Partial_subst.to_arrays psubst in
       let subst = Array.fold_right subs_cons subst env in
-      let usubst = UVars.AInstance.of_array (qsubst, usubst) in
-      let rhsu = Vars.subst_ainstance_constr usubst rhs in
+      let usubst = UVars.Instance.of_array (qsubst, usubst) in
+      let rhsu = Vars.subst_instance_constr usubst rhs in
       let rhs' = cbv_stack_term info TOP subst rhsu in
       rhs', stk
     with PatternFailure -> cbv_apply_rules info env u rs stk
