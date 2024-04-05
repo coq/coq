@@ -127,7 +127,7 @@ type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:constr evar_handler ->
+  ?evars:evar_handler ->
   'a -> 'a -> unit
 
 exception NotConvertible

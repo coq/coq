@@ -305,7 +305,7 @@ val existential_opt_value : evar_map -> econstr pexistential -> econstr option
 
 val existential_opt_value0 : evar_map -> existential -> constr option
 
-val evar_handler : evar_map -> constr CClosure.evar_handler
+val evar_handler : evar_map -> CClosure.evar_handler
 
 val existential_expand_value0 : evar_map -> existential -> constr CClosure.evar_expansion
 

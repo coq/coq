@@ -123,10 +123,10 @@ type 'a evar_expansion =
 | EvarDefined of 'a
 | EvarUndefined of Evar.t * 'a list
 
-type 'constr evar_handler = {
-  evar_expand : 'constr pexistential -> 'constr evar_expansion;
-  evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_irrelevant : 'constr pexistential -> bool;
+type evar_handler = {
+  evar_expand : constr pexistential -> constr evar_expansion;
+  evar_repack : Evar.t * constr list -> constr;
+  evar_irrelevant : constr pexistential -> bool;
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
@@ -142,7 +142,7 @@ let default_evar_handler env = {
 (** Reduction cache *)
 type infos_cache = {
   i_env : env;
-  i_sigma : constr evar_handler;
+  i_sigma : evar_handler;
   i_share : bool;
   i_univs : UGraph.t;
   i_mode : mode;

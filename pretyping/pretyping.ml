@@ -78,14 +78,14 @@ let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   (nas, Array.map inj cs, Array.map inj ts)
 
-let search_guard ?loc env possible_indexes fixdefs =
+let search_guard ?loc ?evars env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env fix
+    (try check_fix ?evars env fix
      with reraise ->
        let (e, info) = Exninfo.capture reraise in
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
@@ -110,7 +110,7 @@ let search_guard ?loc env possible_indexes fixdefs =
             try
               let flags = { (typing_flags env) with Declarations.check_guarded = true } in
               let env = Environ.set_typing_flags flags env in
-              check_fix env fix; raise (Found indexes)
+              check_fix ?evars env fix; raise (Found indexes)
             with TypeError _ -> ())
           combinations;
        let errmsg = "Cannot guess decreasing argument of fix." in
@@ -118,8 +118,13 @@ let search_guard ?loc env possible_indexes fixdefs =
      with Found indexes -> indexes)
 
 let esearch_guard ?loc env sigma indexes fix =
+  (* not sure if we still need to nf_fix when calling search_guard with ~evars
+     (here and other callers through the code)
+     OTOH search_guard needs to go through the whole term to see possible recursive calls
+     so we may as well upfront normalize *)
   let fix = nf_fix sigma fix in
-  try search_guard ?loc env indexes fix
+  let evars = Evd.evar_handler sigma in
+  try search_guard ?loc ~evars env indexes fix
   with TypeError (env,err) ->
     raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
 
@@ -852,7 +857,7 @@ struct
         | GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in
           let cofix = (i, fixdecls) in
-            (try check_cofix !!env (i, nf_fix sigma fixdecls)
+            (try check_cofix ~evars:(Evd.evar_handler sigma) !!env (i, nf_fix sigma fixdecls)
              with reraise ->
                let (e, info) = Exninfo.capture reraise in
                let info = Option.cata (Loc.add_loc info) info loc in

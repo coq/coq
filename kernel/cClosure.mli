@@ -127,18 +127,18 @@ type 'a evar_expansion =
 | EvarDefined of 'a
 | EvarUndefined of Evar.t * 'a list
 
-type 'constr evar_handler = {
-  evar_expand : 'constr pexistential -> 'constr evar_expansion;
-  evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_irrelevant : 'constr pexistential -> bool;
+type evar_handler = {
+  evar_expand : constr pexistential -> constr evar_expansion;
+  evar_repack : Evar.t * constr list -> constr;
+  evar_irrelevant : constr pexistential -> bool;
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
-val default_evar_handler : env -> 'constr evar_handler
+val default_evar_handler : env -> evar_handler
 val create_conv_infos :
-  ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:evar_handler -> reds -> env -> clos_infos
 val create_clos_infos :
-  ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:evar_handler -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 val create_tab : unit -> clos_tab

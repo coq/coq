@@ -261,13 +261,14 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
         Array.of_list fixtypes,
         Array.of_list fixdefs
       in
+      let evars = Evd.evar_handler evd in
       let indexes =
         let env = Global.env () in
         let env = Environ.update_typing_flags ?typing_flags env in
-        Pretyping.search_guard env possible_indexes fixdecls in
+        Pretyping.search_guard ~evars env possible_indexes fixdecls in
       let env = Environ.update_typing_flags ?typing_flags env in
       List.iteri (fun i _ ->
-          Inductive.check_fix env
+          Inductive.check_fix ~evars env
             ((indexes,i),fixdecls))
         fixl
   end in
