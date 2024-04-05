@@ -65,7 +65,7 @@ let project_hint ~poly pri l2r r =
   (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
 let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"fragile-hint-constr" ~category:CWarnings.CoreCategories.automation
+  CWarnings.create ~name:"fragile-hint-constr" ~default:AsError ~category:CWarnings.CoreCategories.automation
     (fun () ->
       Pp.strbrk
         "Declaring arbitrary terms as hints is fragile; it is recommended to \
