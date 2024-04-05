@@ -18,7 +18,7 @@ open Tactypes
 
 val compute_secvars : Proofview.Goal.t -> Id.Pred.t
 
-val default_search_depth : int ref
+val default_search_depth : int
 
 val auto_flags_of_state : TransparentState.t -> Unification.unify_flags
 

@@ -421,12 +421,12 @@ let search d n db_list lems =
     search d n (make_local_db gl)
   end
 
-let default_search_depth = ref 5
+let default_search_depth = 5
 
 let gen_auto ?(debug=Off) n lems dbnames =
   Hints.wrap_hint_warning @@
     Proofview.Goal.enter begin fun gl ->
-    let n = match n with None -> !default_search_depth | Some n -> n in
+    let n = match n with None -> default_search_depth | Some n -> n in
     let db_list =
       match dbnames with
       | Some dbnames -> make_db_list dbnames
@@ -438,8 +438,8 @@ let gen_auto ?(debug=Off) n lems dbnames =
 
 let auto ?(debug=Off) n lems dbnames = gen_auto ~debug (Some n) lems (Some dbnames)
 
-let default_auto = auto !default_search_depth [] []
+let default_auto = auto default_search_depth [] []
 
 let full_auto ?(debug=Off) n lems = gen_auto ~debug (Some n) lems None
 
-let default_full_auto = full_auto !default_search_depth []
+let default_full_auto = full_auto default_search_depth []
