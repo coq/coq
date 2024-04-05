@@ -45,17 +45,26 @@ val backtrace_to_string : backtrace -> string
 val record_backtrace : bool -> unit
 
 val capture : exn -> iexn
-(** Add the current backtrace information to the given exception.
+(** Add the current backtrace information and other meta-data to the
+    given exception.
 
-    The intended use case is of the form:
+    The intended use case is to re-raise an exception while preserving
+    the meta-data:
     {[
 
     try foo
     with
     | Bar -> bar
-    | exn ->
-      let exn = Exninfo.capture err in
-      baz
+    | My_exn _ as exn ->
+      let (exn, info) = Exninfo.capture err in
+      ...
+      let info = ... in
+      Exninfo.iraise (exn, info)
+
+    | exn when CErrors.noncritical exn ->
+      let iexn = Exninfo.capture err in
+      ...
+      Exninfo.iraise iexn
 
     ]}
 
@@ -67,11 +76,11 @@ val capture : exn -> iexn
     {[
 
     try foo
-    with exn ->
-      let exn = Exninfo.capture exn in
+    with exn when CErrors.noncritical exn ->
+      let (err, info) = Exninfo.capture exn in
       match err with
-      | Bar -> bar
-      | err -> baz
+      | exception Bar -> ...
+      | err -> ...
 
     ]}
 
