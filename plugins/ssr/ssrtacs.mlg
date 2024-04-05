@@ -77,7 +77,7 @@ let ssrautoprop =
       with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
     eval_tactic (CAst.make @@ Tacexpr.TacArg CAst.(tacexpr.v))
-  with Not_found -> Auto.full_trivial []
+  with Not_found -> Auto.gen_trivial [] None
   end
 
 let () = ssrautoprop_tac := ssrautoprop
