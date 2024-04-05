@@ -1192,51 +1192,44 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   (* For extensions *)
   | TacAlias (s,l) ->
       let alias = Tacenv.interp_alias s in
-      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
-      let (>>=) = Ftactic.bind in
-      let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
-      let tac l =
-        let addvar x v accu = Id.Map.add x v accu in
-        let lfun = List.fold_right2 addvar alias.Tacenv.alias_args l ist.lfun in
-        let trace = push_trace (loc,LtacNotationCall s) ist in
-        let ist = {
-          lfun
-        ; poly
-        ; extra = add_extra_loc loc (add_extra_trace trace ist.extra) } in
-        val_interp_f ist alias.Tacenv.alias_body >>= fun v ->
-        Ftactic.lift (tactic_of_value ist v)
-      in
-      let tac =
-        Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias print_top_val 0 s lr in
-        Proofview.Trace.name_tactic name (tac lr)
-      (* spiwack: this use of name_tactic is not robust to a
-         change of implementation of [Ftactic]. In such a situation,
-         some more elaborate solution will have to be used. *)
-      in
-      let tac =
-        let len1 = List.length alias.Tacenv.alias_args in
-        let len2 = List.length l in
-        if len1 = len2 then tac
-        else
-          let info = Exninfo.reify () in
-          Tacticals.tclZEROMSG ~info
-            (str "Arguments length mismatch: \
-                  expected " ++ int len1 ++ str ", found " ++ int len2)
-      in
-      Ftactic.run tac (fun () -> Proofview.tclUNIT ())
+      let len1 = List.length alias.alias_args in
+      let len2 = List.length l in
+      if len1 = len2 then
+        Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
+        let lr_f = l |> Ftactic.List.map (interp_tacarg ist) in
+        let tac_f =
+          let (>>=) = Ftactic.bind in
+          lr_f >>= fun lr ->
+          let trace = push_trace (loc, LtacNotationCall s) ist in
+          let lfun = List.fold_right2 Id.Map.add alias.alias_args lr ist.lfun in
+          let ist = {lfun; poly; extra = add_extra_loc loc (add_extra_trace trace ist.extra)} in
+          val_interp_f ist alias.alias_body >>= fun v ->
+          let tac = tactic_of_value ist v in
+          Ftactic.return (lr, tac) in
+        let k (lr, tac) =
+          (* spiwack: this use of [name_tactic] is not robust to a
+             change of implementation of [Ftactic]. In such a situation,
+             some more elaborate solution will have to be used. *)
+          Proofview.Trace.name_tactic
+            (fun () -> Pptactic.pr_alias print_top_val 0 s lr)
+            tac in
+        Ftactic.run tac_f k
+      else
+        let info = Exninfo.reify () in
+        Tacticals.tclZEROMSG ~info
+          (str "Arguments length mismatch: expected " ++ int len1 ++ str ", found " ++ int len2)
 
   | TacML (opn,l) ->
       let trace = push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist in
-      let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
+      let ist = {ist with extra = TacStore.set ist.extra f_trace trace} in
+      let lr_f = l |> Ftactic.List.map_right (interp_tacarg ist) in
       let tac = Tacenv.interp_ml_tactic opn in
-      let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
-      let tac args =
-        let name () = Pptactic.pr_extend print_top_val 0 opn args in
+      let k lr =
         let (stack, _) = trace in
-        Proofview.Trace.name_tactic name (catch_error_tac_loc loc stack (tac args ist))
-      in
-      Ftactic.run args tac
+        Proofview.Trace.name_tactic
+          (fun () -> Pptactic.pr_extend print_top_val 0 opn lr)
+          (catch_error_tac_loc loc stack (tac lr ist)) in
+      Ftactic.run lr_f k
 
 and force_vrec ist v : Val.t Ftactic.t =
   if has_type v (topwit wit_tacvalue) then
