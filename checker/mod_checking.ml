@@ -8,7 +8,7 @@ open Environ
 
 (** {6 Checking constants } *)
 
-let indirect_accessor : (Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes) ref =
+let indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) ref =
   ref (fun _ -> assert false)
 
 let set_indirect_accessor f = indirect_accessor := f
