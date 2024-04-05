@@ -1088,9 +1088,8 @@ let rec val_interp_f ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftac
      [VFun]. Otherwise a [Ltac t := let x := .. in tac] would never
      register its name since it is syntactically a let, not a
      function.  *)
-  let (loc,tac2) = CAst.(tac.loc, tac.v) in
   let aux ist =
-  match tac2 with
+  match tac.v with
   | TacFun (it, body) ->
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, it, body)))
   | TacLetIn (true,l,u) -> interp_letrec ist l u
@@ -1122,8 +1121,8 @@ and interp_tactic ist tac : unit Proofview.tactic =
   val_interp ist tac (fun v -> tactic_of_value ist v)
 
 and eval_tactic_ist ist tac : unit Proofview.tactic =
-  let (loc, tac2) = CAst.(tac.loc, tac.v) in
-  match tac2 with
+  let loc = tac.loc in
+  match tac.v with
   | TacAtom t ->
       let call = LtacAtomCall t in
       let (stack, _) = push_trace(loc,call) ist in
