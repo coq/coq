@@ -48,8 +48,6 @@ val gen_auto : ?debug:debug ->
 
 (** Trivial *)
 
-val trivial : ?debug:debug ->
-  delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 val gen_trivial : ?debug:debug ->
   delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 val full_trivial : ?debug:debug ->

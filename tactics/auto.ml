@@ -365,8 +365,6 @@ let gen_trivial ?(debug=Off) lems dbnames =
     tclTRY_dbg d (trivial_fail_db d db_list local_db)
   end
 
-let trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems (Some dbnames)
-
 let full_trivial ?(debug=Off) lems = gen_trivial ~debug lems None
 
 (**************************************************************************)
