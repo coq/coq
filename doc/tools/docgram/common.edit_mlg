@@ -2182,10 +2182,6 @@ cofixdecl: [
 
 OPTINREF: [ ]
 
-constr_with_bindings_arg: [
-| DELETE ">" constr_with_bindings
-]
-
 destruction_arg: [
 | DELETE constr_with_bindings
 ]
