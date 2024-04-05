@@ -842,7 +842,7 @@ let interp_message_token ist = function
     | Some v -> message_of_value v
 
 let interp_message_f ist l =
-  let open Ftactic in
+  let (>>=) = Ftactic.bind in
   Ftactic.List.map (interp_message_token ist) l >>= fun l ->
   Ftactic.return (prlist_with_sep spc (fun x -> x) l)
 
@@ -1099,18 +1099,17 @@ let rec val_interp_f ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftac
   | TacArg v -> interp_tacarg ist v
   | _ ->
     (* Delayed evaluation *)
-    Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], tac)))
-  in
-  let open Ftactic in
+    Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], tac))) in
   Control.check_for_interrupt ();
+  let (>>=) = Ftactic.bind in
   match curr_debug ist with
   | DebugOn lev ->
         let eval v =
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
-          aux ist >>= fun v -> return (name_vfun appl v)
+          aux ist >>= fun v -> Ftactic.return (name_vfun appl v)
         in
         Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
-  | _ -> aux ist >>= fun v -> return (name_vfun appl v)
+  | _ -> aux ist >>= fun v -> Ftactic.return (name_vfun appl v)
 
 (** Interprets any expression *)
 and val_interp ist tac k =
@@ -1252,11 +1251,11 @@ and force_vrec ist v : Val.t Ftactic.t =
 and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   match r with
   | ArgVar {loc;v=id} ->
+      let (>>=) = Ftactic.bind in
       let v =
         try Id.Map.find id ist.lfun
         with Not_found -> in_gen (topwit wit_hyp) id
       in
-      let open Ftactic in
       force_vrec ist v >>= begin fun v ->
       Ftactic.lift (propagate_trace ist loc id v) >>= fun v ->
       if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
@@ -1312,11 +1311,10 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         (Ftactic.return (Value.of_constr c))
       end
   | TacNumgoals ->
-      Ftactic.lift begin
-        let open Proofview.Notations in
+      Ftactic.lift (
         Proofview.numgoals >>= fun i ->
         Proofview.tclUNIT (Value.of_int i)
-      end
+      )
   | Tacexp t -> val_interp_f ist t
 
 (* Interprets an application node *)
@@ -1462,14 +1460,14 @@ and interp_letrec ist llc u =
 
 (* Interprets the clauses of a LetIn *)
 and interp_letin ist llc u =
+  let (>>=) = Ftactic.bind in
   let rec fold lfun = function
   | [] ->
     let ist = { ist with lfun } in
     val_interp_f ist u
   | ({v=na}, body) :: defs ->
-    Ftactic.bind (interp_tacarg ist body) (fun v ->
-    fold (Name.fold_right (fun id -> Id.Map.add id v) na lfun) defs)
-  in
+    interp_tacarg ist body >>= fun v ->
+    fold (Name.fold_right (fun id -> Id.Map.add id v) na lfun) defs in
   fold ist.lfun llc
 
 (** [interp_match_success lz ist succ] interprets a single matching success
@@ -1558,7 +1556,7 @@ and interp_match_goal ist lz lr lmr =
 
 (* Interprets extended tactic generic arguments *)
 and interp_genarg ist x : Val.t Ftactic.t =
-    let open Ftactic.Notations in
+    let (>>=) = Ftactic.bind in
     (* Ad-hoc handling of some types. *)
     let tag = genarg_tag x in
     if argument_type_eq tag (unquote (topwit (wit_list wit_hyp))) then
@@ -2058,7 +2056,7 @@ let ComTactic.Interpreter hide_interp = ComTactic.register_tactic_interpreter "l
 (** Register standard arguments *)
 
 let register_interp0 wit f =
-  let open Ftactic.Notations in
+  let (>>=) = Ftactic.bind in
   let interp ist v =
     f ist v >>= fun v -> Ftactic.return (Val.inject (val_tag wit) v)
   in
