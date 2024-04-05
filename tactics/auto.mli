@@ -68,5 +68,3 @@ val gen_trivial : ?debug:debug ->
   delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 val full_trivial : ?debug:debug ->
   delayed_open_constr list -> unit Proofview.tactic
-val h_trivial : ?debug:debug ->
-  delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic

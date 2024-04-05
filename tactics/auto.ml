@@ -369,8 +369,6 @@ let trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems (Some dbnames)
 
 let full_trivial ?(debug=Off) lems = gen_trivial ~debug lems None
 
-let h_trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems dbnames
-
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)

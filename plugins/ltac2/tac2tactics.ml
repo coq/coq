@@ -388,7 +388,7 @@ let autorewrite ~all by ids cl =
 let trivial debug lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
-  Auto.h_trivial ~debug lems dbs
+  Auto.gen_trivial ~debug lems dbs
 
 let auto debug n lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in

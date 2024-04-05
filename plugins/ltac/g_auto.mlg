@@ -84,17 +84,17 @@ END
 
 TACTIC EXTEND trivial
 | [ "trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_trivial
 | [ "info_trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial ~debug:Info (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial ~debug:Info (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_trivial
 | [ "debug" "trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial ~debug:Debug (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial ~debug:Debug (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND auto
