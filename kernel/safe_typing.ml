@@ -647,8 +647,8 @@ type exported_opaque = {
 type exported_private_constant = Constant.t * exported_opaque option
 
 let repr_exported_opaque o =
-  let priv = match o .exp_univs with
-  | None -> Opaqueproof.PrivateMonomorphic ()
+  let priv = match o.exp_univs with
+  | None -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
   | Some _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
   in
   (o.exp_handle, (o.exp_body, priv))
@@ -952,8 +952,8 @@ let add_constant ?typing_flags l decl senv =
   with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
 
 type opaque_certificate = {
-  opq_body : Constr.t;
-  opq_univs : Univ.ContextSet.t Opaqueproof.delayed_universes;
+  opq_body : Opaqueproof.opaque_proofterm;
+  opq_public_univs : Univ.Constraints.t;
   opq_handle : Opaqueproof.opaque_handle;
   opq_nonce : Nonce.t;
 }
@@ -978,15 +978,30 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
     | Some hbody -> assert (c == HConstr.self hbody); HConstr.hcons hbody
     | None -> Constr.hcons c
   in
-  let ctx = match ctx with
-  | Opaqueproof.PrivateMonomorphic u ->
-    Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set u)
+  let ctx, public = match ctx with
+  | Opaqueproof.PrivateMonomorphic (univs,csts) ->
+    (* should this be done in upper layers? *)
+    let univs = Univ.Level.Set.diff univs (fst senv.univ) in
+    let ctx = univs, csts in
+    let _, public =
+      UGraph.restrict_universe_context ctx Univ.Level.Set.empty
+    in
+    let public =
+      Univ.Constraints.filter (fun cst ->
+        not (UGraph.check_constraint (Environ.universes senv.env) cst))
+        public
+    in
+    Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set ctx), Univ.hcons_constraints public
   | Opaqueproof.PrivatePolymorphic u ->
-    Opaqueproof.PrivatePolymorphic (Univ.hcons_universe_context_set u)
+    Opaqueproof.PrivatePolymorphic (Univ.hcons_universe_context_set u), Univ.Constraints.empty
   in
-  { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
+  { opq_body = (c,ctx); opq_public_univs = public; opq_handle = i; opq_nonce = nonce }
 
-let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
+let warn_private_mono_control = CWarnings.create_warning ~name:"private-mono" ~from:[CWarnings.CoreCategories.fragile] ()
+
+let warn_private_mono = CWarnings.create_msg warn_private_mono_control ()
+
+let fill_opaque { opq_public_univs = csts; opq_handle = i; opq_nonce = n; _ } senv =
   let () = if not @@ HandleMap.mem i senv.future_cst then
     CErrors.anomaly Pp.(str "Missing opaque handle" ++ spc () ++ int (Opaqueproof.repr_handle i))
   in
@@ -995,12 +1010,9 @@ let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
     if not (Nonce.equal n nonce) then
       CErrors.anomaly  Pp.(str "Invalid opaque certificate")
   in
-  (* TODO: Drop the the monomorphic constraints, they should really be internal
-     but the higher levels use them haphazardly. *)
-  let senv = match ctx with
-  | Opaqueproof.PrivateMonomorphic ctx -> add_constraints ctx senv
-  | Opaqueproof.PrivatePolymorphic _ -> senv
-  in
+  (* TODO: forbid public monomorphic constraints? *)
+  let () = if not (Univ.Constraints.is_empty csts) then CWarnings.warn warn_private_mono csts in
+  let senv = add_constraints (Univ.Level.Set.empty,csts) senv in
   (* Mark the constant as having been checked *)
   { senv with future_cst = HandleMap.remove i senv.future_cst }
 
@@ -1008,8 +1020,8 @@ let is_filled_opaque i senv =
   let () = assert (Opaqueproof.mem_handle i senv.opaquetab) in
   not (HandleMap.mem i senv.future_cst)
 
-let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
-  body, ctx
+let repr_certificate { opq_body = body; _ } =
+  body
 
 let check_constraints uctx = function
 | Entries.Polymorphic_entry _ -> Univ.ContextSet.is_empty uctx

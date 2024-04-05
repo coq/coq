@@ -2340,7 +2340,7 @@ let process_idopt_for_save ~idopt info =
 
 let save ~pm ~proof ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
-  let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
+  let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:true proof in
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
   finish_proof ~pm proof_obj proof_info
 

@@ -28,7 +28,7 @@ val empty_opaquetab : opaquetab
 
 val create : DirPath.t -> opaquetab -> opaque * opaquetab
 
-type opaque_proofterm = Constr.t * unit delayed_universes
+type opaque_proofterm = Constr.t * Univ.ContextSet.t delayed_universes
 
 type opaque_handle
 

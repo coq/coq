@@ -234,7 +234,9 @@ Register pair as core.prod.intro.
 Register prod_rect as core.prod.rect.
 
 Section projections.
-  Context {A : Type} {B : Type}.
+  (* NB don't seem to need separate universes from the base prod univs
+     (template poly typing rule would force [univ of A <= prod.u0] etc regardless) *)
+  Context {A : Type@{prod.u0}} {B : Type@{prod.u1}}.
 
   Definition fst (p:A * B) := match p with (x, y) => x end.
   Definition snd (p:A * B) := match p with (x, y) => y end.

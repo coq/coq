@@ -2131,7 +2131,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false)
+                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true)
                     with exn ->
                       let iexn = Exninfo.capture exn in
                       Exninfo.iraise (State.exn_on id ~valid:eop iexn)

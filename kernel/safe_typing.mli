@@ -270,3 +270,5 @@ val register_inline : Constant.t -> safe_transformer0
 val register_inductive : inductive -> 'a CPrimitives.prim_ind -> safe_transformer0
 
 val set_strategy : Conv_oracle.evaluable -> Conv_oracle.level -> safe_transformer0
+
+val warn_private_mono : Univ.Constraints.t CWarnings.msg

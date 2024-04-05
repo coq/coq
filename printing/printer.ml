@@ -255,6 +255,18 @@ let pr_universe_ctx sigma ?variance c =
   else
     mt()
 
+let pr_mono_private_universes sigma = function
+  | None -> mt ()
+  | Some ctx ->
+    if !Detyping.print_universes && not (Univ.ContextSet.is_empty ctx) then
+      let prlev u = Termops.pr_evd_level sigma u in
+      fnl () ++
+      pr_in_comment
+        (str "Private universes:" ++ fnl() ++
+         v 0 (Univ.pr_universe_context_set prlev ctx))
+    else mt ()
+
+
 let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
@@ -269,7 +281,7 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
     mt()
 
 let pr_universes sigma ?variance ?priv = function
-  | Declarations.Monomorphic -> mt ()
+  | Declarations.Monomorphic -> pr_mono_private_universes sigma priv
   | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
 
 (**********************************************************************)
