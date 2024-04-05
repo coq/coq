@@ -846,6 +846,9 @@ let interp_message_f ist l =
   Ftactic.List.map (interp_message_token ist) l >>= fun l ->
   Ftactic.return (prlist_with_sep spc (fun x -> x) l)
 
+let interp_message ist tac k =
+  Ftactic.run (interp_message_f ist tac) k
+
 let rec interp_intro_pattern ist env sigma = with_loc_val (fun ?loc -> function
   | IntroAction pat ->
     let pat = interp_intro_pattern_action ist env sigma pat in
@@ -1110,6 +1113,13 @@ let rec val_interp_f ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftac
         Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
   | _ -> aux ist >>= fun v -> return (name_vfun appl v)
 
+(** Interprets any expression *)
+and val_interp ist tac k =
+  Ftactic.run (val_interp_f ist tac) k
+
+(* Interprets tactic expressions: returns a "tactic" *)
+and interp_tactic ist tac : unit Proofview.tactic =
+  val_interp ist tac (fun v -> tactic_of_value ist v)
 
 and eval_tactic_ist ist tac : unit Proofview.tactic =
   let (loc, tac2) = CAst.(tac.loc, tac.v) in
@@ -1122,30 +1132,23 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
   | TacId s ->
-      let msgnl =
-        let open Ftactic in
-        interp_message_f ist s >>= fun msg ->
-        return (hov 0 msg , hov 0 msg)
-      in
-      let print (_,msgnl) = Proofview.(tclLIFT (NonLogical.print_info msgnl)) in
-      let log (msg,_) = Proofview.Trace.log (fun () -> msg) in
-      let break = Proofview.tclLIFT (db_breakpoint (curr_debug ist) s) in
-      Ftactic.run msgnl begin fun msgnl ->
-        print msgnl <*> log msgnl <*> break
-      end
-  | TacFail (g,n,s) ->
-      let msg = interp_message_f ist s in
-      let tac ~info l = Tacticals.tclFAILn ~info (interp_int_or_var ist n) l in
-      let tac =
+      let k msg =
+        let msgnl = hov 0 msg in
+        Proofview.tclLIFT (Proofview.NonLogical.print_info msgnl) <*>
+        Proofview.Trace.log (fun () -> msgnl) <*>
+        Proofview.tclLIFT (db_breakpoint (curr_debug ist) s) in
+      interp_message ist s k
+  | TacFail (g, n, s) ->
+      let fail ~info l = Tacticals.tclFAILn ~info (interp_int_or_var ist n) l in
+      let k msg =
         match g with
         | TacLocal ->
           let info = Exninfo.reify () in
-          fun l -> Proofview.tclINDEPENDENT (tac ~info l)
+          Proofview.tclINDEPENDENT (fail ~info msg)
         | TacGlobal ->
           let info = Exninfo.reify () in
-          tac ~info
-      in
-      Ftactic.run msg tac
+          fail ~info msg in
+      interp_message ist s k
   | TacProgress tac -> Tacticals.tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
@@ -1187,7 +1190,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       Tacticals.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacFirst l -> Tacticals.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.tclSOLVE (List.map (interp_tactic ist) l)
-  | TacArg _ -> Ftactic.run (val_interp_f (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
+  | TacArg _ -> val_interp (ensure_loc loc ist) tac (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
 
   (* For extensions *)
@@ -1648,10 +1651,9 @@ and interp_ltac_constr_f ist e : EConstr.t Ftactic.t =
        str "offending expression: " ++ fnl() ++ pr_inspect env e result)
   end
 
-
-(* Interprets tactic expressions : returns a "tactic" *)
-and interp_tactic ist tac : unit Proofview.tactic =
-  Ftactic.run (val_interp_f ist tac) (fun v -> tactic_of_value ist v)
+(** Interprets an expression that evaluates to a constr *)
+and interp_ltac_constr ist c k =
+  Ftactic.run (interp_ltac_constr_f ist c) k
 
 (* Provides a "name" for the trace to atomic tactics *)
 and name_atomic ?env tacexpr tac : unit Proofview.tactic =
@@ -2156,13 +2158,6 @@ let () =
   register_interp0 wit_uconstr (fun ist c -> Ftactic.enter begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.project gl) c)
   end)
-
-(***************************************************************************)
-(* Other entry points *)
-
-let val_interp ist tac k = Ftactic.run (val_interp_f ist tac) k
-
-let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr_f ist c) k
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
