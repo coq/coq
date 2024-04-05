@@ -2932,7 +2932,9 @@ let edit_at ~doc id =
     in
     VCS.print ();
     doc, rc
-  with e ->
+  with
+  | Vcs_aux.Expired -> user_err Pp.(str "Unknown state " ++ Stateid.print id ++ str".")
+  | e ->
     let (e, info) = Exninfo.capture e in
     match Stateid.get info with
     | None ->
