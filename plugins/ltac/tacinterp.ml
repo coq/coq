@@ -173,7 +173,7 @@ let ensure_loc loc ist =
     | None -> { ist with extra = TacStore.set ist.extra f_loc loc }
     | Some _ -> ist
 
-let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
+let print_top_val v = Pptactic.pr_value Pptactic.ltop v
 
 let catching_error call_trace fail (e, info) =
   let inner_trace =
@@ -1207,7 +1207,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
+        let name () = Pptactic.pr_alias print_top_val 0 s lr in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
@@ -1231,7 +1231,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
-        let name () = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
+        let name () = Pptactic.pr_extend print_top_val 0 opn args in
         let (stack, _) = trace in
         Proofview.Trace.name_tactic name (catch_error_tac_loc loc stack (tac args ist))
       in
