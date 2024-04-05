@@ -56,10 +56,6 @@ val default_full_auto : unit Proofview.tactic
 val gen_auto : ?debug:debug ->
   int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
-(** The hidden version of auto *)
-val h_auto   : ?debug:debug ->
-  int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
-
 (** Trivial *)
 
 val trivial : ?debug:debug ->

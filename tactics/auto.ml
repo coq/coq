@@ -443,5 +443,3 @@ let default_auto = auto !default_search_depth [] []
 let full_auto ?(debug=Off) n lems = gen_auto ~debug (Some n) lems None
 
 let default_full_auto = full_auto !default_search_depth []
-
-let h_auto ?(debug=Off) n lems l = gen_auto ~debug n lems l

@@ -99,17 +99,17 @@ END
 
 TACTIC EXTEND auto
 | [ "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_auto
 | [ "info_auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto ~debug:Info n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto ~debug:Info n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_auto
 | [ "debug" "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto ~debug:Debug n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto ~debug:Debug n (eval_uconstrs ist lems) db }
 END
 
 (** Eauto *)

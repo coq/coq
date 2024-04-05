@@ -1472,7 +1472,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
           let sigma = project gl in
           match EConstr.kind sigma (pf_concl gl) with
           | App (f, _) when EConstr.eq_constr sigma f (well_founded ()) ->
-            Auto.h_auto None [] (Some [])
+            Auto.gen_auto None [] (Some [])
           | _ ->
             incr h_num;
             tclCOMPLETE
