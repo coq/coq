@@ -124,10 +124,6 @@ sig
   val levels : t -> Quality.Set.t * Level.Set.t
   (** The set of levels in the instance *)
 
-  val subst_fn
-    : (QVar.t -> Quality.t) * (Universe.t -> Universe.t)
-    -> t -> t
-
 end
 
 val eq_sizes : int * int -> int * int -> bool

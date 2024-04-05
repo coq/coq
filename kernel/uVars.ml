@@ -226,8 +226,6 @@ module AInstance : sig
 
   val share : t -> t * int
 
-  val subst_fn : (Sorts.QVar.t -> Quality.t) * (Universe.t -> Universe.t) -> t -> t
-
   val pr : (Sorts.QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   val levels : t -> Quality.Set.t * Level.Set.t
 end =
@@ -310,11 +308,6 @@ let abstract_instance (qlen,ulen) =
   of_array (qs,us)
 
 let length (aq,au) = Array.length aq, Array.length au
-
-let subst_fn (fq, fn) (q,u as orig) : t =
-  let q' = CArray.Smart.map (Quality.subst fq) q in
-  let u' = CArray.Smart.map fn u in
-  if q' == q && u' == u then orig else q', u'
 
 let levels (xq,xu) =
   let q = Array.fold_left (fun acc x -> Quality.Set.add x acc) Quality.Set.empty xq in
