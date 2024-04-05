@@ -1123,8 +1123,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   let loc = tac.loc in
   match tac.v with
   | TacAtom t ->
-      let call = LtacAtomCall t in
-      let (stack, _) = push_trace(loc,call) ist in
+      let (stack, _) = push_trace (loc, LtacAtomCall t) ist in
       do_profile stack
         (catch_error_tac_loc loc stack (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
@@ -1149,8 +1148,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       interp_message ist s k
   | TacProgress tac -> Tacticals.tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (t,ido) ->
-      let call = LtacMLCall tac in
-      let (stack,_) = push_trace(None,call) ist in
+      let (stack, _) = push_trace (None, LtacMLCall tac) ist in
       do_profile stack
         (catch_error_tac stack begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
@@ -1263,9 +1261,8 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   | ArgArg (loc,r) ->
       Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let ids = extract_ids [] ist.lfun Id.Set.empty in
-      let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
-      let trace = push_trace loc_info ist in
+      let trace = push_trace (Option.default loc loc', LtacNameCall r) ist in
       let extra = TacStore.set extra f_trace trace in
       let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
