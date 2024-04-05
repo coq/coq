@@ -46,9 +46,6 @@ val default_auto : unit Proofview.tactic
 val full_auto : ?debug:debug ->
   int -> delayed_open_constr list -> unit Proofview.tactic
 
-(** auto with default search depth and with all hint databases *)
-val default_full_auto : unit Proofview.tactic
-
 (** The generic form of auto (second arg [None] means all bases) *)
 val gen_auto : ?debug:debug ->
   int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic

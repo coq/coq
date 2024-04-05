@@ -441,5 +441,3 @@ let auto ?(debug=Off) n lems dbnames = gen_auto ~debug (Some n) lems (Some dbnam
 let default_auto = auto default_search_depth [] []
 
 let full_auto ?(debug=Off) n lems = gen_auto ~debug (Some n) lems None
-
-let default_full_auto = full_auto default_search_depth []

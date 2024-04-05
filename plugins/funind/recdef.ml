@@ -34,7 +34,6 @@ open Constrintern
 open Tactypes
 open Genredexpr
 open Equality
-open Auto
 open Eauto
 open Indfun_common
 open Context.Rel.Declaration
@@ -563,6 +562,9 @@ let rec prove_lt hyple =
                 str "assumption: "
                 ++ Printer.Debug.pr_goal g)
               assumption ])
+
+let default_full_auto =
+  Auto.gen_auto (Some Auto.default_search_depth) [] None
 
 let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
   let open Tacticals in
