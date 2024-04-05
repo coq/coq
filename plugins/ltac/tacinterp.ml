@@ -1078,13 +1078,13 @@ let type_uconstr ?(flags = (constr_flags ()))
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
-     [value_interp]. It is installed in the second step by a call to
+     [aux]. It is installed in the second step by a call to
      [name_vfun], because it gives more opportunities to detect a
      [VFun]. Otherwise a [Ltac t := let x := .. in tac] would never
      register its name since it is syntactically a let, not a
      function.  *)
   let (loc,tac2) = CAst.(tac.loc, tac.v) in
-  let value_interp ist =
+  let aux ist =
   match tac2 with
   | TacFun (it, body) ->
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, it, body)))
@@ -1103,10 +1103,10 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | DebugOn lev ->
         let eval v =
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
-          value_interp ist >>= fun v -> return (name_vfun appl v)
+          aux ist >>= fun v -> return (name_vfun appl v)
         in
         Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
-  | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
+  | _ -> aux ist >>= fun v -> return (name_vfun appl v)
 
 
 and eval_tactic_ist ist tac : unit Proofview.tactic =
@@ -2035,7 +2035,7 @@ type ltac_expr = {
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp {global;ast} =
-  let hide_interp env =
+  let aux env =
     let ist = Genintern.empty_glob_sign ~strict:false env in
     let te = intern_pure_tactic ist ast in
     let t = eval_tactic te in
@@ -2043,10 +2043,10 @@ let hide_interp {global;ast} =
   in
   if global then
     Proofview.tclENV >>= fun env ->
-    hide_interp env
+    aux env
   else
     Proofview.Goal.enter begin fun gl ->
-      hide_interp (Proofview.Goal.env gl)
+      aux (Proofview.Goal.env gl)
     end
 
 let ComTactic.Interpreter hide_interp = ComTactic.register_tactic_interpreter "ltac1" hide_interp
