@@ -196,6 +196,27 @@ let check_subtype univs ctxT ctx =
     check_constraints cst univs
   else false
 
+let is_bound l lbound = match lbound with
+  | Bound.Prop -> false
+  | Bound.Set -> Level.is_set l
+
+(* XXX switch the logic to replace [keep] argument with [removed]?
+   and be Constraints.t -> Constraints.t as the level set operation is trivial *)
+let restrict_universe_context ?(lbound=Bound.Set) (univs, csts) keep =
+  let removed = Level.Set.diff univs keep in
+  if Level.Set.is_empty removed then univs, csts
+  else
+    let allunivs = Constraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
+    let g = initial_universes in
+    let g = Level.Set.fold (fun v g ->
+        if Level.is_set v then g else
+          add_universe v ~lbound ~strict:false g) allunivs g in
+    let g = merge_constraints csts g in
+    let allkept = Level.Set.add Level.set (Level.Set.diff allunivs removed) in
+    let csts = constraints_for ~kept:allkept g in
+    let csts = Constraints.filter (fun (l,d,_) -> not (is_bound l lbound && d == Le)) csts in
+    (Level.Set.inter univs keep, csts)
+
 (** Instances *)
 
 let check_eq_instances g t1 t2 =

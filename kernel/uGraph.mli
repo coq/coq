@@ -100,6 +100,13 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
     eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
 val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 
+(** [restrict_universe_context ~lbound (univs,csts) keep] restricts [univs] to
+    the universes in [keep]. The constraints [csts] are adjusted so
+    that transitive constraints between remaining universes (those in
+    [keep] and those not in [univs]) are preserved.
+    Trivial constraints [lbound <= _] are removed. *)
+val restrict_universe_context : ?lbound:Bound.t -> ContextSet.t -> Level.Set.t -> ContextSet.t
+
 val domain : t -> Level.Set.t
 (** Known universes *)
 
