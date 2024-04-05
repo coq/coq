@@ -1,0 +1,18 @@
+Debug:
+[comment-lexing]
+  comment at chars 333-587:
+  (** Pour démontrer [c0 = Rouge -> coul_suiv c0 = Vert],
+      on suppose [c0 = Rouge]
+      et on doit alors prouver [coul_suiv c0 = Vert]
+      sous cette hypothèse supplémentaire ;
+      lorsque l'on introduit une hypothèse, on lui donne un nom. *)
+Debug:
+[comment-lexing]
+  comment at chars 603-639:
+  (* /!\   CRASH ON THIS LINE   /!\ *)
+Debug:
+[comment-lexing]
+  comment at chars 642-814:
+  (** Le raisonnement sous-jacent est :
+      soit c0rou une preuve arbitraire (inconnue) de [c0 = Rouge],
+      on peut s'en servir pour démontrer coul_suiv [c0 = Vert]. *)
