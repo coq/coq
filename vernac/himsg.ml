@@ -756,8 +756,8 @@ let explain_refiner_cannot_generalize env sigma ty =
   pr_leconstr_env env sigma ty ++ str "."
 
 let explain_no_occurrence_found env sigma c id =
-  str "Found no subterm matching " ++ pr_leconstr_env env sigma c ++
-  str " in " ++
+  str "Found no subterm matching" ++ spc() ++ pr_leconstr_env env sigma c ++
+  spc() ++ str "in " ++
     (match id with
       | Some id -> Id.print id
       | None -> str"the current goal") ++ str "."
