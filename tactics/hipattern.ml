@@ -470,7 +470,7 @@ let find_this_eq_data_decompose env sigma eqn =
 
 (*** Sigma-types *)
 
-let match_sigma env sigma ex =
+let match_sigma_data env sigma ex =
   match EConstr.kind sigma ex with
   | App (f, [| a; p; car; cdr |]) when is_lib_ref env sigma "core.sig.intro" f ->
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
@@ -479,7 +479,7 @@ let match_sigma env sigma ex =
   | _ -> raise PatternMatchingFailure
 
 let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
-  match_sigma env ex
+  match_sigma_data env ex
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern =
