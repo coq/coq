@@ -121,10 +121,10 @@ val constant_of_delta_kn : KerName.t -> Constant.t
 val mind_of_delta_kn : KerName.t -> MutInd.t
 
 type indirect_accessor = {
-  access_proof : Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+  access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
 }
 
-val force_proof : indirect_accessor -> Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes
+val force_proof : indirect_accessor -> Opaqueproof.opaque -> Opaqueproof.opaque_proofterm
 
 val body_of_constant : indirect_accessor -> Constant.t ->
   (Constr.constr * unit Opaqueproof.delayed_universes * UVars.AbstractContext.t) option
