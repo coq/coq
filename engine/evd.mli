@@ -806,18 +806,23 @@ module MiniEConstr : sig
   val unsafe_eq : (t, Constr.t) eq
 
   val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt ->
-    (t, t) Context.Named.Declaration.pt
-  val unsafe_to_named_decl : (t, t) Context.Named.Declaration.pt ->
+    (t, etypes) Context.Named.Declaration.pt
+  val unsafe_to_named_decl : (t, etypes) Context.Named.Declaration.pt ->
     (Constr.t, Constr.types) Context.Named.Declaration.pt
-  val unsafe_to_rel_decl : (t, t) Context.Rel.Declaration.pt ->
+  val to_named_decl : evar_map -> (t, etypes) Context.Named.Declaration.pt ->
+    (Constr.t, Constr.types) Context.Named.Declaration.pt
+  val unsafe_to_rel_decl : (t, etypes) Context.Rel.Declaration.pt ->
     (Constr.t, Constr.types) Context.Rel.Declaration.pt
-  val of_case_invert : constr pcase_invert -> econstr pcase_invert
-  val unsafe_to_case_invert : econstr pcase_invert -> constr pcase_invert
   val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt ->
-    (t, t) Context.Rel.Declaration.pt
-  val to_rel_decl : evar_map -> (t, t) Context.Rel.Declaration.pt ->
+    (t, etypes) Context.Rel.Declaration.pt
+  val to_rel_decl : evar_map -> (t, etypes) Context.Rel.Declaration.pt ->
     (Constr.t, Constr.types) Context.Rel.Declaration.pt
 
-  val of_named_context : (Constr.t, Constr.types) Context.Named.pt -> (t, t) Context.Named.pt
-  val of_rel_context : (Constr.t, Constr.types) Context.Rel.pt -> (t, t) Context.Rel.pt
+  val of_case_invert : constr pcase_invert -> econstr pcase_invert
+  val unsafe_to_case_invert : econstr pcase_invert -> constr pcase_invert
+
+  val of_named_context : (Constr.t, Constr.types) Context.Named.pt -> (t, etypes) Context.Named.pt
+  val to_named_context : evar_map -> (t, etypes) Context.Named.pt -> (Constr.t, Constr.types) Context.Named.pt
+  val of_rel_context : (Constr.t, Constr.types) Context.Rel.pt -> (t, etypes) Context.Rel.pt
+  val to_rel_context : evar_map -> (t, etypes) Context.Rel.pt -> (Constr.t, Constr.types) Context.Rel.pt
 end

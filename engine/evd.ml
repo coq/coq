@@ -1854,12 +1854,15 @@ module MiniEConstr = struct
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
+  let to_named_decl sigma d = NamedDecl.map_constr_het_with_relevance (UState.nf_relevance sigma.universes) (to_constr sigma) d
   let of_rel_decl d = d
   let unsafe_to_rel_decl d = d
   let to_rel_decl sigma d = RelDecl.map_constr_het_with_relevance (UState.nf_relevance sigma.universes) (to_constr sigma) d
 
   let of_named_context d = d
+  let to_named_context sigma l = List.map (to_named_decl sigma) l
   let of_rel_context d = d
+  let to_rel_context sigma l = List.map (to_rel_decl sigma) l
 
   let unsafe_to_case_invert x = x
   let of_case_invert x = x
