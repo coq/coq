@@ -749,7 +749,7 @@ let rec extract_term env sg mle mlt c args =
     | CoFix (i,recd) ->
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
     | Cast (c,_,_) -> extract_term env sg mle mlt c args
-    | Evar _ | Meta _ -> MLaxiom
+    | Evar _ | Meta _ -> MLaxiom "evar"
     | Var v ->
        (* Only during Show Extraction *)
        let open Context.Named.Declaration in
@@ -1127,7 +1127,7 @@ let extract_constant env kn cb =
   in
   let mk_ax () =
     let t = extract_axiom env sg kn typ in
-    Dterm (r, MLaxiom, t)
+    Dterm (r, MLaxiom (Constant.to_string kn), t)
   in
   let mk_def c =
     let e,t = extract_std_constant env sg kn c typ in

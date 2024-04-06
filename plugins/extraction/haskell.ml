@@ -220,7 +220,7 @@ let rec pp_expr par env args =
          | s -> str "__" ++ spc () ++ pp_bracket_comment (str s))
     | MLmagic a ->
         pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
-    | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
+    | MLaxiom s -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED (" ++ str s ++ str ")\"")
     | MLuint _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
     | MLfloat _ ->
