@@ -157,6 +157,7 @@ log_failure = "==========> FAILURE <=========="
 log_intro = "==========> TESTING $(1) <=========="
 
 FAIL = >&2 echo 'FAILED    $@'
+FAIL_CHK = >&2 echo 'FAILED    $(patsubst %.v.log,%.chk.log,$@)'
 
 #######################################################################
 # Testing subsystems
@@ -391,7 +392,7 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v mic
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
-	    $(FAIL); \
+	    $(FAIL_CHK); \
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 	$(HIDE)$(call REPORT_TIMER,$(patsubst %.v.log,%.chk.log,$@))
