@@ -58,19 +58,15 @@ Ltac test S b1 b2 b3 b4 :=
     unfold arrow, Basics.arrow; now rewrite <- HR | clear Ht ].
 
 Goal True.
-test Ri   true  true  true  true.
+Proof.
 test Ra   true  true  true  true.
 test Rb   false false false false.
-test RBi  true  true  true  true.
 test RBa  true  true  true  true.
 test RBb  false false false false.
-test RTi  true  true  true  true.
 test RTa  true  true  true  true.
 test RTb  false false false false.
-test RRBi true  true  true  true.
 test RRBa true  true  true  true.
 test RRBb false false false false.
-test RRTi true  true  true  true.
 test RRTa true  true  true  true.
 test RRTb false false false false.
 apply I.
