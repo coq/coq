@@ -109,9 +109,9 @@ let push_rels_assum assums =
 
 let get_body lconstr = EConstr.of_constr lconstr
 
-let get_opaque env c =
+let get_opaque access env c =
   EConstr.of_constr
-    (fst (Global.force_proof Library.indirect_accessor c))
+    (fst (Global.force_proof access c))
 
 let applistc c args = EConstr.mkApp (c, Array.of_list args)
 
@@ -1107,7 +1107,7 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
 
-let extract_constant env kn cb =
+let extract_constant access env kn cb =
   let sg = Evd.from_env env in
   let r = GlobRef.ConstRef kn in
   let typ = EConstr.of_constr cb.const_type in
@@ -1151,7 +1151,7 @@ let extract_constant env kn cb =
                 mk_typ (EConstr.of_constr body))
           | OpaqueDef c ->
             add_opaque r;
-            if access_opaque () then mk_typ (get_opaque env c)
+            if access_opaque () then mk_typ (get_opaque access env c)
             else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
@@ -1165,7 +1165,7 @@ let extract_constant env kn cb =
                 mk_def (EConstr.of_constr body))
           | OpaqueDef c ->
             add_opaque r;
-            if access_opaque () then mk_def (get_opaque env c)
+            if access_opaque () then mk_def (get_opaque access env c)
             else mk_ax ())
   with SingletonInductiveBecomesProp id ->
     error_singleton_become_prop id (Some (GlobRef.ConstRef kn))

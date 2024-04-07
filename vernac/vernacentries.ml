@@ -1377,16 +1377,17 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   | _ -> assert false
 
 let vernac_end_segment lid =
-  Vernactypes.typed_vernac { prog=Pop; proof=ReadOpt; }
+  let open Vernactypes in
+  typed_vernac { ignore_state with prog=Pop; proof=ReadOpt; }
     (fun {proof; prog} ->
        let () = vernac_end_segment ~pm:prog ~proof lid in
-       Vernactypes.no_state)
+       no_state)
 
 let vernac_begin_segment ~interactive f =
   let open Vernactypes in
   let proof = Proof.(if interactive then Reject else Ignore) in
   let prog = Prog.(if interactive then Push else Ignore) in
-  typed_vernac { prog; proof; }
+  typed_vernac { ignore_state with prog; proof; }
     (fun (_:no_state) ->
        let () = f () in
        no_state)
@@ -1979,70 +1980,98 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     Prettyp.print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~pstate =
-  let sigma, env = get_current_or_global_context ~pstate in
+let vernac_print =
+  let no_state f =
+    Vernactypes.(typed_vernac_gen ignore_state (fun _ -> no_state, f ()))
+  in
+  let with_pstate f =
+    let f {Vernactypes.proof} =
+      Vernactypes.no_state, f ~pstate:proof
+    in
+    Vernactypes.(typed_vernac_gen { ignore_state with proof = ReadOpt } f)
+  in
+  let with_proof_env f = with_pstate (fun ~pstate ->
+      let sigma, env = get_current_or_global_context ~pstate in
+      f env sigma)
+  in
+  let with_proof_env_and_opaques f =
+    let open Vernactypes in
+    let f {proof; opaque_access} =
+      let sigma, env = get_current_or_global_context ~pstate:proof in
+      no_state, f ~opaque_access env sigma
+    in
+    typed_vernac_gen { ignore_state with proof = ReadOpt; opaque_access = Access } f
+  in
   function
-  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
-  | PrintTables -> print_tables ()
-  | PrintFullContext-> Prettyp.print_full_context_typ env sigma
-  | PrintSectionContext qid -> Prettyp.print_sec_context_typ env sigma qid
-  | PrintInspect n -> Prettyp.inspect env sigma n
-  | PrintGrammar ent -> Metasyntax.pr_grammar ent
-  | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
-  | PrintKeywords -> Metasyntax.pr_keywords ()
-  | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
-  | PrintLibraries -> print_libraries ()
-  | PrintModule qid -> print_module qid
-  | PrintModuleType qid -> print_modtype qid
-  | PrintNamespace ns -> print_namespace ~pstate ns
-  | PrintMLLoadPath -> Mltop.print_ml_path ()
-  | PrintMLModules -> Mltop.print_ml_modules ()
-  | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
-  | PrintGraph -> Prettyp.print_graph ()
-  | PrintClasses -> Prettyp.print_classes ()
-  | PrintTypeclasses -> Prettyp.print_typeclasses ()
-  | PrintInstances c -> Prettyp.print_instances (smart_global c)
-  | PrintCoercions -> Prettyp.print_coercions ()
-  | PrintNotation (entry, ntnstr) -> Prettyp.print_notation env sigma entry ntnstr
-  | PrintCoercionPaths (cls,clt) ->
+  | PrintTypingFlags -> with_proof_env @@ fun env _sigma -> pr_typing_flags (Environ.typing_flags env)
+  | PrintTables -> no_state print_tables
+  | PrintFullContext -> with_proof_env Prettyp.print_full_context_typ
+  | PrintSectionContext qid -> with_proof_env @@ fun env sigma ->
+    Prettyp.print_sec_context_typ env sigma qid
+  | PrintInspect n -> with_proof_env @@ fun env sigma ->
+    Prettyp.inspect env sigma n
+  | PrintGrammar ent -> no_state @@ fun () -> Metasyntax.pr_grammar ent
+  | PrintCustomGrammar ent -> no_state @@ fun () -> Metasyntax.pr_custom_grammar ent
+  | PrintKeywords -> no_state Metasyntax.pr_keywords
+  | PrintLoadPath dir -> (* For compatibility ? *) no_state @@ fun () -> print_loadpath dir
+  | PrintLibraries -> no_state print_libraries
+  | PrintModule qid -> no_state @@ fun () -> print_module qid
+  | PrintModuleType qid -> no_state @@ fun () -> print_modtype qid
+  | PrintNamespace ns -> with_pstate @@ print_namespace ns
+  | PrintMLLoadPath -> no_state Mltop.print_ml_path
+  | PrintMLModules -> no_state Mltop.print_ml_modules
+  | PrintDebugGC -> no_state Mltop.print_gc
+  | PrintName (qid,udecl) -> with_proof_env_and_opaques @@ fun ~opaque_access env sigma ->
+    Prettyp.print_name opaque_access env sigma qid udecl
+  | PrintGraph -> no_state Prettyp.print_graph
+  | PrintClasses -> no_state Prettyp.print_classes
+  | PrintTypeclasses -> no_state Prettyp.print_typeclasses
+  | PrintInstances c -> no_state @@ fun () -> Prettyp.print_instances (smart_global c)
+  | PrintCoercions -> no_state Prettyp.print_coercions
+  | PrintNotation (entry, ntnstr) -> with_proof_env @@ fun env sigma ->
+    Prettyp.print_notation env sigma entry ntnstr
+  | PrintCoercionPaths (cls,clt) -> no_state @@ fun () ->
     Prettyp.print_coercion_paths (cl_of_qualid cls) (cl_of_qualid clt)
-  | PrintCanonicalConversions qids ->
+  | PrintCanonicalConversions qids -> with_proof_env @@ fun env sigma ->
     let grefs = List.map Smartlocate.smart_global qids in
     Prettyp.print_canonical_projections env sigma grefs
-  | PrintUniverses (sort, subgraph, dst) -> print_universes ~sort ~subgraph dst
-  | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
-  | PrintHintGoal ->
-     begin match pstate with
-     | Some pstate ->
-       let pf = Declare.Proof.get pstate in
-       Hints.pr_applicable_hint pf
-     | None ->
-       str "No proof in progress"
-     end
-  | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
-  | PrintHintDb -> Hints.pr_searchtable env sigma
-  | PrintScopes ->
+  | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
+    print_universes ~sort ~subgraph dst
+  | PrintHint r -> with_proof_env @@ fun env sigma ->
+    Hints.pr_hint_ref env sigma (smart_global r)
+  | PrintHintGoal -> with_pstate @@ fun ~pstate ->
+    begin match pstate with
+    | Some pstate ->
+      let pf = Declare.Proof.get pstate in
+      Hints.pr_applicable_hint pf
+    | None ->
+      str "No proof in progress"
+    end
+  | PrintHintDbName s -> with_proof_env @@ fun env sigma ->
+    Hints.pr_hint_db_by_name env sigma s
+  | PrintHintDb -> with_proof_env @@ fun env sigma ->
+    Hints.pr_searchtable env sigma
+  | PrintScopes -> with_proof_env @@ fun env sigma ->
     Notation.pr_scopes (Constrextern.without_symbols (pr_glob_constr_env env sigma))
-  | PrintScope s ->
+  | PrintScope s -> with_proof_env @@ fun env sigma ->
     Notation.pr_scope (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
-  | PrintVisibility s ->
+  | PrintVisibility s -> with_proof_env @@ fun env sigma ->
     Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
-  | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
-    print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
-  | PrintImplicit qid -> Prettyp.print_impargs env (smart_global qid)
-  | PrintAssumptions (o,t,r) ->
+  | PrintAbout (ref_or_by_not,udecl,glnumopt) -> with_pstate @@
+    print_about_hyp_globs ref_or_by_not udecl glnumopt
+  | PrintImplicit qid -> with_proof_env @@ fun env _sigma ->
+    Prettyp.print_impargs env (smart_global qid)
+  | PrintAssumptions (o,t,r) -> with_proof_env_and_opaques @@ fun ~opaque_access env sigma ->
     (* Prints all the axioms and section variables used by a term *)
-      let env = Global.env () in
-      let gr = smart_global r in
-      let cstr, _ = UnivGen.fresh_global_instance env gr in
-      let st = Conv_oracle.get_transp_state (Environ.oracle env) in
-      let nassums =
-        Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      Printer.pr_assumptionset env sigma nassums
-  | PrintStrategy r -> print_strategy r
-  | PrintRegistered -> print_registered ()
-  | PrintRegisteredSchemes -> print_registered_schemes ()
+    let gr = smart_global r in
+    let cstr, _ = UnivGen.fresh_global_instance env gr in
+    let st = Conv_oracle.get_transp_state (Environ.oracle env) in
+    let nassums =
+      Assumptions.assumptions opaque_access st ~add_opaque:o ~add_transparent:t gr cstr in
+    Printer.pr_assumptionset env sigma nassums
+  | PrintStrategy r -> no_state @@ fun () -> print_strategy r
+  | PrintRegistered -> no_state print_registered
+  | PrintRegisteredSchemes -> no_state print_registered_schemes
 
 let vernac_search ~pstate ~atts s gopt r =
   let open ComSearch in
@@ -2550,9 +2579,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         Feedback.msg_notice @@ vernac_global_check c)
 
   | VernacPrint p ->
-    vtreadproofopt(fun ~pstate ->
-        unsupported_attributes atts;
-        Feedback.msg_notice @@ vernac_print ~pstate p)
+    unsupported_attributes atts;
+    Vernactypes.map_typed_vernac
+      Feedback.msg_notice
+      (vernac_print p)
 
   | VernacSearch (s,g,r) ->
     vtreadproofopt(

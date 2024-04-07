@@ -392,6 +392,7 @@ let understand_state = function
   | "program" -> "vtmodifyprogram", ["pm"]
   | "declare_program" -> "vtdeclareprogram", ["pm"]
   | "program_interactive" -> "vtopenproofprogram", ["pm"]
+  | "opaque_access" -> "vtopaqueaccess", ["opaque_access"]
   | s -> fatal ("unsupported state specifier: " ^ s)
 
 let rec pr_named_arguments fmt = function

@@ -16,7 +16,7 @@ open Environ
 open Evd
 open Miniml
 
-val extract_constant : env -> Constant.t -> constant_body -> ml_decl
+val extract_constant : Global.indirect_accessor -> env -> Constant.t -> constant_body -> ml_decl
 
 val extract_constant_spec : env -> Constant.t -> ('a, 'b) pconstant_body -> ml_spec
 
