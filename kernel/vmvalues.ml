@@ -275,6 +275,7 @@ type atom =
   | Aid of id_key
   | Aind of inductive
   | Asort of Sorts.t
+  | Ahole
 
 (* Zippers *)
 
@@ -312,6 +313,8 @@ let rec whd_accu a stk =
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 2 in
   match Obj.tag at with
+  | i when Int.equal i Obj.int_tag ->
+      Vaccu (Ahole, [])
   | i when Int.equal i type_atom_tag ->
      begin match stk with
      | [] -> Vaccu (Obj.magic at, stk)
@@ -650,7 +653,8 @@ let rec pr_atom a =
                             | RelKey i -> str "#" ++ int i
                             | _ -> str "...") ++ str ")"
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
-  | Asort _ -> str "Asort(")
+  | Asort _ -> str "Asort"
+  | Ahole -> str "?")
 and pr_kind w =
   let open Pp in
   match w with
