@@ -319,14 +319,14 @@ let add_pat_variables sigma pat typ env : Environ.env =
       (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
     match DAst.get pat with
     | PatVar na ->
-      Environ.push_rel
+      EConstr.push_rel
         (RelDecl.LocalAssum (make_annot na Sorts.Relevant, typ))
         env
     | PatCstr (c, patl, na) ->
       let (Inductiveops.IndType (indf, indargs)) =
         try
           Inductiveops.find_rectype env (Evd.from_env env)
-            (EConstr.of_constr typ)
+            typ
         with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
@@ -335,7 +335,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
           (fun cs -> Environ.QConstruct.equal env c (fst cs.Inductiveops.cs_cstr))
           (Array.to_list constructors)
       in
-      let cs_args_types : types list =
+      let cs_args_types : EConstr.types list =
         List.map RelDecl.get_type constructor.Inductiveops.cs_args
       in
       List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
@@ -396,7 +396,7 @@ let rec pattern_to_term_and_type env typ =
       let (Inductiveops.IndType (indf, indargs)) =
         try
           Inductiveops.find_rectype env (Evd.from_env env)
-            (EConstr.of_constr typ)
+            typ
         with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
@@ -406,7 +406,7 @@ let rec pattern_to_term_and_type env typ =
             Environ.QConstruct.equal env (fst cs.Inductiveops.cs_cstr) constr)
           (Array.to_list constructors)
       in
-      let cs_args_types : types list =
+      let cs_args_types : EConstr.types list =
         List.map RelDecl.get_type constructor.Inductiveops.cs_args
       in
       let _, cstl = Inductiveops.dest_ind_family indf in
@@ -418,7 +418,7 @@ let rec pattern_to_term_and_type env typ =
              (fun i ->
                Detyping.detype Detyping.Now Id.Set.empty env
                  (Evd.from_env env)
-                 (EConstr.of_constr csta.(i))))
+                 csta.(i)))
       in
       let patl_as_term =
         List.map2
@@ -719,8 +719,7 @@ and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
           let case_arg_as_constr, ctx =
             Pretyping.understand env (Evd.from_env env) case_arg
           in
-          EConstr.Unsafe.to_constr
-            (Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr))
+          Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr)
         el
     in
     (****** The next works only if the match is not dependent ****)
@@ -799,7 +798,6 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
         (List.map3
            (fun pat e typ_as_constr ->
              let this_pat_ids = ids_of_pat pat in
-             let typ_as_constr = EConstr.of_constr typ_as_constr in
              let typ =
                Detyping.detype Detyping.Now Id.Set.empty new_env
                  (Evd.from_env env) typ_as_constr
@@ -979,7 +977,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                , List.map
                    (fun p ->
                      Detyping.detype Detyping.Now Id.Set.empty env
-                       (Evd.from_env env) (EConstr.of_constr p))
+                       (Evd.from_env env) p)
                    params
                  @ Array.to_list
                      (Array.make (List.length args' - nparam) (mkGHole ())) )
@@ -1004,10 +1002,10 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
             let ty' = snd (Util.List.chop nparam ty) in
             List.fold_left2
               (fun acc var_as_constr arg ->
-                if isRel var_as_constr then
+                if EConstr.isRel sigma var_as_constr then
                   let na =
                     RelDecl.get_name
-                      (Environ.lookup_rel (destRel var_as_constr) env)
+                      (Environ.lookup_rel (EConstr.destRel sigma var_as_constr) env)
                   in
                   match na with
                   | Anonymous -> acc
@@ -1016,8 +1014,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                     , Detyping.detype Detyping.Now Id.Set.empty env
                         (Evd.from_env env) arg )
                     :: acc
-                else if isVar var_as_constr then
-                  ( destVar var_as_constr
+                else if EConstr.isVar sigma var_as_constr then
+                  (EConstr.destVar sigma var_as_constr
                   , Detyping.detype Detyping.Now Id.Set.empty env
                       (Evd.from_env env) arg )
                   :: acc

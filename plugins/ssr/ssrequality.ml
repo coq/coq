@@ -15,7 +15,6 @@ open Util
 open Names
 open Constr
 open Context
-open Vars
 open Locus
 open Printer
 open Termops
@@ -360,10 +359,10 @@ let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar i
 (* such a generic Leibniz equation -- short of inspecting the type   *)
 (* of the elimination lemmas.                                        *)
 
-let rec strip_prod_expand_let c = match Constr.kind c with
-  | Prod (_, _, c') -> strip_prod_expand_let c'
-  | LetIn (_, v, _, c') -> strip_prod_expand_let (subst1 v c)
-  | Cast (c', _, _) -> strip_prod_expand_let c'
+let rec strip_prod_expand_let sigma c = match EConstr.kind sigma c with
+  | Prod (_, _, c') -> strip_prod_expand_let sigma c'
+  | LetIn (_, v, _, c') -> strip_prod_expand_let sigma (EConstr.Vars.subst1 v c)
+  | Cast (c', _, _) -> strip_prod_expand_let sigma c'
   | _ -> c
 
 let rule_id = mk_internal_id "rewrite rule"
@@ -590,9 +589,9 @@ let rwprocess_rule env dir rule =
       | App (r_eq, a) when Hipattern.match_with_equality_type env sigma t != None ->
         let (ind, u) = EConstr.destInd sigma r_eq and rhs = Array.last a in
         let np = Inductiveops.inductive_nparamdecls env ind in
-        let indu = (ind, EConstr.EInstance.kind sigma u) in
+        let indu = (ind, u) in
         let ind_ct = Inductiveops.type_of_constructors env indu in
-        let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_expand_let ind_ct.(0))) in
+        let lhs0 = last_arg sigma (strip_prod_expand_let sigma ind_ct.(0)) in
         let rdesc = match EConstr.kind sigma lhs0 with
         | Rel i ->
           let lhs = a.(np - i) in

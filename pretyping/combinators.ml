@@ -274,7 +274,7 @@ let make_selector env sigma ~pos ~special ~default c ctype =
   let cstrs = get_constructors env indf in
   let build_branch i =
     let endpt = if Int.equal i pos then special else default in
-    let args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstrs.(i-1).cs_args in
+    let args = cstrs.(i-1).cs_args in
     it_mkLambda_or_LetIn endpt args in
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in

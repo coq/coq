@@ -86,7 +86,6 @@ let make_inv_predicate env evd indf realargs id status concl =
       | NoDep ->
           (* We push the arity and leave concl unchanged *)
           let hyps_arity = get_arity env indf in
-          let hyps_arity = List.map (fun d -> map_rel_decl EConstr.of_constr d) hyps_arity in
             (hyps_arity,concl)
       | Dep dflt_concl ->
           if not (occur_var env !evd id concl) then

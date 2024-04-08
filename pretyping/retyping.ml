@@ -220,8 +220,7 @@ let retype ?(polyprop=true) sigma =
         (Inductive.type_of_inductive_knowing_parameters
            ~polyprop (mip, u) paramtyps)
     | Construct (cstr, u) ->
-      let u = EInstance.kind sigma u in
-      EConstr.of_constr (type_of_constructor env (cstr, u))
+      type_of_constructor env (cstr, u)
     | _ -> assert false
 
   and make_param_univs env sigma indu args =
@@ -266,12 +265,12 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match EConstr.kind sigma c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-          type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
+          type_of_inductive_knowing_conclusion env sigma (spec, u) conclty
     | Const (cst, u) ->
         let t = constant_type_in env (cst, EInstance.kind sigma u) in
           sigma, EConstr.of_constr t
     | Var id -> sigma, type_of_var env id
-    | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
+    | Construct (cstr, u) -> sigma, type_of_constructor env (cstr, u)
     | _ -> assert false
 
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =

@@ -738,8 +738,8 @@ let build_beq_scheme env handle kn =
     let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
     let open Inductiveops in
     let constrs =
-      let params = Context.Rel.instance_list mkRel 0 params_ctx in
-      get_constructors env (make_ind_family (indu, params))
+      let params = Context.Rel.instance_list EConstr.mkRel 0 params_ctx in
+      get_constructors env (make_ind_family (on_snd EConstr.EInstance.make indu, params))
     in
     let make_andb_list = function
       | [] -> tt ()
@@ -751,6 +751,7 @@ let build_beq_scheme env handle kn =
         (* A primitive record *)
         let nb_cstr_args = List.length constrs.(0).cs_args in
         let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+          let decl = EConstr.Unsafe.to_rel_decl decl in
           let env_lift' = push_env_lift decl env_lift in
           match decl with
           | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
@@ -784,6 +785,7 @@ let build_beq_scheme env handle kn =
             let cc =
               if Int.equal i j then
                 let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+                   let decl = EConstr.Unsafe.to_rel_decl decl in
                    let env_lift' = push_env_lift decl env_lift in
                    match decl with
                    | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
@@ -804,7 +806,7 @@ let build_beq_scheme env handle kn =
               else
                 ff ()
             in
-            let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi constrs.(j).cs_args in
+            let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi (EConstr.Unsafe.to_rel_context constrs.(j).cs_args) in
             Term.it_mkLambda_or_LetIn cc cs_argsj)
           in
           let predj = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch_csargsi pred) in
@@ -813,7 +815,7 @@ let build_beq_scheme env handle kn =
               ci (predj,rci) NoInvert (EConstr.mkRel (nb_cstr_args + 1))
               (EConstr.of_constr_array ar2)
           in
-          let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch constrs.(i).cs_args in
+          let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch (EConstr.Unsafe.to_rel_context constrs.(i).cs_args) in
           Term.it_mkLambda_or_LetIn (EConstr.Unsafe.to_constr case) cs_argsi)
         in
         let predi = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch pred) in

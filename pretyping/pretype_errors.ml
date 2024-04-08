@@ -121,6 +121,7 @@ let error_ill_typed_rec_body ?loc env sigma i na jl tys =
 let error_elim_arity ?loc env sigma pi c a =
   (* XXX type_errors should have a 'sort type parameter *)
   let a = Option.map EConstr.Unsafe.to_sorts a in
+  let pi = Util.on_snd EConstr.Unsafe.to_instance pi in
   raise_type_error ?loc
     (env, sigma, ElimArity (pi, c, a))
 

@@ -114,17 +114,19 @@ let construct_of_constr_notnative const env tag (ind,u) allargs =
   let params = Array.sub allargs 0 nparams in
   let i = invert_tag const tag mip.mind_reloc_tbl in
   let ctyp = Inductiveops.instantiate_constructor_params ((ind,i),u) (mib,mip) (Array.to_list params) in
-  (mkApp(mkConstructU((ind,i),u), params), ctyp)
+  let u = EConstr.Unsafe.to_instance u in
+  let params = Array.map EConstr.Unsafe.to_constr params in
+  (mkApp(mkConstructU((ind,i),u), params), EConstr.Unsafe.to_constr ctyp)
 
 let construct_of_constr const env sigma tag typ =
   let typ = Reductionops.clos_whd_flags RedFlags.all env sigma (EConstr.of_constr typ) in
-  let t, l = decompose_app (EConstr.Unsafe.to_constr typ) in
-  match Constr.kind t with
+  let t, l = EConstr.decompose_app sigma typ in
+  match EConstr.kind sigma t with
   | Ind indu ->
-      construct_of_constr_notnative const env tag indu l
+    construct_of_constr_notnative const env tag indu l
   | _ ->
-    assert (Constr.equal t (Typeops.type_of_int env));
-    (mkInt (Uint63.of_int tag), t)
+    assert (EConstr.eq_constr sigma t (EConstr.of_constr @@ Typeops.type_of_int env));
+    (mkInt (Uint63.of_int tag), EConstr.Unsafe.to_constr t)
 
 let construct_of_constr_const env sigma tag typ =
   fst (construct_of_constr true env sigma tag typ)
@@ -136,13 +138,13 @@ let get_case_annot decls =
 
 let build_branches_type env sigma mib mip (ind,u) params (pctx, p) =
   let rtbl = mip.mind_reloc_tbl in
-  let paramsl = Array.to_list params in
+  let paramsl = Array.map_to_list EConstr.of_constr params in
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
   let p = it_mkLambda_or_LetIn p pctx in (* TODO: prevent useless cut? *)
   let build_one_branch i (ctx, _) =
     let typi = Inductiveops.instantiate_constructor_params ((ind,i+1),u) (mib,mip) paramsl in
-    let decl,indapp = Reductionops.whd_decompose_prod env sigma (EConstr.of_constr typi) in
+    let decl,indapp = Reductionops.whd_decompose_prod env sigma typi in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
     let ind,cargs = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
@@ -309,7 +311,7 @@ and nf_atom_type env sigma atom =
   | Aconstant cst ->
       mkConstU cst, Typeops.type_of_constant_in env cst
   | Aind ind ->
-      mkIndU ind, Inductiveops.type_of_inductive env ind
+      mkIndU ind, EConstr.Unsafe.to_constr @@ Inductiveops.type_of_inductive env (on_snd EConstr.EInstance.make ind)
   | Asort s ->
       mkSort s, Typeops.type_of_sort s
   | Avar id ->
@@ -327,7 +329,7 @@ and nf_atom_type env sigma atom =
       in
       let p, relevance = nf_predicate env sigma ind mip params p pctx in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env sigma mib mip (ind, u) params (pctx, p) in
+      let btypes = build_branches_type env sigma mib mip (ind, EConstr.EInstance.make u) params (pctx, p) in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) ans bs in
       let mkbranch i v =

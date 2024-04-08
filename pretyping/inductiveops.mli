@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Names
-open Constr
+open EConstr
 open Declarations
 open Environ
 open Evd
@@ -17,32 +17,33 @@ open Evd
 (** The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
 
-val type_of_inductive : env -> pinductive -> types
+val type_of_inductive : env -> inductive puniverses -> types
 
 val e_type_of_inductive : env -> evar_map -> inductive EConstr.puniverses -> EConstr.types
 
 (** Return type as quoted by the user *)
-val type_of_constructor : env -> pconstructor -> types
+val type_of_constructor : env -> constructor puniverses -> types
 
 val e_type_of_constructor : env -> evar_map -> constructor EConstr.puniverses -> EConstr.types
 
-val type_of_constructors : env -> pinductive -> types array
+val type_of_constructors : env -> inductive puniverses -> types array
 
 (** Return constructor types in normal form *)
-val arities_of_constructors : env -> pinductive -> types array
+val arities_of_constructors : env -> inductive puniverses -> types array
 
 (** An inductive type with its parameters (transparently supports
     reasoning either with only recursively uniform parameters or with all
     parameters including the recursively non-uniform ones *)
 type inductive_family
-val make_ind_family : inductive UVars.puniverses * constr list -> inductive_family
-val dest_ind_family : inductive_family -> inductive UVars.puniverses * constr list
+val make_ind_family : inductive puniverses * constr list -> inductive_family
+val dest_ind_family : inductive_family -> inductive puniverses * constr list
 val map_ind_family : (constr -> constr) -> inductive_family -> inductive_family
 val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
 val lift_inductive_family  : int -> inductive_family -> inductive_family
 val substnl_ind_family :
   constr list -> int -> inductive_family -> inductive_family
 
+val relevance_of_inductive : env -> inductive puniverses -> Sorts.relevance
 val relevance_of_inductive_family : env -> inductive_family -> Sorts.relevance
 
 (** An inductive type with its parameters and real arguments *)
@@ -62,7 +63,7 @@ val mis_is_recursive_subset : inductive list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
-  pconstructor -> mutual_inductive_body * one_inductive_body -> constr
+  constructor puniverses -> mutual_inductive_body * one_inductive_body -> constr
 
 (** {6 Extract information from an inductive name} *)
 
@@ -94,10 +95,10 @@ val inductive_nparams : env -> inductive -> int
 val inductive_nparamdecls : env -> inductive -> int
 
 (** @return params context *)
-val inductive_paramdecls : env -> pinductive -> Constr.rel_context
+val inductive_paramdecls : env -> inductive puniverses -> rel_context
 
 (** @return full arity context, hence with letin *)
-val inductive_alldecls : env -> pinductive -> Constr.rel_context
+val inductive_alldecls : env -> inductive puniverses -> rel_context
 
 (** {7 Extract information from a constructor name} *)
 
@@ -127,9 +128,9 @@ val sorts_for_schemes : mind_specif -> Sorts.family list
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
-val is_squashed : evar_map -> (mind_specif * UVars.Instance.t) -> squash option
+val is_squashed : evar_map -> (mind_specif * EInstance.t) -> squash option
 
-val is_allowed_elimination : evar_map -> (mind_specif * UVars.Instance.t) -> EConstr.ESorts.t -> bool
+val is_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
 
 val elim_sort : mind_specif -> Sorts.family
 
@@ -146,22 +147,22 @@ val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
 (** Extract information from an inductive family *)
 
 type constructor_summary = {
-  cs_cstr : pconstructor;    (* internal name of the constructor plus universes *)
+  cs_cstr : constructor puniverses;    (* internal name of the constructor plus universes *)
   cs_params : constr list;   (* parameters of the constructor in current ctx *)
   cs_nargs : int;            (* length of arguments signature (letin included) *)
-  cs_args : Constr.rel_context;   (* signature of the arguments (letin included) *)
+  cs_args : rel_context;   (* signature of the arguments (letin included) *)
   cs_concl_realargs : constr array; (* actual realargs in the concl of cstr *)
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
 val get_constructor :
-  pinductive * mutual_inductive_body * one_inductive_body * constr list ->
+  inductive puniverses * mutual_inductive_body * one_inductive_body * constr list ->
   int -> constructor_summary
 val get_constructors : env -> inductive_family -> constructor_summary array
 
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not
     part of the inductive family, they appears in the arity *)
-val get_arity        : env -> inductive_family -> Constr.rel_context
+val get_arity        : env -> inductive_family -> rel_context
 
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
@@ -178,32 +179,32 @@ val find_coinductive : env -> evar_map -> EConstr.types -> (inductive * EConstr.
 
 (** [instantiate_constructor_params cstr mind params] instantiates the
     type of the given constructor with parameters [params] *)
-val instantiate_constructor_params : pconstructor -> mind_specif -> constr list -> constr
+val instantiate_constructor_params : constructor puniverses -> mind_specif -> constr list -> constr
 
 (********************)
 
 (** Builds the case predicate arity (dependent or not) *)
 val arity_of_case_predicate :
-  env -> inductive_family -> bool -> Sorts.t -> types
+  env -> inductive_family -> bool -> ESorts.t -> types
 
 (** Annotation for cases *)
-val make_case_info : env -> inductive -> case_style -> case_info
+val make_case_info : env -> inductive -> Constr.case_style -> Constr.case_info
 
 (** Make a case or substitute projections if the inductive type is a record
     with primitive projections.
     Fail with an error if the elimination is dependent while the
     inductive type does not allow dependent elimination. *)
 val make_case_or_project :
-  env -> evar_map -> inductive_type -> case_info ->
+  env -> evar_map -> inductive_type -> Constr.case_info ->
   (* pred *) EConstr.constr * Sorts.relevance -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
 (** Sometimes [make_case_or_project] is nicer to call with a pre-built
    [case_invert] than [inductive_type]. *)
 val simple_make_case_or_project :
-  env -> evar_map -> case_info ->
+  env -> evar_map -> Constr.case_info ->
   (* pred *) EConstr.constr * Sorts.relevance -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
-val make_case_invert : env -> inductive_type -> case_relevance:Sorts.relevance -> case_info
+val make_case_invert : env -> inductive_type -> case_relevance:Sorts.relevance -> Constr.case_info
   -> EConstr.case_invert
 
 (*i Compatibility
@@ -217,7 +218,7 @@ val compute_projections : Environ.env -> inductive -> (constr * types) array
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> mind_specif UVars.puniverses -> EConstr.types -> evar_map * EConstr.types
+  env -> evar_map -> mind_specif puniverses -> EConstr.types -> evar_map * EConstr.types
 
 (********************)
 val control_only_guard : env -> Evd.evar_map -> EConstr.types -> unit

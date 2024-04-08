@@ -787,8 +787,6 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             let params1,rargs1 = List.chop nparams args1 in
             let _,rargs2 = List.chop nparams args2 in
             let (mib,mip) = lookup_mind_specif env ind1 in
-            let params1 = List.map EConstr.Unsafe.to_constr params1 in
-            let u1 = EInstance.kind sigma u1 in
             let ctxt = (get_constructor ((ind1,u1),mib,mip,params1) i1).cs_args in
             let adjust i = CVars.adjust_rel_to_rel_context ctxt (i+1) - 1 in
             List.flatten
@@ -893,7 +891,7 @@ let descend_then env sigma head dirn =
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
-  let dirn_env = Environ.push_rel_context cstr.(dirn-1).cs_args env in
+  let dirn_env = EConstr.push_rel_context cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
    (fun sigma dirnval (dfltval,resty) ->
@@ -902,7 +900,7 @@ let descend_then env sigma head dirn =
         it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
         let result = if Int.equal i dirn then dirnval else dfltval in
-        let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.(i-1).cs_args in
+        let cs_args = cstr.(i-1).cs_args in
         let args = name_context env sigma cs_args in
         it_mkLambda_or_LetIn result args in
       let brl =
