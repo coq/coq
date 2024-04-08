@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open CErrors
 open Util
@@ -333,9 +331,8 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let u = EInstance.kind sigma u in
-  let pr = UVars.subst_instance_relevance u pr in
-  let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
+  let pr = Vars.subst_instance_relevance u pr in
+  let ty = Vars.subst_instance_constr u (EConstr.of_constr pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
   {uj_val = EConstr.mkProj (p,pr,cj.uj_val);
    uj_type = ty}
