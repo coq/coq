@@ -103,7 +103,7 @@ let eval_flexible_term ts env evd c sk =
         let cb = lookup_constant c env in
         match cb.const_body with
         | Def l_body ->
-            let def = subst_instance_constr (EInstance.kind evd u) (EConstr.of_constr l_body) in
+            let def = subst_instance_constr u (EConstr.of_constr l_body) in
             (* If we are unfolding a compatibility constant we want to return the
                unfolded primitive projection directly since we would like to pretend
                that the compatibility constant itself does not count as an unfolding

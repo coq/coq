@@ -875,9 +875,11 @@ let subst_univs_level_constr subst c =
   of_constr (Vars.subst_univs_level_constr subst (to_constr c))
 
 let subst_instance_context subst ctx =
+  let subst = EInstance.unsafe_to_instance subst in
   cast_rel_context (sym unsafe_eq) (Vars.subst_instance_context subst (cast_rel_context unsafe_eq ctx))
 
 let subst_instance_constr subst c =
+  let subst = EInstance.unsafe_to_instance subst in
   of_constr (Vars.subst_instance_constr subst (to_constr c))
 
 let subst_ainstance_constr subst c =
