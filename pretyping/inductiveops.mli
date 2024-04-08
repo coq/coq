@@ -141,7 +141,7 @@ val has_dependent_elim : mind_specif -> bool
 
 (** Primitive projections *)
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
-                                     EConstr.t -> EConstr.types -> types
+                                     EConstr.t -> EConstr.types -> EConstr.types
 
 (** Extract information from an inductive family *)
 

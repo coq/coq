@@ -711,17 +711,19 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
 
 let type_of_projection_constant env (p,u) =
   let _, pty = lookup_projection p env in
-  Vars.subst_instance_constr u pty
+  EConstr.Vars.subst_instance_constr u (EConstr.of_constr pty)
 
 let type_of_projection_knowing_arg env sigma p c ty =
-  let c = EConstr.Unsafe.to_constr c in
+  let open EConstr.Vars in
   let IndType(pars,realargs) =
     try find_rectype env sigma ty
     with Not_found ->
       raise (Invalid_argument "type_of_projection_knowing_arg_type: not an inductive type")
   in
   let (_,u), pars = dest_ind_family pars in
-  substl (c :: List.rev pars) (type_of_projection_constant env (p,u))
+  let u = EConstr.EInstance.make u in
+  let pars = List.rev_map EConstr.of_constr pars in
+  substl (c :: pars) (type_of_projection_constant env (p,u))
 
 (***********************************************)
 (* Guard condition *)

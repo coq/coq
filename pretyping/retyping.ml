@@ -180,10 +180,9 @@ let retype ?(polyprop=true) sigma =
         strip_outer_cast sigma
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,_,c) ->
-       let ty = type_of env c in
-       EConstr.of_constr (try
-           Inductiveops.type_of_projection_knowing_arg env sigma p c ty
-         with Invalid_argument _ -> retype_error BadRecursiveType)
+      let ty = type_of env c in
+      (try Inductiveops.type_of_projection_knowing_arg env sigma p c ty
+        with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
     | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
