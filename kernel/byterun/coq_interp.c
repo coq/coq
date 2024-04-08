@@ -737,10 +737,10 @@ value coq_interprete
             Field(accu, 2) = coq_env;
             for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
             sp += num_args;
-            pc = LoadRA(sp[0]);
-            coq_env = sp[1];
-            coq_extra_args = Long_val(sp[2]);
-            sp += 3;
+          } else if (!Is_block(Field(sp[rec_pos], 2))) {
+            /* The recursive argument is a hole; propagate it. */
+            accu = sp[rec_pos];
+            sp += 1 + coq_extra_args;
           } else {
             /* The recursive argument is an accumulator */
             mlsize_t num_args, sz, i;
@@ -775,11 +775,11 @@ value coq_interprete
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
             accu = block;
-            pc = LoadRA(sp[0]);
-            coq_env = sp[1];
-            coq_extra_args = Long_val(sp[2]);
-            sp += 3;
           }
+          pc = LoadRA(sp[0]);
+          coq_env = sp[1];
+          coq_extra_args = Long_val(sp[2]);
+          sp += 3;
         }
         Next;
       }
@@ -1059,6 +1059,12 @@ value coq_interprete
         if (Is_accu (accu)) {
           *--sp = accu; // Save matched block on stack
           accu = Field(accu, 2); // Save atom to accu register
+          if (!Is_block(accu)) {
+            // The matched block is a hole; propagate it.
+            accu = *sp++;
+            pc++;
+            Next;
+          }
           switch (Tag_val(accu)) {
           case ATOM_COFIX_TAG: // We are forcing a cofix
             {
@@ -1160,7 +1166,11 @@ value coq_interprete
         print_instr("ACCUMULATE");
         size = Wosize_val(coq_env);
         sz = size + coq_extra_args + 1;
-        if (sz <= Max_young_wosize) {
+        if (!Is_block(Field(coq_env, 2))) {
+          // The current accumulator is a hole; propagate it.
+          accu = coq_env;
+          sp += coq_extra_args + 1;
+        } else if (sz <= Max_young_wosize) {
           Coq_alloc_small(accu, sz, Closure_tag);
           for (i = 0; i < size; ++i)
             Field(accu, i) = Field(coq_env, i);
@@ -1181,10 +1191,17 @@ value coq_interprete
         sp += 3;
         Next;
       }
+
       Instruct(MAKESWITCHBLOCK) {
         print_instr("MAKESWITCHBLOCK");
         *--sp = accu; // Save matched block on stack
         accu = Field(accu, 2); // Save atom to accu register
+        if (!Is_block(accu)) {
+          // The matched block is a hole; propagate it.
+          pc += 4;
+          accu = *sp++;
+          Next;
+        }
         switch (Tag_val(accu)) {
         case ATOM_COFIX_TAG: // We are forcing a cofix
           {

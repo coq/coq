@@ -104,6 +104,7 @@ type atom =
   | Aid of id_key
   | Aind of inductive
   | Asort of Sorts.t
+  | Ahole
 
 val get_atom_rel : unit -> atom array
 (** Global table of rels *)

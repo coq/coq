@@ -197,6 +197,8 @@ and nf_whd env sigma whd typ =
      nf_univ_args ~nb_univs mk env sigma stk
   | Vaccu (Asort s, stk) ->
     assert (List.is_empty stk); mkSort s
+  | Vaccu (Ahole, _) ->
+      CErrors.user_err Pp.(str "vm_compute reduction has produced an incomplete term.");
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
