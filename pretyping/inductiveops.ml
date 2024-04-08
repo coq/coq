@@ -623,7 +623,7 @@ let find_rectype env sigma c =
         if mib.mind_nparams > List.length l then raise Not_found;
         let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
-        let indu = (ind, EInstance.kind sigma u) in
+        let indu = (ind, EConstr.Unsafe.to_instance u) in
         IndType((indu, par),List.map EConstr.of_constr rargs)
     | _ -> raise Not_found
 

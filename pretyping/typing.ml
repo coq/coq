@@ -331,7 +331,7 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let u = EInstance.kind sigma u in
+  let u = EConstr.Unsafe.to_instance u in
   let pr = UVars.subst_instance_relevance u pr in
   let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
