@@ -1691,10 +1691,10 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
-  let hook {Declare.Hook.S.uctx; _} =
-    let term_ref = Nametab.locate (qualid_of_ident term_id) in
+  let hook {Declare.Hook.S.uctx; dref; _ } =
+    assert (match dref with GlobRef.ConstRef cst -> Id.equal (Label.to_id (Constant.label cst)) term_id | _ -> assert false);
     let f_ref =
-      declare_f function_name Decls.(IsProof Lemma) arg_ctx term_ref
+      declare_f function_name Decls.(IsProof Lemma) arg_ctx dref
     in
     let _ =
       Extraction_plugin.Table.extraction_inline true [qualid_of_ident term_id]
@@ -1704,7 +1704,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
       (* XXX: What is the correct way to get sign at hook time *)
       try
         com_eqn uctx (List.length res_vars) equation_id functional_ref f_ref
-          term_ref
+          dref
           (subst_var function_name equation_lemma_type);
         false
       with e when CErrors.noncritical e ->
