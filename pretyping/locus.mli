@@ -26,9 +26,10 @@ type 'a occurrences_gen =
   | OnlyOccurrences of 'a list (** non-empty *)
 
 type occurrences_expr = (int or_var) occurrences_gen
-type 'a with_occurrences = occurrences_expr * 'a
+type 'a with_occurrences_expr = occurrences_expr * 'a
 
 type occurrences = int occurrences_gen
+type 'a with_occurrences = occurrences * 'a
 
 
 (** {6 Locations}
@@ -49,7 +50,7 @@ type hyp_location_flag = InHyp | InHypTypeOnly | InHypValueOnly
    - [None] means *on every hypothesis*
    - [Some l] means on hypothesis belonging to l *)
 
-type 'a hyp_location_expr = 'a with_occurrences * hyp_location_flag
+type 'a hyp_location_expr = 'a with_occurrences_expr * hyp_location_flag
 
 type 'id clause_expr =
   { onhyps : 'id hyp_location_expr list option;

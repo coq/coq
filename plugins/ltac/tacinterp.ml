@@ -388,14 +388,14 @@ let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
   | ArgArg n -> n
 
-let interp_int_or_var_as_list ist = function
+let interp_int_as_list ist = function
   | ArgVar ({v=id} as locid) ->
-      (try coerce_to_int_or_var_list (Id.Map.find id ist.lfun)
-       with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
-  | ArgArg n as x -> [x]
+      (try coerce_to_int_list (Id.Map.find id ist.lfun)
+       with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
+  | ArgArg n -> [n]
 
-let interp_int_or_var_list ist l =
-  List.flatten (List.map (interp_int_or_var_as_list ist) l)
+let interp_int_list ist l =
+  List.flatten (List.map (interp_int_as_list ist) l)
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist env sigma ({loc;v=id} as locid) =
@@ -454,10 +454,16 @@ let interp_evaluable ist env sigma = function
 
 (* Interprets an hypothesis name *)
 let interp_occurrences ist occs =
-  Locusops.occurrences_map (interp_int_or_var_list ist) occs
+  Locusops.occurrences_map (interp_int_list ist) occs
+
+let interp_occurrences_expr ist occs =
+  (* XXX we should be able to delete this function
+     but hyp clauses still use occurrences_expr *)
+  let occs = interp_occurrences ist occs in
+  Locusops.occurrences_map (List.map (fun x -> ArgArg x)) occs
 
 let interp_hyp_location ist env sigma ((occs,id),hl) =
-  ((interp_occurrences ist occs,interp_hyp ist env sigma id),hl)
+  ((interp_occurrences_expr ist occs,interp_hyp ist env sigma id),hl)
 
 let interp_hyp_location_list_as_list ist env sigma ((occs,id),hl as x) =
   match occs,hl with
@@ -471,7 +477,7 @@ let interp_hyp_location_list ist env sigma l =
 
 let interp_clause ist env sigma { onhyps=ol; concl_occs=occs } : clause =
   { onhyps=Option.map (interp_hyp_location_list ist env sigma) ol;
-    concl_occs=interp_occurrences ist occs }
+    concl_occs=interp_occurrences_expr ist occs }
 
 (* Interpretation of constructions *)
 
@@ -682,7 +688,7 @@ let interp_open_constr_with_classes ?(expected_type=WithoutTypeConstraint) ist e
 let interp_pure_open_constr ist =
   interp_gen WithoutTypeConstraint ist false pure_open_constr_flags
 
-let interp_typed_pattern ist env sigma (_,c,_) =
+let interp_typed_pattern ist env sigma c =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   (* FIXME: it is necessary to be unsafe here because of the way we handle
@@ -711,20 +717,12 @@ let interp_constr_list ist env sigma c =
 let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_open_constr
 
-(* Interprets a reduction expression *)
-let interp_unfold ist env sigma (occs,qid) =
-  (interp_occurrences ist occs,interp_evaluable ist env sigma qid)
-
-let interp_flag ist env sigma red =
-  { red with rConst = List.map (interp_evaluable ist env sigma) red.rConst }
-
 let interp_constr_with_occurrences ist env sigma (occs,c) =
   let (sigma,c_interp) = interp_constr ist env sigma c in
   sigma , (interp_occurrences ist occs, c_interp)
 
-let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
-  let p = match a with
-  | Inl (ArgVar {loc;v=id}) ->
+let interp_evaluable_or_pattern ist env sigma = function
+  | ArgVar {loc;v=id} ->
       (* This is the encoding of an ltac var supposed to be bound
          prioritary to an evaluable reference and otherwise to a constr
          (it is an encoding to satisfy the "union" type given to Simpl) *)
@@ -737,9 +735,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
      with Not_found as exn ->
        let _, info = Exninfo.capture exn in
        Nametab.error_global_not_found ~info (qualid_of_ident ?loc id))
-  | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
-  | Inr c -> Inr (interp_typed_pattern ist env sigma c) in
-  interp_occurrences ist occs, p
+  | ArgArg _ as b -> Inl (interp_evaluable ist env sigma b)
 
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
@@ -751,28 +747,17 @@ let interp_constr_with_occurrences_and_name_as_list =
       sigma, (c_interp,
        interp_name ist env sigma na))
 
-let interp_red_expr ist env sigma = function
-  | Unfold l -> sigma , Unfold (List.map (interp_unfold ist env sigma) l)
-  | Fold l ->
-    let (sigma,l_interp) = interp_constr_list ist env sigma l in
-    sigma , Fold l_interp
-  | Cbv f -> sigma , Cbv (interp_flag ist env sigma f)
-  | Cbn f -> sigma , Cbn (interp_flag ist env sigma f)
-  | Lazy f -> sigma , Lazy (interp_flag ist env sigma f)
-  | Pattern l ->
-      let (sigma,l_interp) =
-        Evd.MonadR.List.map_right
-          (fun c sigma -> interp_constr_with_occurrences ist env sigma c) l sigma
-      in
-      sigma , Pattern l_interp
-  | Simpl (f,o) ->
-     sigma , Simpl (interp_flag ist env sigma f,
-                    Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
-  | CbvVm o ->
-    sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
-  | CbvNative o ->
-    sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
-  | (Red |  Hnf | ExtraRedExpr _ as r) -> sigma , r
+let interp_red_expr ist env sigma r =
+  let ist = {
+    Redexpr.Interp.interp_occurrence_var = (fun x -> interp_int_list ist [ArgVar x]);
+    interp_constr = interp_constr ist;
+    interp_constr_list = (fun env sigma c -> interp_constr_list ist env sigma [c]);
+    interp_evaluable = interp_evaluable ist;
+    interp_pattern = interp_typed_pattern ist;
+    interp_evaluable_or_pattern = interp_evaluable_or_pattern ist;
+  }
+  in
+  Redexpr.Interp.interp_red_expr ist env sigma r
 
 let interp_strategy ist _env _sigma s =
   let interp_redexpr r = fun env sigma -> interp_red_expr ist env sigma r in
@@ -2177,11 +2162,6 @@ let val_interp ist tac k = Ftactic.run (val_interp ist tac) k
 
 let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
-let interp_redexp env sigma r =
-  let ist = default_ist () in
-  let gist = Genintern.empty_glob_sign ~strict:true env in
-  interp_red_expr ist env sigma (intern_red_expr gist r)
-
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
@@ -2225,5 +2205,3 @@ let () =
       optkey   = ["Ltac"; "Backtrace"];
       optread  = (fun () -> !log_trace);
       optwrite = (fun b -> log_trace := b) }
-
-let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp

@@ -78,14 +78,15 @@ and mk_or_and_intro_pattern = function
 
 let mk_intro_patterns ipat = List.map mk_intro_pattern ipat
 
-let mk_occurrences f = function
+let mk_occurrences = function
 | AllOccurrences -> Locus.AllOccurrences
-| AllOccurrencesBut l -> Locus.AllOccurrencesBut (List.map f l)
+| AllOccurrencesBut l -> Locus.AllOccurrencesBut l
 | NoOccurrences -> Locus.NoOccurrences
-| OnlyOccurrences l -> Locus.OnlyOccurrences (List.map f l)
+| OnlyOccurrences l -> Locus.OnlyOccurrences l
 
-let mk_occurrences_expr occ =
-  mk_occurrences (fun i -> Locus.ArgArg i) occ
+let mk_occurrences_expr occs =
+  let occs = mk_occurrences occs in
+  Locusops.occurrences_map (List.map (fun i -> Locus.ArgArg i)) occs
 
 let mk_hyp_location (id, occs, h) =
   ((mk_occurrences_expr occs, id), h)
@@ -135,7 +136,7 @@ let elim ev c copt =
   Tactics.elim ev None c copt
 
 let generalize pl =
-  let mk_occ occs = mk_occurrences (fun i -> i) occs in
+  let mk_occ occs = mk_occurrences occs in
   let pl = List.map (fun (c, occs, na) -> (mk_occ occs, c), na) pl in
   Generalize.new_generalize_gen pl
 
@@ -187,7 +188,7 @@ let rewrite ev rw cl by =
 
 let setoid_rewrite orient c occs id =
   let c = c >>= fun c -> return (mk_with_bindings c) in
-  let occs = mk_occurrences (fun i -> i) occs in
+  let occs = mk_occurrences occs in
   Rewrite.cl_rewrite_clause (delayed_of_tactic c) orient occs id
 
 let symmetry cl =
@@ -217,9 +218,9 @@ let letin_pat_tac ev ipat na c cl =
     Instead, we parse indifferently any pattern and dispatch when the tactic is
     called. *)
 let map_pattern_with_occs (pat, occ) = match pat with
-| Pattern.PRef (GlobRef.ConstRef cst) -> (mk_occurrences_expr occ, Inl (Evaluable.EvalConstRef cst))
-| Pattern.PRef (GlobRef.VarRef id) -> (mk_occurrences_expr occ, Inl (Evaluable.EvalVarRef id))
-| _ -> (mk_occurrences_expr occ, Inr pat)
+| Pattern.PRef (GlobRef.ConstRef cst) -> (mk_occurrences occ, Inl (Evaluable.EvalConstRef cst))
+| Pattern.PRef (GlobRef.VarRef id) -> (mk_occurrences occ, Inl (Evaluable.EvalVarRef id))
+| _ -> (mk_occurrences occ, Inr pat)
 
 let get_evaluable_reference = function
 | GlobRef.VarRef id -> Proofview.tclUNIT (Evaluable.EvalVarRef id)
@@ -258,14 +259,14 @@ let lazy_ flags cl =
 let unfold occs cl =
   let cl = mk_clause cl in
   let map (gr, occ) =
-    let occ = mk_occurrences_expr occ in
+    let occ = mk_occurrences occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
   in
   Proofview.Monad.List.map map occs >>= fun occs ->
   Tactics.reduce (Unfold occs) cl
 
 let pattern where cl =
-  let where = List.map (fun (c, occ) -> (mk_occurrences_expr occ, c)) where in
+  let where = List.map (fun (c, occ) -> (mk_occurrences occ, c)) where in
   let cl = mk_clause cl in
   Tactics.reduce (Pattern where) cl
 
@@ -316,7 +317,7 @@ let eval_lazy flags c =
 
 let eval_unfold occs c =
   let map (gr, occ) =
-    let occ = mk_occurrences_expr occ in
+    let occ = mk_occurrences occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
   in
   Proofview.Monad.List.map map occs >>= fun occs ->
@@ -326,7 +327,7 @@ let eval_fold cl c =
   eval_fun (Fold cl) c
 
 let eval_pattern where c =
-  let where = List.map (fun (pat, occ) -> (mk_occurrences_expr occ, pat)) where in
+  let where = List.map (fun (pat, occ) -> (mk_occurrences occ, pat)) where in
   eval_fun (Pattern where) c
 
 let eval_vm where c =

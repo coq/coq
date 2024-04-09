@@ -73,12 +73,11 @@ let subst_strategy sub = map_strategy
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
 let pr_raw_strategy env sigma prc prlc _ (s : Tacexpr.raw_strategy) =
-  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc) in
+  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc,Pputils.pr_or_var Pp.int) in
   Rewrite.pr_strategy (prc env sigma) prr Pputils.pr_lident s
 let pr_glob_strategy env sigma prc prlc _ (s : Tacexpr.glob_strategy) =
-  let prpat env sigma (_,c,_) = prc env sigma c in
   let prcst = Pputils.pr_or_var Pptactic.(pr_and_short_name (pr_evaluable_reference_env env)) in
-  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prpat) in
+  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prc, Pputils.pr_or_var Pp.int) in
   Rewrite.pr_strategy (prc env sigma) prr Id.print s
 
 }

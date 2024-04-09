@@ -37,10 +37,6 @@ val vernac_require_interp
   -> (Libnames.qualid * Vernacexpr.import_filter_expr) list
   -> unit
 
-(** Hook to dissappear when #8240 is fixed *)
-val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
-  Evd.evar_map * Redexpr.red_expr) Hook.t
-
 (** Miscellaneous stuff *)
 val command_focus : unit Proof.focus_kind
 

@@ -738,6 +738,77 @@ mode: [
 | LIST1 [ "+" | "!" | "-" ]
 ]
 
+int_or_var: [
+| integer
+| identref
+]
+
+nat_or_var: [
+| natural
+| identref
+]
+
+occs_nums: [
+| LIST1 nat_or_var
+| "-" LIST1 nat_or_var
+]
+
+occs: [
+| "at" occs_nums
+|
+]
+
+pattern_occ: [
+| constr occs
+]
+
+ref_or_pattern_occ: [
+| smart_global occs
+| constr occs
+]
+
+unfold_occ: [
+| smart_global occs
+]
+
+red_flag: [
+| "beta"
+| "iota"
+| "match"
+| "fix"
+| "cofix"
+| "zeta"
+| "delta" delta_flag
+| "head"
+]
+
+delta_flag: [
+| "-" "[" LIST1 smart_global "]"
+| "[" LIST1 smart_global "]"
+|
+]
+
+strategy_flag: [
+| LIST1 red_flag
+| OPT "head" delta_flag
+]
+
+red_expr: [
+| "red"
+| "hnf"
+| "simpl" OPT "head" delta_flag OPT ref_or_pattern_occ
+| "cbv" strategy_flag
+| "cbn" strategy_flag
+| "lazy" strategy_flag
+| "compute" delta_flag
+| "vm_compute" OPT ref_or_pattern_occ
+| "native_compute" OPT ref_or_pattern_occ
+| "unfold" LIST1 unfold_occ SEP ","
+| "fold" LIST1 constr
+| "pattern" LIST1 pattern_occ SEP ","
+| IDENT
+]
+
 vernac_control: [
 | "Time" vernac_control
 | "Instructions" vernac_control
@@ -2335,16 +2406,6 @@ rewstrategy0: [
 | "(" rewstrategy ")"
 ]
 
-int_or_var: [
-| integer
-| identref
-]
-
-nat_or_var: [
-| natural
-| identref
-]
-
 id_or_meta: [
 | identref
 ]
@@ -2376,29 +2437,6 @@ conversion: [
 | constr
 | constr "with" constr
 | constr "at" occs_nums "with" constr
-]
-
-occs_nums: [
-| LIST1 nat_or_var
-| "-" LIST1 nat_or_var
-]
-
-occs: [
-| "at" occs_nums
-|
-]
-
-pattern_occ: [
-| constr occs
-]
-
-ref_or_pattern_occ: [
-| smart_global occs
-| constr occs
-]
-
-unfold_occ: [
-| smart_global occs
 ]
 
 intropatterns: [
@@ -2463,44 +2501,6 @@ constr_with_bindings: [
 with_bindings: [
 | "with" bindings
 |
-]
-
-red_flag: [
-| "beta"
-| "iota"
-| "match"
-| "fix"
-| "cofix"
-| "zeta"
-| "delta" delta_flag
-| "head"
-]
-
-delta_flag: [
-| "-" "[" LIST1 smart_global "]"
-| "[" LIST1 smart_global "]"
-|
-]
-
-strategy_flag: [
-| LIST1 red_flag
-| OPT "head" delta_flag
-]
-
-red_expr: [
-| "red"
-| "hnf"
-| "simpl" OPT "head" delta_flag OPT ref_or_pattern_occ
-| "cbv" strategy_flag
-| "cbn" strategy_flag
-| "lazy" strategy_flag
-| "compute" delta_flag
-| "vm_compute" OPT ref_or_pattern_occ
-| "native_compute" OPT ref_or_pattern_occ
-| "unfold" LIST1 unfold_occ SEP ","
-| "fold" LIST1 constr
-| "pattern" LIST1 pattern_occ SEP ","
-| IDENT
 ]
 
 hypident: [
