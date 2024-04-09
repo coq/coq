@@ -1419,7 +1419,7 @@ end =
 struct
 
 type 'constr partial_subst = {
-  subst: ('constr, Sorts.Quality.t, Univ.Universe.t) Partial_subst.t;
+  subst: ('constr, Sorts.Quality.t, Univ.Level.t) Partial_subst.t;
   rhs: constr;
 }
 
@@ -1510,9 +1510,8 @@ let rec match_main : type a. (a, a patstate) reduction -> _ -> _ -> pat_state:(f
     | Some { subst; rhs } ->
         let subst, qsubst, usubst = Partial_subst.to_arrays subst in
         let subst = Array.fold_right subs_cons subst (subs_id 0) in
-        let usubst = UVars.AInstance.of_array (qsubst, usubst) in
-        let rhsu = Vars.subst_ainstance_constr usubst rhs in
-        let m' = mk_clos (subst, UVars.Instance.empty) rhsu in
+        let usubst = UVars.Instance.of_array (qsubst, usubst) in
+        let m' = mk_clos (subst, usubst) rhs in
         begin match pat_state with
         | Nil Yes -> Some (m', stack)
         | _ -> red.red_kni info tab ~pat_state m' stack

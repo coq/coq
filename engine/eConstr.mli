@@ -380,8 +380,6 @@ val subst_univs_level_constr : UVars.sort_level_subst -> t -> t
 val subst_instance_context : UVars.Instance.t -> rel_context -> rel_context
 val subst_instance_constr : UVars.Instance.t -> t -> t
 
-val subst_ainstance_constr : UVars.AInstance.t -> t -> t
-
 val subst_of_rel_context_instance : rel_context -> instance -> substl
 val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl
 
