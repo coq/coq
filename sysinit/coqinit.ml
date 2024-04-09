@@ -182,11 +182,10 @@ let init_runtime opts =
   | Coqargs.Run ->
       injection_commands opts
 
-let require_file ~prefix ~lib ~export =
+let require_file ~intern ~prefix ~lib ~export =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  let intern = Vernacinterp.fs_intern in
   Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
@@ -201,14 +200,14 @@ let warn_deprecated_native_compiler =
           Pp.strbrk "The native-compiler option is deprecated. To compile native \
           files ahead of time, use the coqnative binary instead.")
 
-let handle_injection = let open Coqargs in function
-  | RequireInjection {lib;prefix;export} -> require_file ~lib ~prefix ~export
+let handle_injection ~intern = let open Coqargs in function
+  | RequireInjection {lib;prefix;export} -> require_file ~intern ~lib ~prefix ~export
   | OptionInjection o -> set_option o
   | WarnNoNative s -> warn_no_native_compiler s
   | WarnNativeDeprecated -> warn_deprecated_native_compiler ()
 
-let start_library ~top injections =
+let start_library ~intern ~top injections =
   Flags.verbosely Declaremods.start_library top;
   CWarnings.override_unknown_warning[@ocaml.warning "-3"] := true;
-  List.iter handle_injection injections;
+  List.iter (handle_injection ~intern) injections;
   CWarnings.override_unknown_warning[@ocaml.warning "-3"] := false

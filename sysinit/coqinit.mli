@@ -55,4 +55,5 @@ val init_runtime : Coqargs.t -> Coqargs.injection_command list
     Given the logical name [top] of the current library and the set of initial
     options and required libraries, it starts its processing (see also
     Declaremods.start_library) *)
-val start_library : top:Names.DirPath.t -> Coqargs.injection_command list -> unit
+val start_library :
+  intern:Library.Intern.t -> top:Names.DirPath.t -> Coqargs.injection_command list -> unit

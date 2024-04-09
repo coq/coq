@@ -2236,7 +2236,8 @@ let new_doc { doc_type ; injections } =
     in
 
   (* Start this library and import initial libraries. *)
-  Coqinit.start_library ~top injections;
+  let intern = Vernacinterp.fs_intern in
+  Coqinit.start_library ~intern ~top injections;
 
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
