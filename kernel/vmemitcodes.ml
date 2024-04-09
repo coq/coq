@@ -495,6 +495,7 @@ type 'a pbody_code =
   | BCdefined of ('a * patches)
   | BCalias of Names.Constant.t
   | BCconstant
+  | BChole
 
 type body_code = to_patch pbody_code
 
@@ -502,6 +503,7 @@ let subst_body_code s = function
 | BCdefined (x, tp) -> BCdefined (x, subst_patches s tp)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
+| BChole -> BChole
 
 let to_memory fv code =
   let env = {

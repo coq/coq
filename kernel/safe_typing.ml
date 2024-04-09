@@ -393,6 +393,7 @@ let push_bytecode vmtab code =
     let vmtab, index = Vmlibrary.add code vmtab in
     vmtab, Some (BCdefined (index, patches))
   | Some BCconstant -> vmtab, Some BCconstant
+  | Some BChole -> vmtab, Some BChole
   | Some (BCalias kn) -> vmtab, Some (BCalias kn)
   in
   vmtab, code
@@ -920,7 +921,7 @@ let add_constant l decl senv =
         let nonce = Nonce.create () in
         let future_cst = HandleMap.add i (ctx, senv, nonce) senv.future_cst in
         let senv = { senv with future_cst } in
-        senv, { cb with const_body = OpaqueDef o; const_body_code = Some Vmemitcodes.BCconstant }
+        senv, { cb with const_body = OpaqueDef o; const_body_code = Some Vmemitcodes.BChole }
       | ConstantEntry ce ->
         let cb = Constant_typing.infer_constant ~sec_univs senv.env ce in
         let cb = compile_bytecode senv.env cb in

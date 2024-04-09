@@ -270,6 +270,7 @@ let rec slot_for_getglobal env sigma kn envcache table =
            set_global v table
         | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table
         | BCconstant -> set_global (val_of_constant kn) table
+        | BChole -> set_global (val_of_atom Ahole) table
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
