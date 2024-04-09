@@ -2032,7 +2032,7 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
   let nar = List.fold_left (fun n sign -> Context.Rel.nhyps sign + n) 0 arsign in
   let (rel_subst,var_subst), len =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
-      let signlen = List.length sign in
+      let signlen = Context.Rel.nhyps sign in
         match EConstr.kind sigma tm with
           | Rel _ | Var _ when Int.equal signlen 1 && dependent_rel_or_var sigma tm c
             (* The term to match is not of a dependent type itself *) ->
@@ -2412,7 +2412,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
              (fun (sigma, idents, newpatterns, pats) pat arsign ->
                 let sigma, pat', cpat, idents = constr_of_pat !!env sigma arsign pat idents in
                   (sigma, idents, pat' :: newpatterns, cpat :: pats))
-              (sigma, Id.Set.empty, [], []) eqn.patterns sign
+              (sigma, Id.Set.empty, [], []) eqn.patterns (List.rev sign)
          in
          let newpatterns = List.rev newpatterns and opats = List.rev pats in
          let rhs_rels, pats, signlen =
@@ -2616,9 +2616,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
             pred slift, (arsign' :: []) :: arsigns))
       (sigma, [], 0, [], nar, []) tomatchs arsign
   in
-  let arsign'' = List.rev arsign' in
-    assert(Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
-    sigma, arsign'', allnames, nar, eqs, neqs, refls
+  assert (Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
+  sigma, arsign', allnames, nar, eqs, neqs, refls
 
 let context_of_arsign l =
   let (x, _) = List.fold_right
