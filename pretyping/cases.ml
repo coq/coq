@@ -2428,7 +2428,6 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
-         let _signenv,_ = push_rel_context ~hypnaming sigma rhs_rels' env in
          let arity =
            let args, nargs =
              List.fold_right (fun (sign, c, (_, args), _) (allargs,n) ->
@@ -2646,7 +2645,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
       (sigma, [], 0, [], nar, []) tomatchs arsign
   in
   assert (Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
-  sigma, arsign', allnames, nar, eqs, neqs, refls
+  assert (neqs = nar);
+  sigma, arsign', nar, eqs, refls
 
 let context_of_arsign l =
   (* From a family of [env, arsign |- ctx_i]] to [env, arsign |- ctx_1, ..., ctx_n] *)
@@ -2674,7 +2674,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
   let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
   let len = List.length eqns in
-  let sigma, sign, allnames, signlen, eqs, neqs, args =
+  let sigma, sign, signlen, eqs, args =
     (* The arity signature *)
     let arsign = extract_arity_signature ~dolift:false !!env tomatchs tomatchl in
       (* Build the dependent arity signature, the equalities which makes
