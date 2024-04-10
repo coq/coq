@@ -2511,6 +2511,16 @@ let abstract_tomatch env sigma tomatchs tycon =
       ([], [], Id.Set.empty, tycon) tomatchs
   in List.rev prev, ctx, tycon
 
+(* [build_dependent_inductive] takes:
+   - a list [arsign] of contexts of the form [realvars:realtypes,arg:ind realvars]
+     all typed in context [env]
+   - a list [tomatchs] of terms instantiating [arsign], all typed in [env]
+   It returns [sign,signlen,eqs,neqs,args] where
+   - [eqs] is the list of contexts of equalities between
+     [(realvars,arg)] and their instance in [tomatchs]
+   - [sign] is the same as [arsign] where variables have been renamed using a prime
+   - [signlen] is the common length of [sign] and [eqs] *)
+
 let build_dependent_signature env sigma avoid tomatchs arsign =
   let avoid = ref avoid in
   let arsign = List.rev arsign in
@@ -2532,12 +2542,33 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              let argsign = List.tl arsign in (* arguments in inverse application order *)
              let app_decl = List.hd arsign in (* The matched argument *)
              let argsign = List.rev argsign in (* arguments in application order *)
+             (* We are working on the i-th inductive type of the arity. It satisfies
+                [env |- tm_i : indf_i args_i : Type] with [args_i:argts_i] and we want to build
+                [env, arsign |- eqs_i : ((names_i,appn_i : argsign_i,appt_i) = (args_i,tm_i : argts_i,indf args_i))]
+                  (there are |args|+1 such equations that we see as a context)
+                where [arsign], with appropriate lift on each [ts_i] and [indf_i], is itself
+                [names1:ts1,appn1:indf1 names1,...,names_n:ts_n,appn_n:indf_n names_n]
+                where [indf_i names_i], written [appt],
+                satisfies [env |- names_i:ts_i, appn_i:indf_i names_i]
+                  (that is a context in [env] rather than in [env] extended
+                   with the arity up to [i]);
+                also [nar] is the length of [arsign]
+                and [neqs] is the length of [arsign] up to before [i];
+                Regarding the decls of [arsign] we have [env |- (names_i:argsign_i),(appn_i:appt_i)] as a context,
+                that is [env, name_i1 ... name_i_{j-1} |- name_ij : argsign_i_j]
+                and [env, names_i |- appn_i:appt_i]
+                and we need [env, arsign, name'_i1 ... name'_i_{j-1} |- name_ij:argsign_i_j] and
+                [env, arsign, names'_i |- appn_i:appt_i] as terms, where the [names_i] refer to
+                the [names_i] in [argsign]; we obtain it by first lifting the whole context
+                [(names_i:argsign_i),(appn_i:appt_i)] (argsign') *)
              let sigma, env', nargeqs, argeqs, refl_args, slift, argsign' =
                List.fold_left2
                  (fun (sigma, env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
                     let name = RelDecl.get_name decl in
                     let t = liftn neqs (succ nargeqs) (RelDecl.get_type decl) in
                     let argt = Retyping.get_type_of env sigma arg in
+                    assert (neqs + nargeqs + slift = nar);
+
                     let sigma, eq, refl_arg =
                       let t' = lift (nargeqs + slift) t in
                       let argt' = lift (nargeqs + nar) argt in
@@ -2575,6 +2606,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                        RelDecl.set_name (Name id) decl :: argsign'))
                  (sigma, env, 0, [], [], slift, []) args argsign
              in
+             assert (neqs + nargeqs + slift = nar);
              let appn = RelDecl.get_name app_decl in
              let appt = liftn neqs (succ nargeqs) (RelDecl.get_type app_decl) in
               let sigma, eq =
@@ -2598,9 +2630,12 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              let previd, id = make_prime avoid name in
              let arsign' = RelDecl.set_name (Name id) decl in
              let tomatch_ty = type_of_tomatch ty in
+            assert (neqs + slift = nar);
             let sigma, eq =
-              mk_eq env sigma (lift nar tomatch_ty)
-                (mkRel slift) (lift nar tm)
+              mk_eq env sigma
+                (lift nar tomatch_ty)
+                (mkRel slift)
+                (lift nar tm)
             in
             let sigma, refl = mk_eq_refl env sigma tomatch_ty tm in
             let na = make_annot (Name (eq_id avoid previd)) ERelevance.relevant in
@@ -2614,9 +2649,11 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
   sigma, arsign', allnames, nar, eqs, neqs, refls
 
 let context_of_arsign l =
+  (* From a family of [env, arsign |- ctx_i]] to [env, arsign |- ctx_1, ..., ctx_n] *)
   let (x, _) = List.fold_right
-    (fun c (x, n) ->
-       (lift_rel_context n c @ x, List.length c + n))
+    (fun ctx (prev_ctx, n) ->
+      (* From [env, arsign |- ctx_i] to [env, arsign, ctx1, ..., ctx_{i-1} |- ctx_i] *)
+       (lift_rel_context n ctx @ prev_ctx, List.length ctx + n))
     l ([], 0)
   in x
 
