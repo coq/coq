@@ -1561,7 +1561,7 @@ let extern_constr_pattern env sigma pat =
     (glob_of_pat Id.Set.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
-  let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
+  let a = detype_rel_context Detyping.Later where Id.Set.empty ([],env) sigma sign in
   let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
   pi3 (extern_local_binder ((constr_some_level,None),([],[])) vars a)
