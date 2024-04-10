@@ -559,6 +559,9 @@ Section Elts.
       + now exists (S n).
   Qed.
 
+  Lemma In_iff_nth_error l x : In x l <-> exists n, nth_error l n = Some x.
+  Proof. firstorder eauto using In_nth_error, nth_error_In. Qed.
+
   Lemma nth_error_None l n : nth_error l n = None <-> length l <= n.
   Proof.
     revert n. induction l as [|? ? IHl]; intro n; destruct n; simpl.
@@ -603,6 +606,16 @@ Section Elts.
     cbn. now apply IHn, Nat.succ_le_mono.
   Qed.
 
+  Lemma nth_error_app l l' n : nth_error (l ++ l') n =
+    if Nat.ltb n (length l)
+    then nth_error l n
+    else nth_error l' (n - length l).
+  Proof.
+    case (Nat.ltb_spec n (length l)) as [].
+    - rewrite nth_error_app1; trivial.
+    - rewrite nth_error_app2; trivial.
+  Qed.
+
   Lemma nth_error_ext l l':
     (forall n, nth_error l n = nth_error l' n) -> l = l'.
   Proof.
@@ -642,6 +655,13 @@ Section Elts.
   Lemma nth_error_S l n
     : nth_error l (S n) = nth_error (tl l) n.
   Proof. destruct l; rewrite ?nth_error_nil; reflexivity. Qed.
+
+  Lemma nth_error_cons_0 x l : nth_error (cons x l) 0 = Some x.
+  Proof. trivial. Qed.
+
+  Lemma nth_error_cons_succ x l n :
+    nth_error (cons x l) (S n) = nth_error l n.
+  Proof. trivial. Qed.
 
   (** Results directly relating [nth] and [nth_error] *)
 
@@ -1014,6 +1034,16 @@ Section ListOps.
     - intros Hn %Nat.succ_lt_mono.
       rewrite (IHl _ Hn), app_nth1; [reflexivity|].
       apply Nat.sub_lt; [assumption|apply Nat.lt_0_succ].
+  Qed.
+
+  Lemma nth_error_rev n l : nth_error (rev l) n =
+    if Nat.ltb n (length l) then nth_error l (length l - S n) else None.
+  Proof.
+    case (Nat.ltb_spec n (length l)) as []; cycle 1.
+    { apply nth_error_None; rewrite ?length_rev; trivial. }
+    destruct l as [|x l']; [inversion H|]; set (x::l') as l in *.
+    rewrite 2 nth_error_nth' with (d:=x), rev_nth;
+      rewrite ?length_rev; auto using Nat.lt_0_succ, Nat.sub_lt.
   Qed.
 
 
@@ -2120,6 +2150,13 @@ Section Cutting.
   Lemma firstn_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
   Proof. now simpl. Qed.
 
+  Lemma nth_error_firstn n l i
+    : nth_error (firstn n l) i = if Nat.ltb i n then nth_error l i else None.
+  Proof.
+    revert l i; induction n, l, i; cbn [firstn nth_error]; trivial.
+    case Nat.ltb; trivial.
+  Qed.
+
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
@@ -2194,6 +2231,15 @@ Section Cutting.
                  | a::l => skipn n l
                end
     end.
+
+  Lemma nth_error_skipn n l i : nth_error (skipn n l) i = nth_error l (n + i).
+  Proof.
+    revert l; induction n, l; cbn [nth_error skipn];
+      rewrite ?nth_error_nil; trivial.
+  Qed.
+
+  Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
+  Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
 
   Lemma firstn_skipn_comm : forall m n l,
   firstn m (skipn n l) = skipn n (firstn (n + m) l).
@@ -2789,6 +2835,17 @@ Section NatSeq.
    change [start + len] with (seq (start + len) 1).
    rewrite <- seq_app.
    rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
+  Qed.
+
+  Lemma nth_error_seq start len n :
+    nth_error (seq start len) n =
+    if Nat.ltb n len then Some (start + n) else None.
+  Proof.
+    revert len; revert start; induction n, len;
+      cbn [nth_error seq]; rewrite ?Nat.add_0_r; trivial.
+    rewrite <-seq_shift, nth_error_map, IHn.
+    cbn [Nat.ltb Nat.leb]; case len, Nat.leb; trivial.
+    cbn [option_map]; rewrite ?plus_n_Sm; trivial.
   Qed.
 
 End NatSeq.
@@ -3675,6 +3732,8 @@ Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 Notation app_nil_end := app_nil_end_deprecated (only parsing).
 #[deprecated(since = "8.18", note = "Use app_assoc instead.")]
 Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
+#[deprecated(since = "8.20", note = "Use nth_error_cons_succ instead.")]
+Notation nth_error_cons_S := nth_error_cons_succ.
 
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
