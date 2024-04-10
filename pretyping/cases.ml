@@ -2518,7 +2518,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
   let sigma, eqs, neqs, refls, slift, arsign' =
     List.fold_left2
-      (fun (sigma, eqs, neqs, refl_args, slift, arsigns) (tm, ty) arsign ->
+      (fun (sigma, eqs, neqs, refls, slift, arsigns) (tm, ty) arsign ->
          (* The accumulator:
             previous eqs,
             number of previous eqs,
@@ -2585,7 +2585,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              let previd, id = make_prime avoid appn in
                (sigma, (LocalAssum (make_annot (Name (eq_id avoid previd)) ERelevance.relevant, eq) :: argeqs) :: eqs,
                 succ nargeqs,
-                refl_eq :: refl_args,
+                refl_eq :: refl_args @ refls,
                 pred slift,
                 ((RelDecl.set_name (Name id) app_decl :: argsign') :: arsigns))
 
@@ -2603,7 +2603,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
             let na = make_annot (Name (eq_id avoid previd)) ERelevance.relevant in
             (sigma,
             [LocalAssum (na, eq)] :: eqs, succ neqs,
-            refl :: refl_args,
+            refl :: refls,
             pred slift, (arsign' :: []) :: arsigns))
       (sigma, [], 0, [], nar, []) tomatchs arsign
   in
