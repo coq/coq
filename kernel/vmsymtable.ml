@@ -26,6 +26,8 @@ open Vmbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
+let expensive_bytecode = ref false
+
 type vm_global = values array
 
 (* interpreter *)
@@ -321,7 +323,7 @@ and eval_to_patch env sigma code envcache table =
     a
   in
   let global = get_global_data !table in
-  let lossy = true in
+  let lossy = not !expensive_bytecode in
   coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 lossy
 
 and val_of_constr env sigma c envcache table =

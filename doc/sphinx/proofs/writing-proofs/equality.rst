@@ -847,6 +847,16 @@ to tell the kernel which reduction engine to use.
    full evaluation of algebraic objects. This includes the case of
    reflection-based tactics.
 
+   .. flag:: Expensive Bytecode
+
+      By default, :tacn:`vm_compute` eagerly drops sub-terms involving declarations
+      without body, so as to reduce the memory footprint. If this causes completeness
+      issues, enable this :term:`flag`.
+
+   .. exn:: vm_compute reduction has produced an incomplete term.
+
+      Some of the dropped sub-terms were actually meaningful in the reduced term.
+
 .. tacn:: native_compute {? {| @reference_occs | @pattern_occs } } {? @occurrences }
 
    Evaluates the goal by compilation to OCaml as described

@@ -1760,6 +1760,14 @@ let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
       optdepr  = None;
+      optkey   = ["Expensive";"Bytecode"];
+      optread  = (fun () -> !Vmsymtable.expensive_bytecode);
+      optwrite = (:=) Vmsymtable.expensive_bytecode }
+
+let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
       optkey   = ["Dump";"Lambda"];
       optread  = (fun () -> !Vmlambda.dump_lambda);
       optwrite = (:=) Vmlambda.dump_lambda }
