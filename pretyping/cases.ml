@@ -2240,8 +2240,8 @@ let constr_of_pat env sigma arsign pat avoid =
                 Name id, Id.Set.add id avoid
         in
         let r = ERelevance.relevant in (* TODO relevance *)
-          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, ty,
-           (List.map (fun x -> mkRel 1) realargs), 1, avoid)
+          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, lift 1 ty,
+           rel_list 1 (List.length realargs), 1, avoid)
     | PatCstr (((_, i) as cstr),args,alias) ->
         let cind = inductive_of_constructor cstr in
         let IndType (indf, _) =
@@ -2301,7 +2301,7 @@ let constr_of_pat env sigma arsign pat avoid =
                   sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
   in
   let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (RelDecl.get_type (List.hd arsign), List.tl arsign) pat avoid in
-    sigma, pat', (sign, patc, (RelDecl.get_type (List.hd arsign), args), pat'), avoid
+    sigma, pat', (sign, patc, (patty, args), pat'), avoid
 
 
 (* shadows functional version *)
@@ -2368,7 +2368,7 @@ let build_ineqs env sigma prevpatterns pats liftsign =
                       let len' = lens + len in
                       let sigma, c' =
                         papp env sigma coq_eq_ind
-                          [| lift (len' + liftsign) curpat_ty;
+                          [| lift len' curpat_ty;
                             liftn (len + liftsign) (succ lens) ppat_c ;
                             lift len' curpat_c |]
                       in
@@ -2415,7 +2415,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
                  (sign' @ renv,
                  (* lift to get outside of previous pattern's signatures. *)
                  (sign', liftn n (succ len) c,
-                  (s, List.map (liftn n (succ len)) args), p) :: pats,
+                  (liftn n (succ len) s, List.map (liftn n (succ len)) args), p) :: pats,
                  len + n))
              ([], [], 0) opats in
          let pats, _ = List.fold_left
@@ -2423,7 +2423,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
            (fun (pats, n) (sign, c, (s, args), p) ->
              let len = List.length sign in
                ((rels_of_patsign sigma sign, lift n c,
-                 (s, List.map (lift n) args), p) :: pats, len + n))
+                 (lift n s, List.map (lift n) args), p) :: pats, len + n))
            ([], 0) pats
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
