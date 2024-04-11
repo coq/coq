@@ -125,6 +125,13 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag)
 #endif
 
+/* Beware: Alloc_small can only invoked for allocations smaller than
+   Max_young_wosize, which is usually 256. For larger allocations,
+   caml_alloc_shr needs to be used instead, and the block needs to be filled
+   using caml_initialize. Note that these two functions never trigger a GC,
+   so calling Setup_for_gc is not needed.
+*/
+
 /* If there is an asynchronous exception, we reset the vm */
 #define Handle_potential_exception(res) \
   if (Is_exception_result(res)) {       \
@@ -765,8 +772,6 @@ value coq_interprete
               for (i = 3; i < sz; ++i)
                 Field(block, i) = *sp++;
             } else {
-              // too large for Alloc_small, so use caml_alloc_shr instead
-              // it never triggers a GC, so no need for Setup_for_gc
               block = caml_alloc_shr(sz, Closure_tag);
               caml_initialize(&Field(block, 2), accu);
               for (i = 3; i < sz; ++i)
@@ -1167,8 +1172,6 @@ value coq_interprete
           for (i = size; i < sz; ++i)
             Field(accu, i) = *sp++;
         } else {
-          // too large for Alloc_small, so use caml_alloc_shr instead
-          // it never triggers a GC, so no need for Setup_for_gc
           accu = caml_alloc_shr(sz, Closure_tag);
           for (i = 0; i < size; ++i)
             caml_initialize(&Field(accu, i), Field(coq_env, i));
@@ -1287,8 +1290,6 @@ value coq_interprete
           for (i = 3; i < sz; ++i)
             Field(accu, i) = *sp++;
         } else {
-          // too large for Alloc_small, so use caml_alloc_shr instead
-          // it never triggers a GC, so no need for Setup_for_gc
           accu = caml_alloc_shr(sz, Closure_tag);
           caml_initialize(&Field(accu, 2), Field(coq_atom_tbl, *pc));
           for (i = 3; i < sz; ++i)
