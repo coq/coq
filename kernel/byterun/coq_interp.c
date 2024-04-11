@@ -940,16 +940,21 @@ value coq_interprete
         print_instr("MAKEBLOCK, tag=");
         if (wosize == 0) {
           accu = Atom(tag);
-        } else {
+        } else if (wosize <= Max_young_wosize) {
           Coq_alloc_small(block, wosize, tag);
           Field(block, 0) = accu;
           for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
           accu = block;
+        } else {
+          block = caml_alloc_shr(wosize, tag);
+          caml_initialize(&Field(block, 0), accu);
+          for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
+          accu = block;
         }
         Next;
       }
-      Instruct(MAKEBLOCK1) {
 
+      Instruct(MAKEBLOCK1) {
         tag_t tag = *pc++;
         value block;
         print_instr("MAKEBLOCK1, tag=");
