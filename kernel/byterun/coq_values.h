@@ -29,6 +29,7 @@
 
 #define Is_double(v) (Tag_val(v) == Double_tag)
 #define Is_tailrec_switch(v) (Field(v,1) == Val_true)
+#define Is_const_accu(v) (Tag_val(v) == ATOM_ID_TAG && Tag_val(Field(v, 0)) == 0)
 
 /* coq values for primitive operations */
 #define coq_tag_C1 2

@@ -268,7 +268,7 @@ extern double coq_next_down(double);
 /* The interpreter itself */
 
 value coq_interprete
-(code_t coq_pc, value coq_accu, value coq_atom_tbl, value coq_global_data, value coq_env, long coq_extra_args)
+(code_t coq_pc, value coq_accu, value coq_atom_tbl, value coq_global_data, value coq_env, long coq_extra_args, int lossy)
 {
   /* coq_accu is not allocated on the OCaml heap */
   CAMLparam2(coq_atom_tbl, coq_global_data);
@@ -741,6 +741,13 @@ value coq_interprete
             /* The recursive argument is a hole; propagate it. */
             accu = sp[rec_pos];
             sp += 1 + coq_extra_args;
+          } else if (lossy && Is_const_accu(Field(sp[rec_pos], 2))) {
+            /* The recursive argument is a constant accumulator; turn it into a hole. */
+            sp += 1 + coq_extra_args;
+            Coq_alloc_small(accu, 3, Closure_tag);
+            Code_val(accu) = accumulate;
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = Val_unit;
           } else {
             /* The recursive argument is an accumulator */
             mlsize_t num_args, sz, i;
@@ -1092,6 +1099,18 @@ value coq_interprete
               ++sp;
               goto do_proj;
             }
+          case ATOM_ID_TAG:
+            if (lossy && Tag_val(Field(accu, 0)) == 0) {
+              // The matched block is a constant accumulator; turn it into a hole.
+              ++sp;
+              Coq_alloc_small(accu, 3, Closure_tag);
+              Code_val(accu) = accumulate;
+              Field(accu, 1) = Val_int(2);
+              Field(accu, 2) = Val_unit;
+              ++pc;
+              Next;
+            }
+            // fallthrough
           default:
             {
               value block;
@@ -1170,6 +1189,13 @@ value coq_interprete
           // The current accumulator is a hole; propagate it.
           accu = coq_env;
           sp += coq_extra_args + 1;
+        } else if (lossy && Is_const_accu(Field(coq_env, 2))) {
+          // The current accumulator is a constant; turn it into a hole.
+          sp += coq_extra_args + 1;
+          Coq_alloc_small(accu, 3, Closure_tag);
+          Code_val(accu) = accumulate;
+          Field(accu, 1) = Val_int(2);
+          Field(accu, 2) = Val_unit;
         } else if (sz <= Max_young_wosize) {
           Coq_alloc_small(accu, sz, Closure_tag);
           for (i = 0; i < size; ++i)
@@ -1235,6 +1261,18 @@ value coq_interprete
             sp++;
             Next;
           }
+        case ATOM_ID_TAG:
+          if (lossy && Tag_val(Field(accu, 0)) == 0) {
+            // The matched block is a constant accumulator; turn it into a hole.
+            ++sp;
+            Coq_alloc_small(accu, 3, Closure_tag);
+            Code_val(accu) = accumulate;
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = Val_unit;
+            pc += 4;
+            Next;
+          }
+          // fallthrough
         default:
           {
             mlsize_t sz;
@@ -2025,15 +2063,15 @@ value coq_push_vstack(value stk, value max_stack_size) {
   return Val_unit;
 }
 
-value  coq_interprete_ml(value tcode, value a, value t, value g, value e, value ea) {
+value  coq_interprete_ml(value tcode, value a, value t, value g, value e, value ea, value l) {
   // Registering the other arguments w.r.t. the OCaml GC is done by coq_interprete
   CAMLparam1(tcode);
   print_instr("coq_interprete");
-  value res = coq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea));
+  value res = coq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea), Bool_val(l));
   print_instr("end coq_interprete");
   CAMLreturn(res);
 }
 
 value coq_interprete_byte(value* argv, int argn){
-  return coq_interprete_ml(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  return coq_interprete_ml(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
