@@ -1243,12 +1243,19 @@ value coq_interprete
             *--sp=Field(coq_global_data, annot);
             /* We save the stack */
             if (sz == 0) accu = Atom(0);
-            else {
+            else if (sz <= Max_young_wosize) {
               Coq_alloc_small(accu, sz, Default_tag);
               if (Is_tailrec_switch(*sp)) {
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
               }else{
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];
+              }
+            } else {
+              accu = caml_alloc_shr(sz, Default_tag);
+              if (Is_tailrec_switch(*sp)) {
+                for (i = 0; i < sz; i++) caml_initialize(&Field(accu, i), sp[i+2]);
+              }else{
+                for (i = 0; i < sz; i++) caml_initialize(&Field(accu, i), sp[i+5]);
               }
             }
             *--sp = accu;
