@@ -11,6 +11,8 @@ Proof.
   split. cbn. apply eq_refl.
 Qed.
 
+Set Expensive Bytecode.
+
 Definition t := Eval lazy in constant_ok nat_ops nat_ops_ok.
 Definition t' := Eval vm_compute in constant_ok nat_ops nat_ops_ok.
 Definition t'' := Eval native_compute in constant_ok nat_ops nat_ops_ok.
