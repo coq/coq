@@ -2180,7 +2180,7 @@ let _ =
     | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
     in
     let (c, sigma) = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma ty tac in
-    let j = { Environ.uj_val = EConstr.of_constr c; uj_type = ty } in
+    let j = { Environ.uj_val = c; uj_type = ty } in
     (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_tactic eval

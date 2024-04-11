@@ -542,7 +542,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
      this hack will work in most cases. *)
   let neff = neff.Evd.seff_private in
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
-  ans, sigma
+  EConstr.of_constr ans, sigma
 
 let get_goal_context_gen pf i =
   let { sigma; goals } = data pf in
