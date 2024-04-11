@@ -2361,16 +2361,34 @@ let build_ineqs env sigma prevpatterns curpats curpat_sign_len =
               match acc with
                   None -> sigma, None
                 | Some (old_ppat_sign, old_ppats_len, old_eqs) -> (* FixMe: do not work with ppat_args *)
+                  (try
                     if is_included curpat ppat then
                       (* Length of previous pattern's signature *)
                       let ppat_len = List.length ppat_sign in
                       (* Accumulated length of previous pattern's signatures *)
                       let new_ppats_len = ppat_len + old_ppats_len in
                       let sigma, this_eq =
-                        papp env sigma coq_eq_ind
-                          [| lift new_ppats_len curpat_ty;
-                             liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_c;
-                             lift new_ppats_len curpat_c |]
+                        (* We have [env, curpat_sign |- curpat_c : curpat_ty] and
+                           want [env, curpat_sign, old_sign, ppat_sign |- curpat_c : curpat_ty] *)
+                        let ppat_ty = liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_ty in
+                        let ppat_c = liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_c in
+                        let cur_ty = lift new_ppats_len curpat_ty in
+                        let cur_c = lift new_ppats_len curpat_c in
+                        if Reductionops.is_conv env sigma cur_ty ppat_ty then
+                          mk_eq env sigma
+                            cur_ty
+                            ppat_c
+                            cur_c
+                        else
+                          let can_we_make_sense_of_JMeq = false in
+                          if can_we_make_sense_of_JMeq then
+                            mk_JMeq env sigma
+                              ppat_ty
+                              ppat_c
+                              cur_ty
+                              cur_c
+                          else
+                            raise Exit
                       in
                       let acc =
                         ((* Jump over previous prevpat signs *)
@@ -2378,7 +2396,8 @@ let build_ineqs env sigma prevpatterns curpats curpat_sign_len =
                           new_ppats_len,
                           this_eq :: List.map (lift ppat_len (* Jump over this prevpat signature *)) old_eqs)
                       in sigma, Some acc
-                    else sigma, None)
+                    else sigma, None
+                  with Exit -> sigma, None))
            (sigma, Some ([], 0, [])) ppats curpats
          in match acc with
              None -> sigma, ineqs
