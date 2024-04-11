@@ -2346,51 +2346,50 @@ let rec is_included x y =
         if Int.equal i i' then List.for_all2 is_included args args'
         else false
 
-(* liftsign is the current pattern's complete signature length.
+(* curpat_sign_len is the current pattern's complete signature length.
    Hence pats is already typed in its
    full signature. However prevpatterns are in the original one signature per pattern form.
  *)
-let build_ineqs env sigma prevpatterns pats liftsign =
-  let sigma, diffs =
+let build_ineqs env sigma prevpatterns curpats curpat_sign_len =
+  let sigma, ineqs =
     List.fold_left
-      (fun (sigma, c) eqnpats ->
+      (fun (sigma, ineqs) ppats ->
           let sigma, acc = List.fold_left2
             (* ppat is the pattern we are discriminating against, curpat is the current one. *)
             (fun (sigma, acc) (ppat_sign, ppat_c, (ppat_ty, ppat_tyargs), ppat)
               (curpat_sign, curpat_c, (curpat_ty, curpat_tyargs), curpat) ->
               match acc with
                   None -> sigma, None
-                | Some (sign, len, n, c) -> (* FixMe: do not work with ppat_args *)
+                | Some (old_ppat_sign, old_ppats_len, old_eqs) -> (* FixMe: do not work with ppat_args *)
                     if is_included curpat ppat then
                       (* Length of previous pattern's signature *)
-                      let lens = List.length ppat_sign in
+                      let ppat_len = List.length ppat_sign in
                       (* Accumulated length of previous pattern's signatures *)
-                      let len' = lens + len in
-                      let sigma, c' =
+                      let new_ppats_len = ppat_len + old_ppats_len in
+                      let sigma, this_eq =
                         papp env sigma coq_eq_ind
-                          [| lift len' curpat_ty;
-                            liftn (len + liftsign) (succ lens) ppat_c ;
-                            lift len' curpat_c |]
+                          [| lift new_ppats_len curpat_ty;
+                             liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_c;
+                             lift new_ppats_len curpat_c |]
                       in
                       let acc =
                         ((* Jump over previous prevpat signs *)
-                          lift_rel_context len ppat_sign @ sign,
-                          len',
-                          succ n, (* nth pattern *)
-                          c' :: List.map (lift lens (* Jump over this prevpat signature *)) c)
+                          lift_rel_context old_ppats_len ppat_sign @ old_ppat_sign,
+                          new_ppats_len,
+                          this_eq :: List.map (lift ppat_len (* Jump over this prevpat signature *)) old_eqs)
                       in sigma, Some acc
                     else sigma, None)
-           (sigma, Some ([], 0, 0, [])) eqnpats pats
+           (sigma, Some ([], 0, [])) ppats curpats
          in match acc with
-             None -> sigma, c
-            | Some (sign, len, _, c') ->
-               let sigma, conj = mk_coq_and env sigma c' in
+             None -> sigma, ineqs
+            | Some (sign, len, eqs) ->
+               let sigma, conj = mk_coq_and env sigma eqs in
                let sigma, neg = mk_coq_not env sigma conj in
-               let conj = it_mkProd_or_LetIn neg (lift_rel_context liftsign sign) in
-               sigma, conj :: c)
+               let ineq = it_mkProd_or_LetIn neg (lift_rel_context curpat_sign_len sign) in
+               sigma, ineq :: ineqs)
       (sigma, []) prevpatterns
-  in match diffs with [] -> sigma, None
-    | _ -> let sigma, conj = mk_coq_and env sigma diffs in sigma, Some conj
+  in match ineqs with [] -> sigma, None
+    | _ -> let sigma, conj = mk_coq_and env sigma ineqs in sigma, Some conj
 
 let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
   let i = ref 0 in
