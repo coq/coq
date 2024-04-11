@@ -2242,7 +2242,7 @@ let constr_of_pat env sigma arsign pat avoid =
         let r = ERelevance.relevant in (* TODO relevance *)
           (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, lift 1 ty,
            rel_list 1 (List.length realargs), 1, avoid)
-    | PatCstr (((_, i) as cstr),args,alias) ->
+    | PatCstr (((_, i) as cstr),patargs,alias) ->
         let cind = inductive_of_constructor cstr in
         let IndType (indf, _) =
           try find_rectype env sigma (lift (-(List.length realargs)) ty)
@@ -2254,19 +2254,19 @@ let constr_of_pat env sigma arsign pat avoid =
         let cstrs = get_constructors env indf in
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in
-        assert (Int.equal nb_args_constr (List.length args));
+        assert (Int.equal nb_args_constr (List.length patargs));
         let sigma, patargs, args, sign, env, n, m, avoid =
           List.fold_right2
-            (fun decl ua (sigma, patargs, args, sign, env, n, m, avoid)  ->
+            (fun decl pat (sigma, patargs, pats_c, sign, env, n, m, avoid)  ->
                let t = RelDecl.get_type decl in
-               let sigma, pat', sign', arg', typ', argtypargs, n', avoid =
-                 let liftt = liftn (List.length sign) (succ (List.length args)) t in
-                   typ env sigma (substl args liftt, []) ua avoid
+               let sigma, patarg', sign', pat_c', typ', argtypargs, n', avoid =
+                 let liftt = liftn (List.length sign) (succ (List.length pats_c)) t in
+                   typ env sigma (substl pats_c liftt, []) pat avoid
                in
-               let args' = arg' :: List.map (lift n') args in
+               let pats_c = pat_c' :: List.map (lift n') pats_c in
                let env' = EConstr.push_rel_context sign' env in
-                 (sigma, pat' :: patargs, args', sign' @ sign, env', n' + n, succ m, avoid))
-            ci.cs_args (List.rev args) (sigma, [], [], [], env, 0, 0, avoid)
+                 (sigma, patarg' :: patargs, pats_c, sign' @ sign, env', n' + n, succ m, avoid))
+            ci.cs_args (List.rev patargs) (sigma, [], [], [], env, 0, 0, avoid)
         in
         let args = List.rev args in
         let patargs = List.rev patargs in
