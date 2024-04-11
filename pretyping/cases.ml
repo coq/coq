@@ -2544,15 +2544,15 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                       if Reductionops.is_conv env sigma argt t then
                         let sigma, eq =
                           mk_eq env sigma (lift (nargeqs + slift) argt)
-                            (mkRel (nargeqs + slift))
+                            (mkRel nar)
                             (lift (nargeqs + nar) arg)
                         in
                         let sigma, refl = mk_eq_refl env sigma argt arg in
                         sigma, eq, refl
                       else
                         let sigma, eq =
-                          mk_JMeq env sigma (lift (nargeqs + slift) t)
-                            (mkRel (nargeqs + slift))
+                          mk_JMeq env sigma (lift nar t)
+                            (mkRel nar)
                             (lift (nargeqs + nar) argt)
                             (lift (nargeqs + nar) arg)
                         in
@@ -2576,8 +2576,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              in
               let sigma, eq =
                 mk_JMeq env sigma
-                  (lift (nargeqs + slift) appt)
-                  (mkRel (nargeqs + slift))
+                  (lift nar appt)
+                  (mkRel nar)
                   (lift (nargeqs + nar) ty)
                   (lift (nargeqs + nar) tm)
              in
