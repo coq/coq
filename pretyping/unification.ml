@@ -1766,6 +1766,13 @@ let make_eq_test env evd c =
   in
   (make_eq_univs_test env evd c, out)
 
+let get_rigid_evars sigma c =
+  let rec aux vars c = match EConstr.kind sigma c with
+  | Var id -> Id.Set.add id vars
+  | Evar _ -> vars (* do not take evar instances into account *)
+  | _ -> EConstr.fold sigma aux vars c in
+  aux Id.Set.empty c
+
 let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let id =
     let t = match ty with Some t -> t | None -> get_type_of env sigma c in
@@ -1780,12 +1787,13 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   in
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = EConstr.mkVar id in
-  let compute_dependency _ d (sign,depdecls) =
+  let compute_dependency _ d (remvars,sign,depdecls) =
     let d = map_named_decl EConstr.of_constr d in
     let hyp = NamedDecl.get_id d in
+    if Id.Set.is_empty remvars then
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
-        (push_named_context_val d sign,depdecls)
+        (remvars,push_named_context_val d sign,depdecls)
     | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo env sigma occ test mkvarid d in
@@ -1794,17 +1802,23 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         then
           if check_occs && not (in_every_hyp occs)
           then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
-          else (push_named_context_val d sign, depdecls)
+          else (remvars,push_named_context_val d sign, depdecls)
         else
-          (push_named_context_val newdecl sign, newdecl :: depdecls)
+          (remvars,push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
         (* There are specific occurrences, hence not like first *)
         let newdecl = replace_term_occ_decl_modulo env sigma (AtOccs occ) test mkvarid d in
-        (push_named_context_val newdecl sign, newdecl :: depdecls) in
+        (remvars,push_named_context_val newdecl sign, newdecl :: depdecls)
+    else
+      (* Skip declarations if all rigid variables have not been introduced *)
+      let remvars = Id.Set.remove hyp remvars in
+      (remvars,push_named_context_val d sign,depdecls)
+  in
+  let vars = get_rigid_evars sigma c in
   try
-    let sign,depdecls =
+    let _,sign,depdecls =
       fold_named_context compute_dependency env
-        ~init:(empty_named_context_val,[]) in
+        ~init:(vars,empty_named_context_val,[]) in
     let ccl = match occurrences_of_goal occs with
       | NoOccurrences -> concl
       | occ ->
