@@ -2405,33 +2405,43 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
                   (sigma, idents, pat' :: newpatterns, cpat :: pats))
               (sigma, Id.Set.empty, [], []) eqn.patterns (List.rev sign)
          in
+         (* Below, [opats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign], [pat_c], [ty] and [args] is typed in [env] *)
          let newpatterns = List.rev newpatterns and opats = List.rev pats in
+         (* Below, [pats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign], [pat_c] and [args] is typed in [env]
+            extended with the previous [pats]; [ty] is typed in
+            [env] extended with the type of realargs *)
          let rhs_rels, pats, signlen =
            List.fold_left
-             (fun (renv, pats, n) (sign,c, (s, args), p) ->
+             (fun (renv, pats, n) (sign, pat_c, (ty, args), pat) ->
                (* Recombine signatures and terms of all of the row's patterns *)
                let sign' = lift_rel_context n sign in
                let len = List.length sign' in
                  (sign' @ renv,
                  (* lift to get outside of previous pattern's signatures. *)
-                 (sign', liftn n (succ len) c,
-                  (liftn n (succ len) s, List.map (liftn n (succ len)) args), p) :: pats,
+                 (sign', liftn n (succ len) pat_c,
+                  (liftn n (succ len) ty, List.map (liftn n (succ len)) args), pat) :: pats,
                  len + n))
              ([], [], 0) opats in
+         (* Below, [pats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign] is typed in [env] extended with the previous [sign]
+            but [ty], [args] and [pat_c] are typed in the common context made
+            of [env] extended with all [sign] *)
          let pats, _ = List.fold_left
            (* lift to get outside of past patterns to get terms in the combined environment. *)
-           (fun (pats, n) (sign, c, (s, args), p) ->
+           (fun (pats, n) (sign, pat_c, (ty, args), pat) ->
              let len = List.length sign in
-               ((rels_of_patsign sigma sign, lift n c,
-                 (lift n s, List.map (lift n) args), p) :: pats, len + n))
+               ((rels_of_patsign sigma sign, lift n pat_c,
+                 (lift n ty, List.map (lift n) args), pat) :: pats, len + n))
            ([], 0) pats
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
          let arity =
            let args, nargs =
-             List.fold_right (fun (sign, c, (_, args), _) (allargs,n) ->
-               (args @ c :: allargs, List.length args + succ n))
+             List.fold_right (fun (sign, pat_c, (_, args), _) (allargs,n) ->
+               (args @ pat_c :: allargs, List.length args + succ n))
                pats ([], 0)
            in
            let args = List.rev args in
