@@ -2531,29 +2531,30 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                 as much as possible *)
              let argsign = List.tl arsign in (* arguments in inverse application order *)
              let app_decl = List.hd arsign in (* The matched argument *)
-             let appn = RelDecl.get_name app_decl in
-             let appt = RelDecl.get_type app_decl in
              let argsign = List.rev argsign in (* arguments in application order *)
              let sigma, env', nargeqs, argeqs, refl_args, slift, argsign' =
                List.fold_left2
                  (fun (sigma, env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
                     let name = RelDecl.get_name decl in
-                    let t = RelDecl.get_type decl in
+                    let t = liftn neqs (succ nargeqs) (RelDecl.get_type decl) in
                     let argt = Retyping.get_type_of env sigma arg in
                     let sigma, eq, refl_arg =
-                      if Reductionops.is_conv env sigma argt t then
+                      let t' = lift (nargeqs + slift) t in
+                      let argt' = lift (nargeqs + nar) argt in
+                      if Reductionops.is_conv env sigma argt' t' then
                         let sigma, eq =
-                          mk_eq env sigma (lift (nargeqs + slift) argt)
-                            (mkRel nar)
+                          mk_eq env sigma argt'
+                            (mkRel (nargeqs + slift))
                             (lift (nargeqs + nar) arg)
                         in
                         let sigma, refl = mk_eq_refl env sigma argt arg in
                         sigma, eq, refl
                       else
                         let sigma, eq =
-                          mk_JMeq env sigma (lift nar t)
-                            (mkRel nar)
-                            (lift (nargeqs + nar) argt)
+                          mk_JMeq env sigma
+                            t'
+                            (mkRel (nargeqs + slift))
+                            argt'
                             (lift (nargeqs + nar) arg)
                         in
                         let sigma, refl = mk_JMeq_refl env sigma argt arg in
@@ -2572,19 +2573,21 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                        refl_arg :: refl_args,
                        pred slift,
                        RelDecl.set_name (Name id) decl :: argsign'))
-                 (sigma, env, neqs, [], [], slift, []) args argsign
+                 (sigma, env, 0, [], [], slift, []) args argsign
              in
+             let appn = RelDecl.get_name app_decl in
+             let appt = liftn neqs (succ nargeqs) (RelDecl.get_type app_decl) in
               let sigma, eq =
                 mk_JMeq env sigma
-                  (lift nar appt)
-                  (mkRel nar)
+                  (lift (nargeqs + slift) appt)
+                  (mkRel (nargeqs + slift))
                   (lift (nargeqs + nar) ty)
                   (lift (nargeqs + nar) tm)
              in
              let sigma, refl_eq = mk_JMeq_refl env sigma ty tm in
              let previd, id = make_prime avoid appn in
                (sigma, (LocalAssum (make_annot (Name (eq_id avoid previd)) ERelevance.relevant, eq) :: argeqs) :: eqs,
-                succ nargeqs,
+                succ (nargeqs + neqs),
                 refl_eq :: refl_args @ refls,
                 pred slift,
                 ((RelDecl.set_name (Name id) app_decl :: argsign') :: arsigns))
