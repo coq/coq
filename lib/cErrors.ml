@@ -157,3 +157,10 @@ let noncritical = function
   | Invalid_argument "equal: functional value" -> false
   | _ -> true
 [@@@ocaml.warning "+52"]
+
+(* This should be in exninfo, but noncritical is here... *)
+let to_result ~f x =
+  try Ok (f x)
+  with exn when noncritical exn ->
+    let iexn = Exninfo.capture exn in
+    Error iexn
