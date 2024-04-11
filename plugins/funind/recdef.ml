@@ -18,7 +18,6 @@ open Environ
 open Pp
 open Names
 open Libnames
-open Globnames
 open Nameops
 open CErrors
 open Util
@@ -27,8 +26,6 @@ open Tacticals
 open Tactics
 open Nametab
 open Tacred
-open Glob_term
-open Pretyping
 open Termops
 open Constrintern
 open Tactypes
@@ -135,6 +132,8 @@ let le_n = function () -> coq_init_constant "num.nat.le_n"
 let coq_sig_ref = function
   | () -> find_reference ["Coq"; "Init"; "Specif"] "sig"
 
+let coq_proj1_sig = lazy (Coqlib.build_sigma ()).proj1
+
 let coq_O = function () -> coq_init_constant "num.nat.O"
 let coq_S = function () -> coq_init_constant "num.nat.S"
 let lt_n_O = function () -> coq_constant "num.nat.nlt_0_r"
@@ -165,52 +164,22 @@ let simpl_iter clause =
        ; rStrength = Norm })
     clause
 
-(* Others ugly things ... *)
-let (value_f : Constr.t list -> GlobRef.t -> Constr.t) =
-  let open Term in
-  let open Constr in
-  fun al fterm ->
-    let rev_x_id_l =
-      List.fold_left
-        (fun x_id_l _ ->
-          let x_id = next_ident_away_in_goal x_id x_id_l in
-          x_id :: x_id_l)
-        [] al
-    in
-    let context =
-      List.map
-        (fun (x, c) -> LocalAssum (make_annot (Name x) Sorts.Relevant, c))
-        (List.combine rev_x_id_l (List.rev al))
-    in
-    let env = Environ.push_rel_context context (Global.env ()) in
-    let glob_body =
-      DAst.make
-      @@ GCases
-           ( RegularStyle
-           , None
-           , [ ( DAst.make
-                 @@ GApp
-                      ( DAst.make @@ GRef (fterm, None)
-                      , List.rev_map
-                          (fun x_id -> DAst.make @@ GVar x_id)
-                          rev_x_id_l )
-               , (Anonymous, None) ) ]
-           , [ CAst.make
-                 ( [v_id]
-                 , [ DAst.make
-                     @@ PatCstr
-                          ( (destIndRef (delayed_force coq_sig_ref), 1)
-                          , [ DAst.make @@ PatVar (Name v_id)
-                            ; DAst.make @@ PatVar Anonymous ]
-                          , Anonymous ) ]
-                 , DAst.make @@ GVar v_id ) ] )
-    in
-    let body = fst (understand env (Evd.from_env env) glob_body) (*FIXME*) in
-    let body = EConstr.Unsafe.to_constr body in
-    it_mkLambda_or_LetIn body context
+(* [value_f ctx ref] build [fun ctx => proj1_sig (ref ctx)] where
+   proj1_sig is expanded *)
+let (value_f : Constr.rel_context -> GlobRef.t -> Constr.t) =
+  fun context fterm ->
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let env = Environ.push_rel_context context env in
+  let proj = Globnames.destConstRef (Lazy.force coq_proj1_sig) in
+  let proj_body = constant_value_in env (proj, UVars.Instance.empty) in (* Why not to keep it named? *)
+  let arg = mkApp (mkRef (fterm, EInstance.empty), Context.Rel.instance mkRel 0 context) in
+  let t, p = Hipattern.match_sigma env sigma (Retyping.get_type_of env sigma arg) in
+  let body = Reduction.beta_applist proj_body (List.map (EConstr.to_constr sigma) [t; p; arg]) in
+  Term.it_mkLambda_or_LetIn body context
 
 let (declare_f :
-      Id.t -> Decls.logical_kind -> Constr.t list -> GlobRef.t -> GlobRef.t) =
+      Id.t -> Decls.logical_kind -> Constr.rel_context -> GlobRef.t -> GlobRef.t) =
  fun f_id kind input_type fterm_ref ->
   declare_fun f_id kind (value_f input_type fterm_ref)
 
@@ -1702,10 +1671,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
     decompose_prod_n (rec_arg_num - 1) function_type
   in
   let _, rec_arg_type, _ = destProd function_type_before_rec_arg in
-  let arg_types =
-    List.rev_map snd
-      (fst (decompose_prod_n (List.length res_vars) function_type))
-  in
+  let arg_ctx, _ = decompose_prod_n_decls (List.length res_vars) function_type in
   let equation_id = add_suffix function_name "_equation" in
   let functional_id = add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
@@ -1725,10 +1691,10 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
-  let hook {Declare.Hook.S.uctx; _} =
-    let term_ref = Nametab.locate (qualid_of_ident term_id) in
+  let hook {Declare.Hook.S.uctx; dref; _ } =
+    assert (match dref with GlobRef.ConstRef cst -> Id.equal (Label.to_id (Constant.label cst)) term_id | _ -> assert false);
     let f_ref =
-      declare_f function_name Decls.(IsProof Lemma) arg_types term_ref
+      declare_f function_name Decls.(IsProof Lemma) arg_ctx dref
     in
     let _ =
       Extraction_plugin.Table.extraction_inline true [qualid_of_ident term_id]
@@ -1738,7 +1704,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
       (* XXX: What is the correct way to get sign at hook time *)
       try
         com_eqn uctx (List.length res_vars) equation_id functional_ref f_ref
-          term_ref
+          dref
           (subst_var function_name equation_lemma_type);
         false
       with e when CErrors.noncritical e ->
