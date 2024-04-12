@@ -2239,6 +2239,7 @@ let constr_of_pat env sigma arsign pat avoid =
               let id = next_ident_away wildcard_id avoid in
                 Name id, Id.Set.add id avoid
         in
+        let realargs = List.map (map_name (fun _ -> Anonymous)) realargs in (* Hack to force their instantiation as evars *)
         let r = ERelevance.relevant in (* TODO relevance *)
           (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, lift 1 ty,
            rel_list 1 (List.length realargs), 1, avoid)
@@ -2333,7 +2334,7 @@ let vars_of_ctx sigma ctx =
                    [hole na.binder_name; DAst.make @@ GVar prev])) :: vars
         | _ ->
             match RelDecl.get_name decl with
-                Anonymous -> invalid_arg "vars_of_ctx"
+                Anonymous -> prev, (DAst.make @@ GHole GInternalHole) :: vars (* Hack, see constr_of_pat *)
               | Name n -> n, (DAst.make @@ GVar n) :: vars)
       ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y
