@@ -7,8 +7,8 @@
 [![Discourse][discourse-badge]][discourse-link]
 [![DOI][doi-badge]][doi-link]
 
-[gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
-[gitlab-link]: https://gitlab.com/coq/coq/commits/master
+[gitlab-badge]: https://gitlab.inria.fr/coq/coq/badges/master/pipeline.svg
+[gitlab-link]: https://gitlab.inria.fr/coq/coq/commits/master
 
 [gh-macos-badge]: https://github.com/coq/coq/actions/workflows/ci-macos.yml/badge.svg
 [gh-macos-link]: https://github.com/coq/coq/actions/workflows/ci-macos.yml
