@@ -173,17 +173,13 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   in
   let hook =
     if List.length binders_rel > 1 then
-      let hook { Declare.Hook.S.dref; uctx; obls; _ } =
+      let hook { Declare.Hook.S.dref; uctx; obls; univs=u; _ } =
         let update c = CVars.replace_vars obls (evmap mkVar (Evarutil.nf_evar (Evd.from_ctx uctx) c)) in
         let make = update make in
         let top_arity = update top_arity in
         let binders_rel = Context.Rel.map_het (ERelevance.kind sigma) update binders_rel in
         let univs = UState.check_univ_decl ~poly uctx udecl in
-        let h_body =
-          let inst = UState.(match fst univs with
-              | Polymorphic_entry uctx -> UVars.UContext.instance uctx
-              | Monomorphic_entry _ -> UVars.Instance.empty) in
-          Constr.mkRef (dref, inst) in
+        let h_body = Constr.mkRef (dref, u) in
         let body = Term.it_mkLambda_or_LetIn (Constr.mkApp (h_body, [|make|])) binders_rel in
         let ty = Term.it_mkProd_or_LetIn top_arity binders_rel in
         let ce = definition_entry ~types:ty ~univs body in
