@@ -559,7 +559,8 @@ let vernac_enable_notation ~module_local on rule interp flags scope =
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable (Global.env ()) id ||
+  if Termops.is_section_variable (Global.env ()) id ||
+     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path id) ||
      locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
@@ -612,7 +613,6 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let flags = Pretyping.{ all_and_fail_flags with program_mode } in
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
-      check_name_freshness scope id;
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
           ~args:ids ~impargs:(imps @ imps') () in
       evd, thm)
@@ -677,6 +677,7 @@ let vernac_definition_name lid local =
     | { v = Name.Anonymous; loc } ->
          CAst.make ?loc (fresh_name_for_anonymous_theorem ())
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
+  check_name_freshness local lid;
   let () =
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
@@ -727,6 +728,7 @@ let vernac_start_proof ~atts kind l =
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
+  List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags:atts.typing_flags
     ~program_mode:atts.program
@@ -1056,7 +1058,9 @@ let preprocess_inductive_decl ~atts kind indl =
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  enforce_locality_exp atts.DefAttributes.locality discharge
+  let scope = enforce_locality_exp atts.DefAttributes.locality discharge in
+  List.iter (fun { fname } -> check_name_freshness scope fname) l;
+  scope
 
 let vernac_fixpoint_interactive ~atts discharge l =
   let open DefAttributes in
@@ -1083,7 +1087,9 @@ let vernac_fixpoint ~atts ~pm discharge l =
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  enforce_locality_exp atts.DefAttributes.locality discharge
+  let scope = enforce_locality_exp atts.DefAttributes.locality discharge in
+  List.iter (fun { fname } -> check_name_freshness scope fname) l;
+  scope
 
 let vernac_cofixpoint_interactive ~atts discharge l =
   let open DefAttributes in
