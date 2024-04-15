@@ -178,7 +178,19 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
         let make = update make in
         let top_arity = update top_arity in
         let binders_rel = Context.Rel.map_het (ERelevance.kind sigma) update binders_rel in
-        let univs = UState.check_univ_decl ~poly uctx udecl in
+        let univs =
+          (* same univ entry as the auxiliary constant, but we don't need to redeclare monomorphic universes *)
+          if not poly
+          then UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+          else
+            let auctx = Environ.universes_of_global (Global.env()) dref in
+            let uctx =
+              UVars.UContext.make
+                (UVars.AbstractContext.names auctx)
+                (u, UVars.AbstractContext.instantiate u auctx)
+            in
+            UState.Polymorphic_entry uctx, UnivNames.empty_binders
+        in
         let h_body = Constr.mkRef (dref, u) in
         let body = Term.it_mkLambda_or_LetIn (Constr.mkApp (h_body, [|make|])) binders_rel in
         let ty = Term.it_mkProd_or_LetIn top_arity binders_rel in
