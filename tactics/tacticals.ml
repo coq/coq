@@ -110,18 +110,18 @@ let compute_induction_names check_and branchletsigns = function
       let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
       get_and_check_or_and_pattern_gen check_and ?loc names branchletsigns
 
+let is_recursive_argument env self recarg = match Declareops.dest_recarg recarg with
+| Norec | Mrec (RecArgPrim _)  -> false
+| Mrec (RecArgInd ind) -> Environ.QInd.equal env self ind
+
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures env ~rec_flag ((_,k as ity),u) =
   let rec analrec c recargs =
     match c, recargs with
     | RelDecl.LocalAssum _ :: c, recarg::rest ->
-        let rest = analrec c rest in
-        begin match Declareops.dest_recarg recarg with
-        | Norec | Mrec (RecArgPrim _)  -> true :: rest
-        | Mrec (RecArgInd ind) ->
-            if rec_flag && Environ.QInd.equal env ity ind then true :: true :: rest
-            else true :: rest
-        end
+      let rest = analrec c rest in
+      if rec_flag && is_recursive_argument env ity recarg then true :: true :: rest
+      else true :: rest
     | RelDecl.LocalDef _ :: c, rest -> false :: analrec c rest
     | [], [] -> []
     | _ -> anomaly (Pp.str "compute_constructor_signatures.")
