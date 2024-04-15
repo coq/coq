@@ -897,6 +897,11 @@ Proof. now destruct a. Qed.
 
 Include NExtraPreProp <+ NExtraProp0.
 
+Lemma binary_induction (A : N -> Prop) :
+  A 0 -> (forall n, A n -> A (2 * n)) -> (forall n, A n -> A (2 * n + 1))
+  -> forall n, A n.
+Proof. apply Private_binary_induction; intros x y ->; reflexivity. Qed.
+
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
   layers. The use of [gt] and [ge] is hence not recommended. We provide

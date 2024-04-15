@@ -53,3 +53,12 @@ Proof.
       apply N.add_le_mono; [| exact (N.le_refl _)].
       apply N.le_mul_l; discriminate.
 Qed.
+
+(* [binary_induction] is also available for [N] *)
+Lemma land_diag_binary_induction_test_N n : N.land n n = n.
+Proof.
+  induction n as [| n IH | n IH] using N.binary_induction.
+  - rewrite N.land_0_l; reflexivity.
+  - rewrite N.land_even_l, N.div2_even, IH; reflexivity.
+  - rewrite N.land_odd_l, N.odd_odd, N.div2_odd', IH; reflexivity.
+Qed.
