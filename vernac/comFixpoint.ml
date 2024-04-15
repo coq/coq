@@ -287,7 +287,7 @@ let declare_fixpoint_generic ?indexes ?scope ?clearbody ~poly ?typing_flags ?use
   let fix_kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind:fix_kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
   let cinfo = fixitems in
-  let _ : GlobRef.t list =
+  let _ : GlobRef.t UVars.puniverses list =
     Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
       ~possible_guard ~rec_declaration ?using ()
   in

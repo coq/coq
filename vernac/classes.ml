@@ -351,7 +351,7 @@ let do_declare_instance sigma ~locality ~poly k u ctx ctx' pri udecl impargs sub
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = Declare.prepare_parameter ~poly sigma ~udecl ~types:termtype in
-  let cst = Declare.declare_constant ~name
+  let cst, _ = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   let cst = (GlobRef.ConstRef cst) in
   Impargs.maybe_declare_manual_implicits false cst impargs;

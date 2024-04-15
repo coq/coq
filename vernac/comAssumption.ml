@@ -69,7 +69,7 @@ let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~
   let decl = match body with
     | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?inline:inl typ)
     | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ~types:typ b) in
-  let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
+  let kn, _ = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr impargs in
   let () = match body with None -> Declare.assumption_message name | Some _ -> Declare.definition_message name in

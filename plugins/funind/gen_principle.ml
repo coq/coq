@@ -316,7 +316,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     *)
     let uctx = Evd.evar_universe_context sigma in
     let entry = Declare.definition_entry ~univs ?types body in
-    let (_ : Names.GlobRef.t) =
+    let (_ : Names.GlobRef.t UVars.puniverses) =
       Declare.declare_entry ~name:new_princ_name ~hook
         ~kind:Decls.(IsProof Theorem)
         ~impargs:[] ~uctx entry
@@ -2178,7 +2178,7 @@ let build_scheme fas =
   let bodies_types = make_scheme evd pconstants in
   List.iter2
     (fun (princ_id, _, _) (body, types, univs, opaque) ->
-      let (_ : Constant.t) =
+       let (_ : Constant.t UVars.puniverses) =
         let opaque = if opaque = Vernacexpr.Opaque then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
         Declare.declare_constant ~name:princ_id

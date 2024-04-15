@@ -50,7 +50,7 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   let typ = EConstr.to_constr evd typ in
   let univs = Evd.check_univ_decl ~poly evd udecl in
   let entry = Declare.symbol_entry ~univs ~unfold_fix typ in
-  let kn = Declare.declare_constant ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
+  let kn, _ = Declare.declare_constant ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
   let () = Impargs.maybe_declare_manual_implicits false (GlobRef.ConstRef kn) impls in
   let () = Declare.assumption_message id in
   ()

@@ -439,7 +439,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in
-  let kn =
+  let kn, _ =
     try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
     with Type_errors.TypeError (ctx,te) as exn when not primitive ->
       let _, info = Exninfo.capture exn in
@@ -880,23 +880,16 @@ let declare_class_constant ~univs paramimpls params data =
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
   let class_entry =
     Declare.definition_entry ~types:class_type ~univs class_body in
-  let cst = Declare.declare_constant ~name:id
+  let cst, _ as cstu = Declare.declare_constant ~name:id
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
-  let inst, univs = match univs with
-    | UState.Monomorphic_entry _, ubinders ->
-      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
-    | UState.Polymorphic_entry uctx, _ ->
-      UVars.UContext.instance uctx, univs
-  in
-  let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in
   let proj_type =
     it_mkProd_or_LetIn (mkProd(binder, inst_type, lift 1 field)) params in
   let proj_body =
     it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
   let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
-  let proj_cst = Declare.declare_constant ~name:proj_name
+  let proj_cst, _ = Declare.declare_constant ~name:proj_name
       (Declare.DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let cref = GlobRef.ConstRef cst in

@@ -151,10 +151,12 @@ let decl_constant name univs c =
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
   (* UnsafeMonomorphic: we always do poly:false *)
-  UnsafeMonomorphic.mkConst
-    (declare_constant ~name
-       ~kind:Decls.(IsProof Lemma)
-       (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
+  let kn, _ =
+    declare_constant ~name
+      ~kind:Decls.(IsProof Lemma)
+      (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c))
+  in
+  UnsafeMonomorphic.mkConst kn
 
 let decl_constant na suff univs c =
   let na = Namegen.next_global_ident_away (Nameops.add_suffix na suff) Id.Set.empty in

@@ -49,8 +49,8 @@ let find_reference sl s =
 
 let declare_fun name kind ?univs value =
   let ce = Declare.definition_entry ?univs value (*FIXME *) in
-  GlobRef.ConstRef
-    (Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce))
+  let kn, _ = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce) in
+  GlobRef.ConstRef kn
 
 let defined lemma =
   let (_ : _ list) =

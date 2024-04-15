@@ -219,7 +219,7 @@ let build_id_coercion idf_opt source poly =
          ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
   let kind = Decls.(IsDefinition IdentityCoercion) in
-  let kn = declare_constant ~name ~kind constr_entry in
+  let kn, _ = declare_constant ~name ~kind constr_entry in
   GlobRef.ConstRef kn
 
 let check_source = function

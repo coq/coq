@@ -211,7 +211,7 @@ let add_morphism_as_parameter atts m n : unit =
   let impargs, udecl = [], UState.default_univ_decl in
   let evd, types = Rewrite.Internal.build_morphism_signature env evd m in
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
-  let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
+  let cst, _ = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.Internal.add_instance
     (PropGlobal.proper_class ()) Hints.empty_hint_info atts.locality cst;

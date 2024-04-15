@@ -60,6 +60,9 @@ module Hook : sig
       (** [scope]: Locality of the original declaration *)
       ; dref : GlobRef.t
       (** [dref]: identifier of the original declaration *)
+      ; univs : UVars.Instance.t
+      (** [univs]: canonical univ instance of the original declaration.
+          [mkRef (ref,univs)] is well typed in [uctx]. *)
       }
   end
 
@@ -140,7 +143,7 @@ val declare_mutually_recursive
   -> possible_guard:Pretyping.possible_guard
   -> ?using:Vernacexpr.section_subset_expr
   -> unit
-  -> Names.GlobRef.t list
+  -> Names.GlobRef.t UVars.puniverses list
 
 (** {2 Declaration of interactive constants }  *)
 
@@ -228,14 +231,14 @@ module Proof : sig
     -> proof:t
     -> opaque:Vernacexpr.opacity_flag
     -> idopt:Names.lident option
-    -> OblState.t * GlobRef.t list
+    -> OblState.t * GlobRef.t UVars.puniverses list
 
   (** For proofs known to have [Regular] ending, no need to touch program state. *)
   val save_regular
     : proof:t
     -> opaque:Vernacexpr.opacity_flag
     -> idopt:Names.lident option
-    -> GlobRef.t list
+    -> GlobRef.t UVars.puniverses list
 
   (** Admit a proof *)
   val save_admitted : pm:OblState.t -> proof:t -> OblState.t
@@ -380,7 +383,7 @@ val declare_entry
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
   -> proof_entry
-  -> GlobRef.t
+  -> GlobRef.t UVars.puniverses
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
@@ -442,7 +445,7 @@ val declare_constant
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> constant_entry
-  -> Constant.t
+  -> Constant.t UVars.puniverses
 
 (** Declaration messages, for internal use *)
 

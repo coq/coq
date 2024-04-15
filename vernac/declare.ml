@@ -30,6 +30,9 @@ module Hook = struct
       (**  [locality]: Locality of the original declaration *)
       ; dref : Names.GlobRef.t
       (** [ref]: identifier of the original declaration *)
+      ; univs : UVars.Instance.t
+      (** [univs]: canonical univ instance of the original declaration.
+          [mkRef (ref,univs)] is well typed in [uctx]. *)
       }
   end
 
@@ -477,7 +480,17 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
     | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = register_constant kn kind local ?user_warns in
-  kn
+  let univs = match cd with
+    | DefinitionEntry { proof_entry_universes = univs }
+    | ParameterEntry { parameter_entry_universes = univs }
+    | SymbolEntry { symb_entry_universes = univs } ->
+      fst univs
+  in
+  let univs = match univs with
+    | Monomorphic_entry _ -> UVars.Instance.empty
+    | Polymorphic_entry uctx -> UVars.UContext.instance uctx
+  in
+  kn, univs
 
 let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
   let de, ctx =
@@ -574,7 +587,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_inline_code = de.proof_entry_inline_code;
           }
           in
-          let kn = declare_constant ~name:cname
+          let kn, _ = declare_constant ~name:cname
               ~local:ImportNeedQualified ~kind:(IsProof Lemma) ~typing_flags
               (DefinitionEntry de)
           in
@@ -709,22 +722,22 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
     && not (List.is_empty (Global.named_context()))
     && Option.is_empty entry.proof_entry_secctx
   in
-  let dref = match scope with
+  let dref, univs = match scope with
   | Locality.Discharge ->
     let () = declare_variable ~typing_flags ~name ~kind (SectionLocalDef {clearbody; entry}) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
-    Names.GlobRef.VarRef name
+    Names.GlobRef.VarRef name, UVars.Instance.empty
   | Locality.Global local ->
     assert (not clearbody);
-    let kn = declare_constant ~name ~local ~kind ~typing_flags ?user_warns (DefinitionEntry entry) in
+    let kn, univs = declare_constant ~name ~local ~kind ~typing_flags ?user_warns (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
-    gr
+    gr, univs
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = definition_message name in
-  Hook.call ?hook { Hook.S.uctx; obls; scope; dref };
-  dref
+  Hook.call ?hook { Hook.S.uctx; obls; scope; dref; univs };
+  dref, univs
 
 let declare_entry = declare_entry_core ~obls:[]
 
@@ -808,11 +821,11 @@ let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
-  let kn = declare_constant ~name ~local ~kind ~typing_flags:None decl in
+  let kn, univs = declare_constant ~name ~local ~kind ~typing_flags:None decl in
   let dref = Names.GlobRef.ConstRef kn in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
-  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
+  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref; univs}) in
   dref
 
 (* Preparing proof entries *)
@@ -856,12 +869,12 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let { CInfo.name; impargs; typ; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma in
   let { Info.scope; clearbody; kind; hook; typing_flags; user_warns; ntns; _ } = info in
-  let gref = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
+  let gref, univs = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
   List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) (Global.env ())) ntns;
-  gref, uctx
+  gref, univs, uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
-  declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst
+  declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> pi1
 
 let prepare_obligation ~name ~types ~body sigma =
   let env = Global.env () in
@@ -1116,7 +1129,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let inst = instance_of_univs univs in
     let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
-    let constant =
+    let constant, u =
       declare_constant ~name:obl.obl_name
         ~typing_flags:prg.prg_info.Info.typing_flags
         ~local:Locality.ImportNeedQualified
@@ -1300,11 +1313,11 @@ let declare_definition ~pm prg =
   let name, info, opaque, using = prg.prg_cinfo.CInfo.name, prg.prg_info, prg.prg_opaque, prg.prg_using in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let kn, uctx = declare_definition_core ~cinfo ~info ~obls ~body ~opaque ?using sigma in
+  let kn, univs, uctx = declare_definition_core ~cinfo ~info ~obls ~body ~opaque ?using sigma in
   (* XXX: We call the obligation hook here, by consistency with the
      previous imperative behaviour, however I'm not sure this is right *)
   let pm = State.call_prg_hook prg
-      { Hook.S.uctx; obls; scope = prg.prg_info.Info.scope; dref = kn} pm in
+      { Hook.S.uctx; obls; scope = prg.prg_info.Info.scope; dref = kn; univs} pm in
   let pm = progmap_remove pm prg in
   pm, kn
 
@@ -1359,9 +1372,9 @@ let declare_mutual_definition ~pm l =
       ~cinfo:fixitems ?using:first.prg_using ()
   in
   (* Only for the first constant *)
-  let dref = List.hd kns in
+  let dref, univs = List.hd kns in
   let scope = first.prg_info.Info.scope in
-  let s_hook = {Hook.S.uctx = first.prg_uctx; obls; scope; dref} in
+  let s_hook = {Hook.S.uctx = first.prg_uctx; obls; scope; dref; univs} in
   Hook.call ?hook:first.prg_info.Info.hook s_hook;
   (* XXX: We call the obligation hook here, by consistency with the
      previous imperative behaviour, however I'm not sure this is right *)
@@ -2102,7 +2115,7 @@ module MutualEntry : sig
     : pinfo:Proof_info.t
     -> uctx:UState.t
     -> entry:proof_entry
-    -> Names.GlobRef.t list
+    -> Names.GlobRef.t UVars.puniverses list
 
 end = struct
 
@@ -2248,8 +2261,10 @@ let finish_derived ~f ~name ~entries =
   let f_def = Internal.set_opacity ~opaque:false f_def in
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = DefinitionEntry f_def in
-  let f_kn = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
-  (* Derive does not support univ poly *)
+  let f_kn, f_u = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
+  (* Derive does not support univ poly
+     NB: using the instance from declare_constant isn't enough,
+     we need to cooperate with close_proof *)
   let () = assert (not (Global.is_polymorphic (ConstRef f_kn))) in
   let f_kn_term = Constr.UnsafeMonomorphic.mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
@@ -2268,8 +2283,8 @@ let finish_derived ~f ~name ~entries =
   (* The same is done in the body of the proof. *)
   let lemma_def = Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = DefinitionEntry lemma_def in
-  let ct = declare_constant ~name ~typing_flags:None ~kind:Decls.(IsProof Proposition) lemma_def in
-  [GlobRef.ConstRef f_kn; GlobRef.ConstRef ct]
+  let ct, lemma_u = declare_constant ~name ~typing_flags:None ~kind:Decls.(IsProof Proposition) lemma_def in
+  [(GlobRef.ConstRef f_kn, f_u); (GlobRef.ConstRef ct, lemma_u)]
 
 let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
 
@@ -2284,14 +2299,15 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
         let entry = Internal.pmap_entry_body ~f:Future.force entry in
         let entry, args = Internal.shrink_entry local_context entry in
         let entry = Internal.pmap_entry_body ~f:Future.from_val entry in
-        let cst = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
+        let cst, u = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
+        (* XXX should we use the instance from declare_constant instead of a fresh instance? *)
         let sigma, app = Evd.fresh_global (Global.env ()) sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
-        sigma, cst) sigma0
+        sigma, (cst,u)) sigma0
       types proof_obj.entries
   in
-  let pm = hook ~pm recobls sigma in
-  pm, List.map (fun cst -> GlobRef.ConstRef cst) recobls
+  let pm = hook ~pm (List.map fst recobls) sigma in
+  pm, List.map (fun (cst,u) -> GlobRef.ConstRef cst, u) recobls
 
 let check_single_entry { entries; uctx } label =
   match entries with

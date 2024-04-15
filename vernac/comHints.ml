@@ -56,7 +56,7 @@ let project_hint ~poly pri l2r r =
   let cb =
     Declare.(DefinitionEntry (definition_entry ~univs:ctx ~opaque:false c))
   in
-  let c =
+  let c, _ =
     Declare.declare_constant ~local:Locality.ImportDefaultBehavior ~name
       ~kind:Decls.(IsDefinition Definition)
       cb
