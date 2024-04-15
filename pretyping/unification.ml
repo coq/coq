@@ -672,7 +672,20 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
       | None -> error_cannot_unify env sigma (m,n)
     else sigma
 
-let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
+let rec adjust_prod ctxl ctxr sigma n l r =
+  if Int.equal n 0 then ctxl, ctxr, l, r
+  else
+    let l = strip_outer_cast sigma l in
+    let r = strip_outer_cast sigma r in
+    match EConstr.kind sigma l, EConstr.kind sigma r with
+    | Prod (nal, tl, ul), Prod (nar, tr, ur) ->
+      (* Left-biased *)
+      let ctxl = Rel.Declaration.LocalAssum (nal, tl) :: ctxl in
+      let ctxr = Rel.Declaration.LocalAssum (nar, tr) :: ctxr in
+      adjust_prod ctxl ctxr sigma (n - 1) l r
+    | _ -> ctxl, ctxr, l, r
+
+let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) ~nargs tyM tyN =
   match subst_defined_metas_evars sigma (metasubst,[]) tyM with
   | None -> UnivProblem.Set.empty
   | Some m ->
@@ -680,9 +693,17 @@ let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst
   | None -> UnivProblem.Set.empty
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
-      match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
-      | Some uprob -> uprob
-      | None -> error_cannot_unify env sigma (m,n)
+      let ctxl, ctxr, m0, n0 = adjust_prod [] [] sigma nargs m n in
+      let tyL = it_mkProd_or_LetIn mkProp ctxl in
+      let tyR = it_mkProd_or_LetIn mkProp ctxr in
+      match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma tyL tyR with
+      | None -> error_cannot_unify env sigma (m, n)
+      | Some _ ->
+        (* Drop the context constraints: we will reinfer them when applying arguments *)
+        let env0 = EConstr.push_rel_context ctxl env in
+        match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env0 sigma m0 n0 with
+        | Some uprob -> uprob
+        | None -> error_cannot_unify env sigma (m, n)
     else UnivProblem.Set.empty
 
 let rec is_neutral env sigma ts t =
@@ -1036,7 +1057,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     with ex when precatchable_exception ex ->
     try canonical_projections curenvnb pb opt cM cN substn
     with ex when precatchable_exception ex ->
-    expand curenvnb pb {opt with with_types = false} substn cM f1 l1 cN f2 l2
+    expand curenvnb pb {opt with with_types = false} substn ~nargs:0 cM f1 l1 cN f2 l2
 
   and unify_same_proj (curenv, nb as curenvnb) cv_pb opt substn c1 c2 =
     let substn = unirec_rec curenvnb CONV opt substn c1 c2 in
@@ -1063,7 +1084,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           match EConstr.kind sigma cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
         let (f2,l2) =
           match EConstr.kind sigma cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
-          expand curenvnb pb opt substn cM f1 l1 cN f2 l2
+          expand curenvnb pb opt substn ~nargs cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb opt (sigma, metas, evars as substn) cM cN =
     if flags.modulo_betaiota && not (subterm_restriction opt flags) then
@@ -1077,7 +1098,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
-  and expand (curenv,_ as curenvnb) pb opt (sigma,metasubst,evarsubst as substn : subst0) cM f1 l1 cN f2 l2 =
+  and expand (curenv,_ as curenvnb) pb opt (sigma,metasubst,evarsubst as substn : subst0) ~nargs cM f1 l1 cN f2 l2 =
     let res =
       (* Try full conversion on meta-free terms. *)
       (* Back to 1995 (later on called trivial_unify in 2002), the
@@ -1108,7 +1129,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
              try (* Ensure we call conversion on terms of the same type *)
                let tyM = get_type_of curenv ~lax:true sigma m1 in
                let tyN = get_type_of curenv ~lax:true sigma n1 in
-               check_compatibility_ustate curenv CUMUL flags substn tyM tyN
+               check_compatibility_ustate curenv CUMUL flags substn ~nargs tyM tyN
              with RetypeError _ ->
                (* Renounce, maybe metas/evars prevents typing *) UnivProblem.Set.empty
            else UnivProblem.Set.empty
