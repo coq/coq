@@ -11,9 +11,7 @@
 open Names
 
 let declare id entry =
-  let _ : Constant.t =
-    Declare.declare_constant ~name:id ~kind:Decls.IsPrimitive (Declare.PrimitiveEntry entry)
-  in
+  let _ : Constant.t = Declare.declare_primitive ~name:id entry in
   Flags.if_verbose Feedback.msg_info Pp.(Id.print id ++ str " is declared")
 
 let do_primitive id udecl prim typopt =

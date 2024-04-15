@@ -411,7 +411,6 @@ val declare_variable
 type constant_entry =
   | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
-  | PrimitiveEntry of primitive_entry
   | SymbolEntry of symbol_entry
 
 val prepare_parameter
@@ -420,6 +419,14 @@ val prepare_parameter
   -> types:EConstr.types
   -> Evd.evar_map
   -> Evd.evar_map * parameter_entry
+
+val declare_primitive
+  :  ?local:Locality.import_status
+  -> name:Id.t
+  -> ?typing_flags:Declarations.typing_flags
+  -> ?user_warns:UserWarn.t
+  -> primitive_entry
+  -> Constant.t
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns

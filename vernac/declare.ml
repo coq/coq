@@ -169,7 +169,6 @@ let symbol_entry ?(univs=default_named_univ_entry) ~unfold_fix symb_entry_type =
 type constant_entry =
   | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
-  | PrimitiveEntry of primitive_entry
   | SymbolEntry of symbol_entry
 
 let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
@@ -422,20 +421,6 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
       } in
       ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), ubinders, None
-    | PrimitiveEntry e ->
-      let typ, ubinders, ctx = match e.prim_entry_type with
-      | None -> None, UnivNames.empty_binders, Univ.ContextSet.empty
-      | Some (typ, (univs, ubinders)) ->
-        let univ_entry, ctx = extract_monomorphic univs in
-        Some (typ, univ_entry), ubinders, ctx
-      in
-      let () = Global.push_context_set ~strict:true ctx in
-      let e = {
-        Entries.prim_entry_type = typ;
-        Entries.prim_entry_content = e.prim_entry_content;
-      } in
-      let ubinders = (UState.Monomorphic_entry ctx, ubinders) in
-      ConstantEntry (Entries.PrimitiveEntry e), false, ubinders, None
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
       let () = Global.push_context_set ~strict:true ctx in
@@ -451,6 +436,31 @@ let declare_constant_core ~name ~typing_flags cd =
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn, delayed
+
+let declare_primitive_core ?typing_flags ~name e =
+  let typ, ubinders, ctx = match e.prim_entry_type with
+    | None -> None, UnivNames.empty_binders, Univ.ContextSet.empty
+    | Some (typ, (univs, ubinders)) ->
+      let univ_entry, ctx = extract_monomorphic univs in
+      Some (typ, univ_entry), ubinders, ctx
+  in
+  let () = Global.push_context_set ~strict:true ctx in
+  let e = {
+    Entries.prim_entry_type = typ;
+    Entries.prim_entry_content = e.prim_entry_content;
+  } in
+  let ubinders = (UState.Monomorphic_entry ctx, ubinders) in
+  let decl = ConstantEntry (Entries.PrimitiveEntry e) in
+  let kn = Global.add_constant ?typing_flags name decl in
+  let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
+  if is_unsafe_typing_flags typing_flags then feedback_axiom();
+  kn
+
+let declare_primitive ?(local = Locality.ImportDefaultBehavior) ~name ?typing_flags ?user_warns cd =
+  let () = check_exists name in
+  let kn = declare_primitive_core ?typing_flags ~name cd in
+  let () = register_constant kn IsPrimitive local ?user_warns in
+  kn
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?user_warns cd =
   let () = check_exists name in
