@@ -36,7 +36,7 @@ let { Goptions.get = ground_depth } =
     ()
 
 let default_intuition_tac =
-  let tac _ _ = Auto.h_auto None [] (Some []) in
+  let tac _ _ = Auto.gen_auto None [] (Some []) in
   let name = { Tacexpr.mltac_plugin = "coq-core.plugins.firstorder"; mltac_tactic = "auto_with"; } in
   let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   Tacenv.register_ml_tactic name [| tac |];

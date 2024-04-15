@@ -170,7 +170,7 @@ let diseqCase hyps eqonleft =
   (intro_using_then absurd (fun absurd ->
   tclTHEN  (Simple.apply (mkVar diseq))
   (tclTHEN  (injHyp absurd)
-            (full_trivial []))))))))
+            (Auto.gen_trivial [] None))))))))
 
 open Proofview.Notations
 

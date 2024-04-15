@@ -31,7 +31,6 @@ open Constrintern
 open Tactypes
 open Genredexpr
 open Equality
-open Auto
 open Eauto
 open Indfun_common
 open Context.Rel.Declaration
@@ -532,6 +531,9 @@ let rec prove_lt hyple =
                 str "assumption: "
                 ++ Printer.Debug.pr_goal g)
               assumption ])
+
+let default_full_auto =
+  Auto.gen_auto (Some Auto.default_search_depth) [] None
 
 let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
   let open Tacticals in
@@ -1441,7 +1443,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
           let sigma = project gl in
           match EConstr.kind sigma (pf_concl gl) with
           | App (f, _) when EConstr.eq_constr sigma f (well_founded ()) ->
-            Auto.h_auto None [] (Some [])
+            Auto.gen_auto None [] (Some [])
           | _ ->
             incr h_num;
             tclCOMPLETE

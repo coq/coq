@@ -349,7 +349,7 @@ let make_initial_state evk dbg n localdb =
 
 let e_search_auto ?(debug = Off) ?depth lems db_list =
   Proofview.Goal.enter begin fun gl ->
-  let p = Option.default !default_search_depth depth in
+  let p = Option.default default_search_depth depth in
   let local_db env sigma = make_local_hint_db env sigma ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let debug = match d with Debug -> true | Info | Off -> false in
