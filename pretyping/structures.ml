@@ -352,6 +352,7 @@ let find env sigma (proj,pat) =
   let us = List.map EConstr.of_constr us in
   let params = List.map EConstr.of_constr params in
   let u, ctx' = UnivGen.fresh_instance_from ctx None in
+  let u = EConstr.EInstance.make u in
   let c = EConstr.of_constr c in
   let c' = EConstr.Vars.subst_instance_constr u c in
   let t' = EConstr.of_constr t' in
