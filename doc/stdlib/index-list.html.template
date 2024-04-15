@@ -145,8 +145,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/NArith/BinNatDef.v
     theories/NArith/BinNat.v
     theories/NArith/Nnat.v
-    theories/NArith/Ndigits.v
-    theories/NArith/Ndist.v
     theories/NArith/Ndec.v
     theories/NArith/Ndiv_def.v
     theories/NArith/Ngcd_def.v
@@ -516,7 +514,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Strings/BinaryString.v
     theories/Strings/HexString.v
     theories/Strings/OctalString.v
-    theories/Strings/ByteVector.v
   </dd>
 
   <dt> <b>Reals</b>:
