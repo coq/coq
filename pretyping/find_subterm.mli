@@ -26,7 +26,7 @@ exception SubtermUnificationError of subterm_unification_error
     with None. *)
 
 type ('a, 'b) testing_function = {
-  match_fun : 'a -> constr -> ('b, unit) Result.t;
+  match_fun : int -> 'a -> constr -> ('b, unit) Result.t;
   merge_fun : 'b -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option

@@ -59,7 +59,7 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 exception SubtermUnificationError of subterm_unification_error
 
 type ('a, 'b) testing_function = {
-  match_fun : 'a -> EConstr.constr -> ('b, unit) Result.t;
+  match_fun : int -> 'a -> EConstr.constr -> ('b, unit) Result.t;
   merge_fun : 'b -> 'a -> ('a, unit) Result.t;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
@@ -74,7 +74,7 @@ let replace_term_occ_gen_modulo env sigma like_first test bywhat cl count t =
   let count = ref count in
   let rec substrec (nested, k) t =
     if Locusops.occurrences_done !count then t else
-    match test.match_fun test.testing_state t with
+    match test.match_fun k test.testing_state t with
     | Result.Ok subst ->
       let selected, count' = Locusops.update_occurrence_counter !count in
       let () = count := count' in
@@ -128,7 +128,7 @@ let replace_term_occ_decl_modulo env evd occs test bywhat d =
 (** Finding an exact subterm *)
 
 let make_eq_univs_test env evd c =
-  { match_fun = (fun evd c' ->
+  { match_fun = (fun k evd c' ->
     match EConstr.eq_constr_universes_proj env evd c c' with
     | None -> Result.Error ()
     | Some cst ->
