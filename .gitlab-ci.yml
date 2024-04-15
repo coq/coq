@@ -311,6 +311,22 @@ build:edge+flambda:
 build:base:dev:
   extends: .build-template:base:dev
 
+# Build using native dune rules
+build:base:dev:dune:
+  stage: build
+  image: $EDGE_IMAGE
+  variables:
+    OPAM_VARIANT: "+flambda"
+  interruptible: true
+  extends: .auto-use-tags
+  script:
+    - cp theories/dune.disabled theories/dune
+    - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+    - dune build -p coq-core,coq-stdlib,coq,coqide-server
+    - ls _build/install/default/lib/coq/theories/Reals/Reals.vo
+    - ls _build/install/default/lib/coq/user-contrib/Ltac2/Ltac2.vo
+  only: *full-ci
+
 build:base+async:
   extends: .build-template
   variables:

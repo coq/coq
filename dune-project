@@ -5,7 +5,7 @@
 (using directory-targets 0.1)
 
 ; We need this due to `(coq.pp )` declarations
-(using coq 0.3)
+(using coq 0.6)
 
 (formatting
  (enabled_for ocaml))
