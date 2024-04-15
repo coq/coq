@@ -1,2 +1,6 @@
 .auto-use-tags:
   tags: []
+
+.auto-use-docker-tags:
+  tags:
+    - docker
