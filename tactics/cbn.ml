@@ -671,7 +671,7 @@ let rec apply_rules whrec env sigma u r stk =
       let psubst, stk = apply_rule whrec env sigma [] psubst elims stk in
       let subst, qsubst, usubst = Partial_subst.to_arrays psubst in
       let usubst = UVars.Instance.of_array (qsubst, usubst) in
-      let rhsu = subst_instance_constr usubst (EConstr.of_constr rhs) in
+      let rhsu = subst_instance_constr (EConstr.EInstance.make usubst) (EConstr.of_constr rhs) in
       let rhs' = substl (Array.to_list subst) rhsu in
       (rhs', stk)
     with PatternFailure -> apply_rules whrec env sigma u rs stk
