@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open CErrors
 open Util
@@ -184,8 +182,9 @@ let type_case_branches env sigma (ind,largs) specif pj c =
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let params = List.map EConstr.Unsafe.to_constr params in
   let sigma, ps = is_correct_arity env sigma c pj ind specif params in
+  let ind = on_snd EConstr.Unsafe.to_instance ind in
+  let params = List.map EConstr.Unsafe.to_constr params in
   let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
@@ -224,7 +223,7 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
     with Not_found -> error_case_not_inductive env sigma cj in
   let specif = lookup_mind_specif env ind in
   let () = if Inductive.is_private specif then Type_errors.error_case_on_private_ind env ind in
-  let indspec = ((ind, EInstance.kind sigma u), spec) in
+  let indspec = ((ind, u), spec) in
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
   (* should we have evar map aware should_invert_case? *)
   let sigma, rp =
@@ -234,8 +233,9 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
       raise_type_error (env,sigma,Type_errors.BadCaseRelevance (rp, mkCase case))
     | Some sigma -> sigma, rci
   in
-  let () = check_case_info env (fst indspec) ci in
-  let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
+  let ind = on_snd (EInstance.kind sigma) (fst indspec) in
+  let () = check_case_info env ind ci in
+  let sigma = check_branch_types env sigma ind cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
               != should_invert_case env rp ci
     then Type_errors.error_bad_invert env
@@ -264,7 +264,7 @@ let check_allowed_sort env sigma ind c p =
     | Sort s -> s
     | _ -> error_elim_arity env sigma ind c None
   in
-  if Inductiveops.is_allowed_elimination sigma (specif,(snd ind)) sort then
+  if Inductiveops.is_allowed_elimination sigma (specif, (snd ind)) sort then
     ESorts.relevance_of_sort sigma sort
   else
     error_elim_arity env sigma ind c (Some sort)
@@ -331,9 +331,8 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let u = EInstance.kind sigma u in
-  let pr = UVars.subst_instance_relevance u pr in
-  let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
+  let pr = Vars.subst_instance_relevance u pr in
+  let ty = Vars.subst_instance_constr u (EConstr.of_constr pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
   {uj_val = EConstr.mkProj (p,pr,cj.uj_val);
    uj_type = ty}

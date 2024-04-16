@@ -9,14 +9,14 @@
 (************************************************************************)
 
 open Names
-open Constr
+open EConstr
 open Environ
 open Evd
 
 (** Errors related to recursors building *)
 
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * pinductive
+  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * Constr.pinductive
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
@@ -37,31 +37,31 @@ type case_analysis = private {
   case_type : EConstr.t;
 }
 
-val check_valid_elimination : env -> evar_map -> pinductive -> dep:bool -> EConstr.ESorts.t -> unit
+val check_valid_elimination : env -> evar_map -> inductive puniverses -> dep:bool -> ESorts.t -> unit
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
 val default_case_analysis_dependence : env -> inductive -> bool
 
-val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
-  dep_flag -> EConstr.ESorts.t -> evar_map * case_analysis
+val build_case_analysis_scheme : env -> Evd.evar_map -> inductive puniverses ->
+  dep_flag -> ESorts.t -> evar_map * case_analysis
 
 (** Build a dependent case elimination predicate unless type is in Prop
    or is a recursive record with primitive projections. *)
 
-val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      EConstr.ESorts.t -> evar_map * case_analysis
+val build_case_analysis_scheme_default : env -> evar_map -> inductive puniverses ->
+  ESorts.t -> evar_map * case_analysis
 
 (** Builds a recursive induction scheme (Peano-induction style) in the given sort.  *)
 
-val build_induction_scheme : env -> evar_map -> pinductive ->
-      dep_flag -> EConstr.ESorts.t -> evar_map * constr
+val build_induction_scheme : env -> evar_map -> inductive puniverses ->
+  dep_flag -> ESorts.t -> evar_map * constr
 
 (** Builds mutual (recursive) induction schemes *)
 
 val build_mutual_induction_scheme :
   env -> evar_map -> ?force_mutual:bool ->
-  (pinductive * dep_flag * EConstr.ESorts.t) list -> evar_map * constr list
+  (inductive puniverses * dep_flag * EConstr.ESorts.t) list -> evar_map * constr list
 
 (** Recursor names utilities *)
 

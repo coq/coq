@@ -115,7 +115,7 @@ val error_ill_typed_rec_body :
 
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      pinductive -> constr -> ESorts.t option -> 'b
+      inductive puniverses -> constr -> ESorts.t option -> 'b
 
 val error_not_a_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

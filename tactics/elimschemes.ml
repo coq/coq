@@ -27,9 +27,10 @@ open Ind_tables
 let build_induction_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
   let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
+  let pind = Util.on_snd EConstr.EInstance.make pind in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
   let sigma, c = build_induction_scheme env sigma pind dep sort in
-    c, Evd.evar_universe_context sigma
+  EConstr.to_constr sigma c, Evd.evar_universe_context sigma
 
 (**********************************************************************)
 (* [modify_sort_scheme s rec] replaces the sort of the scheme
@@ -149,6 +150,7 @@ let elim_scheme ~dep ~to_kind =
 let build_case_analysis_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
+  let indu = Util.on_snd EConstr.EInstance.make indu in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep sort in
   let (c, _) = Indrec.eval_case_analysis c in

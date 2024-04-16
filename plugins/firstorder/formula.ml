@@ -50,16 +50,17 @@ let rec nb_prod_after n c=
     | _ -> 0
 
 let construct_nhyps env ind =
+  let ind = on_snd EInstance.make ind in
   let nparams = (fst (Global.lookup_inductive (fst ind))).mind_nparams in
   let constr_types = Inductiveops.arities_of_constructors env ind in
-  let hyp = nb_prod_after nparams in
-    Array.map hyp constr_types
+  let hyp c = nb_prod_after nparams (EConstr.Unsafe.to_constr c) in
+  Array.map hyp constr_types
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs)*)
 let ind_hyps env sigma nevar ind largs =
+  let ind = on_snd EInstance.make ind in
   let types= Inductiveops.arities_of_constructors env ind in
   let myhyps t =
-    let t = EConstr.of_constr t in
     let nparam_decls = Context.Rel.length (fst (Global.lookup_inductive (fst ind))).mind_params_ctxt in
     let t1=Termops.prod_applist_decls sigma nparam_decls t largs in
     let t2=snd (decompose_prod_n_decls sigma nevar t1) in

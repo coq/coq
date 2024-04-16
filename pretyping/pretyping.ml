@@ -907,7 +907,7 @@ struct
             try
               let IndType (indf, args) = find_rectype !!env sigma ty in
               let ((ind',u'),pars) = dest_ind_family indf in
-              if QInd.equal !!env ind ind' then List.map EConstr.of_constr pars
+              if QInd.equal !!env ind ind' then pars
               else (* Let the usual code throw an error *) []
             with Not_found -> []
       else []
@@ -1147,7 +1147,6 @@ struct
       user_err ?loc:loc (str "Destructing let on this type expects " ++
         int cs.cs_nargs ++ str " variables.");
     let fsign, record =
-      let set_name na d = set_name na (map_rel_decl EConstr.of_constr d) in
       match Environ.get_projections !!env ind with
       | None ->
          List.map2 set_name (List.rev nal) cs.cs_args, false
@@ -1155,7 +1154,6 @@ struct
         let rec aux n k names l =
           match names, l with
           | na :: names, (LocalAssum (na', t) :: l) ->
-            let t = EConstr.of_constr t in
             let proj = Projection.make (fst ps.(cs.cs_nargs - k)) true in
             LocalDef ({na' with binder_name = na},
                       lift (cs.cs_nargs - n) (mkProj (proj, na'.binder_relevance, cj.uj_val)), t)
@@ -1183,7 +1181,6 @@ struct
     in
       let indt = build_dependent_inductive !!env indf in
       let psign = LocalAssum (make_annot na indr, indt) :: arsgn in (* For locating names in [po] *)
-      let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
       let predenv = Cases.make_return_predicate_ltac_lvar env sigma na c cj.uj_val in
       let nar = List.length arsgn in
       let psign',env_p = push_rel_context ~hypnaming ~force_names:true sigma psign predenv in
@@ -1193,8 +1190,8 @@ struct
             let ccl = nf_evar sigma pj.utj_val in
             let p = it_mkLambda_or_LetIn ccl psign' in
             let inst =
-              (Array.map_to_list EConstr.of_constr cs.cs_concl_realargs)
-              @[EConstr.of_constr (build_dependent_constructor cs)] in
+              (Array.to_list cs.cs_concl_realargs)
+              @ [build_dependent_constructor cs] in
             let lp = lift cs.cs_nargs p in
             let fty = hnf_lam_applist !!env sigma lp inst in
             let sigma, fj = pretype (mk_tycon fty) env_f sigma d in
@@ -1251,7 +1248,6 @@ struct
       let nar = List.length arsgn in
       let indt = build_dependent_inductive !!env indf in
       let psign = LocalAssum (make_annot na indr, indt) :: arsgn in (* For locating names in [po] *)
-      let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
       let predenv = Cases.make_return_predicate_ltac_lvar env sigma na c cj.uj_val in
       let vars = VarSet.variables (Global.env ()) in
       let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
@@ -1274,8 +1270,8 @@ struct
       let f sigma cs b =
         let n = Context.Rel.length cs.cs_args in
         let pi = lift n pred in (* liftn n 2 pred ? *)
-        let pi = beta_applist sigma (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
-        let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs.cs_args in
+        let pi = beta_applist sigma (pi, [build_dependent_constructor cs]) in
+        let cs_args = cs.cs_args in
         let cs_args = Context.Rel.map (whd_betaiota !!env sigma) cs_args in
         let csgn =
           List.map (set_name Anonymous) cs_args

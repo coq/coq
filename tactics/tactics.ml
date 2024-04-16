@@ -1702,7 +1702,7 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
   let elim = match elim with
   | NotADefinedRecordUseScheme ->
       (* bugs: goes from right to left when i increases! *)
-      let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.cs_args in
+      let cs_args = cstr.cs_args in
       let decl = List.nth cs_args i in
       let t = RelDecl.get_type decl in
       let b = match decl with LocalAssum _ -> mkRel (i+1) | LocalDef (_,b,_) -> b in
@@ -1764,7 +1764,6 @@ let descend_in_conjunctions avoid tac (err, info) c =
         let n = (constructors_nrealargs env ind).(0) in
         let IndType (indf,_) = find_rectype env sigma ccl in
         let (_,inst), params = dest_ind_family indf in
-        let params = List.map EConstr.of_constr params in
         let cstr = (get_constructors env indf).(0) in
         let elim =
           try DefinedRecord (Structures.Structure.find_projections ind)

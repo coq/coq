@@ -882,6 +882,10 @@ let subst_instance_constr subst c =
   let subst = EInstance.unsafe_to_instance subst in
   of_constr (Vars.subst_instance_constr subst (to_constr c))
 
+let subst_instance_relevance subst r =
+  let subst = EInstance.unsafe_to_instance subst in
+  UVars.subst_instance_relevance subst r
+
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with

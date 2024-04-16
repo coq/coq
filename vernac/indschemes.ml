@@ -390,6 +390,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
          | None ->
             let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
             let u, ctx = UnivGen.fresh_instance_from ctx None in
+            let u = EConstr.EInstance.make u in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
               evd, (ind,u), Some u
          | Some ui -> evd, (ind, ui), inst
@@ -406,8 +407,9 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
     Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
   let declare decl fi lrecref =
-    let decltype = Retyping.get_type_of env sigma (EConstr.of_constr decl) in
+    let decltype = Retyping.get_type_of env sigma decl in
     let decltype = EConstr.to_constr sigma decltype in
+    let decl = EConstr.to_constr sigma decl in
     let cst = define ~poly fi sigma decl (Some decltype) in
     Names.GlobRef.ConstRef cst :: lrecref
   in

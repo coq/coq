@@ -797,7 +797,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
   let open Inductiveops in
   let open Context.Rel.Declaration in
   (* Assumes that the arguments do not contain free rels *)
-  let indf = make_ind_family ((ind, EConstr.Unsafe.to_instance u), Array.map_to_list EConstr.Unsafe.to_constr params) in
+  let indf = make_ind_family ((ind, u), Array.to_list params) in
   let projs = get_projections env ind in
   let relevance = Retyping.relevance_of_sort sigma knd in
 
@@ -808,7 +808,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
     let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
     let set_names env l =
       let ident_hd env ids t na =
-        let na = Namegen.named_hd env (Evd.from_env env) (EConstr.of_constr t) na in
+        let na = Namegen.named_hd env (Evd.from_env env) t na in
         Namegen.next_name_away na ids
       in
       let fold d (ids, l) =
@@ -858,16 +858,14 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
   let ind, u = destInd sigma hd in
-  let u0 = EInstance.kind sigma u in
   let s = Retyping.get_sort_of env sigma concl in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = Indrec.check_valid_elimination env sigma (ind, u0) ~dep s in
+  let () = Indrec.check_valid_elimination env sigma (ind, u) ~dep s in
 
   let indf =
-    let params = EConstr.Unsafe.to_constr_array params in
-    Inductiveops.make_ind_family ((ind, u0), Array.to_list params)
+    Inductiveops.make_ind_family ((ind, u), Array.to_list params)
   in
 
   (* Extract the return clause using unification with the conclusion *)
@@ -886,11 +884,11 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
     let open Inductiveops in
     let constrs = get_constructors env indf in
     let get_branch cs =
-      let base = mkApp (pred, EConstr.of_constr_array cs.cs_concl_realargs) in
-      let argctx = EConstr.of_rel_context cs.cs_args in
+      let base = mkApp (pred, cs.cs_concl_realargs) in
+      let argctx = cs.cs_args in
       if dep then
         let argctx = Namegen.name_context env sigma argctx in
-        (argctx, applist (base, [EConstr.of_constr @@ build_dependent_constructor cs]))
+        (argctx, applist (base, [build_dependent_constructor cs]))
       else
         (argctx, base)
     in

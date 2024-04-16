@@ -168,7 +168,7 @@ let find_class_type env sigma t =
         let t = Retyping.get_type_of env sigma c in
         let IndType (fam,_) = find_rectype env sigma t in
         let _, params = dest_ind_family fam in
-        List.rev_map EConstr.of_constr params
+        List.rev params
       in
       CL_PROJ (Projection.repr p), EInstance.empty, (List.rev_append revparams (c :: args))
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args

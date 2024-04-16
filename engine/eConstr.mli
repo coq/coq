@@ -379,6 +379,7 @@ val closed0 : Evd.evar_map -> t -> bool
 val subst_univs_level_constr : UVars.sort_level_subst -> t -> t
 val subst_instance_context : EInstance.t -> rel_context -> rel_context
 val subst_instance_constr : EInstance.t -> t -> t
+val subst_instance_relevance : EInstance.t -> Sorts.relevance -> Sorts.relevance
 
 val subst_of_rel_context_instance : rel_context -> instance -> substl
 val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl

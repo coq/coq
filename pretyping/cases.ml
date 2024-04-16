@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open CErrors
 open Util
@@ -289,8 +287,8 @@ let rec find_row_ind = function
 
 let inductive_template env sigma tmloc ind =
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
-  let arsign = inductive_alldecls env indu in
   let indu = on_snd EInstance.make indu in
+  let arsign = inductive_alldecls env indu in
   let hole_source i = match tmloc with
     | Some loc -> Loc.tag ~loc @@ Evar_kinds.TomatchTypeParameter (ind,i)
     | None     -> Loc.tag      @@ Evar_kinds.TomatchTypeParameter (ind,i) in
@@ -299,14 +297,12 @@ let inductive_template env sigma tmloc ind =
       (fun decl (sigma, subst, evarl, n) ->
         match decl with
         | LocalAssum (na,ty) ->
-            let ty = EConstr.of_constr ty in
             let ty' = substl subst ty in
             let sigma, e =
               Evarutil.new_evar env ~src:(hole_source n) sigma ty'
             in
             (sigma, e::subst,e::evarl,n+1)
         | LocalDef (na,b,ty) ->
-            let b = EConstr.of_constr b in
             (sigma, substl subst b::subst,evarl,n+1))
       arsign (sigma, [], [], 1) in
    sigma, applist (mkIndU indu,List.rev evarl)
@@ -942,7 +938,6 @@ let specialize_predicate_var (cur,typ,dep) env tms ccl =
     | IsInd (_, IndType (_, _), []) -> []
     | IsInd (_, IndType (indf, realargs), names) ->
        let arsign = get_arity env indf in
-       let arsign = List.map EConstr.of_rel_decl arsign in
        subst_of_rel_context_instance_list arsign realargs
     | NotInd _ -> [] in
   subst_predicate (l,c) ccl tms
@@ -1110,13 +1105,12 @@ let specialize_predicate env sigma newtomatchs (names,depna) arsign cs tms ccl =
   (* We prepare the substitution of X and x:I(X) *)
   let realargsi =
     if not (Int.equal nrealargs 0) then
-      CVars.subst_of_rel_context_instance arsign cs.cs_concl_realargs
+      Vars.subst_of_rel_context_instance arsign cs.cs_concl_realargs
     else
       [] in
-  let realargsi = List.map EConstr.of_constr realargsi in
   let copti = match depna with
   | Anonymous -> None
-  | Name _ -> Some (EConstr.of_constr (build_dependent_constructor cs))
+  | Name _ -> Some (build_dependent_constructor cs)
   in
   (* The substituends realargsi, copti are all defined in gamma, x1...xn *)
   (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
@@ -1310,7 +1304,6 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   (* build the name x1..xn from the names present in the equations *)
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
-  let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs_args in
   let names,aliasname = get_names (GlobEnv.vars_of_env pb.env) !!(pb.env) sigma cs_args eqns in
   let typs = List.map2 RelDecl.set_name names cs_args
   in
@@ -1348,14 +1341,14 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
 
   (* The dependent term to subst in the types of the remaining UnPushed
      terms is relative to the current context enriched by topushs *)
-  let ci = EConstr.of_constr (build_dependent_constructor const_info) in
+  let ci = build_dependent_constructor const_info in
 
   (* Current context Gamma has the form Gamma1;cur:I(realargs);Gamma2 *)
   (* We go from Gamma |- PI tms. pred to                              *)
   (* Gamma;x1..xn;curalias:I(x1..xn) |- PI tms'. pred'                *)
   (* where, in tms and pred, those realargs that are vars are         *)
   (* replaced by the corresponding xi and cur replaced by curalias    *)
-  let cirealargs = Array.map_to_list EConstr.of_constr const_info.cs_concl_realargs in
+  let cirealargs = Array.to_list const_info.cs_concl_realargs in
 
   (* Do the specialization for terms to match *)
   let tomatch = List.fold_right2 (fun par arg tomatch ->
@@ -1392,9 +1385,9 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
       let cur_alias = lift const_info.cs_nargs current in
       let ind =
         mkApp (
-          applist (mkIndU (inductive_of_constructor (fst const_info.cs_cstr), EInstance.make (snd const_info.cs_cstr)),
-                   List.map (EConstr.of_constr %> lift const_info.cs_nargs) const_info.cs_params),
-          Array.map EConstr.of_constr const_info.cs_concl_realargs) in
+          applist (mkIndU (inductive_of_constructor (fst const_info.cs_cstr), snd const_info.cs_cstr),
+                   List.map (lift const_info.cs_nargs) const_info.cs_params),
+            const_info.cs_concl_realargs) in
       Alias (initial,(aliasname,cur_alias,(ci,ind))) in
 
   let tomatch = List.rev_append (alias :: currents) tomatch in
@@ -1982,7 +1975,6 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
           let ((ind,_ as indu),_) = dest_ind_family indf' in
           let nrealargs_ctxt = inductive_nrealdecls env0 ind in
           let arsign = get_arity env0 indf' in
-          let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
           let realnal =
             match t with
               | Some {CAst.loc;v=(ind',realnal)} ->
@@ -1993,8 +1985,8 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
                   List.rev realnal
               | None ->
                   List.make nrealargs_ctxt Anonymous in
-          let r = Inductive.relevance_of_inductive env0 indu in
-          let t = EConstr.of_constr (build_dependent_inductive env0 indf') in
+          let r = Inductiveops.relevance_of_inductive env0 indu in
+          let t = build_dependent_inductive env0 indf' in
           LocalAssum (make_annot na r, t) :: List.map2 RelDecl.set_name realnal arsign in
   let rec buildrec n = function
     | [],[] -> []
@@ -2258,7 +2250,6 @@ let constr_of_pat env sigma arsign pat avoid =
             {uj_val = ty; uj_type = Retyping.get_type_of env sigma ty}
         in
         let (ind,u), params = dest_ind_family indf in
-        let params = List.map EConstr.of_constr params in
         if not (QInd.equal env ind cind) then error_bad_constructor ?loc env cstr ind;
         let cstrs = get_constructors env indf in
         let ci = cstrs.(i-1) in
@@ -2267,7 +2258,7 @@ let constr_of_pat env sigma arsign pat avoid =
         let sigma, patargs, args, sign, env, n, m, avoid =
           List.fold_right2
             (fun decl ua (sigma, patargs, args, sign, env, n, m, avoid)  ->
-               let t = EConstr.of_constr (RelDecl.get_type decl) in
+               let t = RelDecl.get_type decl in
                let sigma, pat', sign', arg', typ', argtypargs, n', avoid =
                  let liftt = liftn (List.length sign) (succ (List.length args)) t in
                    typ env sigma (substl args liftt, []) ua avoid
@@ -2280,7 +2271,7 @@ let constr_of_pat env sigma arsign pat avoid =
         let args = List.rev args in
         let patargs = List.rev patargs in
         let pat' = DAst.make ?loc @@ PatCstr (cstr, patargs, alias) in
-        let cstr = mkConstructU (on_snd EInstance.make ci.cs_cstr) in
+        let cstr = mkConstructU ci.cs_cstr in
         let app = applist (cstr, List.map (lift (List.length sign)) params) in
         let app = applist (app, args) in
         let apptype = Retyping.get_type_of env sigma app in

@@ -1313,15 +1313,14 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
     List.map
       (fun idx ->
         let ind = (first_fun_kn, idx) in
-        ((ind, snd first_fun), true, EConstr.ESorts.prop))
+        ((ind, EConstr.EInstance.make @@ snd first_fun), true, EConstr.ESorts.prop))
       funs_indexes
   in
   let sigma, schemes = Indrec.build_mutual_induction_scheme env !evd ind_list in
   let _ = evd := sigma in
   let l_schemes =
     List.map
-      ( EConstr.of_constr
-      %> Retyping.get_type_of env sigma
+      (Retyping.get_type_of env sigma
       %> EConstr.Unsafe.to_constr )
       schemes
   in
@@ -1540,14 +1539,14 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
       let sigma, scheme =
         let sigma, inds = CArray.fold_left_map_i (fun i sigma _ ->
             let sigma, s = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma InType in
-            sigma, (((kn, i), EInstance.kind sigma u), true, s))
+            sigma, (((kn, i), u), true, s))
             !evd
             mib.mind_packets
         in
         Indrec.build_mutual_induction_scheme (Global.env ()) sigma
           (Array.to_list inds)
       in
-      let schemes = Array.of_list scheme in
+      let schemes = Array.map_of_list EConstr.Unsafe.to_constr scheme in
       let proving_tac =
         prove_fun_complete funs_constr mib.Declarations.mind_packets schemes
           lemmas_types_infos
@@ -2225,7 +2224,7 @@ let build_case_scheme fa =
   in
   let ind, sf =
     let ind = (first_fun_kn, funs_indexes) in
-    ((ind, UVars.Instance.empty) (*FIXME*), EConstr.ESorts.prop)
+    ((ind, EConstr.EInstance.empty) (*FIXME*), EConstr.ESorts.prop)
   in
   let sigma, scheme =
     Indrec.build_case_analysis_scheme_default env sigma ind sf

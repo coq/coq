@@ -529,7 +529,7 @@ and extract_really_ind env kn mib =
     for i = 0 to mib.mind_ntypes - 1 do
       let p,u = packets.(i) in
       if not p.ip_logical then
-        let types = arities_of_constructors env ((kn,i),u) in
+        let types = Inductive.arities_of_constructors ((kn,i),u) (mib, mib.mind_packets.(i)) in
         for j = 0 to Array.length types - 1 do
           let t = snd (decompose_prod_n_decls ndecls types.(j)) in
           let prods,head = Reduction.whd_decompose_prod epar t in
@@ -732,7 +732,6 @@ let rec extract_term env sg mle mlt c args =
         let ind = Inductiveops.find_rectype env sg (Retyping.get_type_of env sg c) in
         let indf,_ = Inductiveops.dest_ind_type ind in
         let _,indargs = Inductiveops.dest_ind_family indf in
-        let indargs = List.map EConstr.of_constr indargs in
         extract_term env sg mle mlt (beta_applist sg (EConstr.of_constr term,indargs@[c])) args
     | Rel n ->
         (* As soon as the expected [mlt] for the head is known, *)

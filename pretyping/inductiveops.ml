@@ -12,7 +12,7 @@ open CErrors
 open Util
 open Names
 open Term
-open Constr
+open EConstr
 open Vars
 open Context
 open Declarations
@@ -25,10 +25,11 @@ open Context.Rel.Declaration
    Inductive, but they expect an env *)
 
 let type_of_inductive env (ind,u) =
+ let u = EConstr.Unsafe.to_instance u in
  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
  Typeops.check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
  let t = Inductive.type_of_inductive (specif,u) in
- Arguments_renaming.rename_type t (IndRef ind)
+ EConstr.of_constr @@ Arguments_renaming.rename_type t (IndRef ind)
 
 let e_type_of_inductive env sigma (ind,u) =
  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
@@ -38,11 +39,12 @@ let e_type_of_inductive env sigma (ind,u) =
 
 (* Return type as quoted by the user *)
 let type_of_constructor env (cstr,u) =
+ let u = EConstr.Unsafe.to_instance u in
  let (mib,_ as specif) =
    Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
  Typeops.check_hyps_inclusion env (GlobRef.ConstructRef cstr) mib.mind_hyps;
  let t = Inductive.type_of_constructor (cstr,u) specif in
- Arguments_renaming.rename_type t (ConstructRef cstr)
+ EConstr.of_constr @@ Arguments_renaming.rename_type t (ConstructRef cstr)
 
 let e_type_of_constructor env sigma (cstr,u) =
  let (mib,_ as specif) =
@@ -53,16 +55,18 @@ let e_type_of_constructor env sigma (cstr,u) =
 
 (* Return constructor types in user form *)
 let type_of_constructors env (ind,u as indu) =
- let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_constructors indu specif
+  let indu = on_snd EConstr.Unsafe.to_instance indu in
+  let specif = Inductive.lookup_mind_specif env ind in
+  Array.map EConstr.of_constr (Inductive.type_of_constructors indu specif)
 
 (* Return constructor types in normal form *)
 let arities_of_constructors env (ind,u as indu) =
- let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.arities_of_constructors indu specif
+  let indu = on_snd EConstr.Unsafe.to_instance indu in
+  let specif = Inductive.lookup_mind_specif env ind in
+  Array.map EConstr.of_constr (Inductive.arities_of_constructors indu specif)
 
 (* [inductive_family] = [inductive_instance] applied to global parameters *)
-type inductive_family = pinductive * constr list
+type inductive_family = inductive puniverses * constr list
 
 let make_ind_family (mis, params) = (mis,params)
 let dest_ind_family (mis,params) : inductive_family = (mis,params)
@@ -74,8 +78,12 @@ let lift_inductive_family n = liftn_inductive_family n 1
 
 let substnl_ind_family l n = map_ind_family (substnl l n)
 
-let relevance_of_inductive_family env (ind,_ : inductive_family) =
+let relevance_of_inductive env ind =
+  let ind = on_snd EConstr.Unsafe.to_instance ind in
   Inductive.relevance_of_inductive env ind
+
+let relevance_of_inductive_family env (ind,_ : inductive_family) =
+  relevance_of_inductive env ind
 
 type inductive_type = IndType of inductive_family * EConstr.constr list
 
@@ -85,8 +93,7 @@ let make_ind_type (indf, realargs) = IndType (indf,realargs)
 let dest_ind_type (IndType (indf,realargs)) = (indf,realargs)
 
 let map_inductive_type f (IndType (indf, realargs)) =
-  let f' c = EConstr.Unsafe.to_constr (f (EConstr.of_constr c)) in
-  IndType (map_ind_family f' indf, List.map f realargs)
+  IndType (map_ind_family f indf, List.map f realargs)
 
 let liftn_inductive_type n d = map_inductive_type (EConstr.Vars.liftn n d)
 let lift_inductive_type n = liftn_inductive_type n 1
@@ -97,9 +104,7 @@ let relevance_of_inductive_type env (IndType (indf, _)) =
   relevance_of_inductive_family env indf
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
-  let open EConstr in
-  let ind = on_snd EInstance.make ind in
-  applist (mkIndU ind, (List.map EConstr.of_constr params)@realargs)
+  applist (mkIndU ind, params @ realargs)
 
 (* Does not consider imbricated or mutually recursive types *)
 let mis_is_recursive_subset listind rarg =
@@ -120,7 +125,7 @@ let mis_nf_constructor_type ((_,j),u) (mib,mip) =
   let nconstr = Array.length mip.mind_consnames in
   if j > nconstr then user_err Pp.(str "Not enough constructors in the type.");
   let (ctx, cty) = mip.mind_nf_lc.(j - 1) in
-  subst_instance_constr u (Term.it_mkProd_or_LetIn cty ctx)
+  subst_instance_constr u (EConstr.it_mkProd_or_LetIn (EConstr.of_constr cty) (EConstr.of_rel_context ctx))
 
 (* Number of constructors *)
 
@@ -203,12 +208,13 @@ let inductive_nalldecls env ind =
 (* Others *)
 
 let inductive_paramdecls env (ind,u) =
+  let u = EConstr.Unsafe.to_instance u in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    Inductive.inductive_paramdecls (mib,u)
+  EConstr.of_rel_context @@ Inductive.inductive_paramdecls (mib,u)
 
 let inductive_alldecls env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    Vars.subst_instance_context u mip.mind_arity_ctxt
+  Vars.subst_instance_context u (EConstr.of_rel_context mip.mind_arity_ctxt)
 
 let inductive_alltags env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -254,6 +260,7 @@ let is_squashed sigma ((_,mip),u) =
     match mip.mind_squashed with
     | None -> None
     | Some squash ->
+      let u = EConstr.Unsafe.to_instance u in
       let indq = EConstr.ESorts.quality sigma
           (EConstr.ESorts.make @@ UVars.subst_instance_sort u a.mind_sort)
       in
@@ -325,8 +332,8 @@ let make_case_info env ind style =
     Array.map2 (fun (d, _) n ->
       Context.Rel.to_tags (List.firstn n d))
       mip.mind_nf_lc mip.mind_consnrealdecls in
-  let print_info = { ind_tags; cstr_tags; style } in
-  { ci_ind     = ind;
+  let print_info = { Constr.ind_tags; cstr_tags; style } in
+  { Constr.ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
@@ -335,10 +342,10 @@ let make_case_info env ind style =
 (*s Useful functions *)
 
 type constructor_summary = {
-  cs_cstr : pconstructor;
+  cs_cstr : constructor puniverses;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : Constr.rel_context;
+  cs_args : EConstr.rel_context;
   cs_concl_realargs : constr array
 }
 
@@ -355,26 +362,27 @@ let instantiate_params t params sign =
   let nnonrecpar = Context.Rel.nhyps sign - List.length params in
   (* Adjust the signature if recursively non-uniform parameters are not here *)
   let _,sign = Context.Rel.chop_nhyps nnonrecpar sign in
-  let _,t = decompose_prod_n_decls (Context.Rel.length sign) t in
+  let _,t = Term.decompose_prod_n_decls (Context.Rel.length sign) t in
   let subst = subst_of_rel_context_instance_list sign params in
-  substl subst t
+  substl subst (EConstr.of_constr t)
 
 let instantiate_constructor_params (_,u as cstru) (mib,_ as mind_specif) params =
   let typi = mis_nf_constructor_type cstru mind_specif in
-  let ctx = Vars.subst_instance_context u mib.mind_params_ctxt in
-  instantiate_params typi params ctx
+  let ctx = Vars.subst_instance_context u (EConstr.of_rel_context mib.mind_params_ctxt) in
+  instantiate_params (EConstr.Unsafe.to_constr typi) params ctx
 
 let get_constructor ((ind,u),mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
   let typi = instantiate_constructor_params ((ind,j),u) (mib,mip) params in
-  let (args,ccl) = decompose_prod_decls typi in
-  let (_,allargs) = decompose_app_list ccl in
+  let typi = EConstr.Unsafe.to_constr typi in
+  let (args,ccl) = Term.decompose_prod_decls typi in
+  let (_,allargs) = Constr.decompose_app_list ccl in
   let vargs = List.skipn (List.length params) allargs in
   { cs_cstr = (ith_constructor_of_inductive ind j,u);
     cs_params = params;
     cs_nargs = Context.Rel.length args;
-    cs_args = args;
-    cs_concl_realargs = Array.of_list vargs }
+    cs_args = EConstr.of_rel_context args;
+    cs_concl_realargs = Array.map_of_list EConstr.of_constr vargs }
 
 let get_constructors env (ind,params) =
   let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
@@ -385,11 +393,10 @@ let get_projections = Environ.get_projections
 
 let make_case_invert env (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
   if Typeops.should_invert_case env r ci
-  then CaseInvert {indices=Array.of_list indices}
-  else NoInvert
+  then Constr.CaseInvert {indices=Array.of_list indices}
+  else Constr.NoInvert
 
 let make_project env sigma ind pred c branches ps =
-  let open EConstr in
   assert(Array.length branches == 1);
   let na, ty, t = destLambda sigma pred in
   let mib, mip as specif = Inductive.lookup_mind_specif env ind in
@@ -410,7 +417,7 @@ let make_project env sigma ind pred c branches ps =
     mkProj (Projection.make p true, r, c)
   in
   let proj = match EConstr.destRel sigma br with
-    | exception DestKO -> None
+    | exception Constr.DestKO -> None
     | i ->
       begin match List.skipn (i-1) ctx with
       | exception Failure _ -> None
@@ -442,15 +449,13 @@ let make_project env sigma ind pred c branches ps =
   mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (Array.length ps + 1) br) ctx)
 
 let simple_make_case_or_project env sigma ci pred invert c branches =
-  let open EConstr in
-  let ind = ci.ci_ind in
+  let ind = ci.Constr.ci_ind in
   let projs = get_projections env ind in
   match projs with
   | None -> mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
   | Some ps -> make_project env sigma ind (fst pred) c branches ps
 
 let make_case_or_project env sigma indt ci pred c branches =
-  let open EConstr in
   let IndType (((ind,_),_),_) = indt in
   let projs = get_projections env ind in
   match projs with
@@ -475,6 +480,7 @@ let get_arity env ((ind,u),params) =
     (* Dynamically detect if called with an instance of recursively
        uniform parameter only or also of recursively non-uniform
        parameters *)
+    let u = EConstr.Unsafe.to_instance u in
     let nparams = List.length params in
     if Int.equal nparams mib.mind_nparams then
       Inductive.inductive_paramdecls (mib,u)
@@ -482,8 +488,10 @@ let get_arity env ((ind,u),params) =
       assert (Int.equal nparams mib.mind_nparams_rec);
       snd (Inductive.inductive_nonrec_rec_paramdecls (mib,u))
     end in
+  let parsign = EConstr.of_rel_context parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
+  let arsign = EConstr.of_rel_context arsign in
   let subst = subst_of_rel_context_instance_list parsign params in
   let arsign = Vars.subst_instance_context u arsign in
   substl_rel_context subst arsign
@@ -506,20 +514,18 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 let make_arity_signature env sigma dep (ind, _ as indf) =
   let arsign = get_arity env indf in
-  let r = Inductive.relevance_of_inductive env ind in
+  let r = relevance_of_inductive env ind in
   let anon = make_annot Anonymous r in
-  let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
   if dep then
     (* We need names everywhere *)
     Namegen.name_context env sigma
-      ((LocalAssum (anon,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
+      ((LocalAssum (anon, build_dependent_inductive env indf)) :: arsign)
       (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
     arsign
 
 let make_arity env sigma dep indf s =
-  let open EConstr in
   it_mkProd_or_LetIn (mkSort s) (make_arity_signature env sigma dep indf)
 
 (**************************************************)
@@ -529,9 +535,9 @@ let make_arity env sigma dep indf s =
     The term built is expecting to be substituted first by
     a substitution of the form [params, x : ind params] *)
 let compute_projections env (kn, i as ind) =
-  let open Term in
   let mib = Environ.lookup_mind kn env in
   let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = EInstance.make u in
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
@@ -541,8 +547,10 @@ let compute_projections env (kn, i as ind) =
   in
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
+  let params = EConstr.of_rel_context params in
   let ctx, _ = pkt.mind_nf_lc.(0) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) ctx in
+  let ctx = EConstr.of_rel_context ctx in
   (* We build a substitution smashing the lets in the record parameters so
      that typechecking projections requires just a substitution and not
      matching with a parameter context. *)
@@ -621,10 +629,9 @@ let find_rectype env sigma c =
     | Ind (ind,u) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
-        let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
-        let indu = (ind, EInstance.kind sigma u) in
-        IndType((indu, par),List.map EConstr.of_constr rargs)
+        let indu = (ind, u) in
+        IndType ((indu, par), rargs)
     | _ -> raise Not_found
 
 let find_inductive env sigma c =
@@ -633,7 +640,6 @@ let find_inductive env sigma c =
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
-        let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found
 
@@ -643,7 +649,6 @@ let find_coinductive env sigma c =
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->
-        let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found
 
@@ -651,10 +656,10 @@ let find_coinductive env sigma c =
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
   let arsign = get_arity env (ind,params) in
-  let r = Inductive.relevance_of_inductive env ind in
+  let r = relevance_of_inductive env ind in
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
-  Term.it_mkProd_or_LetIn concl arsign
+  it_mkProd_or_LetIn concl arsign
 
 (***********************************************)
 (* Inferring the sort of parameters of a polymorphic inductive type
@@ -670,9 +675,9 @@ let univ_level_mem l s = match s with
    conclusion, and the other ones by fresh universes. *)
 let rec instantiate_universes env evdref scl is = function
   | (LocalDef _ as d)::sign, exp ->
-      d :: instantiate_universes env evdref scl is (sign, exp)
+    EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
   | d::sign, None::exp ->
-      d :: instantiate_universes env evdref scl is (sign, exp)
+    EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
   | (LocalAssum (na,ty))::sign, Some l::exp ->
       let ctx,_ = Reduction.dest_arity env ty in
       let u = Univ.Universe.make l in
@@ -687,14 +692,14 @@ let rec instantiate_universes env evdref scl is = function
           let evm = Evd.set_leq_sort env evm s (EConstr.ESorts.make (Sorts.sort_of_univ u)) in
             evdref := evm; s
       in
-      let s = EConstr.ESorts.kind !evdref s in
-      (LocalAssum (na,mkArity(ctx,s))) :: instantiate_universes env evdref scl is (sign, exp)
-  | sign, [] -> sign (* Uniform parameters are exhausted *)
+      let ctx = EConstr.of_rel_context ctx in
+      (LocalAssum (na, mkArity (ctx, s))) :: instantiate_universes env evdref scl is (sign, exp)
+  | sign, [] -> EConstr.of_rel_context sign (* Uniform parameters are exhausted *)
   | [], _ -> assert false
 
 let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   match mip.mind_arity with
-  | RegularArity s -> sigma, EConstr.of_constr (subst_instance_constr u s.mind_user_arity)
+  | RegularArity s -> sigma, subst_instance_constr u (EConstr.of_constr s.mind_user_arity)
   | TemplateArity ar ->
     let templ = match mib.mind_template with
     | None -> assert false
@@ -706,15 +711,14 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
     let ctx =
       instantiate_universes
         env evdref scl ar.template_level (ctx,templ.template_param_levels) in
-    let scl = EConstr.ESorts.kind !evdref scl in
-      !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
+    !evdref, mkArity (List.rev ctx, scl)
 
 let type_of_projection_constant env (p,u) =
   let _, pty = lookup_projection p env in
-  Vars.subst_instance_constr u pty
+  EConstr.Vars.subst_instance_constr u (EConstr.of_constr pty)
 
 let type_of_projection_knowing_arg env sigma p c ty =
-  let c = EConstr.Unsafe.to_constr c in
+  let open EConstr.Vars in
   let IndType(pars,realargs) =
     try find_rectype env sigma ty
     with Not_found ->
@@ -735,7 +739,7 @@ let control_only_guard env sigma c =
   let check_fix_cofix e c =
     (* [c] has already been normalized upfront *)
     let c = EConstr.Unsafe.to_constr c in
-    match kind c with
+    match Constr.kind c with
     | CoFix (_,(_,_,_) as cofix) ->
       Inductive.check_cofix ~evars e cofix
     | Fix fix ->
