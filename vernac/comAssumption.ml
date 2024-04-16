@@ -188,8 +188,9 @@ let interp_context_gen ~program_mode ~kind ~share ~autoimp_enable ~coercions env
   let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~share ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
-  let sigma, ctx = Evarutil.finalize
-      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
+  let sigma, ctx = Evarutil.finalize sigma @@ fun nf ->
+    List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
+  in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
       let {binder_name=id}, b, t = NamedDecl.to_tuple d in

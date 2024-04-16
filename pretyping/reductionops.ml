@@ -182,14 +182,14 @@ sig
   type app_node
   val pr_app_node : (EConstr.t -> Pp.t) -> app_node -> Pp.t
 
-  type case_stk = case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t pcase_invert * EConstr.t pcase_branch array
+  type case_stk = case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array
 
-  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t pcase_invert * EConstr.t pcase_branch array -> case_stk
+  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array -> case_stk
 
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * Sorts.relevance
+  | Proj of Projection.t * ERelevance.t
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
@@ -216,7 +216,7 @@ sig
   val zip : evar_map -> constr * t -> constr
   val check_native_args : CPrimitives.t -> t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
-  val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * ((rel_context * constr) * Sorts.relevance) * (rel_context * constr) array
+  val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * ((rel_context * constr) * ERelevance.t) * (rel_context * constr) array
 end =
 struct
   open EConstr
@@ -237,14 +237,14 @@ struct
 
 
   type case_stk =
-    case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t pcase_invert * EConstr.t pcase_branch array
+    case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array
 
   let mkCaseStk x = x
 
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * Sorts.relevance
+  | Proj of Projection.t * ERelevance.t
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 

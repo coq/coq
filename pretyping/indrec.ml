@@ -108,7 +108,7 @@ let check_privacy_block specif =
 
 type case_analysis = {
   case_params : EConstr.rel_context;
-  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_pred : Name.t EConstr.binder_annot * EConstr.types;
   case_branches : EConstr.rel_context;
   case_arity : EConstr.rel_context;
   case_body : EConstr.t;
@@ -162,7 +162,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
-  let relevance = Retyping.relevance_of_sort sigma s in
+  let relevance = Retyping.relevance_of_sort s in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
@@ -171,7 +171,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let env' = RelEnv.push_rel_context lnamespar env in
 
   let typP = make_arity !!env' sigma dep indf s in
-  let nameP = make_name env' "P" Sorts.Relevant in
+  let nameP = make_name env' "P" ERelevance.relevant in
 
   let rec get_branches env k accu =
     if Int.equal k (Array.length mip.mind_consnames) then accu
@@ -194,7 +194,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
     let arsign = get_arity !!env indf' in
     let r = Inductiveops.relevance_of_inductive_family !!env indf' in
     let depind = build_dependent_inductive !!env indf' in
-    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
+    let deparsign = LocalAssum (make_annot Anonymous r,depind) :: arsign in
 
     let ci = make_case_info !!env (fst pind) RegularStyle in
     let pbody =
@@ -212,7 +212,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
         let iv =
-          if Typeops.should_invert_case !!env relevance ci then
+          if Typeops.should_invert_case !!env (ERelevance.kind sigma relevance) ci then
             CaseInvert { indices = Context.Rel.instance mkRel 1 arsign }
           else NoInvert
         in
@@ -235,8 +235,9 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
           mkApp (mkRel 2,
                   Array.map
                     (fun (p,r) ->
-                       let r = EConstr.Vars.subst_instance_relevance u r in
-                       mkProj (Projection.make p true, r, mkRel 1)) ps)
+                       let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
+                       mkProj (Projection.make p true, r, mkRel 1))
+                    ps)
         in
         if dep then
           let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
@@ -500,7 +501,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             in
 
             (* body of i-th component of the mutual fixpoint *)
-            let target_relevance = Retyping.relevance_of_sort sigma target_sort in
+            let target_relevance = Retyping.relevance_of_sort target_sort in
             let deftyi =
               let ci = make_case_info !!env indi RegularStyle in
               let concl = applist (mkRel (dect+j+ndepar),pargs) in
@@ -559,7 +560,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                 type_rec_branch
                   true dep !!env !evdref (vargs,depPvec,i+j) indi cs recarg
               in
-              let r_0 = Retyping.relevance_of_sort sigma sfam in
+              let r_0 = Retyping.relevance_of_sort sfam in
               let namef = make_name env "f" r_0 in
                 mkLambda (namef, p_0,
                   (onerec (RelEnv.push_rel (LocalAssum (namef,p_0)) env)) (j+1))
@@ -571,7 +572,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
       | ((indi,u),_,_,dep,s)::rest ->
           let indf = make_ind_family ((indi,u), Context.Rel.instance_list mkRel i lnamesparrec) in
           let typP = make_arity !!env !evdref dep indf s in
-          let nameP = make_name env "P" Sorts.Relevant in
+          let nameP = make_name env "P" ERelevance.relevant in
             mkLambda (nameP,typP,
               (put_arity (RelEnv.push_rel (LocalAssum (nameP,typP)) env)) (i+1) rest)
       | [] ->

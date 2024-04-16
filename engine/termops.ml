@@ -1255,13 +1255,9 @@ let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 let mem_named_context_val id ctxt =
   try ignore(Environ.lookup_named_ctxt id ctxt); true with Not_found -> false
 
-let map_rel_decl f = function
-| RelDecl.LocalAssum (id, t) -> RelDecl.LocalAssum (id, f t)
-| RelDecl.LocalDef (id, b, t) -> RelDecl.LocalDef (id, f b, f t)
+let map_rel_decl = RelDecl.map_constr_het
 
-let map_named_decl f = function
-| NamedDecl.LocalAssum (id, t) -> NamedDecl.LocalAssum (id, f t)
-| NamedDecl.LocalDef (id, b, t) -> NamedDecl.LocalDef (id, f b, f t)
+let map_named_decl = NamedDecl.map_constr_het
 
 let compact_named_context sigma sign =
   let compact l decl =

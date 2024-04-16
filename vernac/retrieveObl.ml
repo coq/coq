@@ -139,11 +139,11 @@ let etype_of_evar evm evs hyps concl =
       | LocalDef (id, c, _) ->
         let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
         let c' = subst_vars acc 0 c' in
-        ( Term.mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest
+        ( Term.mkNamedProd_or_LetIn (LocalDef (EConstr.Unsafe.to_binder_annot id, c', t'')) rest
         , Int.Set.union s'' s'
         , Id.Set.union trans'' trans' )
       | LocalAssum (id, _) ->
-        (Term.mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans') )
+        (Term.mkNamedProd_or_LetIn (LocalAssum (EConstr.Unsafe.to_binder_annot id, t'')) rest, s', trans') )
     | [] ->
       let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
       (subst_vars acc 0 t', s, trans)

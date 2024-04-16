@@ -35,7 +35,7 @@ let well_founded sigma = init_constant (Global.env ()) sigma (lib_ref "core.wf.w
 let mkSubset sigma name typ prop =
   let open EConstr in
   let sigma, app_h = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).typ in
-  sigma, mkApp (app_h, [| typ; mkLambda (make_annot name Sorts.Relevant, typ, prop) |])
+  sigma, mkApp (app_h, [| typ; mkLambda (make_annot name ERelevance.relevant, typ, prop) |])
 
 let make_qref s = qualid_of_string s
 let lt_ref = make_qref "Init.Peano.lt"
@@ -61,7 +61,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let sigma, letbinders, { telescope_type = argtyp; telescope_value = make } =
     telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
-  let arg = LocalAssum (make_annot (Name argname) Sorts.Relevant, argtyp) in
+  let arg = LocalAssum (make_annot (Name argname) ERelevance.relevant, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
@@ -84,7 +84,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
   let wfarg sigma len =
     let sigma, ss_term = mkSubset sigma (Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel (len + 1))) in
-    sigma, LocalAssum (make_annot (Name argid') Sorts.Relevant, ss_term)
+    sigma, LocalAssum (make_annot (Name argid') ERelevance.relevant, ss_term)
   in
   let sigma, intern_bl =
     let sigma, wfa = wfarg sigma 1 in
@@ -92,7 +92,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   in
   let _intern_env = push_rel_context intern_bl env in
   let sigma, proj = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.proj1 in
-  let wfargpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
+  let wfargpred = mkLambda (make_annot (Name argid') ERelevance.relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
   in
@@ -102,29 +102,29 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
      now intern_arity is in wfarg :: arg *)
   let sigma, wfa = wfarg sigma 1 in
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfa] in
-  let intern_fun_binder = LocalAssum (make_annot (Name (add_suffix recname "'")) Sorts.Relevant,
+  let intern_fun_binder = LocalAssum (make_annot (Name (add_suffix recname "'")) ERelevance.relevant,
                                       intern_fun_arity_prod) in
   let recproofid = Id.of_string "recproof" in
   let sigma, curry_fun =
-    let wfpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
+    let wfpred = mkLambda (make_annot (Name argid') ERelevance.relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
     let sigma, intro = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
-    let lam = LocalAssum (make_annot (Name recproofid) Sorts.Relevant, rcurry) in
+    let lam = LocalAssum (make_annot (Name recproofid) ERelevance.relevant, rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
     let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
-    sigma, LocalDef (make_annot (Name recname) Sorts.Relevant, body, ty)
+    sigma, LocalDef (make_annot (Name recname) ERelevance.relevant, body, ty)
   in
   let fun_bl = intern_fun_binder :: [arg] in
   let lift_lets = lift_rel_context 1 letbinders in
   let sigma, intern_body =
-    let ctx = LocalAssum (make_annot (Name recname) Sorts.Relevant, get_type curry_fun) :: binders_rel in
+    let ctx = LocalAssum (make_annot (Name recname) ERelevance.relevant, get_type curry_fun) :: binders_rel in
     let impl = CAst.make (Some (Name recproofid, true)) in
     let newimpls = impls @ impl :: arityimpls in
     let dummy_decl =
       (* Ensure the measure argument does not contribute to the computation of automatic implicit arguments *)
-      LocalAssum (make_annot (Name recproofid) Sorts.Relevant, mkProp) in
+      LocalAssum (make_annot (Name recproofid) ERelevance.relevant, mkProp) in
     let full_arity = it_mkProd_or_LetIn top_arity (dummy_decl :: binders_rel) in
     let interning_data =
       Constrintern.compute_internalization_data env sigma recname
@@ -141,7 +141,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
       ()
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
-  let prop = mkLambda (make_annot (Name argname) Sorts.Relevant, argtyp, top_arity_let) in
+  let prop = mkLambda (make_annot (Name argname) ERelevance.relevant, argtyp, top_arity_let) in
   (* XXX: Previous code did parallel evdref update, so possible old
      weak ordering semantics may bite here. *)
   let sigma, def =
@@ -250,7 +250,8 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
       let fixtypes = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixtypes in
       let fixdefs = List.map (EConstr.Vars.subst_vars evd (List.rev fixnames)) fixdefs in
       let fixdefs = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixdefs in
-      let fixdecls = Array.of_list (List.map2 (fun x r -> make_annot (Name x) r) fixnames fixrs),
+      let fixdecls =
+        Array.of_list (List.map2 (fun x r -> make_annot (Name x) (EConstr.ERelevance.kind evd r)) fixnames fixrs),
         Array.of_list fixtypes,
         Array.of_list fixdefs
       in

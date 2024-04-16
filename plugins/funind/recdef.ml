@@ -327,7 +327,7 @@ type journey_info =
           -> constr infos
           -> unit Proofview.tactic)
       -> ( case_info
-           * (constr * Sorts.relevance)
+           * (constr * ERelevance.t)
            * case_invert
            * constr
            * constr array
@@ -1304,7 +1304,7 @@ let abstract_type sigma gl =
     with Not_found -> true in
   Environ.fold_named_context_reverse (fun t decl ->
                                         if is_proof_var decl then
-                                          let decl = Termops.map_named_decl EConstr.of_constr decl in
+                                          let decl = EConstr.of_named_decl decl in
                                           mkNamedProd_or_LetIn sigma decl t
                                         else
                                           t
@@ -1628,7 +1628,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let evd, function_type =
     interp_type_evars ~program_mode:false env evd type_of_f
   in
-  let function_r = Sorts.Relevant in
+  let function_r = ERelevance.relevant in
   (* TODO relevance *)
   let env =
     EConstr.push_named

@@ -331,23 +331,23 @@ let relevance_of_term env sigma c =
       | Rel n ->
         let len = Range.length rels in
         if n <= len then Range.get rels (n - 1)
-        else Relevanceops.relevance_of_rel env (n - len)
-      | Var x -> Relevanceops.relevance_of_var env x
-      | Sort _ -> Sorts.Relevant
+        else ERelevance.make @@ Relevanceops.relevance_of_rel env (n - len)
+      | Var x -> ERelevance.make @@ Relevanceops.relevance_of_var env x
+      | Sort _ -> ERelevance.relevant
       | Cast (c, _, _) -> aux rels c
-      | Prod _ -> Sorts.Relevant
+      | Prod _ -> ERelevance.relevant
       | Lambda ({binder_relevance=r}, _, bdy) ->
         aux (Range.cons r rels) bdy
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
         aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
       | Const (c,u) ->
-        let u = EInstance.kind sigma u in
-        Relevanceops.relevance_of_constant env (c,u)
-      | Ind _ -> Sorts.Relevant
+        let u = Unsafe.to_instance u in
+        ERelevance.make @@ Relevanceops.relevance_of_constant env (c,u)
+      | Ind _ -> ERelevance.relevant
       | Construct (c,u) ->
         let u = Unsafe.to_instance u in
-        Relevanceops.relevance_of_constructor env (c,u)
+        ERelevance.make @@ Relevanceops.relevance_of_constructor env (c,u)
       | Case (_, _, _, (_, r), _, _, _) -> r
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
@@ -355,12 +355,12 @@ let relevance_of_term env sigma c =
       | Evar (evk, _) ->
           let evi = Evd.find_undefined sigma evk in
           Evd.evar_relevance evi
-      | Int _ | Float _ | Array _ -> Sorts.Relevant
-      | Meta _ -> Sorts.Relevant
+      | Int _ | Float _ | Array _ -> ERelevance.relevant
+      | Meta _ -> ERelevance.relevant
 
     in
     aux Range.empty c
-  else Sorts.Relevant
+  else ERelevance.relevant
 
 let is_term_irrelevant env sigma c =
   let r = relevance_of_term env sigma c in
@@ -368,8 +368,8 @@ let is_term_irrelevant env sigma c =
 
 let relevance_of_type env sigma t =
   let s = get_sort_of env sigma t in
-  ESorts.relevance_of_sort sigma s
+  ESorts.relevance_of_sort s
 
 let relevance_of_sort = ESorts.relevance_of_sort
 
-let relevance_of_sort_family sigma f = Evarutil.nf_relevance sigma (Sorts.relevance_of_sort_family f)
+let relevance_of_sort_family sigma f = ERelevance.make (Sorts.relevance_of_sort_family f)

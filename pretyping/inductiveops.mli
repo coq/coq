@@ -43,8 +43,8 @@ val lift_inductive_family  : int -> inductive_family -> inductive_family
 val substnl_ind_family :
   constr list -> int -> inductive_family -> inductive_family
 
-val relevance_of_inductive : env -> inductive puniverses -> Sorts.relevance
-val relevance_of_inductive_family : env -> inductive_family -> Sorts.relevance
+val relevance_of_inductive : env -> inductive puniverses -> ERelevance.t
+val relevance_of_inductive_family : env -> inductive_family -> ERelevance.t
 
 (** An inductive type with its parameters and real arguments *)
 type inductive_type = IndType of inductive_family * EConstr.constr list
@@ -56,7 +56,7 @@ val lift_inductive_type  : int -> inductive_type -> inductive_type
 val substnl_ind_type : EConstr.constr list -> int -> inductive_type -> inductive_type
 val ind_of_ind_type : inductive_type -> inductive
 
-val relevance_of_inductive_type : env -> inductive_type -> Sorts.relevance
+val relevance_of_inductive_type : env -> inductive_type -> ERelevance.t
 
 val mkAppliedInd : inductive_type -> EConstr.constr
 val mis_is_recursive_subset : inductive list -> wf_paths -> bool
@@ -196,16 +196,16 @@ val make_case_info : env -> inductive -> Constr.case_style -> Constr.case_info
     inductive type does not allow dependent elimination. *)
 val make_case_or_project :
   env -> evar_map -> inductive_type -> Constr.case_info ->
-  (* pred *) EConstr.constr * Sorts.relevance -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+  (* pred *) EConstr.constr * ERelevance.t -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
 (** Sometimes [make_case_or_project] is nicer to call with a pre-built
    [case_invert] than [inductive_type]. *)
 val simple_make_case_or_project :
   env -> evar_map -> Constr.case_info ->
-  (* pred *) EConstr.constr * Sorts.relevance -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+  (* pred *) EConstr.constr * ERelevance.t -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
-val make_case_invert : env -> inductive_type -> case_relevance:Sorts.relevance -> Constr.case_info
-  -> EConstr.case_invert
+val make_case_invert : env -> evar_map -> inductive_type -> case_relevance:ERelevance.t
+  -> Constr.case_info -> EConstr.case_invert
 
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info

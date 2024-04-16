@@ -328,7 +328,7 @@ let explain_ill_formed_branch env sigma c ci actty expty =
 let explain_generalization env sigma (name,var) j =
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pv = pr_letype_env env sigma var in
-  let (pc,pt) = pr_ljudge_env (push_rel_assum (make_annot name Sorts.Relevant,var) env) sigma j in
+  let (pc,pt) = pr_ljudge_env (push_rel_assum (make_annot name EConstr.ERelevance.relevant,var) env) sigma j in
   pe ++ str "Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
   str "over" ++ brk(1,1) ++ pc ++ str "," ++ spc () ++
   str "it has type" ++ spc () ++ pt ++
@@ -820,7 +820,7 @@ let explain_disallowed_sprop () =
       ++ strbrk " flag is off.")
 
 let pr_relevance sigma r =
-  let r = Evarutil.nf_relevance sigma r in
+  let r = EConstr.ERelevance.kind sigma r in
   match r with
   | Sorts.Relevant -> str "relevant"
   | Sorts.Irrelevant -> str "irrelevant"
@@ -852,8 +852,8 @@ let explain_bad_relevance env sigma = function
   | BadRelevanceBinder (r,d) -> explain_bad_binder_relevance env sigma r d
 
 let ecast_bad_relevance = let open Typeops in function
-  | BadRelevanceCase (r,c) -> BadRelevanceCase (r, EConstr.of_constr c)
-  | BadRelevanceBinder (r,d) -> BadRelevanceBinder (r, RelDecl.map_constr_het EConstr.of_constr d)
+  | BadRelevanceCase (r,c) -> BadRelevanceCase (EConstr.ERelevance.make r, EConstr.of_constr c)
+  | BadRelevanceBinder (r,d) -> BadRelevanceBinder (EConstr.ERelevance.make r, EConstr.of_rel_decl d)
 
 let () =
   CWarnings.register_printer Typeops.bad_relevance_msg
@@ -1541,7 +1541,7 @@ let explain_pattern_matching_error env sigma = function
 
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
-      let e = map_ptype_error EConstr.of_constr e in
+      let e = of_type_error e in
       str "The abstracted term" ++ spc () ++
       quote (pr_letype_env ~goal_concl_style:true env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++
@@ -1597,7 +1597,7 @@ let rec vernac_interp_error_handler = function
       UnivNames.pr_level_with_global_universes
       i ++ str "."
   | TypeError(env,te) ->
-    let te = map_ptype_error EConstr.of_constr te in
+    let te = of_type_error te in
     explain_type_error env (Evd.from_env env) te
   | PretypeError(ctx,sigma,te) ->
     explain_pretype_error ctx sigma te

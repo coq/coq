@@ -339,7 +339,7 @@ end) = struct
   let unfold_impl n sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (make_annot n Sorts.Relevant, a, lift 1 b)
+      mkProd (make_annot n ERelevance.relevant, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -365,7 +365,7 @@ end) = struct
         (app_poly env evd arrow [| a; b |]), unfold_impl n
         (* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-        (app_poly env evd coq_all [| a; mkLambda (make_annot n Sorts.Relevant, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (make_annot n ERelevance.relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
         (app_poly env evd arrow [| a; b |]), unfold_impl n
 
@@ -404,8 +404,8 @@ end) = struct
       app_poly env evars pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
       app_poly env evars forall_relation
-        [| t; mkLambda (make_annot n Sorts.Relevant, t, car);
-           mkLambda (make_annot n Sorts.Relevant, t, rel) |]
+        [| t; mkLambda (make_annot n ERelevance.relevant, t, car);
+           mkLambda (make_annot n ERelevance.relevant, t, rel) |]
 
   let lift_cstr env evars (args : constr list) c ty cstr =
     let start evars env car =
@@ -827,7 +827,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
     let _, dosub = app_poly_sort b env evars dosub [||] in
     let _, appsub = app_poly_nocheck env evars appsub [||] in
     let dosub_id = Id.of_string "do_subrelation" in
-    let env' = EConstr.push_named (LocalDef (make_annot dosub_id Sorts.Relevant, dosub, appsub)) env in
+    let env' = EConstr.push_named (LocalDef (make_annot dosub_id ERelevance.relevant, dosub, appsub)) env in
     let evars, morph = new_cstr_evar evars env' app in
     (* Replace the free [dosub_id] in the evar by the global reference *)
     let morph = Vars.replace_vars (fst evars) [dosub_id , dosub] morph in
@@ -923,7 +923,7 @@ let make_leibniz_proof env c ty r =
         let prf =
           e_app_poly env evars coq_f_equal
                 [| r.rew_car; ty;
-                   mkLambda (make_annot Anonymous Sorts.Relevant, r.rew_car, c);
+                   mkLambda (make_annot Anonymous ERelevance.relevant, r.rew_car, c);
                    r.rew_from; r.rew_to; prf |]
         in RewPrf (rel, prf)
     | RewCast k -> r.rew_prf
@@ -1517,7 +1517,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
           match abs with
           | None -> p
           | Some (t, ty) ->
-            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
+            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) ERelevance.relevant, ty, p), [| t |])
         in
         let proof = match is_hyp with
           | None -> term
@@ -1564,7 +1564,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
         | Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp ~check:false ~reorder:false (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
+            convert_hyp ~check:false ~reorder:false (LocalAssum (make_annot id ERelevance.relevant, newt)) <*>
             beta_hyp id
         | None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>

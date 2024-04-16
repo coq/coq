@@ -238,7 +238,7 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
       state, (head, [])
 
 and safe_pattern_of_constr ~loc env evd usubst depth state t =
-  begin match Retyping.relevance_of_term env evd (EConstr.of_constr t) with
+  begin match EConstr.ERelevance.kind evd @@ Retyping.relevance_of_term env evd (EConstr.of_constr t) with
   | Sorts.Irrelevant -> warn_irrelevant_pattern ?loc ()
   | Sorts.RelevanceVar _ -> () (* FIXME *)
   | Sorts.Relevant -> ()

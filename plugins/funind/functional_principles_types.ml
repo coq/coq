@@ -65,9 +65,9 @@ let compute_new_princ_type_from_rel env rel_to_fun sorts princ_type =
     let real_args =
       if princ_type_info.indarg_in_concl then List.tl args else args
     in
-    Context.Named.Declaration.LocalAssum
-      ( map_annot Nameops.Name.get_id (Context.Rel.Declaration.get_annot decl)
-      , Term.it_mkProd_or_LetIn (mkSort new_sort) real_args )
+    let na = map_annot Nameops.Name.get_id (Context.Rel.Declaration.get_annot decl) in
+    let na = map_annot_relevance EConstr.Unsafe.to_relevance na in
+    Context.Named.Declaration.LocalAssum (na, Term.it_mkProd_or_LetIn (mkSort new_sort) real_args)
   in
   let new_predicates =
     List.map_i change_predicate_sort 0 princ_type_info.predicates
@@ -261,6 +261,4 @@ let compute_new_princ_type_from_rel env rel_to_fun sorts princ_type =
                 , t
                 , b ))
           new_predicates))
-    (List.map
-       (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d)
-       princ_type_info.params)
+    (EConstr.Unsafe.to_rel_context princ_type_info.params)

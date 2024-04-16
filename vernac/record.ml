@@ -222,7 +222,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     List.fold_left_map (build_type_telescope newps env0) sigma records in
   let typs, aritysorts = List.split typs in
   let arities = List.map (fun typ -> EConstr.it_mkProd_or_LetIn typ newps) typs in
-  let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort sigma s) aritysorts in
+  let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort s) aritysorts in
   let fold accu { DataI.name; _ } arity r =
     EConstr.push_rel (LocalAssum (make_annot (Name name) r,arity)) accu in
   let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
@@ -259,8 +259,8 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
       uvars := Univ.Level.Set.union !uvars varsc;
       c
     in
-    let nf_rel r = Evarutil.nf_relevance sigma r in
-    let map_decl = RelDecl.map_constr_het_with_relevance nf_rel nf in
+    let nf_rel r = EConstr.ERelevance.kind sigma r in
+    let map_decl = RelDecl.map_constr_het nf_rel nf in
     let newps = List.map map_decl newps in
     let map (implfs, fields) (default_dep_elim, typ) =
       let fields = List.map map_decl fields in
@@ -327,7 +327,7 @@ let warning_or_error ~info flags indsp err =
           | None ->
             (Id.print fi ++ str " cannot be defined because it is not typable:" ++ spc() ++
              Himsg.explain_type_error env (Evd.from_env env)
-               (Type_errors.map_ptype_error EConstr.of_constr te))
+               (Pretype_errors.of_type_error te))
   in
   if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ~info st;
   warn_cannot_define_projection (hov 0 st)

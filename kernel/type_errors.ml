@@ -49,7 +49,7 @@ type guard_error = constr pguard_error
 type ('constr, 'types) pcant_apply_bad_type =
   (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
 
-type ('constr, 'types) ptype_error =
+type ('constr, 'types, 'r) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
@@ -67,21 +67,21 @@ type ('constr, 'types) ptype_error =
   | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of ('constr, 'types) pcant_apply_bad_type
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
-  | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecBody of 'constr pguard_error * (Name.t, 'r) Context.pbinder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
-      int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
+      int * (Name.t, 'r) Context.pbinder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
   | UndeclaredQualities of Sorts.QVar.Set.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
-  | BadBinderRelevance of Sorts.relevance * ('constr, 'types) Context.Rel.Declaration.pt
-  | BadCaseRelevance of Sorts.relevance * 'constr
+  | BadBinderRelevance of 'r * ('constr, 'types, 'r) Context.Rel.Declaration.pt
+  | BadCaseRelevance of 'r * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
   | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
 
-type type_error = (constr, types) ptype_error
+type type_error = (constr, types, Sorts.relevance) ptype_error
 
 exception TypeError of env * type_error
 
@@ -205,7 +205,7 @@ let map_pguard_error f = function
 | FixGuardError e -> FixGuardError (map_pfix_guard_error f e)
 | CoFixGuardError e -> CoFixGuardError (map_pcofix_guard_error f e)
 
-let map_ptype_error f = function
+let map_ptype_error fr f = function
 | UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _ | IllFormedCaseParams
 | UndeclaredQualities _ | UndeclaredUniverse _ | DisallowedSProp
 | UnsatisfiedQConstraints _ | UnsatisfiedConstraints _
@@ -224,8 +224,8 @@ let map_ptype_error f = function
   CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
 | CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
 | IllFormedRecBody (ge, na, n, env, jv) ->
-  IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)
+  IllFormedRecBody (map_pguard_error f ge, Array.map (Context.map_annot_relevance fr) na, n, env, Array.map (on_judgment f) jv)
 | IllTypedRecBody (n, na, jv, t) ->
-  IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
-| BadBinderRelevance (rlv, decl) -> BadBinderRelevance (rlv, Context.Rel.Declaration.map_constr_het f decl)
-| BadCaseRelevance (rlv, case) -> BadCaseRelevance (rlv, f case)
+  IllTypedRecBody (n, Array.map (Context.map_annot_relevance fr) na, Array.map (on_judgment f) jv, Array.map f t)
+| BadBinderRelevance (rlv, decl) -> BadBinderRelevance (fr rlv, Context.Rel.Declaration.map_constr_het fr f decl)
+| BadCaseRelevance (rlv, case) -> BadCaseRelevance (fr rlv, f case)

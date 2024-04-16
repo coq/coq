@@ -60,12 +60,12 @@ module Stack : sig
 
   type case_stk
 
-  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.t pcase_return * EConstr.t pcase_invert * EConstr.t pcase_branch array -> case_stk
+  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array -> case_stk
 
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * Sorts.relevance
+  | Proj of Projection.t * ERelevance.t
   | Fix of EConstr.fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
   and t = member list
@@ -116,7 +116,7 @@ module Stack : sig
   val zip : evar_map -> constr * t -> constr
 
   val expand_case : env -> evar_map -> case_stk ->
-    case_info * EInstance.t * constr array * ((rel_context * constr) * Sorts.relevance) * (rel_context * constr) array
+    case_info * EInstance.t * constr array * ((rel_context * constr) * ERelevance.t) * (rel_context * constr) array
 end
 
 (************************************************************************)
@@ -186,11 +186,11 @@ val hnf_lam_app      : env -> evar_map -> constr -> constr -> constr
 val hnf_lam_appvect  : env -> evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env -> evar_map -> constr -> constr list -> constr
 
-val whd_decompose_prod : env -> evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+val whd_decompose_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * constr) list * types
 (** Decompose a type into a sequence of products and a non-product conclusion
     in head normal form, using head-reduction to expose the products *)
 
-val whd_decompose_lambda : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val whd_decompose_lambda : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 (** Decompose a term into a sequence of lambdas and a non-lambda conclusion
     in head normal form, using head-reduction to expose the lambdas *)
 
@@ -198,13 +198,13 @@ val whd_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
 (** Decompose a type into a context and a conclusion not starting with a product or let-in,
     using head-reduction without zeta to expose the products and let-ins *)
 
-val whd_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t Context.binder_annot * constr) list * types
+val whd_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t EConstr.binder_annot * constr) list * types
 (** Like [whd_decompose_prod] but limited at [n] products; raises [Invalid_argument] if not enough products *)
 
-val whd_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val whd_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 (** Like [whd_decompose_lambda] but limited at [n] lambdas; raises [Invalid_argument] if not enough lambdas *)
 
-val splay_arity : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
+val splay_arity : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * ESorts.t
 (** Decompose an arity reducing let-ins; Raises [Reduction.NotArity] *)
 
 val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
@@ -227,7 +227,7 @@ val whd_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_conte
 
 val reducible_mind_case : evar_map -> constr -> bool
 
-val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
+val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t, ERelevance.t) kind_of_term
 val is_arity : env -> evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
@@ -310,9 +310,9 @@ val inferred_universes : (UGraph.t * Univ.Constraints.t) Conversion.universe_com
 
 (** Deprecated *)
 
-val splay_prod : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_prod : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val splay_lam : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_lam : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
 val splay_prod_assum : env -> evar_map -> constr -> rel_context * constr
 [@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
@@ -323,9 +323,9 @@ val splay_lam_n : env -> evar_map -> int -> constr -> rel_context * constr
 
 (** Re-deprecated in 8.19 *)
 
-val hnf_decompose_prod : env -> evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+val hnf_decompose_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * constr) list * types
 [@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
 val hnf_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
 [@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]

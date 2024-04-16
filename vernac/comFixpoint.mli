@@ -66,7 +66,7 @@ val adjust_rec_order
   -> lident option
 
 (** names / relevance / defs / types *)
-type ('constr, 'types) recursive_preentry = Id.t list * Sorts.relevance list * 'constr option list * 'types list
+type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr option list * 'types list
 
 (** Exported for Program *)
 val interp_recursive :
@@ -78,7 +78,7 @@ val interp_recursive :
   (* env / signature / univs / evar_map *)
   (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
-  (EConstr.t, EConstr.types) recursive_preentry *
+  (EConstr.t, EConstr.types, EConstr.ERelevance.t) recursive_preentry *
   (* ctx per mutual def / implicits / struct annotations *)
   (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
@@ -89,10 +89,10 @@ val interp_fixpoint
   -> ?typing_flags:Declarations.typing_flags
   -> cofix:bool
   -> lident option fix_expr_gen list
-  -> (Constr.t, Constr.types) recursive_preentry *
+  -> (Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
      UState.universe_decl * UState.t *
      (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Very private function, do not use *)
 val compute_possible_guardness_evidences :
-  ('a, 'b) Context.Rel.pt * 'c * int option -> int list
+  ('a, 'b, 'r) Context.Rel.pt * 'c * int option -> int list

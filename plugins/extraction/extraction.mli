@@ -26,8 +26,7 @@ val extract_with_type :
   env -> evar_map -> EConstr.t -> ( Id.t list * ml_type ) option
 
 val extract_fixpoint :
-  env -> evar_map -> Constant.t array ->
-    (EConstr.t, EConstr.types) Constr.prec_declaration -> ml_decl
+  env -> evar_map -> Constant.t array -> EConstr.rec_declaration -> ml_decl
 
 val extract_inductive : env -> MutInd.t -> ml_ind
 

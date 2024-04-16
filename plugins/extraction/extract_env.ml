@@ -128,7 +128,7 @@ let check_fix env sg cb i =
     | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> raise Impossible
 
 let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
-  Array.equal (Context.eq_annot Name.equal) na1 na2 &&
+  Array.equal (Context.eq_annot Name.equal (EConstr.ERelevance.equal sg)) na1 na2 &&
   Array.equal (EConstr.eq_constr sg) ca1 ca2 &&
   Array.equal (EConstr.eq_constr sg) ta1 ta2
 

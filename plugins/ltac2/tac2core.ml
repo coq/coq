@@ -119,6 +119,8 @@ let to_relevance = function
     Sorts.RelevanceVar qvar
   | _ -> assert false
 
+(* XXX ltac2 exposes relevance internals so breaks ERelevance abstraction
+   ltac2 Constr.Binder.relevance probably needs to be made an abstract type *)
 let relevance = make_repr of_relevance to_relevance
 
 let of_binder b =
@@ -546,6 +548,7 @@ let () =
   | Case (ci, u, pms, c, iv, t, bl) ->
     (* FIXME: also change representation Ltac2-side? *)
     let (ci, c, iv, t, bl) = EConstr.expand_case env sigma (ci, u, pms, c, iv, t, bl) in
+    let c = on_snd (EConstr.ERelevance.kind sigma) c in
     v_blk 13 [|
       Tac2ffi.of_ext Tac2ffi.val_case ci;
       Tac2ffi.(of_pair of_constr of_relevance c);
@@ -571,7 +574,7 @@ let () =
   | Proj (p, r, c) ->
     v_blk 16 [|
       Tac2ffi.of_ext Tac2ffi.val_projection p;
-      of_relevance r;
+      of_relevance (EConstr.ERelevance.kind sigma r);
       Tac2ffi.of_constr c;
     |]
   | Int n ->
@@ -642,6 +645,7 @@ let () =
   | (13, [|ci; c; iv; t; bl|]) ->
     let ci = Tac2ffi.to_ext Tac2ffi.val_case ci in
     let c = Tac2ffi.(to_pair to_constr to_relevance c) in
+    let c = on_snd EConstr.ERelevance.make c in
     let iv = to_case_invert iv in
     let t = Tac2ffi.to_constr t in
     let bl = Tac2ffi.to_array Tac2ffi.to_constr bl in
@@ -659,7 +663,7 @@ let () =
     let p = Tac2ffi.to_ext Tac2ffi.val_projection p in
     let r = to_relevance r in
     let c = Tac2ffi.to_constr c in
-    EConstr.mkProj (p, r, c)
+    EConstr.mkProj (p, EConstr.ERelevance.make r, c)
   | (17, [|n|]) ->
     let n = Tac2ffi.to_uint63 n in
     EConstr.mkInt n
@@ -743,7 +747,7 @@ let () =
         let t_ty = Retyping.get_type_of env sigma t in
         (* If the user passed eg ['_] for the type we force it to indeed be a type *)
         let sigma, j = Typing.type_judgment env sigma {uj_val=t; uj_type=t_ty} in
-        sigma, EConstr.ESorts.relevance_of_sort sigma j.utj_type
+        sigma, EConstr.ESorts.relevance_of_sort j.utj_type
       in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id t_rel, t)) env in
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
@@ -817,7 +821,7 @@ let () =
     (option ident @-> relevance @-> constr @-> ret valexpr)
     @@ fun na rel ty ->
   let na = match na with None -> Anonymous | Some id -> Name id in
-  Tac2ffi.of_ext val_binder (Context.make_annot na rel, ty)
+  Tac2ffi.of_ext val_binder (Context.make_annot na (EConstr.ERelevance.make rel), ty)
 
 let () =
   define "constr_binder_name" (repr_ext val_binder @-> ret (option ident)) @@ fun (bnd, _) ->

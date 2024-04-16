@@ -69,12 +69,12 @@ type case_info =
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr SList.t
-type ('constr, 'types) prec_declaration =
-    Name.t binder_annot array * 'types array * 'constr array
-type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
+type ('constr, 'types, 'r) prec_declaration =
+    (Name.t,'r) pbinder_annot array * 'types array * 'constr array
+type ('constr, 'types, 'r) pfixpoint =
+    (int array * int) * ('constr, 'types, 'r) prec_declaration
+type ('constr, 'types, 'r) pcofixpoint =
+    int * ('constr, 'types, 'r) prec_declaration
 type 'a puniverses = 'a UVars.puniverses
 type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
@@ -84,50 +84,51 @@ type 'constr pcase_invert =
   | NoInvert
   | CaseInvert of { indices : 'constr array }
 
-type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
-type 'types pcase_return = (Name.t Context.binder_annot array * 'types) * Sorts.relevance
+type ('constr,'r) pcase_branch = (Name.t,'r) Context.pbinder_annot array * 'constr
+type ('types,'r) pcase_return = ((Name.t,'r) Context.pbinder_annot array * 'types) * 'r
 
-type ('constr, 'types, 'univs) pcase =
-  case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
+type ('constr, 'types, 'univs, 'r) pcase =
+  case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr, 'r) pcase_branch array
 
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
-type ('constr, 'types, 'sort, 'univs) kind_of_term =
+type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t binder_annot * 'types * 'types
-  | Lambda    of Name.t binder_annot * 'types * 'constr
-  | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
+  | Prod      of (Name.t,'r) pbinder_annot * 'types * 'types
+  | Lambda    of (Name.t,'r) pbinder_annot * 'types * 'constr
+  | LetIn     of (Name.t,'r) pbinder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
-  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * Sorts.relevance * 'constr
+  | Case      of case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
+  | Fix       of ('constr, 'types, 'r) pfixpoint
+  | CoFix     of ('constr, 'types, 'r) pcofixpoint
+  | Proj      of Projection.t * 'r * 'constr
   | Int       of Uint63.t
   | Float     of Float64.t
   | Array     of 'univs * 'constr array * 'constr * 'types
 
 (* constr is the fixpoint of the previous type. *)
-type t = T of (t, t, Sorts.t, Instance.t) kind_of_term [@@unboxed]
+type t = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unboxed]
 type constr = t
 type types = constr
 
 type existential = existential_key * constr SList.t
 
 type case_invert = constr pcase_invert
-type case_return = types pcase_return
-type case_branch = constr pcase_branch
-type case = (constr, types, Instance.t) pcase
-type rec_declaration = (constr, types) prec_declaration
-type fixpoint = (constr, types) pfixpoint
-type cofixpoint = (constr, types) pcofixpoint
+type case_return = (types,Sorts.relevance) pcase_return
+type case_branch = (constr,Sorts.relevance) pcase_branch
+type case = (constr, types, Instance.t, Sorts.relevance) pcase
+type rec_declaration = (constr, types, Sorts.relevance) prec_declaration
+type fixpoint = (constr, types, Sorts.relevance) pfixpoint
+type cofixpoint = (constr, types, Sorts.relevance) pcofixpoint
+type 'a binder_annot = ('a,Sorts.relevance) Context.pbinder_annot
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
@@ -912,8 +913,8 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
-  | Proj (p1,r1,c1), Proj (p2,r2,c2) ->
-    Projection.CanOrd.equal p1 p2 && Sorts.relevance_equal r1 r2 && eq 0 c1 c2
+  | Proj (p1,_,c1), Proj (p2,_,c2) ->
+    Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
@@ -1310,7 +1311,7 @@ module Hannotinfo = struct
     type t = Name.t binder_annot
     type u = Name.t -> Name.t
     let hash = hash_annot Name.hash
-    let eq = eq_annot (fun na1 na2 -> na1 == na2)
+    let eq = eq_annot (fun na1 na2 -> na1 == na2) Sorts.relevance_equal
     let hashcons h {binder_name=na;binder_relevance} =
       {binder_name=h na;binder_relevance}
   end
@@ -1458,9 +1459,9 @@ let hcons t = fst (sh_rec t)
 
 (* let hcons_types = hcons_constr *)
 
-type rel_declaration = (constr, types) Context.Rel.Declaration.pt
-type named_declaration = (constr, types) Context.Named.Declaration.pt
-type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
+type rel_declaration = (constr, types, Sorts.relevance) Context.Rel.Declaration.pt
+type named_declaration = (constr, types, Sorts.relevance) Context.Named.Declaration.pt
+type compacted_declaration = (constr, types, Sorts.relevance) Context.Compacted.Declaration.pt
 type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list

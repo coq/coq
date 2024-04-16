@@ -338,15 +338,15 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
       let homogeneous = Reductionops.is_conv env sigma ty typ in
       let sigma, (eq, refl) =
         mk_term_eq homogeneous (push_rel_context ctx env) sigma ty (mkRel 1) typ (mkVar id) in
-      sigma, mkProd (make_annot Anonymous Sorts.Relevant, eq, lift 1 concl), [| refl |]
+      sigma, mkProd (make_annot Anonymous ERelevance.relevant, eq, lift 1 concl), [| refl |]
     else sigma, concl, [||]
   in
     (* Abstract by equalities *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
   let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq)
-      (List.map (fun x -> LocalAssum (make_annot Anonymous Sorts.Relevant, x)) eqs)
+      (List.map (fun x -> LocalAssum (make_annot Anonymous ERelevance.relevant, x)) eqs)
   in
-  let r = Sorts.Relevant in (* TODO relevance *)
+  let r = ERelevance.relevant in (* TODO relevance *)
   let decl = match body with
     | None -> LocalAssum (make_annot (Name id) r, c)
     | Some body -> LocalDef (make_annot (Name id) r, body, c)

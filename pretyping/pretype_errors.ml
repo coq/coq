@@ -34,7 +34,9 @@ type position_reporting = (position * int) * constr
 
 type subterm_unification_error = bool * position_reporting * position_reporting
 
-type type_error = (constr, types) ptype_error
+type type_error = (constr, types, ERelevance.t) ptype_error
+
+let of_type_error = map_ptype_error ERelevance.make EConstr.of_constr
 
 type pretype_error =
   (* Old Case *)

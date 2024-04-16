@@ -135,7 +135,7 @@ let eq_recarg r1 r2 = match r1, r2 with
 let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
 
 let eq_in_context (ctx1, t1) (ctx2, t2) =
-  Context.Rel.equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
+  Context.Rel.equal Sorts.relevance_equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
 
 let check_packet env mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
@@ -145,7 +145,7 @@ let check_packet env mind ind
   let check = check mind in
 
   ignore mind_typename; (* passed through *)
-  check "mind_arity_ctxt" (Context.Rel.equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
+  check "mind_arity_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
   check "mind_arity" (check_arity env ind.mind_arity mind_arity);
   ignore mind_consnames; (* passed through *)
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
@@ -206,7 +206,7 @@ let check_inductive env mind mb =
   (* module substitution can increase the real number of recursively
      uniform parameters, so be tolerant and use [<=]. *)
 
-  check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
+  check "mind_params_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
   check "mind_template" (check_template mb.mind_template mind_template);
   check "mind_variance" (Option.equal (Array.equal UVars.Variance.equal)

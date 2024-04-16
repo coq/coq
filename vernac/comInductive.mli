@@ -81,7 +81,7 @@ val interp_mutual_inductive_constr
   -> template:bool option
   -> udecl:UState.universe_decl
   -> variances:Entries.variance_entry
-  -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
+  -> ctx_params:EConstr.rel_context
   -> indnames:Names.Id.t list
   -> arities:EConstr.t list
   -> template_syntax:syntax_allows_template_poly list
@@ -100,7 +100,7 @@ val interp_mutual_inductive_constr
 
 val compute_template_inductive
   : user_template:bool option
-  -> ctx_params:(Constr.constr, Constr.constr) Context.Rel.Declaration.pt list
+  -> ctx_params:Constr.rel_context
   -> univ_entry:UState.universes_entry
   -> Entries.one_inductive_entry
   -> syntax_allows_template_poly

@@ -41,7 +41,7 @@ type naming_mode =
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?relevance:Sorts.relevance ->
+  ?relevance:ERelevance.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
@@ -51,7 +51,7 @@ val new_evar :
 (** Alias of {!Evd.new_pure_evar} *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?relevance:Sorts.relevance ->
+  ?relevance:ERelevance.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->
@@ -170,7 +170,7 @@ val finalize : ?abort_on_undefined_evars:bool -> evar_map ->
     as an evar [e] only if [e] is uninstantiated in [sigma]. Otherwise the
     value of [e] in [sigma] is (recursively) used. *)
 val kind_of_term_upto : evar_map -> Constr.constr ->
-  (Constr.constr, Constr.types, Sorts.t, UVars.Instance.t) kind_of_term
+  (Constr.constr, Constr.types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
 
 (** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
     [t] and [u] up to existential variable instantiation and

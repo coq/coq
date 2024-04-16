@@ -76,7 +76,7 @@ exception Found of int array
 
 let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
-  (nas, Array.map inj cs, Array.map inj ts)
+  (Array.map EConstr.Unsafe.to_binder_annot nas, Array.map inj cs, Array.map inj ts)
 
 let search_guard ?loc ?evars env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
@@ -126,7 +126,7 @@ let esearch_guard ?loc env sigma indexes fix =
   let evars = Evd.evar_handler sigma in
   try search_guard ?loc ~evars env indexes fix
   with TypeError (env,err) ->
-    raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
+    raise (PretypeError (env,sigma,TypingError (of_type_error err)))
 
 (* To force universe name declaration before use *)
 
@@ -779,13 +779,13 @@ struct
       | [] -> sigma, ctxt
       | (na,_,bk,None,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
-        let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
+        let rty' = ESorts.relevance_of_sort ty'.utj_type in
         let dcl = LocalAssum (make_annot na rty', ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
         type_bl env sigma (Context.Rel.add dcl' ctxt) bl
       | (na,_,bk,Some bd,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
-        let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
+        let rty' = ESorts.relevance_of_sort ty'.utj_type in
         let sigma, bd' = pretype (mk_tycon ty'.utj_val) env sigma bd in
         let dcl = LocalDef (make_annot na rty', bd'.uj_val, ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
@@ -1062,7 +1062,7 @@ struct
     in
     let dom_valcon = valcon_of_tycon dom in
     let sigma, j = eval_type_pretyper self ~flags dom_valcon env sigma c1 in
-    let name = {binder_name=name; binder_relevance=ESorts.relevance_of_sort sigma j.utj_type} in
+    let name = {binder_name=name; binder_relevance=ESorts.relevance_of_sort j.utj_type} in
     let var = LocalAssum (name, j.utj_val) in
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
@@ -1084,7 +1084,7 @@ struct
         let sigma, j = pretype_type empty_valcon env sigma c2 in
         sigma, name, { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
-        let r = ESorts.relevance_of_sort sigma j.utj_type in
+        let r = ESorts.relevance_of_sort j.utj_type in
         let var = LocalAssum (make_annot name r, j.utj_val) in
         let var, env' = push_rel ~hypnaming sigma var env in
         let sigma, c2_j = pretype_type empty_valcon env' sigma c2 in
@@ -1171,7 +1171,7 @@ struct
       if not record then
         let f = it_mkLambda_or_LetIn f fsign in
         let ci = make_case_info !!env (ind_of_ind_type indt) LetStyle in
-          mkCase (EConstr.contract_case !!env sigma (ci, (p,rci), make_case_invert !!env indt ~case_relevance:rci ci, cj.uj_val,[|f|]))
+          mkCase (EConstr.contract_case !!env sigma (ci, (p,rci), make_case_invert !!env sigma indt ~case_relevance:rci ci, cj.uj_val,[|f|]))
       else it_mkLambda_or_LetIn f fsign
     in
     (* Make dependencies from arity signature impossible *)
@@ -1288,7 +1288,7 @@ struct
         let ci = make_case_info !!env (fst ind) IfStyle in
         mkCase (EConstr.contract_case !!env sigma
                   (ci, (pred,rci),
-                   make_case_invert !!env indty ~case_relevance:rci ci, cj.uj_val,
+                   make_case_invert !!env sigma indty ~case_relevance:rci ci, cj.uj_val,
                    [|b1;b2|]))
       in
       let cj = { uj_val = v; uj_type = p } in

@@ -138,7 +138,7 @@ let pretype_ind_arity env sigma (loc, c, impls, template_syntax) =
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
-    sigma, (t, Retyping.relevance_of_sort sigma s, template_syntax, impls)
+    sigma, (t, Retyping.relevance_of_sort s, template_syntax, impls)
 
 (* ind_rel is the Rel for this inductive in the context without params.
    n is how many arguments there are in the constructor. *)

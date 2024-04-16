@@ -57,11 +57,11 @@ let debug_ho_unification = CDebug.create ~name:"ho-unification" ()
 
 (* In case the constants id/ID are not defined *)
 let unit_judge_fallback =
-  let na1 = make_annot (Name (Id.of_string "A")) Sorts.Relevant in
-  let na2 = make_annot (Name (Id.of_string "H")) Sorts.Relevant in
+  let na1 = make_annot (Name (Id.of_string "A")) ERelevance.relevant in
+  let na2 = make_annot (Name (Id.of_string "H")) ERelevance.relevant in
   make_judge
     (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
-    (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2)))
+    (mkProd (na1,mkProp,mkArrow (mkRel 1) ERelevance.relevant (mkRel 2)))
 
 let coq_unit_judge env sigma =
   match Coqlib.lib_ref_opt "core.IDProp.idProp" with
@@ -1299,7 +1299,7 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
            let l2' =
              let term = Stack.zip evd (term2,sk2) in
              List.map (fun (p,r) ->
-                 let r = UVars.subst_instance_relevance (Unsafe.to_instance u) r in
+                 let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
                  EConstr.mkProj (Projection.make p false, r, term))
                (Array.to_list projs)
            in

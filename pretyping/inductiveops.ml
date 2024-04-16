@@ -80,7 +80,7 @@ let substnl_ind_family l n = map_ind_family (substnl l n)
 
 let relevance_of_inductive env ind =
   let ind = on_snd EConstr.Unsafe.to_instance ind in
-  Inductive.relevance_of_inductive env ind
+  ERelevance.make @@ Inductive.relevance_of_inductive env ind
 
 let relevance_of_inductive_family env (ind,_ : inductive_family) =
   relevance_of_inductive env ind
@@ -394,7 +394,8 @@ let get_constructors env (ind,params) =
 
 let get_projections = Environ.get_projections
 
-let make_case_invert env (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
+let make_case_invert env sigma (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
+  let r = ERelevance.kind sigma r in
   if Typeops.should_invert_case env r ci
   then Constr.CaseInvert {indices=Array.of_list indices}
   else Constr.NoInvert
@@ -417,7 +418,7 @@ let make_project env sigma ind pred c branches ps =
   let mkProj i c =
     let p, r = ps.(i) in
     let r = UVars.subst_instance_relevance u r in
-    mkProj (Projection.make p true, r, c)
+    mkProj (Projection.make p true, ERelevance.make r, c)
   in
   let proj = match EConstr.destRel sigma br with
     | exception Constr.DestKO -> None
@@ -463,7 +464,7 @@ let make_case_or_project env sigma indt ci pred c branches =
   let projs = get_projections env ind in
   match projs with
   | None ->
-     let invert = make_case_invert env indt ~case_relevance:(snd pred) ci in
+     let invert = make_case_invert env sigma indt ~case_relevance:(snd pred) ci in
      mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
   | Some ps -> make_project env sigma ind (fst pred) c branches ps
 
@@ -546,7 +547,7 @@ let compute_projections env (kn, i as ind) =
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
   | PrimRecord info ->
     let id, _, _, _ = info.(i) in
-    make_annot (Name id) mib.mind_packets.(i).mind_relevance
+    make_annot (Name id) (ERelevance.make mib.mind_packets.(i).mind_relevance)
   in
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
@@ -696,6 +697,7 @@ let rec instantiate_universes env evdref scl is = function
             evdref := evm; s
       in
       let ctx = EConstr.of_rel_context ctx in
+      let na = EConstr.of_binder_annot na in
       (LocalAssum (na, mkArity (ctx, s))) :: instantiate_universes env evdref scl is (sign, exp)
   | sign, [] -> EConstr.of_rel_context sign (* Uniform parameters are exhausted *)
   | [], _ -> assert false
@@ -755,4 +757,6 @@ let control_only_guard env sigma c =
   in
   try iter env c
   with Type_errors.TypeError (env, e) ->
-    raise (Pretype_errors.PretypeError (env, sigma, TypingError (Type_errors.map_ptype_error EConstr.of_constr e)))
+    raise (Pretype_errors.PretypeError
+             (env, sigma,
+              TypingError (Pretype_errors.of_type_error e)))

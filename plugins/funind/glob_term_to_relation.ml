@@ -12,6 +12,7 @@ open Util
 open Glob_termops
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+module ERelevance = EConstr.ERelevance
 
 let observe strm = if do_observe () then Feedback.msg_debug strm else ()
 
@@ -306,7 +307,7 @@ let raw_push_named (na, raw_value, raw_typ) env =
       Pretyping.understand env (Evd.from_env env)
         ~expected_type:Pretyping.IsType raw_typ
     in
-    let na = make_annot id Sorts.Relevant in
+    let na = make_annot id ERelevance.relevant in
     (* TODO relevance *)
     match raw_value with
     | None -> EConstr.push_named (NamedDecl.LocalAssum (na, typ)) env
@@ -320,7 +321,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
     match DAst.get pat with
     | PatVar na ->
       EConstr.push_rel
-        (RelDecl.LocalAssum (make_annot na Sorts.Relevant, typ))
+        (RelDecl.LocalAssum (make_annot na ERelevance.relevant, typ))
         env
     | PatCstr (c, patl, na) ->
       let (Inductiveops.IndType (indf, indargs)) =
@@ -631,7 +632,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let v_res = build_entry_lc env sigma funnames avoid v in
     let v_as_constr, ctx = Pretyping.understand env (Evd.from_env env) v in
     let v_type = Retyping.get_type_of env (Evd.from_env env) v_as_constr in
-    let v_r = Sorts.Relevant in
+    let v_r = ERelevance.relevant in
     (* TODO relevance *)
     let new_env =
       match n with
@@ -920,7 +921,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
           mkGApp (mkGVar (mk_rel_id this_relname), List.tl args' @ [res_rt])
         in
         let t', ctx = Pretyping.understand env (Evd.from_env env) new_t in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -953,7 +954,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         in
         let new_args = List.map (replace_var_by_term id rt) args in
         let subst_b = if is_in_b then b else replace_var_by_term id rt b in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -1037,7 +1038,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         let subst_b = if is_in_b then b else replace_var_by_term id rt b in
         let new_env =
           let t', ctx = Pretyping.understand env (Evd.from_env env) eq' in
-          let r = Sorts.Relevant in
+          let r = ERelevance.relevant in
           (* TODO relevance *)
           EConstr.push_rel (LocalAssum (make_annot n r, t')) env
         in
@@ -1074,7 +1075,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         observe
           (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
         let t', ctx = Pretyping.understand env (Evd.from_env env) t in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -1089,7 +1090,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     | _ -> (
       observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
       let t', ctx = Pretyping.understand env (Evd.from_env env) t in
-      let r = Sorts.Relevant in
+      let r = ERelevance.relevant in
       (* TODO relevance *)
       let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
       let new_b, id_to_exclude =
@@ -1108,7 +1109,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t', ctx = Pretyping.understand env (Evd.from_env env) t in
     match n with
     | Name id ->
-      let r = Sorts.Relevant in
+      let r = ERelevance.relevant in
       (* TODO relevance *)
       let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
       let new_b, id_to_exclude =
@@ -1135,10 +1136,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t', ctx = Pretyping.understand env evd t in
     let evd = Evd.from_ctx ctx in
     let type_t' = Retyping.get_type_of env evd t' in
-    let t' = EConstr.Unsafe.to_constr t' in
-    let type_t' = EConstr.Unsafe.to_constr type_t' in
     let new_env =
-      Environ.push_rel (LocalDef (make_annot n Sorts.Relevant, t', type_t')) env
+      EConstr.push_rel (LocalDef (make_annot n ERelevance.relevant, t', type_t')) env
     in
     let new_b, id_to_exclude =
       rebuild_cons new_env nb_args relname args (t :: crossed_types) (depth + 1)
@@ -1158,7 +1157,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
       rebuild_cons env nb_args relname args crossed_types depth t
     in
     let t', ctx = Pretyping.understand env (Evd.from_env env) new_t in
-    let r = Sorts.Relevant in
+    let r = ERelevance.relevant in
     (* TODO relevance *)
     let new_env = EConstr.push_rel (LocalAssum (make_annot na r, t')) env in
     let new_b, id_to_exclude =
@@ -1300,9 +1299,8 @@ let do_build_inductive evd (funconstants : pconstant list)
       (fun id (c, u) (evd, env) ->
         let u = EConstr.EInstance.make u in
         let evd, t = Typing.type_of env evd (EConstr.mkConstU (c, u)) in
-        let t = EConstr.Unsafe.to_constr t in
         ( evd
-        , Environ.push_named (LocalAssum (make_annot id Sorts.Relevant, t)) env
+        , EConstr.push_named (LocalAssum (make_annot id ERelevance.relevant, t)) env
         ))
       funnames
       (Array.of_list funconstants)
@@ -1367,10 +1365,9 @@ let do_build_inductive evd (funconstants : pconstant list)
         let rex =
           fst (with_full_print (Constrintern.interp_constr env evd) rel_ar)
         in
-        let rex = EConstr.Unsafe.to_constr rex in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
-        Environ.push_named (LocalAssum (make_annot rel_name r, rex)) env)
+        EConstr.push_named (LocalAssum (make_annot rel_name r, rex)) env)
       env relnames rel_arities
   in
   (* and of the real constructors*)

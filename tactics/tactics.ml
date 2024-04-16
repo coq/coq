@@ -1415,7 +1415,7 @@ let cut c =
       let _, info = Exninfo.capture e in
       Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
-      let r = ESorts.relevance_of_sort sigma s in
+      let r = ESorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.pf_ids_set_of_hyps gl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->
@@ -1723,7 +1723,10 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
           let ci = Inductiveops.make_case_info env ind RegularStyle in
           let br = [| mknas cs_args, b |] in
           let args = Context.Rel.instance mkRel 0 sign in
-          let pnas = Array.append (mknas arity) [|make_annot Anonymous (Inductive.relevance_of_ind_body mip (EConstr.Unsafe.to_instance u))|] in
+          let indr = ERelevance.make @@
+            Inductive.relevance_of_ind_body mip (EConstr.Unsafe.to_instance u)
+          in
+          let pnas = Array.append (mknas (EConstr.of_rel_context arity)) [|make_annot Anonymous indr|] in
           let p = (pnas, lift (Array.length pnas) t) in
           let c = mkCase (ci, u, Array.of_list params, (p, get_relevance decl), NoInvert, mkApp (c, args), br) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
@@ -2028,7 +2031,7 @@ let cut_and_apply c =
     | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun sigma ->
-            let typ = mkProd (make_annot Anonymous Sorts.Relevant, c2, concl) in
+            let typ = mkProd (make_annot Anonymous ERelevance.relevant, c2, concl) in
             let (sigma, f) = Evarutil.new_evar env sigma typ in
             let (sigma, x) = Evarutil.new_evar env sigma c1 in
             (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
@@ -2211,7 +2214,7 @@ let keep hyps =
   let sigma = Tacmach.project gl in
   let cl,_ =
     fold_named_context_reverse (fun (clear,keep) decl ->
-      let decl = map_named_decl EConstr.of_constr decl in
+      let decl = EConstr.of_named_decl decl in
       let hyp = NamedDecl.get_id decl in
       if Id.List.mem hyp hyps
         || List.exists (occur_var_in_decl env sigma hyp) keep
@@ -2709,7 +2712,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let eq = applist (eq, args) in
           let refl = applist (refl, [t;mkVar id]) in
           let term = mkNamedLetIn sigma (make_annot id rel) c t
-              (mkLetIn (make_annot (Name heq) Sorts.Relevant, refl, eq, ccl)) in
+              (mkLetIn (make_annot (Name heq) ERelevance.relevant, refl, eq, ccl)) in
           let ans = term,
             Tacticals.tclTHENLIST
               [

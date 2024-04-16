@@ -72,7 +72,7 @@ val judge_of_apply :
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t Context.binder_annot -> Sorts.t -> Sorts.t -> types
+val type_of_product : env -> Name.t binder_annot -> Sorts.t -> Sorts.t -> types
 (* val judge_of_product : *)
 (*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
 (*     -> unsafe_judgment *)
@@ -128,11 +128,11 @@ val warn_bad_relevance_name : string
 val bad_relevance_warning : CWarnings.warning
 (** Also used by the pretyper to define a message which uses the evar map. *)
 
-type ('constr,'types) bad_relevance =
-| BadRelevanceBinder of Sorts.relevance * ('constr,'types) Context.Rel.Declaration.pt
-| BadRelevanceCase of Sorts.relevance * 'constr
+type ('constr,'types, 'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
 
-val bad_relevance_msg : (env * (constr,types) bad_relevance) CWarnings.msg
+val bad_relevance_msg : (env * (constr,types,Sorts.relevance) bad_relevance) CWarnings.msg
 (** Used by the higher layers to register a nicer printer than the default. *)
 
 val should_invert_case : env -> Sorts.relevance -> case_info -> bool

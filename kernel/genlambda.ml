@@ -25,8 +25,8 @@ type 'v lambda =
 | Lvar          of Id.t
 | Levar         of Evar.t * 'v lambda array (* arguments *)
 | Lprod         of 'v lambda * 'v lambda
-| Llam          of Name.t Context.binder_annot array * 'v lambda
-| Llet          of Name.t Context.binder_annot * 'v lambda * 'v lambda
+| Llam          of Name.t binder_annot array * 'v lambda
+| Llet          of Name.t binder_annot * 'v lambda * 'v lambda
 | Lapp          of 'v lambda * 'v lambda array
 | Lconst        of pconstant
 | Lproj         of Projection.Repr.t * 'v lambda
@@ -47,9 +47,9 @@ type 'v lambda =
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
-    nonconstant_branches : (Name.t Context.binder_annot array * 'v lambda) array }
+    nonconstant_branches : (Name.t binder_annot array * 'v lambda) array }
 
-and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
+and 'v fix_decl = Name.t binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
   { evars_val : CClosure.evar_handler }

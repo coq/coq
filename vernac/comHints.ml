@@ -41,8 +41,8 @@ let project_hint ~poly pri l2r r =
     it_mkLambda_or_LetIn
       (mkApp
          ( p
-         , [| mkArrow a Sorts.Relevant (Vars.lift 1 b)
-            ; mkArrow b Sorts.Relevant (Vars.lift 1 a)
+         , [| mkArrow a ERelevance.relevant (Vars.lift 1 b)
+            ; mkArrow b ERelevance.relevant (Vars.lift 1 a)
             ; c |] ))
       sign
   in
