@@ -86,11 +86,11 @@ let add_instance_base inst =
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
-    if Lib.sections_are_opened () then Local
+    if Global.sections_are_opened () then Local
     else SuperGlobal
   | Export ->
     (* Same as above for export *)
-    if Lib.sections_are_opened () then Local
+    if Global.sections_are_opened () then Local
     else Export
   in
   add_instance_hint inst.instance ~locality
