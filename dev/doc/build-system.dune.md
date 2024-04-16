@@ -225,10 +225,8 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
 The following commands should work:
 ```
-dune exec -- dev/shim/coqbyte
+dune exec -- dev/shim/coqtop.byte
 > Drop.
-# #directory "dev";;
-# #use "include";;
 ```
 
 ## Compositionality, developer and release modes.

@@ -1,0 +1,40 @@
+(* File included to get some Coq facilities under the OCaml toplevel. *)
+
+(* parsing of terms *)
+
+let parse_constr = Pcoq.parse_string Pcoq.Constr.constr
+let parse_vernac = Pcoq.parse_string Pvernac.Vernac_.vernac_control
+let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic
+
+(* build a term of type glob_constr without type-checking or resolution of 
+   implicit syntax *)
+
+let e s =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Constrintern.intern_constr env sigma (parse_constr s)
+
+(* build a term of type constr with type-checking and resolution of 
+   implicit syntax *)
+
+let constr_of_string s = 
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Constrintern.interp_constr env sigma (parse_constr s)
+
+(* get the body of a constant *)
+
+let constbody_of_string s =
+  let b = Global.lookup_constant (Nametab.locate_constant (Libnames.qualid_of_string s)) in
+  Option.get (Global.body_of_constant_body Library.indirect_accessor b)
+
+(* Get the current goal *)
+(*
+let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
+
+let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
+let current_goal () = get_nth_goal 1;;
+*)
+
+let pf_e gl s = 
+  Constrintern.interp_constr (Tacmach.pf_env gl) (Tacmach.project gl) (parse_constr s)
