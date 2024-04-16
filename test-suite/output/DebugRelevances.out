@@ -26,13 +26,13 @@ Arguments boz (A B)%type_scope a b
 1 goal
   
   f := fun (A : (* Relevant *) Type) (_ : (* α8 *) A) => A
-   : forall (A : (* Relevant *) Type) (_ : (* α8 *) A), Type
+    : forall (A : (* Relevant *) Type) (_ : (* α8 *) A), Type
   ============================
   True
 1 goal
   
   f := fun (A : (* Relevant *) Type) (_ : (* Relevant *) A) => A
-   : forall (A : (* Relevant *) Type) (_ : (* Relevant *) A), Type
+    : forall (A : (* Relevant *) Type) (_ : (* Relevant *) A), Type
   ============================
   True
 let x := 0 in x

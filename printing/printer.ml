@@ -339,17 +339,19 @@ let get_compact_context,set_compact_context =
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, mt (), typ
+       ids, None, typ
     | CompactedDecl.LocalDef (ids,c,typ) ->
        (* Force evaluation *)
        let pb = pr_lconstr_env ~inctx:true env sigma c in
        let pb = if isCast c then surround pb else pb in
-       ids, (str" := " ++ pb ++ cut ()), typ
-  in
-  let pids = prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids in
+       ids, Some pb, typ in
+  let pids =
+    hov 0 (prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids) in
   let pt = pr_ltype_env env sigma typ in
-  let ptyp = (str" : " ++ pt) in
-  hov 0 (pids ++ pbody ++ ptyp)
+  match pbody with
+  | None -> hov 2 (pids ++ str" :" ++ spc () ++ pt)
+  | Some pbody ->
+     hov 2 (pids ++ str" :=" ++ spc () ++ pbody ++ spc () ++ str": " ++ pt)
 
 let pr_ecompacted_decl env sigma (decl:EConstr.compacted_declaration) =
   let Refl = EConstr.Unsafe.eq in
@@ -374,8 +376,8 @@ let pr_rel_decl env sigma decl =
         (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
   match na with
-  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Anonymous -> hov 2 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name id -> hov 2 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 let pr_erel_decl env sigma (decl:EConstr.rel_declaration) =
   let Refl = EConstr.Unsafe.eq in
@@ -610,7 +612,7 @@ let pr_evgl_sign env sigma (evi : undefined evar_info) =
 let pr_evar sigma (evk, evi) =
   let env = Global.env () in
   let pegl = pr_evgl_sign env sigma evi in
-  hov 0 (pr_existential_key env sigma evk ++ str " : " ++ pegl)
+  hov 2 (pr_existential_key env sigma evk ++ str " :" ++ spc () ++ pegl)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int_hd pr sigma i = function
@@ -1093,7 +1095,7 @@ let pr_assumptionset env sigma s =
         MutInd.print kn
     in
     let safe_pr_ltype env sigma typ =
-      try str " : " ++ pr_ltype_env env sigma typ
+      try str " :" ++ spc () ++ pr_ltype_env env sigma typ
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
@@ -1104,7 +1106,7 @@ let pr_assumptionset env sigma s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          hov 1 (safe_pr_constant env kn ++ cut() ++ safe_pr_ltype env sigma typ)
+          hov 2 (safe_pr_constant env kn ++ safe_pr_ltype env sigma typ)
       | Positive m ->
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->

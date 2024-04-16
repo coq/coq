@@ -102,11 +102,11 @@ Arguments lem3 k
   n, n0 := match x + 0 with
            | 0 | S _ => 0
            end : nat
-  e,
-  e0 := match x + 0 as y return (y = y) with
-        | 0 => eq_refl
-        | S n => eq_refl
-        end : x + 0 = x + 0
+  e, e0 :=
+    match x + 0 as y return (y = y) with
+    | 0 => eq_refl
+    | S n => eq_refl
+    end : x + 0 = x + 0
   n1, n2 := match x with
             | 0 | S _ => 0
             end : nat
@@ -119,14 +119,14 @@ Arguments lem3 k
 1 goal
   
   p : nat
-  a,
-  a0 := match eq_refl as y in (_ = e) return (y = y /\ e = e) with
-        | eq_refl => conj eq_refl eq_refl
-        end : eq_refl = eq_refl /\ p = p
-  a1,
-  a2 := match eq_refl in (_ = e) return (p = p /\ e = e) with
-        | eq_refl => conj eq_refl eq_refl
-        end : p = p /\ p = p
+  a, a0 :=
+    match eq_refl as y in (_ = e) return (y = y /\ e = e) with
+    | eq_refl => conj eq_refl eq_refl
+    end : eq_refl = eq_refl /\ p = p
+  a1, a2 :=
+    match eq_refl in (_ = e) return (p = p /\ e = e) with
+    | eq_refl => conj eq_refl eq_refl
+    end : p = p /\ p = p
   ============================
   eq_refl = eq_refl
 fun x : comparison => match x with
