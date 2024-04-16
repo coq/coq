@@ -66,6 +66,12 @@ let { Goptions.get = is_keyed_unification } =
     ~value:false
     ()
 
+let { Goptions.get = firstorder_function_conversion } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Unification";"Firstorder";"Function";"Conversion"]
+    ~value:true
+    ()
+
 let debug_tactic_unification = CDebug.create ~name:"tactic-unification" ()
 
 let occur_meta_or_undefined_evar evd c =
@@ -299,6 +305,11 @@ type core_unify_flags = {
   restrict_conv_on_strict_subterms : bool;
     (* No conversion at the root of the term; potentially useful for rewrite *)
 
+  firstorder_function_conversion : bool;
+    (* Allow conversion of functions heads when applying the first-order approximation
+       heuristic (generally a bad idea as it might find unexpected successes and dually lead
+       to unexpected, costly failures) *)
+
   modulo_betaiota : bool;
     (* Support betaiota in the reduction *)
     (* Note that zeta is always used *)
@@ -346,6 +357,7 @@ let default_core_unify_flags () =
   use_meta_bound_pattern_unification = true;
   allowed_evars = AllowedEvars.all;
   restrict_conv_on_strict_subterms = false;
+  firstorder_function_conversion = firstorder_function_conversion ();
   modulo_betaiota = true;
   modulo_eta = true;
  }
@@ -562,16 +574,17 @@ let isApp_or_Proj sigma c =
   | _ -> false
 
 type unirec_flags = {
+  with_conv : bool;
   at_top: bool;
   with_types: bool;
   with_cs : bool;
 }
 
-let subterm_restriction opt flags =
-  not opt.at_top && flags.restrict_conv_on_strict_subterms
+let disallow_conversion opt flags =
+  not opt.with_conv || not opt.at_top && flags.restrict_conv_on_strict_subterms
 
 let key_of env sigma b flags f =
-  if subterm_restriction b flags then None else
+  if disallow_conversion b flags then None else
   match EConstr.kind sigma f with
   | Const (cst, u) when is_transparent env (Evaluable.EvalConstRef cst) &&
       (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst
@@ -1056,7 +1069,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       let f1, l1 = expand_proj f1 f2 l1 in
       let f2, l2 = expand_proj f2 f1 l2 in
       let opta = {opt with at_top = true; with_types = false} in
-      let optf = {opt with at_top = true; with_types = true} in
+      let optf = {opt with with_conv = flags.firstorder_function_conversion; at_top = true; with_types = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
         if Array.length l1 == 0 then error_cannot_unify (fst curenvnb) sigma (cM,cN)
         else
@@ -1099,7 +1112,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
 
   and reduce curenvnb pb opt substn cM cN =
     let sigma = substn.subst_sigma in
-    if flags.modulo_betaiota && not (subterm_restriction opt flags) then
+    if flags.modulo_betaiota && not (disallow_conversion opt flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
         if not (EConstr.eq_constr sigma cM cM') then
           unirec_rec curenvnb pb opt substn cM' cN
@@ -1125,7 +1138,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
          (it is used by apply and rewrite); it might now be redundant
          with the support for delta-expansion (which is used
          essentially for apply)... *)
-      if subterm_restriction opt flags then None else
+      if disallow_conversion opt flags then None else
       match flags.modulo_conv_on_closed_terms with
       | None -> None
       | Some convflags ->
@@ -1203,7 +1216,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       if not opt.with_cs ||
         begin match flags.modulo_conv_on_closed_terms with
         | None -> true
-        | Some _ -> subterm_restriction opt flags
+        | Some _ -> disallow_conversion opt flags
         end then
         error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else
@@ -1258,10 +1271,10 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       Termops.Internal.print_constr_env env sigma (fst m) ++ strbrk" ~= " ++
       Termops.Internal.print_constr_env env sigma (fst n));
 
-  let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
+  let opt = { with_conv = true; at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res =
-    if subterm_restriction opt flags ||
+    if disallow_conversion opt flags ||
       fast_occur_meta_or_undefined_evar sigma m || fast_occur_meta_or_undefined_evar sigma n
     then
       None
@@ -1711,6 +1724,7 @@ let default_matching_core_flags sigma =
   use_meta_bound_pattern_unification = false;
   allowed_evars = allow_new_evars sigma;
   restrict_conv_on_strict_subterms = false;
+  firstorder_function_conversion = firstorder_function_conversion ();
   modulo_betaiota = false;
   modulo_eta = false;
 }
