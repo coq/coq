@@ -12,6 +12,7 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 export COQEXTRAFLAGS='-native-compiler no'
 
 ( cd "${CI_BUILD_DIR}/lean_importer"
+  make .merlin
   make
   make test
 )

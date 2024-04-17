@@ -10,6 +10,7 @@ git_download relation_algebra
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/relation_algebra"
+  make .merlin
   make
   make install
 )
