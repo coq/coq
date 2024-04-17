@@ -572,7 +572,7 @@ Ltac2 trivial0 use dbs :=
   Std.trivial Std.Off use dbs.
 
 Ltac2 Notation "trivial"
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := trivial0 use dbs.
 
 Ltac2 Notation trivial := trivial.
@@ -583,7 +583,7 @@ Ltac2 auto0 n use dbs :=
   Std.auto Std.Off n use dbs.
 
 Ltac2 Notation "auto" n(opt(tactic(0)))
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := auto0 n use dbs.
 
 Ltac2 Notation auto := auto.
@@ -594,7 +594,7 @@ Ltac2 eauto0 n use dbs :=
   Std.eauto Std.Off n use dbs.
 
 Ltac2 Notation "eauto" n(opt(tactic(0)))
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := eauto0 n use dbs.
 
 Ltac2 Notation eauto := eauto.
