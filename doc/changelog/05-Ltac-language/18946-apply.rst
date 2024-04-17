@@ -1,0 +1,7 @@
+- **Changed:**
+  When used with a direction :n:`->` or :n:`<-`, :tacn:`apply` now accepts an open term,
+  assuming its holes can be inferred during application, as was already the case for plain
+  :tacn:`apply`
+  (`#18946 <https://github.com/coq/coq/pull/18946>`_,
+  fixes `#18177 <https://github.com/coq/coq/issues/18177>`_,
+  by Guillaume Melquiond).
