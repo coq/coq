@@ -175,13 +175,17 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       let hook { Declare.Hook.S.dref; uctx; _ } =
-        let sigma = Evd.from_ctx uctx in
-        let sigma, h_body = Evd.fresh_global (Global.env ()) sigma dref in
+        let univs = UState.check_univ_decl ~poly uctx udecl in
+        let h_body =
+          let inst = UState.(match fst univs with
+              | Polymorphic_entry uctx -> EConstr.EInstance.make (UVars.UContext.instance uctx)
+              | Monomorphic_entry _ -> EConstr.EInstance.empty) in
+          EConstr.mkRef (dref, inst) in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in
-        let univs = Evd.check_univ_decl ~poly sigma udecl in
         (*FIXME poly? *)
+        let sigma = Evd.from_ctx uctx in
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (* FIXME: include locality *)
         let c = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
