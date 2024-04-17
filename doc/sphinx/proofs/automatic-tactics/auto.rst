@@ -455,9 +455,9 @@ Creating Hints
 
       :n:`@one_term`
         Permits declaring a hint without declaring a new
-        constant first, but this is not recommended.
+        constant first. This is deprecated.
 
-         .. warn:: Declaring arbitrary terms as hints is fragile; it is recommended to declare a toplevel constant instead
+         .. warn:: Declaring arbitrary terms as hints is fragile and deprecated; it is recommended to declare a toplevel constant instead
             :undocumented:
 
       .. exn:: @qualid cannot be used as a hint
