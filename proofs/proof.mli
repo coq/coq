@@ -86,7 +86,7 @@ type open_error_reason =
 
 exception OpenProof of Names.Id.t option * open_error_reason
 
-val return : ?pid:Names.Id.t -> t -> Evd.evar_map
+val return : ?pid:Names.Id.t -> ?allow_given_up:bool -> t -> Evd.evar_map
 
 (*** Focusing actions ***)
 

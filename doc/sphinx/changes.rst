@@ -703,6 +703,22 @@ Infrastructure and dependencies
   fixes `#18548 <https://github.com/coq/coq/issues/18548>`_,
   by Gaëtan Gilbert).
 
+Changes in 8.19.2
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  :tacn:`abstract` failing in the presence of admitted goals in the surrounding proof
+  (`#18945 <https://github.com/coq/coq/pull/18944>`_,
+  fixes `#18942 <https://github.com/coq/coq/issues/18942>`_,
+  by Gaëtan Gilbert).
+
+
 Version 8.18
 ------------
 
