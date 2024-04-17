@@ -1,7 +1,6 @@
 *.glob
 *.d
 *.d.raw
-*.vio
 *.vos
 *.vok
 *.vo

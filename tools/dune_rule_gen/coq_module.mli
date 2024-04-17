@@ -21,11 +21,8 @@ module Rule_type : sig
   type native = Disabled | Coqc | CoqNative
   type t =
     | Regular of { native : native }
-    | Quick
-    (** build / depend on .vio instead of .vo  *)
 
   val native_coqc : t -> bool
-  val vo_ext : t -> string
 end
 
 (** Return the native object files for a module *)

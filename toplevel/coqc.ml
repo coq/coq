@@ -28,30 +28,15 @@ coqc specific options:\
 \n  -verbose               compile and output the input file\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
-\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
-\n                         into fi.vo\
-\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
-\n                         proofs in each fi.vio\
 \n  -vos                   process statements but ignore opaque proofs, and produce a .vos file\
 \n  -vok                   process the file by loading .vos instead of .vo files for\
 \n                         dependencies, and produce an empty .vok file on success\
-\n  -vio                   process statements and suspend opaque proofs, and produce a .vio file\
-\n\
-\nUndocumented:\
-\n  -quick                 (deprecated) alias for -vio\
-\n  -vio2vo                [see manual]\
-\n  -check-vio-tasks       [see manual]\
 \n"
 }
 
 let coqc_main ((copts,_),stm_opts) injections ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_file opts stm_opts copts injections;
-
-  (* Careful this will modify the load-path and state so after this
-     point some stuff may not be safe anymore. *)
-  Topfmt.(in_phase ~phase:CompilationPhase)
-    Vio_compile.do_vio opts copts injections;
 
   flush_all();
 
@@ -76,7 +61,7 @@ let coqc_run copts ~opts injections =
     exit exit_code
 
 let fix_stm_opts opts stm_opts = match opts.Coqcargs.compilation_mode with
-  | BuildVio | BuildVos ->
+  | BuildVos ->
     (* We need to disable error resiliency, otherwise some errors
        will be ignored in batch mode. c.f. #6707
 
@@ -89,7 +74,7 @@ let fix_stm_opts opts stm_opts = match opts.Coqcargs.compilation_mode with
       async_proofs_cmd_error_resilience = false;
       async_proofs_tac_error_resilience = FNone;
     }
-  | BuildVo | BuildVok | Vio2Vo -> stm_opts
+  | BuildVo | BuildVok -> stm_opts
 
 let custom_coqc : ((Coqcargs.t * Colors.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
  = Coqtop.{

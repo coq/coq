@@ -1,14 +1,7 @@
 fA.vo fA.glob fA.v.beautified fA.required_vo: fA.v 
-fA.vio: fA.v 
 fB.vo fB.glob fB.v.beautified fB.required_vo: fB.v fA.vo
-fB.vio: fB.v fA.vio
 fC.vo fC.glob fC.v.beautified fC.required_vo: fC.v fB.vo
-fC.vio: fC.v fB.vio
 fD.vo fD.glob fD.v.beautified fD.required_vo: fD.v fA.vo
-fD.vio: fD.v fA.vio
 fE.vo fE.glob fE.v.beautified fE.required_vo: fE.v fA.vo
-fE.vio: fE.v fA.vio
 fF.vo fF.glob fF.v.beautified fF.required_vo: fF.v fA.vo
-fF.vio: fF.v fA.vio
 fG.vo fG.glob fG.v.beautified fG.required_vo: fG.v fA.vo
-fG.vio: fG.v fA.vio

@@ -120,7 +120,7 @@ end
 module VCache = Set.Make(VData)
 
 (** To avoid reading .v files several times for computing dependencies,
-    once for .vo, once for .vio, and once for .vos extensions, the
+    once for .vo, and once for .vos extensions, the
     following code performs a single pass and produces a structured
     list of dependencies, separating dependencies on compiled Coq files
     (those loaded by [Require]) from other dependencies, e.g. dependencies

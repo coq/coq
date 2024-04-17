@@ -35,33 +35,25 @@ val require_library_syntax_from_dirpath
 (** Segments of a library *)
 type seg_sum
 type seg_lib
-type seg_univ = (* all_cst, finished? *)
-  Univ.ContextSet.t * bool
 type seg_proofs = Opaques.opaque_disk
 type seg_vm = Vmlibrary.compiled_library
 
-(** End the compilation of a library and save it to a ".vo" file,
-    a ".vio" file, or a ".vos" file, depending on the todo_proofs
-    argument.
-    [output_native_objects]: when producing vo objects, also compile the native-code version. *)
+(** End the compilation of a library and save it to a ".vo" file, or a
+    ".vos" file, depending on the todo_proofs argument.
 
-type ('uid, 'doc) tasks = (('uid, 'doc) Stateid.request * bool) list
+    [output_native_objects]: when producing vo objects, also compile
+    the native-code version. *)
 
 type 'doc todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * (Future.UUID.t, 'doc) tasks (* for .vio *)
 
 val save_library_to :
   'document todo_proofs ->
   output_native_objects:bool ->
   DirPath.t -> string -> unit
 
-val load_library_todo
-  :  CUnix.physical_path
-  -> seg_sum * seg_lib * seg_univ * (Opaqueproof.opaque_handle option, 'doc) tasks * seg_proofs * seg_vm
-
-val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> seg_vm -> unit
+val save_library_raw : string -> seg_sum -> seg_lib -> seg_proofs -> seg_vm -> unit
 
 (** {6 Interrogate the status of libraries } *)
 

@@ -1544,7 +1544,7 @@ let declare_include me_asts =
   RawIncludeOps.Interp.declare_include me_asts
 
 (** For the native compiler, we cache the library values *)
-let register_library dir cenv (objs:library_objects) digest univ vmtab =
+let register_library dir cenv (objs:library_objects) digest vmtab =
   let mp = MPfile dir in
   let () =
     try
@@ -1553,7 +1553,7 @@ let register_library dir cenv (objs:library_objects) digest univ vmtab =
     with Not_found ->
       begin
       (* If not, let's do it now ... *)
-      let mp' = Global.import cenv univ vmtab digest in
+      let mp' = Global.import cenv vmtab digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.")
       end

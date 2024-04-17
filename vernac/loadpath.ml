@@ -179,46 +179,25 @@ let locate_file fname =
 type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
-let warn_several_object_files =
-  CWarnings.create ~name:"several-object-files" ~category:CWarnings.CoreCategories.filesystem
-    Pp.(fun (vi, vo) ->
-        seq [ str "Loading"; spc (); str vi
-            ; strbrk " instead of "; str vo
-            ; strbrk " because it is more recent."
-            ])
-
+(* If [!Flags.load_vos_libraries]
+      and the .vos file exists
+      and this file is not empty
+   Then load this library
+   Else load the .vo file or raise error if both are missing *)
 let select_vo_file ~find base =
   let find ext =
     try
       let name = Names.Id.to_string base ^ ext in
       let lpath, file = find name in
-      Some (lpath, file)
-    with Not_found -> None in
-  (* If [!Flags.load_vos_libraries]
-        and the .vos file exists
-        and this file is not empty
-     Then load this library
-     Else load the most recent between the .vo file and the .vio file,
-          or if there is only of the two files, take this one,
-          or raise an error if both are missing. *)
-  let load_most_recent_of_vo_and_vio () =
-    match find ".vo", find ".vio" with
-    | None, None ->
-      Error LibNotFound
-    | Some res, None | None, Some res ->
-      Ok res
-    | Some (_, vo), Some (_, vi as resvi)
-      when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-      warn_several_object_files (vi, vo);
-      Ok resvi
-    | Some resvo, Some _ ->
-      Ok resvo
-    in
-  if !Flags.load_vos_libraries then begin
+      Ok (lpath, file)
+    with Not_found -> Error LibNotFound in
+  if !Flags.load_vos_libraries
+  then begin
     match find ".vos" with
-    | Some (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
-    | _ -> load_most_recent_of_vo_and_vio()
-  end else load_most_recent_of_vo_and_vio()
+    | Ok (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
+    | _ -> find ".vo"
+  end
+  else find ".vo"
 
 let find_first loadpath base =
   match System.all_in_path loadpath base with

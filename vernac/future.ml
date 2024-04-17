@@ -21,9 +21,6 @@ let not_here_msg = ref (fun name ->
                 "asynchronous script processing and don't pass \"-vio\" to "^
                 "coqc."))
 
-let customize_not_ready_msg f = not_ready_msg := f
-let customize_not_here_msg f = not_here_msg := f
-
 exception NotReady of string
 exception NotHere of string
 
