@@ -139,6 +139,9 @@ val decompose_lambda_decls : constr -> Constr.rel_context * constr
 (** Idem but extract the first [n] premisses, counting let-ins. *)
 val decompose_prod_n_decls : int -> types -> Constr.rel_context * types
 
+(** Idem but extracting simultaneously the first [n] premisses, counting let-ins, in a term and its type. *)
+val decompose_lambda_prod_n_decls : int -> constr -> types -> Constr.rel_context * constr * types
+
 (** Idem for lambdas, including let-ins but _not_ counting them;
     This is typically the function to use to extract the context of a Fix
     up to and including the decreasing argument, counting as many lambda's

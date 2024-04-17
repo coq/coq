@@ -23,8 +23,6 @@ open Evarutil
 open Context.Rel.Declaration
 open ComFixpoint
 
-module RelDecl = Context.Rel.Declaration
-
 (* Wellfounded definition *)
 
 open Coqlib
@@ -41,15 +39,6 @@ let mkSubset sigma name typ prop =
 
 let make_qref s = qualid_of_string s
 let lt_ref = make_qref "Init.Peano.lt"
-
-let nf_evar_context sigma ctx =
-  let nf c = Evarutil.nf_evar sigma c in
-  let nfa na = UnivSubst.nf_binder_annot (fun r -> Evarutil.nf_relevance sigma r) na in
-  let map = function
-  | RelDecl.LocalAssum (na, t) -> RelDecl.LocalAssum (nfa na, nf t)
-  | RelDecl.LocalDef (na, c, t) -> RelDecl.LocalDef (nfa na, nf c, nf t)
-  in
-  List.map map ctx
 
 let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typing_flags ?user_warns ?using r measure notations =
   let open EConstr in
@@ -167,8 +156,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let sigma, def = Typing.solve_evars env sigma def in
   let sigma = Evarutil.nf_evar_map sigma in
   let def = mkApp (def, [|intern_body_lam|]) in
-  let binders_rel = nf_evar_context sigma binders_rel in
-  let binders = nf_evar_context sigma binders in
+  let binders_rel = Evarutil.nf_rel_context_evar sigma binders_rel in
+  let binders = Evarutil.nf_rel_context_evar sigma binders in
   let top_arity = Evarutil.nf_evar sigma top_arity in
   let make = Evarutil.nf_evar sigma make in
   let hook, recname, typ =

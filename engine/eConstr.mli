@@ -456,9 +456,13 @@ val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t,
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
 
 val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
+val to_named_decl : Evd.evar_map -> (t, types) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
 
 val of_named_context : Constr.named_context -> named_context
 val of_rel_context : Constr.rel_context -> rel_context
+
+val to_named_context : Evd.evar_map -> (t, types) Context.Named.pt -> (Constr.t, Constr.types) Context.Named.pt
+val to_rel_context : Evd.evar_map -> (t, types) Context.Rel.pt -> (Constr.t, Constr.types) Context.Rel.pt
 
 val of_case_invert : Constr.case_invert -> case_invert
 
