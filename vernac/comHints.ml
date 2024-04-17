@@ -64,12 +64,15 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
   (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
+let warning_deprecated_hint_constr =
+  CWarnings.create_warning ~from:[CWarnings.CoreCategories.automation; Deprecation.Version.v8_20] ~name:"fragile-hint-constr" ~default:AsError ()
+
 let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"fragile-hint-constr" ~default:AsError ~category:CWarnings.CoreCategories.automation
+  CWarnings.create_in warning_deprecated_hint_constr
     (fun () ->
       Pp.strbrk
-        "Declaring arbitrary terms as hints is fragile; it is recommended to \
-         declare a toplevel constant instead")
+        "Declaring arbitrary terms as hints is fragile and deprecated; it is \
+         recommended to declare a toplevel constant instead")
 
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?

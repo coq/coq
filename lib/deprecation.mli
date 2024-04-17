@@ -27,4 +27,5 @@ module Version : sig
   val v8_17 : CWarnings.category
   val v8_18 : CWarnings.category
   val v8_19 : CWarnings.category
+  val v8_20 : CWarnings.category
 end
