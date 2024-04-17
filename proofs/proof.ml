@@ -145,11 +145,6 @@ let is_done p =
   Proofview.finished p.proofview &&
   Proofview.finished (unroll_focus p.proofview p.focus_stack)
 
-(* spiwack: for compatibility with <= 8.2 proof engine *)
-let has_given_up_goals p =
-  let (_goals,sigma) = Proofview.proofview p.proofview in
-  Evd.has_given_up sigma
-
 (* Returns the list of partial proofs to initial goals *)
 let partial_proof p = Proofview.partial_proof p.entry p.proofview
 
@@ -274,6 +269,8 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
+let unfocus_all p = unfocus end_of_stack_kind p ()
+
 let start ~name ~poly ?typing_flags sigma goals =
   let entry, proofview = Proofview.init sigma goals in
   let pr =
@@ -298,36 +295,6 @@ let dependent_start ~name ~poly ?typing_flags goals =
   } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack () 1 number_of_goals pr
-
-type open_error_reason =
-  | UnfinishedProof
-  | HasGivenUpGoals
-
-let print_open_error_reason er = let open Pp in match er with
-  | UnfinishedProof ->
-    str "Attempt to save an incomplete proof"
-  | HasGivenUpGoals ->
-    strbrk "Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed."
-
-exception OpenProof of Names.Id.t option * open_error_reason
-
-let _ = CErrors.register_handler begin function
-    | OpenProof (pid, reason) ->
-      let open Pp in
-      Some (Option.cata (fun pid ->
-          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason)
-    | _ -> None
-  end
-
-let return ?pid (p : t) =
-  if not (is_done p) then
-    raise (OpenProof(pid, UnfinishedProof))
-  else if has_given_up_goals p then
-    raise (OpenProof(pid, HasGivenUpGoals))
-  else begin
-    let p = unfocus end_of_stack_kind p () in
-    Proofview.return p.proofview
-  end
 
 let compact p =
   let entry, proofview = Proofview.compact p.entry p.proofview in

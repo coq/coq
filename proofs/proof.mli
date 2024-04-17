@@ -76,18 +76,6 @@ val compact : t -> t
 (** [update_sigma_univs] lifts [UState.update_sigma_univs] to the proof *)
 val update_sigma_univs : UGraph.t -> t -> t
 
-(* Returns the proofs (with their type) of the initial goals.
-    Raises [UnfinishedProof] is some goals remain to be considered.
-    Raises [HasShelvedGoals] if some goals are left on the shelf.
-    Raises [HasGivenUpGoals] if some goals have been given up. *)
-type open_error_reason =
-  | UnfinishedProof
-  | HasGivenUpGoals
-
-exception OpenProof of Names.Id.t option * open_error_reason
-
-val return : ?pid:Names.Id.t -> t -> Evd.evar_map
-
 (*** Focusing actions ***)
 
 (* ['a focus_kind] is the type used by focusing and unfocusing
@@ -151,6 +139,9 @@ val unfocus : 'a focus_kind -> t -> unit -> t
 
 (* [unfocused p] returns [true] when [p] is fully unfocused. *)
 val unfocused : t -> bool
+
+(** Unfocus everything (fail if no allowed). *)
+val unfocus_all : t -> t
 
 (* [get_at_focus k] gets the information stored at the closest focus point
     of kind [k].
