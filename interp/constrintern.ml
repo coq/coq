@@ -1291,34 +1291,37 @@ let intern_field_ref qid =
 (* Interpreting references                                            *)
 
 let find_appl_head_data env (_,ntnvars) c =
+  let loc = c.CAst.loc in
   match DAst.get c with
   | GVar id when not (Id.Map.mem id ntnvars) ->
     (try
       let _,impls,argsc,_ = Id.Map.find id env.impls in
-      make_implicits_list impls, argsc
-     with Not_found -> [], [])
+      Some (CAst.make ?loc (GlobRef.VarRef id)), make_implicits_list impls, argsc
+     with Not_found -> None, [], [])
   | GRef (ref,_) ->
     let impls = implicits_of_global ref in
     let scopes = find_arguments_scope ref in
-    impls, scopes
+    Some (CAst.make ?loc ref), impls, scopes
   | GApp (r, l) ->
     begin match DAst.get r with
     | GRef (ref,_) ->
       let n = List.length l in
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
+      Some (CAst.make ?loc ref),
       (if n = 0 then [] else List.map (drop_first_implicits n) impls),
        List.skipn_at_least n scopes
-    | _ -> [],[]
+    | _ -> None, [], []
     end
   | GProj ((cst,_), l, c) ->
       let ref = GlobRef.ConstRef cst in
       let n = List.length l + 1 in
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
+      Some (CAst.make ?loc (GlobRef.ConstRef cst)),
       List.map (drop_first_implicits n) impls,
       List.skipn_at_least n scopes
-  | _ -> [],[]
+  | _ -> None, [], []
 
 let error_not_enough_arguments ?loc =
   user_err ?loc  (str "Abbreviation is not applied enough.")
@@ -2078,21 +2081,11 @@ let intern_ind_pattern genv ntnvars env pat =
 let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
-let set_hole_implicit i b c =
-  let loc = c.CAst.loc in
-  let loc, r = match DAst.get c with
-  | GRef (r, _) -> loc, r
-  | GApp (r, _) ->
-    let loc = r.CAst.loc in
-    begin match DAst.get r with
-    | GRef (r, _) -> loc, r
-    | GProj ((cst,_), _, _) -> (* Improve: *) loc, GlobRef.ConstRef cst
-    | _ -> anomaly (Pp.str "Only refs have implicits.")
-    end
-  | GProj ((cst,_), _, _) -> loc, GlobRef.ConstRef cst
-  | GVar id -> loc, GlobRef.VarRef id
-  | _ -> anomaly (Pp.str "Only refs have implicits.") in
-  Loc.tag ?loc (GImplicitArg (r,i,b))
+let set_hole_implicit i na imp r =
+  let loc, r = match r with
+    | Some CAst.{loc;v} -> loc, v
+    | None -> anomaly (Pp.str "Only refs have implicits.") in
+  DAst.make ?loc (GHole (GImplicitArg (r,(i,na),force_inference_of imp)))
 
 let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
@@ -2290,11 +2283,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             lvar us args ref
         in
         check_not_notation_variable f ntnvars;
-        let _,args_scopes = find_appl_head_data env lvar f in
         (* Rem: GApp(_,f,[]) stands for @f *)
-        let args = intern_args env args_scopes (List.map fst args) in
         if args = [] then DAst.make ?loc @@ GApp (f,[])
-        else smart_gapp f loc args
+        else apply_args env loc f (List.map fst args)
     | CApp (f, args) ->
         begin match f.CAst.v with
          (* t.(f args') args *)
@@ -2309,9 +2300,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           apply_impargs env loc c args
         | _ ->
           let f = intern_no_implicit env f in
-          let _, args_scopes = find_appl_head_data env lvar f in
           let args = extract_regular_arguments args in
-          smart_gapp f loc (intern_args env args_scopes args)
+          apply_args env loc f args
         end
     | CRecord fs ->
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
@@ -2332,11 +2322,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           match fields with
             | None -> user_err ?loc (str"No constructor inference.")
             | Some (n, constrname, args) ->
-                let args_scopes = find_arguments_scope constrname in
-                let pars = List.make n (CAst.make ?loc @@ CHole (None)) in
-                let args = intern_args env args_scopes (List.rev_append pars args) in
                 let hd = DAst.make @@ GRef (constrname,None) in
-                DAst.make ?loc @@ GApp (hd, args)
+                let pars = List.make n (CAst.make ?loc @@ CHole (None)) in
+                apply_args env loc hd (List.rev_append pars args)
        end
     | CCases (sty, rtnpo, tms, eqns) ->
         let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
@@ -2579,14 +2567,14 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | Some (p, us, args0, nexpectedparams) ->
       (* A reference registered as projection *)
       check_not_notation_variable f ntnvars;
-      let impl, subscopes = find_appl_head_data env lvar f in
+      let head, impls, subscopes = find_appl_head_data env lvar f in
       let imps1, imps2 =
         if expl then
           [], []
         else
           let ngivenparams = List.count (fun (_,x) -> Option.is_empty x) args1 in
           let nextraargs = List.length args2 in
-          match select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impl with
+          match select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impls with
           | Inl (imps1,imps2) -> (imps1,imps2)
           | Inr l ->
             let l = Lazy.force l in
@@ -2595,37 +2583,35 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                            str (String.plural n " explicit parameter") ++ str ".")
       in
       let subscopes1, subscopes2 = List.chop (nexpectedparams + 1) subscopes in
-      let c,args1 = List.sep_last (intern_impargs f env imps1 subscopes1 (args1@[c,None])) in
+      let c,args1 = List.sep_last (intern_impargs head env imps1 subscopes1 (args1@[c,None])) in
       let p = DAst.make ?loc (GProj ((p,us),args0@args1,c)) in
-      let args2 = intern_impargs p env imps2 subscopes2 args2 in
+      let args2 = intern_impargs head env imps2 subscopes2 args2 in
       smart_gapp p loc args2
     | None ->
       (* Tolerate a use of t.(f) notation for an ordinary application until a decision is taken about it *)
       if expl then intern env (CAst.make ?loc (CAppExpl ((qid,us), List.map fst args1@c::List.map fst args2)))
       else intern env (CAst.make ?loc (CApp ((CAst.make ?loc:qid.CAst.loc (CRef (qid,us))), args1@(c,None)::args2)))
 
-  and intern_impargs c env l subscopes args =
-    let eargs, rargs = extract_explicit_arg l args in
+  and intern_impargs head env allimps subscopes args =
+    let eargs, rargs = extract_explicit_arg allimps args in
     if !parsing_explicit then
       if List.is_empty eargs then intern_args env subscopes rargs
       else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
     else
-    let rec aux n impl subscopes eargs rargs =
+    let rec aux n imps subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
-      match (impl,rargs) with
-      | (imp::impl', rargs) when is_status_implicit imp ->
+      match (imps,rargs) with
+      | (imp::imps', rargs) when is_status_implicit imp ->
           begin try
             let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit imp pos) eargs in
-            intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
+            intern_no_implicit enva a :: aux (n+1) imps' subscopes' eargs' rargs
           with Not_found ->
           if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
             (* Less regular arguments than expected: complete *)
             (* with implicit arguments if maximal insertion is set *)
             []
           else
-              (DAst.map_from_loc (fun ?loc a -> GHole a)
-                (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c)
-              ) :: aux (n+1) impl' subscopes' eargs rargs
+            set_hole_implicit n (get_implicit_name n allimps) imp head :: aux (n+1) imps' subscopes' eargs rargs
           end
       | (imp::impl', a::rargs') ->
           intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
@@ -2640,12 +2626,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | ([], rargs) ->
           assert (List.is_empty eargs);
           intern_args env subscopes rargs
-    in aux 1 l subscopes eargs rargs
+    in aux 1 allimps subscopes eargs rargs
 
   and apply_impargs env loc c args =
-    let impl, subscopes = find_appl_head_data env lvar c in
-    let imp = select_impargs_size (List.length (List.filter (fun (_,x) -> x == None) args)) impl in
-    let args = intern_impargs c env imp subscopes args in
+    let head, impls, subscopes = find_appl_head_data env lvar c in
+    let imps = select_impargs_size (List.length (List.filter (fun (_,x) -> x == None) args)) impls in
+    let args = intern_impargs head env imps subscopes args in
     smart_gapp c loc args
 
   and smart_gapp f loc = function
@@ -2656,12 +2642,16 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | GApp (g, args) -> DAst.make ?loc:(Loc.merge_opt loc' loc) @@ GApp (g, args@l)
       | _ -> DAst.make ?loc:(Loc.merge_opt (loc_of_glob_constr f) loc) @@ GApp (f, l)
 
+  and apply_args env loc hd args =
+    let _, _, subscopes = find_appl_head_data env lvar hd in
+    smart_gapp hd loc (intern_args env subscopes args)
+
   and intern_args env subscopes = function
     | [] -> []
     | a::args ->
       let (enva,subscopes) = apply_scope_env env subscopes in
       let a = intern_no_implicit enva a in
-      a :: (intern_args env subscopes args)
+      a :: intern_args env subscopes args
 
   in
   NewProfile.profile "intern" (fun () ->
