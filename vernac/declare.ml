@@ -1958,6 +1958,10 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   let sigma = Evd.from_ctx uctx in
   let ce, status, sigma = build_constant_by_tactic ~name ~sigma ~sign ~poly typ tac in
   let uctx = Evd.evar_universe_context sigma in
+  (* ignore side effect universes:
+     we don't reset the global env in this code path so the side effects are still present
+     cf #13271 and discussion in #18874
+     (but due to #13324 we still want to inline them) *)
   let cb, _uctx = inline_private_constants ~uctx env ce in
   cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
