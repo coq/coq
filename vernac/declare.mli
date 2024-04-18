@@ -333,9 +333,6 @@ module Proof : sig
     -> idopt:Names.lident option
     -> OblState.t * GlobRef.t list
 
-  (** Used by the STM only to store info, should go away *)
-  val get_po_name : proof_object -> Id.t
-
 end
 
 (** {2 low-level, internal API, avoid using unless you have special needs } *)

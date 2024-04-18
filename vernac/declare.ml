@@ -1723,14 +1723,10 @@ let get_open_goals ps =
   List.length (Evd.shelf sigma)
 
 type proof_object =
-  { name : Names.Id.t
-  (* [name] only used in the STM *)
-  ; entries : proof_entry list
+  { entries : proof_entry list
   ; uctx: UState.t
   ; pinfo : Proof_info.t
   }
-
-let get_po_name { name } = name
 
 let { Goptions.get = private_poly_univs } =
   Goptions.declare_bool_option_and_ref
@@ -1831,7 +1827,7 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.name; poly } = Proof.data proof in
+  let { Proof.poly } = Proof.data proof in
   let elist, uctx = prepare_proof ?warn_incomplete ps in
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
@@ -1850,14 +1846,14 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
     definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
-  { name; entries; uctx; pinfo }
+  { entries; uctx; pinfo }
 
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.name; poly; entry; sigma } = Proof.data proof in
+  let { Proof.poly; entry; sigma } = Proof.data proof in
 
   (* We don't allow poly = true in this path *)
   if poly then
@@ -1893,7 +1889,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
   let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
-  { name; entries; uctx = initial_euctx; pinfo }
+  { entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
 
