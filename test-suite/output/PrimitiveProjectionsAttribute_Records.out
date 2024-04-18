@@ -11,5 +11,6 @@ Expands to: Inductive PrimitiveProjectionsAttribute_Records.C
 G : Prop
 
 G is not universe polymorphic
+G is in Prop but its eliminators are declared dependent by default
 G has primitive projections without eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.G

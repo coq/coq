@@ -198,7 +198,7 @@ let declare_beq_scheme ?locmap mi = declare_beq_scheme_with ?locmap [] mi
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
-  let kind = Inductive.inductive_sort_family mip in
+  let kind = Indrec.pseudo_sort_family_for_elim ind mip in
   let dep, suff =
     if kind == InProp then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
@@ -221,7 +221,7 @@ let declare_one_case_analysis_scheme ?loc ind =
 
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
-  let kind = Inductive.inductive_sort_family mip in
+  let kind = Indrec.pseudo_sort_family_for_elim ind mip in
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim specif in
   let kelim = Inductiveops.sorts_below (Inductiveops.elim_sort (mib,mip)) in
@@ -373,7 +373,7 @@ let rec name_and_process_schemes env l =
 (* If no name has been provided, we build one from the types of the ind requested *)
   | (None, ({sch_type; sch_qualid; sch_sort} as sch)) :: q
    -> let ind = smart_ind sch_qualid in
-      let sort_of_ind = Inductive.inductive_sort_family (snd (Inductive.lookup_mind_specif env ind)) in
+      let sort_of_ind = Indrec.pseudo_sort_family_for_elim ind (snd (Inductive.lookup_mind_specif env ind)) in
       let suffix = scheme_suffix_gen sch sort_of_ind in
       let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
       let newref = CAst.make newid in

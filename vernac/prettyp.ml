@@ -208,6 +208,14 @@ let print_polymorphism env ref =
          ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
        else str "not universe polymorphic") ]
 
+let print_prop_but_default_dep_elim ref =
+  match ref with
+  | GlobRef.IndRef ind ->
+    if Indrec.is_prop_but_default_dependent_elim ind
+    then [pr_global ref ++ str " is in Prop but its eliminators are declared dependent by default"]
+    else []
+  | _ -> []
+
 (** Print projection status *)
 
 let print_projection env ref =
@@ -396,6 +404,7 @@ let print_name_infos env ref =
     else
       [] in
   print_type_in_type env ref @
+  print_prop_but_default_dep_elim ref @
   print_projection env ref @
   print_primitive env ref @
   type_info_for_implicit @

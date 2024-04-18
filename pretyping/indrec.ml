@@ -604,14 +604,37 @@ let build_case_analysis_scheme env sigma pity dep kind =
   let specif = lookup_mind_specif env (fst pity) in
   mis_make_case_com dep env sigma pity specif kind
 
+let prop_but_default_dependent_elim =
+  Summary.ref ~name:"prop_but_default_dependent_elim" Indset_env.empty
+
+let inPropButDefaultDepElim : inductive -> Libobject.obj =
+  Libobject.declare_object @@
+  Libobject.superglobal_object "prop_but_default_dependent_elim"
+    ~cache:(fun i ->
+        prop_but_default_dependent_elim := Indset_env.add i !prop_but_default_dependent_elim)
+    ~subst:(Some (fun (subst,i) -> Mod_subst.subst_ind subst i))
+    ~discharge:(fun i -> Some i)
+
+let declare_prop_but_default_dependent_elim i =
+  Lib.add_leaf (inPropButDefaultDepElim i)
+
+let is_prop_but_default_dependent_elim i = Indset_env.mem i !prop_but_default_dependent_elim
+
+let pseudo_sort_family_for_elim ind mip =
+  match mip.mind_arity with
+  | RegularArity s when Sorts.is_prop s.mind_sort && is_prop_but_default_dependent_elim ind -> InType
+  | RegularArity s -> Sorts.family s.mind_sort
+  | TemplateArity _ -> InType
+
 let is_in_prop mip =
-  match inductive_sort_family mip with
-  | InProp -> true
-  | _ -> false
+  match mip.mind_arity with
+  | RegularArity s -> Sorts.is_prop s.mind_sort
+  | TemplateArity _ -> false
 
 let default_case_analysis_dependence env ind =
   let _, mip as specif = lookup_mind_specif env ind in
-  not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif))
+  Inductiveops.has_dependent_elim specif
+  && (not (is_in_prop mip) || is_prop_but_default_dependent_elim ind)
 
 let build_case_analysis_scheme_default env sigma pity kind =
   let dep = default_case_analysis_dependence env (fst pity) in

@@ -60,6 +60,7 @@ val definition_structure
   module Record_decl : sig
     type t = {
       mie : Entries.mutual_inductive_entry;
+      default_dep_elim : DeclareInd.default_dep_elim list;
       records : Data.t list;
       (* TODO: this part could be factored in mie *)
       primitive_proj : bool;

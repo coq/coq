@@ -46,6 +46,7 @@ module Mind_decl : sig
 (** inductive_expr at the constr level *)
 type t = {
   mie : Entries.mutual_inductive_entry;
+  default_dep_elim : DeclareInd.default_dep_elim list;
   nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
@@ -71,6 +72,8 @@ val interp_mutual_inductive
   -> Declarations.recursivity_kind
   -> Mind_decl.t
 
+type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePoly
+
 (** the post-elaboration part of interp_mutual_inductive, mainly dealing with
     universe levels *)
 val interp_mutual_inductive_constr
@@ -81,7 +84,7 @@ val interp_mutual_inductive_constr
   -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
   -> indnames:Names.Id.t list
   -> arities:EConstr.t list
-  -> arityconcl:EConstr.ESorts.t option list
+  -> template_syntax:syntax_allows_template_poly list
   -> constructors:(Names.Id.t list * EConstr.constr list) list
   -> env_ar_params:Environ.env
   (** Environment with the inductives and parameters in the rel_context *)
@@ -89,7 +92,7 @@ val interp_mutual_inductive_constr
   -> poly:bool
   -> private_ind:bool
   -> finite:Declarations.recursivity_kind
-  -> Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
+  -> DeclareInd.default_dep_elim list * Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
 
 (************************************************************************)
 (** Internal API, exported for Record                                   *)
@@ -97,11 +100,10 @@ val interp_mutual_inductive_constr
 
 val compute_template_inductive
   : user_template:bool option
-  -> env_ar_params:Environ.env
   -> ctx_params:(Constr.constr, Constr.constr) Context.Rel.Declaration.pt list
   -> univ_entry:UState.universes_entry
   -> Entries.one_inductive_entry
-  -> Sorts.t option
+  -> syntax_allows_template_poly
   -> Entries.inductive_universes_entry * Univ.ContextSet.t
 (** [compute_template_inductive] computes whether an inductive can be template
     polymorphic. *)
@@ -133,5 +135,5 @@ sig
     (* arities *)
     -> EConstr.rel_context list list
     (* constructors *)
-    -> Evd.evar_map * EConstr.t list
+    -> Evd.evar_map * (DeclareInd.default_dep_elim list * EConstr.t list)
 end

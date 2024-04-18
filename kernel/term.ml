@@ -377,7 +377,7 @@ let mkArity (sign,s) = it_mkProd_or_LetIn (mkSort s) sign
 let rec isArity c =
   match kind c with
   | Prod (_,_,c)    -> isArity c
-  | LetIn (_,b,_,c) -> isArity (subst1 b c)
+  | LetIn (_,_,_,c) -> isArity c
   | Cast (c,_,_)      -> isArity c
   | Sort _          -> true
   | _               -> false
