@@ -64,17 +64,29 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
   (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
+let warning_deprecated_hint_constr =
+  CWarnings.create_warning ~from:[CWarnings.CoreCategories.automation; Deprecation.Version.v8_20] ~name:"fragile-hint-constr" ~default:AsError ()
+
 let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"fragile-hint-constr" ~category:CWarnings.CoreCategories.automation
+  CWarnings.create_in warning_deprecated_hint_constr
     (fun () ->
       Pp.strbrk
-        "Declaring arbitrary terms as hints is fragile; it is recommended to \
-         declare a toplevel constant instead")
+        "Declaring arbitrary terms as hints is fragile and deprecated; it is \
+         recommended to declare a toplevel constant instead")
 
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?
  *)
 let soft_evaluable = Tacred.soft_evaluable_of_global_reference
+
+(* Slightly more lenient global hint syntax for backwards compatibility *)
+let rectify_hint_constr h = match h with
+| Vernacexpr.HintsReference _ -> h
+| Vernacexpr.HintsConstr c ->
+  let open Constrexpr in
+  match c.CAst.v with
+  | CAppExpl ((qid, None), []) -> Vernacexpr.HintsReference qid
+  | _ -> Vernacexpr.HintsConstr c
 
 let interp_hints ~poly h =
   let env = Global.env () in
@@ -88,7 +100,7 @@ let interp_hints ~poly h =
   let fi c =
     let open Hints in
     let open Vernacexpr in
-    match c with
+    match rectify_hint_constr c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
       (hint_globref gr)

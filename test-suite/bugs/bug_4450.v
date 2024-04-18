@@ -21,7 +21,8 @@ Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
   eauto using (fapp unit funi). (* The two fapp's have different universes *)
 Qed.
 
-#[export] Hint Resolve (fapp unit funi) : mylems.
+Definition fapp0 := fapp unit funi.
+#[export] Hint Resolve fapp0 : mylems.
 
 Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
   eauto with mylems. (* Forces the two fapps at the same level *)
