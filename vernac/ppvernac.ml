@@ -1375,8 +1375,10 @@ let pr_synterp_vernac_expr v =
     return (
       hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
     )
-  | VernacChdir s ->
-    return (keyword "Cd" ++ pr_opt qs s)
+  | VernacChdir None ->
+    return (keyword "Pwd")
+  | VernacChdir (Some s) ->
+    return (keyword "Cd " ++ qs s)
   | VernacSetOption (export, na,v) ->
     let export = if export then keyword "Export" ++ spc () else mt () in
     let set = if v == OptionUnset then "Unset" else "Set" in
