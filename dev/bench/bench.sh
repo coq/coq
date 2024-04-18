@@ -324,6 +324,9 @@ git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_arch
 
 initial_opam_packages="num ocamlfind dune"
 
+failed_packages=
+skipped_packages=
+
 # Create an opam root and install Coq
 # $1 = root_name {ex: NEW / OLD}
 # $2 = compiler name
@@ -395,25 +398,40 @@ create_opam() {
         local this_nproc=$number_of_processors
         if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
 
-        with_test=--with-test
-        if [ "$skip_coq_tests" ]; then with_test=; fi
+        iteration=1
+        aux() {
+          with_test=--with-test
+          if [ "$skip_coq_tests" ]; then with_test=; fi
 
-        _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.$COQ_VER . \
-             3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
-             4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
+          export COQ_ITERATION=$iteration
+          _RES=0
+          opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.$COQ_VER . \
+               3>$log_dir/$package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
+               4>$log_dir/$package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
             _RES=$?
-        if [ $_RES = 0 ]; then
+          if [ $_RES = 0 ]; then
             echo "$package ($RUNNER) installed successfully"
-        else
+          else
             echo "ERROR: \"opam install $package.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
-            zulip_edit "Bench failed: could not install $package ($RUNNER)."
-            exit 1
+          fi
+        }
+        aux
+        if ! [ $_RES = 0 ] && [ $package = coq ] && ! [ "$skip_coq_tests" ]; then
+          skip_coq_tests=true
+          iteration=2
+          echo "Retrying without test suite"
+          if [ $RUNNER = NEW ]; then echo "(OLD will also skip tests)"; fi
+          failed_packages="coq (test suite for $RUNNER)"
+          aux
+        fi
+        if ! [ $_RES = 0 ]; then
+          zulip_edit "Bench failed: could not install $package ($RUNNER)."
+          exit 1
         fi
 
         # we don't multi compile coq for now (TODO some other time)
         # the render needs all the files so copy them around
-        for it in $(seq 2 $num_of_iterations); do
+        for it in $(seq $((iteration + 1)) $num_of_iterations); do
             cp "$log_dir/$package.$RUNNER.1.time" "$log_dir/$package.$RUNNER.$it.time"
             cp "$log_dir/$package.$RUNNER.1.perf" "$log_dir/$package.$RUNNER.$it.perf"
         done
@@ -433,7 +451,10 @@ old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
 # Deliberately don't include the "coqide-server" package
-installable_coq_opam_packages="coq-core coq-stdlib coq"
+installable_coq_opam_packages="coq-core coq-stdlib"
+if ! [ "$skip_coq_tests" ]; then
+  installable_coq_opam_packages="$installable_coq_opam_packages coq"
+fi
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
@@ -468,9 +489,6 @@ done
 # Sort the opam packages
 sorted_coq_opam_packages=$("${program_path}/sort-by-deps.sh" ${coq_opam_packages})
 echo "sorted_coq_opam_packages = ${sorted_coq_opam_packages}"
-
-failed_packages=
-skipped_packages=
 
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
