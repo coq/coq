@@ -2290,7 +2290,8 @@ let save_lemma_admitted_delayed ~pm ~proof =
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
   let pinfo = process_idopt_for_save ~idopt proof.pinfo in
-  finalize_proof ~pm proof pinfo
+  let pm, _ = finalize_proof ~pm proof pinfo in
+  pm
 
 end (* Proof module *)
 

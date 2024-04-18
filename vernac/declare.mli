@@ -331,7 +331,7 @@ module Proof : sig
     : pm:OblState.t
     -> proof:proof_object
     -> idopt:Names.lident option
-    -> OblState.t * GlobRef.t list
+    -> OblState.t
 
 end
 
