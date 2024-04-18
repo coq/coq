@@ -263,6 +263,16 @@ let unbounded_from_below u cstrs =
       | Lt | Le -> not (Univ.Level.equal r u))
     cstrs
 
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match kind c with
+  | Sort (Type u) ->
+    begin match Universe.level u with
+    | Some l -> Some (decls, l)
+    | None -> None
+    end
+  | _ -> None
+
 let get_template univs ~env_params ~env_ar_par ~params entries =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
@@ -273,22 +283,45 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
     in
     (* Compute potential template parameters *)
     let map decl = match decl with
-    | LocalAssum (_, p) ->
-      let c = Term.strip_prod_decls p in
-      let s = match kind c with
-      | Sort (Type u) ->
-        begin match Universe.level u with
-        | Some l -> if Level.Set.mem l (fst ctx) then Some l else None
-        | None -> None
-        end
-      | _ -> None
+    | LocalAssum (_, t) ->
+      let s = match get_arity t with
+      | Some (_, l) -> if Level.Set.mem l (fst ctx) then Some l else None
+      | None -> None
       in
       Some s
     | LocalDef _ -> None
     in
-    let params = List.map_filter map params in
+    let template_params = List.map_filter map params in
     let fold accu u = match u with None -> accu | Some u -> Level.Set.add u accu in
-    let plevels = List.fold_left fold Level.Set.empty params in
+    let plevels = List.fold_left fold Level.Set.empty template_params in
+    (* We must ensure that template levels can be substituted by an arbitrary
+       algebraic universe. A reasonable approximation is to restrict their
+       appearance to the sort of arities from parameters.
+
+       TODO: when algebraic universes land, remove this check. *)
+    let plevels =
+      let fold plevels c = Level.Set.diff plevels (Vars.universes_of_constr c) in
+      let fold_params plevels = function
+      | LocalDef (_, b, t) -> fold (fold plevels t) b
+      | LocalAssum (_, t) ->
+        match get_arity t with
+        | None -> fold plevels t
+        | Some (decls, _) -> fold plevels (it_mkProd_or_LetIn mkProp decls)
+      in
+      let plevels = List.fold_left fold_params plevels params in
+      let plevels =
+        let (decls, s) = Term.decompose_prod_decls entry.mind_entry_arity in
+        let () = assert (isSort s) in
+        fold plevels (it_mkProd_or_LetIn mkProp decls)
+      in
+      let plevels = List.fold_left fold plevels entry.mind_entry_lc in
+      plevels
+    in
+    let map = function
+    | None -> None
+    | Some l -> if Level.Set.mem l plevels then Some l else None
+    in
+    let params = List.map map template_params in
     let unbound = Level.Set.diff (fst ctx) plevels in
     let plevels =
       if not (Level.Set.is_empty unbound) then
