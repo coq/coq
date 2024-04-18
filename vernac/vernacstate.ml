@@ -256,7 +256,6 @@ module Declare_ = struct
       res
 
   let return_proof () = cc Declare.Proof.return_proof
-  let return_partial_proof () = cc Declare.Proof.return_partial_proof
 
   let close_future_proof ~feedback_id pf =
     NewProfile.profile "close_future_proof" (fun () ->

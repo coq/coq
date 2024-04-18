@@ -308,10 +308,6 @@ module Proof : sig
   (** Requires a complete proof. *)
   val return_proof : t -> closed_proof_output
 
-  (** An incomplete proof is allowed (no error), and a warn is given if
-      the proof is complete. *)
-  val return_partial_proof : t -> closed_proof_output
-
   (** XXX: This is an internal, low-level API and could become scheduled
       for removal from the public API, use higher-level declare APIs
       instead *)

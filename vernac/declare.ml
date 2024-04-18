@@ -1872,6 +1872,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
     let univs = UState.univ_entry ~poly:false initial_euctx in
     let types = nf (EConstr.Unsafe.to_constr types) in
 
+    (* NB: for Admitted proofs [fpl] is not valid (raises anomaly when forced) *)
     Future.chain fpl (fun (pf, uctx) ->
         let (pt, eff) = List.nth pf i in
         (* Deferred proof, we already checked the universe declaration with
@@ -1892,16 +1893,6 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   { entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
-
-let return_partial_proof { proof } =
- let proofs = Proof.partial_proof proof in
- let Proof.{sigma=evd} = Proof.data proof in
- let eff = Evd.eval_side_effects evd in
- (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
- let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
- proofs, Evd.evar_universe_context evd
 
 let return_proof ps =
   let p, uctx = prepare_proof ps in
