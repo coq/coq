@@ -22,6 +22,11 @@ if [ -n "${GITLAB_CI}" ];
 then
     # Gitlab build, Coq installed into `_install_ci`
     export COQBIN="$PWD/_install_ci/bin"
+
+    # Where we install external binaries and ocaml libraries
+    # also generally used for dune install --prefix so needs to match coq's expected user-contrib path
+    CI_INSTALL_DIR="$PWD/_install_ci"
+
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
     then
@@ -34,6 +39,9 @@ then
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     export COQCORELIB="$PWD/_build/install/default/lib/coq-core"
+
+    CI_INSTALL_DIR="$PWD/_build/install/default/"
+
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 fi
@@ -47,9 +55,6 @@ ls -l "$COQBIN"
 
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
-
-# Where we install external binaries and ocaml libraries
-CI_INSTALL_DIR="$PWD/_install_ci"
 
 ls -l "$CI_BUILD_DIR" || true
 
