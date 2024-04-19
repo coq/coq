@@ -103,6 +103,12 @@ in the Coq sources.
 
 .. cmd:: Cd {? @string }
 
+   .. deprecated:: 8.20
+
+      Use the command line option :n:`-output-directory` instead (see
+      :ref:`command-line-options`), or the :opt:`Extraction Output Directory`
+      option.
+
    If :n:`@string` is specified, changes the current directory according to
    :token:`string` which can be any valid path.  Otherwise, it displays the
    current directory as :cmd:`Pwd` does.

@@ -90,6 +90,10 @@ let test_id_colon =
     lk_ident >> lk_kw ":"
   end
 
+let warn_chdir_pwd = CWarnings.create ~name:"change-dir-pwd-deprecated" ~category:Deprecation.Version.v8_20
+    (fun () -> strbrk "Command \"Cd\" as a synonym of \"Pwd\" is deprecated." ++ spc () ++
+               strbrk "Use \"Pwd\" instead.")
+
 }
 
 GRAMMAR EXTEND Gram
@@ -1044,7 +1048,7 @@ GRAMMAR EXTEND Gram
 
       (* System directory *)
       | IDENT "Pwd" -> { VernacSynterp (VernacChdir None) }
-      | IDENT "Cd" -> { VernacSynterp (VernacChdir None) }
+      | IDENT "Cd" -> { warn_chdir_pwd (); VernacSynterp (VernacChdir None) }
       | IDENT "Cd"; dir = ne_string -> { VernacSynterp (VernacChdir (Some dir)) }
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> { true } | -> { false } ];
