@@ -1747,8 +1747,7 @@ let warn_remaining_unresolved_evars =
     (fun () -> Pp.str"The proof has unresolved variables")
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
-(* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
-let prepare_proof ?(warn_incomplete=true) ~unsafe_typ { proof } =
+let prepare_proof ?(warn_incomplete=true) { proof } =
   let Proof.{name=pid;entry;poly} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
@@ -1767,13 +1766,6 @@ let prepare_proof ?(warn_incomplete=true) ~unsafe_typ { proof } =
     | None ->
       CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
-  let to_constr_typ t =
-    if unsafe_typ
-    then
-      let t = EConstr.Unsafe.to_constr t in
-      Vars.universes_of_constr t, t
-    else to_constr_body t
-  in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
      thereafter... *)
@@ -1786,7 +1778,7 @@ let prepare_proof ?(warn_incomplete=true) ~unsafe_typ { proof } =
      equations and so far there is no code in the CI that will
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (_, body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
+  let proofs = List.map (fun (_, body, typ) -> (to_constr_body body, eff), to_constr_body typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
@@ -1840,8 +1832,7 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
-  let unsafe_typ = keep_body_ucst_separate && not poly in
-  let elist, uctx = prepare_proof ?warn_incomplete ~unsafe_typ ps in
+  let elist, uctx = prepare_proof ?warn_incomplete ps in
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
     | Vernacexpr.Transparent -> false in
@@ -1917,7 +1908,7 @@ let return_partial_proof { proof } =
  proofs, Evd.evar_universe_context evd
 
 let return_proof ps =
-  let p, uctx = prepare_proof ~unsafe_typ:false ps in
+  let p, uctx = prepare_proof ps in
   List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_sigma_univs ugraph p =
