@@ -72,7 +72,6 @@ type env = private {
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
   env_universes : UGraph.t;
-  env_universes_lbound : UGraph.Bound.t;
   env_qualities : Sorts.QVar.Set.t;
   irr_constants : Sorts.relevance Cmap_env.t
 (** [irr_constants] is a cache of the relevances which are not Relevant.
@@ -98,8 +97,6 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val universes_lbound : env -> UGraph.Bound.t
-val set_universes_lbound : env -> UGraph.Bound.t -> env
 val rel_context   : env -> Constr.rel_context
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
@@ -367,6 +364,9 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
 (** [push_context_set ?(strict=false) ctx env] pushes the universe
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
+
+val push_floating_context_set : ContextSet.t -> env -> env
+(** Same as above but keep the universes floating for template. Do not use. *)
 
 val push_subgraph : ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in

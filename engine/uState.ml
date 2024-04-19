@@ -1128,7 +1128,7 @@ let make_with_initial_binders ~lbound univs binders =
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders ~lbound:(Environ.universes_lbound env) (Environ.universes env) binders
+  make_with_initial_binders ~lbound:UGraph.Bound.Set (Environ.universes env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
