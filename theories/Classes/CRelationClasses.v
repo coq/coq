@@ -33,6 +33,8 @@ Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
 
 Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
 
+Global Typeclasses Opaque flip arrow iffT.
+
 (** We allow to unfold the [crelation] definition while doing morphism search. *)
 
 Section Defs.
