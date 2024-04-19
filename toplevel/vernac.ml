@@ -40,7 +40,15 @@ type time_output =
 
 let make_time_output = function
   | Coqargs.ToFeedback -> ToFeedback
-  | ToFile f -> ToChannel (Format.formatter_of_out_channel (open_out f))
+  | ToFile f ->
+    let ch = open_out f in
+    let fch = Format.formatter_of_out_channel ch in
+    let close () =
+      Format.pp_print_flush fch ();
+      close_out ch
+    in
+    at_exit close;
+    ToChannel fch
 
 module State = struct
 
