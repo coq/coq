@@ -567,28 +567,33 @@ val add_mutual_definitions :
   -> RetrieveObl.obligation_info list
   -> OblState.t
 
-(** Implementation of the [Obligation] command *)
+(** Implementation of the [Obligation n of id : typ with tac] command *)
 val obligation :
      int * Names.Id.t option * Constrexpr.constr_expr option
   -> pm:OblState.t
   -> Genarg.glob_generic_argument option
   -> Proof.t
 
-(** Implementation of the [Next Obligation] and [Final Obligation] commands *)
+(** Implementation of the [Next Obligation of id with tac] and [Final Obligation of id with tac] commands *)
 val next_obligation :
   pm:OblState.t -> ?final:bool -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
 
-(** Implementation of the [Solve Obligation] command *)
+(** Implementation of the [Solve Obligations of id with tac] command *)
 val solve_obligations :
   pm:OblState.t -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t * progress
-
-val solve_all_obligations : pm:OblState.t -> unit Proofview.tactic option -> OblState.t
-
 val try_solve_obligations :
   pm:OblState.t -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t
 
+(** Implementation of the [Solve All Obligations with tac] command *)
+val solve_all_obligations : pm:OblState.t -> unit Proofview.tactic option -> OblState.t
+
+(** Implementation of the [Obligations of id] command *)
 val show_obligations : pm:OblState.t -> ?msg:bool -> Names.Id.t option -> unit
+
+(** Implementation of the [Preterm of id] command *)
 val show_term : pm:OblState.t -> Names.Id.t option -> Pp.t
+
+(** Implementation of the [Admit Obligations of id] command *)
 val admit_obligations : pm:OblState.t -> Names.Id.t option -> OblState.t
 
 val check_program_libraries : unit -> unit

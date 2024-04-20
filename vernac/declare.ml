@@ -2537,12 +2537,18 @@ let solve_obligations ~pm n tac =
   let prg = get_unique_prog ~pm n in
   solve_prg_obligations ~pm prg tac
 
+(** Implements [Solve All Obligations with tac] *)
+
 let solve_all_obligations ~pm tac =
   State.fold pm ~init:pm ~f:(fun k v pm ->
       solve_prg_obligations ~pm v tac |> fst)
 
-let try_solve_obligations ~pm n tac =
-  solve_obligations ~pm n tac |> fst
+(** Implements [Solve Obligations of name with tac] *)
+
+let try_solve_obligations ~pm name tac =
+  solve_obligations ~pm name tac |> fst
+
+(** Implements [Obligation n of name : typ with tac] *)
 
 let obligation (user_num, name, typ) ~pm tac =
   let num = pred user_num in
@@ -2555,20 +2561,22 @@ let obligation (user_num, name, typ) ~pm tac =
     | Some r -> Error.already_solved user_num
   else Error.unknown_obligation num
 
-let show_single_obligation i n obls x =
+(** Implements [Obligations of name] *)
+
+let show_single_obligation i name obls x =
   let x = subst_deps_obl obls x in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let msg =
     str "Obligation" ++ spc ()
     ++ int (succ i)
-    ++ spc () ++ str "of" ++ spc () ++ Id.print n ++ str ":" ++ spc ()
+    ++ spc () ++ str "of" ++ spc () ++ Id.print name ++ str ":" ++ spc ()
     ++ hov 1 (Printer.pr_constr_env env sigma x.obl_type
               ++ str "." ++ fnl ()) in
   Feedback.msg_info msg
 
 let show_obligations_of_prg ?(msg = true) prg =
-  let n = Internal.get_name prg in
+  let name = Internal.get_name prg in
   let {obls; remaining} = Internal.get_obligations prg in
   let showed = ref 5 in
     if msg then Feedback.msg_info (int remaining ++ str " obligation(s) remaining: ");
@@ -2578,25 +2586,27 @@ let show_obligations_of_prg ?(msg = true) prg =
          | None ->
            if !showed > 0 then begin
              decr showed;
-             show_single_obligation i n obls x
+             show_single_obligation i name obls x
            end
          | Some _ -> ())
       obls
 
-let show_obligations ~pm ?(msg = true) n =
+let show_obligations ~pm ?(msg = true) name =
   let progs =
-    match n with
+    match name with
     | None ->
       State.all pm
-    | Some n ->
-      (match State.find pm n with
+    | Some name ->
+      (match State.find pm name with
        | Some prg -> [prg]
-       | None -> Error.no_obligations (Some n))
+       | None -> Error.no_obligations (Some name))
   in
   List.iter (fun x -> show_obligations_of_prg ~msg x) progs
 
-let show_term ~pm n =
-  let prg = get_unique_prog ~pm n in
+(** Implementation of the [Preterm of name] command *)
+
+let show_term ~pm name =
+  let prg = get_unique_prog ~pm name in
   ProgramDecl.show prg
 
 let msg_generating_obl name obls =
@@ -2660,6 +2670,8 @@ let add_mutual_definitions ~pm ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   in
   pm
 
+(** [admit_obligations ~pm name] implements [Admit Obligations of name] *)
+
 let rec admit_prog ~pm prg =
   let {obls} = Internal.get_obligations prg in
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
@@ -2681,37 +2693,39 @@ let rec admit_all_obligations ~pm =
     let pm = admit_prog ~pm prg in
     admit_all_obligations ~pm
 
-let admit_obligations ~pm n =
-  match n with
+let admit_obligations ~pm name =
+  match name with
   | None -> admit_all_obligations ~pm
   | Some _ ->
-    let prg = get_unique_prog ~pm n in
+    let prg = get_unique_prog ~pm name in
     let pm = admit_prog ~pm prg in
     pm
 
-let next_obligation ~pm ?(final=false) n tac =
-  let prg = match n with
+(** Implements [Next Obligation of name with tac] and [Final Obligation of name with tac] *)
+
+let next_obligation ~pm ?(final=false) name tac =
+  let prg = match name with
     | None ->
       begin match State.first_pending pm with
         | Some prg -> prg
         | None ->
           Error.no_obligations None
       end
-    | Some _ -> get_unique_prog ~pm n
+    | Some _ -> get_unique_prog ~pm name
   in
   let {obls; remaining} = Internal.get_obligations prg in
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
     | Some i -> i
     | None ->
-      match n with
+      match name with
       | None -> CErrors.anomaly (Pp.str "Could not find a solvable obligation.")
-      | Some n -> CErrors.user_err (str "No more obligations for " ++ Id.print n ++ str ".")
+      | Some name -> CErrors.user_err (str "No more obligations for " ++ Id.print name ++ str ".")
   in
   let check_final = if not final then None
-    else match n with
+    else match name with
       | None -> Some AllFinal
-      | Some n -> Some (SpecificFinal n)
+      | Some name -> Some (SpecificFinal name)
   in
   solve_obligation ?check_final prg i tac
 
