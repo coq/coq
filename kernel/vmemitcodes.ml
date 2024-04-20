@@ -454,7 +454,7 @@ let emit_instr env = function
       let lenc = Array.length tbl_const in
       assert (lenb < 0x100 && lenc < 0x1000000);
       out env opSWITCH;
-      out_word env lenc (lenc asr 8) (lenc asr 16) (lenb);
+      out_word env lenb lenc (lenc asr 8) (lenc asr 16);
 (*      out_int env (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
       let org = env.out_position in
       Array.iter (out_label_with_orig env org) tbl_const;

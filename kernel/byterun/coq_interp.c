@@ -1047,13 +1047,12 @@ value coq_interprete
       Instruct(SWITCH) {
         uint32_t sizes = *pc++;
         print_instr("SWITCH");
-        print_int(sizes & 0xFFFFFF);
         if (Is_block(accu)) {
           long index = Tag_val(accu);
           if (index == Closure_tag) index = 0;
           print_instr("block");
           print_lint(index);
-          pc += pc[(sizes & 0xFFFFFF) + index];
+          pc += pc[(sizes >> 8) + index];
         } else {
           long index = Long_val(accu);
           print_instr("constant");

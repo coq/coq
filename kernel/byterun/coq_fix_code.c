@@ -135,8 +135,8 @@ value coq_tcode_of_code (value code) {
       uint32_t i, sizes, const_size, block_size;
       COPY32(q,p); p++;
       sizes=*q++;
-      const_size = sizes & 0xFFFFFF;
-      block_size = sizes >> 24;
+      const_size = sizes >> 8;
+      block_size = sizes & 0xFF;
       sizes = const_size + block_size;
       for(i=0; i<sizes; i++) { COPY32(q,p); p++; q++; };
     } else if (instr == CLOSUREREC || instr==CLOSURECOFIX) {
