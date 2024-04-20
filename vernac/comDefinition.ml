@@ -111,6 +111,12 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
 
+let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
+  let evd, (impls, ((env, ctx), imps)) = Constrintern.interp_context_evars ~program_mode env evd bl in
+  let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd typ in
+  let ids = List.map Context.Rel.Declaration.get_name ctx in
+  evd, ids, EConstr.it_mkProd_or_LetIn t' ctx, imps @ imps'
+
 let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
@@ -149,3 +155,31 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
     let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls
   in pm
+
+(* Checks done in start_lemma_com *)
+let post_check_evd ~udecl ~poly evd =
+  let () =
+    if not UState.(udecl.univdecl_extensible_instance &&
+                   udecl.univdecl_extensible_constraints) then
+      ignore (Evd.check_univ_decl ~poly evd udecl)
+  in
+  if poly then evd
+  else (* We fix the variables to ensure they won't be lowered to Set *)
+    Evd.fix_undefined_variables evd
+
+let do_definition_interactive ~program_mode ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl t =
+  let env = Global.env () in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
+  let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
+  let evd, args, typ,impargs = interp_statement ~program_mode ~flags ~scope env evd name bl t in
+  let cinfo = Declare.CInfo.make ~name ~typ ~args ~impargs () in
+  let evd =
+    let inference_hook = if program_mode then Some Declare.Obls.program_inference_hook else None in
+    Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
+  let evd = Evd.minimize_universes evd in
+  Pretyping.check_evars_are_solved ~program_mode env evd;
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.to_constr evd cinfo in
+  let evd = post_check_evd ~udecl ~poly evd in
+  Declare.Proof.start_definition ~info ~cinfo ?using evd
