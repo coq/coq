@@ -34,6 +34,12 @@ let map fc ft fu v =
       if u == u' && elems == elems' && def == def' && ty == ty' then v
       else Array (u',elems',def',ty')
 
+let map_heterogenous fc ft fu v =
+  match v with
+  | Float f -> Float f
+  | Int i -> Int i
+  | Array (u,elems,def,ty) -> Array (fu u, Array.map fc elems, fc def, ft ty)
+
 let fold_map f accu v =
   match v with
   | Float _ | Int _ -> accu, v
@@ -113,6 +119,17 @@ let fold_univs f acc v =
   match v with
   | Array (u,_,_,_) -> f acc u
   | Int _ | Float _ -> acc
+
+let matching ~fail f vpat v acc =
+  match vpat, v with
+  | Int i1, Int i2 when Uint63.equal i1 i2 -> acc
+  | Float f1, Float f2 when Float64.equal f1 f2 -> acc
+  | Array (_,elems1,def1,ty1), Array (_,elems2,def2,ty2)
+    when Array.length elems1 = Array.length elems2 ->
+      let acc = ref acc in
+      Array.iter2 (fun e1 e2 -> acc := f !acc e1 e2) elems1 elems2;
+      f (f !acc def1 def2) ty1 ty2
+  | _, _ -> fail ()
 
 let debug_print pu pc v =
   match v with

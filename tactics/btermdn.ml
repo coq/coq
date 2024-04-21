@@ -53,8 +53,8 @@ let rec eta_reduce_pat (p:constr_pattern) = match p with
     | _ -> p
   else p
 | PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
-| PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
-| PFloat _ | PArray _ -> p
+| PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _
+| PPVal _  -> p
 | PUninstantiated _ -> .
 
 let evaluable_constant c env ts =

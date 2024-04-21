@@ -1548,9 +1548,9 @@ let rec glob_of_pat
   | PSort Sorts.InProp -> GSort (UNamed (None, [GProp,0]))
   | PSort Sorts.InSet -> GSort (UNamed (None, [GSet,0]))
   | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=UnivRigid})
-  | PInt i -> GInt i
-  | PFloat f -> GFloat f
-  | PArray(t,def,ty) ->
+  | PPVal (CPrimVal.Int i) -> GInt i
+  | PPVal (CPrimVal.Float f) -> GFloat f
+  | PPVal (CPrimVal.Array ((),t,def,ty)) ->
     let glob_of = glob_of_pat avoid env sigma in
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
 

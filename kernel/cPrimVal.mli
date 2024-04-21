@@ -33,6 +33,13 @@ val map :
   ('constr, 'types, 'univs) t ->
   ('constr, 'types, 'univs) t
 
+val map_heterogenous :
+  ('constr1 -> 'constr2) ->
+  ('types1 -> 'types2) ->
+  ('univs1 -> 'univs2) ->
+  ('constr1, 'types1, 'univs1) t ->
+  ('constr2, 'types2, 'univs2) t
+
 val fold_map :
   ('a -> 'constr -> 'a * 'constr) ->
   'a ->
@@ -82,6 +89,14 @@ val fold_univs :
   'a ->
   ('constr, 'types, 'univs) t ->
   'a
+
+val matching :
+  fail:(unit -> 'res) ->
+  ('res -> 'constr1 -> 'constr2 -> 'res) ->
+  ('constr1, 'constr1, _) t ->
+  ('constr2, 'constr2, _) t ->
+  'res ->
+  'res
 
 val debug_print :
   ('univs -> Pp.t) ->

@@ -41,9 +41,7 @@ type 'i constr_pattern_r =
       (int * Name.t array * 'i constr_pattern_r) list (** index of constructor, nb of args *)
   | PFix of (int array * int) * (Name.t array * 'i constr_pattern_r array * 'i constr_pattern_r array)
   | PCoFix of int * (Name.t array * 'i constr_pattern_r array * 'i constr_pattern_r array)
-  | PInt of Uint63.t
-  | PFloat of Float64.t
-  | PArray of 'i constr_pattern_r array * 'i constr_pattern_r * 'i constr_pattern_r
+  | PPVal of ('i constr_pattern_r, 'i constr_pattern_r, unit) CPrimVal.t
   | PUninstantiated of 'i uninstantiated_pattern
 
 type constr_pattern = [ `any ] constr_pattern_r
