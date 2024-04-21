@@ -143,7 +143,7 @@ struct
 end
 
 module Vcs_ = Vcs.Make(Stateid.Self)(Kind)
-type future_proof = Declare.Proof.closed_proof_output Future.computation
+type future_proof = Declare.Proof.closed_proof_output option Future.computation
 
 type branch_type = Vcs_.Branch.t Kind.t
 (* TODO 8.7 : split commands and tactics, since this type is too messy now *)
@@ -1309,7 +1309,7 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output option Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1332,7 +1332,7 @@ module rec ProofTask : sig
     ?loc:Loc.t ->
     drop_pt:bool ->
     Stateid.exn_info -> Stateid.t ->
-      Declare.Proof.closed_proof_output Future.computation
+      Declare.Proof.closed_proof_output option Future.computation
 
 end = struct (* {{{ *)
 
@@ -1345,7 +1345,7 @@ end = struct (* {{{ *)
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output option Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1368,7 +1368,7 @@ end = struct (* {{{ *)
     e_safe_states : Stateid.t list }
 
   type response =
-    | RespBuiltProof of Declare.Proof.closed_proof_output * float
+    | RespBuiltProof of Declare.Proof.closed_proof_output option * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
 
@@ -1445,7 +1445,7 @@ end = struct (* {{{ *)
     let wall_clock2 = Unix.gettimeofday () in
     Aux_file.record_in_aux_at ?loc "proof_build_time"
       (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-    let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
+    let p = if drop_pt then None else Some (PG_compat.return_proof ()) in
     if drop_pt then feedback ~id Complete;
     p
 
@@ -1473,9 +1473,11 @@ end = struct (* {{{ *)
        * a bad fixpoint *)
       (* STATE: We use the current installed imperative state *)
       let st = State.freeze () in
-      if not drop then begin
-        (* Unfortunately close_future_proof and friends are not pure so we need
-           to set the state manually here *)
+      let () = match proof with
+        | None -> (* drop *) ()
+        | Some proof ->
+          (* Unfortunately close_future_proof and friends are not pure so we need
+             to set the state manually here *)
           State.unfreeze st;
           let pobject =
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
@@ -1495,7 +1497,7 @@ end = struct (* {{{ *)
             let iexn = Exninfo.capture exn in
             let iexn = State.exn_on exn_info.Stateid.id ~valid:exn_info.Stateid.valid iexn in
             Exninfo.iraise iexn
-        end;
+      in
       (* STATE: Restore the state XXX: handle exn *)
       State.unfreeze st;
       RespBuiltProof(proof,time)
@@ -2089,8 +2091,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepDefined ->
                         CErrors.anomaly (Pp.str "Cannot delegate transparent proofs, this is a bug in the STM.")
                     in
+                    let fp' = Future.chain fp (function
+                        | Some p -> p
+                        | None ->
+                          CErrors.anomaly Pp.(str "Attempting to force admitted proof contents."))
+                    in
                     let proof =
-                      PG_compat.close_future_proof ~feedback_id:id fp in
+                      PG_compat.close_future_proof ~feedback_id:id fp' in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_full_state () in

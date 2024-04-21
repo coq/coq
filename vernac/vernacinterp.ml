@@ -176,7 +176,7 @@ let interp_qed_delayed ~proof ~st pe =
       | Admitted ->
         Declare.Proof.save_lemma_admitted_delayed ~pm ~proof
       | Proved (_,idopt) ->
-        let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
+        let pm = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
         pm)
       pm
   in
