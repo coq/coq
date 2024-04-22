@@ -495,10 +495,20 @@ let rec emit env insns remaining = match insns with
       else (out env opPUSHACC; out_int env n);
       emit env c remaining
   | Kpush :: Kenvacc n :: c ->
-      if n >= 0 && n <= 3
-      then out env(opPUSHENVACC0 + n)
-      else (out env opPUSHENVACC; out_int env n);
-      emit env c remaining
+      let rec aux n c nb =
+        match c with
+        | Kpush :: Kenvacc j :: c when j = n - nb -> aux n c (nb + 1)
+        | _ -> (nb, c) in
+      let (nb, c') = aux n c 1 in
+      if nb >= 3 || (nb >= 2 && n > 3)
+      then (
+        out env opPUSHENVACCMANY; out_int env (n - nb + 1); out_int env nb;
+        emit env c' remaining)
+      else (
+        if n >= 0 && n <= 3
+        then out env (opPUSHENVACC0 + n)
+        else (out env opPUSHENVACC; out_int env n);
+        emit env c remaining)
   | Kpush :: Koffsetclosure ofs :: c ->
       if Int.equal ofs 0 || Int.equal ofs 1
       then out env(opPUSHOFFSETCLOSURE0 + ofs)

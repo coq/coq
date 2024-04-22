@@ -48,6 +48,7 @@ let opcodes =
     "PUSHENVACC2", 0;
     "PUSHENVACC3", 0;
     "PUSHENVACC", 1;
+    "PUSHENVACCMANY", 2;
     "PUSH_RETADDR", 1;
     "APPLY", 1;
     "APPLY1", 0;
