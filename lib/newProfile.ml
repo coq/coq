@@ -100,8 +100,13 @@ module Counters = struct
     minor_words : float;
     major_collections : int;
     minor_collections : int;
+    minor_time : int64 (* nanoseconds *);
+    major_time : int64 (* nanoseconds *);
     instr : System.instruction_count;
   }
+
+  let current_minor_time = ref Int64.zero
+  let current_major_time = ref Int64.zero
 
   let get () =
     let gc = Gc.quick_stat() in
@@ -110,6 +115,8 @@ module Counters = struct
       minor_words = gc.minor_words;
       major_collections = gc.major_collections;
       minor_collections = gc.minor_collections;
+      minor_time = !current_minor_time;
+      major_time = !current_major_time;
       instr = Instr.read_counter();
     }
 
@@ -120,20 +127,25 @@ module Counters = struct
     minor_words = b.minor_words -. a.minor_words;
     major_collections = b.major_collections - a.major_collections;
     minor_collections = b.minor_collections - a.minor_collections;
+    minor_time = Int64.sub b.minor_time a.minor_time;
+    major_time = Int64.sub b.major_time a.major_time;
     instr = System.instructions_between ~c_start:a.instr ~c_end:b.instr;
   }
 
   let format x =
     let ppf tdiff = `String (Format.sprintf "%.3G w" tdiff) in
     let ppi i = `Intlit (string_of_int i) in
+    let ppi64 i = `Intlit (Int64.to_string i) in
     let instr = match x.instr with
-      | Ok count -> [("instr", `Intlit (Int64.to_string count))]
+      | Ok count -> [("instr", ppi64 count)]
       | Error _ -> []
     in
     ("major_words",ppf x.major_words) ::
     ("minor_words", ppf x.minor_words) ::
     ("major_collect", ppi x.major_collections) ::
     ("minor_collect", ppi x.minor_collections) ::
+    ("minor_time", ppi64 x.minor_time) ::
+    ("major_time", ppi64 x.major_time) ::
     instr
 
   let make_diffs ~start ~stop = format (stop - start)
@@ -155,9 +167,51 @@ let enter ?time name ?args () =
   enter_sums ~time ();
   duration ~time name "B" ?args ()
 
+let poll, init_poll =
+  let f = ref (fun () -> ()) in
+  let init () =
+    Runtime_events.start();
+
+    let cursor = Runtime_events.create_cursor None in
+
+    let callbacks =
+      let open Runtime_events in
+      (* do we actually need a stack or is a start_of_current_phase ref enough? *)
+      let current_minor = ref [] in
+      let current_major = ref [] in
+      let runtime_begin _ ts = function
+        | EV_MINOR -> current_minor := ts :: !current_minor
+        | EV_MAJOR -> current_major := ts :: !current_major
+        | _ -> ()
+      in
+      let update ref stack ts =
+        match !stack with
+        | [] -> assert false
+        | start :: rest ->
+          stack := rest;
+          ref := Int64.(add !ref (sub (Timestamp.to_int64 ts) (Timestamp.to_int64 start)))
+      in
+      let runtime_end _ ts = function
+        | EV_MINOR -> update Counters.current_minor_time current_minor ts
+        | EV_MAJOR -> update Counters.current_major_time current_major ts
+        | _ -> ()
+      in
+      let lost_events start stop =
+        (* not sure what start/stop mean or what's the best way to report these *)
+        Printf.eprintf "lost runtime events %d %d\n" start stop
+      in
+      Callbacks.create ~runtime_begin ~runtime_end ~lost_events ()
+    in
+
+    f := (fun () -> ignore (Runtime_events.read_poll cursor callbacks None : int))
+  in
+  (fun () -> !f()), init
+
 let leave_sums ?time name () =
   let accu = Option.get !accu in
   let time = gettimeopt time in
+  (* polling here should be frequent enough to avoid losing events (hopefully) *)
+  let () = poll() in
   match accu.sums with
   | [] -> assert false
   | [start,sum] -> accu.sums <- []; sum, time -. start
@@ -233,6 +287,7 @@ type settings =
 let init { output } =
   let () = assert (not (is_profiling())) in
   accu := Some { ch = output; sums = [] };
+  init_poll ();
   f "{ \"traceEvents\": [\n";
   enter ~time:global_start_time "process" ();
   enter ~time:global_start_time "init" ();

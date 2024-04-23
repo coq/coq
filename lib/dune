@@ -5,7 +5,7 @@
  (wrapped false)
  (modules_without_implementation xml_datatype)
  (libraries
-  coq-core.boot coq-core.clib coq-core.config
+  coq-core.boot coq-core.clib coq-core.config runtime_events
   (select interrupted.ml from
    (!memprof-limits -> interrupted.std.ml)
    (memprof-limits -> interrupted.memprof.ml))
