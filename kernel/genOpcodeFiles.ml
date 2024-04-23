@@ -99,6 +99,7 @@ let opcodes =
     "ACCUMULATE", 0;
     "MAKESWITCHBLOCK", 4;
     "MAKEACCU", 1;
+    "SUBSTINSTANCE", 1;
     "BRANCH", 1;
     "CHECKADDINT63", 1;
     "CHECKADDCINT63", 1;

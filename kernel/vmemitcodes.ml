@@ -372,6 +372,8 @@ let emit_instr env = function
       Array.iter (out_label_with_orig env org) lbl_bodies
   | Kgetglobal q ->
       out env opGETGLOBAL; slot_for_getglobal env q
+  | Ksubstinstance u ->
+      out env opSUBSTINSTANCE; slot_for_const env (Const_univ_instance u)
   | Kconst (Const_b0 i) when is_immed i ->
       if i >= 0 && i <= 3
           then out env (opCONST0 + i)
