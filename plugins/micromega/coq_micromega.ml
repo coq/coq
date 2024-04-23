@@ -27,6 +27,8 @@ open Context
 open Tactypes
 open McPrinter
 
+module ERelevance = EConstr.ERelevance
+
 (**
   * Debug flag
   *)
@@ -1232,7 +1234,7 @@ let prodn n env b =
   let rec prodrec = function
     | 0, env, b -> b
     | n, (v, t) :: l, b ->
-      prodrec (n - 1, l, EConstr.mkProd (make_annot v Sorts.Relevant, t, b))
+      prodrec (n - 1, l, EConstr.mkProd (make_annot v ERelevance.relevant, t, b))
     | _ -> assert false
   in
   prodrec (n, env, b)
@@ -1314,10 +1316,10 @@ let make_goal_of_formula gl dexpr form =
       EConstr.mkApp
         (Lazy.force coq_iff, [|xdump_prop pi xi x; xdump_prop pi xi y|])
     | Mc.IMPL (_, x, _, y) ->
-      EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant
+      EConstr.mkArrow (xdump_prop pi xi x) ERelevance.relevant
         (xdump_prop (pi + 1) (xi + 1) y)
     | Mc.NOT (_, x) ->
-      EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant (Lazy.force coq_False)
+      EConstr.mkArrow (xdump_prop pi xi x) ERelevance.relevant (Lazy.force coq_False)
     | Mc.EQ (x, y) ->
       EConstr.mkApp
         ( Lazy.force coq_eq
@@ -1380,7 +1382,7 @@ let set sigma l concl =
       let name, expr, typ = e in
       xset
         (EConstr.mkNamedLetIn sigma
-           (make_annot (Names.Id.of_string name) Sorts.Relevant)
+           (make_annot (Names.Id.of_string name) ERelevance.relevant)
            expr typ acc)
         l
   in
@@ -1723,7 +1725,7 @@ let abstract_formula : TagSet.t -> 'a formula -> 'a formula =
       ; mkIMPL =
           (fun k x y ->
             match k with
-            | Mc.IsProp -> EConstr.mkArrow x Sorts.Relevant y
+            | Mc.IsProp -> EConstr.mkArrow x ERelevance.relevant y
             | Mc.IsBool -> EConstr.mkApp (Lazy.force coq_implb, [|x; y|]))
       ; mkIFF =
           (let coq_iff = Lazy.force coq_iff in

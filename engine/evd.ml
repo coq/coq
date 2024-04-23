@@ -17,12 +17,12 @@ open Constr
 open Vars
 open Environ
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type econstr = constr
 type etypes = types
 type esorts = Sorts.t
+type erelevance = Sorts.relevance
 
 (** Generic filters *)
 module Filter :
@@ -1675,6 +1675,13 @@ type unsolvability_explanation = SeveralInstancesFound of int
 
 module MiniEConstr = struct
 
+  module ERelevance = struct
+    type t = Sorts.relevance
+    let make r = r
+    let unsafe_to_relevance r = r
+    let kind sigma r = UState.nf_relevance sigma.universes r
+  end
+
   module ESorts =
   struct
     type t = Sorts.t
@@ -1730,6 +1737,7 @@ module MiniEConstr = struct
   let unsafe_to_constr c = c
   let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
+  let unsafe_relevance_eq = Refl
 
   type evclos = {
     evc_map : (int * Vars.substituend Lazy.t) Id.Map.t;
@@ -1854,15 +1862,11 @@ module MiniEConstr = struct
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
-  let to_named_decl sigma d = NamedDecl.map_constr_het_with_relevance (UState.nf_relevance sigma.universes) (to_constr sigma) d
   let of_rel_decl d = d
   let unsafe_to_rel_decl d = d
-  let to_rel_decl sigma d = RelDecl.map_constr_het_with_relevance (UState.nf_relevance sigma.universes) (to_constr sigma) d
 
   let of_named_context d = d
-  let to_named_context sigma l = List.map (to_named_decl sigma) l
   let of_rel_context d = d
-  let to_rel_context sigma l = List.map (to_rel_decl sigma) l
 
   let unsafe_to_case_invert x = x
   let of_case_invert x = x

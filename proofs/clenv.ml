@@ -598,7 +598,7 @@ type proof =
 | RfHole of metavariable
 | RfGround of EConstr.t
 | RfApp of proof * proof list
-| RfProj of Projection.t * Sorts.relevance * proof
+| RfProj of Projection.t * ERelevance.t * proof
 
 exception NonLinear
 
@@ -799,7 +799,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
   (* Assumes that the arguments do not contain free rels *)
   let indf = make_ind_family ((ind, u), Array.to_list params) in
   let projs = get_projections env ind in
-  let relevance = Retyping.relevance_of_sort sigma knd in
+  let relevance = Retyping.relevance_of_sort knd in
 
   let pnas, deparsign =
     let arsign = get_arity env indf in
@@ -835,13 +835,14 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
     let iv =
-      if Typeops.should_invert_case env relevance ci then CaseInvert { indices = indices }
+      if Typeops.should_invert_case env (ERelevance.kind sigma relevance) ci
+      then CaseInvert { indices = indices }
       else NoInvert
     in
     RealCase (ci, u, params, ((pnas, pbody), relevance), iv, indarg)
   | Some ps ->
     let args = Array.map (fun (p,r) ->
-        let r = UVars.subst_instance_relevance (Unsafe.to_instance u) r in
+        let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
         mkProj (Projection.make p true, r, indarg))
         ps
     in

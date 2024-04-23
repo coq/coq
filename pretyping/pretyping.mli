@@ -37,7 +37,7 @@ val search_guard :
 
 val esearch_guard :
   ?loc:Loc.t -> env -> evar_map -> int list list ->
-  (EConstr.t, EConstr.t) Constr.prec_declaration -> int array
+  EConstr.rec_declaration -> int array
 
 type typing_constraint =
   | IsType (** Necessarily a type *)

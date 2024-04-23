@@ -86,7 +86,7 @@ val is_equality_type       : testing_function
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function
 
-val match_with_forall_term    : (Name.t Context.binder_annot * constr * constr) matching_function
+val match_with_forall_term    : (Name.t EConstr.binder_annot * constr * constr) matching_function
 val is_forall_term            : testing_function
 
 val match_with_imp_term    : (constr * constr) matching_function

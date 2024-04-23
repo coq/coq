@@ -189,10 +189,10 @@ let type_case_branches env sigma (ind,largs) specif pj c =
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota env sigma (lambda_applist_decls sigma (n+1) p (realargs@[c])) in
-  sigma, (lc, ty, ESorts.relevance_of_sort sigma ps)
+  sigma, (lc, ty, ESorts.relevance_of_sort ps)
 
 let unify_relevance sigma r1 r2 =
-  match Evarutil.nf_relevance sigma r1, Evarutil.nf_relevance sigma r2 with
+  match ERelevance.kind sigma r1, ERelevance.kind sigma r2 with
   | Relevant, Relevant | Irrelevant, Irrelevant -> Some sigma
   | Relevant, Irrelevant | Irrelevant, Relevant -> None
   | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
@@ -210,12 +210,14 @@ let unify_relevance sigma r1 r2 =
     in
     Some sigma
   | RelevanceVar q1, RelevanceVar q2 ->
-    let sigma =
-      Evd.add_quconstraints sigma
-        (Sorts.QConstraints.singleton (QVar q1, Equal, QVar q2),
-         Univ.Constraints.empty)
-    in
-    Some sigma
+    if Sorts.QVar.equal q1 q2 then Some sigma
+    else
+      let sigma =
+        Evd.add_quconstraints sigma
+          (Sorts.QConstraints.singleton (QVar q1, Equal, QVar q2),
+           Univ.Constraints.empty)
+      in
+      Some sigma
 
 let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let ((ind, u), spec) =
@@ -227,8 +229,7 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
   (* should we have evar map aware should_invert_case? *)
   let sigma, rp =
-    if Sorts.relevance_equal rp rci then sigma, rp
-    else match unify_relevance sigma rp rci with
+    match unify_relevance sigma rp rci with
     | None ->
       raise_type_error (env,sigma,Type_errors.BadCaseRelevance (rp, mkCase case))
     | Some sigma -> sigma, rci
@@ -237,7 +238,7 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let () = check_case_info env ind ci in
   let sigma = check_branch_types env sigma ind cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
-              != should_invert_case env rp ci
+              != should_invert_case env (ERelevance.kind sigma rp) ci
     then Type_errors.error_bad_invert env
   in
   sigma, { uj_val  = mkCase case;
@@ -265,7 +266,7 @@ let check_allowed_sort env sigma ind c p =
     | _ -> error_elim_arity env sigma ind c None
   in
   if Inductiveops.is_allowed_elimination sigma (specif, (snd ind)) sort then
-    ESorts.relevance_of_sort sigma sort
+    ESorts.relevance_of_sort sort
   else
     error_elim_arity env sigma ind c (Some sort)
 
@@ -282,11 +283,13 @@ let judge_of_cast env sigma cj k tj =
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
+  let ids = Array.map EConstr.Unsafe.to_binder_annot ids in
   check_fix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 let check_cofix env sigma pcofix =
   let inj c = EConstr.to_constr sigma c in
   let (idx, (ids, cs, ts)) = pcofix in
+  let ids = Array.map EConstr.Unsafe.to_binder_annot ids in
   check_cofix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 (* The typing machine with universes and existential variables. *)
@@ -331,27 +334,27 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let pr = Vars.subst_instance_relevance u pr in
+  let pr = Vars.subst_instance_relevance u (ERelevance.make pr) in
   let ty = Vars.subst_instance_constr u (EConstr.of_constr pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
   {uj_val = EConstr.mkProj (p,pr,cj.uj_val);
    uj_type = ty}
 
 let judge_of_abstraction env sigma name var j =
-  let r = ESorts.relevance_of_sort sigma var.utj_type in
+  let r = ESorts.relevance_of_sort var.utj_type in
   { uj_val = mkLambda (make_annot name r, var.utj_val, j.uj_val);
     uj_type = mkProd (make_annot name r, var.utj_val, j.uj_type) }
 
 let judge_of_product env sigma name t1 t2 =
   let s1 = ESorts.kind sigma t1.utj_type in
   let s2 = ESorts.kind sigma t2.utj_type in
-  let r = Sorts.relevance_of_sort s1 in
+  let r = ERelevance.make @@ Sorts.relevance_of_sort s1 in
   let s = ESorts.make (sort_of_product env s1 s2) in
   { uj_val = mkProd (make_annot name r, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 
 let judge_of_letin env sigma name defj typj j =
-  let r = ESorts.relevance_of_sort sigma typj.utj_type in
+  let r = ESorts.relevance_of_sort typj.utj_type in
   { uj_val = mkLetIn (make_annot name r, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
@@ -421,7 +424,7 @@ type relevance_preunify =
   | DummySort of ESorts.t
 
 let check_binder_relevance env sigma s decl =
-  let preunify = match ESorts.kind sigma s, Evarutil.nf_relevance sigma (get_relevance decl) with
+  let preunify = match ESorts.kind sigma s, ERelevance.kind sigma (get_relevance decl) with
     | (Prop | Set | Type _), Relevant -> Trivial
     | (Prop | Set | Type _), Irrelevant -> Impossible
     | SProp, Irrelevant -> Trivial
@@ -445,7 +448,7 @@ let check_binder_relevance env sigma s decl =
   | Some sigma -> sigma, decl
   | None ->
     (* TODO always anomaly *)
-    let rs = ESorts.relevance_of_sort sigma s in
+    let rs = ESorts.relevance_of_sort s in
     let () =
       if not (UGraph.type_in_type (Evd.universes sigma))
       then warn_bad_relevance_binder env sigma rs decl

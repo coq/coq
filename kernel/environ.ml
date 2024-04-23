@@ -385,7 +385,7 @@ let val_of_named_context ctxt =
 
 
 let eq_named_context_val c1 c2 =
-   c1 == c2 || Context.Named.equal Constr.equal (named_context_of_val c1) (named_context_of_val c2)
+   c1 == c2 || Context.Named.equal Sorts.relevance_equal Constr.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
 

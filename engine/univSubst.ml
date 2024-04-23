@@ -166,7 +166,7 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
   let frel = Sorts.relevance_subst_fn fqual in
   let flevel = fqual, level_subst_of funiv in
   let aux_rec ((nas, tys, bds) as rc) =
-    let nas' = Array.Smart.map (Context.map_binder_relevance frel) nas in
+    let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
     let tys' = Array.Fun1.Smart.map aux k tys in
     let k' = iterate next (Array.length tys') k in
     let bds' = Array.Fun1.Smart.map aux k' bds in
@@ -174,7 +174,7 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
     else (nas', tys', bds')
   in
   let aux_ctx ((nas, c) as p) =
-    let nas' = Array.Smart.map (Context.map_binder_relevance frel) nas in
+    let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
     let k' = iterate next (Array.length nas) k in
     let c' = aux k' c in
     if nas' == nas && c' == c then p
@@ -211,19 +211,19 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
     if u == u' && elems == elems' && def == def' && ty == ty' then c
     else mkArray (u',elems',def',ty')
   | Prod (na, t, u) ->
-    let na' = Context.map_binder_relevance frel na in
+    let na' = Context.map_annot_relevance frel na in
     let t' = aux k t in
     let u' = aux (next k) u in
     if na' == na && t' == t && u' == u then c
     else mkProd (na', t', u')
   | Lambda (na, t, u) ->
-    let na' = Context.map_binder_relevance frel na in
+    let na' = Context.map_annot_relevance frel na in
     let t' = aux k t in
     let u' = aux (next k) u in
     if na' == na && t' == t && u' == u then c
     else mkLambda (na', t', u')
   | LetIn (na, b, t, u) ->
-    let na' = Context.map_binder_relevance frel na in
+    let na' = Context.map_annot_relevance frel na in
     let b' = aux k b in
     let t' = aux k t in
     let u' = aux (next k) u in

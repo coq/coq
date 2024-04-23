@@ -467,7 +467,7 @@ module Search = struct
     let eq c1 c2 = EConstr.eq_constr sigma c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
-           Context.Named.equal eq sign sign' &&
+           Context.Named.equal (ERelevance.equal sigma) eq sign sign' &&
              cached_modes == modes
     then cached_hints
     else
@@ -731,7 +731,7 @@ module Search = struct
         in
         let eq c1 c2 = EConstr.eq_constr sigma' c1 c2 in
         let hints' =
-          if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
+          if b && not (Context.Named.equal (ERelevance.equal sigma) eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
             let modes = Hint_db.modes info.search_hints in

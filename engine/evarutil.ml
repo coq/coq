@@ -18,6 +18,8 @@ open Evd
 open Termops
 open Namegen
 
+module ERelevance = EConstr.ERelevance
+
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
@@ -34,12 +36,13 @@ let create_clos_infos env sigma flags =
 let finalize ?abort_on_undefined_evars sigma f =
   let sigma = minimize_universes sigma in
   let uvars = ref Univ.Level.Set.empty in
-  let v = f (fun c ->
-      let _, varsc = EConstr.universes_of_constr sigma c in
-      let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
-      uvars := Univ.Level.Set.union !uvars varsc;
-      c)
+  let nf_constr c =
+    let _, varsc = EConstr.universes_of_constr sigma c in
+    let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
+    uvars := Univ.Level.Set.union !uvars varsc;
+    c
   in
+  let v = f nf_constr in
   let sigma = restrict_universe_context sigma !uvars in
   sigma, v
 
@@ -81,7 +84,8 @@ let nf_named_context_evar sigma ctx =
   Context.Named.map_with_relevance (nf_relevance sigma) (nf_evars_universes sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map_with_relevance (nf_relevance sigma) (nf_evar sigma) ctx
+  let nf_relevance r = ERelevance.make (ERelevance.kind sigma r) in
+  Context.Rel.map_with_relevance nf_relevance (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -427,7 +431,7 @@ let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = 
     | Some filter -> Filter.filter_slist filter instance in
   let relevance = match relevance with
   | Some r -> r
-  | None -> Sorts.Relevant (* FIXME: relevant_of_type not defined yet *)
+  | None -> ERelevance.relevant (* FIXME: relevant_of_type not defined yet *)
   in
   let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?name
     ?typeclass_candidate ?principal in
@@ -435,7 +439,7 @@ let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = 
 
 let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let relevance = EConstr.ESorts.relevance_of_sort evd s in
+  let relevance = EConstr.ESorts.relevance_of_sort s in
   let (evd', e) = new_evar env evd' ?src ?filter ~relevance ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
@@ -698,7 +702,7 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   in
   let (decl', evs) = !r in
   let evs =
-    if NamedDecl.equal (==) decl decl' then snd !r
+    if NamedDecl.equal (==) (==) decl decl' then snd !r
     else
       let fold c acc =
         let evs = undefined_evars_of_term sigma c in

@@ -906,7 +906,7 @@ let descend_then env sigma head dirn =
       let brl =
         List.map build_branch
           (List.interval 1 (Array.length mip.mind_consnames)) in
-      let rci = Sorts.Relevant in (* TODO relevance *)
+      let rci = ERelevance.relevant in (* TODO relevance *)
       let ci = make_case_info env ind RegularStyle in
       Inductiveops.make_case_or_project env sigma indt ci (p, rci) head (Array.of_list brl)))
 
@@ -980,7 +980,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
     pf_constr_of_global eq_elim >>= fun eq_elim ->
     Proofview.tclEVARMAP >>= fun sigma ->
     Proofview.tclUNIT
-       (applist (eq_elim, [t;t1;mkNamedLambda sigma (make_annot e Sorts.Relevant) t discriminator;i;t2]))
+       (applist (eq_elim, [t;t1;mkNamedLambda sigma (make_annot e ERelevance.relevant) t discriminator;i;t2]))
 
 type equality = {
   eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
@@ -999,7 +999,7 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar
   let false_ty = Retyping.get_type_of env sigma false_0 in
   let false_kind = Retyping.get_sort_family_of env sigma false_0 in
   let e = next_ident_away eq_baseid (vars_of_env env) in
-  let e_env = push_named (Context.Named.Declaration.LocalAssum (make_annot e Sorts.Relevant,t)) env in
+  let e_env = push_named (Context.Named.Declaration.LocalAssum (make_annot e ERelevance.relevant,t)) env in
   let discriminator =
     try
       Proofview.tclUNIT
@@ -1229,13 +1229,13 @@ let simplify_args env sigma t =
 let inject_at_positions env sigma l2r eq posns tac =
   let { eq_data = (eq, (t,t1,t2)); eq_term = v; eq_evar = evs } = eq in
   let e = next_ident_away eq_baseid (vars_of_env env) in
-  let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
+  let e_env = push_named (LocalAssum (make_annot e ERelevance.relevant,t)) env in
   let evdref = ref sigma in
   let filter (cpath, t1', t2') =
     try
       (* arbitrarily take t1' as the injector default value *)
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
-      let injfun = mkNamedLambda sigma (make_annot e Sorts.Relevant) t injbody in
+      let injfun = mkNamedLambda sigma (make_annot e ERelevance.relevant) t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       (* pf : eq t t1 t2 -> eq resty (injfun t1) (injfun t2) *)
       let mk c = Retyping.get_judgment_of env sigma c in
@@ -1434,7 +1434,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list,_ = List.split decomp2 in
   (* We build the expected goal *)
-  let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term sigma e body) in
+  let fold (e, t) body = lambda_create env sigma (ERelevance.relevant, t, subst_term sigma e body) in
   let abst_B = List.fold_right fold e1_list body in
   let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
   (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
@@ -1447,7 +1447,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
     sigma
   in
   let pred_body = Vars.substl (List.rev proj_list) abst_B in
-  let body = mkApp (lambda_create env sigma (Sorts.Relevant,typ,pred_body),[|dep_pair1|]) in
+  let body = mkApp (lambda_create env sigma (ERelevance.relevant,typ,pred_body),[|dep_pair1|]) in
   let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota env sigma expected_goal in

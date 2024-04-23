@@ -865,7 +865,7 @@ let __eps__ = Id.of_string "_eps_"
 let new_state_var typ state =
   let ids = Environ.ids_of_named_context_val (Environ.named_context_val state.env) in
   let id = Namegen.next_ident_away __eps__ ids in
-  let r = Sorts.Relevant in (* TODO relevance *)
+  let r = EConstr.ERelevance.relevant in (* TODO relevance *)
   state.env<- EConstr.push_named (Context.Named.Declaration.LocalAssum (make_annot id r,typ)) state.env;
   id
 

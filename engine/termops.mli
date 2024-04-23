@@ -17,11 +17,11 @@ open Environ
 open EConstr
 
 (** about contexts *)
-val push_rel_assum : Name.t Context.binder_annot * types -> env -> env
-val push_rels_assum : (Name.t Context.binder_annot * Constr.types) list -> env -> env
-val push_named_rec_types : Name.t Context.binder_annot array * Constr.types array * 'a -> env -> env
+val push_rel_assum : Name.t EConstr.binder_annot * types -> env -> env
+val push_rels_assum : (Name.t Constr.binder_annot * Constr.types) list -> env -> env
+val push_named_rec_types : Name.t Constr.binder_annot array * Constr.types array * 'a -> env -> env
 
-val lookup_rel_id : Id.t -> ('c, 't) Context.Rel.pt -> int * 'c option * 't
+val lookup_rel_id : Id.t -> ('c, 't, 'r) Context.Rel.pt -> int * 'c option * 't
 (** Associates the contents of an identifier in a [rel_context]. Raise
     [Not_found] if there is no such identifier. *)
 
@@ -39,10 +39,10 @@ val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkProd_wo_LetIn : rel_declaration -> types -> types
   [@@ocaml.deprecated "Use synonymous [EConstr.mkProd_wo_LetIn]."]
 
-val it_mkProd : types -> (Name.t Context.binder_annot * types) list -> types
+val it_mkProd : types -> (Name.t EConstr.binder_annot * types) list -> types
   [@@ocaml.deprecated "Use synonymous [EConstr.it_mkProd]."]
 
-val it_mkLambda : constr -> (Name.t Context.binder_annot * types) list -> constr
+val it_mkLambda : constr -> (Name.t EConstr.binder_annot * types) list -> constr
   [@@ocaml.deprecated "Use synonymous [EConstr.it_mkLambda]."]
 
 val it_mkProd_or_LetIn : types -> rel_context -> types
@@ -199,8 +199,8 @@ val add_name : Name.t -> names_context -> names_context
 val lookup_name_of_rel : int -> names_context -> Name.t
 val lookup_rel_of_name : Id.t -> names_context -> int
 val empty_names_context : names_context
-val ids_of_rel_context : ('c, 't) Context.Rel.pt -> Id.t list
-val ids_of_named_context : ('c, 't) Context.Named.pt -> Id.t list
+val ids_of_rel_context : ('c, 't, 'r) Context.Rel.pt -> Id.t list
+val ids_of_named_context : ('c, 't, 'r) Context.Named.pt -> Id.t list
 val ids_of_context : env -> Id.t list
 val names_of_rel_context : env -> names_context
 
@@ -221,7 +221,7 @@ val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 
 (** other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
-val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Name.t Context.binder_annot * 't) list
+val assums_of_rel_context : ('c, 't, 'r) Context.Rel.pt -> ((Name.t,'r) Context.pbinder_annot * 't) list
 
 val lift_rel_context : int -> Constr.rel_context -> Constr.rel_context
   [@@ocaml.deprecated "Use synonymous [Vars.lift_rel_context]."]
@@ -230,7 +230,7 @@ val substl_rel_context : Constr.constr list -> Constr.rel_context -> Constr.rel_
 val smash_rel_context : Constr.rel_context -> Constr.rel_context
   [@@ocaml.deprecated "Use synonymous [Vars.smash_rel_context]."]
 val map_rel_context_with_binders :
-  (int -> 'c -> 'c) -> ('c, 'c) Context.Rel.pt -> ('c, 'c) Context.Rel.pt
+  (int -> 'c -> 'c) -> ('c, 'c, 'r) Context.Rel.pt -> ('c, 'c, 'r) Context.Rel.pt
   [@@ocaml.deprecated "Use synonymous [Context.Rel.map_with_binders]."]
 
 val map_rel_context_in_env :
@@ -241,8 +241,11 @@ val fold_named_context_both_sides :
 val mem_named_context_val : Id.t -> named_context_val -> bool
 val compact_named_context : Evd.evar_map -> EConstr.named_context -> EConstr.compacted_context
 
-val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
-val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
+val map_rel_decl : ('r1 -> 'r2 ) -> ('a -> 'b) -> ('a, 'a, 'r1) Context.Rel.Declaration.pt -> ('b, 'b, 'r2) Context.Rel.Declaration.pt
+[@@deprecated "Use [Context.Rel.Declaration.map_constr_het]"]
+
+val map_named_decl : ('r1 -> 'r2 ) -> ('a -> 'b) -> ('a, 'a, 'r1) Context.Named.Declaration.pt -> ('b, 'b, 'r2) Context.Named.Declaration.pt
+[@@deprecated "Use [Context.Named.Declaration.map_constr_het]"]
 
 val clear_named_body : Id.t -> env -> env
 

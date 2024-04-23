@@ -361,7 +361,7 @@ type coercion_trace =
   | IdCoe
   | PrimProjCoe of {
       proj : Projection.Repr.t;
-      relevance : Sorts.relevance;
+      relevance : ERelevance.t;
       args : econstr list;
       previous : coercion_trace;
     }
@@ -408,7 +408,10 @@ let apply_coercion env sigma p h hty =
          let isproj = i.coe_is_projection in
          let sigma, c = Evd.fresh_global env sigma i.coe_value in
          let u = instance_of_global_constr sigma c in
-         let isproj = Option.map (fun p -> p, Relevanceops.relevance_of_projection_repr env (p,u)) isproj in
+         let isproj = Option.map (fun p ->
+             p, ERelevance.make @@ Relevanceops.relevance_of_projection_repr env (p,u))
+             isproj
+         in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
          let sigma, j', args, jty =
            apply_coercion_args env sigma isproj c typ j jty i.coe_param in
@@ -460,7 +463,7 @@ let unify_product env sigma typ =
     Inl sigma
   | _ ->
     let sigma, (domain_hole, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
-    let r = ESorts.relevance_of_sort sigma s in
+    let r = ESorts.relevance_of_sort s in
     let na = make_annot Anonymous r in
     let env' = push_rel Context.(Rel.Declaration.LocalAssum (na, domain_hole)) env in
     let sigma, (codomain_hole, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
@@ -475,7 +478,7 @@ type delayed_app_body = {
   mutable head : constr;
   mutable rev_args : constr list;
   args_len : int;
-  proj : (Projection.Repr.t * Sorts.relevance) option
+  proj : (Projection.Repr.t * ERelevance.t) option
 }
 
 let force_app_body ({head;rev_args} as body) =

@@ -103,14 +103,16 @@ type cast_kind = VMcast | NATIVEcast | DEFAULTcast
    type t{_ 2} (that means t2 is declared as the type of t1). *)
 val mkCast : constr * cast_kind * constr -> constr
 
+type 'a binder_annot = ('a,Sorts.relevance) Context.pbinder_annot
+
 (** Constructs the product [(x:t1)t2] *)
-val mkProd : Name.t Context.binder_annot * types * types -> types
+val mkProd : Name.t binder_annot * types * types -> types
 
 (** Constructs the abstraction \[x:t{_ 1}\]t{_ 2} *)
-val mkLambda : Name.t Context.binder_annot * types * constr -> constr
+val mkLambda : Name.t binder_annot * types * constr -> constr
 
 (** Constructs the product [let x = t1 : t2 in t3] *)
-val mkLetIn : Name.t Context.binder_annot * constr * types * constr -> constr
+val mkLetIn : Name.t binder_annot * constr * types * constr -> constr
 
 (** [mkApp (f, [|t1; ...; tN|]] constructs the application
     {%html:(f t<sub>1</sub> ... t<sub>n</sub>)%}
@@ -155,10 +157,10 @@ end
     [ac]{^ ith} element is ith constructor case presented as
     {e construct_args |- case_term } *)
 
-type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
+type ('constr,'r) pcase_branch = (Name.t,'r) Context.pbinder_annot array * 'constr
 (** Names bound by matching the constructor for this branch. *)
 
-type 'types pcase_return = (Name.t Context.binder_annot array * 'types) * Sorts.relevance
+type ('types,'r) pcase_return = ((Name.t,'r) Context.pbinder_annot array * 'types) * 'r
 (** Names of the indices + name of self *)
 
 type 'constr pcase_invert =
@@ -169,13 +171,13 @@ type 'constr pcase_invert =
   (** Reduce when the indices match those of the unique constructor.
       (SProp to non SProp only) *)
 
-type ('constr, 'types, 'univs) pcase =
-  case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
+type ('constr, 'types, 'univs, 'r) pcase =
+  case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
 
 type case_invert = constr pcase_invert
-type case_return = types pcase_return
-type case_branch = constr pcase_branch
-type case = (constr, types, UVars.Instance.t) pcase
+type case_return = (types, Sorts.relevance) pcase_return
+type case_branch = (constr, Sorts.relevance) pcase_branch
+type case = (constr, types, UVars.Instance.t, Sorts.relevance) pcase
 
 val mkCase : case -> constr
 
@@ -193,10 +195,10 @@ val mkCase : case -> constr
 
    where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
 *)
-type ('constr, 'types) prec_declaration =
-    Name.t Context.binder_annot array * 'types array * 'constr array
-type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
+type ('constr, 'types, 'r) prec_declaration =
+    (Name.t, 'r) Context.pbinder_annot array * 'types array * 'constr array
+type ('constr, 'types, 'r) pfixpoint =
+    (int array * int) * ('constr, 'types, 'r) prec_declaration
 (** The array of [int]'s tells for each component of the array of
    mutual fixpoints the number of lambdas to skip before finding the
    recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
@@ -204,14 +206,14 @@ type ('constr, 'types) pfixpoint =
    the recursive argument); The second component [int] tells which
    component of the block is returned *)
 
-type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
+type ('constr, 'types, 'r) pcofixpoint =
+    int * ('constr, 'types, 'r) prec_declaration
 (** The component [int] tells which component of the block of
    cofixpoint is returned *)
 
-type rec_declaration = (constr, types) prec_declaration
+type rec_declaration = (constr, types, Sorts.relevance) prec_declaration
 
-type fixpoint = (constr, types) pfixpoint
+type fixpoint = (constr, types, Sorts.relevance) pfixpoint
 val mkFix : fixpoint -> constr
 
 (** If [funnames = [|f1,.....fn|]]
@@ -225,7 +227,7 @@ val mkFix : fixpoint -> constr
      ...
      with       fn = bn.]
  *)
-type cofixpoint = (constr, types) pcofixpoint
+type cofixpoint = (constr, types, Sorts.relevance) pcofixpoint
 val mkCoFix : cofixpoint -> constr
 
 
@@ -235,7 +237,7 @@ val mkCoFix : cofixpoint -> constr
    the same order (i.e. last argument first) *)
 type 'constr pexistential = Evar.t * 'constr SList.t
 
-type ('constr, 'types, 'sort, 'univs) kind_of_term =
+type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Rel       of int
   (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
   | Var       of Id.t
@@ -246,11 +248,11 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t Context.binder_annot * 'types * 'types
+  | Prod      of (Name.t,'r) Context.pbinder_annot * 'types * 'types
   (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
-  | Lambda    of Name.t Context.binder_annot * 'types * 'constr
+  | Lambda    of (Name.t,'r) Context.pbinder_annot * 'types * 'constr
   (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
-  | LetIn     of Name.t Context.binder_annot * 'constr * 'types * 'constr
+  | LetIn     of (Name.t,'r) Context.pbinder_annot * 'constr * 'types * 'constr
   (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
   | App       of 'constr * 'constr array
   (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
@@ -267,7 +269,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Construct of (constructor * 'univs)
   (** A constructor of an inductive type defined by [Variant],
      [Inductive] or [Record] Vernacular-commands. *)
-  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
+  | Case      of case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
   (** [Case (ci,u,params,p,iv,c,brs)] is a [match c return p with brs]
      expression. [c] lives in inductive [ci.ci_ind] at universe
      instance [u] and parameters [params]. If this match has case
@@ -278,9 +280,9 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
      inductive value (ie the [in] and [as] clauses).
 
      The names in the [brs] are the names of the variables bound in the respective branch. *)
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * Sorts.relevance * 'constr
+  | Fix       of ('constr, 'types, 'r) pfixpoint
+  | CoFix     of ('constr, 'types, 'r) pcofixpoint
+  | Proj      of Projection.t * 'r * 'constr
   (** The relevance is the relevance of the whole term *)
   | Int       of Uint63.t
   | Float     of Float64.t
@@ -292,13 +294,13 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
    least one argument and the function is not itself an applicative
    term *)
 
-val kind : constr -> (constr, types, Sorts.t, UVars.Instance.t) kind_of_term
-val of_kind : (constr, types, Sorts.t, UVars.Instance.t) kind_of_term -> constr
+val kind : constr -> (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
+val of_kind : (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term -> constr
 
-val kind_nocast_gen : ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
-  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term)
+val kind_nocast_gen : ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term)
 
-val kind_nocast : constr -> (constr, types, Sorts.t, UVars.Instance.t) kind_of_term
+val kind_nocast : constr -> (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
 
 (** {6 Simple case analysis} *)
 val isRel  : constr -> bool
@@ -354,13 +356,13 @@ val destSort : constr -> Sorts.t
 val destCast : constr -> constr * cast_kind * constr
 
 (** Destructs the product {% $ %}(x:t_1)t_2{% $ %} *)
-val destProd : types -> Name.t Context.binder_annot * types * types
+val destProd : types -> Name.t binder_annot * types * types
 
 (** Destructs the abstraction {% $ %}[x:t_1]t_2{% $ %} *)
-val destLambda : constr -> Name.t Context.binder_annot * types * constr
+val destLambda : constr -> Name.t binder_annot * types * constr
 
 (** Destructs the let {% $ %}[x:=b:t_1]t_2{% $ %} *)
-val destLetIn : constr -> Name.t Context.binder_annot * constr * types * constr
+val destLetIn : constr -> Name.t binder_annot * constr * types * constr
 
 (** Destructs an application *)
 val destApp : constr -> constr * constr array
@@ -429,9 +431,9 @@ val compare : constr -> constr -> int
 
 (** {6 Extension of Context with declarations on constr} *)
 
-type rel_declaration = (constr, types) Context.Rel.Declaration.pt
-type named_declaration = (constr, types) Context.Named.Declaration.pt
-type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
+type rel_declaration = (constr, types, Sorts.relevance) Context.Rel.Declaration.pt
+type named_declaration = (constr, types, Sorts.relevance) Context.Named.Declaration.pt
+type compacted_declaration = (constr, types, Sorts.relevance) Context.Compacted.Declaration.pt
 type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
@@ -578,8 +580,8 @@ val compare_head_gen : UVars.Instance.t instance_compare_fn ->
   constr constr_compare_fn
 
 val compare_head_gen_leq_with :
-  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
-  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
   'univs instance_compare_fn ->
   ('sort -> 'sort -> bool) ->
   ('v pexistential -> 'v pexistential -> bool) ->
@@ -592,8 +594,8 @@ val compare_head_gen_leq_with :
     is used,rather than {!kind}, to expose the immediate subterms of
     [c1] (resp. [c2]). *)
 val compare_head_gen_with :
-  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
-  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
   'univs instance_compare_fn ->
   ('sort -> 'sort -> bool) ->
   ('v pexistential -> 'v pexistential -> bool) ->
@@ -627,7 +629,7 @@ val case_info_hash : case_info -> int
 val hcons : constr -> constr
 
 val debug_print : constr -> Pp.t
-val debug_print_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
+val debug_print_fix : ('a -> Pp.t) -> ('a, 'a, 'r) pfixpoint -> Pp.t
 
 val mkConst : Constant.t -> constr
 [@@deprecated "Use [mkConstU] or if truly needed [UnsafeMonomorphic.mkConst]"]

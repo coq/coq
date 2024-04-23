@@ -404,7 +404,7 @@ let pr_named_context env sigma ne_context =
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
-  let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
+  let rel_context = EConstr.of_rel_context rel_context in
   pr_binders env sigma (extern_rel_context None env sigma rel_context)
 
 let pr_rel_context_of env sigma =
@@ -672,8 +672,8 @@ let print_evar_constraints gl sigma =
     | Some g ->
        let env, _ = goal_repr sigma g in fun e' ->
        begin
-         if Context.Named.equal Constr.equal (named_context env) (named_context e') then
-           if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
+         if Context.Named.equal Sorts.relevance_equal Constr.equal (named_context env) (named_context e') then
+           if Context.Rel.equal Sorts.relevance_equal Constr.equal (rel_context env) (rel_context e') then mt ()
            else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
          else pr_context_of e' sigma ++ str " |-" ++ spc ()
        end

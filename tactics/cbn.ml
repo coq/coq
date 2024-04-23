@@ -104,15 +104,15 @@ sig
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of Projection.t * Sorts.relevance
+    | Cst_proj of Projection.t * ERelevance.t
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * ('a,ERelevance.t) pcase_return * 'a pcase_invert * ('a,ERelevance.t) pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t
-  | Proj of Projection.t * Sorts.relevance * Cst_stack.t
-  | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
+  | Proj of Projection.t * ERelevance.t * Cst_stack.t
+  | Fix of ('a, 'a, ERelevance.t) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
   | Cst of { const : cst_member;
              curr : int;
@@ -128,7 +128,7 @@ sig
   val empty : 'a t
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
-  val equal : env -> ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
+  val equal : env -> ('a -> 'a -> bool) -> (('a, 'a, ERelevance.t) pfixpoint -> ('a, 'a, ERelevance.t) pfixpoint -> bool)
     -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
@@ -162,15 +162,15 @@ struct
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of Projection.t * Sorts.relevance
+    | Cst_proj of Projection.t * ERelevance.t
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * ('a,ERelevance.t) pcase_return * 'a pcase_invert * ('a,ERelevance.t) pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t
-  | Proj of Projection.t * Sorts.relevance * Cst_stack.t
-  | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
+  | Proj of Projection.t * ERelevance.t * Cst_stack.t
+  | Fix of ('a, 'a, ERelevance.t) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
   | Cst of { const : cst_member;
              curr : int;

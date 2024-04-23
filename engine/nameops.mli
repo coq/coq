@@ -135,8 +135,8 @@ module Name : sig
   (** [pick na na'] returns [Anonymous] if both names are [Anonymous].
       Pick one of [na] or [na'] otherwise. *)
 
-  val pick_annot : Name.t Context.binder_annot -> Name.t Context.binder_annot ->
-    Name.t Context.binder_annot
+  val pick_annot : (Name.t,'r) Context.pbinder_annot -> (Name.t,'r) Context.pbinder_annot ->
+    (Name.t,'r) Context.pbinder_annot
 
   val cons : Name.t -> Id.t list -> Id.t list
   (** [cons na l] returns [id::l] if [na] is [Name id] and [l] otherwise. *)

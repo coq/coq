@@ -30,7 +30,7 @@ type dep_flag = bool
 
 type case_analysis = private {
   case_params : EConstr.rel_context;
-  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_pred : Name.t EConstr.binder_annot * EConstr.types;
   case_branches : EConstr.rel_context;
   case_arity : EConstr.rel_context;
   case_body : EConstr.t;

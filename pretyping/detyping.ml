@@ -67,9 +67,13 @@ let instantiate_context u subst nas ctx =
   instantiate (Array.length nas - 1) ctx
 
 let return_clause env sigma ind u params ((nas, p),_) =
+  let nas : Name.t EConstr.binder_annot array = nas in
   try
     let u = EConstr.Unsafe.to_instance u in
     let params = EConstr.Unsafe.to_constr_array params in
+    let nas : Name.t Constr.binder_annot array =
+      match EConstr.Unsafe.relevance_eq with Refl -> nas
+    in
     let () = if not @@ Environ.mem_mind (fst ind) env then raise_notrace Exit in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
@@ -89,9 +93,13 @@ let return_clause env sigma ind u params ((nas, p),_) =
     List.rev (Array.map_to_list dummy nas), p
 
 let branch env sigma (ind, i) u params (nas, br) =
+  let nas : Name.t EConstr.binder_annot array = nas in
   try
     let u = EConstr.Unsafe.to_instance u in
     let params = EConstr.Unsafe.to_constr_array params in
+    let nas : Name.t Constr.binder_annot array =
+      match EConstr.Unsafe.relevance_eq with Refl -> nas
+    in
     let () = if not @@ Environ.mem_mind (fst ind) env then raise_notrace Exit in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
@@ -388,7 +396,7 @@ let detype_sort sigma = function
 
 let detype_relevance_info sigma na =
   if not (print_relevances ()) then None
-  else match Evarutil.nf_relevance sigma na.binder_relevance with
+  else match ERelevance.kind sigma na.binder_relevance with
     | Relevant -> Some GRelevant
     | Irrelevant -> Some GIrrelevant
     | RelevanceVar q -> Some (GRelevanceVar (detype_qvar sigma q))
@@ -1105,7 +1113,7 @@ let detype_closed_glob ?isgoal avoid env sigma t =
           (* spiwack: I'm not sure it is the right thing to do,
              but I'm computing the detyping environment like
              [Printer.pr_constr_under_binders_env] does. *)
-          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) b in
+          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) ERelevance.relevant,(* dummy *) mkProp)) b in
           let env = push_rel_context assums env in
           DAst.get (detype Now ?isgoal avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)

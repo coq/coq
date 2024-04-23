@@ -222,7 +222,7 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
   let old_context_length = List.length context + 1 in
   let witness_fun =
     mkLetIn
-      ( make_annot Anonymous Sorts.Relevant
+      ( make_annot Anonymous ERelevance.relevant
       , make_refl_eq constructor t1_typ (fst t1)
       , t
       , mkApp
@@ -530,7 +530,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                          tclTYPEOFTHEN term (fun sigma termtyp ->
                              let fun_body =
                                mkLambda
-                                 ( make_annot Anonymous Sorts.Relevant
+                                 ( make_annot Anonymous ERelevance.relevant
                                  , termtyp
                                  , Termops.replace_term sigma term (mkRel 1)
                                      dyn_infos.info )
@@ -793,7 +793,7 @@ let generalize_non_dep hyp =
         let open Context.Named.Declaration in
         Environ.fold_named_context_reverse
           (fun (clear, keep) decl ->
-            let decl = map_named_decl EConstr.of_constr decl in
+            let decl = EConstr.of_named_decl decl in
             let hyp = get_id decl in
             if
               Id.List.mem hyp hyps

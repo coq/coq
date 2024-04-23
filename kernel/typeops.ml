@@ -61,9 +61,9 @@ let infer_assumption env t ty =
   with TypeError _ ->
     error_assumption env (make_judge t ty)
 
-type ('constr,'types) bad_relevance =
-| BadRelevanceBinder of Sorts.relevance * ('constr,'types) Context.Rel.Declaration.pt
-| BadRelevanceCase of Sorts.relevance * 'constr
+type ('constr,'types,'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
 
 let warn_bad_relevance_name = "bad-relevance"
 

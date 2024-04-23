@@ -165,14 +165,14 @@ let compute_possible_guardness_evidences (ctx,_,recindex) =
          fixpoints ?) *)
       List.interval 0 (Context.Rel.nhyps ctx - 1)
 
-type ('constr, 'types) recursive_preentry =
-  Id.t list * Sorts.relevance list * 'constr option list * 'types list
+type ('constr, 'types, 'r) recursive_preentry =
+  Id.t list * 'r list * 'constr option list * 'types list
 
 (* Wellfounded definition *)
 
 let fix_proto sigma =
   Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto")
-let fix_proto_relevance = Sorts.Relevant
+let fix_proto_relevance = EConstr.ERelevance.relevant
 (* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
 
 let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
@@ -241,14 +241,14 @@ let check_recursive ~isfix env evd (fixnames,_,fixdefs,_) =
 
 let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
-  let fixrs = List.map (fun r -> Evarutil.nf_relevance evd r) fixrs in
+  let fixrs = List.map (fun r -> EConstr.ERelevance.kind evd r) fixrs in
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
 (* XXX: Unify with interp_recursive  *)
 let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
-  ( (Constr.t, Constr.types) recursive_preentry *
+  ( (Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
     UState.universe_decl * UState.t *
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let env = Global.env () in

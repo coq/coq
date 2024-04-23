@@ -466,7 +466,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
   | (n, _) :: _ ->
     unbound_method env' sigma k.cl_impl (get_id n)
   | _ ->
-    let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
+    let kcl_props = of_rel_context k.cl_props in
     let sigma, res =
       type_ctx_instance ~program_mode
         (push_rel_context ctx' env') sigma kcl_props props subst in
@@ -546,7 +546,7 @@ let interp_instance_context ~program_mode env ctx pl tclass =
   let u_s = EInstance.kind sigma u in
   let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
   let args = List.map of_constr args in
-  let cl_context = List.map (Termops.map_rel_decl of_constr) cl.cl_context in
+  let cl_context = of_rel_context cl.cl_context in
   let _, args =
     List.fold_right (fun decl (args, args') ->
         match decl with

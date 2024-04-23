@@ -31,7 +31,7 @@ let whd_prod env sigma typ =
   | FProd (na, c1, c2, e) ->
     let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
     let c2 = EConstr.of_constr @@ term_of_fconstr (mk_clos (CClosure.usubs_lift e) c2) in
-    Some (na, c1, c2)
+    Some (EConstr.of_binder_annot na, c1, c2)
   | _ -> None
 
 module NamedDecl = Context.Named.Declaration

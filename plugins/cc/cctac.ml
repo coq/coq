@@ -254,7 +254,7 @@ let build_projection env sigma intype (cstr : pconstructor) special default =
   let ci = (snd (fst cstr)) in
   let body = Combinators.make_selector env sigma ~pos:ci ~special ~default (mkRel 1) intype in
   let id = fresh_id env (Id.of_string "t") in
-  sigma, mkLambda (make_annot (Name id) Sorts.Relevant, intype, body)
+  sigma, mkLambda (make_annot (Name id) ERelevance.relevant, intype, body)
 
 (* generate an adhoc tactic following the proof tree  *)
 
@@ -326,7 +326,7 @@ let rec proof_term env sigma (typ, lhs, rhs) p = match p.p_rule with
   let sigma, funty = type_and_refresh_ env sigma f in
   let sigma, argty = type_and_refresh_ env sigma t in
   let id = fresh_id env (Id.of_string "f") in
-  let appf = mkLambda (make_annot (Name id) Sorts.Relevant, funty, mkApp (mkRel 1, [|t|])) in
+  let appf = mkLambda (make_annot (Name id) ERelevance.relevant, funty, mkApp (mkRel 1, [|t|])) in
   let sigma, p1 = proof_term env sigma (funty, f, g) p1 in
   let sigma, p2 = proof_term env sigma (argty, t, u) p2 in
   (* lemma1 : ⊢ f t = g t : B{t} *)
@@ -390,7 +390,7 @@ let convert_to_goal_tac c t1 t2 p =
     let neweq= app_global _eq [|sort;tt1;tt2|] in
     let e = Tacmach.pf_get_new_id (Id.of_string "e") gl in
     let x = Tacmach.pf_get_new_id (Id.of_string "X") gl in
-    let identity=mkLambda (make_annot (Name x) Sorts.Relevant,sort,mkRel 1) in
+    let identity=mkLambda (make_annot (Name x) ERelevance.relevant,sort,mkRel 1) in
     let endt = app_global _eq_rect [|sort; tt1; identity; mkVar c; tt2; mkVar e|] in
     Tacticals.tclTHENS (neweq (assert_before (Name e)))
                            [proof_tac (sort, tt1, tt2) p; endt refine_exact_check]
@@ -490,7 +490,7 @@ let cc_tactic depth additional_terms b =
       end
   end
 
-let id t = mkLambda (make_annot Anonymous Sorts.Relevant, t, mkRel 1)
+let id t = mkLambda (make_annot Anonymous ERelevance.relevant, t, mkRel 1)
 
 (* convertible to (not False) -> P -> not P *)
 let mk_neg_ty ff t nt =
@@ -498,8 +498,8 @@ let mk_neg_ty ff t nt =
 
 (* proof of ((not False) -> P -> not P) -> not P *)
 let mk_neg_tm ff t nt =
-  mkLambda (make_annot Anonymous Sorts.Relevant, mk_neg_ty ff t nt,
-    mkLambda (make_annot Anonymous Sorts.Relevant, t,
+  mkLambda (make_annot Anonymous ERelevance.relevant, mk_neg_ty ff t nt,
+    mkLambda (make_annot Anonymous ERelevance.relevant, t,
       mkApp (mkRel 2,[|id ff; mkRel 1; mkRel 1|])))
 
 (* for [simple congruence] process conclusion (not P) *)

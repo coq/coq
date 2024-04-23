@@ -218,7 +218,7 @@ let insert_before decls lasthyp env =
   | Some id ->
   Environ.fold_named_context
     (fun _ d env ->
-      let d = map_named_decl EConstr.of_constr d in
+      let d = EConstr.of_named_decl d in
       let env = if Id.equal id (NamedDecl.get_id d) then push_named_context decls env else env in
       push_named d env)
     ~init:(reset_context env) env
@@ -252,10 +252,10 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let sigma, eq = Typing.checked_applist env sigma eq [t] in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
-      let newenv = insert_before [LocalAssum (make_annot heq Sorts.Relevant,eq); decl] lastlhyp env in
+      let newenv = insert_before [LocalAssum (make_annot heq ERelevance.relevant,eq); decl] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
       (sigma, mkNamedLetIn sigma (make_annot id r) c t
-         (mkNamedLetIn sigma (make_annot heq Sorts.Relevant) refl eq x))
+         (mkNamedLetIn sigma (make_annot heq ERelevance.relevant) refl eq x))
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
@@ -590,7 +590,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
   let before = ref true in
   let maindep = ref false in
   let seek_deps env decl rhyp =
-    let decl = map_named_decl EConstr.of_constr decl in
+    let decl = EConstr.of_named_decl decl in
     let hyp = NamedDecl.get_id decl in
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false)
     then begin

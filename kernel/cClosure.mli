@@ -44,9 +44,9 @@ type fterm =
   | FCoFix of cofixpoint * usubs
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
-  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * usubs
-  | FProd of Name.t Context.binder_annot * fconstr * constr * usubs
-  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * usubs
+  | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
+  | FProd of Name.t binder_annot * fconstr * constr * usubs
+  | FLetIn of Name.t binder_annot * fconstr * fconstr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
@@ -94,7 +94,7 @@ val usubs_cons : fconstr -> usubs -> usubs
 (** identity if the first instance is empty *)
 val usubst_instance : 'a UVars.puniverses -> UVars.Instance.t -> UVars.Instance.t
 
-val usubst_binder : _ UVars.puniverses -> 'a Context.binder_annot -> 'a Context.binder_annot
+val usubst_binder : _ UVars.puniverses -> 'a binder_annot -> 'a binder_annot
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -117,7 +117,7 @@ val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
 val destFLambda :
-  (usubs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
+  (usubs -> constr -> fconstr) -> fconstr -> Name.t binder_annot * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos
@@ -148,8 +148,8 @@ val info_flags: clos_infos -> reds
 val info_univs : clos_infos -> UGraph.t
 val unfold_projection : clos_infos -> Projection.t -> Sorts.relevance -> stack_member option
 
-val push_relevance : clos_infos -> 'b Context.binder_annot -> clos_infos
-val push_relevances : clos_infos -> 'b Context.binder_annot array -> clos_infos
+val push_relevance : clos_infos -> 'b binder_annot -> clos_infos
+val push_relevances : clos_infos -> 'b binder_annot array -> clos_infos
 val set_info_relevances : clos_infos -> Sorts.relevance Range.t -> clos_infos
 
 val info_relevances : clos_infos -> Sorts.relevance Range.t
@@ -176,7 +176,7 @@ val whd_stack :
 
 val skip_irrelevant_stack : clos_infos -> stack -> stack
 
-val eta_expand_stack : clos_infos -> Name.t Context.binder_annot -> stack -> stack
+val eta_expand_stack : clos_infos -> Name.t binder_annot -> stack -> stack
 
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant

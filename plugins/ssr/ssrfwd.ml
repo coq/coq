@@ -23,6 +23,7 @@ open Ssrcommon
 open Ssrtacticals
 
 module RelDecl = Context.Rel.Declaration
+module ERelevance = EConstr.ERelevance
 
 (** 8. Forward chaining tactics (pose, set, have, suffice, wlog) *)
 (** Defined identifier *)
@@ -69,7 +70,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) =
   let c, (sigma, cty) =  match EConstr.kind sigma c with
   | Cast(t, DEFAULTcast, ty) -> t, (sigma, ty)
   | _ -> c, Typing.type_of env sigma c in
-  let cl' = EConstr.mkLetIn (make_annot (Name id) Sorts.Relevant, c, cty, cl) in
+  let cl' = EConstr.mkLetIn (make_annot (Name id) ERelevance.relevant, c, cty, cl) in
   Proofview.Unsafe.tclEVARS sigma <*>
   convert_concl ~check:true cl' <*>
   introid id
@@ -118,7 +119,7 @@ let combineCG t1 t2 f g = match t1, t2 with
       let _, info = Exninfo.capture e in
       Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
-      let r = ESorts.relevance_of_sort sigma s in
+      let r = ESorts.relevance_of_sort s in
       let sigma, f, glf =
         match k with
         | HaveTransp ->
@@ -182,7 +183,7 @@ let assert_is_conv (ctx, concl) =
   Proofview.Goal.enter begin fun gl ->
     Proofview.tclORELSE (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx))
     (fun _ -> Tacticals.tclZEROMSG (str "Given proof term is not of type " ++
-      pr_econstr_env (Tacmach.pf_env gl) (Tacmach.project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)))
+      pr_econstr_env (Tacmach.pf_env gl) (Tacmach.project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) ERelevance.relevant concl)))
   end
 
 let push_goals gs =
@@ -270,10 +271,10 @@ let havetac ist
        itac_c <*> simpltac <*> tacopen_skols <*> unfold [abstract; abstract_key]
    | _,true,true  ->
      let sigma, _, ty, _ = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
-     sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint <*> itac, clr
+     sigma, EConstr.mkArrow ty ERelevance.relevant concl, hint <*> itac, clr
    | _,false,true ->
      let sigma, _, ty, _ = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
-     sigma, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac_c
+     sigma, EConstr.mkArrow ty ERelevance.relevant concl, hint, itac_c
    | _, false, false ->
      let sigma, n, cty, _  = pf_interp_ty ~resolve_typeclasses:fixtc env sigma ist cty in
      sigma, cty, (binderstac n) <*> hint, Tacticals.tclTHEN itac_c simpltac
@@ -316,7 +317,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   let c, args, ct, sigma =
     let gens = List.filter (function _, Some _ -> true | _ -> false) gens in
     let c = EConstr.mkProp in
-    let c = if cut_implies_goal then EConstr.mkArrow c Sorts.Relevant concl else c in
+    let c = if cut_implies_goal then EConstr.mkArrow c ERelevance.relevant concl else c in
     let mkabs gen (sigma, args, c) =
       abs_wgen env sigma false (fun x -> x) gen (args, c)
     in

@@ -554,7 +554,7 @@ let contract_rec env sigma f nbodies mk_rec contract body =
         List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
             let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
             let tij' = Vars.substl (List.rev subst) tij in
-            let x = make_annot xname Sorts.Relevant in  (* TODO relevance *)
+            let x = make_annot xname ERelevance.relevant in  (* TODO relevance *)
             mkLambda_with_eta sigma x tij' c)
           1 body (List.rev lv)
     in

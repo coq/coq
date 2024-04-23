@@ -45,9 +45,9 @@ open Esubst
 type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack
-  | LAMBDA of int * (Name.t Context.binder_annot * types) list * constr * cbv_value subs
-  | PROD of Name.t Context.binder_annot * types * types * cbv_value subs
-  | LETIN of Name.t Context.binder_annot * cbv_value * types * constr * cbv_value subs
+  | LAMBDA of int * (Name.t Constr.binder_annot * types) list * constr * cbv_value subs
+  | PROD of Name.t Constr.binder_annot * types * types * cbv_value subs
+  | LETIN of Name.t Constr.binder_annot * cbv_value * types * constr * cbv_value subs
   | FIX of fixpoint * cbv_value subs * cbv_value array
   | COFIX of cofixpoint * cbv_value subs * cbv_value array
   | CONSTRUCT of constructor UVars.puniverses * cbv_value array

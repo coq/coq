@@ -1496,7 +1496,7 @@ let prepare_hint env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda sigma (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
+      mkNamedLambda sigma (make_annot id ERelevance.relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
     let diff = UnivGen.diff_sort_context (Evd.sort_context_set sigma) (Evd.sort_context_set init) in
     (c', diff)

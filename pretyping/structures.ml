@@ -441,7 +441,7 @@ let find_opt_with_relevance (c,u) =
   find_opt c |>
   Option.map (fun p ->
       let u = EConstr.Unsafe.to_instance u in
-      p, Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
+      p, EConstr.ERelevance.make @@ Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
 
 let is_transparent_constant ts c =
   match find_opt c with

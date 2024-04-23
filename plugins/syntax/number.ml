@@ -218,7 +218,7 @@ let get_type env sigma c =
     | _ -> List.rev acc, t in
   let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let l, t = aux env [] t in
-  List.map (fun (na, a) -> na, EConstr.Unsafe.to_constr a) l,
+  List.map (fun (na, a) -> EConstr.Unsafe.to_binder_annot na, EConstr.Unsafe.to_constr a) l,
   EConstr.Unsafe.to_constr t
 
 (* [elaborate_to_post_params env sigma ty_ind params] builds the

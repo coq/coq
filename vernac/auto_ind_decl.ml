@@ -735,7 +735,7 @@ let build_beq_scheme env handle kn =
     (* do the [| C1 ... =>  match Y with ... end
                ...
                Cn => match Y with ... end |]  part *)
-    let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
+    let rci = EConstr.ERelevance.relevant in (* returning a boolean, hence relevant *)
     let open Inductiveops in
     let constrs =
       let params = Context.Rel.instance_list EConstr.mkRel 0 params_ctx in

@@ -493,7 +493,7 @@ let unfold_projection_under_eta env ts n c =
 
 type key =
   | IsKey of CClosure.table_key
-  | IsProj of Projection.t * Sorts.relevance * EConstr.constr
+  | IsProj of Projection.t * ERelevance.t * EConstr.constr
 
 let expand_table_key ts env sigma args = function
   | ConstKey (c, _ as cst) ->
@@ -1788,7 +1788,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = EConstr.mkVar id in
   let compute_dependency _ d (remvars,sign,depdecls) =
-    let d = map_named_decl EConstr.of_constr d in
+    let d = EConstr.of_named_decl d in
     let hyp = NamedDecl.get_id d in
     if Id.Set.is_empty remvars then
     match occurrences_of_hyp hyp occs with
@@ -1797,7 +1797,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo env sigma occ test mkvarid d in
-        if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl
+        if Context.Named.Declaration.equal (ERelevance.equal sigma) (EConstr.eq_constr sigma) d newdecl
            && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)

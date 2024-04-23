@@ -28,6 +28,8 @@ open Ssrprinters
 open Ssrcommon
 open Proofview.Notations
 
+module ERelevance = EConstr.ERelevance
+
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
   Goptions.(declare_bool_option
@@ -166,7 +168,7 @@ let newssrcongrtac arg ist =
     let sigma, t_rhs = Evarutil.new_Type sigma in
     let sigma, lhs = mk_evar env sigma t_lhs in
     let sigma, rhs = mk_evar env sigma t_rhs in
-    let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
+    let arrow = EConstr.mkArrow lhs ERelevance.relevant (EConstr.Vars.lift 1 rhs) in
     tclMATCH_GOAL env sigma arrow
     (fun sigma ->
       let lr = [|fs sigma lhs;fs sigma rhs|] in
@@ -388,7 +390,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   let sigma, new_rdx = map_redex env sigma ~before:rdx ~after:new_rdx in
   let sigma, p = (* The resulting goal *)
     Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
-  let pred = EConstr.mkNamedLambda sigma (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
+  let pred = EConstr.mkNamedLambda sigma (make_annot pattern_id ERelevance.relevant) rdx_ty pred in
   let sigma, elim =
     let sort = Tacticals.elimination_sort_of_goal gl in
     match Equality.eq_elimination_ref (dir = L2R) sort with
@@ -481,7 +483,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite ?under ?map_redex cl rdx a.(0) new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
       | _ ->
-          let cl' = EConstr.mkApp (EConstr.mkNamedLambda sigma (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
+          let cl' = EConstr.mkApp (EConstr.mkNamedLambda sigma (make_annot pattern_id ERelevance.relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let sigma0 = pf_merge_uc_of sigma sigma0 in
           convert_concl ~check:true cl', rewritetac ?under dir r', sigma0
@@ -491,8 +493,8 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
         try EConstr.destCast sigma0 r2 with e when CErrors.noncritical e ->
         errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 r
                     ++ str " to " ++ pr_econstr_env env sigma0 r2) in
-      let cl' = EConstr.mkNamedProd sigma (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
-      let cl'' = EConstr.mkNamedProd sigma (make_annot pattern_id Sorts.Relevant) rdxt cl' in
+      let cl' = EConstr.mkNamedProd sigma (make_annot rule_id ERelevance.relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
+      let cl'' = EConstr.mkNamedProd sigma (make_annot pattern_id ERelevance.relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Tactics.clear [pattern_id; rule_id] in
       let rwtacs = [
@@ -516,7 +518,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
       then Tacticals.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
       else Tacticals.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
         ++ pr_econstr_env env sigma0
-          (EConstr.mkNamedLambda sigma (make_annot pattern_id Sorts.Relevant) rdxt cl)
+          (EConstr.mkNamedLambda sigma (make_annot pattern_id ERelevance.relevant) rdxt cl)
         ++ error)
     | (e, info) -> Proofview.tclZERO ~info e
     end

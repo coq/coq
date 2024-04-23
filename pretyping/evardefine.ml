@@ -84,7 +84,7 @@ let define_pure_evar_as_product env evd na evk =
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
   in
-  let rdom = Sorts.relevance_of_sort (ESorts.kind evd1 u1) in
+  let rdom = ESorts.relevance_of_sort u1 in
   let evd2,rng =
     let newenv = push_named (LocalAssum (make_annot id rdom, dom)) evenv in
     let src = subterm_source evk ~where:Codomain evksrc in

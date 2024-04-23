@@ -433,7 +433,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
     | _ -> EConstr.map_with_binders sigma ((+) 1) get i c in
     let rec loop c i = function
     | (_, (n, t)) :: evl ->
-      loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
+      loop (mkLambda (make_annot (mk_evar_name n) ERelevance.relevant, get (i - 1) t, c)) (i - 1) evl
     | [] -> c in
     loop (get 1 c0) 1 evlist, List.map fst evlist, ucst
 
@@ -526,7 +526,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
     let n = Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in
-    loopP evlist (RelDecl.LocalAssum (make_annot n Sorts.Relevant, t) :: accu) (i - 1) evl
+    loopP evlist (RelDecl.LocalAssum (make_annot n ERelevance.relevant, t) :: accu) (i - 1) evl
   in
   let rec loop c i = function
   | (_, (n, t, _)) :: evl ->
@@ -537,7 +537,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let t = get evlist (i - 1) t in
     let extra_args = List.rev_map (fun (k,_) -> mkRel (fst (lookup k i evlist))) t_evplist in
     let c = if extra_args = [] then c else app extra_args 1 c in
-    loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, t, c)) (i - 1) evl
+    loop (mkLambda (make_annot (mk_evar_name n) ERelevance.relevant, t, c)) (i - 1) evl
   | [] -> c in
   let res = loop (get evlist 1 c0) 1 evlist in
   List.length evlist, res

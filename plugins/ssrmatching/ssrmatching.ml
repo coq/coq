@@ -542,7 +542,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
          if skip || not (EConstr.Vars.closed0 ise c') then () else try
            let () = match u.up_k with
            | KpatFlex ->
-             let kludge v = mkLambda (make_annot Anonymous Sorts.Relevant, mkProp, v) in
+             let kludge v = mkLambda (make_annot Anonymous ERelevance.relevant, mkProp, v) in
              let (metas, p_FO) = u.up_FO in
              unif_FO env ise metas (kludge p_FO) (kludge c')
            | KpatLet ->
@@ -1363,7 +1363,7 @@ let ssrpatterntac _ist arg =
     fill_occ_pattern env sigma0 concl0 pat noindex 1 in
   let sigma = Evd.set_universe_context sigma0 uc in
   let sigma, tty = Typing.type_of env sigma t in
-  let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
+  let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) EConstr.ERelevance.relevant, t, tty, concl_x) in
   Proofview.Unsafe.tclEVARS sigma <*>
   convert_concl ~cast:false ~check:true concl DEFAULTcast
   end

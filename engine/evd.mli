@@ -31,6 +31,7 @@ open Environ
 type econstr
 type etypes = econstr
 type esorts
+type erelevance
 
 (** {5 Existential variables and unification states} *)
 
@@ -111,7 +112,7 @@ type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 val evar_concl : undefined evar_info -> econstr
 (** Type of the evar. *)
 
-val evar_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
+val evar_context : 'a evar_info -> (econstr, etypes, erelevance) Context.Named.pt
 (** Context of the evar. *)
 
 val evar_hyps : 'a evar_info -> named_context_val
@@ -135,12 +136,12 @@ val evar_abstract_arguments : undefined evar_info -> Abstraction.t
     can be imitated or should stay abstract in HO unification problems
     and inversion (see [second_order_matching_with_args] for its use). *)
 
-val evar_relevance : 'a evar_info -> Sorts.relevance
+val evar_relevance : 'a evar_info -> erelevance
 (** Relevance of the conclusion of the evar. *)
 
 (** {6 Derived projections} *)
 
-val evar_filtered_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
+val evar_filtered_context : 'a evar_info -> (econstr, etypes, erelevance) Context.Named.pt
 val evar_filtered_hyps : 'a evar_info -> named_context_val
 val evar_env : env -> 'a evar_info -> env
 val evar_filtered_env : env -> 'a evar_info -> env
@@ -188,7 +189,7 @@ val has_shelved : evar_map -> bool
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?relevance:Sorts.relevance ->
+  ?relevance:erelevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->
@@ -584,7 +585,7 @@ val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
 val evars_of_term : evar_map -> econstr -> Evar.Set.t
   (** including evars in instances of evars *)
 
-val evars_of_named_context : evar_map -> (econstr, etypes) Context.Named.pt -> Evar.Set.t
+val evars_of_named_context : evar_map -> (econstr, etypes, erelevance) Context.Named.pt -> Evar.Set.t
 
 val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
@@ -648,8 +649,9 @@ val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val quality_of_name : evar_map -> Id.t -> Sorts.QVar.t
 
-val is_relevance_irrelevant : evar_map -> Sorts.relevance -> bool
+val is_relevance_irrelevant : evar_map -> erelevance -> bool
 (** Whether the relevance is irrelevant modulo qstate *)
+(* XXX move to ERelevance *)
 
 val universe_binders : evar_map -> UnivNames.universe_binders
 
@@ -764,6 +766,13 @@ val create_evar_defs : evar_map -> evar_map
 
 (** Use this module only to bootstrap EConstr *)
 module MiniEConstr : sig
+  module ERelevance : sig
+    type t = erelevance
+    val make : Sorts.relevance -> t
+    val kind : evar_map -> t -> Sorts.relevance
+    val unsafe_to_relevance : t -> Sorts.relevance
+  end
+
   module ESorts : sig
     type t = esorts
     val make : Sorts.t -> t
@@ -782,8 +791,8 @@ module MiniEConstr : sig
 
   type t = econstr
 
-  val kind : evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
-  val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, UVars.Instance.t) Constr.kind_of_term
+  val kind : evar_map -> t -> (t, t, ESorts.t, EInstance.t, ERelevance.t) Constr.kind_of_term
+  val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) Constr.kind_of_term
 
   val whd_evar : evar_map -> t -> t
 
@@ -791,7 +800,7 @@ module MiniEConstr : sig
 
   val replace_vars : evar_map -> (Id.t * t) list -> t -> t
 
-  val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
+  val of_kind : (t, t, ESorts.t, EInstance.t, ERelevance.t) Constr.kind_of_term -> t
 
   val of_constr : Constr.t -> t
   val of_constr_array : Constr.t array -> t array
@@ -804,25 +813,21 @@ module MiniEConstr : sig
   val unsafe_to_constr_array : t array -> Constr.t array
 
   val unsafe_eq : (t, Constr.t) eq
+  val unsafe_relevance_eq : (ERelevance.t, Sorts.relevance) eq
 
-  val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt ->
-    (t, etypes) Context.Named.Declaration.pt
-  val unsafe_to_named_decl : (t, etypes) Context.Named.Declaration.pt ->
-    (Constr.t, Constr.types) Context.Named.Declaration.pt
-  val to_named_decl : evar_map -> (t, etypes) Context.Named.Declaration.pt ->
-    (Constr.t, Constr.types) Context.Named.Declaration.pt
-  val unsafe_to_rel_decl : (t, etypes) Context.Rel.Declaration.pt ->
-    (Constr.t, Constr.types) Context.Rel.Declaration.pt
-  val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt ->
-    (t, etypes) Context.Rel.Declaration.pt
-  val to_rel_decl : evar_map -> (t, etypes) Context.Rel.Declaration.pt ->
-    (Constr.t, Constr.types) Context.Rel.Declaration.pt
-
+  val of_named_decl : (Constr.t, Constr.types, Sorts.relevance) Context.Named.Declaration.pt ->
+    (t, t, ERelevance.t) Context.Named.Declaration.pt
+  val unsafe_to_named_decl : (t, t, ERelevance.t) Context.Named.Declaration.pt ->
+    (Constr.t, Constr.types, Sorts.relevance) Context.Named.Declaration.pt
+  val unsafe_to_rel_decl : (t, t, ERelevance.t) Context.Rel.Declaration.pt ->
+    (Constr.t, Constr.types, Sorts.relevance) Context.Rel.Declaration.pt
   val of_case_invert : constr pcase_invert -> econstr pcase_invert
   val unsafe_to_case_invert : econstr pcase_invert -> constr pcase_invert
+  val of_rel_decl : (Constr.t, Constr.types, Sorts.relevance) Context.Rel.Declaration.pt ->
+    (t, t, ERelevance.t) Context.Rel.Declaration.pt
 
-  val of_named_context : (Constr.t, Constr.types) Context.Named.pt -> (t, etypes) Context.Named.pt
-  val to_named_context : evar_map -> (t, etypes) Context.Named.pt -> (Constr.t, Constr.types) Context.Named.pt
-  val of_rel_context : (Constr.t, Constr.types) Context.Rel.pt -> (t, etypes) Context.Rel.pt
-  val to_rel_context : evar_map -> (t, etypes) Context.Rel.pt -> (Constr.t, Constr.types) Context.Rel.pt
+  val of_named_context : (Constr.t, Constr.types, Sorts.relevance) Context.Named.pt ->
+    (t, t, ERelevance.t) Context.Named.pt
+  val of_rel_context : (Constr.t, Constr.types, Sorts.relevance) Context.Rel.pt ->
+    (t, t, ERelevance.t) Context.Rel.pt
 end

@@ -114,7 +114,7 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params (pctx, p) =
   let build_one_branch i cty =
     let typi = type_constructor mind mib u cty params in
     let decl,indapp = Reductionops.whd_decompose_prod env sigma (EConstr.of_constr typi) in
-    let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
+    let decl = List.map EConstr.Unsafe.(fun (na,c) -> to_binder_annot na, to_constr c) decl in
     let ((ind,u),cargs) = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
@@ -155,6 +155,7 @@ and nf_whd env sigma whd typ =
       let name = Name (Id.of_string "x") in
       let vc = reduce_fun (nb_rel env) (codom p) in
       let r = Retyping.relevance_of_type env sigma (EConstr.of_constr dom) in
+      let r = EConstr.Unsafe.to_relevance r in
       let name = make_annot name r in
       let codom = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vc  in
       mkProd(name,dom,codom)
@@ -338,7 +339,7 @@ and nf_predicate env sigma ind mip params v pctx =
   let env = push_rel_context pctx env in
   let body = nf_vtype env sigma v in
   let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
-  body, rel
+  body, EConstr.Unsafe.to_relevance rel
 
 and nf_telescope env sigma len f typ =
   let open CClosure in
@@ -394,6 +395,7 @@ and nf_fix env sigma f =
   let name = Name (Id.of_string "Ffix") in
   let names = Array.map (fun t ->
       make_annot name @@
+      EConstr.Unsafe.to_relevance @@
       Retyping.relevance_of_type env sigma (EConstr.of_constr t)) ft in
   (* Body argument of the tuple is ignored by push_rec_types *)
   let env = push_rec_types (names,ft,ft) env in
@@ -418,6 +420,7 @@ and nf_cofix env sigma cf =
   let name = Name (Id.of_string "Fcofix") in
   let names = Array.map (fun t ->
       make_annot name @@
+      EConstr.Unsafe.to_relevance @@
       Retyping.relevance_of_type env sigma (EConstr.of_constr t)) cft in
   let env = push_rec_types (names,cft,cft) env in
   let cfb = Util.Array.map2 (fun v t -> nf_val env sigma v t) vb cft in

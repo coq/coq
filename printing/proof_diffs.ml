@@ -235,7 +235,7 @@ type goal = { ty: EConstr.t; env : Environ.env; sigma : Evd.evar_map; }
 (* open Proofview *)
 module CDC = Context.Compacted.Declaration
 
-let to_tuple : EConstr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
+let to_tuple : EConstr.compacted_declaration -> (Names.Id.t EConstr.binder_annot list * 'pc option * 'pc) =
   let open CDC in function
     | LocalAssum(idl, tm)   -> (idl, None, tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some tdef, tm)

@@ -12,6 +12,7 @@ open Util
 open Names
 open Indfun_common
 module RelDecl = Context.Rel.Declaration
+module ERelevance = EConstr.ERelevance
 
 let observe_tac s =
   observe_tac ~header:(Pp.str "observation") (fun _ _ -> Pp.str s)
@@ -51,7 +52,7 @@ let build_newrecursive lnameargsardef =
             Constrintern.Recursive arity impls'
         in
         let open Context.Named.Declaration in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         ( EConstr.push_named
             (LocalAssum (Context.make_annot recname r, arity))
@@ -228,7 +229,7 @@ let change_property_sort evd toSort princ princName =
   let princ_info = Induction.compute_elim_sig evd princ in
   let change_sort_in_predicate decl =
     LocalAssum
-      ( get_annot decl
+      ( EConstr.Unsafe.to_binder_annot @@ get_annot decl
       , let args, ty =
           Term.decompose_prod (EConstr.Unsafe.to_constr (get_type decl))
         in
@@ -254,9 +255,7 @@ let change_property_sort evd toSort princ princName =
   , Term.it_mkLambda_or_LetIn
       (Term.it_mkLambda_or_LetIn init
          (List.map change_sort_in_predicate princ_info.Induction.predicates))
-      (List.map
-         (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d)
-         princ_info.Induction.params) )
+      (EConstr.Unsafe.to_rel_context princ_info.Induction.params) )
 
 let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     new_princ_name funs i proof_tac =
@@ -511,21 +510,21 @@ let generate_type evd g_to_f f graph =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    LocalAssum (Context.make_annot (Name res_id) Sorts.Relevant, lift 1 res_type)
+    LocalAssum (Context.make_annot (Name res_id) ERelevance.relevant, lift 1 res_type)
     :: LocalDef
-         ( Context.make_annot (Name fv_id) Sorts.Relevant
+         ( Context.make_annot (Name fv_id) ERelevance.relevant
          , mkApp (f, args_as_rels)
          , res_type )
     :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f then
-    ( LocalAssum (Context.make_annot Anonymous Sorts.Relevant, graph_applied)
+    ( LocalAssum (Context.make_annot Anonymous ERelevance.relevant, graph_applied)
       :: pre_ctxt
     , lift 1 res_eq_f_of_args
     , graph )
   else
-    ( LocalAssum (Context.make_annot Anonymous Sorts.Relevant, res_eq_f_of_args)
+    ( LocalAssum (Context.make_annot Anonymous ERelevance.relevant, res_eq_f_of_args)
       :: pre_ctxt
     , lift 1 graph_applied
     , graph )
@@ -1255,7 +1254,7 @@ let get_funs_constant mp =
             not
               (List.equal
                  (fun (n1, c1) (n2, c2) ->
-                   Context.eq_annot Name.equal n1 n2 && Constr.equal c1 c2)
+                   Context.eq_annot Name.equal Sorts.relevance_equal n1 n2 && Constr.equal c1 c2)
                  first_params params)
           then CErrors.user_err Pp.(str "Not a mutal recursive block"))
         l_params
@@ -1275,7 +1274,7 @@ let get_funs_constant mp =
           (* Hope this is correct *)
           let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
             Array.equal Int.equal ia1 ia2
-            && Array.equal (Context.eq_annot Name.equal) na1 na2
+            && Array.equal (Context.eq_annot Name.equal Sorts.relevance_equal) na1 na2
             && Array.equal Constr.equal ta1 ta2
             && Array.equal Constr.equal ca1 ca2
           in

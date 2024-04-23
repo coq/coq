@@ -14,6 +14,8 @@ open Pp
 open Lazy
 module NamedDecl = Context.Named.Declaration
 
+module ERelevance = EConstr.ERelevance
+
 let debug_zify = CDebug.create ~name:"zify" ()
 
 (* The following [constr] are necessary for constructing the proof terms *)
@@ -189,7 +191,7 @@ type classify_op =
  *)
 
 let name x =
-  Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
+  Context.make_annot (Name.mk_name (Names.Id.of_string x)) ERelevance.relevant
 
 let mkconvert_unop i1 i2 op top =
   (* fun x => inj (op x) *)
@@ -1011,7 +1013,7 @@ type typed_constr = {constr : EConstr.t; typ : EConstr.t; inj : EInjT.t}
 (* [arrow] is the term (fun (x:Prop) (y : Prop) => x -> y) *)
 let arrow =
   let name x =
-    Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
+    Context.make_annot (Name.mk_name (Names.Id.of_string x)) ERelevance.relevant
   in
   EConstr.mkLambda
     ( name "x"
@@ -1020,7 +1022,7 @@ let arrow =
         ( name "y"
         , EConstr.mkProp
         , EConstr.mkProd
-            ( Context.make_annot Names.Anonymous Sorts.Relevant
+            ( Context.make_annot Names.Anonymous ERelevance.relevant
             , EConstr.mkRel 2
             , EConstr.mkRel 2 ) ) )
 

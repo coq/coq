@@ -145,7 +145,7 @@ let build_branches_type env sigma mib mip (ind,u) params (pctx, p) =
   let build_one_branch i (ctx, _) =
     let typi = Inductiveops.instantiate_constructor_params ((ind,i+1),u) (mib,mip) paramsl in
     let decl,indapp = Reductionops.whd_decompose_prod env sigma typi in
-    let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
+    let decl = List.map EConstr.Unsafe.(fun (na,c) -> to_binder_annot na, to_constr c) decl in
     let ind,cargs = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
@@ -393,7 +393,7 @@ and nf_predicate env sigma ind mip params v pctx =
   let env = push_rel_context pctx env in
   let body = nf_type env sigma v in
   let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
-  body, rel
+  body, EConstr.Unsafe.to_relevance rel
 
 and nf_evar env sigma evk args =
   let evi = try Evd.find_undefined sigma evk with Not_found -> assert false in
