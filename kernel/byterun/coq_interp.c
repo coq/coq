@@ -418,6 +418,18 @@ value coq_interprete
         Next;
       }
 
+      Instruct(PUSHACCMANY) {
+        int first = *pc++;
+        int size = *pc++;
+        int i;
+        print_instr("PUSHACCMANY");
+        sp -= size;
+        for (i = 1; i < size; ++i) sp[i - 1] = sp[first + i];
+        sp[size - 1] = accu;
+        accu = sp[first];
+        Next;
+      }
+
       Instruct(POP){
         print_instr("POP");
         sp += *pc++;

@@ -490,10 +490,20 @@ let rec emit env insns remaining = match insns with
      | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
-      if n = 0 then out env opPUSH
-      else if n < 8 then out env (opPUSHACC1 + n - 1)
-      else (out env opPUSHACC; out_int env n);
-      emit env c remaining
+      let rec aux n c nb =
+        match c with
+        | Kpush :: Kacc j :: c when j = n -> aux n c (nb + 1)
+        | _ -> (nb, c) in
+      let (nb, c') = aux n c 1 in
+      if nb >= 3 || (nb >= 2 && n > 7)
+      then (
+        out env opPUSHACCMANY; out_int env n; out_int env nb;
+        emit env c' remaining)
+      else (
+        if n = 0 then out env opPUSH
+        else if n < 8 then out env (opPUSHACC1 + n - 1)
+        else (out env opPUSHACC; out_int env n);
+        emit env c remaining)
   | Kpush :: Kenvacc n :: c ->
       if n >= 0 && n <= 3
       then out env(opPUSHENVACC0 + n)

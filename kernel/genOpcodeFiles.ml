@@ -37,6 +37,7 @@ let opcodes =
     "PUSHACC6", 0;
     "PUSHACC7", 0;
     "PUSHACC", 1;
+    "PUSHACCMANY", 2;
     "POP", 1;
     "ENVACC0", 0;
     "ENVACC1", 0;
