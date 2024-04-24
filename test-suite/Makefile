@@ -273,8 +273,8 @@ summary:
 	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
 	  $(call summary_dir, "Ltac2 tests", ltac2); \
-	  nb_success=`grep -e $(log_success) -r . -l --include="*.log" | wc -l`; \
-	  nb_failure=`grep -e $(log_failure) -r . -l --include="*.log" | wc -l`; \
+	  nb_success=`grep -e $(log_success) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
+	  nb_failure=`grep -e $(log_failure) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
 	  percentage=`expr 100 \* $$nb_success / $$nb_tests`; \
 	  echo; \
