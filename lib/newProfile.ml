@@ -132,12 +132,20 @@ module Counters = struct
     instr = System.instructions_between ~c_start:a.instr ~c_end:b.instr;
   }
 
+  (* pretty print a int64 representing a number of nanoseconds *)
+  let ppi64_time t =
+    let open Int64 in
+    if t < 1_000L then Printf.sprintf "%Ld ns" t
+    else if t < 1_000_000L then Printf.sprintf "%Ld us %Ld ns" (div t 1_000L) (rem t 1_000L)
+    else if t < 1_000_000_000L then Printf.sprintf "%Ld ms %Ld us" (div t 1_000_000L) (rem t 1_000_000L)
+    else Printf.sprintf "%Ld s %Ld ms" (div t 1_000_000_000L) (rem t 1_000_000_000L)
+
   let format x =
     let ppf tdiff = `String (Format.sprintf "%.3G w" tdiff) in
     let ppi i = `Intlit (string_of_int i) in
-    let ppi64 i = `Intlit (Int64.to_string i) in
+    let ppi64_time i = `String (ppi64_time i) in
     let instr = match x.instr with
-      | Ok count -> [("instr", ppi64 count)]
+      | Ok count -> [("instr", `Intlit (Int64.to_string count))]
       | Error _ -> []
     in
     (* don't print measurements equal to 0 (instr is never going to be 0) *)
@@ -146,8 +154,8 @@ module Counters = struct
     cons (Float.equal x.minor_words 0.) ("minor_words", ppf x.minor_words) @@
     cons (Int.equal x.major_collections 0) ("major_collect", ppi x.major_collections) @@
     cons (Int.equal x.minor_collections 0) ("minor_collect", ppi x.minor_collections) @@
-    cons (Int64.equal x.minor_time Int64.zero) ("minor_time", ppi64 x.minor_time) @@
-    cons (Int64.equal x.major_time Int64.zero) ("major_time", ppi64 x.major_time) @@
+    cons (Int64.equal x.minor_time Int64.zero) ("minor_time", ppi64_time x.minor_time) @@
+    cons (Int64.equal x.major_time Int64.zero) ("major_time", ppi64_time x.major_time) @@
     instr
 
   let make_diffs ~start ~stop = format (stop - start)
