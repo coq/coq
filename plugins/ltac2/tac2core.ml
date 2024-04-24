@@ -831,7 +831,8 @@ let () =
   define "constr_binder_type" (repr_ext val_binder @-> ret constr) @@ fun (_, ty) -> ty
 
 let () =
-  define "constr_binder_relevance" (repr_ext val_binder @-> ret relevance) @@ fun (na, _) -> na.binder_relevance
+  define "constr_binder_relevance" (repr_ext val_binder @-> ret relevance) @@ fun (na, _) ->
+  EConstr.Unsafe.to_relevance na.binder_relevance
 
 let () =
   define "constr_has_evar" (constr @-> tac bool) @@ fun c ->
