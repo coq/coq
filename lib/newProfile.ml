@@ -140,12 +140,14 @@ module Counters = struct
       | Ok count -> [("instr", ppi64 count)]
       | Error _ -> []
     in
-    ("major_words",ppf x.major_words) ::
-    ("minor_words", ppf x.minor_words) ::
-    ("major_collect", ppi x.major_collections) ::
-    ("minor_collect", ppi x.minor_collections) ::
-    ("minor_time", ppi64 x.minor_time) ::
-    ("major_time", ppi64 x.major_time) ::
+    (* don't print measurements equal to 0 (instr is never going to be 0) *)
+    let cons trivial v l = if not trivial then v :: l else l in
+    cons (Float.equal x.major_words 0.) ("major_words",ppf x.major_words) @@
+    cons (Float.equal x.minor_words 0.) ("minor_words", ppf x.minor_words) @@
+    cons (Int.equal x.major_collections 0) ("major_collect", ppi x.major_collections) @@
+    cons (Int.equal x.minor_collections 0) ("minor_collect", ppi x.minor_collections) @@
+    cons (Int64.equal x.minor_time Int64.zero) ("minor_time", ppi64 x.minor_time) @@
+    cons (Int64.equal x.major_time Int64.zero) ("major_time", ppi64 x.major_time) @@
     instr
 
   let make_diffs ~start ~stop = format (stop - start)
