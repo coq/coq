@@ -53,21 +53,21 @@ for menu items are shown on the right of each item.  If you need more complex ed
 commands, you can launch an external text editor on the current buffer, using the
 *Edit/External Editor* menu. (Use `Edit/Preferences/Externals/External Editor` to
 specify the external text editor.)  When you're done editing, you currently must
-reopen the file to see your changes.  Also note:
+reopen the file to see your changes.  Also note these key bindings that are not
+shown in menus:
 
-- Undo is also available as ``Ctrl-Z`` (`Cmd-Z` on macOS).  Redo is `Ctrl-Shift-Z`
-  (`Shift-Cmd-Z` on macOS).
-- Select all is `Ctrl-A` (`Cmd-A` on macOS).
 - `Home` and `End` move the cursor to the beginning or end of the current line
   (`Cmd-Left` and `Cmd-Right` on macOS).
 - `Ctrl-Home` and `Ctrl-End` move the cursor to the beginning or end of the buffer
   (`Cmd-Up` and `Cmd-Down` on macOS).
-- `Ctrl-Delete` deletes a word of text after the cursor.
-- `Ctrl-Backspace` deletes a word of text before the cursor (`Alt-Backspace` on macOS).
-- Commenting and uncommenting the current line or selected text is available in
-  the *Tools* menu.  If some text is selected, exactly that text is commented out;
-  otherwise the line containing the cursor is commented out.  To uncomment, position
-  the cursor between `(*` and `*)` or select any text between them.
+- `Ctrl-Left` and `Ctrl-Right` move the cursor to the next beginning or end of a word
+- `Ctrl-Delete` (`Alt-Backspace` on macOS) and `Ctrl-Backspace` delete characters
+  from the cursor to the next beginning or end of a word.
+
+Commenting and uncommenting the current line or selected text is available in
+the *Tools* menu.  If some text is selected, exactly that text is commented out;
+otherwise the line containing the cursor is commented out.  To uncomment, position
+the cursor between `(*` and `*)` or select any text between them.
 
 Files are automatically saved periodically to a recovery file.  For example,
 `foo.v` is saved to `#foo.v#` every 10 seconds by default.  You can change the
@@ -312,16 +312,20 @@ compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
 `firefox -remote "OpenURL(%s)"`.
 
-The *Shortcuts* section contains buttons that allow you to change the
-modifiers (`Ctrl`, `Alt`, `Cmd`, `Shift`) used for the key bindings of
-all items of a menu (except the View menu in which only the togglable
-items are concerned). To make the interface cleaner, all available
-modifiers are presented at the top. You may toggle some of them to be
-able to use them as modifiers.
-Once you apply your changes, you will see in the menus how accelerators
-have changed. Note that, in case of conflict between menu items,
-accelerators will be removed and you will need to use one of the methods
-described in the next section to get them back.
+.. _shortcuts:
+
+The *Shortcuts* section lets you change the modifiers (e.g. `Ctrl`, `Alt`
+and `Shift`) used in all the menu entry key bindings for the selected menu
+(for the View menu, only the checkbox items will be changed).
+Current key bindings are shown at the right side of each menu entry.
+
+If any of the new key bindings are already assigned, the existing binding
+will be removed.  You can then rebind one of the menu entries as described
+in the next section.
+
+The top of the *Shortcuts* section lets you select the allowed modifiers
+that can be selected for the listed menus.  (The changes won't appear until
+you close and reopen the Preferences dialog.)
 
 *Misc*
 
@@ -333,11 +337,10 @@ is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
 and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq` on Windows.
 Preferences are in the file "coqiderc" and key bindings are in the file "coqide.keys".
 
+.. _key_bindings:
+
 Key bindings
 ~~~~~~~~~~~~
-
-As explained just above, the *Edit/Preferences/Shortcuts* panel
-offers buttons to modify in a few clicks the key bindings for a whole menu.
 
 Each menu item in the GUI shows its key binding, if one has been defined,
 on the right-hand side.  Typing the key binding is equivalent to selecting
@@ -362,7 +365,8 @@ The file contains lines such as:
      (gtk_accel_path "<Actions>/Edit/Find Next" "F4")
 
 The first line corresponds to the menu item for the Queries/About menu item,
-which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Ctrl`.
+which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Cmd` on macOS
+and otherwise `Ctrl`.
 The second line is for a menu item that has no key binding.
 
 Lines that begin with semicolons are comments created by CoqIDE.  CoqIDE uses
@@ -379,7 +383,8 @@ The end of
 `this file <https://github.com/linuxmint/gtk/blob/master/gdk/keyname-table.h#:~:text=NC_(%22keyboard%20label%22%2C%20%22BackSpace%22)>`_
 gives the names of the keys.
 
-Some menu entries can be changed as a group from the Edit/Preferences/Shortcuts panel.
+Modifers (e.g. Alt, Ctrl) for some menus can be can be changed as a group from the
+Edit/Preferences/Shortcuts panel.  See :ref:`Shortcuts<shortcuts>`.
 
 .. todo: list common rebindings?
 
