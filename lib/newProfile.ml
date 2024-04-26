@@ -59,9 +59,14 @@ module MiniJson = struct
   let pid = Unix.getpid()
 
   let pids = string_of_int pid
+  (* not sure if google trace format supports named threads,
+     if yes we could say [`String "gc"] instead of making something up *)
+  let gc_pids = string_of_int (pid+1)
   let base = [("pid", `Intlit pids); ("tid", `Intlit pids)]
+  let gc_base = [("pid", `Intlit pids); ("tid", `Intlit gc_pids)]
 
-  let duration ~name ~ph ~ts ?args () =
+  let duration ~name ~ph ~ts ?(is_gc=false) ?args () =
+    let base = if is_gc then gc_base else base in
     let l = ("name", `String name) :: ("ph", `String ph) :: ("ts", `Intlit ts) :: base in
     let l = match args with
       | None -> l
@@ -164,8 +169,8 @@ end
 
 let global_start_time = gettime ()
 
-let duration ~time name ph ?args ?(last=",") () =
-  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
+let duration ~time name ph ?args ?is_gc ?(last=",") () =
+  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ?is_gc ~ts:(prtime time) ?args ()) last
 
 let enter_sums ?time () =
   let accu = Option.get !accu in
@@ -177,51 +182,13 @@ let enter ?time name ?args () =
   enter_sums ~time ();
   duration ~time name "B" ?args ()
 
-let poll, init_poll =
-  let f = ref (fun () -> ()) in
-  let init () =
-    Runtime_events.start();
-
-    let cursor = Runtime_events.create_cursor None in
-
-    let callbacks =
-      let open Runtime_events in
-      (* do we actually need a stack or is a start_of_current_phase ref enough? *)
-      let current_minor = ref [] in
-      let current_major = ref [] in
-      let runtime_begin _ ts = function
-        | EV_MINOR -> current_minor := ts :: !current_minor
-        | EV_MAJOR -> current_major := ts :: !current_major
-        | _ -> ()
-      in
-      let update ref stack ts =
-        match !stack with
-        | [] -> assert false
-        | start :: rest ->
-          stack := rest;
-          ref := Int64.(add !ref (sub (Timestamp.to_int64 ts) (Timestamp.to_int64 start)))
-      in
-      let runtime_end _ ts = function
-        | EV_MINOR -> update Counters.current_minor_time current_minor ts
-        | EV_MAJOR -> update Counters.current_major_time current_major ts
-        | _ -> ()
-      in
-      let lost_events start stop =
-        (* not sure what start/stop mean or what's the best way to report these *)
-        Printf.eprintf "lost runtime events %d %d\n" start stop
-      in
-      Callbacks.create ~runtime_begin ~runtime_end ~lost_events ()
-    in
-
-    f := (fun () -> ignore (Runtime_events.read_poll cursor callbacks None : int))
-  in
-  (fun () -> !f()), init
+let poll = ref (fun () -> ())
 
 let leave_sums ?time name () =
   let accu = Option.get !accu in
   let time = gettimeopt time in
   (* polling here should be frequent enough to avoid losing events (hopefully) *)
-  let () = poll() in
+  let () = !poll() in
   match accu.sums with
   | [] -> assert false
   | [start,sum] -> accu.sums <- []; sum, time -. start
@@ -250,6 +217,73 @@ let leave ?time name ?(args=[]) ?last () =
   in
   let args = ("subtimes", `Assoc sum) :: args in
   duration ~time name "E" ~args ?last ()
+
+let init_poll () =
+  Runtime_events.start();
+
+  let cursor = Runtime_events.create_cursor None in
+
+  let to_time =
+    (* Timestamp.to_int64 is in nanoseconds
+       the runtime_events timestamps com from a monotonic clock,
+       so they are not directly comparable to the times from Unix.gettimeofday
+       (and the monotonic clock is AFAICT not exposed so we can't use it to replace gettimeofday).
+       Instead we calibrate by taking gettimeofday
+       then immediately generating an event to read its timestamp
+       and claim that the 2 are equal.
+    *)
+    let now = gettime() in
+    let now_ts = ref None in
+    let _ : int =
+      let runtime_begin _ ts _ = now_ts := Some ts in
+      Gc.minor (); (* ensure we have a recent event to look at *)
+      Runtime_events.(read_poll cursor (Callbacks.create ~runtime_begin ()) None)
+    in
+    let now_ts = Runtime_events.Timestamp.to_int64 (Option.get !now_ts) in
+
+    let open Int64 in
+    fun ts ->
+      now +. (to_float (sub (Runtime_events.Timestamp.to_int64 ts) now_ts) /. 1_000_000_000.)
+  in
+
+  let callbacks =
+    let open Runtime_events in
+    (* do we actually need a stack or is a start_of_current_phase ref enough? *)
+    let current_minor = ref [] in
+    let current_major = ref [] in
+    let runtime_begin _ ts = function
+      | EV_MINOR ->
+        current_minor := ts :: !current_minor;
+        duration ~is_gc:true ~time:(to_time ts) "gc_minor" "B" ()
+      | EV_MAJOR ->
+        current_major := ts :: !current_major;
+        duration ~is_gc:true ~time:(to_time ts) "gc_major" "B" ()
+      | _ -> ()
+    in
+    let update ref stack ts =
+      match !stack with
+      | [] -> assert false
+      | start :: rest ->
+        stack := rest;
+        ref := Int64.(add !ref (sub (Timestamp.to_int64 ts) (Timestamp.to_int64 start)))
+    in
+    let runtime_end _ ts = function
+      | EV_MINOR ->
+        update Counters.current_minor_time current_minor ts;
+        duration ~is_gc:true ~time:(to_time ts) "gc_minor" "E" ()
+      | EV_MAJOR ->
+        update Counters.current_major_time current_major ts;
+        duration ~is_gc:true ~time:(to_time ts) "gc_major" "E" ()
+      | _ -> ()
+    in
+    let lost_events start stop =
+      (* not sure what start/stop mean or what's the best way to report these *)
+      Printf.eprintf "lost runtime events %d %d\n" start stop
+    in
+    Callbacks.create ~runtime_begin ~runtime_end ~lost_events ()
+  in
+
+  poll := (fun () -> ignore (Runtime_events.read_poll cursor callbacks None : int))
 
 (* NB: "process" and "init" are unconditional because they don't go
    through [profile] and I'm too lazy to make them conditional *)
