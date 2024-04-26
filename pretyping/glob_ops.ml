@@ -66,12 +66,10 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
 
 exception ComplexSort
 
-let glob_sort_family = let open Sorts in function
-  | UAnonymous {rigid=UnivRigid} -> InType
-  | UNamed (None, [GSProp, 0]) -> InSProp
-  | UNamed (None, [GProp, 0]) -> InProp
-  | UNamed (None, [GSet, 0]) -> InSet
-  | _ -> raise ComplexSort
+let glob_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let glob_SProp_sort = None, UNamed [GSProp, 0]
+let glob_Prop_sort = None, UNamed [GProp, 0]
+let glob_Set_sort = None, UNamed [GSet, 0]
 
 let map_glob_sort_gen f = function
   | UNamed l -> UNamed (f l)
@@ -83,12 +81,25 @@ let glob_sort_gen_eq f u1 u2 =
   | UNamed l1, UNamed l2 -> f l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
 
-let glob_sort_eq u1 u2 =
-  let eq (q1, l1) (q2, l2) =
-    Option.equal glob_qvar_eq q1 q2 &&
-    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
-  in
-  glob_sort_gen_eq eq u1 u2
+let glob_sort_eq (q1, l1) (q2, l2) =
+  Option.equal glob_qvar_eq q1 q2 &&
+  glob_sort_gen_eq
+    (List.equal (fun (x,m) (y,n) ->
+         glob_sort_name_eq x y
+         && Int.equal m n))
+    l1 l2
+
+let glob_sort_family s =
+  let open Sorts in
+  if glob_sort_eq s glob_Type_sort then InType
+  else match s with
+    | None, UNamed [s, 0] -> begin match s with
+        | GSProp -> InSProp
+        | GProp -> InProp
+        | GSet -> InSet
+        | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
+      end
+    | _ -> raise ComplexSort
 
 let glob_level_eq u1 u2 =
   glob_sort_gen_eq glob_sort_name_eq u1 u2

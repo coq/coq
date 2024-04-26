@@ -191,11 +191,11 @@ let glob_quality ?loc evd = let open Sorts.Quality in function
     let evd, q = glob_qvar ?loc evd q in
     evd, QVar q
 
-let sort_info ?loc sigma q l = match l with
-| [] -> assert false
-| [GSProp, 0] -> assert (Option.is_empty q); sigma, Sorts.sprop
-| [GProp, 0] -> assert (Option.is_empty q); sigma, Sorts.prop
-| (u, n) :: us ->
+let sort ?loc sigma (q, l) = match l with
+| UNamed [] -> assert false
+| UNamed [GSProp, 0] -> assert (Option.is_empty q); sigma, ESorts.sprop
+| UNamed [GProp, 0] -> assert (Option.is_empty q); sigma, ESorts.prop
+| UNamed ((u, n) :: us) ->
   let open Pp in
   let sigma, q = match q with
     | None -> sigma, None
@@ -228,7 +228,21 @@ let sort_info ?loc sigma q l = match l with
     | None -> Sorts.sort_of_univ u
     | Some q -> Sorts.qsort q u
   in
-  sigma, s
+  sigma, ESorts.make s
+| UAnonymous {rigid} ->
+  let sigma, q = match q with
+    | None -> sigma, None
+    | Some q ->
+      let sigma, q = glob_qvar ?loc sigma q in
+      sigma, Some q
+  in
+  let sigma, l = new_univ_level_variable ?loc rigid sigma in
+  let u = Univ.Universe.make l in
+  let s = match q with
+    | None -> Sorts.sort_of_univ u
+    | Some q -> Sorts.qsort q u
+  in
+  sigma, ESorts.make s
 
 type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 
@@ -530,14 +544,6 @@ let pretype_ref ?loc sigma env ref us =
     let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 
-let sort ?loc evd : glob_sort -> _ = function
-  | UAnonymous {rigid} ->
-    let evd, l = new_univ_level_variable ?loc rigid evd in
-    evd, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make l))
-  | UNamed (q, l) ->
-    let evd, s = sort_info ?loc evd q l in
-    evd, ESorts.make s
-
 let judge_of_sort ?loc evd s =
   let judge =
     { uj_val = mkSort s; uj_type = mkSort (ESorts.super evd s) }
@@ -545,11 +551,6 @@ let judge_of_sort ?loc evd s =
     evd, judge
 
 let pretype_sort ?loc sigma s =
-  match s with
-  | UNamed (None, [GSProp, 0]) -> sigma, judge_of_sprop
-  | UNamed (None, [GProp, 0]) -> sigma, judge_of_prop
-  | UNamed (None, [GSet, 0]) -> sigma, judge_of_set
-  | _ ->
   let sigma, s = sort ?loc sigma s in
   judge_of_sort ?loc sigma s
 
@@ -1596,7 +1597,7 @@ let path_convertible env sigma cl p q =
       let params = class_nparams cl in
       let clty =
         match cl with
-        | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=UnivFlexible false})
+        | CL_SORT -> mkGSort (None, Glob_term.UAnonymous {rigid=UnivFlexible false})
         | CL_FUN -> anomaly (str "A source class must not be Funclass.")
         | CL_SECVAR v -> mkGRef (GlobRef.VarRef v)
         | CL_CONST c -> mkGRef (GlobRef.ConstRef c)
@@ -1621,4 +1622,4 @@ let path_convertible env sigma cl p q =
       let _ = Evarconv.unify_delay env sigma tp tq in true
   with Evarconv.UnableToUnify _ | PretypeError _ -> false
 
-let _ = Coercionops.install_path_comparator path_convertible
+let () = Coercionops.install_path_comparator path_convertible

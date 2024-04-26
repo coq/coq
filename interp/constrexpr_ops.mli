@@ -14,6 +14,11 @@ open Constrexpr
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
 
+val expr_Type_sort : sort_expr
+val expr_SProp_sort : sort_expr
+val expr_Prop_sort : sort_expr
+val expr_Set_sort : sort_expr
+
 (** {6 Equalities on [constr_expr] related types} *)
 
 val sort_name_expr_eq : sort_name_expr -> sort_name_expr -> bool

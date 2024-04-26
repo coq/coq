@@ -95,10 +95,15 @@ let check_all_names_different indl =
 let rec check_type_conclusion ind =
   let open Glob_term in
   match DAst.get ind with
-  | GSort (UAnonymous {rigid=UnivRigid}) ->
-    (* should have been made flexible *)
-    assert false
-  | GSort (UNamed _) -> true
+  | GSort s ->
+    (* not sure what this check is expected to be exactly *)
+    begin match s with
+      | (None, UAnonymous {rigid=UnivRigid}) ->
+        (* should have been made flexible *)
+        assert false
+      | (None, UAnonymous {rigid=UnivFlexible _}) -> false
+      | _ -> true
+    end
   | GProd (_, _, _, _, e)
   | GLetIn (_, _, _, _, e) ->
     check_type_conclusion e
@@ -107,9 +112,9 @@ let rec check_type_conclusion ind =
 let rec make_anonymous_conclusion_flexible ind =
   let open Glob_term in
   match DAst.get ind with
-  | GSort (UAnonymous {rigid=UnivRigid}) ->
-    Some (DAst.make ?loc:ind.loc (GSort (UAnonymous {rigid=UnivFlexible true})))
-  | GSort (UNamed _) -> None
+  | GSort (None, UAnonymous {rigid=UnivRigid}) ->
+    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {rigid=UnivFlexible true})))
+  | GSort _ -> None
   | GProd (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
       | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, d, e)))
@@ -693,7 +698,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.default (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=UnivRigid})) ar;
+    ind_arity = Option.default (CAst.make @@ CSort Constrexpr_ops.expr_Type_sort) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

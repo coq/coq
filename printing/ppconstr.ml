@@ -185,13 +185,21 @@ let tag_var = tag Tag.variable
     | CType qid -> pr_qualid qid
     | CRawType s -> Univ.Level.raw_pr s
 
+  let pr_univ_level_expr = function
+    | UNamed s -> tag_type (pr_sort_name_expr s)
+    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
+
   let pr_univ_expr (u,n) =
-    pr_sort_name_expr u ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+    tag_type (pr_sort_name_expr u) ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
   let pr_univ l =
     match l with
-      | [x] -> pr_univ_expr x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
+    | UNamed [x] -> pr_univ_expr x
+    | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
+    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible b} ->
+      tag_type (str "Type")
 
   let pr_qvar_expr = function
     | CQAnon _ -> tag_type (str "_")
@@ -217,24 +225,12 @@ let tag_var = tag Tag.variable
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
-  let pr_sort_expr = function
-    | UNamed (None, [CSProp, 0]) -> tag_type (str "SProp")
-    | UNamed (None, [CProp, 0]) -> tag_type (str "Prop")
-    | UNamed (None, [CSet, 0]) -> tag_type (str "Set")
-    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} ->
-      tag_type (str "Type") ++
-      pr_univ_annot (fun _ -> str "_" ++ if b then str " (* algebraic *)" else mt()) ()
-    | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
-
-  let pr_univ_level_expr = function
-    | UNamed CSProp -> tag_type (str "SProp")
-    | UNamed CProp -> tag_type (str "Prop")
-    | UNamed CSet -> tag_type (str "Set")
-    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
-    | UNamed (CType u) -> tag_type (pr_qualid u)
-    | UNamed (CRawType s) -> tag_type (Univ.Level.raw_pr s)
+  let pr_sort_expr : sort_expr -> Pp.t = function
+    | None, UNamed [CSProp, 0] -> tag_type (str "SProp")
+    | None, UNamed [CProp, 0] -> tag_type (str "Prop")
+    | None, UNamed [CSet, 0] -> tag_type (str "Set")
+    | None, UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+    | u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in

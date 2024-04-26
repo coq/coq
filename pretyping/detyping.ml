@@ -378,21 +378,21 @@ let detype_quality sigma q =
   | QVar q -> GQualVar (detype_qvar sigma q)
 
 let detype_universe sigma u =
-  List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
+  UNamed (List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u))
 
 let detype_sort sigma = function
-  | SProp -> UNamed (None, [GSProp,0])
-  | Prop -> UNamed (None, [GProp,0])
-  | Set -> UNamed (None, [GSet,0])
+  | SProp -> glob_SProp_sort
+  | Prop -> glob_Prop_sort
+  | Set -> glob_Set_sort
   | Type u ->
       (if !print_universes
-       then UNamed (None, detype_universe sigma u)
-       else UAnonymous {rigid=UnivRigid})
+       then None, detype_universe sigma u
+       else glob_Type_sort)
   | QSort (q, u) ->
     if !print_universes then
       let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
-      UNamed (q, detype_universe sigma u)
-    else UAnonymous {rigid=UnivRigid}
+      q, detype_universe sigma u
+    else glob_Type_sort
 
 let detype_relevance_info sigma na =
   if not (print_relevances ()) then None

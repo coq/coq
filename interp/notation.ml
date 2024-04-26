@@ -647,10 +647,10 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
       and t' = Array.map (glob_of_constr token_kind ?loc env sigma) t
       and ty' = glob_of_constr token_kind ?loc env sigma ty in
       DAst.make ?loc (Glob_term.GArray (None,t',def',ty'))
-  | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSProp, 0])))
-  | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
-  | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
-  | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=UnivRigid}))
+  | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_SProp_sort)
+  | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Prop_sort)
+  | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Set_sort)
+  | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Type_sort)
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
 let mkGApp ?loc hd args = match args with
@@ -681,10 +681,10 @@ let rec glob_of_token token_kind ?loc env sigma c = match TokenValue.kind c with
     and t' = Array.map (glob_of_token token_kind ?loc env sigma) t
     and ty' = glob_of_token token_kind ?loc env sigma ty in
     DAst.make ?loc (Glob_term.GArray (None,t',def',ty'))
-  | TSort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSProp, 0])))
-  | TSort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
-  | TSort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
-  | TSort (Sorts.Type _ | Sorts.QSort _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=UnivRigid}))
+  | TSort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_SProp_sort)
+  | TSort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Prop_sort)
+  | TSort Sorts.Set -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Set_sort)
+  | TSort (Sorts.Type _ | Sorts.QSort _) -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Type_sort)
   | TOther ->
     let c = TokenValue.repr c in
     Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))

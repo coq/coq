@@ -895,18 +895,21 @@ let extern_glob_quality = function
   | GQConstant q -> CQConstant q
   | GQualVar q -> CQualVar (extern_glob_qvar q)
 
-let extern_glob_sort uvars u =
-  let map (q, l) =
-    Option.map extern_glob_qvar q, List.map (on_fst (extern_glob_sort_name uvars)) l
-  in
-  map_glob_sort_gen map u
+let extern_glob_sort uvars (q, l) =
+  Option.map extern_glob_qvar q,
+  map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars))) l
 
 (** wrapper to handle print_universes: don't forget small univs *)
-let extern_glob_sort uvars = function
-  (* In case we print a glob_constr w/o having passed through detyping *)
-  | UNamed (None, [(GSProp, 0) | (GProp, 0) | (GSet, 0)]) as u -> extern_glob_sort uvars u
-  | UNamed _ when not !print_universes -> UAnonymous {rigid=UnivRigid}
-  | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
+let extern_glob_sort uvars (s:glob_sort) =
+  let really_extern = !print_universes || match s with
+    | None, UNamed [s, 0] -> begin match s with
+        | GSet | GProp | GSProp -> true
+        | GUniv _ | GLocalUniv _ | GRawUniv _ -> false
+      end
+    | _ -> false
+  in
+  if really_extern then extern_glob_sort uvars s
+  else Constrexpr_ops.expr_Type_sort
 
 let extern_instance uvars = function
   | Some (ql,ul) when !print_universes ->
@@ -1544,10 +1547,10 @@ let rec glob_of_pat
           Array.map (fun (bl,_,_) -> bl) v,
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
-  | PSort Sorts.InSProp -> GSort (UNamed (None, [GSProp,0]))
-  | PSort Sorts.InProp -> GSort (UNamed (None, [GProp,0]))
-  | PSort Sorts.InSet -> GSort (UNamed (None, [GSet,0]))
-  | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=UnivRigid})
+  | PSort Sorts.InSProp -> GSort Glob_ops.glob_SProp_sort
+  | PSort Sorts.InProp -> GSort Glob_ops.glob_Prop_sort
+  | PSort Sorts.InSet -> GSort Glob_ops.glob_Set_sort
+  | PSort (Sorts.InType | Sorts.InQSort) -> GSort Glob_ops.glob_Type_sort
   | PInt i -> GInt i
   | PFloat f -> GFloat f
   | PArray(t,def,ty) ->
