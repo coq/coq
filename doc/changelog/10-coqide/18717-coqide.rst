@@ -9,13 +9,13 @@
   The Edit/Undo key binding was changed from Ctrl-U to Ctrl-Z to
   be more consistent with common conventions.  `View/Previous Tab`
   and `View/Next Tab` were changed from `Alt-Left/Right` to
-  `Ctrl-Left/Right` (`Alt-Left/Right` on macOS).  To change key
+  `Ctrl-PgUp/PgDn` (`Cmd-PgUp/PgDn` on macOS).  To change key
   bindings on your system (e.g. back to Ctrl-U), see :ref:`key_bindings`
   (`#18717 <https://github.com/coq/coq/pull/18717>`_,
   by Sylvain Chiron).
 - **Changed:**
   Changing modifiers for the View menu only applies
-  to toggleable items; View/Show Proof was changed to Shift F2
+  to toggleable items; View/Show Proof was changed to Shift-F2
   (`#18717 <https://github.com/coq/coq/pull/18717>`_,
   by Sylvain Chiron).
 - **Added:**

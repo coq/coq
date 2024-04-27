@@ -99,12 +99,6 @@ from the toolbar and from the keyboard.  These include:
 
 On macOS, use `Cmd-Ctrl` instead of `Alt` for these operations.
 
-Note about the change of modifier: the modifier for Navigation was previously
-`Ctrl` (except on macOS). It was changed so that the hotkeys for moving the
-cursor in the editor (`Ctrl-Right`, `Ctrl-Home`, `Ctrl-End`) are supported by
-default. To restore the previous behavior, go to *Edit/Preferences/Shortcuts*
-and change the modifier for Navigation.
-
 Tooltips identify the action associated with each toolbar icon.
 
 Commands may:
@@ -383,7 +377,7 @@ The end of
 `this file <https://github.com/linuxmint/gtk/blob/master/gdk/keyname-table.h#:~:text=NC_(%22keyboard%20label%22%2C%20%22BackSpace%22)>`_
 gives the names of the keys.
 
-Modifers (e.g. Alt, Ctrl) for some menus can be can be changed as a group from the
+Modifiers (e.g. Alt, Ctrl) for some menus can be can be changed as a group from the
 Edit/Preferences/Shortcuts panel.  See :ref:`Shortcuts<shortcuts>`.
 
 .. todo: list common rebindings?
