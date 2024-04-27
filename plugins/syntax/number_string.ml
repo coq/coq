@@ -534,20 +534,8 @@ let locate_global_inductive allow_params qid =
   try locate_global_inductive_with_params allow_params qid
   with Not_found -> Smartlocate.global_inductive_with_alias qid, []
 
-open Constrexpr
-open Constrexpr_ops
-
-let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
-
-let q_option () = qualid_of_ref "core.option.type"
-let q_list () = qualid_of_ref "core.list.type"
-let q_byte () = qualid_of_ref "core.byte.type"
-
-let has_type env sigma f ty =
-  let c = mkCastC (mkRefC f, Some Constr.DEFAULTcast, ty) in
-  try let _ = Constrintern.interp_constr env sigma c in true
-  with Pretype_errors.PretypeError _ -> false
+let q_list () = Coqlib.lib_ref "core.list.type"
+let q_byte () = Coqlib.lib_ref "core.byte.type"
 
 let type_error_to f ty =
   CErrors.user_err
@@ -562,12 +550,13 @@ let type_error_of g ty =
 let vernac_string_notation local ty f g via scope =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let app x y = mkAppC (x,[y]) in
-  let cref q = CAst.make (CAppExpl ((q,None),[])) in (* ensure no implicit arguments *)
-  let cbyte = cref (q_byte ()) in
-  let clist = cref (q_list ()) in
-  let coption = cref (q_option ()) in
-  let opt r = app coption r in
+  let app x y = DAst.make @@ GApp (x,[y]) in
+  let arrow x y =
+    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
+  in
+  let opt r = app (gref (q_option ())) r in
+  let cbyte = gref (q_byte ()) in
+  let clist = gref (q_list ()) in
   let clist_byte = app clist cbyte in
   let ty_name = ty in
   let ty, via =
@@ -575,17 +564,16 @@ let vernac_string_notation local ty f g via scope =
   let tyc, params = locate_global_inductive (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
-  let cty = cref ty in
-  let arrow x y =
-    mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
-  in
+  let f_name, f = f, intern_cref env sigma f in
+  let g_name, g = g, intern_cref env sigma g in
+  let cty = intern_cref env sigma ty in
   (* Check the type of f *)
   let to_kind =
     if has_type env sigma f (arrow clist_byte cty) then ListByte, Direct
     else if has_type env sigma f (arrow clist_byte (opt cty)) then ListByte, Option
     else if has_type env sigma f (arrow cbyte cty) then Byte, Direct
     else if has_type env sigma f (arrow cbyte (opt cty)) then Byte, Option
-    else type_error_to f ty
+    else type_error_to f_name ty
   in
   (* Check the type of g *)
   let of_kind =
@@ -593,7 +581,7 @@ let vernac_string_notation local ty f g via scope =
     else if has_type env sigma g (arrow cty (opt clist_byte)) then ListByte, Option
     else if has_type env sigma g (arrow cty cbyte) then Byte, Direct
     else if has_type env sigma g (arrow cty (opt cbyte)) then Byte, Option
-    else type_error_of g ty
+    else type_error_of g_name ty
   in
   let to_post, pt_refs = match via with
     | None -> elaborate_to_post_params env sigma tyc params
