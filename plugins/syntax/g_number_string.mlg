@@ -13,8 +13,7 @@ DECLARE PLUGIN "coq-core.plugins.number_string_notation"
 {
 
 open Notation
-open Number
-open String_notation
+open Number_string
 open Pp
 open Stdarg
 open Pcoq.Prim
