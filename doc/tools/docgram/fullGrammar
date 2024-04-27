@@ -1516,6 +1516,8 @@ logical_kind: [
 extended_def_token: [
 | def_token
 | "Coercion"
+| "Fixpoint"
+| "CoFixpoint"
 | "Instance"
 | "Scheme"
 | "Canonical"

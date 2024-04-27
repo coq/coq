@@ -188,7 +188,9 @@ described elsewhere
       .. insertprodn logical_kind logical_kind
 
       .. prodn::
-         logical_kind ::= {| @thm_token | @assumption_token }
+         logical_kind ::= Fixpoint
+         | CoFixpoint
+         | {| @thm_token | @assumption_token }
          | {| Definition | Example | Context | Primitive | Symbol }
          | {| Coercion | Instance | Scheme | Canonical | SubClass }
          | {| Field | Method }
