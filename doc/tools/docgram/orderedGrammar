@@ -1053,11 +1053,9 @@ search_item: [
 ]
 
 logical_kind: [
-| "Fixpoint"
-| "CoFixpoint"
 | [ thm_token | assumption_token ]
 | [ "Definition" | "Example" | "Context" | "Primitive" | "Symbol" ]
-| [ "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
+| [ "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" | "Fixpoint" | "CoFixpoint" ]
 | [ "Field" | "Method" ]
 ]
 

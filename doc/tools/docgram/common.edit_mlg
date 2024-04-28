@@ -1971,7 +1971,9 @@ logical_kind: [
 | DELETE "Instance"
 | DELETE "Scheme"
 | DELETE "Canonical"
-| [  "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
+| DELETE "Fixpoint"
+| DELETE "CoFixpoint"
+| [  "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" | "Fixpoint" | "CoFixpoint" ]
 | DELETE "Field"
 | DELETE "Method"
 | [ "Field" | "Method" ]
