@@ -42,10 +42,9 @@ Inductive types
    respectively correspond to
    on :g:`Type`, :g:`Prop`, :g:`Set` and :g:`SProp`.  Their types
    expresses structural induction/recursion principles over objects of
-   type :n:`@ident`.  The :term:`constant` :n:`@ident`\ ``_ind`` is always
-   generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
-   may be impossible to derive (for example, when :n:`@ident` is a
-   proposition).
+   type :n:`@ident`.  These :term:`constants <constant>` are generated when
+   possible (for instance :n:`@ident`\ ``_rect`` may be impossible to derive
+   when :n:`@ident` is a proposition).
 
    .. flag:: Dependent Proposition Eliminators
 
