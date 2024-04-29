@@ -148,4 +148,7 @@ sig
     -> (Names.lident * Vernacexpr.inductive_params_expr)
     -> 'a
 
+
+  val do_auto_prop_lowering : bool ref
+
 end

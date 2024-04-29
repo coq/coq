@@ -1518,9 +1518,10 @@ let do_build_inductive evd (funconstants : pconstant list)
   try
     with_full_print
       (Flags.silently
-         (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds
-            ~cumulative:false ~poly:false ~private_ind:false
-            ~uniform:ComInductive.NonUniformParameters))
+         (Flags.without_option ComInductive.Internal.do_auto_prop_lowering
+            (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds
+               ~cumulative:false ~poly:false ~private_ind:false
+               ~uniform:ComInductive.NonUniformParameters)))
       Declarations.Finite
   with
   | UserError msg as e ->

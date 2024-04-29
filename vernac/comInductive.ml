@@ -204,8 +204,15 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
-let { Goptions.get = do_auto_prop_lowering } =
-  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
+let do_auto_prop_lowering = ref true
+let () =
+  Goptions.declare_bool_option {
+    optstage = Interp;
+    optdepr = None;
+    optkey = ["Automatic";"Proposition";"Inductives"];
+    optread = (fun () -> !do_auto_prop_lowering);
+    optwrite = (fun b -> do_auto_prop_lowering := b);
+  }
 
 let warn_auto_prop_lowering =
   CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
@@ -238,7 +245,7 @@ let prop_lowering_candidates evd ~arities_explicit inds =
     && not (Evd.check_leq evd ESorts.set s)
   in
   let candidates = List.filter_map (fun (explicit,(_,(_,s),_,_ as ind)) ->
-      if (do_auto_prop_lowering() || not explicit) && is_prop_candidate_arity ind
+      if (!do_auto_prop_lowering || not explicit) && is_prop_candidate_arity ind
       then Some s else None)
       (List.combine arities_explicit inds)
   in
@@ -871,6 +878,7 @@ module Internal =
 struct
 
 let inductive_levels = inductive_levels
+let do_auto_prop_lowering = do_auto_prop_lowering
 
 let error_differing_params = error_differing_params
 
