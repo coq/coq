@@ -1,6 +1,6 @@
 Inductive Empty : Prop := .
 
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths {A : Type} (a : A) : A -> Prop :=
   idpath : paths a a.
 
 Notation "x = y :> A" := (@paths A x y) : type_scope.
@@ -46,10 +46,10 @@ Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
                          | inl y' => ap g
                          | inr y' => idmap
                        end
-           | inr x' => match y as y return match y return Prop with
+           | inr x' => match y as y return match y  with
                                                inr y' => x' = y'
                                              | _ => Empty
-                                           end -> match f y return Prop with
+                                           end -> match f y  with
                                                     | inr y' => h x' = y'
                                                     | _ => Empty end with
                          | inl y' => idmap

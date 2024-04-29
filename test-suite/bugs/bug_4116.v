@@ -36,7 +36,7 @@ Notation compose := (fun g f x => g (f x)).
 
 Notation "g 'o' f" := (compose g%function f%function) (at level 40, left associativity) : function_scope.
 
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths {A : Type} (a : A) : A -> Prop :=
   idpath : paths a a.
 
 Arguments idpath {A a} , [A] a.
