@@ -47,6 +47,21 @@ Inductive types
    may be impossible to derive (for example, when :n:`@ident` is a
    proposition).
 
+   .. flag:: Dependent Proposition Eliminators
+
+      The inductive principles express dependent elimination when the
+      inductive type allows it (always true when not using
+      :flag:`Primitive Projections`), except by default when the
+      inductive is explicitly declared in `Prop`.
+
+      Explicitly `Prop` inductive types declared when this flag is
+      enabled also automatically declare dependent inductive
+      principles. Name generation may also change when using tactics
+      such as :tacn:`destruct` on such inductives.
+
+      Note that explicit declarations through :cmd:`Scheme` are not
+      affected by this flag.
+
    :n:`{? %| {* @binder } }`
      The :n:`|` separates uniform and non uniform parameters.
      See :flag:`Uniform Inductive Parameters`.
