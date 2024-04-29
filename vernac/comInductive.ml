@@ -204,12 +204,16 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
+let { Goptions.get = do_auto_prop_lowering } =
+  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
+
 let warn_auto_prop_lowering =
   CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
     Pp.(fun na ->
         strbrk "Automatically putting " ++ Id.print na ++ strbrk " in Prop" ++ spc() ++
         strbrk "even though it was declared with Type." ++ fnl() ++
-        strbrk "Set TODO to prevent this (it will become the default in a future version)." ++ fnl() ++
+        strbrk "Unset Automatic Proposition Inductives to prevent this" ++ spc() ++
+        strbrk "(it will become the default in a future version)." ++ fnl() ++
         strbrk "If you instead put " ++ Id.print na ++ strbrk " explicitly in Prop," ++ spc() ++
         strbrk "set Dependent Proposition Eliminators around the declaration for full backwards compatibility.")
 
@@ -220,7 +224,7 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-let prop_lowering_candidates evd inds =
+let prop_lowering_candidates evd ~arities_explicit inds =
   let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
 
   (* handle automatic lowering to Prop
@@ -233,9 +237,10 @@ let prop_lowering_candidates evd inds =
     && is_flexible_sort evd s
     && not (Evd.check_leq evd ESorts.set s)
   in
-  let candidates = List.filter_map (fun (_,(_,s),_,_ as ind) ->
-      if is_prop_candidate_arity ind then Some s else None)
-      inds
+  let candidates = List.filter_map (fun (explicit,(_,(_,s),_,_ as ind)) ->
+      if (do_auto_prop_lowering() || not explicit) && is_prop_candidate_arity ind
+      then Some s else None)
+      (List.combine arities_explicit inds)
   in
 
   let in_candidates s candidates = List.mem_f (ESorts.equal evd) s candidates in
@@ -321,7 +326,7 @@ let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
       inds
   in
 
-  let candidates = prop_lowering_candidates evd inds in
+  let candidates = prop_lowering_candidates evd ~arities_explicit inds in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
