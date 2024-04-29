@@ -28,6 +28,42 @@ Ltac2 @ external of_exn : exn -> message := "coq-core.plugins.ltac2" "message_of
 
 Ltac2 @ external concat : message -> message -> message := "coq-core.plugins.ltac2" "message_concat".
 
+(** Boxing primitives. They are translated to OCaml "Format" boxes,
+    see https://ocaml.org/docs/formatting-text **)
+
+Ltac2 @external force_new_line : message := "coq-core.plugins.ltac2" "message_force_new_line".
+(** Force writing on a new line after this.
+    Warning: partially reinitialises the pretty-printing engine,
+    potentially leading to bad printing afterwards.
+    Prefer using a break hint inside a vertical box. *)
+
+Ltac2 @external break : int -> int -> message := "coq-core.plugins.ltac2" "message_break".
+(** General break hint: [break n i] either prints [n] spaces or splits
+    the line adding [i] to the current indentation. *)
+
+Ltac2 @external space : message := "coq-core.plugins.ltac2" "message_space".
+(** Breaking space. Equivalent to [break 1 0]. *)
+
+Ltac2 @external hbox : message -> message := "coq-core.plugins.ltac2" "message_hbox".
+(** Horizontal box. Break hints in a horizontal box never split the
+    line (nested boxes inside the horizontal box may allow line
+    splitting). *)
+
+Ltac2 @external vbox : int -> message -> message := "coq-core.plugins.ltac2" "message_vbox".
+(** Vertical box. Every break hint in a vertical box splits the line.
+    The [int] is added to the current indentation when splitting the line. *)
+
+Ltac2 @external hvbox : int -> message -> message := "coq-core.plugins.ltac2" "message_hvbox".
+(** Horizontal/vertical box. Behaves as a horizontal box if it fits on
+    a single line, otherwise behaves as a vertical box (using the
+    given [int]). *)
+
+Ltac2 @external hovbox : int -> message -> message := "coq-core.plugins.ltac2" "message_hovbox".
+(** Horizonal-or-vertical box. Prints as much as possible on each
+    line, splitting the line at break hints when there is no more room
+    on the line (see "Printing Width" option). The [int] is added to
+    the indentation when splitting the line. *)
+
 Module Format.
 
 (** Only for internal use. *)
