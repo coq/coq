@@ -59,6 +59,7 @@ let push_types env idl rl tl =
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
+  ind_arity_explicit : bool;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -203,6 +204,15 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
+let warn_auto_prop_lowering =
+  CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
+    Pp.(fun na ->
+        strbrk "Automatically putting " ++ Id.print na ++ strbrk " in Prop" ++ spc() ++
+        strbrk "even though it was declared with Type." ++ fnl() ++
+        strbrk "Set TODO to prevent this (it will become the default in a future version)." ++ fnl() ++
+        strbrk "If you instead put " ++ Id.print na ++ strbrk " explicitly in Prop," ++ spc() ++
+        strbrk "set Dependent Proposition Eliminators around the declaration for full backwards compatibility.")
+
 let is_flexible_sort evd s = match ESorts.kind evd s with
 | Set | Prop | SProp -> false
 | Type u | QSort (_, u) ->
@@ -282,7 +292,7 @@ let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
-let inductive_levels env evd ~poly arities ctors =
+let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -323,12 +333,15 @@ let inductive_levels env evd ~poly arities ctors =
      as "Type" doesn't produce a qvar.
 
      Perhaps someday we can stop lowering these explicit ": Type". *)
-  let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors) ->
+  let inds = List.map3 (fun na explicit (raw_arity,(ctx,s),indices,ctors) ->
       if List.mem_f (ESorts.equal evd) s candidates then
         (* NB: is_prop_candidate requires is_flexible_sort
            so in this branch we know s <> Prop *)
+        let () = if explicit then warn_auto_prop_lowering na in
         ((PropButDepElim, mkArity (ctx, ESorts.prop)),ESorts.prop,indices,ctors)
       else ((DefaultElim, raw_arity), s, indices, ctors))
+      indnames
+      arities_explicit
       inds
   in
 
@@ -493,7 +506,7 @@ let variance_of_entry ~cumulative ~variances uctx =
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
-let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~template_syntax ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->
@@ -502,7 +515,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         tys)
       constructors
   in
-  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma ~poly arities ctor_args in
+  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
   let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
@@ -675,7 +688,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
             userimpls @ impls) cimpls)
       indimpls cimpls
   in
-  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~template_syntax ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let arities_explicit = List.map (fun ar -> ar.ind_arity_explicit) indl in
+  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (default_dep_elim, mie, binders, impls, ctx)
 
 
@@ -733,6 +747,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
+    ind_arity_explicit = Option.has_some ar;
     ind_arity = Option.default (CAst.make @@ CSort Constrexpr_ops.expr_Type_sort) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl

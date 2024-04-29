@@ -83,6 +83,7 @@ val interp_mutual_inductive_constr
   -> variances:Entries.variance_entry
   -> ctx_params:EConstr.rel_context
   -> indnames:Names.Id.t list
+  -> arities_explicit:bool list
   -> arities:EConstr.t list
   -> template_syntax:syntax_allows_template_poly list
   -> constructors:(Names.Id.t list * EConstr.constr list) list
@@ -132,6 +133,9 @@ sig
     : Environ.env
     -> Evd.evar_map
     -> poly:bool
+    -> indnames:Names.Id.t list
+    -> arities_explicit:bool list
+    (* whether the arities were explicit from the user (for auto Prop lowering) *)
     -> EConstr.constr list
     (* arities *)
     -> EConstr.rel_context list list

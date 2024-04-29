@@ -247,8 +247,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     if def then def_class_levels ~def env_ar sigma aritysorts data
     else (* each inductive has one constructor *)
       let ctors = List.map (fun (_,newfs) -> [newfs]) data in
+      let indnames = List.map (fun x -> x.DataI.name) records in
+      let arities_explicit = List.map (fun x -> Option.has_some x.DataI.arity) records in
       let sigma, (default_dep_elim, typs) =
-        ComInductive.Internal.inductive_levels env_ar sigma ~poly typs ctors
+        ComInductive.Internal.inductive_levels env_ar sigma ~poly ~indnames ~arities_explicit typs ctors
       in
       sigma, List.combine default_dep_elim typs
   in

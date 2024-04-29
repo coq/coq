@@ -524,7 +524,7 @@ We need some infrastructure for that.
 
   Module infrastructure.
 
-    Inductive phantom {T : Type} (t : T) : Type := Phantom.
+    Inductive phantom {T : Type} (t : T) := Phantom.
 
     Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) :=
       phantom t1 -> phantom t2.

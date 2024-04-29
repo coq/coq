@@ -53,9 +53,9 @@ be defined using :cmd:`Variant`.
 
    .. coqtop:: in
 
-      Variant bool : Type := true : bool | false : bool.
-      Variant unit : Type := tt : unit.
-      Variant Empty_set : Type :=.
+      Variant bool : Set := true : bool | false : bool.
+      Variant unit : Set := tt : unit.
+      Variant Empty_set : Set :=.
 
   The option and sum types are defined by:
 
