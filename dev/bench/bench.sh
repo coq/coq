@@ -82,8 +82,8 @@ check_variable () {
 : "${coq_native:=}"
 : "${skip_coq_tests:=}"
 
-: "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-: "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+: "${new_coq_commit:=130d8707e83a0cde67adb240f66b7b3264c9ecf9}"
+: "${old_coq_commit:=b7de03cacd0268f899dd7ed07db62368dd6f8ff3}"
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
 old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
