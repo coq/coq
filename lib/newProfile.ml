@@ -107,11 +107,13 @@ module Counters = struct
     minor_collections : int;
     minor_time : int64 (* nanoseconds *);
     major_time : int64 (* nanoseconds *);
+    lost_events : int;
     instr : System.instruction_count;
   }
 
   let current_minor_time = ref Int64.zero
   let current_major_time = ref Int64.zero
+  let current_lost_events = ref 0
 
   let get () =
     let gc = Gc.quick_stat() in
@@ -122,6 +124,7 @@ module Counters = struct
       minor_collections = gc.minor_collections;
       minor_time = !current_minor_time;
       major_time = !current_major_time;
+      lost_events = !current_lost_events;
       instr = Instr.read_counter();
     }
 
@@ -134,6 +137,7 @@ module Counters = struct
     minor_collections = b.minor_collections - a.minor_collections;
     minor_time = Int64.sub b.minor_time a.minor_time;
     major_time = Int64.sub b.major_time a.major_time;
+    lost_events = b.lost_events - a.lost_events;
     instr = System.instructions_between ~c_start:a.instr ~c_end:b.instr;
   }
 
@@ -161,6 +165,7 @@ module Counters = struct
     cons (Int.equal x.minor_collections 0) ("minor_collect", ppi x.minor_collections) @@
     cons (Int64.equal x.minor_time Int64.zero) ("minor_time", ppi64_time x.minor_time) @@
     cons (Int64.equal x.major_time Int64.zero) ("major_time", ppi64_time x.major_time) @@
+    cons (Int.equal x.lost_events 0) ("lost_events", ppi x.lost_events) @@
     instr
 
   let make_diffs ~start ~stop = format (stop - start)
@@ -277,8 +282,8 @@ let init_poll () =
       | _ -> ()
     in
     let lost_events start stop =
-      (* not sure what start/stop mean or what's the best way to report these *)
-      Printf.eprintf "lost runtime events %d %d\n" start stop
+      (* not sure what start/stop mean *)
+      incr Counters.current_lost_events
     in
     Callbacks.create ~runtime_begin ~runtime_end ~lost_events ()
   in
