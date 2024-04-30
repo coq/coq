@@ -187,8 +187,6 @@ let poll = ref (fun () -> ())
 let leave_sums ?time name () =
   let accu = Option.get !accu in
   let time = gettimeopt time in
-  (* polling here should be frequent enough to avoid losing events (hopefully) *)
-  let () = !poll() in
   match accu.sums with
   | [] -> assert false
   | [start,sum] -> accu.sums <- []; sum, time -. start
@@ -208,6 +206,8 @@ let leave_sums ?time name () =
     sum, dur
 
 let leave ?time name ?(args=[]) ?last () =
+  (* polling here should be frequent enough to avoid losing events (hopefully) *)
+  let () = !poll() in
   let time = gettimeopt time in
   let sum, dur = leave_sums ~time name () in
   let sum = List.map (fun (name, (t, cnt)) ->
