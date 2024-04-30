@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
+
 open Pp
 open CErrors
 open Util
@@ -160,47 +162,51 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
   let binders = Evarutil.nf_rel_context_evar sigma binders in
   let top_arity = Evarutil.nf_evar sigma top_arity in
   let make = Evarutil.nf_evar sigma make in
-  let hook, recname, typ =
+  let recname_func, typ =
     if List.length binders_rel > 1 then
-      let name = add_suffix recname "_func" in
-      let hook { Declare.Hook.S.dref; uctx; _ } =
+      add_suffix recname "_func", it_mkProd_or_LetIn top_arity binders
+    else
+      recname, it_mkProd_or_LetIn top_arity binders_rel in
+  RetrieveObl.check_evars env sigma;
+  let evars, (_, evmap), evars_def, evars_typ =
+    RetrieveObl.retrieve_obligations env recname_func sigma 0 def typ
+  in
+  let hook =
+    if List.length binders_rel > 1 then
+      let hook { Declare.Hook.S.dref; uctx; obls; _ } =
+        let update c = CVars.replace_vars obls (evmap mkVar (Evarutil.nf_evar (Evd.from_ctx uctx) c)) in
+        let make = update make in
+        let top_arity = update top_arity in
+        let binders_rel = Context.Rel.map_het (ERelevance.kind sigma) update binders_rel in
         let univs = UState.check_univ_decl ~poly uctx udecl in
         let h_body =
           let inst = UState.(match fst univs with
-              | Polymorphic_entry uctx -> EConstr.EInstance.make (UVars.UContext.instance uctx)
-              | Monomorphic_entry _ -> EConstr.EInstance.empty) in
-          EConstr.mkRef (dref, inst) in
-        let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
-        let ty = it_mkProd_or_LetIn top_arity binders_rel in
-        let ty = EConstr.Unsafe.to_constr ty in
-        let sigma = Evd.from_ctx uctx in
-        let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
+              | Polymorphic_entry uctx -> UVars.UContext.instance uctx
+              | Monomorphic_entry _ -> UVars.Instance.empty) in
+          Constr.mkRef (dref, inst) in
+        let body = Term.it_mkLambda_or_LetIn (Constr.mkApp (h_body, [|make|])) binders_rel in
+        let ty = Term.it_mkProd_or_LetIn top_arity binders_rel in
+        let ce = definition_entry ~types:ty ~univs body in
         (* FIXME: include locality *)
         let c = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
         let gr = GlobRef.ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr impls
       in
-      let typ = it_mkProd_or_LetIn top_arity binders in
-      hook, name, typ
+      hook
     else
-      let typ = it_mkProd_or_LetIn top_arity binders_rel in
       let hook { Declare.Hook.S.dref; _ } =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false dref impls
-      in hook, recname, typ
+      in hook
   in
   let hook = Declare.Hook.make hook in
-  RetrieveObl.check_evars env sigma;
-  let evars, _, evars_def, evars_typ =
-    RetrieveObl.retrieve_obligations env recname sigma 0 def typ
-  in
   let using =
     let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
     Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
   in
   let uctx = Evd.evar_universe_context sigma in
-  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
+  let cinfo = Declare.CInfo.make ~name:recname_func ~typ:evars_typ ?using () in
   let kind = Decls.(IsDefinition Fixpoint) in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ~hook ?typing_flags ?user_warns ~ntns () in
   let pm, _ =
