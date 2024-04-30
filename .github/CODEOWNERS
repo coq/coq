@@ -105,7 +105,7 @@
 /kernel/native*   @coq/vm-native-maintainers
 /kernel/vm*       @coq/vm-native-maintainers
 /kernel/vconv.*   @coq/vm-native-maintainers
-/kernel/genOpcodefiles.* @coq/vm-native-maintainers
+/kernel/genOpcodeFiles.* @coq/vm-native-maintainers
 
 /kernel/sorts.*   @coq/universes-maintainers
 /kernel/uGraph.*  @coq/universes-maintainers
