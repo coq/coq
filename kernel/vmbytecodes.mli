@@ -52,6 +52,7 @@ type instruction =
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (** nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of Constant.t
+  | Ksubstinstance of UVars.Instance.t
   | Kconst of structured_constant
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
                                          ** is accu, all others are popped from

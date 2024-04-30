@@ -372,6 +372,8 @@ let emit_instr env = function
       Array.iter (out_label_with_orig env org) lbl_bodies
   | Kgetglobal q ->
       out env opGETGLOBAL; slot_for_getglobal env q
+  | Ksubstinstance u ->
+      out env opSUBSTINSTANCE; slot_for_const env (Const_univ_instance u)
   | Kconst (Const_b0 i) when is_immed i ->
       if i >= 0 && i <= 3
           then out env (opCONST0 + i)
@@ -474,7 +476,7 @@ type to_patch = emitcodes * fv * Positions.t
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_quality _ | Const_univ_level _ | Const_univ_instance _
+  | Const_sort _ | Const_b0 _ | Const_univ_instance _
   | Const_val _ | Const_uint _ | Const_float _ | Const_evar _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 

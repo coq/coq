@@ -272,6 +272,16 @@ extern void caml_process_pending_signals(void);
 extern double coq_next_up(double);
 extern double coq_next_down(double);
 
+value coq_subst_instance(value arg, value tosubst)
+{
+  static const value * closure_f = NULL;
+  if (closure_f == NULL) {
+     /* First time around, look up by name */
+    closure_f = caml_named_value("coq_subst_instance");
+  }
+  return caml_callback2_exn(*closure_f, arg, tosubst);
+}
+
 /* The interpreter itself */
 
 value coq_interprete
@@ -1313,6 +1323,17 @@ value coq_interprete
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
         sp += 3;
+        Next;
+      }
+
+      Instruct(SUBSTINSTANCE) {
+        print_instr("SUBSTINSTANCE");
+        print_int(*pc);
+
+        Setup_for_caml_call;
+        accu = coq_subst_instance(accu, Field(coq_global_data, *pc++));
+        Restore_after_caml_call;
+        Handle_potential_exception(accu);
         Next;
       }
 

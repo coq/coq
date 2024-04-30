@@ -826,24 +826,7 @@ and compile_instance env cenv u sz cont =
     (* Optimization: allocate closed instances globally *)
     compile_structured_constant cenv (Const_univ_instance u) sz cont
   else
-    let qs, us = UVars.Instance.to_array u in
-    let comp_qual cenv q sz cont = match Sorts.Quality.var_index q with
-    | None -> compile_structured_constant cenv (Const_quality q) sz cont
-    | Some idx -> pos_instance cenv sz :: Kfield 0 :: Kfield idx :: cont
-    in
-    let comp_univ cenv l sz cont = match Univ.Level.var_index l with
-    | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
-    | Some idx -> pos_instance cenv sz :: Kfield 1 :: Kfield idx :: cont
-    in
-    let comp_array comp_val cenv vs sz cont =
-      if Array.is_empty vs then Kmakeblock (0,0) :: cont
-      else
-        let () = set_max_stack_size cenv (sz + Array.length vs - 1) in
-        comp_args comp_val cenv vs sz (Kmakeblock (Array.length vs, 0) :: cont)
-    in
-    let cont = Kmakeblock (2, 0) :: cont in
-    let cont = comp_array comp_qual cenv qs (sz+1) cont in
-    comp_array comp_univ cenv us sz (Kpush :: cont)
+    pos_instance cenv sz :: Ksubstinstance u :: cont
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
@@ -864,6 +847,11 @@ and compile_constant env cenv kn u args sz cont =
     in
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
+
+let coq_subst_instance : UVars.Instance.t -> UVars.Instance.t -> UVars.Instance.t =
+  UVars.subst_instance_instance
+
+let () = Callback.register "coq_subst_instance" coq_subst_instance
 
 let is_univ_copy (maxq,maxu) u =
   let qs,us = UVars.Instance.to_array u in
