@@ -97,6 +97,8 @@ let gettimeopt = function
 let prtime t =
   Format.sprintf "%.0f" (t *. 1E6)
 
+let poll = ref (fun () -> ())
+
 module Counters = struct
 
   (* time is handled separately because it has special status in the output format *)
@@ -116,6 +118,9 @@ module Counters = struct
   let current_lost_events = ref 0
 
   let get () =
+    (* polling here should be frequent enough to avoid losing events (hopefully)
+       but not so common that we lose perf (unlike eg polling in leave_sums) *)
+    let () = !poll() in
     let gc = Gc.quick_stat() in
     {
       major_words = gc.major_words;
@@ -187,8 +192,6 @@ let enter ?time name ?args () =
   enter_sums ~time ();
   duration ~time name "B" ?args ()
 
-let poll = ref (fun () -> ())
-
 let leave_sums ?time name () =
   let accu = Option.get !accu in
   let time = gettimeopt time in
@@ -211,8 +214,6 @@ let leave_sums ?time name () =
     sum, dur
 
 let leave ?time name ?(args=[]) ?last () =
-  (* polling here should be frequent enough to avoid losing events (hopefully) *)
-  let () = !poll() in
   let time = gettimeopt time in
   let sum, dur = leave_sums ~time name () in
   let sum = List.map (fun (name, (t, cnt)) ->
