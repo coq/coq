@@ -1,0 +1,56 @@
+File "./output/ltac2_abstract.v", line 20, characters 27-28:
+The command has indeed failed with message:
+This expression has type int but an expression was expected of type 
+M.t
+- : M.t = <abstr>
+File "./output/ltac2_abstract.v", line 28, characters 27-28:
+The command has indeed failed with message:
+This expression has type int but an expression was expected of type 
+t
+- : int = 2
+Ltac2 foo : t -> t
+      foo := fun x => Int.add x 1
+Ltac2 three : t
+      three := 3
+- : t = <abstr>
+File "./output/ltac2_abstract.v", line 47, characters 18-21:
+The command has indeed failed with message:
+Unbound constructor M.A
+File "./output/ltac2_abstract.v", line 49, characters 40-43:
+The command has indeed failed with message:
+Unbound constructor M.A
+- : M.t = <abstr>
+- : bool = false
+Ltac2 M.a : M.t
+      M.a := <abstr>
+Ltac2 M.is_b : M.t -> bool
+      M.is_b := fun x => match x with
+                         <abstr>
+                         end
+Ltac2 M.get_b : int -> M.t -> int
+      M.get_b := fun def x => match x with
+                              | <abstr> => x
+                              | _ => def
+                              end
+- : int M.t = <abstr>
+File "./output/ltac2_abstract.v", line 73, characters 20-21:
+The command has indeed failed with message:
+p is not a projection
+File "./output/ltac2_abstract.v", line 75, characters 30-31:
+The command has indeed failed with message:
+p is not a projection
+- : int t = <abstr>
+- : int = 42
+File "./output/ltac2_abstract.v", line 81, characters 27-40:
+The command has indeed failed with message:
+This expression has type bool but an expression was expected of type 
+int
+Ltac2 make : 'a -> 'a t
+      make := fun x => <abstr>
+Ltac2 p : 'a t -> 'a
+      p := fun x => <abstr>
+Ltac2 set : 'a t -> 'a -> unit
+      set := fun x v => <abstr>
+File "./output/ltac2_abstract.v", line 91, characters 32-33:
+The command has indeed failed with message:
+Open types currently do not support #[abstract].

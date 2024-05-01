@@ -111,6 +111,7 @@ let inTacDef : Id.t -> tacdef -> obj =
 
 type typdef = {
   typdef_local : bool;
+  typdef_abstract : bool;
   typdef_expr : glb_quant_typedef;
 }
 
@@ -190,8 +191,10 @@ let define_typedef kn (params, def as qdef) = match def with
   Tac2env.define_type kn qdef
 
 let perform_typdef vs ((sp, kn), def) =
-  let () = if not def.typdef_local then push_typedef vs sp kn def.typdef_expr in
-  define_typedef kn def.typdef_expr
+  let expr = def.typdef_expr in
+  let expr = if def.typdef_abstract then fst expr, GTydDef None else expr in
+  let () = if not def.typdef_local then push_typedef vs sp kn expr in
+  define_typedef kn expr
 
 let load_typdef i obj = perform_typdef (Until i) obj
 let open_typdef i obj = perform_typdef (Exactly i) obj
@@ -383,7 +386,7 @@ let qualid_to_ident qid =
   if qualid_is_ident qid then CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid
   else user_err ?loc:qid.CAst.loc (str "Identifier expected")
 
-let register_typedef ?(local = false) isrec types =
+let register_typedef ?(local = false) ?(abstract=false) isrec types =
   let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
   let () = match List.duplicates same_name types with
   | [] -> ()
@@ -447,7 +450,13 @@ let register_typedef ?(local = false) isrec types =
     | CTydOpn ->
       if isrec then
         user_err ?loc (str "The open type declaration " ++ Id.print id ++
-          str " cannot be recursive")
+                       str " cannot be recursive");
+      if abstract then
+        (* Naive implementation allows to use and match on already
+           existing constructors but not declare new ones outside the
+           type's origin module. Not sure that's what we want so
+           forbid it for now. *)
+        user_err ?loc (str "Open types currently do not support #[abstract].")
   in
   let () = List.iter check types in
   let self =
@@ -461,6 +470,7 @@ let register_typedef ?(local = false) isrec types =
   let map ({v=id}, def) =
     let typdef = {
       typdef_local = local;
+      typdef_abstract = abstract;
       typdef_expr = intern_typedef self def;
     } in
     (id, typdef)
@@ -545,9 +555,12 @@ let register_open ?(local = false) qid (params, def) =
   | CTydRec _ | CTydDef _ ->
     user_err ?loc:qid.CAst.loc (str "Extensions only accept inductive constructors")
 
-let register_type ?local isrec types = match types with
+let register_type ?local ?abstract isrec types = match types with
 | [qid, true, def] ->
-  let () = if isrec then user_err ?loc:qid.CAst.loc (str "Extensions cannot be recursive") in
+  let () = if isrec then user_err ?loc:qid.CAst.loc (str "Extensions cannot be recursive.") in
+  let () = if Option.default false abstract
+    then user_err ?loc:qid.loc (str "Extensions cannot be abstract.")
+  in
   register_open ?local qid def
 | _ ->
   let map (qid, redef, def) =
@@ -557,7 +570,7 @@ let register_type ?local isrec types = match types with
     (qualid_to_ident qid, def)
   in
   let types = List.map map types in
-  register_typedef ?local isrec types
+  register_typedef ?local ?abstract isrec types
 
 (** Parsing *)
 
@@ -959,6 +972,8 @@ let check_modtype what =
   if Lib.is_modtype ()
   then warn_modtype what
 
+let abstract_att = Attributes.bool_attribute ~name:"abstract"
+
 let register_struct atts str = match str with
 | StrVal (mut, isrec, e) ->
   check_modtype "definitions";
@@ -966,8 +981,8 @@ let register_struct atts str = match str with
   register_ltac ?deprecation ?local ~mut isrec e
 | StrTyp (isrec, t) ->
   check_modtype "types";
-  let local = Attributes.(parse locality) atts in
-  register_type ?local isrec t
+  let local, abstract = Attributes.(parse Notations.(locality ++ abstract_att)) atts in
+  register_type ?local ?abstract isrec t
 | StrPrm (id, t, ml) ->
   check_modtype "externals";
   let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
@@ -1245,13 +1260,14 @@ let register_prim_alg name params def =
     galg_nnonconst = nnonconst;
   } in
   let def = (params, GTydAlg alg) in
-  let def = { typdef_local = false; typdef_expr = def } in
+  let def = { typdef_local = false; typdef_abstract = false; typdef_expr = def } in
   Lib.add_leaf (inTypDef id def)
 
 let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
 
 let def_unit = {
   typdef_local = false;
+  typdef_abstract = false;
   typdef_expr = 0, GTydDef (Some (GTypRef (Tuple 0, [])));
 }
 
