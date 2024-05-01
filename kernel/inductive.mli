@@ -52,9 +52,10 @@ type template_univ =
 
 type param_univs = (expected:Univ.Level.t -> template_univ) list
 
+val instantiate_template_universes : mind_specif -> param_univs ->
+  Constraints.t * rel_context * template_univ Univ.Level.Map.t
+
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained
-val constrained_type_of_inductive_knowing_parameters :
-  mind_specif puniverses -> param_univs -> types constrained
 
 val relevance_of_ind_body : one_inductive_body -> UVars.Instance.t -> Sorts.relevance
 
@@ -63,7 +64,7 @@ val relevance_of_inductive : env -> pinductive -> Sorts.relevance
 val type_of_inductive : mind_specif puniverses -> types
 
 val type_of_inductive_knowing_parameters :
-  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
+  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types constrained
 
 val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
 (** For squashing. *)
@@ -81,6 +82,7 @@ val is_primitive_record : mind_specif -> bool
 
 val constrained_type_of_constructor : pconstructor -> mind_specif -> types constrained
 val type_of_constructor : pconstructor -> mind_specif -> types
+val type_of_constructor_knowing_parameters : pconstructor -> mind_specif -> param_univs -> types constrained
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array
