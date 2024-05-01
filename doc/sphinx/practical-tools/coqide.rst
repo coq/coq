@@ -53,20 +53,21 @@ for menu items are shown on the right of each item.  If you need more complex ed
 commands, you can launch an external text editor on the current buffer, using the
 *Edit/External Editor* menu. (Use `Edit/Preferences/Externals/External Editor` to
 specify the external text editor.)  When you're done editing, you currently must
-reopen the file to see your changes.  Also note:
+reopen the file to see your changes.  Also note these key bindings that are not
+shown in menus:
 
-- Undo is also available as ``Ctrl-Z`` (`Cmd-Z` on macOS).  Redo is `Ctrl-Shift-Z`
-  (`Shift-Cmd-Z` on macOS).
-- Select all is `Ctrl-A` (`Cmd-A` on macOS).
-- `Home` and `End` move the cursor to the beginning or end of the current line.
-- If you remove the default bindings for `Ctrl-Home` and `Ctrl-End`, these keys
-  will move the cursor to the beginning or end of the buffer.
-- `Ctrl-Delete` deletes a word of text after the cursor
-- `Ctrl-Backspace` deletes a word of text before the cursor
-- Commenting and uncommenting the current line or selected text is available in
-  the *Tools* menu.  If some text is selected, exactly that text is commented out;
-  otherwise the line containing the cursor is commented out.  To uncomment, position
-  the cursor between `(*` and `*)` or select any text between them.
+- `Home` and `End` move the cursor to the beginning or end of the current line
+  (`Cmd-Left` and `Cmd-Right` on macOS).
+- `Ctrl-Home` and `Ctrl-End` move the cursor to the beginning or end of the buffer
+  (`Cmd-Up` and `Cmd-Down` on macOS).
+- `Ctrl-Left` and `Ctrl-Right` move the cursor to the next beginning or end of a word
+- `Ctrl-Delete` (`Alt-Backspace` on macOS) and `Ctrl-Backspace` delete characters
+  from the cursor to the next beginning or end of a word.
+
+Commenting and uncommenting the current line or selected text is available in
+the *Tools* menu.  If some text is selected, exactly that text is commented out;
+otherwise the line containing the cursor is commented out.  To uncomment, position
+the cursor between `(*` and `*)` or select any text between them.
 
 Files are automatically saved periodically to a recovery file.  For example,
 `foo.v` is saved to `#foo.v#` every 10 seconds by default.  You can change the
@@ -86,15 +87,17 @@ Running Coq scripts
 Operations for running the script are available in the *Navigation* menu,
 from the toolbar and from the keyboard.  These include:
 
-- Forward (`Ctrl-Down`) to run one command or tactic
-- Backward (`Ctrl-Up`) undo one command or tactic
-- Run to cursor (`Ctrl-Right`) to run commands up to the cursor
-- Run to end (`Ctrl-End`) to run commands to the end of the buffer
-- Reset Coq (`Ctrl-Home`) to restart the Coq process
+- Forward (`Alt-Down`) to run one command or tactic
+- Backward (`Alt-Up`) undo one command or tactic
+- Run to cursor (`Alt-Right`) to run commands up to the cursor
+- Run to end (`Alt-End`) to run commands to the end of the buffer
+- Reset Coq (`Alt-Home`) to restart the Coq process
 - Interrupt to stop processing commands after the current command completes.
   (Note: on Windows but not on WSL, Interrupt doesn't work if you start CoqIDE
   as a background process, e.g. `coqide &` in bash.  See Coq issue
   `#16142 <https://github.com/coq/coq/pull/16142>`_).
+
+On macOS, use `Cmd-Ctrl` instead of `Alt` for these operations.
 
 Tooltips identify the action associated with each toolbar icon.
 
@@ -202,7 +205,7 @@ A *query* is any command that does not change the current state, such as
 :cmd:`About`, :cmd:`Check`, :cmd:`Print`, :cmd:`Search`, etc.  The *query pane*
 lets you run such commands
 interactively without modifying your script. The query pane is accessible from
-the *View* menu, or using the shortcut ``F1``.
+the *View* menu, or using the shortcut ``F2``.
 You can also do queries by selecting some text, then choosing an
 item from the *Queries* menu. The response will appear in the message panel.
 The image above shows the result after selecting
@@ -264,10 +267,10 @@ Preferences
 You may customize your environment with the *Preferences* dialog, which is
 accessible from *Edit/Preferences* on the menu. There are several sections:
 
-The `Fonts` section is for selecting the text font used for scripts,
+The *Fonts* section is for selecting the text font used for scripts,
 goal and message panels.
 
-The `Colors` and `Tags` sections are for controlling colors and style of
+The *Colors* and *Tags* sections are for controlling colors and style of
 the three main buffers. A predefined Coq highlighting style as well
 as standard |GtkSourceView| styles are available. Other styles can be
 added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
@@ -280,12 +283,12 @@ governed by files such as ``settings.ini`` and ``gtk.css`` in
 variable ``GTK_THEME`` (search the internet for the various
 possibilities).
 
-The `Editor` section is for customizing the editor. It includes in
+The *Editor* section is for customizing the editor. It includes in
 particular the ability to activate an Emacs mode named
 micro-Proof-General (use the Help menu to know more about the
 available bindings).
 
-The `Files` section is devoted to file management: you may configure
+The *Files* section is devoted to file management: you may configure
 automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *revert* feature: in case a opened file is modified on the disk by a
@@ -294,18 +297,31 @@ you edited that same file, you will be prompted to choose to either
 discard your changes or not. The File charset encoding choice is
 described below in :ref:`character-encoding-saved-files`.
 
-`Project`
+*Project*
 
-`Appearance`
+*Appearance*
 
-The `Externals` section allows customizing the external commands for
+The *Externals* section allows customizing the external commands for
 compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
 `firefox -remote "OpenURL(%s)"`.
 
-`Shortcuts`
+.. _shortcuts:
 
-`Misc`
+The *Shortcuts* section lets you change the modifiers (e.g. `Ctrl`, `Alt`
+and `Shift`) used in all the menu entry key bindings for the selected menu
+(for the View menu, only the checkbox items will be changed).
+Current key bindings are shown at the right side of each menu entry.
+
+If any of the new key bindings are already assigned, the existing binding
+will be removed.  You can then rebind one of the menu entries as described
+in the next section.
+
+The top of the *Shortcuts* section lets you select the allowed modifiers
+that can be selected for the listed menus.  (The changes won't appear until
+you close and reopen the Preferences dialog.)
+
+*Misc*
 
 .. _user-configuration-directory:
 
@@ -314,6 +330,8 @@ which is ``$XDG_CONFIG_HOME/coq`` if the environment variable ``$XDG_CONFIG_HOME
 is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
 and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq` on Windows.
 Preferences are in the file "coqiderc" and key bindings are in the file "coqide.keys".
+
+.. _key_bindings:
 
 Key bindings
 ~~~~~~~~~~~~
@@ -341,7 +359,8 @@ The file contains lines such as:
      (gtk_accel_path "<Actions>/Edit/Find Next" "F4")
 
 The first line corresponds to the menu item for the Queries/About menu item,
-which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Ctrl`.
+which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Cmd` on macOS
+and otherwise `Ctrl`.
 The second line is for a menu item that has no key binding.
 
 Lines that begin with semicolons are comments created by CoqIDE.  CoqIDE uses
@@ -358,9 +377,8 @@ The end of
 `this file <https://github.com/linuxmint/gtk/blob/master/gdk/keyname-table.h#:~:text=NC_(%22keyboard%20label%22%2C%20%22BackSpace%22)>`_
 gives the names of the keys.
 
-Some menu entries can be changed as a group from the Edit/Preferences/Shortcuts panel.
-Key bindings that don't appear in the file such as `Ctrl-A` (Select All) can't be
-changed with this mechanism.  (At the moment, `Ctrl-A` does not work on Windows.)
+Modifiers (e.g. Alt, Ctrl) for some menus can be can be changed as a group from the
+Edit/Preferences/Shortcuts panel.  See :ref:`Shortcuts<shortcuts>`.
 
 .. todo: list common rebindings?
 
