@@ -39,10 +39,10 @@ Polymorphic Axiom maketype@{i} : MyType@{i}.
 
 Goal MyType@{l}.
 Proof.
-  Fail solve [ eauto using maketype@{m} ].
+  Fail solve [ pose (mk := maketype@{m}); eauto using mk ].
   eauto using maketype.
   Undo.
-  eauto using maketype@{n}.
+  pose (mk := maketype@{n}); eauto using mk.
 Qed.
 
 Axiom foo : forall (A : Type), list A.
