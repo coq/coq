@@ -253,8 +253,8 @@ let rec pp_expr par env args =
          | s -> str "__" ++ spc () ++ str ("(* "^s^" *)"))
     | MLmagic a ->
         pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
-    | MLaxiom ->
-        pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
+    | MLaxiom s ->
+        pp_par par (str "failwith \"AXIOM TO BE REALIZED (" ++ str s ++ str ")\"")
     | MLcons (_,r,a) as c ->
         assert (List.is_empty args);
         begin match a with
@@ -422,7 +422,7 @@ and pp_function env t =
     | MLcase(Tglob(r,_),MLrel 1,pv) when
         not (is_coinductive r) && List.is_empty (get_record_fields r) &&
         not (is_custom_match pv) ->
-        if not (ast_occurs 1 (MLcase(Tunknown,MLaxiom,pv))) then
+        if not (ast_occurs 1 (MLcase(Tunknown,MLaxiom "",pv))) then
           pr_binding (List.rev (List.tl bl)) ++
           str " = function" ++ fnl () ++
           v 0 (pp_pat env' pv)

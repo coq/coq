@@ -1,3 +1,11 @@
+File "./output/Extraction_ffi.v", line 15, characters 0-18:
+Warning: The following axiom must be realized in the extracted code:
+ ax_fun.
+ [extraction-axiom-to-realize,extraction,default]
+(** val ax_fun : nat -> nat **)
+
+let ax_fun =
+  failwith "AXIOM TO BE REALIZED (Extraction_ffi.ax_fun)"
 (** User defined extraction *)
 (** val ax_fun : nat -> nat **)
 

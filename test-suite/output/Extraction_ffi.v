@@ -11,6 +11,9 @@ Definition exact_fun (a : nat) := (ax_fun a) + 1.
 (* Define duplicate of the fully specified function*)
 Definition exact_fun2 (a : nat) := (ax_fun a) + 1.
 
+(* before we give the directive axioms produce failwith "axiom to be realized" *)
+Extraction ax_fun.
+
 (* ax_fun shall be a FFI call to the C function my_c_fun *)
 Extract Foreign Constant ax_fun => "my_c_fun".
 Extraction ax_fun.
