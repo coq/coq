@@ -637,12 +637,18 @@ let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
   | Evar (evk,_) -> is_evar_allowed flags evk
   | _ -> false
 
-
-let subst_defined_metas_evars sigma (bl,el) c =
+let subst_defined_metas_evars sigma (bl,el) cl cr =
   (* This seems to be performance-critical, and using the
      evar-insensitive primitives blow up the time passed in this
      function. *)
-  let c = EConstr.Unsafe.to_constr c in
+  let cl = EConstr.Unsafe.to_constr cl in
+  let cr = EConstr.Unsafe.to_constr cr in
+  let rec fast_check c = match Constr.kind c with
+  | Meta i ->
+    if not @@ (List.exists (fun (j, _, _) -> Int.equal i j) bl) then raise Not_found
+  | Evar _ -> ()
+  | _ -> Constr.iter fast_check c
+  in
   let rec substrec c = match Constr.kind c with
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
@@ -657,15 +663,19 @@ let subst_defined_metas_evars sigma (bl,el) c =
         Constr.map substrec c
       end
     | _ -> Constr.map substrec c
-  in try Some (EConstr.of_constr (substrec c)) with Not_found -> None
+  in
+  try
+    let () = fast_check cl in
+    let () = fast_check cr in
+    let cl = substrec cl in
+    let cr = substrec cr in
+    Some (EConstr.of_constr cl, EConstr.of_constr cr)
+  with Not_found -> None
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
+  match subst_defined_metas_evars sigma (metasubst,[]) tyM tyN with
   | None -> sigma
-  | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> sigma
-  | Some n ->
+  | Some (m, n) ->
     if is_ground_term sigma m && is_ground_term sigma n then
       match infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
       | Some sigma -> sigma
@@ -673,12 +683,9 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
     else sigma
 
 let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
+  match subst_defined_metas_evars sigma (metasubst,[]) tyM tyN with
   | None -> UnivProblem.Set.empty
-  | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> UnivProblem.Set.empty
-  | Some n ->
+  | Some (m, n) ->
     if is_ground_term sigma m && is_ground_term sigma n then
       match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
       | Some uprob -> uprob
@@ -1096,12 +1103,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       | None -> None
       | Some convflags ->
       let subst = ((if flags.use_metas_eagerly_in_conv_on_closed_terms then metasubst else ms), (if flags.use_evars_eagerly_in_conv_on_closed_terms then evarsubst else es)) in
-      match subst_defined_metas_evars sigma subst cM with
-      | None -> (* some undefined Metas in cM *) None
-      | Some m1 ->
-      match subst_defined_metas_evars sigma subst cN with
-      | None -> (* some undefined Metas in cN *) None
-      | Some n1 ->
+      match subst_defined_metas_evars sigma subst cM cN with
+      | None -> (* some undefined Metas in cM / cN *) None
+      | Some (m1, n1) ->
          (* No subterm restriction there, too much incompatibilities *)
          let uprob =
            if opt.with_types then
