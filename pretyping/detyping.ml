@@ -570,10 +570,9 @@ let rec build_tree na isgoal e sigma (ci, u, pms, cl) =
   let mkpat n rhs pl =
     let na = update_name sigma na rhs in
     na, DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,na) in
-  let cnl = ci.ci_pp_info.cstr_tags in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e sigma (cnl.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e sigma (mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
@@ -596,7 +595,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
         let mat = align_tree nal isgoal rhs sigma in
         List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
-and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
+and contract_branch isgoal e sigma (mkpat,rhs) =
   let nal,rhs = decomp_branch isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (ids,hd,rhs) ->
@@ -643,6 +642,23 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
+let get_ind_tag env ind p =
+  if Environ.mem_mind (fst ind) env then
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt)
+  else
+    let (nas, _), _ = p in
+    Array.map_to_list (fun _ -> false) nas
+
+let get_cstr_tags env ind bl =
+  if Environ.mem_mind (fst ind) env then
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    Array.map2 (fun (d, _) n -> Context.Rel.to_tags (List.firstn n d))
+      mip.mind_nf_lc mip.mind_consnrealdecls
+  else
+    let map (nas, _) = Array.map_to_list (fun _ -> false) nas in
+    Array.map map bl
+
 let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params, p, iv, c, bl) =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
@@ -667,10 +683,11 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
     then
       Anonymous, None, None
     else
+      let ind_tags = get_ind_tag (snd env) ci.ci_ind p in
       let (ctx, p) = RobustExpand.return_clause (snd env) sigma ci.ci_ind univs params p in
       let p = EConstr.it_mkLambda_or_LetIn p ctx in
       let p = detype p in
-      let nl,typ = it_destRLambda_or_LetIn_names ci.ci_pp_info.ind_tags p in
+      let nl,typ = it_destRLambda_or_LetIn_names ind_tags p in
       let n,typ = match DAst.get typ with
         | GLambda (x,_,_,t,c) -> x, c
         | _ -> Anonymous, typ in
@@ -694,13 +711,26 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
         st
     with Not_found -> st
   in
-  let constagsl = ci.ci_pp_info.cstr_tags in
   match tag, aliastyp with
   | LetStyle, None ->
+    if Coqlib.check_ref "core.detyping.unknown_inductive" (GlobRef.IndRef ci.ci_ind) then
+      (* This is a hack used by coq-elpi to implement destructuring let-bindings
+         on an unknown inductive type. *)
+      let () = assert (Int.equal (Array.length bl) 1) in
+      let _, b = bl.(0) in
+      let b' = detype b in
+      let rec decompose accu c = match DAst.get c with
+      | GLambda (na, _, _, _, c) -> decompose (na :: accu) c
+      | _ -> List.rev accu, c
+      in
+      let (nal, d) = decompose [] b' in
+      GLetTuple (nal,(alias,pred),tomatch,d)
+    else
       let map i br =
         let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
         EConstr.it_mkLambda_or_LetIn body ctx
       in
+      let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
       let bl = Array.mapi map bl in
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
@@ -711,15 +741,16 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
           let ctx, body = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
           EConstr.it_mkLambda_or_LetIn body ctx
         in
+        let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
         let bl = Array.mapi map bl in
         let bl' = Array.map detype bl in
         let nondepbrs = Array.map2 extract_nondep_branches bl' constagsl in
         GIf (tomatch,(alias,pred), nondepbrs.(0), nondepbrs.(1))
       else
-        let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
+        let eqnl = detype_eqns constructs (ci, univs, params, bl) in
         GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
-      let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
+      let eqnl = detype_eqns constructs (ci, univs, params, bl) in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let rec share_names detype flags n l avoid env sigma c t =
@@ -992,7 +1023,7 @@ and detype_r d flags avoid env sigma t =
       let u = detype_instance sigma u in
       GArray(u, t, def, ty)
 
-and detype_eqns d flags avoid env sigma computable constructs consnargsl bl =
+and detype_eqns d flags avoid env sigma computable constructs bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise_notrace Exit;
     let mat = build_tree Anonymous flags (avoid,env) sigma bl in
@@ -1002,9 +1033,9 @@ and detype_eqns d flags avoid env sigma computable constructs consnargsl bl =
   with e when CErrors.noncritical e ->
     let (ci, u, pms, bl) = bl in
     Array.to_list
-      (Array.map3 (detype_eqn d flags avoid env sigma u pms) constructs consnargsl bl)
+      (Array.map2 (detype_eqn d flags avoid env sigma u pms) constructs bl)
 
-and detype_eqn d flags avoid env sigma u pms constr construct_nargs br =
+and detype_eqn d flags avoid env sigma u pms constr br =
   let ctx, body = RobustExpand.branch (snd env) sigma constr u pms br in
   let branch = EConstr.it_mkLambda_or_LetIn body ctx in
   let make_pat decl avoid env b ids =

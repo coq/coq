@@ -329,13 +329,7 @@ let has_dependent_elim (mib,mip) =
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let ind_tags =
-    Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
-  let cstr_tags =
-    Array.map2 (fun (d, _) n ->
-      Context.Rel.to_tags (List.firstn n d))
-      mip.mind_nf_lc mip.mind_consnrealdecls in
-  let print_info = { Constr.ind_tags; cstr_tags; style } in
+  let print_info = { Constr.style } in
   { Constr.ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;

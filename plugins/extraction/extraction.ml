@@ -282,7 +282,7 @@ let fake_match_projection env p =
     let rctx, _ = decompose_prod_decls (Vars.substl subst cty) in
     List.chop mip.mind_consnrealdecls.(0) rctx
   in
-  let ci_pp_info = { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
+  let ci_pp_info = { style = LetStyle } in
   let ci = {
     ci_ind = ind;
     ci_npar = mib.mind_nparams;

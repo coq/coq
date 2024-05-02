@@ -39,9 +39,7 @@ type cast_kind = VMcast | NATIVEcast | DEFAULTcast
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 type case_printing =
-  { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
-    cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
-    style     : case_style }
+  { style     : case_style }
 
 (* INVARIANT:
  * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
@@ -1270,8 +1268,6 @@ struct
   type u = inductive -> inductive
   let hashcons hind ci = { ci with ci_ind = hind ci.ci_ind }
   let pp_info_equal info1 info2 =
-    List.equal (==) info1.ind_tags info2.ind_tags &&
-    Array.equal (List.equal (==)) info1.cstr_tags info2.cstr_tags &&
     info1.style == info2.style
   let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
@@ -1280,8 +1276,6 @@ struct
     Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
     pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
   open Hashset.Combine
-  let hash_bool b = if b then 0 else 1
-  let hash_bool_list = List.fold_left (fun n b -> combine n (hash_bool b))
   let hash_pp_info info =
     let h1 = match info.style with
     | LetStyle -> 0
@@ -1289,9 +1283,7 @@ struct
     | LetPatternStyle -> 2
     | MatchStyle -> 3
     | RegularStyle -> 4 in
-    let h2 = hash_bool_list 0 info.ind_tags in
-    let h3 = Array.fold_left hash_bool_list 0 info.cstr_tags in
-    combine3 h1 h2 h3
+    h1
   let hash ci =
     let h1 = Ind.CanOrd.hash ci.ci_ind in
     let h2 = Int.hash ci.ci_npar in
