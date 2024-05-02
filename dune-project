@@ -34,7 +34,7 @@
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11))
   (conf-linux-libc-dev (= :os "linux")))
- (depopts coq-native)
+ (depopts coq-native memprof-limits)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
