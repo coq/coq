@@ -681,14 +681,40 @@ let extract_coercions indl =
   let extract lc = List.filter (fun (coe,_) -> iscoe coe) lc in
   List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
+exception DifferingParams of
+    string (* inductive or record *)
+    * (Id.t * Vernacexpr.inductive_params_expr)
+    * (Id.t * Vernacexpr.inductive_params_expr)
+
+let explain_differing_params kind (ind,p) (ind',p') =
+  let pr_params = function
+    | ([],None) -> str "no parameters"
+    | (up,p) ->
+      let env = Global.env() in
+      let sigma = Evd.from_env env in
+      let pr_binders = Ppconstr.pr_binders env sigma in
+      str "parameters" ++ spc() ++ hov 1 (quote (pr_binders up ++ pr_opt (fun p -> str "|" ++ spc() ++ pr_binders p) p))
+  in
+  v 0
+    (str "Parameters should be syntactically the same for each " ++ str kind ++ str " type." ++ spc() ++
+     hov 0 (str "Type " ++ quote (Id.print ind) ++ str " has " ++ pr_params p) ++ spc() ++
+     hov 0 (str "but type " ++ quote (Id.print ind') ++ str " has " ++ pr_params p') ++ str ".")
+
+let () = CErrors.register_handler (function
+    | DifferingParams (kind, a, b) -> Some (explain_differing_params kind a b)
+    | _ -> None)
+
+let error_differing_params ~kind (ind,p) (ind',p') =
+  Loc.raise ?loc:ind'.CAst.loc (DifferingParams (kind, (ind.CAst.v,p), (ind'.CAst.v,p')))
+
 let extract_params indl =
-  let paramsl = List.map (fun (_,params,_,_) -> params) indl in
-  match paramsl with
+  match indl with
   | [] -> anomaly (Pp.str "empty list of inductive types.")
-  | params::paramsl ->
-      if not (List.for_all (eq_params params) paramsl) then user_err Pp.(str
-        "Parameters should be syntactically the same for each inductive type.");
-      params
+  | (ind,params,_,_)::rest ->
+    match List.find_opt (fun (_,p',_,_) -> not @@ eq_params params p') rest with
+    | None -> params
+    | Some (ind',p',_,_) ->
+      error_differing_params ~kind:"inductive" (ind,params) (ind',p')
 
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
@@ -811,5 +837,7 @@ module Internal =
 struct
 
 let inductive_levels = inductive_levels
+
+let error_differing_params = error_differing_params
 
 end

@@ -136,4 +136,11 @@ sig
     -> EConstr.rel_context list list
     (* constructors *)
     -> Evd.evar_map * (DeclareInd.default_dep_elim list * EConstr.t list)
+
+  val error_differing_params
+    : kind:string
+    -> (Names.lident * Vernacexpr.inductive_params_expr)
+    -> (Names.lident * Vernacexpr.inductive_params_expr)
+    -> 'a
+
 end

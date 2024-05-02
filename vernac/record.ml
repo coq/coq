@@ -650,17 +650,16 @@ let check_priorities kind records =
 
 let extract_record_data records =
   let data = List.map Ast.to_datai records in
-  let pss = List.map (fun { Ast.binders; _ } -> binders) records in
-  let ps = match pss with
+  let ps = match records with
   | [] -> CErrors.anomaly (str "Empty record block.")
-  | ps :: rem ->
+  | r :: rem ->
     let eq_local_binders bl1 bl2 = List.equal local_binder_eq bl1 bl2 in
-    let () =
-      if not (List.for_all (eq_local_binders ps) rem) then
-        user_err (str "Parameters should be syntactically the \
-          same for each inductive type.")
-    in
-    ps
+    match List.find_opt (fun r' -> not @@ eq_local_binders r.Ast.binders r'.Ast.binders) rem with
+    | None -> r.Ast.binders
+    | Some r' ->
+      ComInductive.Internal.error_differing_params ~kind:"record"
+        (r.name, (r.binders,None))
+        (r'.name, (r'.binders,None))
   in
   ps, data
 

@@ -20,3 +20,12 @@ About option.
 Set Printing Universes.
 About option.
 (* "option is template on xxx" *)
+
+Module DiffParams.
+  Fail Inductive B: Type :=
+  | F: A -> B with
+    Inductive A: Type := mkA.
+
+  Fail Inductive B := { x : nat } with
+      Inductive A := { y : nat }.
+End DiffParams.
