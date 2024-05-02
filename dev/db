@@ -5,6 +5,7 @@ load_printer config.cma
 load_printer boot.cma
 load_printer clib.cma
 load_printer coqperf.cma
+load_printer memprof_limits.cma
 load_printer lib.cma
 load_printer gramlib.cma
 load_printer coqrun.cma
