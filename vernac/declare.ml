@@ -1498,7 +1498,6 @@ module Proof_ending = struct
 end
 
 (* Alias *)
-module Proof_ = Proof
 module Proof = struct
 
 module Proof_info = struct
@@ -1737,31 +1736,71 @@ let { Goptions.get = private_poly_univs } =
 
 let warn_remaining_shelved_goals =
   CWarnings.create ~name:"remaining-shelved-goals" ~category:CWarnings.CoreCategories.tactics
-    (fun () -> Pp.str"The proof has remaining shelved goals")
+    (fun () -> Pp.str"The proof has remaining shelved goals.")
+
+let warn_given_up =
+  CWarnings.create ~name:"remaining-given-up" ~category:CWarnings.CoreCategories.tactics
+    (fun () -> Pp.str"The proof has given up (admitted) goals." )
 
 let warn_remaining_unresolved_evars =
   CWarnings.create ~name:"remaining-unresolved-evars" ~category:CWarnings.CoreCategories.tactics
-    (fun () -> Pp.str"The proof has unresolved variables")
+    (fun () -> Pp.str"The proof has unresolved variables.")
+
+type open_proof_kind =
+  | OpenGoals
+  | NonGroundResult of bool (* true = at least some of the evars in the proof term are given up *)
+
+exception OpenProof of Names.Id.t * open_proof_kind
+
+let () = CErrors.register_handler begin function
+  | OpenProof (pid, reason) ->
+    let open Pp in
+    let ppreason = match reason with
+      | OpenGoals -> str "(there are remaining open goals)"
+      | NonGroundResult has_given_up ->
+        str "(the proof term is not complete" ++
+        (if has_given_up then str " because of given up (admitted) goals" else mt()) ++
+        str ")"
+    in
+    let how_to_admit = match reason with
+      | OpenGoals | NonGroundResult false -> mt()
+      | NonGroundResult true ->
+        fnl() ++ str "If this is really what you want to do, use Admitted in place of Qed."
+    in
+    Some (str " (in proof " ++ Names.Id.print pid ++ str "): " ++
+          str "Attempt to save an incomplete proof" ++ spc() ++ ppreason ++ str "." ++
+          how_to_admit)
+  | _ -> None
+  end
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 let prepare_proof ?(warn_incomplete=true) { proof } =
-  let Proof.{name=pid;entry;poly} = Proof.data proof in
+  let Proof.{name=pid;entry;poly;sigma=evd} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
-  let evd = Proof.return ~pid proof in
-  let () = if warn_incomplete then begin
-    if Evd.has_shelved evd
-    then warn_remaining_shelved_goals ()
-    else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
-  end
+  let () = if not @@ Proof.is_done proof then raise (OpenProof (pid, OpenGoals)) in
+  let _ : Proof.t =
+    (* checks that we closed all brackets ("}") *)
+    Proof.unfocus_all proof
   in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
-  let to_constr_body c =
+  let to_constr c =
     match EConstr.to_constr_opt evd c with
     | Some p ->
       Vars.universes_of_constr p, p
     | None ->
-      CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+      let has_given_up =
+        let exception Found in
+        let rec aux c =
+          let () = match EConstr.kind evd c with
+          | Evar (e,_) -> if Evar.Set.mem e (Evd.given_up evd) then raise Found
+          | _ -> ()
+          in
+          EConstr.iter evd aux c
+        in
+        try aux c; false with Found -> true
+      in
+      raise (OpenProof (pid, NonGroundResult has_given_up))
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -1775,7 +1814,14 @@ let prepare_proof ?(warn_incomplete=true) { proof } =
      equations and so far there is no code in the CI that will
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (_, body, typ) -> (to_constr_body body, eff), to_constr_body typ) initial_goals in
+  let proofs = List.map (fun (_, body, typ) -> (to_constr body, eff), to_constr typ) initial_goals in
+  let () =
+    if warn_incomplete then begin
+      if Evd.has_shelved evd then warn_remaining_shelved_goals ()
+      else if Evd.has_given_up evd then warn_given_up ()
+      else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
+    end
+  in
   proofs, Evd.evar_universe_context evd
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
@@ -2391,7 +2437,7 @@ let solve_by_tac prg obls i tac =
     let loc = fst obl.obl_location in
     CErrors.user_err ?loc (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
-  | Proof_.OpenProof _ ->
+  | Proof.OpenProof _ ->
     None
   | e when CErrors.noncritical e ->
     let err = CErrors.print e in
