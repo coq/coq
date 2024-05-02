@@ -309,7 +309,7 @@ endif
 
 ifneq (,$(PROFILING))
   PROFILE_ARG=-profile $<.prof.json
-  PROFILE_ZIP=gzip $<.prof.json
+  PROFILE_ZIP=gzip -f $<.prof.json
 else
   PROFILE_ARG=
   PROFILE_ZIP=true
@@ -682,6 +682,8 @@ clean::
 	$(HIDE)rm -f $(VOFILES)
 	$(HIDE)rm -f $(VOFILES:.vo=.vos)
 	$(HIDE)rm -f $(VOFILES:.vo=.vok)
+	$(HIDE)rm -f $(VOFILES:.vo=.v.prof.json)
+	$(HIDE)rm -f $(VOFILES:.vo=.v.prof.json.gz)
 	$(HIDE)rm -f $(BEAUTYFILES) $(VFILES:=.old)
 	$(HIDE)rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex
 	$(HIDE)rm -f $(VFILES:.v=.glob)
