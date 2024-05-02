@@ -1218,26 +1218,28 @@ same semantics as if the native compilation process had been performed through
 Using Coq as a library
 ------------------------
 
-In previous versions, ``coqmktop`` was used to build custom
-toplevels - for example for better debugging or custom static
-linking. Nowadays, the preferred method is to use ``ocamlfind``.
+It is possible to build custom Coq executables - for example for
+better debugging or custom static linking.
 
-The most basic custom toplevel is built using:
-
-::
-
-   % ocamlfind ocamlopt -thread -linkall -linkpkg \
-                 -package coq.toplevel \
-                 topbin/coqtop_bin.ml -o my_toplevel.native
-
-
-For example, to statically link |Ltac|, you can just do:
+The preferred method is to use ``dune``:
 
 ::
 
-   % ocamlfind ocamlopt -thread -linkall -linkpkg \
-                 -package coq.toplevel,coq.plugins.ltac \
-                 topbin/coqtop_bin.ml -o my_toplevel.native
+   (executable
+    (name my_toplevel)
+    (libraries coq-core.toplevel))
+
+in a directory with `my_toplevel.ml` containing the main loop entry
+point `Coqc.main()` or `Coqtop.(start_coq coqtop_toplevel)` (depending
+on if you want `coqc` or `coqtop` behaviour).
+
+For example, to statically link |Ltac|, you can do:
+
+::
+
+   (executable
+    (name my_toplevel)
+    (libraries coq-core.toplevel coq-core.plugins.ltac))
 
 and similarly for other plugins.
 
