@@ -146,17 +146,18 @@ let rec interp (ist : environment) = function
   interp ist f;
 | GTacApp (f, args, loc) ->
   let step = step_GTacApp ist f args loc in
-  Proofview.tclTHEN
-    (DebugCommon.save_goals ())
-    (step >>= fun f ->
-      Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-        if DebugCommon.get_debug () && maybe_stop ist loc then begin
-          read_loop ();
-          Proofview.tclTHEN
-            DebugCommon.pr_goals_t
-            (Tac2ffi.apply (Tac2ffi.to_closure f) args)
-        end else
-          Tac2ffi.apply (Tac2ffi.to_closure f) args)
+  step >>= fun f ->
+    Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
+      let apply_save = (Tac2ffi.apply (Tac2ffi.to_closure f) args) >>=
+                       DebugCommon.save_goals
+      in
+      if DebugCommon.get_debug () && maybe_stop ist loc then begin
+        read_loop ();
+        Proofview.tclTHEN
+          DebugCommon.pr_goals_t
+          apply_save
+      end else
+        apply_save
 | GTacLet (false, el, e) ->
   let fold accu (na, e, t) =
     interp ist e >>= fun e ->
@@ -205,11 +206,9 @@ let rec interp (ist : environment) = function
   return (Tac2env.interp_primitive ml)
 | GTacExt (tag, e, loc) ->
   let step = step_GTacExt ist loc in
-  Proofview.tclTHEN
-    (DebugCommon.save_goals ())
     (Proofview.tclLIFT step >>=
-      (fun _ ->
-      eval_glb_ext ist (Glb (tag,e))))
+      (fun _ -> eval_glb_ext ist (Glb (tag,e)))) >>=
+    DebugCommon.save_goals
 
 and step_GTacExt ist loc =
   let chunk = DebugCommon.{ locs = ist.locs;

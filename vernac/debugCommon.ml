@@ -69,7 +69,7 @@ let get_history n =
 
 let cur_goals = ref [] (* current goals *)
 
-let save_goals () =
+let save_goals x =
   if !debug then begin
     let open Proofview in
     let open Notations in
@@ -77,9 +77,9 @@ let save_goals () =
     Proofview.Goal.goals >>= fun gl ->
     Monad.List.map (fun x -> x) gl >>= fun gls ->
     cur_goals := gls;
-    Proofview.tclLIFT (Proofview.NonLogical.return ())
+    Proofview.tclLIFT (Proofview.NonLogical.return x)
   end else
-    Proofview.tclLIFT (Proofview.NonLogical.return ())
+    Proofview.tclLIFT (Proofview.NonLogical.return x)
   [@@ocaml.warning "-3"]
 
 (* todo: replace with List.concat_map when OCaml version is >= 4.10 *)
