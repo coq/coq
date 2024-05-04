@@ -321,6 +321,17 @@ let attach_modifiers (pref : string preference) prefix =
   in
   pref#connect#changed ~callback:cb
 
+let is_action keymods path0 =
+  let (key0, mods0) = keymods in
+  let rv = ref false in
+  let lookup ~path ~key ~modi ~changed =
+    if key = key0 && modi = mods0 && path = path0 then
+      rv := true
+  in
+  (* could be more efficient with GtkData.AccelMap.lookup_entry :-( *)
+  GtkData.AccelMap.foreach lookup;
+  !rv
+
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"]
     (* Note: on Darwin, this will give "<Control><Meta>", i.e. Ctrl and Command; on other

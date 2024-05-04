@@ -864,31 +864,20 @@ module Nav = struct
   let join_document _ = send_to_coq "join" (fun sn -> sn.coqops#join_document)
 end
 
-let f9       = GtkData.AccelGroup.parse "F9"
-let f10      = GtkData.AccelGroup.parse "F10"
-let f11      = GtkData.AccelGroup.parse "F11"
-let shft_f10 = GtkData.AccelGroup.parse "<Shift>F10"
-let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
-let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
-let ctl_f9       = GtkData.AccelGroup.parse "<Ctrl>F9"
-let ctl_f10      = GtkData.AccelGroup.parse "<Ctrl>F10"
-let ctl_shft_f10 = GtkData.AccelGroup.parse "<Ctrl><Shift>F10"
-
 (* handle certain function keys from detached Messages panel
    functions are directed to the specified session or the
    current session, not the Messages session (debatable) *)
-(* todo: Hardcoding keystrokes here does not work with remapped key bindings.
-   Instead should forward the current keystroke for "continue" even it's not f9 *)
 let forward_keystroke key sid =
-  if      key = f9 then (Nav.continue ~sid (); true)
-  else if key = f10 then (Nav.step_in ~sid (); true)
-  else if key = f11 then (Nav.break ~sid (); true)
-  else if key = shft_f10 then (Nav.step_out ~sid (); true)
-  else if key = ctl_up then (Nav.backward_one_sid ~sid (); true)
-  else if key = ctl_down then (Nav.forward_one_sid ~sid (); true)
-  else if key = ctl_f9 then (Nav.continue_rev ~sid (); true)
-  else if key = ctl_f10 then (Nav.step_in_rev ~sid (); true)
-  else if key = ctl_shft_f10 then (Nav.step_out_rev ~sid (); true)
+  let is_action path = Preferences.is_action key path in
+  if      is_action "<Actions>/Debug/Continue" then (Nav.continue ~sid (); true)
+  else if is_action "<Actions>/Debug/Step in" then (Nav.step_in ~sid (); true)
+  else if is_action "<Actions>/Debug/Break" then (Nav.break ~sid (); true)
+  else if is_action "<Actions>/Debug/Step out" then (Nav.step_out ~sid (); true)
+  else if is_action "<Actions>/Navigation/Backward" then (Nav.backward_one_sid ~sid (); true)
+  else if is_action "<Actions>/Navigation/Forward" then (Nav.forward_one_sid ~sid (); true)
+  else if is_action "<Actions>/Debug/Continue back" then (Nav.continue_rev ~sid (); true)
+  else if is_action "<Actions>/Debug/Step in back" then (Nav.step_in_rev ~sid (); true)
+  else if is_action "<Actions>/Debug/Step out back" then (Nav.step_out_rev ~sid (); true)
   else false
 
 let _ = Wg_MessageView.forward_keystroke := forward_keystroke

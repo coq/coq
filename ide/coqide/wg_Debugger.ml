@@ -47,11 +47,11 @@ let make_table_widget cd cb =
 
   let selection = data#selection in
   selection#set_mode `MULTIPLE;
-  let copy = GtkData.AccelGroup.parse "<Ctrl>C" in
 
   let vars_keypress_cb ev =
     let key_ev = Ideutils.filter_key ev in
-    if key_ev = copy then begin
+    if Preferences.is_action key_ev "<Actions>/Edit/Copy" then begin
+      (* todo: broken: no keypress received if Copy is bound to Ctrl-C *)
       let rows = selection#get_selected_rows in
       let get_value iter = store#get ~row:iter ~column:(find_string_col "Var" columns) in
       let buf = Buffer.create 100 in
