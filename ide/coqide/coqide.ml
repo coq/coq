@@ -1482,6 +1482,10 @@ let build_ui () =
     item "Next tab" ~label:"_Next tab" ~accel:"<Alt>Right"
       ~stock:`GO_FORWARD
       ~callback:(fun _ -> notebook#next_page ());
+    item "Previous goal" ~label:"Previous goal" ~accel:"<Alt>Page_Up"
+      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num (-1)));
+    item "Next goal" ~label:"Next goal" ~accel:"<Alt>Page_Down"
+      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num 1));
     item "Zoom in" ~label:"_Zoom in" ~accel:("<Primary>plus")
         ~stock:`ZOOM_IN ~callback:(fun _ ->
           let ft = Pango.Font.from_string text_font#get in
@@ -1552,11 +1556,6 @@ let build_ui () =
     ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurrence", "less");
     ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurrence", "greater");
     ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
-  ] @ [
-    item "Next Goal" ~label:"Next Goal" ~accel:"<ALT>Down"
-      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num 1));
-    item "Previous Goal" ~label:"Previous Goal" ~accel:"<ALT>Up"
-      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num (-1)));
   ] end;
 
   menu templates_menu [

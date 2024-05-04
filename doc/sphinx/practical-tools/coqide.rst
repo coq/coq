@@ -96,6 +96,12 @@ from the toolbar and from the keyboard.  These include:
   as a background process, e.g. `coqide &` in bash.  See Coq issue
   `#16142 <https://github.com/coq/coq/pull/16142>`_).
 
+When the proof panel shows multiple subgoals, by default the premises are only
+shown for the first subgoal.  Use these operations to see the premises for another
+subgoal:
+- View/Next goal
+- View/Previous goal
+
 Tooltips identify the action associated with each toolbar icon.
 
 Commands may:
@@ -507,16 +513,16 @@ Unicode index for the missing character.
 Debugger
 --------
 
-Version 8.15 introduces a visual debugger for |Ltac| tactics within
-CoqIDE.  It supports setting breakpoints visually and automatically
+CoqIDE includes a visual debugger for |Ltac| and Ltac2 tactics.
+It supports setting breakpoints visually and automatically
 displaying the stopping point in the source code with "continue",
 "step over" "step in" and "step out" operations.  The call stack and variable
 values for each stack frame are shown in a new panel.
 
 The debugger is based on the non-visual |Ltac| :ref:`debugger <interactive-debugger>`.
-We'd like to eventually support other scripting facilities such as Ltac2.
 
-Since the visual debugger is new in 8.15, you may encounter bugs or usability issues.
+Ltac2 support and other improvements are new in 8.20.
+If you encounter bugs or usability issues, please report them.
 The behavior and user interface will evolve as the debugger is refined.
 There are notes on bugs and potential enhancements at the end of
 `this page <https://github.com/coq/coq/wiki/Ltac-Debugger-Preview>`_.
@@ -578,7 +584,7 @@ Continue (F9)
   Continue processing the proof.  If you're not stopped in the debugger, this is
   equivalent to "Run to end" (Control End).
 
-Step over (Control ↓)
+Step over (shares key binding with Forward)
   When stopped in the debugger,
   execute the next tactic without stopping inside it.  If the debugger reaches
   a breakpoint in the tactic, it will stop.  This is the same key combination used
@@ -602,28 +608,45 @@ Break (F11)
 Note that the debugger is disabled when CoqIDE is running multiple worker processes,
 i.e. running in async mode.  Going "Forward" a single step at a time doesn't use
 async mode and will always enter the debugger as expected.  In addition, the debugger
-doesn't work correctly in some cases involving editing failed proofs in asymc mode (
+doesn't work correctly in some cases involving editing failed proofs in async mode (
 see `#16069 <https://github.com/coq/coq/pull/16069>`_.)
 
-If you step through `idtac "A"; idtac "B"; idtac "C".`, you'll notice that the
-steps for `my_tac` are:
-
-  | `idtac "A"; idtac "B"; idtac "C"`
-  | `idtac "A"; idtac "B"`
-  | `idtac "A"`
-  | `idtac "B"`
-  | `idtac "C"`
-
-which reflects the two-phase execution process for the :n:`@tactic ; @tactic`
-construct.
-
-Also keep in mind that |Ltac| backtracking may cause the call stack to revert to
+Keep in mind that |Ltac| backtracking may cause the call stack to revert to
 a previous state.  This may cause confusion.  Currently there's no special
 indication that this has happened.
 
-.. unfortunately not working:
-   Note: This `Wiki page <https://github.com/coq/coq/wiki/Configuration-of-CoqIDE#the-alternative-set-of-bindings>`_
-   describes a way to change CoqIDE key bindings.
+**Ltac2 Specifics**
+
+Stepping through an Ltac2 expression stops at each tactic/function call
+in the order of execution rather than strictly left to right and top to
+bottom.  For example, when debugging an expression such as :n:`myapply (mysplit ())`,
+the first stopping point is on :n:`mysplit` and the second is on :n:`myapply`.  If
+you set a breakpoint on :n:`myapply`, you can use the history mechanism to go backward
+and see the steps of the :n:`mysplit` call.
+
+Some Ltac2 tactics such as :n:`apply` are implemented using Ltac2 library code.
+You will see this code if you :n:`Step in` on an :n:`apply`.
+
+.. flag:: Ltac Debug Enter Library
+
+   If set, the debugger will step into functions in packages whose logical path
+   begins with "`Ltac2.`".  Otherwise the debugger steps over functions
+   in these packages, since their execution is generally not of interest to most users.
+   The default is unset.
+
+**Goal display**
+
+8.20 adds support for proof diffs while in the debugger.  In this case, diffs
+are shown relative to the previous subtactic in the current tactic.  For example,
+for the expression :n:`my_tac1; my_tac2`, when stopped at :n:`my_tac2`, diffs
+are computed between the state before executing :n:`my_tac1` and the
+current state.  This lets you see the net effect of :n:`my_tac1`.
+
+For now, goal display while in the debugger doesn't show background, shelved or
+given up goals.
+
+As of 8.20, changing goal display options in the View menu are applied immediately
+while in the debugger.
 
 Call Stack and Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -650,12 +673,53 @@ You can select one or more entries from the tree in the usual way by
 clicking, shift-clicking and control-clicking on an entry.  Control-A selects
 all entries.  Control-C copies the selected entries to the clipboard.
 
-Note: Some variable are not displayed in a useful form.  For example, the value
+Ltac2 variables whose type uses type variables not bound in the function are
+displayed with :n:`<poly>`.  (For example, in a function that returns the length
+of any list, the type of the list elements is not bound.)
+
+Note: Some Ltac1 variables are not displayed in a useful form.  For example, the value
 shown for :n:`tac` in a script containing :n:`let tac = ltac:(auto)` appears
 only as :n:`<genarg:tacvalue>`.  We hope to address this soon.
 
 The :n:`DETACH` button moves the debugger panel into a separate window, which
 will make it easier to examine its contents.
+
+History mechanism
+~~~~~~~~~~~~~~~~~
+
+The debugger saves the call stack, variables and goals at each step of
+execution of Ltac code in a history buffer.  You can navigate the history with
+these with these function keys:
+
+Step back (shares key binding with Backward)
+  Does a Step over further back into the history without stopping in
+  subtactics
+
+Step forward (shares key binding with Forward)
+  Steps forward in history without stopping in subtactics.  If you're at
+  the last history entry, it executes more code
+
+Continue back (Control F9)
+  Steps back in the history, stopping at the first breakpoint it finds
+
+Step in back (Control F10)
+  Like Step in, but backwards in history
+
+Step out back (Control Shift F10)
+  Like Step out, but backwards in history
+
+.. opt:: Ltac Debug History @natural
+
+   Sets the size of the debug history buffer.  Very large values (perhaps 10000+?)
+   may use a lot of memory for long-running Ltac* tactics.  When the buffer is full,
+   the oldest entries are discarded as needed.  The history buffer is cleared when you
+   exit Ltac*.  The default value is 10.  The Messages panel shows prompts such as
+   :n:`History (-15) >`, which indicates that you are looking at 15th newest history
+   entry.
+
+If there's an exception that would cause Ltac* to exit, the debugger stops before
+exiting so you can examine the history to diagnose the problem.  Then doing
+any operation that steps forward exits the debugger.
 
 Supported use cases
 ~~~~~~~~~~~~~~~~~~~
