@@ -18,7 +18,8 @@ Admitted.
 Polymorphic Axiom funi@{i} : f unit@{i}.
 
 Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
-  eauto using (fapp unit funi). (* The two fapp's have different universes *)
+  pose (H := fapp unit funi).
+  eauto using H. (* The two fapp's have different universes *)
 Qed.
 
 Definition fapp0 := fapp unit funi.
@@ -51,7 +52,7 @@ Polymorphic Axiom foop@{i} : forall (A : Type@{i}), list A.
 Universe x y.
 Goal list Type@{x}.
 Proof.
-  eauto using (foo Type). (* Refreshes the term *)
+  pose (H := foo Type); eauto using H. (* Refreshes the term *)
   Undo.
   eauto using foo. Show Universes.
   Undo.

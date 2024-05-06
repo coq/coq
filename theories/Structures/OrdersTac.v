@@ -104,7 +104,7 @@ Lemma trans o o' x y z : #o x y -> #o' y z -> #(o+o') x z.
 Proof.
 destruct o, o'; simpl;
 rewrite ?P.le_lteq; intuition auto;
-subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
+subst_eqns; pose proof (StrictOrder_Transitive x y z); eauto with *.
 Qed.
 
 Definition eq_trans x y z : x==y -> y==z -> x==z := @trans OEQ OEQ x y z.

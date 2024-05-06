@@ -21,9 +21,10 @@ Qed.
 (* Test implicit arguments in "using" clause *)
 
 Goal forall n:nat, nat * nat.
-auto using (pair O).
+epose (H := pair O).
+auto using H.
 Undo.
-eauto using (pair O).
+eauto using H.
 Qed.
 
 Create HintDb test discriminated.
