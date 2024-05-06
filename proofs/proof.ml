@@ -323,10 +323,10 @@ let _ = CErrors.register_handler begin function
     | _ -> None
   end
 
-let return ?pid (p : t) =
+let return ?pid ?(allow_given_up=false) (p : t) =
   if not (is_done p) then
     raise (OpenProof(pid, UnfinishedProof))
-  else if has_given_up_goals p then
+  else if not allow_given_up && has_given_up_goals p then
     raise (OpenProof(pid, HasGivenUpGoals))
   else begin
     let p = unfocus end_of_stack_kind p () in

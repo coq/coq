@@ -1735,7 +1735,7 @@ let warn_remaining_unresolved_evars =
 let prepare_proof ?(warn_incomplete=true) ~unsafe_typ { proof } =
   let Proof.{name=pid;entry;poly} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
-  let evd = Proof.return ~pid proof in
+  let evd = Proof.return ~pid ~allow_given_up:(not warn_incomplete) proof in
   let () = if warn_incomplete then begin
     if Evd.has_shelved evd
     then warn_remaining_shelved_goals ()
