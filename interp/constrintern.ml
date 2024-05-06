@@ -788,8 +788,8 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) binderopt av
       (* Do not try to interpret a variable as a constructor *)
       let na = out_patvar pat in
       let env = push_name_env ~dump:true ntnvars [] env na in
-      let ty' = DAst.make @@ GHole (GBinderType na.CAst.v) in
-      (renaming,env), None, na.v, bk, set_type ty (Some ty')
+      let ty' =  Option.default (DAst.make @@ GHole (GBinderType na.CAst.v)) ty in
+      (renaming,env), None, na.v, bk, Some (locate_if_hole na.v ty')
     else
       (* Interpret as a pattern *)
       let env,pat,bk,t = intern_pat test_kind ntnvars env bk pat in
