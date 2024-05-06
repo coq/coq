@@ -1000,8 +1000,12 @@ let explain_unsatisfiable_constraints env sigma constr comp =
   in
   match constr with
   | None ->
-    str "Unable to satisfy the following constraints:" ++ fnl () ++
-    pr_constraints true env sigma undef constraints
+    if List.is_empty constraints then
+      str "Could not find an instance for the following existential variables:" ++ fnl () ++
+      pr_constraints true env sigma undef constraints
+    else
+      str "Unable to satisfy the following constraints:" ++ fnl () ++
+      pr_constraints true env sigma undef constraints
   | Some (ev, k) ->
     let cstr =
       let remaining = Evar.Map.remove ev undef in

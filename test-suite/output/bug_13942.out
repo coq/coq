@@ -108,7 +108,7 @@ More precisely:
   i : Union (M A)
 File "./output/bug_13942.v", line 140, characters 2-20:
 The command has indeed failed with message:
-Unable to satisfy the following constraints:
+Could not find an instance for the following existential variables:
 In environment:
 K : Type
 M : Type -> Type
