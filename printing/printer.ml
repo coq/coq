@@ -739,7 +739,9 @@ let process_dependent_evar q acc evm is_dependent e =
   let () = match Evd.evar_body evi with
   | Evar_empty ->
     queue_term q true (Evd.evar_concl evi)
-  | Evar_defined b -> ()
+  | Evar_defined b ->
+    let env = Evd.evar_filtered_env (Global.env ()) evi in
+    queue_term q true (Retyping.get_type_of env evm b)
   in
   List.iter begin fun decl ->
     let open NamedDecl in

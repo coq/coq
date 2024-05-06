@@ -1,0 +1,41 @@
+
+Coq < 
+Coq < 1 goal
+  
+  ============================
+  (exists n : nat, n = 5 \/ True) /\ (exists m : nat, m = 6 \/ True)
+
+(dependent evars: ; in current goal:)
+
+x < 
+x < 2 goals
+  
+  ============================
+  exists n : nat, n = 5 \/ True
+
+goal 2 is:
+ exists m : nat, m = 6 \/ True
+
+(dependent evars: ; in current goal:)
+
+x < 2 focused goals (shelved: 1)
+  
+  ============================
+  ?n = 5 \/ True
+
+goal 2 is:
+ exists m : nat, m = 6 \/ True
+
+(dependent evars: ?X10:?n; in current goal: ?X10)
+
+x < 2 focused goals (shelved: 1)
+  
+  ============================
+  True
+
+goal 2 is:
+ exists m : nat, m = 6 \/ True
+
+(dependent evars: ?X10:?n; in current goal:)
+
+x < 
