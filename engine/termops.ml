@@ -337,12 +337,12 @@ let pr_evar_constraints sigma pbs =
          naming/renaming. *)
       Namegen.make_all_name_different env sigma
     in
-    print_env_short env sigma ++ spc () ++ str "|-" ++ spc () ++
+    hov 2 (hov 2 (print_env_short env sigma) ++ spc () ++ str "|-" ++ spc () ++
       Internal.print_kconstr env sigma t1 ++ spc () ++
       str (match pbty with
             | Conversion.CONV -> "=="
             | Conversion.CUMUL -> "<=") ++
-      spc () ++ Internal.print_kconstr env sigma t2
+      spc () ++ Internal.print_kconstr env sigma t2)
   in
   prlist_with_sep fnl pr_evconstr pbs
 

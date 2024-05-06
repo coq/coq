@@ -682,7 +682,7 @@ let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr env sigma (Evd.evar_concl evi) with
   | Some _ ->
     let env = Evd.evar_filtered_env env evi in
-      fnl () ++ str "Could not find an instance for " ++
+      str "Could not find an instance for " ++
       pr_leconstr_env env sigma (Evd.evar_concl evi) ++
       pr_trailing_ne_context_of env sigma
   | _ -> mt()
@@ -975,10 +975,11 @@ let pr_constraints printenv env sigma evars cstrs =
           pr_ne_context_of (str "In environment:") env' sigma
         else mt ()
       in
+      let env = Global.env () in
       let evs =
-        prlist
-        (fun (ev, evi) -> fnl () ++ pr_existential_key (Global.env ()) sigma ev ++
-            str " : " ++ pr_leconstr_env env' sigma (Evd.evar_concl evi) ++ fnl ()) l
+        prlist_with_sep (fun () -> fnl () ++ fnl ())
+        (fun (ev, evi) -> hov 2 (pr_existential_key env sigma ev ++
+            str " :" ++ spc () ++ Printer.pr_leconstr_env env' sigma (Evd.evar_concl evi))) l
       in
       h (pe ++ evs ++ pr_evar_constraints sigma cstrs)
     else
