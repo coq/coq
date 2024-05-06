@@ -281,6 +281,20 @@ let () =
 
 let () = define "message_concat" (pp @-> pp @-> ret pp) Pp.app
 
+let () = define "message_force_new_line" (ret pp) (Pp.fnl ())
+
+let () = define "message_break" (int @-> int @-> ret pp) (fun i j -> Pp.brk (i,j))
+
+let () = define "message_space" (ret pp) (Pp.spc())
+
+let () = define "message_hbox" (pp @-> ret pp) Pp.h
+
+let () = define "message_vbox" (int @-> pp @-> ret pp) Pp.v
+
+let () = define "message_hvbox" (int @-> pp @-> ret pp) Pp.hv
+
+let () = define "message_hovbox" (int @-> pp @-> ret pp) Pp.hov
+
 let () = define "format_stop" (ret format) []
 
 let () =
