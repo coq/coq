@@ -386,18 +386,21 @@ let autorewrite ~all by ids cl =
 
 (** Auto *)
 
+let delayed_of_globref gr = (); fun env sigma ->
+  Evd.fresh_global env sigma gr
+
 let trivial debug lems dbs =
-  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
+  let lems = List.map delayed_of_globref lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Auto.gen_trivial ~debug lems dbs
 
 let auto debug n lems dbs =
-  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
+  let lems = List.map delayed_of_globref lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Auto.gen_auto ~debug n lems dbs
 
 let eauto debug n lems dbs =
-  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
+  let lems = List.map delayed_of_globref lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Eauto.gen_eauto ~debug ?depth:n lems dbs
 

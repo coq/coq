@@ -107,13 +107,13 @@ val injection : evars_flag -> intro_pattern list option -> destruction_arg optio
 
 val autorewrite : all:bool -> unit thunk option -> Id.t list -> clause -> unit tactic
 
-val trivial : Hints.debug -> constr thunk list -> Id.t list option ->
+val trivial : Hints.debug -> GlobRef.t list -> Id.t list option ->
   unit Proofview.tactic
 
-val auto : Hints.debug -> int option -> constr thunk list ->
+val auto : Hints.debug -> int option -> GlobRef.t list ->
   Id.t list option -> unit Proofview.tactic
 
-val eauto : Hints.debug -> int option -> constr thunk list ->
+val eauto : Hints.debug -> int option -> GlobRef.t list ->
   Id.t list option -> unit Proofview.tactic
 
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->

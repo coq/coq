@@ -255,11 +255,11 @@ Ltac2 Type debug := [ Off | Info | Debug ].
 
 Ltac2 Type strategy := [ BFS | DFS ].
 
-Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_trivial".
+Ltac2 @ external trivial : debug -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_trivial".
 
-Ltac2 @ external auto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_auto".
+Ltac2 @ external auto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_auto".
 
-Ltac2 @ external eauto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_eauto".
+Ltac2 @ external eauto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_eauto".
 
 Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_typeclasses_eauto".
 

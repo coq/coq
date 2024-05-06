@@ -573,17 +573,17 @@ let () =
 
 let () =
   define "tac_trivial"
-    (debug @-> list (thunk constr) @-> option (list ident) @-> tac unit)
+    (debug @-> list reference @-> option (list ident) @-> tac unit)
     Tac2tactics.trivial
 
 let () =
   define "tac_eauto"
-    (debug @-> option int @-> list (thunk constr) @-> option (list ident) @-> tac unit)
+    (debug @-> option int @-> list reference @-> option (list ident) @-> tac unit)
     Tac2tactics.eauto
 
 let () =
   define "tac_auto"
-    (debug @-> option int @-> list (thunk constr) @-> option (list ident) @-> tac unit)
+    (debug @-> option int @-> list reference @-> option (list ident) @-> tac unit)
     Tac2tactics.auto
 
 let () =
