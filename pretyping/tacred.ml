@@ -858,7 +858,7 @@ and whd_simpl_stack cache_reds env sigma =
         end
 
       | Const (cst, _) when is_symbol env cst ->
-          whd_const cst env sigma (applist s'), []
+          whd_all env sigma (applist s'), []
 
       | _ ->
         match match_eval_ref env sigma x stack with
