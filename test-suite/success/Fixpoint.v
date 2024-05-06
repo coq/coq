@@ -406,3 +406,9 @@ Fixpoint f (n : nat) :=
   end.
 
 End WithLateCaseReduction.
+
+Module NoArgumentFixpoint.
+
+Fail Fixpoint f : nat. (* was an anomaly at some time *)
+
+End NoArgumentFixpoint.
