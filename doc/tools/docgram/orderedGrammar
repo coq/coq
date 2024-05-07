@@ -991,7 +991,7 @@ command: [
 | "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )
-| "Hint" [ "Constants" | "Variables" ] [ "Transparent" | "Opaque" ] OPT ( ":" LIST1 ident )
+| "Hint" [ "Constants" | "Projections" | "Variables" ] [ "Transparent" | "Opaque" ] OPT ( ":" LIST1 ident )
 | "Hint" [ "Transparent" | "Opaque" ] LIST1 qualid OPT ( ":" LIST1 ident )
 | "Hint" "Mode" qualid LIST1 [ "+" | "!" | "-" ] OPT ( ":" LIST1 ident )
 | "Hint" "Unfold" LIST1 qualid OPT ( ":" LIST1 ident )

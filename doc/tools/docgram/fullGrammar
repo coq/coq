@@ -721,6 +721,8 @@ hint: [
 | "Variables" "Opaque"
 | "Constants" "Transparent"
 | "Constants" "Opaque"
+| "Projections" "Transparent"
+| "Projections" "Opaque"
 | "Transparent" LIST1 global
 | "Opaque" LIST1 global
 | "Mode" global mode

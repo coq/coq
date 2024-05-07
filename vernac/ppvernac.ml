@@ -318,6 +318,7 @@ let pr_hints db h pr_c pr_pat =
       ++ (match l with
           | HintsVariables -> keyword "Variables"
           | HintsConstants -> keyword "Constants"
+          | HintsProjections -> keyword "Projections"
           | HintsReferences l -> prlist_with_sep sep pr_qualid l)
     | HintsMode (m, l) ->
       keyword "Mode"
