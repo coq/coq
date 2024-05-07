@@ -47,7 +47,7 @@ val same_length : 'a list -> 'b list -> bool
 
 val interval : int -> int -> int list
 (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when
-    [j <= i]. *)
+    [j < i]. *)
 
 val make : int -> 'a -> 'a list
 (** [make n x] returns a list made of [n] times [x]. Raise
@@ -289,7 +289,7 @@ val skipn : int -> 'a list -> 'a list
     [Failure _] if [n] is less than 0 or larger than the length of [l].
     This is the second part of [chop]. *)
 
-val skipn_at_least : int -> 'a list -> 'a list
+val skipn_at_best : int -> 'a list -> 'a list
 (** Same as [skipn] but returns [] if [n] is larger than the length of
     the list. *)
 
