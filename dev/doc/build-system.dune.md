@@ -120,6 +120,19 @@ If you built the full standard library with the `world` target,
 then you can run the commands in the
 `_build/install/default/bin` directories (including `coq_makefile`).
 
+## Building custom toplevels
+
+You can build custom toplevels by tweaking the `toplevel/dune` files,
+for example, to add plugins to be linked statically using the
+`(libraries ...)` field.
+
+Note that Coq relies on a hidden Dune hack, which will add `-linkall`
+to binaries if they depend on the `findlib.dynload` library. As of
+today, `coq-core.vernac` uses `findlib.dynload`, so if your toplevel
+hooks at the `coq-core.vernac` or above level, you should be OK,
+otherwise add `-linkall` to Dune's `(link_flags ...)` field for your
+binary.
+
 ## Targets
 
 The default dune target is `dune build` (or `dune build @install`),
