@@ -3449,7 +3449,12 @@ let rec tclWRAPFINALLY before tac finally =
 let with_set_strategy lvl_ql k =
   let glob_key r =
     match r with
-    | GlobRef.ConstRef sp -> Evaluable.EvalConstRef sp
+    | GlobRef.ConstRef sp ->
+        begin
+          match Structures.PrimitiveProjections.find_opt sp with
+          | None -> Evaluable.EvalConstRef sp
+          | Some p -> Evaluable.EvalProjectionRef p
+        end
     | GlobRef.VarRef id -> Evaluable.EvalVarRef id
     | _ -> user_err Pp.(str
                           "cannot set an inductive type or a constructor as transparent") in
