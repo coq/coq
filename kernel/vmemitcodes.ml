@@ -117,25 +117,87 @@ let iter f s =
 
 end
 
+module NonSubstReloc =
+struct
+
+(** Relocations that are left untouched by module substitution. To reduce the
+    memory footprint, this data is kept on the VM segment. *)
+type t =
+| SReloc_Const_sort of Sorts.t
+| SReloc_Const_evar of Evar.t
+| SReloc_Const_b0 of tag
+| SReloc_Const_univ_instance of UVars.Instance.t
+| SReloc_Const_val of structured_values
+| SReloc_Const_uint of Uint63.t
+| SReloc_Const_float of Float64.t
+| SReloc_annot of annot_switch
+| SReloc_caml_prim of caml_prim
+
+let to_reloc = function
+| SReloc_Const_sort s -> Reloc_const (Const_sort s)
+| SReloc_Const_evar e -> Reloc_const (Const_evar e)
+| SReloc_Const_b0 tag -> Reloc_const (Const_b0 tag)
+| SReloc_Const_univ_instance u -> Reloc_const (Const_univ_instance u)
+| SReloc_Const_val v -> Reloc_const (Const_val v)
+| SReloc_Const_uint i -> Reloc_const (Const_uint i)
+| SReloc_Const_float f -> Reloc_const (Const_float f)
+| SReloc_annot annot -> Reloc_annot annot
+| SReloc_caml_prim prm -> Reloc_caml_prim prm
+
+end
+
+module Reloc =
+struct
+
+type t =
+| SReloc_Const_ind of inductive
+| SReloc_getglobal of Names.Constant.t
+| SReloc_indirect of int (* index in the non-subst table *)
+
+let to_reloc table = function
+| SReloc_Const_ind ind -> Reloc_const (Const_ind ind)
+| SReloc_getglobal cst -> Reloc_getglobal cst
+| SReloc_indirect i -> NonSubstReloc.to_reloc table.(i)
+
+let subst s reloc = match reloc with
+| SReloc_Const_ind ind ->
+  let ind' = Mod_subst.subst_ind s ind in
+  if ind' == ind then reloc else SReloc_Const_ind ind'
+| SReloc_getglobal cst ->
+  let cst' = Mod_subst.subst_constant s cst in
+  if cst' == cst then reloc else SReloc_getglobal cst'
+| SReloc_indirect _ -> reloc
+
+end
+
 (** This data type is stored in vo files. *)
+
 type patches = {
-  reloc_infos : reloc_info array;
+  reloc_infos : Reloc.t array;
 }
 
-let patch_int buff reloc positions =
-  let buff = Bytes.of_string buff in
+type to_patch = {
+  tp_code : emitcodes;
+  tp_fv : fv;
+  tp_pos : Positions.t;
+  tp_reloc : NonSubstReloc.t array;
+}
+
+let patch_int tp reloc =
+  let buff = Bytes.of_string tp.tp_code in
   let iter pos =
     let id = Bytes.get_int32_le buff pos in
     let reloc = reloc.(Int32.to_int id) in
     Bytes.set_int32_le buff pos (Int32.of_int reloc)
   in
-  let () = Positions.iter iter positions in
+  let () = Positions.iter iter tp.tp_pos in
   buff
 
-let patch ((buff, fv, pos), pl) f =
+let patch (tp, pl) f =
+  let f r = f (Reloc.to_reloc tp.tp_reloc r) in
   let reloc = CArray.map_left f pl.reloc_infos in
-  let buff = patch_int buff reloc pos in
-  tcode_of_code buff, fv
+  let buff = patch_int tp reloc in
+  tcode_of_code buff, tp.tp_fv
 
 (* Buffering of bytecode *)
 
@@ -469,28 +531,10 @@ let rec emit env insns remaining = match insns with
   | instr :: c ->
       emit_instr env instr; emit env c remaining
 
-(* Initialization *)
-
-type to_patch = emitcodes * fv * Positions.t
-
 (* Substitution *)
-let subst_strcst s sc =
-  match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_instance _
-  | Const_val _ | Const_uint _ | Const_float _ | Const_evar _ -> sc
-  | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
-
-let subst_annot _ (a : annot_switch) = a
-
-let subst_reloc s ri =
-  match ri with
-  | Reloc_annot a -> Reloc_annot (subst_annot s a)
-  | Reloc_const sc -> Reloc_const (subst_strcst s sc)
-  | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
-  | Reloc_caml_prim _ -> ri
 
 let subst_patches subst p =
-  let infos = CArray.Smart.map (fun r -> subst_reloc subst r) p.reloc_infos in
+  let infos = CArray.Smart.map (fun r -> Reloc.subst subst r) p.reloc_infos in
   { reloc_infos = infos }
 
 type 'a pbody_code =
@@ -521,12 +565,41 @@ let to_memory fv code =
   let fold reloc id accu = (id, reloc) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
-  let reloc_infos = CArray.map_of_list snd reloc in
+  let uid = ref 0 in
+  let table = ref [] in
+  let push r =
+    let id = !uid in
+    let () = table := r :: !table in
+    let () = incr uid in
+    Reloc.SReloc_indirect id
+  in
+  let map (_, r) =
+    let open NonSubstReloc in
+    match r with
+    | Reloc_getglobal cst -> Reloc.SReloc_getglobal cst
+    | Reloc_const (Const_ind ind) -> Reloc.SReloc_Const_ind ind
+    | Reloc_annot annot -> push (SReloc_annot annot)
+    | Reloc_caml_prim prm -> push (SReloc_caml_prim prm)
+    | Reloc_const (Const_sort s) -> push (SReloc_Const_sort s)
+    | Reloc_const (Const_evar e) -> push (SReloc_Const_evar e)
+    | Reloc_const (Const_b0 tag) -> push (SReloc_Const_b0 tag)
+    | Reloc_const (Const_univ_instance u) -> push (SReloc_Const_univ_instance u)
+    | Reloc_const (Const_val v) -> push (SReloc_Const_val v)
+    | Reloc_const (Const_uint i) -> push (SReloc_Const_uint i)
+    | Reloc_const (Const_float f) -> push (SReloc_Const_float f)
+  in
+  let reloc_infos = CArray.map_of_list map reloc in
   let positions = Positions.of_list (List.rev env.reloc_pos) in
   let reloc = { reloc_infos } in
+  let to_patch = {
+    tp_code = code;
+    tp_fv = fv;
+    tp_pos = positions;
+    tp_reloc = CArray.rev_of_list !table;
+  } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
         assert (patchlist = []))) env.label_table;
-  ((code, fv, positions), reloc)
+  (to_patch, reloc)
