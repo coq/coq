@@ -128,6 +128,10 @@ val of_constant : Constant.t -> valexpr
 val to_constant : valexpr -> Constant.t
 val constant : Constant.t repr
 
+val of_instance : EConstr.EInstance.t -> valexpr
+val to_instance : valexpr -> EConstr.EInstance.t
+val instance : EConstr.EInstance.t repr
+
 val of_reference : GlobRef.t -> valexpr
 val to_reference : valexpr -> GlobRef.t
 val reference : GlobRef.t repr
@@ -175,8 +179,6 @@ val val_projection : Projection.t Val.tag
 val val_qvar : Sorts.QVar.t Val.tag
 val val_case : Constr.case_info Val.tag
 val val_binder : (Name.t EConstr.binder_annot * types) Val.tag
-val val_univ : Univ.Level.t Val.tag
-val val_quality : Sorts.Quality.t Val.tag
 val val_free : Id.Set.t Val.tag
 val val_uint63 : Uint63.t Val.tag
 val val_float : Float64.t Val.tag
