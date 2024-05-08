@@ -986,12 +986,7 @@ Building a subset of the targets with ``-j``
 ++++++++++++++++++++++++++++++++++++++++++++
 
 To build, say, two targets foo.vo and bar.vo in parallel one can use
-``make only TGTS="foo.vo bar.vo" -j``.
-
-.. note::
-
-  ``make foo.vo bar.vo -j`` has a different meaning for the ``make``
-  utility, in particular it may build a shared prerequisite twice.
+``make only TGTS="foo.vo bar.vo" -j`` or ``make foo.vo bar.vo``.
 
 Precompiling for ``native_compute``
 +++++++++++++++++++++++++++++++++++
