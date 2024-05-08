@@ -201,16 +201,12 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
       in hook
   in
   let hook = Declare.Hook.make hook in
-  let using =
-    let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
-    Option.map (fun using -> Proof_using.definition_using env sigma ~fixnames:[] ~using ~terms) using
-  in
   let uctx = Evd.evar_universe_context sigma in
-  let cinfo = Declare.CInfo.make ~name:recname_func ~typ:evars_typ ?using () in
+  let cinfo = Declare.CInfo.make ~name:recname_func ~typ:evars_typ () in
   let kind = Decls.(IsDefinition Fixpoint) in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ~hook ?typing_flags ?user_warns ~ntns () in
   let pm, _ =
-    Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
+    Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx ?using evars in
   pm
 
 let out_def = function
@@ -235,15 +231,13 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let collect_evars name def typ impargs =
     (* Generalize by the recursive prototypes  *)
-    let terms = [def; typ] in
-    let using = Option.map (fun using -> Proof_using.definition_using env evd ~fixnames ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
     let deps = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evd
         (List.length rec_sign) ~deps def typ in
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     (cinfo, def, evars)
   in
   let fiximps = List.map pi2 info in
@@ -278,7 +272,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns ~ntns () in
-  Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx fixkind
+  Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ?using fixkind
 
 let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
@@ -286,7 +280,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns ?using r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -299,7 +293,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns ?using
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->

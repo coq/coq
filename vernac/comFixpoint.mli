@@ -21,6 +21,7 @@ val do_fixpoint_interactive
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
+  -> ?using:Vernacexpr.section_subset_expr
   -> fixpoint_expr list
   -> Declare.Proof.t
 
@@ -40,6 +41,7 @@ val do_cofixpoint_interactive
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
+  -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
   -> Declare.Proof.t
 
