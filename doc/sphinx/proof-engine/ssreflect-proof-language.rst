@@ -3828,6 +3828,28 @@ displayed as ``'Under[ … ]``):
    This terminator tactic allows one to close goals of the form
    ``'Under[ … ]``.
 
+   .. exn:: No applicable tactic.
+      :name: No applicable tactic. (over)
+
+      This error can occur when we have rewritten an equality directly involving
+      the main bound variable, which has an extra hidden occurrence in term ``'Under[ … ]``
+      (see issue `#11118 <https://github.com/coq/coq/issues/11118>`_).
+
+      A simple workaround amounts to using :ref:`occurrence_selection_ssr` or
+      :ref:`contextual_patterns_ssr` during these rewrite steps. For example:
+
+      .. coqdoc::
+
+         rewrite [UNDER]lem.
+         (* or *)
+         rewrite [in UNDER]lem.
+
+      This is made possible thanks to the ``UNDER`` shortcut provided in ``ssreflect.v``:
+
+      .. coqdoc::
+
+         Notation UNDER := (X in @Under_rel _ _ X _)%pattern.
+
 .. tacv:: by rewrite over
 
    This is a variant of :tacn:`over` in order to close ``'Under[ … ]``

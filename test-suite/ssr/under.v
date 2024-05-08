@@ -2,11 +2,6 @@ Require Import ssreflect.
 Require Import ssrbool TestSuite.ssr_mini_mathcomp.
 Global Unset SsrOldRewriteGoalsOrder.
 
-(* under <names>: {occs}[patt]<lemma>.
-   under <names>: {occs}[patt]<lemma> by tac1.
-   under <names>: {occs}[patt]<lemma> by [tac1 | ...].
- *)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -184,8 +179,27 @@ Lemma test_big_andb (F : nat -> nat) (m n : nat) :
   \sum_(0 <= i < 5 | odd i && (i == 1)) i = 1.
 Proof.
 under eq_bigl => i do [rewrite andb_idl; first by move/eqP->].
-under eq_bigr => i do move/eqP=>{1}->. (* the 2nd occ should not be touched *)
+Fail under eq_bigr => i do move/eqP->. (* the 2nd occ should not be touched *)
+under eq_bigr => i do move/eqP=>{1}->.
 myadmit.
+Qed.
+
+Lemma test_big_andb_patt (F : nat -> nat) (m n : nat) :
+  \sum_(0 <= i < 5 | odd i && (i == 1)) i = 1.
+Proof.
+under eq_bigl => i do [rewrite andb_idl; first by move/eqP->].
+under eq_bigr => i do [move/eqP=> H; rewrite [UNDER]H].
+myadmit.
+Qed.
+
+(* See also bug_11118.v *)
+Lemma test_eq_map_patt (A: list (nat * nat)) (f: nat -> nat) :
+  map (fun (a: nat * nat) => fst (let '(x, y) := a in (f x, f y))) A = map (fun (a: nat * nat) => f (fst a)) A.
+Proof.
+under eq_map => a.
+  Fail rewrite (surjective_pairing a); over.
+  rewrite [in UNDER](surjective_pairing a); over.
+  myadmit.
 Qed.
 
 Lemma test_foo (f1 f2 : nat -> nat) (f_eq : forall n, f1 n = f2 n)

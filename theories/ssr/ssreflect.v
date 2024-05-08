@@ -530,6 +530,9 @@ Ltac over :=
     them in another way than with reflexivity. *)
 Definition UnderE := Under_relE.
 
+(** Contextual pattern to avoid rewriting the hidden occurrence of the var. *)
+Notation UNDER := (X in @Under_rel _ _ X _)%pattern.
+
 (*****************************************************************************)
 
 (** An interface for non-Prop types; used to avoid improper instantiation
