@@ -32,16 +32,13 @@ Proof. intro; subst y; destruct x; reflexivity. Defined.
 Lemma byte_dec_bl x y (H : eqb x y = true) : x = y.
 Proof.
   rewrite <- (of_bits_to_bits x), <- (of_bits_to_bits y).
-  cbv [eqb] in H; revert H.
-  generalize (to_bits x) (to_bits y); clear x y; intros x y H.
-  repeat match goal with
-         | [ H : and _ _ |- _ ] => destruct H
-         | [ H : prod _ _ |- _ ] => destruct H
-         | [ H : context[andb _ _ = true] |- _ ] => rewrite Bool.andb_true_iff in H
-         | [ H : context[Bool.eqb _ _ = true] |- _ ] => rewrite Bool.eqb_true_iff in H
-         | _ => progress subst
-         | _ => reflexivity
-         end.
+  unfold eqb in H; revert H.
+  assert (H : forall (P : bool -> bool -> Prop) b1 b2 b3, (b3 = true -> P b1 b1) -> (b3 && Bool.eqb b1 b2)%bool = true -> P b1 b2).
+  { intros ???? H [? <-%Bool.eqb_prop]%Bool.andb_true_iff. now apply H. }
+  destruct (to_bits x) as (? & ? & ? & ? & ? & ? & ? & ?).
+  destruct (to_bits y) as (? & ? & ? & ? & ? & ? & ? & ?).
+  do 7 refine (H (fun _ _ => _) _ _ _ _).
+  now intros <-%Bool.eqb_prop.
 Qed.
 
 Lemma eqb_false x y : eqb x y = false -> x <> y.
@@ -580,38 +577,41 @@ Section nat.
 
   Lemma to_of_nat x y : of_nat x = Some y -> to_nat y = x.
   Proof.
-    do 256 try destruct x as [|x]; cbv [of_nat]; intro.
-    all: repeat match goal with
-                | _ => reflexivity
-                | _ => progress subst
-                | [ H : Some ?a = Some ?b |- _ ] => assert (a = b) by refine match H with eq_refl => eq_refl end; clear H
-                | [ H : None = Some _ |- _ ] => solve [ inversion H ]
-                end.
+    intros E.
+    pose (P := fun n : nat => match of_nat n with Some z => to_nat z = n | None => True end).
+    enough (H : P x) by now subst P; simpl in H; rewrite E in H.
+    clear y E. revert x.
+    assert (H : forall P, P 0 -> (forall n, P (S n)) -> forall n, P n) by now intros ??? [|?].
+    now do 256 refine (H _ eq_refl _).
   Qed.
 
   Lemma to_of_nat_iff x y : of_nat x = Some y <-> to_nat y = x.
   Proof. split; intro; subst; (apply of_to_nat || apply to_of_nat); assumption. Qed.
 
   Lemma to_of_nat_option_map x : option_map to_nat (of_nat x) = if Nat.leb x 255 then Some x else None.
-  Proof. do 256 try destruct x as [|x]; reflexivity. Qed.
+  Proof.
+    pose (P := (fun n : nat => option_map to_nat (of_nat n) = (if Nat.leb n 255 then Some n else None))).
+    change (P x). revert x.
+    assert (H : forall P, P 0 -> (forall n, P (S n)) -> forall n, P n) by now intros ??? [|?].
+    now do 256 (refine (H _ eq_refl _)).
+  Qed.
 
   Lemma to_nat_bounded x : to_nat x <= 255.
   Proof.
+    apply PeanoNat.Nat.leb_le.
     generalize (to_of_nat_option_map (to_nat x)).
-    rewrite of_to_nat; cbn [option_map].
-    destruct (Nat.leb (to_nat x) 255) eqn:H; [ | congruence ].
-    rewrite (PeanoNat.Nat.leb_le (to_nat x) 255) in H.
-    intro; assumption.
+    rewrite of_to_nat.
+    now destruct (Nat.leb (to_nat x) 255).
   Qed.
 
   Lemma of_nat_None_iff x : of_nat x = None <-> 255 < x.
   Proof.
-    generalize (to_of_nat_option_map x).
-    destruct (of_nat x), (Nat.leb x 255) eqn:H; cbn [option_map]; try congruence.
-    { rewrite PeanoNat.Nat.leb_le in H; split; [ congruence | ].
-      rewrite PeanoNat.Nat.lt_nge; intro H'; exfalso; apply H'; assumption. }
-    { rewrite PeanoNat.Nat.leb_nle in H; split; [ | reflexivity ].
-      rewrite PeanoNat.Nat.lt_nge; intro; assumption. }
+    assert (H := to_of_nat_option_map x).
+    split.
+    - intros E. rewrite E in H.
+      now destruct (PeanoNat.Nat.leb_spec x 255).
+    - intros E%PeanoNat.Nat.leb_gt. rewrite E in H.
+      now destruct (of_nat x).
   Qed.
 End nat.
 
@@ -1144,15 +1144,13 @@ Section N.
 
   Lemma to_of_N x y : of_N x = Some y -> to_N y = x.
   Proof.
-    cbv [of_N];
-      repeat match goal with
-             | [ |- context[match ?x with _ => _ end] ] => is_var x; destruct x
-             | _ => intro
-             | _ => reflexivity
-             | _ => progress subst
-             | [ H : Some ?a = Some ?b |- _ ] => assert (a = b) by refine match H with eq_refl => eq_refl end; clear H
-             | [ H : None = Some _ |- _ ] => solve [ inversion H ]
-             end.
+    intros E.
+    pose (P := fun n : N => match of_N n with Some z => to_N z = n | None => True end).
+    enough (H : P x) by now subst P; simpl in H; rewrite E in H.
+    clear E y.
+    destruct x as [|p]; [reflexivity|revert p].
+    assert (H : forall P, (forall p, P (xI p)) -> (forall p, P (xO p)) -> P xH -> forall p, P p) by now intros ???? [].
+    (do 8 refine (H _ _ _ eq_refl)); exact (fun _ => I).
   Qed.
 
   Lemma to_of_N_iff x y : of_N x = Some y <-> to_N y = x.
@@ -1169,21 +1167,20 @@ Section N.
 
   Lemma to_N_bounded x : to_N x <= 255.
   Proof.
+    apply N.leb_le.
     generalize (to_of_N_option_map (to_N x)).
-    rewrite of_to_N; cbn [option_map].
-    destruct (N.leb (to_N x) 255) eqn:H; [ | congruence ].
-    rewrite (N.leb_le (to_N x) 255) in H.
-    intro; assumption.
+    rewrite of_to_N.
+    now destruct (N.leb (to_N x) 255).
   Qed.
 
   Lemma of_N_None_iff x : of_N x = None <-> 255 < x.
   Proof.
-    generalize (to_of_N_option_map x).
-    destruct (of_N x), (N.leb x 255) eqn:H; cbn [option_map]; try congruence.
-    { rewrite N.leb_le in H; split; [ congruence | ].
-      rewrite N.lt_nge; intro H'; exfalso; apply H'; assumption. }
-    { rewrite N.leb_nle in H; split; [ | reflexivity ].
-      rewrite N.lt_nge; intro; assumption. }
+    assert (H := to_of_N_option_map x).
+    split.
+    - intros E. rewrite E in H.
+      now destruct (N.leb_spec x 255).
+    - intros E%N.leb_gt. rewrite E in H.
+      now destruct (of_N x).
   Qed.
 
   Lemma to_N_via_nat x : to_N x = N.of_nat (to_nat x).
