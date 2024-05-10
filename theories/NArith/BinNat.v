@@ -370,6 +370,9 @@ Qed.
 
 Include NBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
+Lemma strong_induction_le (A : N -> Prop) :
+  A 0 -> (forall n, (forall m, m <= n -> A m) -> A (succ n)) -> forall n, A n.
+Proof. apply Private_strong_induction_le; intros x y ->; reflexivity. Qed.
 
 (** Properties of [double] and [succ_double] *)
 
@@ -893,6 +896,11 @@ Proof. now destruct a. Qed.
     (pow, sqrt, log2, div, gcd, ...) *)
 
 Include NExtraPreProp <+ NExtraProp0.
+
+Lemma binary_induction (A : N -> Prop) :
+  A 0 -> (forall n, A n -> A (2 * n)) -> (forall n, A n -> A (2 * n + 1))
+  -> forall n, A n.
+Proof. apply Private_binary_induction; intros x y ->; reflexivity. Qed.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract

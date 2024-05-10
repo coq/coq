@@ -50,11 +50,23 @@ Proof.
 intro n; induct n; [apply lt_succ_diag_r | intros n H; now apply lt_lt_succ_r].
 Qed.
 
+Theorem le_1_succ : forall n, 1 <= S n.
+Proof.
+intros n; rewrite one_succ; apply ->succ_le_mono; exact (le_0_l _).
+Qed.
+
 Theorem neq_0_lt_0 : forall n, n ~= 0 <-> 0 < n.
 Proof.
 intro n; cases n.
 - split; intro H; [now elim H | intro; now apply lt_irrefl with 0].
 - intro n; split; intro H; [apply lt_0_succ | apply neq_succ_0].
+Qed.
+
+Theorem neq_0_le_1 : forall n, n ~= 0 <-> 1 <= n.
+Proof.
+intros n; split.
+- intros <-%succ_pred; exact (le_1_succ _).
+- intros H E; rewrite E, one_succ in H; apply (nle_succ_0 0); exact H.
 Qed.
 
 Theorem eq_0_gt_0_cases : forall n, n == 0 \/ 0 < n.
@@ -259,5 +271,24 @@ Proof.
   intros X f A IH x. apply (measure_right_induction X f A 0); [|apply le_0_l].
   intros y _ IH'. apply IH. intros. apply IH'. now split; [apply le_0_l|].
 Defined.
+
+(* This is kept private in order to drop the [Proper] condition in
+   implementations. *)
+(* begin hide *)
+Theorem Private_strong_induction_le {A : t -> Prop} :
+  Proper (eq ==> iff) A ->
+  A 0 -> (forall n, ((forall m, m <= n -> A m) -> A (S n))) -> (forall n, A n).
+Proof.
+  intros H H0 sIH n.
+  enough (forall k, k <= n -> A k) as key. {
+    apply key; exact (le_refl _).
+  }
+  induct n.
+  - intros k ->%le_0_r; exact H0.
+  - intros n I k [Hk%lt_succ_r%I | ->]%lt_eq_cases.
+    + exact Hk.
+    + apply sIH; exact I.
+Qed.
+(* end hide *)
 
 End NOrderProp.
