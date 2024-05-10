@@ -59,6 +59,9 @@ apply le_trans with (m + p);
 [now apply add_le_mono_r | now apply add_le_mono_l].
 Qed.
 
+#[export] Instance _add_le_mono: Proper (le ==> le ==> le) add.
+Proof. now simpl_relation; apply add_le_mono. Qed.
+
 Theorem add_lt_le_mono : forall n m p q, n < m -> p <= q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
