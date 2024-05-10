@@ -246,31 +246,15 @@ let push_stack item (ist : environment) =
   | Some s -> Some (item :: s)
   | None -> None
 
-(* todo: if desired, filter out stops in the Ltac2 libraries *)
 let maybe_stop (ist : environment) loc =
-  (* todo: replace with String.starts_with when OCaml 4.13 is required *)
-  let starts_with p s =
-    let plen = String.length p in
-    plen < String.length s && (String.sub s 0 plen = p)
-  in
-  (* filter out locations in Ltac2 plugin files *)
-  let not_internal loc =
-    let open Loc in
-    let fname = match loc with
-      | Some {fname=InFile {file}} -> file
-      | _ -> ""
-    in
-    if false then Printf.eprintf "loc = %s\n%!" fname;
-    true || Bool.not (starts_with "user-contrib/Ltac2/" fname)
-  in
-  let chunk = DebugCommon.{ locs = ist.locs;
-                            stack_f = (fmt_stack2 ist.stack);
-                            vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) } in
-  DebugCommon.save_chunk chunk loc;
-  let stop = DebugCommon.get_debug () && (not_internal loc) &&
-(*    (Bool.not (starts_with "Ltac2." fname)) && *)
-    (DebugCommon.stop_in_debugger loc)
-  in
-  if stop then
-    DebugCommon.new_stop_point ();
-  stop
+  if DebugCommon.is_hidden_code loc then false
+  else begin
+    let chunk = DebugCommon.{ locs = ist.locs;
+                              stack_f = (fmt_stack2 ist.stack);
+                              vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) } in
+    DebugCommon.save_chunk chunk loc;
+    let stop = DebugCommon.get_debug () && (DebugCommon.stop_in_debugger loc) in
+    if stop then
+      DebugCommon.new_stop_point ();
+    stop
+  end

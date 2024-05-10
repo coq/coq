@@ -160,14 +160,16 @@ let fmt_stack1 : ltac_stack -> unit -> string list = fun frames () ->
   List.map (fun f -> let s, _ = cvt_frame f in s) frames
 
 let save_top_chunk tac varmap trace =
-  let {locs; stack; varmaps } =  match trace with
-  | Some trace -> trace
-  | None -> { locs=[]; stack=[]; varmaps=[]}
-  in
-  let chunk = DebugCommon.{ locs;
-                            stack_f = (fmt_stack1 stack);
-                            vars_f = (fmt_vars1 (varmap :: varmaps)) } in
-  DebugCommon.save_chunk chunk CAst.(tac.loc)
+  if not (DebugCommon.is_hidden_code CAst.(tac.loc)) then begin
+    let {locs; stack; varmaps } =  match trace with
+    | Some trace -> trace
+    | None -> { locs=[]; stack=[]; varmaps=[]}
+    in
+    let chunk = DebugCommon.{ locs;
+                              stack_f = (fmt_stack1 stack);
+                              vars_f = (fmt_vars1 (varmap :: varmaps)) } in
+    DebugCommon.save_chunk chunk CAst.(tac.loc)
+  end
 
 (* Prints the goal and the command to be executed *)
 let goal_com tac =

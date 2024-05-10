@@ -76,6 +76,8 @@ val save_goals : 'a -> 'a Proofview.tactic
 
 val save_chunk : chunk -> Loc.t option -> unit
 
+val is_hidden_code : Loc.t option -> bool
+
 val set_top_chunk : chunk -> unit
 
 val push_top_chunk : unit -> unit

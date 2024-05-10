@@ -143,6 +143,19 @@ let () =
       optread  = (fun () -> Some (Array.length !history - 1));
       optwrite = (fun n -> set_history_size (Option.default history_default_len n)) }
 
+let enter_library = ref false
+let set_enter_library v =
+  enter_library := v
+
+let () =
+  let open Goptions in
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Ltac";"Debug";"Enter"; "Library" ];
+      optread  = (fun () -> !enter_library);
+      optwrite = set_enter_library }
+
 let reset_history () =
   (* allow garbage collection of previous contents *)
   for i = !hist_first to !hist_first + !hist_count do
@@ -266,6 +279,28 @@ let set_top_chunk chunk =
   if !debug then
     top_chunk := chunk
 
+(* use String.starts_with on OCaml 4.13+ *)
+let starts_with ~prefix s =
+  let len = String.length prefix in
+  if String.length s < len then false
+  else
+    let rec loop i =
+      if i <= 0 then true
+      else if prefix.[i] != s.[i] then false
+      else loop (i-1)
+    in
+    loop (len-1)
+
+let is_hidden_code loc =
+  if !enter_library then false
+  else begin
+    let open Loc in
+    match loc with
+    | Some {fname=InFile {dirpath=Some dirpath}; bp} ->
+      starts_with ~prefix:"Ltac2." dirpath
+    | _ -> false
+  end
+
 let save_chunk chunk loc =
   if !debug && loc <> None then begin
     top_chunk := chunk;
@@ -318,7 +353,7 @@ let stepping_stop loc =
   end
 
 let stop_in_debugger loc =
-  breakpoint_stop loc || stepping_stop loc
+  (breakpoint_stop loc || stepping_stop loc) && (not (is_hidden_code loc))
 
 open Pp (* for str *)
 
