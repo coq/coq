@@ -23,7 +23,7 @@ type patches
 val patch : (to_patch * patches) -> (reloc_info -> int) -> Vmvalues.tcode * fv
 
 type 'a pbody_code =
-  | BCdefined of ('a * patches)
+  | BCdefined of bool array * 'a * patches
   | BCalias of Constant.t
   | BCconstant
 

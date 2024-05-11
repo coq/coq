@@ -2224,7 +2224,7 @@ let compile_deps env sigma prefix init t =
   match kind t with
   | Ind ((mind,_),_u) -> compile_mind_deps env prefix init mind
   | Const (c, _u) ->
-    let c = get_alias env c in
+    let c, _ = get_alias env c in
     let cb,(nameref,_) = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in
     if is_code_loaded nameref

@@ -263,7 +263,7 @@ let rec slot_for_getglobal env sigma kn envcache table =
       | None -> set_global (val_of_constant kn) table
       | Some code ->
         match code with
-        | BCdefined (index, patches) ->
+        | BCdefined (_, index, patches) ->
            let code = Environ.lookup_vm_code index env in
            let code = (code, patches) in
            let v = eval_to_patch env sigma code envcache table in
@@ -326,7 +326,7 @@ and eval_to_patch env sigma code envcache table =
 
 and val_of_constr env sigma c envcache table =
   match compile ~fail_on_error:true env sigma c with
-  | Some v -> eval_to_patch env sigma v envcache table
+  | Some (_, code, patch) -> eval_to_patch env sigma (code, patch) envcache table
   | None -> assert false
 
 let global_table =

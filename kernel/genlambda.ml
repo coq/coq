@@ -279,6 +279,48 @@ let map_lam_with_binders g f n lam =
     let arg' = f n arg in
     if arg == arg' then lam else Lproj(p,arg')
 
+(* Free rels *)
+
+let free_rels lam =
+  let rec aux k accu lam = match lam with
+  | Lrel (_, n) -> if n >= k then Int.Set.add (n - k + 1) accu else accu
+  | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
+  | Lfloat _ -> accu
+  | Levar (_, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lprod (dom, codom) ->
+    aux k (aux k accu dom) codom
+  | Llam (ids, body) ->
+    aux (k + Array.length ids) accu body
+  | Llet (_, def, body) ->
+    aux (k + 1) (aux k accu def) body
+  | Lapp (fct, args) ->
+    let accu = aux k accu fct in
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lcase (_, t, a, branches) ->
+    let const = branches.constant_branches in
+    let nonconst = branches.nonconstant_branches in
+    let accu = aux k accu t in
+    let accu = aux k accu a in
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu const in
+    let accu = Array.fold_left (fun accu (ids, lam) -> aux (k + Array.length ids) accu lam) accu nonconst in
+    accu
+  | Lfix (_, (ids, ltypes, lbodies)) | Lcofix (_, (ids, ltypes, lbodies)) ->
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu ltypes in
+    let accu = Array.fold_left (fun accu lam -> aux (k + Array.length ids) accu lam) accu lbodies in
+    accu
+  | Lparray (args, def) ->
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu args in
+    aux k accu def
+  | Lmakeblock (_, _, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lprim (_, _, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lproj (_, arg) ->
+    aux k accu arg
+  in
+  aux 1 Int.Set.empty lam
+
 (*s Operators on substitution *)
 let lift = subs_lift
 let liftn = subs_liftn
@@ -476,11 +518,12 @@ let rec get_alias env kn =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
   match tps with
-  | None -> kn
+  | None -> kn, [||]
   | Some tps ->
-    (match tps with
-     | Vmemitcodes.BCalias kn' -> get_alias env kn'
-     | _ -> kn)
+    match tps with
+    | Vmemitcodes.BCalias kn' -> get_alias env kn'
+    | Vmemitcodes.BCconstant -> kn, [||]
+    | Vmemitcodes.BCdefined (mask, _, _) -> kn, mask
 
 (* Translation of constructors *)
 
@@ -715,14 +758,21 @@ let rec lambda_of_constr cache env sigma c =
 and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (kn, u as c) ->
-      let kn = get_alias env kn in
+      let kn, mask = get_alias env kn in
       let cb = lookup_constant kn env in
       begin match cb.const_body with
       | Primitive op -> lambda_of_prim env c op (lambda_of_args cache env sigma 0 args)
       | Def csubst -> (* TODO optimize if f is a proj and argument is known *)
         if cb.const_inline_code then lambda_of_app cache env sigma csubst args
         else
-          mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
+          (* Erase unused arguments *)
+          let mapi i arg =
+            let keep = if i < Array.length mask then mask.(i) else true in
+            if keep then lambda_of_constr cache env sigma arg
+            else Lint 0 (* dummy *)
+          in
+          let args = Array.mapi mapi args in
+          mkLapp (Lconst (kn, u)) args
       | OpaqueDef _ | Undef _ | Symbol _ ->
           mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       end
