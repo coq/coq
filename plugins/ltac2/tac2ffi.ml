@@ -47,8 +47,7 @@ let val_projection = Val.create "projection"
 let val_qvar = Val.create "qvar"
 let val_case = Val.create "case"
 let val_binder = Val.create "binder"
-let val_univ = Val.create "universe"
-let val_quality = Val.create "quality"
+let val_instance = Val.create "instance"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_uint63 = Val.create "uint63"
@@ -320,6 +319,10 @@ let float = {
 let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
 let constant = repr_ext val_constant
+
+let of_instance c = of_ext val_instance c
+let to_instance c = to_ext val_instance c
+let instance = repr_ext val_instance
 
 let of_reference = let open Names.GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])

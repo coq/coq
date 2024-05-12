@@ -129,18 +129,6 @@ let of_binder b =
 let to_binder b =
   Tac2ffi.to_ext Tac2ffi.val_binder b
 
-let of_instance u =
-  let u = UVars.Instance.to_array (EConstr.Unsafe.to_instance u) in
-  let toqs = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_quality v) in
-  let tous = Tac2ffi.of_array (fun v -> Tac2ffi.of_ext Tac2ffi.val_univ v) in
-  Tac2ffi.of_pair toqs tous u
-
-let to_instance u =
-  let toqs = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_quality v) in
-  let tous = Tac2ffi.to_array (fun v -> Tac2ffi.to_ext Tac2ffi.val_univ v) in
-  let u = Tac2ffi.to_pair toqs tous u in
-  EConstr.EInstance.make (UVars.Instance.of_array u)
-
 let of_rec_declaration (nas, ts, cs) =
   let binders = Array.map2 (fun na t -> (na, t)) nas ts in
   (Tac2ffi.of_array of_binder binders,
@@ -547,17 +535,17 @@ let () =
   | Const (cst, u) ->
     v_blk 10 [|
       Tac2ffi.of_constant cst;
-      of_instance u;
+      Tac2ffi.of_instance u;
     |]
   | Ind (ind, u) ->
     v_blk 11 [|
       Tac2ffi.of_ext Tac2ffi.val_inductive ind;
-      of_instance u;
+      Tac2ffi.of_instance u;
     |]
   | Construct (cstr, u) ->
     v_blk 12 [|
       Tac2ffi.of_ext Tac2ffi.val_constructor cstr;
-      of_instance u;
+      Tac2ffi.of_instance u;
     |]
   | Case (ci, u, pms, c, iv, t, bl) ->
     (* FIXME: also change representation Ltac2-side? *)
