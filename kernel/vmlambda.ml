@@ -1,5 +1,4 @@
 open Util
-open Esubst
 open Declarations
 open Genlambda
 open Vmvalues
@@ -80,13 +79,9 @@ module Lambda = Genlambda.Make(Val)
 (*********************************)
 let dump_lambda = ref false
 
-let optimize_lambda lam =
-  let lam = simplify lam in
-  remove_let (subs_id 0) lam
-
 let lambda_of_constr env sigma c =
   let lam = Lambda.lambda_of_constr env sigma c in
-  let lam = optimize_lambda lam in
+  let lam = optimize lam in
   if !dump_lambda then
     Feedback.msg_debug (pp_lam lam);
   lam

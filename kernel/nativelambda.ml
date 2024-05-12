@@ -54,4 +54,4 @@ module Lambda = Genlambda.Make(Val)
 
 let lambda_of_constr env sigma c =
   let lam = Lambda.lambda_of_constr env sigma c in
-  simplify lam
+  optimize lam

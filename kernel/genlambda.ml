@@ -459,6 +459,11 @@ let rec remove_let subst lam =
       if def == def' && body == body' then lam else Llet(id,def',body')
   | _ -> map_lam_with_binders liftn remove_let subst lam
 
+let optimize lam =
+  let lam = simplify lam in
+  let lam = remove_let (subs_id 0) lam in
+  lam
+
 (* Compiling constants *)
 
 let rec get_alias env kn =
