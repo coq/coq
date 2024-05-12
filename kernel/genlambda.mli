@@ -73,7 +73,7 @@ val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
 
 (* {5 Simplification} *)
 
-val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+val simplify : 'v lambda -> 'v lambda
 
 val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 

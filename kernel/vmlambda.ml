@@ -11,15 +11,6 @@ let get_lval (_, v) = v
 
 (** Simplification of lambda expression *)
 
-(* TODO: make the VM and native agree *)
-let can_subst lam =
-  match lam with
-  | Lrel _ | Lvar _ | Lconst _ | Luint _
-  | Lval _ | Lsort _ | Lind _ -> true
-  | _ -> false
-
-let simplify subst lam = simplify can_subst subst lam
-
 (*s Translation from [constr] to [lambda] *)
 
 (* Translation of constructor *)
@@ -90,9 +81,8 @@ module Lambda = Genlambda.Make(Val)
 let dump_lambda = ref false
 
 let optimize_lambda lam =
-  let subst_id = subs_id 0 in
-  let lam = simplify subst_id lam in
-  remove_let subst_id lam
+  let lam = simplify lam in
+  remove_let (subs_id 0) lam
 
 let lambda_of_constr ~optimize env sigma c =
   let lam = Lambda.lambda_of_constr env sigma c in
