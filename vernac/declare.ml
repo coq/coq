@@ -1046,9 +1046,11 @@ let shrink_body c ty =
 (* Saving an obligation                                                *)
 (***********************************************************************)
 
+let instance_of_univs = function
+  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
+
 let declare_obligation prg obl ~uctx ~types ~body =
-  let poly = prg.prg_info.Info.poly in
-  let univs = UState.univ_entry ~poly uctx in
   let body = prg.prg_reduce body in
   let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
@@ -1061,6 +1063,8 @@ let declare_obligation prg obl ~uctx ~types ~body =
       if not poly then shrink_body body types
       else ([], body, types, [||])
     in
+    let univs = UState.univ_entry ~poly uctx in
+    let inst = instance_of_univs univs in
     let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
@@ -1072,17 +1076,12 @@ let declare_obligation prg obl ~uctx ~types ~body =
     in
     definition_message obl.obl_name;
     let body =
-      match fst univs with
-      | UState.Polymorphic_entry uctx ->
-        Some (DefinedObl (constant, UVars.UContext.instance uctx))
-      | UState.Monomorphic_entry _ ->
-        Some
-          (TermObl
-             (it_mkLambda_or_LetIn_or_clean
-                (mkApp (UnsafeMonomorphic.mkConst constant, args))
-                ctx))
+      if poly then DefinedObl (constant, inst)
+      else
+        let const = mkConstU (constant, inst) in
+        TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (const, args)) ctx)
     in
-    (true, {obl with obl_body = body}, [GlobRef.ConstRef constant])
+    (true, {obl with obl_body = Some body}, [GlobRef.ConstRef constant])
 
 (* Updating the obligation meta-info on close *)
 
@@ -1486,20 +1485,19 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} declare_fu
     | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
     | _ -> ()
   in
-  let inst, uctx' =
+  let uctx' =
     if not prg.prg_info.Info.poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let uctx' = UState.Internal.reboot (Global.env ()) uctx in
-      (UVars.Instance.empty, uctx')
+      UState.Internal.reboot (Global.env ()) uctx
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      let uctx' = UState.context uctx in
-      (UVars.UContext.instance uctx', uctx)
+      uctx
   in
   let sec_vars = None in (* Not using "using" for obligations *)
   let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx in
   let cst = declare_fun ~uctx ~sec_vars ~univs in
+  let inst = instance_of_univs univs in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
   let () = do_check_final ~pm check_final in
