@@ -380,23 +380,20 @@ let rec name_and_process_schemes env l =
       (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
 
 let do_mutual_induction_scheme ?(force_mutual=false) env l =
-
-  let sigma, lrecspec, _ =
-    List.fold_right
-      (fun (_,dep,ind,sort) (evd, l, inst) ->
-       let evd, indu, inst =
-         match inst with
-         | None ->
-            let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
-            let u, ctx = UnivGen.fresh_instance_from ctx None in
-            let u = EConstr.EInstance.make u in
-            let evd = Evd.from_ctx (UState.of_context_set ctx) in
-              evd, (ind,u), Some u
-         | Some ui -> evd, (ind, ui), inst
-       in
-       let evd, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid evd sort in
-       (evd, (indu,dep,sort) :: l, inst))
-    l (Evd.from_env env,[],None)
+  let sigma, inst =
+    let _,_,ind,_ = match l with | x::_ -> x | [] -> assert false in
+    let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
+    let u, ctx = UnivGen.fresh_instance_from ctx None in
+    let u = EConstr.EInstance.make u in
+    let sigma = Evd.from_ctx (UState.of_context_set ctx) in
+    sigma, u
+  in
+  let sigma, lrecspec =
+    List.fold_left_map (fun sigma (_,dep,ind,sort) ->
+        let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
+        (sigma, ((ind,inst),dep,sort)))
+      sigma
+      l
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec in
   let poly =
