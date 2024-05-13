@@ -1046,7 +1046,13 @@ let shrink_body c ty =
 (* Saving an obligation                                                *)
 (***********************************************************************)
 
-let current_obligation_uctx prg uctx =
+let universes_of_decl body typ =
+  let univs_typ = match typ with None -> Univ.Level.Set.empty | Some ty -> Vars.universes_of_constr ty in
+  let univs_body = Vars.universes_of_constr body in
+  Univ.Level.Set.union univs_body univs_typ
+
+let current_obligation_uctx prg uctx vars =
+  let uctx = UState.restrict uctx vars in
   if prg.prg_info.Info.poly then
     uctx
   else
@@ -1087,7 +1093,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
       if not poly then shrink_body body types
       else ([], body, types, [||])
     in
-    let uctx' = current_obligation_uctx prg uctx in
+    let uctx' = current_obligation_uctx prg uctx (universes_of_decl body types) in
     let univs = UState.univ_entry ~poly uctx' in
     let inst = instance_of_univs univs in
     let ce = definition_entry ?types:ty ~opaque ~univs body in
@@ -1481,7 +1487,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
 
    FIXME: There is duplication of this code with obligation_terminator
    and Obligations.admit_obligations *)
-let obligation_admitted_terminator ~pm {name; num; auto; check_final} declare_fun uctx =
+let obligation_admitted_terminator ~pm typ {name; num; auto; check_final} declare_fun uctx =
   let prg = Option.get (State.find pm name) in
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
@@ -1490,7 +1496,7 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} declare_fu
     | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
     | _ -> ()
   in
-  let uctx' = current_obligation_uctx prg uctx in
+  let uctx' = current_obligation_uctx prg uctx (Vars.universes_of_constr typ) in
   let sec_vars = None in (* Not using "using" for obligations *)
   let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx' in
   let cst = declare_fun ~uctx ~sec_vars ~univs in
@@ -2228,7 +2234,8 @@ let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
       match MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs with
       | [GlobRef.ConstRef cst] -> cst
       | _ -> assert false in
-    Obls_.obligation_admitted_terminator ~pm oinfo declare_fun uctx
+    let typ = Evarutil.nf_evars_universes (Evd.from_ctx uctx) (List.hd pinfo.Proof_info.cinfo).CInfo.typ in
+    Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun uctx
   | _ ->
     let _cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
     pm
