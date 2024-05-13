@@ -1477,11 +1477,10 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
 
    FIXME: There is duplication of this code with obligation_terminator
    and Obligations.admit_obligations *)
-let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref =
+let obligation_admitted_terminator ~pm {name; num; auto; check_final} declare_fun uctx =
   let prg = Option.get (State.find pm name) in
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
-  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let () =
     match obl.obl_status with
     | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
@@ -1491,13 +1490,16 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref
     if not prg.prg_info.Info.poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let uctx' = UState.Internal.reboot (Global.env ()) uctx' in
+      let uctx' = UState.Internal.reboot (Global.env ()) uctx in
       (UVars.Instance.empty, uctx')
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      let uctx = UState.context uctx' in
-      (UVars.UContext.instance uctx, uctx')
+      let uctx' = UState.context uctx in
+      (UVars.UContext.instance uctx', uctx)
   in
+  let sec_vars = None in (* Not using "using" for obligations *)
+  let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx in
+  let cst = declare_fun ~uctx ~sec_vars ~univs in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
   let () = do_check_final ~pm check_final in
@@ -2223,12 +2225,17 @@ let compute_proof_using_for_admitted proof typ iproof =
       | [] -> None
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
-  let cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
-    Obls_.obligation_admitted_terminator ~pm oinfo uctx (List.hd cst)
-  | _ -> pm
+    let declare_fun ~uctx ~sec_vars ~univs =
+      match MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs with
+      | [GlobRef.ConstRef cst] -> cst
+      | _ -> assert false in
+    Obls_.obligation_admitted_terminator ~pm oinfo declare_fun uctx
+  | _ ->
+    let _cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
+    pm
 
 let save_admitted ~pm ~proof =
   let udecl = get_universe_decl proof in
