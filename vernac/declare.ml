@@ -1482,11 +1482,9 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
   let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
-  let transparent = Environ.evaluable_constant cst (Global.env ()) in
   let () =
     match obl.obl_status with
-    | true, Evar_kinds.Expand | true, Evar_kinds.Define true ->
-      if not transparent then err_not_transp ()
+    | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
     | _ -> ()
   in
   let inst, uctx' =
