@@ -448,12 +448,18 @@ let occur_once lam =
 (* used at most once time in the body, and does not appear under      *)
 (* a lambda or a fix or a cofix                                       *)
 
+let is_value lam = match lam with
+| Lrel _ | Lvar _ | Lconst _ | Luint _
+| Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ -> true
+| Levar _ | Lprod _ | Llet _ | Lapp _ | Lcase _
+| Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ -> false
+
 let rec remove_let subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
   | Llet(id,def,body) ->
     let def' = remove_let subst def in
-    if occur_once body then remove_let (cons def' subst) body
+    if occur_once body && is_value body then remove_let (cons def' subst) body
     else
       let body' = remove_let (lift subst) body in
       if def == def' && body == body' then lam else Llet(id,def',body')
