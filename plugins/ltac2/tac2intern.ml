@@ -1118,7 +1118,7 @@ let rec intern_rec env tycon {loc;v=e} =
     let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
     let a,b = intern_rec env tycon e.alias_body in
     match a with
-    | GTacApp _ -> (GTacAls (a, loc), b)
+    | GTacApp _ -> (GTacAls (a, loc, KerName.to_string kn), b)
     | GTacRef _ -> a,b
     | _ ->
       let pr_opt loc = match loc with
@@ -1203,13 +1203,23 @@ let rec intern_rec env tycon {loc;v=e} =
   if is_rec then intern_let_rec env el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
+  let modpath, label = Names.KerName.repr kn in
+  let label = Names.Label.to_string label in
+  (* get first parenthesized substring, e.g. from "str(apply) ..." *)
+  let regex = Str.regexp {|[^(]*(\([^)]*\)).*|} in
+  let sname = if Str.string_match regex label 0
+    then Str.matched_group 1 label else ""
+  in
+  let fname = Names.ModPath.to_string modpath ^ "." ^ sname in
   let body = Tac2env.interp_notation kn in
   let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
   let ex = intern_rec env tycon v in
   (match ex with
-  (* apply the correct loc *)
-  | GTacLet (a,b,GTacApp (d,e,f)),g -> GTacLet (a, b, GTacApp (d,e,loc)),g
-  | _ -> ex)| CTacCnv (e, tc) ->
+  | (GTacLet (_,_,(GTacApp _)) as ex2), g
+  | (GTacLet (_,_,(GTacLet (_,_,GTacApp _))) as ex2),g -> GTacAls (ex2,loc,fname), g
+    (* todo: any other patterns? *)
+  | _ -> ex)
+| CTacCnv (e, tc) ->
   let tc = intern_type env tc in
   let e = intern_rec_with_constraint env e tc in
   check (e, tc)
@@ -1333,7 +1343,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
   let arg, tpe = obj.ml_intern self ist arg in
   let e = match arg with
-  | GlbVal arg -> GTacExt (tag, arg, loc)
+  | GlbVal arg -> GTacExt (tag, arg)
   | GlbTacexpr e -> e
   in
   check (e, tpe)
@@ -1750,8 +1760,8 @@ let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
 | GTacRef kn -> GTacRef (subst_kn subst kn)
 | GTacFun (ids, ts, e) -> GTacFun (ids, ts, subst_expr subst e)
-| GTacAls (f, loc) ->
-  GTacAls (subst_expr subst f, loc)
+| GTacAls (f, loc, fn) ->
+  GTacAls (subst_expr subst f, loc, fn)
 | GTacApp (f, args, loc) ->
   GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args, loc)
 | GTacLet (r, bs, e) ->
@@ -1797,10 +1807,10 @@ let rec subst_expr subst e = match e with
   let e' = subst_expr subst e in
   let r' = subst_expr subst r in
   if kn' == kn && e' == e && r' == r then e0 else GTacSet (kn', e', p, r')
-| GTacExt (tag, arg, loc) ->
+| GTacExt (tag, arg) ->
   let tpe = interp_ml_object tag in
   let arg' = tpe.ml_subst subst arg in
-  if arg' == arg then e else GTacExt (tag, arg', loc)
+  if arg' == arg then e else GTacExt (tag, arg')
 | GTacOpn (kn, el) as e0 ->
   let kn' = subst_kn subst kn in
   let el' = List.Smart.map (fun e -> subst_expr subst e) el in

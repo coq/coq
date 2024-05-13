@@ -14,6 +14,8 @@ open DebuggerTypes
 let debug = ref false  (* see also tacinterp.is_traced *)
 
 
+(* a stack chunk is one or more contiguous stack frames that are all within Ltac1 or Ltac2;
+   new chunks are created when there are calls between the the two *)
 type chunk = {
   locs : Loc.t option list;
   stack_f : unit -> string list;
@@ -67,20 +69,55 @@ let get_history n =
   | Some h -> h
   | None -> failwith (Printf.sprintf "get_history entry %d %d is None" n !hist_count)
 
+let enter_library = ref false
+let set_enter_library v = enter_library := v
+
+let () =
+  let open Goptions in
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Ltac";"Debug";"Enter"; "Library" ];
+      optread  = (fun () -> !enter_library);
+      optwrite = set_enter_library }
+
+(* use String.starts_with on OCaml 4.13+ *)
+let starts_with ~prefix s =
+  let len = String.length prefix in
+  if String.length s < len then false
+  else
+    let rec loop i =
+      if i <= 0 then true
+      else if prefix.[i] != s.[i] then false
+      else loop (i-1)
+    in
+    loop (len-1)
+
+let is_hidden_code loc =
+  if !enter_library then false
+  else begin
+    let open Loc in
+    match loc with
+    | Some {fname=InFile {dirpath=Some dirpath}; bp} ->
+      starts_with ~prefix:"Ltac2." dirpath
+    | _ -> false
+  end
+
 let cur_goals = ref [] (* current goals *)
 
-let save_goals x =
-  if !debug then begin
+let save_goals loc f x =
+  if !debug && not (is_hidden_code loc) then begin
     let open Proofview in
     let open Notations in
     (* todo: Goal.goals is not entirely trivial (perf impact?) *)
-    Proofview.Goal.goals >>= fun gl ->
-    Monad.List.map (fun x -> x) gl >>= fun gls ->
-    cur_goals := gls;
-    Proofview.tclLIFT (Proofview.NonLogical.return x)
+    Proofview.Goal.goals >>=
+    fun gl -> Monad.List.map (fun x -> x) gl >>=
+    fun gls ->
+      cur_goals := gls;
+      f ();
+      Proofview.tclLIFT (Proofview.NonLogical.return x)
   end else
     Proofview.tclLIFT (Proofview.NonLogical.return x)
-  [@@ocaml.warning "-3"]
 
 (* todo: replace with List.concat_map when OCaml version is >= 4.10 *)
 let concat_map f l = List.concat (List.map f l)
@@ -142,19 +179,6 @@ let () =
       optkey   = ["Ltac";"Debug";"History"];
       optread  = (fun () -> Some (Array.length !history - 1));
       optwrite = (fun n -> set_history_size (Option.default history_default_len n)) }
-
-let enter_library = ref false
-let set_enter_library v =
-  enter_library := v
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optstage = Summary.Stage.Interp;
-      optdepr  = None;
-      optkey   = ["Ltac";"Debug";"Enter"; "Library" ];
-      optread  = (fun () -> !enter_library);
-      optwrite = set_enter_library }
 
 let reset_history () =
   (* allow garbage collection of previous contents *)
@@ -261,47 +285,21 @@ let stack_chunks : chunk list ref = ref []
 let top_chunk : chunk ref = ref empty_chunk
 let cur_loc : Loc.t option ref = ref None
 
-(* stack state for the previous stopping point, used to support StepIn and StepOut *)
-let prev_top_chunk : chunk ref = ref empty_chunk
-let prev_chunks : chunk list ref = ref []
+let push_top_chunk () =
+  if !debug then
+    stack_chunks := !top_chunk :: !stack_chunks
+
+let set_top_chunk c =
+  if !debug then
+    top_chunk := c
+
+let get_top_chunk () = !top_chunk
 
 let pop_chunk () =
   if !debug then
     stack_chunks := List.tl !stack_chunks
 
-let new_stop_point () =
-  if !debug then begin
-    prev_top_chunk := !top_chunk;
-    prev_chunks := !stack_chunks
-  end
-
-let set_top_chunk chunk =
-  if !debug then
-    top_chunk := chunk
-
-(* use String.starts_with on OCaml 4.13+ *)
-let starts_with ~prefix s =
-  let len = String.length prefix in
-  if String.length s < len then false
-  else
-    let rec loop i =
-      if i <= 0 then true
-      else if prefix.[i] != s.[i] then false
-      else loop (i-1)
-    in
-    loop (len-1)
-
-let is_hidden_code loc =
-  if !enter_library then false
-  else begin
-    let open Loc in
-    match loc with
-    | Some {fname=InFile {dirpath=Some dirpath}; bp} ->
-      starts_with ~prefix:"Ltac2." dirpath
-    | _ -> false
-  end
-
-let save_chunk chunk loc =
+let save_in_history chunk loc =
   if !debug && loc <> None then begin
     top_chunk := chunk;
     cur_loc := loc;
@@ -309,25 +307,22 @@ let save_chunk chunk loc =
         goals=(!cur_goals) }
   end
 
-let push_top_chunk () =
-  if !debug then
-    stack_chunks := !top_chunk :: !stack_chunks
-
 
 let action = ref DebugHook.Action.StepOver
+
+(* location stack for the previous stopping point *)
+let st_prev : Loc.t option list ref = ref []
+let st_prev_len = ref 0
+
+let locs_info () =
+  (* performance impact? *)
+  let hentry = get_history !hist_index in
+  let st = concat_map (fun i -> i.locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+  st, List.length st, !st_prev_len
 
 let stepping_stop loc =
   if loc = None then false
   else begin
-    let locs_info () =
-      (* performance impact? *)
-      let hentry = get_history !hist_index in
-      let st =      concat_map (fun i -> i.locs)  (hentry.top_chunk :: hentry.stack_chunks) in
-      let st_prev = concat_map (fun i -> i.locs)  (!prev_top_chunk :: !prev_chunks) in
-      let l_cur, l_prev = List.length st, List.length st_prev in
-      st, st_prev, l_cur, l_prev
-    in
-
     let open DebugHook.Action in
     match !action with
     | ContinueRev
@@ -335,25 +330,32 @@ let stepping_stop loc =
     | StepInRev
     | StepIn   -> true
     | StepOverRev
-    | StepOver -> let st, st_prev, l_cur, l_prev = locs_info () in
+    | StepOver -> let st, l_cur, l_prev = locs_info () in
                   if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
                   else if l_prev = 0 (*&& l_cur > 0*) then false
                   else
-                    let peq = List.nth st (l_cur - l_prev) == (List.hd st_prev) in
+                    let peq = List.nth st (l_cur - l_prev) == (List.hd !st_prev) in
                     (l_cur > l_prev && (not peq)) ||  (* stepped out *)
                     (l_cur = l_prev && peq)  (* stepped over *)
     | StepOutRev
-    | StepOut  -> let st, st_prev, l_cur, l_prev = locs_info () in
+    | StepOut  -> let st, l_cur, l_prev = locs_info () in
                   if l_cur < l_prev then true
                   else if l_prev = 0 then false
                   else
-                    List.nth st (l_cur - l_prev) != (List.hd st_prev)
+                    List.nth st (l_cur - l_prev) != (List.hd !st_prev)
     | Skip | RunCnt _ | RunBreakpoint _ -> false (* not detected here *)
     | _ -> failwith ("invalid stepping action: " ^ (DebugHook.Action.to_string !action))
   end
 
+(* assumes in debugger and not in Ltac2 library *)
 let stop_in_debugger loc =
-  (breakpoint_stop loc || stepping_stop loc) && (not (is_hidden_code loc))
+  if breakpoint_stop loc || stepping_stop loc then
+    let st, l_cur, _ = locs_info () in
+    st_prev := st;
+    st_prev_len := l_cur;
+    true
+  else
+    false
 
 open Pp (* for str *)
 
@@ -459,9 +461,9 @@ let init () =
       Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
         (fun _ -> break := true));
     stack_chunks := [];
-    prev_chunks := [];
     top_chunk := empty_chunk;
-    prev_top_chunk := empty_chunk;
+    st_prev := [];
+    st_prev_len := 0;
     cur_goals := [];
     cur_loc := None;
     reset_history ();
@@ -537,9 +539,6 @@ let isTerminal () = (hook ()).isTerminal
 let pr_goals () =
   if isTerminal () then
     (hook ()).submit_answer (Output (fmt_goals ()))
-
-let pr_goals_t = (* todo: try to drop this version *)
-  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> pr_goals ()))
 
 let goalt_to_evd goals =
   let open Proofview in
@@ -642,8 +641,6 @@ let read () =
       let loc = hentry.cur_loc in
       if stop_in_debugger loc then begin
         (* stop in history *)
-        prev_top_chunk := hentry.top_chunk;
-        prev_chunks := hentry.stack_chunks;
         do_stop ();
       end else
         hist_loop incr

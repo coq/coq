@@ -64,23 +64,21 @@ val show_exn_in_debugger : Exninfo.iexn -> Loc.t option -> unit
 
 val format_stack : string option list -> Loc.t option list -> db_stack_rty
 
-val pr_goals_t : unit Proofview.tactic
-
 val pr_goals : unit -> unit
 
-val pop_chunk : unit -> unit
-
-val new_stop_point : unit -> unit
-
-val save_goals : 'a -> 'a Proofview.tactic
-
-val save_chunk : chunk -> Loc.t option -> unit
-
-val is_hidden_code : Loc.t option -> bool
+val push_top_chunk : unit -> unit
 
 val set_top_chunk : chunk -> unit
 
-val push_top_chunk : unit -> unit
+val get_top_chunk : unit -> chunk
+
+val pop_chunk : unit -> unit
+
+val save_goals : Loc.t option -> (unit -> unit) -> 'a -> 'a Proofview.tactic
+
+val save_in_history : chunk -> Loc.t option -> unit
+
+val is_hidden_code : Loc.t option -> bool
 
 val cur_loc : Loc.t option ref
 

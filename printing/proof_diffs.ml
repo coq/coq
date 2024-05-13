@@ -661,12 +661,12 @@ let default_goal_map_args oldp newp =
     nhas_fg_goals = (Proof.data newp).goals <> [];
   }
 
-let map_goal g (osigma, map) = match GoalMap.find_opt g map with
-| None -> None
-| Some g -> Some (make_goal (Global.env ()) osigma g)
 (* if not found, returning None treats the goal as new and it will be diff highlighted;
     returning Some { it = g; sigma = sigma } will compare the new goal
     to itself and it won't be highlighted *)
+let map_goal g (osigma, map) = match GoalMap.find_opt g map with
+| None -> None
+| Some g -> Some (make_goal (Global.env ()) osigma g)
 
 (* Create a map from new goals to old goals for proof diff.  New goals
  that are evars not appearing in the proof will not have a mapping.
@@ -701,26 +701,20 @@ let make_goal_map_i goal_map_args =
   (* add common goals *)
   let ng_to_og = Evar.Set.fold (fun x accu -> GoalMap.add x x accu) (inter ogs ngs) GoalMap.empty in
 
-  match Evar.Set.elements rem_gs with
-  | [] -> ng_to_og (* only additions *)
-  | _ when Evar.Set.is_empty add_gs -> ng_to_og
-  | [hd] ->
-    (* only 1 removal, some additions *)
-    Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
-  | elts ->
-    let nevar_to_oevar = match_goals (goal_map_args.oto_constr ()) (goal_map_args.nto_constr ()) in
+  let elts = Evar.Set.elements rem_gs in
+  let nevar_to_oevar = match_goals (goal_map_args.oto_constr ()) (goal_map_args.nto_constr ()) in
 
-    let fold accu og = CString.Map.add (goal_to_evar og goal_map_args.osigma) og accu in
-    let oevar_to_og = List.fold_left fold CString.Map.empty elts in
+  let fold accu og = CString.Map.add (goal_to_evar og goal_map_args.osigma) og accu in
+  let oevar_to_og = List.fold_left fold CString.Map.empty elts in
 
-    let get_og ng =
-      let nevar = goal_to_evar ng goal_map_args.nsigma in
-      let oevar = CString.Map.find nevar nevar_to_oevar in
-      let og = CString.Map.find oevar oevar_to_og in
-      og
-    in
-    let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
-    Evar.Set.fold fold add_gs ng_to_og
+  let get_og ng =
+    let nevar = goal_to_evar ng goal_map_args.nsigma in
+    let oevar = CString.Map.find nevar nevar_to_oevar in
+    let og = CString.Map.find oevar oevar_to_og in
+    og
+  in
+  let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
+  Evar.Set.fold fold add_gs ng_to_og
 
 [@@@ocaml.warning "-32"]
 let pr_goal_map map goal_map_args =
@@ -738,7 +732,8 @@ let pr_goal_map map goal_map_args =
 [@@@ocaml.warning "+32"]
 
 let make_goal_map goal_map_args =
-  let map = make_goal_map_i goal_map_args in
+  let map = if Evar.Set.is_empty goal_map_args.nall_goals then GoalMap.empty
+    else make_goal_map_i goal_map_args in
 (*  pr_goal_map map goal_map_args; *)
   (goal_map_args.osigma, map)
 

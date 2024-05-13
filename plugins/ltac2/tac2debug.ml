@@ -195,11 +195,11 @@ let rec dump_Gexpr ?(indent=0) ?(p="D") e =
     dump_Gexpr ~indent ~p e;
     List.iter (fun e -> dump_Gexpr ~indent ~p e) el
   | GTacLet (isrec, lc, e) -> print "GTacLet";
-    List.iter (fun (p,e2, t) ->
-        (match p with
+    List.iter (fun (p1,e2, t) ->
+        (match p1 with
         | Name nm -> print ~indent (Printf.sprintf "let name = %s" (Id.to_string nm))  (* vars to be assigned *)
         | Anonymous -> print ~indent (Printf.sprintf "Anonymous"));
-        dump_Gexpr ~indent e2
+        dump_Gexpr ~indent ~p e2
       ) lc;
     dump_Gexpr ~indent:(indent-2) ~p e
   | GTacCst (ci,n,el) ->
@@ -225,9 +225,9 @@ let rec dump_Gexpr ?(indent=0) ?(p="D") e =
   | GTacOpn _ -> print "GTacOpn"
   | GTacWth _ -> print "GTacWth"
   | GTacFullMatch _ -> print "GTacFullMatch"
-  | GTacExt (tag,_,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
+  | GTacExt (tag,_) -> print (Printf.sprintf "GTacExt %s" (Tac2dyn.Arg.repr tag))
   | GTacPrm ml -> print (Printf.sprintf "GTacPrm %s. %s%!" ml.mltac_plugin ml.mltac_tactic)
-  | GTacAls (e,_) -> print "GTacAls";
+  | GTacAls (e,_, fn) -> print (Printf.sprintf "GTacAls %s" fn);
     dump_Gexpr ~indent ~p e
 
 let dump_Gexpr ?(indent=0) ?(p="D") e =
@@ -246,15 +246,15 @@ let push_stack item (ist : environment) =
   | Some s -> Some (item :: s)
   | None -> None
 
+let get_chunk (ist : environment) =
+  DebugCommon.{ locs = ist.locs;
+                stack_f = (fmt_stack2 ist.stack);
+                vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) }
+
 let maybe_stop (ist : environment) loc =
-  if DebugCommon.is_hidden_code loc then false
-  else begin
-    let chunk = DebugCommon.{ locs = ist.locs;
-                              stack_f = (fmt_stack2 ist.stack);
-                              vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) } in
-    DebugCommon.save_chunk chunk loc;
-    let stop = DebugCommon.get_debug () && (DebugCommon.stop_in_debugger loc) in
-    if stop then
-      DebugCommon.new_stop_point ();
-    stop
+  let chunk = get_chunk ist in
+  DebugCommon.save_in_history chunk loc;
+  if DebugCommon.stop_in_debugger loc then begin
+    DebugCommon.pr_goals ();
+    read_loop ()
   end

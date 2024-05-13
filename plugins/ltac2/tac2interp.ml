@@ -52,9 +52,13 @@ type closure = {
 
 let push_id ist id v = { ist with env_ist = Id.Map.add id v ist.env_ist }
 
-let push_name ist id v = match id with
-| Anonymous -> ist
-| Name id -> push_id ist id v
+let push_name ist id v =
+  let ist = match id with
+    | Anonymous -> ist
+    | Name id -> push_id ist id v
+  in
+  DebugCommon.set_top_chunk (get_chunk ist);
+  ist
 
 let get_var ist id =
   try (Id.Map.find id ist.env_ist).e with Not_found ->
@@ -132,32 +136,26 @@ let rec interp (ist : environment) = function
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_types=ts; clos_exp = e } in
   let f = interp_closure ist cls in
   return f
-| GTacAls (GTacApp (f, args, _), loc) ->
-  interp ist (GTacApp (f, args, loc))
-| GTacAls ((GTacRef e), loc) -> interp ist (GTacRef e)
-| GTacAls (f, loc) as e ->
-  let pr_opt loc =
-    match loc with
-    | Some loc -> Loc.pr loc
-    | None -> Pp.str "None"
+| GTacAls (e, loc, fn) ->
+  let ist1 =
+    if DebugCommon.get_debug () then begin
+      { ist with locs = push_locs loc ist;
+        stack = push_stack (fn, loc) ist;
+        varmaps = ist.env_ist :: ist.varmaps }
+    end else ist
   in
-  Printf.eprintf "Tac2interp GTacAls PROBLEM %s\n%!" (Pp.string_of_ppcmds (pr_opt loc));
-  Tac2debug.dump_Gexpr e;
-  interp ist f;
+  DebugCommon.save_goals loc (fun () -> maybe_stop ist loc) () >>=
+  (fun () -> interp ist1 e) >>=
+  (fun x -> DebugCommon.set_top_chunk (get_chunk ist);  (* for "ltac1:(...)" *)
+      return x)
 | GTacApp (f, args, loc) ->
   let step = step_GTacApp ist f args loc in
   step >>= fun f ->
-    Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-      let apply_save = (Tac2ffi.apply (Tac2ffi.to_closure f) args) >>=
-                       DebugCommon.save_goals
-      in
-      if DebugCommon.get_debug () && maybe_stop ist loc then begin
-        read_loop ();
-        Proofview.tclTHEN
-          DebugCommon.pr_goals_t
-          apply_save
-      end else
-        apply_save
+    Proofview.Monad.List.map (fun e -> interp ist e) args >>=
+    DebugCommon.save_goals loc (fun () -> maybe_stop ist loc) >>=
+    fun args -> Tac2ffi.apply (Tac2ffi.to_closure f) args >>=
+    (fun x -> DebugCommon.set_top_chunk (get_chunk ist);  (* for "ltac1:(...)" *)
+      return x)
 | GTacLet (false, el, e) ->
   let fold accu (na, e, t) =
     interp ist e >>= fun e ->
@@ -204,27 +202,12 @@ let rec interp (ist : environment) = function
   return (Tac2ffi.of_open (kn, Array.of_list el))
 | GTacPrm ml ->
   return (Tac2env.interp_primitive ml)
-| GTacExt (tag, e, loc) ->
-  let step = step_GTacExt ist loc in
-    (Proofview.tclLIFT step >>=
-      (fun _ -> eval_glb_ext ist (Glb (tag,e)))) >>=
-    DebugCommon.save_goals
-
-and step_GTacExt ist loc =
-  let chunk = DebugCommon.{ locs = ist.locs;
-                            stack_f = (fmt_stack2 ist.stack);
-                            vars_f = (fmt_vars2 (ist.env_ist :: ist.varmaps)) } in
-  DebugCommon.set_top_chunk chunk;
-  Proofview.NonLogical.make (fun () ->
-    if (DebugCommon.get_debug () && maybe_stop ist loc) then begin
-      DebugCommon.pr_goals (); (* useful? *)
-      read_loop ()
-    end)
+| GTacExt (tag, e) -> eval_glb_ext ist (Glb (tag,e))
 
 and step_GTacApp ist f args loc =
   let fname = match f with
   | GTacRef kn -> KerName.to_string kn
-  | GTacExt (tag,_,_) -> (Tac2dyn.Arg.repr tag)   (* for ltac1val: *)
+  | GTacExt (tag,_) -> (Tac2dyn.Arg.repr tag)   (* for ltac1val: *)
   | _ -> "???"
   in
   let is_primitive kn =

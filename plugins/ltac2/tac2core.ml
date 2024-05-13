@@ -1296,10 +1296,9 @@ let () =
   (* todo: what about wrapping functions ltac1_ref above and ltac1_apply below? *)
   let wrap (e, info) = Proofview.tclUNIT () >>=
       fun () -> DebugCommon.pop_chunk (); Proofview.tclZERO ~info e in
-  Proofview.tclOR
+  Proofview.tclORELSE
     (Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v >>=
       fun () -> Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> DebugCommon.pop_chunk ())))
-(* toto: check *)
     wrap
 end
 
@@ -1793,6 +1792,13 @@ let () =
     let ty = List.fold_left fold (gtypref t_unit) ids in
     GlbVal (ids, tac), ty
   in
+  let is_debugger_atomic tac =
+    let open Ltac_plugin in
+    let open Tacexpr in
+    match tac with
+      | TacAtom _ | TacId _  | TacFail _ -> true (* TacML? TacAlias? *)
+      | _ -> false
+  in
   let interp _ (ids, tac) =
     let clos args =
       let add lfun id v =
@@ -1804,12 +1810,27 @@ let () =
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
-      DebugCommon.push_top_chunk ();
-      let tac2 = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
+      let CAst.{v; loc} = tac in
+      let tac2 =
+       Proofview.tclTHEN
+        (DebugCommon.save_goals loc (
+          fun () ->
+            if is_debugger_atomic v then begin
+              DebugCommon.save_in_history (DebugCommon.get_top_chunk ()) loc;
+              if DebugCommon.stop_in_debugger loc then begin
+                DebugCommon.pr_goals ();
+                Tac2debug.read_loop ()
+              end;
+            end;
+            DebugCommon.push_top_chunk ();
+          ) ())
+          (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) >>=
+          fun x -> DebugCommon.pop_chunk (); return x
+      in
       let wrap (e, info) = set_bt info >>= fun info ->
           DebugCommon.pop_chunk ();
           Proofview.tclZERO ~info e in
-        Proofview.tclOR tac2 wrap >>= fun () -> DebugCommon.pop_chunk (); return v_unit
+      Proofview.tclORELSE tac2 wrap >>= fun () -> return v_unit
     in
     let len = List.length ids in
     if Int.equal len 0 then
@@ -2012,7 +2033,7 @@ let () =
   let subs avoid globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c), None) in
+      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
       let rem = Id.Set.remove id rem in
       rem, (Name id, c, (* Tac2valtype.wrap *) None) :: accu
     in
@@ -2027,7 +2048,7 @@ let () =
             (Glob_term.GVar
                (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
         in
-        let c = GTacExt (Tac2quote.wit_preterm, (Id.Set.empty, c), None) in
+        let c = GTacExt (Tac2quote.wit_preterm, (Id.Set.empty, c)) in
         (Name id, c, (* Tac2valtype.wrap *) None) :: bnd)
         rem bnd
     in

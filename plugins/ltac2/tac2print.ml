@@ -302,7 +302,7 @@ let pr_glbexpr_gen lvl ~avoid c =
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x
     in
     paren (hov 2 (pr_glbexpr E1 avoid c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
-  | GTacAls (e,_) -> pr_glbexpr lvl avoid e
+  | GTacAls (e,_,_) -> pr_glbexpr lvl avoid e
   | GTacLet (isrec, bnd, e) ->
     let paren = match lvl with
     | E0 | E1 | E2 | E3 | E4 -> paren
@@ -420,7 +420,7 @@ let pr_glbexpr_gen lvl ~avoid c =
     in
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
-  | GTacExt (tag, arg, _) ->
+  | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
     let env = Global.env() in
     let sigma = Evd.from_env env in

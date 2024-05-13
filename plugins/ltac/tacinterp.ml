@@ -1106,11 +1106,11 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   Control.check_for_interrupt ();
   match curr_debug ist with
   | DebugOn lev when can_stop ->
-        let eval v =
-          let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
-          value_interp ist >>= fun v -> return (name_vfun appl v)
-        in
-        Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
+    let eval v =
+      let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
+      value_interp ist >>= fun v -> return (name_vfun appl v)
+    in
+    Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 

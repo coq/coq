@@ -10,7 +10,9 @@
 
 type environment = Tac2env.environment
 
-val maybe_stop : environment -> Loc.t option -> bool
+val get_chunk : environment -> DebugCommon.chunk
+
+val maybe_stop : environment -> Loc.t option -> unit
 
 val push_locs : Loc.t option -> environment -> Loc.t option list
 
