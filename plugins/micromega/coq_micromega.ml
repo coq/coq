@@ -2194,7 +2194,7 @@ end)
   *)
 
 let require_csdp =
-  if System.is_in_system_path "csdp" then lazy () else lazy (raise CsdpNotFound)
+  lazy (if System.is_in_system_path "csdp" then () else raise CsdpNotFound)
 
 let really_call_csdpcert :
     provername -> micromega_polys -> Sos_types.positivstellensatz option =
