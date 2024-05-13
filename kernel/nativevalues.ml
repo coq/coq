@@ -271,6 +271,9 @@ let mk_uint (x : Uint63.t) = (Obj.magic x : t)
 let mk_float (x : Float64.t) = (Obj.magic x : t)
 [@@ocaml.inline always]
 
+let mk_string (x : Pstring.t) = (Obj.magic x : t)
+[@@ocaml.inline always]
+
 let block_size (b:block) =
   Obj.size (Obj.magic b)
 
@@ -295,6 +298,7 @@ let kind_of_value (v:t) =
       else Vaccu (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
+    else if Int.equal tag Obj.string_tag then Vstring (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)
       else
         (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag);
@@ -785,6 +789,79 @@ let no_check_next_down x =
 let next_down accu x =
   if is_float x then no_check_next_down x
   else apply accu x
+
+(** Support for primitive strings *)
+
+let is_string (x:t) =
+  let o = Obj.repr x in
+  Int.equal (Obj.tag o) Obj.string_tag
+
+let to_string (x:t) = (Obj.magic x : Pstring.t)
+[@@ocaml.inline always]
+
+let no_check_string_make n c =
+  mk_string (Pstring.make (to_uint n) (to_uint c))
+[@@ocaml.inline always]
+
+let no_check_string_length s =
+  mk_uint (Pstring.length (to_string s))
+[@@ocaml.inline always]
+
+let no_check_string_get s i =
+  mk_uint (Pstring.get (to_string s) (to_uint i))
+[@@ocaml.inline always]
+
+let no_check_string_sub s off len =
+  mk_string (Pstring.sub (to_string s) (to_uint off) (to_uint len))
+[@@ocaml.inline always]
+
+let no_check_string_cat s1 s2 =
+  mk_string (Pstring.cat (to_string s1) (to_string s2))
+[@@ocaml.inline always]
+
+let no_check_string_compare s1 s2 =
+  match Pstring.compare (to_string s1) (to_string s2) with
+  | x when x < 0 -> (Obj.magic CmpLt:t)
+  | 0 -> (Obj.magic CmpEq:t)
+  | _ -> (Obj.magic CmpGt:t)
+
+let string_make accu n c =
+  if is_int n && is_int c then
+    no_check_string_make n c
+  else
+    apply2 accu n c
+
+let string_length accu s =
+  if is_string s then
+    no_check_string_length s
+  else
+    apply accu s
+
+let string_get accu s i =
+  if is_string s && is_int i then
+    no_check_string_get s i
+  else
+    apply2 accu s i
+
+let string_sub accu s off len =
+  if is_string s && is_int off && is_int len then
+    no_check_string_sub s off len
+  else
+    apply3 accu s off len
+
+let string_cat accu s1 s2 =
+  if is_string s1 && is_string s2 then
+    no_check_string_cat s1 s2
+  else
+    apply2 accu s1 s2
+
+let string_compare accu s1 s2 =
+  if is_string s1 && is_string s2 then
+    no_check_string_compare s1 s2
+  else
+    apply2 accu s1 s2
+
+(** Support for primitive arrays *)
 
 let is_parray t =
   (* This is only used over values known to inhabit an array type, so we just

@@ -115,6 +115,9 @@ val judge_of_int : env -> Uint63.t -> unsafe_judgment
 val type_of_float : env -> types
 val judge_of_float : env -> Float64.t -> unsafe_judgment
 
+val type_of_string : env -> types
+val judge_of_string : env -> String.t -> unsafe_judgment
+
 val type_of_array : env -> UVars.Instance.t -> types
 val judge_of_array : env -> UVars.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
 

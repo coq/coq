@@ -68,6 +68,7 @@ struct
     | DCoFix  of int
     | DInt    of Uint63.t
     | DFloat  of Float64.t
+    | DString of Pstring.t
     | DArray
 
   let compare_ci ci1 ci2 =
@@ -123,6 +124,10 @@ struct
   | DFloat f1, DFloat f2 -> Float64.total_compare f1 f2
 
   | DFloat _, _ -> -1 | _, DFloat _ -> 1
+
+  | DString s1, DString s2 -> String.compare s1 s2
+
+  | DString _, _ -> -1 | _, DString _ -> 1
 
   | DArray, DArray -> 1
 
@@ -207,6 +212,7 @@ struct
       pat_of_constr (mkApp (UnsafeMonomorphic.mkConst (Projection.constant p), [|c|]))
     | Int i -> Some (DInt i, [])
     | Float f -> Some (DFloat f, [])
+    | String s -> Some (DString s, [])
     | Array (_u,t,def,ty) ->
       Some (DArray, Array.to_list t @ [def ; ty])
     in

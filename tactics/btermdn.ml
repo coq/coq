@@ -61,7 +61,7 @@ let rec eta_reduce_pat (p:constr_pattern) = match p with
   else p
 | PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
 | PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
-| PFloat _ | PArray _ -> p
+| PFloat _ | PString _ | PArray _ -> p
 | PUninstantiated _ -> .
 
 let evaluable_constant c env ts =
@@ -119,7 +119,7 @@ let constr_val_discr env sigma ts t =
     | Evar _ -> Everything
     | Case _ -> Everything (* Overapproximate wildly. TODO: be less brutal. *)
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
-    | Int _ | Float _ | Array _ -> Nothing
+    | Int _ | Float _ | String _ | Array _ -> Nothing
   in
   decomp [] (eta_reduce sigma t)
 

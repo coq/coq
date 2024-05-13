@@ -18,4 +18,5 @@ type ('value, 'vaccu, 'vfun, 'vprod, 'vfix, 'vcofix, 'vblock) kind =
   | Vblock of 'vblock
   | Vint64 of int64
   | Vfloat64 of float
+  | Vstring of string
   | Varray of 'value Parray.t

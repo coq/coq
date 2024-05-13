@@ -78,6 +78,7 @@ and ppwhd whd =
   | Vblock b -> ppvblock b
   | Vint64 i -> printf "int64(%LiL)" i
   | Vfloat64 f -> printf "float64(%.17g)" f
+  | Vstring s -> printf "string(%S)" s
   | Varray t -> ppvarray t
   | Vaccu (a, s) ->
       open_hbox();ppatom a;close_box();

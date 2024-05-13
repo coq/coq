@@ -183,6 +183,7 @@ val mkArrow : t -> ERelevance.t  -> t -> t
 val mkArrowR : t -> t -> t
 val mkInt : Uint63.t -> t
 val mkFloat : Float64.t -> t
+val mkString : String.t -> t
 val mkArray : EInstance.t * t array * t * t -> t
 
 module UnsafeMonomorphic : sig

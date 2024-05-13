@@ -63,6 +63,8 @@ let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
    Uint63.equal i1 i2
 | PFloat f1, PFloat f2 ->
    Float64.equal f1 f2
+| PString s1, PString s2 ->
+   String.equal s1 s2
 | PArray (t1, def1, ty1), PArray (t2, def2, ty2) ->
   Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env def1 def2
   && constr_pattern_eq env ty1 ty2
@@ -70,7 +72,7 @@ let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
    | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
    | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _ | PInt _
-   | PFloat _ | PArray _), _ -> false
+   | PFloat _ | PString _ | PArray _), _ -> false
 (** FIXME: fixpoint and cofixpoint should be relativized to pattern *)
 
 and pattern_eq env (i1, j1, p1) (i2, j2, p2) =
@@ -101,7 +103,7 @@ let rec occurn_pattern : 'a. _ -> 'a constr_pattern_r -> _
       (List.exists (fun (_, nas, p) -> occurn_pattern (Array.length nas + n) p) br)
   | PMeta _ | PSoApp _ -> true
   | PEvar (_,args) -> List.exists (occurn_pattern n) args
-  | PVar _ | PRef _ | PSort _ | PInt _ | PFloat _ -> false
+  | PVar _ | PRef _ | PSort _ | PInt _ | PFloat _ | PString _ -> false
   | PFix (_,(_,tl,bl)) ->
      Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
   | PCoFix (_,(_,tl,bl)) ->
@@ -127,7 +129,7 @@ let rec head_pattern_bound (t:constr_pattern) =
         -> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
-    | PCoFix _ | PInt _ | PFloat _ | PArray _ ->
+    | PCoFix _ | PInt _ | PFloat _ | PString _ | PArray _ ->
       anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
     | PUninstantiated _ -> .
 
@@ -225,6 +227,7 @@ let pattern_of_constr ~broken env sigma t =
                   Array.map (pattern_of_constr env') bl))
     | Int i -> PInt i
     | Float f -> PFloat f
+    | String s -> PString s
     | Array (_u, t, def, ty) ->
       PArray (Array.map (pattern_of_constr env) t, pattern_of_constr env def, pattern_of_constr env ty)
     in
@@ -259,7 +262,7 @@ let map_pattern_with_binders_gen (type a b) g f fgen l : a constr_pattern_r -> b
   | PUninstantiated (PGenarg _ as x) -> fgen (x:a uninstantiated_pattern)
   (* Non recursive *)
   | (PVar _ | PRel _ | PRef _  | PSort _  | PMeta _ | PInt _
-    | PFloat _ as x) -> x
+    | PFloat _ | PString _ as x) -> x
 
 let map_pattern_with_binders (type a) g f l (p:a constr_pattern_r) : a constr_pattern_r =
   let fgen : a uninstantiated_pattern -> a constr_pattern_r = function
@@ -287,7 +290,8 @@ let rec subst_pattern
   | PEvar _
   | PRel _
   | PInt _
-  | PFloat _ -> pat
+  | PFloat _
+  | PString _ -> pat
   | PUninstantiated (PGenarg g) -> PUninstantiated (PGenarg (Genarg.generic_substitute subst g))
   | PProj (p,c) ->
       let p' = Projection.map (subst_mind subst) p in
@@ -562,6 +566,7 @@ let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val 
 
   | GInt i -> PInt i
   | GFloat f -> PFloat f
+  | GString s -> PString s
   | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GArray _ ->
       err ?loc (Pp.str "Non supported pattern."))
 

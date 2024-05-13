@@ -586,8 +586,10 @@ let () =
     v_blk 17 [|Tac2ffi.of_uint63 n|]
   | Float f ->
     v_blk 18 [|Tac2ffi.of_float f|]
+  | String s ->
+    v_blk 19 [|Tac2ffi.of_string s|]
   | Array(u,t,def,ty) ->
-    v_blk 19 [|
+    v_blk 20 [|
       of_instance u;
       Tac2ffi.of_array Tac2ffi.of_constr t;
       Tac2ffi.of_constr def;
@@ -675,7 +677,10 @@ let () =
   | (18, [|f|]) ->
     let f = Tac2ffi.to_float f in
     EConstr.mkFloat f
-  | (19, [|u;t;def;ty|]) ->
+  | (19, [|s|]) ->
+    let s = Tac2ffi.to_string s in
+    EConstr.mkString s
+  | (20, [|u;t;def;ty|]) ->
     let t = Tac2ffi.to_array Tac2ffi.to_constr t in
     let def = Tac2ffi.to_constr def in
     let ty = Tac2ffi.to_constr ty in

@@ -187,6 +187,7 @@ let retype ?(polyprop=true) sigma =
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
     | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
     | Float _ -> EConstr.of_constr (Typeops.type_of_float env)
+    | String _ -> EConstr.of_constr (Typeops.type_of_string env)
     | Array(u, _, _, ty) ->
       let arr = EConstr.of_constr @@ Typeops.type_of_array env (EInstance.kind sigma u) in
       mkApp(arr, [|ty|])
@@ -355,9 +356,8 @@ let relevance_of_term env sigma c =
       | Evar (evk, _) ->
           let evi = Evd.find_undefined sigma evk in
           Evd.evar_relevance evi
-      | Int _ | Float _ | Array _ -> ERelevance.relevant
+      | Int _ | Float _ | String _ | Array _ -> ERelevance.relevant
       | Meta _ -> ERelevance.relevant
-
     in
     aux Range.empty c
   else ERelevance.relevant

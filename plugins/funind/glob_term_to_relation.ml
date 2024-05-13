@@ -467,7 +467,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
   let open CAst in
   match DAst.get rt with
   | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _
-   |GFloat _ ->
+   |GFloat _ | GString _ ->
     (* do nothing (except changing type of course) *)
     mk_result [] rt avoid
   | GApp (_, _) -> (
@@ -572,6 +572,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     | GProd _ -> user_err Pp.(str "Cannot apply a type")
     | GInt _ -> user_err Pp.(str "Cannot apply an integer")
     | GFloat _ -> user_err Pp.(str "Cannot apply a float")
+    | GString _ -> user_err Pp.(str "Cannot apply a string")
     | GArray _ -> user_err Pp.(str "Cannot apply an array")
     (* end of the application treatement *) )
   | GProj (f, params, c) ->
@@ -1190,7 +1191,8 @@ let rebuild_cons env nb_args relname args crossed_types rt =
 let rec compute_cst_params relnames params gt =
   DAst.with_val
     (function
-      | GRef _ | GVar _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ -> params
+      | GRef _ | GVar _ | GEvar _ | GPatVar _
+      | GInt _ | GFloat _ | GString _ -> params
       | GApp (f, args) -> (
         match DAst.get f with
         | GVar relname' when Id.Set.mem relname' relnames ->

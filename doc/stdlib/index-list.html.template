@@ -713,4 +713,12 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Array/PArray.v
   </dd>
+
+  <dt> <b>Primitive strings</b>
+    Native string type
+  </dt>
+  <dd>
+    theories/Strings/PrimString.v
+    theories/Strings/PrimStringAxioms.v
+  </dd>
 </dl>

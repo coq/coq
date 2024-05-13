@@ -416,7 +416,7 @@ let compute_constant_coelimination ((cache,_,_),allowed_reds as cache_reds) env 
       | Construct _ ->
           let c = it_mkLambda (applist (c', args)) all_abs in
           CoEliminationConstruct c
-      | Int _ | Float _ | Array _ (* reduced by primitives *) ->
+      | Int _ | Float _ | String _ | Array _ (* reduced by primitives *) ->
           let c = it_mkLambda (applist (c', args)) all_abs in
           CoEliminationPrimitive c
       | CoFix (i,(names,_,_) as cofix) ->
@@ -578,7 +578,7 @@ let contract_cofix env sigma f (bodynum,(_names,_types,bodies as typedbodies) as
 
 let reducible_construct sigma c = match EConstr.kind sigma c with
 | Construct _ | CoFix _ (* reduced by case *)
-| Int _ | Float _ | Array _ (* reduced by primitives *) -> true
+| Int _ | Float _ | String _ | Array _ (* reduced by primitives *) -> true
 | _ -> false
 
 let match_eval_ref env sigma constr stack =
@@ -787,7 +787,7 @@ and reduce_params cache_reds env sigma stack l =
       let arg = List.nth stack i in
       let* rarg = whd_construct_stack cache_reds env sigma arg in
       match EConstr.kind sigma (fst rarg) with
-      | Construct _ | Int _ | Float _ | Array _ ->
+      | Construct _ | Int _ | Float _ | String _ | Array _ ->
         redp (List.assign stack i (applist rarg)) l
       | _ -> NotReducible
   in
@@ -930,7 +930,7 @@ and reduce_case cache_reds env sigma (ci, u, pms, p, iv, c, lf) =
        CoFixpoint const (x : bool) := if x then cons x (const x) else cons x (const x).
        Eval simpl in fun x => (const x).(tl) *)
     Reduced (mkCase (ci, u, pms, p, iv, applist(cofix_def, args), lf))
-  | Int _ | Float _ | Array _ -> NotReducible (* TODO: assert false? *)
+  | Int _ | Float _ | String _ | Array _ -> NotReducible (* TODO: assert false? *)
   | _ -> assert false
 
 and whd_construct_stack cache_reds env sigma s =

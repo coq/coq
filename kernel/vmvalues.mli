@@ -43,6 +43,7 @@ type structured_constant =
   | Const_val of structured_values
   | Const_uint of Uint63.t
   | Const_float of Float64.t
+  | Const_string of Pstring.t
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -194,3 +195,10 @@ val parray_get_default : values
 val parray_set : values
 val parray_copy : values
 val parray_length : values
+
+val pstring_make : values
+val pstring_length : values
+val pstring_get : values
+val pstring_sub : values
+val pstring_cat : values
+val pstring_compare : values

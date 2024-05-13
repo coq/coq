@@ -122,6 +122,7 @@ let mkArrow t1 r t2 = of_kind (Prod (make_annot Anonymous r, t1, t2))
 let mkArrowR t1 t2 = mkArrow t1 ERelevance.relevant t2
 let mkInt i = of_kind (Int i)
 let mkFloat f = of_kind (Float f)
+let mkString s = of_kind (String s)
 let mkArray (u,t,def,ty) = of_kind (Array (u,t,def,ty))
 
 let mkRef (gr,u) = let open GlobRef in match gr with
@@ -561,7 +562,7 @@ let iter_with_full_binders env sigma g f n c =
   let open Context.Rel.Declaration in
   match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+    | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
@@ -800,7 +801,7 @@ let fold_constr_relevance sigma f acc c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _ | Proj _
-  | Int _ | Float _ | Array _ -> acc
+  | Int _ | Float _ | String _ | Array _ -> acc
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
@@ -1144,7 +1145,7 @@ let kind_of_type sigma t = match kind sigma t with
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
-  | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> failwith "Not a type"
+  | (Lambda _ | Construct _ | Int _ | Float _ | String _ | Array _) -> failwith "Not a type"
 
 module Unsafe =
 struct

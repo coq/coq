@@ -1004,7 +1004,8 @@ let rec subterm_specif ?evars renv stack t =
       end
 
     | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Ind _
-      | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Not_subterm
+      | Construct _ | CoFix _ | Int _ | Float _ | String _
+      | Array _ -> Not_subterm
 
 
       (* Other terms are not subterms *)
@@ -1282,7 +1283,7 @@ let check_one_fix ?evars renv recpos trees def =
               match kind hd with
               | Construct cstr -> Some (apply_branch cstr args ci brs, [])
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | Int _ | Float _ | String _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
@@ -1331,7 +1332,8 @@ let check_one_fix ?evars renv recpos trees def =
               match kind hd with
               | Construct _ -> Some (contract_fix fix, stack)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | Int _ | Float _ | String _
+              | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
 
@@ -1385,7 +1387,7 @@ let check_one_fix ?evars renv recpos trees def =
               match kind hd with
               | Construct _ -> Some (args.(Projection.npars p + Projection.arg p), [])
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
-              | Sort _ | Int _ | Float _ | Array _ -> assert false
+              | Sort _ | Int _ | Float _ | String _ | Array _ -> assert false
               | Rel _ | Var _ | Const _ | App _ | Case _ | Fix _
               | Proj _ | Cast _ | Meta _ | Evar _ -> None)
             end
@@ -1415,7 +1417,7 @@ let check_one_fix ?evars renv recpos trees def =
             let rs = check_rec_call_stack renv stack rs c in
             rs
 
-        | Sort _ | Int _ | Float _ ->
+        | Sort _ | Int _ | Float _ | String _ ->
             (* See [Prod]: we cannot ensure that the stack is empty *)
             rs
 
@@ -1651,7 +1653,8 @@ let check_one_cofix ?evars env nbfix def deftype =
         | Evar _ ->
             List.iter (check_rec_call env alreadygrd n tree vlra) args
         | Rel _ | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _
-          | Ind _ | Fix _ | Proj _ | Int _ | Float _ | Array _ ->
+          | Ind _ | Fix _ | Proj _ | Int _ | Float _ | String _
+          | Array _ ->
            raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind ?evars env deftype in

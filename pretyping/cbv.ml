@@ -275,6 +275,14 @@ module VNativeEntries =
         | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
+    let get_string () e =
+      match e with
+      | VAL(_, cf) ->
+        (match kind cf with
+        | String s -> s
+        | _ -> raise Primred.NativeDestKO)
+      | _ -> raise Primred.NativeDestKO
+
     let get_parray () e =
       match e with
       | ARRAY(_u,t,_ty) -> t
@@ -283,6 +291,8 @@ module VNativeEntries =
     let mkInt env i = VAL(0, mkInt i)
 
     let mkFloat env f = VAL(0, mkFloat f)
+
+    let mkString env s = VAL(0, mkString s)
 
     let mkBool env b =
       let (ct,cf) = get_bool_constructors env in
@@ -580,7 +590,7 @@ let rec norm_head info env t stack =
     (ARRAY (u,t,ty), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _ | Int _ | Float _ | String _) -> (VAL(0, t), stack)
   | Prod (na,t,u) -> (PROD(na,t,u,env), stack)
 
 and norm_head_ref k info env stack normt t =
@@ -805,6 +815,8 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     begin match kind t' with Int i' when Uint63.equal i i' -> psubst | _ -> raise PatternFailure end
   | PHFloat f, VAL(0, t') ->
     begin match kind t' with Float f' when Float64.equal f f' -> psubst | _ -> raise PatternFailure end
+  | PHString s, VAL(0, t') ->
+    begin match kind t' with String s' when String.equal s s' -> psubst | _ -> raise PatternFailure end
   | PHLambda (ptys, pbod), LAMBDA (nlam, ntys, body, env) ->
     let np = Array.length ptys in
     if np > nlam then raise PatternFailure;
@@ -835,7 +847,7 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     let psubst = Array.fold_left3_i (fun i psubst ctx pty (_, ty) -> cbv_match_arg_pattern_lift info env ctx i psubst pty ty) psubst contexts_upto ptys tys in
     let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) na psubst pbod body in
     psubst
-  | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHSort _ | PHSymbol _ | PHLambda _ | PHProd _), _ -> raise PatternFailure
+  | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHSymbol _ | PHLambda _ | PHProd _), _ -> raise PatternFailure
 
 
 and cbv_apply_rule info env ctx psubst es stk =

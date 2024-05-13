@@ -471,13 +471,16 @@ let matches_core env sigma allow_bound_rels
 
       | PFloat f1, Float f2 when Float64.equal f1 f2 -> subst
 
+      | PString s1, String s2 when String.equal s1 s2 -> subst
+
       | PArray(pt,pdef,pty), Array(_u,t,def,ty)
              when Array.length pt = Array.length t ->
          sorec ctx env (sorec ctx env (Array.fold_left2 (sorec ctx env) subst pt t) pdef def) pty ty
 
       | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
          | PProd _ | PLetIn _ | PSort _ | PIf _ | PCase _
-         | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _ | PArray _), _ -> raise PatternMatchingFailure
+         | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _
+         | PString _ | PArray _), _ -> raise PatternMatchingFailure
 
       | PUninstantiated _, _ -> .
 
@@ -630,7 +633,7 @@ let sub_match ?(closed=true) env sigma pat c =
     in
     let sub = (env,def) :: (env,ty) :: subargs env t in
     try_aux sub next_mk_ctx next
-  | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _ ->
+  | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _|String _ ->
     next ()
   in
   here next

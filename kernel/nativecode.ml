@@ -59,7 +59,7 @@ let rec is_lazy env t =
   | Cast (c, _, _) | Prod (_, c, _) -> is_lazy env c
   | Const (c, _) -> get_const_lazy env c
   | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _ | Int _
-  | Float _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
+  | Float _ | String _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
     false
 
 and is_lazy_constant env cb =
@@ -305,12 +305,14 @@ type primitive =
   | Mk_proj
   | Is_int
   | Is_float
+  | Is_string
   | Is_parray
   | Cast_accu
   | Upd_cofix
   | Force_cofix
   | Mk_uint
   | Mk_float
+  | Mk_string
   | Mk_int
   | Val_to_int
   | Mk_evar
@@ -344,12 +346,14 @@ let eq_primitive p1 p2 =
   | Mk_proj, Mk_proj
   | Is_int, Is_int
   | Is_float, Is_float
+  | Is_string, Is_string
   | Is_parray, Is_parray
   | Cast_accu, Cast_accu
   | Upd_cofix, Upd_cofix
   | Force_cofix, Force_cofix
   | Mk_uint, Mk_uint
   | Mk_float, Mk_float
+  | Mk_string, Mk_string
   | Mk_int, Mk_int
   | Val_to_int, Val_to_int
   | Mk_evar, Mk_evar
@@ -392,12 +396,14 @@ let eq_primitive p1 p2 =
     | Mk_proj
     | Is_int
     | Is_float
+    | Is_string
     | Is_parray
     | Cast_accu
     | Upd_cofix
     | Force_cofix
     | Mk_uint
     | Mk_float
+    | Mk_string
     | Mk_int
     | Val_to_int
     | Mk_evar
@@ -453,21 +459,23 @@ let primitive_hash = function
   | MLsubst_instance_instance -> 24
   | Mk_float -> 25
   | Is_float -> 26
-  | Is_parray -> 27
-  | MLnot -> 28
-  | MLparray_of_array -> 29
-  | Get_value -> 30
-  | Get_sort -> 31
-  | Get_name -> 32
-  | Get_const -> 33
-  | Get_match -> 34
-  | Get_ind -> 35
-  | Get_evar -> 36
-  | Get_instance -> 37
-  | Get_proj -> 38
-  | Get_symbols -> 39
-  | Lazy -> 40
-  | Mk_empty_instance -> 41
+  | Is_string -> 27
+  | Is_parray -> 28
+  | MLnot -> 29
+  | MLparray_of_array -> 30
+  | Get_value -> 31
+  | Get_sort -> 32
+  | Get_name -> 33
+  | Get_const -> 34
+  | Get_match -> 35
+  | Get_ind -> 36
+  | Get_evar -> 37
+  | Get_instance -> 38
+  | Get_proj -> 39
+  | Get_symbols -> 40
+  | Lazy -> 41
+  | Mk_empty_instance -> 42
+  | Mk_string -> 43
 
 type mllambda =
   | MLlocal        of lname
@@ -485,6 +493,7 @@ type mllambda =
   | MLint          of int
   | MLuint         of Uint63.t
   | MLfloat        of Float64.t
+  | MLstring       of String.t
   | MLsetref       of string * mllambda
   | MLsequence     of mllambda * mllambda
   | MLarray        of mllambda array
@@ -560,6 +569,8 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
       Uint63.equal i1 i2
   | MLfloat f1, MLfloat f2 ->
       Float64.equal f1 f2
+  | MLstring s1, MLstring s2 ->
+      String.equal s1 s2
   | MLsetref (id1, ml1), MLsetref (id2, ml2) ->
       String.equal id1 id2 &&
       eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
@@ -574,7 +585,8 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
     eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
   | (MLlocal _ | MLglobal _ | MLprimitive _ | MLlam _ | MLletrec _ | MLlet _ |
     MLapp _ | MLif _ | MLmatch _ | MLconstruct _ | MLint _ | MLuint _ |
-    MLfloat _ | MLsetref _ | MLsequence _ | MLarray _ | MLisaccu _), _ -> false
+    MLfloat _ | MLstring _ | MLsetref _ | MLsequence _ |
+    MLarray _ | MLisaccu _), _ -> false
 
 and eq_letrec gn1 gn2 n env1 env2 defs1 defs2 =
   let eq_def (_,args1,ml1) (_,args2,ml2) =
@@ -663,6 +675,8 @@ let rec hash_mllambda gn n env t =
       combinesmall 16 (combine (String.hash s) (combine (Ind.CanOrd.hash ind) (hash_mllambda gn n env c)))
   | MLfloat f ->
       combinesmall 17 (Float64.hash f)
+  | MLstring s ->
+      combinesmall 18 (Pstring.hash s)
 
 and hash_mllambda_letrec gn n env init defs =
   let hash_def (_,args,ml) =
@@ -696,7 +710,7 @@ let fv_lam l =
     match l with
     | MLlocal l ->
         if LNset.mem l bind then fv else LNset.add l fv
-    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> fv
+    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ | MLstring _ -> fv
     | MLprimitive (_, args) ->
         let fv_arg arg fv = aux arg bind fv in
         Array.fold_right fv_arg args fv
@@ -1198,6 +1212,7 @@ let compile_prim env decl cond paux =
           | CPrimitives.PT_float64 -> Is_float
           | CPrimitives.PT_array -> Is_parray
           | CPrimitives.PT_int63 -> assert false
+          | CPrimitives.PT_string -> Is_string
           in
            List.fold_left
              (fun ml (_, c) -> app_prim MLand [| ml; app_prim check [|c|]|])
@@ -1482,6 +1497,7 @@ let compile_prim env decl cond paux =
      MLconstruct(prefix,cn,tag,args)
   | Luint i -> MLprimitive (Mk_uint, [|MLuint i|])
   | Lfloat f -> MLprimitive (Mk_float, [|MLfloat f|])
+  | Lstring s -> MLprimitive (Mk_string, [|MLstring s|])
   | Lparray (t,def) ->
     let def = ml_of_lam env l def in
     MLprimitive (MLparray_of_array, [| MLarray (Array.map (ml_of_lam env l) t); def |])
@@ -1535,7 +1551,7 @@ let subst s l =
     let rec aux l =
       match l with
       | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-      | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> l
+      | MLglobal _ | MLint _ | MLuint _ | MLfloat _ | MLstring _ -> l
       | MLprimitive (p, args) -> MLprimitive (p, Array.map aux args)
       | MLlam(params,body) -> MLlam(params, aux body)
       | MLletrec(defs,body) ->
@@ -1606,7 +1622,7 @@ let optimize gdef l =
   let rec optimize s l =
     match l with
     | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> l
+    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ | MLstring _ -> l
     | MLprimitive (p, args) ->
         MLprimitive (p, Array.map (optimize s) args)
     | MLlam(params,body) ->
@@ -1816,6 +1832,7 @@ let pp_mllam fmt l =
     | MLint i -> pp_int fmt i
     | MLuint i -> Format.fprintf fmt "(%s)" (Uint63.compile i)
     | MLfloat f -> Format.fprintf fmt "(%s)" (Float64.compile f)
+    | MLstring s -> Format.fprintf fmt "%S" s
     | MLsetref (s, body) ->
         Format.fprintf fmt "@[%s@ :=@\n %a@]" s pp_mllam body
     | MLsequence(l1,l2) ->
@@ -1940,12 +1957,14 @@ let pp_mllam fmt l =
     | Mk_empty_instance -> Format.fprintf fmt "UVars.Instance.empty"
     | Is_int -> Format.fprintf fmt "is_int"
     | Is_float -> Format.fprintf fmt "is_float"
+    | Is_string -> Format.fprintf fmt "is_string"
     | Is_parray -> Format.fprintf fmt "is_parray"
     | Cast_accu -> Format.fprintf fmt "cast_accu"
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"
     | Force_cofix -> Format.fprintf fmt "force_cofix"
     | Mk_uint -> Format.fprintf fmt "mk_uint"
     | Mk_float -> Format.fprintf fmt "mk_float"
+    | Mk_string -> Format.fprintf fmt "mk_string"
     | Mk_int -> Format.fprintf fmt "mk_int"
     | Val_to_int -> Format.fprintf fmt "val_to_int"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"

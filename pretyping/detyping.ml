@@ -1016,6 +1016,7 @@ and detype_r d flags avoid env sigma t =
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
     | Float f -> GFloat f
+    | String s -> GString s
     | Array(u,t,def,ty) ->
       let t = Array.map (detype d flags avoid env sigma) t in
       let def = detype d flags avoid env sigma def in
@@ -1209,6 +1210,7 @@ let rec subst_glob_constr env subst = DAst.map (function
   | GEvar _
   | GInt _
   | GFloat _
+  | GString _
   | GPatVar _ as raw -> raw
 
   | GApp (r,rl) as raw ->

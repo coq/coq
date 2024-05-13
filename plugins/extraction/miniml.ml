@@ -128,6 +128,7 @@ and ml_ast =
   | MLmagic  of ml_ast
   | MLuint   of Uint63.t
   | MLfloat  of Float64.t
+  | MLstring of String.t
   | MLparray of ml_ast array * ml_ast
 
 and ml_pattern =

@@ -29,6 +29,12 @@ type caml_prim =
 | CAML_Arrayset
 | CAML_Arraycopy
 | CAML_Arraylength
+| CAML_Stringmake
+| CAML_Stringlength
+| CAML_Stringget
+| CAML_Stringsub
+| CAML_Stringcat
+| CAML_Stringcompare
 
 type instruction =
   | Klabel of Label.t

@@ -47,6 +47,7 @@ type notation_constr =
   | NCast of notation_constr * Constr.cast_kind option * notation_constr
   | NInt of Uint63.t
   | NFloat of Float64.t
+  | NString of Pstring.t
   | NArray of notation_constr array * notation_constr * notation_constr
 
 (** Note concerning NList: first constr is iterator, second is terminator;

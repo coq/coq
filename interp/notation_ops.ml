@@ -263,7 +263,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
     aux vars renaming ty1 ty2
   | (NRef _ | NVar _ | NApp _ | NProj _ | NHole _ | NGenarg _ | NList _ | NLambda _ | NProd _
     | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise_notrace Exit in
+    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NString _ | NArray _), _ -> raise_notrace Exit in
   try
     let _ = aux (vars1,vars2) [] t1 t2 in
     if not lt then
@@ -468,6 +468,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
   | NRef (x,u) -> GRef (x,u)
   | NInt i -> GInt i
   | NFloat f -> GFloat f
+  | NString s -> GString s
   | NArray (t,def,ty) -> GArray(None, Array.map (f e) t, f e def, f e ty)
 
 let glob_constr_of_notation_constr ?loc x =
@@ -703,6 +704,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GSort s -> NSort s
   | GInt i -> NInt i
   | GFloat f -> NFloat f
+  | GString s -> NString s
   | GHole w -> NHole w
   | GGenarg arg -> forgetful := { !forgetful with forget_ltac = true }; NGenarg arg
   | GRef (r,u) -> NRef (r,u)
@@ -909,6 +911,7 @@ let rec subst_notation_constr subst bound raw =
   | NSort _ -> raw
   | NInt _ -> raw
   | NFloat _ -> raw
+  | NString _ -> raw
 
   | NHole knd ->
     let nknd = match knd with
@@ -1572,6 +1575,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GInt i1, NInt i2 when Uint63.equal i1 i2 -> sigma
   | GFloat f1, NFloat f2 when Float64.equal f1 f2 -> sigma
+  | GString s1, NString s2 when String.equal s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 
@@ -1606,7 +1610,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GProj _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _
-     | GCast _ | GInt _ | GFloat _ | GArray _), _ -> raise No_match
+     | GCast _ | GInt _ | GFloat _ | GString _ | GArray _), _ -> raise No_match
 
 and match_in_type u alp metas sigma t = function
   | None -> sigma

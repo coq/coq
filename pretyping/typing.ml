@@ -386,6 +386,9 @@ let judge_of_int env v =
 let judge_of_float env v =
   Environ.on_judgment EConstr.of_constr (judge_of_float env v)
 
+let judge_of_string env v =
+  Environ.on_judgment EConstr.of_constr (judge_of_string env v)
+
 let judge_of_array env sigma u tj defj tyj =
   let ulev = match UVars.Instance.to_array u with
     | [||], [|u|] -> u
@@ -577,6 +580,9 @@ let rec execute env sigma cstr =
     | Float f ->
         sigma, judge_of_float env f
 
+    | String s ->
+        sigma, judge_of_string env s
+
     | Array(u,t,def,ty) ->
       let sigma, tyj = execute env sigma ty in
       let sigma, tyj = type_judgment env sigma tyj in
@@ -701,7 +707,7 @@ let rec recheck_against env sigma good c =
     match kind sigma good, kind sigma c with
     (* No subterms *)
     | _, (Meta _ | Rel _ | Var _ | Const _ | Ind _ | Construct _
-         | Sort _ | Int _ | Float _) ->
+         | Sort _ | Int _ | Float _ | String _) ->
       default ()
 
     (* Evar (todo deal with Evar differently??? execute recurses on its type)

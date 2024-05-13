@@ -217,6 +217,12 @@ let eval_caml_prim = function
 | CAML_Arrayset -> 3, Vmvalues.parray_set
 | CAML_Arraycopy -> 4, Vmvalues.parray_copy
 | CAML_Arraylength -> 5, Vmvalues.parray_length
+| CAML_Stringmake -> 6, Vmvalues.pstring_make
+| CAML_Stringlength -> 7, Vmvalues.pstring_length
+| CAML_Stringget -> 8, Vmvalues.pstring_get
+| CAML_Stringsub -> 9, Vmvalues.pstring_sub
+| CAML_Stringcat -> 10, Vmvalues.pstring_cat
+| CAML_Stringcompare -> 11, Vmvalues.pstring_compare
 
 let make_static_prim table =
   let fold table prim =
@@ -232,6 +238,12 @@ let make_static_prim table =
     CAML_Arrayset;
     CAML_Arraycopy;
     CAML_Arraylength;
+    CAML_Stringmake;
+    CAML_Stringlength;
+    CAML_Stringget;
+    CAML_Stringsub;
+    CAML_Stringcat;
+    CAML_Stringcompare;
   ] in
   let table, prims = CList.fold_left_map fold table prims in
   table, Array.of_list prims

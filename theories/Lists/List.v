@@ -2850,6 +2850,148 @@ Section NatSeq.
 
 End NatSeq.
 
+(***********************)
+(** ** List comparison *)
+(***********************)
+
+Section Compare.
+
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+
+  Fixpoint list_compare (xs ys : list A) : comparison :=
+    match xs, ys with
+    | nil   , nil    => Eq
+    | nil   , _      => Lt
+    | _     , nil    => Gt
+    | x :: xs, y :: ys =>
+        match cmp x y with
+        | Eq => list_compare xs ys
+        | c  => c
+        end
+    end%list.
+
+  Section Lemmas.
+
+    Variable Hcmp : forall x y, cmp x y = Eq <-> x = y.
+
+    Lemma list_compare_cons (x : A) (xs ys : list A) :
+      list_compare (x :: xs) (x :: ys) = list_compare xs ys.
+    Proof.
+      simpl. rewrite (proj2 (Hcmp x x) eq_refl). reflexivity.
+    Qed.
+
+    Lemma list_compare_prefix_spec (xs ys : list A) (c : comparison) :
+      list_compare xs ys = c <->
+      exists (prefix xs' ys' : list A),
+        xs = prefix ++ xs' /\
+        ys = prefix ++ ys' /\
+        match xs', ys' with
+        | nil   , nil    => c = Eq
+        | nil   , _      => c = Lt
+        | _     , nil    => c = Gt
+        | x :: _, y :: _ =>
+            match cmp x y with
+            | Eq => False
+            | cm => c = cm
+            end
+        end.
+    Proof.
+      assert (xs = nil ++ xs) as Hxs by reflexivity.
+      assert (ys = nil ++ ys) as Hys by reflexivity.
+      revert Hxs Hys.
+      generalize (@nil A) as prefix.
+      generalize ys at 2 3.
+      generalize xs at 2 3.
+      intros xs'; induction xs' as [|x xs' IH]; intros ys' prefix -> ->; split.
+      - intros <-. exists prefix, nil, ys'.
+        repeat split; destruct ys'; reflexivity.
+      - rewrite List.app_nil_r.
+        intros (prefix' & xs' & ys'' & -> & H2 & H).
+        rewrite <-List.app_assoc in H2. apply List.app_inv_head in H2. subst ys''.
+        destruct xs' as [|x xs''].
+        { destruct ys'; simpl in *; subst c; reflexivity. }
+        exfalso. simpl in *. rewrite (proj2 (Hcmp x x) eq_refl) in H. assumption.
+      - intros <-. destruct ys' as [|y ys'']; simpl.
+        { clear IH. exists prefix, (x :: xs'), nil; auto. }
+        destruct (cmp x y) eqn:Hcmpxy.
+        + apply Hcmp in Hcmpxy. subst y.
+          rewrite list_compare_cons in IH.
+          rewrite <-(IH ys'' (prefix ++ x :: nil)).
+          * reflexivity.
+          * rewrite <-List.app_assoc. reflexivity.
+          * rewrite <-List.app_assoc. reflexivity.
+        + clear IH. exists prefix, (x :: xs'), (y :: ys'').
+          rewrite Hcmpxy. repeat split; reflexivity.
+        + clear IH. exists prefix, (x :: xs'), (y :: ys'').
+          rewrite Hcmpxy. repeat split; reflexivity.
+      - destruct ys' as [|y ys'']; simpl.
+        { clear IH. rewrite List.app_nil_r. intros (prefix' & xs'' & ys' & H1 & -> & H).
+          rewrite <-List.app_assoc in H1. apply List.app_inv_head in H1. subst xs''.
+          destruct ys' as [|y ys']; simpl in *; [subst c; reflexivity|].
+          exfalso. rewrite (proj2 (Hcmp y y) eq_refl) in H. assumption. }
+        destruct (cmp x y) eqn:Hcmpxy.
+        + apply Hcmp in Hcmpxy. subst y.
+          rewrite <-(IH ys'' (prefix ++ x :: nil)).
+          * intros H; exact H.
+          * rewrite <-List.app_assoc; reflexivity.
+          * rewrite <-List.app_assoc; reflexivity.
+        + clear IH. intros (prefix' & xs'' & ys' & H1 & H2 & H).
+          destruct xs'', ys'; try subst c; try reflexivity.
+          * exfalso. rewrite List.app_nil_r in H1, H2. rewrite <-H1 in H2.
+            apply List.app_inv_head in H2. inversion H2; subst.
+            rewrite (proj2 (Hcmp x x) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+          * rewrite List.app_nil_r in H2. subst prefix'.
+            rewrite <-List.app_assoc in H1.
+            apply List.app_inv_head in H1. simpl in H1. inversion H1; subst.
+            rewrite (proj2 (Hcmp y y) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+          * destruct (cmp a a0) eqn:Hc; [exfalso; assumption|subst c; reflexivity|].
+            subst c. exfalso.
+            assert (prefix' = prefix) as Hprefix.
+            { revert prefix' H1 H2; induction prefix as [|p prefix IH]; simpl; intros.
+              - destruct prefix'; simpl; [reflexivity|]. simpl in *.
+                inversion H1; inversion H2; subst.
+                rewrite (proj2 (Hcmp a1 a1) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+              - destruct prefix'; simpl.
+                { simpl in H1, H2. inversion H1; inversion H2; subst.
+                  rewrite (proj2 (Hcmp a0 a0) eq_refl) in Hc. discriminate Hc. }
+                simpl in H1, H2. inversion H1; inversion H2; subst.
+                f_equal. apply IH; assumption. }
+            subst prefix'.
+            apply List.app_inv_head in H1, H2. simpl in H1, H2.
+            inversion H1; inversion H2; subst.
+            rewrite Hcmpxy in Hc. discriminate Hc.
+        + clear IH. intros (prefix' & xs'' & ys' & H1 & H2 & H).
+          destruct xs'', ys'; try subst c; try reflexivity.
+          * exfalso. rewrite List.app_nil_r in H1, H2. rewrite <-H1 in H2.
+            apply List.app_inv_head in H2. inversion H2; subst.
+            rewrite (proj2 (Hcmp x x) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+          * rewrite List.app_nil_r in H1. subst prefix'.
+            rewrite <-List.app_assoc in H2.
+            apply List.app_inv_head in H2. simpl in H2. inversion H2; subst.
+            rewrite (proj2 (Hcmp x x) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+          * destruct (cmp a a0) eqn:Hc; [exfalso; assumption| |subst c; reflexivity].
+            subst c. exfalso.
+            assert (prefix' = prefix) as Hprefix.
+            { revert prefix' H1 H2; induction prefix as [|p prefix IH]; simpl; intros.
+              - destruct prefix'; simpl; [reflexivity|]. simpl in *.
+                inversion H1; inversion H2; subst.
+                rewrite (proj2 (Hcmp a1 a1) eq_refl) in Hcmpxy. discriminate Hcmpxy.
+              - destruct prefix'; simpl.
+                { simpl in H1, H2. inversion H1; inversion H2; subst.
+                  rewrite (proj2 (Hcmp a0 a0) eq_refl) in Hc. discriminate Hc. }
+                simpl in H1, H2. inversion H1; inversion H2; subst.
+                f_equal. apply IH; assumption. }
+            subst prefix'.
+            apply List.app_inv_head in H1, H2. simpl in H1, H2.
+            inversion H1; inversion H2; subst.
+            rewrite Hcmpxy in Hc. discriminate Hc.
+    Qed.
+
+  End Lemmas.
+
+End Compare.
+
 Section Exists_Forall.
 
   (** * Existential and universal predicates over lists *)

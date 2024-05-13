@@ -116,7 +116,7 @@ let change_vars =
             , Array.map (change_vars mapping) t
             , change_vars mapping def
             , change_vars mapping ty )
-        | GSort _ | GHole _ | GGenarg _ | GInt _ as x -> x)
+        | GSort _ | GHole _ | GGenarg _ | GInt _ | GString _ as x -> x)
       rt
   and change_vars_br mapping ({CAst.loc; v = idl, patl, res} as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
@@ -284,7 +284,7 @@ let rec alpha_rt excluded rt =
         , alpha_rt excluded lhs
         , alpha_rt excluded rhs )
     | GRec _ -> user_err Pp.(str "Not handled GRec")
-    | (GSort _ | GInt _ | GFloat _ | GHole _ | GGenarg _) as rt -> rt
+    | (GSort _ | GInt _ | GFloat _ | GString _ | GHole _ | GGenarg _) as rt -> rt
     | GCast (b, k, c) ->
       GCast (alpha_rt excluded b, k, alpha_rt excluded c)
     | GApp (f, args) ->
@@ -347,7 +347,7 @@ let is_free_in id =
         | GGenarg _ -> false (* XXX isn't this incorrect? *)
         | GCast (b, _, t) ->
           is_free_in b || is_free_in t
-        | GInt _ | GFloat _ -> false
+        | GInt _ | GFloat _ | GString _ -> false
         | GArray (_u, t, def, ty) ->
           Array.exists is_free_in t || is_free_in def || is_free_in ty)
       x
@@ -425,6 +425,7 @@ let replace_var_by_term x_id term =
         | (GSort _ | GHole _ | GGenarg _) as rt -> rt (* is this correct for GGenarg? *)
         | GInt _ as rt -> rt
         | GFloat _ as rt -> rt
+        | GString _ as rt -> rt
         | GArray (u, t, def, ty) ->
           GArray
             ( u
@@ -505,9 +506,8 @@ let expand_as =
   in
   let rec expand_as map =
     DAst.map (function
-      | (GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _ | GFloat _)
-        as rt ->
-        rt
+      | (GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _
+         | GFloat _ | GString _ ) as rt -> rt
       | GVar id as rt -> (
         try DAst.get (Id.Map.find id map) with Not_found -> rt )
       | GApp (f, args) -> GApp (expand_as map f, List.map (expand_as map) args)

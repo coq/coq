@@ -605,6 +605,8 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
     if Uint63.equal i i' then psubst else raise PatternFailure
   | PHFloat f, Float f' ->
     if Float64.equal f f' then psubst else raise PatternFailure
+  | PHString s, String s' ->
+    if String.equal s s' then psubst else raise PatternFailure
   | PHLambda (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_lambda sigma t in
     let na = List.length ntys and np = Array.length ptys in
@@ -629,7 +631,7 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
     let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
     let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pbod body in
     psubst
-  | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHSort _ | PHSymbol _), _ -> raise PatternFailure
+  | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHSymbol _), _ -> raise PatternFailure
 
 and extract_n_stack args n s =
   if n = 0 then List.rev args, s else
@@ -937,7 +939,7 @@ let whd_state_gen ?csts flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | Array _ ->
+    | Int _ | Float _ | String _ | Array _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_,u as kn),rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in

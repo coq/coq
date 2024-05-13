@@ -64,6 +64,7 @@ val judge_of_product : Environ.env -> evar_map -> Name.t ->
 val judge_of_projection : env -> evar_map -> Projection.t -> unsafe_judgment -> unsafe_judgment
 val judge_of_int : Environ.env -> Uint63.t -> unsafe_judgment
 val judge_of_float : Environ.env -> Float64.t -> unsafe_judgment
+val judge_of_string : Environ.env -> String.t -> unsafe_judgment
 
 val checked_appvect : env -> evar_map -> constr -> constr array -> evar_map * constr
 val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * constr

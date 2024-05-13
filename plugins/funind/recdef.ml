@@ -241,7 +241,7 @@ let check_not_nested env sigma forbidden e =
   let rec check_not_nested e =
     match EConstr.kind sigma e with
     | Rel _ -> ()
-    | Int _ | Float _ -> ()
+    | Int _ | Float _ | String _ -> ()
     | Var x ->
       if Id.List.mem x forbidden then
         user_err
@@ -465,14 +465,14 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
           | Fix _ -> user_err Pp.(str "Function cannot treat local fixpoint or cofixpoint")
           | Proj _ -> user_err Pp.(str "Function cannot treat projections")
           | Lambda _ | Cast _ | LetIn _
-          | CoFix _ | Array _ | Int _ | Float _ ->
+          | CoFix _ | Array _ | Int _ | Float _ | String _ ->
             anomaly
               ( Pp.str "travel_aux : unexpected "
               ++ Printer.pr_leconstr_env env sigma expr_info.info
               ++ Pp.str "." ) )
       | Cast (t, _, _) -> travel jinfo continuation_tac {expr_info with info = t}
       | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-       |Int _ | Float _ ->
+       |Int _ | Float _ | String _ ->
         let new_continuation_tac = jinfo.otherS () expr_info continuation_tac in
         new_continuation_tac expr_info)
 

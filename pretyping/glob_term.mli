@@ -118,6 +118,7 @@ type 'a glob_constr_r =
   | GProj of (Constant.t * glob_instance option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
   | GFloat of Float64.t
+  | GString of Pstring.t
   | GArray of glob_instance option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 

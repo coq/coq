@@ -107,6 +107,8 @@ val mk_uint : Uint63.t -> t
 
 val mk_float : Float64.t -> t
 
+val mk_string : string -> t
+
 val napply : t -> t array -> t
 (* Functions over accumulators *)
 
@@ -303,6 +305,24 @@ val no_check_ldshiftexp : t -> t -> t
 val no_check_next_up : t -> t
 
 val no_check_next_down : t -> t
+
+(** Support for strings *)
+
+val is_string : t -> bool
+
+val no_check_string_make : t -> t -> t
+val no_check_string_length : t -> t
+val no_check_string_get : t -> t -> t
+val no_check_string_sub : t -> t -> t -> t
+val no_check_string_cat : t -> t -> t
+val no_check_string_compare : t -> t -> t
+
+val string_make : t -> t -> t -> t
+val string_length : t -> t -> t
+val string_get : t -> t -> t -> t
+val string_sub : t -> t -> t -> t -> t
+val string_cat : t -> t -> t -> t
+val string_compare : t -> t -> t -> t
 
 (** Support for arrays *)
 

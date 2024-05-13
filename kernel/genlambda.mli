@@ -38,6 +38,7 @@ type 'v lambda =
   (* inductive name, constructor tag, arguments *)
 | Luint         of Uint63.t
 | Lfloat        of Float64.t
+| Lstring       of String.t
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive

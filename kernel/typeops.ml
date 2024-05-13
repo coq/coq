@@ -314,6 +314,9 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
   | CPrimitives.PT_float64 ->
     assert (UVars.Instance.is_empty u);
     Constr.mkSet
+  | CPrimitives.PT_string ->
+    assert (UVars.Instance.is_empty u);
+    Constr.mkSet
   | CPrimitives.PT_array ->
     begin match UVars.Instance.to_array u with
     | [||], [|u|] ->
@@ -331,6 +334,11 @@ let type_of_float env =
   match env.retroknowledge.Retroknowledge.retro_float64 with
   | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
+
+let type_of_string env =
+  match env.retroknowledge.Retroknowledge.retro_string with
+  | Some c -> UnsafeMonomorphic.mkConst c
+  | None -> CErrors.user_err Pp.(str"The type string must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
   assert (UVars.Instance.length u = (0,1));
@@ -407,6 +415,9 @@ let judge_of_int env i =
 
 let judge_of_float env f =
   make_judge (Constr.mkFloat f) (type_of_float env)
+
+let judge_of_string env s =
+  make_judge (Constr.mkString s) (type_of_string env)
 
 let judge_of_array env u tj defj =
   let def = defj.uj_val in
@@ -823,6 +834,7 @@ let rec execute env cstr =
     (* Primitive types *)
     | Int _ -> cstr, type_of_int env
     | Float _ -> cstr, type_of_float env
+    | String _ -> cstr, type_of_string env
     | Array(u,t,def,ty) ->
       (* ty : Type@{u} and all of t,def : ty *)
       let ulev = match UVars.Instance.to_array u with
@@ -977,11 +989,14 @@ let type_of_prim_const env _u c =
   match c with
   | CPrimitives.Arraymaxlength ->
     int_ty ()
+  | CPrimitives.Stringmaxlength ->
+    int_ty ()
 
 let type_of_prim env u t =
   let module UM = UnsafeMonomorphic in
   let int_ty () = type_of_int env in
   let float_ty () = type_of_float env in
+  let string_ty () = type_of_string env in
   let array_ty u a = mkApp(type_of_array env u, [|a|]) in
   let bool_ty () =
     match env.retroknowledge.Retroknowledge.retro_bool with
@@ -1017,6 +1032,7 @@ let type_of_prim env u t =
   let tr_prim_type (tr_type : ind_or_type -> constr) (type a) (ty : a prim_type) (t : a) = match ty with
     | PT_int63 -> int_ty t
     | PT_float64 -> float_ty t
+    | PT_string -> string_ty t
     | PT_array -> array_ty (fst t) (tr_type (snd t))
   in
   let tr_ind (tr_type : ind_or_type -> constr) (type t) (i : t prim_ind) (a : t) = match i, a with

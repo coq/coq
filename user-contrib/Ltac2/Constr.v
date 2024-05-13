@@ -71,6 +71,7 @@ Ltac2 Type kind := [
 | Proj (projection, Binder.relevance, constr)
 | Uint63 (uint63)
 | Float (float)
+| String (string)
 | Array (instance, constr array, constr, constr)
 ].
 
@@ -146,7 +147,7 @@ Local Ltac2 iter_invert (f : constr -> unit) (ci : case_invert) : unit :=
 Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
   match kind c with
   | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
-  | Constructor _ _ | Uint63 _ | Float _ => ()
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => ()
   | Cast c _ t => f c; f t
   | Prod b c => f (Binder.type b); f c
   | Lambda b c => f (Binder.type b); f c
@@ -177,7 +178,7 @@ Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
 Ltac2 iter_with_binders (g : 'a -> binder -> 'a) (f : 'a -> constr -> unit) (n : 'a) (c : constr) : unit :=
   match kind c with
   | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
-  | Constructor _ _ | Uint63 _ | Float _ => ()
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => ()
   | Cast c _ t => f n c; f n t
   | Prod b c => f n (Binder.type b); f (g n b) c
   | Lambda b c => f n (Binder.type b); f (g n b) c
@@ -219,7 +220,7 @@ Local Ltac2 map_invert (f : constr -> constr) (iv : case_invert) : case_invert :
 Ltac2 map (f : constr -> constr) (c : constr) : constr :=
   match kind c with
   | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
-  | Constructor _ _ | Uint63 _ | Float _ => c
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => c
   | Cast c k t =>
       let c := f c
       with t := f t in

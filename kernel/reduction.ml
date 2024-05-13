@@ -23,10 +23,10 @@ open Context.Rel.Declaration
 let whd_all ?evars env t =
   match kind t with
     | (Sort _|Meta _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|Array _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|String _|Array _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Meta _ | Int _ | Float _ | Array _ -> t
+      | Ind _ | Construct _ | Meta _ | Int _ | Float _ | String _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos ?evars RedFlags.all env) (create_tab ()) (inject t)
@@ -37,10 +37,10 @@ let whd_all ?evars env t =
 let whd_allnolet ?evars env t =
   match kind t with
     | (Sort _|Meta _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|LetIn _|Int _|Float _|Array _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|LetIn _|Int _|Float _|String _|Array _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Meta _ | LetIn _ | Int _ | Float _ | Array _ -> t
+      | Ind _ | Construct _ | Meta _ | LetIn _ | Int _ | Float _ | String _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos ?evars RedFlags.allnolet env) (create_tab ()) (inject t)

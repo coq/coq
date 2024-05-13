@@ -643,6 +643,7 @@ type pretyper = {
   pretype_cast : pretyper -> glob_constr * cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
+  pretype_string : pretyper -> String.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
@@ -689,6 +690,8 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_int self n ?loc ~flags tycon env sigma
   | GFloat f ->
     self.pretype_float self f ?loc ~flags tycon env sigma
+  | GString s ->
+    self.pretype_string self s ?loc ~flags tycon env sigma
   | GArray (u,t,def,ty) ->
     self.pretype_array self (u,t,def,ty) ?loc ~flags tycon env sigma
 
@@ -1436,6 +1439,15 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         in
         discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
 
+  let pretype_string self s =
+    fun ?loc ~flags tycon env sigma ->
+      let resj =
+        try Typing.judge_of_string !!env s
+        with Invalid_argument _ ->
+          user_err ?loc (str "Type of string should be registered first.")
+        in
+        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
+
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~flags tycon env sigma ->
     let sigma, u = match u with
@@ -1501,6 +1513,7 @@ let default_pretyper =
     pretype_cast = pretype_cast;
     pretype_int = pretype_int;
     pretype_float = pretype_float;
+    pretype_string = pretype_string;
     pretype_array = pretype_array;
     pretype_type = pretype_type;
   }

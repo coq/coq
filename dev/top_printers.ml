@@ -368,6 +368,8 @@ let constr_display csr =
       "Int("^(Uint63.to_string i)^")"
   | Float f ->
       "Float("^(Float64.to_string f)^")"
+  | String s ->
+      Printf.sprintf "String(%S)" s
   | Array (u,t,def,ty) -> "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
 
   and array_display v =
@@ -527,6 +529,8 @@ let print_pure_constr csr =
      print_string ("Int("^(Uint63.to_string i)^")")
   | Float f ->
       print_string ("Float("^(Float64.to_string f)^")")
+  | String s ->
+      print_string (Printf.sprintf "String(%S)" s)
   | Array (u,t,def,ty) ->
       print_string "Array(";
       Array.iter (fun x -> box_display x; print_space()) t;
