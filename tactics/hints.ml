@@ -1556,6 +1556,10 @@ let hint_globref gr = IsGlobRef gr
 
 let hint_constr (c, diff) = IsConstr (c, diff)
 
+let warn_non_reference_hint_using =
+  CWarnings.create ~name:"non-reference-hint-using" ~category:CWarnings.CoreCategories.deprecated
+    Pp.(fun (env, sigma, c) -> str "Use of the non-reference term " ++ pr_leconstr_env env sigma c ++ str " in \"using\" clauses is deprecated")
+
 let expand_constructor_hints env sigma lems =
   List.map_append (fun lem ->
     let evd, lem = lem env sigma in
@@ -1568,6 +1572,7 @@ let expand_constructor_hints env sigma lems =
     | Var id -> [IsGlobRef (GlobRef.VarRef id)]
     | Construct (cstr, _) -> [IsGlobRef (GlobRef.ConstructRef cstr)]
     | _ ->
+      let () = warn_non_reference_hint_using (env, evd, lem) in
       let (c, ctx) = prepare_hint env sigma (evd,lem) in
       let ctx = if UnivGen.is_empty_sort_context ctx then None else Some ctx in
       [IsConstr (c, ctx)]) lems
