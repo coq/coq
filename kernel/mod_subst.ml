@@ -427,6 +427,13 @@ let subst_mps subst c =
   if is_empty_subst subst then c
   else map_kn (subst_mind subst) (subst_pcon_term subst) c
 
+let subst_mps_list substs c =
+  if List.is_empty substs || List.for_all is_empty_subst substs then c
+  else
+    let subst_const pcon = List.fold_right subst_mps substs (mkConstU pcon) in
+    let subst_mind pind = List.fold_right subst_mind substs pind in
+    map_kn subst_mind subst_const c
+
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when ModPath.equal mp mpfrom -> mpto

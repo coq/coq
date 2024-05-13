@@ -108,7 +108,7 @@ let indirect_accessor o =
   | Some c -> c
   in
   let (c, prv) = Discharge.cook_opaque_proofterm ci c in
-  let c = Mod_subst.(List.fold_right subst_mps sub c) in
+  let c = Mod_subst.subst_mps_list sub c in
   (c, prv)
 
 let () = Mod_checking.set_indirect_accessor indirect_accessor

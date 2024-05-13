@@ -150,3 +150,4 @@ val replace_mp_in_kn : ModPath.t -> ModPath.t -> KerName.t -> KerName.t
 (** [subst_mps sub c] performs the substitution [sub] on all kernel
    names appearing in [c] *)
 val subst_mps : substitution -> constr -> constr
+val subst_mps_list : substitution list -> constr -> constr
