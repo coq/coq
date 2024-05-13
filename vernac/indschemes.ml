@@ -380,7 +380,6 @@ let rec name_and_process_schemes env l =
       (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
 
 let do_mutual_induction_scheme ?(force_mutual=false) env l =
-  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
 
   let sigma, lrecspec, _ =
     List.fold_right
@@ -406,14 +405,17 @@ let do_mutual_induction_scheme ?(force_mutual=false) env l =
     let _,_,ind,_ = List.hd l in
     Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
-  let declare decl fi lrecref =
+  let declare decl ({CAst.v=fi},dep,ind,sort) =
     let decltype = Retyping.get_type_of env sigma decl in
     let decltype = EConstr.to_constr sigma decltype in
     let decl = EConstr.to_constr sigma decl in
     let cst = define ~poly fi sigma decl (Some decltype) in
-    Names.GlobRef.ConstRef cst :: lrecref
+    DeclareScheme.declare_scheme
+      (Ind_tables.scheme_kind_name @@ Elimschemes.elim_scheme ~dep ~to_kind:sort)
+      (ind,cst)
   in
-  let _ = List.fold_right2 declare listdecl lrecnames [] in
+  let () = List.iter2 declare listdecl l in
+  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
   Declare.fixpoint_message None lrecnames
 
 let do_scheme env l =

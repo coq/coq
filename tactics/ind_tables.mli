@@ -59,6 +59,9 @@ val declare_individual_scheme_object : string ->
 val is_declared_scheme_object : string -> bool
 (** Is the string used as the name of a [scheme_kind]? *)
 
+val scheme_kind_name : _ scheme_kind -> string
+(** Name of a [scheme_kind]. Can be used to register with DeclareScheme. *)
+
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
 val define_individual_scheme : ?loc:Loc.t -> individual scheme_kind ->
