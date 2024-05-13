@@ -1046,6 +1046,28 @@ let shrink_body c ty =
 (* Saving an obligation                                                *)
 (***********************************************************************)
 
+let current_obligation_uctx prg uctx =
+  if prg.prg_info.Info.poly then
+    uctx
+  else
+    (* We let the first obligation declare the monomorphic universe
+      context of the main constant (goes together with
+      update_global_obligation_uctx) *)
+    UState.union prg.prg_uctx uctx
+
+let update_global_obligation_uctx prg uctx =
+  let uctx =
+    if prg.prg_info.Info.poly then
+      (* Accumulate the polymorphic constraints *)
+      UState.union prg.prg_uctx uctx
+    else
+      (* The monomorphic universe context of the main constant has
+         been declared by the first obligation; it is now in the
+         global env and we now remove it for the further
+         declarations *)
+      UState.Internal.reboot (Global.env ()) prg.prg_uctx in
+  ProgramDecl.Internal.set_uctx ~uctx prg
+
 let instance_of_univs = function
   | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
@@ -1055,7 +1077,9 @@ let declare_obligation prg obl ~uctx ~types ~body =
   let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
   | _, Evar_kinds.Expand ->
-    (false, {obl with obl_body = Some (TermObl body)}, [])
+    let prg_uctx = UState.union prg.prg_uctx uctx in
+    let prg = ProgramDecl.Internal.set_uctx ~uctx:prg_uctx prg in
+    (prg, {obl with obl_body = Some (TermObl body)}, [])
   | force, Evar_kinds.Define opaque ->
     let opaque = (not force) && opaque in
     let poly = prg.prg_info.Info.poly in
@@ -1063,7 +1087,8 @@ let declare_obligation prg obl ~uctx ~types ~body =
       if not poly then shrink_body body types
       else ([], body, types, [||])
     in
-    let univs = UState.univ_entry ~poly uctx in
+    let uctx' = current_obligation_uctx prg uctx in
+    let univs = UState.univ_entry ~poly uctx' in
     let inst = instance_of_univs univs in
     let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
@@ -1075,13 +1100,14 @@ let declare_obligation prg obl ~uctx ~types ~body =
         (DefinitionEntry ce)
     in
     definition_message obl.obl_name;
+    let prg = update_global_obligation_uctx prg uctx in
     let body =
       if poly then DefinedObl (constant, inst)
       else
         let const = mkConstU (constant, inst) in
         TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (const, args)) ctx)
     in
-    (true, {obl with obl_body = Some body}, [GlobRef.ConstRef constant])
+    (prg, {obl with obl_body = Some body}, [GlobRef.ConstRef constant])
 
 (* Updating the obligation meta-info on close *)
 
@@ -1372,10 +1398,9 @@ let dependencies obls n =
     obls;
   !res
 
-let update_program_decl_on_defined ~pm prg obls num obl ~uctx rem ~auto =
+let update_program_decl_on_defined ~pm prg obls num obl rem ~auto =
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
-  let prg = {prg with prg_uctx = uctx} in
   let pm, _progress = update_obls ~pm prg obls (pred rem) in
   let pm =
     if pred rem > 0 then
@@ -1426,22 +1451,6 @@ let do_check_final ~pm = function
     in
     if not final then not_final_obligation check_final
 
-let obligation_uctx_terminator prg uctx ~poly ~defined =
-  if poly then
-    (* Polymorphic *)
-    (* We merge the new universes and constraints of the
-       polymorphic obligation with the existing ones *)
-    UState.union prg.prg_uctx uctx
-  else if
-    (* The first obligation, if defined,
-       declares the univs of the constant,
-       each subsequent obligation declares its own additional
-       universes and constraints if any *)
-    defined
-  then
-    UState.Internal.reboot (Global.env ()) uctx
-  else uctx
-
 let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final} =
   let env = Global.env () in
   let ty = entry.proof_entry_type in
@@ -1462,12 +1471,8 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
     | (_, status), false -> status
   in
   let obl = {obl with obl_status = (false, status)} in
-  let poly = prg.prg_info.Info.poly in
-  let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
-  let defined, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
-  let prg_ctx = obligation_uctx_terminator prg uctx ~poly ~defined in
-  let pm =
-    update_program_decl_on_defined ~pm prg obls num obl ~uctx:prg_ctx rem ~auto in
+  let prg, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
+  let pm = update_program_decl_on_defined ~pm prg obls num obl rem ~auto in
   let () = do_check_final ~pm check_final in
   pm, cst
 
@@ -1485,21 +1490,14 @@ let obligation_admitted_terminator ~pm {name; num; auto; check_final} declare_fu
     | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
     | _ -> ()
   in
-  let uctx' =
-    if not prg.prg_info.Info.poly (* Not polymorphic *) then
-      (* The universe context was declared globally, we continue
-         from the new global environment. *)
-      UState.Internal.reboot (Global.env ()) uctx
-    else
-      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      uctx
-  in
+  let uctx' = current_obligation_uctx prg uctx in
   let sec_vars = None in (* Not using "using" for obligations *)
-  let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx in
+  let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx' in
   let cst = declare_fun ~uctx ~sec_vars ~univs in
   let inst = instance_of_univs univs in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
-  let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
+  let prg = update_global_obligation_uctx prg uctx in
+  let pm = update_program_decl_on_defined ~pm prg obls num obl rem ~auto in
   let () = do_check_final ~pm check_final in
   pm
 
@@ -2503,12 +2501,8 @@ let solve_and_declare_by_tac prg obls i tac =
   | None -> None
   | Some (t, ty, uctx) ->
     let obl = obls.(i) in
-    let poly = Internal.get_poly prg in
-    let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
-    let def, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
+    let prg, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
     obls.(i) <- obl';
-    let uctx = obligation_uctx_terminator prg uctx ~poly ~defined:def in
-    let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
     Some prg
 
 let solve_obligation_by_tac prg obls i tac =
