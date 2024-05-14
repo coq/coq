@@ -261,6 +261,26 @@ let rec maximal_unfocus k p =
     with FullyUnfocused | CannotUnfocusThisWay -> p
   else p
 
+(** Brackets "{" and "}" *)
+
+(* "{" focuses on the first goal, "n: {" focuses on the n-th goal
+    "}" unfocuses, provided that the proof of the goal has been completed.
+*)
+let subproof_kind = new_focus_kind "subproof"
+let subproof_cond = done_cond subproof_kind
+
+type subproof_select =
+  | SubproofNth of int
+  | SubproofId of Names.Id.t
+
+let start_subproof gln p =
+  match gln with
+  | SubproofNth n -> focus subproof_cond () n p
+  | SubproofId id -> focus_id subproof_cond () id p
+
+let end_subproof p =
+  unfocus subproof_kind p ()
+
 (*** Proof Creation/Termination ***)
 
 (* [end_of_stack] is unfocused by return to close every loose focus. *)

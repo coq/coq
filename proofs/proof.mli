@@ -143,6 +143,16 @@ val unfocused : t -> bool
 (** Unfocus everything (fail if no allowed). *)
 val unfocus_all : t -> t
 
+(** Brackets "{" and "}" *)
+
+type subproof_select =
+  | SubproofNth of int
+  | SubproofId of Names.Id.t
+
+val start_subproof : subproof_select -> t -> t
+
+val end_subproof : t -> t
+
 (* [get_at_focus k] gets the information stored at the closest focus point
     of kind [k].
     Raises [NoSuchFocus] if there is no focus point of kind [k]. *)
