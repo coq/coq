@@ -62,7 +62,7 @@ val register_native_file : string -> unit
 val is_loaded_native_file : string -> bool
 
 val compile_constant_field : env -> Constant.t ->
-  global list -> constant_body -> global list
+  global list -> 'a pconstant_body -> global list
 
 val compile_mind_field : ModPath.t -> Label.t ->
   global list -> mutual_inductive_body -> global list
