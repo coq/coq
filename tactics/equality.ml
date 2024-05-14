@@ -1451,7 +1451,8 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let abst_B = List.fold_right fold e1_list body in
   let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
   (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
-  let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
+  let sigma, _ = Typing.recheck_against (push_rel_context ctx env) sigma body abst_B in
+  (* NB: we do not have to lift [body] because it is closed *)
   let pred_body = Vars.substl (List.rev proj_list) abst_B in
   let body = mkApp (lambda_create env sigma (ERelevance.relevant,typ,pred_body),[|dep_pair1|]) in
   let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
