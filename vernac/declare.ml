@@ -820,24 +820,23 @@ let error_unresolved_evars env sigma t evars =
   end)
 
 let check_evars_are_solved env sigma t =
-  let t = EConstr.of_constr t in
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
 let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let { Info.poly; udecl; inline; _ } = info in
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
+  let env = Global.env () in
+  Option.iter (check_evars_are_solved env sigma) typ;
+  check_evars_are_solved env sigma body;
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf typ)
   in
-  let env = Global.env () in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
   let using =
     let f (name, body, typ) =
       name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  Option.iter (check_evars_are_solved env sigma) types;
-  check_evars_are_solved env sigma body;
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
   let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
