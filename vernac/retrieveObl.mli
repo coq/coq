@@ -22,6 +22,9 @@ type obligation_info =
    transparent, expand or define), dependencies as indexes into the
    array, tactic to solve it *)
 
+type obligation_name_lifter =
+  (Names.Id.t -> EConstr.t) -> EConstr.t -> Constr.t
+
 val retrieve_obligations :
      Environ.env
   -> Names.Id.t
@@ -32,8 +35,7 @@ val retrieve_obligations :
   -> EConstr.t
   -> EConstr.types
   -> obligation_info
-     * ( (Evar.t * Names.Id.t) list
-       * ((Names.Id.t -> EConstr.t) -> EConstr.t -> Constr.t) )
+     * ( (Evar.t * Names.Id.t) list * obligation_name_lifter )
      * Constr.t
      * Constr.t
 (** [retrieve_obligations env id sigma fs ?status body type] returns

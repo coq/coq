@@ -853,7 +853,7 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
 let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst
 
-let prepare_obligation ~name ~types ~body sigma =
+let prepare_obligations ~name ?types ~body env sigma =
   let env = Global.env () in
   let types = match types with
     | Some t -> t
@@ -864,9 +864,9 @@ let prepare_obligation ~name ~types ~body sigma =
   in
   RetrieveObl.check_evars env sigma;
   let body, types = EConstr.(of_constr body, of_constr types) in
-  let obls, _, body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
+  let obls, (_, evmap), body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
   let uctx = Evd.evar_universe_context sigma in
-  body, cty, uctx, obls
+  body, cty, uctx, evmap, obls
 
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
@@ -2752,7 +2752,7 @@ let check_program_libraries () =
   Coqlib.check_required_library ["Coq";"Init";"Specif"]
 
 (* aliases *)
-let prepare_obligation = prepare_obligation
+let prepare_obligations = prepare_obligations
 let check_solved_obligations =
   let is_empty prg =
     let obls = (Internal.get_obligations (CEphemeron.get prg)).obls in

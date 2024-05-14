@@ -521,12 +521,13 @@ type progress =
   | Defined of GlobRef.t  (** Defined as id *)
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
-val prepare_obligation
+val prepare_obligations
   :  name:Id.t
-  -> types:EConstr.t option
+  -> ?types:EConstr.t
   -> body:EConstr.t
+  -> Environ.env
   -> Evd.evar_map
-  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
+  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_name_lifter * RetrieveObl.obligation_info
 
 (** Start a [Program Definition c] proof. [uctx] [udecl] [impargs]
    [kind] [scope] [poly] etc... come from the interpretation of the

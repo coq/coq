@@ -167,10 +167,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
       add_suffix recname "_func", it_mkProd_or_LetIn top_arity binders
     else
       recname, it_mkProd_or_LetIn top_arity binders_rel in
-  RetrieveObl.check_evars env sigma;
-  let evars, (_, evmap), evars_def, evars_typ =
-    RetrieveObl.retrieve_obligations env recname_func sigma 0 def typ
-  in
+  let evars_def, evars_typ, uctx, evmap, evars =
+    Declare.Obls.prepare_obligations ~name:recname_func ~body:def ~types:typ env sigma in
   let hook =
     if List.length binders_rel > 1 then
       let hook { Declare.Hook.S.dref; uctx; obls; _ } =
@@ -201,7 +199,6 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
       in hook
   in
   let hook = Declare.Hook.make hook in
-  let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname_func ~typ:evars_typ () in
   let kind = Decls.(IsDefinition Fixpoint) in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ~hook ?typing_flags ?user_warns ~ntns () in
