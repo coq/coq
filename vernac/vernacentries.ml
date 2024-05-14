@@ -2193,10 +2193,11 @@ let vernac_subproof gln ~pstate =
   let gln =
     let open Proof in
     match gln with
-    | None -> SubproofNth 1
-    | Some (Goal_select.SelectNth n) -> SubproofNth n
-    | Some (Goal_select.SelectId n) -> SubproofId n
-    | _ -> user_err (str "Brackets do not support multi-goal selectors.")
+    | GoalSubproof None -> SubproofNth 1
+    | GoalSubproof (Some (Goal_select.SelectNth n)) -> SubproofNth n
+    | GoalSubproof (Some (Goal_select.SelectId n)) -> SubproofId n
+    | AbstractSubproof -> SubproofAbstract
+    | GoalSubproof _ -> user_err (str "Brackets do not support multi-goal selectors.")
   in
   Declare.Proof.map ~f:(fun p -> Proof.start_subproof gln p) pstate
 
