@@ -1406,33 +1406,45 @@ let () = declare_intro_decomp_eq intro_decomp_eq
 
  *)
 
-let decomp_tuple_term env sigma c t =
-  let rec decomprec inner_code ex exty =
-    let iterated_decomp =
-    try
-      let ({proj1=p1; proj2=p2}),(i,a,p,car,cdr) = find_sigma_data_decompose env sigma ex in
-      let car_code = applist (mkConstU (destConstRef p1,i),[a;p;inner_code]) in
-      let cdr_code = applist (mkConstU (destConstRef p2,i),[a;p;inner_code]) in
-      let cdrtyp = beta_applist sigma (p,[car]) in
-      List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
-    with Constr_matching.PatternMatchingFailure ->
-      []
-    in [((ex,exty),inner_code)]::iterated_decomp
-  in decomprec (mkRel 1) c t
+let decomp_tuple env sigma c =
+  let rec decomprec accu ex = match find_sigma_data_decompose env sigma ex with
+  | ({ proj1; proj2 }), (u, a, b, car, cdr) ->
+    decomprec ((proj1, proj2, u, a, b, car, cdr) :: accu) cdr
+  | exception Constr_matching.PatternMatchingFailure -> List.rev accu
+  in
+  decomprec [] c
+
+let make_tuple_projs data =
+  let fold accu (p1, p2, u, a, b, _, _) =
+    let proj = applist (mkConstU (destConstRef p1, u), [a; b; accu]) in
+    let accu = applist (mkConstU (destConstRef p2, u), [a; b; accu]) in
+    accu, proj
+  in
+  let last, projs = List.fold_left_map fold (mkRel 1) data in
+  projs @ [last]
+
+let make_tuple_args sigma arg typ data =
+  let fold _ (_, _, _, a, b, car, cdr) =
+    let typ = beta_applist sigma (b, [car]) in
+    (cdr, typ), (car, a)
+  in
+  let last, args = List.fold_left_map fold (arg, typ) data in
+  args @ [last]
 
 let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let typ = get_type_of env sigma dep_pair1 in
   (* We find all possible decompositions *)
-  let decomps1 = decomp_tuple_term env sigma dep_pair1 typ in
-  let decomps2 = decomp_tuple_term env sigma dep_pair2 typ in
+  let data1 = decomp_tuple env sigma dep_pair1 in
+  let data2 = decomp_tuple env sigma dep_pair2 in
   (* We adjust to the shortest decomposition *)
-  let n = min (List.length decomps1) (List.length decomps2) in
-  let decomp1 = List.nth decomps1 (n-1) in
-  let decomp2 = List.nth decomps2 (n-1) in
+  let n = min (List.length data1) (List.length data2) in
+  let data1 = List.firstn n data1 in
+  let data2 = List.firstn n data2 in
   (* We rewrite dep_pair1 ... *)
-  let e1_list,proj_list = List.split decomp1 in
+  let proj_list = make_tuple_projs data1 in
+  let e1_list = make_tuple_args sigma dep_pair1 typ data1 in
   (* ... and use dep_pair2 to compute the expected goal *)
-  let e2_list,_ = List.split decomp2 in
+  let e2_list = make_tuple_args sigma dep_pair2 typ data2 in
   (* We build the expected goal *)
   let fold (e, t) body = lambda_create env sigma (ERelevance.relevant, t, subst_term sigma e body) in
   let abst_B = List.fold_right fold e1_list body in
