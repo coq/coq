@@ -359,7 +359,7 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
     in
     let add_soft u g =
       if not (Level.is_set u || Level.Set.mem u ctx)
-      then try UGraph.add_universe ~lbound ~strict:false u g with UGraph.AlreadyDeclared -> g
+      then try UGraph.add_universe ~lbound:Set ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in
     let g = Constraints.fold
