@@ -744,6 +744,11 @@ let mutual_make_bodies env ~typing_flags ~fixitems ~rec_declaration ~possible_in
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
+let gather_mutual_using_data =
+  List.fold_left2 (fun acc CInfo.{ name; typ; _ } body ->
+      let typ, body = EConstr.(of_constr typ, of_constr body) in
+      (name, [typ; body]) :: acc) []
+
 let declare_mutually_recursive ~info ~cinfo ~opaque ~uctx ~rec_declaration ~possible_indexes ?using () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
@@ -752,12 +757,15 @@ let declare_mutually_recursive ~info ~cinfo ~opaque ~uctx ~rec_declaration ~poss
   let uctx = UState.restrict uctx vars in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   let evd = Evd.from_env env in
+  let using =
+    Option.map (fun using ->
+        let cinfos = gather_mutual_using_data cinfo fixdecls in
+        let f x = x in
+        interp_proof_using_gen f env evd cinfos using)
+      using
+  in
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs } body ->
-         let f (name, typ, body) =
-           name, List.map EConstr.of_constr [typ; body] in
-         (* This call is extruded to single call per-block in #18998 *)
-         let using = Option.map (interp_proof_using_gen f env evd [name, typ, body]) using in
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo fixdecls
