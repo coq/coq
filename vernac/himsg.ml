@@ -963,7 +963,7 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
     pr_leconstr_env env sigma t1 ++ strbrk " at position " ++
     pr_position (cl1,pos1) ++ str "."
 
-let pr_constraints printenv env sigma evars cstrs =
+let pr_constraints printenv msg env sigma evars cstrs =
   let (ev, evi) = Evar.Map.choose evars in
     if Evar.Map.for_all (fun ev' evi' ->
       eq_named_context_val (Evd.evar_hyps evi) (Evd.evar_hyps evi')) evars
@@ -981,7 +981,7 @@ let pr_constraints printenv env sigma evars cstrs =
         (fun (ev, evi) -> hov 2 (pr_existential_key env sigma ev ++
             str " :" ++ spc () ++ Printer.pr_leconstr_env env' sigma (Evd.evar_concl evi))) l
       in
-      h (pe ++ evs ++ pr_evar_constraints sigma cstrs)
+      h (pe ++ str msg ++ fnl () ++ evs ++ pr_evar_constraints sigma cstrs)
     else
       let filter evk _ = Evar.Map.mem evk evars in
       pr_evar_map_filter ~with_univs:false filter env sigma
@@ -1001,17 +1001,17 @@ let explain_unsatisfiable_constraints env sigma constr comp =
   match constr with
   | None ->
     if List.is_empty constraints then
-      str "Could not find an instance for the following existential variables:" ++ fnl () ++
-      pr_constraints true env sigma undef constraints
+      let msg = "Could not find an instance for the following existential variables:" in
+      pr_constraints true msg env sigma undef constraints
     else
-      str "Unable to satisfy the following constraints:" ++ fnl () ++
-      pr_constraints true env sigma undef constraints
+      let msg = "Unable to satisfy the following constraints:" in
+      pr_constraints true msg env sigma undef constraints
   | Some (ev, k) ->
     let cstr =
       let remaining = Evar.Map.remove ev undef in
       if not (Evar.Map.is_empty remaining) then
-        str "With the following constraints:" ++ fnl () ++
-          pr_constraints false env sigma remaining constraints
+        let msg = "With the following constraints:" in
+        pr_constraints false msg env sigma remaining constraints
       else mt ()
     in
     let info = Evar.Map.find ev undef in
