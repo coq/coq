@@ -73,6 +73,8 @@ let declare_individual_scheme_object key ?suff ?deps f =
 
 let is_declared_scheme_object key = Hashtbl.mem scheme_object_table key
 
+let scheme_kind_name (key : _ scheme_kind) : string = key
+
 (**********************************************************************)
 (* Defining/retrieving schemes *)
 
