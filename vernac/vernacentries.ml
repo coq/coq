@@ -2189,26 +2189,19 @@ let vernac_unfocused ~pstate =
   else
     user_err Pp.(str "The proof is not fully unfocused.")
 
-(* "{" focuses on the first goal, "n: {" focuses on the n-th goal
-    "}" unfocuses, provided that the proof of the goal has been completed.
-*)
-let subproof_kind = Proof.new_focus_kind "subproof"
-let subproof_cond = Proof.done_cond subproof_kind
-
 let vernac_subproof gln ~pstate =
-  Declare.Proof.map ~f:(fun p ->
+  let gln =
+    let open Proof in
     match gln with
-    | None -> Proof.focus subproof_cond () 1 p
-    | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
-    | Some (Goal_select.SelectId id) -> Proof.focus_id subproof_cond () id p
-    | _ -> user_err
-             (str "Brackets do not support multi-goal selectors."))
-    pstate
+    | None -> SubproofNth 1
+    | Some (Goal_select.SelectNth n) -> SubproofNth n
+    | Some (Goal_select.SelectId n) -> SubproofId n
+    | _ -> user_err (str "Brackets do not support multi-goal selectors.")
+  in
+  Declare.Proof.map ~f:(fun p -> Proof.start_subproof gln p) pstate
 
 let vernac_end_subproof ~pstate =
-  Declare.Proof.map ~f:(fun p ->
-      Proof.unfocus subproof_kind p ())
-    pstate
+  Declare.Proof.map ~f:Proof.end_subproof pstate
 
 let vernac_bullet (bullet : Proof_bullet.t) ~pstate =
   Declare.Proof.map ~f:(fun p ->
