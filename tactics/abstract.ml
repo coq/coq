@@ -91,3 +91,6 @@ let abstract_subproof ~opaque tac =
 
 let tclABSTRACT ?(opaque=true) name_op tac =
   abstract_subproof ~opaque ~name_op tac
+
+let () = Hook.set Proof.abstract_hook
+    (fun tac -> tclABSTRACT None tac)

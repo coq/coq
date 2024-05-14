@@ -1394,7 +1394,7 @@ simple_tactic: [
 | "replace" OPT [ "->" | "<-" ] one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
 | "typeclasses" "eauto" OPT [ "bfs" | "dfs" | "best_effort" ] OPT nat_or_var OPT ( "with" LIST1 ident )
 | "setoid_replace" one_term "with" one_term OPT ( "using" "relation" one_term ) OPT ( "in" ident ) OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
-| OPT ( [ natural | "[" ident "]" ] ":" ) "{"
+| OPT ( [ natural | "[" ident "]" | "abstract" ] ":" ) "{"
 | [ LIST1 "-" | LIST1 "+" | LIST1 "*" ]
 | "}"
 | "try" ltac_expr3

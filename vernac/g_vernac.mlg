@@ -183,10 +183,11 @@ GRAMMAR EXTEND Gram
   subprf:
   [ [ s = BULLET -> { VernacBullet (make_bullet s) }
     | "}" -> { VernacEndSubproof }
+    | IDENT "abstract"; ":"; "{" -> { VernacSubproof AbstractSubproof }
     ] ]
   ;
   subprf_with_selector:
-  [ [ "{" -> { fun g -> VernacSubproof g }
+  [ [ "{" -> { fun g -> VernacSubproof (GoalSubproof g) }
     (* query_command needs to be here to factor with VernacSubproof *)
     | c = query_command -> { c }
     ] ]
