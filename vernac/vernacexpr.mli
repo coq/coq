@@ -257,6 +257,10 @@ type scheme = {
   sch_sort : Sorts.family ;
 }
 
+type subproof_kind =
+  | AbstractSubproof
+  | GoalSubproof of Goal_select.t option
+
 type section_subset_expr =
   | SsEmpty
   | SsType
@@ -493,7 +497,7 @@ type nonrec synpure_vernac_expr =
   | VernacUnfocus
   | VernacUnfocused
   | VernacBullet of Proof_bullet.t
-  | VernacSubproof of Goal_select.t option
+  | VernacSubproof of subproof_kind
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
