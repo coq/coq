@@ -1414,14 +1414,15 @@ let decomp_tuple env sigma c =
   in
   decomprec [] c
 
-let make_tuple_projs data =
-  let fold accu (p1, p2, u, a, b, _, _) =
+let make_tuple_projs env sigma typ data =
+  let env = push_rel (Rel.Declaration.LocalAssum (anonR, typ)) env in
+  let fold (sigma, accu) (p1, p2, u, a, b, _, _) =
     let proj = applist (mkConstU (destConstRef p1, u), [a; b; accu]) in
-    let accu = applist (mkConstU (destConstRef p2, u), [a; b; accu]) in
-    accu, proj
+    let sigma, accu = Typing.checked_applist env sigma (mkConstU (destConstRef p2, u)) [a; b; accu] in
+    (sigma, accu), proj
   in
-  let last, projs = List.fold_left_map fold (mkRel 1) data in
-  projs @ [last]
+  let (sigma, last), projs = List.fold_left_map fold (sigma, mkRel 1) data in
+  sigma, projs @ [last]
 
 let make_tuple_args sigma arg typ data =
   let fold _ (_, _, _, a, b, car, cdr) =
@@ -1441,7 +1442,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let data1 = List.firstn n data1 in
   let data2 = List.firstn n data2 in
   (* We rewrite dep_pair1 ... *)
-  let proj_list = make_tuple_projs data1 in
+  let sigma, proj_list = make_tuple_projs env sigma typ data1 in
   let e1_list = make_tuple_args sigma dep_pair1 typ data1 in
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list = make_tuple_args sigma dep_pair2 typ data2 in
@@ -1451,13 +1452,6 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let ctx, abst_B = decompose_lambda_n_assum sigma (List.length e1_list) abst_B in
   (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
   let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
-  let sigma =
-    (* FIXME: this should be enforced before. We only have to check the last
-       projection, since all previous ones mention a prefix of the subtypes. *)
-    let env = push_rel (Rel.Declaration.LocalAssum (anonR, typ)) env in
-    let sigma, _ = Typing.type_of env sigma (List.last proj_list) in
-    sigma
-  in
   let pred_body = Vars.substl (List.rev proj_list) abst_B in
   let body = mkApp (lambda_create env sigma (ERelevance.relevant,typ,pred_body),[|dep_pair1|]) in
   let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
