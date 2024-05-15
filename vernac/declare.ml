@@ -1953,7 +1953,7 @@ let warn_use_matching_qed_defined =
       | true -> Pp.strbrk "Interactively-built declarations started with \"Definition\" and with an explicit sealedness are expected to be ended by Defined."
       | false -> Pp.strbrk "Interactively-built declarations started with \"Theorem\" and with an explicit sealedness are expected to be ended by Qed.")
 
-let warn_use_sealed =
+let _warn_use_sealed =
   CWarnings.create ~name:"sealed" ~category:CWarnings.CoreCategories.vernacular
     (function
       | true -> Pp.strbrk "Use attributed \"sealed\" to declare a definition sealed."
@@ -1963,7 +1963,7 @@ let check_opacity opaque kind sealed =
   let default_opaque = default_kind_opacity kind in
   match sealed with
   | Some sealed -> if opaque <> default_opaque then warn_use_matching_qed_defined opaque; sealed
-  | None -> if opaque <> default_opaque then warn_use_sealed opaque; opaque
+  | None -> if opaque <> default_opaque then (*warn_use_sealed opaque*) (); opaque
 
  (* Ignoring Qed/Defined keyword *)
 
