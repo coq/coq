@@ -1612,20 +1612,6 @@ let set_extra_data extras evd = { evd with extras }
 type open_constr = evar_map * constr
 
 (*******************************************************************)
-(* The type constructor ['a sigma] adds an evar map to an object of
-  type ['a] *)
-type 'a sigma = {
-  it : 'a ;
-  sigma : evar_map
-}
-
-let sig_it x = x.it
-let sig_sig x = x.sigma
-let on_sig s f =
-  let sigma', v = f s.sigma in
-    { s with sigma = sigma' }, v
-
-(*******************************************************************)
 (* The state monad with state an evar map. *)
 
 module MonadR =

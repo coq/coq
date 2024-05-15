@@ -488,21 +488,6 @@ module Store : Store.S
 val get_extra_data : evar_map -> Store.t
 val set_extra_data : Store.t -> evar_map -> evar_map
 
-(** {5 Enriching with evar maps} *)
-
-type 'a sigma = {
-  it : 'a ;
-  (** The base object. *)
-  sigma : evar_map
-  (** The added unification state. *)
-} [@@ocaml.deprecated]
-(** The type constructor ['a sigma] adds an evar map to an object of type
-    ['a]. *)
-
-val sig_it  : 'a sigma -> 'a  [@@ocaml.warning "-3"] [@@ocaml.deprecated]
-val sig_sig : 'a sigma -> evar_map [@@ocaml.warning "-3"] [@@ocaml.deprecated]
-val on_sig : 'a sigma -> (evar_map -> evar_map * 'b) -> 'a sigma * 'b [@@ocaml.warning "-3"] [@@ocaml.deprecated]
-
 (** {5 The state monad with state an evar map} *)
 
 module MonadR : Monad.S with type +'a t = evar_map -> evar_map * 'a
