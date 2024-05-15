@@ -35,9 +35,10 @@ Section Well_founded.
 
  Register Acc as core.wf.acc.
 
+ #[unsealed]
  Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
   destruct 1; trivial.
- Defined.
+ Qed.
 
  Global Arguments Acc_inv [x] _ [y] _, [x] _ y _.
  Register Acc_inv as core.wf.acc_inv.
@@ -52,26 +53,29 @@ Section Well_founded.
 
  Hypothesis Rwf : well_founded.
 
+ #[unsealed]
  Theorem well_founded_induction_type :
   forall P:A -> Type,
     (forall x:A, (forall y:A, R y x -> P y) -> P x) -> forall a:A, P a.
  Proof.
   intros; apply Acc_rect; auto.
- Defined.
+ Qed.
 
+ #[unsealed]
  Theorem well_founded_induction :
   forall P:A -> Set,
     (forall x:A, (forall y:A, R y x -> P y) -> P x) -> forall a:A, P a.
  Proof.
   exact (fun P:A -> Set => well_founded_induction_type P).
- Defined.
+ Qed.
 
+ #[unsealed]
  Theorem well_founded_ind :
   forall P:A -> Prop,
     (forall x:A, (forall y:A, R y x -> P y) -> P x) -> forall a:A, P a.
  Proof.
   exact (fun P:A -> Prop => well_founded_induction_type P).
- Defined.
+ Qed.
 
 (** Well-founded fixpoints *)
 
@@ -151,7 +155,7 @@ Section Well_founded_2.
    forall (a:A) (b:B), P a b.
   Proof.
    intros; apply Fix_F_2; auto.
-  Defined.
+  Qed.
 
 End Well_founded_2.
 

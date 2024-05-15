@@ -114,23 +114,26 @@ Definition is_true b := b = true.
 
 (** Additional rewriting lemmas about [eq_true] *)
 
+#[unsealed]
 Lemma eq_true_ind_r :
   forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true.
 Proof.
   intros P b H H0; destruct H0 in H; assumption.
-Defined.
+Qed.
 
+#[unsealed]
 Lemma eq_true_rec_r :
   forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true.
 Proof.
   intros P b H H0; destruct H0 in H; assumption.
-Defined.
+Qed.
 
+#[unsealed]
 Lemma eq_true_rect_r :
   forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true.
 Proof.
   intros P b H H0; destruct H0 in H; assumption.
-Defined.
+Qed.
 
 (** The [BoolSpec] inductive will be used to relate a [boolean] value
     and two propositions corresponding respectively to the [true]
@@ -279,11 +282,12 @@ Definition uncurry {A B C:Type} (f:A -> B -> C)
 
 Import EqNotations.
 
+#[unsealed]
 Lemma rew_pair A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2) :
   (rew H in y1, rew H in y2) = rew [fun x => (P x * Q x)%type] H in (y1,y2).
 Proof.
   destruct H. reflexivity.
-Defined.
+Qed.
 
 (** Polymorphic lists and some operations *)
 
@@ -400,11 +404,12 @@ Register CompEqT as core.CompareSpecT.CompEqT.
 Register CompLtT as core.CompareSpecT.CompLtT.
 Register CompGtT as core.CompareSpecT.CompGtT.
 
+#[unsealed]
 Lemma CompareSpec2Type Peq Plt Pgt c :
  CompareSpec Peq Plt Pgt c -> CompareSpecT Peq Plt Pgt c.
 Proof.
  destruct c; intros H; constructor; inversion_clear H; auto.
-Defined.
+Qed.
 
 (** As an alternate formulation, one may also directly refer to predicates
  [eq] and [lt] for specifying a comparison, rather that fully-applied
@@ -418,9 +423,10 @@ Definition CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
 #[global]
 Hint Unfold CompSpec CompSpecT : core.
 
+#[unsealed]
 Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
  CompSpec eq lt x y c -> CompSpecT eq lt x y c.
-Proof. intros. apply CompareSpec2Type; assumption. Defined.
+Proof. intros. apply CompareSpec2Type; assumption. Qed.
 
 (******************************************************************)
 (** * Misc Other Datatypes *)
