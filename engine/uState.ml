@@ -556,22 +556,12 @@ let process_universe_constraints uctx cstrs =
     | QEq (a, b) ->
       (* TODO sort_inconsistency should be able to handle raw
          qualities instead of having to make a dummy sort *)
-      let mk = function
-        | QVar q -> qsort q Universe.type0
-        | QConstant QSProp -> sprop
-        | QConstant QProp -> prop
-        | QConstant QType -> set
-      in
+      let mk q = Sorts.make q Universe.type0 in
       unify_quality univs CONV (mk a) (mk b) local
     | QLeq (a, b) ->
       (* TODO sort_inconsistency should be able to handle raw
          qualities instead of having to make a dummy sort *)
-      let mk = function
-        | QVar q -> qsort q Universe.type0
-        | QConstant QSProp -> sprop
-        | QConstant QProp -> prop
-        | QConstant QType -> set
-      in
+      let mk q = Sorts.make q Universe.type0 in
       unify_quality univs CUMUL (mk a) (mk b) local
     | ULe (l, r) ->
       let local = unify_quality univs CUMUL l r local in
