@@ -1394,41 +1394,6 @@ module State = struct
   let all pm = ProgMap.bindings pm |> List.map (fun (_,v) -> CEphemeron.get v)
   let find m t = ProgMap.find_opt t m |> Option.map CEphemeron.get
 
-  module View = struct
-    module Obl = struct
-      type t =
-        { name : Id.t
-        ; loc : Loc.t option
-        ; status : bool * Evar_kinds.obligation_definition_status
-        ; solved : bool
-        }
-
-      let make (o : Obligation.t) =
-        let { obl_name; obl_location; obl_status; obl_body; _ } = o in
-        { name = obl_name
-        ; loc = fst obl_location
-        ; status = obl_status
-        ; solved = Option.has_some obl_body
-        }
-    end
-
-    type t =
-      { opaque : bool
-      ; remaining : int
-      ; obligations : Obl.t array
-      }
-
-    let make { prg_opaque; prg_obligations; _ } =
-      { opaque = prg_opaque
-      ; remaining = prg_obligations.remaining
-      ; obligations = Array.map Obl.make prg_obligations.obls
-      }
-
-    let make eph = CEphemeron.get eph |> make
-  end
-
-  let view s = Id.Map.map View.make s
-
 end
 
 (* In all cases, the use of the map is read-only so we don't expose the ref *)

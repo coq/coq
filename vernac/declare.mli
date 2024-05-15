@@ -151,25 +151,6 @@ module OblState : sig
   type t
   val empty : t
 
-  module View : sig
-    module Obl : sig
-      type t = private
-        { name : Id.t
-        ; loc : Loc.t option
-        ; status : bool * Evar_kinds.obligation_definition_status
-        ; solved : bool
-        }
-    end
-
-    type t = private
-      { opaque : bool
-      ; remaining : int
-      ; obligations : Obl.t array
-      }
-  end
-
-  val view : t -> View.t Id.Map.t
-
 end
 
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
