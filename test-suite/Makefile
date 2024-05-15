@@ -241,7 +241,8 @@ $(foreach S,$(VSUBSYSTEMS),$(eval $(call vdeps,$(S))))
 # Summary
 #######################################################################
 
-summary_dir = echo $(1); find $(2) -name '*.log' -print0 | xargs -0 tail -q -n1 | sort
+# using "-L 999" because some versions of tail do not accept more than ~1k arguments
+summary_dir = echo $(1); find $(2) -name '*.log' -print0 | xargs -0 -L 999  tail -q -n1 | sort
 
 .PHONY: summary summary.log
 
