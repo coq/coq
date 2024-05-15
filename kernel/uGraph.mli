@@ -36,7 +36,7 @@ val initial_universes : t
 val initial_universes_with : t -> t
 
 (** Check equality of instances w.r.t. a universe graph *)
-val check_eq_instances : Instance.t check_function
+val check_eq_instances : ?qnorm:(Sorts.QVar.t -> Sorts.Quality.t) -> Instance.t check_function
 
 (** {6 ... } *)
 (** Merge of constraints in a universes graph.
@@ -60,8 +60,9 @@ val merge_constraints : Constraints.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraints.t -> t -> bool
-val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
-val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
+val check_qconstraints : ?qnorm:(Sorts.QVar.t -> Sorts.Quality.t) -> Sorts.QConstraints.t -> bool
+val check_eq_sort : ?qnorm:(Sorts.QVar.t -> Sorts.Quality.t) -> t -> Sorts.t  -> Sorts.t -> bool
+val check_leq_sort : ?qnorm:(Sorts.QVar.t -> Sorts.Quality.t) -> t -> Sorts.t -> Sorts.t -> bool
 
 val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraints.t * t
 
