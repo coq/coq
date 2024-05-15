@@ -1511,17 +1511,6 @@ let cutSubstClause l2r eqn cls =
     | None ->    cutSubstInConcl l2r eqn
     | Some id -> cutSubstInHyp l2r eqn id
 
-let warn_deprecated_cutrewrite =
-  CWarnings.create ~name:"deprecated-cutrewrite" ~category:Deprecation.Version.v8_5
-    (fun () -> strbrk"\"cutrewrite\" is deprecated. Use \"replace\" instead.")
-
-let cutRewriteClause l2r eqn cls =
-  warn_deprecated_cutrewrite ();
-  try_rewrite (cutSubstClause l2r eqn cls)
-
-let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
-let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
-
 let substClause l2r c cls =
   Proofview.Goal.enter begin fun gl ->
   let eq = pf_apply get_type_of gl c in
@@ -1533,17 +1522,13 @@ let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)
 let rewriteInHyp l2r c id = rewriteClause l2r c (Some id)
 let rewriteInConcl l2r c = rewriteClause l2r c None
 
-(* Naming scheme for rewrite and cutrewrite tactics
+(* Naming scheme for rewrite tactics
 
       give equality        give proof of equality
 
     / cutSubstClause       substClause
 raw | cutSubstInHyp        substInHyp
     \ cutSubstInConcl      substInConcl
-
-    / cutRewriteClause     rewriteClause
-user| cutRewriteInHyp      rewriteInHyp
-    \ cutRewriteInConcl    rewriteInConcl
 
 raw = raise typing error or PatternMatchingFailure
 user = raise user error specific to rewrite

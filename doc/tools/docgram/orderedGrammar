@@ -1424,7 +1424,6 @@ simple_tactic: [
 | ltac2_match_key OPT "reverse" "goal" "with" goal_match_list "end"
 | "case_eq" one_term
 | "dependent" "rewrite" OPT [ "->" | "<-" ] one_term OPT ( "in" ident )
-| "cutrewrite" OPT [ "->" | "<-" ] one_type OPT ( "in" ident )
 | "decompose" "sum" one_term
 | "decompose" "record" one_term
 | "absurd" one_type
