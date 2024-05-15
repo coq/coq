@@ -788,8 +788,10 @@ let cofixpoint_message l =
   | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
                     spc () ++ str "are corecursively defined"))
 
-let recursive_message isfix indexes l =
-  (if isfix then fixpoint_message indexes else cofixpoint_message) l
+let recursive_message indexes l =
+  match indexes with
+  | None -> cofixpoint_message l
+  | Some indexes -> fixpoint_message (Some indexes) l
 
 let definition_message id =
   Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
@@ -1017,9 +1019,8 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo bodies_types
   in
-  let isfix = Option.has_some indexes in
   let fixnames = List.map (fun { CInfo.name } -> name) cinfo in
-  recursive_message isfix indexes fixnames;
+  recursive_message indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   csts
 
