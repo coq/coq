@@ -335,7 +335,7 @@ Section sigT.
     apply eq_existT_uncurried; exact pq.
   Defined.
 
-  Lemma eq_existT_curried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+  Definition eq_existT_curried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (p : u1 = v1) (q : rew p in u2 = v2) : (u1; u2) = (v1; v2).
   Proof.
     apply eq_sigT_uncurried; exists p; exact q.
@@ -343,7 +343,7 @@ Section sigT.
 
   Local Notation "(= u ; v )" := (eq_existT_curried u v) (at level 0, format "(= u ;  '/  ' v )").
 
-  Lemma eq_existT_curried_map {A A' P P'} (f:A -> A') (g:forall u:A, P u -> P' (f u))
+  Definition eq_existT_curried_map {A A' P P'} (f:A -> A') (g:forall u:A, P u -> P' (f u))
     {u1 v1 : A} {u2 : P u1} {v2 : P v1} (p : u1 = v1) (q : rew p in u2 = v2) :
     f_equal (fun x => (f x.1; g x.1 x.2)) (= p; q) =
     (= f_equal f p; f_equal_dep2 f g p q).
@@ -351,6 +351,7 @@ Section sigT.
     destruct p, q. reflexivity.
   Defined.
 
+  #[defined]
   Lemma eq_existT_curried_trans {A P} {u1 v1 w1 : A} {u2 : P u1} {v2 : P v1} {w2 : P w1}
     (p : u1 = v1) (q : rew p in u2 = v2)
     (p' : v1 = w1) (q': rew p' in v2 = w2) :
@@ -358,7 +359,7 @@ Section sigT.
       (= eq_trans p p'; eq_trans_map p p' q q').
   Proof.
     destruct p', q'. reflexivity.
-  Defined.
+  Qed.
 
   Theorem eq_existT_curried_congr {A P} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
     {p p' : u1 = v1} {q : rew p in u2 = v2} {q': rew p' in u2 = v2}
@@ -448,6 +449,7 @@ Section sigT.
     := @eq_sigT _ _ u v p (eq_trans (rew_const _ _) q).
 
   (** Classification of transporting across an equality of [sigT]s *)
+  #[defined]
   Lemma rew_sigT {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : { p : P x & Q x p }) {y} (H : x = y)
     : rew [fun a => { p : P a & Q a p }] H in u
       = existT
@@ -456,7 +458,7 @@ Section sigT.
           (rew dependent H in (u.2)).
   Proof.
     destruct H, u; reflexivity.
-  Defined.
+  Qed.
 End sigT.
 Global Arguments eq_existT_curried A P _ _ _ _ !p !q / .
 
@@ -495,7 +497,7 @@ Section sig.
     apply eq_exist_uncurried; exact pq.
   Defined.
 
-  Lemma eq_exist_curried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+  Definition eq_exist_curried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (p : u1 = v1) (q : rew p in u2 = v2) : exist P u1 u2 = exist P v1 v2.
   Proof.
     apply eq_sig_uncurried; exists p; exact q.
@@ -575,6 +577,7 @@ Section sig.
     : u = v <-> (proj1_sig u = proj1_sig v)
     := conj (fun p => f_equal (@proj1_sig _ _) p) (eq_sig_hprop P_hprop u v).
 
+  #[defined]
   Lemma rew_sig {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : { p : P x | Q x p }) {y} (H : x = y)
     : rew [fun a => { p : P a | Q a p }] H in u
       = exist
@@ -583,7 +586,7 @@ Section sig.
           (rew dependent H in proj2_sig u).
   Proof.
     destruct H, u; reflexivity.
-  Defined.
+  Qed.
 End sig.
 Global Arguments eq_exist_curried A P _ _ _ _ !p !q / .
 
@@ -633,7 +636,7 @@ Section sigT2.
     apply eq_existT2_uncurried; exact pqr.
   Defined.
 
-  Lemma eq_existT2_curried {A : Type} {P Q : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+  Definition eq_existT2_curried {A : Type} {P Q : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
              (p : u1 = v1) (q : rew p in u2 = v2) (r : rew p in u3 = v3) : existT2 P Q u1 u2 u3 = existT2 P Q v1 v2 v3.
   Proof.
     apply eq_sigT2_uncurried; exists p; exact q + exact r.
@@ -728,6 +731,7 @@ Section sigT2.
     := @eq_sigT2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
 
   (** Classification of transporting across an equality of [sigT2]s *)
+  #[defined]
   Lemma rew_sigT2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
         (u : { p : P x & Q x p & R x p })
         {y} (H : x = y)
@@ -740,7 +744,7 @@ Section sigT2.
           (rew dependent H in u.3).
   Proof.
     destruct H, u; reflexivity.
-  Defined.
+  Qed.
 End sigT2.
 Global Arguments eq_existT2_curried A P Q _ _ _ _ _ _ !p !q !r / .
 
@@ -790,7 +794,7 @@ Section sig2.
     apply eq_exist2_uncurried; exact pqr.
   Defined.
 
-  Lemma eq_exist2_curried {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+  Definition eq_exist2_curried {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
              (p : u1 = v1) (q : rew p in u2 = v2) (r : rew p in u3 = v3) : exist2 P Q u1 u2 u3 = exist2 P Q v1 v2 v3.
   Proof.
     apply eq_sig2_uncurried; exists p; exact q + exact r.
@@ -885,6 +889,7 @@ Section sig2.
     := @eq_sig2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
 
   (** Classification of transporting across an equality of [sig2]s *)
+  #[defined]
   Lemma rew_sig2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
         (u : { p : P x | Q x p & R x p })
         {y} (H : x = y)
@@ -897,7 +902,7 @@ Section sig2.
           (rew dependent H in proj3_sig u).
   Proof.
     destruct H, u; reflexivity.
-  Defined.
+  Qed.
 End sig2.
 Global Arguments eq_exist2_curried A P Q _ _ _ _ _ _ !p !q !r / .
 
@@ -942,22 +947,25 @@ Section Choice_lemmas.
   Variable R' : S -> S' -> Set.
   Variables R1 R2 : S -> Prop.
 
+  #[defined]
   Lemma Choice :
    (forall x:S, {y:S' | R x y}) -> {f:S -> S' | forall z:S, R z (f z)}.
   Proof.
    intro H.
    exists (fun z => proj1_sig (H z)).
    intro z; destruct (H z); assumption.
-  Defined.
+  Qed.
 
+  #[defined]
   Lemma Choice2 :
    (forall x:S, {y:S' & R' x y}) -> {f:S -> S' & forall z:S, R' z (f z)}.
   Proof.
     intro H.
     exists (fun z => projT1 (H z)).
     intro z; destruct (H z); assumption.
-  Defined.
+  Qed.
 
+  #[defined]
   Lemma bool_choice :
    (forall x:S, {R1 x} + {R2 x}) ->
      {f:S -> bool | forall x:S, f x = true /\ R1 x \/ f x = false /\ R2 x}.
@@ -965,7 +973,7 @@ Section Choice_lemmas.
     intro H.
     exists (fun z:S => if H z then true else false).
     intro z; destruct (H z); auto.
-  Defined.
+  Qed.
 
 End Choice_lemmas.
 
@@ -974,6 +982,7 @@ Section Dependent_choice_lemmas.
   Variable X : Type.
   Variable R : X -> X -> Prop.
 
+  #[defined]
   Lemma dependent_choice :
     (forall x:X, {y | R x y}) ->
     forall x0, {f : nat -> X | f O = x0 /\ forall n, R (f n) (f (S n))}.
@@ -984,7 +993,7 @@ Section Dependent_choice_lemmas.
     split.
     - reflexivity.
     - intro n; induction n; simpl; apply proj2_sig.
-  Defined.
+  Qed.
 
 End Dependent_choice_lemmas.
 
@@ -1008,12 +1017,13 @@ Definition except := False_rec. (* for compatibility with previous versions *)
 
 Arguments except [P] _.
 
+#[defined]
 Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
 Proof.
   intros A C h1 h2.
   apply False_rec.
   apply (h2 h1).
-Defined.
+Qed.
 
 #[global]
 Hint Resolve left right inleft inright: core.
