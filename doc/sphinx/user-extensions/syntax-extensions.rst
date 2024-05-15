@@ -1485,8 +1485,10 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
 
    Declares a new notation scope. Note that the initial
    state of Coq declares the following notation scopes:
-   ``core_scope``, ``type_scope``, ``function_scope``, ``nat_scope``,
-   ``bool_scope``, ``list_scope``, ``dec_int_scope``, ``dec_uint_scope``.
+
+   ``bool_scope``, ``byte_scope``, ``core_scope``, ``dec_int_scope``,
+   ``dec_uint_scope``, ``function_scope``, ``hex_int_scope``, ``hex_nat_scope``,
+   ``hex_uint_scope``, ``list_scope``, ``nat_scope``, ``type_scope``.
 
    Use commands such as :cmd:`Notation` to add notations to the scope.
 
@@ -1509,6 +1511,10 @@ Scopes are removed by name (e.g. by :cmd:`Close Scope`) wherever they are in the
 stack, rather than through "pop" operations.
 
 Use the :cmd:`Print Visibility` command to display the current notation scope stack.
+
+The initial state of Coq has the following scopes opened: ``core_scope``,
+``function_scope``, ``type_scope`` and ``nat_scope``, ``nat_scope`` being the
+top of the scopes stack.
 
 .. cmd:: Open Scope @scope
 
