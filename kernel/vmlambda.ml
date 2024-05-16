@@ -16,7 +16,7 @@ let get_lval (_, v) = v
 
 let is_value lc =
   match lc with
-  | Lval _ | Lint _ | Luint _ -> true
+  | Lval _ | Lint _ | Luint _ | Lfloat _ -> true
   | _ -> false
 
 let get_value lc =
@@ -24,6 +24,7 @@ let get_value lc =
   | Luint i -> val_of_uint i
   | Lval (_, v) -> v
   | Lint i -> val_of_int i
+  | Lfloat f -> val_of_float f
   | _ -> assert false
 
 let hash_block tag args =
@@ -32,6 +33,7 @@ let hash_block tag args =
     let h = match v with
     | Luint i -> Uint63.hash i
     | Lint i -> Hashtbl.hash (i : int)
+    | Lfloat f -> Float64.hash f
     | Lval (h, _) -> h
     | _ -> assert false
     in
@@ -53,7 +55,13 @@ let block_table = HashsetBlock.create 97
 let as_value tag args =
   if Array.for_all is_value args then
     let h = hash_block tag args in
-    let args = Array.map get_value args in
+    (* Don't simplify this to Array.map because of flat float arrays *)
+    let args =
+      let dummy_val = Obj.magic 0 in
+      let ans = Array.make (Array.length args) dummy_val in
+      let () = Array.iteri (fun i v -> ans.(i) <- get_value v) args in
+      ans
+    in
     if tag < Obj.last_non_constant_constructor_tag then
       let block = val_of_block tag args in
       let (_, _, block) = HashsetBlock.repr h (tag, args, block) block_table in

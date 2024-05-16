@@ -138,6 +138,7 @@ val val_of_atom : atom -> values
 val val_of_int : int -> structured_values
 val val_of_block : tag -> structured_values array -> structured_values
 val val_of_uint : Uint63.t -> structured_values
+val val_of_float : Float64.t -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 

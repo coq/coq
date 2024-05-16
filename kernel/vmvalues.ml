@@ -425,6 +425,8 @@ let val_of_int i = (Obj.magic i : values)
 
 let val_of_uint i = (Obj.magic i : structured_values)
 
+let val_of_float f = (Obj.magic f : structured_values)
+
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
   Obj.set_field r 0 (Obj.repr kn);
