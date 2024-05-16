@@ -938,7 +938,7 @@ command: [
 | OPT [ "From" dirpath ] "Require" OPT ( [ "Import" | "Export" ] OPT import_categories ) LIST1 filtered_import
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
-| "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
+| "Include" module_type_inl LIST0 ( "<+" module_type_inl )
 | "Transparent" OPT "!" LIST1 reference
 | "Opaque" OPT "!" LIST1 reference
 | "Strategy" LIST1 [ strategy_level "[" LIST1 reference "]" ]

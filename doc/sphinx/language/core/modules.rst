@@ -171,7 +171,7 @@ are now available through the dot notation.
   #. Assumptions such as :cmd:`Axiom` that include the :n:`Inline` clause will be automatically
      expanded when the functor is applied, except when the function application is prefixed by ``!``.
 
-.. cmd:: Include @module_type_inl {* <+ @module_expr_inl }
+.. cmd:: Include @module_type_inl {* <+ @module_type_inl }
 
    Includes the content of module(s) in the current
    interactive module. Here :n:`@module_type_inl` can be a module expression or a module
