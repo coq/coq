@@ -1251,11 +1251,9 @@ let intern_quality ~local_univs q =
   | CQConstant q -> GQConstant q
   | CQualVar q -> GQualVar (intern_qvar ~local_univs q)
 
-let intern_sort ~local_univs s =
-  let map (q, l) =
-    Option.map (intern_qvar ~local_univs) q, List.map (on_fst (intern_sort_name ~local_univs)) l
-  in
-  map_glob_sort_gen map s
+let intern_sort ~local_univs (q,l) =
+  Option.map (intern_qvar ~local_univs) q,
+  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) l
 
 let intern_instance ~local_univs = function
   | None -> None
@@ -1347,8 +1345,8 @@ let find_projection_data c =
 
 let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
-  | UAnonymous {rigid} -> UAnonymous {rigid}
-  | UNamed id -> UNamed (None, [id, 0])
+  | UAnonymous _ as l -> None, l
+  | UNamed id -> None, UNamed [id, 0]
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -1383,7 +1381,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
           DAst.make ?loc @@ GApp (DAst.make ?loc:loc' @@ GRef (ref, us), arg)
         | _ -> err ()
         end
-      | Some ([],[s]), GSort (UAnonymous {rigid=UnivRigid}) ->
+      | Some ([],[s]), GSort gs when Glob_ops.(glob_sort_eq glob_Type_sort gs) ->
         DAst.make ?loc @@ GSort (glob_sort_of_level s)
       | Some ([],[_old_level]), GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)

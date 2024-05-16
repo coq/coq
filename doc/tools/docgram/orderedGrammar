@@ -285,6 +285,7 @@ sort: [
 
 universe: [
 | "max" "(" LIST1 universe_expr SEP "," ")"
+| "_"
 | universe_expr
 ]
 

@@ -20,6 +20,11 @@ open Constrexpr
 (***********)
 (* Universes *)
 
+let expr_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let expr_SProp_sort = None, UNamed [CSProp, 0]
+let expr_Prop_sort = None, UNamed [CProp, 0]
+let expr_Set_sort = None, UNamed [CSet, 0]
+
 let sort_name_expr_eq c1 c2 = match c1, c2 with
   | CSProp, CSProp
   | CProp, CProp
@@ -44,12 +49,13 @@ let relevance_info_expr_eq = Option.equal relevance_expr_eq
 let univ_level_expr_eq u1 u2 =
   Glob_ops.glob_sort_gen_eq sort_name_expr_eq u1 u2
 
-let sort_expr_eq u1 u2 =
-  let eq (q1, l1) (q2, l2) =
-    Option.equal qvar_expr_eq q1 q2 &&
-    List.equal (fun (x,m) (y,n) -> sort_name_expr_eq x y && Int.equal m n) l1 l2
-  in
-  Glob_ops.glob_sort_gen_eq eq u1 u2
+let sort_expr_eq (q1, l1) (q2, l2) =
+  Option.equal qvar_expr_eq q1 q2 &&
+  Glob_ops.glob_sort_gen_eq
+    (List.equal (fun (x,m) (y,n) ->
+      sort_name_expr_eq x y
+      && Int.equal m n))
+    l1 l2
 
 (***********************)
 (* For binders parsing *)

@@ -57,7 +57,7 @@ type glob_level = glob_sort_name glob_sort_gen
 type glob_instance = glob_quality list * glob_level list
 
 (** sort expressions *)
-type glob_sort = (glob_qvar option * (glob_sort_name * int) list) glob_sort_gen
+type glob_sort = (glob_qvar option * (glob_sort_name * int) list glob_sort_gen)
 
 type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 

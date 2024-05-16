@@ -130,13 +130,14 @@ GRAMMAR EXTEND Gram
     [ [ c = lconstr -> { c } ] ]
   ;
   sort:
-    [ [ "Set"  -> { UNamed (None, [CSet, 0]) }
-      | "Prop" -> { UNamed (None, [CProp, 0]) }
-      | "SProp" -> { UNamed (None, [CSProp, 0]) }
-      | "Type" -> { UAnonymous {rigid=UnivRigid} }
-      | "Type"; "@{"; "_"; "}" -> { UAnonymous {rigid=UnivFlexible false} }
-      | "Type"; "@{"; test_sort_qvar; q = reference; "|"; u = universe; "}" -> { UNamed (Some (CQVar q), u) }
-      | "Type"; "@{"; u = universe; "}" -> { UNamed (None, u) } ] ]
+    [ [ "Set"  -> { None, UNamed [CSet, 0] }
+      | "Prop" -> { None, UNamed [CProp, 0] }
+      | "SProp" -> { None, UNamed [CSProp, 0] }
+      | "Type" -> { None, UAnonymous {rigid=UnivRigid} }
+      | "Type"; "@{"; "_"; "}" -> { None, UAnonymous {rigid=UnivFlexible false} }
+      | "Type"; "@{"; test_sort_qvar; q = reference; "|"; u = universe; "}" ->
+        { Some (CQVar q), u }
+      | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
   ;
   sort_family:
     [ [ "Set"  -> { Sorts.InSet }
@@ -157,8 +158,9 @@ GRAMMAR EXTEND Gram
     [ [ id = universe_name; n = universe_increment -> { (id,n) } ] ]
   ;
   universe:
-    [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> { ids }
-      | u = universe_expr -> { [u] } ] ]
+    [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> { UNamed ids }
+      | "_" -> { UAnonymous { rigid = UnivFlexible false } }
+      | u = universe_expr -> { UNamed [u] } ] ]
   ;
   lconstr:
     [ [ c = term LEVEL "200" -> { c } ] ]

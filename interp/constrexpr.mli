@@ -36,7 +36,7 @@ type relevance_expr =
 
 type relevance_info_expr = relevance_expr option
 
-type sort_expr = (qvar_expr option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
+type sort_expr = (qvar_expr option * (sort_name_expr * int) list Glob_term.glob_sort_gen)
 
 type instance_expr = quality_expr list * univ_level_expr list
 
