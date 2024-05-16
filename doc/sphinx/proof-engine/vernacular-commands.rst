@@ -191,13 +191,13 @@ described elsewhere
          logical_kind ::= {| @thm_token | @assumption_token }
          | {| Definition | Example | Context | Primitive | Symbol }
          | {| Coercion | Instance | Scheme | Canonical | SubClass }
-         | {| Field | Method }
+         | {| Fixpoint | CoFixpoint | Field | Method }
 
       Filters objects by the keyword that was used to define them
       (`Theorem`, `Lemma`, `Axiom`, `Variable`, `Context`,
       `Primitive`...) or its status (`Coercion`, `Instance`, `Scheme`,
-      `Canonical`, `SubClass`, Field` for record fields, `Method` for class
-      fields).  Note that `Coercion`\s, `Canonical Structure`\s, Instance`\s and `Scheme`\s can be
+      `Canonical`, `SubClass`, `Field` for record fields, `Method` for class
+      fields).  Note that `Coercion`\s, `Canonical Structure`\s, `Instance`\s and `Scheme`\s can be
       defined without using those keywords.  See :ref:`this example <search-by-keyword>`.
 
    Additional clauses:
@@ -305,6 +305,13 @@ described elsewhere
       .. coqtop:: all
 
          Search is:Instance [ Reflexive | Symmetric ].
+
+      The following search outputs operations on `nat` defined in the
+      prelude either with the `Definition` or `Fixpoint` keyword:
+
+      .. coqtop:: all reset
+
+         Search (nat -> nat -> nat) -bool [ is:Definition | is:Fixpoint ].
 
 .. cmd:: SearchPattern @one_pattern {? {| inside | in | outside } {+ @qualid } }
 

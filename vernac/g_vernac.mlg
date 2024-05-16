@@ -1248,6 +1248,8 @@ GRAMMAR EXTEND Gram
   extended_def_token:
     [ [ k = def_token -> { snd k }
       | IDENT "Coercion" -> { Coercion }
+      | IDENT "Fixpoint" -> { Fixpoint }
+      | IDENT "CoFixpoint" -> { CoFixpoint }
       | IDENT "Instance" -> { Instance }
       | IDENT "Scheme" -> { Scheme }
       | IDENT "Canonical" -> { CanonicalStructure }

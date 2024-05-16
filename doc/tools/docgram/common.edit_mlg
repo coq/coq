@@ -1974,9 +1974,11 @@ logical_kind: [
 | DELETE "Scheme"
 | DELETE "Canonical"
 | [  "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
+| DELETE "Fixpoint"
+| DELETE "CoFixpoint"
 | DELETE "Field"
 | DELETE "Method"
-| [ "Field" | "Method" ]
+| [  "Fixpoint" | "CoFixpoint" | "Field" | "Method" ]
 ]
 
 (* ltac2 *)
