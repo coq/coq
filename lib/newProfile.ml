@@ -92,9 +92,55 @@ let gettimeopt = function
 let prtime t =
   Format.sprintf "%.0f" (t *. 1E6)
 
-let global_start = gettime()
-let global_start_stat = Gc.quick_stat()
-let global_start_count = Ok Int64.zero
+module Counters = struct
+
+  (* time is handled separately because it has special status in the output format *)
+  type t = {
+    major_words : float;
+    minor_words : float;
+    major_collections : int;
+    minor_collections : int;
+    instr : System.instruction_count;
+  }
+
+  let get () =
+    let gc = Gc.quick_stat() in
+    {
+      major_words = gc.major_words;
+      minor_words = gc.minor_words;
+      major_collections = gc.major_collections;
+      minor_collections = gc.minor_collections;
+      instr = Instr.read_counter();
+    }
+
+  let global_start = get ()
+
+  let (-) b a = {
+    major_words = b.major_words -. a.major_words;
+    minor_words = b.minor_words -. a.minor_words;
+    major_collections = b.major_collections - a.major_collections;
+    minor_collections = b.minor_collections - a.minor_collections;
+    instr = System.instructions_between ~c_start:a.instr ~c_end:b.instr;
+  }
+
+  let format x =
+    let ppf tdiff = `String (Format.sprintf "%.3G w" tdiff) in
+    let ppi i = `Intlit (string_of_int i) in
+    let instr = match x.instr with
+      | Ok count -> [("instr", `Intlit (Int64.to_string count))]
+      | Error _ -> []
+    in
+    ("major_words",ppf x.major_words) ::
+    ("minor_words", ppf x.minor_words) ::
+    ("major_collect", ppi x.major_collections) ::
+    ("minor_collect", ppi x.minor_collections) ::
+    instr
+
+  let make_diffs ~start ~stop = format (stop - start)
+
+end
+
+let global_start_time = gettime ()
 
 let duration ~time name ph ?args ?(last=",") () =
   f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
@@ -141,24 +187,6 @@ let leave ?time name ?(args=[]) ?last () =
   let args = ("subtimes", `Assoc sum) :: args in
   duration ~time name "E" ~args ?last ()
 
-let make_mem_diff ~(mstart:Gc.stat) ~(mend:Gc.stat) =
-  (* XXX we could use memprof to get sampling stats instead?
-     eg stats about how much of the allocation was collected
-     in the same span vs how much survived it *)
-  let major_words = mend.major_words -. mstart.major_words in
-  let minor_words = mend.minor_words -. mstart.minor_words in
-  let major_collect = mend.major_collections - mstart.major_collections in
-  let minor_collect = mend.minor_collections - mstart.minor_collections in
-  let ppf tdiff = `String (Format.sprintf "%.3G w" tdiff) in
-  let ppi i = `Intlit (string_of_int i) in
-  [("major_words",ppf major_words); ("minor_words", ppf minor_words);
-   ("major_collect", ppi major_collect); ("minor_collect", ppi minor_collect); ]
-
-let make_instr_diff ~istart ~iend =
-  match System.instructions_between ~c_start:istart ~c_end:iend with
-  | Ok count -> [("instr", `Intlit (Int64.to_string count))]
-  | Error _ -> []
-
 (* NB: "process" and "init" are unconditional because they don't go
    through [profile] and I'm too lazy to make them conditional *)
 let components =
@@ -174,26 +202,15 @@ let profile name ?args f () =
   else if CString.Pred.mem name components then begin
     let args = Option.map (fun f -> f()) args in
     enter name ?args ();
-    let mstart = Gc.quick_stat () in
-    let istart = Instr.read_counter () in
+    let start = Counters.get () in
     let v = try f ()
       with e ->
         let e = Exninfo.capture e in
-        let iend = Instr.read_counter () in
-        let mend = Gc.quick_stat () in
-        let args =
-          make_instr_diff ~istart ~iend @
-          make_mem_diff ~mstart ~mend
-        in
+        let args = Counters.make_diffs ~start ~stop:(Counters.get()) in
         leave name ~args ();
         Exninfo.iraise e
     in
-    let iend = Instr.read_counter () in
-    let mend = Gc.quick_stat () in
-    let args =
-      make_instr_diff ~istart ~iend @
-      make_mem_diff ~mstart ~mend
-    in
+    let args = Counters.make_diffs ~start ~stop:(Counters.get()) in
     leave name ~args ();
     v
   end
@@ -217,14 +234,9 @@ let init { output } =
   let () = assert (not (is_profiling())) in
   accu := Some { ch = output; sums = [] };
   f "{ \"traceEvents\": [\n";
-  enter ~time:global_start "process" ();
-  enter ~time:global_start "init" ();
-  let iend = Instr.read_counter () in
-  let mend = Gc.quick_stat () in
-  let args =
-    make_instr_diff ~istart:global_start_count ~iend @
-    make_mem_diff ~mstart:global_start_stat ~mend
-  in
+  enter ~time:global_start_time "process" ();
+  enter ~time:global_start_time "init" ();
+  let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
   leave "init" ~args ()
 
 let pause () =
@@ -239,12 +251,7 @@ let resume v =
 let finish () = match !accu with
   | None -> assert false
   | Some { ch } ->
-    let iend = Instr.read_counter () in
-    let mend = Gc.quick_stat () in
-    let args =
-      make_instr_diff ~istart:global_start_count ~iend @
-      make_mem_diff ~mstart:global_start_stat ~mend
-    in
+    let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
     leave "process" ~last:"" ~args ();
     Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
     accu := None
