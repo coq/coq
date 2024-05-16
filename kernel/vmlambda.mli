@@ -15,6 +15,7 @@ type lval
 type lambda = lval Genlambda.lambda
 
 val get_lval : lval -> structured_values
+val as_value : int -> lambda array -> lval option
 
 val lambda_of_constr : env -> Genlambda.evars -> Constr.t -> lambda
 
