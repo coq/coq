@@ -775,6 +775,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
 and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
+  let f' cuniv (l1, t1) (l2, t2) = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
   let rec cmp_rec nargs pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
@@ -783,21 +784,23 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
           | Zlapp a -> if nargs < 0 then -1 else nargs + Array.length a
           | Zlproj _ | Zlfix _ | Zlcase _ | Zlprimitive _ -> -1
           in
-          let cu1 = cmp_rec rnargs s1 s2 cuniv in
-          (match (z1,z2) with
+          let cu1 = if infos.cnv_typ then cuniv else cmp_rec rnargs s1 s2 cuniv in
+          let cu1 = match (z1,z2) with
             | (Zlapp a1,Zlapp a2) ->
               if nargs < 0 then
-               Array.fold_right2 f a1 a2 cu1
+                if infos.cnv_typ then Array.fold_left2 f' cu1 a1 a2
+                else Array.fold_right2 f a1 a2 cu1
               else
+                (* mask not empty -> infos.cnv_typ = true *)
                 let rec fold i cu =
-                  if i < 0 then cu
+                  if Int.equal i (Array.length a1) then cu
                   else if nargs + i < Array.length mask && not mask.(nargs + i) then
-                    fold (i - 1) cu (* skip runtime irrelevant argument *)
+                    fold (i + 1) cu (* skip runtime irrelevant argument *)
                   else
                     let cu = f a1.(i) a2.(i) cu in
-                    fold (i - 1) cu
+                    fold (i + 1) cu
                 in
-                fold (Array.length a1 - 1) cu1
+                fold 0 cu1
             | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
               if not (Projection.Repr.CanOrd.equal c1 c2) then
                 raise NotConvertible
@@ -834,7 +837,9 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
                 let fk (_,a1) (_,a2) cu = f a1 a2 cu in
                 List.fold_right2 fk kargs1 kargs2 cu2
-            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
+            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false
+          in
+          if infos.cnv_typ then cmp_rec rnargs s1 s2 cu1 else cu1
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
     let nargs = if Array.is_empty mask then -1 else 0 in
