@@ -1055,8 +1055,8 @@ search_item: [
 logical_kind: [
 | [ thm_token | assumption_token ]
 | [ "Definition" | "Example" | "Context" | "Primitive" | "Symbol" ]
-| [ "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" | "Fixpoint" | "CoFixpoint" ]
-| [ "Field" | "Method" ]
+| [ "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
+| [ "Fixpoint" | "CoFixpoint" | "Field" | "Method" ]
 ]
 
 univ_name_list: [

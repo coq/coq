@@ -190,8 +190,8 @@ described elsewhere
       .. prodn::
          logical_kind ::= {| @thm_token | @assumption_token }
          | {| Definition | Example | Context | Primitive | Symbol }
-         | {| Coercion | Instance | Scheme | Canonical | SubClass | Fixpoint | CoFixpoint }
-         | {| Field | Method }
+         | {| Coercion | Instance | Scheme | Canonical | SubClass }
+         | {| Fixpoint | CoFixpoint | Field | Method }
 
       Filters objects by the keyword that was used to define them
       (`Theorem`, `Lemma`, `Axiom`, `Variable`, `Context`,
