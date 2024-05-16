@@ -878,7 +878,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
   let cont = [Kstop] in
     let cenv, init_code, fun_code =
       if UVars.eq_sizes universes (0,0) then
-        let lam = lambda_of_constr ~optimize:true env sigma c in
+        let lam = lambda_of_constr env sigma c in
         let cenv = empty_comp_env () in
         let env = { env; fun_code = []; uinst_len = (0,0) } in
         let cont = compile_lam env cenv lam 0 cont in
@@ -888,7 +888,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
          *)
-        let lam = lambda_of_constr ~optimize:true env sigma c in
+        let lam = lambda_of_constr env sigma c in
         let params, body = decompose_Llam lam in
         let arity = Array.length params in
         let cenv = empty_comp_env () in

@@ -60,31 +60,13 @@ val mkLlam : Name.t binder_annot array -> 'v lambda -> 'v lambda
 val decompose_Llam : 'v lambda -> Name.t binder_annot array * 'v lambda
 val decompose_Llam_Llet : 'v lambda -> (Name.t binder_annot * 'v lambda option) array * 'v lambda
 
-val map_lam_with_binders : (int -> 'a -> 'a) -> ('a -> 'v lambda -> 'v lambda) ->
-  'a -> 'v lambda -> 'v lambda
-
-(* {5 Lift and substitution} *)
-
-val lam_exlift : Esubst.lift -> 'v lambda -> 'v lambda
-val lam_lift : int -> 'v lambda -> 'v lambda
-val lam_subst_rel : 'v lambda -> Name.t -> int -> 'v lambda Esubst.subs -> 'v lambda
-val lam_exsubst : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
-val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
-
 (* {5 Simplification} *)
 
-val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
-
-val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+val optimize : 'v lambda -> 'v lambda
 
 (** {5 Translation functions} *)
 
 val get_alias : Environ.env -> Constant.t -> Constant.t
-val make_args : int -> int -> 'v lambda array
-val makeblock : (int -> 'v lambda array -> 'v option) ->
-  inductive -> int -> int -> int -> 'v lambda array -> 'v lambda
-
-val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
 
 module type S =
 sig

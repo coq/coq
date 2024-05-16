@@ -314,13 +314,20 @@ let lam_subst_args subst args =
   if is_subs_id subst then args
   else Array.Smart.map (lam_exsubst subst) args
 
-(* [simplify can_subst subst lam] simplifies the expression [lam_subst subst lam] by: *)
+(* [simplify subst lam] simplifies the expression [lam_subst subst lam] by: *)
 (* - Reducing [let] is the definition can be substituted *)
 (* - Transforming beta redex into [let] expression *)
 (* - Moving arguments under [let] *)
 (* Invariant: Terms in [subst] are already simplified and can be substituted *)
 
-let simplify can_subst subst lam =
+let can_subst lam = match lam with
+| Lrel _ | Lvar _ | Lconst _ | Luint _
+| Lval _ | Lsort _ | Lind _ -> true
+| Levar _ | Lprod _ | Llam _ | Llet _ | Lapp _ | Lcase _ | Lfix _ | Lcofix _
+| Lparray _ | Lmakeblock _ | Lfloat _ | Lprim _ | Lproj _ -> false
+| Lint _ -> false (* TODO: allow substitution of integers *)
+
+let simplify lam =
   let rec simplify subst lam =
     match lam with
     | Lrel(id,i) -> lam_subst_rel lam id i subst
@@ -381,7 +388,7 @@ let simplify can_subst subst lam =
       Llam(Array.of_list lids, simplify (liftn (List.length lids) substf) body)
     | [], _ -> simplify_app substf body substa (Array.of_list largs)
   in
-  simplify subst lam
+  simplify (subs_id 0) lam
 
 (* [occurrence kind k lam]:
    If [kind] is [true] return [true] if the variable [k] does not appear in
@@ -441,16 +448,27 @@ let occur_once lam =
 (* used at most once time in the body, and does not appear under      *)
 (* a lambda or a fix or a cofix                                       *)
 
+let is_value lam = match lam with
+| Lrel _ | Lvar _ | Lconst _ | Luint _
+| Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ -> true
+| Levar _ | Lprod _ | Llet _ | Lapp _ | Lcase _
+| Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ -> false
+
 let rec remove_let subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
   | Llet(id,def,body) ->
     let def' = remove_let subst def in
-    if occur_once body then remove_let (cons def' subst) body
+    if occur_once body && is_value body then remove_let (cons def' subst) body
     else
       let body' = remove_let (lift subst) body in
       if def == def' && body == body' then lam else Llet(id,def',body')
   | _ -> map_lam_with_binders liftn remove_let subst lam
+
+let optimize lam =
+  let lam = simplify lam in
+  let lam = remove_let (subs_id 0) lam in
+  lam
 
 (* Compiling constants *)
 
