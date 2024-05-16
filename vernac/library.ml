@@ -217,7 +217,7 @@ let access_opaque_table o =
   | None -> None
   | Some (c, ctx) ->
     let (c, ctx) = Discharge.cook_opaque_proofterm ci (c, ctx) in
-    let c = Mod_subst.(List.fold_right subst_mps sub c) in
+    let c = Mod_subst.subst_mps_list sub c in
     Some (c, ctx)
 
 let indirect_accessor = {

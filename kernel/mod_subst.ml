@@ -427,6 +427,41 @@ let subst_mps subst c =
   if is_empty_subst subst then c
   else map_kn (subst_mind subst) (subst_pcon_term subst) c
 
+let subst_mps_aux subst = function
+| Inl (con, u) ->
+  begin match subst_con0 subst con with
+  | con', None -> Inl (con', u)
+  | _, Some t -> Inr (Vars.univ_instantiate_constr u t)
+  | exception No_subst -> Inl (con, u)
+  end
+| Inr t -> Inr (subst_mps subst t)
+
+let subst_mps_list substs c =
+  if List.is_empty substs || List.for_all is_empty_subst substs then c
+  else
+    let cache_const = ref Cmap_env.empty in
+    let cache_ind = ref Mindmap_env.empty in
+    let subst_const (con, u as pcon) = match Cmap_env.find_opt con !cache_const with
+    | Some ans ->
+      if ans == con then raise No_subst else mkConstU (ans, u)
+    | None ->
+      let ans = List.fold_right subst_mps_aux substs (Inl pcon) in
+      (* Do not cache arbitrary inline terms *)
+      match ans with
+      | Inl (con', _ as ans) ->
+        let () = cache_const := Cmap_env.add con con' !cache_const in
+        if con' == con then raise No_subst else mkConstU ans
+      | Inr ans -> ans
+    in
+    let subst_mind ind = match Mindmap_env.find_opt ind !cache_ind with
+    | Some ans -> ans
+    | None ->
+      let ans = List.fold_right subst_mind substs ind in
+      let () = cache_ind := Mindmap_env.add ind ans !cache_ind in
+      ans
+    in
+    map_kn subst_mind subst_const c
+
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when ModPath.equal mp mpfrom -> mpto
