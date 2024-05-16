@@ -65,6 +65,8 @@ Extract Inlined Constant String.string_of_list_byte =>
       String.init (Array.length a) (fun i -> a.(i)))".
 Extract Inlined Constant String.list_byte_of_string =>
   "(fun s -> List.init (String.length s) (fun i -> s.[i]))".
+Extract Inlined Constant String.map => "String.map".
+Extract Inlined Constant String.forallb => "String.for_all".
 
 (* Other operations in module String (at the time of this writing):
       String.length

@@ -493,6 +493,22 @@ Definition findex n s1 s2 :=
   | None => O
   end.
 
+(** *** Applying functions to the characters of a string *)
+
+Fixpoint map (f : ascii -> ascii) (s : string) : string :=
+  match s with
+  | EmptyString => EmptyString
+  | String c s' => String (f c) (map f s')
+  end.
+
+(** *** Boolean operations over strings *)
+
+Fixpoint forallb (f : ascii -> bool) (s : string) : bool :=
+  match s with
+  | EmptyString => true
+  | String c s' => f c && forallb f s'
+  end.
+
 (** *** Conversion to/from [list ascii] and [list byte] *)
 
 Fixpoint string_of_list_ascii (s : list ascii) : string
