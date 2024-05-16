@@ -97,7 +97,6 @@ exception OneIntroPatternExpected
 exception KeepAndClearModifierOnlyForHypotheses
 exception FixpointOnNonInductiveType
 exception NotEnoughProducts
-exception FixpointSameMutualInductiveType
 exception AllMethodsInCoinductiveType
 exception ReplacementIllTyped of exn
 exception NotEnoughPremises
@@ -238,8 +237,6 @@ let tactic_interp_error_handler = function
       str "Cannot do a fixpoint on a non inductive type."
   | NotEnoughProducts ->
       str "Not enough products."
-  | FixpointSameMutualInductiveType ->
-      str "Fixpoints should be on the same mutual inductive declaration."
   | AllMethodsInCoinductiveType ->
       str "All methods must construct elements in coinductive types."
   | ReplacementIllTyped e ->
@@ -625,9 +622,7 @@ let rec mk_holes env sigma = function
 let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast sigma cl) with
 | Prod (na, c1, b) ->
   if Int.equal k 1 then
-    try
-      let ((sp, _), u), _ = find_inductive env sigma c1 in
-      (sp, u)
+    try ignore (find_inductive env sigma c1)
     with Not_found -> error FixpointOnNonInductiveType
   else
     let open Context.Rel.Declaration in
@@ -642,7 +637,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
-  let (sp, u) = check_mutind env sigma n concl in
+  let () = check_mutind env sigma n concl in
   let firsts, lasts = List.chop j rest in
   let all = firsts @ (f, n, concl) :: lasts in
   let all = List.map (fun (f, n, ar) ->
@@ -654,9 +649,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | [] -> sign
   | (f, r, n, ar) :: oth ->
     let open Context.Named.Declaration in
-    let (sp', u')  = check_mutind env sigma n ar in
-    if not (QMutInd.equal env sp sp') then
-      error FixpointSameMutualInductiveType;
+    let ()  = check_mutind env sigma n ar in
     if mem_named_context_val f sign then
       error (IntroAlreadyDeclared f);
     mk_sign (push_named_context_val (LocalAssum (make_annot f r, ar)) sign) oth
