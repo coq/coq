@@ -1108,6 +1108,23 @@ let expand_notation ?loc el kn =
     assert (Id.Map.is_empty argtys);
     CAst.make ?loc @@ CTacGlb (prms, el, body, ty)
 
+let warn_unused_variables = CWarnings.create ~name:"ltac2-unused-variable"
+    ~category:CWarnings.CoreCategories.ltac2
+    Pp.(fun ids -> str "Unused " ++ str (String.lplural ids "variable") ++ str ":" ++ spc() ++ prlist_with_sep spc Id.print ids ++ str ".")
+
+let check_unused_variables ?loc env to_name bnd =
+  let unused = List.filter_map (fun bnd -> match to_name bnd with
+      | Anonymous -> None
+      | Name id ->
+        if CString.is_prefix "_" (Id.to_string id)
+        || is_used_var id env
+        then None
+        else Some id)
+      bnd
+  in
+  if CList.is_empty unused then ()
+  else warn_unused_variables ?loc unused
+
 let rec intern_rec env tycon {loc;v=e} =
   let check et = check ?loc env tycon et in
   match e with
@@ -1151,6 +1168,10 @@ let rec intern_rec env tycon {loc;v=e} =
       env, tycon) (env,tycon) nas tl
   in
   let (e, t) = intern_rec env tycon (exp e) in
+  let () =
+    (* TODO better loc? *)
+    check_unused_variables ?loc env (fun x -> x) nas
+  in
   let t = match tycon with
     | None -> List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t
     | Some tycon -> tycon
@@ -1201,7 +1222,7 @@ let rec intern_rec env tycon {loc;v=e} =
         times in this matching")
   in
   let ids = List.fold_left fold Id.Set.empty el in
-  if is_rec then intern_let_rec env el tycon e
+  if is_rec then intern_let_rec env loc el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let v = expand_notation ?loc el kn in
@@ -1379,10 +1400,11 @@ and intern_let env loc ids el tycon e =
   let (e, elp) = List.fold_left_map fold e el in
   let env = List.fold_left (fun accu (na, _, t) -> push_name na t accu) env elp in
   let (e, t) = intern_rec env tycon e in
+  let () = check_unused_variables ?loc env pi1 elp in
   let el = List.map (fun (na, e, _) -> na, e) elp in
   (GTacLet (false, el, e), t)
 
-and intern_let_rec env el tycon e =
+and intern_let_rec env loc el tycon e =
   let map env (pat, t, e) =
     let na = match pat.v with
     | CPatVar na -> na
@@ -1443,6 +1465,10 @@ and intern_let_rec env el tycon e =
   in
   let el = List.map map el in
   let (e, t) = intern_rec env tycon e in
+  let () =
+    (* TODO better loc? *)
+    check_unused_variables ?loc env fst el
+  in
   (GTacLet (true, el, e), t)
 
 and intern_constructor env loc tycon kn args = match kn with
@@ -1509,6 +1535,7 @@ and intern_case env loc e tycon pl =
       let patvars, pat = intern_pat env cpat et in
       let patenv = push_ids patvars env in
       let br = intern_rec_with_constraint patenv cbr rt in
+      let () = check_unused_variables ?loc patenv (fun (id,_) -> Name id) (Id.Map.bindings patvars) in
       pat, br)
       pl
   in
@@ -1521,6 +1548,7 @@ type context = (Id.t * type_scheme) list
 
 let intern ~strict ctx e =
   let env = empty_env ~strict () in
+  (* XXX not doing check_unused_variables *)
   let fold accu (id, t) = push_name (Name id) (polymorphic t) accu in
   let env = List.fold_left fold env ctx in
   let (e, t) = intern_rec env None e in
@@ -1736,6 +1764,7 @@ let intern_notation_data ids body =
     in
     let env, argtys = Id.Set.fold fold ids (env,Id.Map.empty) in
     let body, ty = intern_rec env None body in
+    let () = check_unused_variables env (fun (id,_) -> Name id) (Id.Map.bindings argtys) in
     let count = ref 0 in
     let vars = ref TVar.Map.empty in
     let argtys = Id.Map.map (fun ty -> normalize env (count, vars) ty) argtys in
@@ -2037,6 +2066,7 @@ let () =
     let env = List.fold_left fold env ids in
     let loc = tac.loc in
     let (tac, t) = intern_rec env None tac in
+    let () = check_unused_variables ?loc env (fun x -> Name x) ids in
     let () = check_elt_unit loc env t in
     (ist, (ids, tac))
   in
@@ -2084,6 +2114,7 @@ let () =
     let ids, env = Id.Map.fold fold ntn_vars (Id.Set.empty, env) in
     let loc = tac.loc in
     let (tac, t) = intern_rec env None tac in
+    (* no check_unused_variables for notation variables *)
     let () = check_elt_unit loc env t in
     (ist, (ids, tac))
   in
