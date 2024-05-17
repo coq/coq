@@ -171,7 +171,7 @@ let rec pp_lam lam =
             str")")
   | Lproj(p,arg) ->
     hov 1
-      (str "(proj " ++ Projection.Repr.print p ++ str "(" ++ pp_lam arg
+      (str "(proj " ++ str "{" ++ Projection.Repr.print p ++ str "}" ++ spc () ++ pp_lam arg
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")
