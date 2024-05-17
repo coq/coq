@@ -18,7 +18,7 @@ Set Implicit Arguments.
 
 Notation "{ ( x , y )  :  A  |  P }" :=
   (sig (fun anonymous : A => let (x,y) := anonymous in P))
-  (x name, y name, at level 10) : type_scope.
+  (x name, y name) : type_scope.
 
 Declare Scope program_scope.
 Delimit Scope program_scope with prg.
