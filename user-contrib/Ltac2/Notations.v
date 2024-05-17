@@ -611,6 +611,10 @@ Ltac2 Notation "unify" x(constr) y(constr) := Std.unify x y.
 
 (** Congruence *)
 
+Ltac2 Notation "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr)))) := Std.congruence n l.
+
+Ltac2 Notation "simple" "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr)))) := Std.simple_congruence n l.
+
 Ltac2 f_equal0 () := ltac1:(f_equal).
 Ltac2 Notation f_equal := f_equal0 ().
 

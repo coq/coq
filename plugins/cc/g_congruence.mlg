@@ -22,13 +22,13 @@ DECLARE PLUGIN "coq-core.plugins.cc"
 
 TACTIC EXTEND cc
 | [ "congruence" natural_opt(n) ] ->
-   { congruence_tac (Option.default 1000 n) [] }
+   { congruence_tac n [] }
 | [ "congruence" natural_opt(n) "with" ne_constr_list(l) ] ->
-   { congruence_tac (Option.default 1000 n) l }
+   { congruence_tac n l }
 | [ "simple" "congruence" natural_opt(n) ] ->
-   { simple_congruence_tac (Option.default 1000 n) [] }
+   { simple_congruence_tac n [] }
 | [ "simple" "congruence" natural_opt(n) "with" ne_constr_list(l) ] ->
-   { simple_congruence_tac (Option.default 1000 n) l }
+   { simple_congruence_tac n l }
 END
 
 TACTIC EXTEND f_equal

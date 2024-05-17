@@ -520,12 +520,14 @@ let negative_concl_introf =
   end
 
 let congruence_tac depth l =
+  let depth = Option.default 1000 depth in
   Tacticals.tclTHEN
     (Tacticals.tclREPEAT (Tacticals.tclFIRST [intro; Tacticals.tclTHEN whd_in_concl intro]))
     (cc_tactic depth l false)
 
 
 let simple_congruence_tac depth l =
+  let depth = Option.default 1000 depth in
   Tacticals.tclTHENLIST [
     Tacticals.tclREPEAT intro;
     negative_concl_introf;
@@ -569,7 +571,7 @@ let f_equal =
           begin match EConstr.kind sigma t, EConstr.kind sigma t' with
           | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
               let rec cuts i =
-                if i < 0 then Tacticals.tclTRY (congruence_tac 1000 [])
+                if i < 0 then Tacticals.tclTRY (congruence_tac None [])
                 else Tacticals.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
               in cuts (Array.length v - 1)
           | _ -> Proofview.tclUNIT ()
