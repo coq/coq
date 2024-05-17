@@ -244,6 +244,16 @@ type pretype_flags = {
   unconstrained_sorts : bool;
 }
 
+let glob_opt_qvar ?loc ~flags sigma = function
+  | None ->
+    if flags.unconstrained_sorts then
+      let sigma, q = new_quality_variable ?loc sigma in
+      sigma, Some q
+    else sigma, None
+  | Some q ->
+    let sigma, q = glob_qvar ?loc sigma q in
+    sigma, Some q
+
 let sort ?loc ~flags sigma (q, l) = match l with
 | UNamed [] -> assert false
 | UNamed [GSProp, 0] -> assert (Option.is_empty q); sigma, ESorts.sprop
@@ -251,16 +261,7 @@ let sort ?loc ~flags sigma (q, l) = match l with
 | UNamed [GSet, 0] when Option.is_empty q -> sigma, ESorts.set
 | UNamed ((u, n) :: us) ->
   let open Pp in
-  let sigma, q = match q with
-    | None ->
-      if flags.unconstrained_sorts then
-        let sigma, q = new_quality_variable ?loc sigma in
-        sigma, Some q
-      else sigma, None
-    | Some q ->
-      let sigma, q = glob_qvar ?loc sigma q in
-      sigma, Some q
-  in
+  let sigma, q = glob_opt_qvar ?loc ~flags sigma q in
   let get_level sigma u n = match level_name sigma u with
   | None ->
     user_err ?loc
@@ -288,16 +289,7 @@ let sort ?loc ~flags sigma (q, l) = match l with
   in
   sigma, ESorts.make s
 | UAnonymous {rigid} ->
-  let sigma, q = match q with
-    | None ->
-      if flags.unconstrained_sorts then
-        let sigma, q = new_quality_variable ?loc sigma in
-        sigma, Some q
-      else sigma, None
-    | Some q ->
-      let sigma, q = glob_qvar ?loc sigma q in
-      sigma, Some q
-  in
+  let sigma, q = glob_opt_qvar ?loc ~flags sigma q in
   let sigma, l = new_univ_level_variable ?loc rigid sigma in
   let u = Univ.Universe.make l in
   let s = match q with
