@@ -119,7 +119,12 @@ let of_loc loc =
   ; bp
   ; ep
   } = loc in
+  let fname = match fname with
+  | ToplevelInput -> []
+  | InFile { dirpath = None; file } -> [ ("file", file) ]
+  | InFile { dirpath = Some dir; file } -> [ ("dirpath", dir); ("file", file) ] in
   Element ("loc",
+           fname @
            [ ("line_nb", string_of_int line_nb)
            ; ("bol_pos", string_of_int bol_pos)
            ; ("line_nb_last", string_of_int line_nb_last)
@@ -133,13 +138,20 @@ let to_loc xml =
   match xml with
   | Element ("loc", l,[]) as x ->
     (try
+       let fname =
+         let dirpath = try Some (get_attr "dirpath" l) with Not_found -> None in
+         let file = try Some (get_attr "file" l) with Not_found -> None in
+         match dirpath, file with
+         | None, None -> Loc.ToplevelInput
+         | dirpath, Some file -> Loc.InFile { dirpath; file }
+         | Some _, None -> raise (Marshal_error("loc",x)) in
        let line_nb = massoc "line_nb" l |> int_of_string in
        let bol_pos = massoc "bol_pos" l |> int_of_string in
        let line_nb_last = massoc "line_nb_last" l |> int_of_string in
        let bol_pos_last = massoc "bol_pos_last" l |> int_of_string in
        let bp = massoc "start" l |> int_of_string in
        let ep = massoc "stop" l |> int_of_string in
-       { Loc.fname = ToplevelInput
+       { Loc.fname
        ; line_nb
        ; bol_pos
        ; line_nb_last

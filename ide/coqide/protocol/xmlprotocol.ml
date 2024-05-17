@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** Protocol version of this file. This is the date of the last modification. *)
-let protocol_version = "20230413"
+let protocol_version = "20240517"
 
 (** See xml-protocol.md for a description of the protocol. *)
 (** UPDATE xml-protocol.md WHEN YOU UPDATE THE PROTOCOL *)
@@ -177,26 +177,17 @@ let to_dbcontinue_opt opt =
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
 | Fail (id,loc, msg) ->
-  let loc = match loc with
-  | None -> []
-  | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)] in
   let id = of_stateid id in
-  Element ("value", ["val", "fail"] @ loc, [id; of_pp msg])
+  Element ("value", ["val", "fail"], [id; of_option of_loc loc; of_pp msg])
 
 let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
   if ans = "good" then Good (f (singleton l))
   else if ans = "fail" then
-    let loc =
-      try
-        let loc_s = int_of_string (Serialize.massoc "loc_s" attrs) in
-        let loc_e = int_of_string (Serialize.massoc "loc_e" attrs) in
-        Some (loc_s, loc_e)
-      with Marshal_error _ | Failure _ -> None
-    in
-    let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise (Marshal_error("val",PCData "no id attribute")) in
+    let (id, loc, msg) = match l with [id; loc; msg] -> (id, loc, msg) | _ -> raise (Marshal_error("val",PCData "no id attribute")) in
     let id = to_stateid id in
+    let loc = to_option to_loc loc   in
     let msg = to_pp msg    in
     Fail (id, loc, msg)
   else raise (Marshal_error("good or fail",PCData ans))
@@ -947,9 +938,8 @@ let to_call : xml -> unknown_call =
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
   | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^ Pp.string_of_ppcmds str ^ "]"
-  | Fail (id,Some(i,j),str) ->
-      "FAIL "^Stateid.to_string id^
-        " ("^string_of_int i^","^string_of_int j^")["^Pp.string_of_ppcmds str^"]"
+  | Fail (id,Some loc,str) ->
+      Printf.sprintf "FAIL %s (%d, %d)[%s]" (Stateid.to_string id) loc.bp loc.ep (Pp.string_of_ppcmds str)
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value : type a. a call -> a value -> string = fun call value -> match call with
   | Add _        -> pr_value_gen (print add_rty_t        ) value
@@ -1021,9 +1011,12 @@ let document to_string_fmt =
     (to_string_fmt (constructor "call" "C" [PCData "a"]));
   Printf.printf "A response carrying output b can either be:\n\n%s\n\n"
     (to_string_fmt (of_value (fun _ -> PCData "b") (Good ())));
-  Printf.printf "or:\n\n%s\n\nwhere the attributes loc_s and loc_c are optional.\n"
+  Printf.printf "or:\n\n%s\n\n"
     (to_string_fmt (of_value (fun _ -> PCData "b")
-      (Fail (Stateid.initial,Some (15,34), Pp.str "error message"))));
+      (Fail
+         (Stateid.initial,
+          Some (Loc.{fname=ToplevelInput; line_nb=4; bol_pos=0; line_nb_last=6; bol_pos_last=10; bp=15; ep=34}),
+          Pp.str "error message"))));
   document_type_encoding to_string_fmt
 
 (* Moved from feedback.mli : This is IDE specific and we don't want to

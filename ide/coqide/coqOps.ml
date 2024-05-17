@@ -831,7 +831,6 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
                   self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
@@ -990,7 +989,7 @@ object(self)
     self#backtrack_until ?move_insert until
 
   method private handle_failure_aux
-    ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
+    ?(move_insert=false) (safe_id, (loc : Interface.location), msg)
   =
     messages#default_route#push Feedback.Error msg;
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
