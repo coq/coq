@@ -279,6 +279,34 @@ let is_squashed sigma ((_,mip),u) =
         then None
         else Some (SquashToQuality indq)
 
+let squash_elim_sort env sigma squash rtnsort = match squash with
+| SquashToSet ->
+  (* Squashed inductive in Set, only happens with impredicative Set *)
+  begin match ESorts.kind sigma rtnsort with
+  | Set | SProp | Prop -> sigma
+  | QSort _ | Type _ ->
+    Evd.set_eq_sort env sigma rtnsort ESorts.set
+  end
+| SquashToQuality (QConstant QProp) ->
+  (* Squashed inductive in Prop, return sort must be Prop or SProp *)
+  begin match ESorts.kind sigma rtnsort with
+  | SProp | Prop -> sigma
+  | QSort _ | Type _ | Set ->
+    Evd.set_eq_sort env sigma rtnsort ESorts.prop
+  end
+| SquashToQuality (QConstant QSProp) ->
+  (* Squashed inductive in SProp, return sort must be SProp. *)
+  begin match ESorts.kind sigma rtnsort with
+  | SProp -> sigma
+  | Type _ | Set | Prop | QSort _ ->
+    Evd.set_eq_sort env sigma rtnsort ESorts.sprop
+  end
+| SquashToQuality (QConstant QType) ->
+  (* Sort poly squash to type *)
+  Evd.set_leq_sort env sigma ESorts.set rtnsort
+| SquashToQuality (QVar q) ->
+  Evd.set_leq_sort env sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+
 let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
   let open Sorts in
   match mib.mind_record with

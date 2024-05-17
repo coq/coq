@@ -129,41 +129,36 @@ let check_branch_types env sigma (ind,u) cj (lfj,explft) =
         error_ill_formed_branch env sigma cj.uj_val ((ind,i+1),u) lfj.uj_type explft)
     sigma lfj explft
 
-let max_sort l =
-  if List.mem_f Sorts.family_equal InType l then InType else
-  if List.mem_f Sorts.family_equal InSet l then InSet else InProp
-
 let is_correct_arity env sigma c pj ind specif params =
   let arsign = make_arity_signature env sigma true (make_ind_family (ind,params)) in
-  let allowed_sorts = sorts_below (elim_sort specif) in
-  let error () = Pretype_errors.error_elim_arity env sigma ind c None in
+  let error rtnsort = Pretype_errors.error_elim_arity env sigma ind c rtnsort in
   let rec srec env sigma pt ar =
     let pt' = whd_all env sigma pt in
     match EConstr.kind sigma pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
       begin match Evarconv.unify_leq_delay env sigma a1 a1' with
-        | exception Evarconv.UnableToUnify _ -> error ()
+        | exception Evarconv.UnableToUnify _ -> error None
         | sigma ->
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
-        let sigma = match ESorts.kind sigma s with
-        | QSort (_, u) ->
-          (* Arbitrarily set the return sort to Type *)
-          Evd.set_eq_sort env sigma s (ESorts.make (Sorts.sort_of_univ u))
-        | Set | Type _ | Prop | SProp -> sigma
+      begin match is_squashed sigma (specif, snd ind) with
+      | None -> sigma, s
+      | Some squash ->
+        let sigma =
+          try squash_elim_sort env sigma squash s
+          with UGraph.UniverseInconsistency _ -> error (Some s)
         in
-        if not (List.mem_f Sorts.family_equal (ESorts.family sigma s) allowed_sorts)
-        then error ()
-        else sigma, s
+        sigma, s
+      end
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
+        let sigma, s = Evd.fresh_sort_in_family sigma (elim_sort specif) in
         let sigma = Evd.define ev (mkSort s) sigma in
         sigma, s
     | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) sigma (lift 1 pt') ar'
     | _ ->
-        error ()
+        error None
   in
   srec env sigma pj.uj_type (List.rev arsign)
 
