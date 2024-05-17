@@ -60,6 +60,8 @@ val push_scope : scope_name -> scopes -> scopes
 
 val find_scope : scope_name -> scope
 
+val scope_delimiters : scope -> delimiters option
+
 (** Declare delimiters for printing *)
 
 val declare_delimiters : scope_name -> delimiters -> unit

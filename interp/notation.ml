@@ -164,6 +164,8 @@ let ensure_scope scope = check_scope ~tolerant:true scope
 
 let find_scope scope = find_scope scope
 
+let scope_delimiters scope = scope.delimiters
+
 (* [sc] might be here a [scope_name] or a [delimiter]
    (now allowed after Open Scope) *)
 
