@@ -73,14 +73,14 @@ let arg_int f = Arg.Int (fun d -> prefs := f !prefs d)
 (* TODO: replace these hacks with Arg.Rest_all, when coq moves to a newer version of OCaml stdlib *)
 let arg_path f = Arg.String (fun s ->
   if Array.length Sys.argv < !Arg.current + 3 ||
-    Sys.argv.(!Arg.current + 2).[0] = '-' then
+    CString.is_prefix "-" Sys.argv.(!Arg.current + 2) then
     raise (Arg.Bad ("Two arguments expected: <dir> and <name>"))
   else
     Arg.current := !Arg.current + 1;
     prefs := f !prefs (normalize_path s, Sys.argv.(!Arg.current + 1)))
 let arg_url_path f = Arg.String (fun s ->
   if Array.length Sys.argv < !Arg.current + 3 ||
-    Sys.argv.(!Arg.current + 2).[0] = '-' then
+    CString.is_prefix "-" Sys.argv.(!Arg.current + 2) then
     raise (Arg.Bad ("Two arguments expected: <url> and <path>"))
   else
     Arg.current := !Arg.current + 1;
