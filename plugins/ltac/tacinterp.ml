@@ -631,6 +631,7 @@ let constr_flags () = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 (* Interprets a constr; expects evars to be solved *)
@@ -652,6 +653,7 @@ let open_constr_use_classes_flags () = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let open_constr_no_classes_flags () = {
@@ -664,6 +666,7 @@ let open_constr_no_classes_flags () = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let pure_open_constr_flags = {
@@ -676,6 +679,7 @@ let pure_open_constr_flags = {
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 (* Interprets an open constr *)

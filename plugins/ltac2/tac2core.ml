@@ -33,6 +33,7 @@ let constr_flags =
     polymorphic = false;
     undeclared_evars_patvars = false;
     patvars_abstract = false;
+    unconstrained_sorts = false;
   }
 
 let open_constr_no_classes_flags =
@@ -47,6 +48,7 @@ let open_constr_no_classes_flags =
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
   }
 
 let preterm_flags =
@@ -61,6 +63,7 @@ let preterm_flags =
   polymorphic = false;
   undeclared_evars_patvars = false;
   patvars_abstract = false;
+  unconstrained_sorts = false;
   }
 
 (** Standard values *)

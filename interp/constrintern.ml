@@ -2862,14 +2862,14 @@ let push_auto_implicit env sigma t int_env id =
   let imps = compute_internalization_data env sigma ~silent:false id ty t imps in (* add automatic implicit arguments to manual ones *)
   { int_env with impls = Id.Map.add id imps int_env.impls }
 
-let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalization_env) ?(share=false) ?(autoimp_enable=true) ~dump env sigma make_decl push_decl bl =
+let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false) ?(impl_env=empty_internalization_env) ?(share=false) ?(autoimp_enable=true) ~dump env sigma make_decl push_decl bl =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
        context being interpreted *)
      extract_ids env in
   let int_env = default_internalization_env ids (bound_univs sigma) impl_env in
-  let flags = { Pretyping.all_no_fail_flags with program_mode } in
+  let flags = { Pretyping.all_no_fail_flags with program_mode; unconstrained_sorts } in
   let (int_env, (env, sigma, bl, impls)) =
     List.fold_left
       (fun (int_env, acc) b ->
@@ -2880,7 +2880,9 @@ let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalizat
             | Some t, CLocalAssum (_,_,Default _,_) when share -> sigma, t
             | _ ->
               let t' = if Option.is_empty b' then locate_if_hole ?loc:(loc_of_glob_constr t) na t else t in (* useful? *)
-              understand_tcc ~flags env sigma ~expected_type:IsType t' in
+              let sigma, t, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar IsType t' in
+              sigma, t
+          in
           let r = Retyping.relevance_of_type env sigma t in
           match b' with
           | None ->
@@ -2890,7 +2892,7 @@ let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalizat
             (int_env, Some t, (push_decl d env, sigma, d::params, impls))
           | Some b ->
             assert (bk = Explicit);
-            let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
+            let sigma, c, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar (OfType t) b in
             let d = make_decl (LocalDef (make_annot na r, c, t)) in
             (int_env, Some t, (push_decl d env, sigma, d::params, impls)))
           bl (int_env,None,acc) in
@@ -2899,13 +2901,13 @@ let interp_context_evars_gen ?(program_mode=false) ?(impl_env=empty_internalizat
   in
   sigma, (int_env.impls, ((env, bl), List.rev impls))
 
-let interp_named_context_evars ?program_mode ?impl_env ?share ?autoimp_enable env sigma bl =
+let interp_named_context_evars ?program_mode ?unconstrained_sorts ?impl_env ?share ?autoimp_enable env sigma bl =
   let extract_name = function Name id -> id | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.") in
   let make_decl = Context.Named.Declaration.of_rel_decl extract_name in
-  interp_context_evars_gen ?program_mode ?impl_env ?share ?autoimp_enable ~dump:false env sigma make_decl EConstr.push_named bl
+  interp_context_evars_gen ?program_mode ?unconstrained_sorts  ?impl_env ?share ?autoimp_enable ~dump:false env sigma make_decl EConstr.push_named bl
 
-let interp_context_evars ?program_mode ?impl_env ?share env sigma bl =
-  interp_context_evars_gen ?program_mode ?impl_env ?share ~autoimp_enable:false ~dump:true env sigma (fun d -> d) EConstr.push_rel bl
+let interp_context_evars ?program_mode ?unconstrained_sorts ?impl_env ?share env sigma bl =
+  interp_context_evars_gen ?program_mode ?unconstrained_sorts ?impl_env ?share ~autoimp_enable:false ~dump:true env sigma (fun d -> d) EConstr.push_rel bl
 
 (** Local universe and constraint declarations. *)
 

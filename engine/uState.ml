@@ -210,7 +210,6 @@ type t =
    sort_variables : QState.t;
    (** Local quality variables. *)
    universes : UGraph.t; (** The current graph extended with the local constraints *)
-   universes_lbound : UGraph.Bound.t; (** The lower bound on universes (e.g. Set or Prop) *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
    minim_extra : UnivMinim.extra;
  }
@@ -222,14 +221,12 @@ let empty =
     univ_variables = UnivFlex.empty;
     sort_variables = QState.empty;
     universes = UGraph.initial_universes;
-    universes_lbound = UGraph.Bound.Set;
     initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
 let make ~lbound univs =
   { empty with
     universes = univs;
-    universes_lbound = lbound;
     initial_universes = univs }
 
 let is_empty uctx =
@@ -263,7 +260,7 @@ let union uctx uctx' =
     let newus = Level.Set.diff newus (UnivFlex.domain uctx.univ_variables) in
     let extra = UnivMinim.extra_union uctx.minim_extra uctx'.minim_extra in
     let declarenew g =
-      Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:uctx.universes_lbound ~strict:false g) newus g
+      Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict:false g) newus g
     in
     let fail_union s q1 q2 =
       if UGraph.type_in_type uctx.universes then s
@@ -283,7 +280,6 @@ let union uctx uctx' =
            else
              let cstrsr = ContextSet.constraints uctx'.local in
              UGraph.merge_constraints cstrsr (declarenew uctx.universes));
-        universes_lbound = uctx.universes_lbound;
         minim_extra = extra}
 
 let context_set uctx = uctx.local
@@ -910,7 +906,7 @@ let is_bound l lbound = match lbound with
   | UGraph.Bound.Prop -> false
   | UGraph.Bound.Set -> Level.is_set l
 
-let restrict_universe_context ~lbound (univs, csts) keep =
+let restrict_universe_context ?(lbound = UGraph.Bound.Set) (univs, csts) keep =
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, csts
   else
@@ -924,17 +920,17 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   let csts = Constraints.filter (fun (l,d,r) -> not (is_bound l lbound && d == Le)) csts in
   (Level.Set.inter univs keep, csts)
 
-let restrict uctx vars =
+let restrict ?lbound uctx vars =
   let vars = Level.Set.union vars uctx.seff_univs in
   let vars = Id.Map.fold (fun na l vars -> Level.Set.add l vars)
       (snd (fst uctx.names)) vars
   in
-  let uctx' = restrict_universe_context ~lbound:uctx.universes_lbound uctx.local vars in
+  let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
-let restrict_even_binders uctx vars =
+let restrict_even_binders ?lbound uctx vars =
   let vars = Level.Set.union vars uctx.seff_univs in
-  let uctx' = restrict_universe_context ~lbound:uctx.universes_lbound uctx.local vars in
+  let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
 let restrict_constraints uctx csts =
@@ -958,7 +954,7 @@ let merge ?loc ~sideff rigid uctx uctx' =
   let local = ContextSet.append uctx' uctx.local in
   let declare g =
     Level.Set.fold (fun u g ->
-        try UGraph.add_universe ~lbound:uctx.universes_lbound ~strict:false u g
+        try UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false u g
         with UGraph.AlreadyDeclared when sideff -> g)
       levels g
   in
@@ -1040,7 +1036,7 @@ let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
   let declare g =
     Level.Set.fold (fun u g ->
-        try UGraph.add_universe ~lbound:uctx.universes_lbound ~strict:false u g
+        try UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false u g
         with UGraph.AlreadyDeclared -> g)
       levels g
   in
@@ -1086,7 +1082,8 @@ let add_loc l loc (names, (qnames_rev,unames_rev) as orig) =
   | None -> orig
   | Some _ -> (names, (qnames_rev, Level.Map.add l { uname = None; uloc = loc } unames_rev))
 
-let add_universe ?loc name strict lbound uctx u =
+let add_universe ?loc name strict uctx u =
+  let lbound = UGraph.Bound.Set in
   let initial_universes = UGraph.add_universe ~lbound ~strict u uctx.initial_universes in
   let universes = UGraph.add_universe ~lbound ~strict u uctx.universes in
   let local = ContextSet.add_universe u uctx.local in
@@ -1118,10 +1115,10 @@ let new_univ_variable ?loc rigid name uctx =
       let univ_variables = UnivFlex.add u ~algebraic uctx.univ_variables in
       { uctx with univ_variables }
   in
-  let uctx = add_universe ?loc name false uctx.universes_lbound uctx u in
+  let uctx = add_universe ?loc name false uctx u in
   uctx, u
 
-let add_global_univ uctx u = add_universe None true UGraph.Bound.Set uctx u
+let add_global_univ uctx u = add_universe None true uctx u
 
 let make_with_initial_binders ~lbound univs binders =
   let uctx = make ~lbound univs in
@@ -1131,7 +1128,7 @@ let make_with_initial_binders ~lbound univs binders =
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders ~lbound:(Environ.universes_lbound env) (Environ.universes env) binders
+  make_with_initial_binders ~lbound:UGraph.Bound.Set (Environ.universes env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
@@ -1159,9 +1156,8 @@ let fix_undefined_variables uctx =
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
 
-let minimize uctx =
+let minimize ?(lbound = UGraph.Bound.Set) uctx =
   let open UnivMinim in
-  let lbound = uctx.universes_lbound in
   let (vars', us') =
     normalize_context_set ~lbound uctx.universes uctx.local uctx.univ_variables
       uctx.minim_extra
@@ -1175,7 +1171,6 @@ let minimize uctx =
         univ_variables = vars';
         sort_variables = uctx.sort_variables;
         universes = universes;
-        universes_lbound = lbound;
         initial_universes = uctx.initial_universes;
         minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
 

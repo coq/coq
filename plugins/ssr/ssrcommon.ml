@@ -177,6 +177,7 @@ let interp_refine env sigma ist ~concl rc =
     polymorphic = false;
     undeclared_evars_patvars = false;
     patvars_abstract = false;
+    unconstrained_sorts = false;
   }
   in
   let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
