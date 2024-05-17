@@ -102,6 +102,9 @@ let msg_may_need_inversion () =
 let make_anonymous_patvars n =
   List.make n (DAst.make @@ PatVar Anonymous)
 
+let nf_evar expand_evars sigma c =
+  if expand_evars then Evarutil.nf_evar sigma c else c
+
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
@@ -380,12 +383,12 @@ let is_patvar pat =
   | PatVar _ -> true
   | _ -> false
 
-let coerce_row ~program_mode typing_fun env sigma pats (tomatch,(na,indopt)) =
+let coerce_row ~program_mode ~expand_evars typing_fun env sigma pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let sigma, tycon, realnames = find_tomatch_tycon !!env sigma loc indopt in
   let sigma, j = typing_fun tycon env sigma tomatch in
   let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) ~program_mode !!env sigma j in
-  let typ = nf_evar sigma j.uj_type in
+  let typ = nf_evar expand_evars sigma j.uj_type in
   let env = make_return_predicate_ltac_lvar env sigma na tomatch j.uj_val in
   let sigma, t =
     if realnames = None && pats <> [] && List.for_all is_patvar pats then
@@ -397,12 +400,12 @@ let coerce_row ~program_mode typing_fun env sigma pats (tomatch,(na,indopt)) =
   in
   ((env, sigma), (j.uj_val,t))
 
-let coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl =
+let coerce_to_indtype ~program_mode ~expand_evars typing_fun env sigma matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
   let matx' = match matrix_transpose pats with
     | [] -> List.map (fun _ -> []) tomatchl (* no patterns at all *)
     | m -> m in
-  let (env, sigma), tms = List.fold_left2_map (fun (env, sigma) -> coerce_row ~program_mode typing_fun env sigma) (env, sigma) matx' tomatchl in
+  let (env, sigma), tms = List.fold_left2_map (fun (env, sigma) -> coerce_row ~program_mode ~expand_evars typing_fun env sigma) (env, sigma) matx' tomatchl in
   env, sigma, tms
 
 (************************************************************************)
@@ -1197,11 +1200,11 @@ let rec is_dependent_generalization sigma ng body =
 let is_dependent_branch sigma k (_,br) =
   is_dependent_generalization sigma k br
 
-let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
+let postprocess_dependencies ~expand_evars evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = map_constr (fun c -> nf_evar evd c) d in
+      let d = map_constr (fun c -> nf_evar expand_evars evd c) d in
       let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl evd (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch evd k) brs then
@@ -1287,10 +1290,10 @@ let rec generalize_problem names sigma pb = function
       end
 
 (* No more patterns: typing the right-hand side of equations *)
-let build_leaf sigma pb =
+let build_leaf ~expand_evars sigma pb =
   let used, rhs = extract_rhs pb in
   let sigma, j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env sigma rhs.it in
-  used, sigma, j_nf_evar sigma j
+  used, sigma, if expand_evars then j_nf_evar sigma j else j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
 (* spiwack: the [initial] argument keeps track whether the branch is a
@@ -1420,7 +1423,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
 
 (**********************************************************************)
 (* Main compiling descent *)
-let compile ~program_mode sigma pb =
+let compile ~program_mode ~expand_evars sigma pb =
   let vars = VarSet.variables (Global.env ()) in
   let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
   let rec compile sigma pb =
@@ -1429,7 +1432,7 @@ let compile ~program_mode sigma pb =
       | Alias (initial,x) :: rest -> compile_alias initial sigma pb x rest
       | NonDepAlias :: rest -> compile_non_dep_alias sigma pb rest
       | Abstract (i,d) :: rest -> compile_generalization sigma pb i d rest
-      | [] -> build_leaf sigma pb
+      | [] -> build_leaf ~expand_evars sigma pb
 
 (* Case splitting *)
   and match_current sigma pb (initial,tomatch) =
@@ -1463,7 +1466,7 @@ let compile ~program_mode sigma pb =
           (* We build the (elementary) case analysis *)
             let depstocheck = current::binding_vars_of_inductive sigma typ in
             let brvals,tomatch,pred,inst =
-              postprocess_dependencies sigma depstocheck
+              postprocess_dependencies ~expand_evars sigma depstocheck
                 brvals pb.tomatch pb.pred deps cstrs in
             let brvals = Array.map (fun (sign,body) ->
               it_mkLambda_or_LetIn body sign) brvals in
@@ -1812,7 +1815,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
  * further explanations
  *)
 
-let build_inversion_problem ~program_mode loc env sigma tms t =
+let build_inversion_problem ~program_mode ~expand_evars loc env sigma tms t =
   let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd !!env sigma t Anonymous) avoid in
@@ -1941,7 +1944,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
       caseloc   = loc;
       casestyle = RegularStyle;
       typing_function = build_tycon ?loc env pb_env s subst} in
-  let _used, sigma, j = compile ~program_mode sigma pb in
+  let _used, sigma, j = compile ~program_mode ~expand_evars sigma pb in
   (sigma, j.uj_val)
 
 (* Here, [pred] is assumed to be in the context built from all *)
@@ -2096,7 +2099,7 @@ let expected_elimination_sorts env sigma tomatchl =
  * Each matched term is independently considered dependent or not.
  *)
 
-let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign tycon pred =
+let prepare_predicate ?loc ~program_mode ~expand_evars typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
     (* If we put the typing constraint in the term, it has to be
        refreshed to preserve the invariant that no algebraic universe
@@ -2118,7 +2121,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
              sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
-        let sigma1,pred1 = build_inversion_problem loc ~program_mode env sigma tomatchs t in
+        let sigma1,pred1 = build_inversion_problem loc ~program_mode ~expand_evars env sigma tomatchs t in
         (* Optional second strategy: we abstract the tycon wrt to the dependencies *)
         let p2 =
           prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs arsign t in
@@ -2177,7 +2180,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let sigma = List.fold_left check_elim_sort sigma
           (expected_elimination_sorts !!env sigma tomatchs)
       in
-      let predccl = nf_evar sigma predcclj.uj_val in
+      let predccl = nf_evar expand_evars sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
   List.map
@@ -2617,7 +2620,7 @@ let context_of_arsign l =
     l ([], 0)
   in x
 
-let compile_program_cases ?loc style (typing_function, sigma) tycon env
+let compile_program_cases ?loc ~expand_evars style (typing_function, sigma) tycon env
     (predopt, tomatchl, eqns) =
   let hypnaming = ProgramNaming (VarSet.variables (Global.env ())) in
   let typing_fun tycon env sigma = function
@@ -2629,7 +2632,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true typing_function env sigma matx tomatchl in
+  let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true ~expand_evars typing_function env sigma matx tomatchl in
   let tycon = valcon_of_tycon tycon in
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
   let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
@@ -2716,7 +2719,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
       casestyle= style;
       typing_function = typing_function } in
 
-  let used, sigma, j = compile ~program_mode:true sigma pb in
+  let used, sigma, j = compile ~program_mode:true ~expand_evars sigma pb in
     (* We check for unused patterns *)
     check_unused_pattern !!env used matx;
     let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
@@ -2730,9 +2733,9 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
+let compile_cases ?loc ~program_mode ~expand_evars style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
   if predopt == None && program_mode && Program.is_program_cases () then
-    compile_program_cases ?loc style (typing_fun, sigma)
+    compile_program_cases ?loc ~expand_evars style (typing_fun, sigma)
       tycon env (predopt, tomatchl, eqns)
   else
 
@@ -2741,13 +2744,13 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl in
+  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode ~expand_evars typing_fun env sigma matx tomatchl in
 
   (* If an elimination predicate is provided, we check it is compatible
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
   let arsign = extract_arity_signature !!env tomatchs tomatchl in
-  let preds = prepare_predicate ?loc ~program_mode typing_fun predenv sigma tomatchs arsign tycon predopt in
+  let preds = prepare_predicate ?loc ~program_mode ~expand_evars typing_fun predenv sigma tomatchs arsign tycon predopt in
 
   let compile_for_one_predicate (sigma,nal,pred) =
     (* We push the initial terms to match and push their alias to rhs' envs *)
@@ -2793,7 +2796,7 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
         casestyle = style;
         typing_function = typing_fun } in
 
-    let used, sigma, j = compile ~program_mode sigma pb in
+    let used, sigma, j = compile ~program_mode ~expand_evars sigma pb in
 
     (* We coerce to the tycon (if an elim predicate was provided) *)
     let sigma, j = inh_conv_coerce_to_tycon ?loc ~program_mode !!env sigma j tycon in

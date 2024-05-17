@@ -293,6 +293,7 @@ type pretype_flags = {
   use_coercions : bool;
   undeclared_evars_patvars : bool;
   patvars_abstract : bool;
+  expand_evars : bool;
 }
 
 (* Compute the set of still-undefined initial evars up to restriction
@@ -463,7 +464,7 @@ let check_evars_are_solved ~program_mode env ?initial current_sigma =
 
 let process_inference_flags flags env initial (sigma,c,cty) =
   let sigma = solve_remaining_evars flags env ~initial sigma in
-  let c = if flags.expand_evars then nf_evar sigma c else c in
+  let c = if flags.expand_evars then Evarutil.nf_evar sigma c else c in
   sigma,c,cty
 
 let adjust_evar_source sigma na c =
@@ -479,6 +480,9 @@ let adjust_evar_source sigma na c =
      | _ -> sigma, c
      end
   | _, _ -> sigma, c
+
+let nf_evar flags sigma c =
+  if flags.expand_evars then Evarutil.nf_evar sigma c else c
 
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
@@ -860,7 +864,7 @@ struct
                     uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         sigma ctxtv vdef in
       let sigma = Typing.check_type_fixpoint ?loc !!env sigma names ftys vdefj in
-      let nf c = nf_evar sigma c in
+      let nf c = nf_evar flags sigma c in
       let ftys = Array.map nf ftys in (* FIXME *)
       let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
       let fixj = match fixkind with
@@ -999,7 +1003,7 @@ struct
               | exception Evarconv.UnableToUnify (sigma,e) ->
                 raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
               | sigma ->
-                sigma, args, nf_evar sigma (j_val hj)
+                sigma, args, nf_evar flags sigma (j_val hj)
             end
         in
         let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
@@ -1214,7 +1218,7 @@ struct
           (match po with
           | Some p ->
             let sigma, pj = pretype_type empty_valcon env_p sigma p in
-            let ccl = nf_evar sigma pj.utj_val in
+            let ccl = nf_evar flags sigma pj.utj_val in
             let p = it_mkLambda_or_LetIn ccl psign' in
             let inst =
               (Array.to_list cs.cs_concl_realargs)
@@ -1232,7 +1236,7 @@ struct
           | None ->
             let tycon = lift_tycon cs.cs_nargs tycon in
             let sigma, fj = pretype tycon env_f sigma d in
-            let ccl = nf_evar sigma fj.uj_type in
+            let ccl = nf_evar flags sigma fj.uj_type in
             let ccl =
               if noccur_between sigma 1 cs.cs_nargs ccl then
                 lift (- cs.cs_nargs) ccl
@@ -1250,7 +1254,7 @@ struct
   let pretype_cases self (sty, po, tml, eqns)  =
     fun ?loc ~flags tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
-    Cases.compile_cases ?loc ~program_mode:flags.program_mode sty (pretype, sigma) tycon env (po,tml,eqns)
+    Cases.compile_cases ?loc ~program_mode:flags.program_mode ~expand_evars:flags.expand_evars sty (pretype, sigma) tycon env (po,tml,eqns)
 
   let pretype_if self (c, (na, po), b1, b2) =
     fun ?loc ~flags tycon env sigma ->
@@ -1282,7 +1286,7 @@ struct
       let sigma, pred, p = match po with
         | Some p ->
           let sigma, pj = eval_type_pretyper self ~flags empty_valcon env_p sigma p in
-          let ccl = nf_evar sigma pj.utj_val in
+          let ccl = nf_evar flags sigma pj.utj_val in
           let pred = it_mkLambda_or_LetIn ccl psign in
           let typ = lift (- nar) (beta_applist sigma (pred,[cj.uj_val])) in
           sigma, pred, typ
@@ -1292,8 +1296,8 @@ struct
             | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.CasesType false)
           in
           sigma, it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
-      let pred = nf_evar sigma pred in
-      let p = nf_evar sigma p in
+      let pred = nf_evar flags sigma pred in
+      let p = nf_evar flags sigma p in
       let f sigma cs b =
         let n = Context.Rel.length cs.cs_args in
         let pi = lift n pred in (* liftn n 2 pred ? *)
@@ -1310,7 +1314,7 @@ struct
       let sigma, b2 = f sigma cstrs.(1) b2 in
       let v =
         let ind,_ = dest_ind_family indf in
-        let pred = nf_evar sigma pred in
+        let pred = nf_evar flags sigma pred in
         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
         let ci = make_case_info !!env (fst ind) IfStyle in
         mkCase (EConstr.contract_case !!env sigma
@@ -1328,11 +1332,11 @@ struct
       let sigma, tj = eval_type_pretyper self ~flags empty_valcon env sigma t in
       let sigma, tval = Evarsolve.refresh_universes
           ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
-      let tval = nf_evar sigma tval in
+      let tval = nf_evar flags sigma tval in
       let (sigma, cj), tval = match k with
         | Some VMcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
-          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
+          let cty = nf_evar flags sigma cj.uj_type and tval = nf_evar flags sigma tval in
           begin match Reductionops.vm_infer_conv !!env sigma cty tval with
             | Some sigma -> (sigma, cj), tval
             | None ->
@@ -1341,7 +1345,7 @@ struct
           end
         | Some NATIVEcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
-          let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
+          let cty = nf_evar flags sigma cj.uj_type and tval = nf_evar flags sigma tval in
           begin
             match Reductionops.native_infer_conv !!env sigma cty tval with
             | Some sigma -> (sigma, cj), tval
@@ -1379,7 +1383,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
            (* Correction of bug #5315 : we need to define an evar for *all* holes *)
            let sigma, evkt = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
            let ev,_ = destEvar sigma evkt in
-           let sigma = Evd.define ev (nf_evar sigma v) sigma in
+           let sigma = Evd.define ev (nf_evar flags sigma v) sigma in
            (* End of correction of bug #5315 *)
            sigma, { utj_val = v;
                     utj_type = s }
@@ -1504,6 +1508,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
     poly = flags.polymorphic;
     undeclared_evars_patvars = flags.undeclared_evars_patvars;
     patvars_abstract = flags.patvars_abstract;
+    expand_evars = flags.expand_evars;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
       | UseTC | UseTCForConv -> true
