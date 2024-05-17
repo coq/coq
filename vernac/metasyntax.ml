@@ -812,8 +812,10 @@ let pr_arg_level from (lev,typ) =
 
 let pr_level ntn ({notation_entry = from; notation_level = fromlevel}, args) typs =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
-  str "at level " ++ int fromlevel ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
+  str "at level " ++ int fromlevel ++
+  (match args with | [] -> mt () | _ :: _ ->
+     spc () ++ str "with arguments" ++ spc()
+     ++ prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs))
 
 let error_incompatible_level ntn oldprec oldtyps prec typs =
   user_err
