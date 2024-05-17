@@ -1,4 +1,4 @@
-Set Printing All.
+Set Printing All. Set Warnings "-prefix-incompatible-level".
 
 (* if ``~`` and ``~~`` are both defined as tokens,
    the inputs ``~ ~`` and ``~~`` generate different tokens *)

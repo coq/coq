@@ -90,7 +90,6 @@ Module SsrSyntax.
  at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
 
 Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)".
-Reserved Notation "(* 69 *)".
 
 (**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
 Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)".

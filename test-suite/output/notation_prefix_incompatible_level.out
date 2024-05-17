@@ -1,0 +1,10 @@
+File "./output/notation_prefix_incompatible_level.v", line 4, characters 0-43:
+Warning: Notations "#0 #1" defined at level 30 and "#0 #1 #2"
+defined at level 40 have incompatible prefixes.
+One of them will likely not work.
+[notation-incompatible-prefix,parsing,default]
+File "./output/notation_prefix_incompatible_level.v", line 7, characters 0-63:
+Warning: Notations "#20 #21 _ #3 _" defined at level 50 with arguments constr
+at level 30 and "#20 #21 _ #34" defined at level 50 with arguments constr
+at level 40 have incompatible prefixes. One of them will likely not work.
+[notation-incompatible-prefix,parsing,default]

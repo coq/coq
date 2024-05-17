@@ -215,15 +215,22 @@ definition is the following:
 More generally, it is required that notations are explicitly factorized on the
 left. See the next section for more about factorization.
 
+.. _NotationFactorization:
+
 Simple factorization rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Coq extensible parsing is performed by *Camlp5* which is essentially a LL1
 parser: it decides which notation to parse by looking at tokens from left to right.
 Hence, some care has to be taken not to hide already existing rules by new
-rules. Some simple left factorization work has to be done. Here is an example.
+rules. Indeed notations with a common prefix but different levels can
+interfere with one another, making some of them unusable. For instance, a notation ``x < y`` with ``x``
+and ``y`` at level 69 would be broken by another rule that puts
+``y`` at another level, like ``x < y < z`` with ``x`` at level 69 and ``y``
+at level 200. To avoid such issues, you should left factorize rules, that is ensure
+that common prefixes use the samel levels.
 
-.. coqtop:: all
+.. coqtop:: in
 
    Notation "x < y" := (lt x y) (at level 70).
    Fail Notation "x < y < z" := (x < y /\ y < z) (at level 70).
@@ -446,6 +453,14 @@ Reserving notations
    default by all subsequent interpretations of the corresponding
    notation. Individual interpretations can override the format.
 
+   .. warn:: Notations "a b" defined at level x and "a c" defined at level y have incompatible prefixes. One of them will likely not work.
+      :name: notation-incompatible-prefix
+
+      The two notations have a common prefix but different levels.
+      The levels of one of the notations should be adjusted to match
+      the other. See :ref:`factorization <NotationFactorization>` for
+      details.
+
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -652,9 +667,9 @@ Displaying information about notations
          Print Notation "_ mod _".
          Print Notation "x 'mod' y".
 
-         Reserved Notation "/ x /" (at level 0, format "/ x /").
-         Fail Print Notation "/x/".
-         Print Notation "/ x /".
+         Reserved Notation "# x #" (at level 0, format "# x #").
+         Fail Print Notation "#x#".
+         Print Notation "# x #".
 
          Reserved Notation "( x , y , .. , z )" (at level 0).
          Print Notation "( _ , _ , .. , _ )".
@@ -1220,7 +1235,7 @@ Custom entries
    For instance, we may want to define an ad hoc
    parser for arithmetical operations and proceed as follows:
 
-   .. coqtop:: all
+   .. coqtop:: reset all
 
       Inductive Expr :=
       | One : Expr
