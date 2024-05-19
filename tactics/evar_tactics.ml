@@ -28,9 +28,8 @@ module NamedDecl = Context.Named.Declaration
 let define_and_solve_constraints evk c env evd =
   if Termops.occur_evar evd evk c then
     Pretype_errors.error_occur_check env evd evk c;
-  let () = ignore (extract_all_conv_pbs evd) (* ensure that there is no pending modifications - ideally the case *) in
   let evd = define evk c evd in
-  let (evd,pbs) = extract_changed_conv_pbs evd in (* consider problems relying on evk *)
+  let (evd,pbs) = extract_changed_conv_pbs_from evd (Some (Evar.Set.singleton evk)) in
   match
     List.fold_left
       (fun p (pbty,env,t1,t2) -> match p with
