@@ -1,0 +1,25 @@
+File "./output/bug_19047.v", line 11, characters 2-135:
+The command has indeed failed with message:
+Recursive definition of F is ill-formed.
+In environment
+coacc_rect :
+  forall (A : Type) (R : A -> A -> Prop) (P : A -> Type),
+  (forall x : A,
+   (forall y : A, R x y -> coAcc R y) -> (forall y : A, R x y -> P y) -> P x) ->
+  forall x : A, coAcc R x -> P x
+A : Type
+R : A -> A -> Prop
+P : A -> Type
+f :
+  forall x : A,
+  (forall y : A, R x y -> coAcc R y) -> (forall y : A, R x y -> P y) -> P x
+F : forall x : A, coAcc R x -> P x
+x : R
+a : coAcc P x
+The codomain is "f x"
+which should be a coinductive type.
+Recursive definition is:
+"fun (x : A) (a : coAcc R x) =>
+ match a with
+ | coAcc_intro _ _ g => f x g (fun (y : A) (r : R x y) => F y (g y r))
+ end".
