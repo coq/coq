@@ -9,20 +9,20 @@
 /************************************************************************/
 
 #include <linux/perf_event.h>
-#include <sys/syscall.h>
 #include <sys/ioctl.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include <errno.h>
 #include <string.h>
 
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
 
-static int perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-                           int cpu, int group_fd, unsigned long flags) {
+static int perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu,
+                           int group_fd, unsigned long flags) {
   return syscall(SYS_perf_event_open, hw_event, pid, cpu, group_fd, flags);
 }
 
@@ -53,7 +53,7 @@ CAMLprim value CAML_init(value unit) {
     caml_failwith("initialisation failure");
   }
 
-  if (ioctl(fd, PERF_EVENT_IOC_RESET , 0) == -1) {
+  if (ioctl(fd, PERF_EVENT_IOC_RESET, 0) == -1) {
     close(fd);
     fd = NOT_INITIALIZED;
     caml_failwith("could not initially reset counter");
@@ -84,7 +84,8 @@ CAMLprim value CAML_drop(value unit) {
 CAMLprim value CAML_peek(value unit) {
   CAMLparam1(unit);
 
-  if (fd == NOT_INITIALIZED) caml_failwith("counter not initialized");
+  if (fd == NOT_INITIALIZED)
+    caml_failwith("counter not initialized");
 
   if (ioctl(fd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
     caml_failwith("could not disable counter");

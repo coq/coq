@@ -28,7 +28,7 @@
 #define ATOM_COFIXEVALUATED_TAG 7
 
 #define Is_double(v) (Tag_val(v) == Double_tag)
-#define Is_tailrec_switch(v) (Field(v,1) == Val_true)
+#define Is_tailrec_switch(v) (Field(v, 1) == Val_true)
 
 /* coq values for primitive operations */
 #define coq_tag_C1 2
