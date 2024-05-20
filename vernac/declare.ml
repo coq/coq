@@ -1922,6 +1922,25 @@ let () = CErrors.register_handler begin function
   | _ -> None
   end
 
+let raise_non_ground_proof evd pid c =
+  let has_given_up =
+    let exception Found in
+    let rec aux c =
+      let () = match EConstr.kind evd c with
+        | Evar (e,_) -> if Evar.Set.mem e (Evd.given_up evd) then raise Found
+        | _ -> ()
+      in
+      EConstr.iter evd aux c
+    in
+    try aux c; false with Found -> true
+  in
+  raise (OpenProof (pid, NonGroundResult has_given_up))
+
+let check_incomplete_proof evd =
+  if Evd.has_shelved evd then warn_remaining_shelved_goals ()
+  else if Evd.has_given_up evd then warn_given_up ()
+  else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
+
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   let Proof.{name=pid;entry;poly;sigma=evd} = Proof.data proof in
@@ -1936,19 +1955,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   let to_constr c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
-    | None ->
-      let has_given_up =
-        let exception Found in
-        let rec aux c =
-          let () = match EConstr.kind evd c with
-          | Evar (e,_) -> if Evar.Set.mem e (Evd.given_up evd) then raise Found
-          | _ -> ()
-          in
-          EConstr.iter evd aux c
-        in
-        try aux c; false with Found -> true
-      in
-      raise (OpenProof (pid, NonGroundResult has_given_up))
+    | None -> raise_non_ground_proof evd pid c
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -1972,13 +1979,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
       let typing_flags = pinfo.info.typing_flags in
       fst (make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration) in
   let proofs = List.map (fun (body, typ) -> ((body, eff), typ)) proofs in
-  let () =
-    if warn_incomplete then begin
-      if Evd.has_shelved evd then warn_remaining_shelved_goals ()
-      else if Evd.has_given_up evd then warn_given_up ()
-      else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
-    end
-  in
+  let () = if warn_incomplete then check_incomplete_proof evd in
   proofs, Evd.ustate evd
 
 exception NotGuarded of
