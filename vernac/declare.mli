@@ -12,7 +12,7 @@ open Names
 
 (** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
-   environment. It also updates some accesory tables such as [Nametab]
+   environment. It also updates some accessory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
 (** We provide three main entry points:
