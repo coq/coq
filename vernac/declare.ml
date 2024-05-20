@@ -2152,14 +2152,13 @@ let get_current_context pf =
   let p = get pf in
   Proof.get_proof_context p
 
-(* Support for mutually proved theorems *)
-
 (* XXX: this should be unified with the code for non-interactive
    mutuals previously on this file. *)
 module MutualEntry : sig
 
   val declare_possibly_mutual_parameters
-    : pinfo:Proof_info.t
+    :  info:Info.t
+    -> cinfo:unit CInfo.t list
     -> uctx:UState.t
     -> ?mono_uctx_extra:UState.t
     -> sec_vars:Id.Set.t option
@@ -2168,29 +2167,30 @@ module MutualEntry : sig
 
   val declare_possibly_mutual_definitions
     (* Common to all recthms *)
-    : pinfo:Proof_info.t
+    :  info:Info.t
+    -> cinfo:unit CInfo.t list
     -> uctx:UState.t
     -> proof_entry list
     -> Names.GlobRef.t list
 
 end = struct
 
-  let declare_possibly_mutual_definitions ~pinfo ~uctx entries =
-    let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } } = pinfo in
+  let declare_possibly_mutual_definitions ~info ~cinfo ~uctx entries =
+    let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
     let refs = List.map2 (fun CInfo.{name; impargs} ->
-        declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) pinfo.Proof_info.cinfo entries in
+        declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) cinfo entries in
     let () =
       (* We override the temporary notations used while proving, now using the global names *)
-      let local = pinfo.info.scope=Locality.Discharge in
+      let local = info.scope=Locality.Discharge in
       CWarnings.with_warn ("-"^Notation.warning_overridden_name)
-        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) pinfo.info.ntns
+        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) info.ntns
     in
     refs
 
-  let declare_possibly_mutual_parameters ~pinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
+  let declare_possibly_mutual_parameters ~info ~cinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
     (* Note, if an initial uctx, minimize and restrict have not been done *)
     (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
-    let { Info.scope; poly; hook; udecl } = pinfo.Proof_info.info in
+    let { Info.scope; poly; hook; udecl } = info in
     pi3 (List.fold_left2 (
       fun (i, subst, csts) { CInfo.name; impargs } typ ->
         let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
@@ -2206,7 +2206,7 @@ end = struct
         let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
         let inst = instance_of_univs univs in
         (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
-    ) (0, [], []) pinfo.Proof_info.cinfo typs)
+    ) (0, [], []) cinfo typs)
 
 end
 
@@ -2250,14 +2250,15 @@ let check_type_evars_solved env sigma typ =
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   (* If the constant was an obligation we need to update the program map *)
+  let { Proof_info.info; cinfo } = pinfo in
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
     let declare_fun ~uctx ~mono_uctx_extra typ =
-      List.hd (MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
+      List.hd (MutualEntry.declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
     let typ = match typs with [typ] -> typ | _ -> assert false in
     Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun sec_vars uctx
   | _ ->
-    let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars typs in
+    let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars typs in
     pm
 
 let save_admitted ~pm ~proof =
@@ -2328,17 +2329,18 @@ let check_single_entry { entries; uctx } label =
 
 let finish_proof ~pm proof_obj proof_info =
   let open Proof_ending in
+  let { Proof_info.info; cinfo; possible_guard } = proof_info in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
     let {entries; uctx} = proof_obj in
-    pm, MutualEntry.declare_possibly_mutual_definitions ~uctx ~pinfo:proof_info entries
+    pm, MutualEntry.declare_possibly_mutual_definitions ~uctx ~info ~cinfo entries
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
   | End_derive ->
     pm, finish_derived proof_obj
   | End_equations { hook; i; types; sigma } ->
-    let kind = proof_info.Proof_info.info.Info.kind in
+    let kind = info.Info.kind in
     finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma
 
 let err_save_forbidden_in_place_of_qed () =
