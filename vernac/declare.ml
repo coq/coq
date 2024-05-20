@@ -2027,15 +2027,17 @@ let control_only_guard { proof; pinfo } =
       raise (NotGuarded (env, sigma, cofix_error, fix_errors, rec_declaration))
     with Exit -> ()
 
+let bool_of_opacity = function
+  | Vernacexpr.Opaque -> true
+  | Vernacexpr.Transparent -> false
+
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.poly } = Proof.data proof in
   let elist, uctx = prepare_proof ?warn_incomplete ps in
-  let opaque = match opaque with
-    | Vernacexpr.Opaque -> true
-    | Vernacexpr.Transparent -> false in
+  let opaque = bool_of_opacity opaque in
 
   let make_entry ((body, eff), typ) =
     let keep_body_ucst_separate = if keep_body_ucst_separate then Some initial_euctx else None in
