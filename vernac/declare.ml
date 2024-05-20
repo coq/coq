@@ -849,6 +849,27 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
 
 let declare_entry = declare_entry_core ~obls:[]
 
+let warn_let_as_axiom =
+  CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
+    Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
+                  spc () ++ strbrk "declared as an axiom.")
+
+(* Declare an assumption when not in a section: Parameter/Axiom but also
+   Variable/Hypothesis seen as Local Parameter/Axiom *)
+let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
+  let local = match scope with
+    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
+    | Locality.Global local -> local
+  in
+  let kind = Decls.(IsAssumption Conjectural) in
+  let decl = ParameterEntry pe in
+  let cst = declare_constant ~name ~local ~kind ~typing_flags:None decl in
+  let dref = Names.GlobRef.ConstRef cst in
+  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
+  let () = assumption_message name in
+  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
+  cst
+
 (* Using processing *)
 let interp_proof_using_gen f env evd cinfo using =
   let cextract v (fixnames, terms) =
@@ -914,27 +935,6 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   csts
-
-let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
-    Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
-                  spc () ++ strbrk "declared as an axiom.")
-
-(* Declare an assumption when not in a section: Parameter/Axiom but also
-   Variable/Hypothesis seen as Local Parameter/Axiom *)
-let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
-  let local = match scope with
-    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
-    | Locality.Global local -> local
-  in
-  let kind = Decls.(IsAssumption Conjectural) in
-  let decl = ParameterEntry pe in
-  let cst = declare_constant ~name ~local ~kind ~typing_flags:None decl in
-  let dref = Names.GlobRef.ConstRef cst in
-  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
-  let () = assumption_message name in
-  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
-  cst
 
 (* Preparing proof entries *)
 let error_unresolved_evars env sigma t evars =
