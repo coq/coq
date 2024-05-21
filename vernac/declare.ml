@@ -2056,7 +2056,7 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   { entries; uctx; pinfo })
     ()
 
-type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
+type closed_proof_output = ((Constr.t * Evd.side_effects) * Constr.t) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
   NewProfile.profile "close_proof_delayed" (fun () ->
@@ -2082,7 +2082,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
 
     (* NB: for Admitted proofs [fpl] is not valid (raises anomaly when forced) *)
     Future.chain fpl (fun (pf, uctx) ->
-        let (body, eff) = List.nth pf i in
+        let (body, eff) = fst (List.nth pf i) in
         (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
@@ -2097,9 +2097,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
 
 let close_future_proof = close_proof_delayed
 
-let return_proof ps =
-  let p, uctx = prepare_proof ps in
-  List.map (fun ((body,eff),_) -> (body,eff)) p, uctx
+let return_proof p = prepare_proof p
 
 let update_sigma_univs ugraph p =
   map ~f:(Proof.update_sigma_univs ugraph) p
