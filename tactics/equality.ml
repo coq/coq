@@ -662,8 +662,12 @@ let replace c1 c2 =
 let replace_by c1 c2 tac =
   replace_using_leibniz onConcl c2 c1 false false (Some tac)
 
-let replace_in_clause_maybe_by c1 c2 cl tac_opt =
-  replace_using_leibniz cl c2 c1 false false tac_opt
+let replace_in_clause_maybe_by dir_opt c1 c2 cl tac_opt =
+  let c1, c2, dir = match dir_opt with
+  | None | Some false -> c1, c2, false
+  | Some true -> c2, c1, true
+  in
+  replace_using_leibniz cl c2 c1 dir false tac_opt
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
