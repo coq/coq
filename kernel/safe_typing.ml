@@ -385,9 +385,9 @@ let push_bytecode vmtab code =
   let open Vmemitcodes in
   let vmtab, code = match code with
   | None -> vmtab, None
-  | Some (BCdefined (code, patches)) ->
+  | Some (BCdefined (mask, code, patches)) ->
     let vmtab, index = Vmlibrary.add code vmtab in
-    vmtab, Some (BCdefined (index, patches))
+    vmtab, Some (BCdefined (mask, index, patches))
   | Some BCconstant -> vmtab, Some BCconstant
   | Some (BCalias kn) -> vmtab, Some (BCalias kn)
   in

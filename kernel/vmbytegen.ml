@@ -873,12 +873,30 @@ let dump_bytecodes init code fvs =
      prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
      fnl ())
 
+let skip_suffix l =
+  let rec aux = function
+  | [] -> None
+  | b :: l ->
+    match aux l with
+    | None -> if b then None else Some [b]
+    | Some l -> Some (b :: l)
+  in
+  match aux l with None -> [] | Some l -> l
+
 let compile ?universes:(universes=(0,0)) env sigma c =
   Label.reset_label_counter ();
+  let lam = lambda_of_constr env sigma c in
+  let params, body = decompose_Llam lam in
+  let arity = Array.length params in
+  let mask =
+    let rels = Genlambda.free_rels body in
+    let init i = Int.Set.mem (arity - i) rels in
+    let mask = List.init arity init in
+    Array.of_list @@ skip_suffix mask
+  in
   let cont = [Kstop] in
     let cenv, init_code, fun_code =
       if UVars.eq_sizes universes (0,0) then
-        let lam = lambda_of_constr env sigma c in
         let cenv = empty_comp_env () in
         let env = { env; fun_code = []; uinst_len = (0,0) } in
         let cont = compile_lam env cenv lam 0 cont in
@@ -888,9 +906,6 @@ let compile ?universes:(universes=(0,0)) env sigma c =
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
          *)
-        let lam = lambda_of_constr env sigma c in
-        let params, body = decompose_Llam lam in
-        let arity = Array.length params in
         let cenv = empty_comp_env () in
         let full_arity = arity + 1 in
         let r_fun = comp_env_fun ~univs:true arity in
@@ -912,7 +927,8 @@ let compile ?universes:(universes=(0,0)) env sigma c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in
-    to_memory (Array.of_list fv) res
+    let code, patch = to_memory (Array.of_list fv) res in
+    mask, code, patch
 
 let warn_compile_error =
   CWarnings.create ~name:"bytecode-compiler-failed-compilation" ~category:CWarnings.CoreCategories.bytecode_compiler
@@ -949,8 +965,8 @@ let compile_constant_body ~fail_on_error env univs = function
       match alias with
       | Some kn -> Some (BCalias kn)
       | _ ->
-          let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
-          Option.map (fun code -> BCdefined code) res
+        let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
+        Option.map (fun (mask, code, patch) -> BCdefined (mask, code, patch)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
