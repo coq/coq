@@ -1084,6 +1084,10 @@ simple_tactic: [
 | DELETE "replace" "<-" uconstr clause
 | DELETE "replace" uconstr clause
 | "replace" orient uconstr clause
+| REPLACE "replace" uconstr "with" constr clause by_arg_tac
+| WITH "replace" orient constr "with" constr clause OPT ( "by" ltac_expr3 )
+| DELETE "replace" "->" uconstr "with" constr clause by_arg_tac
+| DELETE "replace" "<-" uconstr "with" constr clause by_arg_tac
 | REPLACE "rewrite" "*" orient uconstr "in" hyp "at" occurrences by_arg_tac
 | WITH "rewrite" "*" orient uconstr OPT ( "in" hyp ) OPT ( "at" occurrences ) by_arg_tac
 | DELETE "rewrite" "*" orient uconstr "in" hyp by_arg_tac

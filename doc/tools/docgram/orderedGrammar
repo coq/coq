@@ -1383,6 +1383,7 @@ simple_tactic: [
 | "einjection" OPT induction_arg OPT ( "as" LIST0 simple_intropattern )
 | "simple" "injection" OPT induction_arg
 | "replace" OPT [ "->" | "<-" ] one_term OPT occurrences
+| "replace" OPT [ "->" | "<-" ] one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
 | "typeclasses" "eauto" OPT [ "bfs" | "dfs" | "best_effort" ] OPT nat_or_var OPT ( "with" LIST1 ident )
 | "setoid_replace" one_term "with" one_term OPT ( "using" "relation" one_term ) OPT ( "in" ident ) OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
 | OPT ( [ natural | "[" ident "]" ] ":" ) "{"
@@ -1545,7 +1546,6 @@ simple_tactic: [
 | "enough" one_type OPT as_ipat OPT ( "by" ltac_expr3 )
 | "eenough" one_type OPT as_ipat OPT ( "by" ltac_expr3 )
 | "generalize" "dependent" one_term
-| "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
 | "generalize" LIST1 one_term
 | "generalize" LIST1 [ pattern_occs OPT as_name ] SEP ","
 | "induction" LIST1 induction_clause SEP "," OPT induction_principle
