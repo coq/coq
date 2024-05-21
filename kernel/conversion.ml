@@ -698,7 +698,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
-    | FCaseInvert (ci1,u1,pms1,p1,_,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,_,_,br2,e2) ->
+    | FCaseInvert (ci1,u1,pms1,p1,iv1,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,iv2,_,br2,e2) ->
       (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
       let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
       let fold c1 c2 cuniv = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
@@ -715,6 +715,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let pms1 = mk_clos_vect e1 pms1 in
       let pms2 = mk_clos_vect e2 pms2 in
       let cuniv = Array.fold_right2 fold pms1 pms2 cuniv in
+      let cuniv = Array.fold_right2 fold (get_invert iv1) (get_invert iv2) cuniv in
       let cuniv = convert_return_clause mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
       convert_branches mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv
 

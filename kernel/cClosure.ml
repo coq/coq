@@ -108,6 +108,8 @@ and usubs = fconstr subs UVars.puniverses
 
 and finvert = fconstr array
 
+let get_invert fiv = fiv
+
 let fterm_of v = v.term
 let set_ntrl v = v.mark <- Ntrl
 
@@ -1912,13 +1914,11 @@ and knit : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> _ -> 'a =
   let (ht,s) = knht info e t stk in
   knr info tab ~pat_state ht s
 
-and case_inversion info tab ci u params indices v =
-  let open Declarations in
+and case_inversion info tab ci u params indices v = match v with
+| [||] -> None (* empty type *)
+| [| [||], v |] ->
   (* No binders / lets at all in the unique branch *)
-  let v = match v with
-  | [| [||], v |] -> v
-  | _ -> assert false
-  in
+  let open Declarations in
   if Array.is_empty indices then Some v
   else
     let env = info_env info in
@@ -1938,6 +1938,7 @@ and case_inversion info tab ci u params indices v =
     in
     if Array.for_all_i check_index 0 indices
     then Some v else None
+| _ -> assert false
 
 let knred = {
   red_kni = kni;

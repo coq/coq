@@ -80,6 +80,8 @@ val check_native_args : CPrimitives.t -> stack -> bool
 val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
   fconstr list * fconstr * fconstr next_native_args * stack
 
+val get_invert : finvert -> fconstr array
+
 val stack_args_size : stack -> int
 
 val inductive_subst : Declarations.mutual_inductive_body
