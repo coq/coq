@@ -888,6 +888,42 @@ let gather_mutual_using_data =
       let typ, body = EConstr.(of_constr typ, of_constr body) in
       (name, [typ; body]) :: acc) []
 
+(* XXX: this should be unified with the code for non-interactive
+   mutuals previously on this file. *)
+
+let declare_possibly_mutual_definitions ~info ~cinfo ~uctx entries =
+  let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
+  let refs = List.map2 (fun CInfo.{name; impargs} ->
+      declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) cinfo entries in
+  let () =
+    (* We override the temporary notations used while proving, now using the global names *)
+    let local = info.scope=Locality.Discharge in
+    CWarnings.with_warn ("-"^Notation.warning_overridden_name)
+      (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) info.ntns
+  in
+  refs
+
+let declare_possibly_mutual_parameters ~info ~cinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
+  (* Note, if an initial uctx, minimize and restrict have not been done *)
+  (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
+  let { Info.scope; poly; hook; udecl } = info in
+  pi3 (List.fold_left2 (
+    fun (i, subst, csts) { CInfo.name; impargs } typ ->
+      let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
+      let univs = UState.check_univ_decl ~poly uctx' udecl in
+      let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
+      let typ = Vars.replace_vars subst typ in
+      let pe = {
+          parameter_entry_secctx = sec_vars;
+          parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
+          parameter_entry_universes = univs;
+          parameter_entry_inline_code = None;
+        } in
+      let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
+      let inst = instance_of_univs univs in
+      (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
+  ) (0, [], []) cinfo typs)
+
 let make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration =
   let env = Environ.update_typing_flags ?typing_flags env in
   let indexes = Pretyping.search_guard env possible_guard rec_declaration in
@@ -2152,64 +2188,6 @@ let get_current_context pf =
   let p = get pf in
   Proof.get_proof_context p
 
-(* XXX: this should be unified with the code for non-interactive
-   mutuals previously on this file. *)
-module MutualEntry : sig
-
-  val declare_possibly_mutual_parameters
-    :  info:Info.t
-    -> cinfo:unit CInfo.t list
-    -> uctx:UState.t
-    -> ?mono_uctx_extra:UState.t
-    -> sec_vars:Id.Set.t option
-    -> Constr.t list
-    -> (Constant.t * UState.named_universes_entry) list
-
-  val declare_possibly_mutual_definitions
-    (* Common to all recthms *)
-    :  info:Info.t
-    -> cinfo:unit CInfo.t list
-    -> uctx:UState.t
-    -> proof_entry list
-    -> Names.GlobRef.t list
-
-end = struct
-
-  let declare_possibly_mutual_definitions ~info ~cinfo ~uctx entries =
-    let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
-    let refs = List.map2 (fun CInfo.{name; impargs} ->
-        declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) cinfo entries in
-    let () =
-      (* We override the temporary notations used while proving, now using the global names *)
-      let local = info.scope=Locality.Discharge in
-      CWarnings.with_warn ("-"^Notation.warning_overridden_name)
-        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) info.ntns
-    in
-    refs
-
-  let declare_possibly_mutual_parameters ~info ~cinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
-    (* Note, if an initial uctx, minimize and restrict have not been done *)
-    (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
-    let { Info.scope; poly; hook; udecl } = info in
-    pi3 (List.fold_left2 (
-      fun (i, subst, csts) { CInfo.name; impargs } typ ->
-        let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
-        let univs = UState.check_univ_decl ~poly uctx' udecl in
-        let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
-        let typ = Vars.replace_vars subst typ in
-        let pe = {
-            parameter_entry_secctx = sec_vars;
-            parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
-            parameter_entry_universes = univs;
-            parameter_entry_inline_code = None;
-          } in
-        let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
-        let inst = instance_of_univs univs in
-        (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
-    ) (0, [], []) cinfo typs)
-
-end
-
 (************************************************************************)
 (* Admitting a lemma-like constant                                      *)
 (************************************************************************)
@@ -2254,11 +2232,11 @@ let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
     let declare_fun ~uctx ~mono_uctx_extra typ =
-      List.hd (MutualEntry.declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
+      List.hd (declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
     let typ = match typs with [typ] -> typ | _ -> assert false in
     Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun sec_vars uctx
   | _ ->
-    let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars typs in
+    let (_ : 'a list) = declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars typs in
     pm
 
 let save_admitted ~pm ~proof =
@@ -2333,7 +2311,7 @@ let finish_proof ~pm proof_obj proof_info =
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
     let {entries; uctx} = proof_obj in
-    pm, MutualEntry.declare_possibly_mutual_definitions ~uctx ~info ~cinfo entries
+    pm, declare_possibly_mutual_definitions ~uctx ~info ~cinfo entries
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
