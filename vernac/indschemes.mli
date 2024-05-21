@@ -11,16 +11,10 @@
 open Names
 open Constr
 open Environ
-open Vernacexpr
 
 type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.family
 
 (** See also Auto_ind_decl, Indrec, Eqscheme, Ind_tables, ... *)
-
-(** Resolve the names of a list of inductive schemes with respect to an environment *)
-val name_and_process_schemes : Environ.env
-  -> (lident option * scheme) list
-  -> resolved_scheme list
 
 (** Build and register the boolean equalities associated to an inductive type *)
 
@@ -40,10 +34,11 @@ val declare_rewriting_schemes : ?loc:Loc.t -> inductive -> unit
     [force_mutual] forces the construction of eliminators having the same predicates and
     methods even if some of the inductives are not recursive.
     By default it is [false] and some of the eliminators are defined as simple case analysis.
+    By default [isrec] is [true].
  *)
 
 val do_mutual_induction_scheme : ?force_mutual:bool
-  -> Environ.env -> resolved_scheme list -> unit
+  -> Environ.env -> ?isrec:bool -> resolved_scheme list -> unit
 
 (** Main calls to interpret the Scheme command *)
 
