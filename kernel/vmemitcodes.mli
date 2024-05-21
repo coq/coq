@@ -26,6 +26,7 @@ type 'a pbody_code =
   | BCdefined of ('a * patches)
   | BCalias of Constant.t
   | BCconstant
+  | BChole
 
 type body_code = to_patch pbody_code
 

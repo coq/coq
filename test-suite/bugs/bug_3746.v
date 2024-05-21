@@ -71,7 +71,7 @@ Module InclSigOpaque.
  Include SigOpaque.
 End InclSigOpaque.
 
-Compute InclSigOpaque.p.
+Eval cbv in InclSigOpaque.p.
 Print InclSigOpaque.p.
 Print Assumptions InclSigOpaque.p. (* Closed *)
 
@@ -87,6 +87,6 @@ Module InclFunctOpa.
  Include F'(Empty).
 End InclFunctOpa.
 
-Compute InclFunctOpa.p.
+Eval cbv in InclFunctOpa.p.
 Print InclFunctOpa.p.
 Print Assumptions InclFunctOpa.p. (* Closed *)

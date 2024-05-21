@@ -279,7 +279,7 @@ let v_reloc = v_sum "vm_reloc" 0 [|
 let v_vm_patches = v_tuple "vm_patches" [|Array v_reloc|]
 
 let v_vm_pbody_code index =
-  v_sum "pbody_code" 1 [|
+  v_sum "pbody_code" 2 [|
     [|v_pair index v_vm_patches|];
     [|v_cst|];
   |]
