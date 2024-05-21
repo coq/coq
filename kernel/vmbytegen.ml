@@ -888,6 +888,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
   let lam = lambda_of_constr env sigma c in
   let params, body = decompose_Llam lam in
   let arity = Array.length params in
+  let umask = Genlambda.has_univs body in
   let mask =
     let rels = Genlambda.free_rels body in
     let init i = Int.Set.mem (arity - i) rels in
@@ -896,7 +897,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
   in
   let cont = [Kstop] in
     let cenv, init_code, fun_code =
-      if UVars.eq_sizes universes (0,0) then
+      if not umask then
         let cenv = empty_comp_env () in
         let env = { env; fun_code = []; uinst_len = (0,0) } in
         let cont = compile_lam env cenv lam 0 cont in
@@ -928,7 +929,7 @@ let compile ?universes:(universes=(0,0)) env sigma c =
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in
     let code, patch = to_memory (Array.of_list fv) res in
-    mask, code, patch
+    (umask, mask), code, patch
 
 let warn_compile_error =
   CWarnings.create ~name:"bytecode-compiler-failed-compilation" ~category:CWarnings.CoreCategories.bytecode_compiler

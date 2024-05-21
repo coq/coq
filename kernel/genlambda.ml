@@ -321,6 +321,74 @@ let free_rels lam =
   in
   aux 1 Int.Set.empty lam
 
+exception HasUniverses
+
+let level_has_univs l = match Univ.Level.var_index l with
+| None -> ()
+| Some _ -> raise HasUniverses
+
+let binder_annot_has_univs id = match id.Context.binder_relevance with
+| Sorts.RelevanceVar _ -> raise HasUniverses
+| Sorts.Relevant | Sorts.Irrelevant -> ()
+
+let sort_has_univs s = match s with
+| Sorts.SProp | Sorts.Prop | Sorts.Set -> ()
+| Sorts.QSort _ -> raise HasUniverses
+| Sorts.Type u ->
+  let levels = Univ.Universe.levels u in
+  Univ.Level.Set.iter level_has_univs levels
+
+let instance_has_univs (u : UVars.Instance.t) =
+  let qvars, ulevels = UVars.Instance.levels u in
+  let () = Univ.Level.Set.iter level_has_univs ulevels in
+  if Sorts.Quality.Set.is_empty qvars then () else raise HasUniverses
+
+let has_univs lam =
+  let rec aux lam = match lam with
+  | Lsort s -> sort_has_univs s
+  | Lconst (_, u) | Lind (_, u) -> instance_has_univs u
+  | Lrel _ | Lvar _ | Lval _ | Lint _ | Luint _ | Lfloat _ -> ()
+  | Levar (_, args) -> Array.iter aux args
+  | Lprod (dom, codom) ->
+    let () = aux dom in
+    aux codom
+  | Llam (ids, body) ->
+    let () = Array.iter binder_annot_has_univs ids in
+    aux body
+  | Llet (id, def, body) ->
+    let () = binder_annot_has_univs id in
+    let () = aux def in
+    aux body
+  | Lapp (fct, args) ->
+    let () = aux fct in
+    Array.iter aux args
+  | Lcase (_, t, a, branches) ->
+    let const = branches.constant_branches in
+    let nonconst = branches.nonconstant_branches in
+    let () = aux t in
+    let () = aux a in
+    let () = Array.iter aux const in
+    let iter (ids, br) =
+      let () = Array.iter binder_annot_has_univs ids in
+      aux br
+    in
+    Array.iter iter nonconst
+  | Lfix (_, (ids, ltypes, lbodies)) | Lcofix (_, (ids, ltypes, lbodies)) ->
+    let () = Array.iter binder_annot_has_univs ids in
+    let () = Array.iter aux ltypes in
+    Array.iter aux lbodies
+  | Lparray (args, def) ->
+    let () = Array.iter aux args in
+    aux def
+  | Lmakeblock (_, _, args) ->
+    Array.iter aux args
+  | Lprim ((_, u), _, args) ->
+    let () = instance_has_univs u in (* FIXME *)
+    Array.iter aux args
+  | Lproj (_, arg) -> aux arg
+  in
+  try let () = aux lam in false with HasUniverses -> true
+
 (*s Operators on substitution *)
 let lift = subs_lift
 let liftn = subs_liftn
@@ -518,11 +586,11 @@ let rec get_alias env kn =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
   match tps with
-  | None -> kn, [||]
+  | None -> kn, (true, [||])
   | Some tps ->
     match tps with
     | Vmemitcodes.BCalias kn' -> get_alias env kn'
-    | Vmemitcodes.BCconstant -> kn, [||]
+    | Vmemitcodes.BCconstant -> kn, (true, [||])
     | Vmemitcodes.BCdefined (mask, _, _) -> kn, mask
 
 (* Translation of constructors *)
@@ -758,7 +826,7 @@ let rec lambda_of_constr cache env sigma c =
 and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (kn, u as c) ->
-      let kn, mask = get_alias env kn in
+      let kn, (umask, mask) = get_alias env kn in
       let cb = lookup_constant kn env in
       begin match cb.const_body with
       | Primitive op -> lambda_of_prim env c op (lambda_of_args cache env sigma 0 args)
@@ -766,6 +834,7 @@ and lambda_of_app cache env sigma f args =
         if cb.const_inline_code then lambda_of_app cache env sigma csubst args
         else
           (* Erase unused arguments *)
+          let u = if umask then u else UVars.Instance.empty in
           let mapi i arg =
             let keep = if i < Array.length mask then mask.(i) else true in
             if keep then lambda_of_constr cache env sigma arg

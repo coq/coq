@@ -538,7 +538,7 @@ let subst_patches subst p =
   { reloc_infos = infos }
 
 type 'a pbody_code =
-  | BCdefined of bool array * 'a * patches
+  | BCdefined of (bool * bool array) * 'a * patches
   | BCalias of Names.Constant.t
   | BCconstant
 

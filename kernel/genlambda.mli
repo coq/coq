@@ -61,6 +61,7 @@ val decompose_Llam : 'v lambda -> Name.t binder_annot array * 'v lambda
 val decompose_Llam_Llet : 'v lambda -> (Name.t binder_annot * 'v lambda option) array * 'v lambda
 
 val free_rels : 'v lambda -> Int.Set.t
+val has_univs : 'v lambda -> bool
 
 (* {5 Simplification} *)
 
@@ -68,7 +69,7 @@ val optimize : 'v lambda -> 'v lambda
 
 (** {5 Translation functions} *)
 
-val get_alias : Environ.env -> Constant.t -> Constant.t * bool array
+val get_alias : Environ.env -> Constant.t -> Constant.t * (bool * bool array)
 
 module type S =
 sig
