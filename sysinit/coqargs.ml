@@ -231,6 +231,7 @@ let set_option = let open Goptions in function
   | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
 
 let get_compat_file = function
+  | "8.21" -> "Coq.Compat.Coq821"
   | "8.20" -> "Coq.Compat.Coq820"
   | "8.19" -> "Coq.Compat.Coq819"
   | "8.18" -> "Coq.Compat.Coq818"
