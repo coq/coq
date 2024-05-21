@@ -45,7 +45,7 @@ module QState : sig
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse : t -> t
-  val pr : t -> Pp.t
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
 end =
 struct
@@ -181,18 +181,19 @@ let collapse m =
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let pr { qmap; above } =
-  (* TODO names *)
+let pr prqvar { qmap; above; named } =
   let open Pp in
   let prbody u = function
   | None ->
     if QSet.mem u above then str " >= Prop"
+    else if QSet.mem u named then
+      str " (internal name " ++ QVar.raw_pr u ++ str ")"
     else mt ()
   | Some q ->
-    let q = Quality.raw_pr q in
+    let q = Quality.pr prqvar q in
     str " := " ++ q
   in
-  h (prlist_with_sep fnl (fun (u, v) -> QVar.raw_pr u ++ prbody u v) (QMap.bindings qmap))
+  h (prlist_with_sep fnl (fun (u, v) -> prqvar u ++ prbody u v) (QMap.bindings qmap))
 
 end
 
@@ -1230,7 +1231,7 @@ let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =
   let open Pp in
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
 
-let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables
+let pr_sort_opt_subst uctx = QState.pr (pr_uctx_qvar uctx) uctx.sort_variables
 
 module Internal =
 struct
