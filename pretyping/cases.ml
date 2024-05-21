@@ -2141,38 +2141,12 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
       let sigma, rtnsort = Evd.new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
-      (* We take into account the elimination constraints coming from the terms
-        to match. When there is an elimination constraint and the predicate is
-        underspecified, i.e. a QSort, we make a non-canonical choice for the
-        return type. Incompatible constraints are ignored and handled later
-        when typing the pattern-matching. *)
-      let check_elim_sort sigma = function
-      | SquashToSet ->
-        (* Squashed inductive in Set, only happens with impredicative Set *)
-        begin match ESorts.kind sigma rtnsort with
-        | Sorts.QSort _ ->
-          Evd.set_eq_sort !!env sigma rtnsort ESorts.set
-        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
-        end
-      | SquashToQuality (QConstant QProp) ->
-        (* Squashed inductive in Prop, return sort must be Prop or SProp *)
-        begin match ESorts.kind sigma rtnsort with
-        | Sorts.QSort _ ->
-          Evd.set_eq_sort !!env sigma rtnsort ESorts.prop
-        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
-        end
-      | SquashToQuality (QConstant QSProp) ->
-        (* Squashed inductive in SProp, return sort must be SProp. *)
-        begin match ESorts.kind sigma rtnsort with
-        | Sorts.QSort _ ->
-          Evd.set_eq_sort !!env sigma rtnsort ESorts.sprop
-        | Sorts.Type _ | Sorts.Set | Sorts.Prop | Sorts.SProp -> sigma
-        end
-      | SquashToQuality (QConstant QType) ->
-        (* Sort poly squash to type *)
-        Evd.set_leq_sort !!env sigma ESorts.set rtnsort
-      | SquashToQuality (QVar q) ->
-        Evd.set_leq_sort !!env sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+      let check_elim_sort sigma squash =
+        try Inductiveops.squash_elim_sort !!env sigma squash rtnsort
+        with UGraph.UniverseInconsistency _ ->
+          (* Incompatible constraints are ignored and handled later
+             when typing the pattern-matching. *)
+          sigma
       in
       let sigma = List.fold_left check_elim_sort sigma
           (expected_elimination_sorts !!env sigma tomatchs)

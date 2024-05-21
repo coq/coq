@@ -130,6 +130,12 @@ type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 val is_squashed : evar_map -> (mind_specif * EInstance.t) -> squash option
 
+val squash_elim_sort : env -> evar_map -> squash -> ESorts.t -> evar_map
+(** Take into account elimination constraints. When there is an
+    elimination constraint and the predicate is underspecified, i.e. a
+    QSort, we make a non-canonical choice for the return type.
+    Incompatible constraints produce a universe inconsistency. *)
+
 val is_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
 
 val elim_sort : mind_specif -> Sorts.family
