@@ -171,9 +171,6 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
 
 type hint_locality = Local | Export | SuperGlobal
 
-val default_hint_locality : unit -> hint_locality
-(** Warns *)
-
 (** [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db
    [use_dn] switches the use of the discrimination net for all hints

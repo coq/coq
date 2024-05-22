@@ -30,13 +30,6 @@ let set_typeclass_transparency ~locality c b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
-let default_tc_transparency_locality () =
-  if Lib.sections_are_opened () then Hints.Local
-  else
-    Hints.Export
-
-let tc_transparency_locality = Attributes.hint_locality ~default:default_tc_transparency_locality
-
 let set_typeclass_transparency_com ~locality refs b =
   let refs = List.map
       (fun x -> Tacred.evaluable_of_global_reference
@@ -128,13 +121,6 @@ let instance_input : instance -> obj =
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       subst_function = subst_instance }
-
-let default_locality () =
-  if Lib.sections_are_opened () then Local
-  else Export
-
-let instance_locality =
-  Attributes.hint_locality ~default:default_locality
 
 module Event = struct
   type t =

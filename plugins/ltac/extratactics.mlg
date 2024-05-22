@@ -238,19 +238,17 @@ let add_rewrite_hint ~locality ~poly bases ort t lcsr =
 
 let classify_hint _ = VtSideff ([], VtLater)
 
-let hint_rewrite_locality = Attributes.hint_locality ~default:default_hint_rewrite_locality
-
 }
 
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o None l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o (Some t) l }
 END
 
