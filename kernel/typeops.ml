@@ -503,8 +503,11 @@ let should_invert_case env r ci =
      XXX Someday consider more carefully what happens with letin params and arguments
      (currently they're squashed, see indtyping)
  *)
-  Array.length mip.mind_nf_lc = 1 &&
-  List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
+  match Array.length mip.mind_nf_lc with
+  | 0 -> true
+  | 1 ->
+    List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
+  | _ -> false
 
 let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
