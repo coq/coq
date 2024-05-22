@@ -30,24 +30,10 @@ let set_typeclass_transparency ~locality c b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
-let warn_deprecated_tc_transparency_without_locality =
-  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:Deprecation.Version.v8_15
-    Pp.(fun () -> strbrk
-  "The default value for Typeclasses Opaque and Typeclasses \
-   Transparent locality is currently \"local\" in a section and \
-   \"global\" otherwise, but is scheduled to change in a future \
-   release. For the time being, adding typeclass transparency hints outside of \
-   sections without specifying an explicit locality attribute is \
-   therefore deprecated. It is recommended to use \"export\" whenever \
-   possible. Use the attributes #[local], #[global] and #[export] \
-   depending on your choice. For example: \"#[export] Typeclasses Transparent foo.\". \
-   This is supported since Coq 8.15.")
-
 let default_tc_transparency_locality () =
   if Lib.sections_are_opened () then Hints.Local
   else
-    let () = warn_deprecated_tc_transparency_without_locality () in
-    Hints.SuperGlobal
+    Hints.Export
 
 let tc_transparency_locality = Attributes.hint_locality ~default:default_tc_transparency_locality
 
