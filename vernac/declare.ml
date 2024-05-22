@@ -363,15 +363,15 @@ let (objConstant : (Id.t * constant_obj) Libobject.Dyn.tag) =
 
 let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
-let update_tables c =
-  Impargs.declare_constant_implicits c;
-  Notation.declare_ref_arguments_scope (GlobRef.ConstRef c)
-
-let register_constant kn kind ?user_warns local =
-  let id = Label.to_id (Constant.label kn) in
+(* Register the libobjects attached to the constants *)
+let register_constant cst kind ?user_warns local =
+  (* Register the declaration *)
+  let id = Label.to_id (Constant.label cst) in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_warn = user_warns }) in
   let () = Lib.add_leaf o in
-  update_tables kn
+  (* Register associated data *)
+  Impargs.declare_constant_implicits cst;
+  Notation.declare_ref_arguments_scope (GlobRef.ConstRef cst)
 
 let register_side_effect (c, body, role) =
   (* Register the body in the opaque table *)
@@ -422,32 +422,34 @@ type ('a, 'b) effect_entry =
 | EffectEntry : (private_constants deferred_opaque_proof_body, unit) effect_entry
 | PureEntry : (Constr.constr, Constr.constr) effect_entry
 
+let section_context_of_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (body : a) typ =
+  let open Environ in
+  let env = Global.env () in
+  let hyp_typ, hyp_def =
+    if List.is_empty (Environ.named_context env) then
+      Id.Set.empty, Id.Set.empty
+    else
+      let ids_typ = global_vars_set env typ in
+      let (pf : Constr.constr), env = match entry with
+        | PureEntry -> body, env
+        | EffectEntry ->
+          let (pf, _), eff = Future.force body.body in
+          let env = Safe_typing.push_private_constants env eff in
+          pf, env
+      in
+      let vars = global_vars_set env pf in
+      ids_typ, vars
+  in
+  let () = if Aux_file.recording () then record_aux env hyp_typ hyp_def in
+  Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
+
 let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a pproof_entry) : b Entries.opaque_entry * _ =
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
   in
   let secctx = match e.proof_entry_secctx with
-  | None ->
-    let open Environ in
-    let env = Global.env () in
-    let hyp_typ, hyp_def =
-      if List.is_empty (Environ.named_context env) then
-        Id.Set.empty, Id.Set.empty
-      else
-        let ids_typ = global_vars_set env typ in
-        let (pf : Constr.constr), env = match entry with
-        | PureEntry -> let b = e.proof_entry_body in b, env
-        | EffectEntry ->
-          let (pf, _), eff = Future.force (e.proof_entry_body.body) in
-          let env = Safe_typing.push_private_constants env eff in
-          pf, env
-        in
-        let vars = global_vars_set env pf in
-        ids_typ, vars
-    in
-    let () = if Aux_file.recording () then record_aux env hyp_typ hyp_def in
-    Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
+  | None -> section_context_of_opaque_proof_entry entry e.proof_entry_body typ
   | Some hyps -> hyps
   in
   let body : b = match entry with
@@ -469,9 +471,9 @@ let is_unsafe_typing_flags flags =
   let open Declarations in
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
-let declare_constant_core ~name ~typing_flags cd =
+let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?user_warns cd =
+  let make_constant ~name ~typing_flags = function
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let decl, unsafe, ubinders, delayed = match cd with
     | DefinitionEntry de ->
       (* We deal with side effects *)
       (match de.proof_entry_body with
@@ -538,26 +540,23 @@ let declare_constant_core ~name ~typing_flags cd =
       let ubinders = make_ubinders ctx entry_univs in
       Entries.SymbolEntry e, false, ubinders, None
   in
+  let declare_opaque kn = function
+    | None -> ()
+    | Some (body, feedback_id) ->
+      let open Declarations in
+      match (Global.lookup_constant kn).const_body with
+      | OpaqueDef o ->
+        let (_, _, _, i) = Opaqueproof.repr o in
+        Opaques.declare_defined_opaque ?feedback_id i body
+      | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
+  in
+  let () = check_exists name in
+  let decl, unsafe, ubinders, delayed = make_constant ~name ~typing_flags cd in
   let kn = Global.add_constant ?typing_flags name decl in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
-  if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
-  kn, delayed
-
-let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?user_warns cd =
-  let () = check_exists name in
-  let kn, delayed = declare_constant_core ~typing_flags ~name cd in
-  (* Register the libobjects attached to the constants *)
-  let () = match delayed with
-  | None -> ()
-  | Some (body, feedback_id) ->
-    let open Declarations in
-    match (Global.lookup_constant kn).const_body with
-    | OpaqueDef o ->
-      let (_, _, _, i) = Opaqueproof.repr o in
-      Opaques.declare_defined_opaque ?feedback_id i body
-    | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
-  in
+  let () = declare_opaque kn delayed in
   let () = register_constant kn kind local ?user_warns in
+  if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
 let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~opaque de =
@@ -571,10 +570,7 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
   in
   let kn, eff = Global.add_private_constant name ctx de in
   let () = register_constant kn kind local in
-  let seff_roles = match role with
-  | None -> Cmap.empty
-  | Some r -> Cmap.singleton kn r
-  in
+  let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
