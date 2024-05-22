@@ -166,8 +166,8 @@ type 'constr pcase_invert =
   (** Normal reduction: match when the scrutinee is a constructor. *)
 
   | CaseInvert of { indices : 'constr array; }
-  (** Reduce when the indices match those of the unique constructor.
-      (SProp to non SProp only) *)
+  (** SProp to non SProp only:
+      No constructors or reduce when the indices match those of the unique constructor. *)
 
 type ('constr, 'types, 'univs, 'r) pcase =
   case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
