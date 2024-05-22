@@ -136,5 +136,5 @@ val bad_relevance_msg : (env * (constr,types,Sorts.relevance) bad_relevance) CWa
 (** Used by the higher layers to register a nicer printer than the default. *)
 
 val should_invert_case : env -> Sorts.relevance -> case_info -> bool
-(** We have case inversion exactly when going from irrelevant nonempty
-   (ie 1 constructor) inductive to relevant type. *)
+(** Matches must be annotated with the indices when going from SProp to non SProp
+    (implies 1 or 0 constructors). *)
