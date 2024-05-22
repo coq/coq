@@ -71,7 +71,7 @@ sig
 
   (** {6 Generic operations} **)
 
-  module Set : Set.S with type elt = t
+  module Set : CSet.ExtS with type elt = t
   (** Finite sets on [string] *)
 
   module Map : CMap.ExtS with type key = t and module Set := Set

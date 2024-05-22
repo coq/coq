@@ -104,7 +104,7 @@ type t = Names.Id.Set.t
 
 let definition_using env evd ~fixnames ~using ~terms =
   let l = process_expr env evd fixnames using terms in
-  Names.Id.Set.(List.fold_right add l empty)
+  Names.Id.Set.(CList.fold_right add l empty)
 
 let name_set id expr =
   if Id.equal id all_collection_id then err_redefine_all_collection ();

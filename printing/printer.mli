@@ -220,7 +220,7 @@ type context_object =
   | Opaque of Constant.t     (* An opaque constant. *)
   | Transparent of Constant.t
 
-module ContextObjectSet : Set.S with type elt = context_object
+module ContextObjectSet : CSet.ExtS with type elt = context_object
 module ContextObjectMap : CMap.ExtS
   with type key = context_object and module Set := ContextObjectSet
 

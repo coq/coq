@@ -29,7 +29,7 @@ sig
   val is_sub : string -> string -> int -> bool
   val is_prefix : string -> string -> bool
   val is_suffix : string -> string -> bool
-  module Set : Set.S with type elt = t
+  module Set : CSet.ExtS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
   module Pred : Predicate.S with type elt = t
   module List : CList.MonoS with type elt = t
@@ -167,7 +167,7 @@ struct
   let compare = compare
 end
 
-module Set = Set.Make(Self)
+module Set = CSet.Make(Self)
 module Map = CMap.Make(Self)
 module Pred = Predicate.Make(Self)
 

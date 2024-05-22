@@ -16,7 +16,18 @@ end
 
 module type S = Set.S
 
-module Make(M : OrderedType) : S
+module type ExtS =
+sig
+  include CSig.SetS
+  (** The underlying Set library *)
+
+  module List : sig
+    val union : t list -> t
+    (** Union of sets from a list *)
+  end
+end
+
+module Make(M : Map.OrderedType) : ExtS
   with type elt = M.t
   and type t = Set.Make(M).t
 

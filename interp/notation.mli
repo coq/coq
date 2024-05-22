@@ -22,9 +22,9 @@ val notation_cat : Libobject.category
 val pr_notation : notation -> Pp.t
 (** Printing *)
 
-module NotationSet : Set.S with type elt = notation
+module NotationSet : CSet.ExtS with type elt = notation
 module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
-module SpecificNotationSet : Set.S with type elt = specific_notation
+module SpecificNotationSet : CSet.ExtS with type elt = specific_notation
 module SpecificNotationMap : CMap.ExtS with type key = specific_notation and module Set := SpecificNotationSet
 
 (** {6 Scopes } *)
