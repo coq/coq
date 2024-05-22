@@ -439,7 +439,15 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos ~nargs fl1 fl2 cuniv in
          let () = if irr_flex infos.cnv_inf fl1 then raise NotConvertible (* trigger the fallback *) in
-         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+         (* Reuse the VM mask to assess whether some arguments are runtime
+            irrelevant. This is sound because the VM conversion is untyped,
+            hence if an argument is erased by the VM, it is only used in type
+            annotations and thus not necessary for conversion. *)
+         let mask = match fl1 with
+         | ConstKey _ -> get_ref_mask infos.cnv_inf infos.lft_tab fl1
+         | RelKey _ | VarKey _ -> [||]
+         in
+         convert_stacks ~mask l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | NotConvertibleTrace _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
@@ -767,22 +775,38 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        | FProd _ | FEvar _ | FInt _ | FFloat _ | FString _
        | FArray _ | FIrrelevant), _ -> raise NotConvertible
 
-and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
+and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
-  let rec cmp_rec pstk1 pstk2 cuniv =
+  let rec cmp_rec nargs pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
-          let cu1 = cmp_rec s1 s2 cuniv in
+          (* Stacks are known to have the same argument size *)
+          let rnargs = match z1 with
+          | Zlapp a -> if nargs < 0 then -1 else nargs + Array.length a
+          | Zlproj _ | Zlfix _ | Zlcase _ | Zlprimitive _ -> -1
+          in
+          let cu1 = cmp_rec rnargs s1 s2 cuniv in
           (match (z1,z2) with
             | (Zlapp a1,Zlapp a2) ->
+              if nargs < 0 then
                Array.fold_right2 f a1 a2 cu1
+              else
+                let rec fold i cu =
+                  if i < 0 then cu
+                  else if nargs + i < Array.length mask && not mask.(nargs + i) then
+                    fold (i - 1) cu (* skip runtime irrelevant argument *)
+                  else
+                    let cu = f a1.(i) a2.(i) cu in
+                    fold (i - 1) cu
+                in
+                fold (Array.length a1 - 1) cu1
             | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
               if not (Projection.Repr.CanOrd.equal c1 c2) then
                 raise NotConvertible
               else cu1
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 let cu2 = f fx1 fx2 cu1 in
-                cmp_rec a1 a2 cu2
+                cmp_rec (-1) a1 a2 cu2
             | (Zlcase(ci1,l1,u1,pms1,p1,br1,e1),Zlcase(ci2,l2,u2,pms2,p2,br2,e2)) ->
                 if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
@@ -815,7 +839,8 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
-    cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
+    let nargs = if Array.is_empty mask then -1 else 0 in
+    cmp_rec nargs (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
 
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
