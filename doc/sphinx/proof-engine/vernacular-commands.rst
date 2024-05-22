@@ -417,6 +417,10 @@ Requests to the environment
    are reported only when the containing module has been imported
    (e.g. with :cmd:`Require Import` or :cmd:`Import`).
 
+   Objects defined with commands such as :cmd:`Definition`, :cmd:`Parameter`,
+   :cmd:`Record`, :cmd:`Theorem` and their numerous variants are shown
+   as `Constant` in the output.
+
    :n:`@qualid`
      refers to object names that end with :n:`@qualid`.
 
