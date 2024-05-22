@@ -398,6 +398,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
     in
     let decl = {
       univdecl_qualities = qualities;
+      univdecl_extensible_qualities = udecl.univdecl_extensible_qualities;
       univdecl_instance = instance;
       univdecl_extensible_instance = udecl.univdecl_extensible_instance;
       univdecl_constraints = cstrs;

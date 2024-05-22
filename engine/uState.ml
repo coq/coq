@@ -762,6 +762,7 @@ let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
+  univdecl_extensible_qualities : bool;
   univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
   univdecl_constraints : 'c; (* Declared constraints *)
@@ -772,6 +773,10 @@ type universe_decl =
 
 let default_univ_decl =
   { univdecl_qualities = [];
+    (* in practice non named qualities will get collapsed for toplevel definitions,
+       but side effects see named qualities from the surrounding definitions
+       while using default_univ_decl *)
+    univdecl_extensible_qualities = true;
     univdecl_instance = [];
     univdecl_extensible_instance = true;
     univdecl_constraints = Constraints.empty;
@@ -825,9 +830,10 @@ let universe_context_inst decl qvars levels names =
   let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in
   let leftus = List.fold_left (fun acc l -> Level.Set.remove l acc) levels decl.univdecl_instance in
   let () =
+    let unboundqs = if decl.univdecl_extensible_qualities then QVar.Set.empty else leftqs in
     let unboundus = if decl.univdecl_extensible_instance then Level.Set.empty else leftus in
-    if not (QVar.Set.is_empty leftqs && Level.Set.is_empty unboundus)
-    then error_unbound_universes leftqs unboundus names
+    if not (QVar.Set.is_empty unboundqs && Level.Set.is_empty unboundus)
+    then error_unbound_universes unboundqs unboundus names
   in
   let leftqs = UContext.sort_qualities
       (Array.map_of_list (fun q -> Quality.QVar q) (QVar.Set.elements leftqs))
@@ -1179,9 +1185,10 @@ let universe_context_inst_decl decl qvars levels names =
   let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in
   let leftus = List.fold_left (fun acc l -> Level.Set.remove l acc) levels decl.univdecl_instance in
   let () =
+    let unboundqs = if decl.univdecl_extensible_qualities then QVar.Set.empty else leftqs in
     let unboundus = if decl.univdecl_extensible_instance then Level.Set.empty else leftus in
-    if not (QVar.Set.is_empty leftqs && Level.Set.is_empty unboundus)
-    then error_unbound_universes leftqs unboundus names
+    if not (QVar.Set.is_empty unboundqs && Level.Set.is_empty unboundus)
+    then error_unbound_universes unboundqs unboundus names
   in
   let instq = Array.map_of_list (fun q -> Quality.QVar q) decl.univdecl_qualities in
   let instu = Array.of_list decl.univdecl_instance in
