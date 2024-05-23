@@ -19,11 +19,15 @@ Goal (forall x, S (S (S x)) = x) -> exists x, S x = 0.
 eexists.
 rewrite H.
 Show.
-Undo 2.
+Abort.
+
+Goal (forall x, S (S (S x)) = x) -> exists x, S x = 0.
 eexists ?[x].
 rewrite H.
 Show.
-Undo 2.
+Abort.
+
+Goal (forall x, S (S (S x)) = x) -> exists x, S x = 0.
 eexists ?[y].
 rewrite H.
 Show.

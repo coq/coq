@@ -10,10 +10,10 @@ Print eq_refl.
 About eq_refl.
 
 Goal 3 = 3.
-apply @eq_refl with (B := nat).
-Undo.
-apply @eq_refl with (y := 3).
-Undo.
+Succeed apply @eq_refl with (B := nat).
+
+Succeed apply @eq_refl with (y := 3).
+
 pose (y := nat).
 apply (@eq_refl y) with (y := 3).
 Qed.

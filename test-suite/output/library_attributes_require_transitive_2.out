@@ -1,0 +1,10 @@
+File "./output/library_attributes_require_transitive_2.v", line 5, characters 0-46:
+Warning: Library File (transitively required) TestSuite.deprecated_library is
+deprecated since XX YY. This library is useless.
+[deprecated-transitive-library-file-since-XX-YY,deprecated-since-XX-YY,deprecated-transitive-library-file,deprecated]
+File "./output/library_attributes_require_transitive_2.v", line 5, characters 0-46:
+Warning: This library is dangerous.
+[warn-transitive-library-file-dangerous-library,dangerous-library,warn-transitive-library-file,user-warn]
+File "./output/library_attributes_require_transitive_2.v", line 5, characters 0-46:
+Warning: This library is tricky.
+[warn-transitive-library-file-dangerous-library-tricky-library,tricky-library,dangerous-library,warn-transitive-library-file,user-warn]

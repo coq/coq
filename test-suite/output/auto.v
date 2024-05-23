@@ -1,12 +1,9 @@
 (* testing info_*/debug auto/eauto *)
 
 Goal False \/ (True -> True).
-info_auto.
-Undo.
-debug auto.
-Undo.
-info_eauto.
-Undo.
+Succeed info_auto.
+Succeed debug auto.
+Succeed info_eauto.
 debug eauto.
 Qed.
 
