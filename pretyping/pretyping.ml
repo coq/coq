@@ -149,10 +149,14 @@ let esearch_guard ?loc env sigma indexes fix =
   let evars = Evd.evar_handler sigma in
   try search_guard ?loc ~evars env indexes fix
   with TypeError (env,err) ->
-    raise (PretypeError (env,sigma,TypingError (of_type_error err)))
+    Loc.raise ?loc (PretypeError (env,sigma,TypingError (of_type_error err)))
 
 let esearch_fix_guard ?loc env sigma possible_fix_indices fix =
   Option.get (esearch_guard ?loc env sigma {possibly_cofix=false; possible_fix_indices} fix)
+
+let esearch_cofix_guard ?loc env sigma cofix =
+  let res = esearch_guard ?loc env sigma {possibly_cofix=true; possible_fix_indices=[]} cofix in
+  assert (Option.is_empty res)
 
 (* To force universe name declaration before use *)
 
@@ -887,12 +891,8 @@ struct
         | GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in
           let cofix = (i, fixdecls) in
-            (try check_cofix ~evars:(Evd.evar_handler sigma) !!env (i, nf_fix sigma fixdecls)
-             with reraise ->
-               let (e, info) = Exninfo.capture reraise in
-               let info = Option.cata (Loc.add_loc info) info loc in
-               Exninfo.iraise (e, info));
-            make_judge (mkCoFix cofix) ftys.(i)
+          let () = esearch_cofix_guard ?loc !!env sigma fixdecls in
+          make_judge (mkCoFix cofix) ftys.(i)
       in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma fixj tycon
 

@@ -57,6 +57,8 @@ val esearch_fix_guard : (* For Fixpoints only *)
   ?loc:Loc.t -> env -> evar_map -> possible_fix_indices ->
   EConstr.rec_declaration -> int array
 
+val esearch_cofix_guard : ?loc:Loc.t -> env -> evar_map -> EConstr.rec_declaration -> unit
+
 type typing_constraint =
   | IsType (** Necessarily a type *)
   | OfType of types (** A term of the expected type *)
