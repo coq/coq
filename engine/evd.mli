@@ -277,6 +277,9 @@ val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
+val defined_map : evar_map -> defined evar_info Evar.Map.t
+(** Access the defined evar mapping directly. *)
+
 val drop_all_defined : evar_map -> evar_map
 
 val drop_new_defined : original:evar_map -> evar_map -> evar_map

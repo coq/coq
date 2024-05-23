@@ -892,6 +892,8 @@ let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
 
+let defined_map d = d.defn_evars
+
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
 (* spiwack: not clear what folding over an evar_map, for now we shall

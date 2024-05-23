@@ -53,6 +53,10 @@ val projection_nparams : Names.Constant.t -> int
 
 val is_projection : Names.Constant.t -> bool
 
+val projection_number : Environ.env -> Names.Constant.t -> int
+(** [projection_number env p] returns the position of the projection p in
+    the structure it corresponds to, counting from 0. *)
+
 end
 
 (** A canonical instance declares "canonical" conversion hints between
@@ -128,6 +132,8 @@ val find :
     unfold too much and lose a projection too early *)
 val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> EConstr.t -> bool
+
+val print : Environ.env -> Evd.evar_map -> t -> Pp.t
 
 end
 
