@@ -2317,8 +2317,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
     | UState.Monomorphic_entry _ -> false
     | UState.Polymorphic_entry _ -> true in
   let univs = UState.univ_entry ~poly uctx in
-  let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs
+  finish_admitted ~pm ~uctx ~pinfo ~sec_vars:proof_entry_secctx ~univs
 
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
