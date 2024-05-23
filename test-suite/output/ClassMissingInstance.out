@@ -1,8 +1,6 @@
 File "./output/ClassMissingInstance.v", line 7, characters 0-28:
 The command has indeed failed with message:
-Unable to satisfy the following constraints:
+Could not find an instance for the following existential variables:
+?arg_2 : Foo 1
 
-?arg_2 : "Foo 1"
-
-?arg_20 : "Foo 2"
-
+?arg_20 : Foo 2
