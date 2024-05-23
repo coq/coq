@@ -2374,10 +2374,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
   let typs = List.map (function { proof_entry_type } -> Option.get proof_entry_type) entries in
   (* Note: an alternative would be to compute sec_vars of the partial
      proof as a Future computation, as in compute_proof_using_for_admitted *)
-  let sec_vars = if get_keep_admitted_vars () then (List.hd entries).proof_entry_secctx else None in
-  (* If the proof is partial, do we want to take the (restriction on
-     visible uvars of) uctx so far or (as done below) the initial ones
-     that refers to only the types *)
+  let sec_vars = (List.hd entries).proof_entry_secctx in
   finish_admitted ~pm ~uctx ~pinfo ~sec_vars typs
 
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
