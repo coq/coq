@@ -1,64 +1,66 @@
-.TH COQ 1
-
+.TH COQC 1
+.
 .SH NAME
-coqc \- The Coq Proof Assistant compiler
-
-
+coqc \- Coq compiler
+.
+.
 .SH SYNOPSIS
 .B coqc
 [
-.B general \ Coq \ options
+general Coq options
 ]
 .I file
-
-
+.
+.
 .SH DESCRIPTION
-
+.
 .B coqc
 is the batch compiler for the Coq Proof Assistant.
-The options are basically the same as coqtop(1).
-.IR file.v \&
+The options are basically the same as
+.BR coqtop (1).
+.I file.v
 is the vernacular file to compile.
-.IR file \&
+.I file
 must be formed
-only with the characters `a` to  `Z`, `0`-`9` or `_` and must begin
+only with the characters `a' to `Z', `0' to `9' or `_' and must begin
 with a letter.
 The compiler produces an object file
 .IR file.vo \&.
-
+.PP
 For interactive use of Coq, see
-.BR coqtop(1).
-
-
+.BR coqtop (1).
+.
+.
 .SH OPTIONS
-
+.
+.\" TODO: Coqc is not a script.  Correct this claim.
 .B coqc
 is a script that simply runs
 .B coqtop
 with option
-.B \-compile
-it accepts the same options as
-.B coqtop.
-
+.BR \-compile .
+It accepts the same options as
+.BR coqtop .
+.
 .TP
 .BI \-image \ bin
-use
+Use
 .I bin
 as underlying
 .B coqtop
 instead of the default one.
-
+.
 .TP
-.BI \-verbose
-print the compiled file on the standard output.
-
+.B \-verbose
+Print the compiled file on the standard output.
+.
 .SH SEE ALSO
-
+.
 .BR coqtop (1),
 .BR coq_makefile (1),
-.BR coqdep (1).
-.br
+.BR coqdep (1)
+.PP
 .I
 The Coq Reference Manual.
-.I
+.PP
 The Coq web site: http://coq.inria.fr
