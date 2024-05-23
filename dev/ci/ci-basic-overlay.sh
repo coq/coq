@@ -500,7 +500,7 @@ project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
 ########################################################################
 # Jasmin
 ########################################################################
-project jasmin "https://github.com/jasmin-lang/jasmin" "504d05f25c561f117b3ee2a2b664f8b692130d6c"
+project jasmin "https://github.com/jasmin-lang/jasmin" "e8380c779b5c284c6d4c654d4ea86c56521a6d4c"
 # Contact @vbgl, @bgregoir on github
 # go back to "main" and change dependency to MC 2 when
 # https://github.com/jasmin-lang/jasmin/pull/560 is merged
