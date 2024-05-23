@@ -1730,7 +1730,9 @@ simple_tactic: [
 | "assert_succeeds" tactic3
 | "replace" uconstr "with" constr clause by_arg_tac
 | "replace" "->" uconstr clause
+| "replace" "->" uconstr "with" constr clause by_arg_tac
 | "replace" "<-" uconstr clause
+| "replace" "<-" uconstr "with" constr clause by_arg_tac
 | "replace" uconstr clause
 | "simplify_eq"
 | "simplify_eq" destruction_arg

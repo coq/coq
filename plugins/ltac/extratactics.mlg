@@ -36,8 +36,8 @@ TACTIC EXTEND assert_succeeds
 END
 
 TACTIC EXTEND replace
-| ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> { Internals.replace_in_clause_maybe_by ist c1 c2 cl tac }
+| [ "replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist None c1 c2 cl tac }
 END
 
 TACTIC EXTEND replace_term_left
@@ -45,9 +45,19 @@ TACTIC EXTEND replace_term_left
   -> { Internals.replace_term ist (Some true) c cl }
 END
 
+TACTIC EXTEND replace_left
+| ["replace" "->" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist (Some true) c1 c2 cl tac }
+END
+
 TACTIC EXTEND replace_term_right
 | [ "replace"  "<-" uconstr(c) clause(cl) ]
   -> { Internals.replace_term ist (Some false) c cl }
+END
+
+TACTIC EXTEND replace_right
+| [ "replace" "<-" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist (Some false) c1 c2 cl tac }
 END
 
 TACTIC EXTEND replace_term

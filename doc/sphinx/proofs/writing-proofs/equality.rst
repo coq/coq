@@ -238,16 +238,15 @@ Rewriting with Leibniz and setoid equality
    :name: rewrite *; _
    :undocumented:
 
-.. tacn:: replace @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
+.. tacn:: replace {? {| -> | <- } } @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
           replace {? {| -> | <- } } @one_term__from {? @occurrences }
    :name: replace; _
 
-   The first form replaces all free occurrences of :n:`@one_term__from`
-   in the current goal with :n:`@one_term__to` and generates an equality
-   :n:`@one_term__to = @one_term__from`
-   as a subgoal. (Note the generated equality is reversed with respect
-   to the order of the two terms in the tactic syntax; see
-   issue `#13480 <https://github.com/coq/coq/issues/13480>`_.)
+   The first form, when used with `<-` or no arrow, replaces all free
+   occurrences of :n:`@one_term__from` in the current goal with :n:`@one_term__to`
+   and generates an equality :n:`@one_term__to = @one_term__from` as a subgoal.
+   Note that this equality is reversed with respect to the order of the two terms.
+   When used with `->`, it generates instead an equality :n:`@one_term__from = @one_term__to`.
    When :n:`by @ltac_expr3` is not present, this equality is automatically solved
    if it occurs among the hypotheses, or if its symmetric form occurs.
 

@@ -53,7 +53,7 @@ val general_multi_rewrite :
   evars_flag -> (bool * multi * clear_flag * delayed_open_constr_with_bindings) list ->
     clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
 
-val replace_in_clause_maybe_by : constr -> constr -> clause -> unit Proofview.tactic option -> unit Proofview.tactic
+val replace_in_clause_maybe_by : bool option -> constr -> constr -> clause -> unit Proofview.tactic option -> unit Proofview.tactic
 val replace    : constr -> constr -> unit Proofview.tactic
 val replace_by : constr -> constr -> unit Proofview.tactic -> unit Proofview.tactic
 
