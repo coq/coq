@@ -828,7 +828,7 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
+  let sigma, (body, types) = Evarutil.finalize
       sigma (fun nf -> nf body, Option.map nf typ)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
