@@ -165,8 +165,8 @@ by giving the type of its arguments alone.
 Automatic Prop lowering
 +++++++++++++++++++++++
 
-When an inductive is declared with no explicit sort, it is put in the
-smallest sort which does not prevent large elimination (excluding
+When an inductive is declared without an explicit sort, it is put in the
+smallest sort which permits large elimination (excluding
 `SProp`). For :ref:`empty and singleton <Empty-and-singleton-elimination>`
 types this means they are declared in `Prop`.
 
@@ -179,7 +179,7 @@ types this means they are declared in `Prop`.
 
    Disabling this flag prevents inductives with an explicit non-`Prop`
    type from being lowered to `Prop`. This will become the default in
-   a future version. Note :flag:`Dependent Proposition Eliminators` to
+   a future version. Use :flag:`Dependent Proposition Eliminators` to
    declare the inductive type in `Prop` while preserving compatibility.
 
    Depending on universe minimization they may then be declared in
