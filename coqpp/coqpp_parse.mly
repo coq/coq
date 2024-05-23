@@ -59,6 +59,9 @@ let parse_user_entry s sep =
 
 let no_code = { code = ""; loc = None }
 
+let rhs_loc n =
+  { loc_start = Parsing.rhs_start_pos n; loc_end = Parsing.rhs_end_pos n }
+
 %}
 
 %token <Coqpp_ast.code> CODE
@@ -255,8 +258,9 @@ vernac_attributes:
 ;
 
 vernac_attribute:
-| qualid_or_ident EQUAL qualid_or_ident { ($1, $3) }
-| qualid_or_ident { ($1, $1) }
+| qualid_or_ident EQUAL qualid_or_ident {
+  ($1, { code = $3; loc = Some (rhs_loc 3) }) }
+| qualid_or_ident { ($1, { code = $1; loc = Some (rhs_loc 1) }) }
 ;
 
 rule_deprecation:
