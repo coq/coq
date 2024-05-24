@@ -64,11 +64,14 @@ val reversible : bool option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
-val hint_locality : default:(unit -> Hints.hint_locality) -> Hints.hint_locality attribute
+val explicit_hint_locality : Hints.hint_locality option attribute
 val bind_scope_where : Notation.add_scope_where option attribute
 
-(** With the warning for Hint (and not for Instance etc) *)
-val really_hint_locality : Hints.hint_locality attribute
+(** Default: if sections are opened then Local otherwise Export.
+    Although this is named and uses the type [hint_locality]
+    it may be used as the standard 3-valued locality attribute.
+*)
+val hint_locality : Hints.hint_locality attribute
 
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute

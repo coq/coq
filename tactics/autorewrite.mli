@@ -44,5 +44,3 @@ val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> uni
 val auto_multi_rewrite_with : ?conds:conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
 
 val print_rewrite_hintdb : string -> Pp.t
-
-val default_hint_rewrite_locality : unit -> Hints.hint_locality

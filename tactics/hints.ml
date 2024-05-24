@@ -1368,9 +1368,6 @@ let make_hint ~locality name action =
   hint_action = action;
 }
 
-let default_hint_locality () =
-  if Lib.sections_are_opened () then Local else Export
-
 let remove_hints ~locality dbnames grs =
   let () = check_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in

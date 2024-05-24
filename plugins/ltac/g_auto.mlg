@@ -191,7 +191,7 @@ ARGUMENT EXTEND opthints
 END
 
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
-| #[ locality = Attributes.really_hint_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
+| #[ locality = Attributes.hint_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
   let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
   Hints.add_hints ~locality
     (match dbnames with None -> ["core"] | Some l -> l) entry;

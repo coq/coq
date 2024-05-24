@@ -21,14 +21,14 @@ DECLARE PLUGIN "coq-core.plugins.ltac"
 (** Options: depth, debug and transparency settings. *)
 
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings CLASSIFIED AS SIDEFF
-| #[ locality = tc_transparency_locality ]
+| #[ locality = Attributes.hint_locality ]
   [ "Typeclasses" "Transparent" ne_reference_list(cl) ] -> {
     set_typeclass_transparency_com ~locality cl true
   }
 END
 
 VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings CLASSIFIED AS SIDEFF
-| #[ locality = tc_transparency_locality ]
+| #[ locality = Attributes.hint_locality ]
   [ "Typeclasses" "Opaque" ne_reference_list(cl) ] -> {
     set_typeclass_transparency_com ~locality cl false
   }
