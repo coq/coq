@@ -159,8 +159,8 @@ val count : ('a -> bool) -> 'a list -> int
 val index : 'a eq -> 'a -> 'a list -> int
 (** [index] returns the 1st index of an element in a list (counting from 1). *)
 
-val safe_index : 'a eq -> 'a -> 'a list -> int option
-(** [safe_index] returns the 1st index of an element in a list (counting from 1)
+val index_opt : 'a eq -> 'a -> 'a list -> int option
+(** [index_opt] returns the 1st index of an element in a list (counting from 1)
     and None otherwise. *)
 
 val index0 : 'a eq -> 'a -> 'a list -> int
