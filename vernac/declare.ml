@@ -820,24 +820,23 @@ let error_unresolved_evars env sigma t evars =
   end)
 
 let check_evars_are_solved env sigma t =
-  let t = EConstr.of_constr t in
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
 let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let { Info.poly; udecl; inline; _ } = info in
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
+  let env = Global.env () in
+  Option.iter (check_evars_are_solved env sigma) typ;
+  check_evars_are_solved env sigma body;
+  let sigma, (body, types) = Evarutil.finalize
       sigma (fun nf -> nf body, Option.map nf typ)
   in
-  let env = Global.env () in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
   let using =
     let f (name, body, typ) =
       name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  Option.iter (check_evars_are_solved env sigma) types;
-  check_evars_are_solved env sigma body;
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
   let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
@@ -853,7 +852,7 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
 let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst
 
-let prepare_obligation ~name ~types ~body sigma =
+let prepare_obligations ~name ?types ~body env sigma =
   let env = Global.env () in
   let types = match types with
     | Some t -> t
@@ -864,9 +863,9 @@ let prepare_obligation ~name ~types ~body sigma =
   in
   RetrieveObl.check_evars env sigma;
   let body, types = EConstr.(of_constr body, of_constr types) in
-  let obls, _, body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
+  let obls, (_, evmap), body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
   let uctx = Evd.evar_universe_context sigma in
-  body, cty, uctx, obls
+  body, cty, uctx, evmap, obls
 
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
@@ -2752,7 +2751,7 @@ let check_program_libraries () =
   Coqlib.check_required_library ["Coq";"Init";"Specif"]
 
 (* aliases *)
-let prepare_obligation = prepare_obligation
+let prepare_obligations = prepare_obligations
 let check_solved_obligations =
   let is_empty prg =
     let obls = (Internal.get_obligations (CEphemeron.get prg)).obls in

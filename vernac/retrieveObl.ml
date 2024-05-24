@@ -203,6 +203,9 @@ let sort_dependencies evl =
   in
   aux evl Evar.Set.empty []
 
+type obligation_name_lifter =
+  (Names.Id.t -> EConstr.t) -> EConstr.t -> Constr.t
+
 let retrieve_obligations env name evm fs ?deps ?status t ty =
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in

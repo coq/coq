@@ -143,7 +143,7 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
   let evd, (body, types), impargs =
     interp_definition ~program_mode:true env evd empty_internalization_env bl red_option c ctypopt
   in
-  let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
+  let term, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
