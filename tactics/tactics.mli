@@ -210,7 +210,7 @@ val apply_with_bindings_gen :
   ?with_classes:bool -> advanced_flag -> evars_flag -> (clear_flag * constr with_bindings CAst.t) list -> unit Proofview.tactic
 
 val apply_with_delayed_bindings_gen :
-  advanced_flag -> evars_flag -> (clear_flag * delayed_open_constr_with_bindings CAst.t) list -> unit Proofview.tactic
+  advanced_flag -> evars_flag -> (clear_flag * constr with_bindings Proofview.tactic CAst.t) list -> unit Proofview.tactic
 
 val apply_with_bindings   : constr with_bindings -> unit Proofview.tactic
 val eapply_with_bindings : ?with_classes:bool -> constr with_bindings -> unit Proofview.tactic
@@ -224,7 +224,7 @@ val apply_in :
 
 val apply_delayed_in :
   advanced_flag -> evars_flag -> Id.t ->
-    (clear_flag * delayed_open_constr_with_bindings CAst.t) list ->
+    (clear_flag * constr with_bindings Proofview.tactic CAst.t) list ->
     intro_pattern option -> unit Proofview.tactic -> unit Proofview.tactic
 
 (** {6 Elimination tactics. } *)

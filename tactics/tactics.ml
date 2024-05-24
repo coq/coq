@@ -1874,13 +1874,10 @@ let rec apply_with_bindings_gen ?with_classes b e = function
         (apply_with_bindings_gen ?with_classes b e cbl)
 
 let apply_with_delayed_bindings_gen b e l =
-  let one k {CAst.loc;v=f} =
-    Proofview.Goal.enter begin fun gl ->
-      let sigma = Tacmach.project gl in
-      let env = Proofview.Goal.env gl in
-      let (sigma, cb) = f env sigma in
-        Tacticals.tclWITHHOLES e
-          (general_apply ~respect_opaque:(not b) b b e k CAst.(make ?loc cb)) sigma
+  let one k {CAst.loc;v=cb} =
+    Proofview.Goal.enter begin fun _ ->
+      Tacticals.tclRUNWITHHOLES e cb
+        (fun cb -> general_apply ~respect_opaque:(not b) b b e k CAst.(make ?loc cb))
     end
   in
   let rec aux = function
@@ -1988,14 +1985,10 @@ let apply_in_once ?(respect_opaque = false) with_delta
 
 let apply_in_delayed_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{CAst.loc;v=f}) tac =
-  Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.project gl in
-    let (sigma, c) = f env sigma in
-    Tacticals.tclWITHHOLES with_evars
-      (apply_in_once ~respect_opaque with_delta with_destruct with_evars
-         naming id (clear_flag,CAst.(make ?loc c)) tac)
-      sigma
+  Proofview.Goal.enter begin fun _ ->
+    Tacticals.tclRUNWITHHOLES with_evars f
+      (fun c -> apply_in_once ~respect_opaque with_delta with_destruct with_evars
+          naming id (clear_flag,CAst.(make ?loc c)) tac)
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -2559,7 +2552,10 @@ and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
       let naming = NamingMustBe (CAst.make ?loc id) in
       let tac_ipat = prepare_action ?loc with_evars destopt pat in
-      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings)) in
+      let f =
+        tactic_of_delayed f >>= fun c ->
+        Proofview.tclUNIT (c, NoBindings)
+      in
       apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
         (fun id -> Tacticals.tclTHENLIST [tac_ipat id; tac thin None []])
 
@@ -2658,7 +2654,7 @@ let general_apply_in ?(respect_opaque=false) with_delta
 *)
 
 let apply_in simple with_evars id lemmas ipat =
-  let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (fun _ sigma -> (sigma,l))) lemmas in
+  let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (Proofview.tclUNIT l)) lemmas in
   general_apply_in simple simple with_evars id lemmas ipat Tacticals.tclIDTAC
 
 let apply_delayed_in simple with_evars id lemmas ipat then_tac =

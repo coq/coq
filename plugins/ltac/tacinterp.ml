@@ -1687,7 +1687,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let l = List.map (fun (k,c) ->
-          let loc, f = interp_open_constr_with_bindings_loc ist c in
+            let loc, f = interp_open_constr_with_bindings_loc ist c in
+            let f = Tacticals.tactic_of_delayed f in
             (k,(CAst.make ?loc f))) cb
         in
         let tac = match cl with

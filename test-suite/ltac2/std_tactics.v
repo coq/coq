@@ -136,3 +136,7 @@ Goal False.
   (* interned as with type scope locally open *)
   assert (H' : nat * (0 * 0 = 0)) by (split; first [exact 0 | reflexivity]).
 Abort.
+
+Goal nat.
+  Std.apply true false [fun () => Control.plus (fun () => 'I) (fun _ => '0), Std.NoBindings] None.
+Qed.
