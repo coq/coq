@@ -37,7 +37,7 @@ let mytclWithHoles tac with_evars c =
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
-(* cutrewrite, dependent rewrite                                      *)
+(* dependent rewrite                                      *)
 
 let with_delayed_uconstr ist c tac =
   let flags = Pretyping.{

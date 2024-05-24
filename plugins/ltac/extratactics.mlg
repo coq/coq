@@ -137,12 +137,6 @@ TACTIC EXTEND dependent_rewrite
     -> { rewriteInHyp b c id }
 END
 
-TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> { cutRewriteInConcl b eqn }
-| [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> { cutRewriteInHyp b eqn id }
-END
-
 (**********************************************************************)
 (* Decompose                                                          *)
 

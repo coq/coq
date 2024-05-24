@@ -83,10 +83,6 @@ val simpleInjClause : inj_flags option -> evars_flag ->
 val dEq : keep_proofs:(bool option) -> evars_flag -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 val dEqThen : keep_proofs:(bool option) -> evars_flag -> (int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
-(* The family cutRewriteIn expect an equality statement *)
-val cutRewriteInHyp : bool -> types -> Id.t -> unit Proofview.tactic
-val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
-
 (* The family rewriteIn expect the proof of an equality *)
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic

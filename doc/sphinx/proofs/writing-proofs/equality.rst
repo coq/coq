@@ -266,14 +266,6 @@ Rewriting with Leibniz and setoid equality
    .. exn:: Terms do not have convertible types.
       :undocumented:
 
-   .. tacn:: cutrewrite {? {| -> | <- } } @one_type {? in @ident }
-
-      Where :n:`@one_type` is an equality.
-
-      .. deprecated:: 8.5
-
-         Use :tacn:`replace` instead.
-
 .. tacn:: substitute {? {| -> | <- } } @one_term_with_bindings
    :undocumented:
 
