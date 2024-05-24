@@ -97,6 +97,7 @@ Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)".
 
 Reserved Notation "<hidden n >" (at level 0, n at level 0,
   format "<hidden  n >").
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "T (* n *)" (at level 200, format "T  (* n *)").
 
 End SsrSyntax.

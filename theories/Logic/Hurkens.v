@@ -102,6 +102,7 @@ Reserved Notation "'λ₁' x , u" (at level 200, x name, right associativity).
 Reserved Notation "f '·₁' x" (at level 5, left associativity).
 Reserved Notation "'∀₂' A , F" (at level 200, A name, right associativity).
 Reserved Notation "'λ₂' x , u" (at level 200, x name, right associativity).
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "f '·₁' [ A ]" (at level 5, left associativity).
 Reserved Notation "'∀₀' x : A , B" (at level 200, x name, A at level 200,right associativity).
 Reserved Notation "A '⟶₀' B" (at level 99, right associativity, B at level 200).
@@ -109,6 +110,7 @@ Reserved Notation "'λ₀' x , u" (at level 200, x name, right associativity).
 Reserved Notation "f '·₀' x" (at level 5, left associativity).
 Reserved Notation "'∀₀¹' A : U , F" (at level 200, A name, right associativity).
 Reserved Notation "'λ₀¹' x , u" (at level 200, x name, right associativity).
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "f '·₀' [ A ]" (at level 5, left associativity).
 
 (* end hide *)

@@ -250,6 +250,11 @@ of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 
    It is usually better to put closed notations, that is the ones starting and ending with a terminal symbol, at level 0.
 
+.. warn:: Postfix notations (i.e. starting with a nonterminal symbol and ending with a terminal symbol) should usually be at level 1 (default).")
+   :name: postfix-notation-not-level-1
+
+   It is usually better to put postfix notations, that is the ones ending with a terminal symbol, at level 1.
+
 .. _UseOfNotationsForPrinting:
 
 Use of notations for printing
