@@ -131,6 +131,7 @@ sig
   val inductive_levels
     : Environ.env
     -> Evd.evar_map
+    -> poly:bool
     -> EConstr.constr list
     (* arities *)
     -> EConstr.rel_context list list

@@ -256,27 +256,33 @@ let prop_lowering_candidates evd inds =
   let candidates = spread_nonprop candidates in
   candidates
 
-let include_constructor_argument env evd ~ctor_sort ~inductive_sort =
-  (* We ignore the quality when comparing the sorts: it has an impact
-     on squashing in the kernel but cannot cause a universe error. *)
-  let univ_of_sort s =
-    match ESorts.kind evd s with
-    | SProp | Prop -> None
-    | Set -> Some Univ.Universe.type0
-    | Type u | QSort (_,u) -> Some u
-  in
-  match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
-  | _, None ->
-    (* This function is only called when [s] is not impredicative *)
-    assert false
-  | None, Some _ -> evd
-  | Some uctor, Some uind ->
-    let mk u = ESorts.make (Sorts.sort_of_univ u) in
-    Evd.set_leq_sort env evd (mk uctor) (mk uind)
+let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
+  if poly then
+    (* We ignore the quality when comparing the sorts: it has an impact
+       on squashing in the kernel but cannot cause a universe error. *)
+    let univ_of_sort s =
+      match ESorts.kind evd s with
+      | SProp | Prop -> None
+      | Set -> Some Univ.Universe.type0
+      | Type u | QSort (_,u) -> Some u
+    in
+    match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
+    | _, None ->
+      (* This function is only called when [s] is not impredicative *)
+      assert false
+    | None, Some _ -> evd
+    | Some uctor, Some uind ->
+      let mk u = ESorts.make (Sorts.sort_of_univ u) in
+      Evd.set_leq_sort env evd (mk uctor) (mk uind)
+  else
+    match ESorts.kind evd ctor_sort with
+    | SProp | Prop -> evd
+    | Set | Type _ | QSort _ ->
+      Evd.set_leq_sort env evd ctor_sort inductive_sort
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
-let inductive_levels env evd arities ctors =
+let inductive_levels env evd ~poly arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -290,7 +296,7 @@ let inductive_levels env evd arities ctors =
   let evd = List.fold_left (fun evd (raw_arity,(_,s),ctors) ->
       if less_than_2 ctors || is_impredicative_sort evd s then evd
       else (* >=2 constructors is like having a bool argument *)
-        include_constructor_argument env evd ~ctor_sort:ESorts.set ~inductive_sort:s)
+        include_constructor_argument env evd ~poly ~ctor_sort:ESorts.set ~inductive_sort:s)
       evd inds
   in
   (* If indices_matter, the index telescope acts like an extra
@@ -335,7 +341,7 @@ let inductive_levels env evd arities ctors =
       if is_impredicative_sort evd s then evd
       else List.fold_left
           (List.fold_left (fun evd ctor_sort ->
-               include_constructor_argument env evd ~ctor_sort ~inductive_sort:s))
+               include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort:s))
           evd (Option.List.cons indices ctors))
       evd inds
   in
@@ -496,7 +502,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         tys)
       constructors
   in
-  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma arities ctor_args in
+  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma ~poly arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
   let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
