@@ -22,7 +22,10 @@ include:
 
 stages:
   - docker
-  - build
+  - build-0
+  - build-1
+  - build-2
+  - build-3+
   - deploy
 
 # We set "needs" to contain all transitive dependencies. We include the
@@ -61,7 +64,7 @@ before_script:
 
 # Regular "release" build of Coq, with final installed layout
 .build-template:
-  stage: build
+  stage: build-0
   interruptible: true
   extends: .auto-use-tags
   variables:
@@ -100,7 +103,7 @@ before_script:
 # Developer build, with build layout. Faster and useful for those
 # jobs needing _build
 .build-template:base:dev:
-  stage: build
+  stage: build-0
   interruptible: true
   extends: .auto-use-tags
   script:
@@ -119,7 +122,7 @@ before_script:
     expire_in: 1 month
 
 .doc-template:
-  stage: build
+  stage: build-1
   interruptible: true
   extends: .auto-use-tags
   needs:
@@ -139,7 +142,7 @@ before_script:
 
 # set "needs" when using
 .test-suite-template:
-  stage: build
+  stage: build-1
   interruptible: true
   extends: .auto-use-tags
   needs:
@@ -159,7 +162,7 @@ before_script:
 
 # set "needs" when using
 .validate-template:
-  stage: build
+  stage: build-1
   interruptible: true
   extends: .auto-use-tags
   needs:
@@ -180,7 +183,7 @@ before_script:
 # This template defaults to "needs: build:base"
 # Remember to include it as a transitive dependency if you want additional "needs:"
 .ci-template:
-  stage: build
+  stage: build-1
   interruptible: true
   extends: .auto-use-tags
   script:
@@ -221,7 +224,7 @@ before_script:
     - git config --global user.email "coqbot@users.noreply.github.com"
 
 .pkg:opam-template:
-  stage: build
+  stage: build-0
   image: $EDGE_IMAGE
   interruptible: true
   extends: .auto-use-tags
@@ -236,7 +239,7 @@ before_script:
   only: *full-ci
 
 .nix-template:
-  stage: build
+  stage: build-0
   needs: []
   interruptible: true
   image: nixos/nix:latest
@@ -310,7 +313,7 @@ build:base:dev:
 
 # Build using native dune rules
 build:base:dev:dune:
-  stage: build
+  stage: build-0
   image: $EDGE_IMAGE
   variables:
     OPAM_VARIANT: "+flambda"
@@ -349,7 +352,7 @@ build:base+async:
   timeout: 1h 30min
 
 lint:
-  stage: build
+  stage: build-0
   image: $EDGE_IMAGE
   script: dev/lint-repository.sh
   extends: .auto-use-tags
@@ -500,7 +503,7 @@ test-suite:edge+flambda:
   only: *full-ci
 
 test-suite:base:dev:
-  stage: build
+  stage: build-1
   interruptible: true
   extends: .auto-use-tags
   needs:
@@ -517,7 +520,9 @@ test-suite:base:dev:
     # expire_in: never
 
 .test-suite:ocaml+beta+dune-template:
-  stage: build
+  stage: build-1 # even though it has no deps we put it with the other test suite jobs
+  needs:
+    - docker-boot
   interruptible: true
   script:
     - opam switch create $OCAMLVER --empty
@@ -593,6 +598,7 @@ library:ci-bedrock2:
   - library:ci-coqutil
   - library:ci-kami
   - library:ci-riscv_coq
+  stage: build-3+
   timeout: 2h
 
 library:ci-category_theory:
@@ -600,12 +606,14 @@ library:ci-category_theory:
   needs:
   - build:base
   - plugin:ci-equations
+  stage: build-2
 
 library:ci-color:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
+  stage: build-2
 
 library:ci-compcert:
   extends: .ci-template-flambda
@@ -613,6 +621,7 @@ library:ci-compcert:
   - build:edge+flambda
   - library:ci-flocq
   - library:ci-menhir
+  stage: build-2
 
 library:ci-coq_performance_tests:
   extends: .ci-template
@@ -625,6 +634,7 @@ library:ci-coqprime:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
+  stage: build-2
 
 library:ci-coqtail:
   extends: .ci-template
@@ -634,6 +644,7 @@ library:ci-coquelicot:
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-coqutil:
   extends: .ci-template-flambda
@@ -652,6 +663,7 @@ library:ci-fcsl_pcm:
   needs:
   - build:edge+flambda
   - library:ci-mathcomp_1
+  stage: build-2
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
@@ -662,6 +674,7 @@ library:ci-fiat_crypto:
   - library:ci-coqprime
   - library:ci-rupicola
   - plugin:ci-rewriter
+  stage: build-3+
   timeout: 3h
 
 library:ci-fiat_crypto_legacy:
@@ -676,6 +689,7 @@ library:ci-fiat_crypto_ocaml:
   needs:
   - build:edge+flambda
   - library:ci-fiat_crypto
+  stage: build-3+
   artifacts:
     paths: [] # These artifacts would go over the size limit
 
@@ -694,6 +708,7 @@ library:ci-oddorder:
   - build:edge+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-fourcolor:
   extends: .ci-template-flambda
@@ -701,6 +716,7 @@ library:ci-fourcolor:
   - build:edge+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-corn:
   extends: .ci-template-flambda
@@ -708,6 +724,7 @@ library:ci-corn:
   - build:edge+flambda
   - plugin:ci-bignums
   - library:ci-math_classes
+  stage: build-3+
 
 library:ci-hott:
   extends: .ci-template
@@ -717,18 +734,21 @@ library:ci-iris:
   needs:
     - build:edge+flambda
     - library:ci-autosubst
+  stage: build-2
 
 library:ci-math_classes:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
+  stage: build-2
 
 library:ci-mathcomp:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-elpi_hb  # for Hierarchy Builder
+  stage: build-2
 
 library:ci-mathcomp_1:
   extends: .ci-template-flambda
@@ -739,6 +759,7 @@ library:ci-mathcomp_test:
   - build:edge+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-mczify:
   extends: .ci-template-flambda
@@ -746,18 +767,21 @@ library:ci-mczify:
   - build:edge+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-analysis:
   extends: .ci-template-flambda
@@ -767,6 +791,7 @@ library:ci-analysis:
   - library:ci-finmap
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
+  stage: build-3+
 
 library:ci-neural_net_interp:
   extends: .ci-template
@@ -780,6 +805,7 @@ library:ci-itree:
     - build:edge+flambda
     - library:ci-ext_lib
     - library:ci-paco
+  stage: build-2
 
 library:ci-itree_io:
   extends: .ci-template-flambda
@@ -787,12 +813,14 @@ library:ci-itree_io:
     - build:edge+flambda
     - library:ci-simple_io
     - library:ci-itree
+  stage: build-3+
 
 library:ci-simple_io:
   extends: .ci-template-flambda
   needs:
     - build:edge+flambda
     - library:ci-ext_lib
+  stage: build-2
 
 library:ci-sf:
   extends: .ci-template
@@ -818,6 +846,7 @@ library:ci-vst:
   - library:ci-flocq
   - library:ci-menhir
   - library:ci-compcert
+  stage: build-3+
   timeout: 2h
 
 library:ci-deriving:
@@ -826,12 +855,14 @@ library:ci-deriving:
   - build:edge+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
+  stage: build-3+
 
 library:ci-mathcomp_word:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-mathcomp_1
+  stage: build-2
 
 library:ci-jasmin:
   extends: .ci-template-flambda
@@ -839,6 +870,7 @@ library:ci-jasmin:
   - build:edge+flambda
   - library:ci-mathcomp_1
   - library:ci-mathcomp_word
+  stage: build-3+
 
 library:ci-coq_library_undecidability:
   extends: .ci-template
@@ -846,6 +878,7 @@ library:ci-coq_library_undecidability:
   - build:base
   - plugin:ci-equations
   - plugin:ci-metacoq
+  stage: build-3+
 
 library:ci-http:
   extends: .ci-template-flambda
@@ -854,12 +887,14 @@ library:ci-http:
   - library:ci-menhir
   - library:ci-itree_io
   - plugin:ci-quickchick
+  stage: build-3+
 
 library:ci-trakt:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-elpi_hb
+  stage: build-2
 
 # Plugins are by definition the projects that depend on Coq's ML API
 
@@ -889,20 +924,20 @@ plugin:ci-coqhammer:
 
 plugin:ci-elpi_hb:
   extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-elpi_hb
+  stage: build-2
 
 plugin:ci-hb_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-elpi_hb
+  stage: build-2
 
 plugin:ci-equations:
   extends: .ci-template
@@ -912,6 +947,7 @@ plugin:ci-equations_test:
   needs:
   - build:base
   - plugin:ci-equations
+  stage: build-2
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
@@ -927,6 +963,7 @@ plugin:ci-metacoq:
   needs:
   - build:base
   - plugin:ci-equations
+  stage: build-2
   timeout: 1h 30min
 
 plugin:ci-mtac2:
@@ -939,7 +976,7 @@ plugin:ci-perennial:
   extends: .ci-template-flambda
 
 plugin:plugin-tutorial:
-  stage: build
+  stage: build-0
   interruptible: true
   extends: .auto-use-tags
   script:
@@ -953,12 +990,14 @@ plugin:ci-quickchick:
   - library:ci-ext_lib
   - library:ci-simple_io
   - library:ci-mathcomp_1
+  stage: build-3+
 
 plugin:ci-quickchick_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-quickchick
+  stage: build-3+
 
 plugin:ci-reduction_effects:
   extends: .ci-template
@@ -970,6 +1009,7 @@ plugin:ci-relation_algebra:
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   - plugin:ci-aac_tactics
+  stage: build-3+
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
@@ -979,12 +1019,14 @@ library:ci-riscv_coq:
   needs:
   - build:edge+flambda
   - library:ci-coqutil
+  stage: build-2
 
 library:ci-rupicola:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-bedrock2
+  stage: build-3+
 
 plugin:ci-serapi:
   extends: .ci-template-flambda
@@ -996,12 +1038,14 @@ plugin:ci-serapi_test:
   - plugin:ci-elpi_hb
   - library:ci-mathcomp_1
   - plugin:ci-serapi
+  stage: build-2
 
 plugin:ci-coq_lsp:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - plugin:ci-serapi
+  stage: build-2
 
 plugin:ci-vscoq:
   extends: .ci-template-flambda
