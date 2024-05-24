@@ -91,7 +91,7 @@ else
 coqidetop := $(BIN)coqidetop.byte
 endif
 
-coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
+coqc_interactive := $(coqc) -test-mode
 coqdep := $(BIN)coqdep
 
 # This is the convention for coq_makefile

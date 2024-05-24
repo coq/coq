@@ -4,13 +4,12 @@ Goal forall x, 0+x = 1+x.
 intro x.
 simpl (_ + x).
 Show.
-Undo.
+change (0+x = 1+x).
 simpl (_ + x) at 2.
 Show.
-Undo.
+change (0+x = 1+x).
 simpl (0 + _).
 Show.
-Undo.
 Abort.
 
 Require Import String.
