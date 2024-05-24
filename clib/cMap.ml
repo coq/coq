@@ -23,17 +23,15 @@ end
 
 module type S = Map.S
 
-module type ExtS =
+module type UExtS =
 sig
-  include CSig.MapS
-  module Set : CSig.SetS with type elt = key
+  include CSig.UMapS
+  module Set : CSig.USetS with type elt = key
   val get : key -> 'a t -> 'a
   val set : key -> 'a -> 'a t -> 'a t
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
   val bind : (key -> 'a) -> Set.t -> 'a t
-  val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
   val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t (* in OCaml 4.11 *)
@@ -49,10 +47,24 @@ sig
   module Monad(M : MonadS) :
   sig
     val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
-    val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
-    val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
     val mapi : (key -> 'a -> 'b M.t) -> 'a t -> 'b t M.t
   end
+end
+module type ExtS = sig
+  include CSig.MapS
+
+  module Set : CSig.SetS with type elt = key
+
+  include UExtS with type key := key and type 'a t := 'a t and module Set := Set
+
+  module Monad(M:MonadS) : sig
+    include module type of Monad(M)
+    val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+  end
+
+  val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 end
 
 module MapExt (M : Map.OrderedType) :

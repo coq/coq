@@ -44,8 +44,8 @@ module ExtRefOrdered : sig
   val hash : t -> int
 end
 
-module ExtRefSet : CSig.SetS with type elt = extended_global_reference
-module ExtRefMap : CMap.ExtS
+module ExtRefSet : CSig.USetS with type elt = extended_global_reference
+module ExtRefMap : CMap.UExtS
   with type key = extended_global_reference
    and module Set := ExtRefSet
 

@@ -62,7 +62,7 @@ module MakeTable =
    (A : sig
           type t
           type key
-          module Set : CSig.SetS with type elt = t
+          module Set : CSig.USetS with type elt = t
           val table : (string * key table_of_A) list ref
           val encode : Environ.env -> key -> t
           val subst : Mod_subst.substitution -> t -> t
@@ -172,7 +172,7 @@ let get_ref_table k = String.List.assoc (nickname k) !ref_table
 module type RefConvertArg =
 sig
   type t
-  module Set : CSig.SetS with type elt = t
+  module Set : CSig.USetS with type elt = t
   val encode : Environ.env -> Libnames.qualid -> t
   val subst : Mod_subst.substitution -> t -> t
   val printer : t -> Pp.t

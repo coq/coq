@@ -18,7 +18,7 @@ type 'a until = Stop of 'a | Cont of 'a
 
 type (_, _) eq = Refl : ('a, 'a) eq
 
-module type SetS =
+module type USetS =
 sig
     type elt
     type t
@@ -42,15 +42,22 @@ sig
     val partition: (elt -> bool) -> t -> t * t
     val cardinal: t -> int
     val elements: t -> elt list
-    val min_elt: t -> elt
-    val max_elt: t -> elt
     val choose: t -> elt
-    val split: elt -> t -> t * bool * t
 end
-(** Redeclaration of OCaml set signature, to preserve compatibility. See OCaml
-    documentation for more information. *)
+(** Redeclaration of OCaml set signature, to preserve compatibility.
+    See OCaml documentation for more information. Operations which
+    can't be efficiently implemented for HSets are moved to OSetS. *)
 
-module type MapS =
+module type SetS = sig
+  include USetS
+
+  val min_elt: t -> elt
+  val max_elt: t -> elt
+  val split: elt -> t -> t * bool * t
+end
+(** OCaml set operations which require the order structure to be efficient. *)
+
+module type UMapS =
 sig
     type key
     type (+'a) t
@@ -75,13 +82,18 @@ sig
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
-    val min_binding: 'a t -> (key * 'a)
-    val max_binding: 'a t -> (key * 'a)
     val choose: 'a t -> (key * 'a)
     val choose_opt: 'a t -> (key * 'a) option
-    val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
     val find_opt : key -> 'a t -> 'a option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+end
+
+module type MapS = sig
+  include UMapS
+
+  val min_binding: 'a t -> (key * 'a)
+  val max_binding: 'a t -> (key * 'a)
+  val split: key -> 'a t -> 'a t * 'a option * 'a t
 end
