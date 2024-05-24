@@ -401,14 +401,13 @@ end = struct
         let cb = lookup_constant cst env in
         shortcut_irrelevant info (UVars.subst_instance_relevance u cb.const_relevance);
         let ts = RedFlags.red_transparent info.i_flags in
-        if TransparentState.is_transparent_constant ts cst then begin
-          match Cmap_env.find_opt cst env.symb_pats with
-          | Some r ->
-            let b = match [@ocaml.warning "-4"] cb.const_body with Symbol b -> b | _ -> assert false in
-            raise (NotEvaluableConst (HasRules (u, b, r)))
-          | None -> ();
+        if TransparentState.is_transparent_constant ts cst then match cb.const_body with
+        | Undef _ | Def _ | OpaqueDef _ | Primitive _ ->
           Def (constant_value_in u cb.const_body)
-        end else
+        | Symbol b ->
+          let r = Cmap_env.get cst env.symb_pats in
+          raise (NotEvaluableConst (HasRules (u, b, r)))
+        else
           raise Not_found
     with
     | Irrelevant -> Def mk_irrelevant
