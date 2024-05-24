@@ -560,8 +560,11 @@ type unirec_flags = {
   with_cs : bool;
 }
 
+let subterm_restriction opt flags =
+  not opt.at_top && flags.restrict_conv_on_strict_subterms
+
 let disallow_conversion opt flags =
-  not opt.with_conv || not opt.at_top && flags.restrict_conv_on_strict_subterms
+  not opt.with_conv || subterm_restriction opt flags
 
 let key_of env sigma b flags f =
   if disallow_conversion b flags then None else
@@ -1079,7 +1082,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           expand curenvnb pb opt substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb opt (sigma, metas, evars as substn) cM cN =
-    if flags.modulo_betaiota && not (disallow_conversion opt flags) then
+    if flags.modulo_betaiota && not (subterm_restriction opt flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
         if not (EConstr.eq_constr sigma cM cM') then
           unirec_rec curenvnb pb opt substn cM' cN
