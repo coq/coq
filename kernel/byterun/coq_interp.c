@@ -480,6 +480,20 @@ value coq_interprete
         accu = Field(coq_env, 2 + *pc++);
         Next;
       }
+
+      Instruct(PUSHENVACCMANY) {
+        int first = *pc++;
+        int size = *pc++;
+        int i;
+        print_instr("PUSHENVACCMANY");
+        first += 2;
+        sp -= size;
+        for (i = 1; i < size; ++i) sp[i - 1] = Field(coq_env, first + i);
+        sp[size - 1] = accu;
+        accu = Field(coq_env, first);
+        Next;
+      }
+
       /* Function application */
 
       Instruct(PUSH_RETADDR) {
