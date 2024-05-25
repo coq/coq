@@ -197,7 +197,7 @@ let focus_id cond inf id pr =
   let (focused_goals, evar_map) = Proofview.proofview pr.proofview in
   begin match try Some (Evd.evar_key id evar_map) with Not_found -> None with
   | Some ev ->
-     begin match CList.safe_index Evar.equal ev focused_goals with
+     begin match CList.index_opt Evar.equal ev focused_goals with
      | Some i ->
         (* goal is already under focus *)
         _focus cond inf i i pr

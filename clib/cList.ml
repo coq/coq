@@ -455,7 +455,7 @@ let rec index_f f x l n = match l with
 
 let index f x l = index_f f x l 1
 
-let safe_index f x l = try Some (index f x l) with Not_found -> None
+let index_opt f x l = try Some (index f x l) with Not_found -> None
 
 let index0 f x l = index_f f x l 0
 
