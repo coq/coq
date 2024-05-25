@@ -789,7 +789,8 @@ command: [
 | "Debug" [ "On" | "Off" ]
 | "Declare" "Reduction" ident ":=" red_expr
 | "Declare" "Custom" "Entry" ident
-| "Derive" ident "SuchThat" one_term "As" ident      (* derive plugin *)
+| "Derive" open_binders "SuchThat" type "As" ident
+| "Derive" open_binders "in" type "as" ident
 | "Extraction" qualid      (* extraction plugin *)
 | "Recursive" "Extraction" LIST1 qualid      (* extraction plugin *)
 | "Extraction" string LIST1 qualid      (* extraction plugin *)

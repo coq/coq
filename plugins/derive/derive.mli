@@ -14,7 +14,7 @@
     and [lemma] as the proof. *)
 val start_deriving
   :  atts:Vernacentries.DefAttributes.t
-  -> Names.Id.t CAst.t
+  -> Constrexpr.local_binder_expr list
   -> Constrexpr.constr_expr
   -> Names.Id.t
   -> Declare.Proof.t
