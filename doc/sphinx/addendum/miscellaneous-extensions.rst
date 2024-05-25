@@ -7,20 +7,24 @@ of program refinements. To use the Derive extension it must first be
 required with ``Require Coq.derive.Derive``. When the extension is loaded,
 it provides the following command:
 
-.. cmd:: Derive @ident__1 SuchThat @one_term As @ident__2
+.. cmd:: Derive @open_binders in @type as @ident
+         Derive @open_binders SuchThat @type As @ident
 
-   :n:`@ident__1` can appear in :n:`@one_term`. This command opens a new proof
-   presenting the user with a goal for :n:`@one_term` in which the name :n:`@ident__1` is
-   bound to an existential variable :g:`?x` (formally, there are other goals
+   where :n:`@open_binders` declares a list of declarations of the form
+   :g:`@ident__i : @type__i` which can appear in :n:`@type`. This
+   command opens a new proof presenting the user with a goal for
+   :n:`@type` in which each name :n:`@ident__i` is bound to an
+   existential variable :g:`?x__i` (formally, there are other goals
    standing for the existential variables but they are shelved, as
    described in :tacn:`shelve`).
 
-   When the proof ends two :term:`constants <constant>` are defined:
+   When the proof ends as many :term:`constants <constant>` as the
+   number of :g:`@ident__i` plus one are defined:
 
-   + The first one is named :n:`@ident__1` and is defined as the proof of the
-     shelved goal (which is also the value of :g:`?x`). It is always
+   + The first ones, named :n:`@ident__i`, are defined as the proof of the
+     shelved goals (which are also the value of :g:`?x__i`). They are always
      transparent.
-   + The second one is named :n:`@ident__2`. It has type :n:`@type`, and its :term:`body` is
+   + The final one is named :n:`@ident`. It has type :n:`@type`, and its :term:`body` is
      the proof of the initially visible goal. It is opaque if the proof
      ends with :cmd:`Qed`, and transparent if the proof ends with :cmd:`Defined`.
 
@@ -35,19 +39,24 @@ it provides the following command:
 
      Variables (n m k:nat).
 
-     Derive p SuchThat ((k*n)+(k*m) = p) As h.
+     Derive j p SuchThat ((k*n)+(k*m) = j*p) As h.
      Proof.
      rewrite <- Nat.mul_add_distr_l.
-     subst p.
+     subst j p.
      reflexivity.
      Qed.
 
      End P.
 
+     Print j.
      Print p.
      Check h.
 
-Any property can be used as `term`, not only an equation. In particular,
+Any property can be used as `type`, not only an equation. In particular,
 it could be an order relation specifying some form of program
 refinement or a non-executable property from which deriving a program
 is convenient.
+
+.. note::
+   The syntax :n:`Derive @open_binders SuchThat @type As @ident` is obsolete
+   and to be avoided.
