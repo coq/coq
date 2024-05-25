@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Context
 open Context.Named.Declaration
 
 (** [start_deriving f suchthat lemma] starts a proof of [suchthat]
@@ -31,9 +30,7 @@ let start_deriving f suchthat name : Declare.Proof.t =
     let open Proofview in
     TCons ( env , sigma , f_type_type , (fun sigma f_type ->
         TCons ( env , sigma , f_type , (fun sigma ef ->
-            let f_type = EConstr.Unsafe.to_constr f_type in
-            let ef = EConstr.Unsafe.to_constr ef in
-            let env' = Environ.push_named (LocalDef (annotR f, ef, f_type)) env in
+            let env' = EConstr.push_named (LocalDef (EConstr.annotR f, ef, f_type)) env in
             let sigma, suchthat = Constrintern.interp_type_evars ~program_mode:false env' sigma suchthat in
             TCons ( env' , sigma , suchthat , (fun sigma _ ->
                 TNil sigma))))))
