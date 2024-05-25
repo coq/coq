@@ -193,7 +193,7 @@ module Proof : sig
      both of them. Please, get in touch with the developers if you
      would like to experiment with multi-goal dependent proofs so we
      can use your input on the design of the new API. *)
-  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> Proofview.telescope -> t
+  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> cinfo:unit CInfo.t list -> Proofview.telescope -> t
 
   val start_equations :
        name:Id.t
