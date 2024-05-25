@@ -1377,6 +1377,12 @@ command: [
 | REPLACE "Declare" "Scope" IDENT
 | WITH "Declare" "Scope" scope_name
 
+| REPLACE "Derive" open_binders "SuchThat" constr "As" identref      (* derive plugin *)
+| WITH "Derive" open_binders "SuchThat" type "As" ident      (* derive plugin *)
+
+| REPLACE "Derive" open_binders "in" constr "as" identref      (* derive plugin *)
+| WITH "Derive" open_binders "in" type "as" ident      (* derive plugin *)
+
 (* odd that these are in command while other notation-related ones are in syntax *)
 | REPLACE "Number" "Notation" reference reference reference OPT number_options ":" preident
 | WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
