@@ -14,6 +14,7 @@
     and [lemma] as the proof. *)
 val start_deriving
   :  Names.Id.t
+  -> Constrexpr.constr_expr option
   -> Constrexpr.constr_expr
   -> Names.Id.t
   -> Declare.Proof.t

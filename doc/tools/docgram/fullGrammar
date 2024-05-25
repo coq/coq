@@ -563,6 +563,7 @@ command: [
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" IDENT
 | "Derive" identref "SuchThat" constr "As" identref      (* derive plugin *)
+| "Derive" identref ":" constr "SuchThat" constr "As" identref      (* derive plugin *)
 | "Extraction" global      (* extraction plugin *)
 | "Recursive" "Extraction" LIST1 global      (* extraction plugin *)
 | "Extraction" string LIST1 global      (* extraction plugin *)
