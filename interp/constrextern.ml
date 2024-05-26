@@ -218,10 +218,10 @@ let rec fill_arg_scopes args subscopes (_,scopes as all) =
   | a :: args, [] ->
     (a, ((constr_some_level,None), ([], scopes))) :: fill_arg_scopes args [] all
 
-let overlap_right_left lev_after ((typs,_):Notation_term.interpretation) =
-  List.exists (fun (_id,(({notation_relative_level = lev; notation_position = side},_),_,_)) ->
+let overlap_right_left {notation_entry = entry} lev_after ((typs,_):Notation_term.interpretation) =
+  List.exists (fun (_id,(({notation_subentry = entry'; notation_relative_level = lev; notation_position = side},_),_,_)) ->
       match side with
-      | Some Right -> may_capture_cont_after lev_after lev
+      | Some Right when notation_entry_eq entry entry' -> may_capture_cont_after lev_after lev
       | _ -> false) typs
 
 let update_with_subscope from_entry (entry,(scopt,scl)) lev_after closed scopes =
@@ -449,7 +449,7 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
       begin
         let entry =
           let entry = fst (Notation.level_of_notation ntn) in
-          if overlap_right_left lev_after pat then {entry with notation_level = max_int} else entry in
+          if overlap_right_left entry lev_after pat then {entry with notation_level = max_int} else entry in
         let coercion, appcoercion = find_entry_coercion_with_application custom entry (List.is_empty extra_args) in
         let closed = not (List.is_empty coercion) in
         match availability_of_notation specific_ntn (tmp_scope,scopes) with
@@ -1306,7 +1306,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
             let entry = fst (Notation.level_of_notation ntn) in
-            let non_included = overlap_right_left lev_after pat in
+            let non_included = overlap_right_left entry lev_after pat in
             let coercion, appcoercion = find_entry_coercion_with_application ~non_included custom entry (is_empty_extra_args extra_args) in
             (match availability_of_notation specific_ntn scopes with
                   (* Uninterpretation is not allowed in current context *)
