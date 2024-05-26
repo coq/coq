@@ -564,20 +564,21 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
       let pm, _ = Declare.Obls.add_definition ~pm ~cinfo ~info ~opaque:false ~body ~uctx ?using obls in
       Some pm, None
     | _ ->
+      let possible_guard = (possible_guard, fixrs) in
       Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None)
   | None ->
     try
       let bodies = List.map Option.get bodies in
       let uctx = Evd.evar_universe_context sigma in
       (* All bodies are defined *)
+      let possible_guard = (possible_guard, fixrs) in
       let _ : GlobRef.t list =
-        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
-          ~possible_guard ~bodies:(bodies,fixrs) ?using ()
+        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~possible_guard ~bodies ?using ()
       in
       None, None
     with Option.IsNone ->
       (* At least one undefined body *)
       Evd.check_univ_decl_early ~poly ~with_obls:false sigma udecl (Option.List.flatten bodies @ fixtypes);
-      let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
-          ~bodies ~possible_guard ?using sigma in
+      let possible_guard = (possible_guard, fixrs) in
+      let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma in
       None, Some lemma

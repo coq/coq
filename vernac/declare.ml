@@ -781,60 +781,48 @@ let interp_proof_using_cinfo env evd cinfo using =
   let f { CInfo.name; typ; _ } = name, [EConstr.of_constr typ] in
   interp_proof_using_gen f env evd cinfo using
 
-let make_recursive_body env possible_guard rec_declaration =
-  let indexes = Pretyping.search_guard env possible_guard rec_declaration in
-  let body = match indexes with
-  | Some indexes -> Constr.mkFix ((indexes,0), rec_declaration)
-  | None -> Constr.mkCoFix (0, rec_declaration) in
-  body, indexes
-
 let gather_mutual_using_data =
-  List.fold_left2 (fun acc CInfo.{ name; typ; _ } body ->
+  List.fold_left2 (fun acc CInfo.{ name; typ; _ } (body, _) ->
       let typ, body = EConstr.(of_constr typ, of_constr body) in
       (name, [typ; body]) :: acc) []
 
-let select_body i t =
-  let open Constr in
-  match Constr.kind t with
-  | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
-  | CoFix (0,decls) -> mkCoFix (i,decls)
-  | _ -> assert false
-
-let make_mutual_bodies env ~typing_flags ~rec_declaration ~possible_guard =
+let make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration =
   let env = Environ.update_typing_flags ?typing_flags env in
-  let body, indexes = make_recursive_body env possible_guard rec_declaration in
-  let vars = Vars.universes_of_constr body in
-  let nfix = Array.length (pi1 rec_declaration) in
-  let fixdecls = List.init nfix (fun i -> select_body i body) in
-  vars, fixdecls, indexes
+  let indexes = Pretyping.search_guard env possible_guard rec_declaration in
+  let mkbody i = match indexes with
+  | Some indexes -> Constr.mkFix ((indexes,i), rec_declaration)
+  | None -> Constr.mkCoFix (i, rec_declaration) in
+  List.map_i (fun i typ -> (mkbody i, typ)) 0 (Array.to_list (pi2 rec_declaration)), indexes
 
-let prepare_recursive_declaration fixitems (fixdefs,fixrs) =
-  let fixnames = List.map (fun CInfo.{name} -> name) fixitems in
-  let names = List.map2 (fun CInfo.{name} r -> Context.make_annot (Name name) r) fixitems fixrs in
-  let fixtypes = List.map (fun CInfo.{typ} -> typ) fixitems in
+let prepare_recursive_declaration cinfo fixtypes fixrs fixdefs =
+  let fixnames = List.map (fun CInfo.{name} -> name) cinfo in
+  let names = List.map2 (fun name r -> Context.make_annot (Name name) r) fixnames fixrs in
   let defs = List.map (Vars.subst_vars (List.rev fixnames)) fixdefs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
 let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard ?using () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
-  let rec_declaration = prepare_recursive_declaration cinfo bodies in
-  let vars, fixdecls, indexes = make_mutual_bodies env ~typing_flags ~rec_declaration ~possible_guard in
+  let possible_guard, fixrelevances = possible_guard in
+  let fixtypes = List.map (fun CInfo.{typ} -> typ) cinfo in
+  let rec_declaration = prepare_recursive_declaration cinfo fixtypes fixrelevances bodies in
+  let bodies_types, indexes = make_recursive_bodies env ~typing_flags ~rec_declaration ~possible_guard in
+  let vars = Vars.universes_of_constr (fst (List.hd bodies_types)) in (* All bodies have same vars *)
   let uctx = UState.restrict uctx vars in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   let evd = Evd.from_env env in
   let using =
     Option.map (fun using ->
-        let cinfos = gather_mutual_using_data cinfo fixdecls in
+        let cinfos = gather_mutual_using_data cinfo bodies_types in
         let f x = x in
         interp_proof_using_gen f env evd cinfos using)
       using
   in
   let csts = CList.map2
-      (fun CInfo.{ name; typ; impargs } body ->
+      (fun CInfo.{ name; typ; impargs } (body, _) ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
-      cinfo fixdecls
+      cinfo bodies_types
   in
   let isfix = Option.has_some indexes in
   let fixnames = List.map (fun { CInfo.name } -> name) cinfo in
@@ -976,7 +964,7 @@ module ProgramDecl = struct
     ; prg_uctx : UState.t
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
-    ; prg_possible_guard : Pretyping.possible_guard option (* None = not recursive *)
+    ; prg_possible_guard : (Pretyping.possible_guard * Sorts.relevance list) option (* None = not recursive *)
     ; prg_reduce : constr -> constr
     }
 
@@ -1356,27 +1344,24 @@ let declare_mutual_definitions ~pm l =
   let defobl x =
     let oblsubst = obligation_substitution true x in
     let subs, typ = subst_prog oblsubst x in
-    let env = Global.env () in
     let sigma = Evd.from_ctx x.prg_uctx in
-    let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
     let term = EConstr.of_constr subs in
     let typ = EConstr.of_constr typ in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in
-    let r = EConstr.ERelevance.kind sigma r in
-    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs) in
+    let def = (x.prg_reduce term, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs) in
     let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
     (def, oblsubst)
   in
   let defs, obls = List.split (List.map defobl l) in
   let obls = List.flatten obls in
-  let fixitems = List.map2 (fun (d, relevance, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
-  let fixdefs, fixrs, fixtypes, _ = List.split4 defs in
+  let fixitems = List.map2 (fun (d, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+  let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
   (* Declare the recursive definitions *)
   let kns =
     declare_mutual_definitions ~info:first.prg_info
-      ~uctx:first.prg_uctx ~bodies:(fixdefs, fixrs) ~possible_guard ~opaque:first.prg_opaque
+      ~uctx:first.prg_uctx ~bodies:fixdefs ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems ?using:first.prg_using ()
   in
   (* Only for the first constant *)
@@ -1553,7 +1538,7 @@ module Proof_info = struct
     ; info : Info.t
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; possible_guard : Pretyping.possible_guard option (* None = not recursive *)
+    ; possible_guard : (Pretyping.possible_guard * Sorts.relevance list) option (* None = not recursive *)
     (** thms and compute guard are specific only to
        start_definition + regular terminator, so we
        could make this per-proof kind *)
@@ -1667,18 +1652,6 @@ let start_equations ~name ~info ~hook ~types sigma goals =
   let proof_ending = Proof_ending.End_equations {hook; i=name; types; sigma} in
   start_dependent ~name ~info ~proof_ending goals
 
-let rec_tac_initializer Pretyping.{possibly_cofix; possible_fix_indices} thms =
-  if possibly_cofix then
-    match List.map (fun { CInfo.name; typ } -> name, (EConstr.of_constr typ)) thms with
-    | (id,_)::l -> Tactics.mutual_cofix id l 0
-    | _ -> assert false
-  else
-    (* nl is set to its maximal possible value for the purpose of mutual_fix; it will then be recomputed at Qed-time *)
-    let nl = List.map succ (List.map List.last possible_fix_indices)
-    in match List.map2 (fun { CInfo.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
-       | (id,n,_)::l -> Tactics.mutual_fix id n l 0
-       | _ -> assert false
-
 let start_definition ~info ~cinfo ?using sigma =
   let { CInfo.name; typ; args } = cinfo in
   let init_tac = Tactics.auto_intros_tac args in
@@ -1689,34 +1662,33 @@ let start_definition ~info ~cinfo ?using sigma =
   map lemma ~f:(fun p ->
       pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
-let start_mutual_definitions ~info ~cinfo ?bodies ~possible_guard ?using sigma =
+let start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma =
   let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
+  let fixrs = snd possible_guard in
   let init_tac =
-    let rec_tac = rec_tac_initializer possible_guard cinfo in
-    let term_tac =
-      match bodies with
-      | None ->
-        List.map intro_tac cinfo
-      | Some bodies ->
-        (* This is the case for hybrid proof mode / definition
-           fixpoint, where terms for some constants are given with := *)
-        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) bodies in
-        List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
-    in
-    Tacticals.tclTHENS rec_tac term_tac
+    (* This is the case for hybrid proof mode / definition
+       fixpoint, where terms for some constants are given with := *)
+    let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) bodies in
+    List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
   in
   match cinfo with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { CInfo.name; typ; _} :: thms ->
+  | { CInfo.name; _} :: _ as thms ->
     let pinfo = Proof_info.make ~cinfo ~info ~possible_guard () in
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
-    let typ = EConstr.of_constr typ in
     let env = Global.env () in
+    let sign =
+      List.fold_left2 (fun sign CInfo.{name;typ} r ->
+          let typ = EConstr.of_constr typ in
+          let r = EConstr.ERelevance.make r in
+          let decl = Context.Named.Declaration.LocalAssum (Context.make_annot name r, typ) in
+          EConstr.push_named_context_val decl sign) (initialize_named_context_for_proof ()) cinfo fixrs in
     let using = Option.map (interp_proof_using_cinfo env sigma cinfo) using in
-    let lemma = start_proof_core ~name ~pinfo ?using sigma [None, typ] in
+    let goals = List.map (function CInfo.{typ} -> (Some sign, EConstr.of_constr typ)) thms in
+    let lemma = start_proof_core ~name ~pinfo ?using sigma goals in
     let lemma = map lemma ~f:(fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) in
+        pi1 @@ Proof.run_tactic Global.(env ()) (Proofview.tclFOCUS 1 (List.length thms) (Proofview.tclDISPATCH init_tac)) p) in
     let () =
       (* Temporary declaration of notations for the time of the proofs *)
       let ntn_env =
@@ -1833,7 +1805,7 @@ let () = CErrors.register_handler begin function
   end
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
-let prepare_proof ?(warn_incomplete=true) { proof } =
+let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   let Proof.{name=pid;entry;poly;sigma=evd} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
   let () = if not @@ Proof.is_done proof then raise (OpenProof (pid, OpenGoals)) in
@@ -1845,8 +1817,7 @@ let prepare_proof ?(warn_incomplete=true) { proof } =
   let evd = Evd.minimize_universes evd in
   let to_constr c =
     match EConstr.to_constr_opt evd c with
-    | Some p ->
-      Vars.universes_of_constr p, p
+    | Some p -> p
     | None ->
       let has_given_up =
         let exception Found in
@@ -1873,7 +1844,17 @@ let prepare_proof ?(warn_incomplete=true) { proof } =
      equations and so far there is no code in the CI that will
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (_, body, typ) -> (to_constr body, eff), to_constr typ) initial_goals in
+  let proofs = List.map (fun (_, body, typ) -> (to_constr body, to_constr typ)) initial_goals in
+  let proofs = match pinfo.possible_guard with
+    | None -> proofs
+    | Some (possible_guard, fixrelevances) ->
+      let env = Safe_typing.push_private_constants (Global.env()) eff.Evd.seff_private in
+      let fixbodies, fixtypes = List.split proofs in
+      let rec_declaration = prepare_recursive_declaration pinfo.cinfo fixtypes fixrelevances fixbodies in
+      let typing_flags = pinfo.info.typing_flags in
+      fst (make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration) in
+  let add_univ c = (Vars.universes_of_constr c, c) in
+  let proofs = List.map (fun (body, typ) -> ((add_univ body, eff), add_univ typ)) proofs in
   let () =
     if warn_incomplete then begin
       if Evd.has_shelved evd then warn_remaining_shelved_goals ()
@@ -2109,39 +2090,12 @@ module MutualEntry : sig
     (* Common to all recthms *)
     : pinfo:Proof_info.t
     -> uctx:UState.t
-    -> entry:proof_entry
+    -> proof_entry list
     -> Names.GlobRef.t list
 
 end = struct
 
-  (* XXX: Refactor this with the code in [Declare.declare_possibly_mutual_definitions] *)
-  let guess_decreasing env possible_guard (body, eff) =
-    let open Constr in
-    match Constr.kind body with
-    | Fix (_,(_,_,fixdefs as fixdecls)) | CoFix (_,(_,_,fixdefs as fixdecls)) ->
-      let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
-      let body, _ = make_recursive_body env possible_guard fixdecls in
-      (body, eff)
-    | _ -> assert false
-
-  let update_mutual_entry i entry uctx typ =
-    { entry with
-      proof_entry_body = ProofEntry.map_entry_body ~f:(fun (body, eff) -> (select_body i body, eff)) entry.proof_entry_body;
-      proof_entry_type = Some (UState.nf_universes uctx typ) }
-
-  let declare_possibly_mutual_definitions ~pinfo ~uctx ~entry =
-    let entries = match pinfo.Proof_info.possible_guard with
-    | None ->
-      (* Not a recursive statement *)
-      [entry]
-    | Some possible_guard ->
-      (* Try all combinations... not optimal *)
-      let env = Global.env() in
-      let typing_flags = pinfo.Proof_info.info.Info.typing_flags in
-      let env = Environ.update_typing_flags ?typing_flags env in
-      let entry = ProofEntry.map_proof_entry entry ~f:(guess_decreasing env possible_guard) in
-      List.map_i (fun i CInfo.{typ} -> update_mutual_entry i entry uctx typ) 0 pinfo.Proof_info.cinfo
-    in
+  let declare_possibly_mutual_definitions ~pinfo ~uctx entries =
     let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } } = pinfo in
     let refs = List.map2 (fun CInfo.{name; impargs} ->
         declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) pinfo.Proof_info.cinfo entries in
@@ -2187,7 +2141,7 @@ let { Goptions.get = get_keep_admitted_vars } =
     ~value:true
     ()
 
-let compute_proof_using_for_admitted proof typs iproof =
+let compute_proof_using_for_admitted pinfo proof typs iproof =
   if not (get_keep_admitted_vars ()) || not (Lib.sections_are_opened()) then None
   else match get_used_variables proof with
     | Some _ as x -> x
@@ -2200,6 +2154,12 @@ let compute_proof_using_for_admitted proof typs iproof =
         (* [pproof] is evar-normalized by [partial_proof]. We don't
            count variables appearing only in the type of evars. *)
         let vars = Id.Set.union ids_def ids_typ in
+        let vars = match pinfo.Proof_info.possible_guard with
+          | Some _ ->
+            let recvars = Id.Set.of_list (List.map (fun CInfo.{name} -> name) pinfo.cinfo) in
+            Id.Set.diff vars recvars
+          | None -> vars
+        in
         Some (Environ.really_needed env vars)
 
 let check_type_evars_solved env sigma typ =
@@ -2225,14 +2185,15 @@ let save_admitted ~pm ~proof =
   let typs = List.map pi3 (Proofview.initial_goals entry) in
   let iproof = get proof in
   List.iter (check_type_evars_solved (Global.env()) sigma) typs;
-  let sec_vars = compute_proof_using_for_admitted proof typs iproof in
+  let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
   (* We have the choice of taking CInfo.typ and initial_euctx or or
      the typs and uctx from the type. By uniformity we would like to
      do the same as in save_lemma_admitted_delayed, but we would need
      for that that fixpoints are represented with multi-statements; so
      we take the initial types *)
-  let typs = List.map (fun CInfo.{typ} -> typ) proof.pinfo.cinfo in
-  let uctx = proof.initial_euctx in
+  let sigma = Evd.minimize_universes sigma in
+  let typs = List.map (EConstr.to_constr sigma) typs in
+  let uctx = Evd.evar_universe_context sigma in
   finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars typs
 
 (************************************************************************)
@@ -2308,8 +2269,8 @@ let finish_proof ~pm proof_obj proof_info =
   let open Proof_ending in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
-    let entry, uctx = check_single_entry proof_obj "Proof.save" in
-    pm, MutualEntry.declare_possibly_mutual_definitions ~entry ~uctx ~pinfo:proof_info
+    let {entries; uctx} = proof_obj in
+    pm, MutualEntry.declare_possibly_mutual_definitions ~uctx ~pinfo:proof_info entries
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
