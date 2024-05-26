@@ -1533,7 +1533,7 @@ module Proof = struct
 module Proof_info = struct
 
   type t =
-    { cinfo : Constr.t CInfo.t list
+    { cinfo : unit CInfo.t list
     (** cinfo contains each individual constant info in a mutual decl *)
     ; info : Info.t
     ; proof_ending : Proof_ending.t CEphemeron.key
@@ -1625,7 +1625,7 @@ let start_proof_core ~name ~pinfo ?using sigma goals =
 let start_core ~info ~cinfo ?proof_ending ?using sigma =
   let { CInfo.name; typ; _ } = cinfo in
   check_exists name;
-  let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
+  let cinfo = [{ cinfo with CInfo.typ = () }] in
   let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
   start_proof_core ~name ~pinfo ?using sigma [None,typ]
 
@@ -1655,7 +1655,7 @@ let start_equations ~name ~info ~hook ~types sigma goals =
 let start_definition ~info ~cinfo ?using sigma =
   let { CInfo.name; typ; args } = cinfo in
   let init_tac = Tactics.auto_intros_tac args in
-  let pinfo = Proof_info.make ~cinfo:[cinfo] ~info () in
+  let pinfo = Proof_info.make ~cinfo:[{cinfo with typ = ()}] ~info () in
   let env = Global.env () in
   let using = Option.map (interp_proof_using_cinfo env sigma [cinfo]) using in
   let lemma = start_proof_core ~name ~pinfo ?using sigma [None, EConstr.of_constr typ] in
@@ -1674,7 +1674,7 @@ let start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma =
   match cinfo with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
   | { CInfo.name; _} :: _ as thms ->
-    let pinfo = Proof_info.make ~cinfo ~info ~possible_guard () in
+    let pinfo = Proof_info.make ~cinfo:(List.map (fun cinfo -> {cinfo with CInfo.typ = ()}) cinfo) ~info ~possible_guard () in
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
     let env = Global.env () in
@@ -1991,8 +1991,7 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EConstr.t) tac =
-  let typ_ = EConstr.Unsafe.to_constr typ in
-  let cinfo = [CInfo.make ~name ~typ:typ_ ()] in
+  let cinfo = [CInfo.make ~name ~typ:() ()] in
   let info = Info.make ~poly () in
   let pinfo = Proof_info.make ~cinfo ~info () in
   let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
@@ -2174,7 +2173,7 @@ let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   | Proof_ending.End_obligation oinfo ->
     let declare_fun ~uctx ~mono_uctx_extra typ =
       List.hd (MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
-    let typ = Evarutil.nf_evars_universes (Evd.from_ctx uctx) (List.hd pinfo.Proof_info.cinfo).CInfo.typ in
+    let typ = match typs with [typ] -> typ | _ -> assert false in
     Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun sec_vars uctx
   | _ ->
     let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars typs in
