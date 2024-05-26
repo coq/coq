@@ -1616,13 +1616,15 @@ let initialize_named_context_for_proof () =
       let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof ()) ?using sigma =
+let start_proof_core ~name ~pinfo ?using sigma goals =
   (* In ?sign, we remove the bodies of variables in the named context
      marked "opaque", this is a hack tho, see #10446, and
      build_constant_by_tactic uses a different method that would break
      program_inference_hook *)
   let { Proof_info.info = { Info.poly; typing_flags; _ }; _ } = pinfo in
-  let goals = [Global.env_of_context sign, typ] in
+  let goals = List.map (fun (sign, typ) ->
+      let sign = match sign with None -> initialize_named_context_for_proof () | Some sign -> sign in
+      (Global.env_of_context sign, typ)) goals in
   let proof = Proof.start ~name ~poly ?typing_flags sigma goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
@@ -1640,7 +1642,7 @@ let start_core ~info ~cinfo ?proof_ending ?using sigma =
   check_exists name;
   let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
   let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
-  start_proof_core ~name ~typ ~pinfo ?sign:None ?using sigma
+  start_proof_core ~name ~pinfo ?using sigma [None,typ]
 
 let start = start_core ?proof_ending:None
 
@@ -1683,7 +1685,7 @@ let start_definition ~info ~cinfo ?using sigma =
   let pinfo = Proof_info.make ~cinfo:[cinfo] ~info () in
   let env = Global.env () in
   let using = Option.map (interp_proof_using_cinfo env sigma [cinfo]) using in
-  let lemma = start_proof_core ~name ~typ:(EConstr.of_constr typ) ~pinfo ?sign:None ?using sigma in
+  let lemma = start_proof_core ~name ~pinfo ?using sigma [None, EConstr.of_constr typ] in
   map lemma ~f:(fun p ->
       pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
@@ -1712,7 +1714,7 @@ let start_mutual_definitions ~info ~cinfo ?bodies ~possible_guard ?using sigma =
     let typ = EConstr.of_constr typ in
     let env = Global.env () in
     let using = Option.map (interp_proof_using_cinfo env sigma cinfo) using in
-    let lemma = start_proof_core ~name ~typ ~pinfo ?using sigma in
+    let lemma = start_proof_core ~name ~pinfo ?using sigma [None, typ] in
     let lemma = map lemma ~f:(fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) in
     let () =
@@ -2012,7 +2014,7 @@ let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EC
   let cinfo = [CInfo.make ~name ~typ:typ_ ()] in
   let info = Info.make ~poly () in
   let pinfo = Proof_info.make ~cinfo ~info () in
-  let pf = start_proof_core ~name ~typ ~pinfo ~sign sigma in
+  let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
   let pf, status = by tac pf in
   let { entries; uctx } = close_proof ?warn_incomplete ~opaque:Vernacexpr.Transparent ~keep_body_ucst_separate:false pf in
   let { Proof.sigma } = Proof.data pf.proof in
