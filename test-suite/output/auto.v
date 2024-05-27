@@ -5,8 +5,8 @@ Succeed info_auto.
 Succeed debug auto.
 Succeed info_eauto.
 debug eauto.
-Qed.
+Defined.
 
 Goal True.
 info_trivial.
-Qed.
+Defined.
