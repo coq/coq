@@ -589,3 +589,58 @@ destruct n as [|n']. apply a. apply (c' n').
 Defined.
 
 End TheoremWith.
+
+Module HighlyNested.
+
+Inductive T A := E : A * list A * list (list A) -> T A.
+Inductive U := H : T (T U) -> U.
+
+Definition map {A B : Type} (f : A -> B) :=
+  fix map (l : list A) : list B :=
+  match l with
+  | nil => nil
+  | cons a t => cons (f a) (map t)
+  end.
+
+Definition mapT {A B} (f:A -> B) t :=
+  match t with E _ (a, l, ll) => E _ (f a, map f l, map (map f) ll) end.
+
+Fixpoint mapU (f:U->U) u :=
+  match u with
+  | H t => H (mapT (mapT (mapU f)) t)
+  end.
+
+End HighlyNested.
+
+Module TestIntersection.
+
+(* This example used to stress rtree.inter (3 nested types) *)
+
+Inductive Pmap_ne (A : Type) :=
+| PNode010 : A -> Pmap_ne A
+| PNode110 : Pmap_ne A -> A -> Pmap_ne A.
+Arguments PNode010 {A} _ : assert.
+Arguments PNode110 {A} _ _ : assert.
+
+Variant Pmap (A : Type) := PEmpty : Pmap A | PNodes : Pmap_ne A -> Pmap A.
+Arguments PEmpty {A}.
+Arguments PNodes {A} _.
+
+Definition Pmap_ne_case {A B} (t : Pmap_ne A) (f : Pmap A -> option A -> Pmap A -> B) : B :=
+  match t with
+  | PNode010 x => f PEmpty (Some x) PEmpty
+  | PNode110 l x => f (PNodes l) (Some x) PEmpty
+  end.
+Definition Pmap_fold_aux {A B} (go : B -> Pmap_ne A -> B) (y : B) (mt : Pmap A) : B :=
+  match mt with PEmpty => y | PNodes t => go y t end.
+Definition Pmap_ne_fold {A B} (f : A -> B -> B) : B -> Pmap_ne A -> B :=
+  fix go y t :=
+    Pmap_ne_case t (fun ml mx mr => Pmap_fold_aux go
+      (Pmap_fold_aux go match mx with None => y | Some x => f x y end ml) mr).
+Definition Pmap_fold {A} {B} (f : A -> B -> B) := Pmap_fold_aux (Pmap_ne_fold f).
+
+Inductive test := Test : Pmap test -> test.
+Fixpoint test_size (t : test) : nat :=
+  let 'Test ts := t in S (Pmap_fold (fun t' => plus (test_size t')) 0%nat ts).
+
+End TestIntersection.
