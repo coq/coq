@@ -88,7 +88,7 @@ let pr_cumul_univdecl_instance l extensible =
 
 let pr_univdecl_constraints l extensible =
   if List.is_empty l && extensible then mt ()
-  else str"|" ++ spc () ++ prlist_with_sep (fun () -> strbrk" | ") pr_uconstraint l ++
+  else pr_spcbar () ++ prlist_with_sep pr_comma pr_uconstraint l ++
        (if extensible then str"+" else mt())
 
 let pr_universe_decl l =
