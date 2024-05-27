@@ -279,7 +279,7 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
     mb.mod_type, me, mb.mod_delta, cst, vm
   | MEapply (fe,mp1) ->
     translate_apply ustate env inl (translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe) mp1 mk_alg_app
-  |MEwith(me, with_decl) ->
+  | MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
     check_with_alg ustate vmstate env mp (translate_mse (cst, ustate) (vm, vmstate) env None inl me) with_decl
@@ -297,13 +297,13 @@ let mk_modtype mp ty reso =
   { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
 
 let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse = function
-  |[] ->
+  | [] ->
     let sign,alg,reso,cst,vm = translate_mse (cst, ustate) (vm, vmstate) env (if is_mod then Some mp else None) inl mse in
     let sign,reso =
       if is_mod then sign,reso
       else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
     sign, MENoFunctor alg, reso, cst, vm
-  |(mbid, ty, ty_inl) :: params ->
+  | (mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp_id ty_inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
@@ -353,7 +353,7 @@ let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
   | MType (params,ty) ->
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl (params,ty) in
     module_body_of_type mp mtb, cst, vm
-  |MExpr (params,mse,oty) ->
+  | MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst,vm) = translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso) restype
@@ -379,7 +379,7 @@ let rec forbid_incl_signed_functor env = function
     | MoreFunctor _, None, Algebraic me ->
       (* functor, no signature yet, a definition which may be restricted *)
       forbid_incl_signed_functor env (unfunct me)
-    |_ -> ()
+    | _ -> ()
 
 let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = function
   | MEident mp1 ->

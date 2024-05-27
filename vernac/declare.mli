@@ -453,7 +453,7 @@ val build_by_tactic
   -> poly:bool
   -> typ:EConstr.types
   -> unit Proofview.tactic
-  -> Constr.constr * Constr.types option * (UState.named_universes_entry) * bool * UState.t
+  -> Constr.constr * Constr.types option * UState.named_universes_entry * bool * UState.t
 
 (** {2 Program mode API} *)
 
@@ -599,7 +599,7 @@ val is_local_constant : Constant.t -> bool
 
 module Internal : sig
 
-  (* Liboject exports *)
+  (* Libobject exports *)
   module Constant : sig
     type t
     val tag : (Id.t * t) Libobject.Dyn.tag
