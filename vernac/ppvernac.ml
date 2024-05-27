@@ -548,7 +548,7 @@ let pr_intarg n = spc () ++ int n
 let pr_vernac_attributes =
   function
   | [] -> mt ()
-  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
+  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ spc ()
 
 let pr_oc coe ins = match coe, ins with
   | NoCoercion, NoInstance -> str" :"
