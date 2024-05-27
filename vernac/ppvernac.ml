@@ -73,6 +73,11 @@ let pr_variance_lident (lid,v) =
   let v = Option.cata UVars.Variance.pr (mt()) v in
   v ++ pr_lident lid
 
+let pr_univdecl_qualities l extensible =
+  (* "extensible" not really supported in syntax currently *)
+  if List.is_empty l then mt()
+  else prlist_with_sep spc pr_lident l ++ strbrk " | "
+
 let pr_univdecl_instance l extensible =
   prlist_with_sep spc pr_lident l ++
   (if extensible then str"+" else mt ())
@@ -91,16 +96,22 @@ let pr_universe_decl l =
   match l with
   | None -> mt ()
   | Some l ->
-    str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+    str"@{" ++
+    pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
+    pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    str "}"
 
 let pr_cumul_univ_decl l =
   let open UState in
   match l with
   | None -> mt ()
   | Some l ->
-    str"@{" ++ pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+    str"@{" ++
+    pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
+    pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    str "}"
 
 let pr_ident_decl (lid, l) =
   pr_lident lid ++ pr_universe_decl l
