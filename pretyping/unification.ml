@@ -783,7 +783,6 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let evarsubst = if flags.use_evars_eagerly_in_conv_on_closed_terms then substn.subst_evars else subst.subst_evars in
     (metasubst, evarsubst)
   in
-  let sigma = subst.subst_sigma in
   let rec unirec_rec (curenv,nb as curenvnb) pb opt (substn : subst0) ?(nargs=0) curm curn =
     let { subst_sigma = sigma; subst_metas = metasubst; subst_evars = evarsubst } = substn in
     let cM = Evarutil.whd_head_evar sigma curm
@@ -1073,8 +1072,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   and unify_same_proj (curenv, nb as curenvnb) cv_pb opt substn c1 c2 =
     let substn = unirec_rec curenvnb CONV opt substn c1 c2 in
       try (* Force unification of the types to fill in parameters *)
-        let ty1 = get_type_of curenv ~lax:true sigma c1 in
-        let ty2 = get_type_of curenv ~lax:true sigma c2 in
+        let ty1 = get_type_of curenv ~lax:true substn.subst_sigma c1 in
+        let ty2 = get_type_of curenv ~lax:true substn.subst_sigma c2 in
           unify_0_with_initial_metas substn true curenv cv_pb
             { flags with modulo_conv_on_closed_terms = Some TransparentState.full;
               modulo_delta = TransparentState.full;
@@ -1252,6 +1251,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
 
+  let sigma = subst.subst_sigma in
   debug_tactic_unification (fun () ->
       str "Starting unification:" ++ spc() ++
       Termops.Internal.print_constr_env env sigma (fst m) ++ strbrk" ~= " ++
