@@ -778,7 +778,17 @@ let rec compile_lam env cenv lam sz cont =
     (* Hack: brutally pierce through the abstraction of PArray *)
     let dummy = KerName.make (ModPath.MPfile DirPath.empty) (Names.Label.of_id @@ Id.of_string "dummy") in
     let dummy = (MutInd.make1 dummy, 0) in
-    let ar = Lmakeblock (dummy, 0, args) in (* build the ocaml array *)
+    let ar, cont = match Vmlambda.as_value 0 args with
+    | None ->
+      (* build the ocaml array *)
+      Lmakeblock (dummy, 0, args), cont
+    | Some v ->
+      (* dump the blob as is, but copy the resulting parray afterwards so that
+         the blob is left untouched by modifications to the resulting parray *)
+      let lbl = Label.create () in
+      (* dummy label, the array will never be an accumulator *)
+      Lval v, Klabel lbl :: Kcamlprim (CAML_Arraycopy, lbl) :: cont
+    in
     let kind = Lmakeblock (dummy, 0, [|ar; def|]) in (* Parray.Array *)
     let v = Lmakeblock (dummy, 0, [|kind|]) (* the reference *) in
     compile_lam env cenv v sz cont
