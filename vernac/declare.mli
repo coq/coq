@@ -12,7 +12,7 @@ open Names
 
 (** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
-   environment. It also updates some accesory tables such as [Nametab]
+   environment. It also updates some accessory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
 (** We provide three main entry points:
@@ -131,12 +131,12 @@ val declare_definition
   -> Evd.evar_map
   -> GlobRef.t
 
-val declare_mutually_recursive
-  : info:Info.t
+val declare_mutual_definitions
+  :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
-  -> rec_declaration:Constr.rec_declaration
+  -> bodies:(Constr.t list * Sorts.relevance list)
   -> possible_guard:Pretyping.possible_guard
   -> ?using:Vernacexpr.section_subset_expr
   -> unit
@@ -205,7 +205,7 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by the Lemma vernaculars *)
-  val start_with_initialization
+  val start_definition
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t
     -> ?using:Vernacexpr.section_subset_expr
@@ -213,10 +213,10 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
-  val start_mutual_with_initialization
+  val start_mutual_definitions
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> ?init_terms:Constr.t option list
+    -> ?bodies:Constr.t option list
     -> possible_guard:Pretyping.possible_guard
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
@@ -536,15 +536,15 @@ val prepare_obligations
    also register [c] with the kernel. *)
 val add_definition :
      pm:OblState.t
-  -> cinfo:Constr.types CInfo.t
   -> info:Info.t
-  -> ?obl_hook: OblState.t Hook.g
-  -> ?term:Constr.t
+  -> cinfo:Constr.types CInfo.t
+  -> opaque:bool
   -> uctx:UState.t
+  -> ?body:Constr.t
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
   -> ?using:Vernacexpr.section_subset_expr
+  -> ?obl_hook: OblState.t Hook.g
   -> RetrieveObl.obligation_info
   -> OblState.t * progress
 
@@ -555,14 +555,16 @@ val add_definition :
 val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
-  -> ?obl_hook: OblState.t Hook.g
+  -> cinfo:Constr.types CInfo.t list
+  -> opaque:bool
   -> uctx:UState.t
+  -> bodies:Constr.t list
+  -> possible_guard:Pretyping.possible_guard
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
   -> ?using:Vernacexpr.section_subset_expr
-  -> possible_guard:Pretyping.possible_guard
-  -> (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
+  -> ?obl_hook: OblState.t Hook.g
+  -> RetrieveObl.obligation_info list
   -> OblState.t
 
 (** Implementation of the [Obligation] command *)
