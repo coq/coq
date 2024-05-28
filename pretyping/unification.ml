@@ -659,31 +659,39 @@ let subst_defined_metas_evars sigma (bl,el) c =
     | _ -> Constr.map substrec c
   in try Some (EConstr.of_constr (substrec c)) with Not_found -> None
 
+type 'a compat_result =
+| CompatAborted
+| CompatSuccess of 'a
+| CompatError of constr * constr
+
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
   match subst_defined_metas_evars sigma (metasubst,[]) tyM with
-  | None -> sigma
+  | None -> CompatAborted
   | Some m ->
   match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> sigma
-  | Some n ->
-    if is_ground_term sigma m && is_ground_term sigma n then
-      match infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
-      | Some sigma -> sigma
-      | None -> error_cannot_unify env sigma (m,n)
-    else sigma
-
-let check_compatibility_ustate env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
-  | None -> UnivProblem.Set.empty
-  | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
-  | None -> UnivProblem.Set.empty
+  | None -> CompatAborted
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
       match infer_conv_ustate ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
-      | Some uprob -> uprob
-      | None -> error_cannot_unify env sigma (m,n)
-    else UnivProblem.Set.empty
+      | Some uprob -> CompatSuccess (m, n, uprob)
+      | None -> CompatError (m, n)
+    else CompatAborted
+
+let check_compatibility_ustate env pbty flags substn tyM tyN =
+  match check_compatibility env pbty flags substn tyM tyN with
+  | CompatAborted -> UnivProblem.Set.empty
+  | CompatError (m, n) -> error_cannot_unify env (pi1 substn) (m,n)
+  | CompatSuccess (_, _, uprobs) -> uprobs
+
+let check_compatibility env pbty flags substn tyM tyN =
+  match check_compatibility env pbty flags substn tyM tyN with
+  | CompatAborted -> pi1 substn
+  | CompatError (m, n) -> error_cannot_unify env (pi1 substn) (m,n)
+  | CompatSuccess (m, n, uprobs) ->
+    let (sigma, _, _) = substn in
+    try Evd.add_universe_constraints sigma uprobs
+    with UGraph.UniverseInconsistency _ | Evd.UniversesDiffer ->
+      error_cannot_unify env sigma (m, n)
 
 let rec is_neutral env sigma ts t =
   let (f, l) = decompose_app sigma t in
