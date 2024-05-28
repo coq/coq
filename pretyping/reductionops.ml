@@ -1278,6 +1278,11 @@ let univproblem_univ_state =
     compare_instances = univproblem_compare_instances;
     compare_cumul_instances = univproblem_check_inductive_instances; }
 
+type genconv = {
+  genconv : 'a 'err. conv_pb -> l2r:bool -> Evd.evar_map -> TransparentState.t ->
+    Environ.env -> ('a, 'err) Conversion.generic_conversion_function
+}
+
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
   try
@@ -1299,7 +1304,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
-        match conv_fun pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
+        match conv_fun.genconv pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
         | Result.Ok sigma -> Some sigma
         | Result.Error None -> None
         | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
@@ -1309,8 +1314,8 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     let e = Exninfo.capture e in
     report_anomaly e
 
-let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Conversion.generic_conv pb ~l2r ~evars:(Evd.evar_handler sigma))
+let infer_conv = infer_conv_gen { genconv = fun pb ~l2r sigma ->
+      Conversion.generic_conv pb ~l2r ~evars:(Evd.evar_handler sigma) }
 
 let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
@@ -1344,15 +1349,15 @@ let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
 
 let vm_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
-  infer_conv_gen (fun pb ~l2r sigma ts ->
-      Vconv.vm_conv_gen pb (evars_of_evar_map sigma))
+  infer_conv_gen { genconv = fun pb ~l2r sigma ts ->
+      Vconv.vm_conv_gen pb (evars_of_evar_map sigma) }
     ~catch_incon:true ~pb env sigma t1 t2
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
 
 let native_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
-  infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
+  infer_conv_gen { genconv = fun pb ~l2r sigma ts -> native_conv_generic pb sigma }
     ~catch_incon:true ~pb env sigma t1 t2
 
 let check_hyps_inclusion env sigma x hyps =

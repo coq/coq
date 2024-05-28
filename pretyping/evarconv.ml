@@ -594,7 +594,7 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     v
   in
   let evar_handler = { (Evd.evar_handler sigma) with evar_expand } in
-  let conv pb ~l2r sigma = Conversion.generic_conv pb ~l2r ~evars:evar_handler in
+  let conv = { genconv = fun pb ~l2r sigma -> Conversion.generic_conv pb ~l2r ~evars:evar_handler } in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->
