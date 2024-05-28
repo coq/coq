@@ -483,7 +483,7 @@ Ltac2 exact1 ev c :=
         (Constr.Pretype.expected_oftype (Control.goal()))
         c
     in
-    Control.refine (fun _ => c)).
+    Std.exact_no_check c).
 
 Ltac2 Notation "exact" c(preterm) := exact1 false c.
 
