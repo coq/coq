@@ -60,10 +60,10 @@
 /dev/doc/release-process.md   @coq/contributing-process-maintainers
 /dev/doc/shield-icon.png      @coq/contributing-process-maintainers
 /dev/doc/SProp.md             @coq/universes-maintainers
-/dev/doc/style.txt            @coq/contributing-process-maintainers
+/dev/doc/style.md             @coq/contributing-process-maintainers
 /dev/doc/unification.txt      @coq/pretyper-maintainers
 /dev/doc/universes.md         @coq/universes-maintainers
-/dev/doc/xml-protocol         @coq/stm-maintainers
+/dev/doc/xml-protocol.md      @coq/stm-maintainers
 
 /man/                  @coq/doc-maintainers
 
