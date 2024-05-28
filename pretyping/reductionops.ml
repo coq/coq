@@ -1304,10 +1304,27 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
-        match conv_fun.genconv pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
-        | Result.Ok sigma -> Some sigma
-        | Result.Error None -> None
-        | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
+        (* First try conversion with postponed universe problems as a kind of FO
+           approximation. This may result in unsatisfiable constraints even if
+           some unfoldings of the arguments could have been unified, but this
+           should be exceedingly rare. *)
+        let ans = match conv_fun.genconv pb ~l2r:false sigma ts env (UnivProblem.Set.empty, univproblem_univ_state) x y with
+        | Result.Ok cstr -> Some cstr
+        | Result.Error None ->
+          None (* no universe unification can make these terms convertible *)
+        | Result.Error (Some e) -> Empty.abort e
+        in
+        match ans with
+        | None -> None
+        | Some cstr ->
+          match Evd.add_universe_constraints sigma cstr with
+          | sigma -> Some sigma
+          | exception UGraph.UniverseInconsistency _ | exception Evd.UniversesDiffer ->
+            (* Retry with local universe checking, which may imply constant unfolding *)
+            match conv_fun.genconv pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
+            | Result.Ok sigma -> Some sigma
+            | Result.Error None -> None
+            | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
   with
   | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
