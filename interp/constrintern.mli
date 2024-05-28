@@ -62,9 +62,6 @@ val compute_internalization_env : env -> evar_map -> ?impls:internalization_env 
   Id.t list -> types list -> Impargs.manual_implicits list ->
   internalization_env
 
-val set_obligation_internalization_data :
-  Id.t -> var_internalization_data -> var_internalization_data
-
 val implicits_of_decl_in_internalization_env :
   Id.t -> internalization_env -> Impargs.implicit_status list
 
