@@ -74,7 +74,7 @@ type notation_data =
       nota_body : glb_tacexpr;
     }
 
-let ltac_notations = Summary.ref KNmap.empty ~stage:Summary.Stage.Synterp ~name:"ltac2-notations"
+let ltac_notations = Summary.ref KNmap.empty ~name:"ltac2-notations"
 
 let define_global kn e =
   let state = !ltac_state in
