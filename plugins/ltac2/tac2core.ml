@@ -1336,9 +1336,11 @@ module type MapType = sig
   val repr : S.elt Tac2ffi.repr
 end
 
+type ('a,'set,'map) map =
+  (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
+
 module MapTypeV = struct
-  type _ t = Map : (module MapType with type S.elt = 't and type S.t = 'set and type valmap = 'map)
-    -> ('t * 'set * 'map) t
+  type _ t = Map : ('t, 'set, 'map) map -> ('t * 'set * 'map) t
 end
 
 module MapMap = MapTagDyn.Map(MapTypeV)
@@ -1555,6 +1557,22 @@ let () =
   let (module V) = get_map tag in
   let Refl = V.valmap_eq in
   tag_set tag (V.M.domain m)
+
+let () =
+  define "fmap_min_binding" (map_repr @-> ret valexpr)
+    @@ fun (TaggedMap (tag,m)) ->
+  let (module V) = get_map tag in
+  let Refl = V.valmap_eq in
+  let o = V.M.min_binding_opt m in
+  Tac2ffi.(of_option (of_pair (repr_of V.repr) identity)) o
+
+let () =
+  define "fmap_max_binding" (map_repr @-> ret valexpr)
+    @@ fun (TaggedMap (tag,m)) ->
+  let (module V) = get_map tag in
+  let Refl = V.valmap_eq in
+  let o = V.M.max_binding_opt m in
+  Tac2ffi.(of_option (of_pair (repr_of V.repr) identity)) o
 
 (** ML types *)
 

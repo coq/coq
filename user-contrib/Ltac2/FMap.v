@@ -35,4 +35,10 @@ Ltac2 @ external cardinal : ('k, 'v) t -> int := "coq-core.plugins.ltac2" "fmap_
 
 Ltac2 @ external bindings : ('k, 'v) t -> ('k * 'v) list := "coq-core.plugins.ltac2" "fmap_bindings".
 
+(** Not supported on maps created with tag [Ltac2.FSet.Tags.constant_tag]. *)
+Ltac2 @ external min_binding : ('k, 'v) t -> ('k * 'v) option := "coq-core.plugins.ltac2" "fmap_min_binding".
+
+(** Not supported on maps created with tag [Ltac2.FSet.Tags.constant_tag]. *)
+Ltac2 @ external max_binding : ('k, 'v) t -> ('k * 'v) option := "coq-core.plugins.ltac2" "fmap_max_binding".
+
 Ltac2 @ external domain : ('k, 'v) t -> 'k FSet.t := "coq-core.plugins.ltac2" "fmap_domain".
