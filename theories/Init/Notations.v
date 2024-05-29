@@ -69,7 +69,9 @@ Reserved Notation "{ x }" (at level 0, x at level 99).
 
 (** Notations for sigma-types or subsets *)
 
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "{ A }  +  { B }" (at level 50, left associativity).
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "A  +  { B }" (at level 50, left associativity).
 
 Reserved Notation "{ x | P }" (at level 0, x at level 99).

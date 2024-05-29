@@ -245,6 +245,16 @@ have to be observed for notations starting with a symbol, e.g., rules
 starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
 of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 
+.. warn:: Closed notations (i.e. starting and ending with a terminal symbol) should usually be at level 0 (default).
+   :name: closed-notation-not-level-0
+
+   It is usually better to put closed notations, that is the ones starting and ending with a terminal symbol, at level 0.
+
+.. warn:: Postfix notations (i.e. starting with a nonterminal symbol and ending with a terminal symbol) should usually be at level 1 (default).")
+   :name: postfix-notation-not-level-1
+
+   It is usually better to put postfix notations, that is the ones ending with a terminal symbol, at level 1.
+
 .. _UseOfNotationsForPrinting:
 
 Use of notations for printing

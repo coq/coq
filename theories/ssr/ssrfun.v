@@ -287,6 +287,7 @@ Reserved Notation "{ 'mono' f : x y /~ a }" (at level 0, f at level 99,
   x name, y name, format "{ 'mono'  f  :  x  y  /~  a }").
 
 Reserved Notation "@ 'id' T" (at level 10, T at level 8, format "@ 'id'  T").
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "@ 'sval'" (at level 10, format "@ 'sval'").
 
 (**

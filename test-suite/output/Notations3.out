@@ -116,6 +116,10 @@ where
      : nat * (nat * nat)
 {{0, 1, 2, 3}}
      : nat * (nat * (nat * nat))
+File "./output/Notations3.v", line 178, characters 0-174:
+Warning: Closed notations (i.e. starting and ending with a terminal symbol)
+should usually be at level 0 (default).
+[closed-notation-not-level-0,parsing,default]
 letpair x [1] = {0};
 return (1, 2, 3, 4)
      : nat * nat * nat * nat

@@ -1286,6 +1286,18 @@ let printability level typs vars onlyparsing reversibility = function
      (warn_non_reversible_notation reversibility; true)
     else onlyparsing),None
 
+let warn_closed_notation_not_level_0 =
+  CWarnings.create ~name:"closed-notation-not-level-0" ~category:CWarnings.CoreCategories.parsing
+    (fun () -> strbrk "Closed notations (i.e. starting and ending with a \
+                       terminal symbol) should usually be at level 0 \
+                       (default).")
+
+let warn_postfix_notation_not_level_1 =
+  CWarnings.create ~name:"postfix-notation-not-level-1" ~category:CWarnings.CoreCategories.parsing
+    (fun () -> strbrk "Postfix notations (i.e. starting with a \
+                       nonterminal symbol and ending with a terminal \
+                       symbol) should usually be at level 1 (default).")
+
 let find_precedence custom lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
@@ -1303,11 +1315,16 @@ let find_precedence custom lev etyps symbols onlyprint =
   match first_symbol with
   | None -> [],0
   | Some (NonTerminal x) ->
+      let msgs, lev = match last_is_terminal (), lev with
+        | false, _ -> [], lev
+        | true, None -> [fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting postfix notation at level 1.")], Some 1
+        | true, Some 1 -> [], Some 1
+        | true, Some n -> [fun () -> warn_postfix_notation_not_level_1 ()], Some n in
       let test () =
         if onlyprint then
           if Option.is_empty lev then
             user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
-          else [],Option.get lev
+          else msgs,Option.get lev
         else
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
@@ -1317,7 +1334,7 @@ let find_precedence custom lev etyps symbols onlyprint =
             | None ->
               ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)
             | Some 0 ->
-              ([],0)
+              (msgs,0)
             | _ ->
               user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
@@ -1328,15 +1345,17 @@ let find_precedence custom lev etyps symbols onlyprint =
             (* Give a default ? *)
             if Option.is_empty lev then
               user_err Pp.(str "Need an explicit level.")
-            else [],Option.get lev
+            else msgs,Option.get lev
       with Not_found ->
         if Option.is_empty lev then
           user_err Pp.(str "A left-recursive notation must have an explicit level.")
-        else [],Option.get lev)
+        else msgs,Option.get lev)
   | Some (Terminal _) when last_is_terminal () ->
-      if Option.is_empty lev then
-        ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0)
-      else [],Option.get lev
+      begin match lev with
+      | None -> [fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0
+      | Some 0 -> [], 0
+      | Some n -> [fun () -> warn_closed_notation_not_level_0 ()], n
+      end
   | Some _ ->
       if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
       [],Option.get lev
