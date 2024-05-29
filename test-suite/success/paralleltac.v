@@ -20,7 +20,7 @@ Fixpoint fib n := match n with
 Ltac sleep n :=
   try (assert (fib n = S (fib n)) by reflexivity).
 (* Tune that depending on your PC *)
-Let time := 18.
+#[local] Definition time := 18.
 
 Axiom P : nat -> Prop.
 Axiom P_triv : Type -> forall x, P x.

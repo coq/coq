@@ -116,8 +116,8 @@ Module MathComp.
 
    End Map.
 
-   Variables (n0 : nat) (T1 : eqType) (x1 : T1).
-   Variables (T2 : eqType) (x2 : T2) (f : T1 -> T2).
+   Parameters (n0 : nat) (T1 : eqType) (x1 : T1).
+   Parameters (T2 : eqType) (x2 : T2) (f : T1 -> T2).
 
    Lemma mapP s y : reflect (exists2 x, x \in s & y = f x) (y \in map f s).
    admit.
@@ -471,14 +471,14 @@ Module SSr.
 
    End RealMorph.
 
-   Variables (R : Real.structure) (S : Real.model) (phi : R -> S).
-   Hypothesis phiP : Real.morphism phi.
+   Parameters (R : Real.structure) (S : Real.model) (phi : R -> S).
+   Axiom phiP : Real.morphism phi.
    Implicit Types (x y z : R) (E : Real.set R).
-   Let phi_eq := Rmorph_eq phiP.
-   Let phiD := Real.morph_add phiP.
-   Let phi0 := Real.morph_zero phiP.
+   Definition phi_eq := Rmorph_eq phiP.
+   Definition phiD := Real.morph_add phiP.
+   Definition phi0 := Real.morph_zero phiP.
 
-   Let Radd0 x : 0 + x == x.
+   Lemma Radd0 x : 0 + x == x.
    Proof.
    by rewrite -phi_eq phiD phi0 add0R.
    Abort.

@@ -1,6 +1,6 @@
 (* Outside a section, Hypothesis, Variable, Axiom all obey implicit binders *)
-Hypothesis foo1 : forall {n : nat}, True.
-Variable foo1' : forall {n : nat}, True.
+Axiom foo1 : forall {n : nat}, True.
+Parameter foo1' : forall {n : nat}, True.
 Axiom foo1'' : forall {n : nat}, True.
 Check foo1 (n := 1).
 Check foo1' (n := 1).

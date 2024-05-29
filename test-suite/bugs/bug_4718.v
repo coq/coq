@@ -8,7 +8,7 @@ Goal @eq Type nat nat.
 congruence. (*bug*)
 Qed.
 
-Variable T : Type.
+Parameter T : Type.
 
 Goal @eq Type T T.
 congruence.

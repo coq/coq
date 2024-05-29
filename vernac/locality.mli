@@ -26,7 +26,10 @@ val default_scope : definition_scope
 
 val make_locality : bool option -> bool
 val make_non_locality : bool option -> bool
-val enforce_locality_exp : bool option -> Vernacexpr.discharge -> definition_scope
+
+(** [enforce_locality_exp given_locality expected thing_unexpected_outside_section replacement] *)
+val enforce_locality_exp : bool option -> Vernacexpr.discharge -> string -> string -> definition_scope
+
 val enforce_locality : bool option -> bool
 
 (** For commands whose default is to not discharge but to export:

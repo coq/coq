@@ -53,7 +53,7 @@ Check X.s1.
 Check X.s2.
 
 Module Y.
-  Let s3 := MKL x3.
+  Definition s3 := MKL x3.
   Canonical Structure s3.
   Check (refl_equal _ : l _ = x3).
 End Y.
@@ -61,7 +61,7 @@ Fail Check (refl_equal _ : l _ = x3).
 Fail Check s3.
 
 Module V.
-  #[canonical] Let s3 := MKL x3.
+  #[canonical] Definition s3 := MKL x3.
   Check (refl_equal _ : l _ = x3).
 End V.
 

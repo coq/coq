@@ -1,5 +1,5 @@
-Variables P Q : nat -> Prop.
-Variable f : nat -> nat.
+Parameter P Q : nat -> Prop.
+Parameter f : nat -> nat.
 
 Goal forall (x:nat), (forall y, P y -> forall z, Q z -> y=f z -> False) -> False.
 Proof.

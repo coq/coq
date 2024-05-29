@@ -14,12 +14,12 @@ Require Import ssreflect.
 
 Require Import ssrbool TestSuite.ssr_mini_mathcomp.
 
-Variable T : Type.
+Parameter T : Type.
 
 Lemma test0 : forall a b c d : T, True.
 Proof. by move=> a b {a} a c; exact I. Qed.
 
-Variable P : T -> Prop.
+Parameter P : T -> Prop.
 
 Lemma test1 : forall a b c : T, P a -> forall d : T, True.
 Proof. move=> a b {a} a _ d; exact I. Qed.

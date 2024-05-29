@@ -39,8 +39,8 @@ Class Isomorphic {C : PreCategory} s d := {
     isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic }.
 Coercion morphism_isomorphic : Isomorphic >-> morphism.
 
-Variable C : PreCategory.
-Variables s d : C.
+Parameter C : PreCategory.
+Parameters s d : C.
 
 Definition path_isomorphic (i j : Isomorphic s d)
 : @morphism_isomorphic _ _ _ i = @morphism_isomorphic _ _ _ j -> i = j.

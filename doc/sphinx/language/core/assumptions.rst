@@ -178,8 +178,8 @@ has type :n:`@type`.
    which makes the defined :n:`@ident`\s accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
 
-   Similarly, :cmd:`Hypothesis`, :cmd:`Variable` and their plural forms are equivalent.  Outside
-   of a section, these are equivalent to :n:`Local Parameter`.  Inside a section, the
+   Similarly, :cmd:`Hypothesis`, :cmd:`Variable` and their plural forms are equivalent.
+   They should only be used inside :ref:`section-mechanism`. The
    :n:`@ident`\s defined are only accessible within the section.  When the current section
    is closed, the :n:`@ident`\(s) become undefined and every object depending on them will be explicitly
    parameterized (i.e., the variables are *discharged*).  See Section :ref:`section-mechanism`.
@@ -202,10 +202,12 @@ has type :n:`@type`.
    :name: ‘ident’ already exists. (Axiom)
    :undocumented:
 
-.. warn:: @ident is declared as a local axiom
+.. warn:: Use of "Variable" or "Hypothesis" outside sections behaves as "#[local] Parameter" or "#[local] Axiom".
 
    Warning generated when using :cmd:`Variable` or its equivalent
    instead of :n:`Local Parameter` or its equivalent.
+   This message is an error by default, it may be convenient to disable it
+   while debuging.
 
 .. note::
    We advise using the commands :cmd:`Axiom`, :cmd:`Conjecture` and

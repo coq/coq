@@ -165,7 +165,7 @@ Set Warnings "syntax".
 
 
 Axiom eq0le0 : forall (n : nat) (x : n = 0), n <= 0.
-Variable eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
+Parameter eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
 Axiom eq0le0'' : forall (n : nat) {x : n = 0}, n <= 0.
 Definition eq0le0''' : forall (n : nat) {x : n = 0}, n <= 0. Admitted.
 Fail Axiom eq0le0'''' : forall [n : nat] {x : n = 0}, n <= 0.

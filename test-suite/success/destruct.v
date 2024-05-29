@@ -63,8 +63,8 @@ Abort.
 
 (* The calls to "destruct" below did not work before revision 12356 *)
 
-Variable A0:Type.
-Variable P:A0->Type.
+Parameter A0:Type.
+Parameter P:A0->Type.
 Require Import JMeq.
 Goal forall a b (p:P a) (q:P b),
   forall H:a = b, eq_rect a P p b H = q -> JMeq (existT _ a p) (existT _ b q).

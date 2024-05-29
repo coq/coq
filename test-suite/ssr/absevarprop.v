@@ -24,9 +24,9 @@ Definition R := fun (x : nat) (p : P x) m (q : P (x+1)) => m > 0.
 
 Inductive myEx : Type := ExI : forall n (pn : P n) pn', Q n pn -> R n pn n pn' -> myEx.
 
-Variable P1 : P 1.
-Variable P11 : P (1 + 1).
-Variable Q1 : forall P1, Q 1 P1.
+Parameter P1 : P 1.
+Parameter P11 : P (1 + 1).
+Parameter Q1 : forall P1, Q 1 P1.
 
 Lemma testmE1 : myEx.
 Proof.

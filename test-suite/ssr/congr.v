@@ -26,8 +26,8 @@ Definition equals T (A B : T) := A = B.
 Lemma test3 : forall a b : nat, a = b -> equals nat (a + b) (b + b).
 Proof. move=> a b E; congr (_ + _); exact E. Qed.
 
-Variable S : eqType.
-Variable f : nat -> S.
+Parameter S : eqType.
+Parameter f : nat -> S.
 Coercion f : nat >-> Equality.sort.
 
 Lemma test4 : forall a b : nat, b = a -> @eq S (b + b) (a + a).

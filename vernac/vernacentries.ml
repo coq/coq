@@ -673,7 +673,8 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
     atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
-  let scope = enforce_locality_exp local discharge in
+  let scope = enforce_locality_exp atts.locality discharge
+                "\"Let\"" "\"#[local] Definition\"" in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
   start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
@@ -684,7 +685,8 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
     atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
-  let scope = enforce_locality_exp local discharge in
+  let scope = enforce_locality_exp atts.locality discharge
+                "\"Let\"" "\"#[local] Definition\"" in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
@@ -712,7 +714,7 @@ let vernac_start_proof ~atts kind l =
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   let local, poly, program_mode, user_warns, typing_flags, using =
     atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
-  let scope = enforce_locality_exp local NoDischarge in
+  let scope = enforce_locality_exp local NoDischarge "" "" in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags
@@ -741,7 +743,9 @@ let vernac_assumption ~atts discharge kind l inline =
   let open DefAttributes in
   let local, poly, program_mode, using, user_warns =
     atts.locality, atts.polymorphic, atts.program, atts.using, atts.user_warns in
-  let scope = enforce_locality_exp local discharge in
+  let scope = enforce_locality_exp atts.locality discharge
+                "\"Variable\" or \"Hypothesis\""
+                "\"#[local] Parameter\" or \"#[local] Axiom\"" in
   if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
@@ -1047,7 +1051,8 @@ let preprocess_inductive_decl ~atts kind indl =
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  let scope = enforce_locality_exp atts.DefAttributes.locality discharge in
+  let scope = enforce_locality_exp atts.DefAttributes.locality discharge
+    "\"Let Fixpoint\"" "\"#[local] Fixpoint\"" in
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
@@ -1076,7 +1081,8 @@ let vernac_fixpoint ~atts ~pm discharge l =
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  let scope = enforce_locality_exp atts.DefAttributes.locality discharge in
+  let scope = enforce_locality_exp atts.DefAttributes.locality discharge
+    "\"Let CoFixpoint\"" "\"#[local] CoFixpoint\"" in
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 

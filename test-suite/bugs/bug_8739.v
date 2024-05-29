@@ -66,7 +66,7 @@ Open Scope category_scope.
 Open Scope homset_scope.
 Open Scope morphism_scope.
 
-Context {C : Category}.
+#[warning="context-outside-section"] Context {C : Category}.
 
 Class Isomorphism (x y : C) : Type := {
   to   :: x ~> y;

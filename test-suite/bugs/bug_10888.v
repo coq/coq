@@ -1,6 +1,5 @@
-
 Module Type T.
-Context {A:Type}.
+#[warning="context-outside-section"] Context {A:Type}.
 End T.
 
 Module M(X:T).

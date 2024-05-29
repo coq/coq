@@ -57,9 +57,9 @@ Definition functor_category (C D : PreCategory) : PreCategory.
 Defined.
 
 Local Notation "C -> D" := (functor_category C D) : category_scope.
-Variable C1 : PreCategory.
-Variable C2 : PreCategory.
-Variable D : PreCategory.
+Parameter C1 : PreCategory.
+Parameter C2 : PreCategory.
+Parameter D : PreCategory.
 
 Definition functor_object_of
 : (C1 -> (C2 -> D))%category -> (C1 * C2 -> D)%category.

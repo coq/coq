@@ -221,8 +221,18 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
+let warn_context_outside_section =
+  CWarnings.create ~name:"context-outside-section"
+    ~category:CWarnings.CoreCategories.vernacular
+    ~default:CWarnings.AsError
+    Pp.(fun () -> strbrk "Use of \"Context\" outside sections behaves \
+                          as \"#[local] Parameter\" or \"#[local] \
+                          Axiom\" followed by \"Existing Instance\" \
+                          for typeclasses.")
+
 let do_context ~program_mode ~poly ctx =
   let sec = Lib.sections_are_opened () in
+  if not sec then warn_context_outside_section ();
   if Dumpglob.dump () then begin
     let l = List.map (function
         | Constrexpr.CLocalAssum (l, _, _, _) ->

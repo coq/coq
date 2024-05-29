@@ -422,7 +422,7 @@ Module Restrict.
 End Restrict.
 
 Module F.
-  Context {A B : Type}.
+  #[warning="context-outside-section"] Context {A B : Type}.
   Definition foo : Type := B.
 End F.
 

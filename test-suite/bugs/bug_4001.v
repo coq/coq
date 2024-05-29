@@ -4,8 +4,8 @@
 Set Implicit Arguments.
 Set Asymmetric Patterns.
 
-Variable A : Type.
-Variable typ : A -> Type.
+Parameter A : Type.
+Parameter typ : A -> Type.
 
 Inductive t : list A -> Type :=
 | snil  : t nil

@@ -11,7 +11,7 @@ If dtauto is changed to reduce lets in constructors before checking dependency,
 this test will need to be changed.
 *)
 
-Context (P Q : Type).
+Parameter (P Q : Type).
 Inductive Foo1 (X : Type) (x := X) := foo1 : let y := X in P -> Q -> Foo1 x.
 Inductive Foo2 (X : Type) (x := X) := foo2 : let y := X in P -> Q -> Foo2 y.
 

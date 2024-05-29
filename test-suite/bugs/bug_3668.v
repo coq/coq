@@ -11,7 +11,7 @@ Notation "A <~> B" := (Equiv A B) (at level 85).
 Axiom IsHProp : Type -> Type.
 Inductive Bool := true | false.
 Definition negb (b : Bool) := if b then false else true.
-Hypothesis LEM : forall A : Type, IsHProp A -> A + (A -> False).
+Axiom LEM : forall A : Type, IsHProp A -> A + (A -> False).
 Axiom cheat : forall {A},A.
 Module NonPrim.
   Class Contr (A : Type) := { center : A ; contr : (forall y : A, center = y) }.

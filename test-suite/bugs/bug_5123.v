@@ -13,7 +13,7 @@ Require Bool.
 
 #[export] Instance Bool_eqdec : Eqdec bool := Bool.bool_dec.
 
-Context `{vect_sigT_eqdec : forall A : Type, Eqdec A -> Eqdec {a : nat & vect A a}}.
+#[warning="context-outside-section"] Context `{vect_sigT_eqdec : forall A : Type, Eqdec A -> Eqdec {a : nat & vect A a}}.
 
 Typeclasses eauto := debug.
 

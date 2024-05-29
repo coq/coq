@@ -1,15 +1,15 @@
 Require Import Setoid.
 
-Variable X : Set.
+Parameter X : Set.
 
-Variable f : X -> X.
-Variable g : X -> X -> X.
-Variable h : nat -> X -> X.
+Parameter f : X -> X.
+Parameter g : X -> X -> X.
+Parameter h : nat -> X -> X.
 
-Variable lem0 : forall x, f (f x) = f x.
-Variable lem1 : forall x, g x x = f x.
-Variable lem2 : forall n x, h (S n) x = g (h n x) (h n x).
-Variable lem3 : forall x, h 0 x = x.
+Parameter lem0 : forall x, f (f x) = f x.
+Parameter lem1 : forall x, g x x = f x.
+Parameter lem2 : forall n x, h (S n) x = g (h n x) (h n x).
+Parameter lem3 : forall x, h 0 x = x.
 
 #[export] Hint Rewrite lem0 lem1 lem2 lem3 : rew.
 

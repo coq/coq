@@ -1,4 +1,4 @@
-Variable Ack : nat -> nat -> nat.
+Parameter Ack : nat -> nat -> nat.
 
 Axiom Ack0 : forall m : nat, Ack 0 m = S m.
 Axiom Ack1 : forall n : nat, Ack (S n) 0 = Ack n 1.

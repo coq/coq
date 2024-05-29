@@ -4,8 +4,8 @@ Module S.
   Record state (u : unit) :=
     { p : nat -> nat }.
 
-  Context (u : unit).
-  Context (s1 s2 : state u).
+  Parameter (u : unit).
+  Parameter (s1 s2 : state u).
 
   (* Unifying the compatibility constant with the primitive projection *)
   Goal exists n, ltac:(exact (p u)) s1 n = p _ s1 1.

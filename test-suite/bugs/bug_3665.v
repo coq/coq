@@ -18,8 +18,8 @@ Abort.
 End withdefault.
 
 Module withnondefault.
-Variable T0 : Type -> Type.
-Variable T0hset: forall A, IsHSet (T0 A).
+Parameter T0 : Type -> Type.
+Parameter T0hset: forall A, IsHSet (T0 A).
 
 Canonical Structure nondefault_HSet := fun A =>(@BuildhSet (T0 A) (T0hset A)).
 Canonical Structure default_HSet := fun A P =>(@BuildhSet A P).

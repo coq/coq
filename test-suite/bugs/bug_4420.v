@@ -1,5 +1,5 @@
 Module foo.
-  Context (Char : Type).
+  Parameter (Char : Type).
   Axiom foo : Type -> Type.
   Goal foo Char = foo Char.
     change foo with (fun x => foo x).

@@ -7,7 +7,7 @@ Inductive Finx(n : nat) : Set :=
 | Fx1(i : nat)(e : n = S i)
 | FxS(i : nat)(f : Finx i)(e : n = S i).
 
-Context `{Finx_eqdec : forall n, Eqdec (Finx n)}.
+#[warning="context-outside-section"] Context `{Finx_eqdec : forall n, Eqdec (Finx n)}.
 
 Goal {x : Type & Eqdec x}.
   eexists.

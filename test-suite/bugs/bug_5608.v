@@ -8,7 +8,7 @@ Local Open Scope ctype_scope.
 Delimit Scope expr_scope with expr.
 Inductive base_type := TZ | TWord (logsz : nat).
 Inductive flat_type := Tbase (T : base_type) | Prod (A B : flat_type).
-Context {var : base_type -> Type}.
+#[warning="context-outside-section"] Context {var : base_type -> Type}.
 Fixpoint interp_flat_type (interp_base_type : base_type -> Type) (t :
 flat_type) :=
   match t with

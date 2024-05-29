@@ -1,13 +1,13 @@
 Require Export Relation_Definitions.
 Require Export Setoid.
 
-Variable A : Type.
-Variable S : A -> Type.
-Variable Seq : forall {a:A}, relation (S a).
+Parameter A : Type.
+Parameter S : A -> Type.
+Parameter Seq : forall {a:A}, relation (S a).
 
-Hypothesis Seq_refl : forall {a:A} (x : S a), Seq x x.
-Hypothesis Seq_sym : forall {a:A} (x y : S a), Seq x y -> Seq y x.
-Hypothesis Seq_trans : forall {a:A} (x y z : S a), Seq x y -> Seq y z ->
+Axiom Seq_refl : forall {a:A} (x : S a), Seq x x.
+Axiom Seq_sym : forall {a:A} (x y : S a), Seq x y -> Seq y x.
+Axiom Seq_trans : forall {a:A} (x y z : S a), Seq x y -> Seq y z ->
 Seq x z.
 
 Add Parametric Relation a : (S a) Seq

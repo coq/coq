@@ -62,7 +62,7 @@ Record U : Type := { A:=Type; a:A }.
 
 (** Check assignment of sorts to inductives and records. *)
 
-Variable sh : list nat.
+Parameter sh : list nat.
 
 Definition is_box_in_shape (b :nat * nat) := True.
 Definition myType := Type.

@@ -1521,7 +1521,7 @@ Proof.
  intros [| px| px] Hx1 Hx2; try (discriminate Hx1); trivial.
 Qed.
 
-Let pred_nat_unfolded_subproof px :
+#[local] Definition pred_nat_unfolded_subproof px :
   Pos.to_nat px <> 0.
 Proof.
 apply Nat.neq_0_lt_0, lt_O_nat_of_P.

@@ -116,7 +116,7 @@ Polymorphic Fixpoint big_tree@{i} (n : nat@{i}) : Tree@{i} nat@{i} :=
 
 Eval compute in height (big_tree (S (S (S O)))).
 
-Let big := S (S (S (S (S O)))).
+#[local] Definition big := S (S (S (S (S O)))).
 Polymorphic Definition really_big@{i} := (S@{i} (S (S (S (S (S (S (S (S (S O)))))))))).
 
 Time Definition _5 : height (@Empty nat) = O :=

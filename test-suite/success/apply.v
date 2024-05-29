@@ -81,7 +81,7 @@ exists Prop.
 trivial.
 Qed.
 
-Variable Eq : Prop = (Prop -> Prop) :> E.
+Parameter Eq : Prop = (Prop -> Prop) :> E.
 Goal Prop.
 rewrite Eq.
 Abort.
@@ -97,8 +97,8 @@ Qed.
 (* Check use of unification of bindings types in specialize *)
 
 Module Type Test.
-Variable P : nat -> Prop.
-Variable L : forall (l : nat), P l -> P l.
+Parameter P : nat -> Prop.
+Parameter L : forall (l : nat), P l -> P l.
 Goal P 0 -> True.
 intros.
 specialize L with (1:=H).
@@ -116,7 +116,7 @@ Fixpoint P (l : list nat) : Prop :=
   | e1 :: nil => e1 = e1
   | e1 :: l1 => e1 = e1 /\ P l1
   end.
-Variable L : forall n l, P (n::l) -> P l.
+Parameter L : forall n l, P (n::l) -> P l.
 
 Goal forall (x:nat) l, P (x::l) -> P l.
 intros.
@@ -144,8 +144,8 @@ Qed.
 
 Require Import ZArith.
 Coercion Zpos : positive >-> Z.
-Variable f : Z -> Z -> Z.
-Variable g : forall q1 q2 p : Z, f (f q1 p) (f q2 p) = Z0.
+Parameter f : Z -> Z -> Z.
+Parameter g : forall q1 q2 p : Z, f (f q1 p) (f q2 p) = Z0.
 Goal forall p q1 q2, f (f q1 (Zpos p)) (f q2 (Zpos p)) = Z0.
 intros; rewrite g with (p:=p).
 reflexivity.
