@@ -849,7 +849,7 @@ However elimination to `Type` or to a polymorphic sort with `s := Prop` is allow
      : forall s, P s
      := fun s => match s with squash _ x => H x end.
 
-   Definition Squash_Prop_srect@{s|u +|} A (P:Squash@{Prop|_} A -> Type@{s|u})
+   Definition Squash_Prop_srect@{s|u ?|} A (P:Squash@{Prop|_} A -> Type@{s|u})
      (H:forall x, P (squash _ x))
      : forall s, P s
      := fun s => match s with squash _ x => H x end.
