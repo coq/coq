@@ -860,7 +860,7 @@ value coq_interprete
         *--sp=accu;
         Coq_alloc_small(accu, nfuncs * 3 + nvars, Closure_tag);
         Field(accu, nfuncs * 3 + nvars - 1) = *sp++;
-        p = &Field(accu, 0);
+        p = (value *) &Field(accu, 0);
         *p++ = (value) (pc + pc[0]);
         *p++ = Val_int(nfuncs * 3 - 1);
         for (i = 1; i < nfuncs; i++) {
