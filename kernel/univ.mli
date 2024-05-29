@@ -68,7 +68,7 @@ sig
 
   module Set :
     sig
-      include CSig.SetS with type elt = t
+      include CSig.USetS with type elt = t
 
       val pr : (elt -> Pp.t) -> t -> Pp.t
       (** Pretty-printing *)
@@ -76,7 +76,7 @@ sig
 
   module Map :
   sig
-    include CMap.ExtS with type key = t and module Set := Set
+    include CMap.UExtS with type key = t and module Set := Set
 
     val lunion : 'a t -> 'a t -> 'a t
     (** [lunion x y] favors the bindings in the first map. *)

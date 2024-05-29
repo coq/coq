@@ -15,8 +15,8 @@ type constraint_type = Lt | Le | Eq
 module type Point = sig
   type t
 
-  module Set : CSig.SetS with type elt = t
-  module Map : CMap.ExtS with type key = t and module Set := Set
+  module Set : CSig.USetS with type elt = t
+  module Map : CMap.UExtS with type key = t and module Set := Set
 
   val equal : t -> t -> bool
   val compare : t -> t -> int

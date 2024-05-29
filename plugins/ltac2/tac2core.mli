@@ -39,8 +39,8 @@ val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proo
 
 module type MapType = sig
   (** to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
-  module S : CSig.SetS
-  module M : CMap.ExtS with type key = S.elt and module Set := S
+  module S : CSig.USetS
+  module M : CMap.UExtS with type key = S.elt and module Set := S
   type valmap
   val valmap_eq : (valmap, Tac2val.valexpr M.t) Util.eq
   val repr : S.elt Tac2ffi.repr

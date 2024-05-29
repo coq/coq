@@ -85,7 +85,7 @@ module MakeRefTable :
   functor
     (A : sig
        type t
-       module Set : CSig.SetS with type elt = t
+       module Set : CSig.USetS with type elt = t
        val encode : Environ.env -> Libnames.qualid -> t
        val subst : Mod_subst.substitution -> t -> t
        val printer : t -> Pp.t

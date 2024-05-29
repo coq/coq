@@ -309,9 +309,9 @@ sig
   val hash : t -> int
 end
 
-module KNset  : CSig.SetS with type elt = KerName.t
+module KNset  : CSig.USetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
-module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
+module KNmap  : Map.UExtS with type key = KerName.t and module Set := KNset
 
 (** {6 Signature for quotiented names} *)
 
@@ -430,14 +430,14 @@ end
 (** The [*_env] modules consider an order on user part of names
    the others consider an order on canonical part of names*)
 module Cpred : Predicate.S with type elt = Constant.t
-module Cset : CSig.SetS with type elt = Constant.t
-module Cset_env  : CSig.SetS with type elt = Constant.t
+module Cset : CSig.USetS with type elt = Constant.t
+module Cset_env  : CSig.USetS with type elt = Constant.t
 
-module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
+module Cmap : Map.UExtS with type key = Constant.t and module Set := Cset
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "canonical form" of the constant. *)
 
-module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
+module Cmap_env : Map.UExtS with type key = Constant.t and module Set := Cset_env
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "user form" of the constant. *)
 
@@ -494,9 +494,9 @@ sig
 
 end
 
-module Mindset : CSig.SetS with type elt = MutInd.t
-module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-module Mindmap_env : CMap.ExtS with type key = MutInd.t
+module Mindset : CSig.USetS with type elt = MutInd.t
+module Mindmap : Map.UExtS with type key = MutInd.t and module Set := Mindset
+module Mindmap_env : CMap.UExtS with type key = MutInd.t
 
 module Ind :
 sig
@@ -654,8 +654,8 @@ module Projection : sig
 
 end
 
-module PRset : CSig.SetS with type elt = Projection.Repr.t
-module PRmap : Map.ExtS with type key = Projection.Repr.t and module Set := PRset
+module PRset : CSig.USetS with type elt = Projection.Repr.t
+module PRmap : Map.UExtS with type key = Projection.Repr.t and module Set := PRset
 
 (** Predicate on projection representation (ignoring unfolding state) *)
 module PRpred : Predicate.S with type elt = Projection.Repr.t
@@ -677,12 +677,12 @@ module GlobRef : sig
 
   include QNameS with type t := t
 
-  module Set_env : CSig.SetS with type elt = t
-  module Map_env : Map.ExtS
+  module Set_env : CSig.USetS with type elt = t
+  module Map_env : Map.UExtS
     with type key = t and module Set := Set_env
 
-  module Set : CSig.SetS with type elt = t
-  module Map : Map.ExtS
+  module Set : CSig.USetS with type elt = t
+  module Map : Map.UExtS
     with type key = t and module Set := Set
 
   val print : t -> Pp.t

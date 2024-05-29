@@ -13,8 +13,8 @@ open Libnames
 open Miniml
 open Declarations
 
-module Refset' : CSig.SetS with type elt = GlobRef.t
-module Refmap' : CSig.MapS with type key = GlobRef.t
+module Refset' : CSig.USetS with type elt = GlobRef.t
+module Refmap' : CSig.UMapS with type key = GlobRef.t
 
 val safe_basename_of_global : GlobRef.t -> Id.t
 
