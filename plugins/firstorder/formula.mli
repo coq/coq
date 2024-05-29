@@ -32,10 +32,17 @@ val construct_nhyps : Environ.env -> pinductive -> int array
 val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
   constr list -> EConstr.rel_context array
 
+module Env :
+sig
+  type t
+  val empty : t
+end
+
 type atom
 
 val hole_atom : atom
-val repr_atom : atom -> EConstr.t
+val repr_atom : Env.t -> atom -> EConstr.t
+val compare_atom : atom -> atom -> int
 
 type atoms = { positive:atom list; negative:atom list }
 
@@ -87,5 +94,5 @@ type 'a t = private {
 
 type any_formula = AnyFormula : 'a t -> any_formula
 
-val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> 'a side -> 'a identifier -> types ->
-  counter -> ('a t, atom) sum
+val build_formula : flags:flags -> Env.t -> Environ.env -> Evd.evar_map -> 'a side -> 'a identifier -> types ->
+  counter -> Env.t * ('a t, atom) sum

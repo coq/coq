@@ -47,3 +47,5 @@ val extend_with_ref_list : flags:flags -> Environ.env -> Evd.evar_map -> GlobRef
 
 val extend_with_auto_hints : flags:flags -> Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
   t -> t * Evd.evar_map
+
+val state : t -> Env.t

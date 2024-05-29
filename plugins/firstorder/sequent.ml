@@ -80,23 +80,28 @@ sig
 end =
 struct
 
-module CM = Map.Make(Constr)
+module Atom =
+struct
+  type t = atom
+  let compare = compare_atom
+end
+
+module CM = Map.Make(Atom)
+
 type t = GlobRef.t list CM.t
 
 let empty = CM.empty
 
 let find sigma t cm =
-  List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom t)) cm)
+  List.hd (CM.find t cm)
 
 let add sigma typ nam cm =
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
 let remove env sigma typ nam cm =
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in
     let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
@@ -114,6 +119,7 @@ type seqgoal = GoalTerm of atom | GoalAtom of atom
 type t=
     {redexes:HP.t;
      context:Context.t;
+     state : Env.t;
      latoms:atom list;
      gl: seqgoal;
      cnt:counter;
@@ -140,23 +146,25 @@ let lookup env sigma item seq=
           History.exists p seq.history
 
 let add_concl ~flags env sigma t seq =
-  match build_formula ~flags env sigma Concl goal_id t seq.cnt with
-  | Left f ->
-    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr }
-  | Right t ->
-    {seq with gl = GoalAtom t}
+  match build_formula ~flags seq.state env sigma Concl goal_id t seq.cnt with
+  | state, Left f ->
+    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr; state }
+  | state, Right t ->
+    {seq with gl = GoalAtom t; state}
 
 let add_formula ~flags ~hint env sigma id t seq =
   let side = Hyp hint in
-  match build_formula ~flags env sigma side (formula_id env id) t seq.cnt with
-  | Left f ->
+  match build_formula ~flags seq.state env sigma side (formula_id env id) t seq.cnt with
+  | state, Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
-      context=Context.add sigma f.constr id seq.context}
-  | Right t ->
+      context=Context.add sigma f.constr id seq.context;
+      state}
+  | state, Right t ->
     {seq with
       context=Context.add sigma t id seq.context;
-      latoms=t::seq.latoms}
+      latoms=t::seq.latoms;
+      state}
 
 let re_add_formula_list sigma lf seq=
   let do_one (AnyFormula f) cm = match f.id with
@@ -196,7 +204,8 @@ let empty_seq depth=
    gl= GoalTerm hole_atom;
    cnt=newcnt ();
    history=History.empty;
-   depth=depth}
+   depth=depth;
+   state=Env.empty}
 
 let make_simple_atoms seq =
   let ratoms=
@@ -246,3 +255,5 @@ let extend_with_auto_hints ~flags env sigma l seq =
     Hint_db.fold (fun _ _ l acc -> List.fold_left f acc l) hdb acc
   in
   List.fold_left h (seq,sigma) l
+
+let state seq = seq.state
