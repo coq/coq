@@ -154,11 +154,11 @@ let library_is_loaded dir =
   (* If a library is loaded several time, then the first occurrence must
      be performed first, thus the libraries_loaded_list ... *)
 
-let register_loaded_library m =
+let register_loaded_library ~root m =
   let libname = m.libsum_name in
   let rec aux = function
-    | [] -> [libname]
-    | m'::_ as l when DirPath.equal m' libname -> l
+    | [] -> [root, libname]
+    | (_, m') ::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := DPmap.add libname m !libraries_table
@@ -171,7 +171,7 @@ let register_native_library libname =
       Nativelib.enable_library dirname libname
   end
 
-  let loaded_libraries () = !libraries_loaded_list
+  let loaded_libraries () = List.map snd !libraries_loaded_list
 
 (** Delayed / available tables of opaque terms *)
 
@@ -279,7 +279,7 @@ let intern_from_file ?loc lib_resolver dir =
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
   lsd, lmd, digest_lmd, del_opaque, vmlib
 
-let rec intern_library ~intern (needed, contents as acc) dir =
+let rec intern_library ~root ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
   try find_library dir, acc
   with Not_found ->
@@ -288,16 +288,16 @@ let rec intern_library ~intern (needed, contents as acc) dir =
   with Not_found ->
   let lsd, lmd, digest_lmd, del_opaque, vmlib = intern dir in
   let m = mk_intern_library lsd lmd digest_lmd del_opaque vmlib in
-  mk_summary m, intern_library_deps ~intern acc dir m
+  mk_summary m, intern_library_deps ~root ~intern acc dir m
 
-and intern_library_deps ~intern libs dir m =
+and intern_library_deps ~root ~intern libs dir m =
   let needed, contents =
     Array.fold_left (intern_mandatory_library ~intern dir)
       libs m.library_deps in
-  (dir :: needed, DPmap.add dir m contents )
+  ((root, dir) :: needed, DPmap.add dir m contents )
 
 and intern_mandatory_library ~intern caller libs (dir,d) =
-  let m, libs = intern_library ~intern libs dir in
+  let m, libs = intern_library ~root:false ~intern libs dir in
   let digest = m.libsum_digests in
   let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     let from = library_full_filename caller in
@@ -311,7 +311,7 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
 
 let rec_intern_library ~lib_resolver libs (loc, dir) =
   let intern dir = intern_from_file ?loc lib_resolver dir in
-  let m, libs = intern_library ~intern libs dir in
+  let m, libs = intern_library ~root:true ~intern libs dir in
   Library_info.warn_library_info m.libsum_name m.libsum_info;
   libs
 
@@ -348,12 +348,12 @@ let register_library m =
   ;
   register_native_library m.library_name
 
-let register_library_syntax m =
+let register_library_syntax (root, m) =
   let l = m.library_data in
   Declaremods.Synterp.register_library
     m.library_name
     l.md_syntax_objects;
-  register_loaded_library (mk_summary m)
+  register_loaded_library ~root (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in
@@ -391,7 +391,7 @@ let discharge_require_syntax o = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj_syntax = library_t list
+type require_obj_syntax = (bool * library_t) list
 
 let in_require_syntax : require_obj_syntax -> obj =
   declare_object
@@ -417,19 +417,22 @@ let require_library_from_dirpath needed =
 
 let require_library_syntax_from_dirpath ~lib_resolver modrefl =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
-  let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
+  let needed = List.rev_map (fun (root, dir) -> root, DPmap.find dir contents) needed in
   Lib.add_leaf (in_require_syntax needed);
-  needed
+  List.map snd needed
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
 let current_deps () =
-  let map name =
-    let m = try_find_library name in
-    (name, m.libsum_digests)
+  (* Only keep the roots of the dependency DAG *)
+  let map (root, m) =
+    if root then
+      let m = try_find_library m in
+      Some (m.libsum_name, m.libsum_digests)
+    else None
   in
-  List.map map !libraries_loaded_list
+  List.map_filter map !libraries_loaded_list
 
 let error_recursively_dependent_library dir =
   user_err
@@ -515,7 +518,7 @@ let save_library_raw f sum lib proofs = save_library_base f sum lib proofs
 
 let get_used_load_paths () =
   String.Set.elements
-    (List.fold_left (fun acc m -> String.Set.add
+    (List.fold_left (fun acc (root, m) -> String.Set.add
       (Filename.dirname (library_full_filename m)) acc)
        String.Set.empty !libraries_loaded_list)
 
