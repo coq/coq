@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Constr
 open EConstr
 open Environ
 open Evd
@@ -94,22 +93,3 @@ val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
    (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
-
-(* For tracing *)
-
-type metabinding = (metavariable * constr * (instance_constraint * instance_typing_status))
-
-type subst0 =
-  (evar_map *
-    metabinding list *
-      ((Environ.env * int) * existential * t) list)
-
-val w_merge : env -> bool -> core_unify_flags -> subst0 -> evar_map
-
-val unify_0 :            Environ.env ->
-           Evd.evar_map ->
-           Evd.conv_pb ->
-           core_unify_flags ->
-           types ->
-           types ->
-           subst0
