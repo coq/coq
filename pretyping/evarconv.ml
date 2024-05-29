@@ -268,7 +268,9 @@ let activate_hook ~name =
   active_hooks := name :: !active_hooks
 
 let apply_hooks env sigma proj pat =
-  List.find_map (fun name -> CString.Map.get name !all_hooks env sigma proj pat) !active_hooks
+  List.find_map (fun name ->
+    try CString.Map.get name !all_hooks env sigma proj pat
+    with e when CErrors.noncritical e -> anomaly Pp.(str "CS hook " ++ str name ++ str " exploded")) !active_hooks
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose
    the problem (t1 stack1) = (t2 stack2) into a problem
