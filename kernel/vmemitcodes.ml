@@ -170,6 +170,76 @@ let subst s reloc = match reloc with
 
 end
 
+(* Most of the words of the bytecode are comprised of a byte followed by three
+   nul bytes. It is compressed as follows. In the common case, only the byte is
+   output. In the other cases (or when the byte is too large), 255 is output
+   followed by the four original bytes, or 254 is output followed by the first
+   three original bytes (assuming the fourth is nul), or 253 or 252. *)
+
+let compress_code src sz =
+  let buf = Buffer.create (sz * 3 / 8) in
+  for i = 0 to sz / 4 - 1 do
+    let c01 = Bytes.get_uint16_le src (i * 4) in
+    let c23 = Bytes.get_uint16_le src (i * 4 + 2) in
+    if c23 = 0 then
+      if c01 < 252 then
+        Buffer.add_uint8 buf c01
+      else
+        begin
+          Buffer.add_uint8 buf 253;
+          Buffer.add_uint16_le buf c01;
+        end
+    else if c23 = 0xffff && c01 >= 0xff00 then
+      begin
+        Buffer.add_uint8 buf 252;
+        Buffer.add_uint8 buf c01;
+      end
+    else if c23 <= 0xff then
+      begin
+        Buffer.add_uint8 buf 254;
+        Buffer.add_uint16_le buf c01;
+        Buffer.add_uint8 buf c23;
+      end
+    else
+      begin
+        Buffer.add_uint8 buf 255;
+        Buffer.add_uint16_le buf c01;
+        Buffer.add_uint16_le buf c23;
+      end
+  done;
+  Buffer.contents buf
+
+let decompress_code src =
+  let sz = String.length src in
+  let buf = Buffer.create (sz * 4) in
+  (* TODO: remove the following two lines once the minimal version of OCaml is 4.13 *)
+  let module String = Bytes in
+  let src = String.unsafe_of_string src in
+  let i = ref 0 in
+  while !i < sz do
+    let c01, c23 =
+      match String.get src !i with
+      | '\000' .. '\251' as c ->
+          i := !i + 1;
+          (Char.code c, 0)
+      | '\252' ->
+          i := !i + 2;
+          (String.get_uint8 src (!i - 1) + 0xff00, 0xffff)
+      | '\253' ->
+          i := !i + 3;
+          (String.get_uint16_le src (!i - 2), 0)
+      | '\254' ->
+          i := !i + 4;
+          (String.get_uint16_le src (!i - 3), String.get_uint8 src (!i - 1))
+      | '\255' ->
+          i := !i + 5;
+          (String.get_uint16_le src (!i - 4), String.get_int16_le src (!i - 2))
+    in
+    Buffer.add_uint16_le buf c01;
+    Buffer.add_uint16_le buf c23;
+  done;
+  Buffer.to_bytes buf
+
 (** This data type is stored in vo files. *)
 
 type patches = {
@@ -184,7 +254,7 @@ type to_patch = {
 }
 
 let patch_int tp reloc =
-  let buff = Bytes.of_string tp.tp_code in
+  let buff = decompress_code tp.tp_code in
   let iter pos =
     let id = Bytes.get_int32_le buff pos in
     let reloc = reloc.(Int32.to_int id) in
@@ -454,7 +524,7 @@ let emit_instr env = function
       let lenc = Array.length tbl_const in
       assert (lenb < 0x100 && lenc < 0x1000000);
       out env opSWITCH;
-      out_word env lenc (lenc asr 8) (lenc asr 16) (lenb);
+      out_word env lenb lenc (lenc asr 8) (lenc asr 16);
 (*      out_int env (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
       let org = env.out_position in
       Array.iter (out_label_with_orig env org) tbl_const;
@@ -579,8 +649,7 @@ let to_memory fv code =
     reloc_info = RelocTable.create 91;
   } in
   emit env code [];
-  (** Later uses of this string are all purely functional *)
-  let code = Bytes.sub_string env.out_buffer 0 env.out_position in
+  let code = compress_code env.out_buffer env.out_position in
   let code = CString.hcons code in
   let fold reloc id accu = (id, reloc) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
