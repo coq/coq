@@ -233,7 +233,7 @@ let test_univ_decl =
 let test_cumul_univ_decl =
   let open Pcoq.Lookahead in
   let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
-  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
+  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 
 }
@@ -387,7 +387,7 @@ GRAMMAR EXTEND Gram
   ;
   cumul_univ_decl:
     [ [ "@{" ; test_cumul_univ_decl; l0 = LIST0 identref; "|";
-        l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+        l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -398,7 +398,7 @@ GRAMMAR EXTEND Gram
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
 
-       | "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+       | "@{" ; l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
