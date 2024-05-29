@@ -42,10 +42,24 @@ Inductive types
    respectively correspond to
    on :g:`Type`, :g:`Prop`, :g:`Set` and :g:`SProp`.  Their types
    expresses structural induction/recursion principles over objects of
-   type :n:`@ident`.  The :term:`constant` :n:`@ident`\ ``_ind`` is always
-   generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
-   may be impossible to derive (for example, when :n:`@ident` is a
-   proposition).
+   type :n:`@ident`.  These :term:`constants <constant>` are generated when
+   possible (for instance :n:`@ident`\ ``_rect`` may be impossible to derive
+   when :n:`@ident` is a proposition).
+
+   .. flag:: Dependent Proposition Eliminators
+
+      The inductive principles express dependent elimination when the
+      inductive type allows it (always true when not using
+      :flag:`Primitive Projections`), except by default when the
+      inductive is explicitly declared in `Prop`.
+
+      Explicitly `Prop` inductive types declared when this flag is
+      enabled also automatically declare dependent inductive
+      principles. Name generation may also change when using tactics
+      such as :tacn:`destruct` on such inductives.
+
+      Note that explicit declarations through :cmd:`Scheme` are not
+      affected by this flag.
 
    :n:`{? %| {* @binder } }`
      The :n:`|` separates uniform and non uniform parameters.
@@ -147,6 +161,37 @@ by giving the type of its arguments alone.
    .. coqtop:: in
 
       Inductive nat : Set := O | S (_:nat).
+
+Automatic Prop lowering
++++++++++++++++++++++++
+
+When an inductive is declared without an explicit sort, it is put in the
+smallest sort which permits large elimination (excluding
+`SProp`). For :ref:`empty and singleton <Empty-and-singleton-elimination>`
+types this means they are declared in `Prop`.
+
+.. flag:: Automatic Proposition Inductives
+
+   By default the above behaviour is extended to empty and singleton
+   inductives explicitly declared in `Type` (but not those in explicit
+   universes using `Type@{u}`, or in `Type` through an auxiliary definition
+   such as `Definition typ := Type.`).
+
+   Disabling this flag prevents inductives with an explicit non-`Prop`
+   type from being lowered to `Prop`. This will become the default in
+   a future version. Use :flag:`Dependent Proposition Eliminators` to
+   declare the inductive type in `Prop` while preserving compatibility.
+
+   Depending on universe minimization they may then be declared in
+   `Set` or in a floating universe level,
+   see also :flag:`Universe Minimization ToSet`.
+
+.. warn:: Automatically putting @ident in Prop even though it was declared with Type.
+   :name: automatic-prop-lowering
+
+   This warning is produced when :flag:`Automatic Proposition
+   Inductives` is enabled and resulted in an inductive type being
+   lowered to `Prop`.
 
 Simple indexed inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

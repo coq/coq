@@ -145,6 +145,9 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
+let { Goptions.get = default_prop_dep_elim } =
+  Goptions.declare_bool_option_and_ref ~key:["Dependent";"Proposition";"Eliminators"] ~value:false ()
+
 type default_dep_elim = DefaultElim | PropButDepElim
 
 let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) ?default_dep_elim mie ubinders impls =
@@ -181,12 +184,19 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   let () = match default_dep_elim with
     | None -> ()
     | Some defaults ->
-      List.iteri (fun i -> function
-          | DefaultElim -> ()
-          | PropButDepElim ->
-            (* XXX maybe the API should have a default_dep_elim per inductive
-               instead of for the whole block *)
-            Indrec.declare_prop_but_default_dependent_elim (mind,i))
+      List.iteri (fun i default ->
+          let ind = (mind, i) in
+          let prop_but_default_dep_elim = match default with
+            | PropButDepElim -> true
+            | DefaultElim ->
+              default_prop_dep_elim () &&
+              let _, mip = Global.lookup_inductive ind in
+              match mip.mind_arity with
+              | RegularArity ar -> Sorts.is_prop ar.mind_sort
+              | TemplateArity _ -> false
+          in
+          if prop_but_default_dep_elim then
+            Indrec.declare_prop_but_default_dependent_elim ind)
         defaults
   in
   Flags.if_verbose Feedback.msg_info (minductive_message names);

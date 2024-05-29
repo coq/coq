@@ -5,7 +5,7 @@ Record Pred@{A} :=
   ; P : car -> Prop
   }.
 
-Class All@{A} (A : Pred@{A}) : Type :=
+Class All@{A} (A : Pred@{A}) :=
   { proof : forall (a : A), P A a
   }.
 

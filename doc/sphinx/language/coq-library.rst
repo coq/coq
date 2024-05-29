@@ -158,6 +158,15 @@ At times, it's helpful to know exactly what these notations represent.
   | or_intror (_:B).
   Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
 
+We also have the `Type` level negation:
+
+.. index::
+  single: notT (term)
+
+.. coqtop:: in
+
+  Definition notT (A:Type) := A -> False.
+
 Quantifiers
 +++++++++++
 
@@ -318,14 +327,8 @@ Programming
   Inductive bool : Set := true | false.
   Inductive nat : Set := O | S (n:nat).
   Inductive option (A:Set) : Set := Some (_:A) | None.
-  Inductive identity (A:Type) (a:A) : A -> Type :=
-    refl_identity : identity A a a.
 
 Note that zero is the letter ``O``, and *not* the numeral ``0``.
-
-The predicate ``identity`` is logically
-equivalent to equality but it lives in sort ``Type``.
-It is mainly maintained for compatibility.
 
 We then define the disjoint sum of ``A+B`` of two sets ``A`` and
 ``B``, and their product ``A*B``.
@@ -699,33 +702,6 @@ fixpoint equation can be proved.
   Lemma Fix_eq : forall x:A, Fix x = F x (fun (y:A) (p:R y x) => Fix y).
   End FixPoint.
   End Well_founded.
-
-Accessing the Type level
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-The standard library includes ``Type`` level definitions of counterparts of some
-logic concepts and basic lemmas about them.
-
-The module ``Datatypes`` defines ``identity``, which is the ``Type`` level counterpart
-of equality:
-
-.. index::
-   single: identity (term)
-
-.. coqtop:: in
-
-   Inductive identity (A:Type) (a:A) : A -> Type :=
-     identity_refl : identity A a a.
-
-Some properties of ``identity`` are proved in the module ``Logic_Type``, which also
-provides the definition of ``Type`` level negation:
-
-.. index::
-  single: notT (term)
-
-.. coqtop:: in
-
-  Definition notT (A:Type) := A -> False.
 
 Tactics
 ~~~~~~~

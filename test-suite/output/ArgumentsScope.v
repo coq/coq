@@ -81,8 +81,8 @@ About g''.
 
 Module SectionTest1.
 
-  Inductive A:Type :=.
-  Inductive B:Type :=.
+  Inductive A :=.
+  Inductive B :=.
   Declare Scope X.
   Section S.
     Declare Scope Y.
@@ -99,7 +99,7 @@ End SectionTest1.
 
 Module SectionTest2.
 
-  Inductive A:Type :=.
+  Inductive A :=.
   Module M.
     Declare Scope X.
     Bind Scope X with A.
