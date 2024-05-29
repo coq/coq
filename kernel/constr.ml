@@ -465,7 +465,7 @@ let rels = Array.init 17 (fun i -> T (Rel i))
    as canonical, and hence hash-consed to themselves *)
 let () = ignore (hash_term_array rels)
 
-let mkRel n = if 0<=n && n<=16 then rels.(n) else T (Rel n)
+let mkRel n = if 0<=n && n<=16 then rels.(n) else hcons (T (Rel n))
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 (* We ensure applicative terms have at least one argument and the
@@ -487,6 +487,9 @@ let mkCast (t1,k2,t2) =
 let of_kind = function
 | App (f, a) -> mkApp (f, a)
 | Cast (c, knd, t) -> mkCast (c, knd, t)
+| Rel i -> mkRel i
+| Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _ as k ->
+  hcons (T k)
 | k -> T k
 
 (* Construct a type *)
