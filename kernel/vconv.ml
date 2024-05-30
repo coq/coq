@@ -8,12 +8,22 @@ open Vmsymtable
 
 (* Test la structure des piles *)
 
+type 'a fail = { fail : 'r. 'a -> 'r }
+
 exception NotConvertible
 
-let fail_check (state, check) = match state with
-| Result.Ok state -> (state, check)
-| Result.Error ConvErrDefault -> raise NotConvertible
-| Result.Error (ConvErrUniverses err) -> raise (UGraph.UniverseInconsistency err)
+let fail_check state check box = match state with
+| Result.Ok state -> (state, check, box)
+| Result.Error None -> raise NotConvertible
+| Result.Error (Some err) -> box.fail err
+
+let convert_instances ~flex u1 u2 (state, check, box) =
+  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+  fail_check state check box
+
+let sort_cmp_universes env pb s1 s2 (state, check, box) =
+  let state, check = Conversion.sort_cmp_universes env pb s1 s2 (state, check) in
+  fail_check state check box
 
 let table_key_instance env = function
 | ConstKey cst -> Environ.constant_context env cst
@@ -110,7 +120,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           assert (0 < nargs args2);
           let u1 = uni_instance (arg args1 0) in
           let u2 = uni_instance (arg args2 0) in
-          let cu = fail_check @@ convert_instances ~flex:false u1 u2 cu in
+          let cu = convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
@@ -127,13 +137,13 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           assert (0 < nargs args2);
           let u1 = uni_instance (arg args1 0) in
           let u2 = uni_instance (arg args2 0) in
-          let cu = fail_check @@ convert_instances ~flex:false u1 u2 cu in
+          let cu = convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
     else raise NotConvertible
   | Asort s1, Asort s2 ->
-    fail_check @@ sort_cmp_universes env pb s1 s2 cu
+    sort_cmp_universes env pb s1 s2 cu
   | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
@@ -205,18 +215,21 @@ let warn_bytecode_compiler_failed =
          (fun () -> strbrk "Bytecode compiler failed, " ++
                       strbrk "falling back to standard conversion")
 
-let vm_conv_gen cv_pb sigma env univs t1 t2 =
+let vm_conv_gen (type err) cv_pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
   else
+  let exception Error of err in
+  let box = { fail = fun e -> raise (Error e) } in
   try
+    let (state, check) = univs in
     let v1 = val_of_constr env sigma t1 in
     let v2 = val_of_constr env sigma t2 in
-    Result.Ok (fst (conv_val env cv_pb (nb_rel env) v1 v2 univs))
+    Result.Ok (pi1 (conv_val env cv_pb (nb_rel env) v1 v2 (state, check, box)))
   with
-  | NotConvertible -> Result.Error ConvErrDefault
-  | UGraph.UniverseInconsistency e -> Result.Error (ConvErrUniverses e)
+  | NotConvertible -> Result.Error None
+  | Error e -> Result.Error (Some e)
   | Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
@@ -231,14 +244,12 @@ let vm_conv cv_pb env t1 t2 =
   if b then Result.Ok ()
   else
     let state = (univs, checked_universes) in
-    let ans : (UGraph.t, conversion_error) result =
+    let ans : (UGraph.t, 'a option) result =
       NewProfile.profile "vm_conv" (fun () ->
           vm_conv_gen cv_pb (Genlambda.empty_evars env) env state t1 t2)
         ()
     in
     match ans with
     | Result.Ok (_ : UGraph.t)-> Result.Ok ()
-    | Result.Error ConvErrDefault -> Result.Error ()
-    | Result.Error (ConvErrUniverses _) ->
-      (* checked_universes cannot raise this *)
-      assert false
+    | Result.Error None -> Result.Error ()
+    | Result.Error (Some e) -> Empty.abort e

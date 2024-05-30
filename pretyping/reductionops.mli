@@ -273,7 +273,7 @@ val native_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
 (** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
 conversion function. Used to pretype vm and native casts. *)
 val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
-    Environ.env -> evar_map Conversion.generic_conversion_function) ->
+    Environ.env -> (evar_map, UGraph.univ_inconsistency) Conversion.generic_conversion_function) ->
   ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t -> env ->
   evar_map -> constr -> constr -> evar_map option
 
@@ -306,7 +306,7 @@ val meta_instance : env -> evar_map -> constr freelisted -> constr
 exception AnomalyInConversion of exn
 
 (* inferred_universes just gathers the constraints. *)
-val inferred_universes : (UGraph.t * Univ.Constraints.t) Conversion.universe_compare
+val inferred_universes : (UGraph.t * Univ.Constraints.t, UGraph.univ_inconsistency) Conversion.universe_compare
 
 (** Deprecated *)
 

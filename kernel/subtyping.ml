@@ -90,8 +90,8 @@ let check_conv_error error why state poly pb env a1 a2 =
   | Result.Error () ->  error (IncompatiblePolymorphism (env, a1, a2))
   else match Conversion.generic_conv pb ~l2r:false TransparentState.full env state a1 a2 with
   | Result.Ok state -> state
-  | Result.Error Conversion.ConvErrDefault -> error why
-  | Result.Error (Conversion.ConvErrUniverses e) -> error (IncompatibleUniverses e)
+  | Result.Error None -> error why
+  | Result.Error (Some e) -> error (IncompatibleUniverses e)
 
 let check_universes error env u1 u2 =
   match u1, u2 with

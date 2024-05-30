@@ -98,7 +98,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
           in
           begin match cst with
           | Result.Ok cst -> cst
-          | Result.Error Conversion.(ConvErrDefault | ConvErrUniverses _) ->
+          | Result.Error (None | Some _) ->
             error_incorrect_with_constraint lab
           end
         | Polymorphic uctx, Polymorphic ctx ->
