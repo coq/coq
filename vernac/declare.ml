@@ -105,6 +105,7 @@ type 'a pproof_entry = {
   (* State id on which the completion of type checking is reported *)
   proof_entry_feedback : Stateid.t option;
   proof_entry_type        : Constr.types option;
+  proof_entry_arity       : int option;
   proof_entry_universes   : UState.named_universes_entry;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
@@ -135,11 +136,12 @@ let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
+let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types ?arity
     ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
     proof_entry_type = types;
+    proof_entry_arity = arity;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
@@ -275,20 +277,22 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
+let pure_definition_entry ?(opaque=false) ?(inline=false) ?types ?arity
     ?(univs=default_named_univ_entry) body =
   { proof_entry_body = ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
     proof_entry_type = types;
+    proof_entry_arity = arity;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
     proof_entry_inline_code = inline}
 
-let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
+let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types ?arity body =
   { proof_entry_body = body
   ; proof_entry_secctx = using
   ; proof_entry_type = types
+  ; proof_entry_arity = arity
   ; proof_entry_universes = univs
   ; proof_entry_opaque = opaque
   ; proof_entry_feedback = feedback_id
@@ -314,6 +318,7 @@ let cast_proof_entry e =
   { Entries.const_entry_body = body;
     const_entry_secctx = e.proof_entry_secctx;
     const_entry_type = e.proof_entry_type;
+    const_entry_arity = e.proof_entry_arity;
     const_entry_universes = univ_entry;
     const_entry_inline_code = e.proof_entry_inline_code;
   },
@@ -369,6 +374,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   { Entries.opaque_entry_body = body;
     opaque_entry_secctx = secctx;
     opaque_entry_type = typ;
+    opaque_entry_arity = e.proof_entry_arity;
     opaque_entry_universes = univ_entry;
   },
   ctx
@@ -560,6 +566,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_feedback = de.proof_entry_feedback;
             proof_entry_type = de.proof_entry_type;
+            proof_entry_arity = de.proof_entry_arity;
             proof_entry_universes = UState.univ_entry ~poly UState.empty;
             proof_entry_opaque = true;
             proof_entry_inline_code = de.proof_entry_inline_code;

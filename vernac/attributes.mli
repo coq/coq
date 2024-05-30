@@ -66,6 +66,7 @@ val canonical_instance : bool attribute
 val using : string option attribute
 val explicit_hint_locality : Hints.hint_locality option attribute
 val bind_scope_where : Notation.add_scope_where option attribute
+val arity : int attribute
 
 (** Default: if sections are opened then Local otherwise Export.
     Although this is named and uses the type [hint_locality]

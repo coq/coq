@@ -347,6 +347,7 @@ val definition_entry
   -> ?using:Names.Id.Set.t
   -> ?inline:bool
   -> ?types:Constr.types
+  -> ?arity:int
   -> ?univs:UState.named_universes_entry
   -> Constr.constr
   -> proof_entry

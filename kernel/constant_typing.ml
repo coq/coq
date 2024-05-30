@@ -131,6 +131,19 @@ let adjust_primitive_univ_entry p auctx = function
                                 str (CPrimitives.op_or_type_to_string p));
     Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx)
 
+
+let infer_arity typ =
+  let ctx, _ = Term.decompose_prod_decls typ in
+  Context.Rel.nhyps ctx
+
+let check_arity typ expected_arity =
+  match expected_arity with
+  | None -> true
+  | Some n ->
+    let ctx, _ = Term.decompose_prod_decls typ in
+    n <= Context.Rel.nhyps ctx
+
+
 let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let open CPrimitives in
   let auctx = CPrimitives.op_or_type_univs p in
@@ -164,6 +177,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_univ_hyps = LevelInstance.empty;
     const_body = body;
     const_type = typ;
+    const_arity = Some (infer_arity typ);
     const_body_code = ();
     const_universes = univs;
     const_relevance = Sorts.Relevant;
@@ -181,6 +195,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_univ_hyps = LevelInstance.empty;
     const_body = Symbol symb_entry_unfold_fix;
     const_type = t;
+    const_arity = Some (infer_arity t);
     const_body_code = ();
     const_universes = univs;
     const_relevance = UVars.subst_sort_level_relevance usubst r;
@@ -205,6 +220,7 @@ let infer_parameter ~sec_univs env entry =
     const_univ_hyps = make_univ_hyps sec_univs;
     const_body = undef;
     const_type = typ;
+    const_arity = None;
     const_body_code = ();
     const_universes = univs;
     const_relevance = UVars.subst_sort_level_relevance usubst r;
@@ -226,10 +242,15 @@ let infer_definition ~sec_univs env entry =
   let body = Vars.subst_univs_level_constr usubst j.uj_val in
   let def = Def body in
   let hyps = used_section_variables env entry.const_entry_secctx (Some body) typ in
+  let arity =
+    if check_arity typ entry.const_entry_arity then entry.const_entry_arity
+    else CErrors.user_err Pp.(str "Declared arity is invalid")
+  in
   {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
     const_body = def;
+    const_arity = arity;
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
@@ -252,11 +273,16 @@ let infer_opaque ~sec_univs env entry =
   let def = OpaqueDef () in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
+  let arity =
+    if check_arity typ entry.opaque_entry_arity then entry.opaque_entry_arity
+    else CErrors.user_err Pp.(str "Declared arity is invalid")
+  in
   {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
     const_body = def;
     const_type = typ;
+    const_arity = arity;
     const_body_code = ();
     const_universes = univs;
     const_relevance = UVars.subst_sort_level_relevance usubst @@ Sorts.relevance_of_sort typj.utj_type;

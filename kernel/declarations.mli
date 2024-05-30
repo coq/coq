@@ -110,6 +110,7 @@ type ('opaque, 'bytecode) pconstant_body = {
     const_body : (Constr.t, 'opaque, bool) constant_def;
                     (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
+    const_arity : int option;
     const_relevance : Sorts.relevance;
     const_body_code : 'bytecode;
     const_universes : universes;

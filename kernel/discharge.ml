@@ -77,6 +77,7 @@ let cook_constant _env info cb =
     const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
+    const_arity = Option.map (fun n -> n + Context.Rel.nhyps (rel_context_of_cooking_cache cache)) cb.const_arity;
     const_body_code = ();
     const_universes = univs;
     const_relevance = cb.const_relevance;
