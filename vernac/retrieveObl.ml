@@ -235,10 +235,10 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
   let evts =
     (* Remove existential variables in types and build the corresponding products *)
     List.fold_right
-      (fun (id, (n, nstr), ev) l ->
+      (fun (id, (n, nstr), ev) evs ->
         let hyps = Evd.evar_filtered_context ev in
         let hyps = trunc_named_context nc_len hyps in
-        let evtyp, deps, transp = etype_of_evar evm l hyps (Evd.evar_concl ev) in
+        let evtyp, deps, transp = etype_of_evar evm evs hyps (Evd.evar_concl ev) in
         let evtyp, hyps, chop =
           match chop_product fs evtyp with
           | Some t -> (t, trunc_named_context fs hyps, fs)
@@ -271,7 +271,7 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
           ; ev_deps = deps
           ; ev_tac = None }
         in
-        (id, info) :: l)
+        (id, info) :: evs)
       evn []
   in
   let t', _, transparent =

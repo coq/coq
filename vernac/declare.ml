@@ -2261,7 +2261,7 @@ let check_single_entry { entries; uctx } label =
   | _ ->
     CErrors.anomaly ~label Pp.(str "close_proof returned more than one proof term")
 
-let finalize_proof ~pm proof_obj proof_info =
+let finish_proof ~pm proof_obj proof_info =
   let open Proof_ending in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
@@ -2297,7 +2297,7 @@ let save ~pm ~proof ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
-  finalize_proof ~pm proof_obj proof_info
+  finish_proof ~pm proof_obj proof_info
 
 let save_regular ~(proof : t) ~opaque ~idopt =
   let open Proof_ending in
@@ -2325,7 +2325,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
   let pinfo = process_idopt_for_save ~idopt proof.pinfo in
-  let pm, _ = finalize_proof ~pm proof pinfo in
+  let pm, _ = finish_proof ~pm proof pinfo in
   pm
 
 end (* Proof module *)
