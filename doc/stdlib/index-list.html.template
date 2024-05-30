@@ -696,13 +696,14 @@ through the <tt>Require Import</tt> command.</p>
   </dd>
 
   <dt> <b>Compat</b>:
-    Compatibility wrappers for previous versions of Coq
+    Compatibility wrappers for previous versions of Coq and recommended options at the time of a given Coq release
   </dt>
   <dd>
     theories/Compat/AdmitAxiom.v
     theories/Compat/Coq818.v
     theories/Compat/Coq819.v
     theories/Compat/Coq820.v
+    theories/Compat/GoodDefaults_8_20.v
     user-contrib/Ltac2/Compat/Coq818.v
     user-contrib/Ltac2/Compat/Coq819.v
   </dd>
