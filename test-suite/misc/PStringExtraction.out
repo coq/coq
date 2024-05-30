@@ -1,0 +1,53 @@
+
+type comparison =
+| Eq
+| Lt
+| Gt
+
+type char63 = Uint63.t
+
+(** val make : Uint63.t -> char63 -> Pstring.t **)
+
+let make = Pstring.make
+
+(** val length : Pstring.t -> Uint63.t **)
+
+let length = Pstring.length
+
+(** val sub : Pstring.t -> Uint63.t -> Uint63.t -> Pstring.t **)
+
+let sub = Pstring.sub
+
+(** val cat : Pstring.t -> Pstring.t -> Pstring.t **)
+
+let cat = Pstring.cat
+
+(** val compare : Pstring.t -> Pstring.t -> comparison **)
+
+let compare = (fun x y -> let c = Pstring.compare x y in if c = 0 then Eq else if c < 0 then Lt else Gt)
+
+(** val s1 : Pstring.t **)
+
+let s1 =
+  "hello"
+
+(** val s2 : Pstring.t **)
+
+let s2 =
+  "wwworlddd"
+
+(** val s : Pstring.t **)
+
+let s =
+  cat s1 (cat ", " (cat (sub s2 (Uint63.of_int (2)) (Uint63.of_int (5))) "!"))
+
+(** val w : Pstring.t **)
+
+let w =
+  make (length s) (Uint63.of_int (119))
+
+(** val c : comparison **)
+
+let c =
+  compare s w
+

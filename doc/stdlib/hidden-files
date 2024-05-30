@@ -19,6 +19,7 @@ theories/extraction/ExtrOcamlIntConv.v
 theories/extraction/ExtrOcamlNatBigInt.v
 theories/extraction/ExtrOcamlNatInt.v
 theories/extraction/ExtrOcamlString.v
+theories/extraction/ExtrOCamlPString.v
 theories/extraction/ExtrOcamlNativeString.v
 theories/extraction/ExtrOcamlZBigInt.v
 theories/extraction/ExtrOcamlZInt.v
