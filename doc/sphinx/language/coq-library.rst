@@ -1078,6 +1078,34 @@ counterpart, using the variant type ``spec_float``, and the injection
 For more details on the available definitions and lemmas, see the
 online documentation of the ``Floats`` library.
 
+.. _pstring_library:
+
+Primitive strings library
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The standard library provides a ``PrimString`` module declaring a primitive
+string type ``PrimString.string`` (corresponding to the OCaml ``string`` type),
+together with a small set of primitive functions:
+
+* ``max_length`` : gives the maximum length of a string
+* ``make`` : builds a string of the given length conly containing the given byte
+* ``length`` : gives the lenght of the given string
+* ``get`` : gives the byte at a given index in the given string
+* ``sub`` : extracts the sub-string from the given string that starts at the given offset and with the given length
+* ``cat`` : concatenates the two given strings
+* ``compare`` : compares the two strings and returns a ``comparison``
+
+Bytes are represented using the ``PrimString.char63``, which is defined as ``Uint63.int``,
+but primitive strings only store values fitting on 8 bits (i.e., values between 0 and 255).
+
+Axiomatic specifications of these primitive string functions are provided in the
+``PrimStringAxioms`` module. Additional properties, and relations to equivalent
+primitives defined in Gallina are provided in module ``PString`` (which exports
+``PrimString`` and ``PrimStringAxioms``.
+
+A custom string notation is provided for the ``string`` and ``char63`` types,
+in respective scopes ``pstring`` and ``char63``.
+
 .. _userscontributions:
 
 Users’ contributions

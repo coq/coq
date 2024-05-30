@@ -171,3 +171,48 @@ the array are modified have O(n) access time, the same as a list. The version th
 changes dynamically upon each get and set call: the current list of modifications
 is applied to the native array and the lists of modifications of the other versions
 are updated so that they still represent the same values.
+
+.. _primitive-string:
+
+Primitive (Byte-Based) Strings
+------------------------------
+
+The language of terms supports immutable strings as values. Primitive strings
+are *axiomatized*.  The type is declared through the following sentence (excerpt
+from the :g:`PrimString` module):
+
+.. coqdoc::
+
+   Primitive string := #string_type.
+
+This type is equipped with functions that must be similarly declared. For example,
+the length of a string can be computed with :g:`PrimString.length`, and the character
+(i.e., byte) at a given position can be obtained with :g:`PrimString.get`. These
+functions are defined as follows:
+
+.. coqdoc::
+
+   Definition char63 := int.
+
+   Primitive length : string -> int := #string_length.
+   Primitive get : string -> int -> char63 := #string_get.
+
+The remaining primitives can be found in the :g:`PrimString` module.
+
+These primitive declarations are regular axioms. As such, they must be trusted and
+are listed by the :g:`Print Assumptions` command.
+
+The reduction machines (:tacn:`vm_compute`, :tacn:`native_compute`) implement
+dedicated, efficient rules to reduce the applications of these primitive
+operations.
+
+The extraction of these primitives can be customized similarly to the extraction
+of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPString`
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Pstring` module. Said OCaml module is not produced by
+extraction. Instead, it has to be provided by the user (if they want to compile
+or execute the extracted code). For instance, an implementation of this module
+can be taken from the kernel of Coq (see ``kernel/pstring.ml``).
+
+Literal values (of type :g:`Pstring.t`, or equivalently :g:`string`) are extracted
+to literal OCaml values (of type :g:`string`).

@@ -2212,6 +2212,8 @@ String notations
             * :n:`Byte.byte -> option @qualid__type`
             * :n:`list Byte.byte -> @qualid__type`
             * :n:`list Byte.byte -> option @qualid__type`
+            * :n:`PrimString.string -> @qualid__type`
+            * :n:`PrimString.string -> option @qualid__type`
 
          The printing function :n:`@qualid__print` should have one of the
          following types:
@@ -2220,6 +2222,8 @@ String notations
             * :n:`@qualid__type -> option Byte.byte`
             * :n:`@qualid__type -> list Byte.byte`
             * :n:`@qualid__type -> option (list Byte.byte)`
+            * :n:`@qualid__type -> PrimString.string`
+            * :n:`@qualid__type -> option PrimString.string`
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the string will be fully reduced, and universes
@@ -2227,7 +2231,7 @@ String notations
 
          Note that only fully-reduced ground terms (terms containing only
          function application, constructors, inductive type families,
-         sorts, primitive integers, primitive floats, primitive arrays and type
+         sorts, primitive integers, primitive floats, primitive strings, primitive arrays and type
          constants for primitive types) will be considered for printing.
 
       :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
@@ -2239,12 +2243,12 @@ String notations
      the given string.  This error is given when the interpretation
      function returns :g:`None`.
 
-   .. exn:: @qualid__parse should go from Byte.byte or (list Byte.byte) to @type or (option @type).
+   .. exn:: @qualid__parse should go from Byte.byte, (list Byte.byte), or PrimString.string to @type or (option @type).
 
      The parsing function given to the :cmd:`String Notation`
      command is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
+   .. exn:: @qualid__print should go from @type to T or (option T), where T is either Byte.byte, (list Byte.byte), or PrimString.string.
 
      The printing function given to the :cmd:`String Notation`
      command is not of the right type.
@@ -2252,8 +2256,8 @@ String notations
    .. exn:: Unexpected term @term while parsing a string notation.
 
      Parsing functions must always return ground terms, made up of
-     function application, constructors, inductive type families, sorts and primitive
-     integers.  Parsing functions may not return terms containing
+     function application, constructors, inductive type families, sorts, primitive
+     integers and primitive strings.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
    .. exn:: Unexpected non-option term @term while parsing a string notation.
