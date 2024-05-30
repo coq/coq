@@ -688,8 +688,8 @@ let next_error sn =
     let file,line,start,stop,error_msg = search_next_error () in
     FileAux.load_file file;
     let b = sn.buffer in
-    let starti = b#get_iter_at_byte ~line:(line-1) start in
-    let stopi = b#get_iter_at_byte ~line:(line-1) stop in
+    let starti = Ideutils.get_iter_at_byte b ~line:(line-1) start in
+    let stopi = Ideutils.get_iter_at_byte b ~line:(line-1) stop in
     b#apply_tag Tags.Script.error ~start:starti ~stop:stopi;
     b#place_cursor ~where:starti;
     sn.messages#default_route#set (Pp.str error_msg);
