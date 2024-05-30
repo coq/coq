@@ -174,6 +174,19 @@ let ulen uni_ch =
   else if uni_ch < 0x10000 then 3
   else 4
 
+(* workaround for lablgtk bug up to version 3.1.4 *)
+(* replaces: buffer#get_iter_at_byte ~line index *)
+(* see https://github.com/garrigue/lablgtk/pull/181 *)
+let get_iter_at_byte buffer ~line index =
+  let iter = buffer#get_iter_at_byte ~line 0 in
+  let rec adjust iter cnt =
+    if cnt <= 0 then
+      iter
+    else
+      adjust (iter#forward_char) (cnt - (ulen iter#char))
+  in
+  adjust iter index
+
 (** convert UTF-8 byte offset (used by Coq) to unicode offset (used by GTK buffer) *)
 let byte_off_to_buffer_off buffer byte_off =
   let rec cvt iter cnt =
