@@ -14,8 +14,6 @@ open Environ
 (***********************************************************************
   s conversion functions *)
 
-exception NotConvertible
-
 type conversion_error =
 | ConvErrDefault
 | ConvErrUniverses of UGraph.univ_inconsistency

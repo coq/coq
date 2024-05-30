@@ -25,6 +25,7 @@ open Type_errors
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+exception NotConvertible
 exception NotConvertibleVect of int
 
 let conv_leq env x y = default_conv CUMUL env x y
@@ -745,7 +746,7 @@ let rec execute env cstr =
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
             let () = match conv_leq env ct ct' with
             | Result.Ok () -> ()
-            | Result.Error () -> raise NotConvertible (* FIXME *)
+            | Result.Error () -> error_bad_invert env (* TODO: more informative message *)
             in
             let _, args' = decompose_app ct' in
             if args == args' then iv
@@ -919,7 +920,7 @@ let check_context env rels =
         let jty = infer_type env ty in
         let () = match conv_leq env j1.uj_type ty with
         | Result.Ok () -> ()
-        | Result.Error () -> raise NotConvertible (* FIXME *)
+        | Result.Error () -> error_actual_type env j1 ty
         in
         let x = check_let_annot env jty.utj_type x j1.uj_val jty.utj_val in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)

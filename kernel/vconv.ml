@@ -8,6 +8,8 @@ open Vmsymtable
 
 (* Test la structure des piles *)
 
+exception NotConvertible
+
 let fail_check (state, check) = match state with
 | Result.Ok state -> (state, check)
 | Result.Error ConvErrDefault -> raise NotConvertible

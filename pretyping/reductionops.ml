@@ -1213,13 +1213,12 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
     let evars = Evd.evar_handler sigma in
     try
       let env = Environ.set_universes (Evd.universes sigma) env in
-      let () = match Conversion.generic_conv ~l2r:false pb ~evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 with
-      | Result.Ok (_ : Evd.evar_map) -> ()
-      | Result.Error ConvErrDefault -> raise Conversion.NotConvertible
+      begin match Conversion.generic_conv ~l2r:false pb ~evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 with
+      | Result.Ok (_ : Evd.evar_map) -> true
+      | Result.Error ConvErrDefault -> false
       | Result.Error (ConvErrUniverses e) -> assert false
-      in
-      true
-    with Conversion.NotConvertible -> false
+      end
+    with
     | e ->
       let e = Exninfo.capture e in
       report_anomaly e
@@ -1302,10 +1301,9 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let env = Environ.set_universes (Evd.universes sigma) env in
         match conv_fun pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
         | Result.Ok sigma -> Some sigma
-        | Result.Error Conversion.ConvErrDefault -> raise Conversion.NotConvertible
+        | Result.Error Conversion.ConvErrDefault -> None
         | Result.Error (Conversion.ConvErrUniverses e) -> raise (UGraph.UniverseInconsistency e)
   with
-  | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
     let e = Exninfo.capture e in
@@ -1334,10 +1332,9 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
             env (UnivProblem.Set.empty, univproblem_univ_state) x y
         with
         | Result.Ok cstr -> Some cstr
-        | Result.Error Conversion.ConvErrDefault -> raise Conversion.NotConvertible
+        | Result.Error Conversion.ConvErrDefault -> None
         | Result.Error (Conversion.ConvErrUniverses e) -> raise (UGraph.UniverseInconsistency e)
   with
-  | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
     let e = Exninfo.capture e in

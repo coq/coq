@@ -63,11 +63,6 @@ type with_body = {
   w_bytecode : Vmlibrary.indirect_code option;
 }
 
-let fail_check = function
-| Result.Ok ans -> ans
-| Result.Error _ -> (* FIXME? *)
-  raise Conversion.NotConvertible
-
 let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
@@ -95,13 +90,17 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               let cst = infer_gen_conv_leq (cst, ustate) env' j.uj_type typ in
-              fail_check cst
+              cst
             | Def c' ->
-              fail_check @@ infer_gen_conv (cst, ustate) env' wth.w_def c'
+              infer_gen_conv (cst, ustate) env' wth.w_def c'
             | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
           in
-          cst
+          begin match cst with
+          | Result.Ok cst -> cst
+          | Result.Error Conversion.(ConvErrDefault | ConvErrUniverses _) ->
+            error_incorrect_with_constraint lab
+          end
         | Polymorphic uctx, Polymorphic ctx ->
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
@@ -157,7 +156,6 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
@@ -230,7 +228,6 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 type 'a vm_handler = { vm_handler : env -> universes -> Constr.t -> 'a -> 'a * Vmlibrary.indirect_code option }
 type 'a vm_state = 'a * 'a vm_handler

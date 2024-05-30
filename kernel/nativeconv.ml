@@ -18,6 +18,8 @@ open Environ
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
+exception NotConvertible
+
 let fail_check (state, check) = match state with
 | Result.Ok state -> (state, check)
 | Result.Error ConvErrDefault -> raise NotConvertible
