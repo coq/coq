@@ -1213,7 +1213,11 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
     let evars = Evd.evar_handler sigma in
     try
       let env = Environ.set_universes (Evd.universes sigma) env in
-      let _ = Conversion.generic_conv ~l2r:false pb ~evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
+      let () = match Conversion.generic_conv ~l2r:false pb ~evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 with
+      | Result.Ok (_ : Evd.evar_map) -> ()
+      | Result.Error ConvErrDefault -> raise Conversion.NotConvertible
+      | Result.Error (ConvErrUniverses e) -> assert false
+      in
       true
     with Conversion.NotConvertible -> false
     | e ->
@@ -1296,10 +1300,10 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
-        let sigma' =
-          conv_fun pb ~l2r:false sigma ts
-            env (sigma, sigma_univ_state) x y in
-        Some sigma'
+        match conv_fun pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
+        | Result.Ok sigma -> Some sigma
+        | Result.Error Conversion.ConvErrDefault -> raise Conversion.NotConvertible
+        | Result.Error (Conversion.ConvErrUniverses e) -> raise (UGraph.UniverseInconsistency e)
   with
   | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
@@ -1325,10 +1329,13 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
-        let cstr =
+        match
           Conversion.generic_conv pb ~l2r:false ~evars:(Evd.evar_handler sigma) ts
-            env (UnivProblem.Set.empty, univproblem_univ_state) x y in
-        Some cstr
+            env (UnivProblem.Set.empty, univproblem_univ_state) x y
+        with
+        | Result.Ok cstr -> Some cstr
+        | Result.Error Conversion.ConvErrDefault -> raise Conversion.NotConvertible
+        | Result.Error (Conversion.ConvErrUniverses e) -> raise (UGraph.UniverseInconsistency e)
   with
   | Conversion.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None

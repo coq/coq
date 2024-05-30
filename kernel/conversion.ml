@@ -122,13 +122,13 @@ let pure_stack lfts stk =
 (* Conversion utility functions *)
 
 (* functions of this type are called from the kernel *)
-type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+type 'a kernel_conversion_function = env -> 'a -> 'a -> (unit, unit) result
 
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:evar_handler ->
-  'a -> 'a -> unit
+  'a -> 'a -> (unit, unit) result
 
 exception NotConvertible
 
@@ -158,9 +158,9 @@ type 'a universe_compare = {
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type 'b generic_conversion_function = 'b universe_state -> constr -> constr -> 'b
+type 'a generic_conversion_function = 'a universe_state -> constr -> constr -> ('a, conversion_error) result
 
-type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraints.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> (Univ.Constraints.t, conversion_error) result
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare_sorts env pb s0 s1 u, check)
@@ -933,7 +933,9 @@ let () =
       in
       assert (univs==univs');
       true
-      with NotConvertible -> false
+    with
+    | NotConvertible -> false
+    | UGraph.UniverseInconsistency _ -> assert false
   in
   CClosure.set_conv conv
 
@@ -943,19 +945,23 @@ let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=defaul
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
   in
-    if b then ()
-    else
-      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
-        ()
+    if b then Result.Ok ()
+    else match clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 with
+    | (_ : UGraph.t * UGraph.t universe_compare)-> Result.Ok ()
+    | exception NotConvertible -> Result.Error ()
+    | exception UGraph.UniverseInconsistency _ ->
+      (* checked_universes cannot raise this *)
+      assert false
 
 let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) univs t1 t2 =
   let graph = Environ.universes env in
-  let (s, _) =
-    clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
-  in s
+  match clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2 with
+  | (s, _) -> Result.Ok s
+  | exception NotConvertible -> Result.Error ConvErrDefault
+  | exception (UGraph.UniverseInconsistency err) -> Result.Error (ConvErrUniverses err)
 
 let default_conv cv_pb env t1 t2 =
     gen_conv cv_pb env t1 t2

@@ -211,8 +211,11 @@ let vm_conv_gen cv_pb sigma env univs t1 t2 =
   try
     let v1 = val_of_constr env sigma t1 in
     let v2 = val_of_constr env sigma t2 in
-    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
-  with Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
+    Result.Ok (fst (conv_val env cv_pb (nb_rel env) v1 v2 univs))
+  with
+  | NotConvertible -> Result.Error ConvErrDefault
+  | UGraph.UniverseInconsistency e -> Result.Error (ConvErrUniverses e)
+  | Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
@@ -223,11 +226,17 @@ let vm_conv cv_pb env t1 t2 =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
     else Constr.eq_constr_univs univs t1 t2
   in
-  if not b then
+  if b then Result.Ok ()
+  else
     let state = (univs, checked_universes) in
-    let _ : UGraph.t =
+    let ans : (UGraph.t, conversion_error) result =
       NewProfile.profile "vm_conv" (fun () ->
           vm_conv_gen cv_pb (Genlambda.empty_evars env) env state t1 t2)
         ()
     in
-    ()
+    match ans with
+    | Result.Ok (_ : UGraph.t)-> Result.Ok ()
+    | Result.Error ConvErrDefault -> Result.Error ()
+    | Result.Error (ConvErrUniverses _) ->
+      (* checked_universes cannot raise this *)
+      assert false

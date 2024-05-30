@@ -63,6 +63,11 @@ type with_body = {
   w_bytecode : Vmlibrary.indirect_code option;
 }
 
+let fail_check = function
+| Result.Ok ans -> ans
+| Result.Error _ -> (* FIXME? *)
+  raise Conversion.NotConvertible
+
 let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
@@ -90,9 +95,9 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               let cst = infer_gen_conv_leq (cst, ustate) env' j.uj_type typ in
-              cst
+              fail_check cst
             | Def c' ->
-              infer_gen_conv (cst, ustate) env' wth.w_def c'
+              fail_check @@ infer_gen_conv (cst, ustate) env' wth.w_def c'
             | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
           in
@@ -109,14 +114,14 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               let j = Typeops.infer env' wth.w_def in
               assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
-              begin
-                try Conversion.conv_leq env' j.uj_type typ
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+              begin match Conversion.conv_leq env' j.uj_type typ with
+              | Result.Ok () -> ()
+              | Result.Error () -> error_incorrect_with_constraint lab
               end
             | Def c' ->
-              begin
-                try Conversion.conv env' wth.w_def c'
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+              begin match Conversion.conv env' wth.w_def c' with
+              | Result.Ok () -> ()
+              | Result.Error () -> error_incorrect_with_constraint lab
               end
             | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab

@@ -32,8 +32,9 @@ let conv_leq env x y = default_conv CUMUL env x y
 let conv_leq_vecti env v1 v2 =
   Array.fold_left2_i
     (fun i _ t1 t2 ->
-      try conv_leq env t1 t2
-      with NotConvertible -> raise (NotConvertibleVect i))
+      match conv_leq env t1 t2 with
+      | Result.Ok () -> ()
+      | Result.Error () -> raise (NotConvertibleVect i))
     ()
     v1
     v2
@@ -188,14 +189,20 @@ let check_hyps_inclusion env ?evars c sign =
       let id = NamedDecl.get_id d1 in
       try
         let d2 = lookup_named id env in
-        conv env (get_type d2) (get_type d1);
+        let () = match conv env (get_type d2) (get_type d1) with
+        | Result.Ok () -> ()
+        | Result.Error () -> raise NotConvertible
+        in
         (match d2,d1 with
         | LocalAssum _, LocalAssum _ -> ()
         | LocalAssum _, LocalDef _ ->
             (* This is wrong, because we don't know if the body is
                needed or not for typechecking: *) ()
         | LocalDef _, LocalAssum _ -> raise NotConvertible
-        | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
+        | LocalDef (_,b2,_), LocalDef (_,b1,_) ->
+          match conv env b2 b1 with
+          | Result.Ok () -> ()
+          | Result.Error () -> raise NotConvertible);
       with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
@@ -262,8 +269,8 @@ let type_of_apply env func funt argsv argstv =
         let argt = argstv.(i) in
         let c1 = term_of_fconstr c1 in
         begin match conv_leq env argt c1 with
-        | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
-        | exception NotConvertible ->
+        | Result.Ok () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
+        | Result.Error () ->
           error_cant_apply_bad_type env
             (i+1,c1,argt)
             (make_judge func funt)
@@ -288,8 +295,8 @@ let type_of_parameters env ctx u argsv argstv =
     let argt = argstv.(i) in
     let t = esubst u subst t in
     begin match conv_leq env argt t with
-    | () -> apply_rec (i + 1) (Esubst.subs_cons (Vars.make_substituend arg) subst) ctx
-    | exception NotConvertible ->
+    | Result.Ok () -> apply_rec (i + 1) (Esubst.subs_cons (Vars.make_substituend arg) subst) ctx
+    | Result.Error () ->
       error_actual_type env (make_judge arg argt) t
     end
   | LocalDef (_, b, _) :: ctx ->
@@ -380,8 +387,7 @@ let type_of_product env _name s1 s2 =
 *)
 
 let check_cast env c ct k expected_type =
-  try
-    match k with
+  let ans = match k with
     | VMcast ->
       Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
@@ -389,7 +395,10 @@ let check_cast env c ct k expected_type =
     | NATIVEcast ->
       let sigma = Genlambda.empty_evars env in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
-  with NotConvertible ->
+  in
+  match ans with
+  | Result.Ok () -> ()
+  | Result.Error () ->
     error_actual_type env (make_judge c ct) expected_type
 
 let judge_of_int env i =
@@ -484,8 +493,9 @@ let check_branch_types env (_mib, mip) ci u pms c _ct lft (pctx, p) =
     let indices = List.lastn mip.mind_nrealargs retargs in
     let subst = instantiate (List.rev pctx) (indices @ [cstr]) (Esubst.subs_shft (nargs, Esubst.subs_id 0)) in
     let expbrt = Vars.esubst Vars.lift_substituend subst p in
-    try conv_leq brenv brt expbrt
-    with NotConvertible -> raise (NotConvertibleBranch (i, brctx, brt, expbrt))
+    match conv_leq brenv brt expbrt with
+    | Result.Ok () -> ()
+    | Result.Error () -> raise (NotConvertibleBranch (i, brctx, brt, expbrt))
   in
   try Array.iteri iter lft
   with NotConvertibleBranch (i, brctx, brt, expbrt) ->
@@ -512,7 +522,11 @@ let should_invert_case env r ci =
 let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
   (* Check that the type of the scrutinee is <= the expected argument type *)
-  let () = try Array.iter2 (fun p1 p2 -> Conversion.conv ~l2r:true env p1 p2) (Array.of_list params) pms
+  let iter p1 p2 = match Conversion.conv ~l2r:true env p1 p2 with
+  | Result.Ok () -> ()
+  | Result.Error () -> raise NotConvertible
+  in
+  let () = try Array.iter2 iter (Array.of_list params) pms
     with NotConvertible -> raise Type_errors.(TypeError (env,IllFormedCaseParams))
   in
   (* We use l2r:true for compat with old versions which used CONV with arguments
@@ -729,7 +743,10 @@ let rec execute env cstr =
             let args = Array.append pms indices in
             let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
-            let () = conv_leq env ct ct' in
+            let () = match conv_leq env ct ct' with
+            | Result.Ok () -> ()
+            | Result.Error () -> raise NotConvertible (* FIXME *)
+            in
             let _, args' = decompose_app ct' in
             if args == args' then iv
             else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
@@ -900,7 +917,10 @@ let check_context env rels =
       | LocalDef (x,bd,ty) ->
         let j1 = infer env bd in
         let jty = infer_type env ty in
-        conv_leq env j1.uj_type ty;
+        let () = match conv_leq env j1.uj_type ty with
+        | Result.Ok () -> ()
+        | Result.Error () -> raise NotConvertible (* FIXME *)
+        in
         let x = check_let_annot env jty.utj_type x j1.uj_val jty.utj_val in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])

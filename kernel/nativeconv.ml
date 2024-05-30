@@ -169,7 +169,10 @@ let native_conv_gen pb sigma env univs t1 t2 =
   let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
   debug_native_compiler (fun () -> Pp.str time_info);
   (* TODO change 0 when we can have de Bruijn *)
-  fst (conv_val env pb 0 rt1 rt2 univs)
+  try Result.Ok (fst (conv_val env pb 0 rt1 rt2 univs))
+  with
+  | NotConvertible -> Result.Error ConvErrDefault
+  | UGraph.UniverseInconsistency e -> Result.Error (ConvErrUniverses e)
 
 let native_conv_gen pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_native_compiler then
@@ -184,8 +187,14 @@ let native_conv cv_pb sigma env t1 t2 =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
     else Constr.eq_constr_univs univs t1 t2
   in
-  if not b then
+  if b then Result.Ok ()
+  else
     let state = (univs, checked_universes) in
     let t1 = Term.it_mkLambda_or_LetIn t1 (Environ.rel_context env) in
     let t2 = Term.it_mkLambda_or_LetIn t2 (Environ.rel_context env) in
-    let _ = native_conv_gen cv_pb sigma env state t1 t2 in ()
+    match native_conv_gen cv_pb sigma env state t1 t2 with
+    | Result.Ok (_ : UGraph.t) -> Result.Ok ()
+    | Result.Error ConvErrDefault -> Result.Error ()
+    | Result.Error (ConvErrUniverses _) ->
+      (* checked_universes cannot raise this *)
+      assert false
