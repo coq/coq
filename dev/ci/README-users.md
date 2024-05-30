@@ -126,10 +126,14 @@ Some important points:
 - Job dependencies are declared in 2 places: `Makefile.ci` using the
   usual Makefile syntax, and `.gitlab-ci.yml` using `needs`. If you
   only depend on Coq itself the implicit `needs` from the template
-  suffices. Otherwise the `needs` list must include all transitive
-  dependencies including `build:base` or `build:edge+flambda`
-  depending on the switch you chose. See for instance the declaration
-  for `library:ci-analysis`.
+  suffices. Otherwise the `needs` list must include `build:base` or
+  `build:edge+flambda` (depending on the switch you chose). See for
+  instance the declaration for `library:ci-analysis`.
+
+- If you depend on more than Coq itself you must specify the `stage`:
+  `build-2` if all your dependencies depend only on Coq itself,
+  otherwise `build-3+` (the number is the max depth of the dependency
+  chain, with Coq itself at 0 and the default from the template at 1).
 
 - If needed you can disable native compilation by doing `export
   COQEXTRAFLAGS='-native-compiler no'` before the build commands in
