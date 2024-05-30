@@ -18,6 +18,11 @@ open Environ
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
+let fail_check (state, check) = match state with
+| Result.Ok state -> (state, check)
+| Result.Error ConvErrDefault -> raise NotConvertible
+| Result.Error (ConvErrUniverses err) -> raise (UGraph.UniverseInconsistency err)
+
 let rec conv_val env pb lvl v1 v2 cu =
   if v1 == v2 then cu
   else
@@ -83,13 +88,13 @@ and conv_atom env pb lvl a1 a2 cu =
     | Arel i1, Arel i2 ->
         if Int.equal i1 i2 then cu else raise NotConvertible
     | Aind (ind1,u1), Aind (ind2,u2) ->
-       if Ind.CanOrd.equal ind1 ind2 then convert_instances ~flex:false u1 u2 cu
+       if Ind.CanOrd.equal ind1 ind2 then fail_check @@ convert_instances ~flex:false u1 u2 cu
        else raise NotConvertible
     | Aconstant (c1,u1), Aconstant (c2,u2) ->
-       if Constant.CanOrd.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
+       if Constant.CanOrd.equal c1 c2 then fail_check @@ convert_instances ~flex:true u1 u2 cu
        else raise NotConvertible
     | Asort s1, Asort s2 ->
-        sort_cmp_universes env pb s1 s2 cu
+      fail_check @@ sort_cmp_universes env pb s1 s2 cu
     | Avar id1, Avar id2 ->
         if Id.equal id1 id2 then cu else raise NotConvertible
     | Acase(a1,ac1,p1,bs1), Acase(a2,ac2,p2,bs2) ->

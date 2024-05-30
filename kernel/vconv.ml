@@ -8,6 +8,11 @@ open Vmsymtable
 
 (* Test la structure des piles *)
 
+let fail_check (state, check) = match state with
+| Result.Ok state -> (state, check)
+| Result.Error ConvErrDefault -> raise NotConvertible
+| Result.Error (ConvErrUniverses err) -> raise (UGraph.UniverseInconsistency err)
+
 let table_key_instance env = function
 | ConstKey cst -> Environ.constant_context env cst
 | RelKey _ | VarKey _ | EvarKey _ -> UVars.AbstractContext.empty
@@ -103,7 +108,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           assert (0 < nargs args2);
           let u1 = uni_instance (arg args1 0) in
           let u2 = uni_instance (arg args2 0) in
-          let cu = convert_instances ~flex:false u1 u2 cu in
+          let cu = fail_check @@ convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
@@ -120,13 +125,13 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           assert (0 < nargs args2);
           let u1 = uni_instance (arg args1 0) in
           let u2 = uni_instance (arg args2 0) in
-          let cu = convert_instances ~flex:false u1 u2 cu in
+          let cu = fail_check @@ convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
     else raise NotConvertible
   | Asort s1, Asort s2 ->
-    sort_cmp_universes env pb s1 s2 cu
+    fail_check @@ sort_cmp_universes env pb s1 s2 cu
   | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =

@@ -16,6 +16,10 @@ open Environ
 
 exception NotConvertible
 
+type conversion_error =
+| ConvErrDefault
+| ConvErrUniverses of UGraph.univ_inconsistency
+
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
@@ -26,10 +30,10 @@ type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = {
   (* Might raise NotConvertible *)
-  compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
-  compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> 'a;
+  compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> ('a, conversion_error) result;
+  compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, conversion_error) result;
   compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
-    UVars.Instance.t -> UVars.Instance.t -> 'a -> 'a;
+    UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, conversion_error) result;
 }
 
 type 'a universe_state = 'a * 'a universe_compare
@@ -45,12 +49,12 @@ val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int
 val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int
 
 val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
-  'a * 'a universe_compare -> 'a * 'a universe_compare
+  'a * 'a universe_compare -> ('a, conversion_error) result * 'a universe_compare
 
 (* [flex] should be true for constants, false for inductive types and
 constructors. *)
 val convert_instances : flex:bool -> UVars.Instance.t -> UVars.Instance.t ->
-  'a * 'a universe_compare -> 'a * 'a universe_compare
+  'a * 'a universe_compare -> ('a, conversion_error) result * 'a universe_compare
 
 (** This function never raise UnivInconsistency. *)
 val checked_universes : UGraph.t universe_compare
