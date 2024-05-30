@@ -27,7 +27,6 @@ open Elimschemes
 open Environ
 open Termops
 open EConstr
-open Libnames
 open Proofview.Notations
 open Context.Named.Declaration
 
@@ -37,29 +36,14 @@ module TC = Typeclasses
 
 (** Constants used by the tactic. *)
 
-let classes_dirpath =
-  Names.DirPath.make (List.map Id.of_string ["Classes";"Coq"])
-
-let init_relation_classes () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Classes";"RelationClasses"]
-
-let init_setoid () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
-
-let find_reference dir s =
-  Coqlib.find_reference "generalized rewriting" dir s
-[@@warning "-3"]
-
-let lazy_find_reference dir s =
-  let gr = lazy (find_reference dir s) in
+let bind_global_ref lib s =
+  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
   fun () -> Lazy.force gr
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
-let find_global dir s =
-  let gr = lazy (find_reference dir s) in
+let bind_global lib s =
+  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
     fun env (evd,cstrs) ->
       let (evd, c) = Evd.fresh_global env evd (Lazy.force gr) in
         (evd, cstrs), c
@@ -69,10 +53,12 @@ let find_global dir s =
 (** Global constants. *)
 
 let coq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
-let coq_eq      = find_global    ["Coq"; "Init"; "Logic"] "eq"
-let coq_f_equal = find_global    ["Coq"; "Init"; "Logic"] "f_equal"
-let coq_all     = find_global    ["Coq"; "Init"; "Logic"] "all"
-let impl        = find_global    ["Coq"; "Program"; "Basics"] "impl"
+let coq_eq      = bind_global "core.eq" "type"
+let coq_f_equal = bind_global "core.eq" "congr"
+let coq_all     = bind_global "core" "all"
+let impl        = bind_global "core" "impl"
+
+let default_relation = bind_global "rewrite" "DefaultRelation"
 
 (** Bookkeeping which evars are constraints so that we can
     remove them at the end of the tactic. *)
@@ -215,49 +201,50 @@ let decompose_applied_relation env sigma (c,l) =
 (** Utility functions *)
 
 module GlobalBindings (M : sig
-  val relation_classes : string list
-  val morphisms : string list
-  val relation : string list * string
+  val prefix : string
   val app_poly : env -> evars -> (env -> evars -> evars * constr) -> constr array -> evars * constr
   val arrow : env -> evars -> evars * constr
 end) = struct
   open M
   open Context.Rel.Declaration
-  let relation : env -> evars -> evars * constr = find_global (fst relation) (snd relation)
 
-  let reflexive_type = find_global relation_classes "Reflexive"
-  let reflexive_proof = find_global relation_classes "reflexivity"
+  let bind_rewrite s = bind_global prefix s
+  let bind_rewrite_ref s = bind_global_ref prefix s
 
-  let symmetric_type = find_global relation_classes "Symmetric"
-  let symmetric_proof = find_global relation_classes "symmetry"
+  let relation : env -> evars -> evars * constr =
+    bind_rewrite "relation"
 
-  let transitive_type = find_global relation_classes "Transitive"
-  let transitive_proof = find_global relation_classes "transitivity"
+  let reflexive_type = bind_rewrite "Reflexive"
+  let reflexive_proof = bind_rewrite "reflexivity"
 
-  let forall_relation = find_global morphisms "forall_relation"
-  let pointwise_relation = find_global morphisms "pointwise_relation"
+  let symmetric_type = bind_rewrite "Symmetric"
+  let symmetric_proof = bind_rewrite "symmetry"
 
-  let forall_relation_ref = lazy_find_reference morphisms "forall_relation"
-  let pointwise_relation_ref = lazy_find_reference morphisms "pointwise_relation"
+  let transitive_type = bind_rewrite "Transitive"
+  let transitive_proof = bind_rewrite "transitivity"
 
-  let respectful = find_global morphisms "respectful"
+  let forall_relation = bind_rewrite "forall_relation"
+  let pointwise_relation = bind_rewrite "pointwise_relation"
 
-  let default_relation = find_global ["Coq"; "Classes"; "SetoidTactics"] "DefaultRelation"
+  let forall_relation_ref = bind_global_ref prefix "forall_relation"
+  let pointwise_relation_ref = bind_global_ref prefix "pointwise_relation"
 
-  let coq_forall = find_global morphisms "forall_def"
+  let respectful = bind_rewrite "respectful"
 
-  let subrelation = find_global relation_classes "subrelation"
-  let do_subrelation = find_global morphisms "do_subrelation"
-  let apply_subrelation = find_global morphisms "apply_subrelation"
+  let coq_forall = bind_rewrite "forall_def"
 
-  let rewrite_relation_class = find_global relation_classes "RewriteRelation"
+  let subrelation = bind_rewrite "subrelation"
+  let do_subrelation = bind_rewrite "do_subrelation"
+  let apply_subrelation = bind_rewrite "apply_subrelation"
+
+  let rewrite_relation_class = bind_rewrite "RewriteRelation"
 
   let proper_class =
-    let r = lazy (find_reference morphisms "Proper") in
+    let r = lazy (bind_rewrite_ref "Proper" ()) in
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proxy_class =
-    let r = lazy (find_reference morphisms "ProperProxy") in
+    let r = lazy (bind_rewrite_ref "ProperProxy" ()) in
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proj () =
@@ -481,12 +468,10 @@ let type_app_poly env env evd f args =
 module PropGlobal = struct
   module Consts =
   struct
-    let relation_classes = ["Coq"; "Classes"; "RelationClasses"]
-    let morphisms = ["Coq"; "Classes"; "Morphisms"]
-    let relation = ["Coq"; "Relations";"Relation_Definitions"], "relation"
+    let prefix = "rewrite.prop"
     let app_poly = app_poly_nocheck
-    let arrow = find_global ["Coq"; "Program"; "Basics"] "arrow"
-    let coq_inverse = find_global ["Coq"; "Program"; "Basics"] "flip"
+    let arrow = bind_global "core" "arrow"
+    let coq_inverse = bind_global "core" "flip"
   end
 
   module G = GlobalBindings(Consts)
@@ -502,12 +487,10 @@ end
 module TypeGlobal = struct
   module Consts =
     struct
-      let relation_classes = ["Coq"; "Classes"; "CRelationClasses"]
-      let morphisms = ["Coq"; "Classes"; "CMorphisms"]
-      let relation = relation_classes, "crelation"
+      let prefix = "rewrite.type"
       let app_poly = app_poly_check
-      let arrow = find_global ["Coq"; "Classes"; "CRelationClasses"] "arrow"
-      let coq_inverse = find_global ["Coq"; "Classes"; "CRelationClasses"] "flip"
+      let arrow = bind_global prefix "arrow"
+      let coq_inverse = bind_global prefix "flip"
     end
 
   module G = GlobalBindings(Consts)
@@ -521,6 +504,17 @@ module TypeGlobal = struct
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
+
+(* Check that relation constants have been registered *)
+let init_relation_classes () =
+  if Coqlib.has_ref "rewrite.prop.relation" || Coqlib.has_ref "rewrite.type.relation" then ()
+  else CErrors.user_err
+    (Pp.str "No bindings have been registered for relation classes in Prop or Type, maybe you need to require Coq.Classes.(C)RelationClasses.")
+
+let init_rewrite () =
+  if Coqlib.has_ref "rewrite.prop.Proper" || Coqlib.has_ref "rewrite.type.Proper" then ()
+  else CErrors.user_err
+    (Pp.str "No bindings have been registered for morphisms in Prop or Type, maybe you need to require Coq.Classes.(C)Morphisms.")
 
 let get_type_of_refresh env evars t =
   let evars', tty = Evarsolve.get_type_of_refresh env (fst evars) t in
@@ -1611,14 +1605,14 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       raise (RewriteFailure (env, evd, e))
   end
 
-let tactic_init_setoid () =
-  try init_setoid (); Proofview.tclUNIT ()
+let tactic_init_rewrite () =
+  try init_rewrite (); Proofview.tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
     Tacticals.tclFAIL ~info (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
-  tactic_init_setoid () <*>
+  tactic_init_rewrite () <*>
   (if progress then Proofview.tclPROGRESS else fun x -> x)
    (Proofview.tclOR
       (cl_rewrite_clause_newtac ~progress strat clause)
@@ -1812,7 +1806,7 @@ let build_morphism_signature env sigma m =
   let _ = List.iter
     (fun (ty, rel) ->
       Option.iter (fun rel ->
-        let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
+        let default = e_app_poly env evd default_relation [| ty; rel |] in
         let evd', t = new_cstr_evar !evd env default in
         evd := evd')
         rel)
@@ -1890,7 +1884,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
               }
   in
   let origsigma = Tacmach.project gl in
-  tactic_init_setoid () <*>
+  tactic_init_rewrite () <*>
     Proofview.tclOR
       (tclPROGRESS
         (tclTHEN

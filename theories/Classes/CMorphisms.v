@@ -738,3 +738,14 @@ Hint Extern 4 (StrictOrder (relation_conjunction _ _)) =>
 #[global]
 Hint Extern 4 (PartialOrder _ (relation_disjunction _ _)) => 
   class_apply StrictOrder_PartialOrder : typeclass_instances.
+
+(* Register bindings for the generalized rewriting tactic *)
+
+Register forall_relation as rewrite.type.forall_relation.
+Register pointwise_relation as rewrite.type.pointwise_relation.
+Register respectful as rewrite.type.respectful.
+Register forall_def as rewrite.type.forall_def.
+Register do_subrelation as rewrite.type.do_subrelation.
+Register apply_subrelation as rewrite.type.apply_subrelation.
+Register Proper as rewrite.type.Proper.
+Register ProperProxy as rewrite.type.ProperProxy.

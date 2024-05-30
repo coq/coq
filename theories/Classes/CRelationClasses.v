@@ -391,3 +391,17 @@ Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : type
 (* Qed. *)
 
 Global Typeclasses Opaque relation_equivalence.
+
+(* Register bindings for the generalized rewriting tactic *)
+
+Register arrow as rewrite.type.arrow.
+Register flip as rewrite.type.flip.
+Register crelation as rewrite.type.relation.
+Register subrelation as rewrite.type.subrelation.
+Register Reflexive as rewrite.type.Reflexive.
+Register reflexivity as rewrite.type.reflexivity.
+Register Symmetric as rewrite.type.Symmetric.
+Register symmetry as rewrite.type.symmetry.
+Register Transitive as rewrite.type.Transitive.
+Register transitivity as rewrite.type.transitivity.
+Register RewriteRelation as rewrite.type.RewriteRelation.
