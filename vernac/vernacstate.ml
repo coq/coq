@@ -229,9 +229,9 @@ module Declare_ = struct
         cc (fun pt -> Declare.Proof.close_future_proof ~feedback_id pt pf))
       ()
 
-  let close_proof ~opaque ~keep_body_ucst_separate =
+  let close_proof ~opaque =
     NewProfile.profile "close_proof" (fun () ->
-        cc (fun pt -> Declare.Proof.close_proof ~opaque ~keep_body_ucst_separate pt))
+        cc (fun pt -> Declare.Proof.close_proof ~opaque pt))
       ()
 
   let discard_all () = s_lemmas := None
