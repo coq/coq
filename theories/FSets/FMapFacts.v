@@ -1259,8 +1259,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     forall m m' x e, ~ In x m -> Add x e m m' -> cardinal m' = S (cardinal m).
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  change S with ((fun _ _ => S) x e).
-  apply fold_Add with (eqA:=eq); compute; auto.
+  apply fold_Add with (f := fun _ _ x => S x) (k := x) (e := e) (eqA:=eq); compute; auto.
   Qed.
 
   Lemma cardinal_Add_In:
