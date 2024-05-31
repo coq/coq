@@ -723,7 +723,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
     forall s s' x, ~ In x s -> Add x s s' -> cardinal s' = S (cardinal s).
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  change (S (fold (fun _ x => S x) s 0)) with ((fun _ x => S x) x (fold (fun _ x => S x) s 0)).
+  change (S (fold (fun _ => S) s 0)) with ((fun _ x => S x) x (fold (fun _ x => S x) s 0)).
   apply fold_2; auto with fset.
   Qed.
 
@@ -889,7 +889,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros.
   do 2 rewrite cardinal_fold.
-  change (S (fold (fun _ x => S x) (remove x s) 0)) with (((fun _ =>S) x) (fold (fun _ x => S x) (remove x s) 0)).
+  change (S (fold (fun _ => S) (remove x s) 0)) with (((fun _ =>S) x) (fold (fun _ x => S x) (remove x s) 0)).
   apply remove_fold_1 with (eqA:=@Logic.eq nat); auto with fset.
   Qed.
 
