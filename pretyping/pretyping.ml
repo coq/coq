@@ -747,25 +747,22 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
 module Arities =
 struct
 
-  let constant_arity env cst =
-    (Environ.lookup_constant cst env).const_arity
-
-  let eta_expand ctx n t =
-    it_mkLambda_or_LetIn (EConstr.applist (EConstr.Vars.lift n t, Context.Rel.instance_list EConstr.mkRel 0 ctx)) ctx
-
-  let constructor_arity env c =
-    Some (constructor_nrealargs env c)
-
-  let inductive_arity env i =
-    (* Some (inductive_nparams env i) *)
-    None
+  let eta_expand env sigma ctx n t =
+    let fold decl (env, sigma, ctx) =
+      let open Context.Rel.Declaration in
+      let ty = get_type decl in
+      let sigma, newty = Evarsolve.refresh_universes ~status:(UnivFlexible false) ~onlyalg:false (Some true) env sigma ty in
+      let decl' = Context.Rel.Declaration.set_type newty decl in
+      (env, sigma, decl' :: ctx) in
+    let env', sigma, fresh_ctx = Context.Rel.fold_outside fold ctx ~init:(env, sigma, []) in
+    sigma, it_mkLambda_or_LetIn (EConstr.applist (EConstr.Vars.lift n t, Context.Rel.instance_list EConstr.mkRel 0 ctx)) ctx
 
   let maybe_expand ?loc env sigma j f nargs arity =
     match arity with
-    | None -> j
+    | None -> sigma, j
     | Some arity ->
       let len = arity - nargs in
-      if len <= 0 then j
+      if len <= 0 then sigma, j
       else
         let rest = j.uj_type in
         let to_abs, concl =
@@ -774,14 +771,14 @@ struct
             Termops.Internal.print_constr_env env sigma f ++ str " in inferred type " ++
             Termops.Internal.print_constr_env env sigma rest)
         in
-        let exp = eta_expand to_abs len j.uj_val in
-        { j with uj_val = exp }
+        let sigma, exp = eta_expand env sigma to_abs len j.uj_val in
+        sigma, { j with uj_val = exp }
 
   let head_arity env c =
     match c with
-    | Const (cst, univs) -> constant_arity env cst
-    | Construct (c, u) -> constructor_arity env c
-    | Ind (i, u) -> inductive_arity env i
+    | Const (cst, univs) -> Environ.get_reference_arity env (ConstRef cst)
+    | Construct (c, u) -> Environ.get_reference_arity env (ConstructRef c)
+    | Ind (i, u) -> Environ.get_reference_arity env (IndRef i)
     | _ -> None
 
   let enforce ?loc env sigma j =
@@ -801,7 +798,7 @@ struct
     fun ?loc ~flags tycon env sigma ->
     let sigma, t_ref = pretype_ref ?loc sigma env ref u in
     let sigma, j = discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma t_ref tycon in
-    sigma, if eta_expand then Arities.enforce ?loc env sigma j else j
+    if eta_expand then Arities.enforce ?loc env sigma j else sigma, j
 
   let pretype_var self id =
     fun ?loc ~flags tycon env sigma ->
@@ -1103,8 +1100,7 @@ struct
         let sigma, resj = refresh_template env sigma resj in
         { resj with uj_val = Coercion.reapply_coercions sigma trace t }
     in
-    let resj = Arities.enforce env sigma resj in
-    (sigma, resj)
+    Arities.enforce env sigma resj
 
   let pretype_proj self ((f,us), args, c) =
     fun ?loc ~flags tycon env sigma ->

@@ -409,7 +409,7 @@ let fold_arity f acc params arity indices = match arity with
     fold_ctx (fold_ctx acc params) indices
 
 let fold_inductive_blocks f acc params inds =
-  Array.fold_left (fun acc ((arity,lc),(indices,_),_) ->
+  Array.fold_left (fun acc ((arity,lc),(indices,_),_,_) ->
       fold_arity f (Array.fold_left f acc lc) params arity indices)
     acc inds
 
@@ -488,7 +488,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
-  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),squashed) recarg =
+  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),app_arity,squashed) recarg =
     let lc = Array.map (substl subst) lc in
     (* Type of constructors in normal form *)
     let nf_lc =
@@ -522,6 +522,7 @@ let build_inductive env ~sec_univs names prv univs template variance
       { mind_typename = id;
         mind_arity = arity;
         mind_arity_ctxt = indices @ paramsctxt;
+        mind_application_arity = app_arity;
         mind_nrealargs = Context.Rel.nhyps indices;
         mind_nrealdecls = Context.Rel.length indices;
         mind_squashed = squashed;
@@ -598,7 +599,7 @@ let check_inductive env ~sec_univs kn mie =
   in
   let (nmr,recargs) = check_positivity ~chkpos kn names
       env_ar_par paramsctxt mie.mind_entry_finite
-      (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
+      (Array.map (fun ((_,lc),(indices,_),_,_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
     build_inductive env ~sec_univs names mie.mind_entry_private univs template variance

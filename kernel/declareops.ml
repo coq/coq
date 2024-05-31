@@ -242,6 +242,7 @@ let subst_mind_packet subst mbp =
     mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps subst) ctx, subst_mps subst c) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context subst mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity subst mbp.mind_arity;
+    mind_application_arity = mbp.mind_application_arity;
     mind_user_lc = Array.Smart.map (subst_mps subst) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;

@@ -130,9 +130,16 @@ let cook_one_ind cache ~ntypes mip =
       decompose_prod_decls lc)
       mip.mind_nf_lc
   in
+  let mind_application_arity =
+    match mip.mind_application_arity with
+    | None -> None
+    | Some n -> let nrels = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
+      Some (nrels + n)
+  in
   { mind_typename = mip.mind_typename;
     mind_arity_ctxt;
     mind_arity;
+    mind_application_arity;
     mind_consnames = mip.mind_consnames;
     mind_user_lc;
     mind_nrealargs = mip.mind_nrealargs;

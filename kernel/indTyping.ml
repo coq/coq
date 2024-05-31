@@ -310,7 +310,7 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
     let params = List.rev params in
     Some { template_param_levels = params; template_context = ctx }
 
-let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
+let abstract_packets usubst template ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
   then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
@@ -331,6 +331,19 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
   in
 
+  let app_arity =
+    match template with
+    | Some { template_param_levels = params; _ } ->
+      let rec find best i = function
+        | Some _ :: tl -> find i (succ i) tl
+        | None :: tl -> find best (succ i) tl
+        | [] -> best
+      in
+      let min = find (-1) 1 params in
+      if Int.equal min (-1) then None else Some min
+    | None -> None
+  in
+
   let squashed = Option.map (function
       | AlwaysSquashed -> AlwaysSquashed
       | SometimesSquashed qs ->
@@ -343,7 +356,7 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       univ_info.ind_squashed
   in
 
-  (arity,lc), (indices,splayed_lc), squashed
+  (arity,lc), (indices,splayed_lc), app_arity, squashed
 
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
@@ -441,7 +454,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     (inst, Polymorphic auctx)
   in
   let params = Vars.subst_univs_level_context usubst params in
-  let data = List.map (abstract_packets usubst) data in
+  let data = List.map (abstract_packets usubst template) data in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in

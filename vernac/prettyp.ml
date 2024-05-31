@@ -220,7 +220,7 @@ let print_prop_but_default_dep_elim ref =
 let print_arity env ref =
   let arity = Environ.get_reference_arity env ref in
   match arity with
-  | None -> [ pr_global ref ++ str " has no declared arity " ]
+  | None -> [ ]
   | Some i -> [ pr_global ref ++ str " has minimal arity " ++ int i]
 
 (** Print projection status *)

@@ -137,11 +137,11 @@ let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equa
 let eq_in_context (ctx1, t1) (ctx2, t2) =
   Context.Rel.equal Sorts.relevance_equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
 
-let check_packet env mind ind
+let check_packet env mb mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
       mind_nrealargs; mind_nrealdecls; mind_squashed; mind_nf_lc;
       mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_relevance;
-      mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
+      mind_nb_constant; mind_nb_args; mind_reloc_tbl; mind_application_arity } =
   let check = check mind in
 
   ignore mind_typename; (* passed through *)
@@ -151,6 +151,7 @@ let check_packet env mind ind
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
   check "mind_nrealargs" Int.(equal ind.mind_nrealargs mind_nrealargs);
   check "mind_nrealdecls" Int.(equal ind.mind_nrealdecls mind_nrealdecls);
+  check "mind_application_arity" (Option.cata (fun x -> x <= mb.mind_nparams + mind_nrealargs) true mind_application_arity);
   check "mind_squashed" (check_squashed ind.mind_squashed mind_squashed);
 
   check "mind_nf_lc" (Array.equal eq_in_context ind.mind_nf_lc mind_nf_lc);
@@ -194,7 +195,7 @@ let check_inductive env mind mb =
   in
   let check = check mind in
 
-  Array.iter2 (check_packet env mind) mb.mind_packets mind_packets;
+  Array.iter2 (check_packet env mb mind) mb.mind_packets mind_packets;
   check "mind_record" (check_same_record mb.mind_record mind_record);
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);

@@ -193,6 +193,8 @@ type one_inductive_body = {
 
     mind_arity : inductive_arity; (** Arity sort and original user arity *)
 
+    mind_application_arity : int option;
+
     mind_consnames : Id.t array; (** Names of the constructors: [cij] *)
 
     mind_user_lc : types array;

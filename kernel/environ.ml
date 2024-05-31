@@ -955,8 +955,9 @@ let get_reference_arity env r =
   match r with
   | VarRef _id -> None
   | ConstRef c -> (lookup_constant c env).const_arity
-  | IndRef _ -> None
-  | ConstructRef ((m, i), c) -> Some (lookup_mind m env).mind_packets.(i).mind_consnrealargs.(c)
+  | IndRef (m, ind) -> (lookup_mind m env).mind_packets.(ind).mind_application_arity
+  | ConstructRef _ -> None
+  (* | ConstructRef ((m, i), c) -> Some (lookup_mind m env).mind_packets.(i).mind_consnrealargs.(c - 1) *)
 
 let vm_library env = env.vm_library
 

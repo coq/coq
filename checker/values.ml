@@ -301,11 +301,14 @@ let v_vm_positions = String
 
 let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positions; Array v_non_subst_reloc|]
 
+let v_application_arity = Opt Int
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_level_instance;
     v_cst_def;
     v_constr;
+    v_application_arity;
     v_relevance;
     Opt v_vm_indirect_code;
     v_univs;
@@ -336,6 +339,7 @@ let v_one_ind = v_tuple "one_inductive_body"
   [|v_id;
     v_rctxt;
     v_ind_arity;
+    v_application_arity;
     Array v_id;
     Array v_constr;
     Int;

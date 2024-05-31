@@ -177,7 +177,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_univ_hyps = LevelInstance.empty;
     const_body = body;
     const_type = typ;
-    const_arity = Some (infer_arity typ);
+    const_arity = None;
     const_body_code = ();
     const_universes = univs;
     const_relevance = Sorts.Relevant;
