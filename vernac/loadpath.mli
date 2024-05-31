@@ -52,13 +52,14 @@ val locate_file : string -> string
     it does not respect the visibility of paths. *)
 
 (** {6 Locate a library in the load path } *)
-type locate_error = LibUnmappedDir | LibNotFound
-type 'a locate_result = ('a, locate_error) result
+module Error : sig
+  type t = LibUnmappedDir | LibNotFound
+end
 
 val locate_qualified_library
   :  ?root:DirPath.t
   -> Libnames.qualid
-  -> (DirPath.t * CUnix.physical_path) locate_result
+  -> (DirPath.t * CUnix.physical_path, Error.t) Result.t
 
 (** Locates a library by implicit name.
 
@@ -67,7 +68,10 @@ val locate_qualified_library
 
 *)
 
+val locate_absolute_library : DirPath.t -> (CUnix.physical_path, Error.t) Result.t
+
 val try_locate_absolute_library : DirPath.t -> string
+(* To do in another PR: [@@deprecated "use locate_absolute_library instead"] *)
 
 (** {6 Extending the Load Path } *)
 
