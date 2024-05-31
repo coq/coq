@@ -334,17 +334,24 @@ Binding arguments to scopes
 Effects of :cmd:`Arguments` on unfolding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+ `simpl never` indicates that a :term:`constant` should never be unfolded by :tacn:`cbn` or
-  :tacn:`simpl`:
++ `simpl never` indicates that a :term:`constant` should not be unfolded by :tacn:`cbn` or
+  :tacn:`simpl` when in head position. Note that in the case of :tacn:`simpl`, the
+  modifier does not apply to reduction of the main argument of a `match`, `fix`,
+  primitive projection, or of an unfoldable constant hiding a `match`,
+  `fix` or primitive projection.
 
   .. example::
 
      .. coqtop:: all
 
-        Arguments minus n m : simpl never.
+        Arguments Nat.sub n m : simpl never.
 
-  After that command an expression like :g:`(minus (S x) y)` is left
+  After that command an expression like :g:`(Nat.sub (S x) y)` is left
   untouched by the tactics :tacn:`cbn` and :tacn:`simpl`.
+
+  Otherwise, an expression like :g:`(Nat.sub (S x) 0) + 1`
+  reduces to :g:`S (x + 1)` for :tacn:`simpl` because `Nat.sub`
+  is the main argument of `+` in this case.
 
 + A :term:`constant` can be marked to be unfolded only if it's applied to at least
   the arguments appearing before the `/` in a :cmd:`Arguments` command.

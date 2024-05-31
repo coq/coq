@@ -621,13 +621,31 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    :tacn:`cbn` was intended to be a more principled, faster and more
    predictable replacement for :tacn:`simpl`.
-
-   The main difference between :tacn:`cbn` and :tacn:`simpl` is that
-   :tacn:`cbn` may unfold constants even when they cannot be reused in recursive calls:
-   in the previous example, :g:`succ t` is reduced to :g:`S t`.
+   The main difference is that :tacn:`cbn` may unfold constants even when they
+   cannot be reused in recursive calls: in the previous example, :g:`succ t` is
+   reduced to :g:`S t`. Modifiers such as `simpl never` are also not treated the same,
+   see :ref:`Args_effect_on_unfolding`.
 
    Setting :opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
    ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
+
+   .. example::
+
+      Here are typical examples comparing :tacn:`cbn` and :tacn:`simpl`:
+
+      .. coqtop:: all
+
+         Definition add1 (n:nat) := n + 1.
+         Eval simpl in add1 0.
+         Eval cbn in add1 0.
+
+         Definition pred_add n m := pred (n + m).
+         Eval simpl in pred_add 0 0.
+         Eval cbn in pred_add 0 0.
+
+         Parameter n : nat.
+         Eval simpl in pred_add 0 n.
+         Eval cbn in pred_add 0 n.
 
 .. tacn:: hnf @simple_occurrences
 
