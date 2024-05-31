@@ -812,8 +812,10 @@ let pr_arg_level from (lev,typ) =
 
 let pr_level ntn ({notation_entry = from; notation_level = fromlevel}, args) typs =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
-  str "at level " ++ int fromlevel ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
+  str "at level " ++ int fromlevel ++
+  (match args with | [] -> mt () | _ :: _ ->
+     spc () ++ str "with arguments" ++ spc()
+     ++ prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs))
 
 let error_incompatible_level ntn oldprec oldtyps prec typs =
   user_err
@@ -894,6 +896,33 @@ let check_and_extend_constr_grammar ntn rule =
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
 
+let warn_prefix_incompatible_level =
+  CWarnings.create ~name:"notation-incompatible-prefix"
+    ~category:CWarnings.CoreCategories.parsing
+    (fun (pref, ntn, pref_prec, pref_nottyps, prec, nottyps) ->
+      str "Notations " ++ pr_notation pref
+      ++ spc () ++ str "defined " ++ pr_level pref pref_prec pref_nottyps
+      ++ spc () ++ str "and " ++ pr_notation ntn
+      ++ spc () ++ str "defined " ++ pr_level ntn prec nottyps
+      ++ spc () ++ str "have incompatible prefixes."
+      ++ spc () ++ str "One of them will likely not work.")
+
+let check_prefix_incompatible_level ntn prec nottyps =
+  match Notgram_ops.longest_common_prefix ntn with
+  | None -> ()
+  | Some (pref, k) ->
+     try
+       let level_firstn k (lvl, lvls) = lvl, CList.firstn k lvls in
+       let pref_prec = Notation.level_of_notation pref in
+       let pref_prec = level_firstn k pref_prec in
+       let prec = level_firstn k prec in
+       let pref_nottyps = Notgram_ops.non_terminals_of_notation pref in
+       let pref_nottyps = CList.firstn k pref_nottyps in
+       let nottyps = CList.firstn k nottyps in
+       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_eq nottyps pref_nottyps) then
+         warn_prefix_incompatible_level (pref, ntn, pref_prec, pref_nottyps, prec, nottyps);
+     with Not_found | Failure _ -> ()
+
 let cache_one_syntax_extension (ntn,synext) =
   let prec = synext.synext_level in
   (* Check and ensure that the level and the precomputed parsing rule is declared *)
@@ -911,6 +940,7 @@ let cache_one_syntax_extension (ntn,synext) =
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
     with Not_found ->
+      check_prefix_incompatible_level ntn prec synext.synext_nottyps;
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
       let () = Notgram_ops.declare_notation_non_terminals ntn synext.synext_nottyps in

@@ -18,6 +18,8 @@ Notation "a b" := (@cons Byte.byte a b)
 Notation "" := (@nil Byte.byte)
   (only printing, right associativity, at level 3, format "").
 
+Set Warnings "-notation-incompatible-prefix".
+
 Notation "  " := (Byte.x20) (only printing).
 Notation "'!'" := (Byte.x21) (only printing).
 Notation "'""'" := (Byte.x22) (only printing).

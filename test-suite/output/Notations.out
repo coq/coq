@@ -87,6 +87,13 @@ NIL : list nat
      : Prop
 [|1, 2, 3; 4, 5, 6|]
      : Z * Z * Z * (Z * Z * Z)
+File "./output/Notations.v", line 211, characters 0-210:
+Warning: Notations "[| _ , _ , .. , _ ; _ , _ , .. , _ |]" defined at level 0
+with arguments constr
+and "[| _ * ( _ , _ , .. , _ ) ; ( _ , _ , .. , _ ) * _ |]"
+defined at level 0 with arguments constr at level 39
+have incompatible prefixes. One of them will likely not work.
+[notation-incompatible-prefix,parsing,default]
 [|0 * (1, 2, 3); (4, 5, 6) * false|]
      : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
 fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|} : Z
