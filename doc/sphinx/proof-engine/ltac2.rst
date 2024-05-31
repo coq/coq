@@ -3,43 +3,6 @@
 Ltac2
 =====
 
-The |Ltac| tactic language is probably one of the ingredients of the success of
-Coq, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
-
-- has often unclear semantics
-- is very non-uniform due to organic growth
-- lacks expressivity (data structures, combinators, types, ...)
-- is slow
-- is error-prone and fragile
-- has an intricate implementation
-
-Following the need of users who are developing huge projects relying
-critically on Ltac, we believe that we should offer a proper modern language
-that features at least the following:
-
-- at least informal, predictable semantics
-- a type system
-- standard programming facilities (e.g., datatypes)
-
-This new language, called Ltac2, is described in this chapter. It is still
-experimental but we nonetheless encourage users to start testing it,
-especially wherever an advanced tactic language is needed. The previous
-implementation of Ltac, described in the previous chapter, will be referred to
-as Ltac1.
-
-Current limitations include:
-
-- There are a number of tactics that are not yet supported in Ltac2 because
-  the interface OCaml and/or Ltac2 notations haven't been written.  See
-  :ref:`defining_tactics`.
-
-- Missing usability features such as:
-
-  - Printing functions are limited and awkward to use.  Only a few data types are
-    printable.
-
-- Error messages may be cryptic.
-
 .. _ltac2_design:
 
 General design
@@ -47,8 +10,8 @@ General design
 
 There are various alternatives to Ltac1, such as Mtac or Rtac for instance.
 While those alternatives can be quite different from Ltac1, we designed
-Ltac2 to be as close as reasonably possible to Ltac1, while fixing the
-aforementioned defects.
+Ltac2 to be as close as reasonably possible to Ltac1, while fixing its
+:ref:`defects <ltac_defects>`.
 
 In particular, Ltac2 is:
 

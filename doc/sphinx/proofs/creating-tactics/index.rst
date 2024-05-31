@@ -9,7 +9,7 @@ tactics by combining existing ones with constructs such as
 conditionals and looping.  While :ref:`Ltac <ltac>` was initially
 thought of as a language for doing some basic combinations, it has
 been used successfully to build highly complex tactics as well, but
-this has also highlighted its limits and fragility.  The experimental
+this has also highlighted its limits and fragility.  The
 language :ref:`Ltac2 <ltac2>` is a typed and more principled variant
 which is more adapted to building complex tactics.
 
