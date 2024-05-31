@@ -39,6 +39,33 @@ since the paper was written.)
 
    See Section :ref:`ltac-examples` for more advanced examples.
 
+.. _ltac_defects:
+
+Defects
+-------
+
+The |Ltac| tactic language is probably one of the ingredients of the success of
+Coq, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
+
+- has often unclear semantics
+- is very non-uniform due to organic growth
+- lacks expressivity (data structures, combinators, types, ...)
+- is slow
+- is error-prone and fragile
+- has an intricate implementation
+
+Following the need of users who are developing huge projects relying
+critically on Ltac, we believe that we should offer a proper modern language
+that features at least the following:
+
+- at least informal, predictable semantics
+- a type system
+- standard programming facilities (e.g., datatypes)
+
+This new language, called Ltac2, is described in the :ref:`ltac2`
+chapter. We encourage users to start testing it, especially wherever
+an advanced tactic language is needed.
+
 .. _ltac-syntax:
 
 Syntax
