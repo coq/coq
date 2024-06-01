@@ -1660,7 +1660,6 @@ simple_tactic: [
 | "firstorder" OPT tactic firstorder_using
 | "firstorder" OPT tactic "with" LIST1 preident
 | "firstorder" OPT tactic firstorder_using "with" LIST1 preident
-| "gintuition" OPT tactic
 | "functional" "inversion" quantified_hypothesis OPT reference      (* funind plugin *)
 | "functional" "induction" lconstr fun_ind_using with_names      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 constr fun_ind_using with_names      (* funind plugin *)

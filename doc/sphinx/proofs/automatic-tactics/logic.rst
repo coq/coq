@@ -146,11 +146,6 @@ Solvers for logic and equality
 
       This :term:`option` controls the proof search depth bound.
 
-   .. tacn:: gintuition {? @ltac_expr }
-
-      An extension of :tacn:`intuition` to first-order reasoning
-      (similar to how :tacn:`firstorder` extends :tacn:`tauto`).
-
 .. tacn:: congruence {? @natural } {? with {+ @one_term } }
 
    :token:`natural`
