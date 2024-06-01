@@ -423,18 +423,19 @@ let declare_constant_core ~name ~typing_flags cd =
       } in
       ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), ubinders, None
     | PrimitiveEntry e ->
-      let typ, ubinders, ctx = match e.prim_entry_type with
-      | None -> None, UnivNames.empty_binders, Univ.ContextSet.empty
-      | Some (typ, (univs, ubinders)) ->
-        let univ_entry, ctx = extract_monomorphic univs in
-        Some (typ, univ_entry), ubinders, ctx
+      let typ, univ_entry, ctx = match e.prim_entry_type with
+      | None ->
+        None, (UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders), Univ.ContextSet.empty
+      | Some (typ, entry_univs) ->
+        let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
+        Some (typ, univ_entry), entry_univs, ctx
       in
       let () = Global.push_context_set ~strict:true ctx in
       let e = {
         Entries.prim_entry_type = typ;
         Entries.prim_entry_content = e.prim_entry_content;
       } in
-      let ubinders = (UState.Monomorphic_entry ctx, ubinders) in
+      let ubinders = make_ubinders ctx univ_entry in
       ConstantEntry (Entries.PrimitiveEntry e), false, ubinders, None
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
