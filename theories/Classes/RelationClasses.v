@@ -528,3 +528,14 @@ Qed.
 
 Global Typeclasses Opaque arrows predicate_implication predicate_equivalence
             relation_equivalence pointwise_lifting.
+
+(* Register bindings for the generalized rewriting tactic *)
+
+Register relation as rewrite.prop.relation.
+Register subrelation as rewrite.prop.subrelation.
+Register Reflexive as rewrite.prop.Reflexive.
+Register reflexivity as rewrite.prop.reflexivity.
+Register Symmetric as rewrite.prop.Symmetric.
+Register symmetry as rewrite.prop.symmetry.
+Register Transitive as rewrite.prop.Transitive.
+Register transitivity as rewrite.prop.transitivity.

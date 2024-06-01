@@ -39,10 +39,12 @@ Local Open Scope program_scope.
 (** The non-dependent function space between [A] and [B]. *)
 
 Definition arrow (A B : Type) := A -> B.
+Register arrow as core.arrow.
 
 (** Logical implication. *)
 
 Definition impl (A B : Prop) : Prop := A -> B.
+Register impl as core.impl.
 
 (** The constant function [const a] always returns [a]. *)
 
@@ -51,6 +53,7 @@ Definition const {A B} (a : A) := fun _ : B => a.
 (** The [flip] combinator reverses the first two arguments of a function. *)
 
 Definition flip {A B C} (f : A -> B -> C) x y := f y x.
+Register flip as core.flip.
 
 (** Application as a combinator. *)
 

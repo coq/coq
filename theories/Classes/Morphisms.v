@@ -493,15 +493,8 @@ Section GenericInstances.
     unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
     split ; intros H1 x3 y1 H2.
     
-    - rewrite <- H0.
-      apply H1.
-      rewrite H.
-      assumption.
-
-    - rewrite H0.
-      apply H1.
-      rewrite <- H.
-      assumption.
+    - now apply H0, H1, H.
+    - now apply H0, H1, H.
   Qed.
 
   (** [R] is Reflexive, hence we can build the needed proof. *)
@@ -603,10 +596,8 @@ Proof.
   intros x y H y0 y1 e; destruct e.
   reduce in H.
   split ; red ; intros H0.
-  - setoid_rewrite <- H.
-    apply H0.
-  - setoid_rewrite H.
-    apply H0.
+  - apply H, H0.
+  - apply H, H0.
 Qed.
 
 Ltac proper_reflexive :=
@@ -649,8 +640,7 @@ Section Normalize.
 
   Lemma proper_normalizes_proper `(Normalizes R0 R1, Proper A R1 m) : Proper R0 m.
   Proof.
-    rewrite normalizes.
-    assumption.
+    eapply proper_proper; eauto.
   Qed.
 
   Lemma flip_atom R : Normalizes R (flip (flip R)).
@@ -759,7 +749,8 @@ split; compute.
   + intro Hxz.
     apply Hxy'.
     apply partial_order_antisym; auto.
-    rewrite Hxz; auto.
+    eapply PartialOrder_proper; eauto.
+    apply reflexivity.
 Qed.
 
 
@@ -775,8 +766,10 @@ split.
 - intros x. right. reflexivity.
 - intros x y z [Hxy|Hxy] [Hyz|Hyz].
   + left. transitivity y; auto.
-  + left. rewrite <- Hyz; auto.
-  + left. rewrite Hxy; auto.
+  + left. eapply H1; eauto.
+    * apply reflexivity.
+    * now apply symmetry.
+  + left. eapply H1; try eassumption. now apply reflexivity.
   + right. transitivity y; auto.
 Qed.
 
@@ -800,3 +793,15 @@ Hint Extern 4 (StrictOrder (relation_conjunction _ _)) =>
 #[global]
 Hint Extern 4 (PartialOrder _ (relation_disjunction _ _)) => 
   class_apply StrictOrder_PartialOrder : typeclass_instances.
+
+(* Register bindings for the generalized rewriting tactic *)
+
+Register forall_relation as rewrite.prop.forall_relation.
+Register pointwise_relation as rewrite.prop.pointwise_relation.
+Register respectful as rewrite.prop.respectful.
+Register forall_def as rewrite.prop.forall_def.
+Register do_subrelation as rewrite.prop.do_subrelation.
+Register apply_subrelation as rewrite.prop.apply_subrelation.
+Register RewriteRelation as rewrite.prop.RewriteRelation.
+Register Proper as rewrite.prop.Proper.
+Register ProperProxy as rewrite.prop.ProperProxy.

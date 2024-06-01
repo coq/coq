@@ -34,6 +34,7 @@ Unset Strict Implicit.
    *)
 
 Class DefaultRelation A (R : relation A).
+Register DefaultRelation as rewrite.DefaultRelation.
 
 (** To search for the default relation, just call [default_relation]. *)
 
