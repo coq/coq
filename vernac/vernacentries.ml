@@ -50,6 +50,7 @@ let scope_class_of_qualid qid =
 (** Standard attributes for definition-like commands. *)
 module DefAttributes = struct
   type t = {
+    scope : definition_scope;
     locality : bool option;
     polymorphic : bool;
     program : bool;
@@ -60,6 +61,42 @@ module DefAttributes = struct
     reversible : bool;
     clearbody: bool option;
   }
+  (* [locality] is used for [vernac_definition_hook],
+     the raw Local/Global attribute is also used to generate [scope].
+     [locality] can't be computed back from [scope]
+     because [Let Coercion] outside section generates [locality = None]
+     but [scope = Global ImportNeedQualified]
+     (which is otherwise associated with [locality = Some true]).
+
+     Since [Let] (ie discharge = DoDischarge) does not allow explicit locality
+     we could alternatively decide to change the default locality
+     of the coercion from out-of-section [Let Coercion].
+  *)
+
+  let importability_of_bool = function
+    | true -> ImportNeedQualified
+    | false -> ImportDefaultBehavior
+
+  let warn_declaration_outside_section =
+    CWarnings.create ~name:"declaration-outside-section"
+      ~category:CWarnings.CoreCategories.vernacular
+      ~default:CWarnings.AsError
+      Pp.(fun (unexpected_thing, replacement) ->
+          strbrk "Use of " ++ str unexpected_thing
+          ++ strbrk " outside sections behaves as " ++ str replacement ++ str ".")
+
+  let scope_of_locality locality_flag discharge deprecated_thing replacement : definition_scope =
+    let open Vernacexpr in
+    match locality_flag, discharge with
+    | Some b, NoDischarge -> Global (importability_of_bool b)
+    | None, NoDischarge -> Global ImportDefaultBehavior
+    | None, DoDischarge when not (Lib.sections_are_opened ()) ->
+      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
+      warn_declaration_outside_section (deprecated_thing, replacement);
+      Global ImportNeedQualified
+    | None, DoDischarge -> Discharge
+    | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
+    | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")
 
   open Attributes
   open Attributes.Notations
@@ -67,7 +104,8 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   (* [XXX] EJGA: coercion is unused here *)
-  let parse ?(coercion=false) ?(discharge=NoDischarge) f =
+  let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
+    let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
     let (((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
@@ -82,7 +120,8 @@ module DefAttributes = struct
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
-    { polymorphic; program; locality; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    let scope = scope_of_locality locality discharge deprecated_thing replacement in
+    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -562,8 +601,8 @@ let vernac_enable_notation ~module_local on rule interp flags scope =
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Termops.is_section_variable (Global.env ()) id ||
-     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path id) ||
-     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality <> Discharge && Nametab.exists_cci (Lib.make_path id) ||
+     locality <> Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -670,11 +709,9 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
-  let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
-  let scope = enforce_locality_exp atts.locality discharge
-                "\"Let\"" "\"#[local] Definition\"" in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
   start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
@@ -682,11 +719,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
-  let scope = enforce_locality_exp atts.locality discharge
-                "\"Let\"" "\"#[local] Definition\"" in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
@@ -712,9 +747,8 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let local, poly, program_mode, user_warns, typing_flags, using =
-    atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
-  let scope = enforce_locality_exp local NoDischarge "" "" in
+  let scope, poly, program_mode, user_warns, typing_flags, using =
+    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags
@@ -739,13 +773,10 @@ let vernac_exact_proof ~lemma ~pm c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pm
 
-let vernac_assumption ~atts discharge kind l inline =
+let vernac_assumption ~atts kind l inline =
   let open DefAttributes in
-  let local, poly, program_mode, using, user_warns =
-    atts.locality, atts.polymorphic, atts.program, atts.using, atts.user_warns in
-  let scope = enforce_locality_exp atts.locality discharge
-                "\"Variable\" or \"Hypothesis\""
-                "\"#[local] Parameter\" or \"#[local] Axiom\"" in
+  let scope, poly, program_mode, using, user_warns =
+    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns in
   if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
@@ -1048,17 +1079,16 @@ let vernac_inductive ~atts kind indl =
 let preprocess_inductive_decl ~atts kind indl =
   snd @@ preprocess_inductive_decl ~atts kind indl
 
-let vernac_fixpoint_common ~atts discharge l =
+let vernac_fixpoint_common ~atts l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  let scope = enforce_locality_exp atts.DefAttributes.locality discharge
-    "\"Let Fixpoint\"" "\"#[local] Fixpoint\"" in
+  let scope = atts.DefAttributes.scope in
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_fixpoint_interactive ~atts discharge l =
+let vernac_fixpoint_interactive ~atts l =
   let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts discharge l in
+  let scope = vernac_fixpoint_common ~atts l in
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
   (* Eventually make this into a more structured record *)
@@ -1066,9 +1096,9 @@ let vernac_fixpoint_interactive ~atts discharge l =
     atts.polymorphic, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   ComFixpoint.do_fixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
 
-let vernac_fixpoint ~atts ~pm discharge l =
+let vernac_fixpoint ~atts ~pm l =
   let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts discharge l in
+  let scope = vernac_fixpoint_common ~atts l in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
     atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
   if program_mode then
@@ -1078,25 +1108,24 @@ let vernac_fixpoint ~atts ~pm discharge l =
     let () = ComFixpoint.do_fixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
     pm
 
-let vernac_cofixpoint_common ~atts discharge l =
+let vernac_cofixpoint_common ~atts l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  let scope = enforce_locality_exp atts.DefAttributes.locality discharge
-    "\"Let CoFixpoint\"" "\"#[local] CoFixpoint\"" in
+  let scope = atts.DefAttributes.scope in
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_cofixpoint_interactive ~atts discharge l =
+let vernac_cofixpoint_interactive ~atts l =
   let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts discharge l in
+  let scope = vernac_cofixpoint_common ~atts l in
   if atts.program then
     CErrors.user_err Pp.(str"Program CoFixpoint requires a body.");
   let poly, using = atts.polymorphic, atts.using in
   ComFixpoint.do_cofixpoint_interactive ~scope ~poly ?using l
 
-let vernac_cofixpoint ~atts ~pm discharge l =
+let vernac_cofixpoint ~atts ~pm l =
   let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts discharge l in
+  let scope = vernac_cofixpoint_common ~atts l in
   let poly, typing_flags, using, clearbody, user_warns =
     atts.polymorphic, atts.typing_flags, atts.using, atts.clearbody, atts.user_warns in
   if atts.program then
@@ -2398,12 +2427,12 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~discharge ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
        vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~coercion ~discharge ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
        vernac_definition_interactive dkind lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
@@ -2414,7 +2443,12 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         vernac_exact_proof ~lemma c)
 
   | VernacAssumption ((discharge,kind),nl,l) ->
-    vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
+    vtdefault(fun () ->
+        with_def_attributes ~atts
+          ~discharge:(discharge,
+                      "\"Variable\" or \"Hypothesis\"",
+                      "\"#[local] Parameter\" or \"#[local] Axiom\"")
+          vernac_assumption kind l nl)
 
   | VernacSymbol l ->
     vtdefault (fun () ->
@@ -2428,19 +2462,21 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        with_def_attributes ~discharge ~atts vernac_fixpoint_interactive discharge l)
+        with_def_attributes ~discharge ~atts vernac_fixpoint_interactive l)
     else
       vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm) discharge l))
+        with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm) l))
 
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let discharge = discharge,  "\"Let CoFixpoint\"", "\"#[local] CoFixpoint\"" in
     (if opens then
-      vtopenproof(fun () -> with_def_attributes ~discharge ~atts vernac_cofixpoint_interactive discharge l)
+      vtopenproof(fun () -> with_def_attributes ~discharge ~atts vernac_cofixpoint_interactive l)
     else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm) discharge l))
+      vtmodifyprogram(fun ~pm -> with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm) l))
 
   | VernacScheme l ->
     vtdefault(fun () ->
