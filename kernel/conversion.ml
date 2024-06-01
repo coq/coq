@@ -208,9 +208,9 @@ let fail_check (infos : 'err conv_tab) (state, check) = match state with
 | Result.Error None -> raise NotConvertible
 | Result.Error (Some err) -> raise (NotConvertibleTrace (infos.err_ret err))
 
-let convert_inductives infos cv_pb ind nargs u1 u2 (s, check) =
-  fail_check infos @@ (convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
-    cv_pb ind nargs u1 u2 s, check)
+let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
+  convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+    cv_pb ind nargs u1 u2 s, check
 
 let constructor_cumulativity_arguments (mind, ind, ctor) =
   mind.Declarations.mind_nparams +
@@ -230,9 +230,9 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
       let variance = Array.make (snd (UVars.Instance.length u1)) UVars.Variance.Irrelevant in
       cmp_cumul CONV variance u1 u2 s
 
-let convert_constructors infos ctor nargs u1 u2 (s, check) =
-  fail_check infos @@ (convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
-    ctor nargs u1 u2 s, check)
+let convert_constructors ctor nargs u1 u2 (s, check) =
+  convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+    ctor nargs u1 u2 s, check
 
 let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
@@ -615,7 +615,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = same_args_size v1 v2 in
-          match convert_inductives infos cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
+          match fail_check infos @@ convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
           | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
           | exception MustExpand ->
             let env = info_env infos.cnv_inf in
@@ -632,7 +632,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = same_args_size v1 v2 in
-          match convert_constructors infos (mind, snd ind1, j1) nargs u1 u2 cuniv with
+          match fail_check infos @@ convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
           | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
           | exception MustExpand ->
             let env = info_env infos.cnv_inf in
@@ -716,7 +716,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let nargs = inductive_cumulativity_arguments ind in
         let u1 = CClosure.usubst_instance e1 u1 in
         let u2 = CClosure.usubst_instance e2 u2 in
-        convert_inductives infos CONV ind nargs u1 u2 cuniv
+        fail_check infos @@ convert_inductives CONV ind nargs u1 u2 cuniv
       in
       let pms1 = mk_clos_vect e1 pms1 in
       let pms2 = mk_clos_vect e2 pms2 in
