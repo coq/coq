@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Util
-open Pp
 open CErrors
 open Names
 open Formula
@@ -69,18 +68,34 @@ struct
     else c
 end
 
-module CM=Map.Make(Constr)
-
 module History=Set.Make(Hitem)
 
-let cm_add sigma typ nam cm=
+module Context :
+sig
+  type t
+  val empty : t
+  val find : Evd.evar_map -> atom -> t -> GlobRef.t
+  val add : Evd.evar_map -> atom -> GlobRef.t -> t -> t
+  val remove : Environ.env -> Evd.evar_map -> atom -> GlobRef.t -> t -> t
+end =
+struct
+
+module CM = Map.Make(Constr)
+type t = GlobRef.t list CM.t
+
+let empty = CM.empty
+
+let find sigma t cm =
+  List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom t)) cm)
+
+let add sigma typ nam cm =
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
-let cm_remove env sigma typ nam cm=
+let remove env sigma typ nam cm =
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom typ) in
   try
     let l=CM.find typ cm in
@@ -90,13 +105,15 @@ let cm_remove env sigma typ nam cm=
         | _ ->CM.add typ l0 cm
       with Not_found ->cm
 
+end
+
 module HP=Heap.Functional(OrderedFormula)
 
 type seqgoal = GoalTerm of atom | GoalAtom of atom
 
 type t=
     {redexes:HP.t;
-     context:(GlobRef.t list) CM.t;
+     context:Context.t;
      latoms:atom list;
      gl: seqgoal;
      cnt:counter;
@@ -135,22 +152,22 @@ let add_formula ~flags ~hint env sigma id t seq =
   | Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
-      context=cm_add sigma f.constr id seq.context}
+      context=Context.add sigma f.constr id seq.context}
   | Right t ->
     {seq with
-      context=cm_add sigma t id seq.context;
+      context=Context.add sigma t id seq.context;
       latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=
   let do_one (AnyFormula f) cm = match f.id with
   | GoalId -> cm
-  | FormulaId id -> cm_add sigma f.constr id cm
+  | FormulaId id -> Context.add sigma f.constr id cm
   in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
-let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma (repr_atom t)) seq.context)
+let find_left sigma t seq = Context.find sigma t seq.context
 
 let find_goal sigma seq =
   let t = match seq.gl with GoalAtom a -> a | GoalTerm t -> t in
@@ -170,11 +187,11 @@ let rec take_formula env sigma seq=
   | FormulaId id ->
       hd,{seq with
             redexes=hp;
-            context=cm_remove env sigma hd0.constr id seq.context}
+            context=Context.remove env sigma hd0.constr id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;
-   context=CM.empty;
+   context=Context.empty;
    latoms=[];
    gl= GoalTerm hole_atom;
    cnt=newcnt ();
@@ -229,20 +246,3 @@ let extend_with_auto_hints ~flags env sigma l seq =
     Hint_db.fold (fun _ _ l acc -> List.fold_left f acc l) hdb acc
   in
   List.fold_left h (seq,sigma) l
-
-(* For debug *)
-let _print_cmap map=
-  let print_entry c l s=
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-      str "| " ++
-      prlist Printer.pr_global l ++
-      str " : " ++
-      Printer.pr_constr_env env sigma c ++
-      cut () ++
-      s in
-    (v 0
-             (str "-----" ++
-              cut () ++
-              CM.fold print_entry map (mt ()) ++
-              str "-----"))
