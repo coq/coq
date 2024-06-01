@@ -1580,7 +1580,6 @@ simple_tactic: [
 | "simple" "congruence" OPT natural OPT ( "with" LIST1 one_term )
 | "f_equal"
 | "firstorder" OPT ltac_expr OPT ( "using" LIST1 qualid SEP "," ) OPT ( "with" LIST1 ident )
-| "gintuition" OPT ltac_expr
 | "functional" "inversion" [ ident | natural ] OPT qualid      (* funind plugin *)
 | "functional" "induction" term OPT ( "using" one_term_with_bindings ) OPT ( "as" simple_intropattern )      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 one_term OPT ( "using" one_term_with_bindings ) OPT ( "as" simple_intropattern )      (* funind plugin *)

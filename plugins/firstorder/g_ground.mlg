@@ -133,8 +133,3 @@ TACTIC EXTEND firstorder
        "with" ne_preident_list(l') ] ->
       { gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' }
 END
-
-TACTIC EXTEND gintuition DEPRECATED { Deprecation.make ~since:"8.20" () }
-| [ "gintuition" tactic_opt(t) ] ->
-     { gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] }
-END
