@@ -148,6 +148,8 @@ Solvers for logic and equality
 
    .. tacn:: gintuition {? @ltac_expr }
 
+      .. deprecated:: 8.20
+
       An extension of :tacn:`intuition` to first-order reasoning
       (similar to how :tacn:`firstorder` extends :tacn:`tauto`).
 
