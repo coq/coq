@@ -340,9 +340,9 @@ let pr_glbexpr_gen lvl ~avoid c =
             | _ -> spc () ++ pr_sequence pr_name vars
           in
           hov 4 (str "|" ++ spc () ++ hov 0 (cstr ++ vars ++ spc () ++ str "=>") ++ spc () ++
-                 hov 2 (pr_glbexpr E5 avoid p)) ++ spc ()
+                 hov 2 (pr_glbexpr E5 avoid p))
         in
-        prlist pr_branch br
+        prlist_with_sep spc pr_branch br
       end
     | Tuple n ->
       let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
@@ -409,6 +409,7 @@ let pr_glbexpr_gen lvl ~avoid c =
       let r = pr_glbexpr E1 avoid r in
       hov 0 (e ++ str "." ++ paren proj ++ spc () ++ str ":=" ++ spc () ++ r)
     end
+  | GTacOpn (kn, []) -> pr_constructor kn
   | GTacOpn (kn, cl) ->
     let paren = match lvl with
     | E0 -> paren
