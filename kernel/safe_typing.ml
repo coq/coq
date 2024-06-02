@@ -125,6 +125,11 @@ type compiled_library = {
 
 type reimport = compiled_library * Vmlibrary.on_disk * vodigest
 
+type required_lib = {
+  req_root : bool; (* true if a root of the dependency DAG *)
+  req_digest : vodigest;
+}
+
 (** Part of the safe_env at a section opening time to be backtracked *)
 type section_data = {
   rev_env : Environ.env;
@@ -164,7 +169,7 @@ type safe_environment =
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
     future_cst : (Constant_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
-    required : vodigest DPmap.t;
+    required : required_lib DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
     opaquetab : Opaqueproof.opaquetab;
@@ -493,16 +498,21 @@ let check_empty_struct senv =
     with the correct digests. *)
 
 let check_required current_libs needed =
-  let check (id,required) =
-    try
-      let actual = DPmap.find id current_libs in
-      if not(digest_match ~actual ~required) then
-        CErrors.user_err Pp.(pr_sequence str
-          ["Inconsistent assumptions over module"; DirPath.to_string id; "."])
-    with Not_found ->
-      CErrors.user_err Pp.(pr_sequence str ["Reference to unknown module"; DirPath.to_string id; "."])
+  let check current (id, required) = match DPmap.find_opt id current with
+  | None ->
+    CErrors.user_err Pp.(pr_sequence str ["Reference to unknown module"; DirPath.to_string id; "."])
+  | Some { req_root; req_digest = actual } ->
+    if not (digest_match ~actual ~required) then
+      CErrors.user_err Pp.(pr_sequence str
+        ["Inconsistent assumptions over module"; DirPath.to_string id; "."])
+    else if req_root then
+      (* the library is being transitively required, not a root anymore *)
+      DPmap.set id { req_root = false; req_digest = actual } current
+    else
+      (* nothing to do *)
+      current
   in
-  Array.iter check needed
+  Array.fold_left check current_libs needed
 
 (** When loading a library, the current flags should match
     those needed for the library *)
@@ -1404,11 +1414,15 @@ let export ~output_native_objects senv dir =
   let permanent_flags = {
     rewrite_rules_allowed = Environ.rewrite_rules_allowed senv.env;
   } in
+  let filter_dep (dp, { req_root; req_digest }) =
+    if req_root then Some (dp, req_digest) else None
+  in
+  let comp_deps = List.map_filter filter_dep (DPmap.bindings senv.required) in
   let lib = {
     comp_name = dir;
     comp_mod = mb;
     comp_univs = senv.univ;
-    comp_deps = Array.of_list (DPmap.bindings senv.required);
+    comp_deps = Array.of_list comp_deps;
     comp_flags = permanent_flags
   } in
   let vmlib = Vmlibrary.export @@ Environ.vm_library senv.env in
@@ -1416,7 +1430,7 @@ let export ~output_native_objects senv dir =
 
 let import lib vmtab vodigest senv =
   let senv = check_flags_for_library lib senv in
-  check_required senv.required lib.comp_deps;
+  let required = check_required senv.required lib.comp_deps in
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err
       Pp.(strbrk "Cannot load a library with the same name as the current one ("
@@ -1434,13 +1448,19 @@ let import lib vmtab vodigest senv =
         {custom with rev_reimport = (lib,vmtab,vodigest) :: custom.rev_reimport}))
       senv.sections
   in
+  let required =
+    if DPmap.mem lib.comp_name required then
+      (* should probably be an error, we are requiring the same library twice *)
+      required
+    else DPmap.add lib.comp_name { req_root = true; req_digest = vodigest } required
+  in
   mp,
   { senv with
     env;
     (* Do NOT store the name quotient from the dependencies in the set of
        constraints that will be marshalled on disk. *)
     paramresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.paramresolver;
-    required = DPmap.add lib.comp_name vodigest senv.required;
+    required;
     loads = (mp,mb)::senv.loads;
     sections;
   }
