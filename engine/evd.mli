@@ -818,3 +818,14 @@ module MiniEConstr : sig
   val of_rel_context : (Constr.t, Constr.types, Sorts.relevance) Context.Rel.pt ->
     (t, t, ERelevance.t) Context.Rel.pt
 end
+
+(** Only used as EConstr internals *)
+module Expand : sig
+  open MiniEConstr
+  type handle
+  val empty_handle : handle
+  val liftn_handle : int -> handle -> handle
+  val kind : evar_map -> handle -> econstr -> handle * (econstr, econstr, ESorts.t, EInstance.t, ERelevance.t) Constr.kind_of_term
+  val expand : evar_map -> handle -> econstr -> econstr
+  val expand_instance : skip:bool -> undefined evar_info -> handle -> econstr SList.t -> econstr SList.t
+end

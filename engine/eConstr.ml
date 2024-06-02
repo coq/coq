@@ -63,6 +63,90 @@ module EInstance = struct
     UVars.Instance.equal (kind sigma i1) (kind sigma i2)
 end
 
+module Expand :
+sig
+
+type t
+type kind = (t, t, ESorts.t, EInstance.t, ERelevance.t) Constr.kind_of_term
+type handle
+val make : Evd.econstr -> handle * t
+val repr : Evd.evar_map -> handle -> t -> Evd.econstr
+val liftn_handle : int -> handle -> handle
+val kind : Evd.evar_map -> handle -> t -> handle * kind
+val expand_instance : skip:bool -> Evd.undefined Evd.evar_info -> handle -> t SList.t -> t SList.t
+val iter : Evd.evar_map -> (handle -> t -> unit) -> handle -> kind -> unit
+val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> handle -> t -> unit) -> 'a -> handle -> kind -> unit
+
+end
+=
+struct
+  include Evd.Expand
+  type t = Evd.econstr
+  type kind = (t, t, ESorts.t, EInstance.t, ERelevance.t) Constr.kind_of_term
+
+  let make c = (empty_handle, c)
+  let repr = expand
+
+  let iter sigma f h knd = match knd with
+  | Evar (evk, args) ->
+    let evi = Evd.find_undefined sigma evk in
+    let args = expand_instance ~skip:false evi h args in
+    (* Despite the type, the sparse list contains no default element *)
+    SList.Skip.iter (f h) args
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+  | Construct _ | Int _ | Float _ | String _ -> ()
+  | Cast (c, _, t) -> f h c; f h t
+  | Prod (_, t, c) -> f h t; f (liftn_handle 1 h) c
+  | Lambda (_, t, c) -> f h t; f (liftn_handle 1 h) c
+  | LetIn (_, b, t, c) -> f h b; f h t; f (liftn_handle 1 h) c
+  | App (c, l) -> f h c; Array.Fun1.iter f h l
+  | Case (_, _, pms, (p, _), iv, c, bl) ->
+    Array.Fun1.iter f h pms;
+    f (liftn_handle (Array.length (fst p)) h) (snd p);
+    iter_invert (f h) iv;
+    f h c;
+    Array.Fun1.iter (fun h (ctx, b) -> f (liftn_handle (Array.length ctx) h) b) h bl
+  | Proj (_p, _r, c) -> f h c
+  | Fix (_, (_, tl, bl)) ->
+    Array.Fun1.iter f h tl;
+    Array.Fun1.iter f (liftn_handle (Array.length tl) h) bl
+  | CoFix (_, (_, tl, bl)) ->
+    Array.Fun1.iter f h tl;
+    Array.Fun1.iter f (liftn_handle (Array.length tl) h) bl
+  | Array(_u, t, def, ty) ->
+    Array.iter (f h) t; f h def; f h ty
+
+  let iter_with_binders sigma g f l h knd = match knd with
+  | Evar (evk, args) ->
+    let evi = Evd.find_undefined sigma evk in
+    let args = expand_instance ~skip:false evi h args in
+    (* Despite the type, the sparse list contains no default element *)
+    SList.Skip.iter (f l h) args
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+  | Construct _ | Int _ | Float _ | String _ -> ()
+  | Cast (c, _, t) -> f l h c; f l h t
+  | Prod (_, t, c) -> f l h t; f (g l) (liftn_handle 1 h) c
+  | Lambda (_, t, c) -> f l h t; f (g l) (liftn_handle 1 h) c
+  | LetIn (_, b, t, c) -> f l h b; f l h t; f (g l) (liftn_handle 1 h) c
+  | App (c, args) -> f l h c; Array.iter (fun c -> f l h c) args
+  | Case (_, _, pms, (p, _), iv, c, bl) ->
+    Array.iter (fun c -> f l h c) pms;
+    f (iterate g (Array.length (fst p)) l) (liftn_handle (Array.length (fst p)) h) (snd p);
+    iter_invert (fun c -> f l h c) iv;
+    f l h c;
+    Array.iter (fun (ctx, b) -> f (iterate g (Array.length ctx) l) (liftn_handle (Array.length ctx) h) b) bl
+  | Proj (_p, _r, c) -> f l h c
+  | Fix (_, (_, tl, bl)) ->
+    Array.iter (fun c -> f l h c) tl;
+    Array.iter (f (iterate g (Array.length tl) l) (liftn_handle (Array.length tl) h)) bl
+  | CoFix (_, (_, tl, bl)) ->
+    Array.iter (fun c -> f l h c) tl;
+    Array.iter (f (iterate g (Array.length tl) l) (liftn_handle (Array.length tl) h)) bl
+  | Array(_u, t, def, ty) ->
+    Array.iter (fun c -> f l h c) t; f l h def; f l h ty
+
+end
+
 include (Evd.MiniEConstr : module type of Evd.MiniEConstr
          with module ERelevance := ERelevance
           and module ESorts := ESorts
