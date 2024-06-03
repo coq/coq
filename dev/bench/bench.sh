@@ -72,7 +72,7 @@ check_variable () {
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/mattam82/coq-opam-archive.git}"
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
-: "${new_coq_opam_archive_git_branch:=reference-arities}"
+: "${new_coq_opam_archive_git_branch:=new-math-classes}"
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${new_coq_version:=dev}"
 : "${old_coq_version:=dev}"
