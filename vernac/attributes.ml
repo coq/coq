@@ -351,6 +351,17 @@ let payload_attribute ?cat ~name = attribute_of_list [name, payload_parser ?cat 
 
 let using = payload_attribute ?cat:None ~name:"using"
 
+let arity_parser : int key_parser = fun ?loc orig args ->
+  assert_once ?loc ~name:"arity" orig;
+  match args with
+  | VernacFlagLeaf (FlagString n) ->
+    (match int_of_string_opt n with
+    | None -> CErrors.user_err ?loc (Pp.str "Ill formed “arity” attribute.")
+    | Some n -> n)
+  | _ -> CErrors.user_err ?loc (Pp.str "Ill formed “arity” attribute.")
+
+let arity = attribute_of_list ["arity",arity_parser]
+
 let process_typing_att ?loc ~typing_flags att disable =
   let enable = not disable in
   match att with

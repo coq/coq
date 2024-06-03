@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> ?arity:int
     -> unit
     -> 'constr t
 

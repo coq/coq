@@ -60,6 +60,7 @@ module DefAttributes = struct
     using : Vernacexpr.section_subset_expr option;
     reversible : bool;
     clearbody: bool option;
+    arity: int option;
   }
   (* [locality] is used for [vernac_definition_hook],
      the raw Local/Global attribute is also used to generate [scope].
@@ -107,12 +108,12 @@ module DefAttributes = struct
   let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, user_warns), polymorphic), program),
+    let ((((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
-         reversible), clearbody =
+         reversible), clearbody), arity =
       parse (locality ++ user_warns ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
+             reversible ++ clearbody ++ arity)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
@@ -121,7 +122,7 @@ module DefAttributes = struct
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
     let scope = scope_of_locality locality discharge deprecated_thing replacement in
-    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody; arity }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -643,7 +644,7 @@ let program_inference_hook env sigma ev =
    / ComDefinition ? *)
 let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
   let inference_hook = if program_mode then Some program_inference_hook else None in
-  List.fold_left_map (fun evd ((id, _), (bl, t)) ->
+  List.fold_left_map (fun evd ((id, _), (bl, arity, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
         Constrintern.interp_context_evars ~program_mode env0 evd bl
       in
@@ -652,7 +653,7 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
-          ~args:ids ~impargs:(imps @ imps') () in
+          ~args:ids ~impargs:(imps @ imps') ?arity () in
       evd, thm)
     evd thms
 
@@ -721,13 +722,14 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, arity =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+    atts.using, atts.clearbody, atts.arity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
   start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
-    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, t)]
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, arity, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -759,14 +761,15 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let scope, poly, program_mode, user_warns, typing_flags, using =
-    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
+  let scope, poly, program_mode, user_warns, typing_flags, using, arity =
+    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+    atts.using, atts.arity in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags
     ~program_mode
     ~poly
-    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using l
+    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using (List.map (fun (x, (bl, t)) -> (x, (bl, arity, t))) l)
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->

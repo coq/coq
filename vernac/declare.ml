@@ -57,11 +57,13 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
+    ; arity : int option
+    (** User given arity of the definition *)
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    { name; typ; args; impargs }
+  let make ~name ~typ ?(args=[]) ?(impargs=[]) ?arity () =
+    { name; typ; args; impargs; arity }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
