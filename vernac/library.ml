@@ -504,8 +504,11 @@ let save_library_struct ~output_native_objects dir =
 
 let save_library dir : library_t =
   let sd, md, vmlib, _ast = save_library_struct ~output_native_objects:false dir in
-  let digest = Safe_typing.Dvo_or_vi (Digest.string "") in
-  mk_library sd md digest (Vmlibrary.inject vmlib)
+  (* Digest for .vo files is on the md part, for now we also play it
+     safe when we work on-memory and compute the digest for the lib
+     part, even if that's slow. Better safe than sorry. *)
+  let digest = Marshal.to_string md [] |> Digest.string in
+  mk_library sd md (Dvo_or_vi digest) (Vmlibrary.inject vmlib)
 
 let save_library_to todo_proofs ~output_native_objects dir f =
   assert(
