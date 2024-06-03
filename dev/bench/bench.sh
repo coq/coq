@@ -70,7 +70,7 @@ check_variable () {
 : "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=$CI_REPOSITORY_URL}"
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
-: "${new_coq_opam_archive_git_uri:=https://github.com/mattam82/opam-coq-archive.git}"
+: "${new_coq_opam_archive_git_uri:=https://github.com/mattam82/coq-opam-archive.git}"
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=reference-arities}"
 : "${old_coq_opam_archive_git_branch:=master}"
