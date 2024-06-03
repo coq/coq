@@ -266,7 +266,7 @@ module Intern = struct
         "/usr/local/foo.vo"], used for error messages. *)
   end
   module Error = struct
-    type t = Pp.t
+    type t = exn
   end
 
   type t = DirPath.t -> (library_t, Error.t) Result.t * Provenance.t
@@ -288,7 +288,7 @@ let intern_from_file file =
   let provenance = ("file", file) in
   (match CErrors.to_result ~f:intern_from_file file with
    | Ok res -> Ok res
-   | Error iexn -> Error (CErrors.iprint iexn)), provenance
+   | Error (exn, _) -> Error exn), provenance
 
 let check_library_expected_name ~provenance dir library_name =
   if not (DirPath.equal dir library_name) then
@@ -298,9 +298,18 @@ let check_library_expected_name ~provenance dir library_name =
        DirPath.print library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".")
 
-let error_in_intern provenance dir err = CErrors.user_err
-    Pp.(str "Error when parsing .vo (from " ++ str (fst provenance) ++ str " " ++
-        str (snd provenance) ++ str ") for library " ++ Names.DirPath.print dir ++ str ": " ++ err)
+exception InternError of { exn : exn; provenance : Intern.Provenance.t; dir : DirPath.t }
+
+let () = CErrors.register_handler (function
+    | InternError { exn; provenance; dir } ->
+      let err = CErrors.print exn in
+      Some (Pp.(str "Error when parsing .vo (from " ++ str (fst provenance) ++ str " " ++
+                str (snd provenance) ++ str ") for library " ++ Names.DirPath.print dir ++ str ": " ++ err))
+    | _ -> None)
+
+let error_in_intern provenance dir exn =
+  let info = Exninfo.info exn in
+  Exninfo.iraise (InternError { exn; provenance; dir }, info)
 
 (* Returns the digest of a library, checks both caches to see what is loaded *)
 let rec intern_library ~root ~intern (needed, contents as acc) dir =

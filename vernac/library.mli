@@ -34,7 +34,7 @@ module Intern : sig
   end
 
   module Error : sig
-    type t = Pp.t
+    type t = exn
   end
 
   type t = DirPath.t -> (library_t, Error.t) Result.t * Provenance.t
