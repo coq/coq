@@ -841,7 +841,7 @@ let check_evars_are_solved env sigma t =
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
-let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
+let prepare_definition ~info ~opaque ?using ~name ~body ~typ ?arity sigma =
   let { Info.poly; udecl; inline; _ } = info in
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
@@ -855,13 +855,13 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
       name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let entry = definition_entry ~opaque ?using ~inline ?types ~univs ?arity body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
-  let { CInfo.name; impargs; typ; _ } = cinfo in
-  let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma in
+  let { CInfo.name; impargs; typ; arity; _ } = cinfo in
+  let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ ?arity sigma in
   let { Info.scope; clearbody; kind; hook; typing_flags; user_warns; ntns; _ } = info in
   let gref = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
   List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) (Global.env ())) ntns;

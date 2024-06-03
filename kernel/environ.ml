@@ -949,6 +949,15 @@ let is_type_in_type env r =
   | IndRef ind -> type_in_type_ind ind env
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
+
+let get_reference_arity env r =
+  let open Names.GlobRef in
+  match r with
+  | VarRef _id -> None
+  | ConstRef c -> (lookup_constant c env).const_arity
+  | IndRef _ -> None
+  | ConstructRef ((m, i), c) -> Some (lookup_mind m env).mind_packets.(i).mind_consnrealargs.(c)
+
 let vm_library env = env.vm_library
 
 let set_vm_library lib env =

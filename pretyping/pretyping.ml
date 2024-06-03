@@ -612,7 +612,7 @@ let mark_obligation_evar sigma k evc =
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
 
 type pretyper = {
-  pretype_ref : pretyper -> GlobRef.t * glob_instance option -> unsafe_judgment pretype_fun;
+  pretype_ref : pretyper -> GlobRef.t * glob_instance option -> eta_expand:bool -> unsafe_judgment pretype_fun;
   pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
   pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
@@ -640,7 +640,7 @@ let eval_pretyper self ~flags tycon env sigma t =
   let loc = t.CAst.loc in
   match DAst.get t with
   | GRef (ref,u) ->
-    self.pretype_ref self (ref, u) ?loc ~flags tycon env sigma
+    self.pretype_ref self (ref, u) ~eta_expand:true ?loc ~flags tycon env sigma
   | GVar id ->
     self.pretype_var self id ?loc ~flags tycon env sigma
   | GEvar (evk, args) ->
@@ -744,15 +744,64 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
   check_instance subst inst;
   sigma, List.map snd subst
 
+module Arities =
+struct
+
+  let constant_arity env cst =
+    (Environ.lookup_constant cst env).const_arity
+
+  let eta_expand ctx n t =
+    it_mkLambda_or_LetIn (EConstr.applist (EConstr.Vars.lift n t, Context.Rel.instance_list EConstr.mkRel 0 ctx)) ctx
+
+  let constructor_arity env c =
+    Some (constructor_nrealargs env c)
+
+  let inductive_arity env i =
+    (* Some (inductive_nparams env i) *)
+    None
+
+  let maybe_expand ?loc env sigma j f nargs arity =
+    match arity with
+    | None -> j
+    | Some arity ->
+      let len = arity - nargs in
+      if len <= 0 then j
+      else
+        let rest = j.uj_type in
+        let to_abs, concl =
+          try Reductionops.whd_decompose_prod_n_assum env sigma len rest
+          with Invalid_argument _ -> CErrors.user_err ?loc Pp.(str"Not enough products for declared arity " ++ int arity ++ str" of reference " ++
+            Termops.Internal.print_constr_env env sigma f ++ str " in inferred type " ++
+            Termops.Internal.print_constr_env env sigma rest)
+        in
+        let exp = eta_expand to_abs len j.uj_val in
+        { j with uj_val = exp }
+
+  let head_arity env c =
+    match c with
+    | Const (cst, univs) -> constant_arity env cst
+    | Construct (c, u) -> constructor_arity env c
+    | Ind (i, u) -> inductive_arity env i
+    | _ -> None
+
+  let enforce ?loc env sigma j =
+    let env = GlobEnv.env env in
+    let (f, l) = EConstr.decompose_app sigma j.uj_val in
+    let arity = head_arity env (EConstr.kind sigma f) in
+    maybe_expand env sigma j f (Array.length l) arity
+
+end
+
 module Default =
 struct
 
   let discard_trace (sigma,t,otrace) = sigma, t
 
-  let pretype_ref self (ref, u) =
+  let pretype_ref self (ref, u) ~eta_expand =
     fun ?loc ~flags tycon env sigma ->
     let sigma, t_ref = pretype_ref ?loc sigma env ref u in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma t_ref tycon
+    let sigma, j = discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma t_ref tycon in
+    sigma, if eta_expand then Arities.enforce ?loc env sigma j else j
 
   let pretype_var self id =
     fun ?loc ~flags tycon env sigma ->
@@ -902,55 +951,18 @@ struct
     let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
-  let constant_arity env cst =
-    (Environ.lookup_constant cst env).const_arity
-
-  let eta_expand ctx n t =
-    it_mkLambda_or_LetIn (EConstr.applist (EConstr.Vars.lift n t, Context.Rel.instance_list EConstr.mkRel 0 ctx)) ctx
-
-  let constructor_arity env c =
-    Some (constructor_nallargs env c)
-
-  let inductive_arity env i =
-    (* Some (inductive_nparams env i) *)
-    None
-
-  let maybe_expand ?loc env sigma j f l arity =
-    match arity with
-    | None -> j
-    | Some arity ->
-      let len = arity - Array.length l in
-      if len <= 0 then j
-      else
-        let rest = j.uj_type in
-        let to_abs, concl =
-          try Reductionops.whd_decompose_prod_n_assum env sigma len rest
-          with Invalid_argument _ -> CErrors.user_err ?loc Pp.(str"Not enough products for declared arity " ++ int arity ++ str" of reference " ++
-            Termops.Internal.print_constr_env env sigma f ++ str " in inferred type " ++
-            Termops.Internal.print_constr_env env sigma rest)
-        in
-        let exp = eta_expand to_abs len j.uj_val in
-        { j with uj_val = exp }
-
-  let head_arity env c =
-    match c with
-    | Const (cst, univs) -> constant_arity env cst
-    | Construct (c, u) -> constructor_arity env c
-    | Ind (i, u) -> inductive_arity env i
-    | _ -> None
-
-  let enforce_arity ?loc env sigma j =
-    let env = GlobEnv.env env in
-    let (f, l) = EConstr.decompose_app sigma j.uj_val in
-    let arity = head_arity env (EConstr.kind sigma f) in
-    maybe_expand env sigma j f l arity
-
   let pretype_app self (f, args) =
     fun ?loc ~flags tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
-    let sigma, fj = pretype empty_tycon env sigma f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
+    let sigma, fj =
+      let loc = f.CAst.loc in
+      match DAst.get f with
+      | GRef (ref,u) ->
+        self.pretype_ref self (ref, u) ~eta_expand:false ?loc ~flags empty_tycon env sigma
+      | _ -> pretype empty_tycon env sigma f
+    in
     let nargs_before_bidi =
       if Option.is_empty tycon then length
       (* We apply bidirectionality hints only if an expected type is specified *)
@@ -1091,7 +1103,7 @@ struct
         let sigma, resj = refresh_template env sigma resj in
         { resj with uj_val = Coercion.reapply_coercions sigma trace t }
     in
-    let resj = enforce_arity env sigma resj in
+    let resj = Arities.enforce env sigma resj in
     (sigma, resj)
 
   let pretype_proj self ((f,us), args, c) =

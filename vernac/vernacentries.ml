@@ -733,8 +733,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, arity =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+     atts.using, atts.clearbody, atts.arity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
@@ -748,12 +749,12 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
       ?clearbody ~poly ?typing_flags ~scope ~kind
-      ?user_warns ?using pl bl red_option c typ_opt ?hook
+      ?user_warns ?using pl bl ?arity red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
         ?clearbody ~poly ?typing_flags ~scope ~kind
-        ?user_warns ?using pl bl red_option c typ_opt ?hook in
+        ?user_warns ?using pl bl ?arity red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)

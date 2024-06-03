@@ -445,6 +445,8 @@ val is_template_polymorphic : env -> GlobRef.t -> bool
 val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
 
+val get_reference_arity : env -> GlobRef.t -> int option
+
 (** {5 VM and native} *)
 
 val vm_library : env -> Vmlibrary.t

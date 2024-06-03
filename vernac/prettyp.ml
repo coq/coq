@@ -216,6 +216,13 @@ let print_prop_but_default_dep_elim ref =
     else []
   | _ -> []
 
+
+let print_arity env ref =
+  let arity = Environ.get_reference_arity env ref in
+  match arity with
+  | None -> [ pr_global ref ++ str " has no declared arity " ]
+  | Some i -> [ pr_global ref ++ str " has minimal arity " ++ int i]
+
 (** Print projection status *)
 
 let print_projection env ref =
@@ -950,6 +957,7 @@ let print_about_global_reference ?loc env ref udecl =
   pr_infos_list
    (print_ref env false ref udecl :: blankline ::
     print_polymorphism env ref @
+    print_arity env ref @
     print_name_infos env ref @
     print_reduction_behaviour ref @
     print_opacity env ref @
