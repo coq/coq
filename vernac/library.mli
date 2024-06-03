@@ -30,12 +30,16 @@ val intern_from_file :
   CUnix.physical_path -> library_t
 
 module Intern : sig
+  module Error : sig
+    type t = string
+  end
+
   module Provenance : sig
     type t = string * string
     (** A pair of [kind, object], for example ["file",
         "/usr/local/foo.vo"], used for error messages. *)
   end
-  type t = DirPath.t -> library_t * Provenance.t
+  type t = DirPath.t -> (library_t * Provenance.t, Error.t) Result.t
 end
 
 val require_library_syntax_from_dirpath

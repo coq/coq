@@ -63,15 +63,11 @@ val locate_qualified_library
 
 (** Locates a library by implicit name.
 
-  @raise LibUnmappedDir if the library is not in the path
-  @raise LibNotFound if there is no corresponding file in the path
+  @return LibUnmappedDir if the library is not in the path
+  @return LibNotFound if there is no corresponding file in the path
 
 *)
-
 val locate_absolute_library : DirPath.t -> (CUnix.physical_path, Error.t) Result.t
-
-val try_locate_absolute_library : DirPath.t -> string
-(* To do in another PR: [@@deprecated "use locate_absolute_library instead"] *)
 
 (** {6 Extending the Load Path } *)
 

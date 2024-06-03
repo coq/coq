@@ -260,12 +260,15 @@ let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
 module Intern = struct
+  module Error = struct
+    type t = string
+  end
   module Provenance = struct
     type t = string * string
     (** A pair of [kind, object], for example ["file",
         "/usr/local/foo.vo"], used for error messages. *)
   end
-  type t = DirPath.t -> library_t * Provenance.t
+  type t = DirPath.t -> (library_t * Provenance.t, Error.t) Result.t
 end
 
 let intern_from_file file =
@@ -288,6 +291,8 @@ let check_library_expected_name ~provenance dir library_name =
        DirPath.print library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".")
 
+let error_in_intern err = CErrors.user_err Pp.(str "Error when parsing .vo file: " ++ str err)
+
 (* Returns the digest of a library, checks both caches to see what is loaded *)
 let rec intern_library ~root ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
@@ -300,9 +305,12 @@ let rec intern_library ~root ~intern (needed, contents as acc) dir =
       mk_summary interned_lib, acc
     | None ->
       (* We intern the library, and then intern the deps *)
-      let m, provenance = intern dir in
-      check_library_expected_name ~provenance dir m.library_name;
-      mk_summary m, intern_library_deps ~root ~intern acc dir m
+      match intern dir with
+      | Ok (m, provenance) ->
+        check_library_expected_name ~provenance dir m.library_name;
+        mk_summary m, intern_library_deps ~root ~intern acc dir m
+      | Error error ->
+        error_in_intern error
 
 and intern_library_deps ~root ~intern libs dir m =
   let needed, contents =

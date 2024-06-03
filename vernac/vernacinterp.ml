@@ -215,12 +215,36 @@ let interp_entry ?(verbosely=true) ~st entry =
   Vernacstate.unfreeze_full_state st;
   interp_gen ~verbosely ~st ~interp_fn:interp_control entry
 
-let fs_intern dp =
-  let file = Loadpath.try_locate_absolute_library dp in
-  Feedback.feedback @@ Feedback.FileDependency (Some file, Names.DirPath.to_string dp);
-  let res = Library.intern_from_file file, ("file", file) in
-  Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file);
-  res
+module Intern = struct
+  let error_unmapped_dir qid =
+    let prefix, _ = Libnames.repr_qualid qid in
+    CErrors.user_err
+      Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
+              ; str "no physical path bound to"; spc ()
+              ; Names.DirPath.print prefix; fnl ()
+              ])
+
+  let error_lib_not_found dir =
+    let vos = !Flags.load_vos_libraries in
+    let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
+    CErrors.user_err
+      Pp.(seq ([ str "Cannot find library "; Names.DirPath.print dir; str" in loadpath"]@vos_msg))
+
+
+  let fs_intern dp =
+    match Loadpath.locate_absolute_library dp with
+    | Ok file ->
+      Feedback.feedback @@ Feedback.FileDependency (Some file, Names.DirPath.to_string dp);
+      let res = Library.intern_from_file file, ("file", file) in
+      Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file);
+      Ok res
+    | Error Loadpath.Error.LibNotFound ->
+      error_lib_not_found dp
+    | Error Loadpath.Error.LibUnmappedDir ->
+      error_unmapped_dir (Libnames.qualid_of_dirpath dp)
+end
+
+let fs_intern = Intern.fs_intern
 
 let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Vernacstate.Interp.t =
   (* Synterp duplication of control handling bites us here... *)

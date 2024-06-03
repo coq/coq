@@ -252,28 +252,6 @@ let locate_qualified_library ?root qid :
       Ok (library, file)
     | Error _ as e -> e
 
-let error_unmapped_dir qid =
-  let prefix, _ = Libnames.repr_qualid qid in
-  CErrors.user_err
-    Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
-            ; str "no physical path bound to"; spc ()
-            ; DP.print prefix; fnl ()
-            ])
-
-let error_lib_not_found qid =
-  let vos = !Flags.load_vos_libraries in
-  let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
-  CErrors.user_err
-    Pp.(seq ([ str "Cannot find library "; Libnames.pr_qualid qid; str" in loadpath"]@vos_msg))
-
-let try_locate_absolute_library dir =
-  match locate_absolute_library dir with
-  | Ok res -> res
-  | Error LibUnmappedDir ->
-    error_unmapped_dir (Libnames.qualid_of_dirpath dir)
-  | Error LibNotFound ->
-    error_lib_not_found (Libnames.qualid_of_dirpath dir)
-
 (** { 5 Extending the load path } *)
 
 type vo_path =
