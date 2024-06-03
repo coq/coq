@@ -85,16 +85,13 @@ let make_labmap mp list =
   CList.fold_right add_one list empty_labmap
 
 let check_conv_error error why state poly pb env a1 a2 =
-  try
-    if poly then
-      try
-        let () = Conversion.default_conv pb env a1 a2 in
-        fst state
-      with NotConvertible -> error (IncompatiblePolymorphism (env, a1, a2))
-    else
-      Conversion.generic_conv pb ~l2r:false TransparentState.full env state a1 a2
-  with NotConvertible -> error why
-     | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
+  if poly then match Conversion.default_conv pb env a1 a2 with
+  | Result.Ok () -> fst state
+  | Result.Error () ->  error (IncompatiblePolymorphism (env, a1, a2))
+  else match Conversion.generic_conv pb ~l2r:false TransparentState.full env state a1 a2 with
+  | Result.Ok state -> state
+  | Result.Error None -> error why
+  | Result.Error (Some e) -> error (IncompatibleUniverses e)
 
 let check_universes error env u1 u2 =
   match u1, u2 with

@@ -96,7 +96,11 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
             | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
           in
-          cst
+          begin match cst with
+          | Result.Ok cst -> cst
+          | Result.Error (None | Some _) ->
+            error_incorrect_with_constraint lab
+          end
         | Polymorphic uctx, Polymorphic ctx ->
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
@@ -109,14 +113,14 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
               let j = Typeops.infer env' wth.w_def in
               assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
-              begin
-                try Conversion.conv_leq env' j.uj_type typ
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+              begin match Conversion.conv_leq env' j.uj_type typ with
+              | Result.Ok () -> ()
+              | Result.Error () -> error_incorrect_with_constraint lab
               end
             | Def c' ->
-              begin
-                try Conversion.conv env' wth.w_def c'
-                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
+              begin match Conversion.conv env' wth.w_def c' with
+              | Result.Ok () -> ()
+              | Result.Error () -> error_incorrect_with_constraint lab
               end
             | Primitive _ | Symbol _ ->
               error_incorrect_with_constraint lab
@@ -152,7 +156,6 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
@@ -225,7 +228,6 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 type 'a vm_handler = { vm_handler : env -> universes -> Constr.t -> 'a -> 'a * Vmlibrary.indirect_code option }
 type 'a vm_state = 'a * 'a vm_handler

@@ -8,6 +8,23 @@ open Vmsymtable
 
 (* Test la structure des piles *)
 
+type 'a fail = { fail : 'r. 'a -> 'r }
+
+exception NotConvertible
+
+let fail_check state check box = match state with
+| Result.Ok state -> (state, check, box)
+| Result.Error None -> raise NotConvertible
+| Result.Error (Some err) -> box.fail err
+
+let convert_instances ~flex u1 u2 (state, check, box) =
+  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+  fail_check state check box
+
+let sort_cmp_universes env pb s1 s2 (state, check, box) =
+  let state, check = Conversion.sort_cmp_universes env pb s1 s2 (state, check) in
+  fail_check state check box
+
 let table_key_instance env = function
 | ConstKey cst -> Environ.constant_context env cst
 | RelKey _ | VarKey _ | EvarKey _ -> UVars.AbstractContext.empty
@@ -198,16 +215,22 @@ let warn_bytecode_compiler_failed =
          (fun () -> strbrk "Bytecode compiler failed, " ++
                       strbrk "falling back to standard conversion")
 
-let vm_conv_gen cv_pb sigma env univs t1 t2 =
+let vm_conv_gen (type err) cv_pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
   else
+  let exception Error of err in
+  let box = { fail = fun e -> raise (Error e) } in
   try
+    let (state, check) = univs in
     let v1 = val_of_constr env sigma t1 in
     let v2 = val_of_constr env sigma t2 in
-    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
-  with Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
+    Result.Ok (pi1 (conv_val env cv_pb (nb_rel env) v1 v2 (state, check, box)))
+  with
+  | NotConvertible -> Result.Error None
+  | Error e -> Result.Error (Some e)
+  | Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
@@ -218,11 +241,15 @@ let vm_conv cv_pb env t1 t2 =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
     else Constr.eq_constr_univs univs t1 t2
   in
-  if not b then
+  if b then Result.Ok ()
+  else
     let state = (univs, checked_universes) in
-    let _ : UGraph.t =
+    let ans : (UGraph.t, 'a option) result =
       NewProfile.profile "vm_conv" (fun () ->
           vm_conv_gen cv_pb (Genlambda.empty_evars env) env state t1 t2)
         ()
     in
-    ()
+    match ans with
+    | Result.Ok (_ : UGraph.t)-> Result.Ok ()
+    | Result.Error None -> Result.Error ()
+    | Result.Error (Some e) -> Empty.abort e

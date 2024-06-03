@@ -40,7 +40,7 @@ The command has indeed failed with message:
 In environment
 v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) : punit
 The term "v" has type "punit@{Set}" while it is expected to have type
- "punit@{u}".
+ "punit@{u}" (universe inconsistency: Cannot enforce Set = u).
 S
      : nat -> nat
 S (ack 4 4)
