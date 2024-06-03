@@ -336,7 +336,7 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 
 (************************************************************************)
 
-type table_val = (fconstr, Empty.t, UVars.Instance.t * bool * rewrite_rule list) constant_def
+type table_val = ((fconstr * int option), Empty.t, UVars.Instance.t * bool * rewrite_rule list) constant_def
 
 module Table : sig
   type t
@@ -387,14 +387,14 @@ end = struct
           | RelDecl.LocalAssum _ -> raise Not_found
           | RelDecl.LocalDef (_, t, _) -> lift n t
         in
-        Def (inject body)
+        Def (inject body, None)
       | VarKey id ->
         let def = Environ.lookup_named id env in
         shortcut_irrelevant info
           (binder_relevance (NamedDecl.get_annot def));
         let ts = RedFlags.red_transparent info.i_flags in
         if TransparentState.is_transparent_variable ts id then
-          Def (assoc_defined def)
+          Def (assoc_defined def, None)
         else
           raise Not_found
       | ConstKey (cst,u) ->
@@ -403,14 +403,14 @@ end = struct
         let ts = RedFlags.red_transparent info.i_flags in
         if TransparentState.is_transparent_constant ts cst then match cb.const_body with
         | Undef _ | Def _ | OpaqueDef _ | Primitive _ ->
-          Def (constant_value_in u cb.const_body)
+          Def (constant_value_in u cb.const_body, cb.const_arity)
         | Symbol b ->
           let r = Cmap_env.get cst env.symb_pats in
           raise (NotEvaluableConst (HasRules (u, b, r)))
         else
           raise Not_found
     with
-    | Irrelevant -> Def mk_irrelevant
+    | Irrelevant -> Def (mk_irrelevant, None)
     | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
     | NotEvaluableConst (HasRules (u, b, r)) -> Symbol (u, b, r)
     | Not_found (* List.assoc *)
@@ -1796,7 +1796,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
         | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
       (match Table.lookup info tab fl with
-        | Def v -> kni info tab ~pat_state v stk
+        | Def (v, None) -> kni info tab ~pat_state v stk
+        | Def (v, Some arity) ->
+          if arity <= stack_args_size stk then
+            kni info tab ~pat_state v stk
+          else (set_ntrl m; knr_ret info tab ~pat_state (m, stk))
         | Primitive op ->
           if check_native_args op stk then
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
@@ -2136,7 +2140,10 @@ let infos_with_reds infos reds =
 
 let unfold_ref_with_args infos tab fl v =
   match Table.lookup infos tab fl with
-  | Def def -> Some (def, v)
+  | Def (def, None) -> Some (def, v)
+  | Def (def, Some arity) ->
+    if arity <= stack_args_size v then Some (def, v)
+    else None
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in

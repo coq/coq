@@ -830,11 +830,18 @@ let whd_state_gen flags env sigma =
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,fst (Stack.strip_app stack)))));
       if RedFlags.red_set flags (RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
-       match constant_value_in env (c, u') with
-       | body ->
+       match constant_arity_value_in env (c, u') with
+       | body, None ->
          begin
           let body = EConstr.of_constr body in
           whrec (body, stack)
+          end
+       | body, Some arity ->
+         begin
+          if arity <= Stack.args_size stack then
+            let body = EConstr.of_constr body in
+            whrec (body, stack)
+          else fold ()
           end
        | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
           let kargs = CPrimitives.kind p in

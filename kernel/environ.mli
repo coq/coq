@@ -238,6 +238,7 @@ val constant_context : env -> Constant.t -> AbstractContext.t
 (* These functions should be called under the invariant that [env]
    already contains the constraints corresponding to the constant
    application. *)
+val constant_arity_value_in : env -> Constant.t puniverses -> constr * int option
 val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option

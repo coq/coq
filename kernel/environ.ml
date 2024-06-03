@@ -620,6 +620,19 @@ let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
   subst_instance_constr u cb.const_type
 
+let constant_arity_value_in env (kn,u) =
+  let cb = lookup_constant kn env in
+  match cb.const_body with
+    | Def l_body ->
+      (subst_instance_constr u l_body, cb.const_arity)
+    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+    | Undef _ -> raise (NotEvaluableConst NoBody)
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+    | Symbol b ->
+        match Cmap_env.find_opt kn env.symb_pats with
+        | Some r -> raise (NotEvaluableConst (HasRules (u, b, r)))
+        | None -> assert false
+
 let constant_value_in env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_body with
