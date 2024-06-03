@@ -27,20 +27,21 @@ val require_library_from_dirpath : library_t list -> unit
 
 (** Intern from a .vo file located by libresolver *)
 module Intern : sig
-  module Error : sig
-    type t = Pp.t
-  end
-
   module Provenance : sig
     type t = string * string
     (** A pair of [kind, object], for example ["file",
         "/usr/local/foo.vo"], used for error messages. *)
   end
-  type t = DirPath.t -> (library_t * Provenance.t, Error.t) Result.t
+
+  module Error : sig
+    type t = Pp.t
+  end
+
+  type t = DirPath.t -> (library_t, Error.t) Result.t * Provenance.t
 end
 
 val intern_from_file : CUnix.physical_path ->
-  (library_t * Intern.Provenance.t, Intern.Error.t) Result.t
+  (library_t, Intern.Error.t) Result.t * Intern.Provenance.t
 
 val require_library_syntax_from_dirpath
   :  intern:Intern.t

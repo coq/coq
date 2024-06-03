@@ -235,10 +235,10 @@ module Intern = struct
     match Loadpath.locate_absolute_library dp with
     | Ok file ->
       Feedback.feedback @@ Feedback.FileDependency (Some file, Names.DirPath.to_string dp);
-      let res = Library.intern_from_file file in
+      let res, provenance = Library.intern_from_file file in
       Result.iter (fun _ ->
           Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file)) res;
-      res
+      res, provenance
     | Error Loadpath.Error.LibNotFound ->
       error_lib_not_found dp
     | Error Loadpath.Error.LibUnmappedDir ->

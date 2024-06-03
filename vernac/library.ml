@@ -260,15 +260,16 @@ let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
 module Intern = struct
-  module Error = struct
-    type t = Pp.t
-  end
   module Provenance = struct
     type t = string * string
     (** A pair of [kind, object], for example ["file",
         "/usr/local/foo.vo"], used for error messages. *)
   end
-  type t = DirPath.t -> (library_t * Provenance.t, Error.t) Result.t
+  module Error = struct
+    type t = Pp.t
+  end
+
+  type t = DirPath.t -> (library_t, Error.t) Result.t * Provenance.t
 end
 
 let intern_from_file file =
@@ -281,13 +282,13 @@ let intern_from_file file =
   System.check_caml_version ~caml:lsd.md_ocaml ~file;
   register_library_filename lsd.md_name file;
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
-  mk_intern_library lsd lmd digest_lmd del_opaque vmlib, ("file", file)
+  mk_intern_library lsd lmd digest_lmd del_opaque vmlib
 
 let intern_from_file file =
-  match CErrors.to_result ~f:intern_from_file file with
-  | Ok res -> Ok res
-  | Error iexn ->
-    Error (CErrors.iprint iexn)
+  let provenance = ("file", file) in
+  (match CErrors.to_result ~f:intern_from_file file with
+   | Ok res -> Ok res
+   | Error iexn -> Error (CErrors.iprint iexn)), provenance
 
 let check_library_expected_name ~provenance dir library_name =
   if not (DirPath.equal dir library_name) then
@@ -297,8 +298,9 @@ let check_library_expected_name ~provenance dir library_name =
        DirPath.print library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".")
 
-let error_in_intern dir err = CErrors.user_err
-    Pp.(str "Error when parsing .vo file for library " ++ Names.DirPath.print dir ++ str ": " ++ err)
+let error_in_intern provenance dir err = CErrors.user_err
+    Pp.(str "Error when parsing .vo (from " ++ str (fst provenance) ++ str " " ++
+        str (snd provenance) ++ str ") for library " ++ Names.DirPath.print dir ++ str ": " ++ err)
 
 (* Returns the digest of a library, checks both caches to see what is loaded *)
 let rec intern_library ~root ~intern (needed, contents as acc) dir =
@@ -313,11 +315,11 @@ let rec intern_library ~root ~intern (needed, contents as acc) dir =
     | None ->
       (* We intern the library, and then intern the deps *)
       match intern dir with
-      | Ok (m, provenance) ->
+      | Ok m, provenance ->
         check_library_expected_name ~provenance dir m.library_name;
         mk_summary m, intern_library_deps ~root ~intern acc dir m
-      | Error error ->
-        error_in_intern dir error
+      | Error error, provenance ->
+        error_in_intern provenance dir error
 
 and intern_library_deps ~root ~intern libs dir m =
   let needed, contents =
