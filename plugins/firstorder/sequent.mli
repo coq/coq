@@ -34,7 +34,7 @@ val add_formula : flags:flags -> hint:bool -> Environ.env -> Evd.evar_map -> Glo
 
 val re_add_formula_list : Evd.evar_map -> Formula.any_formula list -> t -> t
 
-val find_left : Evd.evar_map -> constr -> t -> GlobRef.t
+val find_left : Evd.evar_map -> atom -> t -> GlobRef.t
 
 val find_goal : Evd.evar_map -> t -> GlobRef.t
 
@@ -47,3 +47,5 @@ val extend_with_ref_list : flags:flags -> Environ.env -> Evd.evar_map -> GlobRef
 
 val extend_with_auto_hints : flags:flags -> Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
   t -> t * Evd.evar_map
+
+val state : t -> Env.t
