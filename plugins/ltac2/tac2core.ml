@@ -1093,6 +1093,9 @@ let () =
   define "new_goal" (evar @-> tac unit) @@ fun ev ->
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evd.mem sigma ev then
+    let sigma = Evd.remove_future_goal sigma ev in
+    let sigma = Evd.unshelve sigma [ev] in
+    Proofview.Unsafe.tclEVARS sigma <*>
     Proofview.Unsafe.tclNEWGOALS [Proofview.with_empty_state ev] <*>
     Proofview.tclUNIT ()
   else throw err_notfound
