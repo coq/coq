@@ -528,8 +528,6 @@ module FutureGoals : sig
 
   val comb : t -> Evar.t list
 
-  val principal : t -> Evar.t option
-
   val map_filter : (Evar.t -> Evar.t option) -> t -> t
   (** Applies a function on the future goals *)
 
@@ -543,7 +541,7 @@ module FutureGoals : sig
   val push : stack -> stack
   val pop : stack -> t * stack
 
-  val add : principal:bool -> Evar.t -> stack -> stack
+  val add : Evar.t -> stack -> stack
   val remove : Evar.t -> stack -> stack
 
   val fold : ('a -> Evar.t -> 'a) -> 'a -> stack -> 'a
@@ -556,21 +554,11 @@ end = struct
     uid : int;
     comb : Evar.t Int.Map.t;
     revmap : int Evar.Map.t;
-    principal : Evar.t option; (** if [Some e], [e] must be
-                                   contained in
-                                   [comb]. The evar
-                                   [e] will inherit
-                                   properties (now: the
-                                   name) of the evar which
-                                   will be instantiated with
-                                   a term containing [e]. *)
   }
 
   let comb g =
     (* Keys are reversed, highest number is last introduced *)
     Int.Map.fold (fun _ evk accu -> evk :: accu) g.comb []
-
-  let principal g = g.principal
 
   type stack = t list
 
@@ -579,38 +567,28 @@ end = struct
   | hd :: tl ->
     f hd :: tl
 
-  let add ~principal evk stack =
+  let add evk stack =
     let add fgl =
       let comb = Int.Map.add fgl.uid evk fgl.comb in
       let revmap = Evar.Map.add evk fgl.uid fgl.revmap in
-      let principal =
-        if principal then
-          match fgl.principal with
-          | Some _ -> CErrors.user_err Pp.(str "Only one main goal per instantiation.")
-          | None -> Some evk
-        else fgl.principal
-      in
       let uid = fgl.uid + 1 in
       let () = assert (0 <= uid) in
-      { comb; revmap; principal; uid }
+      { comb; revmap; uid }
     in
     set add stack
 
   let remove e stack =
     let remove fgl =
-      let filter e' = not (Evar.equal e e') in
-      let principal = Option.filter filter fgl.principal in
       let comb, revmap = match Evar.Map.find e fgl.revmap with
       | index -> (Int.Map.remove index fgl.comb, Evar.Map.remove e fgl.revmap)
       | exception Not_found -> fgl.comb, fgl.revmap
       in
-      { principal; comb; revmap; uid = fgl.uid }
+      { comb; revmap; uid = fgl.uid }
     in
     List.map remove stack
 
   let empty = {
     uid = 0;
-    principal = None;
     comb = Int.Map.empty;
     revmap = Evar.Map.empty;
   }
@@ -635,8 +613,7 @@ end = struct
       else (Int.Map.remove index comb, Evar.Map.remove evk revmap)
     in
     let (comb, revmap) = Int.Map.fold fold fgl.comb (fgl.comb, fgl.revmap) in
-    let principal = Option.filter f fgl.principal in
-    { comb; principal; revmap; uid = fgl.uid }
+    { comb; revmap; uid = fgl.uid }
 
   let map_filter f fgl =
     let fold index evk (comb, revmap) = match f evk with
@@ -645,15 +622,13 @@ end = struct
       (Int.Map.add index evk' comb, Evar.Map.add evk' index revmap)
     in
     let (comb, revmap) = Int.Map.fold fold fgl.comb (Int.Map.empty, Evar.Map.empty) in
-    let principal = Option.bind fgl.principal f in
-    { comb; revmap; principal; uid = fgl.uid }
+    { comb; revmap; uid = fgl.uid }
 
   let pr_stack stack =
     let open Pp in
     let pr_future_goals fgl =
       let comb = comb fgl in
-      prlist_with_sep spc Evar.print comb ++
-        pr_opt (fun ev -> str"(principal: " ++ Evar.print ev ++ str")") fgl.principal
+      prlist_with_sep spc Evar.print comb
     in
     if List.is_empty stack then str"(empty stack)"
     else prlist_with_sep (fun () -> str"||") pr_future_goals stack
@@ -1321,11 +1296,7 @@ let eval_side_effects evd = evd.effects
 
 (* Future goals *)
 let declare_future_goal evk evd =
-  let future_goals = FutureGoals.add ~principal:false evk evd.future_goals in
-  { evd with future_goals }
-
-let declare_principal_goal evk evd =
-  let future_goals = FutureGoals.add ~principal:true evk evd.future_goals in
+  let future_goals = FutureGoals.add evk evd.future_goals in
   { evd with future_goals }
 
 let push_future_goals evd =
@@ -1379,7 +1350,7 @@ let pr_shelf evd =
 
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance = Sorts.Relevant)
   ?(abstract_arguments = Abstraction.identity) ?candidates
-  ?name ?typeclass_candidate ?(principal=false) sign evd typ =
+  ?name ?typeclass_candidate sign evd typ =
   let evi = {
     evar_hyps = sign;
     evar_concl = Undefined typ;
@@ -1391,13 +1362,9 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
     evar_relevance = relevance;
   }
   in
-  let typeclass_candidate = if principal then Some false else typeclass_candidate in
   let newevk = new_untyped_evar () in
   let evd = add_with_name evd ?name ?typeclass_candidate newevk evi in
-  let evd =
-    if principal then declare_principal_goal newevk evd
-    else declare_future_goal newevk evd
-  in
+  let evd = declare_future_goal newevk evd in
   (evd, newevk)
 
 let define_aux def undef evk body =

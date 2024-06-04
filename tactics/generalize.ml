@@ -76,10 +76,10 @@ let bring_hyps hyps =
       let concl = Tacmach.pf_concl gl in
       let newcl = it_mkNamedProd_or_LetIn sigma concl hyps in
       let args = Context.Named.instance mkVar hyps in
-      Refine.refine ~typecheck:false begin fun sigma ->
+      Refine.refine_with_principal ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
-          Evarutil.new_evar env sigma ~principal:true newcl in
-        (sigma, mkApp (ev, args))
+          Evarutil.new_evar env sigma newcl in
+        (sigma, mkApp (ev, args), Some (fst @@ destEvar sigma ev))
       end
     end
 
@@ -228,9 +228,9 @@ let new_generalize_gen_let lconstr =
         0 lconstr (concl, sigma, [])
     in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-        (Refine.refine ~typecheck:false begin fun sigma ->
-          let (sigma, ev) = Evarutil.new_evar env sigma ~principal:true newcl in
-          (sigma, applist (ev, args))
+        (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+          let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+          (sigma, applist (ev, args), Some (fst @@ destEvar sigma ev))
          end)
   end
 
@@ -329,7 +329,7 @@ let mk_term_eq homogeneous env sigma ty t ty' t' =
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
-  Refine.refine ~typecheck:true begin fun sigma ->
+  Refine.refine_with_principal ~typecheck:true begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let sigma, abshypeq, abshypt =
@@ -356,7 +356,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Abstract by the extension of the context *)
   let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
-  let (sigma, genc) = Evarutil.new_evar env sigma ~principal:true genctyp in
+  let (sigma, genc) = Evarutil.new_evar env sigma genctyp in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instantiated hyp. *)
@@ -364,7 +364,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finally, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
-  (sigma, mkApp (appeqs, abshypt))
+  (sigma, mkApp (appeqs, abshypt), Some (fst @@ destEvar sigma genc))
   end
 
 let hyps_of_vars env sigma sign nogen hyps =

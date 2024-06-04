@@ -54,7 +54,7 @@ let generic_refine ~typecheck f gl =
   let sigma = Evd.push_future_goals sigma in
   (* Create the refinement term *)
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-  f >>= fun (v, c) ->
+  f >>= fun (v, c, principal) ->
   Proofview.tclEVARMAP >>= fun sigma' ->
   Proofview.wrap_exceptions begin fun () ->
   (* Redo the effects in sigma in the monad's env *)
@@ -74,16 +74,20 @@ let generic_refine ~typecheck f gl =
   (* Restore the [future goals] state. *)
   let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
+  (* XXX is it useful to advance / filter the [principal] or should we
+     just expect [f] to produce the right thing? *)
   let future_goals = Evd.FutureGoals.map_filter (Proofview.Unsafe.advance sigma) future_goals in
+  let principal = Option.bind principal (Proofview.Unsafe.advance sigma) in
   let shelf = Evd.shelf sigma in
   let future_goals = Evd.FutureGoals.filter (fun ev -> not @@ List.mem ev shelf) future_goals in
+  let principal = Option.filter (fun ev -> not @@ List.mem ev shelf) principal in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
     (* Nothing to do, the goal has been solved by side-effect *)
     sigma
   | Some self ->
-    match (Evd.FutureGoals.principal future_goals) with
+    match principal with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in
@@ -116,7 +120,13 @@ let make_refine_enter ~typecheck f gl = generic_refine ~typecheck (lift f) gl
 
 let refine ~typecheck f =
   let f evd =
-    let (evd,c) = f evd in (evd,((), c))
+    let (evd,c) = f evd in (evd,((), c, None))
+  in
+  Proofview.Goal.enter (make_refine_enter ~typecheck f)
+
+let refine_with_principal ~typecheck f =
+  let f evd =
+    let (evd,c, principal) = f evd in (evd,((), c, principal))
   in
   Proofview.Goal.enter (make_refine_enter ~typecheck f)
 

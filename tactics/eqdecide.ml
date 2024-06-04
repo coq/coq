@@ -86,12 +86,12 @@ let mk_dectype { eqonleft; op; eq1; eq2; noteq } t x y =
 let generalize_right dty typ c1 c2 =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Refine.refine_with_principal ~typecheck:false begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
     let r = Retyping.relevance_of_type env sigma typ in
     let newconcl = mkProd (make_annot na r, typ, mk_dectype dty typ c1 (mkRel 1)) in
-    let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
-    (sigma, mkApp (x, [|c2|]))
+    let (sigma, x) = Evarutil.new_evar env sigma newconcl in
+    (sigma, mkApp (x, [|c2|]), Some (fst @@ destEvar sigma x))
   end
   end
 
