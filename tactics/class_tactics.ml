@@ -446,7 +446,7 @@ module Search = struct
   type autoinfo =
     { search_depth : int list;
       last_tac : Pp.t Lazy.t;
-      search_dep : bool;
+      search_dep : bool Lazy.t;
       search_only_classes : bool;
       search_cut : hints_path;
       search_hints : hint_db;
@@ -502,14 +502,13 @@ module Search = struct
       overlapping) cases:
       - [unique_instances] is [true].
         This is the case when the goal's class has [Unique Instances].
-      - [indep] is [true] and the current goal has no evars.
-        [indep] is generally [true] and only gets set to [false] if the
+      - [dep] is [false] and the current goal has no evars.
+        [dep] is generally [false] and only gets set to [true] if the
         current goal's evar is mentioned in other goals.
-        ([indep] is the negation of [search_dep].)
       - The current goal is a [Prop] and has no evars. *)
-  let needs_backtrack env evd ~unique_instances ~indep concl =
+  let needs_backtrack env evd ~unique_instances ~dep concl =
     if unique_instances then false else
-    if indep || is_Prop env evd concl then
+    if (Lazy.is_val dep && not (Lazy.force dep)) || is_Prop env evd concl || not (Lazy.force dep) then
       occur_existential evd concl
     else true
 
@@ -687,12 +686,11 @@ module Search = struct
     let concl = Goal.concl gl in
     let sigma = Goal.sigma gl in
     let unique_instances = is_unique env sigma concl in
-    let indep = not info.search_dep in
-    let backtrack = needs_backtrack env sigma ~unique_instances ~indep concl in
+    let backtrack = lazy (needs_backtrack env sigma ~unique_instances ~dep:info.search_dep concl) in
     let () = ppdebug 0 (fun () ->
         pr_depth info.search_depth ++ str": looking for " ++
         Printer.pr_econstr_env (Goal.env gl) sigma concl ++
-        (if backtrack then str" with backtracking"
+        (if Lazy.force backtrack then str" with backtracking"
          else str" without backtracking"))
     in
     let secvars = compute_secvars gl in
@@ -706,7 +704,6 @@ module Search = struct
        we don't need to backtrack, as long as no evar appears in the goal
        This is an overapproximation. Evars could appear in this goal only
        and not any other *)
-    let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
     let rec onetac e (tac, pat, b, name, pp) tl =
@@ -738,7 +735,7 @@ module Search = struct
             make_autogoal_hints info.search_only_classes (modes,st) gl'
           else info.search_hints
         in
-        let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
+        let dep' = lazy (Lazy.force info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls) in
         let info' =
           { search_depth = succ j :: i :: info.search_depth;
             last_tac = pp;
@@ -814,6 +811,7 @@ module Search = struct
       in
       if path_matches_epsilon derivs then aux e tl
       else
+        let ortac = if Lazy.force backtrack then Proofview.tclOR else Proofview.tclORELSE in
         ortac
              (with_shelf tac >>= fun s ->
               let i = !idx in incr idx; result s i None)
@@ -843,8 +841,8 @@ module Search = struct
             else Proofview.tclZERO ~info:ie NoApplicableHint
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableHint
     in
-    if backtrack then aux (NoApplicableHint,Exninfo.null) poss
-    else tclONCE (aux (NoApplicableHint,Exninfo.null) poss)
+    let break e = if Lazy.force backtrack then None else Some e in
+    Proofview.tclBREAK break (aux (NoApplicableHint, Exninfo.null) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =
     Proofview.Goal.enter
@@ -889,7 +887,7 @@ module Search = struct
   let search_tac_gl mst only_classes dep hints best_effort depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
-    let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
+    let dep = lazy (dep || Proofview.unifiable sigma (Goal.goal gl) gls) in
     let info = make_autogoal mst only_classes dep (cut_of_hints hints)
       best_effort i gl in
     search_tac hints depth 1 info
