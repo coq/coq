@@ -220,6 +220,7 @@ val collapse_sort_variables : t -> t
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
+  univdecl_extensible_qualities : bool;
   univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
   univdecl_constraints : 'c; (* Declared constraints *)
