@@ -1,2 +1,2 @@
-Existential 1 = ?Goal : [ |- False] (shelved)
-Existential 1 = ?f : [ |- False] (shelved)
+Existential 1 = ?f : [ |- False]
+Existential 1 = ?f : [ |- False]
