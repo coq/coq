@@ -751,7 +751,7 @@ struct
     let fold decl (env, sigma, ctx) =
       let open Context.Rel.Declaration in
       let ty = get_type decl in
-      let sigma, newty = Evarsolve.refresh_universes ~status:(UnivFlexible false) ~onlyalg:false (Some true) env sigma ty in
+      let sigma, newty = Evarsolve.refresh_universes ~status:(UnivFlexible) ~onlyalg:false (Some true) env sigma ty in
       let decl' = Context.Rel.Declaration.set_type newty decl in
       (env, sigma, decl' :: ctx) in
     let env', sigma, fresh_ctx = Context.Rel.fold_outside fold ctx ~init:(env, sigma, []) in
