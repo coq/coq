@@ -74,13 +74,9 @@ let generic_refine ~typecheck f gl =
   (* Restore the [future goals] state. *)
   let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
-  (* XXX is it useful to advance / filter the [principal] or should we
-     just expect [f] to produce the right thing? *)
   let future_goals = Evd.FutureGoals.map_filter (Proofview.Unsafe.advance sigma) future_goals in
-  let principal = Option.bind principal (Proofview.Unsafe.advance sigma) in
   let shelf = Evd.shelf sigma in
   let future_goals = Evd.FutureGoals.filter (fun ev -> not @@ List.mem ev shelf) future_goals in
-  let principal = Option.filter (fun ev -> not @@ List.mem ev shelf) principal in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
