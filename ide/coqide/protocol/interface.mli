@@ -133,7 +133,7 @@ type db_continue_opt =
 
 (** Calls result *)
 
-type location = (int * int) option (* start and end of the error *)
+type location = Loc.t option
 type state_id = Stateid.t
 type route_id = Feedback.route_id
 

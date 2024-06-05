@@ -458,15 +458,12 @@ let about () = {
 
 let handle_exn (e, info) =
   let dummy = Stateid.dummy in
-  let loc_of e = match Loc.get_loc e with
-    | Some loc -> Some (Loc.unloc loc)
-    | _        -> None in
   let mk_msg () = CErrors.iprint (e,info) in
   match e with
   | e ->
       match Stateid.get info with
-      | Some (valid, _) -> valid, loc_of info, mk_msg ()
-      | None -> dummy, loc_of info, mk_msg ()
+      | Some (valid, _) -> valid, Loc.get_loc info, mk_msg ()
+      | None -> dummy, Loc.get_loc info, mk_msg ()
 
 let init =
   let initialized = ref false in

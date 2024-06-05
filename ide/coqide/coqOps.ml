@@ -161,8 +161,8 @@ open SentenceId
 (* Given a Coq loc, convert it to a pair of iterators start / end in
    the buffer. *)
 let coq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
-  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
-  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
+  Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
+  Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
 
 (** increase [uni_off] by the number of bytes until [s_uni] This can
     be used to convert a character offset to byte offset if we know a
@@ -831,7 +831,6 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
                   self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
@@ -990,7 +989,7 @@ object(self)
     self#backtrack_until ?move_insert until
 
   method private handle_failure_aux
-    ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
+    ?(move_insert=false) (safe_id, (loc : Interface.location), msg)
   =
     messages#default_route#push Feedback.Error msg;
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
