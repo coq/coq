@@ -1078,6 +1078,23 @@ let downcast evk ccl evd =
   let evar_info' = { evar_info with evar_concl = Undefined ccl } in
   { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
 
+let mem_head_evar c evars =
+  (* Note: evar-sensitive code *)
+  let rec hrec c = match kind c with
+    | Evar (evk,_)   -> Evar.Set.mem evk evars
+    | Case (_, _, _, _, _, c, _) -> hrec c
+    | App (c,_)      -> hrec c
+    | Cast (c,_,_)   -> hrec c
+    | Proj (_, _, c)    -> hrec c
+    | _              -> false
+  in
+  hrec c
+
+let has_evar evars (pbty,_,t1,t2) =
+  match evars with
+  | None -> true
+  | Some evars -> mem_head_evar t1 evars || mem_head_evar t2 evars
+
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
 let extract_conv_pbs evd p =
@@ -1094,8 +1111,11 @@ let extract_conv_pbs evd p =
   {evd with conv_pbs = pbs1; last_mods = Evar.Set.empty},
   pbs
 
-let extract_changed_conv_pbs evd p =
-  extract_conv_pbs evd (fun pb -> p evd.last_mods pb)
+let extract_changed_conv_pbs evd =
+  extract_conv_pbs evd (has_evar (Some evd.last_mods))
+
+let extract_changed_conv_pbs_from evd evars=
+  extract_conv_pbs evd (has_evar evars)
 
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)

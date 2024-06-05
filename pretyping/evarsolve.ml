@@ -1864,12 +1864,8 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
  * ass.
  *)
 
-let status_changed evd lev (pbty,_,t1,t2) =
-  (try Evar.Set.mem (head_evar evd t1) lev with NoHeadEvar -> false) ||
-  (try Evar.Set.mem (head_evar evd t2) lev with NoHeadEvar -> false)
-
 let reconsider_unif_constraints unify flags evd =
-  let (evd,pbs) = extract_changed_conv_pbs evd (status_changed evd) in
+  let (evd,pbs) = extract_changed_conv_pbs evd in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
        match p with
