@@ -57,6 +57,22 @@ val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
 val resolve_tc : constr -> unit Proofview.tactic
 
+type solver = (Environ.env ->
+    Evd.evar_map ->
+    Constr.metavariable option ->
+    bool ->
+    best_effort:bool ->
+    (Evd.evar_map -> Evar.t -> bool) ->
+    (bool * Evd.evar_map) option)
+
+type condition = (Environ.env -> Evd.evar_map -> Evar.Set.t -> bool)
+
+type tc_solver = solver * condition
+
+val register_solver : name:CString.Map.key -> ?override:bool -> tc_solver -> unit
+val activate_solver : name:CString.Map.key -> unit
+val deactivate_solver : name:CString.Map.key -> unit
+
 module Search : sig
   val eauto_tac :
     Hints.hint_mode array list GlobRef.Map.t * TransparentState.t

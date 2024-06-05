@@ -442,6 +442,14 @@ let make_hints env sigma (modes,st) only_classes sign =
       else hints)
     sign db
 
+type solver = (Environ.env ->
+  evar_map ->
+  metavariable option ->
+  bool ->
+  best_effort:bool ->
+  (evar_map -> Evar.t -> bool) ->
+  (bool * evar_map) option)
+
 module Search = struct
   type autoinfo =
     { search_depth : int list;
@@ -1064,7 +1072,8 @@ module Search = struct
         evars_eauto env evd depth true ~best_effort unique false st hints p)
       ()
 
-  let typeclasses_resolve env evd depth unique ~best_effort p =
+
+  let typeclasses_resolve : solver = fun env evd depth unique ~best_effort p ->
     let db = searchtable_map typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
@@ -1159,6 +1168,39 @@ let find_undefined p oevd evd =
 
 exception Unresolved of evar_map
 
+
+type condition = (Environ.env -> evar_map -> Evar.Set.t -> bool)
+
+type tc_solver = solver * condition
+
+let class_solvers = ref (CString.Map.empty : tc_solver CString.Map.t)
+
+let register_solver ~name ?(override=false) h =
+  if not override && CString.Map.mem name !class_solvers then
+    CErrors.anomaly ~label:"Class_tactics.register_solver"
+      Pp.(str (Printf.sprintf {|Solver "%s" is already registered|} name));
+  class_solvers := CString.Map.add name h !class_solvers
+
+let active_solvers = Summary.ref ~name:"typeclass_solvers" ([] : string list)
+
+let deactivate_solver ~name =
+  active_solvers := List.filter (fun s -> not (String.equal s name)) !active_solvers
+
+let activate_solver ~name =
+  assert (CString.Map.mem name !class_solvers);
+  deactivate_solver ~name;
+  active_solvers := name :: !active_solvers
+
+let find_solver env evd (s : Intpart.set) =
+  let rec find_solver = function
+    | [] -> Search.typeclasses_resolve
+    | hd :: tl ->
+      try
+        let (solver,cond) = CString.Map.find hd !class_solvers in
+        if cond env evd s then solver else find_solver tl
+      with Not_found ->  find_solver tl in
+  find_solver !active_solvers
+
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars depth unique env p oevd fail =
@@ -1185,8 +1227,8 @@ let resolve_all_evars depth unique env p oevd fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let res = Search.typeclasses_resolve env evd depth
-            ~best_effort:true unique p in
+          let solver = find_solver env evd comp in
+          let res = solver env evd ~best_effort:true depth unique p in
           match res with
           | Some (finished, evd') ->
             if has_undefined p oevd evd' then
