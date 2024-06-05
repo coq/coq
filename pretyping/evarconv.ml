@@ -1851,8 +1851,14 @@ let error_cannot_unify env evd pb ?reason t1 t2 =
     ?loc:(loc_of_conv_pb evd pb) env
     evd ?reason (t1, t2)
 
-let check_problems_are_solved env evd =
-  match snd (extract_all_conv_pbs evd) with
+let check_problems_are_solved ?evars env evd =
+  let has_evar (pbty,_,t1,t2) =
+    match evars with
+    | None -> true
+    | Some evars ->
+      (try Evar.Set.mem (head_evar evd t1) evars with NoHeadEvar -> false) ||
+      (try Evar.Set.mem (head_evar evd t2) evars with NoHeadEvar -> false) in
+  match snd (extract_conv_pbs evd has_evar) with
   | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 

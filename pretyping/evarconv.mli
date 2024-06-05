@@ -69,10 +69,10 @@ val unify : ?flags:unify_flags -> ?with_ho:bool ->
 val solve_unif_constraints_with_heuristics :
   env -> ?flags:unify_flags -> ?with_ho:bool -> evar_map -> evar_map
 
-(** Check all pending unification problems are solved and raise a
-    PretypeError otherwise *)
+(** Check all pending unification problems relative to a set of evars
+    are solved and raise a PretypeError otherwise *)
 
-val check_problems_are_solved : env -> evar_map -> unit
+val check_problems_are_solved : ?evars:Evar.Set.t -> env -> evar_map -> unit
 
 (** Hook for the canonical structure resolution *)
 
