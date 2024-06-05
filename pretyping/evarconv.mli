@@ -74,6 +74,22 @@ val solve_unif_constraints_with_heuristics :
 
 val check_problems_are_solved : env -> evar_map -> unit
 
+(** Hook for the canonical structure resolution *)
+
+type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
+
+val all_hooks : hook CString.Map.t ref
+
+val register_hook : name:CString.Map.key -> ?override:bool -> hook -> unit
+
+val active_hooks : string list ref
+
+val deactivate_hook : name:Util.String.t -> unit
+
+val activate_hook : name:CString.Map.key -> unit
+
+val apply_hooks : hook
+
 (** Check if a canonical structure is applicable *)
 
 val check_conv_record : env -> evar_map ->

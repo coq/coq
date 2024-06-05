@@ -247,6 +247,31 @@ let occur_rigidly flags env evd (evk,_) t =
     | Normal b -> b
     | Reducible -> false
 
+type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
+
+let all_hooks = ref (CString.Map.empty : hook CString.Map.t)
+
+let register_hook ~name ?(override=false) h =
+  if not override && CString.Map.mem name !all_hooks then
+    CErrors.anomaly ~label:"CanonicalSolution.register_hook"
+      Pp.(str "Hook already registered: \"" ++ str name ++ str "\".");
+  all_hooks := CString.Map.add name h !all_hooks
+
+let active_hooks = Summary.ref ~name:"canonical_solution_hooks_hacked" ([] : string list)
+
+let deactivate_hook ~name =
+  active_hooks := List.filter (fun s -> not (String.equal s name)) !active_hooks
+
+let activate_hook ~name =
+  assert (CString.Map.mem name !all_hooks);
+  deactivate_hook ~name;
+  active_hooks := name :: !active_hooks
+
+let apply_hooks env sigma proj pat =
+  List.find_map (fun name ->
+    try CString.Map.get name !all_hooks env sigma proj pat
+    with e when CErrors.noncritical e -> anomaly Pp.(str "CS hook " ++ str name ++ str " exploded")) !active_hooks
+
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose
    the problem (t1 stack1) = (t2 stack2) into a problem
 
@@ -270,7 +295,7 @@ let occur_rigidly flags env evd (evk,_) t =
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
    (* I only recognize ConstRef projections since these are the only ones for which
       I know how to obtain the number of parameters. *)
-  let (proji, _), arg =
+  let (proji, u), arg =
     match Termops.global_app_of_constr sigma t1 with
     | (Names.GlobRef.ConstRef proji, u), arg -> (proji, u), arg
     | _ -> raise Not_found in
@@ -304,14 +329,20 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let (pat, _, args2') = try ValuePattern.of_constr sigma h2 with | DestKO -> (Default_cs, None, []) in
   let (sigma, solution), sk2_effective =
      (* N.B. In the `Proj` case, the subject needs to be added in args2. *)
-    try
-      let () = if pat = Default_cs then raise Not_found else () in
-      let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
-      if List.length solution.cvalue_arguments = k + (List.length args2') then (sigma, solution), args2' @ args2 else raise Not_found
-    with | Not_found ->
-      let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, Default_cs) in
-      (* We have to drop the arguments args2 because the default solution does not have them. *)
-      if List.length solution.cvalue_arguments = 0 then (sigma, solution), [] else raise Not_found
+    try begin
+      try
+         let () = if pat = Default_cs then raise Not_found else () in
+         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
+         if List.length solution.cvalue_arguments = k + (List.length args2') then (sigma, solution), args2' @ args2 else raise Not_found
+       with | Not_found ->
+         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, Default_cs) in
+         (* We have to drop the arguments args2 because the default solution does not have them. *)
+         if List.length solution.cvalue_arguments = 0 then (sigma, solution), [] else raise Not_found
+      end
+    with | Not_found -> (* If we find no solution, we ask the hook if it has any. *)
+      match (apply_hooks env sigma ((proji, u), params1, c1) (t2, args2)) with
+      | Some r -> r, args2' @ args2
+      | None -> raise Not_found
   in
   let t2 = Stack.zip sigma (h2, (Stack.append_app_list args2 Stack.empty)) in
   let h, _ = decompose_app sigma solution.body in
