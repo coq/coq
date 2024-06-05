@@ -234,6 +234,40 @@ let is_empty uctx =
   ContextSet.is_empty uctx.local &&
   UnivFlex.is_empty uctx.univ_variables
 
+let id_of_level uctx l =
+  try (Level.Map.find l (snd (snd uctx.names))).uname
+  with Not_found -> None
+
+let id_of_qvar uctx l =
+  try (QVar.Map.find l (fst (snd uctx.names))).uname
+  with Not_found -> None
+
+let qualid_of_qvar_names (bind, (qrev,_)) l =
+  try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
+  with Not_found | Option.IsNone ->
+    None (* no global qvars *)
+
+let qualid_of_level_names (bind, (_,urev)) l =
+  try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l urev).uname))
+  with Not_found | Option.IsNone ->
+    UnivNames.qualid_of_level bind l
+
+let qualid_of_level uctx l = qualid_of_level_names uctx.names l
+
+let pr_uctx_qvar_names names l =
+  match qualid_of_qvar_names names l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> QVar.raw_pr l
+
+let pr_uctx_level_names names l =
+  match qualid_of_level_names names l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> Level.raw_pr l
+
+let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
+
+let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
+
 let uname_union s t =
   if s == t then s
   else
@@ -725,40 +759,6 @@ let check_universe_constraints uctx csts =
 let constrain_variables diff uctx =
   let local, vars = UnivFlex.constrain_variables diff uctx.univ_variables uctx.local in
   { uctx with local; univ_variables = vars }
-
-let id_of_level uctx l =
-  try (Level.Map.find l (snd (snd uctx.names))).uname
-  with Not_found -> None
-
-let id_of_qvar uctx l =
-  try (QVar.Map.find l (fst (snd uctx.names))).uname
-  with Not_found -> None
-
-let qualid_of_qvar_names (bind, (qrev,_)) l =
-  try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
-  with Not_found | Option.IsNone ->
-    None (* no global qvars *)
-
-let qualid_of_level_names (bind, (_,urev)) l =
-  try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l urev).uname))
-  with Not_found | Option.IsNone ->
-    UnivNames.qualid_of_level bind l
-
-let qualid_of_level uctx l = qualid_of_level_names uctx.names l
-
-let pr_uctx_qvar_names names l =
-  match qualid_of_qvar_names names l with
-  | Some qid -> Libnames.pr_qualid qid
-  | None -> QVar.raw_pr l
-
-let pr_uctx_level_names names l =
-  match qualid_of_level_names names l with
-  | Some qid -> Libnames.pr_qualid qid
-  | None -> Level.raw_pr l
-
-let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
-
-let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
