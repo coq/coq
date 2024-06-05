@@ -282,7 +282,7 @@ let _ = CErrors.register_handler begin function
   | _ -> None
 end
 
-let synterp_require from export qidl =
+let synterp_require ~intern from export qidl =
   let root = match from with
   | None -> None
   | Some from ->
@@ -297,8 +297,7 @@ let synterp_require from export qidl =
     | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
-  let lib_resolver = Loadpath.try_locate_absolute_library in
-  let filenames = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
+  let filenames = Library.require_library_syntax_from_dirpath ~intern modrefl in
   Option.iter (fun (export,cats) ->
       let cats = synterp_import_cats cats in
       List.iter2 (fun (_, m) (_, f) ->
@@ -441,7 +440,7 @@ let rec synterp_control_flag ~loc (f : control_flag list)
     let (ctrl, v) = Topfmt.with_output_to_file s (synterp_control_flag ~loc l fn) expr in
     (ControlRedirect s :: ctrl, v)
 
-let rec synterp ?loc ~atts v =
+let rec synterp ~intern ?loc ~atts v =
   match v with
   | VernacSynterp v0 ->
     let e = begin match v0 with
@@ -475,7 +474,7 @@ let rec synterp ?loc ~atts v =
       synterp_end_segment lid;
       EVernacEndSegment lid
     | VernacRequire (from, export, qidl) ->
-      let needed, modrefl = synterp_require from export qidl in
+      let needed, modrefl = synterp_require ~intern from export qidl in
       EVernacRequire (needed, modrefl, export, qidl)
     | VernacImport (export,qidl) ->
       let export, mpl = synterp_import export qidl in
@@ -507,7 +506,7 @@ let rec synterp ?loc ~atts v =
       EVernacNoop
     | VernacLoad (verbosely, fname) ->
       unsupported_attributes atts;
-      synterp_load verbosely fname
+      synterp_load ~intern verbosely fname
     | VernacExtend (opn,args) ->
       let f = Vernacextend.type_vernac ?loc ~atts opn args () in
       EVernacExtend(f)
@@ -515,7 +514,7 @@ let rec synterp ?loc ~atts v =
     VernacSynterp e
   | VernacSynPure x -> VernacSynPure x
 
-and synterp_load verbosely fname =
+and synterp_load ~intern verbosely fname =
   let fname =
     Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (Pp.str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
@@ -534,17 +533,17 @@ and synterp_load verbosely fname =
     match parse_sentence proof_mode input with
     | None -> entries
     | Some cmd ->
-      let entry = v_mod synterp_control cmd in
+      let entry = v_mod (synterp_control ~intern) cmd in
       let st = Vernacstate.Synterp.freeze () in
       (load_loop [@ocaml.tailcall]) ((entry,st)::entries)
   in
   let entries = List.rev @@ load_loop [] in
   EVernacLoad(verbosely, entries)
 
-and synterp_control CAst.{ loc; v = cmd } =
+and synterp_control ~intern CAst.{ loc; v = cmd } =
   let fn expr =
     with_generic_atts ~check:true cmd.attrs (fun ~atts ->
-        synterp ?loc ~atts cmd.expr)
+        synterp ~intern ?loc ~atts cmd.expr)
   in
   let control, expr = synterp_control_flag ~loc cmd.control fn cmd.expr in
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
@@ -563,7 +562,7 @@ let has_timeout ctrl = ctrl |> List.exists (function
     | Vernacexpr.ControlTimeout _ -> true
     | _ -> false)
 
-let synterp_control CAst.{ loc; v = cmd } =
+let synterp_control ~intern CAst.{ loc; v = cmd } =
   let control = cmd.control in
   let control = match !default_timeout with
     | None -> control
@@ -571,7 +570,7 @@ let synterp_control CAst.{ loc; v = cmd } =
       if has_timeout control then control
       else Vernacexpr.ControlTimeout n :: control
   in
-  synterp_control @@ CAst.make ?loc { cmd with control }
+  synterp_control ~intern @@ CAst.make ?loc { cmd with control }
 
-let synterp_control cmd =
-  Flags.with_option Flags.in_synterp_phase synterp_control cmd
+let synterp_control ~intern cmd =
+  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd

@@ -129,11 +129,12 @@ let loaded_native_libraries = Summary.ref DPset.empty ~stage:Summary.Stage.Inter
 (* various requests to the tables *)
 
 let find_library dir =
-  DPmap.find dir !libraries_table
+  DPmap.find_opt dir !libraries_table
 
 let try_find_library dir =
-  try find_library dir
-  with Not_found ->
+  match find_library dir with
+  | Some lib -> lib
+  | None ->
     user_err
       (str "Unknown library " ++ DirPath.print dir ++ str ".")
 
@@ -248,47 +249,60 @@ let mk_summary m = {
   libsum_info = m.library_info;
 }
 
-let mk_intern_library sum lib digest_lib proofs =
+let mk_intern_library sum lib digest_lib proofs vm =
   add_opaque_table sum.md_name (ToFetch proofs);
   let open Safe_typing in
-  mk_library sum lib (Dvo_or_vi digest_lib)
+  mk_library sum lib (Dvo_or_vi digest_lib) vm
 
 let summary_seg : seg_sum ObjFile.id = ObjFile.make_id "summary"
 let library_seg : seg_lib ObjFile.id = ObjFile.make_id "library"
 let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
 let vm_seg : seg_vm ObjFile.id = Vmlibrary.vm_segment
 
-let intern_from_file ?loc lib_resolver dir =
-  let f = lib_resolver dir in
-  Feedback.feedback(Feedback.FileDependency (Some f, DirPath.to_string dir));
-  let ch = raw_intern_library f ?loc in
+module Intern = struct
+  module Provenance = struct
+    type t = string * string
+    (** A pair of [kind, object], for example ["file",
+        "/usr/local/foo.vo"], used for error messages. *)
+  end
+  type t = DirPath.t -> library_t * Provenance.t
+end
+
+let intern_from_file file =
+  let ch = raw_intern_library file in
   let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
-  let del_opaque, _ = in_delayed f ch ~segment:opaques_seg in
-  let vmlib = Vmlibrary.load dir ~file:f ch in
+  let del_opaque, _ = in_delayed file ch ~segment:opaques_seg in
+  let vmlib = Vmlibrary.load lsd.md_name ~file ch in
   ObjFile.close_in ch;
-  System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
-  register_library_filename lsd.md_name f;
-  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-  if not (DirPath.equal dir lsd.md_name) then
-    user_err ?loc
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-       DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
-       spc() ++ DirPath.print dir ++ str ".");
-  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
+  System.check_caml_version ~caml:lsd.md_ocaml ~file;
+  register_library_filename lsd.md_name file;
   Library_info.warn_library_info ~transitive:true lsd.md_name lsd.md_info;
-  lsd, lmd, digest_lmd, del_opaque, vmlib
+  mk_intern_library lsd lmd digest_lmd del_opaque vmlib
 
+let check_library_expected_name ~provenance dir library_name =
+  if not (DirPath.equal dir library_name) then
+    let kind, obj = provenance in
+    user_err
+      (str "The " ++ str kind ++ str " " ++ str obj ++ str " contains library" ++ spc () ++
+       DirPath.print library_name ++ spc () ++ str "and not library" ++
+       spc() ++ DirPath.print dir ++ str ".")
+
+(* Returns the digest of a library, checks both caches to see what is loaded *)
 let rec intern_library ~root ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
-  try find_library dir, acc
-  with Not_found ->
-  (* Look if already listed and consequently its dependencies too *)
-  try mk_summary (DPmap.find dir contents), acc
-  with Not_found ->
-  let lsd, lmd, digest_lmd, del_opaque, vmlib = intern dir in
-  let m = mk_intern_library lsd lmd digest_lmd del_opaque vmlib in
-  mk_summary m, intern_library_deps ~root ~intern acc dir m
+  match find_library dir with
+  | Some loaded_lib -> loaded_lib, acc
+  | None ->
+    (* Look if already listed in the accumulator *)
+    match DPmap.find_opt dir contents with
+    | Some interned_lib ->
+      mk_summary interned_lib, acc
+    | None ->
+      (* We intern the library, and then intern the deps *)
+      let m, provenance = intern dir in
+      check_library_expected_name ~provenance dir m.library_name;
+      mk_summary m, intern_library_deps ~root ~intern acc dir m
 
 and intern_library_deps ~root ~intern libs dir m =
   let needed, contents =
@@ -309,8 +323,7 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
   in
   libs
 
-let rec_intern_library ~lib_resolver libs (loc, dir) =
-  let intern dir = intern_from_file ?loc lib_resolver dir in
+let rec_intern_library ~intern libs (loc, dir) =
   let m, libs = intern_library ~root:true ~intern libs dir in
   Library_info.warn_library_info m.libsum_name m.libsum_info;
   libs
@@ -415,8 +428,8 @@ let require_library_from_dirpath needed =
   if Lib.is_module_or_modtype () then warn_require_in_module ();
   Lib.add_leaf (in_require needed)
 
-let require_library_syntax_from_dirpath ~lib_resolver modrefl =
-  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
+let require_library_syntax_from_dirpath ~intern modrefl =
+  let needed, contents = List.fold_left (rec_intern_library ~intern) ([], DPmap.empty) modrefl in
   let needed = List.rev_map (fun (root, dir) -> root, DPmap.find dir contents) needed in
   Lib.add_leaf (in_require_syntax needed);
   List.map snd needed
@@ -488,6 +501,14 @@ let save_library_struct ~output_native_objects dir =
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
   sd, md, vmlib, ast
+
+let save_library dir : library_t =
+  let sd, md, vmlib, _ast = save_library_struct ~output_native_objects:false dir in
+  (* Digest for .vo files is on the md part, for now we also play it
+     safe when we work on-memory and compute the digest for the lib
+     part, even if that's slow. Better safe than sorry. *)
+  let digest = Marshal.to_string md [] |> Digest.string in
+  mk_library sd md (Dvo_or_vi digest) (Vmlibrary.inject vmlib)
 
 let save_library_to todo_proofs ~output_native_objects dir f =
   assert(
