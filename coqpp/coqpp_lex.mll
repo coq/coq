@@ -162,7 +162,7 @@ and ocaml = parse
 | eof { lex_unexpected_eof lexbuf "OCaml code" }
 
 and comment = parse
-| "*)" { match end_comment lexbuf with Some _ -> extend lexbuf | None -> comment lexbuf }
+| "*)" { match end_comment lexbuf with Some tk -> tk | None -> comment lexbuf }
 | "(*" { start_comment lexbuf; comment lexbuf }
 | '\n' { newline lexbuf; Buffer.add_char comment_buf '\n'; comment lexbuf }
 | (_ as c) { Buffer.add_char comment_buf c; comment lexbuf }
