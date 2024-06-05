@@ -359,15 +359,15 @@ let typeclasses_filter ~program_mode frozen =
   then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen frozen evk))
   else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen frozen evk))
 
-let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
-  let sigma = Typeclasses.resolve_typeclasses
+let apply_typeclasses ~program_mode env sigma frozen =
+  let sigma, failed = Typeclasses.resolve_typeclasses_keep_err
       ~filter:(typeclasses_filter ~program_mode frozen)
-      ~fail:fail_evar env sigma in
+      ~fail:false env sigma in
   let sigma = if program_mode then (* Try optionally solving the obligations *)
       Typeclasses.resolve_typeclasses
         ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen frozen evk)) ~fail:false env sigma
     else sigma in
-  sigma
+  sigma, failed
 
 let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen with
 | Frz (_, None) -> sigma
@@ -398,13 +398,13 @@ let apply_heuristics ~patvars_abstract env sigma =
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e -> sigma
 
-let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
+let check_typeclasses_instances_are_solved ~program_mode env sigma frozen failed =
   let tcs = Typeclasses.get_filtered_typeclass_evars
       (typeclasses_filter ~program_mode frozen)
       sigma
   in
   if not (Evar.Set.is_empty tcs) then begin
-    Typeclasses.error_unresolvable env sigma tcs
+    Typeclasses.error_unresolvable env sigma ?err:failed tcs
   end
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
@@ -437,8 +437,8 @@ let check_evars env ?initial sigma c =
     | _ -> EConstr.iter sigma proc_rec c
   in proc_rec c
 
-let check_evars_are_solved ~program_mode env sigma frozen =
-  check_typeclasses_instances_are_solved ~program_mode env sigma frozen;
+let check_evars_are_solved ~program_mode env sigma ?err frozen =
+  check_typeclasses_instances_are_solved ~program_mode env sigma frozen err;
   check_problems_are_solved env sigma;
   check_extra_evars_are_solved env sigma frozen
 
@@ -447,10 +447,10 @@ let check_evars_are_solved ~program_mode env sigma frozen =
 let solve_remaining_evars ?hook (flags : inference_flags) env ?initial sigma =
   let program_mode = flags.program_mode in
   let frozen = frozen_and_pending_holes (initial, sigma) in
-  let sigma =
+  let sigma, failed =
     match flags.use_typeclasses with
-    | UseTC -> apply_typeclasses ~program_mode ~fail_evar:false env sigma frozen
-    | NoUseTC | UseTCForConv -> sigma
+    | UseTC -> apply_typeclasses ~program_mode env sigma frozen
+    | NoUseTC | UseTCForConv -> sigma, None
   in
   let frozen = frozen_and_pending_holes (initial, sigma) in
   let sigma = match hook with
@@ -461,7 +461,7 @@ let solve_remaining_evars ?hook (flags : inference_flags) env ?initial sigma =
     then apply_heuristics ~patvars_abstract:flags.patvars_abstract env sigma
     else sigma
   in
-  if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen;
+  if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen ?err:failed;
   sigma
 
 let check_evars_are_solved ~program_mode env ?initial current_sigma =
