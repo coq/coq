@@ -2213,10 +2213,11 @@ let constr_of_pat env sigma arsign pat avoid =
               let id = next_ident_away wildcard_id avoid in
                 Name id, Id.Set.add id avoid
         in
+        let realargs = List.map (map_name (fun _ -> Anonymous)) realargs in (* Hack to force their instantiation as evars *)
         let r = ERelevance.relevant in (* TODO relevance *)
-          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, ty,
-           (List.map (fun x -> mkRel 1) realargs), 1, avoid)
-    | PatCstr (((_, i) as cstr),args,alias) ->
+          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, lift 1 ty,
+           rel_list 1 (List.length realargs), 1, avoid)
+    | PatCstr (((_, i) as cstr),patargs,alias) ->
         let cind = inductive_of_constructor cstr in
         let IndType (indf, _) =
           try find_rectype env sigma (lift (-(List.length realargs)) ty)
@@ -2228,19 +2229,19 @@ let constr_of_pat env sigma arsign pat avoid =
         let cstrs = get_constructors env indf in
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in
-        assert (Int.equal nb_args_constr (List.length args));
+        assert (Int.equal nb_args_constr (List.length patargs));
         let sigma, patargs, args, sign, env, n, m, avoid =
           List.fold_right2
-            (fun decl ua (sigma, patargs, args, sign, env, n, m, avoid)  ->
+            (fun decl pat (sigma, patargs, pats_c, sign, env, n, m, avoid)  ->
                let t = RelDecl.get_type decl in
-               let sigma, pat', sign', arg', typ', argtypargs, n', avoid =
-                 let liftt = liftn (List.length sign) (succ (List.length args)) t in
-                   typ env sigma (substl args liftt, []) ua avoid
+               let sigma, patarg', sign', pat_c', typ', argtypargs, n', avoid =
+                 let liftt = liftn (List.length sign) (succ (List.length pats_c)) t in
+                   typ env sigma (substl pats_c liftt, []) pat avoid
                in
-               let args' = arg' :: List.map (lift n') args in
+               let pats_c = pat_c' :: List.map (lift n') pats_c in
                let env' = EConstr.push_rel_context sign' env in
-                 (sigma, pat' :: patargs, args', sign' @ sign, env', n' + n, succ m, avoid))
-            ci.cs_args (List.rev args) (sigma, [], [], [], env, 0, 0, avoid)
+                 (sigma, patarg' :: patargs, pats_c, sign' @ sign, env', n' + n, succ m, avoid))
+            ci.cs_args (List.rev patargs) (sigma, [], [], [], env, 0, 0, avoid)
         in
         let args = List.rev args in
         let patargs = List.rev patargs in
@@ -2275,7 +2276,7 @@ let constr_of_pat env sigma arsign pat avoid =
                   sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
   in
   let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (RelDecl.get_type (List.hd arsign), List.tl arsign) pat avoid in
-    sigma, pat', (sign, patc, (RelDecl.get_type (List.hd arsign), args), pat'), avoid
+    sigma, pat', (sign, patc, (patty, args), pat'), avoid
 
 
 (* shadows functional version *)
@@ -2307,7 +2308,7 @@ let vars_of_ctx sigma ctx =
                    [hole na.binder_name; DAst.make @@ GVar prev])) :: vars
         | _ ->
             match RelDecl.get_name decl with
-                Anonymous -> invalid_arg "vars_of_ctx"
+                Anonymous -> prev, (DAst.make @@ GHole GInternalHole) :: vars (* Hack, see constr_of_pat *)
               | Name n -> n, (DAst.make @@ GVar n) :: vars)
       ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y
@@ -2320,51 +2321,69 @@ let rec is_included x y =
         if Int.equal i i' then List.for_all2 is_included args args'
         else false
 
-(* liftsign is the current pattern's complete signature length.
+(* curpat_sign_len is the current pattern's complete signature length.
    Hence pats is already typed in its
    full signature. However prevpatterns are in the original one signature per pattern form.
  *)
-let build_ineqs env sigma prevpatterns pats liftsign =
-  let sigma, diffs =
+let build_ineqs env sigma prevpatterns curpats curpat_sign_len =
+  let sigma, ineqs =
     List.fold_left
-      (fun (sigma, c) eqnpats ->
+      (fun (sigma, ineqs) ppats ->
           let sigma, acc = List.fold_left2
             (* ppat is the pattern we are discriminating against, curpat is the current one. *)
             (fun (sigma, acc) (ppat_sign, ppat_c, (ppat_ty, ppat_tyargs), ppat)
               (curpat_sign, curpat_c, (curpat_ty, curpat_tyargs), curpat) ->
               match acc with
                   None -> sigma, None
-                | Some (sign, len, n, c) -> (* FixMe: do not work with ppat_args *)
+                | Some (old_ppat_sign, old_ppats_len, old_eqs) -> (* FixMe: do not work with ppat_args *)
+                  (try
                     if is_included curpat ppat then
                       (* Length of previous pattern's signature *)
-                      let lens = List.length ppat_sign in
+                      let ppat_len = List.length ppat_sign in
                       (* Accumulated length of previous pattern's signatures *)
-                      let len' = lens + len in
-                      let sigma, c' =
-                        papp env sigma coq_eq_ind
-                          [| lift (len' + liftsign) curpat_ty;
-                            liftn (len + liftsign) (succ lens) ppat_c ;
-                            lift len' curpat_c |]
+                      let new_ppats_len = ppat_len + old_ppats_len in
+                      let sigma, this_eq =
+                        (* We have [env, curpat_sign |- curpat_c : curpat_ty] and
+                           want [env, curpat_sign, old_sign, ppat_sign |- curpat_c : curpat_ty] *)
+                        let ppat_ty = liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_ty in
+                        let ppat_c = liftn (old_ppats_len + curpat_sign_len) (succ ppat_len) ppat_c in
+                        let cur_ty = lift new_ppats_len curpat_ty in
+                        let cur_c = lift new_ppats_len curpat_c in
+                        if Reductionops.is_conv env sigma cur_ty ppat_ty then
+                          mk_eq env sigma
+                            cur_ty
+                            ppat_c
+                            cur_c
+                        else
+                          let can_we_make_sense_of_JMeq = false in
+                          if can_we_make_sense_of_JMeq then
+                            mk_JMeq env sigma
+                              ppat_ty
+                              ppat_c
+                              cur_ty
+                              cur_c
+                          else
+                            raise Exit
                       in
                       let acc =
                         ((* Jump over previous prevpat signs *)
-                          lift_rel_context len ppat_sign @ sign,
-                          len',
-                          succ n, (* nth pattern *)
-                          c' :: List.map (lift lens (* Jump over this prevpat signature *)) c)
+                          lift_rel_context old_ppats_len ppat_sign @ old_ppat_sign,
+                          new_ppats_len,
+                          this_eq :: List.map (lift ppat_len (* Jump over this prevpat signature *)) old_eqs)
                       in sigma, Some acc
-                    else sigma, None)
-           (sigma, Some ([], 0, 0, [])) eqnpats pats
+                    else sigma, None
+                  with Exit -> sigma, None))
+           (sigma, Some ([], 0, [])) ppats curpats
          in match acc with
-             None -> sigma, c
-            | Some (sign, len, _, c') ->
-               let sigma, conj = mk_coq_and env sigma c' in
+             None -> sigma, ineqs
+            | Some (sign, len, eqs) ->
+               let sigma, conj = mk_coq_and env sigma eqs in
                let sigma, neg = mk_coq_not env sigma conj in
-               let conj = it_mkProd_or_LetIn neg (lift_rel_context liftsign sign) in
-               sigma, conj :: c)
+               let ineq = it_mkProd_or_LetIn neg (lift_rel_context curpat_sign_len sign) in
+               sigma, ineq :: ineqs)
       (sigma, []) prevpatterns
-  in match diffs with [] -> sigma, None
-    | _ -> let sigma, conj = mk_coq_and env sigma diffs in sigma, Some conj
+  in match ineqs with [] -> sigma, None
+    | _ -> let sigma, conj = mk_coq_and env sigma ineqs in sigma, Some conj
 
 let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
   let i = ref 0 in
@@ -2379,34 +2398,43 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
                   (sigma, idents, pat' :: newpatterns, cpat :: pats))
               (sigma, Id.Set.empty, [], []) eqn.patterns (List.rev sign)
          in
+         (* Below, [opats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign], [pat_c], [ty] and [args] is typed in [env] *)
          let newpatterns = List.rev newpatterns and opats = List.rev pats in
+         (* Below, [pats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign], [pat_c] and [args] is typed in [env]
+            extended with the previous [pats]; [ty] is typed in
+            [env] extended with the type of realargs *)
          let rhs_rels, pats, signlen =
            List.fold_left
-             (fun (renv, pats, n) (sign,c, (s, args), p) ->
+             (fun (renv, pats, n) (sign, pat_c, (ty, args), pat) ->
                (* Recombine signatures and terms of all of the row's patterns *)
                let sign' = lift_rel_context n sign in
                let len = List.length sign' in
                  (sign' @ renv,
                  (* lift to get outside of previous pattern's signatures. *)
-                 (sign', liftn n (succ len) c,
-                  (s, List.map (liftn n (succ len)) args), p) :: pats,
+                 (sign', liftn n (succ len) pat_c,
+                  (liftn n (succ len) ty, List.map (liftn n (succ len)) args), pat) :: pats,
                  len + n))
              ([], [], 0) opats in
+         (* Below, [pats] is a list of [(sign, pat_c, (ty, args), pat)];
+            each of [sign] is typed in [env] extended with the previous [sign]
+            but [ty], [args] and [pat_c] are typed in the common context made
+            of [env] extended with all [sign] *)
          let pats, _ = List.fold_left
            (* lift to get outside of past patterns to get terms in the combined environment. *)
-           (fun (pats, n) (sign, c, (s, args), p) ->
+           (fun (pats, n) (sign, pat_c, (ty, args), pat) ->
              let len = List.length sign in
-               ((rels_of_patsign sigma sign, lift n c,
-                 (s, List.map (lift n) args), p) :: pats, len + n))
+               ((rels_of_patsign sigma sign, lift n pat_c,
+                 (lift n ty, List.map (lift n) args), pat) :: pats, len + n))
            ([], 0) pats
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
-         let _signenv,_ = push_rel_context ~hypnaming sigma rhs_rels' env in
          let arity =
            let args, nargs =
-             List.fold_right (fun (sign, c, (_, args), _) (allargs,n) ->
-               (args @ c :: allargs, List.length args + succ n))
+             List.fold_right (fun (sign, pat_c, (_, args), _) (allargs,n) ->
+               (args @ pat_c :: allargs, List.length args + succ n))
                pats ([], 0)
            in
            let args = List.rev args in
@@ -2485,6 +2513,16 @@ let abstract_tomatch env sigma tomatchs tycon =
       ([], [], Id.Set.empty, tycon) tomatchs
   in List.rev prev, ctx, tycon
 
+(* [build_dependent_inductive] takes:
+   - a list [arsign] of contexts of the form [realvars:realtypes,arg:ind realvars]
+     all typed in context [env]
+   - a list [tomatchs] of terms instantiating [arsign], all typed in [env]
+   It returns [sign,signlen,eqs,neqs,args] where
+   - [eqs] is the list of contexts of equalities between
+     [(realvars,arg)] and their instance in [tomatchs]
+   - [sign] is the same as [arsign] where variables have been renamed using a prime
+   - [signlen] is the common length of [sign] and [eqs] *)
+
 let build_dependent_signature env sigma avoid tomatchs arsign =
   let avoid = ref avoid in
   let arsign = List.rev arsign in
@@ -2492,7 +2530,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
   let sigma, eqs, neqs, refls, slift, arsign' =
     List.fold_left2
-      (fun (sigma, eqs, neqs, refl_args, slift, arsigns) (tm, ty) arsign ->
+      (fun (sigma, eqs, neqs, refls, slift, arsigns) (tm, ty) arsign ->
          (* The accumulator:
             previous eqs,
             number of previous eqs,
@@ -2505,19 +2543,40 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                 as much as possible *)
              let argsign = List.tl arsign in (* arguments in inverse application order *)
              let app_decl = List.hd arsign in (* The matched argument *)
-             let appn = RelDecl.get_name app_decl in
-             let appt = RelDecl.get_type app_decl in
              let argsign = List.rev argsign in (* arguments in application order *)
+             (* We are working on the i-th inductive type of the arity. It satisfies
+                [env |- tm_i : indf_i args_i : Type] with [args_i:argts_i] and we want to build
+                [env, arsign |- eqs_i : ((names_i,appn_i : argsign_i,appt_i) = (args_i,tm_i : argts_i,indf args_i))]
+                  (there are |args|+1 such equations that we see as a context)
+                where [arsign], with appropriate lift on each [ts_i] and [indf_i], is itself
+                [names1:ts1,appn1:indf1 names1,...,names_n:ts_n,appn_n:indf_n names_n]
+                where [indf_i names_i], written [appt],
+                satisfies [env |- names_i:ts_i, appn_i:indf_i names_i]
+                  (that is a context in [env] rather than in [env] extended
+                   with the arity up to [i]);
+                also [nar] is the length of [arsign]
+                and [neqs] is the length of [arsign] up to before [i];
+                Regarding the decls of [arsign] we have [env |- (names_i:argsign_i),(appn_i:appt_i)] as a context,
+                that is [env, name_i1 ... name_i_{j-1} |- name_ij : argsign_i_j]
+                and [env, names_i |- appn_i:appt_i]
+                and we need [env, arsign, name'_i1 ... name'_i_{j-1} |- name_ij:argsign_i_j] and
+                [env, arsign, names'_i |- appn_i:appt_i] as terms, where the [names_i] refer to
+                the [names_i] in [argsign]; we obtain it by first lifting the whole context
+                [(names_i:argsign_i),(appn_i:appt_i)] (argsign') *)
              let sigma, env', nargeqs, argeqs, refl_args, slift, argsign' =
                List.fold_left2
                  (fun (sigma, env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
                     let name = RelDecl.get_name decl in
-                    let t = RelDecl.get_type decl in
+                    let t = liftn neqs (succ nargeqs) (RelDecl.get_type decl) in
                     let argt = Retyping.get_type_of env sigma arg in
+                    assert (neqs + nargeqs + slift = nar);
+
                     let sigma, eq, refl_arg =
-                      if Reductionops.is_conv env sigma argt t then
+                      let t' = lift (nargeqs + slift) t in
+                      let argt' = lift (nargeqs + nar) argt in
+                      if Reductionops.is_conv env sigma argt' t' then
                         let sigma, eq =
-                          mk_eq env sigma (lift (nargeqs + slift) argt)
+                          mk_eq env sigma argt'
                             (mkRel (nargeqs + slift))
                             (lift (nargeqs + nar) arg)
                         in
@@ -2525,9 +2584,10 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                         sigma, eq, refl
                       else
                         let sigma, eq =
-                          mk_JMeq env sigma (lift (nargeqs + slift) t)
+                          mk_JMeq env sigma
+                            t'
                             (mkRel (nargeqs + slift))
-                            (lift (nargeqs + nar) argt)
+                            argt'
                             (lift (nargeqs + nar) arg)
                         in
                         let sigma, refl = mk_JMeq_refl env sigma argt arg in
@@ -2546,8 +2606,11 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                        refl_arg :: refl_args,
                        pred slift,
                        RelDecl.set_name (Name id) decl :: argsign'))
-                 (sigma, env, neqs, [], [], slift, []) args argsign
+                 (sigma, env, 0, [], [], slift, []) args argsign
              in
+             assert (neqs + nargeqs + slift = nar);
+             let appn = RelDecl.get_name app_decl in
+             let appt = liftn neqs (succ nargeqs) (RelDecl.get_type app_decl) in
               let sigma, eq =
                 mk_JMeq env sigma
                   (lift (nargeqs + slift) appt)
@@ -2558,8 +2621,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              let sigma, refl_eq = mk_JMeq_refl env sigma ty tm in
              let previd, id = make_prime avoid appn in
                (sigma, (LocalAssum (make_annot (Name (eq_id avoid previd)) ERelevance.relevant, eq) :: argeqs) :: eqs,
-                succ nargeqs,
-                refl_eq :: refl_args,
+                succ (nargeqs + neqs),
+                refl_eq :: refl_args @ refls,
                 pred slift,
                 ((RelDecl.set_name (Name id) app_decl :: argsign') :: arsigns))
 
@@ -2569,25 +2632,31 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
              let previd, id = make_prime avoid name in
              let arsign' = RelDecl.set_name (Name id) decl in
              let tomatch_ty = type_of_tomatch ty in
+            assert (neqs + slift = nar);
             let sigma, eq =
-              mk_eq env sigma (lift nar tomatch_ty)
-                (mkRel slift) (lift nar tm)
+              mk_eq env sigma
+                (lift nar tomatch_ty)
+                (mkRel slift)
+                (lift nar tm)
             in
             let sigma, refl = mk_eq_refl env sigma tomatch_ty tm in
             let na = make_annot (Name (eq_id avoid previd)) ERelevance.relevant in
             (sigma,
             [LocalAssum (na, eq)] :: eqs, succ neqs,
-            refl :: refl_args,
+            refl :: refls,
             pred slift, (arsign' :: []) :: arsigns))
       (sigma, [], 0, [], nar, []) tomatchs arsign
   in
   assert (Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
-  sigma, arsign', allnames, nar, eqs, neqs, refls
+  assert (neqs = nar);
+  sigma, arsign', nar, eqs, refls
 
 let context_of_arsign l =
+  (* From a family of [env, arsign |- ctx_i]] to [env, arsign |- ctx_1, ..., ctx_n] *)
   let (x, _) = List.fold_right
-    (fun c (x, n) ->
-       (lift_rel_context n c @ x, List.length c + n))
+    (fun ctx (prev_ctx, n) ->
+      (* From [env, arsign |- ctx_i] to [env, arsign, ctx1, ..., ctx_{i-1} |- ctx_i] *)
+       (lift_rel_context n ctx @ prev_ctx, List.length ctx + n))
     l ([], 0)
   in x
 
@@ -2608,7 +2677,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
   let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
   let len = List.length eqns in
-  let sigma, sign, allnames, signlen, eqs, neqs, args =
+  let sigma, sign, signlen, eqs, args =
     (* The arity signature *)
     let arsign = extract_arity_signature ~dolift:false !!env tomatchs tomatchl in
       (* Build the dependent arity signature, the equalities which makes
