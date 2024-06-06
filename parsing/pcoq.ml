@@ -520,24 +520,18 @@ let rec number_of_entries accu = function
   number_of_entries (p + accu) rem
 
 let unfreeze (grams, lex) =
+  (* EJGA: NOTE: this code is not safe w.r.t. async interruptions, (is
+     it even safe for a regular exceptions?).
+
+     Thus, the below needs to happen atomically. *)
+  (* BEGIN ATOMIC *)
   let (undo, redo, common) = factorize_grams !grammar_stack grams in
   let n = number_of_entries 0 undo in
   remove_grammars n;
   grammar_stack := common;
   keyword_state := lex;
   List.iter extend_dyn_grammar (List.rev redo)
-
-(** No need to provide an init function : the grammar state is
-    statically available, and already empty initially, while
-    the lexer state should not be reset, since it contains
-    keywords declared in g_*.mlg *)
-
-let parser_summary_tag =
-  Summary.declare_summary_tag "GRAMMAR_LEXER"
-    { stage = Summary.Stage.Synterp;
-      Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = Summary.nop }
+  (* END ATOMIC *)
 
 let with_grammar_rule_protection f x =
   let fs = freeze () in

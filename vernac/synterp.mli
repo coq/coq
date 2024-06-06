@@ -32,8 +32,8 @@ type control_entry =
   | ControlInstructions of { synterp_instructions: System.instruction_count }
   | ControlRedirect of string
   | ControlTimeout of { remaining : float }
-  | ControlFail of { st : Vernacstate.Synterp.t }
-  | ControlSucceed of { st : Vernacstate.Synterp.t }
+  | ControlFail of { st : Vernacstate.System.Synterp.t }
+  | ControlSucceed of { st : Vernacstate.System.Synterp.t }
 
 
 type synterp_entry =
@@ -60,7 +60,7 @@ type synterp_entry =
       module_entry list
   | EVernacInclude of Declaremods.module_expr list
   | EVernacSetOption of { export : bool; key : Goptions.option_name; value : Vernacexpr.option_setting }
-  | EVernacLoad of Vernacexpr.verbose_flag * (vernac_control_entry * Vernacstate.Synterp.t) list
+  | EVernacLoad of Vernacexpr.verbose_flag * (vernac_control_entry * Vernacstate.System.Synterp.t) list
   | EVernacExtend of Vernactypes.typed_vernac
 
 and vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen

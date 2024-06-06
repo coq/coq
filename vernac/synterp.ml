@@ -80,8 +80,8 @@ type control_entry =
   | ControlInstructions of { synterp_instructions: System.instruction_count }
   | ControlRedirect of string
   | ControlTimeout of { remaining : float }
-  | ControlFail of { st : Vernacstate.Synterp.t }
-  | ControlSucceed of { st : Vernacstate.Synterp.t }
+  | ControlFail of { st : Vernacstate.System.Synterp.t }
+  | ControlSucceed of { st : Vernacstate.System.Synterp.t }
 
 type synterp_entry =
   | EVernacNoop
@@ -108,7 +108,7 @@ type synterp_entry =
       module_entry list
   | EVernacInclude of Declaremods.module_expr list
   | EVernacSetOption of { export : bool; key : Goptions.option_name; value : Vernacexpr.option_setting }
-  | EVernacLoad of Vernacexpr.verbose_flag * (vernac_control_entry * Vernacstate.Synterp.t) list
+  | EVernacLoad of Vernacexpr.verbose_flag * (vernac_control_entry * Vernacstate.System.Synterp.t) list
   | EVernacExtend of Vernactypes.typed_vernac
 
 and vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
@@ -389,10 +389,10 @@ let real_error_loc ~cmdloc ~eloc =
   else cmdloc
 
 let with_fail ~loc f =
-  let st = Vernacstate.Synterp.freeze () in
+  let st = Vernacstate.System.Synterp.freeze () in
   let res = with_fail f in
-  let transient_st = Vernacstate.Synterp.freeze () in
-  Vernacstate.Synterp.unfreeze st;
+  let transient_st = Vernacstate.System.Synterp.freeze () in
+  Vernacstate.System.Synterp.unfreeze st;
   match res with
   | Error (ctrl, v) ->
     ControlFail { st = transient_st } :: ctrl, v
@@ -403,10 +403,10 @@ let with_fail ~loc f =
     [], VernacSynterp EVernacNoop
 
 let with_succeed f =
-  let st = Vernacstate.Synterp.freeze () in
+  let st = Vernacstate.System.Synterp.freeze () in
   let (ctrl, v) = f () in
-  let transient_st = Vernacstate.Synterp.freeze () in
-  Vernacstate.Synterp.unfreeze st;
+  let transient_st = Vernacstate.System.Synterp.freeze () in
+  Vernacstate.System.Synterp.unfreeze st;
   ControlSucceed { st = transient_st } :: ctrl, v
 
 (* We restore the state always *)
@@ -534,7 +534,7 @@ and synterp_load ~intern verbosely fname =
     | None -> entries
     | Some cmd ->
       let entry = v_mod (synterp_control ~intern) cmd in
-      let st = Vernacstate.Synterp.freeze () in
+      let st = Vernacstate.System.Synterp.freeze () in
       (load_loop [@ocaml.tailcall]) ((entry,st)::entries)
   in
   let entries = List.rev @@ load_loop [] in

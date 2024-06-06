@@ -26,19 +26,22 @@ module System = struct
 
   module Synterp = struct
 
-    type t = Lib.Synterp.frozen * Summary.Synterp.frozen
+    type t = Pcoq.frozen_t * Lib.Synterp.frozen * Summary.Synterp.frozen
 
+    let parsing (ps, _, _) = ps
     let freeze () =
-      (Lib.Synterp.freeze (), Summary.Synterp.freeze_summaries ())
+      (Pcoq.freeze (), Lib.Synterp.freeze (), Summary.Synterp.freeze_summaries ())
 
-    let unfreeze (fl,fs) =
+    let unfreeze (ps, fl,fs) =
+      Pcoq.unfreeze ps;
       Lib.Synterp.unfreeze fl;
       Summary.Synterp.unfreeze_summaries fs
 
     module Stm = struct
-      let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, Summary.Synterp.make_marshallable summary
-      let lib = fst
-      let summary = snd
+      let make_shallow (ps, lib, summary) =
+        ps, Lib.Synterp.drop_objects lib, Summary.Synterp.make_marshallable summary
+      let lib (_, lib, _) = lib
+      let summary (_, _, sum) = sum
     end
 
   end
@@ -89,29 +92,6 @@ module System = struct
         Interp.unfreeze interp_st;
         Exninfo.iraise reraise
       end
-
-end
-
-module Synterp = struct
-
-  type t =
-    { parsing : Parser.t
-    ; system : System.Synterp.t
-    }
-
-  let freeze () =
-    { parsing = Parser.cur_state ();
-      system = System.Synterp.freeze ();
-    }
-
-  let make_shallow s =
-    { s with system = System.Synterp.Stm.make_shallow s.system }
-
-  let init () = freeze ()
-
-  let unfreeze st =
-    System.Synterp.unfreeze st.system;
-    Pcoq.unfreeze st.parsing
 
 end
 
@@ -188,18 +168,18 @@ let unfreeze_interp_state { system; lemmas; program; opaques } =
 end
 
 type t =
-  { synterp: Synterp.t
+  { synterp: System.Synterp.t
   ; interp: Interp.t
   }
 
 let freeze_full_state () =
-  { synterp = Synterp.freeze ();
+  { synterp = System.Synterp.freeze ();
     interp = Interp.freeze_interp_state ();
   }
 
 let unfreeze_full_state st =
   NewProfile.profile "unfreeze_full_state" (fun () ->
-      Synterp.unfreeze st.synterp;
+      System.Synterp.unfreeze st.synterp;
       Interp.unfreeze_interp_state st.interp)
     ()
 
@@ -318,13 +298,14 @@ module Stm = struct
       }
     }
 
-  type non_pstate = Summary.Synterp.frozen * Lib.Synterp.frozen * Summary.Interp.frozen * Lib.Interp.frozen
+  type non_pstate = Pcoq.frozen_t * Summary.Synterp.frozen * Lib.Synterp.frozen * Summary.Interp.frozen * Lib.Interp.frozen
   let non_pstate { synterp; interp } =
     let system = interp.system in
     let st = System.Interp.Stm.summary system in
     let st = Summary.Interp.remove_from_summary st Evarutil.meta_counter_summary_tag in
     let st = Summary.Interp.remove_from_summary st Evd.evar_counter_summary_tag in
-    System.Synterp.Stm.summary synterp.system, System.Synterp.Stm.lib synterp.system,
+    System.Synterp.parsing synterp,
+    System.Synterp.Stm.summary synterp, System.Synterp.Stm.lib synterp,
       st, System.Interp.Stm.lib system
 
   let same_env { interp = { system = s1 } } { interp = { system = s2 } } =
@@ -336,7 +317,7 @@ module Stm = struct
 
   let make_shallow st =
     { interp = Interp.make_shallow st.interp
-    ; synterp = Synterp.make_shallow st.synterp
+    ; synterp = System.Synterp.Stm.make_shallow st.synterp
     }
 
 end

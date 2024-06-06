@@ -65,10 +65,10 @@ let interp_control_entry ~loc (f : control_entry) ~st
     (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
   match f with
   | ControlFail { st = synterp_st } ->
-    with_fail ~loc ~st (fun () -> Vernacstate.Synterp.unfreeze synterp_st; fn ~st);
+    with_fail ~loc ~st (fun () -> Vernacstate.System.Synterp.unfreeze synterp_st; fn ~st);
     st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
   | ControlSucceed { st = synterp_st } ->
-    with_succeed ~st (fun () -> Vernacstate.Synterp.unfreeze synterp_st; fn ~st);
+    with_succeed ~st (fun () -> Vernacstate.System.Synterp.unfreeze synterp_st; fn ~st);
     st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
   | ControlTimeout { remaining } ->
     vernac_timeout ~timeout:remaining (fun () -> fn ~st) ()
@@ -130,7 +130,7 @@ and vernac_load ~verbosely entries =
   let st = Vernacstate.freeze_full_state () in
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let interp_entry (stack, pm) (CAst.{ loc; v = cmd }, synterp_st) =
-    Vernacstate.Synterp.unfreeze synterp_st;
+    Vernacstate.System.Synterp.unfreeze synterp_st;
     let st = Vernacstate.{ synterp = synterp_st; interp = { st.interp with Interp.lemmas = stack; program = pm }} in
     v_mod (interp_control ~st) (CAst.make ?loc cmd)
   in
@@ -209,7 +209,7 @@ let interp ~intern ?(verbosely=true) ~st cmd =
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr cmd.CAst.v.expr);
   let entry = NewProfile.profile "synterp" (fun () -> Synterp.synterp_control ~intern cmd) () in
   let interp = NewProfile.profile "interp" (fun () -> interp_gen ~verbosely ~st ~interp_fn:interp_control entry) () in
-  Vernacstate.{ synterp = Vernacstate.Synterp.freeze (); interp }
+  Vernacstate.{ synterp = Vernacstate.System.Synterp.freeze (); interp }
 
 let interp_entry ?(verbosely=true) ~st entry =
   Vernacstate.unfreeze_full_state st;

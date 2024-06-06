@@ -587,7 +587,7 @@ end = struct (* {{{ *)
   let get_parsing_state id =
     stm_pperr_endline (fun () -> str "retrieve parsing state state " ++ str (Stateid.to_string id) ++ str " }}}");
     match (get_info id).state with
-    | FullState s -> Some s.Vernacstate.synterp.parsing
+    | FullState s -> Some (Vernacstate.System.Synterp.parsing s.synterp)
     | ParsingState s -> Some s
     | ErrorState (s,_) -> s
     | EmptyState -> None
@@ -1980,7 +1980,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
-  let inject_non_pstate (s_synterp,l_synterp,s_interp,l_interp) =
+  let inject_non_pstate (s_parsing, s_synterp,l_synterp,s_interp,l_interp) =
+    Pcoq.unfreeze s_parsing;
     Summary.Synterp.unfreeze_summaries ~partial:true s_synterp;
     Lib.Synterp.unfreeze l_synterp;
     Summary.Interp.unfreeze_summaries ~partial:true s_interp;
