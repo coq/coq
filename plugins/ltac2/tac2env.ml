@@ -65,7 +65,7 @@ let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
 
 let compiled_tacs = Summary.ref ~local:true ~name:"ltac2-compiled-state" KNmap.empty
 
-let ltac_notations = Summary.ref KNmap.empty ~stage:Summary.Stage.Synterp ~name:"ltac2-notations"
+let ltac_notations = Summary.ref KNmap.empty ~name:"ltac2-notations"
 
 let define_global kn e =
   let state = !ltac_state in
