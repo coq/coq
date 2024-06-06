@@ -439,7 +439,7 @@ let make_project env sigma ind pred c branches ps =
            (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
       ctx (0, 1, [])
   in
-  mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (Array.length ps + 1) br) ctx)
+  mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (mip.mind_consnrealdecls.(0) + 1) br) ctx)
 
 let simple_make_case_or_project env sigma ci pred invert c branches =
   let open EConstr in
