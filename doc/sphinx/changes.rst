@@ -718,6 +718,14 @@ Tactics
   fixes `#18942 <https://github.com/coq/coq/issues/18942>`_,
   by Gaëtan Gilbert).
 
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  Position error/warning tooltips correctly when multibyte UTF-8 characters are present
+  (`#19137 <https://github.com/coq/coq/pull/19137>`_,
+  fixes `#19136 <https://github.com/coq/coq/issues/19136>`_,
+  by Jim Fehrle).
 
 Version 8.18
 ------------
