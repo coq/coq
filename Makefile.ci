@@ -180,9 +180,7 @@ ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-serapi_test: ci-mathcomp_1 ci-serapi
-
-ci-coq_lsp: ci-serapi
+ci-serapi: ci-coq_lsp
 
 # Virtual targets used by the CI to group compilation of rules in a single job
 
