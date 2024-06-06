@@ -34,7 +34,7 @@ depends: [
   "conf-linux-libc-dev" {os = "linux"}
   "odoc" {with-doc}
 ]
-depopts: ["coq-native"]
+depopts: ["coq-native" "memprof-limits"]
 dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}

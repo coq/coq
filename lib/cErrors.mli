@@ -64,11 +64,29 @@ val iprint : Exninfo.iexn -> Pp.t
 val print_no_report : exn -> Pp.t
 val iprint_no_report : Exninfo.iexn -> Pp.t
 
-(** Critical exceptions should not be caught and ignored by mistake
-    by inner functions during a [vernacinterp]. They should be handled
-    only in [Toplevel.do_vernac] (or Ideslave), to be displayed to the user.
-    Typical example: [Sys.Break], [Assert_failure], [Anomaly] ...
-*)
+(** "Critical" exceptions, such as anomalies or interruptions should
+    not be caught and ignored by mistake by inner Coq functions by
+    means of doing a "catch-all". They should be handled instead by
+    the compiler layer which is in charge of coordinating the
+    intepretation of Coq vernaculars.
+
+    Please, avoid exceptions catch-all! If you must do so, then use the form:
+    {[
+    try my_comp ()
+    with exn when noncritical exn ->
+      my_handler
+    ]}
+
+    If you need to re-raise the excepction, you must work to preserve
+    the backtrace and other important information:
+    {[
+    try my_comp ()
+    with exn when noncritical exn ->
+      let iexn = Exninfo.capture exn in
+      ...
+      Exninfo.iraise iexn
+    ]}
+ *)
 val noncritical : exn -> bool
 
 (** Register a printer for errors carrying additional information on
