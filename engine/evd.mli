@@ -682,7 +682,7 @@ val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> UState.na
 
 (** An early check of compatibility of the universe declaration before
     starting to build a declaration interactively *)
-val check_univ_decl_early : poly:bool -> evar_map -> UState.universe_decl -> Constr.t list -> unit
+val check_univ_decl_early : poly:bool -> with_obls:bool -> evar_map -> UState.universe_decl -> Constr.t list -> unit
 
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map

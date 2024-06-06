@@ -345,7 +345,7 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
   match pm with
   | Some pm ->
     let bodies = List.map Option.get bodies in
-    Evd.check_univ_decl_early ~poly sigma udecl (bodies @ fixtypes);
+    Evd.check_univ_decl_early ~poly ~with_obls:true sigma udecl (bodies @ fixtypes);
     let sigma = if poly then sigma else Evd.fix_undefined_variables sigma in
     let uctx = Evd.evar_universe_context sigma in
     Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None
@@ -361,7 +361,7 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
       None, None
     with Option.IsNone ->
       (* At least one undefined body *)
-      Evd.check_univ_decl_early ~poly sigma udecl (Option.List.flatten bodies @ fixtypes);
+      Evd.check_univ_decl_early ~poly ~with_obls:false sigma udecl (Option.List.flatten bodies @ fixtypes);
       let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
           ~bodies ~possible_guard ?using sigma in
       None, Some lemma

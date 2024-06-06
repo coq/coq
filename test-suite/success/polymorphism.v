@@ -510,14 +510,20 @@ Module EarlyMonoUniverseDeclarationCheck.
   exact (match n with 0 => nat | _ => nat end).
   Defined.
 
-  Program Fixpoint f'@{u} (A:Type@{u}) (n:nat) : Type@{u} :=
+  Fail Program Fixpoint f'@{u} (A:Type@{u}) (n:nat) : Type@{u} := (* By convention, we require extensibility for Program *)
+    match n with 0 => _ | S n => f' (A->A) n end.
+
+  Program Fixpoint f'@{u +} (A:Type@{u}) (n:nat) : Type@{u} :=
     match n with 0 => _ | S n => f' (A->A) n end.
   Next Obligation. exact nat. Defined.
 
   Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
     match n with 0 => _ | S n => f'' (Type->A) n end.
 
-  Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+  Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} := (* By convention, we require extensibility for Program *)
+    match n with 0 => _ | S n => f'' (A->A) n end.
+
+  Program Fixpoint f''@{u +} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
     match n with 0 => _ | S n => f'' (A->A) n end.
   Next Obligation. Show. exact nat. Defined.
   Next Obligation. Show. Admitted.

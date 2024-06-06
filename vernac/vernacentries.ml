@@ -656,7 +656,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
-  Evd.check_univ_decl_early ~poly evd udecl typs;
+  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl typs;
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   match mut_analysis with
   | RecLemmas.NonMutual thm ->
