@@ -72,4 +72,8 @@ val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * con
 (** hack *)
 val recheck_against : Environ.env -> evar_map -> constr -> constr -> evar_map * types
 
-val bad_relevance_msg : (Environ.env * evar_map * (constr, types, ERelevance.t) Typeops.bad_relevance) CWarnings.msg
+type ('constr,'types,'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
+
+val bad_relevance_msg : (Environ.env * evar_map * (constr, types, ERelevance.t) bad_relevance) CWarnings.msg

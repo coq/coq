@@ -125,19 +125,6 @@ val type_of_prim_type : env -> UVars.Instance.t -> 'a CPrimitives.prim_type -> t
 val type_of_prim : env -> UVars.Instance.t -> CPrimitives.t -> types
 val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> types
 
-val warn_bad_relevance_name : string
-(** Allow the checker to make this warning into an error. *)
-
-val bad_relevance_warning : CWarnings.warning
-(** Also used by the pretyper to define a message which uses the evar map. *)
-
-type ('constr,'types, 'r) bad_relevance =
-| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
-| BadRelevanceCase of 'r * 'constr
-
-val bad_relevance_msg : (env * (constr,types,Sorts.relevance) bad_relevance) CWarnings.msg
-(** Used by the higher layers to register a nicer printer than the default. *)
-
 val should_invert_case : env -> Sorts.relevance -> case_info -> bool
 (** Matches must be annotated with the indices when going from SProp to non SProp
     (implies 1 or 0 constructors). *)

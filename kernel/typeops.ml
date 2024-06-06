@@ -63,50 +63,12 @@ let infer_assumption env t ty =
   with TypeError _ ->
     error_assumption env (make_judge t ty)
 
-type ('constr,'types,'r) bad_relevance =
-| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
-| BadRelevanceCase of 'r * 'constr
-
-let warn_bad_relevance_name = "bad-relevance"
-
-let bad_relevance_warning =
-  CWarnings.create_warning ~name:warn_bad_relevance_name ~default:CWarnings.AsError ()
-
-let bad_relevance_msg = CWarnings.create_msg bad_relevance_warning ()
-
-let default_print_bad_relevance = function
-  | BadRelevanceCase _ -> Pp.str "Bad relevance in case annotation."
-  | BadRelevanceBinder (_, na) ->
-    Pp.(str "Bad relevance for binder " ++ Name.print (RelDecl.get_name na) ++ str ".")
-
-(* used eg in the checker *)
-let () = CWarnings.register_printer bad_relevance_msg
-    (fun (_env,b) -> default_print_bad_relevance b)
-
-let warn_bad_relevance_case ?loc env rlv case =
-  match CWarnings.warning_status bad_relevance_warning with
-| CWarnings.Disabled | CWarnings.Enabled ->
-  CWarnings.warn bad_relevance_msg ?loc (env, BadRelevanceCase (rlv, mkCase case))
-| CWarnings.AsError ->
-  error_bad_case_relevance env rlv case
-
-let warn_bad_relevance_binder ?loc env rlv bnd =
-  match CWarnings.warning_status bad_relevance_warning with
-| CWarnings.Disabled | CWarnings.Enabled ->
-  CWarnings.warn bad_relevance_msg ?loc (env, BadRelevanceBinder (rlv, bnd))
-| CWarnings.AsError ->
-  error_bad_binder_relevance env rlv bnd
-
 let check_assumption env x t ty =
   let r = x.binder_relevance in
   let r' = infer_assumption env t ty in
-  let x =
-    if Sorts.relevance_equal r r' then x
-    else
-      let () = warn_bad_relevance_binder env r' (RelDecl.LocalAssum (x, t)) in
-      {x with binder_relevance = r'}
-  in
-  x
+  if Sorts.relevance_equal r r' then ()
+  else
+    error_bad_binder_relevance env r' (RelDecl.LocalAssum (x, t))
 
 let check_binding_relevance na1 na2 =
   (* Since we know statically the relevance here, we are stricter *)
@@ -563,12 +525,11 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
   | exception DestKO ->
     error_elim_arity env (ind, u') c None
   in
-  let rp =
+  let () =
     let expected = Sorts.relevance_of_sort sp in
-    if Sorts.relevance_equal rp expected then rp
+    if Sorts.relevance_equal rp expected then ()
     else
-      let () = warn_bad_relevance_case env expected (ci, u, pms, ((pnas, p), rp), iv, c, lf) in
-      expected
+      error_bad_case_relevance env expected (ci, u, pms, ((pnas, p), rp), iv, c, lf)
   in
   let () = check_case_info env (ind, u') ci in
   let () =
@@ -589,7 +550,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
   (* We return the "higher" inductive universe instance from the predicate,
      the branches must be typeable using these universes. *)
   let () = check_branch_types env (mib, mip) ci u pms c ct lft (pctx, p) in
-  rp, rslty
+  rslty
 
 let type_of_projection env p c ct =
   let pr, pty = lookup_projection p env in
@@ -646,19 +607,16 @@ let check_assum_annot env s x t =
   let r = x.binder_relevance in
   let r' = Sorts.relevance_of_sort s in
   if Sorts.relevance_equal r' r
-  then x
-  else
-    let () = warn_bad_relevance_binder env r' (RelDecl.LocalAssum (x, t)) in
-    {x with binder_relevance = r'}
+  then ()
+  else error_bad_binder_relevance env r' (RelDecl.LocalAssum (x, t))
+
 
 let check_let_annot env s x c t =
   let r = x.binder_relevance in
   let r' = Sorts.relevance_of_sort s in
   if Sorts.relevance_equal r' r
-  then x
-  else
-    let () = warn_bad_relevance_binder env r' (RelDecl.LocalDef (x, c, t)) in
-    {x with binder_relevance = r'}
+  then ()
+  else error_bad_binder_relevance env r' (RelDecl.LocalDef (x, c, t))
 
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
@@ -673,105 +631,94 @@ let rec execute env cstr =
       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
       | QSort _ | Prop | Set | Type _ -> ()
       in
-      cstr, type_of_sort s
+      type_of_sort s
 
     | Rel n ->
-      cstr, type_of_relative env n
+      type_of_relative env n
 
     | Var id ->
-      cstr, type_of_variable env id
+      type_of_variable env id
 
     | Const c ->
-      cstr, type_of_constant env c
+      type_of_constant env c
 
     | Proj (p, r, c) ->
-      let c', ct = execute env c in
-      let r', ty = type_of_projection env p c' ct in
+      let ct = execute env c in
+      let r', ty = type_of_projection env p c ct in
       assert (Sorts.relevance_equal r r');
-      let cstr = if c == c' then cstr else mkProj (p,r,c') in
-      cstr, ty
+      ty
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let args', argst = execute_array env args in
-        let f', ft =
+      let argst = execute_array env args in
+        let ft =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind args' argst
+            type_of_inductive_knowing_parameters env ind args argst
           | _ ->
             (* No template polymorphism *)
             execute env f
         in
-        let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
-        cstr, type_of_apply env f' ft args' argst
+        type_of_apply env f ft args argst
 
     | Lambda (name,c1,c2) ->
-      let c1', s = execute_is_type env c1 in
-      let name' = check_assum_annot env s name c1' in
-      let env1 = push_rel (LocalAssum (name',c1')) env in
-      let c2', c2t = execute env1 c2 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name',c1',c2') in
-      cstr, type_of_abstraction env name' c1 c2t
+      let s = execute_is_type env c1 in
+      let () = check_assum_annot env s name c1 in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
+      let c2t = execute env1 c2 in
+      type_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
-      let c1', vars = execute_is_type env c1 in
-      let name' = check_assum_annot env vars name c1' in
-      let env1 = push_rel (LocalAssum (name',c1')) env in
-      let c2', vars' = execute_is_type env1 c2 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
-      cstr, type_of_product env name' vars vars'
+      let vars = execute_is_type env c1 in
+      let () = check_assum_annot env vars name c1 in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
+      let vars' = execute_is_type env1 c2 in
+      type_of_product env name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let c1', c1t = execute env c1 in
-      let c2', c2s = execute_is_type env c2 in
-      let name' = check_let_annot env c2s name c1' c2' in
-      let () = check_cast env c1' c1t DEFAULTcast c2' in
-      let env1 = push_rel (LocalDef (name',c1',c2')) env in
-      let c3', c3t = execute env1 c3 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
-        else mkLetIn(name',c1',c2',c3')
-      in
-      cstr, subst1 c1 c3t
+      let c1t = execute env c1 in
+      let c2s = execute_is_type env c2 in
+      let () = check_let_annot env c2s name c1 c2 in
+      let () = check_cast env c1 c1t DEFAULTcast c2 in
+      let env1 = push_rel (LocalDef (name,c1,c2)) env in
+      let c3t = execute env1 c3 in
+      subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let c', ct = execute env c in
-      let t', _ts = execute_is_type env t in
-      let () = check_cast env c' ct k t' in
-      let cstr = if c == c' && t == t' then cstr else mkCast(c',k,t') in
-      cstr, t'
+      let ct = execute env c in
+      let _ts : Sorts.t = execute_is_type env t in
+      let () = check_cast env c ct k t in
+      t
 
     (* Inductive types *)
     | Ind ind ->
-      cstr, type_of_inductive env ind
+      type_of_inductive env ind
 
     | Construct c ->
-      cstr, type_of_constructor env c
+      type_of_constructor env c
 
     | Case (ci, u, pms, (p,rp), iv, c, lf) ->
-        let c', ct = execute env c in
-        let iv' = match iv with
-          | NoInvert -> NoInvert
+        let ct = execute env c in
+        let () = match iv with
+          | NoInvert -> ()
           | CaseInvert {indices} ->
             let args = Array.append pms indices in
             let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
-            let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
-            let () = match conv_leq env ct ct' with
+            let _ : Sorts.t = execute_is_type env ct' in
+            match conv_leq env ct ct' with
             | Result.Ok () -> ()
             | Result.Error () -> error_bad_invert env (* TODO: more informative message *)
-            in
-            let _, args' = decompose_app ct' in
-            if args == args' then iv
-            else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
+
         in
         let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
         let cst = Inductive.instantiate_inductive_constraints mib u in
         let () = check_constraints cst env in
-        let pms', pmst = execute_array env pms in
+        let pmst = execute_array env pms in
         let paramsubst =
-          try type_of_parameters env mib.mind_params_ctxt u pms' pmst
-          with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c' None
+          try type_of_parameters env mib.mind_params_ctxt u pms pmst
+          with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c None
         in
-        let (pctx, p', pt) =
+        let (pctx, pt) =
           let (nas, p) = p in
           let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
           let self =
@@ -782,76 +729,65 @@ let rec execute env cstr =
           let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
           let realdecls =
             try instantiate_context u paramsubst nas realdecls
-            with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c' None
+            with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c None
           in
           let p_env = Environ.push_rel_context realdecls env in
-          let p', pt = execute p_env p in
-          (realdecls, p', pt)
+          let pt = execute p_env p in
+          (realdecls, pt)
         in
         let () =
           let nbranches = Array.length mip.mind_nf_lc in
           if not (Int.equal (Array.length lf) nbranches) then
             error_number_branches env (make_judge c ct) nbranches
         in
-        let lft = Array.make (Array.length lf) ([], mkProp, mkProp) in
-        let build_one_branch i (nas, br as b) =
+        let build_one_branch i (nas, br) =
           let (ctx, cty) = mip.mind_nf_lc.(i) in
           let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
           let ctx =
             try instantiate_context u paramsubst nas ctx
             with ArgumentsMismatch ->
               (* Despite the name, the toplevel message is reasonable *)
-              error_elim_arity env (ci.ci_ind, u) c' None
+              error_elim_arity env (ci.ci_ind, u) c None
           in
           let br_env = Environ.push_rel_context ctx env in
-          let br', brt = execute br_env br in
+          let brt = execute br_env br in
           let cty = esubst u (Esubst.subs_liftn mip.mind_consnrealdecls.(i) paramsubst) cty in
-          let () = lft.(i) <- (ctx, brt, cty) in
-          if br == br' then b else (nas, br')
+          (ctx, brt, cty)
         in
-        let lf' = Array.Smart.map_i build_one_branch lf in
-        let rp', t = type_of_case env (mib, mip) ci u pms' (pctx, fst p, p', rp, pt) iv' c' ct lf' lft in
-        let eqbr (_, br1) (_, br2) = br1 == br2 in
-        let cstr = if rp == rp' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
-          else mkCase (ci, u, pms', ((fst p, p'), rp'), iv', c', lf')
-        in
-        cstr, t
+        let lft = Array.mapi build_one_branch lf in
+        type_of_case env (mib, mip) ci u pms (pctx, fst p, snd p, rp, pt) iv c ct lf lft
 
-    | Fix ((_vn,i as vni),recdef as fix) ->
-      let (fix_ty,recdef') = execute_recdef env recdef i in
-      let cstr, fix = if recdef == recdef' then cstr, fix else
-          let fix = (vni,recdef') in mkFix fix, fix
-      in
-      check_fix env fix; cstr, fix_ty
+    | Fix ((_,i),recdef as fix) ->
+      let fix_ty = execute_recdef env recdef i in
+      check_fix env fix;
+      fix_ty
 
     | CoFix (i,recdef as cofix) ->
-      let (fix_ty,recdef') = execute_recdef env recdef i in
-      let cstr, cofix = if recdef == recdef' then cstr, cofix else
-          let cofix = (i,recdef') in mkCoFix cofix, cofix
-      in
-      check_cofix env cofix; cstr, fix_ty
+      let fix_ty = execute_recdef env recdef i in
+      check_cofix env cofix;
+      fix_ty
 
     (* Primitive types *)
-    | Int _ -> cstr, type_of_int env
-    | Float _ -> cstr, type_of_float env
-    | String _ -> cstr, type_of_string env
+    | Int _ -> type_of_int env
+    | Float _ -> type_of_float env
+    | String _ -> type_of_string env
     | Array(u,t,def,ty) ->
       (* ty : Type@{u} and all of t,def : ty *)
       let ulev = match UVars.Instance.to_array u with
         | [||], [|u|] -> u
         | _ -> assert false
       in
-      let ty',tyty = execute env ty in
-      check_cast env ty' tyty DEFAULTcast (mkType (Universe.make ulev));
-      let def', def_ty = execute env def in
-      check_cast env def' def_ty DEFAULTcast ty';
+      let tyty = execute env ty in
+      check_cast env ty tyty DEFAULTcast (mkType (Universe.make ulev));
+      let def_ty = execute env def in
+      check_cast env def def_ty DEFAULTcast ty;
       let ta = type_of_array env u in
-      let t' = Array.Smart.map (fun x ->
-        let x', xt = execute env x in
-        check_cast env x' xt DEFAULTcast ty';
-        x') t in
-      let cstr = if def'==def && t'==t && ty'==ty then cstr else mkArray(u, t',def',ty') in
-      cstr, mkApp(ta, [|ty'|])
+      let () = Array.iter (fun x ->
+          let xt = execute env x in
+          check_cast env x xt DEFAULTcast ty)
+          t
+      in
+      mkApp(ta, [|ty|])
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -861,22 +797,19 @@ let rec execute env cstr =
         anomaly (Pp.str "the kernel does not support existential variables.")
 
 and execute_is_type env constr =
-  let c, t = execute env constr in
-    c, check_type env constr t
+  let t = execute env constr in
+  check_type env constr t
 
-and execute_recdef env (names,lar,vdef as recdef) i =
-  let lar', lart = execute_array env lar in
-  let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
-  let env1 = push_rec_types (names',lar',vdef) env in (* vdef is ignored *)
-  let vdef', vdeft = execute_array env1 vdef in
-  let () = check_fixpoint env1 names' lar' vdef' vdeft in
-  let recdef = if names == names' && lar == lar' && vdef == vdef' then recdef else (names',lar',vdef') in
-    (lar'.(i),recdef)
+and execute_recdef env (names,lar,vdef) i =
+  let lart = execute_array env lar in
+  let () = Array.iteri (fun i na -> check_assumption env na lar.(i) lart.(i)) names in
+  let env1 = push_rec_types (names,lar,vdef) env in (* vdef is ignored *)
+  let vdeft = execute_array env1 vdef in
+  let () = check_fixpoint env1 names lar vdef vdeft in
+  lar.(i)
 
 and execute_array env cs =
-  let tys = Array.make (Array.length cs) mkProp in
-  let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
-  cs, tys
+  Array.map (fun c -> execute env c) cs
 
 let execute env c =
   NewProfile.profile "Typeops.infer" (fun () -> execute env c) ()
@@ -901,7 +834,7 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let t = execute env constr in
   make_judge constr t
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
@@ -913,7 +846,7 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let t = execute env constr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 
@@ -925,7 +858,7 @@ let check_context env rels =
     match d with
       | LocalAssum (x,ty) ->
         let jty = infer_type env ty in
-        let x = check_assum_annot env jty.utj_type x jty.utj_val in
+        let () = check_assum_annot env jty.utj_type x jty.utj_val in
         push_rel d env, LocalAssum (x,jty.utj_val) :: rels
       | LocalDef (x,bd,ty) ->
         let j1 = infer env bd in
@@ -934,7 +867,7 @@ let check_context env rels =
         | Result.Ok () -> ()
         | Result.Error () -> error_actual_type env j1 ty
         in
-        let x = check_let_annot env jty.utj_type x j1.uj_val jty.utj_val in
+        let () = check_let_annot env jty.utj_type x j1.uj_val jty.utj_val in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])
 
