@@ -703,6 +703,80 @@ Infrastructure and dependencies
   fixes `#18548 <https://github.com/coq/coq/issues/18548>`_,
   by Gaëtan Gilbert).
 
+Changes in 8.19.2
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Specification language, type inference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  Regression from Coq 8.18 in the presence of a defined field in
+  a primitive :n:`Record`
+  (`#19088 <https://github.com/coq/coq/pull/19088>`_,
+  fixes `#19082 <https://github.com/coq/coq/issues/19082>`_,
+  by Hugo Herbelin).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  :tacn:`abstract` failing in the presence of admitted goals in the surrounding proof
+  (`#18945 <https://github.com/coq/coq/pull/18944>`_,
+  fixes `#18942 <https://github.com/coq/coq/issues/18942>`_,
+  by Gaëtan Gilbert).
+
+Ltac2 language
+^^^^^^^^^^^^^^
+
+- **Fixed:**
+  anomalies when using Ltac2 in VsCoq due to incorrect state handling of Ltac2 notations
+  (`#19096 <https://github.com/coq/coq/pull/19096>`_,
+  fixes `coq-community/vscoq#772 <https://github.com/coq-community/vscoq/issues/772>`_,
+  by Gaëtan Gilbert)
+
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  anomaly when using :cmd:`Include` on a module containing a record
+  declared with :flag:`Primitive Projections`
+  (`#18772 <https://github.com/coq/coq/pull/18772>`_,
+  fixes `#18769 <https://github.com/coq/coq/issues/18769>`_,
+  by Jan-Oliver Kaiser)
+
+- **Fixed:**
+  anomaly from :cmd:`Fixpoint` with no arguments
+  (`#18741 <https://github.com/coq/coq/pull/18741>`_,
+  by Hugo Herbelin)
+
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  Position error/warning tooltips correctly when multibyte UTF-8 characters are present
+  (`#19137 <https://github.com/coq/coq/pull/19137>`_,
+  fixes `#19136 <https://github.com/coq/coq/issues/19136>`_,
+  by Jim Fehrle).
+
+Infrastructure and dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  compatibility with OCaml versions where `effect` is a keyword
+  (`#18863 <https://github.com/coq/coq/pull/18863>`_,
+  by Remy Seassau)
+
+- **Added:**
+  Coq is now compatible with `memprof-limits` interruption
+  methods. This means that Coq will be recompiled when the library is
+  installed / removed from an OPAM switch.
+  (`#18906 <https://github.com/coq/coq/pull/18906>`_,
+  fixes `#17760 <https://github.com/coq/coq/issues/17760>`_,
+  by Emilio Jesus Gallego Arias).
+
 Version 8.18
 ------------
 
