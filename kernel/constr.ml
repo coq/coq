@@ -1147,8 +1147,8 @@ let invert_eqeq iv1 iv2 =
 let hasheq_ctx (nas1, c1) (nas2, c2) =
   array_eqeq nas1 nas2 && c1 == c2
 
-let hasheq t1 t2 =
-  match kind t1, kind t2 with
+let hasheq_kind t1 t2 =
+  match t1, t2 with
     | Rel n1, Rel n2 -> n1 == n2
     | Meta m1, Meta m2 -> m1 == m2
     | Var id1, Var id2 -> id1 == id2
@@ -1188,6 +1188,8 @@ let hasheq t1 t2 =
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
       | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
       | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
+
+let hasheq t1 t2 = hasheq_kind (kind t1) (kind t2)
 
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
