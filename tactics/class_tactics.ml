@@ -442,13 +442,17 @@ let make_hints env sigma (modes,st) only_classes sign =
       else hints)
     sign db
 
-type solver = (Environ.env ->
-  evar_map ->
-  metavariable option ->
-  bool ->
+module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
+
+type solver =
+  Environ.env ->
+  Evd.evar_map ->
+  depth:int option ->
+  unique:bool ->
   best_effort:bool ->
-  (evar_map -> Evar.t -> bool) ->
-  (bool * evar_map) option)
+  goals:Evar.Set.t ->
+  nongoals:Evar.Set.t ->
+  (bool * Evd.evar_map)
 
 module Search = struct
   type autoinfo =
@@ -993,7 +997,7 @@ module Search = struct
       (eauto_tac_stuck mst ?unique ~only_classes
           ~best_effort ?strategy ~depth ~dep hints)
 
-  let run_on_goals env evm p tac goals nongoals =
+  let run_on_goals env evm tac ~goals ~nongoals =
     let goalsl =
       if get_typeclasses_dependency_order () then
         top_sort evm goals
@@ -1051,33 +1055,22 @@ module Search = struct
         str"New typeclass evars are: " ++
         hov 0 (prlist_with_sep spc (pr_ev_with_id evm') (Evar.Set.elements nongoals')))
     in
-    Some (finished, evm')
-
-  let run_on_evars env evm p tac =
-    match evars_to_goals p evm with
-    | None -> None (* This happens only because there's no evar having p *)
-    | Some (goals, nongoals) ->
-      run_on_goals env evm p tac goals nongoals
-  let evars_eauto env evd depth only_classes ~best_effort unique dep mst hints p =
-    let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes
-      ~best_effort
-      ~depth ~dep:(unique || dep) hints in
-    run_on_evars env evd p eauto_tac
+     (finished, evm')
 
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
-  let typeclasses_eauto env evd ?depth unique ~best_effort st hints p =
-    NewProfile.profile "typeclass search" (fun () ->
-        evars_eauto env evd depth true ~best_effort unique false st hints p)
-      ()
+  let typeclasses_eauto_ env evd ~goals ~nongoals ?depth ~unique ~best_effort st hints =
+    let only_classes = true in
+    let dep = unique in
+    (NewProfile.profile "typeclass search" (fun () ->
+      (run_on_goals env evd (eauto_tac_stuck st ~unique ~only_classes ~best_effort ~depth ~dep hints) ~goals ~nongoals)) ())
 
-
-  let typeclasses_resolve : solver = fun env evd depth unique ~best_effort p ->
+  let typeclasses_resolve : solver = fun env evd ~depth ~unique ~best_effort ~goals ~nongoals ->(
     let db = searchtable_map typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
-    typeclasses_eauto env evd ?depth ~best_effort unique (modes,st) [db] p
+    typeclasses_eauto_ env evd ~goals ?depth ~best_effort ~unique ~nongoals (modes,st) [db])
 end
 
 let typeclasses_eauto ?(only_classes=false)
@@ -1103,8 +1096,6 @@ let typeclasses_eauto ?(only_classes=false)
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
-
-module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
@@ -1168,7 +1159,6 @@ let find_undefined p oevd evd =
 
 exception Unresolved of evar_map
 
-
 type condition = (Environ.env -> evar_map -> Evar.Set.t -> bool)
 
 type tc_solver = solver * condition
@@ -1227,10 +1217,11 @@ let resolve_all_evars depth unique env p oevd fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let solver = find_solver env evd comp in
-          let res = solver env evd ~best_effort:true depth unique p in
-          match res with
-          | Some (finished, evd') ->
+          (* evars_to_goals p evd gives none when there's no evar having p *)
+          match evars_to_goals p evd with
+          | Some (goals, nongoals) ->
+            let solver = find_solver env evd comp in
+            let finished, evd' = solver env evd ~goals ~best_effort:true ~depth ~unique ~nongoals in
             if has_undefined p oevd evd' then
               let () = if finished then ppdebug 1 (fun () ->
                   str"Proof is finished but there remain undefined evars: " ++
