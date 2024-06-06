@@ -63,8 +63,7 @@ type solver =
   depth:int option ->
   unique:bool ->
   best_effort:bool ->
-  goals:Evar.Set.t ->
-  nongoals:Evar.Set.t ->
+  goals:Evar.t list ->
   (bool * Evd.evar_map)
 
 
