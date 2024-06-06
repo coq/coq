@@ -135,6 +135,9 @@ GRAMMAR EXTEND Gram
       | "SProp" -> { None, UNamed [CSProp, 0] }
       | "Type" -> { None, UAnonymous {rigid=UnivRigid} }
       | "Type"; "@{"; "_"; "}" -> { None, UAnonymous {rigid=UnivFlexible false} }
+      | "Type"; "@{"; "Set" ; "|"; u = universe; "}" -> { None, u }
+      | "Type"; "@{"; "Prop" ; "|"; u = universe; "}" -> { None, UNamed [CProp, 0] }
+      | "Type"; "@{"; "SProp" ; "|"; u = universe; "}" -> { None, UNamed [CSProp, 0] }
       | "Type"; "@{"; test_sort_qvar; q = reference; "|"; u = universe; "}" ->
         { Some (CQVar q), u }
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
