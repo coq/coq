@@ -1186,14 +1186,8 @@ let hasheq t1 t2 =
 module HashsetTerm =
   Hashset.Make(struct type t = constr let eq = hasheq end)
 
-module HashsetTermArray =
-  Hashset.Make(struct type t = constr array let eq = array_eqeq end)
-
 let term_table = HashsetTerm.create 19991
 (* The associative table to hashcons terms. *)
-
-let term_array_table = HashsetTermArray.create 4999
-(* The associative table to hashcons term arrays. *)
 
 open Hashset.Combine
 
@@ -1433,7 +1427,7 @@ and hash_term_array t =
   done;
   (* [h] must be positive. *)
   let h = !accu land 0x3FFFFFFF in
-  (HashsetTermArray.repr h t term_array_table, h)
+  (t, h)
 
 and hash_list_array l =
   let fold accu c =
