@@ -15,7 +15,7 @@ open Vars
 open Termops
 open Reductionops
 
-exception UFAIL of constr*constr
+exception UFAIL
 
 (*
    RIGID-only Martelli-Montanari style unification for CLOSED terms
@@ -57,12 +57,12 @@ let unif env evd t1 t2=
               let t=subst_meta !sigma nt2 in
                 if Int.Set.is_empty (free_rels evd t) &&
                   not (occur_metavariable evd i t) then
-                    bind i t else raise (UFAIL(nt1,nt2))
+                    bind i t else raise UFAIL
           | _,Meta i ->
               let t=subst_meta !sigma nt1 in
                 if Int.Set.is_empty (free_rels evd t) &&
                   not (occur_metavariable evd i t) then
-                    bind i t else raise (UFAIL(nt1,nt2))
+                    bind i t else raise UFAIL
           | Cast(_,_,_),_->Queue.add (strip_outer_cast evd nt1,nt2) bige
           | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast evd nt2) bige
           | (Prod(_,a,b),Prod(_,c,d))|(Lambda(_,a,b),Lambda(_,c,d))->
@@ -75,7 +75,7 @@ let unif env evd t1 t2=
               Queue.add (ca,cb) bige;
               let l=Array.length va in
                 if not (Int.equal l (Array.length vb)) then
-                  raise (UFAIL (nt1,nt2))
+                  raise UFAIL
                 else
                   for i=0 to l-1 do
                     Queue.add (va.(i),vb.(i)) bige
@@ -84,12 +84,12 @@ let unif env evd t1 t2=
               Queue.add (ha,hb) bige;
               let l=Array.length va in
                 if not (Int.equal l (Array.length vb)) then
-                  raise (UFAIL (nt1,nt2))
+                  raise UFAIL
                 else
                   for i=0 to l-1 do
                     Queue.add (va.(i),vb.(i)) bige
                   done
-          | _->if not (eq_constr_nounivs evd nt1 nt2) then raise (UFAIL (nt1,nt2))
+          | _->if not (eq_constr_nounivs evd nt1 nt2) then raise UFAIL
     done;
       assert false
         (* this place is unreachable but needed for the sake of typing *)
@@ -148,7 +148,7 @@ let unif_atoms state env evd i dom t1 t2 =
       if isMeta evd t then Some (Phantom dom)
       else Some (Real(mk_rel_inst evd t,value evd i t1))
   with
-      UFAIL(_,_) ->None
+    | UFAIL -> None
     | Not_found ->Some (Phantom dom)
 
 let renum_metas_from k n t= (* requires n = max (free_rels t) *)
@@ -163,4 +163,4 @@ let more_general env evd (m1,t1) (m2,t2)=
       let sigma=unif env evd mt1 mt2 in
       let p (n,t)= n<m1 || isMeta evd t in
         List.for_all p sigma
-    with UFAIL(_,_)->false
+    with UFAIL -> false
