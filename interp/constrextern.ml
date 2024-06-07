@@ -219,10 +219,10 @@ let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) =
   | a :: args, [] ->
     (a, (entry, ([], scopes))) :: fill_arg_scopes args [] all
 
-let overlap_right_left lev_after ((typs,_):Notation_term.interpretation) =
-  List.exists (fun (_id,(({notation_relative_level = lev; notation_position = side},_),_,_)) ->
+let overlap_right_left {notation_entry = entry} lev_after ((typs,_):Notation_term.interpretation) =
+  List.exists (fun (_id,(({notation_subentry = entry'; notation_relative_level = lev; notation_position = side},_),_,_)) ->
       match side with
-      | Some Right -> may_capture_cont_after lev_after lev
+      | Some Right when notation_entry_eq entry entry' -> may_capture_cont_after lev_after lev
       | _ -> false) typs
 
 let update_with_subscope from_entry (entry,(scopt,scl)) lev_after closed scopes =
@@ -416,7 +416,7 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
     | NotationRule (_,ntn as specific_ntn) ->
       begin
         let entry = fst (Notation.level_of_notation ntn) in
-        let entry = if overlap_right_left lev_after pat then {entry with notation_level = max_int} else entry in
+        let entry = if overlap_right_left entry lev_after pat then {entry with notation_level = max_int} else entry in
         match availability_of_entry_coercion custom entry with
         | None -> raise No_match
         | Some coercion ->
@@ -1275,7 +1275,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
             let entry = fst (Notation.level_of_notation ntn) in
-            let non_empty = overlap_right_left lev_after pat in
+            let non_empty = overlap_right_left entry lev_after pat in
              (match availability_of_entry_coercion ~non_empty custom entry with
              | None -> raise No_match
              | Some coercion ->
