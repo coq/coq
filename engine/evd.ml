@@ -1661,6 +1661,148 @@ module Monad =
 
 type unsolvability_explanation = SeveralInstancesFound of int
 
+module Expand :
+sig
+  type handle
+  val empty_handle : handle
+(*   val liftn_handle : int -> handle -> handle *)
+  val kind : evar_map -> handle -> constr ->
+    handle * (constr, constr, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
+  val expand : evar_map -> handle -> constr -> constr
+end =
+struct
+
+type clos = {
+  evc_map : (int * clos * Constr.t) Id.Map.t;
+  (* Map each bound ident to its value and the depth it was introduced at *)
+  evc_lift : int; (* number of binders crossed since last evar *)
+  evc_stack : int list; (* stack of binders crossed at each evar *)
+  evc_depth : int; (* length of evc_stack *)
+  evc_cache : int Int.Map.t ref option; (* Cache get_lift on evc_stack *)
+}
+
+let empty_clos = {
+  evc_lift = 0;
+  evc_depth = 0;
+  evc_stack = [];
+  evc_map = Id.Map.empty;
+  evc_cache = None;
+}
+
+let push_clos info clos args =
+  let push id c map = Id.Map.add id (clos.evc_depth, clos, c) map in
+  let nmap = evar_instance_array clos.evc_map push info args in
+  {
+    evc_lift = 0;
+    evc_map = nmap;
+    evc_depth = clos.evc_depth + 1;
+    evc_stack = clos.evc_lift :: clos.evc_stack;
+    evc_cache = Some (ref Int.Map.empty);
+  }
+
+let find_clos clos id = match Id.Map.find_opt id clos.evc_map with
+| None -> None
+| Some (depth, nclos, v) ->
+  let pos = clos.evc_depth - depth - 1 in
+  let rec get_lift accu n lft =
+    if Int.equal n 0 then accu
+    else match lft with
+    | [] -> assert false
+    | k :: lft -> get_lift (accu + k) (n - 1) lft
+  in
+  let ans = match clos.evc_cache with
+  | None -> assert false
+  | Some cache ->
+    match Int.Map.find_opt pos !cache with
+    | None ->
+      let ans = get_lift 0 pos clos.evc_stack in
+      let () = cache := Int.Map.add pos ans !cache in
+      ans
+    | Some ans -> ans
+  in
+  let k = clos.evc_lift + ans in
+  Some (k, nclos, v)
+
+type handle = {
+  h_clos : clos;
+  h_lift : Esubst.lift;
+}
+
+let empty_handle = {
+  h_clos = empty_clos;
+  h_lift = Esubst.el_id;
+}
+
+let liftn_clos n s = { s with evc_lift = s.evc_lift + n }
+
+let liftn_handle n h = {
+  h_clos = liftn_clos n h.h_clos;
+  h_lift = Esubst.el_liftn n h.h_lift;
+}
+
+let rec kind sigma h c = match Constr.kind c with
+| Rel n -> h, Rel (Esubst.reloc_rel n h.h_lift)
+| Var id as c0 ->
+  begin match find_clos h.h_clos id with
+  | None -> (h, c0)
+  | Some (k, clos, v) ->
+    let h = { h_clos = clos; h_lift = Esubst.el_shft k h.h_lift } in
+    kind sigma h v
+  end
+| Evar (evk, args) as c0 ->
+  begin match EvMap.find_opt evk sigma.defn_evars with
+  | None -> (h, c0)
+  | Some info ->
+    let Evar_defined c = evar_body info in
+    let nclos = push_clos info h.h_clos args in
+    kind sigma { h_lift = h.h_lift; h_clos = nclos } c
+  end
+| Meta _ | Sort _ | Cast _  | Prod _ | Lambda _ | LetIn _ | App _
+| Const _ | Ind _ | Construct _ | Case _ | Fix _ | CoFix _ | Proj _ | Int _ | Float _ | Array _ as c0 ->
+  (h, c0)
+
+let expand0 sigma h c =
+  let lift h = liftn_handle 1 h in
+  let rec aux h c = match Constr.kind c with
+  | Rel n ->
+    let n' = Esubst.reloc_rel n h.h_lift in
+    if Int.equal n n' then c else mkRel n'
+  | Var id ->
+    begin match find_clos h.h_clos id with
+    | None -> c
+    | Some (k, clos, v) ->
+      let h = { h_clos = clos; h_lift = Esubst.el_shft k h.h_lift } in
+      aux h v
+    end
+  | Evar (evk, args) ->
+    (* for efficiency do not expand evars, just their instance *)
+    let EvarInfo evi = find sigma evk in
+    let push decl c args =
+      if isVarId (NamedDecl.get_id decl) c then SList.default args
+      else SList.cons c args
+    in
+    let rec expand ctx args = match ctx, SList.view args with
+    | [], None -> SList.empty
+    | decl :: ctx, Some (Some c, args) ->
+      let c = aux h c in
+      push decl c (expand ctx args)
+    | decl :: ctx, Some (None, args) ->
+      let c = aux h (mkVar (NamedDecl.get_id decl)) in
+      push decl c (expand ctx args)
+    | [], Some _ | _ :: _, None -> instance_mismatch ()
+    in
+    let args = expand (evar_filtered_context evi) args in
+    mkEvar (evk, args)
+  | _ -> Constr.map_with_binders lift aux h c
+  in
+  aux h c
+
+let expand sigma h c =
+  if Esubst.is_lift_id h.h_lift && Id.Map.is_empty h.h_clos.evc_map then c
+  else expand0 sigma h c
+
+end
+
 module MiniEConstr = struct
 
   module ERelevance = struct
@@ -1695,25 +1837,23 @@ module MiniEConstr = struct
   let rec whd_evar sigma c =
     match Constr.kind c with
     | Evar ev ->
-      begin match existential_opt_value sigma ev with
-        | Some c -> whd_evar sigma c
-        | None -> c
-      end
+      let (h, knd) = Expand.kind sigma Expand.empty_handle c in
+      if Constr.kind c == knd then c
+      else whd_kind sigma h knd
     | App (f, args) when isEvar f ->
       (* Enforce smart constructor invariant on applications *)
-      let ev = destEvar f in
-      begin match existential_opt_value sigma ev with
-        | None -> c
-        | Some f -> whd_evar sigma (mkApp (f, args))
-      end
+      let (h, knd) = Expand.kind sigma Expand.empty_handle f in
+      if Constr.kind f == knd then c
+      else mkApp (whd_kind sigma h knd, args)
     | Cast (c0, k, t) when isEvar c0 ->
       (* Enforce smart constructor invariant on casts. *)
-      let ev = destEvar c0 in
-      begin match existential_opt_value sigma ev with
-        | None -> c
-        | Some c -> whd_evar sigma (mkCast (c, k, t))
-      end
+      let (h, knd) = Expand.kind sigma Expand.empty_handle c0 in
+      if Constr.kind c0 == knd then c
+      else mkCast (whd_kind sigma h knd, k, t)
     | _ -> c
+  and whd_kind sigma h knd =
+    (* we need to force the head as Expand.expand does not expand evar subterms *)
+    whd_evar sigma (Expand.expand sigma h (Constr.of_kind knd))
 
   let mkLEvar = mkLEvar
   let replace_vars = replace_vars
