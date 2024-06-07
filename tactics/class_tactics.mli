@@ -57,7 +57,7 @@ val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
 val resolve_tc : constr -> unit Proofview.tactic
 
-type solver =
+type solver = { solver :
   Environ.env ->
   Evd.evar_map ->
   depth:int option ->
@@ -65,6 +65,7 @@ type solver =
   best_effort:bool ->
   goals:Evar.t list ->
   (bool * Evd.evar_map)
+}
 
 
 type condition = (Environ.env -> Evd.evar_map -> Evar.Set.t -> bool)
