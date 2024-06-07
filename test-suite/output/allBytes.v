@@ -33,9 +33,9 @@ Notation "')'" := (Byte.x29) (only printing).
 Notation "'*'" := (Byte.x2a) (only printing).
 Notation "'+'" := (Byte.x2b) (only printing).
 Notation "','" := (Byte.x2c) (only printing).
-Notation "'-'" := (Byte.x2d) (only printing).
+Notation "'-'" := (Byte.x2d) (only printing, at level 0).
 Notation "'.'" := (Byte.x2e) (only printing).
-Notation "'/'" := (Byte.x2f) (only printing).
+Notation "'/'" := (Byte.x2f) (only printing, at level 0).
 Notation "'0'" := (Byte.x30) (only printing).
 Notation "'1'" := (Byte.x31) (only printing).
 Notation "'2'" := (Byte.x32) (only printing).
@@ -114,7 +114,7 @@ Notation "'z'" := (Byte.x7a) (only printing).
 Notation "'{'" := (Byte.x7b) (only printing).
 Notation "'|'" := (Byte.x7c) (only printing).
 Notation "'}'" := (Byte.x7d) (only printing).
-Notation "'~'" := (Byte.x7e) (only printing).
+Notation "'~'" := (Byte.x7e) (only printing, at level 0).
 
 Global Set Printing Width 300.
 

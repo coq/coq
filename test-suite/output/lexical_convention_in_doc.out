@@ -1,23 +1,11 @@
-File "./output/lexical_convention_in_doc.v", line 7, characters 0-26:
-Warning: Notations "~ _" defined at level 75 and "~" defined at level 0
-have incompatible prefixes. One of them will likely not work.
-[notation-incompatible-prefix,parsing,default]
 not (not True)
      : Prop
 not True
      : Prop
-File "./output/lexical_convention_in_doc.v", line 19, characters 0-26:
-Warning: Notations "~ _" defined at level 75 and "~" defined at level 0
-have incompatible prefixes. One of them will likely not work.
-[notation-incompatible-prefix,parsing,default]
 not (not True)
      : Prop
 not (not True)
      : Prop
-File "./output/lexical_convention_in_doc.v", line 32, characters 0-26:
-Warning: Notations "~ _" defined at level 75 and "~" defined at level 0
-have incompatible prefixes. One of them will likely not work.
-[notation-incompatible-prefix,parsing,default]
 not False
      : Prop
 (fun x : Prop => not (not x)) o
@@ -25,9 +13,5 @@ not False
 File "./output/lexical_convention_in_doc.v", line 50, characters 12-15:
 The command has indeed failed with message:
 The reference _ho was not found in the current environment.
-File "./output/lexical_convention_in_doc.v", line 59, characters 0-26:
-Warning: Notations "~ _" defined at level 75 and "~" defined at level 0
-have incompatible prefixes. One of them will likely not work.
-[notation-incompatible-prefix,parsing,default]
 True
      : Prop
