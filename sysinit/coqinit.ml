@@ -76,7 +76,6 @@ let init_gc () =
     if Coq_config.caml_version_nums >= [4;10;0] then set_gc_best_fit () else ()
 
 let init_ocaml () =
-  CProfile.init_profile ();
   init_gc ();
   (* Get error message (and backtrace if enabled) on Ctrl-C instead of just exiting the process *)
   Sys.catch_break true
