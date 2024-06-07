@@ -32,7 +32,7 @@ open Quality
 
 let sort_inconsistency ?explain cst l r =
   let explain = Option.map (fun p -> UGraph.Other p) explain in
-  raise (UGraph.UniverseInconsistency (cst, l, r, explain))
+  raise (UGraph.UniverseInconsistency (None, (cst, l, r, explain)))
 
 module QState : sig
   type t
@@ -234,6 +234,46 @@ let is_empty uctx =
   ContextSet.is_empty uctx.local &&
   UnivFlex.is_empty uctx.univ_variables
 
+let id_of_level uctx l =
+  try (Level.Map.find l (snd (snd uctx.names))).uname
+  with Not_found -> None
+
+let id_of_qvar uctx l =
+  try (QVar.Map.find l (fst (snd uctx.names))).uname
+  with Not_found -> None
+
+let qualid_of_qvar_names (bind, (qrev,_)) l =
+  try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
+  with Not_found | Option.IsNone ->
+    None (* no global qvars *)
+
+let qualid_of_level_names (bind, (_,urev)) l =
+  try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l urev).uname))
+  with Not_found | Option.IsNone ->
+    UnivNames.qualid_of_level bind l
+
+let qualid_of_level uctx l = qualid_of_level_names uctx.names l
+
+let pr_uctx_qvar_names names l =
+  match qualid_of_qvar_names names l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> QVar.raw_pr l
+
+let pr_uctx_level_names names l =
+  match qualid_of_level_names names l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> Level.raw_pr l
+
+let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
+
+let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
+
+let merge_constraints uctx cstrs g =
+  try UGraph.merge_constraints cstrs g
+  with UGraph.UniverseInconsistency (_, i) ->
+    let printers = (pr_uctx_qvar uctx, pr_uctx_level uctx) in
+    raise (UGraph.UniverseInconsistency (Some printers, i))
+
 let uname_union s t =
   if s == t then s
   else
@@ -280,7 +320,7 @@ let union uctx uctx' =
           (if local == uctx.local then uctx.universes
            else
              let cstrsr = ContextSet.constraints uctx'.local in
-             UGraph.merge_constraints cstrsr (declarenew uctx.universes));
+             merge_constraints uctx cstrsr (declarenew uctx.universes));
         minim_extra = extra}
 
 let context_set uctx = uctx.local
@@ -373,7 +413,7 @@ let { Goptions.get = drop_weak_constraints } =
 
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
-  raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
+  raise (UGraph.UniverseInconsistency (None, (cst, mk l, mk r, None)))
 
 let nf_universe uctx u =
   UnivSubst.(subst_univs_universe (UnivFlex.normalize_univ_variable uctx.univ_variables)) u
@@ -657,7 +697,7 @@ let add_universe_constraints uctx cstrs =
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
-    universes = UGraph.merge_constraints local' uctx.universes;
+    universes = merge_constraints uctx local' uctx.universes;
     sort_variables = sorts;
     minim_extra = extra; }
 
@@ -725,40 +765,6 @@ let check_universe_constraints uctx csts =
 let constrain_variables diff uctx =
   let local, vars = UnivFlex.constrain_variables diff uctx.univ_variables uctx.local in
   { uctx with local; univ_variables = vars }
-
-let id_of_level uctx l =
-  try (Level.Map.find l (snd (snd uctx.names))).uname
-  with Not_found -> None
-
-let id_of_qvar uctx l =
-  try (QVar.Map.find l (fst (snd uctx.names))).uname
-  with Not_found -> None
-
-let qualid_of_qvar_names (bind, (qrev,_)) l =
-  try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
-  with Not_found | Option.IsNone ->
-    None (* no global qvars *)
-
-let qualid_of_level_names (bind, (_,urev)) l =
-  try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l urev).uname))
-  with Not_found | Option.IsNone ->
-    UnivNames.qualid_of_level bind l
-
-let qualid_of_level uctx l = qualid_of_level_names uctx.names l
-
-let pr_uctx_qvar_names names l =
-  match qualid_of_qvar_names names l with
-  | Some qid -> Libnames.pr_qualid qid
-  | None -> QVar.raw_pr l
-
-let pr_uctx_level_names names l =
-  match qualid_of_level_names names l with
-  | Some qid -> Libnames.pr_qualid qid
-  | None -> Level.raw_pr l
-
-let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
-
-let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
@@ -857,7 +863,7 @@ let check_universe_context_set ~prefix levels names =
 
 let check_implication uctx cstrs cstrs' =
   let gr = initial_graph uctx in
-  let grext = UGraph.merge_constraints cstrs gr in
+  let grext = merge_constraints uctx cstrs gr in
   let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
   if Constraints.is_empty cstrs' then ()
   else CErrors.user_err
@@ -979,7 +985,7 @@ let merge ?loc ~sideff rigid uctx uctx' =
   in
   let initial = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = UGraph.merge_constraints (ContextSet.constraints uctx') univs in
+  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
   let uctx =
     match rigid with
     | UnivRigid -> uctx
@@ -1049,7 +1055,7 @@ let merge_seff uctx uctx' =
   in
   let initial_universes = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = UGraph.merge_constraints (ContextSet.constraints uctx') univs in
+  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
   { uctx with universes; initial_universes }
 
 let emit_side_effects eff u =
