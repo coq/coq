@@ -482,7 +482,7 @@ TACTIC EXTEND specialize_eqs
 | [ "specialize_eqs" hyp(id) ] -> { specialize_eqs id }
 END
 
-TACTIC EXTEND destauto
+TACTIC EXTEND destauto DEPRECATED { Deprecation.make ~since:"8.20" () }
 | [ "destauto" ] -> { Internals.destauto }
 | [ "destauto" "in" hyp(id) ] -> { Internals.destauto_in id }
 END
