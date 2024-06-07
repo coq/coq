@@ -907,12 +907,14 @@ let warn_prefix_incompatible_level =
       ++ spc () ++ str "have incompatible prefixes."
       ++ spc () ++ str "One of them will likely not work.")
 
+let level_firstn k (lvl, lvls) =
+  lvl, try CList.firstn k lvls with Failure _ -> []
+
 let check_prefix_incompatible_level ntn prec nottyps =
   match Notgram_ops.longest_common_prefix ntn with
   | None -> ()
   | Some (pref, k) ->
      try
-       let level_firstn k (lvl, lvls) = lvl, CList.firstn k lvls in
        let pref_prec = Notation.level_of_notation pref in
        let pref_prec = level_firstn k pref_prec in
        let prec = level_firstn k prec in
@@ -1473,6 +1475,22 @@ let check_locality_compatibility local custom i_typs =
                     strbrk " which is local."))
       (List.uniquize allcustoms)
 
+let longest_common_prefix_level ntn =
+  Notgram_ops.longest_common_prefix ntn
+  |> Option.map (fun (ntn, sz) ->
+         let level, levels = level_firstn sz (Notation.level_of_notation ntn) in
+         ntn, level.notation_level, levels)
+
+let default_prefix_level ntn_prefix =
+  let with_prefix prefix level =
+    Flags.if_verbose Feedback.msg_info
+      (strbrk "Setting notation at level " ++ int level ++ spc ()
+       ++ str "to match previous notation with longest common prefix:"
+       ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+    level in
+  function Some n -> Some n | None ->
+    Option.map (fun (prefix, level, _) -> with_prefix prefix level) ntn_prefix
+
 let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let open SynData in
   let open NotationMods in
@@ -1482,7 +1500,9 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let msgs,n = find_precedence main_data.entry mods.level mods.etyps symbols main_data.onlyprinting in
+  let ntn_prefix = longest_common_prefix_level ntn in
+  let level = default_prefix_level ntn_prefix mods.level in
+  let msgs,n = find_precedence main_data.entry level mods.etyps symbols main_data.onlyprinting in
   let symbols_for_grammar =
     if main_data.entry = InConstrEntry then remove_curly_brackets symbols else symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
