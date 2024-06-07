@@ -317,7 +317,7 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
   | CPrimitives.PT_array ->
     begin match UVars.Instance.to_array u with
     | [||], [|u|] ->
-      let ty = Constr.mkType (Univ.Universe.make u) in
+      let ty = Constr.mkType u in
       Constr.mkProd(Context.anonR, ty , ty)
     | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
     end
@@ -830,7 +830,7 @@ let rec execute env cstr =
         | _ -> assert false
       in
       let ty',tyty = execute env ty in
-      check_cast env ty' tyty DEFAULTcast (mkType (Universe.make ulev));
+      check_cast env ty' tyty DEFAULTcast (mkType ulev);
       let def', def_ty = execute env def in
       check_cast env def' def_ty DEFAULTcast ty';
       let ta = type_of_array env u in

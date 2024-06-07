@@ -405,6 +405,8 @@ val subst_instance_context : EInstance.t -> rel_context -> rel_context
 val subst_instance_constr : EInstance.t -> t -> t
 val subst_instance_relevance : EInstance.t -> ERelevance.t -> ERelevance.t
 
+val subst_level_instance_constr : UVars.LevelInstance.t -> t -> t
+
 val subst_of_rel_context_instance : rel_context -> instance -> substl
 val subst_of_rel_context_instance_list : rel_context -> instance_list -> substl
 

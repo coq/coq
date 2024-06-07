@@ -238,6 +238,7 @@ val constant_context : env -> Constant.t -> AbstractContext.t
 (* These functions should be called under the invariant that [env]
    already contains the constraints corresponding to the constant
    application. *)
+val constant_arity_value_in : env -> Constant.t puniverses -> constr * int option
 val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
@@ -444,6 +445,8 @@ val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
 val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
+
+val get_reference_arity : env -> GlobRef.t -> int option
 
 (** {5 VM and native} *)
 

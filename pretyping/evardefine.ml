@@ -82,7 +82,7 @@ let define_pure_evar_as_product env evd na evk =
   let evksrc = evar_source evi in
   let src = subterm_source evk ~where:Domain evksrc in
   let evd1,(dom,u1) =
-    new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
+    new_type_evar evenv evd univ_flexible ~src ~filter:(evar_filter evi)
   in
   let rdom = ESorts.relevance_of_sort u1 in
   let evd2,rng =
@@ -93,7 +93,7 @@ let define_pure_evar_as_product env evd na evk =
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar newenv evd1 concl ~src ~filter
       else
-        let status = univ_flexible_alg in
+        let status = univ_flexible in
         let evd3, (rng, srng) =
           new_type_evar newenv evd1 status ~src ~filter
         in
@@ -190,8 +190,8 @@ let define_pure_evar_as_array env sigma evk =
   let evenv = evar_env env evi in
   let evksrc = evar_source evi in
   let src = subterm_source evk ~where:Domain evksrc in
-  let sigma, u = new_univ_level_variable univ_flexible sigma in
-  let s' = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
+  let sigma, u = new_univ_variable univ_flexible sigma in
+  let s' = ESorts.make @@ Sorts.sort_of_univ @@ u in
   let sigma, ty = new_evar evenv sigma ~typeclass_candidate:false ~src ~filter:(evar_filter evi) (mkSort s') in
   let concl = Reductionops.whd_all evenv sigma (Evd.evar_concl evi) in
   let s = destSort sigma concl in

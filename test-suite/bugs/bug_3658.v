@@ -17,7 +17,7 @@ Module NonPrim.
     end.
   Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc : IsTrunc_internal n A.
   Notation Contr := (IsTrunc -2).
-  #[export] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+  #[export] Hint Extern 0 => match goal with [ |- context [ Contr_internal ?A ] ] => progress change (Contr_internal A) with (Contr A) in * end : typeclass_instances.
   Goal forall (H : Type) (H0 : H -> H -> Type) (H1 : Type)
               (H2 : Contr H1) (H3 : H1) (H4 : H1 -> H)
               (H5 : H0 (H4 (center H1)) (H4 H3))
@@ -52,7 +52,8 @@ Module Prim.
     end.
   Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc : IsTrunc_internal n A.
   Notation Contr := (IsTrunc -2).
-  #[export] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+  #[export] Hint Extern 0 => match goal with [ |- context [ Contr_internal ?A ] ] => progress change (Contr_internal A) with (Contr A) in |- * end : typeclass_instances.
+  #[export] Hint Extern 0 => match goal with [ H : context [ Contr_internal ?A ] |- _ ] => progress change (Contr_internal A) with (Contr A) in H end : typeclass_instances.
   Goal forall (H : Type) (H0 : H -> H -> Type) (H1 : Type)
               (H2 : Contr H1) (H3 : H1) (H4 : H1 -> H)
               (H5 : H0 (H4 (center H1)) (H4 H3))

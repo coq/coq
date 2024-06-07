@@ -37,6 +37,7 @@ val do_definition
   -> ?user_warns:UserWarn.t
   -> universe_decl_expr option
   -> local_binder_expr list
+  -> ?arity:int
   -> red_expr option
   -> constr_expr
   -> constr_expr option
@@ -55,6 +56,7 @@ val do_definition_program
   -> ?user_warns:UserWarn.t
   -> universe_decl_expr option
   -> local_binder_expr list
+  -> ?arity:int
   -> red_expr option
   -> constr_expr
   -> constr_expr option

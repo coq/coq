@@ -23,9 +23,10 @@ open Declarations
     - for each inductive,
       (arity * constructors) (with params)
       * (indices * splayed constructor types) (both without params)
+      * minimal application arity
       * top allowed elimination
  *)
-val typecheck_inductive : env -> sec_univs:UVars.Instance.t option
+val typecheck_inductive : env -> sec_univs:UVars.LevelInstance.t option
   -> mutual_inductive_entry
   -> env
   * universes
@@ -35,5 +36,5 @@ val typecheck_inductive : env -> sec_univs:UVars.Instance.t option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *
-     squash_info option)
+     int option * squash_info option)
     array

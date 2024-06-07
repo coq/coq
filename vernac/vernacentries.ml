@@ -60,6 +60,7 @@ module DefAttributes = struct
     using : Vernacexpr.section_subset_expr option;
     reversible : bool;
     clearbody: bool option;
+    arity: int option;
   }
   (* [locality] is used for [vernac_definition_hook],
      the raw Local/Global attribute is also used to generate [scope].
@@ -107,12 +108,12 @@ module DefAttributes = struct
   let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, user_warns), polymorphic), program),
+    let ((((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
-         reversible), clearbody =
+         reversible), clearbody), arity =
       parse (locality ++ user_warns ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
+             reversible ++ clearbody ++ arity)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
@@ -121,7 +122,7 @@ module DefAttributes = struct
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
     let scope = scope_of_locality locality discharge deprecated_thing replacement in
-    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody; arity }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -166,9 +167,13 @@ let show_top_evars ~proof =
 
 let show_universes ~proof =
   let Proof.{goals;sigma} = Proof.data proof in
-  let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
+  let ctx = try
+    let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
+    Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
+    with e -> str"Exception raised while minimizing"
+  in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
-  str "Normalized constraints:" ++ brk(1,1) ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
+  str "Normalized constraints:" ++ brk(1,1) ++ ctx
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -363,17 +368,23 @@ let print_registered_schemes () =
   in
   hov 0 (prlist_with_sep fnl pr_schemes_of_ind (Indmap.bindings schemes))
 
+type kind = Lt | Le | Eq
+
 let dump_universes output g =
   let open Univ in
   let dump_arc u = function
     | UGraph.Node ltle ->
-      Univ.Level.Map.iter (fun v strict ->
-          let typ = if strict then Lt else Le in
-          output typ u v) ltle;
-    | UGraph.Alias v ->
-      output Eq u v
+      List.iter (fun (k, v) ->
+        if k = 1 then
+          output Lt (Universe.of_expr (u, 0)) v
+        else
+          output Le (Universe.of_expr (u, k)) v)
+        ltle;
+    | UGraph.Alias (v, k) ->
+      output Eq (Universe.make u) (Universe.of_expr (v, k))
   in
   Univ.Level.Map.iter dump_arc g
+
 
 let dump_universes_gen prl g s =
   let fulls = System.get_output_path s in
@@ -386,11 +397,11 @@ let dump_universes_gen prl g s =
       begin fun kind left right ->
         let () = Lazy.force init in
         match kind with
-          | Univ.Lt ->
+          | Lt ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" right left
-          | Univ.Le ->
+          | Le ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
-          | Univ.Eq ->
+          | Eq ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->
         if Lazy.is_val init then Printf.fprintf output "}\n";
@@ -399,9 +410,9 @@ let dump_universes_gen prl g s =
     end else begin
       begin fun kind left right ->
         let kind = match kind with
-          | Univ.Lt -> "<"
-          | Univ.Le -> "<="
-          | Univ.Eq -> "="
+          | Lt -> "<"
+          | Le -> "<="
+          | Eq -> "="
         in
         Printf.fprintf output "%s %s %s ;\n" left kind right
       end, (fun () -> close_out output)
@@ -428,7 +439,7 @@ let universe_subgraph ?loc kept univ =
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
   let add u newgraph =
-    let strict = UGraph.check_constraint univ (Level.set,Lt,u) in
+    let strict = UGraph.check_constraint univ (Universe.type1,Le,Universe.make u) in
     UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict newgraph
   in
   let univ = Level.Set.fold add kept UGraph.initial_universes in
@@ -436,9 +447,9 @@ let universe_subgraph ?loc kept univ =
 
 let sort_universes g =
   let open Univ in
-  let rec normalize u = match Level.Map.find u g with
-  | UGraph.Alias u -> normalize u
-  | UGraph.Node _ -> u
+  let rec normalize (u, ku as l) = match Level.Map.find u g with
+  | UGraph.Alias (u, k) -> normalize (u, ku + k)
+  | UGraph.Node _ -> l
   in
   let get_next u = match Level.Map.find u g with
   | UGraph.Alias u -> assert false (* nodes are normalized *)
@@ -448,7 +459,7 @@ let sort_universes g =
   let rec traverse accu todo = match todo with
   | [] -> accu
   | (u, n) :: todo ->
-    let () = assert (Level.equal (normalize u) u) in
+    let () = assert (LevelExpr.equal (normalize (u, n)) (u, n)) in
     let n = match Level.Map.find u accu with
     | m -> if m < n then Some n else None
     | exception Not_found -> Some n
@@ -458,21 +469,22 @@ let sort_universes g =
     | Some n ->
       let accu = Level.Map.add u n accu in
       let next = get_next u in
-      let fold v lt todo =
-        let v = normalize v in
-        if lt then (v, n + 1) :: todo else (v, n) :: todo
+      let fold (k, u) todo =
+        let u = Universe.repr u in
+        let v = List.map (fun (v, kv) -> normalize (v, k + n - kv)) u in
+        v @ todo
       in
-      let todo = Level.Map.fold fold next todo in
+      let todo = List.fold_right fold next todo in
       traverse accu todo
   in
   (* Only contains normalized nodes *)
-  let levels = traverse Level.Map.empty [normalize Level.set, 0] in
+  let levels = traverse Level.Map.empty [normalize (Level.set, 0)] in
   let max_level = Level.Map.fold (fun _ n accu -> max n accu) levels 0 in
   let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp "" i))) in
   (* Add the normal universes *)
   let fold (cur, ans) u =
-    let ans = Level.Map.add cur (UGraph.Node (Level.Map.singleton u true)) ans in
+    let ans = Level.Map.add cur (UGraph.Node [1, Universe.make u]) ans in
     (u, ans)
   in
   let _, ans = Array.fold_left fold (Level.set, Level.Map.empty) ulevels in
@@ -481,8 +493,9 @@ let sort_universes g =
   let fold u _ ans =
     if Level.is_set u then ans
     else
-      let n = Level.Map.find (normalize u) levels in
-      Level.Map.add u (UGraph.Alias ulevels.(n)) ans
+      let v, k = normalize (u, 0) in
+      let n = Level.Map.find v levels in
+      Level.Map.add u (UGraph.Alias (ulevels.(n), k)) ans
   in
   Level.Map.fold fold g ans
 
@@ -501,7 +514,7 @@ let print_universes ?loc ~sort ~subgraph dst =
   let prl = UnivNames.pr_level_with_global_universes in
   begin match dst with
     | None -> UGraph.pr_universes prl univ ++ pr_remaining
-    | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
+    | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (Univ.Universe.pr prl u)) univ s
   end
 
 (*********************)
@@ -631,7 +644,7 @@ let program_inference_hook env sigma ev =
    / ComDefinition ? *)
 let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
   let inference_hook = if program_mode then Some program_inference_hook else None in
-  List.fold_left_map (fun evd ((id, _), (bl, t)) ->
+  List.fold_left_map (fun evd ((id, _), (bl, arity, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
         Constrintern.interp_context_evars ~program_mode env0 evd bl
       in
@@ -640,7 +653,7 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
-          ~args:ids ~impargs:(imps @ imps') () in
+          ~args:ids ~impargs:(imps @ imps') ?arity () in
       evd, thm)
     evd thms
 
@@ -709,18 +722,20 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, arity =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+    atts.using, atts.clearbody, atts.arity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
   start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
-    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, t)]
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, arity, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, arity =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+     atts.using, atts.clearbody, atts.arity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
@@ -734,12 +749,12 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
       ?clearbody ~poly ?typing_flags ~scope ~kind
-      ?user_warns ?using pl bl red_option c typ_opt ?hook
+      ?user_warns ?using pl bl ?arity red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
         ?clearbody ~poly ?typing_flags ~scope ~kind
-        ?user_warns ?using pl bl red_option c typ_opt ?hook in
+        ?user_warns ?using pl bl ?arity red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -747,14 +762,15 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let scope, poly, program_mode, user_warns, typing_flags, using =
-    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
+  let scope, poly, program_mode, user_warns, typing_flags, using, arity =
+    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags,
+    atts.using, atts.arity in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags
     ~program_mode
     ~poly
-    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using l
+    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using (List.map (fun (x, (bl, t)) -> (x, (bl, arity, t))) l)
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -1950,6 +1966,11 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
   let sigma, env = get_current_context_of_args ~pstate glopt in
   check_may_eval env sigma redexp rc
 
+let vernac_check_constraint ~pstate c glopt =
+  let glopt = query_command_selector glopt in
+  let sigma, env = get_current_context_of_args ~pstate glopt in
+  DeclareUniv.check_constraint env sigma c
+
 let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
@@ -2610,7 +2631,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
-
+  | VernacCheckConstraint (c,g) ->
+    vtreadproofopt(fun ~pstate ->
+        unsupported_attributes atts;
+        vernac_check_constraint ~pstate c g)
   | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)

@@ -43,7 +43,7 @@ fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
 Arguments wrap {A}%type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
-(* uu |= Set < uu *)
+(* uu |= Set+1 <= uu *)
 foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
@@ -122,7 +122,7 @@ The command has indeed failed with message:
 This object does not support universe names.
 File "./output/UnivBinders.v", line 110, characters 0-50:
 The command has indeed failed with message:
-Cannot enforce v < u because u < gU < gV < v
+Cannot enforce v+1 <= u
 insec@{v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* v |=  *)

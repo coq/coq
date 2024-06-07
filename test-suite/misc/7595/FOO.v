@@ -21,12 +21,12 @@ Tactic Notation "destruct_decide" constr(dec) :=
 (** * Tactics *)
 Tactic Notation "case_option_guard" "as" ident(Hx) :=
   match goal with
-  | H : context C [@mguard option _ ?P ?dec] |- _ =>
-    change (@mguard option _ P dec) with (λ A (f : P → option A),
+  | H : context C [@mguard _ option_guard ?P ?dec] |- _ =>
+    change (@mguard _ option_guard P dec) with (λ A (f : P → option A),
       match @decide P dec with left H' => f H' | _ => None end) in *;
     destruct_decide (@decide P dec) as Hx
-  | |- context C [@mguard option _ ?P ?dec] =>
-    change (@mguard option _ P dec) with (λ A (f : P → option A),
+  | |- context C [@mguard _ option_guard ?P ?dec] =>
+    change (@mguard _ _ P dec) with (λ A (f : P → option A),
       match @decide P dec with left H' => f H' | _ => None end) in *;
     destruct_decide (@decide P dec) as Hx
   end.

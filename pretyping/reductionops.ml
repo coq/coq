@@ -830,11 +830,18 @@ let whd_state_gen flags env sigma =
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,fst (Stack.strip_app stack)))));
       if RedFlags.red_set flags (RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
-       match constant_value_in env (c, u') with
-       | body ->
+       match constant_arity_value_in env (c, u') with
+       | body, None ->
          begin
           let body = EConstr.of_constr body in
           whrec (body, stack)
+          end
+       | body, Some arity ->
+         begin
+          if arity <= Stack.args_size stack then
+            let body = EConstr.of_constr body in
+            whrec (body, stack)
+          else fold ()
           end
        | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
           let kargs = CPrimitives.kind p in
@@ -1670,12 +1677,14 @@ let infer_eq (univs, cstrs as cuniv) u u' =
     Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
   with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
+
 let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq_sort univs u u' then Result.Ok cuniv
-  else match UnivSubst.enforce_leq_alg_sort u u' univs with
-  | cstrs', univs ->
-    Result.Ok (univs, Univ.Constraints.union cstrs cstrs')
-  | exception UGraph.UniverseInconsistency err -> Result.Error (Some err)
+  else
+    try
+      let cstrs' = UnivSubst.enforce_leq_sort u u' Constraints.empty in
+      Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
+    with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
 let infer_cmp_universes _env pb s0 s1 univs =
   match pb with

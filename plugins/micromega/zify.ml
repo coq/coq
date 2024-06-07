@@ -630,7 +630,7 @@ module MakeTable (E : Elt) : S = struct
 
   let safe_ref evd c =
     try
-      fst (EConstr.destRef evd c)
+      fst (EConstr.destRef evd (Termops.eta_reduce_head evd c))
     with DestKO -> CErrors.user_err Pp.(str "Add Zify "++str E.name ++ str ": the term "++
                                           gl_pr_constr c ++ str " should be a global reference")
 

@@ -164,8 +164,8 @@ Module binders.
   Proof.
     exact Type.
   Qed.
-  Check hidden_strict_type@{_}.
-  Fail Check hidden_strict_type@{Set}.
+  Check hidden_strict_type@{_ _}.
+  Fail Check hidden_strict_type@{Set _}.
 
   Fail Definition morec@{i j|} (A : Type@{i}) : Type@{j} := A.
 
@@ -186,7 +186,7 @@ Module binders.
     exact Type@{i}.
   Qed.
 
-  Lemma barext@{i j|+} : Type@{j}.
+  Lemma barext@{i j|?} : Type@{j}.
   Proof.
     exact Type@{i}.
   Qed.
@@ -378,7 +378,7 @@ Module Anonymous.
 
   Definition defaultalg := (fun x : Type => x) (Type : Type).
   Definition usedefaultalg := defaultalg@{_ _ _}.
-  Check usedefaultalg@{_ _}.
+  Check usedefaultalg@{_}.
 
   Definition anonalg := (fun x : Type@{_} => x) (Type : Type).
   Check anonalg@{_ _}.
@@ -457,7 +457,7 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _ _}.
 End ObligationRegression.
 
 Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.

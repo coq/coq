@@ -343,6 +343,7 @@ module Constr =
     let ident = Entry.make "ident"
     let global = Entry.make "global"
     let universe_name = Entry.make "universe_name"
+    let universe = Entry.make "universe"
     let sort = Entry.make "sort"
     let sort_family = Entry.make "sort_family"
     let pattern = Entry.make "pattern"

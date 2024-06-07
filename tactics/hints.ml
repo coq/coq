@@ -1560,7 +1560,8 @@ let warn_non_reference_hint_using =
 let expand_constructor_hints env sigma lems =
   List.map_append (fun lem ->
     let evd, lem = lem env sigma in
-    let lem0 = drop_extra_implicit_args evd lem in
+    let lem0 = eta_reduce_head sigma lem in
+    let lem0 = drop_extra_implicit_args evd lem0 in
     match EConstr.kind evd lem0 with
     | Ind (ind,u) ->
         List.init (nconstructors env ind)

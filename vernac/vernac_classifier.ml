@@ -94,7 +94,7 @@ let classify_vernac e =
     | VernacExactProof _ -> VtQed (VtKeep VtKeepOpaque)
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacGlobalCheck _ | VernacCheckMayEval _ -> VtQuery
+    | VernacGlobalCheck _ | VernacCheckMayEval _ | VernacCheckConstraint _ -> VtQuery
     (* ProofStep *)
     | VernacProof _
     | VernacFocus _ | VernacUnfocus

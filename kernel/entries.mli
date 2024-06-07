@@ -71,6 +71,7 @@ type definition_entry = {
   (* List of section variables *)
   const_entry_secctx : Id.Set.t option;
   const_entry_type : types option;
+  const_entry_arity : int option;
   const_entry_universes : universes_entry;
   const_entry_inline_code : bool;
 }
@@ -85,6 +86,7 @@ type 'a opaque_entry = {
   (* List of section variables *)
   opaque_entry_secctx : Id.Set.t;
   opaque_entry_type        : types;
+  opaque_entry_arity : int option;
   opaque_entry_universes   : universes_entry;
 }
 

@@ -12,12 +12,10 @@ open Univ
 
 type t = {
   subst: Universe.t option Level.Map.t;
-  algs : Level.Set.t;
 }
 
 let empty = {
   subst = Level.Map.empty;
-  algs = Level.Set.empty;
 }
 
 let is_empty {subst} = Level.Map.is_empty subst
@@ -26,60 +24,52 @@ let domain {subst} = Level.Map.domain subst
 
 let mem l {subst} = Level.Map.mem l subst
 
+let remove l {subst} = {subst = Level.Map.remove l subst}
+
 let fold f {subst} acc =
   Level.Map.fold (fun l v acc -> f l ~is_defined:(Option.has_some v) acc)
     subst acc
 
-let is_algebraic l {algs} = Level.Set.mem l algs
-
-let make_nonalgebraic_variable {subst;algs} l =
-  { subst; algs = Level.Set.remove l algs }
-
-let make_all_undefined_nonalgebraic {subst;algs=_} =
-  { subst; algs = Level.Set.empty }
-
 let fix_undefined_variables us =
-  Level.Map.fold (fun u v ({subst; algs} as acc) ->
+  Level.Map.fold (fun u v ({subst} as acc) ->
       match v with
-      | None -> { subst = Level.Map.remove u subst; algs = Level.Set.remove u algs }
+      | None -> { subst = Level.Map.remove u subst }
       | Some _ -> acc)
     us.subst us
 
-let add l ~algebraic {subst; algs} =
+let add l {subst} =
   let subst = Level.Map.update l
       (function
         | None -> Some None
         | Some _ -> assert false)
       subst
   in
-  let algs = if algebraic then Level.Set.add l algs else algs in
-  { subst; algs }
+  { subst }
 
-let add_levels levels ~algebraic subst =
-  Level.Set.fold (fun l subst -> add l ~algebraic subst) levels subst
+let add_levels levels subst =
+  Level.Set.fold (fun l subst -> add l subst) levels subst
 
-let define l v {subst;algs} =
-  (* XXX update algs? *)
+let define l v {subst} =
   let subst =
     try Level.Map.modify l (fun _ old -> assert (Option.is_empty old); Some v) subst
     with Not_found -> assert false
   in
-  { subst; algs }
+  { subst }
 
 let constrain_variables diff us ctx =
   (* XXX update algs? *)
-  Level.Set.fold (fun l ((univs,cstrs),{subst;algs} as acc) ->
+  Level.Set.fold (fun l ((univs,cstrs),{subst } as acc) ->
       match Level.Map.find_opt l subst with
       | None | Some None -> acc
       | Some (Some u) -> match Universe.level u with
         | None -> acc
         | Some u ->
-          ((Level.Set.add l univs, Constraints.add (l, Eq, u) cstrs),
-           {subst = Level.Map.remove l subst; algs}))
+          ((Level.Set.add l univs, enforce_eq_level l u cstrs),
+           {subst = Level.Map.remove l subst}))
     diff
     (ctx,us)
 
-let biased_union {subst=lsubst;algs=lalgs} {subst=rsubst; algs=ralgs} =
+let biased_union {subst=lsubst} {subst=rsubst} =
   let subst =
     Level.Map.union (fun _k l r ->
         match l, r with
@@ -87,7 +77,7 @@ let biased_union {subst=lsubst;algs=lalgs} {subst=rsubst; algs=ralgs} =
         | None, None -> Some l
         | _, _ -> Some r) lsubst rsubst
   in
-  { subst; algs = Level.Set.union lalgs ralgs }
+  { subst }
 
 let normalize_univ_variable ~find =
   let rec aux cur =
@@ -113,7 +103,7 @@ let normalize ctx =
         | None -> None
         | Some v -> Some (normalize v)) ctx.subst
   in
-  {subst; algs = ctx.algs}
+  {subst}
 
 let normalize_univ_variables ctx =
   let ctx = normalize ctx in
@@ -127,14 +117,12 @@ let normalize_univ_variables ctx =
   let subst l = Level.Map.find_opt l subst in
   ctx, def, subst
 
-let pr prl {subst; algs} =
+let pr prl {subst} =
   let open Pp in
   let ppsubst = Level.Map.pr prl (function
       | None -> mt()
       | Some x -> str " := " ++ Universe.pr prl x)
       subst
   in
-  str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-  h (Level.Set.pr prl algs) ++ fnl() ++
   str"FLEXIBLE UNIVERSES:"++brk(0,1)++
   h ppsubst

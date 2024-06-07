@@ -15,11 +15,13 @@ myprod unit bool
 option : Type -> Type
 
 option is template universe polymorphic
+option has minimal arity 1
 Arguments option A%type_scope
 Expands to: Inductive Coq.Init.Datatypes.option
 option : Type@{option.u0} -> Type@{max(Set,option.u0)}
 
 option is template universe polymorphic on option.u0
+option has minimal arity 1
 Arguments option A%type_scope
 Expands to: Inductive Coq.Init.Datatypes.option
 File "./output/Inductive.v", line 27, characters 4-13:

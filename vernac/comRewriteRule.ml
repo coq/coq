@@ -92,7 +92,7 @@ let update_invtblu1 ~loc evd lvlold lvl (curvaru, tbl) =
     | Some k ->
         CErrors.user_err ?loc
           Pp.(str "Universe variable "
-            ++ Termops.pr_evd_level evd lvlold
+            ++ Termops.pr_evd_universe evd lvlold
             ++ str" is bound multiple times in the pattern (holes number "
             ++ int k ++ str" and " ++ int curvaru ++ str").")
 
@@ -120,7 +120,8 @@ let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u :
   let stateq, maskq = Array.fold_left_map (safe_quality_pattern_of_quality ~loc evd qsubst) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
-      let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
+      (* MS TODO Check correctness of Option.get *)
+      let lvlnew = Univ.Level.var_index @@ Option.get (Univ.Universe.level (Univ.subst_univs_level_universe usubst lvlold)) in
       Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
@@ -131,7 +132,8 @@ let universe_level_subst_var_index usubst u =
     | None -> None
     | Some lvlold ->
         let lvl = Univ.subst_univs_level_level usubst lvlold in
-        Option.map (fun lvl -> lvlold, lvl) @@ Univ.Level.var_index lvl
+        let optl = Option.cata Univ.Level.var_index None (Univ.Universe.level lvl) in
+        Option.map (fun lvl -> lvlold, lvl) optl
 
 let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =
   let open Sorts in
@@ -140,7 +142,7 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
       begin match universe_level_subst_var_index usubst u with
       | None -> state, PSType None
       | Some (lvlold, lvl) ->
-        (st, sq, update_invtblu1 ~loc evd lvlold lvl su), PSType (Some lvl)
+        (st, sq, update_invtblu1 ~loc evd (Univ.Universe.make lvlold) lvl su), PSType (Some lvl)
       end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
@@ -153,7 +155,7 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
       in
       let su, ba =
         match universe_level_subst_var_index usubst u with
-        | Some (lvlold, lvl) -> update_invtblu1 ~loc evd lvlold lvl su, Some lvl
+        | Some (lvlold, lvl) -> update_invtblu1 ~loc evd (Univ.Universe.make lvlold) lvl su, Some lvl
         | None -> su, None
       in
       (st, sq, su), PSQSort (bq, ba)

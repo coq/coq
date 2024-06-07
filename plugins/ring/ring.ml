@@ -487,6 +487,11 @@ let dest_ring env sigma th_spec =
         (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
+let dest_ring env sigma th_spec =
+  let x, r, zero, one, add, mul, sub, opp, req = dest_ring env sigma th_spec in
+  let eta = Termops.eta_reduce_head sigma in
+  x, eta r, eta zero, eta one, eta add, eta mul, Option.map eta sub, Option.map eta opp, eta req
+
 
 let reflect_coeff rkind =
   (* We build an ill-typed terms on purpose... *)

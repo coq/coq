@@ -409,7 +409,7 @@ let coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl =
 (* Utils *)
 
 let mkExistential ?(src=(Loc.tag Evar_kinds.InternalHole)) env sigma =
-  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible_alg in
+  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible in
   sigma, e
 
 let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =

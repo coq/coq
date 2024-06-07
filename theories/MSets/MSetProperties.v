@@ -723,9 +723,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
     forall s s' x, ~ In x s -> Add x s s' -> cardinal s' = S (cardinal s).
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  change S with ((fun _ => S) x).
-  apply fold_2; auto.
-  - split; congruence.
+  eapply (fold_2 (x := x) _ 0 (f := fun _ => S)); auto.
   - congruence.
   Qed.
 
@@ -899,8 +897,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   Proof.
   intros.
   do 2 rewrite cardinal_fold.
-  change S with ((fun _ =>S) x).
-  apply remove_fold_1 with (eqA:=@Logic.eq nat); auto with *.
+  apply remove_fold_1 with (x := x) (f := fun _ => S) (eqA:=@Logic.eq nat); auto with *.
   congruence.
   Qed.
 

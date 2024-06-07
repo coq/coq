@@ -44,14 +44,14 @@ let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name 
     if coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
         r ~local:true ~reversible:false in
-  (r, UVars.Instance.empty)
+  (r, UVars.LevelInstance.empty)
 
 let declare_variable ~coe ~kind ~univs ~impargs ~impl ~name typ =
   declare_local ~coe ~try_assum_as_instance:true ~kind:(Decls.IsAssumption kind) ~univs ~impargs ~impl ~name None typ
 
 let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
-  | UState.Monomorphic_entry _ -> UVars.Instance.empty
+  | UState.Monomorphic_entry _ -> UVars.LevelInstance.empty
 
 (** Declares a global axiom/parameter, possibly declaring it:
     - as a coercion
@@ -119,7 +119,8 @@ let declare_context ~try_global_assum_as_instance ~scope ~univs ?user_warns ~inl
     let refu = match scope with
       | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ~impargs ~impl ~name b t
       | Locality.Global local -> declare_global ~coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name b t in
-    (name, Constr.mkRef refu) :: subst
+    let ref, u = refu in
+    (name, Constr.mkRef (ref, UVars.Instance.of_level_instance u)) :: subst
   in
   let _ = List.fold_left_i fn 0 [] ctx in
   ()

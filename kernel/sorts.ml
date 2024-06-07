@@ -336,18 +336,18 @@ let levels s = match s with
 let subst_fn (fq,fu) = function
   | SProp | Prop | Set as s -> s
   | Type v as s ->
-    let v' = fu v in
+    let v' = Universe.subst_fn fu v in
     if v' == v then s else sort_of_univ v'
   | QSort (q, v) as s ->
     let open Quality in
     match fq q with
     | QVar q' ->
-      let v' = fu v in
+      let v' = Universe.subst_fn fu v in
       if q' == q && v' == v then s
       else qsort q' v'
     | QConstant QSProp -> sprop
     | QConstant QProp -> prop
-    | QConstant QType -> sort_of_univ (fu v)
+    | QConstant QType -> sort_of_univ (Universe.subst_fn fu v)
 
 let family = function
   | SProp -> InSProp
@@ -480,22 +480,17 @@ let pr_sort_family = function
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
-let extract_level u =
-  match Universe.level u with
-  | Some l -> l
-  | None -> CErrors.anomaly Pp.(str "Tried to extract level of an algebraic universe")
-
-let extract_sort_level = function
+let extract_univ = function
   | Type u
-  | QSort (_, u) -> extract_level u
-  | Prop | SProp | Set -> Univ.Level.set
+  | QSort (_, u) -> u
+  | Prop | SProp | Set -> Univ.Universe.type0
 
 let pattern_match ps s qusubst =
   match ps, s with
   | PSProp, Prop -> Some qusubst
   | PSSProp, SProp -> Some qusubst
   | PSSet, Set -> Some qusubst
-  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Level.set qusubst)
-  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
-  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
+  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Universe.type0 qusubst)
+  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio u qusubst)
+  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_univ s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None

@@ -35,5 +35,6 @@ val extra_union : extra -> extra -> extra
 
 val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
   UnivFlex.t (* The defined and undefined variables *) ->
+  ?binders:UnivNames.universe_binders ->
   extra ->
   UnivFlex.t in_universe_context_set

@@ -473,6 +473,7 @@ type nonrec synpure_vernac_expr =
   | VernacMemOption of Goptions.option_name * Goptions.table_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of Genredexpr.raw_red_expr option * Goal_select.t option * constr_expr
+  | VernacCheckConstraint of univ_constraint_expr list * Goal_select.t option
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable

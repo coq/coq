@@ -57,11 +57,13 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
+    ; arity : int option
+    (** User given arity of the definition *)
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    { name; typ; args; impargs }
+  let make ~name ~typ ?(args=[]) ?(impargs=[]) ?arity () =
+    { name; typ; args; impargs; arity }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -105,6 +107,7 @@ type 'a pproof_entry = {
   (* State id on which the completion of type checking is reported *)
   proof_entry_feedback : Stateid.t option;
   proof_entry_type        : Constr.types option;
+  proof_entry_arity       : int option;
   proof_entry_universes   : UState.named_universes_entry;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
@@ -135,11 +138,12 @@ let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
+let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types ?arity
     ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
     proof_entry_type = types;
+    proof_entry_arity = arity;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
@@ -275,20 +279,22 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
+let pure_definition_entry ?(opaque=false) ?(inline=false) ?types ?arity
     ?(univs=default_named_univ_entry) body =
   { proof_entry_body = ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
     proof_entry_type = types;
+    proof_entry_arity = arity;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
     proof_entry_inline_code = inline}
 
-let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
+let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types ?arity body =
   { proof_entry_body = body
   ; proof_entry_secctx = using
   ; proof_entry_type = types
+  ; proof_entry_arity = arity
   ; proof_entry_universes = univs
   ; proof_entry_opaque = opaque
   ; proof_entry_feedback = feedback_id
@@ -314,6 +320,7 @@ let cast_proof_entry e =
   { Entries.const_entry_body = body;
     const_entry_secctx = e.proof_entry_secctx;
     const_entry_type = e.proof_entry_type;
+    const_entry_arity = e.proof_entry_arity;
     const_entry_universes = univ_entry;
     const_entry_inline_code = e.proof_entry_inline_code;
   },
@@ -369,6 +376,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   { Entries.opaque_entry_body = body;
     opaque_entry_secctx = secctx;
     opaque_entry_type = typ;
+    opaque_entry_arity = e.proof_entry_arity;
     opaque_entry_universes = univ_entry;
   },
   ctx
@@ -541,7 +549,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
-            let qs, us = UVars.Instance.to_array u in
+            let qs, us = UVars.LevelInstance.to_array u in
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
@@ -560,6 +568,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_feedback = de.proof_entry_feedback;
             proof_entry_type = de.proof_entry_type;
+            proof_entry_arity = de.proof_entry_arity;
             proof_entry_universes = UState.univ_entry ~poly UState.empty;
             proof_entry_opaque = true;
             proof_entry_inline_code = de.proof_entry_inline_code;
@@ -832,7 +841,7 @@ let check_evars_are_solved env sigma t =
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
-let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
+let prepare_definition ~info ~opaque ?using ~name ~body ~typ ?arity sigma =
   let { Info.poly; udecl; inline; _ } = info in
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
@@ -846,13 +855,13 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
       name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let entry = definition_entry ~opaque ?using ~inline ?types ~univs ?arity body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
-  let { CInfo.name; impargs; typ; _ } = cinfo in
-  let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma in
+  let { CInfo.name; impargs; typ; arity; _ } = cinfo in
+  let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ ?arity sigma in
   let { Info.scope; clearbody; kind; hook; typing_flags; user_warns; ntns; _ } = info in
   let gref = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
   List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) (Global.env ())) ntns;
@@ -960,14 +969,13 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
     ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
-    ; prg_uctx
+    ; prg_uctx = uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_possible_guard = possible_guard
@@ -1091,7 +1099,7 @@ let update_global_obligation_uctx prg uctx =
   ProgramDecl.Internal.set_uctx ~uctx prg
 
 let instance_of_univs = function
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
 
 let declare_obligation prg obl ~uctx ~types ~body =
@@ -2034,7 +2042,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
        should be enforced statically. *)
     let (_, body_uctx), _ = const.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (UVars.UContext.instance ctx)
+    EConstr.EInstance.make (UVars.Instance.of_level_instance (UVars.UContext.instance ctx))
   in
   let args = List.map EConstr.of_constr args in
   let lem = EConstr.mkConstU (cst, inst) in

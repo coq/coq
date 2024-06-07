@@ -33,7 +33,7 @@ if [ "$COQ_CI_COLOR" = 1 ] && command -v script > /dev/null; then
     if [ "$CI" ]; then
       export TERM=xterm-color
     fi
-    if [ "$OSTYPE" = darwin ]; then
+    if [ "${OSTYPE:0:6}" = darwin ]; then
         script -q /dev/null bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
     else
         script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
@@ -47,7 +47,7 @@ fi
 code=$?
 echo 'Aggregating timing log...'
 echo
-python ./tools/make-one-time-file.py --real "$CI_NAME.log"
+python3 ./tools/make-one-time-file.py --real "$CI_NAME.log"
 if [ "$CI" ] && ! [ $code = 0 ]; then
   set +x
 
