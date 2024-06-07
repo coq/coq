@@ -200,11 +200,3 @@ with MutualI2' (A:Type) := C2' (p2 : MutualI1' A).
 Print MutualI2'.
 
 End MutualTypes.
-
-Module Inconsistency.
-
-Set Universe Polymorphism.
-Definition g@{a b} := Type@{a} : Type@{b}.
-Fail Definition h@{a} := g@{a a}.
-
-End Inconsistency.

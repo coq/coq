@@ -251,6 +251,3 @@ Arguments MutualI1' A%type_scope
 Arguments C1' A%type_scope p1
 Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
-File "./output/UnivBinders.v", line 208, characters 0-33:
-The command has indeed failed with message:
-Universe inconsistency. Cannot enforce a < a because a = a.

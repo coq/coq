@@ -39,8 +39,7 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
-type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
 
@@ -103,7 +102,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
     let (u, c, v) = cst in
     let e = lazy (G.get_explanation cst g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    raise (UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))))
+    raise (UniverseInconsistency (c, mk u, mk v, Some (Path e)))
   else g
 | Some g -> g
 
@@ -153,7 +152,7 @@ let enforce_leq_alg u v g =
   | Inr ((u, c, v), g) ->
     let e = lazy (G.get_explanation (u, c, v) g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    let e = UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))) in
+    let e = UniverseInconsistency (c, mk u, mk v, Some (Path e)) in
     raise e
 
 module Bound =
@@ -276,11 +275,7 @@ let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
 
 open Pp
 
-let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) : univ_inconsistency) =
-  let prq, prl = match printers with
-    | Some (prq, prl) -> prq, prl
-    | None -> default_prq, default_prl
-  in
+let explain_universe_inconsistency prq prl (o,u,v,p : univ_inconsistency) =
   let pr_uni u = match u with
   | Sorts.Set -> str "Set"
   | Sorts.Prop -> str "Prop"

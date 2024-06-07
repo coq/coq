@@ -32,7 +32,7 @@ open Quality
 
 let sort_inconsistency ?explain cst l r =
   let explain = Option.map (fun p -> UGraph.Other p) explain in
-  raise (UGraph.UniverseInconsistency (None, (cst, l, r, explain)))
+  raise (UGraph.UniverseInconsistency (cst, l, r, explain))
 
 module QState : sig
   type t
@@ -268,12 +268,6 @@ let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
 
 let pr_uctx_qvar uctx l = pr_uctx_qvar_names uctx.names l
 
-let merge_constraints uctx cstrs g =
-  try UGraph.merge_constraints cstrs g
-  with UGraph.UniverseInconsistency (_, i) ->
-    let printers = (pr_uctx_qvar uctx, pr_uctx_level uctx) in
-    raise (UGraph.UniverseInconsistency (Some printers, i))
-
 let uname_union s t =
   if s == t then s
   else
@@ -320,7 +314,7 @@ let union uctx uctx' =
           (if local == uctx.local then uctx.universes
            else
              let cstrsr = ContextSet.constraints uctx'.local in
-             merge_constraints uctx cstrsr (declarenew uctx.universes));
+             UGraph.merge_constraints cstrsr (declarenew uctx.universes));
         minim_extra = extra}
 
 let context_set uctx = uctx.local
@@ -413,7 +407,7 @@ let { Goptions.get = drop_weak_constraints } =
 
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
-  raise (UGraph.UniverseInconsistency (None, (cst, mk l, mk r, None)))
+  raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
 
 let nf_universe uctx u =
   UnivSubst.(subst_univs_universe (UnivFlex.normalize_univ_variable uctx.univ_variables)) u
@@ -697,7 +691,7 @@ let add_universe_constraints uctx cstrs =
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
-    universes = merge_constraints uctx local' uctx.universes;
+    universes = UGraph.merge_constraints local' uctx.universes;
     sort_variables = sorts;
     minim_extra = extra; }
 
@@ -863,7 +857,7 @@ let check_universe_context_set ~prefix levels names =
 
 let check_implication uctx cstrs cstrs' =
   let gr = initial_graph uctx in
-  let grext = merge_constraints uctx cstrs gr in
+  let grext = UGraph.merge_constraints cstrs gr in
   let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
   if Constraints.is_empty cstrs' then ()
   else CErrors.user_err
@@ -985,7 +979,7 @@ let merge ?loc ~sideff rigid uctx uctx' =
   in
   let initial = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
+  let universes = UGraph.merge_constraints (ContextSet.constraints uctx') univs in
   let uctx =
     match rigid with
     | UnivRigid -> uctx
@@ -1055,7 +1049,7 @@ let merge_seff uctx uctx' =
   in
   let initial_universes = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
+  let universes = UGraph.merge_constraints (ContextSet.constraints uctx') univs in
   { uctx with universes; initial_universes }
 
 let emit_side_effects eff u =
