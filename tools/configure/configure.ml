@@ -22,7 +22,7 @@ open CmdArgs.Prefs
 
 let (/) = Filename.concat
 
-let coq_version = "8.19.1"
+let coq_version = "8.19.2"
 let vo_magic = 81999
 let is_a_released_version = true
 
