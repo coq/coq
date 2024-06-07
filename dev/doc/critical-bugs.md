@@ -508,7 +508,7 @@ fix.
 
 #### broken long multiplication primitive integer emulation layer on 32 bits
 
-- component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+- component: all 3 kernel conversion machines (lazy, VM, native)
 - introduced: [e43b176](https://github.com/coq/coq/commit/e43b1768d0f8399f426b92f4dfe31955daceb1a4)
 - impacted released versions: 8.10.0, 8.10.1, 8.10.2
 - impacted development branches: 8.11
