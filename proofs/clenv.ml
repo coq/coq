@@ -675,7 +675,7 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
     goalacc, ty, sigma, f
   | _ -> mk_refgoals env sigma goalacc None f
   in
-  let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
+  let (acc'', conclty', sigma, args) = mk_arggoals env sigma acc' hdty l in
   let ans = EConstr.applist (applicand, args) in
   (acc'', conclty', sigma, ans)
 | RfProj (p, r, c) ->
@@ -685,16 +685,26 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
   (acc',ty,sigma,c)
 
 and mk_arggoals env sigma goalacc funty allargs =
+  let open CClosure in
+  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
+  let tab = create_tab () in
+  let inject c = CClosure.inject (EConstr.Unsafe.to_constr c) in
   let foldmap (goalacc, funty, sigma) harg =
-    let t = whd_all env sigma funty in
-    match EConstr.kind sigma t with
-    | Prod (_, c1, b) ->
+    let t, _ = whd_stack infos tab funty [] in
+    match fterm_of t with
+    | FProd (_, c1, b, e) ->
+      let c1 = EConstr.of_constr (term_of_fconstr c1) in
       let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (Some c1) harg in
-      (acc, EConstr.Vars.subst1 arg b, sigma), arg
+      let b = mk_clos (CClosure.usubs_cons (inject arg) e) b in
+      (acc, b, sigma), arg
     | _ ->
+      let t = EConstr.of_constr (term_of_fconstr funty) in
       raise (RefinerError (env,sigma,CannotApply (t, as_constr harg)))
   in
-  List.fold_left_map foldmap (goalacc, funty, sigma) allargs
+  let funty = inject funty in
+  let (goalacc, ty, sigma), args = List.fold_left_map foldmap (goalacc, funty, sigma) allargs in
+  let ty = EConstr.of_constr (term_of_fconstr ty) in
+  (goalacc, ty, sigma, args)
 
 let treat_case env sigma ci lbrty accu =
   let open EConstr in
