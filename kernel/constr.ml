@@ -1447,7 +1447,7 @@ and hash_list_array l =
      as canonical, and hence hash-consed to themselves *)
 let () = ignore (hash_term_array rels)
 
-let hcons t = fst (sh_rec t)
+let hcons t = NewProfile.profile "Constr.hcons" (fun () -> fst (sh_rec t)) ()
 
 (* let hcons_types = hcons_constr *)
 
