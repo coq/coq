@@ -1491,6 +1491,38 @@ let default_prefix_level ntn_prefix =
   function Some n -> Some n | None ->
     Option.map (fun (prefix, level, _) -> with_prefix prefix level) ntn_prefix
 
+let default_prefix_level_subentries ntn ntn_prefix symbols etyps =
+  let with_prefix prefix from_level levels =
+    let default_entry etyps (x, l) =
+      let l' = match l with
+        | LevelLt n when Int.equal n from_level -> NextLevel
+        | LevelLe n | LevelLt n -> NumLevel n
+        | LevelSome -> DefaultLevel in
+      let e = List.assoc_opt x etyps
+        |> Option.default (ETConstr (fst ntn, None, DefaultLevel)) in
+      match l', e with
+      | (NumLevel _ | NextLevel), ETConstr (n, b, DefaultLevel) ->
+         Flags.if_verbose Feedback.msg_info
+           (strbrk "Setting " ++ Id.print x ++ str " "
+            ++ pr_arg_level from_level (l, e) ++ spc ()
+            ++ str "to match previous notation with longest common prefix:"
+            ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+         (x, ETConstr (n, b, l')) :: List.remove_assoc x etyps
+      | _ -> etyps in
+    let levels =
+      let rec aux levs symbs = match levs, symbs with
+        | [], _ | _, [] | _, SProdList _ :: _ -> []
+        (* not handling recursive notations *)
+        | _, (Terminal _ | Break _) :: symbs -> aux levs symbs
+        | l :: levs, NonTerminal x :: symbs -> (x, l) :: aux levs symbs in
+      match levels, symbols with
+      (* don't mess up with level of left border terminal *)
+      | _ :: levs, NonTerminal _ :: symbs | levs, symbs -> aux levs symbs in
+    List.fold_left default_entry etyps levels in
+  match ntn_prefix with
+  | None -> etyps
+  | Some (prefix, from_level, levels) -> with_prefix prefix from_level levels
+
 let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let open SynData in
   let open NotationMods in
@@ -1509,7 +1541,8 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let ntn_for_grammar = if need_squash then make_notation_key main_data.entry symbols_for_grammar else ntn in
   if main_data.entry = InConstrEntry && not main_data.onlyprinting then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
-  let etyps = join_auxiliary_recursive_types recvars mods.etyps in
+  let etyps = default_prefix_level_subentries ntn ntn_prefix symbols mods.etyps in
+  let etyps = join_auxiliary_recursive_types recvars etyps in
   let sy_typs, prec =
     find_subentry_types main_data.entry n assoc etyps symbols in
   let sy_typs_for_grammar, prec_for_grammar =

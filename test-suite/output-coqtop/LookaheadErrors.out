@@ -6,7 +6,9 @@ Coq < Toplevel input, characters 9-11:
 >          ^^
 Error: Syntax error: '##' or [term] expected after '##' (in [term]).
 
-Coq < Coq < 
+Coq < Coq < Setting x constr at next level
+to match previous notation with longest common prefix: "## _".
+
 Coq < 
 Coq < Toplevel input, characters 9-11:
 > Check ## [].
