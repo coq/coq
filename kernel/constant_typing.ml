@@ -213,9 +213,9 @@ let infer_parameter ~sec_univs env entry =
   }
 
 let infer_definition ~sec_univs env entry =
-  let env, usubst, _, univs = process_universes env entry.const_entry_universes in
-  let j = Typeops.infer env entry.const_entry_body in
-  let typ = match entry.const_entry_type with
+  let env, usubst, _, univs = process_universes env entry.definition_entry_universes in
+  let j = Typeops.infer env entry.definition_entry_body in
+  let typ = match entry.definition_entry_type with
     | None ->
       Vars.subst_univs_level_constr usubst j.uj_type
     | Some t ->
@@ -225,7 +225,7 @@ let infer_definition ~sec_univs env entry =
   in
   let body = Vars.subst_univs_level_constr usubst j.uj_val in
   let def = Def body in
-  let hyps = used_section_variables env entry.const_entry_secctx (Some body) typ in
+  let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
   {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
@@ -234,15 +234,9 @@ let infer_definition ~sec_univs env entry =
     const_body_code = ();
     const_universes = univs;
     const_relevance = Relevanceops.relevance_of_term env body;
-    const_inline_code = entry.const_entry_inline_code;
+    const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
   }
-
-let infer_constant ~sec_univs env = function
-  | PrimitiveEntry entry -> infer_primitive env entry
-  | SymbolEntry entry -> infer_symbol env entry
-  | ParameterEntry entry -> infer_parameter ~sec_univs env entry
-  | DefinitionEntry entry -> infer_definition ~sec_univs env entry
 
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
 let infer_opaque ~sec_univs env entry =

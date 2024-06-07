@@ -311,11 +311,11 @@ let cast_proof_entry e =
         CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.");
   in
   let univ_entry, ctx = extract_monomorphic univ_entry in
-  { Entries.const_entry_body = body;
-    const_entry_secctx = e.proof_entry_secctx;
-    const_entry_type = e.proof_entry_type;
-    const_entry_universes = univ_entry;
-    const_entry_inline_code = e.proof_entry_inline_code;
+  { Entries.definition_entry_body = body;
+    definition_entry_secctx = e.proof_entry_secctx;
+    definition_entry_type = e.proof_entry_type;
+    definition_entry_universes = univ_entry;
+    definition_entry_inline_code = e.proof_entry_inline_code;
   },
   ctx
 
@@ -400,8 +400,7 @@ let declare_constant_core ~name ~typing_flags cd =
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
         let () = Global.push_context_set ~strict:true ctx in
-        let cd = Entries.DefinitionEntry e in
-        ConstantEntry cd, false, ubinders, None
+        Entries.DefinitionEntry e, false, ubinders, None
       else
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
@@ -410,7 +409,7 @@ let declare_constant_core ~name ~typing_flags cd =
         let cd, ctx = cast_opaque_proof_entry EffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ~strict:true ctx in
-        OpaqueEntry cd, false, ubinders, Some (body, feedback_id)
+        Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
@@ -421,7 +420,7 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.parameter_entry_universes = univ_entry;
         Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
       } in
-      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), ubinders, None
+      Entries.ParameterEntry e, not (Lib.is_modtype_strict()), ubinders, None
     | PrimitiveEntry e ->
       let typ, univ_entry, ctx = match e.prim_entry_type with
       | None ->
@@ -436,7 +435,7 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.prim_entry_content = e.prim_entry_content;
       } in
       let ubinders = make_ubinders ctx univ_entry in
-      ConstantEntry (Entries.PrimitiveEntry e), false, ubinders, None
+      Entries.PrimitiveEntry e, false, ubinders, None
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
       let () = Global.push_context_set ~strict:true ctx in
@@ -446,7 +445,7 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.symb_entry_universes = univ_entry;
       } in
       let ubinders = make_ubinders ctx entry_univs in
-      ConstantEntry (Entries.SymbolEntry e), false, ubinders, None
+      Entries.SymbolEntry e, false, ubinders, None
   in
   let kn = Global.add_constant ?typing_flags name decl in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
