@@ -64,20 +64,11 @@ end
 
 module System = struct
 let protect f x =
-  let synterp_st = Synterp.freeze () in
-  let interp_st = Interp_system.freeze () in
-  try
-    let a = f x in
-    Synterp.unfreeze synterp_st;
-    Interp_system.unfreeze interp_st;
-    a
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    begin
-      Synterp.unfreeze synterp_st;
-      Interp_system.unfreeze interp_st;
-      Exninfo.iraise reraise
-    end
+  let freeze () = let s = Synterp.freeze () in let i = Interp_system.freeze () in s, i in
+  let unfreeze (s,i) = Synterp.unfreeze s; Interp_system.unfreeze i in
+  let open Memprof_coq.Resource_bind in
+  let& () = Util.protect_state ~freeze ~unfreeze in
+  f x
 end
 
 module LemmaStack = struct

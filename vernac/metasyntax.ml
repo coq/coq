@@ -1666,12 +1666,10 @@ let open_close_scope local ~to_open sc =
 (**********************************************************************)
 
 let with_lib_stk_protection f x =
-  let fs = Lib.Interp.freeze () in
-  try let a = f x in Lib.Interp.unfreeze fs; a
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    let () = Lib.Interp.unfreeze fs in
-    Exninfo.iraise reraise
+  let open Memprof_coq.Resource_bind in
+  let freeze, unfreeze = Lib.Interp.(freeze, unfreeze) in
+  let& () = Util.protect_state ~freeze ~unfreeze in
+  f x
 
 let with_syntax_protection f x =
   with_lib_stk_protection

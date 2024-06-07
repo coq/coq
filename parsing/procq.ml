@@ -540,9 +540,11 @@ let parser_summary_tag =
       Summary.init_function = Summary.nop }
 
 let with_grammar_rule_protection f x =
-  let fs = freeze () in
-  try let a = f x in unfreeze fs; a
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    let () = unfreeze fs in
-    Exninfo.iraise reraise
+  let open Memprof_coq.Resource_bind in
+  let& () = Util.protect_state ~freeze ~unfreeze in
+  f x
+
+(* Usually we don't need to protect unfreeze, as for references doing
+   unfreeze again will restore them to a coherent state, however this
+   is not the case for Procq *)
+let unfreeze = Util.atomify unfreeze

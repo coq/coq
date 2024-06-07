@@ -356,6 +356,12 @@ let unfreeze_ml_modules x =
        let name = PluginSpec.of_package name in
        trigger_ml_object ~verbose:false ~cache:false ~reinit:false name) x
 
+(* Beware of the order to avoid double-locking *)
+let unfreeze_ml_modules = Util.atomify unfreeze_ml_modules
+
+let trigger_ml_object  ~verbose ~cache ~reinit =
+  Util.atomify (trigger_ml_object ~verbose ~cache ~reinit)
+
 let () =
   Summary.declare_ml_modules_summary
     { stage = Summary.Stage.Synterp
