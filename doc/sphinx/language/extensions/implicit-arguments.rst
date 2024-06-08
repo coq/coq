@@ -444,6 +444,7 @@ but succeeds in
 
    Check Prop = nat.
 
+.. _deactivation-of-implicit-arguments:
 
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
