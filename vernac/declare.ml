@@ -192,9 +192,9 @@ let definition_entry_core ?using ?(inline=false) ?types
 let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs body =
   definition_entry_core ?using ?inline ?types ?univs body
 
-let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
+let definition_entry ?(opaque=false) ?(eff=Evd.empty_side_effects) ?using ?inline ?types ?univs body =
   let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent in
-  definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, Evd.empty_side_effects); opaque })
+  definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, eff); opaque })
 
 let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
   definition_entry_core ?using ?types ~univs (DeferredOpaque { body; feedback_id })
@@ -584,6 +584,11 @@ let inline_private_constants ~uctx env (body, eff) =
   let body, ctx = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
   let uctx = UState.merge ~sideff:true Evd.univ_rigid uctx ctx in
   body, uctx
+
+let merge_private_constant_universes ~uctx env ((body, ctx), eff) =
+  (* Overkill use of inline_private_constants to get just the universes *)
+  let _, ctx = Safe_typing.inline_private_constants env ((body, ctx), eff.Evd.seff_private) in
+  (body, UState.merge ~sideff:true Evd.univ_rigid uctx ctx), eff
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
@@ -1131,7 +1136,7 @@ let update_global_obligation_uctx prg uctx =
       UState.Internal.reboot (Global.env ()) uctx in
   ProgramDecl.Internal.set_uctx ~uctx prg
 
-let declare_obligation prg obl ~uctx ~types ~body =
+let declare_obligation prg obl ~uctx ~types ~body ~eff =
   let body = prg.prg_reduce body in
   let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
@@ -1149,7 +1154,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let uctx' = current_obligation_uctx prg uctx (universes_of_decl body types) in
     let univs = UState.univ_entry ~poly uctx' in
     let inst = instance_of_univs univs in
-    let ce = definition_entry ?types:ty ~opaque ~univs body in
+    let ce = definition_entry ?types:ty ~opaque ~univs body ~eff in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       declare_constant ~name:obl.obl_name
@@ -1467,7 +1472,12 @@ let do_check_final ~pm = function
 let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final} =
   let env = Global.env () in
   let ty = entry.proof_entry_type in
-  let body, uctx = inline_private_constants ~uctx env (ProofEntry.get_entry_body entry) in
+  let (body, uctx), eff =
+    if ProofEntry.get_opacity entry then
+      inline_private_constants ~uctx env (ProofEntry.get_entry_body entry), Evd.empty_side_effects
+    else
+      merge_private_constant_universes ~uctx env (ProofEntry.get_entry_body entry)
+  in
   let sigma = Evd.from_ctx uctx in
   Inductiveops.control_only_guard (Global.env ()) sigma
     (EConstr.of_constr body);
@@ -1484,7 +1494,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
     | (_, status), false -> status
   in
   let obl = {obl with obl_status = (false, status)} in
-  let prg, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
+  let prg, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx ~eff in
   let pm = update_program_decl_on_defined ~pm prg obls num obl rem ~auto in
   let () = do_check_final ~pm check_final in
   pm, cst
@@ -2018,7 +2028,7 @@ let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EC
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term, or a non transparent one.")
 
-let build_by_tactic env ~uctx ~poly ~typ tac =
+let build_by_tactic env ~uctx ~poly ~inline ~typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = Environ.(val_of_named_context (named_context env)) in
   let sigma = Evd.from_ctx uctx in
@@ -2029,8 +2039,13 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
      cf #13271 and discussion in #18874
      (but due to #13324 we still want to inline them) *)
   let body, effs = ce.proof_entry_body in
-  let body, _uctx = inline_private_constants ~uctx env ((body, Univ.ContextSet.empty), effs) in
-  body, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
+  let (body, _uctx), eff =
+    if inline then
+      inline_private_constants ~uctx env ((body, Univ.ContextSet.empty), effs), Evd.empty_side_effects
+    else
+      merge_private_constant_universes ~uctx env ((body, Univ.ContextSet.empty), effs)
+  in
+  body, ce.proof_entry_type, eff, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
   let (const, safe, sigma') =
@@ -2355,8 +2370,6 @@ end (* Proof module *)
 let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
 let _ = Abstract.declare_abstract := Proof.declare_abstract
 
-let build_by_tactic = Proof.build_by_tactic
-
 (* This module could be merged with Obl, and placed before [Proof],
    however there is a single dependency on [Proof.start] for the interactive case *)
 module Obls = struct
@@ -2446,10 +2459,11 @@ let solve_by_tac prg obls i tac =
   (* the status of [build_by_tactic] is dropped. *)
   try
     let env = Global.env () in
-    let body, types, _univs, _, uctx =
-      build_by_tactic env ~uctx ~poly ~typ:(EConstr.of_constr obl.obl_type) tac in
+    let body, types, eff, _univs, _, uctx =
+      let inline = match obl.obl_status with false, Define true -> true | _ -> false in
+      Proof.build_by_tactic env ~uctx ~poly ~inline ~typ:(EConstr.of_constr obl.obl_type) tac in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
-    Some (body, types, uctx)
+    Some (body, eff, types, uctx)
   with
   | Tacticals.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in
@@ -2467,9 +2481,9 @@ let solve_by_tac prg obls i tac =
 let solve_and_declare_by_tac prg obls i tac =
   match solve_by_tac prg obls i tac with
   | None -> None
-  | Some (t, ty, uctx) ->
+  | Some (t, eff, ty, uctx) ->
     let obl = obls.(i) in
-    let prg, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
+    let prg, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx ~eff in
     obls.(i) <- obl';
     Some prg
 
@@ -2772,3 +2786,7 @@ let declare_constant ?local ~name ~kind ?typing_flags =
 
 let declare_entry ~name ?scope ~kind ?user_warns =
   declare_entry ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~user_warns
+
+let build_by_tactic env ~uctx ~poly ~typ tac =
+  let body, types, _eff, univs, status, uctx = Proof.build_by_tactic env ~uctx ~poly ~inline:true ~typ tac in
+  body, types, univs, status, uctx

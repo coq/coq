@@ -344,6 +344,7 @@ type symbol_entry
 
 val definition_entry
   :  ?opaque:bool
+  -> ?eff:Evd.side_effects
   -> ?using:Names.Id.Set.t
   -> ?inline:bool
   -> ?types:Constr.types

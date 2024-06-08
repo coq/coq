@@ -24,3 +24,35 @@ Defined.
 
 End S.
 
+(* Check visibility *)
+
+Module A.
+Definition a : nat.
+Proof. abstract (exact 0) using afoo.
+Defined.
+Print afoo. (* afoo = 0 *)
+End A.
+
+Require Import Program.
+
+Module B.
+Program Definition b : nat := _.
+Next Obligation. abstract (exact 1) using bfoo.
+Defined.
+Print bfoo. (* bfoo = 1 *)
+End B.
+
+Require Import Program.
+
+Module C.
+#[local] Obligation Tactic := try abstract (exact 2) using cfoo.
+Program Definition c : nat * bool * bool := (_, _, _).
+Next Obligation. abstract (exact true) using dfoo. Defined.
+Next Obligation. abstract (exact true) using efoo. Qed.
+Print cfoo. (* *** [ cfoo : nat ] *)
+Print dfoo. (* Check that dfoo exists (dcfoo = true) *)
+Fail Check eq_refl : dfoo = true. (* Check that dfoo is opaque *)
+Check eq_refl : c_obligation_1 = cfoo. (* Check that dfoo is not inlined *)
+Check eq_refl : c_obligation_2 = dfoo. (* Check that dfoo is not inlined *)
+Fail Print efoo. (* opaque obligation, efoo not in environment *)
+End C.
