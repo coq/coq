@@ -1456,6 +1456,21 @@ let () = ignore (hash_term_array rels)
 
 let hcons t = NewProfile.profile "Constr.hcons" (fun () -> fst (sh_rec t)) ()
 
+let dbg = CDebug.create ~name:"hcons" ()
+
+let hcons t =
+  let t = hcons t in
+  dbg Pp.(fun () ->
+      let open Hashset in
+      let stats = HashsetTerm.stats term_table in
+      v 0 (
+        str "num_bindings = " ++ int stats.num_bindings ++ spc() ++
+        str "num_buckets = " ++ int stats.num_buckets ++ spc() ++
+        str "max_bucket_length = " ++ int stats.max_bucket_length
+      )
+    );
+  t
+
 (* let hcons_types = hcons_constr *)
 
 type rel_declaration = (constr, types, Sorts.relevance) Context.Rel.Declaration.pt
