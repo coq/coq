@@ -327,7 +327,7 @@ let make_table_widget ?sort cd cb =
 let create_errpage (script : Wg_ScriptView.script_view) : errpage =
   let table, access =
     make_table_widget ~sort:(0, `ASCENDING)
-      [`Int,"Line",true; `String,"Error message",true]
+      [`Int,"Line",true; `String,"Error/Warning",true]
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let lno = store#get ~row ~column:(find_int_col "Line" columns) in
@@ -353,7 +353,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         List.iter (fun (lno, msg) -> access (fun columns store ->
           let line = store#append () in
           store#set ~row:line ~column:(find_int_col "Line" columns) lno;
-          store#set ~row:line ~column:(find_string_col "Error message" columns) msg))
+          store#set ~row:line ~column:(find_string_col "Error/Warning" columns) msg))
           errs
       end
     method on_update ~callback:cb = callback := cb
