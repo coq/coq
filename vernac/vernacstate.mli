@@ -41,16 +41,12 @@ end
 
 module Synterp : sig
 
-  type t =
-    { parsing : Parser.t
-    (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
-    ; system : System.Synterp.t
-    (** system state needed for the synterp phase *)
-    }
+  type t = System.Synterp.t
 
   val init : unit -> t
   val freeze : unit -> t
   val unfreeze : t -> unit
+  val parsing : t -> Parser.t
 
 end
 

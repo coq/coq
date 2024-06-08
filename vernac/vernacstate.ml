@@ -35,6 +35,11 @@ module System = struct
       Lib.Synterp.unfreeze fl;
       Summary.Synterp.unfreeze_summaries fs
 
+    let init () = freeze ()
+
+    let parsing (_, sum) =
+      Summary.Synterp.project_from_summary sum Pcoq.parser_summary_tag
+
     module Stm = struct
       let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, Summary.Synterp.make_marshallable summary
       let lib = fst
@@ -92,28 +97,7 @@ module System = struct
 
 end
 
-module Synterp = struct
-
-  type t =
-    { parsing : Parser.t
-    ; system : System.Synterp.t
-    }
-
-  let freeze () =
-    { parsing = Parser.cur_state ();
-      system = System.Synterp.freeze ();
-    }
-
-  let make_shallow s =
-    { s with system = System.Synterp.Stm.make_shallow s.system }
-
-  let init () = freeze ()
-
-  let unfreeze st =
-    System.Synterp.unfreeze st.system;
-    Pcoq.unfreeze st.parsing
-
-end
+module Synterp = System.Synterp
 
 module LemmaStack = struct
 
@@ -324,7 +308,7 @@ module Stm = struct
     let st = System.Interp.Stm.summary system in
     let st = Summary.Interp.remove_from_summary st Evarutil.meta_counter_summary_tag in
     let st = Summary.Interp.remove_from_summary st Evd.evar_counter_summary_tag in
-    System.Synterp.Stm.summary synterp.system, System.Synterp.Stm.lib synterp.system,
+    System.Synterp.Stm.summary synterp, System.Synterp.Stm.lib synterp,
       st, System.Interp.Stm.lib system
 
   let same_env { interp = { system = s1 } } { interp = { system = s2 } } =
@@ -336,7 +320,7 @@ module Stm = struct
 
   let make_shallow st =
     { interp = Interp.make_shallow st.interp
-    ; synterp = Synterp.make_shallow st.synterp
+    ; synterp = Synterp.Stm.make_shallow st.synterp
     }
 
 end
