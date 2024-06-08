@@ -442,6 +442,18 @@ let make_hints env sigma (modes,st) only_classes sign =
       else hints)
     sign db
 
+module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
+
+type solver = { solver :
+  Environ.env ->
+  Evd.evar_map ->
+  depth:int option ->
+  unique:bool ->
+  best_effort:bool ->
+  goals:Evar.t list ->
+  (bool * Evd.evar_map)
+}
+
 module Search = struct
   type autoinfo =
     { search_depth : int list;
@@ -982,19 +994,23 @@ module Search = struct
 
   let eauto_tac mst ?unique ~only_classes ~best_effort ?strategy ~depth ~dep hints =
     Hints.wrap_hint_warning @@
-      (eauto_tac_stuck mst ?unique ~only_classes
-          ~best_effort ?strategy ~depth ~dep hints)
+      eauto_tac_stuck mst ?unique ~only_classes
+          ~best_effort ?strategy ~depth ~dep hints
 
-  let run_on_goals env evm p tac goals nongoals =
-    let goalsl =
+  let preprocess_goals evm goals =
+    let sorted_goals =
       if get_typeclasses_dependency_order () then
         top_sort evm goals
       else Evar.Set.elements goals
     in
-    let goalsl = List.map Proofview.with_empty_state goalsl in
-    let tac = Proofview.Unsafe.tclNEWGOALS goalsl <*> tac in
     let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
     let evm = Evd.push_future_goals evm in
+    evm, Evd.meta_list evm, sorted_goals
+
+
+  let run_on_goals env evm tac ~goals =
+    let goalsl = List.map Proofview.with_empty_state goals in
+    let tac = Proofview.Unsafe.tclNEWGOALS goalsl <*> tac in
     let _, pv = Proofview.init evm [] in
      (* Instance may try to call this before a proof is set up!
        Thus, give_me_the_proof will fail. Beware! *)
@@ -1019,56 +1035,52 @@ module Search = struct
     in
     let finished = Proofview.finished pv' in
     let evm' = Proofview.return pv' in
-    let _, evm' = Evd.pop_future_goals evm' in
+    (finished, evm')
+
+  let post_process_goals ~goals ~nongoals ~old_metas ~sigma ~finished =
+    let _, sigma = Evd.pop_future_goals sigma in
+    let tc_evars = Evd.get_typeclass_evars sigma in
     let () = ppdebug 1 (fun () ->
         str"Finished resolution with " ++ str(if finished then "a complete" else "an incomplete") ++
         str" solution." ++ fnl()  ++
         str"Old typeclass evars not concerned by this resolution = " ++
-        hov 0 (prlist_with_sep spc (pr_ev_with_id evm')
-                 (Evar.Set.elements (Evd.get_typeclass_evars evm'))) ++ fnl() ++
+        hov 0 (prlist_with_sep spc (pr_ev_with_id sigma)
+                 (Evar.Set.elements tc_evars)) ++ fnl() ++
         str"Shelf = " ++
-        hov 0 (prlist_with_sep spc (pr_ev_with_id evm')
-                 (Evar.Set.elements (Evd.get_typeclass_evars evm'))))
+        hov 0 (prlist_with_sep spc (pr_ev_with_id sigma)
+                 (Evar.Set.elements tc_evars)))
     in
-    let nongoals' =
-      Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
+    let nongoals =
+      Evar.Set.fold (fun ev acc -> match Evarutil.advance sigma ev with
           | Some ev -> Evar.Set.add ev acc
-          | None -> acc) (Evar.Set.union goals nongoals) (Evd.get_typeclass_evars evm')
+          | None -> acc) (Evar.Set.union goals nongoals) tc_evars
     in
     (* FIXME: the need to merge metas seems to come from this being called
        internally from Unification. It should be handled there instead. *)
-    let evm' = Evd.meta_merge (Evd.meta_list evm) (Evd.clear_metas evm') in
-    let evm' = Evd.set_typeclass_evars evm' nongoals' in
+    let sigma = Evd.meta_merge old_metas (Evd.clear_metas sigma) in
+    let sigma = Evd.set_typeclass_evars sigma nongoals in
     let () = ppdebug 1 (fun () ->
         str"New typeclass evars are: " ++
-        hov 0 (prlist_with_sep spc (pr_ev_with_id evm') (Evar.Set.elements nongoals')))
+        hov 0 (prlist_with_sep spc (pr_ev_with_id sigma) (Evar.Set.elements nongoals)))
     in
-    Some (finished, evm')
+    sigma
 
-  let run_on_evars env evm p tac =
-    match evars_to_goals p evm with
-    | None -> None (* This happens only because there's no evar having p *)
-    | Some (goals, nongoals) ->
-      run_on_goals env evm p tac goals nongoals
-  let evars_eauto env evd depth only_classes ~best_effort unique dep mst hints p =
-    let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes
-      ~best_effort
-      ~depth ~dep:(unique || dep) hints in
-    run_on_evars env evd p eauto_tac
 
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
-  let typeclasses_eauto env evd ?depth unique ~best_effort st hints p =
+  let typeclasses_eauto env evd ~goals ?depth ~unique ~best_effort st hints =
+    let only_classes = true in
+    let dep = unique in
     NewProfile.profile "typeclass search" (fun () ->
-        evars_eauto env evd depth true ~best_effort unique false st hints p)
-      ()
+      run_on_goals env evd (eauto_tac_stuck st ~unique ~only_classes ~best_effort ~depth ~dep hints) ~goals) ()
 
-  let typeclasses_resolve env evd depth unique ~best_effort p =
+  let typeclasses_resolve : solver = { solver = fun env evd ~depth ~unique ~best_effort ~goals ->
     let db = searchtable_map typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
-    typeclasses_eauto env evd ?depth ~best_effort unique (modes,st) [db] p
+    typeclasses_eauto env evd ~goals ?depth ~best_effort ~unique (modes,st) [db]
+  }
 end
 
 let typeclasses_eauto ?(only_classes=false)
@@ -1094,8 +1106,6 @@ let typeclasses_eauto ?(only_classes=false)
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
-
-module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
@@ -1159,6 +1169,38 @@ let find_undefined p oevd evd =
 
 exception Unresolved of evar_map
 
+type condition = Environ.env -> evar_map -> Evar.Set.t -> bool
+
+type tc_solver = solver * condition
+
+let class_solvers = ref (CString.Map.empty : tc_solver CString.Map.t)
+
+let register_solver ~name ?(override=false) h =
+  if not override && CString.Map.mem name !class_solvers then
+    CErrors.anomaly ~label:"Class_tactics.register_solver"
+      Pp.(str (Printf.sprintf {|Solver "%s" is already registered|} name));
+  class_solvers := CString.Map.add name h !class_solvers
+
+let active_solvers = Summary.ref ~name:"typeclass_solvers" ([] : string list)
+
+let deactivate_solver ~name =
+  active_solvers := List.filter (fun s -> not (String.equal s name)) !active_solvers
+
+let activate_solver ~name =
+  assert (CString.Map.mem name !class_solvers);
+  deactivate_solver ~name;
+  active_solvers := name :: !active_solvers
+
+let find_solver env evd (s : Intpart.set) =
+  let rec find_solver = function
+    | [] -> Search.typeclasses_resolve
+    | hd :: tl ->
+      try
+        let (solver,cond) = CString.Map.find hd !class_solvers in
+        if cond env evd s then solver else find_solver tl
+      with Not_found ->  find_solver tl in
+  find_solver !active_solvers
+
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars depth unique env p oevd fail =
@@ -1185,18 +1227,21 @@ let resolve_all_evars depth unique env p oevd fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let res = Search.typeclasses_resolve env evd depth
-            ~best_effort:true unique p in
-          match res with
-          | Some (finished, evd') ->
-            if has_undefined p oevd evd' then
+          (* evars_to_goals p evd gives none when there's no evar having p *)
+          match evars_to_goals p evd with
+          | Some (goals, nongoals) ->
+            let solver = find_solver env evd comp in
+            let evd, old_metas, sorted_goals = Search.preprocess_goals evd goals in
+            let finished, evd = solver.solver env evd ~goals:sorted_goals ~best_effort:true ~depth ~unique in
+            let evd = Search.post_process_goals ~goals ~nongoals ~old_metas ~sigma:evd ~finished in
+            if has_undefined p oevd evd then
               let () = if finished then ppdebug 1 (fun () ->
                   str"Proof is finished but there remain undefined evars: " ++
-                  prlist_with_sep spc (pr_ev evd')
-                    (Evar.Set.elements (find_undefined p oevd evd')))
+                  prlist_with_sep spc (pr_ev evd)
+                    (Evar.Set.elements (find_undefined p oevd evd)))
               in
-              raise (Unresolved evd')
-            else docomp evd' comps
+              raise (Unresolved evd)
+            else docomp evd comps
           | None -> docomp evd comps (* No typeclass evars left in this component *)
         with Not_found ->
           (* Typeclass resolution failed *)
