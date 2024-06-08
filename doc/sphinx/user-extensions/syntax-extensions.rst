@@ -224,28 +224,35 @@ Coq extensible parsing is performed by *Camlp5* which is essentially a LL1
 parser: it decides which notation to parse by looking at tokens from left to right.
 Hence, some care has to be taken not to hide already existing rules by new
 rules. Indeed notations with a common prefix but different levels can
-interfere with one another, making some of them unusable. For instance, a notation ``x < y`` with ``x``
+interfere with one another, making some of them unusable. For instance, a notation ``x << y`` with ``x``
 and ``y`` at level 69 would be broken by another rule that puts
-``y`` at another level, like ``x < y < z`` with ``x`` at level 69 and ``y``
+``y`` at another level, like ``x << y << z`` with ``x`` at level 69 and ``y``
 at level 200. To avoid such issues, you should left factorize rules, that is ensure
 that common prefixes use the samel levels.
 
-.. coqtop:: in
+.. coqtop:: all
 
-   Notation "x < y" := (lt x y) (at level 70).
-   Fail Notation "x < y < z" := (x < y /\ y < z) (at level 70).
+   Reserved Notation "x << y" (at level 70).
+   Fail Reserved Notation "x << y << z" (at level 70, y at level 200).
 
 In order to factorize the left part of the rules, the subexpression
 referred to by ``y`` has to be at the same level in both rules. However the
 default behavior puts ``y`` at the next level below 70 in the first rule
-(``no associativity`` is the default), and at level 200 in the second
-rule (``level 200`` is the default for inner expressions). To fix this, we
+(``no associativity`` is the default). To fix this, we
 need to force the parsing level of ``y``, as follows.
 
-.. coqtop:: in
+.. coqtop:: reset all
 
-   Notation "x < y" := (lt x y) (at level 70).
-   Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
+   Reserved Notation "x << y" (at level 70).
+   Reserved Notation "x << y << z" (at level 70, y at next level).
+
+Or better yet, simply let the defaults ensure the best factorization.
+
+.. coqtop:: reset all
+
+   Reserved Notation "x << y" (at level 70).
+   Reserved Notation "x << y << z".
+   Print Notation "_ << _ << _".
 
 For the sake of factorization with Coq predefined rules, simple rules
 have to be observed for notations starting with a symbol, e.g., rules
