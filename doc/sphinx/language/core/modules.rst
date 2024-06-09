@@ -171,7 +171,7 @@ are now available through the dot notation.
   #. Assumptions such as :cmd:`Axiom` that include the :n:`Inline` clause will be automatically
      expanded when the functor is applied, except when the function application is prefixed by ``!``.
 
-.. cmd:: Include @module_type_inl {* <+ @module_expr_inl }
+.. cmd:: Include @module_type_inl {* <+ @module_type_inl }
 
    Includes the content of module(s) in the current
    interactive module. Here :n:`@module_type_inl` can be a module expression or a module
@@ -181,12 +181,6 @@ are now available through the dot notation.
 
    Including multiple modules in a single :cmd:`Include` is equivalent to including each module
    in a separate :cmd:`Include` command.
-
-.. cmd:: Include Type {+<+ @module_type_inl }
-
-   .. deprecated:: 8.3
-
-      Use :cmd:`Include` instead.
 
 .. cmd:: Declare Module {? {| Import | Export } {? @import_categories } } @ident {* @module_binder } : @module_type_inl
 
