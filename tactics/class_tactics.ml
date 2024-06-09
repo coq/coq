@@ -149,15 +149,30 @@ let auto_unif_flags ?(allowed_evars = Evarsolve.AllowedEvars.all) st =
     resolve_evars = false
 }
 
+let convert_leq ?pb ?ts x y =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    match Reductionops.infer_conv ?pb ?ts env sigma x y with
+    | Some sigma -> Proofview.Unsafe.tclEVARS sigma
+    | None -> Proofview.tclZERO NotConvertible
+  end
+
 let e_give_exact flags h =
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = project gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   let sigma, c = Hints.fresh_hint env sigma h in
   let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
-  Proofview.Unsafe.tclEVARS sigma <*>
-  Clenv.unify ~flags ~cv_pb:CUMUL t1 <*> exact_no_check c
+  if occur_existential sigma t1 || occur_existential sigma concl then
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Clenv.unify ~flags ~cv_pb:CUMUL t1 <*> exact_no_check c
+  else
+    let ts = flags.core_unify_flags.modulo_conv_on_closed_terms in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    convert_leq ~pb:CUMUL ?ts t1 concl <*> exact_no_check c
   end
 
 let unify_resolve ~with_evars flags h diff = match diff with
