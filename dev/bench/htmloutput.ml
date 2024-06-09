@@ -10,7 +10,7 @@
 
 open BenchUtil
 
-let colors = [|"#F08080"; "#EEE8AA"; "#98FB98"|]
+let colors = [|"#FFCECB"; "#D1F8D9"; "#98FB98"|]
 
 let max_data_count = Array.length colors
 
