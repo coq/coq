@@ -689,7 +689,7 @@ GRAMMAR EXTEND Gram
         { VernacSynterp (VernacImport ((Import,cats),qidl)) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacImport ((Export,cats),qidl)) }
-      | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
+      | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_type ->
           { VernacSynterp (VernacInclude(e::l)) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
          { warn_deprecated_include_type ~loc ();
