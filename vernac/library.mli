@@ -45,12 +45,6 @@ val require_library_syntax_from_dirpath
 
 (** {6 Start the compilation of a library } *)
 
-(** Segments of a library *)
-type seg_sum
-type seg_lib
-type seg_proofs = Opaques.opaque_disk
-type seg_vm = Vmlibrary.compiled_library
-
 (** End the compilation of a library and save it to a ".vo" file, or a
     ".vos" file, depending on the todo_proofs argument.
 
@@ -69,8 +63,6 @@ val save_library_to :
 (** Save library to library_t format, that can be used later in
     [require_library_syntax_from_dirpath] *)
 val save_library : DirPath.t -> library_t
-
-val save_library_raw : string -> seg_sum -> seg_lib -> seg_proofs -> seg_vm -> unit
 
 (** {6 Interrogate the status of libraries } *)
 

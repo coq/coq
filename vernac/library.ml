@@ -535,8 +535,6 @@ let save_library_to todo_proofs ~output_native_objects dir f =
     let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
     Nativelib.compile_library ast fn
 
-let save_library_raw f sum lib proofs = save_library_base f sum lib proofs
-
 let get_used_load_paths () =
   String.Set.elements
     (List.fold_left (fun acc (root, m) -> String.Set.add
