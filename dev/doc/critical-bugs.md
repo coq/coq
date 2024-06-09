@@ -595,10 +595,10 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 
 #### arbitrary code execution on arrays of floating point numbers
 
-- component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+- component: "virtual" and "native" conversion machines
 - introduced: 8.13
 - impacted released versions: 8.13.0, 8.13.1, 8.14.0
-- impacted coqchk versions: none (no virtual machine in coqchk)
+- impacted coqchk versions: none (no VM / native computation in coqchk)
 - fixed in: 8.14.1
 - found by: Melquiond
 - GH issue number: coq/coq#15070
