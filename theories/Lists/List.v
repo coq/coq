@@ -683,6 +683,12 @@ Section Elts.
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
   Qed.
 
+  Lemma nth_error_nth_None (l : list A) (n : nat) (d : A) :
+    nth_error l n = None -> nth n l d = d.
+  Proof.
+    intros H%nth_error_None. apply nth_overflow. assumption.
+  Qed.
+
   (******************************)
   (** ** Last element of a list *)
   (******************************)
@@ -2157,6 +2163,13 @@ Section Cutting.
     case Nat.ltb; trivial.
   Qed.
 
+  Lemma nth_firstn (n : nat) (l : list A) (i : nat) (d : A) :
+    nth i (firstn n l) d = if i <? n then nth i l d else d.
+  Proof.
+    revert l i; induction n, l, i; cbn [firstn nth]; trivial.
+    case Nat.ltb; trivial.
+  Qed.
+
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
@@ -2238,6 +2251,12 @@ Section Cutting.
       rewrite ?nth_error_nil; trivial.
   Qed.
 
+  Lemma nth_skipn n l i d : nth i (skipn n l) d = nth (n + i) l d.
+  Proof.
+    revert l; induction n, l; cbn [nth skipn];
+      rewrite ?nth_error_nil; destruct i; trivial.
+  Qed.
+
   Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
   Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
 
@@ -2265,6 +2284,16 @@ Section Cutting.
   Proof.
     intros l L%Nat.sub_0_le; rewrite <-(firstn_all l) at 1.
     now rewrite skipn_firstn_comm, L.
+  Qed.
+
+  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = nil.
+  Proof.
+    split; [apply skipn_all2|].
+    revert l; induction n as [|n IH]; intros l.
+    - destruct l; simpl; [reflexivity|discriminate].
+    - destruct l; simpl.
+      + intros _. apply Nat.le_0_l.
+      + intros H%IH. apply le_n_S. exact H.
   Qed.
 
   Lemma skipn_skipn : forall x y l, skipn x (skipn y l) = skipn (x + y) l.
@@ -2988,6 +3017,21 @@ Section Compare.
             rewrite Hcmpxy in Hc. discriminate Hc.
     Qed.
 
+    Lemma list_compare_refl (xs ys : list A) :
+      list_compare xs ys = Eq <-> xs = ys.
+    Proof.
+      split.
+      - rewrite list_compare_prefix_spec.
+        intros (prefix & xs' & ys' & -> & -> & H).
+        destruct xs' as [|x xs']; destruct ys' as [|y ys'].
+        + reflexivity.
+        + discriminate H.
+        + discriminate H.
+        + destruct (cmp x y); try inversion H.
+      - intros <-. induction xs as [|x xs IH]; [reflexivity|].
+        simpl. rewrite (proj2 (Hcmp x x) eq_refl). apply IH.
+    Qed.
+
   End Lemmas.
 
 End Compare.
@@ -3687,6 +3731,16 @@ Section Repeat.
     revert n. induction m as [|m IHm].
     - now intros [|n].
     - intros [|n]; [reflexivity|exact (IHm n)].
+  Qed.
+
+  Lemma nth_repeat_lt a m n d :
+    n < m ->
+    nth n (repeat a m) d = a.
+  Proof.
+    revert n. induction m as [|m IHm].
+    - now intros [|n].
+    - intros [|n]; [reflexivity|].
+      intros Hlt%Nat.succ_lt_mono. apply (IHm _ Hlt).
   Qed.
 
   Lemma nth_error_repeat a m n :

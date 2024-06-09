@@ -1939,6 +1939,28 @@ Proof.
   - rewrite Z.max_l; [reflexivity | lia].
 Qed.
 
+Lemma min_add_min_n_same (m i1 i2 : int) :
+  to_Z i1 + to_Z i2 < wB ->
+  Uint63.min m (Uint63.min m i1 + i2) = Uint63.min m (i1 + i2).
+Proof.
+  intros H. apply to_Z_inj.
+  pose proof (to_Z_bounded m) as Hm.
+  pose proof (to_Z_bounded i1) as Hi1.
+  pose proof (to_Z_bounded i2) as Hi2.
+  rewrite !min_spec, !add_spec, !min_spec, !Z.mod_small; lia.
+Qed.
+
+Lemma min_add_n_min_same (m i1 i2 : int) :
+  to_Z i1 + to_Z i2 < wB ->
+  Uint63.min m (i1 + Uint63.min m i2) = Uint63.min m (i1 + i2).
+Proof.
+  intros H. apply to_Z_inj.
+  pose proof (to_Z_bounded m) as Hm.
+  pose proof (to_Z_bounded i1) as Hi1.
+  pose proof (to_Z_bounded i2) as Hi2.
+  rewrite !min_spec, !add_spec, !min_spec, !Z.mod_small; lia.
+Qed.
+
 Module Export Uint63Notations.
   Local Open Scope uint63_scope.
   Export Uint63NotationsInternalB.

@@ -720,5 +720,6 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Strings/PrimString.v
     theories/Strings/PrimStringAxioms.v
+    theories/Strings/PString.v
   </dd>
 </dl>
