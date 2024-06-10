@@ -411,7 +411,7 @@ let warn_bad_relevance_binder ?loc env sigma rlv bnd =
 | CWarnings.Disabled | CWarnings.Enabled ->
   CWarnings.warn bad_relevance_msg ?loc (env,sigma,Typeops.BadRelevanceBinder (rlv, bnd))
 | CWarnings.AsError ->
-  CErrors.anomaly (CErrors.print (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd)))))
+  Loc.raise ?loc (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd))))
 
 type relevance_preunify =
   | Trivial
