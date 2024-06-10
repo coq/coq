@@ -121,6 +121,8 @@ val check_caml_version : caml:string -> file:string -> unit
 type time
 type duration
 
+val empty_duration : duration
+
 val get_time : unit -> time
 val time_difference : time -> time -> float (** in seconds *)
 

@@ -409,9 +409,19 @@ let with_succeed f =
   Vernacstate.Synterp.unfreeze st;
   ControlSucceed { st = transient_st } :: ctrl, v
 
+let synpure_control : control_flag -> control_entry =
+  let freeze = Vernacstate.Synterp.freeze in function
+  | ControlTime -> ControlTime { synterp_duration = System.empty_duration }
+  | ControlInstructions -> ControlInstructions { synterp_instructions = Ok 0L }
+  | ControlRedirect s -> ControlRedirect s
+  | ControlTimeout timeout ->
+    check_timeout timeout;
+    ControlTimeout { remaining = float_of_int timeout }
+  | ControlFail -> ControlFail { st = freeze() }
+  | ControlSucceed -> ControlSucceed { st = freeze() }
+
 (* We restore the state always *)
-let rec synterp_control_flag ~loc (f : control_flag list)
-    (fn : vernac_expr -> vernac_entry) expr =
+let rec synterp_control_flag ~loc (f : control_flag list) fn expr =
   match f with
   | [] -> [], fn expr
   | ControlFail :: l ->
@@ -562,15 +572,17 @@ let has_timeout ctrl = ctrl |> List.exists (function
     | Vernacexpr.ControlTimeout _ -> true
     | _ -> false)
 
-let synterp_control ~intern CAst.{ loc; v = cmd } =
-  let control = cmd.control in
-  let control = match !default_timeout with
-    | None -> control
-    | Some n ->
-      if has_timeout control then control
-      else Vernacexpr.ControlTimeout n :: control
-  in
-  synterp_control ~intern @@ CAst.make ?loc { cmd with control }
+let add_default_timeout control =
+  match !default_timeout with
+  | None -> control
+  | Some n ->
+    if has_timeout control then control
+    else Vernacexpr.ControlTimeout n :: control
+
+let synterp_control ~intern cmd =
+  synterp_control ~intern (CAst.map (fun cmd ->
+      { cmd with control = add_default_timeout cmd.control })
+      cmd)
 
 let synterp_control ~intern cmd =
   Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd
