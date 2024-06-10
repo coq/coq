@@ -159,15 +159,13 @@ let rec dump_expr ?(indent=0) e =
   | CTacExt _ -> printloc "CTacExt" e
 
 let dump_Cexpr loc e =
-  try ignore @@ Sys.getenv "TEST";
-    let loc = match loc with
-    | None -> "None"
-    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
-    in
-    Printf.eprintf "loc = %s\n%!" loc;
-    dump_expr e;
+  let loc = match loc with
+  | None -> "None"
+  | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+  in
+  Printf.eprintf "loc = %s\n%!" loc;
+  dump_expr e;
   Printf.eprintf "\n%!"
-  with Not_found -> ()
 
 let rec dump_Gexpr ?(indent=0) ?(p="D") e =
   let printloc loc =
@@ -253,7 +251,7 @@ let get_chunk (ist : environment) =
 
 let maybe_stop (ist : environment) loc =
   let chunk = get_chunk ist in
-  DebugCommon.save_in_history chunk loc;
+  DebugCommon.save_in_history chunk ist.prev_chunks loc;
   if DebugCommon.stop_in_debugger loc then begin
     DebugCommon.pr_goals ();
     read_loop ()

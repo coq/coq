@@ -22,12 +22,10 @@ type chunk = {
   vars_f : int -> db_vars_rty;
 }
 
-let empty_chunk = { locs=[]; stack_f=(fun _ -> []); vars_f=(fun _ -> []) }
-
 (* Ltac history mechanism *)
 
 type history = {
-  stack_chunks : chunk list;
+  prev_chunks : chunk list;
   top_chunk : chunk;
   cur_loc : Loc.t option;
   goals : Proofview.Goal.t list;
@@ -125,7 +123,7 @@ let concat_map f l = List.concat (List.map f l)
 let get_all_chunks index =
   if !hist_count = 0 then [] else
     let hist = get_history index in
-    hist.top_chunk :: hist.stack_chunks
+    hist.top_chunk :: hist.prev_chunks
 
 (* Find the closest prior history entry with the same stack as the current entry
    (ignoring the top of stack) AND in which the goals differ from the current entry. *)
@@ -281,29 +279,9 @@ let breakpoint_stop loc =
     | _ -> false
 
 
-let stack_chunks : chunk list ref = ref []
-let top_chunk : chunk ref = ref empty_chunk
-let cur_loc : Loc.t option ref = ref None
-
-let push_top_chunk () =
-  if !debug then
-    stack_chunks := !top_chunk :: !stack_chunks
-
-let set_top_chunk c =
-  if !debug then
-    top_chunk := c
-
-let get_top_chunk () = !top_chunk
-
-let pop_chunk () =
-  if !debug then
-    stack_chunks := List.tl !stack_chunks
-
-let save_in_history chunk loc =
-  if !debug && loc <> None then begin
-    top_chunk := chunk;
-    cur_loc := loc;
-    append_history { stack_chunks=(!stack_chunks); top_chunk=(!top_chunk); cur_loc=(!cur_loc);
+let save_in_history top_chunk prev_chunks cur_loc =
+  if !debug && cur_loc <> None then begin
+    append_history { prev_chunks; top_chunk; cur_loc;
         goals=(!cur_goals) }
   end
 
@@ -317,7 +295,7 @@ let st_prev_len = ref 0
 let locs_info () =
   (* performance impact? *)
   let hentry = get_history !hist_index in
-  let st = concat_map (fun i -> i.locs)  (hentry.top_chunk :: hentry.stack_chunks) in
+  let st = concat_map (fun i -> i.locs)  (hentry.top_chunk :: hentry.prev_chunks) in
   st, List.length st, !st_prev_len
 
 let stepping_stop loc =
@@ -460,12 +438,9 @@ let init () =
     if Sys.os_type = "Unix" then
       Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
         (fun _ -> break := true));
-    stack_chunks := [];
-    top_chunk := empty_chunk;
     st_prev := [];
     st_prev_len := 0;
     cur_goals := [];
-    cur_loc := None;
     reset_history ();
     let open DebugHook in
     match Intf.get () with
@@ -502,17 +477,17 @@ let fmt_stack () =
   format_stack (common @ [None]) locs
 
 let get_vars framenum =
-  let rec get_chunk chunks framenum =
+  let rec get_vars0 chunks framenum =
     match chunks with
     | [] -> []
     | { locs; vars_f } :: tl ->
       let len = List.length locs in
-      if len <= framenum then
-        get_chunk tl (framenum - len)
+      if len < framenum then
+        get_vars0 tl (framenum - len)
       else
         vars_f framenum
   in
-  get_chunk (get_all_chunks !hist_index) framenum
+  get_vars0 (get_all_chunks !hist_index) framenum
 
 let fmt_goal gl =
   let env = Proofview.Goal.env gl in

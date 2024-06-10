@@ -159,15 +159,19 @@ let cvt_frame f =
 let fmt_stack1 : ltac_stack -> unit -> string list = fun frames () ->
   List.map (fun f -> let s, _ = cvt_frame f in s) frames
 
+let get_chunk varmap trace =
+  let {locs; stack; varmaps } = trace in
+  DebugCommon.{ locs;
+                stack_f = (fmt_stack1 stack);
+                vars_f = (fmt_vars1 (varmap :: varmaps)) }
+
 let save_history tac varmap trace =
-  let {locs; stack; varmaps } =  match trace with
+  let trace =  match trace with
   | Some trace -> trace
-  | None -> { locs=[]; stack=[]; varmaps=[]}
+  | None -> { locs=[]; stack=[]; varmaps=[]; prev_chunks=[]}
   in
-  let chunk = DebugCommon.{ locs;
-                            stack_f = (fmt_stack1 stack);
-                            vars_f = (fmt_vars1 (varmap :: varmaps)) } in
-  DebugCommon.save_in_history chunk CAst.(tac.loc)
+  let chunk = get_chunk varmap trace in
+  DebugCommon.save_in_history chunk trace.prev_chunks CAst.(tac.loc)
 
 (* Prints the goal and the tactic to be executed *)
 let goal_tac tac =

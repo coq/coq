@@ -146,7 +146,7 @@ type interp_sign = Geninterp.interp_sign =
   ; poly : bool
   ; extra : TacStore.t }
 
-let empty_trace = {locs=[]; stack=[]; varmaps=[]}
+let empty_trace = {locs=[]; stack=[]; varmaps=[]; prev_chunks=[]}
 
 let add_extra_trace trace extra = TacStore.set extra f_trace trace
 let extract_trace ist =
@@ -269,9 +269,10 @@ let push_trace call ist =
   if is_traced () then begin
     let (loc, _) = call in
     match TacStore.get ist.extra f_trace with
-    | Some {locs; stack; varmaps} -> {locs=(loc :: locs); stack=(call::stack);
-      varmaps=(ist.lfun :: varmaps)}
-    | None -> {locs=[loc]; stack=[call]; varmaps=[ist.lfun]}
+    | Some {locs; stack; varmaps; prev_chunks} ->
+      {locs=(loc :: locs); stack=(call::stack);
+      varmaps=(ist.lfun :: varmaps); prev_chunks}
+    | None -> {locs=[loc]; stack=[call]; varmaps=[ist.lfun]; prev_chunks=[]}
   end else empty_trace
 
 let propagate_trace ist loc id v =
@@ -596,9 +597,6 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   } in
   let loc = loc_of_glob_constr term in
   let trace = push_trace (loc,LtacConstrInterp (env,sigma,term,vars)) ist in
-  (* save and restore the current trace info because the called routine later starts
-     with an empty trace *)
-  DebugCommon.push_top_chunk ();
   try
     let (evd,c) =
       catch_error_with_trace_loc loc trace (understand_ltac flags env sigma vars kind) term
@@ -607,11 +605,9 @@ let interp_gen kind ist pattern_mode flags env sigma c =
        function already use effect, I call [run] hoping it doesn't mess
        up with any assumption. *)
     Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
-    DebugCommon.pop_chunk ();
     (evd,c)
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    DebugCommon.pop_chunk ();
     Exninfo.iraise reraise
 
 let constr_flags () = {

@@ -28,6 +28,7 @@ type environment = Tac2env.environment = {
   stack : (string * Loc.t option) list option;
   (* variable value maps for each stack frame *)
   varmaps : Tac2env.typed_valexpr Id.Map.t list;
+  prev_chunks : DebugCommon.chunk list;
 }
 
 let empty_environment () = {
@@ -35,6 +36,7 @@ let empty_environment () = {
   locs = [];
   stack = if DebugCommon.get_debug () then Some [] else None;
   varmaps = [];
+  prev_chunks = [];
 }
 
 type closure = {
@@ -52,13 +54,9 @@ type closure = {
 
 let push_id ist id v = { ist with env_ist = Id.Map.add id v ist.env_ist }
 
-let push_name ist id v =
-  let ist = match id with
-    | Anonymous -> ist
-    | Name id -> push_id ist id v
-  in
-  DebugCommon.set_top_chunk (get_chunk ist);
-  ist
+let push_name ist id v = match id with
+| Anonymous -> ist
+| Name id -> push_id ist id v
 
 let get_var ist id =
   try (Id.Map.find id ist.env_ist).e with Not_found ->
@@ -138,24 +136,20 @@ let rec interp (ist : environment) = function
   return f
 | GTacAls (e, loc, fn) ->
   let ist1 =
-    if DebugCommon.get_debug () then begin
+    if DebugCommon.get_debug () then
       { ist with locs = push_locs loc ist;
         stack = push_stack (fn, loc) ist;
         varmaps = ist.env_ist :: ist.varmaps }
-    end else ist
+    else ist
   in
   DebugCommon.save_goals loc (fun () -> maybe_stop ist loc) () >>=
-  (fun () -> interp ist1 e) >>=
-  (fun x -> DebugCommon.set_top_chunk (get_chunk ist);  (* for "ltac1:(...)" *)
-      return x)
+  (fun () -> interp ist1 e)
 | GTacApp (f, args, loc) ->
   let step = step_GTacApp ist f args loc in
   step >>= fun f ->
     Proofview.Monad.List.map (fun e -> interp ist e) args >>=
     DebugCommon.save_goals loc (fun () -> maybe_stop ist loc) >>=
-    fun args -> Tac2ffi.apply (Tac2ffi.to_closure f) args >>=
-    (fun x -> DebugCommon.set_top_chunk (get_chunk ist);  (* for "ltac1:(...)" *)
-      return x)
+    fun args -> Tac2ffi.apply (Tac2ffi.to_closure f) args
 | GTacLet (false, el, e) ->
   let fold accu (na, e, t) =
     interp ist e >>= fun e ->
@@ -222,7 +216,8 @@ and step_GTacApp ist f args loc =
     if DebugCommon.get_debug () && (not (is_primitive fname)) then
       { ist with locs = push_locs loc ist;
         stack = push_stack (fname, loc) ist;
-        varmaps = ist.env_ist :: ist.varmaps }
+        varmaps = ist.env_ist :: ist.varmaps;
+        prev_chunks = ist.prev_chunks }
     else ist
   in
   interp ist f

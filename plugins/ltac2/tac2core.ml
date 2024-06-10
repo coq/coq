@@ -1286,21 +1286,13 @@ let () =
         List.hd (Tacenv.locate_extended_all_tactic (Libnames.qualid_of_path fp))
       else raise Not_found
   in
-  Tacinterp.Value.of_closure (Tacinterp.default_ist ()) (Tacenv.interp_ltac r)
+  Tacinterp.Value.of_closure (Tacinterp.default_ist ()) (Tacenv.interp_ltac r)  (* todo? *)
 
 let () =
-  define "ltac1_run" (ltac1 @-> tac unit) @@ begin fun v ->
-  (* for Ltac.run ... construct *)
+  (* Ltac.run ... construct *)
+  define "ltac1_run" (ltac1 @-> tac unit) @@ fun v ->
   let open Ltac_plugin in
-  DebugCommon.push_top_chunk ();
-  (* todo: what about wrapping functions ltac1_ref above and ltac1_apply below? *)
-  let wrap (e, info) = Proofview.tclUNIT () >>=
-      fun () -> DebugCommon.pop_chunk (); Proofview.tclZERO ~info e in
-  Proofview.tclORELSE
-    (Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v >>=
-      fun () -> Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> DebugCommon.pop_chunk ())))
-    wrap
-end
+  Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v
 
 let () =
   define "ltac1_apply" (ltac1 @-> list ltac1 @-> closure @-> tac unit) @@ fun f args k ->
@@ -1779,6 +1771,36 @@ let () =
   } in
   define_ml_object Tac2quote.wit_reference obj
 
+(* routines to copy prev_chunks between Ltac1 and Ltac2 *)
+let call_from_ltac2_to_1 ist2 =
+  let open Ltac_plugin.Tacinterp in
+  let ist1 = default_ist () in
+  if DebugCommon.get_debug () then begin
+    let prev_chunks = match ist2.stack with
+    | None -> []
+    | Some stack ->
+      if stack = [] then ist2.prev_chunks
+      else (Tac2debug.get_chunk ist2) :: ist2.prev_chunks
+    in
+    let extra = TacStore.set ist1.extra f_trace { empty_trace with prev_chunks } in
+    { ist1 with extra }
+  end else
+    ist1
+
+let call_from_ltac1_to_2 ist1 =
+  let open Ltac_plugin.Tacinterp in
+  let env = Tac2interp.empty_environment () in
+  if DebugCommon.get_debug () then begin
+    let prev_chunks = match TacStore.get ist1.extra f_trace with
+    | None -> []
+    | Some trace ->
+      if trace.stack = [] then trace.prev_chunks
+      else (Ltac_plugin.Tactic_debug.get_chunk ist1.lfun trace) :: trace.prev_chunks
+    in
+    { env with prev_chunks }
+  end else
+    env
+
 let () =
   let intern self ist (ids, tac) =
     let map { CAst.v = id } = id in
@@ -1799,7 +1821,7 @@ let () =
       | TacAtom _ | TacId _  | TacFail _ -> true (* TacML? TacAlias? *)
       | _ -> false
   in
-  let interp _ (ids, tac) =
+  let interp ist2 (ids, tac) =
     let clos args =
       let add lfun id v =
         let v = Tac2ffi.to_ext val_ltac1 v in
@@ -1808,7 +1830,7 @@ let () =
       let lfun = List.fold_left2 add Id.Map.empty ids args in
       let ist = Tac2interp.empty_environment () in
       let lfun = Tac2interp.set_env ist lfun in
-      let ist = Ltac_plugin.Tacinterp.default_ist () in
+      let ist = call_from_ltac2_to_1 ist2 in
       let ist = { ist with Geninterp.lfun = lfun } in
       let CAst.{v; loc} = tac in
       let tac2 =
@@ -1816,21 +1838,17 @@ let () =
         (DebugCommon.save_goals loc (
           fun () ->
             if is_debugger_atomic v then begin
-              DebugCommon.save_in_history (DebugCommon.get_top_chunk ()) loc;
+              DebugCommon.save_in_history (Tac2debug.get_chunk ist2) ist2.prev_chunks loc;
               if DebugCommon.stop_in_debugger loc then begin
                 DebugCommon.pr_goals ();
                 Tac2debug.read_loop ()
               end;
             end;
-            DebugCommon.push_top_chunk ();
           ) ())
-          (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) >>=
-          fun x -> DebugCommon.pop_chunk (); return x
+          (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic)
       in
-      let wrap (e, info) = set_bt info >>= fun info ->
-          DebugCommon.pop_chunk ();
-          Proofview.tclZERO ~info e in
-      Proofview.tclORELSE tac2 wrap >>= fun () -> return v_unit
+      tac2 >>= fun () ->
+      return v_unit
     in
     let len = List.length ids in
     if Int.equal len 0 then
@@ -1876,7 +1894,7 @@ let () =
     let ty = List.fold_left fold (gtypref t_ltac1) ids in
     GlbVal (ids, tac), ty
   in
-  let interp _ (ids, tac) =
+  let interp ist2 (ids, tac) =
     let clos args =
       let add lfun id v =
         let v = Tac2ffi.to_ext val_ltac1 v in
@@ -1885,7 +1903,7 @@ let () =
       let lfun = List.fold_left2 add Id.Map.empty ids args in
       let ist = Tac2interp.empty_environment () in
       let lfun = Tac2interp.set_env ist lfun in
-      let ist = Ltac_plugin.Tacinterp.default_ist () in
+      let ist = call_from_ltac2_to_1 ist2 in
       let ist = { ist with Geninterp.lfun = lfun } in
       return (Tac2ffi.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
     in
@@ -2136,13 +2154,10 @@ let () =
     (* Evaluate the Ltac2 quotation eagerly *)
     let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
         (CAst.make (Tacexpr.TacId [])) in
-    DebugCommon.push_top_chunk ();
-    let ist = Tac2interp.empty_environment () in
-    let tac = Tac2interp.interp ist tac in
-    let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
-    Proofview.tclOR tac wrap >>= (fun _ ->
-    DebugCommon.pop_chunk ();
-    Ftactic.return idtac)
+    let ist = call_from_ltac1_to_2 ist in
+    Tac2interp.interp ist tac >>= fun v ->
+    let v = idtac in
+    Ftactic.return v
   | _ :: _ ->
     (* Return a closure [@f := {blob} |- fun ids => ltac2_eval(f, ids) ] *)
     (* This name cannot clash with Ltac2 variables which are all lowercase *)
@@ -2153,7 +2168,7 @@ let () =
     let clos = CAst.make (Tacexpr.TacFun
         (nas, CAst.make (Tacexpr.TacML (ltac2_eval, mk_arg self_id :: args)))) in
     let self = GTacFun (List.map (fun id -> Name id) ids, None, tac) in
-    let self = Tac2interp.interp_value (Tac2interp.empty_environment ()) self in
+    let self = Tac2interp.interp_value (call_from_ltac1_to_2 ist) self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)
@@ -2161,9 +2176,9 @@ let () =
   Geninterp.register_interp0 wit_ltac2in1 interp
 
 let () =
-  let interp ist tac =
-    let ist = Tac2interp.empty_environment () in
-    Tac2interp.interp ist tac >>= fun v ->
+  let interp ist1 tac =
+    let ist2 = call_from_ltac1_to_2 ist1 in
+    Tac2interp.interp ist2 tac >>= fun v ->
     let v = repr_to ltac1 v in
     Ftactic.return v
   in

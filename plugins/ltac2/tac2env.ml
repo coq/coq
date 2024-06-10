@@ -290,6 +290,7 @@ type environment = {
   locs : Loc.t option list;
   stack : (string * Loc.t option) list option;
   varmaps : typed_valexpr Id.Map.t list;
+  prev_chunks : DebugCommon.chunk list;
 }
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr

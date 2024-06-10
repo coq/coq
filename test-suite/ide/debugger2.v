@@ -67,10 +67,49 @@ y ().
 (* check goals are saved after ltac1:()
    Should be no goals left at (*bp*)  *)
 ltac1:(apply I); (* bp *) m "after".
-
-
 Abort.
 End Ltac1.
+
+
+(* backtracking into Ltac1 from Ltac2
+   The stack at 1 and the stack at 2 should
+   be the same except for the top entry *)
+Module Ltac2_to_Ltac1.
+Ltac y := multimatch goal with
+  | |- True => (*1*)idtac "a"
+  | |- _ => (*2*)idtac "b"
+end.
+
+Ltac2 z () :=
+  multi_match! goal with
+  | [|- True] => ltac1:(y); fail
+  | [|- _] => m "z"
+end.
+
+Goal True.
+z ().
+Abort.
+End Ltac2_to_Ltac1.
+
+(* backtracking into Ltac2 from Ltac1
+   The stack at 1 and the stack at 2 should
+   be the same except for the top entry *)
+Module Ltac1_to_Ltac2.
+Ltac2 z () :=
+  multi_match! goal with
+  | [|- True] => (*1*) m "1"
+  | [|- _] => (*2*) m "2"
+end.
+
+Ltac y := multimatch goal with
+  | |- True => ltac2:(z ()); fail
+  | |- _ => idtac "y"
+end.
+
+Goal True.
+ltac1:(y).
+Abort.
+End Ltac1_to_Ltac2.
 
 
 (* abbreviations/notations
@@ -159,8 +198,6 @@ End Ltac1val.
 
 
 (*
-        **Exceptions and backtracking work as expected
-                *And across environments
         Shows reasonable data for multi file case
         open_constr?
 History mechanism
@@ -169,7 +206,6 @@ History mechanism
         ?Apply history limits, cleared after exit
           ?Can set limit
 
-        ltac1val.v - ltac1val:() shouldn't be a stopping point
         ltac2_demo_*.v
 *)
 
@@ -227,7 +263,8 @@ Abort.
 Module EnterLibrary.
 
 
-(* Navigation/Interrupt (aborts tactic) and Debug/Break (stops tactic, resumable) *)
+(* Navigation/Interrupt (aborts tactic) and Debug/Break (stops tactic, resumable)
+   Select either operation while the proof is running, check result *)
 Module Interrupt.
 Ltac2 n () := ().
 Goal True.

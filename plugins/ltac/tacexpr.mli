@@ -363,9 +363,10 @@ type ltac_call_kind =
 
 type ltac_stack = ltac_call_kind Loc.located list
 type varmap = Geninterp.Val.t Id.Map.t
-type ltac_trace = { locs    : Loc.t option list
-                  ; stack   : ltac_stack
-                  ; varmaps : varmap list }
+type ltac_trace = { locs        : Loc.t option list
+                  ; stack       : ltac_stack
+                  ; varmaps     : varmap list
+                  ; prev_chunks : DebugCommon.chunk list }
 
 type tacdef_body =
   | TacticDefinition of lident * raw_tactic_expr (* indicates that user employed ':=' in Ltac body *)

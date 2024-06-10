@@ -58,3 +58,5 @@ type varmap = Geninterp.Val.t Names.Id.Map.t
 
 val fmt_stack1 : ltac_stack -> unit -> string list
 val fmt_vars1 : varmap list -> int -> DebuggerTypes.db_vars_rty
+
+val get_chunk : Geninterp.Val.t Id.Map.t -> Tacexpr.ltac_trace -> DebugCommon.chunk
