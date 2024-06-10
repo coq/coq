@@ -587,7 +587,7 @@ end = struct (* {{{ *)
   let get_parsing_state id =
     stm_pperr_endline (fun () -> str "retrieve parsing state state " ++ str (Stateid.to_string id) ++ str " }}}");
     match (get_info id).state with
-    | FullState s -> Some s.Vernacstate.synterp.parsing
+    | FullState s -> Some Vernacstate.(Synterp.parsing s.synterp)
     | ParsingState s -> Some s
     | ErrorState (s,_) -> s
     | EmptyState -> None
