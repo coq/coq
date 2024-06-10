@@ -1086,16 +1086,6 @@ let vernac_fixpoint_common ~atts l =
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_fixpoint_interactive ~atts l =
-  let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts l in
-  if atts.program then
-    CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
-  (* Eventually make this into a more structured record *)
-  let poly, user_warns, typing_flags, using, clearbody =
-    atts.polymorphic, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
-  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
-
 let vernac_fixpoint ~atts ~pm l =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts l in
@@ -1103,10 +1093,16 @@ let vernac_fixpoint ~atts ~pm l =
     atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
   if program_mode then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    if opens then
+      CErrors.user_err Pp.(str"Program Fixpoint requires a body.")
+    else
+      let pm = Option.get pm in
+      let pm = ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+      Some pm, None
   else
-    let () = ComFixpoint.do_fixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
-    pm
+    let proof = ComFixpoint.do_fixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+    pm, proof
 
 let vernac_cofixpoint_common ~atts l =
   if Dumpglob.dump () then
@@ -1115,24 +1111,22 @@ let vernac_cofixpoint_common ~atts l =
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_cofixpoint_interactive ~atts l =
-  let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts l in
-  if atts.program then
-    CErrors.user_err Pp.(str"Program CoFixpoint requires a body.");
-  let poly, using = atts.polymorphic, atts.using in
-  ComFixpoint.do_cofixpoint_interactive ~scope ~poly ?using l
-
 let vernac_cofixpoint ~atts ~pm l =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts l in
   let poly, typing_flags, using, clearbody, user_warns =
     atts.polymorphic, atts.typing_flags, atts.using, atts.clearbody, atts.user_warns in
   if atts.program then
-    ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    if opens then
+      CErrors.user_err Pp.(str"Program CoFixpoint requires a body.")
+    else
+      let pm = Option.get pm in
+      let pm = ComProgramFixpoint.do_cofixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+      Some pm, None
   else
-    let () = ComFixpoint.do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
-    pm
+    let proof = ComFixpoint.do_cofixpoint ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using l in
+    pm, proof
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -2465,18 +2459,28 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        with_def_attributes ~discharge ~atts vernac_fixpoint_interactive l)
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:None) l in
+        assert (Option.is_empty pm);
+        Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm) l))
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:(Some pm)) l in
+        assert (Option.is_empty proof);
+        Option.get pm))
 
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     let discharge = discharge,  "\"Let CoFixpoint\"", "\"#[local] CoFixpoint\"" in
     (if opens then
-      vtopenproof(fun () -> with_def_attributes ~discharge ~atts vernac_cofixpoint_interactive l)
+      vtopenproof (fun () ->
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:None) l in
+        assert (Option.is_empty pm);
+        Option.get proof)
     else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm) l))
+      vtmodifyprogram (fun ~pm ->
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:(Some pm)) l in
+        assert (Option.is_empty proof);
+        Option.get pm))
 
   | VernacScheme l ->
     vtdefault(fun () ->

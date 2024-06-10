@@ -218,7 +218,7 @@ let do_program_recursive ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?
   let (env, rec_sign, udecl, evd), fix, info =
     let env = Global.env () in
     let env = Environ.update_typing_flags ?typing_flags env in
-    interp_recursive env ~cofix ~program_mode:true fixl
+    interp_recursive_evars env ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)

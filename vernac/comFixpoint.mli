@@ -15,45 +15,25 @@ open Vernacexpr
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
-val do_fixpoint_interactive
-  : scope:Locality.definition_scope
-  -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
-  -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
-  -> Declare.Proof.t
-
 val do_fixpoint
-   : ?scope:Locality.definition_scope
-   -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
-  -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
-  -> unit
-
-val do_cofixpoint_interactive
-  : scope:Locality.definition_scope
+  : ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
-  -> cofixpoint_expr list
-  -> Declare.Proof.t
+  -> fixpoint_expr list
+  -> Declare.Proof.t option
 
 val do_cofixpoint
-  : scope:Locality.definition_scope
+  : ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
   -> cofixpoint_expr list
-  -> unit
+  -> Declare.Proof.t option
 
 (************************************************************************)
 (** Internal API  *)
@@ -71,7 +51,7 @@ val adjust_rec_order
 type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr option list * 'types list
 
 (** Exported for Program *)
-val interp_recursive :
+val interp_recursive_evars :
   Environ.env ->
   (* Misc arguments *)
   program_mode:bool -> cofix:bool ->
@@ -86,7 +66,7 @@ val interp_recursive :
 
 (** Exported for Funind *)
 
-val interp_fixpoint
+val interp_recursive
   :  ?check_recursivity:bool
   -> ?typing_flags:Declarations.typing_flags
   -> cofix:bool
