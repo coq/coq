@@ -313,6 +313,8 @@ let output_int64 ch n =
 type time = {real: float; user: float; system: float; }
 type duration = time
 
+let empty_duration = { real = 0.; user = 0.; system = 0. }
+
 let get_time () =
   let t = Unix.times ()  in
   { real = Unix.gettimeofday();

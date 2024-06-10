@@ -224,9 +224,8 @@ let fs_intern dp =
 
 let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Vernacstate.Interp.t =
   (* Synterp duplication of control handling bites us here... *)
-  let cmd = CAst.make ?loc { control; expr = VernacSynPure (VernacEndProof pe); attrs = [] } in
-  let CAst.{ loc; v = entry } = Synterp.synterp_control ~intern:fs_intern cmd in
-  let control = entry.control in
+  let control = Synterp.add_default_timeout control in
+  let control = List.map Synterp.synpure_control control in
   NewProfile.profile "interp-delayed-qed" (fun () ->
       interp_gen ~verbosely:false ~st
         ~interp_fn:(interp_qed_delayed_control ~proof ~control) e)

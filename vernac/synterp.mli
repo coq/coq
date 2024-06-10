@@ -35,6 +35,8 @@ type control_entry =
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
 
+(** Interprete control flag assuming a synpure command. *)
+val synpure_control : Vernacexpr.control_flag -> control_entry
 
 type synterp_entry =
   | EVernacNoop
@@ -86,6 +88,8 @@ val synterp_control :
   intern:Library.Intern.t ->
   Vernacexpr.vernac_control ->
   vernac_control_entry
+
+val add_default_timeout : Vernacexpr.control_flag list -> Vernacexpr.control_flag list
 
 (** Default proof mode set by `start_proof` *)
 val get_default_proof_mode : unit -> Pvernac.proof_mode
