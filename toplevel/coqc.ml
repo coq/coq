@@ -46,7 +46,7 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
     Feedback.msg_notice Pp.(Flags.(with_option raw_print (fun () ->
         Prettyp.print_full_pure_context access env sigma) ()) ++ fnl ())
   end;
-  CProfile.print_profile ()
+  ()
 
 let coqc_run copts ~opts injections =
   let _feeder = Feedback.add_feeder Coqloop.coqloop_feed in
