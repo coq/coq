@@ -65,8 +65,18 @@
 
 ## Only for the final release of each major version ##
 
-- [ ] Ping `@Zimmi48` to publish a new version on Zenodo.
-  *TODO:* automate this with coqbot.
+- [ ] Ping `@coq/zenodo-maintainers` to publish a new version on Zenodo.
+  Process:
+  1. Go to the [Zenodo Coq community](https://zenodo.org/communities/rocq-prover) and click on the existing "Coq Proof Assistant" record.
+  2. Click on "New version".
+  3. Click on "Upload files" and upload the PDF manual and the source tarball, copied from the GitHub release.
+  4. Select the manual as the default preview.
+  5. Enter the release date as publication date.
+  6. Replace the release summary in the description with the one from the https://coq.inria.fr/refman/changes.html page for the current release (copy-pasting from the HTML page to the rich text editor works, except that bullet-point lists appear as quoted text, which you can fix easily in the rich text editor). Note that the first paragraph of the description is not the release summary but the general description of Coq, which should not change from one release to another.
+  7. Change the "Project manager" to the current release manager, and update the project members to match the current maintainers if necessary.
+  8. Add the (major) version number.
+  9. Update the link to the release on GitHub (in the related works section).
+  10. Click "Publish".
 
 ## This is now delegated to the platform maintainers ##
 
