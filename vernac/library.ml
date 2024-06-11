@@ -265,11 +265,8 @@ module Intern = struct
     (** A pair of [kind, object], for example ["file",
         "/usr/local/foo.vo"], used for error messages. *)
   end
-  module Error = struct
-    type t = exn
-  end
 
-  type t = DirPath.t -> (library_t, Error.t) Result.t * Provenance.t
+  type t = DirPath.t -> (library_t, exn) Result.t * Provenance.t
 end
 
 let intern_from_file file =
