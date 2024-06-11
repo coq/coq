@@ -216,20 +216,6 @@ let interp_entry ?(verbosely=true) ~st entry =
   interp_gen ~verbosely ~st ~interp_fn:interp_control entry
 
 module Intern = struct
-  let error_unmapped_dir qid =
-    let prefix, _ = Libnames.repr_qualid qid in
-    CErrors.user_err
-      Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
-              ; str "no physical path bound to"; spc ()
-              ; Names.DirPath.print prefix; fnl ()
-              ])
-
-  let error_lib_not_found dir =
-    let vos = !Flags.load_vos_libraries in
-    let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
-    CErrors.user_err
-      Pp.(seq ([ str "Cannot find library "; Names.DirPath.print dir; str" in loadpath"]@vos_msg))
-
 
   let fs_intern dp =
     match Loadpath.locate_absolute_library dp with
@@ -239,10 +225,8 @@ module Intern = struct
       Result.iter (fun _ ->
           Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file)) res;
       res, provenance
-    | Error Loadpath.Error.LibNotFound ->
-      error_lib_not_found dp
-    | Error Loadpath.Error.LibUnmappedDir ->
-      error_unmapped_dir (Libnames.qualid_of_dirpath dp)
+    | Error e ->
+      Loadpath.Error.raise dp e
 end
 
 let fs_intern = Intern.fs_intern

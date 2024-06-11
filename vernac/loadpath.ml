@@ -178,6 +178,26 @@ let locate_file fname =
 
 module Error = struct
   type t = LibUnmappedDir | LibNotFound
+
+  let unmapped_dir qid =
+    let prefix, _ = Libnames.repr_qualid qid in
+    CErrors.user_err
+      Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
+              ; str "no physical path bound to"; spc ()
+              ; Names.DirPath.print prefix; fnl ()
+              ])
+
+  let lib_not_found dir =
+    let vos = !Flags.load_vos_libraries in
+    let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
+    CErrors.user_err
+      Pp.(seq ([ str "Cannot find library "; Names.DirPath.print dir; str" in loadpath"]@vos_msg))
+
+  let raise dp = function
+    | LibUnmappedDir ->
+      unmapped_dir (Libnames.qualid_of_dirpath dp)
+    | LibNotFound ->
+      lib_not_found dp
 end
 
 (* If [!Flags.load_vos_libraries]
