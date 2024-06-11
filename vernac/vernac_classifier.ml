@@ -214,11 +214,7 @@ let classify_vernac e =
     (* Fail Qed or Fail Lemma must not join/fork the DAG *)
     (* XXX why is Fail not always Query? *)
     if Vernacprop.has_query_control cmd then
-      (match static_classifier ~atts:v.attrs v.expr with
-         | VtQuery | VtProofStep _ | VtSideff _
-         | VtMeta as x -> x
-         | VtQed _ -> VtProofStep { proof_block_detection = None }
-         | VtStartProof _ | VtProofMode _ -> VtQuery)
+      VtQuery
     else
       static_classifier ~atts:v.attrs v.expr
 
