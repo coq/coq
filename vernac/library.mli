@@ -33,11 +33,11 @@ module Intern : sig
         "/usr/local/foo.vo"], used for error messages. *)
   end
 
-  type t = DirPath.t -> (library_t, exn) Result.t * Provenance.t
+  type t = DirPath.t -> (library_t, Exninfo.iexn) Result.t * Provenance.t
 end
 
 val intern_from_file : CUnix.physical_path ->
-  (library_t, exn) Result.t * Intern.Provenance.t
+  (library_t, Exninfo.iexn) Result.t * Intern.Provenance.t
 
 val require_library_syntax_from_dirpath
   :  intern:Intern.t

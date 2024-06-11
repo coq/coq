@@ -266,7 +266,7 @@ module Intern = struct
         "/usr/local/foo.vo"], used for error messages. *)
   end
 
-  type t = DirPath.t -> (library_t, exn) Result.t * Provenance.t
+  type t = DirPath.t -> (library_t, Exninfo.iexn) Result.t * Provenance.t
 end
 
 let intern_from_file file =
@@ -283,9 +283,11 @@ let intern_from_file file =
 
 let intern_from_file file =
   let provenance = ("file", file) in
+  (* This is a barrier to catch IO / Marshal exceptions in a more
+     structured way, as to provide better error messages. *)
   (match CErrors.to_result ~f:intern_from_file file with
    | Ok res -> Ok res
-   | Error (exn, _) -> Error exn), provenance
+   | Error iexn -> Error iexn), provenance
 
 let check_library_expected_name ~provenance dir library_name =
   if not (DirPath.equal dir library_name) then
@@ -304,8 +306,7 @@ let () = CErrors.register_handler (function
                 str (snd provenance) ++ str ") for library " ++ Names.DirPath.print dir ++ str ": " ++ err))
     | _ -> None)
 
-let error_in_intern provenance dir exn =
-  let info = Exninfo.info exn in
+let error_in_intern provenance dir (exn, info) =
   Exninfo.iraise (InternError { exn; provenance; dir }, info)
 
 (* Returns the digest of a library, checks both caches to see what is loaded *)
@@ -324,8 +325,8 @@ let rec intern_library ~root ~intern (needed, contents as acc) dir =
       | Ok m, provenance ->
         check_library_expected_name ~provenance dir m.library_name;
         mk_summary m, intern_library_deps ~root ~intern acc dir m
-      | Error error, provenance ->
-        error_in_intern provenance dir error
+      | Error iexn, provenance ->
+        error_in_intern provenance dir iexn
 
 and intern_library_deps ~root ~intern libs dir m =
   let needed, contents =
