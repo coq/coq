@@ -55,21 +55,23 @@ let classify_vernac e =
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
-    | VernacSetOption (_, l,_)
-      when CList.exists (CList.equal String.equal l)
-        options_affecting_stm_scheduling ->
-       VtSideff ([], VtNow)
-    | VernacBeginSection {v=id} -> VtSideff ([id], VtLater)
+    | VernacSetOption (_, l,_) ->
+      let now =
+        if CList.exists (CList.equal String.equal l) options_affecting_stm_scheduling
+        then VtNow
+        else VtLater
+      in
+       VtSideff ([], now)
+    | VernacBeginSection {v=id} -> VtSideff ([id], VtNow)
     | VernacChdir _ | VernacExtraDependency _
-    | VernacSetOption _ -> VtSideff ([], VtLater)
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff ([], VtNow)
     (* Modules with parameters have to be executed: can import notations *)
     | VernacDeclareModule (exp,{v=id},bl,_)
     | VernacDefineModule (exp,{v=id},bl,_,_) ->
-        VtSideff ([id], if bl = [] && exp = None then VtLater else VtNow)
+        VtSideff ([id], VtNow)
     | VernacDeclareModuleType ({v=id},bl,_,_) ->
-        VtSideff ([id], if bl = [] then VtLater else VtNow)
+        VtSideff ([id], VtNow)
     (* These commands alter the parser *)
     | VernacDeclareCustomEntry _
     | VernacNotation _ | VernacReservedNotation _
@@ -182,13 +184,12 @@ let classify_vernac e =
     | VernacAttributes _
     | VernacSchemeEquality _
     | VernacAddRewRule _
-    | VernacDeclareInstance _ -> VtSideff ([], VtLater)
-    (* Who knows *)
+    | VernacDeclareInstance _
     | VernacOpenCloseScope _ | VernacDeclareScope _
     | VernacDelimiters _ | VernacBindScope _
     | VernacEnableNotation _
     | VernacSyntacticDefinition _
-    | VernacContext _ (* TASSI: unsure *) -> VtSideff ([], VtNow)
+    | VernacContext _ -> VtSideff ([], VtLater)
     | VernacInstance ((name,_),_,_,props,_) ->
       let program, refine =
         Attributes.(parse_drop_extra Notations.(program ++ Classes.refine_att) atts)
