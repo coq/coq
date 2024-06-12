@@ -1745,7 +1745,7 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
   | FString s' ->
     let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
     | (PHString s, elims), psubst ->
-      if not @@ String.equal s s' then None else
+      if not @@ Pstring.equal s s' then None else
       Some (elims, psubst)
     | _ -> None) patterns states
     in

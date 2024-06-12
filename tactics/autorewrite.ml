@@ -125,7 +125,7 @@ struct
 
   | DFloat _, _ -> -1 | _, DFloat _ -> 1
 
-  | DString s1, DString s2 -> String.compare s1 s2
+  | DString s1, DString s2 -> Pstring.compare s1 s2
 
   | DString _, _ -> -1 | _, DString _ -> 1
 

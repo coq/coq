@@ -71,7 +71,7 @@ Ltac2 Type kind := [
 | Proj (projection, Binder.relevance, constr)
 | Uint63 (uint63)
 | Float (float)
-| String (string)
+| String (pstring)
 | Array (instance, constr array, constr, constr)
 ].
 

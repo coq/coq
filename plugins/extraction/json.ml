@@ -167,7 +167,7 @@ let rec json_expr env = function
     ]
   | MLstring s -> json_dict [
       ("what", json_str "expr:string");
-      ("string", json_str s)
+      ("string", json_str (Pstring.to_string s))
     ]
   | MLparray(t,def) -> json_dict [
       ("what", json_str "expr:array");

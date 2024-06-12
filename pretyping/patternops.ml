@@ -64,7 +64,7 @@ let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
 | PFloat f1, PFloat f2 ->
    Float64.equal f1 f2
 | PString s1, PString s2 ->
-   String.equal s1 s2
+   Pstring.equal s1 s2
 | PArray (t1, def1, ty1), PArray (t2, def2, ty2) ->
   Array.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env def1 def2
   && constr_pattern_eq env ty1 ty2

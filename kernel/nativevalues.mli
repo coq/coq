@@ -107,7 +107,7 @@ val mk_uint : Uint63.t -> t
 
 val mk_float : Float64.t -> t
 
-val mk_string : string -> t
+val mk_string : Pstring.t -> t
 
 val napply : t -> t array -> t
 (* Functions over accumulators *)

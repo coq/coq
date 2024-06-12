@@ -471,7 +471,7 @@ let matches_core env sigma allow_bound_rels
 
       | PFloat f1, Float f2 when Float64.equal f1 f2 -> subst
 
-      | PString s1, String s2 when String.equal s1 s2 -> subst
+      | PString s1, String s2 when Pstring.equal s1 s2 -> subst
 
       | PArray(pt,pdef,pty), Array(_u,t,def,ty)
              when Array.length pt = Array.length t ->

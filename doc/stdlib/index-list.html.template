@@ -678,6 +678,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Pattern.v
     user-contrib/Ltac2/Printf.v
     user-contrib/Ltac2/Proj.v
+    user-contrib/Ltac2/Pstring.v
     user-contrib/Ltac2/RedFlags.v
     user-contrib/Ltac2/Ref.v
     user-contrib/Ltac2/Std.v

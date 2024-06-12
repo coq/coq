@@ -1133,10 +1133,9 @@ let coqbyte_of_string ?loc esig byte s =
 let coqbyte_of_char esig byte c = coqbyte_of_char_code esig byte (Char.code c)
 
 let pstring_of_string ?loc s =
-  if String.length s > Pstring.max_length_int then
-    user_err ?loc (str "String literal would be too large on a 32-bits system.")
-  else
-    Constr.mkString s
+  match Pstring.of_string s with
+  | Some s -> Constr.mkString s
+  | None -> user_err ?loc (str "String literal would be too large on a 32-bits system.")
 
 let make_ascii_string n =
   if n>=32 && n<=126 then String.make 1 (char_of_int n)
@@ -1150,7 +1149,7 @@ let string_of_coqbyte c = make_ascii_string (char_code_of_coqbyte c)
 
 let string_of_pstring c =
   match TokenValue.kind c with
-  | TString s -> s
+  | TString s -> Pstring.to_string s
   | _ -> raise NotAValidPrimToken
 
 let coqlist_byte_of_string esig byte_ty list_ty str =

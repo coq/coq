@@ -27,8 +27,6 @@ From Coq Require Import ExtrOCamlInt63.
 (** Primitive types and operators. *)
 
 Extract Constant PrimString.string => "Pstring.t".
-Extraction Inline PrimString.string.
-(* Otherwise, the name conflicts with the primitive OCaml type [string] *)
 
 Extract Constant PrimString.max_length => "Pstring.max_length".
 Extract Constant PrimString.make => "Pstring.make".

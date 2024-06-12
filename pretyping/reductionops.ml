@@ -731,7 +731,7 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
   | PHFloat f, Float f' ->
     if Float64.equal f f' then psubst else raise PatternFailure
   | PHString s, String s' ->
-    if String.equal s s' then psubst else raise PatternFailure
+    if Pstring.equal s s' then psubst else raise PatternFailure
   | PHLambda (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_lambda sigma t in
     let na = List.length ntys and np = Array.length ptys in

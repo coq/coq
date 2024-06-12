@@ -6,42 +6,47 @@ type comparison =
 
 type char63 = Uint63.t
 
-(** val make : Uint63.t -> char63 -> Pstring.t **)
+type string = Pstring.t
+
+(** val make : Uint63.t -> char63 -> string **)
 
 let make = Pstring.make
 
-(** val length : Pstring.t -> Uint63.t **)
+(** val length : string -> Uint63.t **)
 
 let length = Pstring.length
 
-(** val sub : Pstring.t -> Uint63.t -> Uint63.t -> Pstring.t **)
+(** val sub : string -> Uint63.t -> Uint63.t -> string **)
 
 let sub = Pstring.sub
 
-(** val cat : Pstring.t -> Pstring.t -> Pstring.t **)
+(** val cat : string -> string -> string **)
 
 let cat = Pstring.cat
 
-(** val compare : Pstring.t -> Pstring.t -> comparison **)
+(** val compare : string -> string -> comparison **)
 
 let compare = (fun x y -> let c = Pstring.compare x y in if c = 0 then Eq else if c < 0 then Lt else Gt)
 
-(** val s1 : Pstring.t **)
+(** val s1 : string **)
 
 let s1 =
-  "hello"
+  (Pstring.unsafe_of_string "hello")
 
-(** val s2 : Pstring.t **)
+(** val s2 : string **)
 
 let s2 =
-  "wwworlddd"
+  (Pstring.unsafe_of_string "wwworlddd")
 
-(** val s : Pstring.t **)
+(** val s : string **)
 
 let s =
-  cat s1 (cat ", " (cat (sub s2 (Uint63.of_int (2)) (Uint63.of_int (5))) "!"))
+  cat s1
+    (cat (Pstring.unsafe_of_string ", ")
+      (cat (sub s2 (Uint63.of_int (2)) (Uint63.of_int (5)))
+        (Pstring.unsafe_of_string "!")))
 
-(** val w : Pstring.t **)
+(** val w : string **)
 
 let w =
   make (length s) (Uint63.of_int (119))

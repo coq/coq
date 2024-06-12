@@ -130,7 +130,7 @@ type t =
 | SReloc_Const_val of structured_values
 | SReloc_Const_uint of Uint63.t
 | SReloc_Const_float of Float64.t
-| SReloc_Const_string of String.t
+| SReloc_Const_string of Pstring.t
 | SReloc_annot of annot_switch
 | SReloc_caml_prim of caml_prim
 

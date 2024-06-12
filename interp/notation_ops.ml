@@ -1575,7 +1575,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GInt i1, NInt i2 when Uint63.equal i1 i2 -> sigma
   | GFloat f1, NFloat f2 when Float64.equal f1 f2 -> sigma
-  | GString s1, NString s2 when String.equal s1 s2 -> sigma
+  | GString s1, NString s2 when Pstring.equal s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 

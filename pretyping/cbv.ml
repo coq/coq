@@ -816,7 +816,7 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
   | PHFloat f, VAL(0, t') ->
     begin match kind t' with Float f' when Float64.equal f f' -> psubst | _ -> raise PatternFailure end
   | PHString s, VAL(0, t') ->
-    begin match kind t' with String s' when String.equal s s' -> psubst | _ -> raise PatternFailure end
+    begin match kind t' with String s' when Pstring.equal s s' -> psubst | _ -> raise PatternFailure end
   | PHLambda (ptys, pbod), LAMBDA (nlam, ntys, body, env) ->
     let np = Array.length ptys in
     if np > nlam then raise PatternFailure;

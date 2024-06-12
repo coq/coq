@@ -10,12 +10,19 @@
 
 (** Primitive [string] type. *)
 
-type t = string
+type t = private string
 
 type char63 = Uint63.t
 
 val max_length_int : int
 val max_length : Uint63.t
+
+(** [to_string s] converts the primitive string [s] into a standard string. *)
+val to_string : t -> string
+
+(** [of_string s] converts string [s] into a primitive string if its size does
+    not exceed [max_length_int], and returns [None] otherwise. *)
+val of_string : string -> t option
 
 (** [make i c] returns a string of size [min i max_length] containing only the
     character with code [c l_and 255]. *)
@@ -49,3 +56,13 @@ val equal : t -> t -> bool
 
 (** [hash s] gives a hash of [s], with the same value as [Hashtbl.hash s]. *)
 val hash : t -> int
+
+(** [unsafe_of_string s] converts [s] into a primitive string without checking
+    whether its size satisfies the length constraint. Callers of this function
+    must ensure that [length s <= max_length_int], which is always the case if
+    [s] was obtained via [to_string]. NOTE: this function is used in generated
+    code, via [compile]. *)
+val unsafe_of_string : string -> t
+
+(** [compile s] outputs an OCaml expression producing primitive string [s]. *)
+val compile : t -> string

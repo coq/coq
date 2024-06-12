@@ -1123,7 +1123,7 @@ let rec extern inctx scopes vars r =
 
   | GString s ->
      extern_prim_token_delimiter_if_required
-       (String s)
+       (String (Pstring.to_string s))
        "pstring" "pstring_scope" (snd scopes)
 
   | GArray(u,t,def,ty) ->

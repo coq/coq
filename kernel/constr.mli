@@ -80,7 +80,7 @@ val mkArray : UVars.Instance.t * constr array * constr * types -> constr
 val mkFloat : Float64.t -> constr
 
 (** Constructs a machine string. *)
-val mkString : string -> constr
+val mkString : Pstring.t -> constr
 
 (** Constructs an patvar named "?n" *)
 val mkMeta : metavariable -> constr
@@ -287,7 +287,7 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   (** The relevance is the relevance of the whole term *)
   | Int       of Uint63.t
   | Float     of Float64.t
-  | String    of String.t
+  | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
   (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
       [u] is a universe containing [t]. *)

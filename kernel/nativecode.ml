@@ -493,7 +493,7 @@ type mllambda =
   | MLint          of int
   | MLuint         of Uint63.t
   | MLfloat        of Float64.t
-  | MLstring       of String.t
+  | MLstring       of Pstring.t
   | MLsetref       of string * mllambda
   | MLsequence     of mllambda * mllambda
   | MLarray        of mllambda array
@@ -570,7 +570,7 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   | MLfloat f1, MLfloat f2 ->
       Float64.equal f1 f2
   | MLstring s1, MLstring s2 ->
-      String.equal s1 s2
+      Pstring.equal s1 s2
   | MLsetref (id1, ml1), MLsetref (id2, ml2) ->
       String.equal id1 id2 &&
       eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
@@ -1832,7 +1832,7 @@ let pp_mllam fmt l =
     | MLint i -> pp_int fmt i
     | MLuint i -> Format.fprintf fmt "(%s)" (Uint63.compile i)
     | MLfloat f -> Format.fprintf fmt "(%s)" (Float64.compile f)
-    | MLstring s -> Format.fprintf fmt "%S" s
+    | MLstring s -> Format.fprintf fmt "(%s)" (Pstring.compile s)
     | MLsetref (s, body) ->
         Format.fprintf fmt "@[%s@ :=@\n %a@]" s pp_mllam body
     | MLsequence(l1,l2) ->

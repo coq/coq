@@ -399,7 +399,7 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
 | MLuint i1, MLuint i2 -> Uint63.equal i1 i2
 | MLfloat f1, MLfloat f2 -> Float64.equal f1 f2
-| MLstring s1, MLstring s2 -> String.equal s1 s2
+| MLstring s1, MLstring s2 -> Pstring.equal s1 s2
 | MLparray (t1,def1), MLparray (t2, def2) -> Array.equal eq_ml_ast t1 t2 && eq_ml_ast def1 def2
 | (MLrel _|MLapp _|MLlam _|MLletin _|MLglob _|MLcons _
   |MLtuple _|MLcase _|MLfix _|MLexn _|MLdummy _|MLaxiom _

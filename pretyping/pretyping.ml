@@ -643,7 +643,7 @@ type pretyper = {
   pretype_cast : pretyper -> glob_constr * cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
-  pretype_string : pretyper -> String.t -> unsafe_judgment pretype_fun;
+  pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }

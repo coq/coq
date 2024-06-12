@@ -159,7 +159,7 @@ let pp_struct_const = function
   | Const_val _ -> Pp.str "(value)"
   | Const_uint i -> Pp.str (Uint63.to_string i)
   | Const_float f -> Pp.str (Float64.to_string f)
-  | Const_string s -> Pp.str (Printf.sprintf "%S" s)
+  | Const_string s -> Pp.str (Printf.sprintf "%S" (Pstring.to_string s))
 
 (* Abstract data *)
 type vprod
@@ -659,7 +659,7 @@ and pr_kind w =
   | Vblock _b -> str "Vblock"
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
-  | Vstring s -> s |> Format.sprintf "Vstring(%S)" |> str
+  | Vstring s -> Pstring.to_string s |> Format.sprintf "Vstring(%S)" |> str
   | Varray _ -> str "Varray"
   | Vaccu (a, stk) -> str "Vaccu(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
 and pr_stack stk =

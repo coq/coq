@@ -110,7 +110,7 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Proj      of Projection.t * 'r * 'constr
   | Int       of Uint63.t
   | Float     of Float64.t
-  | String    of String.t
+  | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
 
 (* constr is the fixpoint of the previous type. *)
@@ -907,7 +907,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
-  | String s1, String s2 -> String.equal s1 s2
+  | String s1, String s2 -> Pstring.equal s1 s2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
@@ -1079,7 +1079,7 @@ let constr_ord_int f t1 t2 =
     | Int _, _ -> -1 | _, Int _ -> 1
     | Float f1, Float f2 -> Float64.total_compare f1 f2
     | Float _, _ -> -1 | _, Float _ -> 1
-    | String s1, String s2 -> String.compare s1 s2
+    | String s1, String s2 -> Pstring.compare s1 s2
     | String _, _ -> -1 | _, String _ -> 1
     | Array(_u1,t1,def1,ty1), Array(_u2,t2,def2,ty2) ->
       compare [(Array.compare f, t1, t2); (f, def1, def2); (f, ty1, ty2)]
@@ -1182,7 +1182,7 @@ let hasheq t1 t2 =
       && array_eqeq bl1 bl2
     | Int i1, Int i2 -> i1 == i2
     | Float f1, Float f2 -> Float64.equal f1 f2
-    | String s1, String s2 -> String.equal s1 s2
+    | String s1, String s2 -> Pstring.equal s1 s2
     | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
       u1 == u2 && def1 == def2 && ty1 == ty2 && array_eqeq t1 t2
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
@@ -1543,7 +1543,7 @@ let rec debug_print c =
          str"}")
   | Int i -> str"Int("++str (Uint63.to_string i) ++ str")"
   | Float i -> str"Float("++str (Float64.to_string i) ++ str")"
-  | String s -> str"String("++str (Printf.sprintf "%S" s) ++ str")"
+  | String s -> str"String("++str (Printf.sprintf "%S" (Pstring.to_string s)) ++ str")"
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
       ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"}"

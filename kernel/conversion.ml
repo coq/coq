@@ -323,7 +323,7 @@ let rec compare_under e1 c1 e2 c2 =
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
-  | String s1, String s2 -> String.equal s1 s2
+  | String s1, String s2 -> Pstring.equal s1 s2
   | Sort s1, Sort s2 ->
     let subst_instance_sort u s =
       if UVars.Instance.is_empty u then s else UVars.subst_instance_sort u s
@@ -706,7 +706,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     | FString s1, FString s2 ->
-        if String.equal s1 s2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+        if Pstring.equal s1 s2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
     | FCaseInvert (ci1,u1,pms1,p1,iv1,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,iv2,_,br2,e2) ->

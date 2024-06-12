@@ -17,6 +17,11 @@ let max_length_int : int = 16777211
 
 let max_length : Uint63.t = Uint63.of_int max_length_int
 
+let to_string : t -> string = fun s -> s
+
+let of_string : string -> t option = fun s ->
+  if String.length s <= max_length_int then Some s else None
+
 (* Return a string of size [max_length] if the parameter is too large.
    Use [c land 255] if [c] is not a valid character. *)
 let make : Uint63.t -> char63 -> t = fun i c ->
@@ -29,7 +34,7 @@ let length : t -> Uint63.t = fun s ->
   Uint63.of_int (String.length s)
 
 (* Out of bound access gives '\x00'. *)
-let get : string -> Uint63.t -> char63 = fun s i ->
+let get : t -> Uint63.t -> char63 = fun s i ->
   let i = Uint63.to_int_min i max_length_int in
   if i < String.length s then
     Uint63.of_int (Char.code (String.get s i))
@@ -66,3 +71,8 @@ let equal : t -> t -> bool =
 
 let hash : t -> int =
   Hashtbl.hash
+
+let unsafe_of_string : string -> t = fun s -> s
+
+let compile : t -> string =
+  Printf.sprintf "Pstring.unsafe_of_string %S"

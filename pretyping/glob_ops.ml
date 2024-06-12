@@ -217,7 +217,7 @@ let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
     List.equal f args1 args2 && f c1 c2
   | GInt i1, GInt i2 -> Uint63.equal i1 i2
   | GFloat f1, GFloat f2 -> Float64.equal f1 f2
-  | GString s1, GString s2 -> String.equal s1 s2
+  | GString s1, GString s2 -> Pstring.equal s1 s2
   | GArray (u1, t1, def1, ty1), GArray (u2, t2, def2, ty2) ->
     Array.equal f t1 t2 && f def1 def2 && f ty1 ty2 &&
     Option.equal instance_eq u1 u2

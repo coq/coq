@@ -92,7 +92,7 @@ and conv_whd env pb k whd1 whd2 cu =
     if Float64.(equal (of_float f1) (of_float f2)) then cu
     else raise NotConvertible
   | Vstring s1, Vstring s2 ->
-    if String.equal s1 s2 then cu
+    if Pstring.equal s1 s2 then cu
     else raise NotConvertible
   | Varray t1, Varray t2 ->
     if t1 == t2 then cu else

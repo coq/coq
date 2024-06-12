@@ -41,7 +41,7 @@ type 'v lambda =
   (* inductive name, constructor tag, arguments *)
 | Luint         of Uint63.t
 | Lfloat        of Float64.t
-| Lstring       of String.t
+| Lstring       of Pstring.t
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
@@ -162,7 +162,7 @@ let rec pp_lam lam =
        str")")
   | Luint i -> str (Uint63.to_string i)
   | Lfloat f -> str (Float64.to_string f)
-  | Lstring s -> str (Printf.sprintf "%S" s)
+  | Lstring s -> str (Printf.sprintf "%S" (Pstring.to_string s))
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
