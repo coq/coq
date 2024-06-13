@@ -443,6 +443,7 @@ let nb_cs_proj_args env ise pc f u =
   | Sort s -> na (Sort_cs (Sorts.family (ESorts.kind ise s)))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Proj (c',_,_) -> let _ = na (Proj_cs (Names.Projection.repr c')) in 0
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -606,7 +607,17 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
             (EConstr.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env)
             ise' pb b
         | KpatFlex | KpatProj _ ->
-          unif_HO env ise u.up_f (mkSubApp f (i - Array.length u.up_a) a)
+          let fa = mkSubApp f (i - Array.length u.up_a) a in
+          let ise =
+            match EConstr.kind ise f, EConstr.kind ise u.up_f with
+            | Proj _, _ | _, Proj _ ->
+               (* with primitive projections we "lose" parameters so we unify
+                * the type of the arguments to retrieve that information *)
+               let tuf = Retyping.get_type_of ~lax:true env ise u.up_f in
+               let tfa = Retyping.get_type_of ~lax:true env ise fa in
+               unif_HO env ise tuf tfa
+            | _ -> ise in
+          unif_HO env ise u.up_f fa
         | _ -> unif_HO env ise u.up_f f in
         let ise'' = unif_HO_args env ise' u.up_a (i - Array.length u.up_a) a in
         let lhs = mkSubApp f i a in
