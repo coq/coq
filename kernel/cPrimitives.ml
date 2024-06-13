@@ -58,6 +58,7 @@ type t =
   | Float64mul
   | Float64div
   | Float64sqrt
+  | Float64fma
   | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
@@ -115,6 +116,7 @@ let parse = function
   | "float64_mul" -> Float64mul
   | "float64_div" -> Float64div
   | "float64_sqrt" -> Float64sqrt
+  | "float64_fma" -> Float64fma
   | "float64_of_uint63" -> Float64ofUint63
   | "float64_normfr_mantissa" -> Float64normfr_mantissa
   | "float64_frshiftexp" -> Float64frshiftexp
@@ -188,6 +190,7 @@ let hash = function
   | Int63asr -> 53
   | Int63compares -> 54
   | Float64equal -> 55
+  | Float64fma -> 56
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -234,6 +237,7 @@ let to_string = function
   | Float64mul -> "fmul"
   | Float64div -> "fdiv"
   | Float64sqrt -> "fsqrt"
+  | Float64fma -> "ffma"
   | Float64ofUint63 -> "float_of_int"
   | Float64normfr_mantissa -> "normfr_mantissa"
   | Float64frshiftexp -> "frshiftexp"
@@ -337,6 +341,8 @@ let types =
       [float_ty], PITT_ind (PIT_f_class, ())
   | Float64add | Float64sub | Float64mul | Float64div ->
       [float_ty; float_ty], float_ty
+  | Float64fma ->
+      [float_ty; float_ty; float_ty], float_ty
   | Float64ldshiftexp ->
       [float_ty; int_ty], float_ty
   | Arraymake ->
@@ -402,6 +408,7 @@ let params = function
   | Float64mul
   | Float64div
   | Float64sqrt
+  | Float64fma
   | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
@@ -462,6 +469,7 @@ let univs = function
   | Float64mul
   | Float64div
   | Float64sqrt
+  | Float64fma
   | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
