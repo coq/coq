@@ -318,6 +318,7 @@ let cast_kind_display k =
   match k with
   | VMcast -> "VMcast"
   | DEFAULTcast -> "DEFAULTcast"
+  | REVERSEcast -> "REVERSEcast"
   | NATIVEcast -> "NATIVEcast"
 
 let constr_display csr =
