@@ -1342,9 +1342,7 @@ struct
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
     let sigma, cj =
       let sigma, tj = eval_type_pretyper self ~flags empty_valcon env sigma t in
-      let sigma, tval = Evarsolve.refresh_universes
-          ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
-      let tval = nf_evar sigma tval in
+      let tval = nf_evar sigma tj.utj_val in
       let (sigma, cj), tval = match k with
         | Some VMcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
