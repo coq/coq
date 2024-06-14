@@ -1,5 +1,7 @@
 File "./output/bug6404.v", line 7, characters 7-11:
 The command has indeed failed with message:
+The term "I" has type "True"
+which should be Set, Prop or Type.
 In nested Ltac calls to "c", "abs", "transparent_abstract (tactic3)", 
 "b", "a", "pose (I : I)" and "(I : I)", last term evaluation failed.
-The term "I" has type "True" which should be Set, Prop or Type.
+
