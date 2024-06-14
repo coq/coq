@@ -1241,6 +1241,17 @@ Managing the local context
 
          There are fewer than :n:`@natural` premises in the goal.
 
+      .. warn:: intros is fragile, specify the names.
+
+         When no name is specified the tactic generates fresh names depending on
+         the current context, and these names can be used in the following
+         proof text. This is brittle as any change may not preserve the
+         automatically generated names, and this in turn can break the proof
+         script.
+         This warning is part of the category `pedantic` and is disabled
+         by default.
+
+
 .. tacn:: eintros {* @intropattern }
 
    Works just like :tacn:`intros` except that it creates existential variables

@@ -2017,6 +2017,31 @@ end
 (* globalization + interpretation *)
 
 
+let warning_fragile_intros =
+  CWarnings.create_with_quickfix ~default:CWarnings.Disabled ~name:"fragile-intros"
+    ~category:CWarnings.CoreCategories.pedantic
+    (fun () -> strbrk "intros is fragile, specify the names." ++ fnl ())
+
+let intro_patterns_deprecated b l loc : unit Proofview.tactic =
+  Proofview.Goal.enter begin fun gl ->
+    let old_hyps = Proofview.Goal.hyps gl in
+    Tactics.intro_patterns b l >>=
+    fun () -> Proofview.Goal.enter begin fun gl ->
+      let new_hyps = Proofview.Goal.hyps gl in
+      let old_ids = List.map Context.Named.Declaration.get_id old_hyps in
+      let new_ids = List.map Context.Named.Declaration.get_id new_hyps in
+      let nnew = List.length new_ids in
+      let nold = List.length old_ids in
+      let names, rest = CList.chop (nnew - nold) new_ids in
+      let names = List.rev names in
+      if names <> [] && Option.has_some loc then
+        warning_fragile_intros ?loc
+          ~quickfix:[Quickfix.make ~loc:Option.(get loc) Pp.(str "intros " ++ prlist_with_sep spc Id.print names)] ();
+      Proofview.tclUNIT ()
+  end
+end
+
+
 let interp_tac_gen lfun avoid_ids debug t =
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   Proofview.Goal.enter begin fun gl ->
@@ -2043,9 +2068,10 @@ let hide_interp {global;ast} =
   let hide_interp env =
     let ist = Genintern.empty_glob_sign ~strict:false env in
     let te = intern_pure_tactic ist ast in
-    let t = eval_tactic te in
-    t
-  in
+    match ast.CAst.v with
+    | TacAtom (TacIntroPattern(false,[ { CAst.v = IntroForthcoming false; loc } ])) ->
+      intro_patterns_deprecated false [CAst.make ?loc @@ IntroForthcoming false] te.CAst.loc
+    | _ -> eval_tactic te in
   if global then
     Proofview.tclENV >>= fun env ->
     hide_interp env
