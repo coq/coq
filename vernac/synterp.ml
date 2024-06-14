@@ -243,8 +243,8 @@ let synterp_end_section {CAst.loc; v} =
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.Synterp.close_section ()
 
-let synterp_end_segment ({v=id} as lid) =
-  let ss = Lib.Synterp.find_opening_node id in
+let synterp_end_segment ({v=id;loc} as lid) =
+  let ss = Lib.Synterp.find_opening_node ?loc id in
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> ignore (synterp_end_module export lid)
   | Lib.OpenedModule (true,_,_,_) -> ignore (Declaremods.Synterp.end_modtype ())
