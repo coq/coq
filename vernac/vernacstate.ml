@@ -8,20 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Parser = struct
-
-  type t = Pcoq.frozen_t
-
-  let init () = Pcoq.freeze ()
-
-  let cur_state () = Pcoq.freeze ()
-
-  let parse ps entry pa =
-    Pcoq.unfreeze ps;
-    Pcoq.Entry.parse entry pa
-
-end
-
 module Synterp = struct
 
   type t = Lib.Synterp.frozen * Summary.Synterp.frozen
@@ -33,10 +19,10 @@ module Synterp = struct
     Lib.Synterp.unfreeze fl;
     Summary.Synterp.unfreeze_summaries fs
 
-  let init () = freeze ()
+  let parsing (_fl, fs) =
+    Summary.Synterp.project_from_summary fs Pcoq.parser_summary_tag
 
-  let parsing (_, sum) =
-    Summary.Synterp.project_from_summary sum Pcoq.parser_summary_tag
+  let init () = freeze ()
 
   module Stm = struct
     let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, Summary.Synterp.make_marshallable summary
@@ -68,7 +54,6 @@ end = struct
     Lib.Interp.unfreeze fl;
     Summary.Interp.unfreeze_summaries fs
 
-  (* STM-specific state manipulations *)
   module Stm = struct
     let make_shallow (lib, summary) = Lib.Interp.drop_objects lib, Summary.Interp.make_marshallable summary
     let lib = fst

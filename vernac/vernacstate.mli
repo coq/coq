@@ -8,18 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Parser : sig
-
-  (** Subset of [Synterp.t] needed to parse *)
-  type t
-
-  val init : unit -> t
-  val cur_state : unit -> t
-
-  val parse : t -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
-
-end
-
 (** Synterp State, includes parser state, etc... ; as of today the
     parsing state has no functional components. *)
 module Synterp : sig
@@ -29,8 +17,7 @@ module Synterp : sig
   val init : unit -> t
   val freeze : unit -> t
   val unfreeze : t -> unit
-  val parsing : t -> Parser.t
-
+  val parsing : t -> Pcoq.frozen_t
 end
 
 module System : sig
