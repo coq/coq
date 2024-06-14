@@ -34,6 +34,12 @@ type caml_prim =
 | CAML_Arrayset
 | CAML_Arraycopy
 | CAML_Arraylength
+| CAML_Stringmake
+| CAML_Stringlength
+| CAML_Stringget
+| CAML_Stringsub
+| CAML_Stringcat
+| CAML_Stringcompare
 
 type instruction =
   | Klabel of Label.t
@@ -91,6 +97,12 @@ let caml_prim_to_prim = function
 | CAML_Arrayset -> CPrimitives.Arrayset
 | CAML_Arraycopy -> CPrimitives.Arraycopy
 | CAML_Arraylength -> CPrimitives.Arraylength
+| CAML_Stringmake -> CPrimitives.Stringmake
+| CAML_Stringlength -> CPrimitives.Stringlength
+| CAML_Stringget -> CPrimitives.Stringget
+| CAML_Stringsub -> CPrimitives.Stringsub
+| CAML_Stringcat -> CPrimitives.Stringcat
+| CAML_Stringcompare -> CPrimitives.Stringcompare
 
 let pp_lbl lbl = str "L" ++ int lbl
 

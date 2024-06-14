@@ -96,7 +96,6 @@ let locate_number () =
     Some (int_ty, gref q_int, gref q_uint, gref q_dint, gref q_duint,
           num_ty, gref q_num, gref q_dec)
 
-
 let locate_int63 () =
   let pos_neg_int63n = "num.int63.pos_neg_int63" in
   match Coqlib.lib_ref pos_neg_int63n with
@@ -400,10 +399,6 @@ let locate_global_inductive_with_params allow_params qid =
               Some (EConstr.Unsafe.to_constr c)) l
     | _ -> raise Not_found
 
-let locate_global_inductive allow_params qid =
-  try locate_global_inductive_with_params allow_params qid
-  with Not_found -> Smartlocate.global_inductive_with_alias qid, []
-
 let locate_global_inductive_or_int63_or_float env allow_params qid =
   try TargetInd (locate_global_inductive_with_params allow_params qid)
   with Not_found ->
@@ -527,6 +522,100 @@ let vernac_number_notation local ty f g opts scope =
        { pt_local = local;
          pt_scope = scope;
          pt_interp_info = NumberNotation o;
+         pt_required;
+         pt_refs;
+         pt_in_match = true }
+  in
+  enable_prim_token_interpretation i
+
+(** * String notation *)
+
+let locate_global_inductive_or_pstring env allow_params qid =
+  try TargetInd (locate_global_inductive_with_params allow_params qid)
+  with Not_found ->
+    let pstringn = "strings.pstring.type" in
+    let pstringc = "strings.pstring.wrap_string" in
+    let pstringw = "strings.pstring.string_wrapper" in
+    if allow_params && Coqlib.has_ref pstringn
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref pstringn)
+    then TargetPrim (Coqlib.lib_ref pstringw, [Coqlib.lib_ref pstringc],
+                     (Nametab.path_of_global (Coqlib.lib_ref pstringn), []))
+    else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
+
+let q_list () = Coqlib.lib_ref "core.list.type"
+let q_byte () = Coqlib.lib_ref "core.byte.type"
+
+let locate_pstring () =
+  Option.map gref (Coqlib.lib_ref_opt "strings.pstring.type")
+
+let type_error_to f ty =
+  CErrors.user_err
+    (pr_qualid f ++ str " should go from Byte.byte, (list Byte.byte), or PrimString.string to " ++
+     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ").")
+
+let type_error_of g ty =
+  CErrors.user_err
+    (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
+     str " to T or (option T), where T is either Byte.byte, (list Byte.byte), or PrimString.string.")
+
+let vernac_string_notation local ty f g via scope =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let pstring_ty = locate_pstring () in
+  let app x y = DAst.make @@ GApp (x,[y]) in
+  let arrow x y =
+    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
+  in
+  let opt r = app (gref (q_option ())) r in
+  let cbyte = gref (q_byte ()) in
+  let clist = gref (q_list ()) in
+  let clist_byte = app clist cbyte in
+  let ty_name = ty in
+  let ty, via =
+    match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
+  let tyc_params = locate_global_inductive_or_pstring env (via = None) ty in
+  let to_ty = Smartlocate.global_with_alias f in
+  let of_ty = Smartlocate.global_with_alias g in
+  let f_name, f = f, intern_cref env sigma f in
+  let g_name, g = g, intern_cref env sigma g in
+  let cty = intern_cref env sigma ty in
+  (* Check the type of f *)
+  let to_kind =
+    match pstring_ty with
+    | Some pstring when has_type env sigma f (arrow pstring cty) -> PString, Direct
+    | Some pstring when has_type env sigma f (arrow pstring (opt cty)) -> PString, Option
+    | _ ->
+    if has_type env sigma f (arrow clist_byte cty) then ListByte, Direct
+    else if has_type env sigma f (arrow clist_byte (opt cty)) then ListByte, Option
+    else if has_type env sigma f (arrow cbyte cty) then Byte, Direct
+    else if has_type env sigma f (arrow cbyte (opt cty)) then Byte, Option
+    else type_error_to f_name ty
+  in
+  (* Check the type of g *)
+  let of_kind =
+    match pstring_ty with
+    | Some pstring when has_type env sigma g (arrow cty pstring) -> PString, Direct
+    | Some pstring when has_type env sigma g (arrow cty (opt pstring)) -> PString, Option
+    | _ ->
+    if has_type env sigma g (arrow cty clist_byte) then ListByte, Direct
+    else if has_type env sigma g (arrow cty (opt clist_byte)) then ListByte, Option
+    else if has_type env sigma g (arrow cty cbyte) then Byte, Direct
+    else if has_type env sigma g (arrow cty (opt cbyte)) then Byte, Option
+    else type_error_of g_name ty
+  in
+  let to_post, pt_required, pt_refs = match tyc_params with
+    | TargetPrim (_, refs, path) -> [||], path, refs
+    | TargetInd (tyc, params) ->
+       let to_post, pt_refs =
+         match via with
+         | None -> elaborate_to_post_params env sigma tyc params
+         | Some (ty, l) -> elaborate_to_post_via env sigma ty tyc l in
+       to_post, (Nametab.path_of_global (GlobRef.IndRef tyc), []), pt_refs in
+  let o = { to_kind; to_ty; to_post; of_kind; of_ty; ty_name; warning = () } in
+  let i =
+       { pt_local = local;
+         pt_scope = scope;
+         pt_interp_info = StringNotation o;
          pt_required;
          pt_refs;
          pt_in_match = true }

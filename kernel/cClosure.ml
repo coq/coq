@@ -98,6 +98,7 @@ and fterm =
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
+  | FString of Pstring.t
   | FArray of UVars.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * usubs
@@ -216,7 +217,7 @@ let usubs_shft (n,(e,u)) = subs_shft (n, e), u
    when the lift is 0. *)
 let rec lft_fconstr n ft =
   match ft.term with
-    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _|FIrrelevant) -> ft
+    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _|FString _|FIrrelevant) -> ft
     | FRel i -> {mark=ft.mark;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {mark=Cstr; term=FLambda(k,tys,f,usubs_shft(n,e))}
     | FFix(fx,e) ->
@@ -318,6 +319,7 @@ let mk_clos (e:usubs) t =
     | Construct kn -> {mark = Cstr; term = FConstruct (usubst_punivs e kn) }
     | Int i -> {mark = Cstr; term = FInt i}
     | Float f -> {mark = Cstr; term = FFloat f}
+    | String s -> {mark = Cstr; term = FString s}
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _) ->
         {mark = Red; term = FCLOS(t,e)}
 
@@ -554,6 +556,8 @@ let rec to_constr (lfts, usubst as ulfts) v =
        Constr.mkInt i
     | FFloat f ->
         Constr.mkFloat f
+    | FString s ->
+        Constr.mkString s
 
     | FArray (u,t,ty) ->
       let u = usubst_instance ((),usubst) u in
@@ -991,6 +995,11 @@ module FNativeEntries =
       | FFloat f -> f
       | _ -> assert false
 
+    let get_string () e =
+      match [@ocaml.warning "-4"] e.term with
+      | FString s -> s
+      | _ -> assert false
+
     let get_parray () e =
       match [@ocaml.warning "-4"] e.term with
       | FArray (_u,t,_ty) -> t
@@ -1018,6 +1027,16 @@ module FNativeEntries =
         defined_float := true;
         ffloat := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
       | None -> defined_float := false
+
+    let defined_string = ref false
+    let fstring = ref dummy
+
+    let init_string retro =
+      match retro.Retroknowledge.retro_string with
+      | Some c ->
+        defined_string := true;
+        fstring := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
+      | None -> defined_string := false
 
     let defined_bool = ref false
     let ftrue = ref dummy
@@ -1122,6 +1141,7 @@ module FNativeEntries =
       current_retro := env.retroknowledge;
       init_int !current_retro;
       init_float !current_retro;
+      init_string !current_retro;
       init_bool !current_retro;
       init_carry !current_retro;
       init_pair !current_retro;
@@ -1140,6 +1160,10 @@ module FNativeEntries =
     let check_float env =
       check_env env;
       assert (!defined_float)
+
+    let check_string env =
+      check_env env;
+      assert (!defined_string)
 
     let check_bool env =
       check_env env;
@@ -1176,6 +1200,10 @@ module FNativeEntries =
     let mkFloat env f =
       check_float env;
       { mark = Cstr; term = FFloat f }
+
+    let mkString env s =
+      check_string env;
+      { mark = Cstr; term = FString s }
 
     let mkBool env b =
       check_bool env;
@@ -1323,7 +1351,8 @@ let rec knh info m stk =
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
-       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|FArray _) ->
+       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|
+       FString _|FArray _) ->
         (m, stk)
 
 (* The same for pure terms *)
@@ -1357,7 +1386,7 @@ and knht info e t stk =
       | None -> ({ mark = Red; term = FProj (p, r, mk_clos e c) }, stk)
       | Some s -> knht info e c (s :: stk)
       end
-    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
+    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _|String _) -> (mk_clos e t, stk)
     | CoFix cfx ->
       { mark = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
@@ -1713,6 +1742,15 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main red info tab ~pat_state states loc
+  | FString s' ->
+    let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
+    | (PHString s, elims), psubst ->
+      if not @@ Pstring.equal s s' then None else
+      Some (elims, psubst)
+    | _ -> None) patterns states
+    in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    match_main red info tab ~pat_state states loc
   | FProd (n, ty, body, e) ->
     let ntys, _ = Term.decompose_prod body in
     let na = 1 + List.length ntys in
@@ -1854,7 +1892,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
-  | FInt _ | FFloat _ | FArray _ ->
+  | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
      | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
@@ -1957,7 +1995,7 @@ let kh info tab v stk = fapp_stack(kni info tab v stk)
       calls itself recursively. *)
 
 let is_val v = match v.term with
-| FAtom _ | FRel _   | FInd _ | FConstruct _ | FInt _ | FFloat _ -> true
+| FAtom _ | FRel _   | FInd _ | FConstruct _ | FInt _ | FFloat _ | FString _ -> true
 | FFlex _ -> v.mark == Ntrl
 | FApp _ | FProj _ | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _
 | FProd _ | FLetIn _ | FEvar _ | FArray _ | FLIFT _ | FCLOS _ -> false
@@ -1986,7 +2024,8 @@ and klt info tab e t = match kind t with
     if hd' == hd && args' == args then t
     else mkApp (hd', args')
   | Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _
-  | Cast _ | LetIn _ | Proj _ | Array _ | Rel _ | Meta _ | Sort _ | Int _ | Float _ ->
+  | Cast _ | LetIn _ | Proj _ | Array _ | Rel _ | Meta _ | Sort _ | Int _
+  | Float _ | String _ ->
     let share = info.i_cache.i_share in
     let (nm,s) = knit info tab e t [] in
     let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
@@ -2011,7 +2050,8 @@ and klt info tab e t = match kind t with
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
   zip_term info tab (norm_head info tab nm) s
-| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ -> subst_instance_constr (snd e) t
+| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ | String _ ->
+  subst_instance_constr (snd e) t
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
@@ -2060,7 +2100,7 @@ and norm_head info tab m =
         mkArray (u, a, def, ty)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
       | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
-      | FFloat _ -> term_of_fconstr m
+      | FFloat _ | FString _ -> term_of_fconstr m
       | FIrrelevant -> assert false (* only introduced when converting *)
 
 and zip_term info tab m stk = match stk with

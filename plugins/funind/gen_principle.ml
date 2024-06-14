@@ -84,7 +84,8 @@ let is_rec names =
   let rec lookup names gt =
     match DAst.get gt with
     | GVar id -> check_id id names
-    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _ | GFloat _ ->
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _
+    | GInt _ | GFloat _ | GString _ ->
       false
     | GCast (b, _, _) -> lookup names b
     | GRec _ -> CErrors.user_err (Pp.str "GRec not handled")

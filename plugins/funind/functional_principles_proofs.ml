@@ -663,13 +663,14 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
           | _ -> do_finalize dyn_infos )
         | Cast (t, _, _) -> build_proof do_finalize {dyn_infos with info = t}
         | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-         |Int _ | Float _ ->
+         |Int _ | Float _ | String _ ->
           do_finalize dyn_infos
         | App (_, _) -> (
           let f, args = decompose_app_list sigma dyn_infos.info in
           match EConstr.kind sigma f with
           | Int _ -> user_err Pp.(str "integer cannot be applied")
           | Float _ -> user_err Pp.(str "float cannot be applied")
+          | String _ -> user_err Pp.(str "string cannot be applied")
           | Array _ -> user_err Pp.(str "array cannot be applied")
           | App _ ->
             assert false (* we have collected all the app in decompose_app *)

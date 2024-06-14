@@ -188,6 +188,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
+  | FString _ -> infer_stack infos variances stk
   | FFlex Names.(RelKey _ | VarKey _ as fl) ->
     (* We could try to lazily unfold but then we have to analyse the
        universes in the bodies, not worth coding at least for now. *)

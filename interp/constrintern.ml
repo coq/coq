@@ -881,7 +881,7 @@ let rec adjust_env env = function
   | NCast (c,_,_) -> adjust_env env c
   | NApp _ -> restart_no_binders env
   | NVar _ | NRef _ | NHole _ | NGenarg _ | NCases _ | NLetTuple _ | NIf _
-  | NRec _ | NSort _ | NProj _ | NInt _ | NFloat _ | NArray _
+  | NRec _ | NSort _ | NProj _ | NInt _ | NFloat _ | NString _ | NArray _
   | NList _ | NBinderList _ -> env (* to be safe, but restart should be ok *)
 
 let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =

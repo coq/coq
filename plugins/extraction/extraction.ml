@@ -418,7 +418,7 @@ let rec extract_type env sg db j c args =
             | (Info, TypeScheme) ->
               extract_type_app env sg db (r, type_sign env sg ty) args
             | (Info, Default) -> Tunknown))
-    | Cast _ | LetIn _ | Construct _ | Int _ | Float _ | Array _ -> assert false
+    | Cast _ | LetIn _ | Construct _ | Int _ | Float _ | String _ | Array _ -> assert false
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],
@@ -761,6 +761,7 @@ let rec extract_term env sg mle mlt c args =
        extract_app env sg mle mlt extract_var args
     | Int i -> assert (args = []); MLuint i
     | Float f -> assert (args = []); MLfloat f
+    | String s -> assert (args = []); MLstring s
     | Array (_u,t,def,_ty) ->
       assert (args = []);
       let a = new_meta () in

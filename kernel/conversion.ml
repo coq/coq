@@ -323,6 +323,7 @@ let rec compare_under e1 c1 e2 c2 =
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
+  | String s1, String s2 -> Pstring.equal s1 s2
   | Sort s1, Sort s2 ->
     let subst_instance_sort u s =
       if UVars.Instance.is_empty u then s else UVars.subst_instance_sort u s
@@ -361,7 +362,7 @@ let rec compare_under e1 c1 e2 c2 =
     && compare_under e1 ty1 e2 ty2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _ | Int _ | Float _| Array _), _ -> false
+    | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
 
 
 let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 with
@@ -704,6 +705,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
+    | FString s1, FString s2 ->
+        if Pstring.equal s1 s2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+        else raise NotConvertible
+
     | FCaseInvert (ci1,u1,pms1,p1,iv1,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,iv2,_,br2,e2) ->
       (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
       let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
@@ -760,7 +765,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
-       | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant), _ -> raise NotConvertible
+       | FProd _ | FEvar _ | FInt _ | FFloat _ | FString _
+       | FArray _ | FIrrelevant), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in

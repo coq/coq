@@ -678,6 +678,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Pattern.v
     user-contrib/Ltac2/Printf.v
     user-contrib/Ltac2/Proj.v
+    user-contrib/Ltac2/Pstring.v
     user-contrib/Ltac2/RedFlags.v
     user-contrib/Ltac2/Ref.v
     user-contrib/Ltac2/Std.v
@@ -712,5 +713,14 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Array/PArray.v
+  </dd>
+
+  <dt> <b>Primitive strings</b>
+    Native string type
+  </dt>
+  <dd>
+    theories/Strings/PrimString.v
+    theories/Strings/PrimStringAxioms.v
+    theories/Strings/PString.v
   </dd>
 </dl>

@@ -70,6 +70,12 @@ type t =
   | Arrayset
   | Arraycopy
   | Arraylength
+  | Stringmake
+  | Stringlength
+  | Stringget
+  | Stringsub
+  | Stringcat
+  | Stringcompare
 
 let parse = function
   | "int63_head0" -> Int63head0
@@ -127,6 +133,12 @@ let parse = function
   | "array_set" -> Arrayset
   | "array_length" -> Arraylength
   | "array_copy" -> Arraycopy
+  | "string_make" -> Stringmake
+  | "string_length" -> Stringlength
+  | "string_get" -> Stringget
+  | "string_sub" -> Stringsub
+  | "string_cat" -> Stringcat
+  | "string_compare" -> Stringcompare
   | _ -> raise Not_found
 
 let equal (p1 : t) (p2 : t) =
@@ -188,6 +200,12 @@ let hash = function
   | Int63asr -> 53
   | Int63compares -> 54
   | Float64equal -> 55
+  | Stringmake -> 56
+  | Stringlength -> 57
+  | Stringget -> 58
+  | Stringsub -> 59
+  | Stringcat -> 60
+  | Stringcompare -> 61
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -246,23 +264,34 @@ let to_string = function
   | Arrayset -> "arrayset"
   | Arraycopy -> "arraycopy"
   | Arraylength -> "arraylength"
+  | Stringmake -> "string_make"
+  | Stringlength -> "string_length"
+  | Stringget -> "string_get"
+  | Stringsub -> "string_sub"
+  | Stringcat -> "string_cat"
+  | Stringcompare -> "string_compare"
 
 type const =
   | Arraymaxlength
+  | Stringmaxlength
 
 let const_to_string = function
   | Arraymaxlength -> "arraymaxlength"
+  | Stringmaxlength -> "stringmaxlength"
 
 let const_of_string = function
   | "array_max_length" -> Arraymaxlength
+  | "string_max_length" -> Stringmaxlength
   | _ -> raise Not_found
 
 let const_univs = function
-  | Arraymaxlength -> AbstractContext.empty
+  | Arraymaxlength
+  | Stringmaxlength -> AbstractContext.empty
 
 type 'a prim_type =
   | PT_int63 : unit prim_type
   | PT_float64 : unit prim_type
+  | PT_string : unit prim_type
   | PT_array : (Instance.t * ind_or_type) prim_type
 
 and 'a prim_ind =
@@ -284,6 +313,7 @@ let one_univ =
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AbstractContext.empty
   | PT_float64 -> AbstractContext.empty
+  | PT_string -> AbstractContext.empty
   | PT_array -> one_univ
 
 type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
@@ -293,6 +323,7 @@ type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 let types =
   let int_ty = PITT_type (PT_int63, ()) in
   let float_ty = PITT_type (PT_float64, ()) in
+  let string_ty = PITT_type (PT_string, ()) in
   let array_ty =
     PITT_type
       (PT_array,
@@ -351,6 +382,18 @@ let types =
       [array_ty], array_ty
   | Arraylength ->
       [array_ty], int_ty
+  | Stringmake ->
+      [int_ty; int_ty], string_ty
+  | Stringlength ->
+      [string_ty], int_ty
+  | Stringget ->
+      [string_ty; int_ty], int_ty
+  | Stringsub ->
+      [string_ty; int_ty; int_ty], string_ty
+  | Stringcat ->
+      [string_ty; string_ty], string_ty
+  | Stringcompare ->
+      [string_ty; string_ty], PITT_ind (PIT_cmp, ())
 
 let one_param =
   (* currently if there's a parameter it's always this *)
@@ -407,7 +450,13 @@ let params = function
   | Float64frshiftexp
   | Float64ldshiftexp
   | Float64next_up
-  | Float64next_down -> []
+  | Float64next_down
+  | Stringmake
+  | Stringlength
+  | Stringget
+  | Stringsub
+  | Stringcat
+  | Stringcompare -> []
 
   | Arraymake
   | Arrayget
@@ -467,7 +516,13 @@ let univs = function
   | Float64frshiftexp
   | Float64ldshiftexp
   | Float64next_up
-  | Float64next_down -> AbstractContext.empty
+  | Float64next_down
+  | Stringmake
+  | Stringlength
+  | Stringget
+  | Stringsub
+  | Stringcat
+  | Stringcompare -> AbstractContext.empty
 
   | Arraymake
   | Arrayget
@@ -516,6 +571,7 @@ let prim_ind_to_string (type a) (p : a prim_ind) = match p with
 let prim_type_to_string (type a) (ty : a prim_type) = match ty with
   | PT_int63 -> "int63_type"
   | PT_float64 -> "float64_type"
+  | PT_string -> "string_type"
   | PT_array -> "array_type"
 
 let op_or_type_to_string = function
@@ -526,6 +582,7 @@ let op_or_type_to_string = function
 let prim_type_of_string = function
   | "int63_type" -> PTE PT_int63
   | "float64_type" -> PTE PT_float64
+  | "string_type" -> PTE PT_string
   | "array_type" -> PTE PT_array
   | _ -> raise Not_found
 
@@ -550,3 +607,5 @@ let op_or_type_univs = function
 let body_of_prim_const = function
   | Arraymaxlength ->
     Constr.mkInt (Parray.max_length)
+  | Stringmaxlength ->
+    Constr.mkInt (Pstring.max_length)

@@ -1,0 +1,14 @@
+"hello"%pstring
+     : string
+""%pstring
+     : string
+"a"%char63
+     : char63_wrapper
+"a" : char63
+     : char63
+0%uint63
+     : int
+0%uint63 : char63
+     : char63
+"hello"
+     : string

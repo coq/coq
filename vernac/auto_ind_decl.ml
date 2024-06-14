@@ -153,7 +153,7 @@ let get_inductive_deps ~noprop env kn =
         | None -> accu)
       | Rel _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | Proj _
       | Construct _ | Case _ | CoFix _ | Fix _ | Meta _ | Evar _ | Int _
-      | Float _ | Array _ -> Termops.fold_constr_with_full_binders env sigma EConstr.push_rel aux env (List.fold_left (aux env) accu a) c
+      | Float _ | String _ | Array _ -> Termops.fold_constr_with_full_binders env sigma EConstr.push_rel aux env (List.fold_left (aux env) accu a) c
     in
     let fold i accu (constr_ctx,_) =
       let constr_ctx, _ = List.chop mip.mind_consnrealdecls.(i) constr_ctx in
@@ -468,7 +468,7 @@ let build_beq_scheme env handle kn =
     | Fix _ -> None
 
     (* Not building a type *)
-    | Proj _ | CoFix _ | Int _ | Float _ -> None
+    | Proj _ | CoFix _ | Int _ | Float _ | String _ -> None
 
     | Meta _ | Evar _ -> assert false (* kernel terms *)
     in
@@ -601,7 +601,7 @@ let build_beq_scheme env handle kn =
     | Prod _ -> raise InductiveWithProduct (* loss of decidable if uncountable domain *)
 
     | Meta _ | Evar _ -> None (* assert false! *)
-    | Int _ | Float _ | Array _ -> None
+    | Int _ | Float _ | String _ | Array _ -> None
     in
     Option.map (fun c -> Term.it_mkLambda_or_LetIn c ctx) c
 

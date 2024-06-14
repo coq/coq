@@ -8,13 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Libnames
-open Vernacexpr
+Require Import Uint63 PrimString ExtrOCamlPString.
 
-(** * String notation *)
+Local Open Scope uint63.
+Local Open Scope pstring.
 
-val vernac_string_notation : locality_flag ->
-                             qualid ->
-                             qualid -> qualid ->
-                             Number.number_string_via option ->
-                             Notation_term.scope_name -> unit
+Definition s1 := "hello".
+Definition s2 := "wwworlddd".
+
+Definition s := cat s1 (cat ", " (cat (sub s2 2 5) "!")).
+
+Definition w := make (length s) "w"%char63.
+
+Definition c := compare s w.
+
+Recursive Extraction c.

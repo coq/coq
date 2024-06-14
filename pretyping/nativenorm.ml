@@ -209,6 +209,7 @@ let rec nf_val env sigma v typ =
   | Vconst n -> construct_of_constr_const env sigma n typ
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vfloat64 f -> f |> Float64.of_float |> mkFloat
+  | Vstring s -> s |> mkString
   | Varray t -> nf_array env sigma t typ
   | Vblock b ->
       let capp,ctyp = construct_of_constr_block env sigma (block_tag b) typ in

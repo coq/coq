@@ -683,6 +683,12 @@ Section Elts.
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
   Qed.
 
+  Lemma nth_error_nth_None (l : list A) (n : nat) (d : A) :
+    nth_error l n = None -> nth n l d = d.
+  Proof.
+    intros H%nth_error_None. apply nth_overflow. assumption.
+  Qed.
+
   (******************************)
   (** ** Last element of a list *)
   (******************************)
@@ -2157,6 +2163,13 @@ Section Cutting.
     case Nat.ltb; trivial.
   Qed.
 
+  Lemma nth_firstn (n : nat) (l : list A) (i : nat) (d : A) :
+    nth i (firstn n l) d = if i <? n then nth i l d else d.
+  Proof.
+    revert l i; induction n, l, i; cbn [firstn nth]; trivial.
+    case Nat.ltb; trivial.
+  Qed.
+
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
@@ -2238,6 +2251,12 @@ Section Cutting.
       rewrite ?nth_error_nil; trivial.
   Qed.
 
+  Lemma nth_skipn n l i d : nth i (skipn n l) d = nth (n + i) l d.
+  Proof.
+    revert l; induction n, l; cbn [nth skipn];
+      rewrite ?nth_error_nil; destruct i; trivial.
+  Qed.
+
   Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
   Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
 
@@ -2267,6 +2286,16 @@ Section Cutting.
     now rewrite skipn_firstn_comm, L.
   Qed.
 
+  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = nil.
+  Proof.
+    split; [apply skipn_all2|].
+    revert l; induction n as [|n IH]; intros l.
+    - destruct l; simpl; [reflexivity|discriminate].
+    - destruct l; simpl.
+      + intros _. apply Nat.le_0_l.
+      + intros H%IH. apply le_n_S. exact H.
+  Qed.
+
   Lemma skipn_skipn : forall x y l, skipn x (skipn y l) = skipn (x + y) l.
   Proof.
     intros x y. rewrite Nat.add_comm. induction y as [|y IHy].
@@ -2282,6 +2311,17 @@ Section Cutting.
     - simpl; auto.
     - intro l; destruct l; simpl; auto.
       f_equal; auto.
+  Qed.
+
+  Lemma firstn_skipn_middle n l x :
+    nth_error l n = Some x ->
+    firstn n l ++ x :: skipn (S n) l = l.
+  Proof.
+    revert l x; induction n as [|n IH]; intros [|y l] x.
+    - discriminate.
+    - injection 1. intros ->. reflexivity.
+    - discriminate.
+    - simpl. intros H. f_equal. apply IH. exact H.
   Qed.
 
   Lemma length_firstn : forall n l, length (firstn n l) = min n (length l).
@@ -2849,6 +2889,203 @@ Section NatSeq.
   Qed.
 
 End NatSeq.
+
+(***********************)
+(** ** List comparison *)
+(***********************)
+
+Section Compare.
+
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+
+  Fixpoint list_compare (xs ys : list A) : comparison :=
+    match xs, ys with
+    | nil   , nil    => Eq
+    | nil   , _      => Lt
+    | _     , nil    => Gt
+    | x :: xs, y :: ys =>
+        match cmp x y with
+        | Eq => list_compare xs ys
+        | c  => c
+        end
+    end%list.
+
+  Section Lemmas.
+
+    Variable Hcmp : forall x y, cmp x y = Eq <-> x = y.
+
+    Lemma list_compare_cons (x : A) (xs ys : list A) :
+      list_compare (x :: xs) (x :: ys) = list_compare xs ys.
+    Proof.
+      simpl. rewrite (proj2 (Hcmp x x) eq_refl). reflexivity.
+    Qed.
+
+    Lemma list_compare_app (xs ys zs : list A) :
+      list_compare (xs ++ ys) (xs ++ zs) = list_compare ys zs.
+    Proof.
+      induction xs as [|x xs IH]; [reflexivity|].
+      rewrite <-!app_comm_cons, list_compare_cons. exact IH.
+    Qed.
+
+    Lemma prefix_eq {prefix1 prefix2 xs1 xs2 ys1 ys2 : list A} {x1 x2 y1 y2 : A} :
+      prefix1 ++ x1 :: xs1 = prefix2 ++ x2 :: xs2 ->
+      prefix1 ++ y1 :: ys1 = prefix2 ++ y2 :: ys2 ->
+      x1 <> y1 ->
+      x2 <> y2 ->
+      prefix1 = prefix2.
+    Proof.
+      clear Hcmp cmp.
+      intros Heq1 Heq2 Hne1 Hne2.
+      revert prefix2 xs1 xs2 ys1 ys2 Heq1 Heq2.
+      induction prefix1 as [|z prefix1 IH]; intros prefix2 xs1 xs2 ys1 ys2.
+      - destruct prefix2; [reflexivity|]. simpl. intros H1 H2.
+        injection H1; clear H1; intros ??; subst.
+        injection H2; clear H2; intros ??; subst.
+        exfalso. apply Hne1. reflexivity.
+      - destruct prefix2.
+        + simpl. intros H1 H2.
+          injection H1; clear H1; intros ??; subst.
+          injection H2; clear H2; intros ??; subst.
+          exfalso. apply Hne2. reflexivity.
+        + simpl. intros H1 H2.
+          injection H1; clear H1; intros ??; subst.
+          injection H2; clear H2; intros ?; subst.
+          intros. f_equal. eapply IH; eassumption.
+    Qed.
+
+    #[local] Ltac list_auto :=
+      repeat lazymatch goal with
+      | |- ?x = ?x =>
+          reflexivity
+      | H : ?xs = ?xs ++ _ |- _ =>
+          rewrite <-(app_nil_r xs) in H at 1
+      | H : ?xs ++ _ = ?xs |- _ =>
+          symmetry in H
+      | H : ?xs ++ _ = ?xs ++ _ |- _ =>
+          apply app_inv_head in H
+      | H : _ :: _ = _ :: _ |- _ =>
+          injection H; intros; clear H; subst
+      | H : [] = _ :: _ |- _ =>
+          inversion H
+      | H : cmp ?x ?x = Lt |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; discriminate
+      | H : cmp ?x ?x = Gt |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; discriminate
+      | H1 : ?p1 ++ _ :: _ = ?p2 ++ _ :: _,
+        H2 : ?p2 ++ _ :: _ = ?p1 ++ _ :: _ |- _ =>
+          symmetry in H2
+      | H1 : ?p1 ++ ?x1 :: ?xs1 = ?p2 ++ ?x2 :: ?xs2,
+        H2 : ?p1 ++ ?y1 :: ?ys1 = ?p2 ++ ?y2 :: ?ys2 |- _ =>
+          assert (p1 = p2) as Hp;
+          [ eapply (prefix_eq H1 H2); intros Heq; subst
+          | subst; apply app_inv_head in H1, H2 ]
+      | H : cmp ?x ?x = _ |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; try discriminate H
+      | H1 : cmp ?x1 ?x2 = _,
+        H2 : cmp ?x1 ?x2 = _ |- _ =>
+          rewrite H1 in H2; discriminate H2
+      | Htrans : forall (x y z : A) (c : comparison), cmp x y = c -> cmp y z = c -> cmp x z = c,
+        H1 : cmp ?x1 ?x2 = ?c,
+        H2 : cmp ?x2 ?x3 = ?c |- _ =>
+          pose proof (Htrans x1 x2 x3 c H1 H2); clear H1 H2
+      | Hcmp_opp : (forall x y, cmp y x = CompOpp (cmp x y)),
+        H1 : cmp ?x1 ?x2 = ?c, H2 : cmp ?x2 ?x1 = ?c |- _ =>
+          rewrite Hcmp_opp, H2 in H1; simpl in H1; discriminate H1
+      end.
+
+    Inductive ListCompareSpec (xs ys : list A) : forall (c : comparison), Prop :=
+      | ListCompareEq :
+          xs = ys ->
+          ListCompareSpec xs ys Eq
+      | ListCompareShorter y ys' :
+          ys = xs ++ y :: ys' ->
+          ListCompareSpec xs ys Lt
+      | ListCompareLonger x xs' :
+          xs = ys ++ x :: xs' ->
+          ListCompareSpec xs ys Gt
+      | ListCompareLt prefix x xs' y ys' :
+          xs = prefix ++ x :: xs' ->
+          ys = prefix ++ y :: ys' ->
+          cmp x y = Lt ->
+          ListCompareSpec xs ys Lt
+      | ListCompareGt prefix x xs' y ys' :
+          xs = prefix ++ x :: xs' ->
+          ys = prefix ++ y :: ys' ->
+          cmp x y = Gt ->
+          ListCompareSpec xs ys Gt.
+
+    Lemma list_compareP (xs ys : list A) :
+      ListCompareSpec xs ys (list_compare xs ys).
+    Proof.
+      assert (xs = nil ++ xs) as Hxs by reflexivity.
+      assert (ys = nil ++ ys) as Hys by reflexivity.
+      revert Hxs Hys.
+      generalize (@nil A) as prefix.
+      generalize ys at 2 4.
+      generalize xs at 2 4.
+      intros xs'; induction xs' as [|x xs' IH]; intros ys' prefix -> ->.
+      - destruct ys' as [|y ys']; rewrite app_nil_r; simpl.
+        + apply ListCompareEq. reflexivity.
+        + eapply ListCompareShorter; reflexivity.
+      - destruct ys' as [|y ys']; rewrite ?app_nil_r; simpl.
+        + eapply ListCompareLonger; reflexivity.
+        + destruct (cmp x y) eqn:Hxy.
+          * apply Hcmp in Hxy; subst y.
+            apply (IH ys' (prefix ++ [x])); rewrite <-app_assoc; reflexivity.
+          * eapply ListCompareLt; [reflexivity|reflexivity|exact Hxy].
+          * eapply ListCompareGt; [reflexivity|reflexivity|exact Hxy].
+    Qed.
+
+    Lemma list_compare_refl (xs ys : list A) :
+      list_compare xs ys = Eq <-> xs = ys.
+    Proof.
+      destruct (list_compareP xs ys); subst; split; intros.
+      all: first [discriminate | list_auto].
+    Qed.
+
+    Lemma list_compare_antisym (xs ys : list A) :
+      (forall x y, cmp y x = CompOpp (cmp x y)) ->
+      list_compare ys xs = CompOpp (list_compare xs ys).
+    Proof.
+      intros Hcmp_opp.
+      destruct (list_compareP xs ys), (list_compareP ys xs); subst.
+      all: repeat rewrite <-app_assoc in *; simpl in *; list_auto.
+    Qed.
+
+    Lemma list_compare_trans (xs ys zs : list A) (c : comparison) :
+      (forall x y z c, cmp x y = c -> cmp y z = c -> cmp x z = c) ->
+      (forall x y, cmp y x = CompOpp (cmp x y)) ->
+      list_compare xs ys = c -> list_compare ys zs = c -> list_compare xs zs = c.
+    Proof.
+      intros Hcmp_trans Hcmp_opp.
+      destruct
+        (list_compareP xs ys) as [?|???|???|p1 x1 xs1 y1 ys1 Hxy1 Hxy2 Hlt1|p1 x1 xs1 y1 ys1 Hxy1 Hxy2 Hgt1],
+        (list_compareP ys zs) as [?|???|???|p2 y2 ys2 z2 zs2 Hyz1 Hyz2 Hlt2|p2 y2 ys2 z2 zs2 Hyz1 Hyz2 Hgt2],
+        (list_compareP xs zs) as [?|???|???|p3 x3 xs3 z3 zs3 Hxz1 Hxz2 Hlt3|p3 x3 xs3 z3 zs3 Hxz1 Hxz2 Hgt3].
+      all: intros <-; try discriminate; intros _; try reflexivity; exfalso.
+      all: try (subst; rewrite <-?app_assoc in *; simpl in *; list_auto; fail).
+      all: rewrite Hxy1 in Hxz1; rewrite Hxy2 in Hyz1; rewrite Hyz2 in Hxz2; clear Hxy1 Hxy2 Hyz2.
+      all: revert p2 p3 xs1 ys1 ys2 zs2 xs3 zs3 Hyz1 Hxz1 Hxz2.
+      all: induction p1 as [|h1 p1 IH]; intros; destruct p2 as [|h2 p2]; destruct p3 as [|h3 p3].
+      all: simpl in *; list_auto.
+      all: eapply IH; eassumption.
+    Qed.
+
+    Lemma list_compare_spec_complete (xs ys : list A) (c : comparison) :
+      ListCompareSpec xs ys c -> list_compare xs ys = c.
+    Proof.
+      intros [->|??->|??->|?????->->Heq|?????->->Heq].
+      - apply list_compare_refl. reflexivity.
+      - rewrite <-(app_nil_r xs) at 1. apply list_compare_app.
+      - rewrite <-(app_nil_r ys) at 2. apply list_compare_app.
+      - rewrite list_compare_app. simpl. rewrite Heq. reflexivity.
+      - rewrite list_compare_app. simpl. rewrite Heq. reflexivity.
+    Qed.
+
+  End Lemmas.
+
+End Compare.
 
 Section Exists_Forall.
 
@@ -3545,6 +3782,16 @@ Section Repeat.
     revert n. induction m as [|m IHm].
     - now intros [|n].
     - intros [|n]; [reflexivity|exact (IHm n)].
+  Qed.
+
+  Lemma nth_repeat_lt a m n d :
+    n < m ->
+    nth n (repeat a m) d = a.
+  Proof.
+    revert n. induction m as [|m IHm].
+    - now intros [|n].
+    - intros [|n]; [reflexivity|].
+      intros Hlt%Nat.succ_lt_mono. apply (IHm _ Hlt).
   Qed.
 
   Lemma nth_error_repeat a m n :

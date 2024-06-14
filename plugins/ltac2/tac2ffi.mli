@@ -152,6 +152,10 @@ val of_float : Float64.t -> valexpr
 val to_float : valexpr -> Float64.t
 val float : Float64.t repr
 
+val of_pstring : Pstring.t -> valexpr
+val to_pstring : valexpr -> Pstring.t
+val pstring : Pstring.t repr
+
 type ('a, 'b) fun1
 
 val app_fun1 : ('a, 'b) fun1 -> 'a repr -> 'b repr -> 'a -> 'b Proofview.tactic

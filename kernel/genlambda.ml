@@ -41,6 +41,7 @@ type 'v lambda =
   (* inductive name, constructor tag, arguments *)
 | Luint         of Uint63.t
 | Lfloat        of Float64.t
+| Lstring       of Pstring.t
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
@@ -161,6 +162,7 @@ let rec pp_lam lam =
        str")")
   | Luint i -> str (Uint63.to_string i)
   | Lfloat f -> str (Float64.to_string f)
+  | Lstring s -> str (Printf.sprintf "%S" (Pstring.to_string s))
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
@@ -216,7 +218,7 @@ let decompose_Llam_Llet lam =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ -> lam
+  | Lfloat _ | Lstring _ -> lam
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -285,7 +287,7 @@ let free_rels lam =
   let rec aux k accu lam = match lam with
   | Lrel (_, n) -> if n >= k then Int.Set.add (n - k + 1) accu else accu
   | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ -> accu
+  | Lfloat _ | Lstring _ -> accu
   | Levar (_, args) ->
     Array.fold_left (fun accu lam -> aux k accu lam) accu args
   | Lprod (dom, codom) ->
@@ -366,7 +368,7 @@ let can_subst lam = match lam with
 | Lrel _ | Lvar _ | Lconst _ | Luint _
 | Lval _ | Lsort _ | Lind _ -> true
 | Levar _ | Lprod _ | Llam _ | Llet _ | Lapp _ | Lcase _ | Lfix _ | Lcofix _
-| Lparray _ | Lmakeblock _ | Lfloat _ | Lprim _ | Lproj _ -> false
+| Lparray _ | Lmakeblock _ | Lfloat _ | Lstring _ | Lprim _ | Lproj _ -> false
 | Lint _ -> false (* TODO: allow substitution of integers *)
 
 let simplify lam =
@@ -447,7 +449,7 @@ let rec occurrence k kind lam =
       if kind then false else raise Not_found
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ -> kind
+  | Lfloat _ | Lstring _ -> kind
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -492,7 +494,7 @@ let occur_once lam =
 
 let is_value lam = match lam with
 | Lrel _ | Lvar _ | Lconst _ | Luint _
-| Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ -> true
+| Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ | Lstring _ -> true
 | Levar _ | Lprod _ | Llet _ | Lapp _ | Lcase _
 | Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ -> false
 
@@ -750,6 +752,8 @@ let rec lambda_of_constr cache env sigma c =
   | Int i -> Luint i
 
   | Float f -> Lfloat f
+
+  | String s -> Lstring s
 
   | Array (_u, t, def, _ty) ->
     let def = lambda_of_constr cache env sigma def in

@@ -263,6 +263,7 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
     state, PHConstr (c, mask)
   | Int i -> state, PHInt i
   | Float f -> state, PHFloat f
+  | String s -> state, PHString s
   | Lambda _ ->
     let (ntys, b) = Term.decompose_lambda t in
     let tys = Array.rev_of_list ntys in
@@ -353,7 +354,7 @@ let rec test_pattern_redex env evd ~loc = function
   | head, PECase (_, _, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
   | head, PEProj _ :: elims -> test_pattern_redex env evd ~loc (head, elims)
   | PHProd (tys, bod), [] -> Array.iter (test_pattern_redex_aux env evd ~loc) tys; test_pattern_redex_aux env evd ~loc bod
-  | (PHRel _ | PHInt _ | PHFloat _ | PHSort _ | PHInd _ | PHConstr _ | PHSymbol _), [] -> ()
+  | (PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHInd _ | PHConstr _ | PHSymbol _), [] -> ()
 and test_pattern_redex_aux env evd ~loc = function
   | EHole _ | EHoleIgnored -> ()
   | ERigid p -> test_pattern_redex env evd ~loc p

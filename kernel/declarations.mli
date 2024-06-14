@@ -311,6 +311,7 @@ type 'arg head_pattern =
   | PHConstr  of constructor * instance_mask
   | PHInt     of Uint63.t
   | PHFloat   of Float64.t
+  | PHString  of Pstring.t
   | PHLambda  of 'arg array * 'arg
   | PHProd    of 'arg array * 'arg
 

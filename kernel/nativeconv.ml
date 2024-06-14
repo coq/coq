@@ -59,6 +59,9 @@ let rec conv_val env pb lvl v1 v2 cu =
     | Vfloat64 f1, Vfloat64 f2 ->
         if Float64.(equal (of_float f1) (of_float f2)) then cu
         else raise NotConvertible
+    | Vstring s1, Vstring s2 ->
+        if Pstring.equal s1 s2 then cu
+        else raise NotConvertible
     | Varray t1, Varray t2 ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
@@ -77,7 +80,7 @@ let rec conv_val env pb lvl v1 v2 cu =
         in
         aux lvl (n1-1) b1 b2 0 cu
     | (Vfix e | Vcofix e), _ | _, (Vfix e | Vcofix e) -> Empty.abort e
-    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
+    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Vstring _ | Varray _ | Vblock _), _ -> raise NotConvertible
 
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in

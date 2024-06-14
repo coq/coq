@@ -64,6 +64,12 @@ type t =
   | Arrayset
   | Arraycopy
   | Arraylength
+  | Stringmake
+  | Stringlength
+  | Stringget
+  | Stringsub
+  | Stringcat
+  | Stringcompare
 
 (** Can raise [Not_found].
     Beware that this is not exactly the reverse of [to_string] below. *)
@@ -73,6 +79,7 @@ val equal : t -> t -> bool
 
 type const =
   | Arraymaxlength
+  | Stringmaxlength
 
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive*)
@@ -98,6 +105,7 @@ val kind : t -> args_red
 type 'a prim_type =
   | PT_int63 : unit prim_type
   | PT_float64 : unit prim_type
+  | PT_string : unit prim_type
   | PT_array : (UVars.Instance.t * ind_or_type) prim_type
 
 and 'a prim_ind =

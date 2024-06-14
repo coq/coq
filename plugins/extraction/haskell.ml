@@ -225,6 +225,8 @@ let rec pp_expr par env args =
       pp_par par (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
     | MLfloat _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
+    | MLstring _ ->
+      pp_par par (str "Prelude.error \"EXTRACTION OF STRING NOT IMPLEMENTED\"")
     | MLparray _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF ARRAY NOT IMPLEMENTED\"")
 

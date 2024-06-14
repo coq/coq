@@ -524,6 +524,12 @@ let get_caml_prim = let open CPrimitives in function
   | Arrayset -> Some CAML_Arrayset
   | Arraycopy -> Some CAML_Arraycopy
   | Arraylength -> Some CAML_Arraylength
+  | Stringmake -> Some CAML_Stringmake
+  | Stringlength -> Some CAML_Stringlength
+  | Stringget -> Some CAML_Stringget
+  | Stringsub -> Some CAML_Stringsub
+  | Stringcat -> Some CAML_Stringcat
+  | Stringcompare -> Some CAML_Stringcompare
   | _ -> None
 
 (* sz is the size of the local stack *)
@@ -539,6 +545,8 @@ let rec compile_lam env cenv lam sz cont =
   | Luint i -> compile_structured_constant cenv (Const_uint i) sz cont
 
   | Lfloat f -> compile_structured_constant cenv (Const_float f) sz cont
+
+  | Lstring s -> compile_structured_constant cenv (Const_string s) sz cont
 
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj (Projection.Repr.arg p) :: cont)

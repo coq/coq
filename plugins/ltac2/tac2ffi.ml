@@ -52,6 +52,7 @@ let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_uint63 = Val.create "uint63"
 let val_float = Val.create "float"
+let val_pstring = Val.create "pstring"
 let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = Val.create "ind_data"
 let val_transparent_state : TransparentState.t Val.tag = Val.create "transparent_state"
 let val_pretype_flags = Val.create "pretype_flags"
@@ -314,6 +315,14 @@ let to_float x = to_ext val_float x
 let float = {
   r_of = of_float;
   r_to = to_float;
+}
+
+let of_pstring s = of_ext val_pstring s
+let to_pstring x = to_ext val_pstring x
+
+let pstring = {
+  r_of = of_pstring;
+  r_to = to_pstring;
 }
 
 let of_constant c = of_ext val_constant c

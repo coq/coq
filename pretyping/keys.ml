@@ -27,6 +27,7 @@ type key =
   | KRel
   | KInt
   | KFloat
+  | KString
   | KArray
 
 module KeyOrdered = struct
@@ -45,7 +46,8 @@ module KeyOrdered = struct
     | KRel -> 7
     | KInt -> 8
     | KFloat -> 9
-    | KArray -> 10
+    | KString -> 10
+    | KArray -> 11
 
   let compare gr1 gr2 =
     match gr1, gr2 with
@@ -142,6 +144,7 @@ let constr_key env kind c =
       | LetIn _ -> KLet
       | Int _ -> KInt
       | Float _ -> KFloat
+      | String _ -> KString
       | Array _ -> KArray
     in Some (aux c)
   with Not_found -> None
@@ -160,6 +163,7 @@ let pr_key pr_global = function
   | KRel -> str"Rel"
   | KInt -> str"Int"
   | KFloat -> str"Float"
+  | KString -> str"String"
   | KArray -> str"Array"
 
 let pr_keyset pr_global v =

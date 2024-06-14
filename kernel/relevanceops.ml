@@ -63,7 +63,7 @@ let rec relevance_of_term_extra env extra lft c =
   | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
   | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
   | Proj (_, r, _) -> r
-  | Int _ | Float _ -> Sorts.Relevant
+  | Int _ | Float _ | String _ -> Sorts.Relevant
   | Array _ -> Sorts.Relevant
 
   | Meta _ | Evar _ -> Sorts.Relevant (* let's assume metas and evars are relevant for now *)

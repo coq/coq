@@ -130,6 +130,7 @@ type t =
 | SReloc_Const_val of structured_values
 | SReloc_Const_uint of Uint63.t
 | SReloc_Const_float of Float64.t
+| SReloc_Const_string of Pstring.t
 | SReloc_annot of annot_switch
 | SReloc_caml_prim of caml_prim
 
@@ -141,6 +142,7 @@ let to_reloc = function
 | SReloc_Const_val v -> Reloc_const (Const_val v)
 | SReloc_Const_uint i -> Reloc_const (Const_uint i)
 | SReloc_Const_float f -> Reloc_const (Const_float f)
+| SReloc_Const_string s -> Reloc_const (Const_string s)
 | SReloc_annot annot -> Reloc_annot annot
 | SReloc_caml_prim prm -> Reloc_caml_prim prm
 
@@ -432,14 +434,20 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength ->
-    assert false
+  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength
+  | Stringmake | Stringlength | Stringget | Stringsub | Stringcat | Stringcompare
+    -> assert false
 
 let check_caml_prim_op = function
 | CAML_Arraymake -> opCHECKCAMLCALL2_1
 | CAML_Arrayget -> opCHECKCAMLCALL2
 | CAML_Arrayset -> opCHECKCAMLCALL3_1
 | CAML_Arraydefault | CAML_Arraycopy | CAML_Arraylength -> opCHECKCAMLCALL1
+| CAML_Stringmake -> opCHECKCAMLCALL2
+| CAML_Stringlength -> opCHECKCAMLCALL1
+| CAML_Stringget -> opCHECKCAMLCALL2
+| CAML_Stringsub -> opCHECKCAMLCALL3
+| CAML_Stringcat | CAML_Stringcompare -> opCHECKCAMLCALL2
 
 let inplace_prim_op = function
   | Float64next_up | Float64next_down -> true
@@ -676,6 +684,7 @@ let to_memory fv code =
     | Reloc_const (Const_val v) -> push (SReloc_Const_val v)
     | Reloc_const (Const_uint i) -> push (SReloc_Const_uint i)
     | Reloc_const (Const_float f) -> push (SReloc_Const_float f)
+    | Reloc_const (Const_string s) -> push (SReloc_Const_string s)
   in
   let reloc_infos = CArray.map_of_list map reloc in
   let positions = Positions.of_list (List.rev env.reloc_pos) in

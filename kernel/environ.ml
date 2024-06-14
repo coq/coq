@@ -670,6 +670,11 @@ let is_float64_type env c =
   | None -> false
   | Some c' -> Constant.CanOrd.equal c c'
 
+let is_string_type env c =
+  match env.retroknowledge.Retroknowledge.retro_string with
+  | None -> false
+  | Some c' -> Constant.CanOrd.equal c c'
+
 let is_array_type env c =
   match env.retroknowledge.Retroknowledge.retro_array with
   | None -> false
@@ -677,8 +682,15 @@ let is_array_type env c =
 
 let is_primitive_type env c =
   (* dummy match to force an update if we add a primitive type *)
-  let _ = function CPrimitives.(PTE(PT_int63)) | CPrimitives.(PTE(PT_float64)) | CPrimitives.(PTE(PT_array)) -> () in
-  is_int63_type env c || is_float64_type env c || is_array_type env c
+  let _ =
+    function
+    | CPrimitives.(PTE(PT_int63))
+    | CPrimitives.(PTE(PT_float64))
+    | CPrimitives.(PTE(PT_string))
+    | CPrimitives.(PTE(PT_array)) -> ()
+  in
+  is_int63_type env c || is_float64_type env c || is_array_type env c ||
+  is_string_type env c
 
 let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)

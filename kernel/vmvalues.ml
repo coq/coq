@@ -56,6 +56,7 @@ type structured_constant =
   | Const_val of structured_values
   | Const_uint of Uint63.t
   | Const_float of Float64.t
+  | Const_string of Pstring.t
 
 type reloc_table = (tag * int) array
 
@@ -111,6 +112,8 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_uint _, _ -> false
 | Const_float f1, Const_float f2 -> Float64.equal f1 f2
 | Const_float _, _ -> false
+| Const_string s1, Const_string s2 -> Pstring.equal s1 s2
+| Const_string _, _ -> false
 
 let hash_structured_constant c =
   let open Hashset.Combine in
@@ -123,6 +126,7 @@ let hash_structured_constant c =
   | Const_val v -> combinesmall 6 (hash_structured_values v)
   | Const_uint i -> combinesmall 7 (Uint63.hash i)
   | Const_float f -> combinesmall 8 (Float64.hash f)
+  | Const_string s -> combinesmall 9 (Pstring.hash s)
 
 let eq_annot_switch asw1 asw2 =
   let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
@@ -155,6 +159,7 @@ let pp_struct_const = function
   | Const_val _ -> Pp.str "(value)"
   | Const_uint i -> Pp.str (Uint63.to_string i)
   | Const_float f -> Pp.str (Float64.to_string f)
+  | Const_string s -> Pp.str (Printf.sprintf "%S" (Pstring.to_string s))
 
 (* Abstract data *)
 type vprod
@@ -380,6 +385,7 @@ let whd_val (v: values) =
       | VCaccu -> Vaccu (Aid (RelKey (int_tcode (fun_code o) 1)), [])
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
+    else if Int.equal tag Obj.string_tag then Vstring (Obj.magic v)
     else
       Vblock (Obj.obj o)
 
@@ -406,6 +412,7 @@ let obj_of_str_const str =
   | Const_val v -> Obj.repr v
   | Const_uint i -> Obj.repr i
   | Const_float f -> Obj.repr f
+  | Const_string s -> Obj.repr s
 
 let val_of_block tag (args : structured_values array) =
   let nargs = Array.length args in
@@ -652,6 +659,7 @@ and pr_kind w =
   | Vblock _b -> str "Vblock"
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
+  | Vstring s -> Pstring.to_string s |> Format.sprintf "Vstring(%S)" |> str
   | Varray _ -> str "Varray"
   | Vaccu (a, stk) -> str "Vaccu(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
 and pr_stack stk =
@@ -673,3 +681,11 @@ let parray_get_default = Obj.magic Parray.default
 let parray_set = Obj.magic Parray.set
 let parray_copy = Obj.magic Parray.copy
 let parray_length = Obj.magic Parray.length
+
+let pstring_make = Obj.magic Pstring.make
+let pstring_length = Obj.magic Pstring.length
+let pstring_get = Obj.magic Pstring.get
+let pstring_sub = Obj.magic Pstring.sub
+let pstring_cat = Obj.magic Pstring.cat
+let pstring_compare = Obj.magic @@ fun x y ->
+  match Pstring.compare x y with 0 -> 0 | i when i < 0 -> 1 | _ -> 2

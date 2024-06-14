@@ -321,6 +321,9 @@ let rec pp_expr par env args =
     | MLfloat f ->
         assert (args=[]);
         str "(" ++ str (Float64.compile f) ++ str ")"
+    | MLstring s ->
+        assert (args=[]);
+        str "(" ++ str (Pstring.compile s) ++ str ")"
     | MLparray(t,def) ->
       assert (args=[]);
       let tuple = pp_array (pp_expr true env []) (Array.to_list t) in
