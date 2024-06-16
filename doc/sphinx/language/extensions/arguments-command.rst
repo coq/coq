@@ -20,6 +20,7 @@ Setting properties of a function's arguments
       | %{ {+ @name } %}
       args_modifier ::= simpl nomatch
       | simpl never
+      | clear simpl
       | default implicits
       | clear implicits
       | clear scopes
@@ -140,6 +141,9 @@ Setting properties of a function's arguments
          that would expose a match construct in the head position.  See :ref:`Args_effect_on_unfolding`.
       `simpl never`
          prevents performing a simplification step for :n:`@reference`.  See :ref:`Args_effect_on_unfolding`.
+      `clear simpl`
+         resets the modifications made to the simplification steps,
+         i.e., cancels all previous `simpl never`, `simpl nomatch`, `/` and `!`.
 
       `clear bidirectionality hint`
          removes the bidirectionality hint, the `&`

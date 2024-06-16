@@ -81,6 +81,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   let default_implicits_flag = List.mem `DefaultImplicits flags in
   let never_unfold_flag = List.mem `SimplNeverUnfold flags in
   let nomatch_flag = List.mem `SimplDontExposeCase flags in
+  let clear_red_flag = List.mem `ClearReduction flags in
   let clear_bidi_hint = List.mem `ClearBidiHint flags in
 
   let err_incompat x y =
@@ -245,18 +246,22 @@ let vernac_arguments ~section_local reference args more_implicits flags =
 
   let red_behavior =
     let open Reductionops.ReductionBehaviour in
-    match never_unfold_flag, nomatch_flag, rargs, nargs_for_red with
-    | true, false, [], None -> Some NeverUnfold
-    | true, true, _, _ -> err_incompat "simpl never" "simpl nomatch"
-    | true, _, _::_, _ -> err_incompat "simpl never" "!"
-    | true, _, _, Some _ -> err_incompat "simpl never" "/"
-    | false, false, [], None  -> None
-    | false, false, _, _ -> Some (UnfoldWhen { nargs = nargs_for_red;
-                                               recargs = rargs;
-                                             })
-    | false, true, _, _ -> Some (UnfoldWhenNoMatch { nargs = nargs_for_red;
-                                                     recargs = rargs;
-                                                   })
+    match clear_red_flag, never_unfold_flag, nomatch_flag, rargs, nargs_for_red with
+    | true, true, _, _, _ -> err_incompat "clear simpl" "simpl never"
+    | true, false, true, _, _ -> err_incompat "clear simpl" "simpl nomatch"
+    | true, false, false, _ :: _, _ -> err_incompat "clear simpl" "!"
+    | true, false, false, [], Some _ -> err_incompat "clear simpl" "/"
+    | false, true, false, [], None -> Some NeverUnfold
+    | false, true, true, _, _ -> err_incompat "simpl never" "simpl nomatch"
+    | false, true, _, _::_, _ -> err_incompat "simpl never" "!"
+    | false, true, _, _, Some _ -> err_incompat "simpl never" "/"
+    | _, false, false, [], None  -> None
+    | false, false, false, _, _ -> Some (UnfoldWhen { nargs = nargs_for_red;
+                                                      recargs = rargs;
+                                                    })
+    | false, false, true, _, _ -> Some (UnfoldWhenNoMatch { nargs = nargs_for_red;
+                                                            recargs = rargs;
+                                                          })
   in
 
 
@@ -291,11 +296,11 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   if default_implicits_flag then
     Impargs.declare_implicits section_local (smart_global reference);
 
-  if red_modifiers_specified then begin
+  if red_modifiers_specified || clear_red_flag then begin
     match sr with
     | GlobRef.ConstRef c ->
       Reductionops.ReductionBehaviour.set
-        ~local:section_local c (Option.get red_behavior)
+        ~local:section_local c red_behavior
 
     | _ ->
       CErrors.user_err

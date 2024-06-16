@@ -328,6 +328,7 @@ type arguments_modifier =
   [  `Assert
   | `ClearBidiHint
   | `ClearImplicits
+  | `ClearReduction
   | `ClearScopes
   | `DefaultImplicits
   | `ExtraScopes

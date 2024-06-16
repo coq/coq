@@ -97,8 +97,9 @@ module ReductionBehaviour = struct
 
   let load _ (_,(r, b)) =
     table := (match b with
-                | NeverUnfold -> Cpred.add r (fst !table), Cmap.remove r (snd !table)
-                | _ -> Cpred.remove r (fst !table), Cmap.add r b (snd !table))
+                | None -> Cpred.remove r (fst !table), Cmap.remove r (snd !table)
+                | Some NeverUnfold -> Cpred.add r (fst !table), Cmap.remove r (snd !table)
+                | Some b -> Cpred.remove r (fst !table), Cmap.add r b (snd !table))
 
   let cache o = load 1 o
 
@@ -115,7 +116,7 @@ module ReductionBehaviour = struct
         if Lib.is_in_section gr then
           let vars = Lib.section_instance gr in
           let extra = Array.length vars in
-          more_args extra b
+          Option.map (more_args extra) b
         else b
       in
       Some (false, (gr, b))
