@@ -173,7 +173,7 @@ project coquelicot 'https://gitlab.inria.fr/coquelicot/coquelicot' 'ca1a747aa8b7
 ########################################################################
 # CompCert
 ########################################################################
-project compcert 'https://github.com/AbsInt/CompCert' '8f5fd33fb4f9594dacbc11597335ec362344c08d'
+project compcert 'https://github.com/AbsInt/CompCert' '2ca39a2801d333abcfa3d691620d03abde4e7e37'
 # Contact @xavierleroy on github
 
 ########################################################################
