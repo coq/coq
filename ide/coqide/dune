@@ -1,7 +1,7 @@
 ; IDE Server
 (ocamllex utf8_convert config_lexer coq_lex)
 
-(library (lint (pps coqlint))
+(library
  (name core)
  (public_name coqide-server.core)
  (wrapped false)
@@ -23,7 +23,7 @@
  (files (idetop.bc as coqidetop.byte)))
 
 ; IDE Client, we may want to add the macos_prehook.ml conditionally.
-(library (lint (pps coqlint))
+(library
  (name coqide_gui)
  (wrapped false)
  (modules (:standard \ document idetop coqide_main default_bindings_src gen_gtk_platform
@@ -34,7 +34,7 @@
   (names coqide_os_stubs))
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3 platform_specific))
 
-(library (lint (pps coqlint))
+(library
  (name platform_specific)
  (wrapped false)
  (modules shared shared_os_specific)

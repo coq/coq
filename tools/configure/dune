@@ -1,4 +1,4 @@
-(library (lint (pps coqlint))
+(library
  (name conf)
  (modules :standard \ configure)
  (libraries unix str))
