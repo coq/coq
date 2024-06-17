@@ -1252,9 +1252,9 @@ let rec hash t =
       combinesmall 17 (combine3 (Projection.CanOrd.hash p) (Sorts.relevance_hash r) (hash c))
     | Int i -> combinesmall 18 (Uint63.hash i)
     | Float f -> combinesmall 19 (Float64.hash f)
-    | String s -> combinesmall 21 (Pstring.hash s)
+    | String s -> combinesmall 20 (Pstring.hash s)
     | Array(u,t,def,ty) ->
-      combinesmall 22 (combine4 (Instance.hash u) (hash_term_array t) (hash def) (hash ty))
+      combinesmall 21 (combine4 (Instance.hash u) (hash_term_array t) (hash def) (hash ty))
 
 and hash_invert = function
   | NoInvert -> 0
@@ -1412,14 +1412,14 @@ let rec hash_term (t : t) =
     let (h,l) = Uint63.to_int2 i in
     (t, combinesmall 18 (combine h l))
   | Float f as t -> (t, combinesmall 19 (Float64.hash f))
-  | String s as t -> (t, combinesmall 21 (Pstring.hash s))
+  | String s as t -> (t, combinesmall 20 (Pstring.hash s))
   | Array (u,t,def,ty) ->
     let u, hu = Instance.share u in
     let t, ht = hash_term_array t in
     let def, hdef = sh_rec def in
     let ty, hty = sh_rec ty in
     let h = combine4 hu ht hdef hty in
-    (Array(u,t,def,ty), combinesmall 22 h)
+    (Array(u,t,def,ty), combinesmall 21 h)
 
 and sh_invert = function
   | NoInvert -> NoInvert, 0
