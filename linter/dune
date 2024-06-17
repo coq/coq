@@ -1,0 +1,4 @@
+(library
+ (name coqlint)
+ (kind ppx_rewriter)
+ (libraries ppxlib))
