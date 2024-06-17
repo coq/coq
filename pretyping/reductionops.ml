@@ -1288,6 +1288,11 @@ let univproblem_univ_state =
     compare_instances = univproblem_compare_instances;
     compare_cumul_instances = univproblem_check_inductive_instances; }
 
+type genconv = {
+  genconv : 'a 'err. conv_pb -> l2r:bool -> Evd.evar_map -> TransparentState.t ->
+    Environ.env -> ('a, 'err) Conversion.generic_conversion_function
+}
+
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
   try
@@ -1309,18 +1314,35 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
-        match conv_fun pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
-        | Result.Ok sigma -> Some sigma
-        | Result.Error None -> None
-        | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
+        (* First try conversion with postponed universe problems as a kind of FO
+           approximation. This may result in unsatisfiable constraints even if
+           some unfoldings of the arguments could have been unified, but this
+           should be exceedingly rare. *)
+        let ans = match conv_fun.genconv pb ~l2r:false sigma ts env (UnivProblem.Set.empty, univproblem_univ_state) x y with
+        | Result.Ok cstr -> Some cstr
+        | Result.Error None ->
+          None (* no universe unification can make these terms convertible *)
+        | Result.Error (Some e) -> Empty.abort e
+        in
+        match ans with
+        | None -> None
+        | Some cstr ->
+          match Evd.add_universe_constraints sigma cstr with
+          | sigma -> Some sigma
+          | exception UGraph.UniverseInconsistency _ | exception Evd.UniversesDiffer ->
+            (* Retry with local universe checking, which may imply constant unfolding *)
+            match conv_fun.genconv pb ~l2r:false sigma ts env (sigma, sigma_univ_state) x y with
+            | Result.Ok sigma -> Some sigma
+            | Result.Error None -> None
+            | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
   with
   | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
     let e = Exninfo.capture e in
     report_anomaly e
 
-let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Conversion.generic_conv pb ~l2r ~evars:(Evd.evar_handler sigma))
+let infer_conv = infer_conv_gen { genconv = fun pb ~l2r sigma ->
+      Conversion.generic_conv pb ~l2r ~evars:(Evd.evar_handler sigma) }
 
 let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
@@ -1354,15 +1376,15 @@ let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
 
 let vm_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
-  infer_conv_gen (fun pb ~l2r sigma ts ->
-      Vconv.vm_conv_gen pb (evars_of_evar_map sigma))
+  infer_conv_gen { genconv = fun pb ~l2r sigma ts ->
+      Vconv.vm_conv_gen pb (evars_of_evar_map sigma) }
     ~catch_incon:true ~pb env sigma t1 t2
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
 
 let native_infer_conv ?(pb=Conversion.CUMUL) env sigma t1 t2 =
-  infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
+  infer_conv_gen { genconv = fun pb ~l2r sigma ts -> native_conv_generic pb sigma }
     ~catch_incon:true ~pb env sigma t1 t2
 
 let check_hyps_inclusion env sigma x hyps =
