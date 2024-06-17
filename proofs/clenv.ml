@@ -30,7 +30,11 @@ open Logic
 (******************************************************************)
 (* Clausal environments *)
 
-type meta_arg = metavariable * metavariable list option
+type meta_arg = {
+  marg_meta : metavariable;
+  marg_chain : metavariable list option;
+  marg_dep : bool;
+}
 (* List of clenv meta arguments with the submetas of the clenv it has been
    possibly chained with. We never need to chain more than two clenvs, so there
    is no need to make the type recursive. *)
@@ -88,7 +92,7 @@ let clenv_refresh env sigma ctx clenv =
     mk_clausenv env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
 let clenv_evd ce =  ce.evd
-let clenv_arguments c = List.map fst c.metas
+let clenv_arguments c = List.map (fun arg -> arg.marg_meta) c.metas
 
 let clenv_meta_type env sigma mv =
   let ty =
@@ -110,11 +114,16 @@ let clenv_push_prod cl =
         let concl = if dep then subst1 (mkMeta mv) u else u in
         let templval = applist (cl.templval, [mkMeta mv]) in
         let metaset = Metaset.add mv cl.metaset in
+        let marg = {
+          marg_meta = mv;
+          marg_chain = None;
+          marg_dep = dep;
+        } in
         Some (mv, dep, { templval; metaset;
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          metas = cl.metas @ [mv, None]; })
+          metas = cl.metas @ [marg]; })
     | _ -> None
   in clrec typ
 
@@ -143,7 +152,7 @@ let clenv_environments evd bound t =
           let dep = not (noccurn evd 1 t2) in
           let na' = if dep then na.binder_name else Anonymous in
           let e' = meta_declare mv t1 ~name:na' e in
-          clrec (e', (mv)::metas) (Option.map ((+) (-1)) n)
+          clrec (e', (mv, dep)::metas) (Option.map ((+) (-1)) n)
             (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
@@ -153,13 +162,15 @@ let clenv_environments evd bound t =
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
-  let templval = mkApp (c, Array.map_of_list mkMeta args) in
-  let metaset = Metaset.of_list args in
+  let map (mv, _) = mkMeta mv in
+  let templval = mkApp (c, Array.map_of_list map args) in
+  let metaset = Metaset.of_list (List.map fst args) in
+  let map (mv, dep) = { marg_meta = mv; marg_chain = None; marg_dep = dep } in
   { templval; metaset;
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
-    metas = List.map (fun mv -> mv, None) args; }
+    metas = List.map map args; }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
 let mk_clenv_from_n env sigma n c = mk_clenv_from_env env sigma (Some n) c
@@ -408,11 +419,11 @@ let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
     let evd = meta_merge (Metamap.of_list metas) clenv.evd in
     let clenv = update_clenv_evd clenv evd in
     let c = applist (c, List.map (fun (mv, _) -> mkMeta mv) metas) in
-    let map (mv0, submetas0 as arg) =
-      if Int.equal mv mv0 then
+    let map arg =
+      if Int.equal mv arg.marg_meta then
         (* we never chain more than 2 clenvs *)
-        let () = assert (Option.is_empty submetas0) in
-        (mv, Some (List.map fst metas))
+        let () = assert (Option.is_empty arg.marg_chain) in
+        { arg with marg_chain = Some (List.map fst metas) }
       else arg
     in
     let metas = List.map map clenv.metas in
