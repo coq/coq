@@ -772,7 +772,7 @@ end = struct (* {{{ *)
 
     let run_command () =
       try while true do get_last_job () () done
-      with e -> () (* No failure *)
+      with e [@coqlint.allow_catchall "grandfathered"] -> () (* No failure *)
 
     let command ~now job =
       if now then job ()
@@ -2538,7 +2538,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
     stm_pperr_endline (fun () -> str "processed with " ++ pr_rc rc ++ str " }}}");
     VCS.print ();
     rc
-  with e ->
+  with e [@coqlint.allow_catchall "handle_failure reraises"] ->
     let e = Exninfo.capture e in
     handle_failure e vcs
 
@@ -2754,11 +2754,12 @@ let edit_at ~doc id =
     doc, rc
   with
   | Vcs_aux.Expired -> user_err Pp.(str "Unknown state " ++ Stateid.print id ++ str".")
-  | e ->
+  | e [@coqlint.allow_catchall "reraises"] ->
     let (e, info) = Exninfo.capture e in
     match Stateid.get info with
     | None ->
         VCS.print ();
+        (* should we be raising the original exn when it's critical? *)
         anomaly (str ("edit_at "^Stateid.to_string id^": ") ++
           CErrors.print_no_report e ++ str ".")
     | Some (_, id) ->

@@ -43,7 +43,7 @@ let () = at_exit (fun () ->
         let d = Lazy.force my_temp_dir in
         Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
         Unix.rmdir d
-      with e ->
+      with (Unix.Unix_error _ | Sys_error _) as e ->
         Feedback.msg_warning
           Pp.(str "Native compile: failed to cleanup: " ++
               str(Printexc.to_string e) ++ fnl()))

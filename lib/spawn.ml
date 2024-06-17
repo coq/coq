@@ -148,7 +148,7 @@ let spawn_with_control prefer_sock env prog args =
 let output_death_sentence pid oob_req =
   prerr_endline ("death sentence for " ^ pid);
   try output_value oob_req ReqDie; flush oob_req
-  with e -> prerr_endline ("death sentence: " ^ Printexc.to_string e)
+  with e when CErrors.noncritical e -> prerr_endline ("death sentence: " ^ Printexc.to_string e)
 
 (* spawn a process and read its output asynchronously *)
 module Async(ML : MainLoopModel) = struct
@@ -183,7 +183,7 @@ let kill ({ pid = unixpid; oob_resp; oob_req; cin; cout; alive; watch } as p) =
     Option.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid Sys.sigkill;
     p.watch <- None
-  with e -> prerr_endline ("kill: "^Printexc.to_string e) end
+  with e when CErrors.noncritical e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
 let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
     prog args callback
@@ -252,7 +252,7 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
     Option.iter close_in_noerr oob_resp;
     Option.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid Sys.sigkill;
-  with e -> prerr_endline ("kill: "^Printexc.to_string e) end
+  with e when CErrors.noncritical e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
 let rec wait p =
   (* On windows kill is not reliable, so wait may never return. *)

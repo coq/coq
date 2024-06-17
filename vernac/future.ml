@@ -129,7 +129,7 @@ let rec compute ck : 'a value =
       try
         let data = f () in
         c := Val data; `Val data
-      with e ->
+      with e [@coqlint.allow_catchall "grandfathered"] ->
         let e = Exninfo.capture e in
         let e = eval_fix_exn fix_exn e in
         match e with

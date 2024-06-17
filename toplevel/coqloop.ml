@@ -294,7 +294,7 @@ let extract_default_loc loc doc_id sid : Loc.t option =
     try
       let doc = Stm.get_doc doc_id in
       Option.cata (fun {CAst.loc} -> loc) None Stm.(get_ast ~doc sid)
-    with _ -> loc
+    with exn [@coqlint.allow_catchall "grandfathered"] -> loc
 
 (** Coqloop Console feedback handler *)
 let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
@@ -387,7 +387,7 @@ let top_goal_print ~doc c oldp newp =
       print_and_diff dproof newp
     end
   with
-  | exn ->
+  | exn [@coqlint.allow_catchall "coqtop allows critical exceptions while printing goal"] ->
     let (e, info) = Exninfo.capture exn in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
@@ -501,7 +501,7 @@ let read_and_execute ~state =
     in
     TopErr.print_error_for_buffer Feedback.Error msg top_buffer;
     exit 1
-  | any ->
+  | any [@coqlint.allow_catchall "coqtop continues even after critical exceptions"] ->
     let (e, info) = Exninfo.capture any in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in

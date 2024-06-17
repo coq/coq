@@ -336,7 +336,7 @@ module Make(T : Task) () = struct
         stm_pr_err Pp.(prlist str ["Fatal marshal error: "; s]); flush_all (); exit 2
       | End_of_file ->
         stm_prerr_endline "connection lost"; flush_all (); exit 2
-      | e ->
+      | e [@coqlint.allow_catchall "fatal"] ->
         stm_pr_err Pp.(seq [str "Slave: critical exception: "; print e]);
         flush_all (); exit 1
     done

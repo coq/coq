@@ -870,20 +870,26 @@ end
 
 let () = register_init "constr" begin fun env sigma c ->
   let c = to_constr c in
-  let c = try Printer.pr_leconstr_env env sigma c with _ -> str "..." in
+  let c = try Printer.pr_leconstr_env env sigma c
+    with _ [@coqlint.allow_catchall "grandfathered"] -> str "..."
+  in
   hov 2 (str "constr:(" ++ c ++ str ")")
 end
 
 let () = register_init "preterm" begin fun env sigma c ->
   let c = to_preterm c in
   (* XXX should we get the ltac2 env out of the closure and print it too? Maybe with a debug flag? *)
-  let c = try Printer.pr_closed_glob_env env sigma c with _ -> str "..." in
+  let c = try Printer.pr_closed_glob_env env sigma c
+    with _ [@coqlint.allow_catchall "grandfathered"] -> str "..."
+  in
   hov 2 (str "preterm:(" ++ c ++ str ")")
 end
 
 let () = register_init "pattern" begin fun env sigma c ->
   let c = to_pattern c in
-  let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
+  let c = try Printer.pr_lconstr_pattern_env env sigma c
+    with _ [@coqlint.allow_catchall "grandfathered"] -> str "..."
+  in
   hov 2 (str "pat:(" ++ c ++ str ")")
 end
 

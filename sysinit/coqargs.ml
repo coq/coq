@@ -445,7 +445,7 @@ let parse_args ~usage ~init arglist : t * string list =
   in
   try
     parse init
-  with any -> fatal_error any
+  with any [@coqlint.allow_catchall "fatal"] -> fatal_error any
 
 (* We need to reverse a few lists *)
 let parse_args ~usage ~init args =

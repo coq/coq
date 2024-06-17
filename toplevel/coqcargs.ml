@@ -134,4 +134,4 @@ let parse arglist : t =
     let opts, extra = parse default in
     let args = List.fold_left add_compile opts extra in
     args
-  with any -> fatal_error any
+  with any [@coqlint.allow_catchall "fatal"] -> fatal_error any

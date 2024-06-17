@@ -360,10 +360,11 @@ let command exe_path args vl =
       | Unix.WEXITED 0 -> (
         let inch = Unix.in_channel_of_descr stdout_read in
         try Marshal.from_channel inch
-        with any ->
+        with (End_of_file | Failure _) as exn ->
           failwith
-            (Printf.sprintf "command \"%s\" exited %s" exe_path
-               (Printexc.to_string any)) )
+            (Printf.sprintf "command \"%s\" exited with code 0 but result could not be read back: %s"
+               exe_path
+               (Printexc.to_string exn)) )
       | Unix.WEXITED i ->
         failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
       | Unix.WSIGNALED i ->
@@ -373,7 +374,7 @@ let command exe_path args vl =
     (* Cleanup  *)
       (fun () ->
       List.iter
-        (fun x -> try Unix.close x with any -> ())
+        (fun x -> try Unix.close x with Unix.Unix_error _ -> ())
         [ stdin_read
         ; stdin_write
         ; stdout_read

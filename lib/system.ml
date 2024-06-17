@@ -74,7 +74,7 @@ let apply_subdir f path name =
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
-let readdir dir = try Sys.readdir dir with any -> [||]
+let readdir dir = try Sys.readdir dir with Sys_error _ -> [||]
 
 let process_directory f path =
   Array.iter (apply_subdir f path) (readdir path)
@@ -362,7 +362,7 @@ let measure_duration f x =
     let y = f x in
     let stop = get_time() in
     Ok (y, duration_between ~start ~stop)
-  with e ->
+  with e [@coqlint.allow_catchall "caller must reraise"] ->
     let stop = get_time() in
     let exn = Exninfo.capture e in
     Error (exn, duration_between ~start ~stop)
@@ -399,7 +399,7 @@ let count_instructions f x =
     let y = f x in
     let c_end = Instr.read_counter () in
     Ok(y, instructions_between ~c_start ~c_end)
-  with e ->
+  with e [@coqlint.allow_catchall "caller must reraise"] ->
     let exn = Exninfo.capture e in
     let c_end = Instr.read_counter () in
     Error(exn, instructions_between ~c_start ~c_end)

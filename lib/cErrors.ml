@@ -122,7 +122,7 @@ let print_gen ~anomaly (e, info) =
   let extra_msg = print_extra info in
   try
     print_gen ~anomaly !handle_stack e ++ extra_msg
-  with exn ->
+  with exn [@coqlint.allow_catchall "grandfathered"] ->
     let exn, info = Exninfo.capture exn in
     (* exception in error printer *)
     str "<in exception printer>:" ++ spc() ++ print_anomaly anomaly exn ++ print_extra info ++ fnl() ++

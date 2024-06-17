@@ -34,7 +34,7 @@ let controller h pr pw =
         | Hello _ -> prerr_endline "internal protocol error"; exit 1
         | ReqDie -> prerr_endline "death sentence received"; exit 0
       with
-      | e ->
+      | e [@coqlint.allow_catchall "fatal"] ->
         prerr_endline ("control channel broken: " ^ Printexc.to_string e);
         exit 1 in
     loop () in

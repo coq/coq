@@ -266,7 +266,7 @@ let make_style_stack () =
     | Format.String_tag tag ->
       let (tpfx, _) = split_tag tag in
       if tpfx = start_pfx then "" else begin
-        if tpfx = end_pfx then diff_tag_stack := (try List.tl !diff_tag_stack with tl -> []);
+        if tpfx = end_pfx then diff_tag_stack := (match !diff_tag_stack with _ :: tl -> tl | [] -> []);
         match !style_stack with
         | []       -> (* Something went wrong, we fallback *)
           Terminal.eval default_style
@@ -448,7 +448,7 @@ let pr_cmd_header com =
   let (start,stop) = Option.cata Loc.unloc (0,0) com.CAst.loc in
   let safe_pr_vernac x =
     try Ppvernac.pr_vernac x
-    with e -> str (Printexc.to_string e) in
+    with e [@coqlint.allow_catchall "grandfathered"] -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in str "Chars " ++ int start ++ str " - " ++ int stop ++
      str " [" ++ str cmd ++ str "] "

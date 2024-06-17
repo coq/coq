@@ -26,7 +26,7 @@ let get_version ~boot =
     let rev = input_line ch in
     let () = close_in ch in
     Printf.sprintf "%s (%s)" ver rev
-  with _ -> Coq_config.version
+  with Sys_error _ | End_of_file -> Coq_config.version
 
 let print_header ~boot () =
   Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ~boot));
@@ -71,7 +71,7 @@ let start_coq custom =
   (* Init phase *)
   let opts, custom_opts, state =
     try init_toplevel custom
-    with any ->
+    with any [@coqlint.allow_catchall "fatal"] ->
       flush_all();
       fatal_error_exn any in
   Feedback.del_feeder init_feeder;
@@ -169,7 +169,7 @@ let get_native_name s =
                 [ !Nativelib.output_dir
                 ; Library.native_name_from_filename s
                 ])
-  with _ -> ""
+  with _ [@coqlint.allow_catchall "deliberately silent"] -> ""
 
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with

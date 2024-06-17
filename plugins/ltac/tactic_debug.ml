@@ -69,7 +69,7 @@ let update_bpt fname offset opt =
           (try
             let p = Loadpath.find_load_path (CUnix.physical_path_of_string dirname) in
             DirPath.repr (Loadpath.logical p)
-          with _ -> []))
+          with exn when CErrors.noncritical exn -> []))
     end
   in
   let dirpath = DirPath.to_string dp in
@@ -170,14 +170,14 @@ let cvt_loc loc =
              let knlen = String.length text in
              let lastdot = String.rindex text '.' in
              String.sub text (lastdot+1) (knlen - (lastdot + 1))
-           with _ -> text
+           with exn when CErrors.noncritical exn -> text
          in
          Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
        | Some { fname=ToplevelInput; line_nb } ->
          let items = String.split_on_char '.' text in
          Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
        | _ -> text
-   with _ -> text
+   with exn when CErrors.noncritical exn -> text
 
 let format_stack s =
   List.map (fun (tac, loc) ->
