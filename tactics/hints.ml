@@ -857,10 +857,6 @@ let error_no_such_hint_database x =
 (*             Auxiliary functions to prepare AUTOHINT objects            *)
 (**************************************************************************)
 
-let rec nb_hyp sigma c = match EConstr.kind sigma c with
-  | Prod(_,_,c2) -> if noccurn sigma 1 c2 then 1+(nb_hyp sigma c2) else nb_hyp sigma c2
-  | _ -> 0
-
 (* adding and removing tactics in the search table *)
 
 let with_uid c = { obj = c; uid = fresh_key () }
@@ -913,10 +909,9 @@ let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
     let hd =
       try head_bound (Clenv.clenv_evd ce) c'
       with Bound -> failwith "make_apply_entry" in
-    let miss = Clenv.clenv_missing ce in
+    let miss, hyps = Clenv.clenv_missing ce in
     let nmiss = List.length miss in
     let secvars = secvars_of_constr env sigma c in
-    let hyps = nb_hyp sigma' cty in
     let pri = match info.hint_priority with None -> hyps + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
     | Some p -> ConstrPattern (snd p)
@@ -1392,7 +1387,7 @@ let add_resolves env sigma clist ~locality dbnames =
       | ERes_pf { rhint_term = c; rhint_type = cty; rhint_uctx = ctx } ->
         let sigma' = merge_context_set_opt sigma ctx in
         let ce = Clenv.mk_clenv_from env sigma' (c,cty) in
-        let miss = Clenv.clenv_missing ce in
+        let miss, _ = Clenv.clenv_missing ce in
         let nmiss = List.length miss in
         let variables = str (CString.plural nmiss "variable") in
         Feedback.msg_info (

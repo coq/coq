@@ -301,7 +301,9 @@ let clenv_dependent_gen hyps_only ?(iter=true) env sigma concl =
         Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
     all_undefined
 
-let clenv_missing ce = clenv_dependent_gen true ce.env ce.evd (clenv_type ce)
+let clenv_missing ce =
+  let miss = clenv_dependent_gen true ce.env ce.evd (clenv_type ce) in
+  (miss, List.count (fun arg -> not arg.marg_dep) ce.metas)
 
 (******************************************************************)
 
