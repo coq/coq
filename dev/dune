@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name dev)
  (public_name coq-core.dev)
  (synopsis "Coq's Debug Printers")
@@ -6,7 +6,7 @@
  (modules top_printers vm_printers)
  (libraries coq-core.toplevel coq-core.plugins.ltac))
 
-(library
+(library (lint (pps coqlint))
  (name debugger_support)
  (public_name coq-core.debugger_support)
  (synopsis "Coq Support for ocamldebug")

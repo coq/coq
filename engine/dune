@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name engine)
  (synopsis "Coq's Tactic Engine")
  (public_name coq-core.engine)

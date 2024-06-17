@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name library)
  (synopsis "Coq's Loadable Libraries (vo) Support")
  (public_name coq-core.library)

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name coqrun)
  (synopsis "Coq's Kernel Abstract Reduction Machine [C implementation]")
  (public_name coq-core.vm)

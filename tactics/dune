@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name tactics)
  (synopsis "Coq's Core Tactics [ML implementation]")
  (public_name coq-core.tactics)

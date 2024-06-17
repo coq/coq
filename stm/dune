@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name stm)
  (synopsis "Coq's Document Manager and Proof Checking Scheduler")
  (public_name coq-core.stm)

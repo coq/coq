@@ -1,11 +1,11 @@
-(library
+(library (lint (pps coqlint))
  (name micromega_core_plugin)
  (public_name coq-core.plugins.micromega_core)
  (modules micromega numCompat mutils sos_types sos_lib sos)
  (synopsis "Coq's micromega core plugin")
  (libraries zarith coq-core.clib))
 
-(library
+(library (lint (pps coqlint))
  (name micromega_plugin)
  (public_name coq-core.plugins.micromega)
  ; be careful not to link the executable to the plugin!
@@ -22,7 +22,7 @@
  (flags :standard -open Micromega_core_plugin)
  (libraries coq-core.plugins.micromega_core))
 
-(library
+(library (lint (pps coqlint))
  (name zify_plugin)
  (public_name coq-core.plugins.zify)
  (modules g_zify zify)

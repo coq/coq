@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name kernel)
  (synopsis "The Coq Kernel")
  (public_name coq-core.kernel)

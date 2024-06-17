@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name number_string_notation_plugin)
  (public_name coq-core.plugins.number_string_notation)
  (synopsis "Coq number and string notation plugin")

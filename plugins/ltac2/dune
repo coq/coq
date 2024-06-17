@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ltac2_plugin)
  (public_name coq-core.plugins.ltac2)
  (synopsis "Ltac2 plugin")

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ring_plugin)
  (public_name coq-core.plugins.ring)
  (synopsis "Coq's ring plugin")

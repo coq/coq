@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ltac_plugin)
  (public_name coq-core.plugins.ltac)
  (synopsis "Coq's LTAC tactic language")
@@ -6,7 +6,7 @@
  (modules_without_implementation tacexpr)
  (libraries coq-core.vernac))
 
-(library
+(library (lint (pps coqlint))
  (name tauto_plugin)
  (public_name coq-core.plugins.tauto)
  (synopsis "Coq's tauto tactic")

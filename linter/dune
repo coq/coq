@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name coqlint)
  (kind ppx_rewriter)
  (libraries ppxlib))

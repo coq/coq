@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name vernac)
  (synopsis "Coq's Vernacular Language")
  (public_name coq-core.vernac)

@@ -1,6 +1,6 @@
 ; This library must have no dependencies except config, as it is a
 ; dependency for most Coq command line tools.
-(library
+(library (lint (pps coqlint))
  (name boot)
  (public_name coq-core.boot)
  (synopsis "Coq Enviroment and Paths facilities")

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name funind_plugin)
  (public_name coq-core.plugins.funind)
  (synopsis "Coq's functional induction plugin")
