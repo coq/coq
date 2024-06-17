@@ -405,10 +405,10 @@ let instantiate_variable l (b : Universe.t) v =
 
 exception UniversesDiffer
 
-let { Goptions.get = drop_weak_constraints } =
+let { Goptions.get = weak_constraints } =
   Goptions.declare_bool_option_and_ref
     ~key:["Cumulativity";"Weak";"Constraints"]
-    ~value:false
+    ~value:true
     ()
 
 let level_inconsistency cst l r =
@@ -668,7 +668,7 @@ let process_universe_constraints uctx cstrs =
     | ULub (l, r) ->
       equalize_variables true l r local
     | UWeak (l, r) ->
-      if not (drop_weak_constraints ())
+      if weak_constraints ()
       then { local with local_weak = UPairSet.add (l, r) local.local_weak }
       else local
     | UEq (l, r) ->
