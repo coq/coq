@@ -213,6 +213,7 @@ html_context = {
     'versions': [
         ("dev", "https://coq.inria.fr/doc/master/refman/"),
         ("stable", "https://coq.inria.fr/refman/"),
+        ("8.20", "https://coq.inria.fr/doc/v8.20/refman/"),
         ("8.19", "https://coq.inria.fr/doc/v8.19/refman/"),
         ("8.18", "https://coq.inria.fr/doc/v8.18/refman/"),
         ("8.17", "https://coq.inria.fr/doc/V8.17.1/refman/"),
