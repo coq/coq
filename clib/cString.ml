@@ -20,6 +20,7 @@ sig
   val drop_simple_quotes : string -> string
   val quote_coq_string : string -> string
   val unquote_coq_string : string -> string option
+  val html_escape : string -> string
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
@@ -90,6 +91,16 @@ let unquote_coq_string s =
       done;
       Some (Buffer.contents b)
     with Exit -> None
+
+let html_escape msg =
+  let buf = Buffer.create (String.length msg) in
+  String.iter (fun c ->
+      if String.contains "\"&'<>" c then
+        Buffer.add_string buf (Printf.sprintf "&#%d;" (Char.code c))
+      else
+        Buffer.add_char buf c)
+    msg;
+  Buffer.contents buf
 
 (* substring searching... *)
 

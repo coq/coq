@@ -402,7 +402,8 @@ object(self)
          compare and compensate for the shift. *)
       let offset, _line_shift = offset_compensation script#buffer s in
       let ss = find_all_tooltips s (iter#offset - offset) in
-      let msg = String.concat "\n" (CList.uniquize ss) in
+      let ss = if ss = [] then Doc.get_errors document else ss in
+      let msg = CString.html_escape (String.concat "\n" (CList.uniquize ss)) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
     end else begin
@@ -649,13 +650,13 @@ object(self)
           add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
           self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.error sentence
+          self#apply_tag_in_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "WarningMsg " ++ message);
           let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
+          self#apply_tag_in_sentence ?loc Tags.Script.warning sentence;
           (messages#route msg.route)#push Warning message
       | Message(lvl, loc, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "Msg " ++ message);
@@ -707,9 +708,6 @@ object(self)
       let start, stop = coq_loc_to_gtk_offset ~line_drift buffer loc in
       buffer#apply_tag tag ~start ~stop
 
-  method private position_tag_at_sentence ?loc tag sentence =
-    self#apply_tag_in_sentence ?loc tag sentence
-
   method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop = start_stop_iters buffer sentence in
@@ -717,6 +715,7 @@ object(self)
     self#discard_command_queue queue;
     Ideutils.pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
+      self#attach_tooltip ?loc sentence (Pp.string_of_ppcmds msg);
       self#apply_tag_in_sentence ?loc Tags.Script.error sentence;
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
@@ -817,6 +816,7 @@ object(self)
             let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            Doc.set_errors document [];
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;
@@ -832,6 +832,7 @@ object(self)
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
                   let sentence = Doc.pop document in
+                  Doc.set_errors document [Pp.string_of_ppcmds msg];
                   self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
       in

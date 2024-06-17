@@ -42,6 +42,10 @@ sig
       (i.e. removing surrounding double quotes and undoubling double
       quotes); returns [None] if not a quoted string *)
 
+  val html_escape : string -> string
+  (** replace HTML reserved characters with escape sequences,
+      e.g. `&` -> "&#38;" *)
+
   val string_index_from : string -> int -> string -> int
   (** As [index_from], but takes a string instead of a char as pattern argument *)
 
