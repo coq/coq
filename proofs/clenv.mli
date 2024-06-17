@@ -50,7 +50,7 @@ val clenv_instantiate : ?flags:unify_flags -> ?submetas:(metavariable * clbindin
    clenv (dependent or not). Positions can be negative meaning to
    start from the rightmost argument of the template. *)
 val clenv_independent : clausenv -> metavariable list
-val clenv_missing : clausenv -> metavariable list * int
+val clenv_missing : clausenv -> Names.Name.t list * int
 
 (** start with a clenv to refine with a given term with bindings *)
 

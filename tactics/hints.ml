@@ -1396,7 +1396,7 @@ let add_resolves env sigma clist ~locality dbnames =
           strbrk " will only be used by eauto, because applying " ++
           pr_leconstr_env env sigma' c ++
           strbrk " would leave " ++ variables ++ Pp.spc () ++
-          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name (Clenv.clenv_evd ce)) miss) ++
+          Pp.prlist_with_sep Pp.pr_comma Name.print miss ++
           strbrk " as unresolved existential " ++ variables ++ str "."
         )
       | _ -> ()

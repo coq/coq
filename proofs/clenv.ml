@@ -303,6 +303,7 @@ let clenv_dependent_gen hyps_only ?(iter=true) env sigma concl =
 
 let clenv_missing ce =
   let miss = clenv_dependent_gen true ce.env ce.evd (clenv_type ce) in
+  let miss = List.map (Evd.meta_name ce.evd) miss in
   (miss, List.count (fun arg -> not arg.marg_dep) ce.metas)
 
 (******************************************************************)
