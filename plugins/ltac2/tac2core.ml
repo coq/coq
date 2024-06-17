@@ -469,6 +469,10 @@ let () =
   define "string_app" (bytes @-> bytes @-> ret bytes) @@ fun a b ->
   Bytes.concat Bytes.empty [a; b]
 
+let () =
+  define "string_sub" (bytes @-> int @-> int @-> tac bytes) @@ fun s off len ->
+  try return (Bytes.sub s off len) with Invalid_argument _ -> throw err_outofbounds
+
 let () = define "string_equal" (bytes @-> bytes @-> ret bool) Bytes.equal
 
 let () = define "string_compare" (bytes @-> bytes @-> ret int) Bytes.compare
