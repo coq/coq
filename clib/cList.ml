@@ -395,6 +395,22 @@ let map4 f l1 l2 l3 l4 = match l1, l2, l3, l4 with
     cast c
   | _ -> invalid_arg "List.map4"
 
+let rec map5_loop f p l1 l2 l3 l4 l5 = match l1, l2, l3, l4, l5 with
+  | [], [], [], [], [] -> ()
+  | x :: l1, y :: l2, z :: l3, t :: l4, u :: l5 ->
+    let c = { head = f x y z t u; tail = [] } in
+    p.tail <- cast c;
+    map5_loop f c l1 l2 l3 l4 l5
+  | _ -> invalid_arg "List.map5"
+
+let map5 f l1 l2 l3 l4 l5 = match l1, l2, l3, l4, l5 with
+  | [], [], [], [], [] -> []
+  | x :: l1, y :: l2, z :: l3, t :: l4, u :: l5 ->
+    let c = { head = f x y z t u; tail = [] } in
+    map5_loop f c l1 l2 l3 l4 l5;
+    cast c
+  | _ -> invalid_arg "List.map5"
+
 let rec map_until_loop f p = function
   | [] -> []
   | x :: l as l' ->
