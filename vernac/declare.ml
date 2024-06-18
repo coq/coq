@@ -2260,7 +2260,8 @@ let finish_derived ~f ~name {entries; pinfo; uctx} =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
 
   let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; poly; udecl; _ } } = pinfo in
-  pi3 (List.fold_left2 (fun (i, subst, refs) CInfo.{name; impargs} entry ->
+  let _, _, refs, _ =
+    List.fold_left2 (fun (i, subst, refs, used_univs) CInfo.{name; impargs} entry ->
       (* The opacity of the specification is adjusted to be [false], as it must.*)
       let entry = if i = 0 then ProofEntry.set_transparent_for_derived entry else entry in
       let f c = UState.nf_universes uctx (Vars.replace_vars subst c) in
@@ -2268,14 +2269,15 @@ let finish_derived ~f ~name {entries; pinfo; uctx} =
       let entry = ProofEntry.map_proof_entry entry ~f:(fun (b,fx) -> (f b, fx)) in
       let used_univs_body = Vars.universes_of_constr (fst (fst (ProofEntry.get_entry_body entry))) (* Currently assume not delayed *) in
       let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty entry.proof_entry_type in
-      let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
+      let used_univs = Univ.Level.Set.union used_univs (Univ.Level.Set.union used_univs_body used_univs_typ) in
       let uctx' = UState.restrict uctx used_univs in
       let entry = { entry with proof_entry_universes = UState.check_univ_decl ~poly uctx' udecl } in
       let gref = declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx entry in
       let cst = match gref with ConstRef cst -> cst | _ -> assert false in
       let inst = instance_of_univs entry.proof_entry_universes in
-      (i+1, (name, Constr.mkConstU (cst,inst))::subst, gref::refs))
-      (0, [], []) pinfo.Proof_info.cinfo entries)
+      (i+1, (name, Constr.mkConstU (cst,inst))::subst, gref::refs, used_univs))
+      (0, [], [], Univ.Level.Set.empty) pinfo.Proof_info.cinfo entries in
+  refs
 
 let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
 
