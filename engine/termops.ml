@@ -1096,6 +1096,13 @@ let is_global = EConstr.isRefX
 
 let isGlobalRef = EConstr.isRef
 
+let is_template_polymorphic_ref env sigma f =
+  match EConstr.kind sigma f with
+  | Ind (ind, u) | Construct ((ind, _), u) ->
+    if not (EConstr.EInstance.is_empty u) then false
+    else Environ.template_polymorphic_ind ind env
+  | _ -> false
+
 let is_template_polymorphic_ind env sigma f =
   match EConstr.kind sigma f with
   | Ind (ind, u) ->
