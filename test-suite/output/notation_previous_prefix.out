@@ -1,0 +1,6 @@
+Notation "#0 #1 _" at level 30 with arguments constr at next level,
+no associativity.
+Notation "#0 #1 _" in foo at level 40 with arguments custom foo
+at next level, no associativity.
+Notation "#2 _ #3 _ #4 _" at level 30 with arguments constr at level 20,
+constr at level 25, constr at next level, no associativity.
