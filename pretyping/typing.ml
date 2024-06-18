@@ -406,13 +406,20 @@ let judge_of_array env sigma u tj defj tyj =
   in
   sigma, j
 
-let bad_relevance_msg = CWarnings.create_msg Typeops.bad_relevance_warning ()
+type ('constr,'types,'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
+
+let bad_relevance_warning =
+  CWarnings.create_warning ~name:"bad-relevance" ~default:CWarnings.AsError ()
+
+let bad_relevance_msg = CWarnings.create_msg bad_relevance_warning ()
 (* no need for default printer, pretyping is always linked with himsg in practice *)
 
 let warn_bad_relevance_binder ?loc env sigma rlv bnd =
-  match CWarnings.warning_status Typeops.bad_relevance_warning with
+  match CWarnings.warning_status bad_relevance_warning with
 | CWarnings.Disabled | CWarnings.Enabled ->
-  CWarnings.warn bad_relevance_msg ?loc (env,sigma,Typeops.BadRelevanceBinder (rlv, bnd))
+  CWarnings.warn bad_relevance_msg ?loc (env,sigma,BadRelevanceBinder (rlv, bnd))
 | CWarnings.AsError ->
   Loc.raise ?loc (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd))))
 

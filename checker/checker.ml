@@ -386,7 +386,6 @@ let init_with_argv argv =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   try
     parse_args argv;
-    CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     Flags.if_verbose print_header ();
     if not !boot then init_load_path ();
