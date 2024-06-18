@@ -193,6 +193,30 @@ let print_if_is_coercion ref =
 
 (** Printing polymorphic status *)
 
+let template_poly_variables env ind =
+  let mib, mip = Inductive.lookup_mind_specif env ind in
+  match mib.mind_template with
+  | None -> []
+  | Some { template_param_arguments } ->
+    let rec fold acc ctx template = match ctx, template with
+      | _, [] -> acc
+      | LocalDef _ :: ctx, _ -> fold acc ctx template
+      | LocalAssum _ :: ctx, false :: template -> fold acc ctx template
+      | LocalAssum (_,t) :: ctx, true :: template ->
+        let _, s = Term.destArity t in
+        let u = match s with Type u -> Option.get @@ Univ.Universe.level u | _ -> assert false in
+        let acc = Univ.Level.Set.add u acc in
+        fold acc ctx template
+      | [], _ :: _ -> assert false
+    in
+    Univ.Level.Set.elements @@
+    fold Univ.Level.Set.empty (List.rev mib.mind_params_ctxt) template_param_arguments
+
+
+let get_template_poly_variables env = function
+  | GlobRef.IndRef ind | ConstructRef (ind,_) -> template_poly_variables env ind
+  | VarRef _ | ConstRef _ -> []
+
 let pr_template_variables = function
   | [] -> mt ()
   | vars -> str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
@@ -200,7 +224,7 @@ let pr_template_variables = function
 let print_polymorphism env ref =
   let poly = Environ.is_polymorphic env ref in
   let template_poly = Environ.is_template_polymorphic env ref in
-  let template_variables = Environ.get_template_polymorphic_variables env ref in
+  let template_variables = get_template_poly_variables env ref in
   [ pr_global ref ++ str " is " ++
       (if poly then str "universe polymorphic"
        else if template_poly then

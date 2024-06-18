@@ -702,10 +702,11 @@ let univ_level_mem l s = match s with
 let rec instantiate_universes env evdref scl is = function
   | (LocalDef _ as d)::sign, exp ->
     EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
-  | d::sign, None::exp ->
+  | d::sign, false::exp ->
     EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
-  | (LocalAssum (na,ty))::sign, Some l::exp ->
-      let ctx,_ = Reduction.dest_arity env ty in
+  | (LocalAssum (na,ty))::sign, true::exp ->
+      let ctx,s = Reduction.dest_arity env ty in
+      let l = match s with Type u -> Option.get @@ Univ.Universe.level u | _ -> assert false in
       let u = Univ.Universe.make l in
       let s =
         (* Does the sort of parameter [u] appear in (or equal)
@@ -737,7 +738,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
     let evdref = ref sigma in
     let ctx =
       instantiate_universes
-        env evdref scl ar.template_level (ctx,templ.template_param_levels) in
+        env evdref scl ar.template_level (ctx,templ.template_param_arguments) in
     !evdref, mkArity (List.rev ctx, scl)
 
 let type_of_projection_constant env (p,u) =

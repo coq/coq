@@ -52,7 +52,7 @@ let hcons_template_arity ar =
   { template_level = Sorts.hcons ar.template_level; }
 
 let hcons_template_universe ar =
-  { template_param_levels = ar.template_param_levels;
+  { template_param_arguments = ar.template_param_arguments;
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function

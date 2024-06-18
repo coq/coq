@@ -17,7 +17,6 @@ open UVars
 open Cooking
 
 module NamedDecl = Context.Named.Declaration
-module RelDecl = Context.Rel.Declaration
 
 let lift_univs info univ_hyps = function
   | Monomorphic ->
@@ -184,14 +183,10 @@ let cook_inductive info mib =
   in
   let mind_template = match mib.mind_template with
   | None -> None
-  | Some {template_param_levels=levels; template_context} ->
-      let sec_levels = CList.map_filter (fun d ->
-          if RelDecl.is_local_assum d then Some None
-          else None)
-          (rel_context_of_cooking_cache cache)
-      in
+  | Some {template_param_arguments=levels; template_context} ->
+      let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) false in
       let levels = List.rev_append sec_levels levels in
-      Some {template_param_levels=levels; template_context}
+      Some {template_param_arguments=levels; template_context}
   in
   {
     mind_packets;

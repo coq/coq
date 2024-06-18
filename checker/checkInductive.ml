@@ -93,8 +93,8 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
 
 let check_template ar1 ar2 = match ar1, ar2 with
 | None, None -> true
-| Some ar, Some {template_context; template_param_levels} ->
-  List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+| Some ar, Some {template_context; template_param_arguments} ->
+  List.equal Bool.equal ar.template_param_arguments template_param_arguments &&
   ContextSet.equal template_context ar.template_context
 | None, Some _ | Some _, None -> false
 
