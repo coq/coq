@@ -971,7 +971,7 @@ struct
         else sigma, resj
       | _ -> sigma, resj
     in
-    let rec apply_rec env sigma n body (subs, typ) val_before_bidi candargs bidiargs = function
+    let rec apply_rec env sigma n body (subs, typ) val_before_bidi candargs template bidiargs = function
       | [] ->
         let typ = Vars.esubst Vars.lift_substituend subs typ in
         let body = Coercion.force_app_body body in
@@ -999,6 +999,17 @@ struct
           in
           sigma, body, na, c1, Esubst.subs_id 0, c2, trace
         in
+        let sigma, template, c1 = match template with
+          | None | Some [] -> sigma, None, c1
+          | Some (false :: t) -> sigma, Some t, c1
+          | Some (true :: t) ->
+            (* template arg: type guaranteed to be syntactically an arity
+               we replace the output universe with a fresh one *)
+            let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+            let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
+            let ctx, _ = destArity sigma c1 in
+            sigma, Some t, mkArity (ctx,s)
+        in
         let (sigma, hj), bidiargs =
           if bidi then
             (* We want to get some typing information from the context before
@@ -1025,12 +1036,19 @@ struct
         let subs = Esubst.subs_cons (Vars.make_substituend ujval) subs in
         let body = Coercion.push_arg body ujval in
         let val_before_bidi = if bidi then val_before_bidi else body in
-        apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs bidiargs rest
+        apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs template bidiargs rest
     in
     let typ = (Esubst.subs_id 0, fj.uj_type) in
     let body = (Coercion.start_app_body sigma fj.uj_val) in
+    let template = match EConstr.kind sigma fj.uj_val with
+      | Ind (ind,u) | Construct ((ind,_),u)
+        when EInstance.is_empty u && Environ.template_polymorphic_ind ind !!env ->
+        let mib = Environ.lookup_mind (fst ind) !!env in
+        Option.map (fun t -> t.Declarations.template_param_arguments) mib.mind_template
+      | _ -> None
+    in
     let sigma, resj, val_before_bidi, bidiargs =
-      apply_rec env sigma 0 body typ body candargs [] args
+      apply_rec env sigma 0 body typ body candargs template [] args
     in
     let sigma, resj = refresh_template env sigma resj in
     let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon in

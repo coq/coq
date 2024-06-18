@@ -210,3 +210,25 @@ Set Warnings "-no-template-universe".
 Check (foo unit : Prop).
 
 End TemplateParamUnit.
+
+Module TemplateAlg.
+
+  Inductive foo (A:Type) (B :Type) := C (_:A).
+
+  Check foo True nat : Prop.
+
+  Universes u v.
+
+  Axiom U : Type@{u}.
+  Axiom V : Type@{v}.
+
+  Check foo (U * V) True : Type@{max(u,v)}.
+
+End TemplateAlg.
+
+Module TemplateNoExtraCsts.
+
+  Polymorphic Definition opt'@{u|} (A:Type@{u}) := option A.
+  Polymorphic Definition some@{u|} (A:Type@{u}) (x:A) : opt' A := Some x.
+
+End TemplateNoExtraCsts.
