@@ -229,25 +229,26 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let invProof = it_mkNamedLambda_or_LetIn sigma c !ownSign in
   invProof, sigma
 
-let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
+let add_inversion_lemma ~poly ~opaque name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
-  let cinfo = Declare.CInfo.make ~name ~typ:None () in
+  let opaque = Some (Option.default false opaque) in
+  let cinfo = Declare.CInfo.make ~name ~typ:None ~opaque () in
   let info = Declare.Info.make ~poly ~kind:Decls.(IsProof Lemma) () in
   let _ : Names.GlobRef.t =
-    Declare.declare_definition ~cinfo ~info ~opaque:false ~body:invProof sigma
+    Declare.declare_definition ~cinfo ~info ~body:invProof sigma
   in
   ()
 
 (* inv_op = Inv (derives de complete inv. lemma)
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
-let add_inversion_lemma_exn ~poly na com comsort bool tac =
+let add_inversion_lemma_exn ~poly ~opaque na com comsort bool tac =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let c, uctx = Constrintern.interp_type env sigma com in
   let sigma = Evd.from_ctx uctx in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid sigma comsort in
-  add_inversion_lemma ~poly na env sigma c sort bool tac
+  add_inversion_lemma ~poly ~opaque na env sigma c sort bool tac
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)

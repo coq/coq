@@ -256,6 +256,13 @@ let locality =
     ("global", single_key_parser ~name ~key:"global" false);
   ]
 
+let opacity =
+  let name = "Opacity" in
+  attribute_of_list [
+    ("sealed", single_key_parser ~name ~key:"sealed" true);
+    ("unsealed", single_key_parser ~name ~key:"unsealed" false);
+  ]
+
 let ukey = "universes"
 
 let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
