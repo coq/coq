@@ -1,17 +1,31 @@
 UNIVERSES:
- {ShowUnivs.5 ShowUnivs.4 ShowUnivs.3 ShowUnivs.2 ShowUnivs.1} |=
-   ShowUnivs.2 < ShowUnivs.3
-   ShowUnivs.3 < ShowUnivs.4
-   ShowUnivs.3 <= ShowUnivs.5
-   ShowUnivs.4 <= ShowUnivs.1
-   ShowUnivs.5 <= ShowUnivs.1
+ {w v u} |= u <= v
+            v <= w
 ALGEBRAIC UNIVERSES:
- {ShowUnivs.5 ShowUnivs.4 ShowUnivs.1}
+ {}
 FLEXIBLE UNIVERSES:
- ShowUnivs.5
+ 
+SORTS:
+ 
+WEAK CONSTRAINTS:
+ 
+
+Normalized constraints: {w v u} |= u <= v
+                                   v <= w
+UNIVERSES:
+ {ShowUnivs.8 ShowUnivs.7 ShowUnivs.6 ShowUnivs.5 ShowUnivs.4} |=
+   ShowUnivs.5 < ShowUnivs.6
+   ShowUnivs.6 < ShowUnivs.7
+   ShowUnivs.6 <= ShowUnivs.8
+   ShowUnivs.7 <= ShowUnivs.4
+   ShowUnivs.8 <= ShowUnivs.4
+ALGEBRAIC UNIVERSES:
+ {ShowUnivs.8 ShowUnivs.7 ShowUnivs.4}
+FLEXIBLE UNIVERSES:
+ ShowUnivs.8
+ ShowUnivs.7
+ ShowUnivs.6
  ShowUnivs.4
- ShowUnivs.3
- ShowUnivs.1
 SORTS:
  α1 := Type
  α2 := Type
@@ -20,4 +34,4 @@ WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {ShowUnivs.3 ShowUnivs.2} |= ShowUnivs.2 < ShowUnivs.3
+ {ShowUnivs.6 ShowUnivs.5} |= ShowUnivs.5 < ShowUnivs.6
