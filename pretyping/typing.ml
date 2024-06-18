@@ -63,7 +63,7 @@ let assumption_of_judgment env sigma j =
   with Type_errors.TypeError _ | PretypeError _ ->
     error_assumption env sigma j
 
-let judge_of_apply env sigma funj argjv =
+let judge_of_apply_core env sigma funj argjv =
   let rec apply_rec sigma n subs typ = function
   | [] ->
     let typ = Vars.esubst Vars.lift_substituend subs typ in
@@ -96,17 +96,10 @@ let judge_of_apply env sigma funj argjv =
   in
   apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
-let checked_appvect env sigma f args =
-  let mk c = Retyping.get_judgment_of env sigma c in
-  let sigma, j = judge_of_apply env sigma (mk f) (Array.map mk args) in
-  sigma, j.uj_val
-
-let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
-
 let judge_of_applied ~check env sigma funj argjv =
   let sigma =
     if check then
-      let (sigma, _) = judge_of_apply env sigma funj argjv in
+      let (sigma, _) = judge_of_apply_core env sigma funj argjv in
       sigma
     else sigma
   in
@@ -132,6 +125,23 @@ let judge_of_applied_constructor_knowing_parameters ~check env sigma ((ind, _ as
   let sigma = Evd.add_constraints sigma csts in
   let funj = { uj_val = mkConstructU (cstr, u); uj_type = (EConstr.of_constr (rename_type ty (GR.ConstructRef cstr))) } in
   judge_of_applied ~check env sigma funj argjv
+
+let judge_of_apply env sigma fj args =
+  match EConstr.kind sigma fj.uj_val with
+  | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+    judge_of_applied_inductive_knowing_parameters ~check:true env sigma (ind, u) args
+  | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+    judge_of_applied_constructor_knowing_parameters ~check:true env sigma (cstr, u) args
+  | _ ->
+    (* No template polymorphism *)
+    judge_of_apply_core env sigma fj args
+
+let checked_appvect env sigma f args =
+  let mk c = Retyping.get_judgment_of env sigma c in
+  let sigma, j = judge_of_apply env sigma (mk f) (Array.map mk args) in
+  sigma, j.uj_val
+
+let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
@@ -561,16 +571,9 @@ let rec execute env sigma cstr =
       sigma, judge_of_projection env sigma p cj
 
     | App (f,args) ->
+        let sigma, fj = execute env sigma f in
         let sigma, jl = execute_array env sigma args in
-        (match EConstr.kind sigma f with
-            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-               judge_of_applied_inductive_knowing_parameters ~check:true env sigma (ind, u) jl
-            | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
-               judge_of_applied_constructor_knowing_parameters ~check:true env sigma (cstr, u) jl
-            | _ ->
-               (* No template polymorphism *)
-               let sigma, fj = execute env sigma f in
-               judge_of_apply env sigma fj jl)
+        judge_of_apply env sigma fj jl
 
     | Lambda (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
