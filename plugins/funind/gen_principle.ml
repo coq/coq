@@ -386,7 +386,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
+    ComDefinition.do_definition ~name:fname.CAst.v ~opaque:(Some false) ~poly:false
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -1484,7 +1484,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lem_id = mk_correct_id f_id in
           let typ, _ = lemmas_types_infos.(i) in
           let info = Declare.Info.make () in
-          let cinfo = Declare.CInfo.make ~name:lem_id ~typ () in
+          let cinfo = Declare.CInfo.make ~name:lem_id ~typ ~opaque:(Some false) () in
           let lemma = Declare.Proof.start ~cinfo ~info !evd in
           let lemma = fst @@ Declare.Proof.by (proving_tac i) lemma in
           let (_ : _ list) =
@@ -1548,9 +1548,9 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
               Ensures by: obvious
             i*)
           let lem_id = mk_complete_id f_id in
-          let info = Declare.Info.make () in
+          let info = Declare.Info.make() in
           let cinfo =
-            Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ()
+            Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ~opaque:(Some false) ()
           in
           let lemma = Declare.Proof.start ~cinfo sigma ~info in
           let lemma =
@@ -2091,7 +2091,8 @@ let make_graph (f_ref : GlobRef.t) =
               ; binders = nal_tas @ bl
               ; rtype = t
               ; body_def = Some b'
-              ; notations = [] })
+              ; notations = []
+              ; fix_attrs = [] })
             fixexprl
         in
         l
@@ -2102,7 +2103,8 @@ let make_graph (f_ref : GlobRef.t) =
           ; binders = nal_tas
           ; rtype = t
           ; body_def = Some b
-          ; notations = [] } ]
+          ; notations = []
+          ; fix_attrs = [] } ]
     in
     let mp = Constant.modpath c in
     let expr_list = List.split expr_list in

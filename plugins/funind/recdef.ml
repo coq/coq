@@ -1463,7 +1463,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     ()
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
-  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in
+  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type ~opaque:(Some false (* as in "defined" *)) () in
   let lemma = Declare.Proof.start ~cinfo ~info sigma in
   let lemma =
     if Indfun_common.is_strict_tcc () then
@@ -1496,7 +1496,7 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
     let cinfo =
       Declare.CInfo.make ~name:thm_name
         ~typ:(EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
-        ()
+        ~opaque:(Some false) ()
     in
     let info = Declare.Info.make ~hook () in
     let lemma = Declare.Proof.start ~cinfo ~info ctx in
@@ -1568,7 +1568,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let cinfo =
     Declare.CInfo.make ~name:eq_name
       ~typ:(EConstr.of_constr equation_lemma_type)
-      ()
+      ~opaque:(Some (opacity == Opaque)) ()
   in
   let lemma = Declare.Proof.start ~cinfo evd ~info in
   let lemma =

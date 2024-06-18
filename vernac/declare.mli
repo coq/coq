@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> opaque : bool option
     -> unit
     -> 'constr t
 
@@ -125,7 +126,6 @@ end
 val declare_definition
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
-  -> opaque:bool
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
@@ -134,7 +134,6 @@ val declare_definition
 val declare_mutual_definitions
   :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
   -> possible_guard:Pretyping.possible_guard * Sorts.relevance list
@@ -431,7 +430,6 @@ val declare_constant
 val declare_definition_full
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
-  -> opaque:bool
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
@@ -538,7 +536,6 @@ val add_definition :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t
-  -> opaque:bool
   -> uctx:UState.t
   -> ?body:Constr.t
   -> ?tactic:unit Proofview.tactic
@@ -556,7 +553,6 @@ val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
   -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)

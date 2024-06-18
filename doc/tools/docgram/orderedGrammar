@@ -462,7 +462,7 @@ pattern0: [
 ]
 
 fix_definition: [
-| ident_decl LIST0 binder OPT fixannot OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
+| LIST0 [ "#[" LIST1 attribute SEP "," "]" ] ident_decl LIST0 binder OPT fixannot OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
 thm_token: [
@@ -571,7 +571,7 @@ filtered_import: [
 ]
 
 cofix_definition: [
-| ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
+| LIST0 [ "#[" LIST1 attribute SEP "," "]" ] ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
 rw_pattern: [

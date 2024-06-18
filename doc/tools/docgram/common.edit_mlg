@@ -1507,13 +1507,13 @@ legacy_attr: [
 sentence: [ ]  (* productions defined below *)
 
 fix_definition: [
-| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| REPLACE quoted_attributes ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| WITH quoted_attributes ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 cofix_definition: [
-| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| REPLACE quoted_attributes ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| WITH quoted_attributes ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 type_cstr: [

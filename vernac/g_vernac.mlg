@@ -500,18 +500,18 @@ GRAMMAR EXTEND Gram
   ;
   (* (co)-fixpoints *)
   fix_definition:
-    [ [ id_decl = ident_decl;
+    [ [ fix_attrs = quoted_attributes; id_decl = ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
           { let binders, rec_order = bl in
-            ((rec_order : Constrexpr.fixpoint_order_expr option), {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations})
+            ((rec_order : Constrexpr.fixpoint_order_expr option), {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations; fix_attrs})
           } ] ]
   ;
   cofix_definition:
-    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+    [ [ fix_attrs = quoted_attributes; id_decl = ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
-        { {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations}
+        { {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations; fix_attrs}
         } ]]
   ;
   (* Rewrite Rules *)
