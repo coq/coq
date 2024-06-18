@@ -10,8 +10,9 @@ SORTS:
 WEAK CONSTRAINTS:
  
 
-Normalized constraints: {w v u} |= u <= v
-                                   v <= w
+Normalized constraints:
+ {w v u} |= u <= v
+            v <= w
 UNIVERSES:
  {ShowUnivs.8 ShowUnivs.7 ShowUnivs.6 ShowUnivs.5 ShowUnivs.4} |=
    ShowUnivs.5 < ShowUnivs.6
