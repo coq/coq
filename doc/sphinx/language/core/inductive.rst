@@ -462,7 +462,7 @@ constructions.
    .. insertprodn fix_definition fix_definition
 
    .. prodn::
-      fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
+      fix_definition ::= {* #[ {+, @attribute } ] } @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
 
    Allows defining functions by pattern matching over inductive
    objects using a fixed point construction. The meaning of this declaration is
