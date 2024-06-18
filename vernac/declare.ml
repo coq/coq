@@ -133,6 +133,17 @@ type symbol_entry = {
 let default_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty
 let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
+let instance_of_univs = function
+  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
+
+let check_only_extra_mono ((_, body_uctx), _) = function
+  (* We mimic what the kernel does, that is ensuring that no additional
+     constraints appear in the body of polymorphic constants. Ideally this
+     should be enforced statically. *)
+  | UState.Monomorphic_entry _, _ -> true
+  | UState.Polymorphic_entry _, _ -> Univ.ContextSet.is_empty body_uctx
+
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
@@ -1089,10 +1100,6 @@ let update_global_obligation_uctx prg uctx =
       UState.Internal.reboot (Global.env ()) prg.prg_uctx in
   ProgramDecl.Internal.set_uctx ~uctx prg
 
-let instance_of_univs = function
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
-  | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
-
 let declare_obligation prg obl ~uctx ~types ~body =
   let body = prg.prg_reduce body in
   let types = Option.map prg.prg_reduce types in
@@ -2025,18 +2032,10 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
-  let inst = match fst const.proof_entry_universes with
-  | UState.Monomorphic_entry _ -> EConstr.EInstance.empty
-  | UState.Polymorphic_entry ctx ->
-    (* We mimic what the kernel does, that is ensuring that no additional
-       constraints appear in the body of polymorphic constants. Ideally this
-       should be enforced statically. *)
-    let (_, body_uctx), _ = const.proof_entry_body in
-    let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (UVars.UContext.instance ctx)
-  in
+  let inst = instance_of_univs const.proof_entry_universes in
+  let () = assert (check_only_extra_mono const.proof_entry_body const.proof_entry_universes) in
   let args = List.map EConstr.of_constr args in
-  let lem = EConstr.mkConstU (cst, inst) in
+  let lem = EConstr.of_constr (Constr.mkConstU (cst, inst)) in
   let effs = Evd.concat_side_effects eff effs in
   effs, sigma, lem, args, safe
 
