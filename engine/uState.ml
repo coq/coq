@@ -99,17 +99,20 @@ let set q qv m =
       Some { named = m.named; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
 
 let set_above_prop q m =
-  (* XXX fail if named? *)
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
-  { named = m.named; qmap = m.qmap; above = QSet.add q m.above }
+  if QSet.mem q m.named then None
+  else Some { named = m.named; qmap = m.qmap; above = QSet.add q m.above }
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
 | QConstant QProp, QConstant QProp
 | QConstant QSProp, QConstant QSProp -> local
 | QConstant QProp, QVar q when c == Conversion.CUMUL ->
-  set_above_prop q local
+  begin match set_above_prop q local with
+  | Some local -> local
+  | None -> fail ()
+  end
 | QVar qv1, QVar qv2 -> begin match set qv1 q2 local with
     | Some local -> local
     | None -> match set qv2 q1 local with
