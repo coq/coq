@@ -1898,8 +1898,9 @@ let clear_all_no_check =
         Environ.reset_with_named_context Environ.empty_named_context_val
           (Tacmach.pf_env gl)
       in
-      Refine.refine ~typecheck:false (fun sigma ->
-          Evarutil.new_evar env sigma ~principal:true concl))
+      Refine.refine_with_principal ~typecheck:false (fun sigma ->
+          let sigma, ev = Evarutil.new_evar env sigma concl in
+          sigma, ev, Some (fst (EConstr.destEvar sigma ev))))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Proofview.Goal.enter (fun gl ->

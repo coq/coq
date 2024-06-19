@@ -1148,7 +1148,7 @@ let () =
 (** (unit -> constr) -> unit *)
 let () =
   define "refine" (closure @-> tac unit) @@ fun c ->
-  let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Tac2ffi.to_constr c) in
+  let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Tac2ffi.to_constr c, None) in
   Proofview.Goal.enter @@ fun gl ->
   Refine.generic_refine ~typecheck:true c gl
 

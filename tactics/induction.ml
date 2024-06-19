@@ -254,13 +254,14 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (make_annot heq ERelevance.relevant,eq); decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
+      let (sigma, x) = new_evar newenv sigma ccl in
       (sigma, mkNamedLetIn sigma (make_annot id r) c t
-         (mkNamedLetIn sigma (make_annot heq ERelevance.relevant) refl eq x))
+         (mkNamedLetIn sigma (make_annot heq ERelevance.relevant) refl eq x),
+      Some (fst @@ destEvar sigma x))
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
-      (sigma, mkNamedLetIn sigma (make_annot id r) c t x)
+      let (sigma, x) = new_evar newenv sigma ccl in
+      (sigma, mkNamedLetIn sigma (make_annot id r) c t x, Some (fst @@ destEvar sigma x))
 
 let warn_cannot_remove_as_expected =
   CWarnings.create ~name:"cannot-remove-as-expected" ~category:CWarnings.CoreCategories.tactics
@@ -1373,7 +1374,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           (* and destruct has side conditions first *)
           Tacticals.tclTHENLAST)
       (Tacticals.tclTHENLIST [
-        Refine.refine ~typecheck:false begin fun sigma ->
+        Refine.refine_with_principal ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
           let sigma, c, t = use_bindings env sigma elim b (c0,lbind) t0 in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
@@ -1396,7 +1397,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       let tac =
       Tacticals.tclTHENLIST [
-        Refine.refine ~typecheck:false begin fun sigma ->
+        Refine.refine_with_principal ~typecheck:false begin fun sigma ->
           mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None
         end;
         (tac inhyps)
