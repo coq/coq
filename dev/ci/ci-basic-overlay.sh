@@ -474,7 +474,7 @@ project deriving 'https://github.com/arthuraa/deriving' '5712f82f94d00c2229fbb8c
 ########################################################################
 # VsCoq
 ########################################################################
-project vscoq 'https://github.com/coq-community/vscoq' '8cdb3e6a8e74fd345e546d4d155bf172521af0f5'
+project vscoq 'https://github.com/coq-community/vscoq' '2918fb053f7bc1be9ea4891e4faba9f284772d21'
 # Contact @rtetley, @gares on github
 
 ########################################################################
@@ -486,7 +486,7 @@ project category_theory 'https://github.com/jwiegley/category-theory' 'f8295f0d7
 ########################################################################
 # itauto
 ########################################################################
-project itauto 'https://gitlab.inria.fr/fbesson/itauto' '782ec4f7b29f8a925ff7a4c72dab727c6bd656ed'
+project itauto 'https://gitlab.inria.fr/fbesson/itauto' '90a359a652ec8f42c5d8832d12362b9218618705'
 # Contact @fajb on github
 
 ########################################################################
