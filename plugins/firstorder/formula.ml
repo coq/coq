@@ -19,7 +19,6 @@ open Declarations
 module RelDecl = Context.Rel.Declaration
 
 type flags = {
-  qflag : bool;
   reds : RedFlags.reds;
 }
 
@@ -183,8 +182,6 @@ type _ side =
 | Hyp : bool -> [ `Hyp ] side (* true if treated as hint *)
 | Concl : [ `Goal ] side
 
-let no_atoms = (false,{positive=[];negative=[]})
-
 let build_atoms (type a) ~flags state env sigma metagen (side : a side) cciterm =
   let trivial =ref false
   and positive=ref []
@@ -293,10 +290,7 @@ let build_formula (type a) ~flags state env sigma (side : a side) (nam : a ident
     try
       let state = ref state in
       let m=meta_succ(metagen false) in
-      let trivial,atoms=
-        if flags.qflag then
-          build_atoms ~flags state env sigma metagen side typ
-        else no_atoms in
+      let trivial, atoms = build_atoms ~flags state env sigma metagen side typ in
       let pattern : a pattern =
         match side with
             Concl ->

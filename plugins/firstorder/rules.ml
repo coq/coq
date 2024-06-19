@@ -189,10 +189,7 @@ let forall_tac ~flags backtrack continue seq=
        (tclORELSE
           (tclTHEN introf (tclCOMPLETE (wrap ~flags 0 true continue seq)))
           backtrack))
-    (if flags.qflag then
-       tclFAIL (Pp.str "reversible in 1st order mode")
-     else
-       backtrack)
+    (tclFAIL (Pp.str "reversible in 1st order mode"))
 
 let left_exists_tac ~flags ind backtrack id continue seq =
   Proofview.Goal.enter begin fun gl ->
