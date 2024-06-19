@@ -131,6 +131,16 @@ exception NoSubtacCoercion
 let hnf env sigma c = whd_all env sigma c
 let hnf_nodelta env sigma c = whd_betaiota env sigma c
 
+let has_undefined_head_evar sigma c =
+  let rec hrec c = match kind sigma c with
+    | Evar (evk,_)   -> true
+    | Case (_, _, _, _, _, c, _) -> hrec c
+    | App (c,_)      -> hrec c
+    | Cast (c,_,_)   -> hrec c
+    | Proj (_, _, c) -> hrec c
+    | _ -> false
+  in hrec c
+
 let lift_args n sign =
   let rec liftrec k = function
     | t::sign -> liftn n k t :: (liftrec (k-1) sign)
@@ -696,8 +706,7 @@ let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty ta
           let sigma, rev_x, _, _ = apply_coercion env sigma reversible x target_type in
           let sigma, direct_v, _, _ = apply_coercion env sigma direct v v_ty in
           let sigma = unify_leq_delay ~flags env sigma direct_v rev_x in
-          (try let _ = Evarutil.head_evar sigma (whd_evar sigma x) in raise Not_found
-           with NoHeadEvar -> ());  (* fail if x is stil an unresolved evar *)
+          if has_undefined_head_evar sigma x then raise Not_found;
           let sigma, rev_x = add_reverse_coercion env sigma target_type v_ty x v in
           sigma, rev_x, target_type, ReplaceCoe rev_x
       in

@@ -664,21 +664,19 @@ struct
       (* Warn about no longer typable hint? *)
       None
 
-  let head_evar sigma c =
+  let has_no_head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
-      | Evar (evk,_)   -> evk
+      | Evar (evk,_)   -> false
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
-      | _              -> raise Evarutil.NoHeadEvar
+      | _              -> true
     in
     hrec c
 
   let match_mode sigma m arg =
     match m with
     | ModeInput -> not (occur_existential sigma arg)
-    | ModeNoHeadEvar ->
-       (try ignore(head_evar sigma arg); false
-                 with Evarutil.NoHeadEvar -> true)
+    | ModeNoHeadEvar -> has_no_head_evar sigma arg
     | ModeOutput -> true
 
   let matches_mode sigma args mode =

@@ -125,23 +125,6 @@ let is_ground_env evd env =
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
 
-(* Return the head evar if any *)
-
-exception NoHeadEvar
-
-let head_evar sigma c =
-  (* FIXME: this breaks if using evar-insensitive code *)
-  let c = EConstr.Unsafe.to_constr c in
-  let rec hrec c = match kind c with
-    | Evar (evk,_)   -> evk
-    | Case (_, _, _, _, _, c, _) -> hrec c
-    | App (c,_)      -> hrec c
-    | Cast (c,_,_)   -> hrec c
-    | Proj (_, _, c)    -> hrec c
-    | _              -> raise NoHeadEvar
-  in
-  hrec c
-
 (* Expand head evar if any (currently consider only applications but I
    guess it should consider Case too) *)
 

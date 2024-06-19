@@ -71,10 +71,6 @@ val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
 (** {6 Unification utils} *)
 
-(** [head_evar c] returns the head evar of [c] if any *)
-exception NoHeadEvar
-val head_evar : evar_map -> constr -> Evar.t (** may raise NoHeadEvar *)
-
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> constr -> constr
 
