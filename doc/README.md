@@ -87,16 +87,16 @@ Compilation
 The current documentation targets are:
 
 - `make refman-html`
-  Build the HTML reference manual on `_build/default/doc/refman-html`
+  Build the reference manual in HTML form into `_build/default/doc/refman-html`
 
 - `make refman-pdf`
-  Build the PDF reference manual on `_build/default/doc/refman-pdf`
+  Build the reference manual in PDF form into `_build/default/doc/refman-pdf`
 
 - `make stdlib-html`
-  Build the documentation for Coq's standard library `_build/default/doc/stdlib/html`
+  Build Coq's standard library documentation into `_build/default/doc/stdlib/html`
 
 - `make apidoc`
-  Build the documentation for Coq's standard library `_build/default/_doc/_html`
+  Build the ML API's documentation into `_build/default/_doc/_html`
 
 To build the Sphinx documentation without stopping at the first
 warning, change the value of the `SPHINXWARNOPT` variable (default is
