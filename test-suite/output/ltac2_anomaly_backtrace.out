@@ -1,10 +1,10 @@
 File "./output/ltac2_anomaly_backtrace.v", line 9, characters 0-18:
-Error:
+Error: Anomaly "Uncaught exception Not_found."
+Please report at http://coq.inria.fr/bugs/.
 Backtrace:
 Call foo
 Prim <coq-core.plugins.ltac2:eval_hnf>
-Anomaly "Uncaught exception Not_found."
-Please report at http://coq.inria.fr/bugs/.
+
 
 
 coqc exited with code 129

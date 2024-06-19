@@ -1,45 +1,52 @@
 File "./output/ltac_missing_args.v", line 11, characters 2-11:
 The command has indeed failed with message:
-Ltac call to "foo" failed.
 The user-defined tactic "foo" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+Ltac call to "foo" failed.
+
 File "./output/ltac_missing_args.v", line 12, characters 2-11:
 The command has indeed failed with message:
-Ltac call to "bar" failed.
 The user-defined tactic "bar" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+Ltac call to "bar" failed.
+
 File "./output/ltac_missing_args.v", line 13, characters 2-16:
 The command has indeed failed with message:
-Ltac call to "bar" failed.
 The user-defined tactic "bar" was not fully applied:
 There is a missing argument for variable y and 1 more,
 1 argument was provided.
+Ltac call to "bar" failed.
+
 File "./output/ltac_missing_args.v", line 14, characters 2-11:
 The command has indeed failed with message:
-In nested Ltac calls to "baz" and "foo", last call failed.
 The user-defined tactic "baz" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+In nested Ltac calls to "baz" and "foo", last call failed.
+
 File "./output/ltac_missing_args.v", line 15, characters 2-11:
 The command has indeed failed with message:
-In nested Ltac calls to "qux" and "bar", last call failed.
 The user-defined tactic "qux" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+In nested Ltac calls to "qux" and "bar", last call failed.
+
 File "./output/ltac_missing_args.v", line 16, characters 2-36:
 The command has indeed failed with message:
-In nested Ltac calls to "mydo" and "tac" (bound to 
-fun _ _ => idtac), last call failed.
 The user-defined tactic "mydo" was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
+In nested Ltac calls to "mydo" and "tac" (bound to 
+fun _ _ => idtac), last call failed.
+
 File "./output/ltac_missing_args.v", line 17, characters 2-42:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
+
 File "./output/ltac_missing_args.v", line 18, characters 2-24:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
@@ -47,11 +54,13 @@ There is a missing argument for variable _,
 no arguments at all were provided.
 File "./output/ltac_missing_args.v", line 19, characters 2-16:
 The command has indeed failed with message:
-In nested Ltac calls to "rec" and "rec", last call failed.
 The user-defined tactic "rec" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
+In nested Ltac calls to "rec" and "rec", last call failed.
+
 File "./output/ltac_missing_args.v", line 20, characters 2-40:
 The command has indeed failed with message:
 An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable x, 1 argument was provided.
+
