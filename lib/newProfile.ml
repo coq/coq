@@ -253,5 +253,5 @@ let finish () = match !accu with
   | Some { ch } ->
     let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
     leave "process" ~last:"" ~args ();
-    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
+    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }@.";
     accu := None
