@@ -876,7 +876,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) ~kind ~typing_flags ~user_warns ?hook ~obls ~impargs ~uctx entry =
+let declare_entry ~name ?(scope=Locality.default_scope) ?(clearbody=false) ~kind ~typing_flags ~user_warns ?hook ?(obls=[]) ~impargs ~uctx entry =
   let should_suggest =
     ProofEntry.get_opacity entry
     && not (List.is_empty (Global.named_context()))
@@ -898,8 +898,6 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
   let () = definition_message name in
   Hook.call ?hook { Hook.S.uctx; obls; scope; dref };
   dref
-
-let declare_entry = declare_entry_core ~obls:[]
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
@@ -946,8 +944,8 @@ let gather_mutual_using_data =
 let declare_possibly_mutual_definitions ~info ~cinfo proof_obj =
   let entries, uctx = process_proof ~info proof_obj in
   let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
-  let refs = List.map2 (fun CInfo.{name; impargs} ->
-      declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) cinfo entries in
+  let refs = List.map2 (fun CInfo.{name; impargs} entry ->
+      declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx entry) cinfo entries in
   let () =
     (* We override the temporary notations used while proving, now using the global names *)
     let local = info.scope=Locality.Discharge in
@@ -1064,7 +1062,7 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let { CInfo.name; impargs; typ; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma in
   let { Info.scope; clearbody; kind; hook; typing_flags; user_warns; ntns; _ } = info in
-  let gref = declare_entry_core ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
+  let gref = declare_entry ~name ~scope ~clearbody ~kind ~impargs ~typing_flags ~user_warns ~obls ?hook ~uctx entry in
   List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) (Global.env ())) ntns;
   gref, uctx
 
@@ -2826,5 +2824,5 @@ module OblState = Obls_.State
 let declare_constant ?local ~name ~kind ?typing_flags =
   declare_constant ?local ~name ~kind ~typing_flags
 
-let declare_entry ~name ?scope ~kind ?user_warns =
-  declare_entry ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~user_warns
+let declare_entry ~name ?scope ~kind ?user_warns ?hook ~impargs ~uctx entry =
+  declare_entry ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~user_warns ?hook ~impargs ~uctx entry
