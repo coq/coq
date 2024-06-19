@@ -159,7 +159,7 @@ let noncritical = function
   | Assert_failure _ | Match_failure _ | Anomaly _
   | Control.Timeout -> false
   | Invalid_argument "equal: functional value" -> false
-  | _ -> not (Interrupted.is_interrupted ())
+  | _ -> not (Memprof_coq.is_interrupted ())
 [@@@ocaml.warning "+52"]
 
 (* This should be in exninfo, but noncritical is here... *)

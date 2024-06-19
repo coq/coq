@@ -5,7 +5,11 @@
  (wrapped false)
  (modules_without_implementation cSig)
  (modules :standard \ unicodetable_gen)
- (libraries str unix threads))
+ (libraries
+  (select memprof_coq.ml from
+   (!memprof-limits -> memprof_coq.std.ml)
+   (memprof-limits -> memprof_coq.memprof.ml))
+   str unix threads))
 
 (executable
  (name unicodetable_gen)
