@@ -179,10 +179,12 @@ let leave_sums ?time name () =
 let leave ?time name ?(args=[]) ?last () =
   let time = gettimeopt time in
   let sum, dur = leave_sums ~time name () in
+  let sum = CString.Map.bindings sum in
+  let sum = List.sort (fun (_,(t1,_)) (_,(t2,_)) -> Float.compare t2 t1) sum in
   let sum = List.map (fun (name, (t, cnt)) ->
       name, `String
         (Format.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
-      (CString.Map.bindings sum)
+      sum
   in
   let args = ("subtimes", `Assoc sum) :: args in
   duration ~time name "E" ~args ?last ()
