@@ -33,7 +33,8 @@ if [ "$COQ_CI_COLOR" = 1 ] && command -v script > /dev/null; then
     if [ "$CI" ]; then
       export TERM=xterm-color
     fi
-    if [ "$OSTYPE" = darwin ]; then
+    # on some macos systems OSTYPE is just "darwin", on others it's followed by version info
+    if [[ "$OSTYPE" =~ ^darwin ]]; then
         script -q /dev/null bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
     else
         script --quiet --flush --return -c "bash '${DIR}/${CI_SCRIPT}'" /dev/null 2>&1 | tee "$CI_NAME.log"
