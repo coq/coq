@@ -16,7 +16,35 @@ end
 
 module type S = Set.S
 
-module Make(M : OrderedType)= Set.Make(M)
+module type ExtS =
+sig
+  include CSig.SetS
+  module List : sig
+    val union : t list -> t
+  end
+end
+
+module SetExt (M : Set.OrderedType) :
+sig
+  type set = Set.Make(M).t
+  module List : sig
+    val union : set list -> set
+  end
+end =
+struct
+  module S = Set.Make(M)
+  type set = S.t
+
+  module List = struct
+    let union = List.fold_left S.union S.empty
+  end
+end
+
+module Make(M : Set.OrderedType) =
+struct
+  include Set.Make(M)
+  include SetExt(M)
+end
 
 module type HashedType =
 sig

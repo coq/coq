@@ -107,7 +107,7 @@ module PluginSpec : sig
 
   val pp : t -> string
 
-  module Set : CSet.S with type elt = t
+  module Set : CSet.ExtS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
 end = struct

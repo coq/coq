@@ -154,7 +154,7 @@ sig
   val repr : t -> (Level.t * int) list
   val unrepr : (Level.t * int) list -> t
 
-  module Set : CSet.S with type elt  = t
+  module Set : CSet.ExtS with type elt  = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
 end
@@ -174,7 +174,7 @@ type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 type univ_constraint = Level.t * constraint_type * Level.t
 
 module Constraints : sig
-  include Set.S with type elt = univ_constraint
+  include CSet.ExtS with type elt = univ_constraint
 
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
 end

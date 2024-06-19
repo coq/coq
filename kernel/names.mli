@@ -62,7 +62,7 @@ sig
   val print : t -> Pp.t
   (** Pretty-printer. *)
 
-  module Set : Set.S with type elt = t
+  module Set : Set.ExtS with type elt = t
   (** Finite sets of identifiers. *)
 
   module Map : Map.ExtS with type key = t and module Set := Set
@@ -120,7 +120,7 @@ type name = Name.t = Anonymous | Name of Id.t
 type variable = Id.t
 type module_ident = Id.t
 
-module ModIdset : Set.S with type elt = module_ident
+module ModIdset : Set.ExtS with type elt = module_ident
 module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIdset
 
 (** {6 Directory paths = section names paths } *)
@@ -164,7 +164,7 @@ sig
   val print : t -> Pp.t
 end
 
-module DPset : Set.S with type elt = DirPath.t
+module DPset : Set.ExtS with type elt = DirPath.t
 module DPmap : Map.ExtS with type key = DirPath.t and module Set := DPset
 
 (** {6 Names of structure elements } *)
@@ -198,7 +198,7 @@ sig
   val print : t -> Pp.t
   (** Pretty-printer. *)
 
-  module Set : Set.S with type elt = t
+  module Set : Set.ExtS with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
   val hcons : t -> t
@@ -240,7 +240,7 @@ sig
 
 end
 
-module MBIset : Set.S with type elt = MBId.t
+module MBIset : Set.ExtS with type elt = MBId.t
 module MBImap : Map.ExtS with type key = MBId.t and module Set := MBIset
 
 (** {6 The module part of the kernel name } *)
@@ -274,7 +274,7 @@ sig
 
 end
 
-module MPset : Set.S with type elt = ModPath.t
+module MPset : Set.ExtS with type elt = ModPath.t
 module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
 
 (** {6 The absolute names of objects seen by kernel } *)
@@ -528,10 +528,10 @@ end
 
 type constructor = Construct.t
 
-module Indset : CSet.S with type elt = inductive
-module Constrset : CSet.S with type elt = constructor
-module Indset_env : CSet.S with type elt = inductive
-module Constrset_env : CSet.S with type elt = constructor
+module Indset : CSet.ExtS with type elt = inductive
+module Constrset : CSet.ExtS with type elt = constructor
+module Indset_env : CSet.ExtS with type elt = inductive
+module Constrset_env : CSet.ExtS with type elt = constructor
 module Indmap : CMap.ExtS with type key = inductive and module Set := Indset
 module Constrmap : CMap.ExtS with type key = constructor and module Set := Constrset
 module Indmap_env : CMap.ExtS with type key = inductive and module Set := Indset_env
