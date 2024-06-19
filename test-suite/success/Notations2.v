@@ -131,7 +131,7 @@ End M14.
 
 Module M15.
   Local Notation "###### x" := (S x) (right associativity, at level 79, x at next level).
-  Fail Local Notation "###### x" := (S x) (right associativity, at level 79).
+  Fail Local Notation "###### x" := (S x) (right associativity, at level 79, x at level 79).
   Local Notation "###### x" := (S x) (at level 79).
 End M15.
 
