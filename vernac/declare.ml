@@ -419,7 +419,8 @@ let cast_pure_proof_entry (e : Constr.constr pproof_entry) =
   ctx
 
 type ('a, 'b) effect_entry =
-| EffectEntry : (private_constants deferred_opaque_proof_body, unit) effect_entry
+| ImmediateEffectEntry : (private_constants Entries.proof_output, unit) effect_entry
+| DeferredEffectEntry : (private_constants Entries.proof_output Future.computation, unit) effect_entry
 | PureEntry : (Constr.constr, Constr.constr) effect_entry
 
 let section_context_of_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (body : a) typ =
@@ -432,8 +433,12 @@ let section_context_of_opaque_proof_entry (type a b) (entry : (a, b) effect_entr
       let ids_typ = global_vars_set env typ in
       let (pf : Constr.constr), env = match entry with
         | PureEntry -> body, env
-        | EffectEntry ->
-          let (pf, _), eff = Future.force body.body in
+        | ImmediateEffectEntry ->
+          let (pf, _), eff = body in
+          let env = Safe_typing.push_private_constants env eff in
+          pf, env
+        | DeferredEffectEntry ->
+          let (pf, _), eff = Future.force body in
           let env = Safe_typing.push_private_constants env eff in
           pf, env
       in
@@ -454,7 +459,8 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   in
   let body : b = match entry with
   | PureEntry -> e.proof_entry_body
-  | EffectEntry -> ()
+  | ImmediateEffectEntry -> ()
+  | DeferredEffectEntry -> ()
   in
   let univ_entry, ctx = extract_monomorphic (fst (e.proof_entry_universes)) in
   { Entries.opaque_entry_body = body;
@@ -489,17 +495,17 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         let () = Global.push_context_set ~strict:true ctx in
         Entries.DefinitionEntry e, false, ubinders, None
       | Default { body = (body, eff); opaque = Opaque body_uctx } ->
-        let body = Future.from_val ((body, body_uctx), eff.Evd.seff_private) in
-        let de = { de with proof_entry_body = { body; feedback_id = None } } in
-        let cd, ctx = cast_opaque_proof_entry EffectEntry de in
+        let body = ((body, body_uctx), eff.Evd.seff_private) in
+        let de = { de with proof_entry_body = body } in
+        let cd, ctx = cast_opaque_proof_entry ImmediateEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ~strict:true ctx in
-        Entries.OpaqueEntry cd, false, ubinders, Some (body, None)
+        Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None)
       | DeferredOpaque { body; feedback_id } ->
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain body map in
-        let de = { de with proof_entry_body = { body; feedback_id } } in
-        let cd, ctx = cast_opaque_proof_entry EffectEntry de in
+        let de = { de with proof_entry_body = body } in
+        let cd, ctx = cast_opaque_proof_entry DeferredEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ~strict:true ctx in
         Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id))
