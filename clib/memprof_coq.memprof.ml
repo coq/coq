@@ -8,23 +8,8 @@ module Resource_bind = Memprof_limits.Resource_bind
 (* module Thread_map =  Memprof_limits.Thread_map *)
 (* module Mutex_aux = Memprof_limits.Mutex_aux *)
 
-module Mutex_aux = struct
-  external unlock: Mutex.t -> unit = "caml_mutex_unlock"
-
-  (* Critical sections :
-     - Mutex.lock does not poll on leaving the blocking section
-       since 4.12.
-     - Never inline, to avoid theoretically-possible reorderings with
-       flambda.
-     - Inline the call to Mutex.unlock to avoid polling in bytecode.
-       (workaround to the lack of masking) *)
-  let[@inline never] with_lock m ~scope =
-    let () = Mutex.lock m (* BEGIN ATOMIC *) in
-    match (* END ATOMIC *) scope () with
-    | (* BEGIN ATOMIC *) x -> unlock m ; (* END ATOMIC *) x
-    | (* BEGIN ATOMIC *) exception e -> unlock m ; (* END ATOMIC *) raise e
-
-end
+(* We do our own Mutex_aux for OCaml 5.x *)
+module Mutex_aux = Mutex_aux
 
 module Thread_map_core = struct
   open Resource_bind
