@@ -1886,7 +1886,7 @@ let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
      the body.  So we keep the two sets distinct. *)
   let uctx_body = UState.restrict uctx used_univs in
   let ubody = UState.check_mono_univ_decl uctx_body udecl in
-  utyp, DeferredOpaque { body = Future.from_val ((body, ubody), eff); feedback_id = None }
+  utyp, Default { body = (body, eff); opaque = Opaque ubody }
 
 let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) eff =
   let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
