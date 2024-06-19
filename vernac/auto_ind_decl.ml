@@ -666,8 +666,9 @@ let build_beq_scheme env handle kn =
 
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
-  let u, uctx = UnivGen.fresh_instance_from auctx None in
-  let uctx = UState.of_context_set uctx in
+  let u, ctx = UnivGen.fresh_instance_from auctx None in
+  let uctx = UState.from_env env in
+  let uctx = UState.merge_sort_context ~sideff:false UState.univ_rigid uctx ctx in
 
   (* number of inductives in the mutual *)
   let nb_ind = Array.length mib.mind_packets in
@@ -851,6 +852,21 @@ let build_beq_scheme env handle kn =
          if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
          [|Term.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in
+
+  let uctx =
+    (* infer univ constraints
+       For instance template poly inductive produces a univ monomorphic scheme
+       which when applied needs to constrain the universe of its argument
+    *)
+    let sigma = Evd.from_ctx uctx in
+    let sigma = Array.fold_left (fun sigma c ->
+        fst @@ Typing.type_of env sigma (EConstr.of_constr c))
+        sigma
+        res
+    in
+    Evd.ustate sigma
+  in
+
   res, uctx
 
 let beq_scheme_kind =
