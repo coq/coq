@@ -119,9 +119,6 @@ val get_arguments : coqtop -> string list
 val set_arguments : coqtop -> string list -> unit
 (** Set process arguments. This also forces a planned reset. *)
 
-(** In win32, sockets are not like regular files *)
-val gio_channel_of_descr_socket : (Unix.file_descr -> Glib.Io.channel) ref
-
 (** {5 Task processing} *)
 
 val try_grab : ?db:bool -> coqtop -> unit task -> (unit -> unit) -> bool
