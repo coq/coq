@@ -26,7 +26,8 @@
   The release manager is the person responsible for merging PRs that target the release branch and backporting appropriate PRs (mostly safe bug fixes, user message improvements and documentation updates) that are merged into `master`.
 - [ ] Pin the versions of libraries and plugins in [`dev/ci/ci-basic-overlay.sh`](../ci/ci-basic-overlay.sh) to use commit hashes. You can use the [`dev/tools/pin-ci.sh`](../tools/pin-ci.sh) script to do this semi-automatically.
 - [ ] In a PR on `master` to be backported, add a new link to the `'versions'` list of the refman (in `html_context` in [`doc/sphinx/conf.py`](../../doc/sphinx/conf.py)).
-- [ ] Ping `@Zimmi48` and `@erikmd` to set up the infrastructure to have alpha Docker images built for the branch.
+- [ ] Add `{coq,coq-core,coq-stdlib,coqide-server}.X.X.dev` packages in [`core-dev`](https://github.com/coq/opam-coq-archive/tree/master/core-dev)
+- [ ] Ping `@erikmd` and `@Zimmi48` to set up the infrastructure to have alpha Docker images built for the branch: the main steps amount to release `coq-bignums v9.Y.Y+coqX.X` in [`extra-dev`](https://github.com/coq/opam-coq-archive/tree/master/extra-dev), prepare a new [Docker-Coq](https://github.com/coq-community/docker-coq) image `coqorg/coq:X.X-alpha`, then browse <https://gitlab.inria.fr/coq/coq/-/hooks> to copy the `dev` webhook into a new `vX.X` webhook: `https://gitlab.com/api/v4/projects/19687072/trigger/pipeline?ref=master&variables[CRON_MODE]=rebuild-keyword&variables[ITEM]=X.X&token=_`, Push events → Wildcard pattern → `vX.X`, Test Push events. (If need be, the token can be regenerated at <https://gitlab.com/coq-community/docker-coq/-/settings/ci_cd>.)
 
 ## In the days following the branching ##
 
