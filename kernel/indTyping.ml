@@ -259,8 +259,8 @@ let check_record data =
 let unbounded_from_below u cstrs =
   Univ.Constraints.for_all (fun (l, d, r) ->
       match d with
-      | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-      | Lt | Le -> not (Univ.Level.equal r u))
+      | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
+      | Le -> not (Univ.Level.equal r u))
     cstrs
 
 let get_arity c =
