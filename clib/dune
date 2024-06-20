@@ -19,3 +19,18 @@
  (targets unicodetable.ml)
  (deps (:gen ./unicodetable_gen.exe))
  (action (run %{gen} %{targets})))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_4.x.ml %{target}))
+ (enabled_if (< %{ocaml_version} 5.0)))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_5.0.ml %{target}))
+ (enabled_if (and (>= %{ocaml_version} 5.0) (< %{ocaml_version} 5.1))))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_5.x.ml %{target}))
+ (enabled_if (>= %{ocaml_version} 5.1)))
