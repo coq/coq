@@ -1019,14 +1019,14 @@ end
 let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2bt.print_ltac2_backtrace then
     let bt = Exninfo.get info Tac2bt.backtrace in
-    let bt = match bt with
-    | Some bt -> List.rev bt
-    | None -> []
-    in
-    let bt =
-      str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
-    in
-    Some bt
+    match bt with
+    | None -> None
+    | Some bt ->
+      let bt = List.rev bt in
+      let bt =
+        str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
+      in
+      Some bt
   else None
 end
 
