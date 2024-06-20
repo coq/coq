@@ -273,12 +273,12 @@ let get_arity c =
     end
   | _ -> None
 
-let get_template univs ~env_params ~env_ar_par ~params entries =
+let get_template univs ~env_params ~env_ar_par ~params entries data =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
-    let entry = match entries with
-      | [entry] -> entry
+    let entry, sort = match entries, data with
+      | [entry], [(_, _, info)] -> entry, info.ind_univ
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
     (* Compute potential template parameters *)
@@ -298,6 +298,10 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
        algebraic universe. A reasonable approximation is to restrict their
        appearance to the sort of arities from parameters.
 
+       Furthermore, to prevent the generation of algebraic levels with increments
+       strictly larger than 1, we must also forbid the return sort to contain
+       a positive increment on a template level, see #19230.
+
        TODO: when algebraic universes land, remove this check. *)
     let plevels =
       let fold plevels c = Level.Set.diff plevels (Vars.universes_of_constr c) in
@@ -316,6 +320,13 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
       in
       let plevels = List.fold_left fold plevels entry.mind_entry_lc in
       plevels
+    in
+    let plevels = match sort with
+    | Type u ->
+      let fold accu (l, n) = if Int.equal n 0 then accu else Level.Set.remove l accu in
+      List.fold_left fold plevels (Universe.repr u)
+    | Prop | SProp | Set -> plevels
+    | QSort _ -> assert false
     in
     let map = function
     | None -> None
@@ -462,7 +473,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         Some variances
   in
 
-  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds in
+  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds data in
 
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with

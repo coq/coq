@@ -415,16 +415,17 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
   | LocalDef _ -> accu
   in
   let paramslevels = List.fold_left fold_params Univ.Level.Set.empty paramsctxt in
-  let check_level l =
+  let check_level (l, n) =
+    Int.equal n 0 &&
     Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
     Univ.Level.Set.mem l paramslevels &&
     (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)
   in
-  let univs = Univ.Universe.levels u in
-  let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
-  univs
+  let univs = Univ.Universe.repr u in
+  let univs = List.filter check_level univs in
+  List.fold_left (fun accu (l, _) -> Univ.Level.Set.add l accu) Univ.Level.Set.empty univs
 
 let template_polymorphism_candidate uctx params entry template_syntax = match template_syntax with
 | SyntaxNoTemplatePoly -> Univ.Level.Set.empty
