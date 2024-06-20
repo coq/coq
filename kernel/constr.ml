@@ -1212,8 +1212,7 @@ let hash_cast_kind = function
 | DEFAULTcast -> 2
 
 (* Exported hashing fonction on constr, used mainly in plugins.
-   Slight differences from [snd (hash_term t)] above: it ignores binders
-   and doesn't do [land  0x3FFFFFFF]. *)
+   Slight differences from [snd (hash_term t)] above: it ignores binders. *)
 
 let rec hash t =
   match kind t with
@@ -1429,8 +1428,6 @@ and sh_invert = function
 
 and sh_rec t =
   let (y, h) = hash_term t in
-  (* [h] must be positive. *)
-  let h = h land 0x3FFFFFFF in
   (HashsetTerm.repr h (T y) term_table, h)
 
 (* Note : During hash-cons of arrays, we modify them *in place* *)
@@ -1442,8 +1439,7 @@ and hash_term_array t =
     accu := combine !accu h;
     Array.unsafe_set t i x
   done;
-  (* [h] must be positive. *)
-  let h = !accu land 0x3FFFFFFF in
+  let h = !accu in
   (HashsetTermArray.repr h t term_array_table, h)
 
 and hash_list_array l =
@@ -1452,7 +1448,7 @@ and hash_list_array l =
     (combine accu h, c)
   in
   let h, l = SList.Smart.fold_left_map fold 0 l in
-  (l, h land 0x3FFFFFFF)
+  (l, h)
 
   (* Make sure our statically allocated Rels (1 to 16) are considered
      as canonical, and hence hash-consed to themselves *)
