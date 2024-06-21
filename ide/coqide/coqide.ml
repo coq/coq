@@ -1729,7 +1729,7 @@ let build_ui () =
     else
       slaveinfo#set_text (Printf.sprintf "%d / %d" missing n_err);
     slaveinfo#set_use_markup true;
-    sn.errpage#update sn.coqops#get_errors;
+    sn.errpage#update sn.coqops#get_errors_warnings;
     sn.jobpage#update (Util.pi3 sn.coqops#get_slaves_status) in
   let callback () = on_current_term update; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in

@@ -238,7 +238,7 @@ object
   method stop_worker : string -> unit task
 
   method get_n_errors : int
-  method get_errors : (int * string) list
+  method get_errors_warnings : (int * string) list
   method get_slaves_status : int * int * string CString.Map.t
   method backtrack_to_begin : unit -> unit task
   method handle_failure : handle_exn_rty -> unit task
@@ -860,19 +860,24 @@ object(self)
   method get_n_errors =
     Doc.fold_all document 0 (fun n _ _ s -> if has_flag s `ERROR then n+1 else n)
 
-  method get_errors =
-    let extract_error s =
-      match List.find (function `ERROR _ -> true | _ -> false) s.flags with
-      | `ERROR (loc, msg) ->
-         let iter = begin match loc with
-           | None      -> buffer#get_iter_at_mark s.start
-           | Some loc ->
-             fst (coq_loc_to_gtk_offset buffer loc)
-         end in iter#line + 1, msg
-      | _ -> assert false in
+  method get_errors_warnings =
+    let extract s =
+      let l = List.find_all (function `ERROR _ | `WARNING _ -> true | _ -> false) s.flags in
+      List.map (fun item ->
+        match item with
+        | `ERROR (loc, msg)
+        | `WARNING (loc, msg) ->
+           let iter = begin match loc with
+             | None      -> buffer#get_iter_at_mark s.start
+             | Some loc ->
+               fst (coq_loc_to_gtk_offset buffer loc)
+           end in iter#line + 1, msg
+        | _ -> assert false
+      ) l
+    in
     List.rev
       (Doc.fold_all document [] (fun acc _ _ s ->
-        if has_flag s `ERROR then extract_error s :: acc else acc))
+        if has_flag s `ERROR || (has_flag s `WARNING) then extract s @ acc else acc))
 
   method process_next_phrase =
     let until n _ _ = n >= 1 in
