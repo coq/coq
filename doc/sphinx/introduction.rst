@@ -64,3 +64,7 @@ This manual is organized in three main parts, plus an appendix:
   :ref:`indexes <indexes>` are very useful to **quickly browse the
   manual and find what you are looking for.** They are often the main
   entry point to the manual.
+
+.. only:: html
+
+   The full table of contents is presented below:
