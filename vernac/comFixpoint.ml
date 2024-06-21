@@ -11,7 +11,9 @@
 open Pp
 open Util
 open Names
+open Constrexpr
 open Constrintern
+open Vernacexpr
 
 (* 3c| Fixpoints and co-fixpoints *)
 
@@ -69,12 +71,12 @@ let non_full_mutual_message x xge y yge isfix rest =
     else
       Id.print y ++ str " and " ++ Id.print x ++ strbrk " are not mutually dependent" in
   let e = if List.is_empty rest then reason else strbrk "e.g., " ++ reason in
-  let k = if isfix then "fixpoint" else "cofixpoint" in
+  let k = Decls.(match isfix with Fixpoint -> "defined fixpoint" | CoFixpoint -> "defined cofixpoint" | _ -> "dependent definition") in
   let w =
-    if isfix
+    if isfix <> Decls.CoFixpoint
     then strbrk "Well-foundedness check may fail unexpectedly." ++ fnl()
     else mt () in
-  strbrk "Not a fully mutually defined " ++ str k ++ fnl () ++
+  strbrk "Not a fully mutually " ++ str k ++ fnl () ++
   str "(" ++ e ++ str ")." ++ fnl () ++ w
 
 let warn_non_full_mutual =
@@ -85,7 +87,7 @@ let warn_non_full_mutual =
 let warn_non_recursive =
   CWarnings.create ~name:"non-recursive" ~category:CWarnings.CoreCategories.fixpoints
          (fun (x,isfix) ->
-          let k = if isfix then "fixpoint" else "cofixpoint" in
+          let k = Decls.(match isfix with Fixpoint -> "fixpoint" | CoFixpoint -> "cofixpoint" | _ -> "definition") in
           strbrk "Not a truly recursive " ++ str k ++ str ".")
 
 let check_true_recursivity env evd ~isfix fixl =
@@ -103,32 +105,71 @@ let check_true_recursivity env evd ~isfix fixl =
     | [x,Inr []] -> warn_non_recursive (x,isfix)
     | _ -> ()
 
+let extract_decreasing_argument ~structonly { CAst.v = v; _ } =
+  let open Constrexpr in
+  match v with
+  | CStructRec na -> na
+  | (CWfRec (na,_) | CMeasureRec (Some na,_,_)) when not structonly -> na
+  | CMeasureRec (None,_,_) when not structonly ->
+    CErrors.user_err Pp.(str "Decreasing argument must be specified in measure clause.")
+  | _ ->
+    CErrors.user_err Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
+
+(* This is a special case: if there's only one binder, we pick it as
+   the recursive argument if none is provided. *)
+let adjust_rec_order ~structonly binders rec_order =
+  let rec_order =
+      match binders, rec_order with
+      | [CLocalAssum([{ CAst.v = Name x }],_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
+      | [CLocalDef({ CAst.v = Name x },_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
+      | _, x -> x
+  in
+  extract_decreasing_argument ~structonly rec_order
+
 (* Interpret the index of a recursion order annotation *)
 exception Found of int
-let find_rec_annot bl ctx na =
-  let name = Name na.CAst.v in
-  try
-    Context.Rel.fold_outside (fun decl n ->
-      match Context.Rel.Declaration.(get_value decl, Name.equal (get_name decl) name) with
-      | None, true -> raise (Found n)
-      | Some _, true ->
-          let loc = List.find_map (fun id -> if Name.equal name id.CAst.v then Some id.CAst.loc else None) (Constrexpr_ops.names_of_local_binders bl) in
-          let loc = Option.default na.CAst.loc loc in
-          CErrors.user_err ?loc
-            (Name.print name ++ str" must be a proper parameter and not a local definition.")
-      | None, false -> n + 1
-      | Some _, false -> n (* let-ins don't count *))
-      ~init:0 ctx |> ignore;
-    CErrors.user_err ?loc:na.loc
-      (str "No parameter named " ++ Id.print na.v ++ str".");
-  with
-    Found k -> k
+let find_rec_annot ~structonly Vernacexpr.{binders} (_, ctx) = function
+  | None ->
+    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err Pp.(str "A fixpoint needs at least one parameter.");
+    List.interval 0 (Context.Rel.nhyps ctx - 1)
+  | Some fix_order ->
+    let na = adjust_rec_order ~structonly binders fix_order in
+    let name = Name na.CAst.v in
+    try
+      Context.Rel.fold_outside (fun decl n ->
+        match Context.Rel.Declaration.(get_value decl, Name.equal (get_name decl) name) with
+        | None, true -> raise (Found n)
+        | Some _, true ->
+            let loc = List.find_map (fun id -> if Name.equal name id.CAst.v then Some id.CAst.loc else None) (Constrexpr_ops.names_of_local_binders binders) in
+            let loc = Option.default na.CAst.loc loc in
+            CErrors.user_err ?loc
+              (Name.print name ++ str" must be a proper parameter and not a local definition.")
+        | None, false -> n + 1
+        | Some _, false -> n (* let-ins don't count *))
+        ~init:0 ctx |> ignore;
+      CErrors.user_err ?loc:na.loc
+        (str "No parameter named " ++ Id.print na.v ++ str".");
+    with
+      Found k -> [k]
 
-let interp_fix_context ~program_mode ~cofix env sigma fix =
-  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma fix.Vernacexpr.binders in
-  if not cofix && Context.Rel.nhyps ctx = 0 then CErrors.user_err Pp.(str "A fixpoint needs at least one parameter.");
-  let annot = Option.map (find_rec_annot fix.Vernacexpr.binders ctx) fix.Vernacexpr.rec_order in
-  sigma, ((env', ctx), (impl_env, imps), annot)
+let interp_rec_annot fixl ctxl (structonly, rec_order) =
+  let open Pretyping in
+  match rec_order with
+  (* If recursive argument was not given by user, we try all args.
+     An earlier approach was to look only for inductive arguments,
+     but doing it properly involves delta-reduction, and it finally
+     doesn't seem to worth the effort (except for huge mutual
+     fixpoints ?) *)
+  | CFixRecOrder fix_orders -> Decls.Fixpoint, {possibly_cofix = false; possible_fix_indices = List.map3 (find_rec_annot ~structonly) fixl ctxl fix_orders}
+  | CCoFixRecOrder -> Decls.CoFixpoint, {possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixl}
+  | CUnknownRecOrder -> Decls.Definition, {possibly_cofix = true; possible_fix_indices = List.map2 (fun fix ctx -> find_rec_annot ~structonly fix ctx None) fixl ctxl}
+(*  | CNoRecOrder -> (false, [])*)
+
+let interp_fix_context ~program_mode env sigma {Vernacexpr.binders} =
+  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma binders in
+  sigma, ((env', ctx), (impl_env, imps))
 
 let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -147,19 +188,6 @@ let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences (ctx,_,recindex) =
-  (* A recursive index is characterized by the number of lambdas to
-     skip before finding the relevant inductive argument *)
-  match recindex with
-  | Some i -> [i]
-  | None ->
-      (* If recursive argument was not given by user, we try all args.
-         An earlier approach was to look only for inductive arguments,
-         but doing it properly involves delta-reduction, and it finally
-         doesn't seem to worth the effort (except for huge mutual
-         fixpoints ?) *)
-      List.interval 0 (Context.Rel.nhyps ctx - 1)
-
 type ('constr, 'types, 'r) recursive_preentry =
   Id.t list * 'r list * 'constr option list * 'types list
 
@@ -170,16 +198,17 @@ let fix_proto sigma =
 let fix_proto_relevance = EConstr.ERelevance.relevant
 (* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
 
-let interp_recursive_evars env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
+let interp_recursive_evars env ~program_mode rec_order fixl =
   let open Context.Named.Declaration in
   let open EConstr in
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
 
   (* Interp arities allowing for unresolved types *)
   let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
-  let sigma, (fixctxs, fiximppairs, fixannots) =
-    on_snd List.split3 @@
-      List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma ~cofix) sigma fixl in
+  let sigma, (fixctxs, fiximppairs) =
+    on_snd List.split @@
+      List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
+  let fixkind, fixannot = interp_rec_annot fixl fixctxs rec_order in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
@@ -226,7 +255,7 @@ let interp_recursive_evars env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_ex
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,decl,sigma), (fixnames,fixrs,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
+  (env,rec_sign,decl,sigma), (fixnames,fixrs,fixdefs,fixtypes), List.combine fixctxs fiximps, fixkind, fixannot
 
 let check_recursive ~isfix env evd (fixnames,_,fixdefs,_) =
   if List.for_all Option.has_some fixdefs then begin
@@ -242,33 +271,26 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
 (* XXX: Unify with interp_recursive  *)
-let interp_recursive ?(check_recursivity=true) ?typing_flags ~cofix l :
-  ( (Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
+let interp_recursive ?(check_recursivity=true) ?typing_flags rec_order l :
+  Decls.definition_object_kind * Pretyping.possible_guard * ((Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
     UState.universe_decl * UState.t *
-    (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
+    (EConstr.rel_context * Impargs.manual_implicits) list) =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,_,pl,evd),fix,info = interp_recursive_evars env ~program_mode:false ~cofix l in
-  if check_recursivity then check_recursive ~isfix:(not cofix) env evd fix;
+  let (env,_,pl,evd),fix,info,isfix,possible_guards = interp_recursive_evars env ~program_mode:false rec_order l in
+  if check_recursivity then check_recursive ~isfix env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
   let uctx,fix = ground_fixpoint env evd fix in
-  (fix,pl,uctx,info)
+  isfix, possible_guards, (fix,pl,uctx,info)
 
-let build_recthms ~indexes fixnames fixtypes fiximps =
-  let fix_kind, possible_guard = match indexes with
-    | Some possible_fix_indices -> Decls.Fixpoint, Pretyping.{possibly_cofix = false; possible_fix_indices}
-    | None -> Decls.CoFixpoint, Pretyping.{possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixtypes}
-  in
-  let thms =
-    List.map3 (fun name typ (ctx,impargs,_) ->
-        let args = List.map Context.Rel.Declaration.get_name ctx in
-        Declare.CInfo.make ~name ~typ ~args ~impargs ()
-      ) fixnames fixtypes fiximps
-  in
-  fix_kind, possible_guard, thms
+let build_recthms fixnames fixtypes fiximps =
+  List.map3 (fun name typ (ctx,impargs) ->
+      let args = List.map Context.Rel.Declaration.get_name ctx in
+      Declare.CInfo.make ~name ~typ ~args ~impargs ()
+    ) fixnames fixtypes fiximps
 
-let declare_recursive ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
-  let fix_kind, possible_guard, cinfo = build_recthms ~indexes fixnames fixtypes fiximps in
+let declare_recursive ~fix_kind ~possible_guard ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
+  let cinfo = build_recthms fixnames fixtypes fiximps in
   let kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns () in
   match Option.List.map (fun x -> x) fixdefs with
@@ -286,41 +308,7 @@ let declare_recursive ?indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns
       ~bodies:fixdefs ~possible_guard ?using evd in
     Some lemma
 
-let extract_decreasing_argument ~structonly { CAst.v = v; _ } =
-  let open Constrexpr in
-  match v with
-  | CStructRec na -> na
-  | (CWfRec (na,_) | CMeasureRec (Some na,_,_)) when not structonly -> na
-  | CMeasureRec (None,_,_) when not structonly ->
-    CErrors.user_err Pp.(str "Decreasing argument must be specified in measure clause.")
-  | _ ->
-    CErrors.user_err Pp.(str "Well-founded induction requires Program Fixpoint or Function.")
-
-(* This is a special case: if there's only one binder, we pick it as
-   the recursive argument if none is provided. *)
-let adjust_rec_order ~structonly binders rec_order =
-  let rec_order = Option.map (fun rec_order ->
-      let open Constrexpr in
-      match binders, rec_order with
-      | [CLocalAssum([{ CAst.v = Name x }],_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-      | [CLocalDef({ CAst.v = Name x },_,_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-        CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-      | _, x -> x) rec_order
-  in
-  Option.map (extract_decreasing_argument ~structonly) rec_order
-
-let do_fixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fixl : Vernacexpr.fixpoint_expr list) : Declare.Proof.t option =
-  let fixl = List.map (fun fix ->
-      Vernacexpr.{ fix
-                   with rec_order = adjust_rec_order ~structonly:true fix.binders fix.rec_order }) fixl in
+let do_mutually_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl) : Declare.Proof.t option =
   let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let (_, _, _, info as fix) = interp_recursive ~cofix:false ?typing_flags fixl in
-  let possible_indexes = List.map compute_possible_guardness_evidences info in
-  declare_recursive ~indexes:possible_indexes ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns
-
-let do_cofixpoint ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fixl : Vernacexpr.cofixpoint_expr list) =
-  let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
-  let cofix, ntns = interp_recursive ~cofix:true fixl, ntns in
-  declare_recursive ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using cofix ntns
+  let fix_kind, possible_guard, fix = interp_recursive ?typing_flags (true, rec_order) fixl in
+  declare_recursive ~fix_kind ~possible_guard ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using fix ntns

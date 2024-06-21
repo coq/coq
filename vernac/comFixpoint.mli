@@ -15,37 +15,19 @@ open Vernacexpr
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
-val do_fixpoint
+val do_mutually_recursive
   : ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
-  -> fixpoint_expr list
-  -> Declare.Proof.t option
-
-val do_cofixpoint
-  : ?scope:Locality.definition_scope
-  -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
-  -> ?using:Vernacexpr.section_subset_expr
-  -> cofixpoint_expr list
+  -> recursives_expr
   -> Declare.Proof.t option
 
 (************************************************************************)
 (** Internal API  *)
 (************************************************************************)
-
-(** Typing global fixpoints and cofixpoint_expr *)
-
-val adjust_rec_order
-  :  structonly:bool
-  -> Constrexpr.local_binder_expr list
-  -> Constrexpr.recursion_order_expr option
-  -> lident option
 
 (** names / relevance / defs / types *)
 type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr option list * 'types list
@@ -54,27 +36,25 @@ type ('constr, 'types, 'r) recursive_preentry = Id.t list * 'r list * 'constr op
 val interp_recursive_evars :
   Environ.env ->
   (* Misc arguments *)
-  program_mode:bool -> cofix:bool ->
+  program_mode:bool ->
   (* Notations of the fixpoint / should that be folded in the previous argument? *)
-  lident option fix_expr_gen list ->
+  bool * recursion_order_expr ->
+  recursive_expr_gen list ->
   (* env / signature / univs / evar_map *)
   (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
   (EConstr.t, EConstr.types, EConstr.ERelevance.t) recursive_preentry *
   (* ctx per mutual def / implicits / struct annotations *)
-  (EConstr.rel_context * Impargs.manual_implicits * int option) list
+  (EConstr.rel_context * Impargs.manual_implicits) list * Decls.definition_object_kind * Pretyping.possible_guard
 
 (** Exported for Funind *)
 
 val interp_recursive
   :  ?check_recursivity:bool
   -> ?typing_flags:Declarations.typing_flags
-  -> cofix:bool
-  -> lident option fix_expr_gen list
-  -> (Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
-     UState.universe_decl * UState.t *
-     (EConstr.rel_context * Impargs.manual_implicits * int option) list
-
-(** Very private function, do not use *)
-val compute_possible_guardness_evidences :
-  ('a, 'b, 'r) Context.Rel.pt * 'c * int option -> int list
+  -> bool * Vernacexpr.recursion_order_expr
+  -> recursive_expr_gen list
+  -> Decls.definition_object_kind * Pretyping.possible_guard *
+     ((Constr.t, Constr.types, Sorts.relevance) recursive_preentry *
+      UState.universe_decl * UState.t *
+      (EConstr.rel_context * Impargs.manual_implicits) list)

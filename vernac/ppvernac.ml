@@ -524,7 +524,7 @@ let pr_notation_declaration ntn_decl =
 let pr_where_notation decl_ntn =
   fnl () ++ keyword "where " ++ pr_notation_declaration decl_ntn
 
-let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =
+let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
   let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
   pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
@@ -927,7 +927,7 @@ let pr_synpure_vernac_expr v =
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
     )
 
-  | VernacFixpoint (local, recs) ->
+  | VernacFixpoint (local, (rec_order, recs)) ->
     let local = match local with
       | DoDischarge -> "Let "
       | NoDischarge -> ""
@@ -935,7 +935,7 @@ let pr_synpure_vernac_expr v =
     return (
       hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
              prlist_with_sep (fun _ -> fnl () ++ keyword "with"
-                                       ++ spc ()) pr_rec_definition recs)
+                                       ++ spc ()) pr_rec_definition (List.combine rec_order recs))
     )
 
   | VernacCoFixpoint (local, corecs) ->
