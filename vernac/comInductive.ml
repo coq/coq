@@ -381,6 +381,16 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match Constr.kind c with
+  | Sort (Type u) ->
+    begin match Univ.Universe.level u with
+    | Some l -> Some (decls, l)
+    | None -> None
+    end
+  | _ -> None
+
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter
    (starting from the most recent and ignoring let-definitions) is not
@@ -398,13 +408,9 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
   let fold_params accu decl = match decl with
   | LocalAssum (_, p) ->
     let c = Term.strip_prod_decls p in
-    begin match Constr.kind c with
-    | Constr.Sort (Type u) ->
-      begin match Univ.Universe.level u with
-      | Some l -> Univ.Level.Set.add l accu
-      | None -> accu
-      end
-    | _ -> accu
+    begin match get_arity c with
+    | Some (_, l) -> Univ.Level.Set.add l accu
+    | None -> accu
     end
   | LocalDef _ -> accu
   in
@@ -429,12 +435,14 @@ let template_polymorphism_candidate uctx params entry template_syntax = match te
   | Type u ->
     let ctor_levels =
       let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
-      let param_levels =
-        List.fold_left (fun levels d -> match d with
-            | LocalAssum _ -> levels
-            | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-          Univ.Level.Set.empty params
+      let fold_params levels = function
+      | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
+      | LocalAssum (_, t) ->
+        match get_arity t with
+        | None -> add_levels t levels
+        | Some (decls, _) -> add_levels (Term.it_mkProd_or_LetIn Constr.mkProp decls) levels
       in
+      let param_levels = List.fold_left fold_params Univ.Level.Set.empty params in
       List.fold_left (fun levels c -> add_levels c levels)
         param_levels entry.mind_entry_lc
     in
