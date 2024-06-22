@@ -251,8 +251,8 @@ before_script:
     - cat /proc/{cpu,mem}info || true
     # Use current worktree as tmpdir to allow exporting artifacts in case of failure
     - export TMPDIR=$PWD
-    # Install Cachix as documented at https://github.com/cachix/cachix
-    - nix-env -iA cachix -f https://cachix.org/api/v1/install
+    # Install Cachix
+    - nix-env -iA nixpkgs.cachix
     - cachix use coq
   artifacts:
     name: "$CI_JOB_NAME.logs"
