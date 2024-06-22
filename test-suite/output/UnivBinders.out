@@ -172,7 +172,7 @@ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 axfoo' is not universe polymorphic
 Arguments axfoo' _%type_scope
 Expands to: Constant UnivBinders.axfoo'
-axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
+axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i}
 
 axbar' is not universe polymorphic
 Arguments axbar' _%type_scope
@@ -188,10 +188,10 @@ Arguments axbar _%type_scope
 *** [ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
 
 Arguments axfoo' _%type_scope
-*** [ axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
+*** [ axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i} ]
 
 Arguments axbar' _%type_scope
-File "./output/UnivBinders.v", line 157, characters 19-26:
+File "./output/UnivBinders.v", line 156, characters 19-26:
 The command has indeed failed with message:
 When declaring multiple assumptions in one command, only the first name is
 allowed to mention a universe binder (which will be shared by the whole
@@ -199,9 +199,9 @@ block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |=  *)
-Type@{u0} -> Type@{UnivBinders.64}
-     : Type@{max(u0+1,UnivBinders.64+1)}
-(* {UnivBinders.64} |=  *)
+Type@{u0} -> Type@{UnivBinders.65}
+     : Type@{max(u0+1,UnivBinders.65+1)}
+(* {UnivBinders.65} |=  *)
 bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 bind_univs.poly@{u} = Type@{u}
@@ -251,6 +251,6 @@ Arguments MutualI1' A%type_scope
 Arguments C1' A%type_scope p1
 Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
-File "./output/UnivBinders.v", line 208, characters 0-33:
+File "./output/UnivBinders.v", line 207, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a < a because a = a.
