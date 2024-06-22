@@ -408,17 +408,22 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
   let fold_params accu decl = match decl with
   | LocalAssum (_, p) ->
     let c = Term.strip_prod_decls p in
+    let update = function None -> Some 0 | Some n -> Some (n + 1) in
     begin match get_arity c with
-    | Some (_, l) -> Univ.Level.Set.add l accu
+    | Some (_, l) -> Univ.Level.Map.update l update accu
     | None -> accu
     end
   | LocalDef _ -> accu
   in
-  let paramslevels = List.fold_left fold_params Univ.Level.Set.empty paramsctxt in
+  let paramslevels = List.fold_left fold_params Univ.Level.Map.empty paramsctxt in
+  let is_linear l = match Univ.Level.Map.find_opt l paramslevels with
+  | None -> false
+  | Some n -> Int.equal n 0
+  in
   let check_level (l, n) =
     Int.equal n 0 &&
     Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
-    Univ.Level.Set.mem l paramslevels &&
+    is_linear l &&
     (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)

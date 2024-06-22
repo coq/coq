@@ -292,7 +292,13 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
     | LocalDef _ -> None
     in
     let template_params = List.map_filter map params in
-    let fold accu u = match u with None -> accu | Some u -> Level.Set.add u accu in
+    let fold accu u = match u with
+    | None -> accu
+    | Some u ->
+      if Level.Set.mem u accu then
+        CErrors.user_err Pp.(str "Non-linear template level " ++ Level.raw_pr u)
+      else Level.Set.add u accu
+    in
     let plevels = List.fold_left fold Level.Set.empty template_params in
     (* We must ensure that template levels can be substituted by an arbitrary
        algebraic universe. A reasonable approximation is to restrict their
