@@ -794,6 +794,7 @@ let explain_non_linear_unification env sigma m t =
   pr_leconstr_env env sigma t ++ str "."
 
 let explain_unsatisfied_constraints env sigma cst =
+  let cst = Univ.Constraints.filter (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
   strbrk "Unsatisfied constraints: " ++
     Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
