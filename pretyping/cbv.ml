@@ -436,7 +436,14 @@ and reify_value = function (* reduction under binders *)
   | SYMBOL { cst; stk; _ } ->
       reify_stack (mkConstU cst) stk
 
-and reify_args args =
+and reify_args args = match args with
+| [] -> [||]
+| [arg1] -> [|reify_value arg1|]
+| [arg1; arg2] -> [|reify_value arg1; reify_value arg2|]
+| [arg1; arg2; arg3] -> [|reify_value arg1; reify_value arg2; reify_value arg3|]
+| [arg1; arg2; arg3; arg4] ->
+  [|reify_value arg1; reify_value arg2; reify_value arg3; reify_value arg4|]
+| _ ->
   Array.map_of_list reify_value args
 
 and apply_env env t =
@@ -989,7 +996,14 @@ and cbv_norm_value info = function
       mkArray(u, Array.map (cbv_norm_value info) t, def, ty)
   | SYMBOL { cst; stk; _ } -> apply_stack info (mkConstU cst) stk
 
-and cbv_norm_args info args =
+and cbv_norm_args info args = match args with
+| [] -> [||]
+| [arg1] -> [|cbv_norm_value info arg1|]
+| [arg1; arg2] -> [|cbv_norm_value info arg1; cbv_norm_value info arg2|]
+| [arg1; arg2; arg3] -> [|cbv_norm_value info arg1; cbv_norm_value info arg2; cbv_norm_value info arg3|]
+| [arg1; arg2; arg3; arg4] ->
+  [|cbv_norm_value info arg1; cbv_norm_value info arg2; cbv_norm_value info arg3; cbv_norm_value info arg4|]
+| _ ->
   Array.map_of_list (cbv_norm_value info) args
 
 (* with profiling *)
