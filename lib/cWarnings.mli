@@ -23,7 +23,7 @@ type warning
 type 'a msg
 (** A [msg] belongs to a [warning]. *)
 
-val warn : 'a msg -> ?loc:Loc.t -> 'a -> unit
+val warn : 'a msg -> ?loc:Loc.t -> ?quickfix:Quickfix.t list -> 'a -> unit
 (** Emit a message in some warning. *)
 
 (** Creation functions
@@ -46,7 +46,7 @@ val create_hybrid : ?from:category list -> ?default:status -> name:string -> uni
 val create_msg : warning -> unit -> 'a msg
 (** A message with data ['a] in the given warning. *)
 
-val create_in : warning -> ('a -> Pp.t) -> ?loc:Loc.t -> 'a -> unit
+val create_in : warning -> ('a -> Pp.t) -> ?loc:Loc.t -> ?quickfix:Quickfix.t list -> 'a -> unit
 (** Create a msg with registered printer. *)
 
 val register_printer : 'a msg -> ('a -> Pp.t) -> unit
@@ -55,6 +55,10 @@ val register_printer : 'a msg -> ('a -> Pp.t) -> unit
 val create : name:string -> ?category:category -> ?default:status ->
   ('a -> Pp.t) -> ?loc:Loc.t -> 'a -> unit
 (** Combined creation function. [name] must be a fresh name. *)
+
+val create_with_quickfix : name:string -> ?category:category -> ?default:status ->
+    ('a -> Pp.t) -> ?loc:Loc.t -> ?quickfix:Quickfix.t list -> 'a -> unit
+  (** Combined creation function. [name] must be a fresh name. *)
 
 (** Misc APIs *)
 

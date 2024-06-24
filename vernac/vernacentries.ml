@@ -1387,8 +1387,8 @@ let msg_of_subsection ss id =
   in
   Pp.str kind ++ spc () ++ Id.print id
 
-let vernac_end_segment ~pm ~proof ({v=id} as lid) =
-  let ss = Lib.Interp.find_opening_node id in
+let vernac_end_segment ~pm ~proof ({v=id; loc} as lid) =
+  let ss = Lib.Interp.find_opening_node ?loc id in
   let what_for = msg_of_subsection ss lid.v in
   if Option.has_some proof then
     CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");

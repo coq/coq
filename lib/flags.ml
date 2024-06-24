@@ -85,3 +85,5 @@ let profile_ltac_cutoff = ref 2.0
 (* Default output directory *)
 
 let output_directory = ref None
+
+let test_mode = ref false

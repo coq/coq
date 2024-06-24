@@ -545,7 +545,7 @@ module type StagedLibS = sig
   }
   val classify_segment : Libobject.t list -> classified_objects
 
-  val find_opening_node : Id.t -> summary node
+  val find_opening_node : ?loc:Loc.t -> Id.t -> summary node
 
   val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
@@ -604,7 +604,18 @@ let add_leaf_entry obj = Actions.add_leaf_entry obj
 
 let open_section id = Actions.open_section id
 
-let find_opening_node id =
+exception WrongClosingBlockName of Id.t * Loc.t option
+
+let () = CErrors.register_handler (function
+  | WrongClosingBlockName (id,_) ->
+    Some Pp.(str "Last block to end has name " ++ Id.print id ++ str ".")
+  | _ -> None)
+
+let () = Quickfix.register (function
+  | WrongClosingBlockName (id, Some loc) -> [Quickfix.make ~loc (Id.print id)]
+  | _ -> [])
+
+let find_opening_node ?loc id =
   let entry = match Actions.get_lib_stk () with
     | [] -> assert false
     | (CompilingLibrary _, _) :: _ ->
@@ -613,8 +624,7 @@ let find_opening_node id =
   in
   let id' = prefix_id (node_prefix entry) in
   if not (Names.Id.equal id id') then
-    CErrors.user_err Pp.(str "Last block to end has name "
-      ++ Id.print id' ++ str ".");
+    Loc.raise ?loc (WrongClosingBlockName(id',loc));
   entry
 
 let start_module = Actions.start_mod ~is_type:false

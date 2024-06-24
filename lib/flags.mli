@@ -100,3 +100,8 @@ val profile_ltac_cutoff : float ref
 
 (** Default output directory *)
 val output_directory : CUnix.physical_path option ref
+
+
+(** Flag set when the test-suite is called. Its only effect to display
+    verbose information for [Fail] *)
+val test_mode : bool ref

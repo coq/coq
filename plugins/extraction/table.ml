@@ -373,7 +373,7 @@ let warning_opaques accessed =
     else warn_extraction_opaque_as_axiom lst
 
 let warning_ambiguous_name =
-  CWarnings.create ~name:"extraction-ambiguous-name" ~category:CWarnings.CoreCategories.extraction
+  CWarnings.create_with_quickfix ~name:"extraction-ambiguous-name" ~category:CWarnings.CoreCategories.extraction
     (fun (q,mp,r) -> strbrk "The name " ++ pr_qualid q ++ strbrk " is ambiguous, " ++
                        strbrk "do you mean module " ++
                        pr_long_mp mp ++
@@ -381,6 +381,10 @@ let warning_ambiguous_name =
                        pr_long_global r ++ str " ?" ++ fnl () ++
                        strbrk "First choice is assumed, for the second one please use " ++
                        strbrk "fully qualified name." ++ fnl ())
+let warning_ambiguous_name ?loc (_,mp,r as x) =
+  match loc with
+  | None -> warning_ambiguous_name x
+  | Some loc -> warning_ambiguous_name ~loc ~quickfix:(List.map (Quickfix.make ~loc) [pr_long_mp mp;pr_long_global r]) x
 
 let error_axiom_scheme ?loc r i =
   err ?loc (str "The type scheme axiom " ++ spc () ++

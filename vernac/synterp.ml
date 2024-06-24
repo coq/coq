@@ -243,8 +243,8 @@ let synterp_end_section {CAst.loc; v} =
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.Synterp.close_section ()
 
-let synterp_end_segment ({v=id} as lid) =
-  let ss = Lib.Synterp.find_opening_node id in
+let synterp_end_segment ({v=id;loc} as lid) =
+  let ss = Lib.Synterp.find_opening_node ?loc id in
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> ignore (synterp_end_module export lid)
   | Lib.OpenedModule (true,_,_,_) -> ignore (Declaremods.Synterp.end_modtype ())
@@ -369,8 +369,6 @@ let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
     else ControlTimeout { remaining } :: ctrl, v
   end
 
-let test_mode = ref false
-
 (* Restoring the state is the caller's responsibility *)
 let with_fail f : (Loc.t option * Pp.t, 'a) result =
   try
@@ -397,8 +395,8 @@ let with_fail ~loc f =
   | Error (ctrl, v) ->
     ControlFail { st = transient_st } :: ctrl, v
   | Ok (eloc, msg) ->
-    let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !test_mode
+    let loc = if !Flags.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
+    if not !Flags.quiet || !Flags.test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg);
     [], VernacSynterp EVernacNoop
 
