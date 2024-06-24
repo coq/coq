@@ -457,9 +457,9 @@ Proof.
 intros P n h1 h2 v1 v2.
 split.
 - intros H.
-  split.
-  + inversion H; assumption.
-  + dependent induction H; assumption.
+  inversion H.
+  apply Eqdep.EqdepTheory.inj_pair2 in H2,H5; subst.
+  split; assumption.
 - intros H.
   destruct H.
   apply Forall2_cons; assumption.
