@@ -261,7 +261,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fi
         let recarg = mkIdentC n.CAst.v in
         build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns r recarg notations
 
-    | [Some { CAst.v = CMeasureRec (n, m, r) }],
+    | [Some { CAst.v = CMeasureRec (n, m, r); loc }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
       (* We resolve here a clash between the syntax of Program Fixpoint and the one of funind *)
       let r = match n, r with
@@ -269,7 +269,7 @@ let do_fixpoint ~pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (fi
           let loc = id.CAst.loc in
           Some (CAst.make ?loc @@ CRef(qualid_of_ident ?loc id.CAst.v,None))
         | Some _, Some _ ->
-          user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
+          user_err ?loc Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
         build_wellfounded pm (id, univs, binders, rtype, out_def body_def) ~scope ?clearbody poly ?typing_flags ?user_warns
