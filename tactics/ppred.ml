@@ -57,7 +57,7 @@ let pr_union pr1 pr2 = function
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern,prvar) keyword = function
   | Red -> keyword "red"
   | Hnf -> keyword "hnf"
-  | Simpl (simpl_flags,o) -> keyword "simpl" ++ (pr_strength_delta pr_ref simpl_flags)
+  | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
                     ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
   | Cbv f ->
     if f.rBeta && f.rMatch && f.rFix && f.rCofix &&

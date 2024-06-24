@@ -45,7 +45,7 @@ type ('b,'c,'occvar) red_context = ('occvar Locus.occurrences_gen * ('b,'c) Util
 type ('a, 'b, 'c, 'occvar, 'flags) red_expr_gen0 =
   | Red
   | Hnf
-  | Simpl of (strength * bool * 'b list) * ('b, 'c, 'occvar) red_context
+  | Simpl of 'flags * ('b, 'c, 'occvar) red_context
   | Cbv of 'flags
   | Cbn of 'flags
   | Lazy of 'flags
