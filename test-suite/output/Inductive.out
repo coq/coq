@@ -32,3 +32,42 @@ The command has indeed failed with message:
 Parameters should be syntactically the same for each record type.
 Type "B" has no parameters
 but type "Inductive" has parameters "A".
+or : Prop -> Prop -> Prop
+
+or is not universe polymorphic
+or may only be eliminated to produce values whose type is SProp or Prop.
+Arguments or (A B)%type_scope
+Expands to: Inductive Coq.Init.Logic.or
+sunit : SProp
+
+sunit is not universe polymorphic
+sunit may only be eliminated to produce values whose type is SProp.
+Expands to: Inductive Inductive.sunit
+sempty@{q | } : Type@{q | Set}
+(* q |  |=  *)
+
+sempty is universe polymorphic
+sempty@{q | } may only be eliminated to produce values whose type is in sort quality q,
+  unless instantiated such that the quality SProp
+  is equal to the instantiation of q,
+  or to Prop or Type if q is instantiated to Type.
+Expands to: Inductive Inductive.sempty
+ssig@{q1 q2 q3 | a b} :
+forall A : Type@{q1 | a}, (A -> Type@{q2 | b}) -> Type@{q3 | max(a,b)}
+(* q1 q2 q3 | a b |=  *)
+
+ssig is universe polymorphic
+ssig@{q1 q2 q3 | a b} may only be eliminated to produce values whose type is in sort quality q3,
+  unless instantiated such that the qualities q1, q2 and Prop
+  are equal to the instantiation of q3,
+  or to Prop or Type if q3 is instantiated to Type.
+Arguments ssig A%type_scope B%function_scope
+Expands to: Inductive Inductive.ssig
+BoxP@{q | a} : Type@{q | a} -> Prop
+(* q | a |=  *)
+
+BoxP is universe polymorphic
+BoxP@{q | a} may only be eliminated to produce values whose type is SProp or Prop,
+  unless instantiated such that the quality q is SProp or Prop.
+Arguments BoxP A%type_scope
+Expands to: Inductive Inductive.BoxP

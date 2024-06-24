@@ -208,6 +208,57 @@ let print_polymorphism env ref =
          ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
        else str "not universe polymorphic") ]
 
+let print_squash env ref udecl = match ref with
+  | GlobRef.IndRef ind ->
+    let _, mip = Inductive.lookup_mind_specif env ind in
+    begin match mip.mind_squashed with
+    | None -> []
+    | Some squash ->
+      let univs = Environ.universes_of_global env ref in
+      let bl = Printer.universe_binders_with_opt_names univs udecl in
+      let sigma = Evd.from_ctx (UState.of_names bl) in
+      let inst = if fst @@ UVars.AbstractContext.size univs = 0 then mt()
+        else Printer.pr_universe_instance sigma (UVars.make_abstract_instance univs)
+      in
+      let inds = match mip.mind_arity with
+        | TemplateArity _ -> assert false
+        | RegularArity a -> a.mind_sort
+      in
+      let target = match inds with
+          | SProp -> str "SProp"
+          | Prop -> str "SProp or Prop"
+          | Set -> str "SProp, Prop or Set"
+          | Type _ -> str "not in a variable sort quality"
+          | QSort (q,_) -> str "in sort quality " ++ Termops.pr_evd_qvar sigma q
+      in
+      let unless = match squash with
+        | AlwaysSquashed -> str "."
+        | SometimesSquashed qs ->
+          let target = match inds with
+            | SProp | Prop | Set -> target
+            | Type _ -> str "instantiated to constant qualities"
+            | QSort (q,_) ->
+              let ppq = Termops.pr_evd_qvar sigma q in
+              str "equal to the instantiation of " ++ ppq ++ pr_comma() ++
+              str "or to Prop or Type if " ++ ppq ++ str " is instantiated to Type"
+          in
+          let qs = Sorts.Quality.Set.elements qs in
+          let quality_s, is_s = match qs with
+            | [_] -> "quality", "is"
+            | _ -> "qualities", "are"
+          in
+          (* this reads kinda weird when qs is singleton of a constant quality, we get eg
+             "quality Prop is equal to the instantiation of q" *)
+          pr_comma () ++
+          hov 0 (str "unless instantiated such that the " ++ str quality_s ++ str " " ++
+                 pr_enum (Sorts.Quality.pr (Termops.pr_evd_qvar sigma)) qs ++
+                 spc() ++ str is_s ++ str " " ++ target ++ str ".")
+      in
+      [hv 2 (hov 1 (pr_global ref ++ inst) ++ str " may only be eliminated to produce values whose type is " ++
+             target ++ unless)]
+    end
+  | _ -> []
+
 let print_prop_but_default_dep_elim ref =
   match ref with
   | GlobRef.IndRef ind ->
@@ -950,6 +1001,7 @@ let print_about_global_reference ?loc env ref udecl =
   pr_infos_list
    (print_ref env false ref udecl :: blankline ::
     print_polymorphism env ref @
+    print_squash env ref udecl @
     print_name_infos env ref @
     print_reduction_behaviour ref @
     print_opacity env ref @
