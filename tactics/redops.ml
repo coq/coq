@@ -58,8 +58,8 @@ let map_occs f (occ,e) = (occ,f e)
 let map_red_expr_gen f g h = function
   | Fold l -> Fold (List.map f l)
   | Pattern occs_l -> Pattern (List.map (map_occs f) occs_l)
-  | Simpl ((strength,b,delta),occs_o) ->
-     Simpl ((strength,b,List.map g delta), Option.map (map_occs (Util.map_union g h)) occs_o)
+  | Simpl (flags,occs_o) ->
+     Simpl (map_flags g flags, Option.map (map_occs (Util.map_union g h)) occs_o)
   | Unfold occs_l -> Unfold (List.map (map_occs g) occs_l)
   | Cbv flags -> Cbv (map_flags g flags)
   | Lazy flags -> Lazy (map_flags g flags)

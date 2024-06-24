@@ -82,13 +82,6 @@ let to_red_flag v = match Value.to_tuple v with
 
 let red_flags = make_to_repr to_red_flag
 
-let to_simpl_red_flag v = match Value.to_tuple v with
-| [| strength; delta; const |] ->
-  (to_red_strength strength, Value.to_bool delta, Value.to_list Value.to_reference const)
-| _ -> assert false
-
-let simpl_red_flags = make_to_repr to_simpl_red_flag
-
 let pattern_with_occs = pair pattern occurrences
 
 let constr_with_occs = pair constr occurrences
@@ -344,7 +337,7 @@ let () =
 
 let () =
   define "tac_simpl"
-    (simpl_red_flags @-> option pattern_with_occs @-> clause @-> tac unit)
+    (red_flags @-> option pattern_with_occs @-> clause @-> tac unit)
     Tac2tactics.simpl
 
 let () =
@@ -389,7 +382,7 @@ let () = define "eval_hnf" (constr @-> tac constr) Tac2tactics.eval_hnf
 
 let () =
   define "eval_simpl"
-    (simpl_red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
+    (red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_simpl
 
 let () =
