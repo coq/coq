@@ -88,7 +88,7 @@ let async_proofs_is_master opt =
   !Flags.async_proofs_worker_id = "master"
 
 let execution_error ?loc state_id msg =
-    feedback ~id:state_id (Message (Error, loc, msg))
+    feedback ~id:state_id (Message (Error, loc, [], msg))
 
 module Hooks = struct
 
@@ -1699,9 +1699,10 @@ end = struct (* {{{ *)
       ignore(stm_vernac_interp r_for st { r_what with verbose = true });
       feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in
-      let msg = iprint e     in
-      feedback ~id:r_for (Message (Error, None, msg))
+      let e,_ as ie = Exninfo.capture e in
+      let msg = iprint ie in
+      let qf = Result.value ~default:[] (Quickfix.from_exception e) in
+      feedback ~id:r_for (Message (Error, None, qf, msg))
 
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
   let name_of_request { r_what } = string_of_ppcmds (pr_ast r_what)

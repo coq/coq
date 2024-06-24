@@ -103,7 +103,7 @@ module type StagedLibS = sig
   val classify_segment : Libobject.t list -> classified_objects
 
   (** Returns the opening node of a given name *)
-  val find_opening_node : Id.t -> summary node
+  val find_opening_node : ?loc:Loc.t -> Id.t -> summary node
 
   val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit

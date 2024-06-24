@@ -162,11 +162,11 @@ let error_info_for_buffer ?loc buf =
       | Loc.InFile _ -> Topfmt.pr_phase ~loc ()
 
 (* Actual printing routine *)
-let print_error_for_buffer ?loc lvl msg buf =
+let print_error_for_buffer ?loc ?qf lvl msg buf =
   let pre_hdr = error_info_for_buffer ?loc buf in
   if !print_emacs
   then Topfmt.emacs_logger ?pre_hdr lvl msg
-  else Topfmt.std_logger   ?pre_hdr lvl msg
+  else Topfmt.std_logger   ?pre_hdr ?qf lvl msg
 
 (*
 let print_toplevel_parse_error (e, info) buf =
@@ -312,13 +312,13 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   | FileLoaded (_,_) -> ()
   | Custom (_,_,_) -> ()
   (* Re-enable when we switch back to feedback-based error printing *)
-  | Message (Error,loc,msg) -> ()
+  | Message (Error,loc,_,msg) -> ()
   (* TopErr.print_error_for_buffer ?loc lvl msg top_buffer *)
-  | Message (Warning,loc,msg) ->
+  | Message (Warning,loc,qf,msg) ->
     let loc = extract_default_loc loc fb.doc_id fb.span_id in
-    TopErr.print_error_for_buffer ?loc Warning msg top_buffer
-  | Message (lvl,loc,msg) ->
-    TopErr.print_error_for_buffer ?loc lvl msg top_buffer
+    TopErr.print_error_for_buffer ?loc ~qf Warning msg top_buffer
+  | Message (lvl,loc,qf,msg) ->
+    TopErr.print_error_for_buffer ?loc ~qf lvl msg top_buffer
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.

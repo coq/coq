@@ -1,0 +1,5 @@
+File "./output/Qf_intros.v", line 3, characters 0-6:
+Warning: intros is fragile, specify the names.
+ [fragile-intros,pedantic]
+Quickfix:
+intros x

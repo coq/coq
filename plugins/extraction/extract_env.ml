@@ -617,7 +617,7 @@ let rec locate_ref = function
         | None, Some r -> let refs,mps = locate_ref l in r::refs,mps
         | Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
         | Some mp, Some r ->
-           warning_ambiguous_name (qid,mp,r);
+           warning_ambiguous_name ?loc:qid.CAst.loc (qid,mp,r);
            let refs,mps = locate_ref l in refs,mp::mps
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is

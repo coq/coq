@@ -45,7 +45,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t option * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Pp.t
+  | Message of level * Loc.t option * Quickfix.t list * Pp.t
 
 type feedback = {
   doc_id   : doc_id;            (* The document being concerned *)
@@ -86,9 +86,9 @@ val msg_info : ?loc:Loc.t -> Pp.t -> unit
 val msg_notice : ?loc:Loc.t -> Pp.t -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
-val msg_warning : ?loc:Loc.t -> Pp.t -> unit
+val msg_warning : ?loc:Loc.t -> ?quickfix:Quickfix.t list -> Pp.t -> unit
 (** Message indicating that something went wrong, but without serious
-    consequences. *)
+    consequences. A list of quick fixes, in the VSCode sense, can be provided *)
 
 val msg_debug : ?loc:Loc.t -> Pp.t -> unit
 (** For debugging purposes *)

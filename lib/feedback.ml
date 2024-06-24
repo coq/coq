@@ -42,7 +42,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t option * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Pp.t
+  | Message of level * Loc.t option * Quickfix.t list * Pp.t
 
 type feedback = {
   doc_id   : doc_id;            (* The document being concerned *)
@@ -83,19 +83,19 @@ let feedback ?did ?id ?route what =
   if !warn_no_listeners && Hashtbl.length feeders = 0 then begin
     Format.eprintf "Warning, feedback message received but no listener to handle it!@\n%!";
     match m.contents with
-    | Message (lvl,_,msg) ->
+    | Message (lvl,_,_,msg) ->
       Format.eprintf "%a%a" pp_lvl lvl Pp.pp_with msg
     | _ -> ()
   end ;
   Hashtbl.iter (fun _ f -> f m) feeders
 
 (* Logging messages *)
-let feedback_logger ?loc lvl msg =
-  feedback ~route:!feedback_route ~id:!span_id (Message (lvl, loc, msg))
+let feedback_logger ?loc ?(quickfix=[]) lvl msg =
+  feedback ~route:!feedback_route ~id:!span_id (Message (lvl, loc, quickfix, msg))
 
 let msg_info    ?loc x = feedback_logger ?loc Info x
 let msg_notice  ?loc x = feedback_logger ?loc Notice x
-let msg_warning ?loc x = feedback_logger ?loc Warning x
+let msg_warning ?loc ?quickfix x = feedback_logger ?loc ?quickfix Warning x
 (* let msg_error   ?loc x = feedback_logger ?loc Error x *)
 let msg_debug   ?loc x = feedback_logger ?loc Debug x
 
@@ -123,6 +123,6 @@ let console_feedback_listener fmt =
   | FileDependency (_,_) -> ()
   | FileLoaded (_,_) -> ()
   | Custom (_,_,_) -> ()
-  | Message (lvl,loc,msg) ->
+  | Message (lvl,loc,_,msg) ->
     fprintf fmt "@[%a@]%a@[%a@]\n%!" pp_loc loc pp_lvl lvl Pp.pp_with msg
   in checker_feed

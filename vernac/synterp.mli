@@ -94,7 +94,3 @@ val add_default_timeout : Vernacexpr.control_flag list -> Vernacexpr.control_fla
 (** Default proof mode set by `start_proof` *)
 val get_default_proof_mode : unit -> Pvernac.proof_mode
 val proof_mode_opt_name : string list
-
-(** Flag set when the test-suite is called. Its only effect to display
-    verbose information for [Fail] *)
-val test_mode : bool ref

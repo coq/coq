@@ -643,7 +643,7 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | GlobRef (_, _, _, _, _), None -> msg_wo_sent "GlobRef"
-      | Message(Error, loc, msg), Some (id,sentence) ->
+      | Message(Error, loc, _, msg), Some (id,sentence) ->
           log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg in
@@ -651,20 +651,20 @@ object(self)
           self#mark_as_needed sentence;
           self#attach_tooltip ?loc sentence rmsg;
           self#apply_tag_in_sentence ?loc Tags.Script.error sentence
-      | Message(Warning, loc, message), Some (id,sentence) ->
+      | Message(Warning, loc, _, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "WarningMsg " ++ message);
           let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
           self#apply_tag_in_sentence ?loc Tags.Script.warning sentence;
           (messages#route msg.route)#push Warning message
-      | Message(lvl, loc, message), Some (id,sentence) ->
+      | Message(lvl, loc, _, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "Msg " ++ message);
           (messages#route msg.route)#push lvl message
       (* We do nothing here as for BZ#5583 *)
-      | Message(Error, loc, msg), None ->
+      | Message(Error, loc, _, msg), None ->
           log_pp Pp.(str "Error Msg without a sentence" ++ msg)
-      | Message(lvl, loc, message), None ->
+      | Message(lvl, loc, _, message), None ->
           log_pp Pp.(str "Msg without a sentence " ++ message);
           (messages#route msg.route)#push lvl message
       | InProgress n, _ ->

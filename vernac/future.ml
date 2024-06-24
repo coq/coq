@@ -39,7 +39,8 @@ let eval_fix_exn f (e, info) = match f with
   | None ->
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
-    let () = Feedback.(feedback ~id (Message (Error, loc, msg))) in
+    let qf = Result.value ~default:[] (Quickfix.from_exception e) in
+    let () = Feedback.(feedback ~id (Message (Error, loc, qf, msg))) in
     (e, Stateid.add info ~valid id)
 
 module UUID = struct
