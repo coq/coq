@@ -12,5 +12,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 ( cd "${CI_BUILD_DIR}/elpi"
   make build-core
   make build-apps
-  make install
+  make install DUNE_install_FLAGS=--prefix="$CI_INSTALL_DIR"
 )
