@@ -2156,10 +2156,10 @@ let compute_proof_using_for_admitted proof typ iproof =
       | pproof :: _ ->
         let env = Global.env () in
         let sigma = (Proof.data iproof).Proof.sigma in
-        let ids_typ = Termops.global_vars_set env sigma typ in
+        let ids_typ = Termops.global_vars_set_no_evar env sigma typ in
         (* [pproof] is evar-normalized by [partial_proof]. We don't
            count variables appearing only in the type of evars. *)
-        let ids_def = Termops.global_vars_set env sigma pproof in
+        let ids_def = Termops.global_vars_set_no_evar env sigma pproof in
         Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
       | [] -> None
 
