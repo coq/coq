@@ -264,7 +264,9 @@ let print_squash env ref udecl = match ref with
             | QSort (q,_) ->
               let ppq = Termops.pr_evd_qvar sigma q in
               str "equal to the instantiation of " ++ ppq ++ pr_comma() ++
-              str "or to Prop or Type if " ++ ppq ++ str " is instantiated to Type"
+              str "or to qualities smaller" ++ spc() ++
+              str "(SProp <= Prop <= Type, and all variables <= Type)" ++ spc() ++
+              str "than the instantiation of " ++ ppq
           in
           let qs = Sorts.Quality.Set.elements qs in
           let quality_s, is_s = match qs with
