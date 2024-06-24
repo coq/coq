@@ -48,7 +48,7 @@ fi
 code=$?
 echo 'Aggregating timing log...'
 echo
-python ./tools/make-one-time-file.py --real "$CI_NAME.log"
+tools/make-one-time-file.py --real "$CI_NAME.log"
 if [ "$CI" ] && ! [ $code = 0 ]; then
   set +x
 
