@@ -458,7 +458,15 @@ intros P n h1 h2 v1 v2.
 split.
 - intros H.
   inversion H.
-  apply Eqdep.EqdepTheory.inj_pair2 in H2,H5; subst.
+  match type of H2 with
+  | existT _ _ ?x = existT _ _ ?y =>
+    assert (x = y) by (apply inj_pair2_eq_dec in H2; [exact H2|apply Nat.eq_dec])
+  end.
+  match type of H5 with
+  | existT _ _ ?x = existT _ _ ?y =>
+    assert (x = y) by (apply inj_pair2_eq_dec in H5; [exact H5|apply Nat.eq_dec])
+  end.
+  subst.
   split; assumption.
 - intros H.
   destruct H.
