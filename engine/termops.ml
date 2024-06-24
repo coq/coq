@@ -1296,6 +1296,16 @@ let global_vars_set env sigma constr =
   in
   filtrec Id.Set.empty constr
 
+let global_vars_set_no_evar env sigma constr =
+  let rec filtrec acc c =
+    match EConstr.kind sigma c with
+    | Evar _ -> Id.Set.empty
+    | _ -> match EConstr.destRef sigma c with
+    | gr, _ -> Id.Set.union (vars_of_global env gr) acc
+    | exception DestKO -> EConstr.fold sigma filtrec acc c
+  in
+  filtrec Id.Set.empty constr
+
 let global_vars_set_of_decl env sigma = function
   | NamedDecl.LocalAssum (_,t) -> global_vars_set env sigma t
   | NamedDecl.LocalDef (_,c,t) ->
