@@ -183,6 +183,8 @@ ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
 ci-serapi: ci-coq_lsp
 
+ci-smtcoq_trakt: ci-trakt
+
 # Virtual targets used by the CI to group compilation of rules in a single job
 
 ci-elpi_hb: ci-elpi ci-hb
