@@ -216,6 +216,8 @@ val fix_undefined_variables : t -> t
 (** Universe minimization *)
 val minimize : ?lbound:UGraph.Bound.t -> t -> t
 
+val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
+
 val collapse_sort_variables : t -> t
 
 type ('a, 'b, 'c) gen_universe_decl = {
