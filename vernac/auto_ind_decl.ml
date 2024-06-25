@@ -1424,7 +1424,14 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
           let blI = mkConstU (c,u) in
           let c = get_scheme handle lb_scheme_kind ind in
           let lbI = mkConstU (c,u) in
+          (* univ polymorphic schemes may have extra constraints
+             from using univ monomorphic f_equal and the like *)
+          let env, sigma = Proofview.Goal.(env gl, sigma gl) in
+          let sigma, _ = Typing.type_of env sigma (EConstr.of_constr blI) in
+          let sigma, _ = Typing.type_of env sigma (EConstr.of_constr lbI) in
           Tacticals.tclTHENLIST [
+              Proofview.Unsafe.tclEVARS sigma;
+
               (*we do this so we don't have to prove the same goal twice *)
               assert_by (Name freshH) (EConstr.of_constr (
                                            mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
