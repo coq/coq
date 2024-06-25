@@ -1047,6 +1047,12 @@ plugin:ci-smtcoq:
 plugin:ci-smtcoq_trakt:
   extends: .ci-template
 
+plugin:ci-sniper:
+  extends: .ci-template
+  needs:
+  - build:base
+  - plugin:ci-smtcoq_trakt
+
 plugin:ci-stalmarck:
   extends: .ci-template
 

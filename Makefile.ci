@@ -93,6 +93,7 @@ CI_TARGETS= \
     ci-simple_io \
     ci-smtcoq \
     ci-smtcoq_trakt \
+    ci-sniper \
     ci-stalmarck \
     ci-stdlib2 \
     ci-tactician \
@@ -186,6 +187,8 @@ ci-serapi: ci-coq_lsp
 # Virtual targets used by the CI to group compilation of rules in a single job
 
 ci-elpi_hb: ci-elpi ci-hb
+
+ci-sniper: ci-smtcoq_trakt
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:

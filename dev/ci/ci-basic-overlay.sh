@@ -527,6 +527,12 @@ project smtcoq_trakt "https://github.com/smtcoq/smtcoq" "with-trakt-coq-master"
 # Contact @ckeller on github
 
 ########################################################################
+# Sniper
+########################################################################
+project sniper "https://github.com/smtcoq/sniper" "coq-master"
+# Contact @ckeller on github
+
+########################################################################
 # Stalmarck
 ########################################################################
 project stalmarck "https://github.com/coq-community/stalmarck" "master"
