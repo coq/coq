@@ -451,7 +451,7 @@ intros P n v. rewrite Forall_nth. split.
   apply H.
 Qed.
 
-Lemma Forall2_cons_iff A: forall P n (h1 h2 : A) (v1 v2 : t A n),
+Lemma Forall2_cons_iff A B: forall P n h1 h2 (v1 : t A n) (v2 : t B n),
   Forall2 P (h1 :: v1) (h2 :: v2) <-> P h1 h2 /\ Forall2 P v1 v2.
 Proof.
 intros P n h1 h2 v1 v2.
