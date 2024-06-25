@@ -186,7 +186,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let env' = RelEnv.push_rel (LocalAssum (nameP,typP)) env' in
   let branches = get_branches env' 0 [] in
 
-  let sigma, arity, body, bodyT =
+  let arity, body, bodyT =
     let env = RelEnv.push_rel_context branches env' in
     let nbprod = Array.length mip.mind_consnames + 1 in
 
@@ -207,7 +207,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
       if dep then deparsign
       else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
     in
-    let sigma, obj, objT =
+    let obj, objT =
       match projs with
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
@@ -229,7 +229,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
         let br = Array.init ncons mk_branch in
         let pnas = Array.of_list (List.rev_map get_annot pctx) in
         let obj = mkCase (ci, u, pms, ((pnas, liftn ndepar (ndepar + 1) pbody), relevance), iv, mkRel 1, br) in
-        sigma, obj, pbody
+        obj, pbody
       | Some ps ->
         let term =
           mkApp (mkRel 2,
@@ -241,11 +241,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
         in
         if dep then
           let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
-          sigma, mkCast (term, DEFAULTcast, ty), ty
+          mkCast (term, DEFAULTcast, ty), ty
         else
-          sigma, term, mkRel 3
+          term, mkRel 3
     in
-    (sigma, deparsign, obj, objT)
+    (deparsign, obj, objT)
   in
   let params = set_names env lnamespar in
   let case = {
