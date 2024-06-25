@@ -558,7 +558,12 @@ type subterm_spec =
   | Not_subterm
   | Internally_bound_subterm of Int.Set.t
 
-let eq_wf_paths = Rtree.equal Declareops.eq_recarg
+let is_norec_path t =
+  let check = function
+  | Norec -> true
+  | Mrec _ -> false
+  in
+  Rtree.is_node check t
 
 let inter_recarg r1 r2 = if eq_recarg r1 r2 then Some r1 else None
 
@@ -567,7 +572,7 @@ let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
 let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
 
 let spec_of_tree t =
-  if eq_wf_paths t mk_norec
+  if is_norec_path t
   then Not_subterm
   else Subterm (Int.Set.empty, Strict, t)
 
@@ -817,7 +822,7 @@ let get_recargs_approx ?evars env tree ind args =
 
   and build_recargs_nested (env,_ra_env as ienv) tree (((mind,i),u), largs) =
     (* If the inferred tree already disallows recursion, no need to go further *)
-    if eq_wf_paths tree mk_norec then tree
+    if is_norec_path tree then tree
     else
     let mib = Environ.lookup_mind mind env in
     let auxnpar = mib.mind_nparams_rec in
@@ -853,7 +858,7 @@ let get_recargs_approx ?evars env tree ind args =
     (Rtree.mk_rec irecargs).(i)
 
   and build_recargs_nested_primitive (env, ra_env) tree (c, largs) =
-    if eq_wf_paths tree mk_norec then tree
+    if is_norec_path tree then tree
     else
     let ntypes = 1 in (* Primitive types are modelled by non-mutual inductive types *)
     let ra_env = List.map (fun (r,t) -> (r,Rtree.lift ntypes t)) ra_env in
@@ -1594,7 +1599,7 @@ let check_one_cofix ?evars env nbfix def deftype =
             let realargs = List.skipn mib.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) ->
-                  if eq_wf_paths rar mk_norec then
+                  if is_norec_path rar then
                     if noccur_with_meta n nbfix t
                     then process_args_of_constr (lr, lrar)
                     else raise (CoFixGuardError

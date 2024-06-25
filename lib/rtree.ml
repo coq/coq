@@ -90,10 +90,11 @@ let dest_node t =
       Node (l,sons) -> (l,sons)
     | _ -> failwith "Rtree.dest_node"
 
-let is_node t =
-  match expand t with
-      Node _ -> true
-    | _ -> false
+let is_node check t =
+  (* no need to expand as the result must be a Node *)
+  match t with
+  | Node (l, _) -> check l
+  | Var _ | Rec _ -> false
 
 let rec map f t = match t with
     Var(i,j) -> Var(i,j)

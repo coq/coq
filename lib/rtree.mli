@@ -49,7 +49,7 @@ val mk_rec   : 'a t array -> 'a t array
    to avoid captures when a tree appears under [mk_rec] *)
 val lift : int -> 'a t -> 'a t
 
-val is_node : 'a t -> bool
+val is_node : ('a -> bool) -> 'a t -> bool
 
 (** Destructors (recursive calls are expanded) *)
 val dest_node  : 'a t -> 'a * 'a t array array
