@@ -454,23 +454,13 @@ Qed.
 Lemma Forall2_cons_iff A B: forall P n h1 h2 (v1 : t A n) (v2 : t B n),
   Forall2 P (h1 :: v1) (h2 :: v2) <-> P h1 h2 /\ Forall2 P v1 v2.
 Proof.
-intros P n h1 h2 v1 v2.
-split.
-- intros H.
-  inversion H.
-  match type of H2 with
-  | existT _ _ ?x = existT _ _ ?y =>
-    assert (x = y) by (apply inj_pair2_eq_dec in H2; [exact H2|apply Nat.eq_dec])
-  end.
-  match type of H5 with
-  | existT _ _ ?x = existT _ _ ?y =>
-    assert (x = y) by (apply inj_pair2_eq_dec in H5; [exact H5|apply Nat.eq_dec])
-  end.
-  subst.
-  split; assumption.
-- intros H.
-  destruct H.
-  apply Forall2_cons; assumption.
+  intros P n h1 h2 v1 v2; split.
+  2: { intros [H1 H2]; right; [exact H1 | exact H2]. }
+  intros H; inversion H as [| m x1 x2 v0 v3 ph f2p mn [x1h1 H1] [x2h2 H2]].
+  split; [exact ph |].
+  apply inj_pair2_eq_dec in H1 as ->; [| exact Nat.eq_dec].
+  apply inj_pair2_eq_dec in H2 as ->; [| exact Nat.eq_dec].
+  exact f2p.
 Qed.
 
 Lemma Forall2_nth A: forall P n (v1 v2 : t A n),
