@@ -142,7 +142,10 @@ let make_inv_predicate env evd indf realargs id status concl =
         in
         let eq = evd_comb1 (Evd.fresh_global env) evd eq_term in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
-        let refl_term = evd_comb1 (Evd.fresh_global env) evd refl_term in
+        let refl_term =
+          let _, u = destRef !evd eq in
+          mkRef (refl_term, u)
+        in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
         let r = Retyping.relevance_of_term env !evd refl in
         let eqns = (make_annot Anonymous r, lift n eqn) :: eqns in
