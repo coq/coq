@@ -523,6 +523,9 @@ project serapi "https://github.com/ejgallego/coq-serapi" "main"
 project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
 # Contact @ckeller on github
 
+project smtcoq_trakt "https://github.com/smtcoq/smtcoq" "with-trakt-coq-master"
+# Contact @ckeller on github
+
 ########################################################################
 # Stalmarck
 ########################################################################

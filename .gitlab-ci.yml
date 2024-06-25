@@ -1044,6 +1044,9 @@ plugin:ci-vscoq:
 plugin:ci-smtcoq:
   extends: .ci-template
 
+plugin:ci-smtcoq_trakt:
+  extends: .ci-template
+
 plugin:ci-stalmarck:
   extends: .ci-template
 
