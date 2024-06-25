@@ -1,3 +1,8 @@
+
+Lemma foo@{u v w|u <= v, v <= w} : Prop.
+Show Universes.
+Abort.
+
 Goal True.
   pose (fun x => let y := Type in x y :y).
   Show Universes.
