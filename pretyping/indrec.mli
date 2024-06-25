@@ -37,7 +37,7 @@ type case_analysis = private {
   case_type : EConstr.t;
 }
 
-val check_valid_elimination : env -> evar_map -> inductive puniverses -> dep:bool -> ESorts.t -> unit
+val check_valid_elimination : env -> evar_map -> inductive puniverses -> dep:bool -> ESorts.t -> evar_map
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 

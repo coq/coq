@@ -148,16 +148,35 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
       raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
   in
   let () = check_privacy_block specif in
-  if not @@ Inductiveops.is_allowed_elimination sigma (specif,u) s then
-    let s = EConstr.ESorts.kind sigma s in
-    let pind = on_snd EConstr.Unsafe.to_instance pind in
-    raise
-      (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (false, s, pind)))
+  match is_squashed sigma (specif,u) with
+  | None -> sigma
+  | Some squash ->
+    let fail () =
+      let s = EConstr.ESorts.kind sigma s in
+      let pind = on_snd EConstr.Unsafe.to_instance pind in
+      raise
+        (RecursionSchemeError
+           (env, NotAllowedCaseAnalysis (false, s, pind)))
+    in
+    match squash with
+    | SquashToSet ->
+    begin match EConstr.ESorts.kind sigma s with
+    | SProp|Prop|Set -> sigma
+    | QSort _ | Type _ ->
+      try Evd.set_leq_sort env sigma s ESorts.set
+      with UGraph.UniverseInconsistency _ -> fail ()
+    end
+  | SquashToQuality indq ->
+    let sq = ESorts.quality sigma s in
+    if Inductiveops.quality_leq sq indq then sigma
+    else
+      let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
+      try Evd.set_leq_sort env sigma (mk sq) (mk indq)
+      with UGraph.UniverseInconsistency _ -> fail ()
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let open EConstr in
-  let () = check_valid_elimination env sigma pind ~dep s in
+  let sigma = check_valid_elimination env sigma pind ~dep s in
   let lnamespar = Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in

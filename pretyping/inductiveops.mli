@@ -128,6 +128,8 @@ val sorts_for_schemes : mind_specif -> Sorts.family list
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
+val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
+
 val is_squashed : evar_map -> (mind_specif * EInstance.t) -> squash option
 
 val squash_elim_sort : env -> evar_map -> squash -> ESorts.t -> evar_map
