@@ -1049,7 +1049,7 @@ plugin:ci-smtcoq_trakt:
   needs:
   - build:edge+flambda
   - library:ci-trakt
-  stage: build-2
+  stage: build-3+
 
 plugin:ci-sniper:
   extends: .ci-template-flambda
