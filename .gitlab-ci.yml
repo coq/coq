@@ -1044,6 +1044,13 @@ plugin:ci-vscoq:
 plugin:ci-smtcoq:
   extends: .ci-template
 
+plugin:ci-smtcoq_trakt:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-trakt
+  stage: build-3+
+
 plugin:ci-stalmarck:
   extends: .ci-template
 

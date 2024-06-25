@@ -92,6 +92,7 @@ CI_TARGETS= \
     ci-sf \
     ci-simple_io \
     ci-smtcoq \
+    ci-smtcoq_trakt \
     ci-stalmarck \
     ci-stdlib2 \
     ci-tactician \
@@ -181,6 +182,8 @@ ci-compcert: ci-menhir ci-flocq
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
 ci-serapi: ci-coq_lsp
+
+ci-smtcoq_trakt: ci-trakt
 
 # Virtual targets used by the CI to group compilation of rules in a single job
 
