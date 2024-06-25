@@ -186,11 +186,11 @@ ci-serapi: ci-coq_lsp
 
 ci-smtcoq_trakt: ci-trakt
 
+ci-sniper: ci-smtcoq_trakt ci-metacoq ci-elpi_hb
+
 # Virtual targets used by the CI to group compilation of rules in a single job
 
 ci-elpi_hb: ci-elpi ci-hb
-
-ci-sniper: ci-smtcoq_trakt
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
