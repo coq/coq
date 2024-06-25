@@ -1047,7 +1047,7 @@ plugin:ci-smtcoq:
 plugin:ci-smtcoq_trakt:
   extends: .ci-template-flambda
   needs:
-  - build:edge-flambda
+  - build:edge+flambda
   - library:ci-trakt
   stage: build-2
 
