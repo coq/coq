@@ -1058,6 +1058,7 @@ plugin:ci-sniper:
   - plugin:ci-smtcoq_trakt
   - plugin:ci-elpi_hb
   - plugin:ci-metacoq
+  stage: build-3+
 
 plugin:ci-stalmarck:
   extends: .ci-template
