@@ -9,7 +9,7 @@ git_download smtcoq_trakt
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-( cd "${CI_BUILD_DIR}/smtcoq"
+( cd "${CI_BUILD_DIR}/smtcoq_trakt"
   make -C src .merlin
   make
   make install
