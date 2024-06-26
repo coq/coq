@@ -55,6 +55,13 @@ let inductive_type_knowing_parameters env sigma (ind,u as indu) jl =
   let paramstyp = make_param_univs env sigma indu mspec jl in
   Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
 
+let constructor_type_knowing_parameters env sigma (cstr, u) jl =
+  let u0 = Unsafe.to_instance u in
+  let (ind, _) = cstr in
+  let mspec = lookup_mind_specif env ind in
+  let paramstyp = make_param_univs env sigma (ind, u) mspec jl in
+  Inductive.type_of_constructor_knowing_parameters (cstr, u0) mspec paramstyp
+
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
     | Sort s -> sigma, {utj_val = j.uj_val; utj_type = s }
@@ -111,13 +118,24 @@ let checked_appvect env sigma f args =
 let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
 
 let judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv =
-  let ar = inductive_type_knowing_parameters env sigma ind argjv in
+  let ar, csts = inductive_type_knowing_parameters env sigma ind argjv in
+  let sigma = Evd.add_constraints sigma csts in
   let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
   sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
 
 let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
   let (sigma, j) = judge_of_apply env sigma funj argjv in
   judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv
+
+let judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj cstr argjv =
+  let ar, csts = constructor_type_knowing_parameters env sigma cstr argjv in
+  let sigma = Evd.add_constraints sigma csts in
+  let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
+  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
+
+let judge_of_applied_constructor_knowing_parameters env sigma funj ind argjv =
+  let (sigma, j) = judge_of_apply env sigma funj argjv in
+  judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj ind argjv
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
@@ -543,6 +561,9 @@ let rec execute env sigma cstr =
             | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
                let sigma, fj = execute env sigma f in
                judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl
+            | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+               let sigma, fj = execute env sigma f in
+               judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl
             | _ ->
                (* No template polymorphism *)
                let sigma, fj = execute env sigma f in
@@ -781,6 +802,8 @@ let rec recheck_against env sigma good c =
         (match EConstr.kind sigma f with
          | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
            maybe_changed (judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl)
+         | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+           maybe_changed (judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl)
          | _ ->
            (* No template polymorphism *)
            maybe_changed (judge_of_apply env sigma fj jl))

@@ -417,11 +417,11 @@ let make_param_univs env indu spec args argtys =
 
 let type_of_inductive_knowing_parameters env (ind,u as indu) args argst =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
-  check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
-      (spec,u) (make_param_univs env indu spec args argst)
-  in
-  check_constraints cst env;
+  let () = assert (Option.has_some mib.mind_template) in
+  let () = check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps in
+  let param_univs = make_param_univs env indu spec args argst in
+  let t, cst = Inductive.type_of_inductive_knowing_parameters (spec,u) param_univs in
+  let () = check_constraints cst env in
   t
 
 let type_of_inductive env (ind,u) =
@@ -432,6 +432,16 @@ let type_of_inductive env (ind,u) =
   t
 
 (* Constructors. *)
+
+let type_of_constructor_knowing_parameters env (c, u as cu) args argst =
+  let ind = inductive_of_constructor c in
+  let (mib, _ as spec) = lookup_mind_specif env ind in
+  let () = assert (Option.has_some mib.mind_template) in
+  let () = check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps in
+  let param_univs = make_param_univs env (ind, u) spec args argst in
+  let t, cst = Inductive.type_of_constructor_knowing_parameters cu spec param_univs in
+  let () = check_constraints cst env in
+  t
 
 let type_of_constructor env (c,_u as cu) =
   let (mib, _ as specif) = lookup_mind_specif env (inductive_of_constructor c) in
@@ -655,6 +665,8 @@ let rec execute env cstr =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
             type_of_inductive_knowing_parameters env ind args argst
+          | Construct ((ind, _), _ as cstr) when Environ.template_polymorphic_ind ind env ->
+            type_of_constructor_knowing_parameters env cstr args argst
           | _ ->
             (* No template polymorphism *)
             execute env f
@@ -711,11 +723,19 @@ let rec execute env cstr =
 
         in
         let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
-        let cst = Inductive.instantiate_inductive_constraints mib u in
-        let () = check_constraints cst env in
         let pmst = execute_array env pms in
+        let cst, params = match mib.mind_template with
+        | None ->
+          let cst = Inductive.instantiate_inductive_constraints mib u in
+          cst, mib.mind_params_ctxt
+        | Some _ ->
+          let args = make_param_univs env (ci.ci_ind, u) (mib, mip) pms pmst in
+          let (cst, params, _) = instantiate_template_universes (mib, mip) args in
+          cst, params
+        in
+        let () = check_constraints cst env in
         let paramsubst =
-          try type_of_parameters env mib.mind_params_ctxt u pms pmst
+          try type_of_parameters env params u pms pmst
           with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c None
         in
         let (pctx, pt) =

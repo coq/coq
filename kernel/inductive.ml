@@ -209,10 +209,59 @@ let subst_univs_sort subs = function
     let fold accu (u, n) = Universe.sup accu (supern u n) in
     Sorts.sort_of_univ (List.fold_left fold (supern u n) rest)
 
-let instantiate_universes ctx (templ, ar) args =
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match kind c with
+  | Sort (Sorts.Type u) ->
+    begin match Universe.level u with
+    | Some l -> (decls, l)
+    | None -> assert false
+    end
+  | _ -> assert false
+
+let rec subst_univs_ctx accu subs ctx params = match ctx, params with
+| [], [] -> accu
+| (LocalDef _ as decl) :: ctx, params ->
+  subst_univs_ctx (decl :: accu) subs ctx params
+| (LocalAssum _ as decl) :: ctx, None :: params ->
+  subst_univs_ctx (decl :: accu) subs ctx params
+| LocalAssum (na, t) :: ctx, Some _ :: params ->
+  let (decls, u) = get_arity t in
+  let u = subst_univs_sort subs (Sorts.sort_of_univ (Universe.make u)) in
+  let decl = LocalAssum (na, Term.it_mkProd_or_LetIn (mkSort u) decls) in
+  subst_univs_ctx (decl :: accu) subs ctx params
+| _, [] | [], _ -> assert false
+
+let instantiate_template_constraints subst templ =
+  let _, cstrs = templ.template_context in
+  let fold (u, cst, v) accu =
+    (* v is not a local universe by the unbounded from below property *)
+    let u = subst_univs_sort subst (Sorts.sort_of_univ (Universe.make u)) in
+    match u with
+    | Sorts.QSort _ | Sorts.SProp -> assert false
+    | Sorts.Prop -> accu
+    | Sorts.Set -> Constraints.add (Univ.Level.set, cst, v) accu
+    | Sorts.Type u ->
+      let fold accu (u, n) = match n, cst with
+      | 0, _ -> Constraints.add (u, cst, v) accu
+      | 1, Le -> Constraints.add (u, Lt, v) accu
+      | 1, (Eq | Lt) -> assert false (* FIXME? *)
+      | _ -> assert false
+      in
+      List.fold_left fold accu (Univ.Universe.repr u)
+  in
+  Constraints.fold fold cstrs Constraints.empty
+
+let instantiate_template_universes (mib, _mip) args =
+  let templ = match mib.mind_template with
+  | None -> assert false
+  | Some t -> t
+  in
+  let ctx = List.rev mib.mind_params_ctxt in
   let subst = make_subst (ctx,templ.template_param_levels,args) in
-  let ty = subst_univs_sort subst ar.template_level in
-  (ctx, ty)
+  let ctx = subst_univs_ctx [] subst ctx templ.template_param_levels in
+  let cstrs = instantiate_template_constraints subst templ in
+  (cstrs, ctx, subst)
 
 (* Type of an inductive type *)
 
@@ -232,33 +281,26 @@ let check_instance mib u =
 let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =
   check_instance mib u;
   match mip.mind_arity with
-  | RegularArity a -> subst_instance_constr u a.mind_user_arity
+  | RegularArity a ->
+    let cst = instantiate_inductive_constraints mib u in
+    subst_instance_constr u a.mind_user_arity, cst
   | TemplateArity ar ->
-    let templ = match mib.mind_template with
-    | None -> assert false
-    | Some t -> t
-    in
-    let ctx = List.rev mip.mind_arity_ctxt in
-    let ctx,s = instantiate_universes ctx (templ, ar) paramtyps in
-      (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
-         the situation where a non-Prop singleton inductive becomes Prop
-         when applied to Prop params *)
-      if not polyprop && not (Sorts.is_prop ar.template_level) && Sorts.is_prop s
-      then raise (SingletonInductiveBecomesProp mip.mind_typename);
-      Term.mkArity (List.rev ctx,s)
+    let cst, params, subst = instantiate_template_universes (mib, mip) paramtyps in
+    let ctx = (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) @ params in
+    let s = subst_univs_sort subst ar.template_level in
+    (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
+        the situation where a non-Prop singleton inductive becomes Prop
+        when applied to Prop params *)
+    if not polyprop && not (Sorts.is_prop ar.template_level) && Sorts.is_prop s
+    then raise (SingletonInductiveBecomesProp mip.mind_typename);
+    Term.mkArity (ctx, s), cst
 
 let type_of_inductive pind =
+  let (ty, _cst) = type_of_inductive_gen pind [] in
+  ty
+
+let constrained_type_of_inductive pind =
   type_of_inductive_gen pind []
-
-let constrained_type_of_inductive ((mib,_mip),u as pind) =
-  let ty = type_of_inductive pind in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
-
-let constrained_type_of_inductive_knowing_parameters ((mib,_mip),u as pind) args =
-  let ty = type_of_inductive_gen pind args in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
 
 let type_of_inductive_knowing_parameters ?(polyprop=true) mip args =
   type_of_inductive_gen ~polyprop mip args
@@ -266,17 +308,30 @@ let type_of_inductive_knowing_parameters ?(polyprop=true) mip args =
 (************************************************************************)
 (* Type of a constructor *)
 
-let type_of_constructor (cstr, u) (mib,mip) =
+let type_of_constructor_gen (cstr, u) (mib,mip) paramtyps =
   check_instance mib u;
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
   if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  subst_instance_constr u mip.mind_user_lc.(i-1)
+  match mip.mind_arity with
+  | RegularArity _ ->
+    let cst = instantiate_inductive_constraints mib u in
+    subst_instance_constr u mip.mind_user_lc.(i-1), cst
+  | TemplateArity _ar ->
+    let cst, params, _ = instantiate_template_universes (mib, mip) paramtyps in
+    let _, typ = Term.decompose_prod_n_decls (List.length mib.mind_params_ctxt) mip.mind_user_lc.(i - 1) in
+    let typ = Term.it_mkProd_or_LetIn typ params in
+    typ, cst
 
-let constrained_type_of_constructor (_cstr,u as cstru) (mib,_mip as ind) =
-  let ty = type_of_constructor cstru ind in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
+let type_of_constructor pcstr ind =
+  let (ty, _cst) = type_of_constructor_gen pcstr ind [] in
+  ty
+
+let constrained_type_of_constructor cstru ind =
+  type_of_constructor_gen cstru ind []
+
+let type_of_constructor_knowing_parameters cstr specif args =
+  type_of_constructor_gen cstr specif args
 
 let arities_of_constructors (_,u) (_,mip) =
   let map (ctx, c) =
