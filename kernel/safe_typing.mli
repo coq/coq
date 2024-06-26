@@ -57,6 +57,7 @@ val concat_private : private_constants -> private_constants -> private_constants
 
 val inline_private_constants :
   Environ.env -> private_constants Entries.proof_output -> Constr.constr Univ.in_universe_context_set
+(** Abstract the private constants of a proof over the proof output *)
 
 val push_private_constants : Environ.env -> private_constants -> Environ.env
 (** Push the constants in the environment if not already there. *)
@@ -69,10 +70,6 @@ val is_joined_environment : safe_environment -> bool
 (** {6 Enriching a safe environment } *)
 
 (** Insertion of global axioms or definitions *)
-
-type global_declaration =
-| ConstantEntry : Entries.constant_entry -> global_declaration
-| OpaqueEntry : unit Entries.opaque_entry -> global_declaration
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
@@ -90,7 +87,7 @@ val export_private_constants :
 (** returns the main constant *)
 val add_constant :
   ?typing_flags:Declarations.typing_flags ->
-  Label.t -> global_declaration -> Constant.t safe_transformer
+  Label.t -> Entries.constant_entry -> Constant.t safe_transformer
 
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :

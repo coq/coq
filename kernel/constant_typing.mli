@@ -29,8 +29,16 @@ val infer_local_def : env -> Id.t -> section_def_entry ->
 
 val infer_local_assum : env -> types -> types * Sorts.relevance
 
-val infer_constant :
-  sec_univs:UVars.Instance.t option -> env -> constant_entry ->
+val infer_primitive : env -> primitive_entry -> ('a, unit) pconstant_body
+
+val infer_symbol : env -> symbol_entry -> ('a, unit) pconstant_body
+
+val infer_parameter :
+  sec_univs:UVars.Instance.t option -> env -> parameter_entry ->
+    ('a, unit) pconstant_body
+
+val infer_definition :
+  sec_univs:UVars.Instance.t option -> env -> definition_entry ->
     ('a, unit) pconstant_body
 
 val infer_opaque :

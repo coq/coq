@@ -52,7 +52,7 @@ val export_private_constants :
 
 val add_constant :
   ?typing_flags:typing_flags ->
-  Id.t -> Safe_typing.global_declaration -> Constant.t
+  Id.t -> Entries.constant_entry -> Constant.t
 val fill_opaque : Safe_typing.opaque_certificate -> unit
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants

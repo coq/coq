@@ -637,10 +637,6 @@ let add_field ((l,sfb) as field) gn senv =
 
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
-type global_declaration =
-| ConstantEntry : Entries.constant_entry -> global_declaration
-| OpaqueEntry : unit Entries.opaque_entry -> global_declaration
-
 type exported_opaque = {
   exp_handle : Opaqueproof.opaque_handle;
   exp_body : Constr.t;
@@ -811,11 +807,11 @@ let constant_entry_of_side_effect eff =
   }
   else
   DefinitionEff {
-    const_entry_body = p;
-    const_entry_secctx = Some (Context.Named.to_vars cb.const_hyps);
-    const_entry_type = Some cb.const_type;
-    const_entry_universes = univs;
-    const_entry_inline_code = cb.const_inline_code }
+    definition_entry_body = p;
+    definition_entry_secctx = Some (Context.Named.to_vars cb.const_hyps);
+    definition_entry_type = Some cb.const_type;
+    definition_entry_universes = univs;
+    definition_entry_inline_code = cb.const_inline_code }
 
 let export_eff eff =
   (eff.seff_constant, eff.seff_body)
@@ -868,10 +864,9 @@ let export_side_effects senv eff =
         let univs = Univ.ContextSet.union uctx univs in
         let env, cb =
           let ce = constant_entry_of_side_effect eff in
-          let open Entries in
           let cb = match ce with
             | DefinitionEff ce ->
-              Constant_typing.infer_constant ~sec_univs env (DefinitionEntry ce)
+              Constant_typing.infer_definition ~sec_univs env ce
             | OpaqueEff ce ->
               infer_direct_opaque ~sec_univs env ce
           in
@@ -918,7 +913,7 @@ let add_constant l decl senv =
   let senv, cb =
     let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
-      | OpaqueEntry ce ->
+      | Entries.OpaqueEntry ce ->
         let senv, o = push_opaque_proof senv in
         let cb, ctx = Constant_typing.infer_opaque ~sec_univs senv.env ce in
         (* Push the delayed data in the environment *)
@@ -926,21 +921,23 @@ let add_constant l decl senv =
         let nonce = Nonce.create () in
         let future_cst = HandleMap.add i (ctx, senv, nonce) senv.future_cst in
         let senv = { senv with future_cst } in
-        senv, { cb with const_body = OpaqueDef o; const_body_code = Some Vmemitcodes.BCconstant }
-      | ConstantEntry ce ->
-        let cb = Constant_typing.infer_constant ~sec_univs senv.env ce in
-        let cb = compile_bytecode senv.env cb in
-        senv, cb
+        senv, { cb with const_body = OpaqueDef o }
+      | Entries.DefinitionEntry entry ->
+        senv, Constant_typing.infer_definition ~sec_univs senv.env entry
+      | Entries.ParameterEntry entry ->
+        senv, Constant_typing.infer_parameter ~sec_univs senv.env entry
+      | Entries.PrimitiveEntry entry ->
+        let senv = match entry with
+        | { Entries.prim_entry_content = CPrimitives.OT_type t; _ } ->
+          if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
+          add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
+        | _ -> senv in
+        senv, Constant_typing.infer_primitive senv.env entry
+      | Entries.SymbolEntry entry ->
+        senv, Constant_typing.infer_symbol senv.env entry
   in
+  let cb = compile_bytecode senv.env cb in
   let senv = add_constant_aux senv (kn, cb) in
-
-  let senv =
-    match decl with
-    | ConstantEntry (Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ }) ->
-      if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
-      add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
-    | _ -> senv
-  in
   kn, senv
 
 let add_constant ?typing_flags l decl senv =
@@ -1017,8 +1014,8 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
         let () = assert (check_constraints uctx ce.Entries.opaque_entry_universes) in
         infer_direct_opaque ~sec_univs senv.env ce
       | DefinitionEff ce ->
-        let () = assert (check_constraints uctx ce.Entries.const_entry_universes) in
-        Constant_typing.infer_constant ~sec_univs senv.env (Entries.DefinitionEntry ce)
+        let () = assert (check_constraints uctx ce.Entries.definition_entry_universes) in
+        Constant_typing.infer_definition ~sec_univs senv.env ce
     in
   let cb = compile_bytecode senv.env cb in
   let dcb = match cb.const_body with
