@@ -310,31 +310,21 @@ let update_sigma_univs ugraph p =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
-  let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
-    Proofview.tclEVARMAP >>= fun sigma ->
-    Proofview.Unsafe.tclEVARS (Evd.push_shelf sigma) >>= fun () ->
-    tac >>= fun result ->
-    Proofview.tclEVARMAP >>= fun sigma ->
-    (* Already solved goals are not to be counted as shelved. Nor are
-      they to be marked as unresolvable. *)
-    let retrieved, sigma = Evd.pop_future_goals sigma in
-    let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
-    let retrieved = List.rev (Evd.FutureGoals.comb retrieved) in
-    let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
-    let to_shelve, sigma = Evd.pop_shelf sigma in
-    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.Unsafe.tclNEWSHELVED (retrieved@to_shelve) <*>
-    Proofview.tclUNIT (result,retrieved,to_shelve)
+    (* include the future goals in the shelf *)
+    Proofview.with_shelf tac >>= fun (shelf, v) ->
+    Proofview.Unsafe.tclNEWSHELVED shelf <*>
+    Proofview.tclUNIT v
   in
   let { name; poly; proofview } = pr in
-  let proofview = Proofview.Unsafe.push_future_goals proofview in
-  let ((result,retrieved,to_shelve),proofview,status,info_trace) =
+  let (result,proofview,status,info_trace) =
     Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
-  let to_shelve = undef sigma to_shelve in
-  let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
+  (* cleanup any shelved goals that got defined
+     (this is only useful for goals that were already in the shelf,
+     tclNEWSHELVED filters out defined goals instead of adding them)
+     XXX should we be doing something advance-aware like tclNEWSHELVED? *)
   let proofview = Proofview.filter_shelf (Evd.is_undefined sigma) proofview in
   { pr with proofview },(status,info_trace),result
 
