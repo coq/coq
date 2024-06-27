@@ -1086,7 +1086,7 @@ let update_global_obligation_uctx prg uctx =
          been declared by the first obligation; it is now in the
          global env and we now remove it for the further
          declarations *)
-      UState.Internal.reboot (Global.env ()) prg.prg_uctx in
+      UState.Internal.reboot (Global.env ()) uctx in
   ProgramDecl.Internal.set_uctx ~uctx prg
 
 let instance_of_univs = function
