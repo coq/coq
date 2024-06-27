@@ -196,12 +196,6 @@ let interp_fix_body ~program_mode env_rec sigma impls ctx fix ccl =
 let build_fix_type sigma ctx ccl =
   Evarutil.nf_evar sigma (EConstr.it_mkProd_or_LetIn ccl ctx)
 
-(* Jump over let-bindings. *)
-
-type ('constr, 'types, 'r) recursive_preentry =
-  (Id.t list * 'r list * 'constr option list * 'types list * EConstr.rel_context list * Impargs.manual_implicits list) *
-  Decls.definition_object_kind * Pretyping.possible_guard * UState.universe_decl
-
 (* Wellfounded definition *)
 
 let encapsulate env sigma r t =
