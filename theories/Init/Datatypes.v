@@ -83,7 +83,11 @@ Qed.
 #[global]
 Hint Resolve andb_prop: bool.
 
-Register andb_prop as core.bool.andb_prop.
+Lemma andb_prop_inf (a b:bool) : andb a b = true -> a = true /\ b = true.
+Proof.
+  destruct a, b; repeat split; assumption.
+Defined.
+Register andb_prop_inf as core.bool.andb_prop.
 
 Lemma andb_true_intro (b1 b2:bool) :
   b1 = true /\ b2 = true -> andb b1 b2 = true.
@@ -93,7 +97,12 @@ Qed.
 #[global]
 Hint Resolve andb_true_intro: bool.
 
-Register andb_true_intro as core.bool.andb_true_intro.
+Lemma andb_true_intro_inf (b1 b2:bool) :
+  b1 = true /\ b2 = true -> andb b1 b2 = true.
+Proof.
+  destruct b1; destruct b2; simpl; intros [? ?]; assumption.
+Defined.
+Register andb_true_intro_inf as core.bool.andb_true_intro.
 
 (** Interpretation of booleans as propositions *)
 
