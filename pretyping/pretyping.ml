@@ -1005,7 +1005,8 @@ struct
           | Some (Some u0 :: t, bound) ->
             (* template arg: type guaranteed to be syntactically an arity
                we replace the output universe with a fresh one *)
-            let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+            (* rigid to get minimization to behave in a more backwards compatible way *)
+            let sigma, u = Evd.new_univ_level_variable UState.univ_rigid sigma in
             let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
             let ctx, _ = destArity sigma c1 in
             let bound =
