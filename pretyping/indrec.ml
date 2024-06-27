@@ -148,16 +148,35 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
       raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
   in
   let () = check_privacy_block specif in
-  if not @@ Inductiveops.is_allowed_elimination sigma (specif,u) s then
-    let s = EConstr.ESorts.kind sigma s in
-    let pind = on_snd EConstr.Unsafe.to_instance pind in
-    raise
-      (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (false, s, pind)))
+  match is_squashed sigma (specif,u) with
+  | None -> sigma
+  | Some squash ->
+    let fail () =
+      let s = EConstr.ESorts.kind sigma s in
+      let pind = on_snd EConstr.Unsafe.to_instance pind in
+      raise
+        (RecursionSchemeError
+           (env, NotAllowedCaseAnalysis (false, s, pind)))
+    in
+    match squash with
+    | SquashToSet ->
+    begin match EConstr.ESorts.kind sigma s with
+    | SProp|Prop|Set -> sigma
+    | QSort _ | Type _ ->
+      try Evd.set_leq_sort env sigma s ESorts.set
+      with UGraph.UniverseInconsistency _ -> fail ()
+    end
+  | SquashToQuality indq ->
+    let sq = ESorts.quality sigma s in
+    if Inductiveops.quality_leq sq indq then sigma
+    else
+      let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
+      try Evd.set_leq_sort env sigma (mk sq) (mk indq)
+      with UGraph.UniverseInconsistency _ -> fail ()
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let open EConstr in
-  let () = check_valid_elimination env sigma pind ~dep s in
+  let sigma = check_valid_elimination env sigma pind ~dep s in
   let lnamespar = Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
@@ -186,7 +205,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let env' = RelEnv.push_rel (LocalAssum (nameP,typP)) env' in
   let branches = get_branches env' 0 [] in
 
-  let sigma, arity, body, bodyT =
+  let arity, body, bodyT =
     let env = RelEnv.push_rel_context branches env' in
     let nbprod = Array.length mip.mind_consnames + 1 in
 
@@ -207,7 +226,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
       if dep then deparsign
       else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
     in
-    let sigma, obj, objT =
+    let obj, objT =
       match projs with
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
@@ -229,7 +248,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
         let br = Array.init ncons mk_branch in
         let pnas = Array.of_list (List.rev_map get_annot pctx) in
         let obj = mkCase (ci, u, pms, ((pnas, liftn ndepar (ndepar + 1) pbody), relevance), iv, mkRel 1, br) in
-        sigma, obj, pbody
+        obj, pbody
       | Some ps ->
         let term =
           mkApp (mkRel 2,
@@ -241,11 +260,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
         in
         if dep then
           let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
-          sigma, mkCast (term, DEFAULTcast, ty), ty
+          mkCast (term, DEFAULTcast, ty), ty
         else
-          sigma, term, mkRel 3
+          term, mkRel 3
     in
-    (sigma, deparsign, obj, objT)
+    (deparsign, obj, objT)
   in
   let params = set_names env lnamespar in
   let case = {

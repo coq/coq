@@ -877,7 +877,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
 
-  let () = Indrec.check_valid_elimination env sigma (ind, u) ~dep s in
+  let sigma = Indrec.check_valid_elimination env sigma (ind, u) ~dep s in
 
   let indf =
     Inductiveops.make_ind_family ((ind, u), Array.to_list params)

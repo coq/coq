@@ -44,6 +44,7 @@ module QState : sig
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
+  val collapse_above_prop : to_prop:bool -> t -> t
   val collapse : t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
@@ -176,6 +177,16 @@ let of_set qs =
 let undefined m =
   let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
   QMap.domain m
+
+let collapse_above_prop ~to_prop m =
+  let map q v = match v with
+    | None ->
+      if not @@ QSet.mem q m.above then None else
+      if to_prop then Some (QConstant QProp)
+      else Some (QConstant QType)
+  | Some _ -> v
+  in
+  { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
 let collapse m =
   let map q v = match v with
@@ -1168,6 +1179,9 @@ let normalize_variables uctx =
 
 let fix_undefined_variables uctx =
   { uctx with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables }
+
+let collapse_above_prop_sort_variables ~to_prop uctx =
+  { uctx with sort_variables = QState.collapse_above_prop ~to_prop uctx.sort_variables }
 
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
