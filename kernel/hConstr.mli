@@ -57,3 +57,5 @@ module Tbl : sig
 
   val create : int -> 'a t
 end
+
+val hcons : t -> Constr.t

@@ -856,8 +856,7 @@ and execute_array tbl env cs =
   Array.map (fun c -> execute tbl env c) cs
 
 let execute env c =
-  let c = HConstr.of_constr env c in
-  NewProfile.profile "Typeops.execute" (fun () -> c, execute (HConstr.Tbl.create 57) env c) ()
+  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create 57) env c) ()
 
 (* Derived functions *)
 
@@ -877,11 +876,15 @@ let check_wellformed_universes env c =
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
-let infer env constr =
-  let () = check_wellformed_universes env constr in
-  let hconstr, t = execute env constr in
+let infer_hconstr env hconstr =
   let constr = HConstr.self hconstr in
+  let () = check_wellformed_universes env constr in
+  let t = execute env hconstr in
   make_judge constr t
+
+let infer env c =
+  let c = HConstr.of_constr env c in
+  infer_hconstr env c
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
@@ -892,8 +895,9 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let hconstr, t = execute env constr in
+  let hconstr = HConstr.of_constr env constr in
   let constr = HConstr.self hconstr in
+  let t = execute env hconstr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 

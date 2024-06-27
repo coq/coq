@@ -628,6 +628,23 @@ val case_info_hash : case_info -> int
 
 (*********************************************************************)
 
+module GenHCons(C:sig
+    type t
+    val kind : t -> (t, t, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
+    val self : t -> constr
+    val refcount : t -> int
+
+    val via_hconstr : bool
+
+    module Tbl : sig
+      val find_opt : t -> (constr * int) option
+      val add : t -> constr * int -> unit
+    end
+  end) : sig
+  val hcons : C.t -> constr
+end
+
+
 val hcons : constr -> constr
 
 val hasheq_kind : (_ kind_of_term as 'k) -> 'k -> bool

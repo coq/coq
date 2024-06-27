@@ -88,7 +88,8 @@ val safe_flags : Conv_oracle.oracle -> typing_flags
     of the structure, but simply hash-cons all inner constr
     and other known elements *)
 
-val hcons_const_body : ('a, 'b) pconstant_body -> ('a, 'b) pconstant_body
+val hcons_const_body : ?hbody:(Constr.t -> Constr.t) ->
+  ('a, 'b) pconstant_body -> ('a, 'b) pconstant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
 val hcons_module_body : module_body -> module_body
 val hcons_module_type : module_type_body -> module_type_body

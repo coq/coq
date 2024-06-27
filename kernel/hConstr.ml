@@ -373,3 +373,18 @@ let of_constr env c =
 let of_constr env c = NewProfile.profile "HConstr.of_constr" (fun () -> of_constr env c) ()
 
 let kind x = x.kind
+
+let hcons x =
+  let tbl = Tbl.create 47 in
+  let module HCons = GenHCons(struct
+      type nonrec t = t
+      let kind = kind
+      let self = self
+      let refcount = refcount
+        let via_hconstr = true
+      module Tbl = struct
+        let find_opt x = Tbl.find_opt tbl x
+        let add x y = Tbl.add tbl x y
+      end
+    end) in
+  HCons.hcons x

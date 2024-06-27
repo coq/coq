@@ -136,12 +136,12 @@ let hcons_rel_decl =
 
 let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
-let hcons_const_def = function
+let hcons_const_def ?(hbody=Constr.hcons) = function
   | Undef inl -> Undef inl
   | Primitive p -> Primitive p
   | Symbol r -> Symbol r
   | Def l_constr ->
-    Def (Constr.hcons l_constr)
+    Def (hbody l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
 let hcons_universes cbu =
@@ -150,9 +150,9 @@ let hcons_universes cbu =
   | Polymorphic ctx ->
     Polymorphic (UVars.hcons_abstract_universe_context ctx)
 
-let hcons_const_body cb =
+let hcons_const_body ?hbody cb =
   { cb with
-    const_body = hcons_const_def cb.const_body;
+    const_body = hcons_const_def ?hbody cb.const_body;
     const_type = Constr.hcons cb.const_type;
     const_universes = hcons_universes cb.const_universes;
   }

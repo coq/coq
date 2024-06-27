@@ -460,6 +460,10 @@ let destRef c = let open GlobRef in match kind c with
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
+let destArray c = match kind c with
+  | Array (u,ar,def,ty) -> u,ar,def,ty
+  | _ -> raise DestKO
+
 (******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)
 (******************************************************************)
@@ -1322,6 +1326,25 @@ module Hannot = Hashcons.Make(Hannotinfo)
 
 let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons Name.hcons
 
+let dbg = CDebug.create ~name:"hcons" ()
+
+module GenHCons(C:sig
+    type t
+    val kind : t -> (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term
+    val self : t -> constr
+    val refcount : t -> int
+
+    val via_hconstr : bool
+
+    module Tbl : sig
+      val find_opt : t -> (constr * int) option
+      val add : t -> constr * int -> unit
+    end
+  end) = struct
+open C
+
+let steps = ref 0
+
 let rec hash_term (t : t) =
   match kind t with
   | Var i ->
@@ -1346,12 +1369,11 @@ let rec hash_term (t : t) =
     let c, hc = sh_rec c in
     (LetIn (hcons_annot na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
   | App (c,l) ->
+    let _, cl = destApp (self t) in
     let c, hc = sh_rec c in
-    let l, hl = hash_term_array l in
+    let l, hl = hash_term_array cl l in
     (App (c,l), combinesmall 7 (combine hl hc))
-  | Evar (e,l) ->
-    let l, hl = hash_list_array l in
-    (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
+  | Evar _ -> assert false
   | Const (c,u) ->
     let c' = hcons_con c in
     let u', hu = Instance.share u in
@@ -1374,9 +1396,10 @@ let rec hash_term (t : t) =
       (lna, c), combine hna hc
     in
     let u, hu = Instance.share u in
-    let pms,hpms = hash_term_array pms in
+    let _,_,cpms,_,civ,_,_ = destCase (self t) in
+    let pms,hpms = hash_term_array cpms pms in
     let p, hp = hcons_ctx p in
-    let iv, hiv = sh_invert iv in
+    let iv, hiv = sh_invert civ iv in
     let c, hc = sh_rec c in
     let fold accu c =
       let c, h = hcons_ctx c in
@@ -1386,16 +1409,18 @@ let rec hash_term (t : t) =
     let hbl = combine (combine hc (combine hiv (combine hpms (combine hu hp)))) hbl in
     (Case (hcons_caseinfo ci, u, pms, (p,r), iv, c, bl), combinesmall 12 hbl)
   | Fix (ln,(lna,tl,bl)) ->
-    let bl,hbl = hash_term_array bl in
-    let tl,htl = hash_term_array tl in
+    let _, (_,ctl,cbl) = destFix (self t) in
+    let bl,hbl = hash_term_array cbl bl in
+    let tl,htl = hash_term_array ctl tl in
     let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
     let fold accu na = combine (hash_annot Name.hash na) accu in
     let hna = Array.fold_left fold 0 lna in
     let h = combine3 hna hbl htl in
     (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
   | CoFix(ln,(lna,tl,bl)) ->
-    let bl,hbl = hash_term_array bl in
-    let tl,htl = hash_term_array tl in
+    let _, (_,ctl,cbl) = destCoFix (self t) in
+    let bl,hbl = hash_term_array cbl bl in
+    let tl,htl = hash_term_array ctl tl in
     let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
     let fold accu na = combine (hash_annot Name.hash na) accu in
     let hna = Array.fold_left fold 0 lna in
@@ -1414,64 +1439,87 @@ let rec hash_term (t : t) =
     (t, combinesmall 18 (combine h l))
   | Float f as t -> (t, combinesmall 19 (Float64.hash f))
   | String s as t -> (t, combinesmall 20 (Pstring.hash s))
-  | Array (u,t,def,ty) ->
+  | Array (u,ar,def,ty) ->
+    let _,car,_,_ = destArray (self t) in
     let u, hu = Instance.share u in
-    let t, ht = hash_term_array t in
+    let t, ht = hash_term_array car ar in
     let def, hdef = sh_rec def in
     let ty, hty = sh_rec ty in
     let h = combine4 hu ht hdef hty in
     (Array(u,t,def,ty), combinesmall 21 h)
 
-and sh_invert = function
-  | NoInvert -> NoInvert, 0
-  | CaseInvert {indices;} ->
-    let indices, ha = hash_term_array indices in
+and sh_invert civ iv = match civ, iv with
+  | NoInvert, NoInvert -> NoInvert, 0
+  | CaseInvert {indices=cindices}, CaseInvert {indices;} ->
+    let indices, ha = hash_term_array cindices indices in
     CaseInvert {indices;}, combinesmall 1 ha
+  | (NoInvert | CaseInvert _), _ -> assert false
 
-and sh_rec t =
+and sh_rec_main t =
   let (y, h) = hash_term t in
   (HashsetTerm.repr h (T y) term_table, h)
 
+and sh_rec t =
+  incr steps;
+  if refcount t = 1 then sh_rec_main t
+  else match Tbl.find_opt t with
+    | Some res -> res
+    | None ->
+      let res = sh_rec_main t in
+      Tbl.add t res;
+      res
+
 (* Note : During hash-cons of arrays, we modify them *in place* *)
 
-and hash_term_array t =
+and hash_term_array ct t =
   let accu = ref 0 in
   for i = 0 to Array.length t - 1 do
     let x, h = sh_rec (Array.unsafe_get t i) in
     accu := combine !accu h;
-    Array.unsafe_set t i x
+    Array.unsafe_set ct i x
   done;
   let h = !accu in
-  (HashsetTermArray.repr h t term_array_table, h)
-
-and hash_list_array l =
-  let fold accu c =
-    let c, h = sh_rec c in
-    (combine accu h, c)
-  in
-  let h, l = SList.Smart.fold_left_map fold 0 l in
-  (l, h)
-
-  (* Make sure our statically allocated Rels (1 to 16) are considered
-     as canonical, and hence hash-consed to themselves *)
-let () = ignore (hash_term_array rels)
+  (HashsetTermArray.repr h ct term_array_table, h)
 
 let hcons t = NewProfile.profile "Constr.hcons" (fun () -> fst (sh_rec t)) ()
 
-let dbg = CDebug.create ~name:"hcons" ()
-
 let hcons t =
+  steps := 0;
   let t = hcons t in
   dbg Pp.(fun () ->
       let open Hashset in
       let stats = HashsetTerm.stats term_table in
       v 0 (
+        str "via hconstr = " ++ bool via_hconstr ++ spc() ++
+        str "steps = " ++ int !steps ++ spc() ++
         str "num_bindings = " ++ int stats.num_bindings ++ spc() ++
         str "num_buckets = " ++ int stats.num_buckets ++ spc() ++
         str "max_bucket_length = " ++ int stats.max_bucket_length
       )
     );
   t
+
+end
+
+module HCons = GenHCons(struct
+    type t = constr
+    let kind = kind
+    let self x = x
+    let refcount _ = 1
+
+    let via_hconstr = false
+
+    module Tbl = struct
+      let find_opt _ = None
+      let add _ _ : unit = assert false
+    end
+  end)
+
+  (* Make sure our statically allocated Rels (1 to 16) are considered
+     as canonical, and hence hash-consed to themselves *)
+let () = ignore (HCons.hash_term_array rels rels)
+
+let hcons = HCons.hcons
 
 (* let hcons_types = hcons_constr *)
 
