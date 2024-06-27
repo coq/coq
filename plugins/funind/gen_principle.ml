@@ -153,9 +153,7 @@ and rebuild_nal aux bk bl' nal typ =
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (rec_order, fixpoint_exprl) =
-  let _, _, ((_, _, _, typel), _, uctx, _) =
-    ComFixpoint.interp_recursive ~check_recursivity:false (false, CFixRecOrder rec_order) fixpoint_exprl
-  in
+  let typel, uctx = ComFixpoint.interp_fixpoint_short rec_order fixpoint_exprl in
   let constr_expr_typel =
     with_full_print
       (List.map (fun c ->
@@ -406,8 +404,8 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    let p = ComFixpoint.do_mutually_recursive ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
-    assert (Option.is_empty p);
+    let pm, p = ComFixpoint.do_mutually_recursive ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
+    assert (Option.is_empty pm && Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->
