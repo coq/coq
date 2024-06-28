@@ -31,6 +31,7 @@
 
 /dev/ci/nix          @coq/nix-maintainers
 *.nix                @coq/nix-maintainers
+/flake.lock          @coq/nix-maintainers
 
 /dev/ci/user-overlays/*.sh
 # Trick to avoid getting review requests
