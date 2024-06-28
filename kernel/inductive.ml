@@ -142,30 +142,38 @@ let remember_subst u subst =
 
 type param_univs = (expected:Univ.Level.t -> template_univ) list
 
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match kind c with
+  | Sort (Sorts.Type u) ->
+    begin match Universe.level u with
+    | Some l -> (decls, l)
+    | None -> assert false
+    end
+  | _ -> assert false
+
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
 let make_subst =
   let rec make subst = function
     | LocalDef _ :: sign, exp, args ->
         make subst (sign, exp, args)
-    | _d::sign, None::exp, args ->
+    | _d::sign, false::exp, args ->
         let args = match args with _::args -> args | [] -> [] in
         make subst (sign, exp, args)
-    | _d::sign, Some u::exp, a::args ->
-        (* We recover the level of the argument, but we don't change the *)
-        (* level in the corresponding type in the arity; this level in the *)
-        (* arity is a global level which, at typing time, will be enforce *)
-        (* to be greater than the level of the argument; this is probably *)
-        (* a useless extra constraint *)
+    | LocalAssum (_,t)::sign, true::exp, a::args ->
+        (* We recover the level of the argument *)
+        let _, u = get_arity t in
         let s = a ~expected:u in
         make (cons_subst u s subst) (sign, exp, args)
-    | LocalAssum (_na,_t) :: sign, Some u::exp, [] ->
+    | LocalAssum (_na,t) :: sign, true::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
         (* substitution (when [u] is distinct from all other universes in the *)
         (* template, it is identity substitution  otherwise (ie. when u is *)
         (* already in the domain of the substitution) [remember_subst] will *)
         (* update its image [x] by [sup x u] in order not to forget the *)
         (* dependency in [u] that remains to be fulfilled. *)
+        let _, u = get_arity t in
         make (remember_subst u subst) (sign, exp, [])
     | _sign, [], _ ->
         (* Uniform parameters are exhausted *)
@@ -223,9 +231,9 @@ let rec subst_univs_ctx accu subs ctx params = match ctx, params with
 | [], [] -> accu
 | (LocalDef _ as decl) :: ctx, params ->
   subst_univs_ctx (decl :: accu) subs ctx params
-| (LocalAssum _ as decl) :: ctx, None :: params ->
+| (LocalAssum _ as decl) :: ctx, false :: params ->
   subst_univs_ctx (decl :: accu) subs ctx params
-| LocalAssum (na, t) :: ctx, Some _ :: params ->
+| LocalAssum (na, t) :: ctx, true :: params ->
   let (decls, u) = get_arity t in
   let u = subst_univs_sort subs (Sorts.sort_of_univ (Universe.make u)) in
   let decl = LocalAssum (na, Term.it_mkProd_or_LetIn (mkSort u) decls) in
@@ -258,8 +266,8 @@ let instantiate_template_universes (mib, _mip) args =
   | Some t -> t
   in
   let ctx = List.rev mib.mind_params_ctxt in
-  let subst = make_subst (ctx,templ.template_param_levels,args) in
-  let ctx = subst_univs_ctx [] subst ctx templ.template_param_levels in
+  let subst = make_subst (ctx,templ.template_param_arguments,args) in
+  let ctx = subst_univs_ctx [] subst ctx templ.template_param_arguments in
   let cstrs = instantiate_template_constraints subst templ in
   (cstrs, ctx, subst)
 

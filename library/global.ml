@@ -192,9 +192,6 @@ let is_polymorphic r =
 let is_template_polymorphic r =
   Environ.is_template_polymorphic (env ()) r
 
-let get_template_polymorphic_variables r =
-  Environ.get_template_polymorphic_variables (env ()) r
-
 let is_type_in_type r =
   Environ.is_type_in_type (env ()) r
 

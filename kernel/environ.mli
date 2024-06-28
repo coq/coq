@@ -285,7 +285,6 @@ val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_ind : inductive -> env -> bool
-val template_polymorphic_variables : inductive -> env -> Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
 
 (** {6 Changes of representation of Case nodes} *)
@@ -443,7 +442,6 @@ val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declarat
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
-val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
 
 (** {5 VM and native} *)

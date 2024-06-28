@@ -738,12 +738,6 @@ let template_polymorphic_ind (mind,i) env =
   | TemplateArity _ -> true
   | RegularArity _ -> false
 
-let template_polymorphic_variables (mind, _) env =
-  match (lookup_mind mind env).mind_template with
-  | Some { Declarations.template_param_levels = l; _ } ->
-    List.map_filter (fun level -> level) l
-  | None -> []
-
 let template_polymorphic_pind (ind,u) env =
   if not (UVars.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
@@ -941,14 +935,6 @@ let is_template_polymorphic env r =
   | ConstRef _c -> false
   | IndRef ind -> template_polymorphic_ind ind env
   | ConstructRef cstr -> template_polymorphic_ind (inductive_of_constructor cstr) env
-
-let get_template_polymorphic_variables env r =
-  let open Names.GlobRef in
-  match r with
-  | VarRef _id -> []
-  | ConstRef _c -> []
-  | IndRef ind -> template_polymorphic_variables ind env
-  | ConstructRef cstr -> template_polymorphic_variables (inductive_of_constructor cstr) env
 
 let is_type_in_type env r =
   let open Names.GlobRef in

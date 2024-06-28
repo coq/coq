@@ -357,8 +357,8 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
         ~arities:[entry.mind_entry_arity]
         ~ctors:[entry.mind_entry_lc]
     in
-    let params = List.rev params in
-    Some { template_param_levels = params; template_context = ctx }
+    let params = List.rev_map Option.has_some params in
+    Some { template_param_arguments = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)

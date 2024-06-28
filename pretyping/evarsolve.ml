@@ -108,7 +108,7 @@ let get_polymorphic_positions env sigma f =
     let mib,oib = Inductive.lookup_mind_specif env ind in
       (match mib.mind_template with
       | None -> assert false
-      | Some templ -> templ.template_param_levels)
+      | Some templ -> templ.template_param_arguments)
   | _ -> assert false
 
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
@@ -182,11 +182,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     | _ -> EConstr.map !evdref (refresh_term_evars ~onevars ~top:false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
-      | Some l :: ls ->
+      | true :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:true ~top:false args.(i));
         aux (succ i) ls
-      | None :: ls ->
+      | false :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:false ~top:false args.(i));
         aux (succ i) ls

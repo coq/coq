@@ -30,7 +30,7 @@ type template_arity = {
 }
 
 type template_universes = {
-  template_param_levels : Univ.Level.t option list;
+  template_param_arguments : bool list;
   template_context : Univ.ContextSet.t;
 }
 
