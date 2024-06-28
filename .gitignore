@@ -98,6 +98,9 @@ test-suite/bug_10796.ml
 test-suite/bug_10796.mli
 test-suite/**/*.time
 
+# `nix build` (through flake) symlink
+result
+
 # documentation
 
 doc/common/version.tex
