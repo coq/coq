@@ -198,6 +198,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) ?scope ?clearbody poly ?typ
       in hook
   in
   let hook = Declare.Hook.make hook in
+  Evd.check_univ_decl_early ~poly ~with_obls:true sigma udecl [evars_def;evars_typ];
   let cinfo = Declare.CInfo.make ~name:recname_func ~typ:evars_typ () in
   let kind = Decls.(IsDefinition Fixpoint) in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ~hook ?typing_flags ?user_warns ~ntns () in

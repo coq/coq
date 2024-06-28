@@ -284,8 +284,7 @@ let interp_fixpoint_short rec_order fixpoint_exprl =
   let (_, _, sigma),(fix, _, _, _) = interp_recursive_evars env ~program_mode:false (false, CFixRecOrder rec_order) fixpoint_exprl in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
-  let uctx = Evd.evar_universe_context sigma in
-  typel, uctx
+  typel, sigma
 
 let build_recthms {fixnames;fixtypes;fixctxs;fiximps} =
   List.map4 (fun name typ ctx impargs ->
@@ -337,20 +336,23 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
   let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_recursive_evars env ~program_mode:(Option.has_some pm) (true, rec_order) fixl in
   check_recursive ~isfix env sigma fix;
   let kind = Decls.IsDefinition isfix in
-  let sigma, ({fixdefs=bodies;fixrs} as fix), obls =
+  let sigma, ({fixdefs=bodies;fixrs;fixtypes} as fix), obls =
     match pm with
     | Some pm -> finish_program env sigma rec_sign possible_guard fix
     | None -> finish_regular env sigma fix in
-  let uctx = Evd.evar_universe_context sigma in
   let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns:fix.fixntns () in
   let cinfo = build_recthms fix in
   match pm with
   | Some pm ->
     let bodies = List.map Option.get bodies in
+    Evd.check_univ_decl_early ~poly ~with_obls:true sigma udecl (bodies @ fixtypes);
+    let sigma = if poly then sigma else Evd.fix_undefined_variables sigma in
+    let uctx = Evd.evar_universe_context sigma in
     Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None
   | None ->
     try
       let bodies = List.map Option.get bodies in
+      let uctx = Evd.evar_universe_context sigma in
       (* All bodies are defined *)
       let _ : GlobRef.t list =
         Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
@@ -359,7 +361,7 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
       None, None
     with Option.IsNone ->
       (* At least one undefined body *)
-      let evd = Evd.from_ctx uctx in
+      Evd.check_univ_decl_early ~poly ~with_obls:false sigma udecl (Option.List.flatten bodies @ fixtypes);
       let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo
-          ~bodies ~possible_guard ?using evd in
+          ~bodies ~possible_guard ?using sigma in
       None, Some lemma

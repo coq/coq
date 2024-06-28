@@ -128,14 +128,6 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using
   in ()
 
 let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
-  let () = if not poly then udecl |> Option.iter (fun udecl ->
-      if not udecl.UState.univdecl_extensible_instance
-      || not udecl.UState.univdecl_extensible_constraints
-      then
-        CErrors.user_err
-          Pp.(str "Non extensible universe declaration not supported \
-                   with monomorphic Program Definition."))
-  in
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
@@ -144,6 +136,7 @@ let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags 
     interp_definition ~program_mode:true env evd empty_internalization_env bl red_option c ctypopt
   in
   let body, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
+  Evd.check_univ_decl_early ~poly ~with_obls:true evd udecl [body; typ];
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
