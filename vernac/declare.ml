@@ -1428,7 +1428,8 @@ let do_check_final ~pm = function
 
 let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final} =
   let env = Global.env () in
-  let ty = entry.proof_entry_type in
+  let ty, opaque = entry.proof_entry_type, entry.proof_entry_opaque in
+  (* EJGA: CAREFUL HERE, other stuff in the entry is lost *)
   let body, uctx = inline_private_constants ~uctx env entry in
   let sigma = Evd.from_ctx uctx in
   Inductiveops.control_only_guard (Global.env ()) sigma
@@ -1438,7 +1439,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
   let status =
-    match (obl.obl_status, entry.proof_entry_opaque) with
+    match (obl.obl_status, opaque) with
     | (_, Evar_kinds.Expand), true -> err_not_transp ()
     | (true, _), true -> err_not_transp ()
     | (false, _), true -> Evar_kinds.Define true
@@ -2497,6 +2498,10 @@ let auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
   let prg = get_unique_prog ~pm n in
   solve_prg_obligations ~pm prg ?oblset tac
 
+let warn_unused_using =
+  CWarnings.create ~name:"using-on-sub-obligation" (fun () ->
+      Pp.str "Using declarations are ignored in sub-obligations.")
+
 let solve_obligation ?check_final prg num tac =
   let user_num = succ num in
   let { obls; remaining=rem } = Internal.get_obligations prg in
@@ -2518,7 +2523,17 @@ let solve_obligation ?check_final prg num tac =
     Proof_ending.End_obligation {name; num; auto; check_final}
   in
   let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
+
+  (* EJGA/HH: Note that this using won't have any effect as
+     [obligation_terminator] discards the using data in the entry set
+     by the call below to [Proof.start_core]. We still pass it to the
+     proof context, but emit a warning. Note that we only warn if
+     using the attribute, [Proof Using] doesn't do the check to see if
+     we are in a obligation [could be done by checking terminator type
+     tho] *)
   let using =
+    (* TODO: locate this *)
+    let () = warn_unused_using () ?loc:None in
     let using = Internal.get_using prg in
     let env = Global.env () in
     let f {CInfo.name; typ; _} = name, [typ] in
