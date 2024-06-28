@@ -42,14 +42,23 @@ let refcount x = x.refcount
 module Tbl = struct
   type key = t
 
-  (* We expose the API of Hashtbl but implemented using Int.Map ref.
-     For unclear reasons this is dramatically faster on an artificial example
-     (balanced binary tree whose leaves are all different primitive ints,
-      such that there is no sharing).
-     It is a bit slower in the real world.
-     It seems that hashtbl produces overly large buckets which then need to be linearly scanned.
-     hconsing doesn't seem to have this problem,
-     perhaps because of differences between hashtbl and our hashset implementation. *)
+  (* The API looks like Hashtbl but implemented using Int.Map ref.
+
+     We don't use Hashtbl for 2 reasons:
+     - to provide the pre-hashconsing leaf lookup (not sure why it's so fast but it seems to be)
+       (although note we could do this with Hashtbl by using something like
+       [type key = Real of t | Fake of int (* hash *) * (t -> bool)],
+       equality between [Real] and [Fake] uses the predicate in [Fake],
+       wrap [add] so that we only add [Real] keys,
+       then [raw_find] is [Hashtbl.find_opt] using [Fake].)
+
+     - for unclear reasons Int.Map ref is dramatically faster on an artificial example
+       (balanced binary tree whose leaves are all different primitive ints,
+        such that there is no sharing).
+       It is a bit slower in the real world.
+       It seems that hashtbl produces overly large buckets which then need to be linearly scanned.
+       hconsing doesn't seem to have this problem,
+       perhaps because of differences between hashtbl and our hashset implementation. *)
   type 'a t = (key * 'a) list Int.Map.t ref
 
   let create _ = ref Int.Map.empty
@@ -59,6 +68,11 @@ module Tbl = struct
         | None -> Some [(key,v)]
         | Some l -> Some ((key,v)::l))
         !tbl
+
+  let raw_find tbl h p =
+    match Int.Map.find_opt h !tbl with
+    | None -> None
+    | Some l -> List.find_map (fun (k,v) -> if p k then Some v else None) l
 
   let find_opt tbl key =
     match Int.Map.find_opt key.hash !tbl with
@@ -235,7 +249,24 @@ let of_kind_nohashcons = function
   in
   { self; kind; hash; isRel = 0; refcount = 1 }
 
+let eq_leaf c c' = match kind c, c'.kind with
+  | Var i, Var i' -> Id.equal i i'
+  | Const (c,u), Const (c',u') -> Constant.SyntacticOrd.equal c c' && UVars.Instance.equal u u'
+  | Ind (i,u), Ind (i',u') -> Ind.SyntacticOrd.equal i i' && UVars.Instance.equal u u'
+  | Construct (c,u), Construct (c',u') -> Construct.SyntacticOrd.equal c c' && UVars.Instance.equal u u'
+  | _ -> false
+
+let nonrel_leaf tbl c = match kind c with
+  | Rel _ -> None
+  | Var _ | Const _ | Ind _ | Construct _ as k ->
+    let h = hash_kind k in
+    Tbl.raw_find tbl h (fun c' -> eq_leaf c c')
+  | _ -> None
+
 let rec of_constr tbl local_env c =
+  match nonrel_leaf tbl c with
+  | Some v -> v
+  | None ->
   let c =
     let kind = of_constr_aux tbl local_env c in
     let self = kind_to_constr kind in
