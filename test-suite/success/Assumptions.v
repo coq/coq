@@ -36,6 +36,6 @@ Section S. Context (A B : Type). End S. (* Distinct universes *)
 Section T. Variables A B : Type. End T. (* Same universe *)
 
 Section S. Fail Context (a b : _) (e : a = 0). End S. (* not shared *)
-Section S. Variables (a b : _) (e : a = 0). End S. (* shared *)
+Section S. Fail Variables (a b : _) (e : a = 0). End S. (* not shared *)
 
 End TypeSharing.

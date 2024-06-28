@@ -145,8 +145,7 @@ Print Applied.infunct.
 
    In polymorphic mode the domain Type gets separate universes for the
    different axioms, but all axioms have to declare all universes. In
-   monomorphic mode they get the same universes, ie the type is only
-   interpd once. *)
+   monomorphic mode they also get separate universes. *)
 Axiom axfoo@{i+} axbar : Type -> Type@{i}.
 Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
 

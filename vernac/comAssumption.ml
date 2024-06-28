@@ -184,8 +184,8 @@ let find_binding_kind id impls =
     | _ -> None in
   Option.default Explicit (CList.find_map find impls)
 
-let interp_context_gen ~program_mode ~kind ~share ~autoimp_enable ~coercions env sigma l =
-  let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~share ~autoimp_enable env sigma l in
+let interp_context_gen ~program_mode ~kind ~autoimp_enable ~coercions env sigma l =
+  let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
   let sigma, ctx = Evarutil.finalize sigma @@ fun nf ->
@@ -217,7 +217,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
-  let sigma, ctx = interp_context_gen ~program_mode ~kind ~share:true ~autoimp_enable:true ~coercions env sigma ctx in
+  let sigma, ctx = interp_context_gen ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
@@ -253,7 +253,7 @@ let do_context ~program_mode ~poly ctx =
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
-  let sigma, ctx = interp_context_gen ~program_mode ~kind:Context ~share:false ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen ~program_mode ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let univs = Evd.univ_entry ~poly sigma in
   declare_context ~try_global_assum_as_instance:true ~scope ~univs ~inline:Declaremods.NoInline ctx
 
@@ -264,6 +264,6 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let sigma, ctx = interp_context_gen ~program_mode:false ~kind:Context ~share:false ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx
