@@ -61,6 +61,8 @@ val wit_open_constr :
 
 val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
 
+val wit_open_binders : local_binder_expr list uniform_genarg_type
+
 (** Aliases for compatibility *)
 
 val wit_natural : int uniform_genarg_type
