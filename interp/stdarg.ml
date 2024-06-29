@@ -67,6 +67,9 @@ let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 let wit_clause_dft_concl  =
   make0 "clause_dft_concl"
 
+let wit_open_binders =
+  make0 "open_binders"
+
 (** Aliases for compatibility *)
 
 let wit_integer = wit_int

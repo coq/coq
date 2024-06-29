@@ -562,4 +562,5 @@ let () =
   Grammar.register0 wit_smart_global (Prim.smart_global);
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
+  Grammar.register0 wit_open_binders (Constr.open_binders);
   ()
