@@ -1,6 +1,6 @@
 Require Import Derive.
 
-Derive foo SuchThat (foo = foo :> nat) As bar.
+Derive foo in (foo = foo :> nat) as bar.
 Proof.
   Unshelve.
   2:abstract exact 0.
