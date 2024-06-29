@@ -1,13 +1,13 @@
 Require Import Derive.
 
-Derive foo : nat SuchThat (foo = foo) As bar.
+Derive foo : nat in (foo = foo) as bar.
 Proof.
 reflexivity.
 Unshelve.
 exact 0.
 Qed.
 
-Derive id : (forall {A}, A -> A) SuchThat (forall {A} (a:A), id a = a) As spec.
+Derive id : (forall {A}, A -> A) in (forall {A} (a:A), id a = a) as spec.
 Proof.
 unfold id.
 reflexivity.
@@ -17,7 +17,7 @@ Check id 0.
 
 Set Universe Polymorphism.
 
-Derive id' : (forall {A}, A -> A) SuchThat (forall {A} (a:A), id' a = a) As spec'.
+Derive id' : (forall {A}, A -> A) in (forall {A} (a:A), id' a = a) as spec'.
 Proof.
 unfold id.
 Unshelve.
