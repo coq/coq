@@ -2860,7 +2860,7 @@ let push_auto_implicit env sigma t int_env id =
   let imps = compute_internalization_data env sigma ~silent:false id ty t imps in (* add automatic implicit arguments to manual ones *)
   { int_env with impls = Id.Map.add id imps int_env.impls }
 
-let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false) ?(impl_env=empty_internalization_env) ?(autoimp_enable=true) ~dump env sigma make_decl push_decl bl =
+let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false) ?(impl_env=empty_internalization_env) ?(autoimp_enable=true) ~dump ?with_instances env sigma make_decl push_decl bl =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
@@ -2884,7 +2884,14 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
           match b' with
           | None ->
             let int_env = if autoimp_enable then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
-            let d = make_decl ?loc (LocalAssum (make_annot na r,t)) in
+            let sigma, d =
+              match with_instances with
+              | Some (src, typeclass_candidate) ->
+                let sigma, ev = Evarutil.new_evar env sigma ~src:((Loc.tag ?loc @@ Evar_kinds.GoalEvar)) ~typeclass_candidate t in
+                sigma, make_decl ?loc (LocalDef (make_annot na r,ev,t))
+              | None ->
+                sigma,make_decl ?loc (LocalAssum (make_annot na r,t))
+            in
             let impls = impl_of_binder_kind na bk :: impls in
             (int_env, (push_decl d env, sigma, d::params, impls))
           | Some b ->
@@ -2902,6 +2909,12 @@ let interp_named_context_evars ?program_mode ?unconstrained_sorts ?impl_env ?aut
   let extract_name ?loc = function Name id -> id | Anonymous -> user_err ?loc Pp.(str "Unexpected anonymous variable.") in
   let make_decl ?loc = Context.Named.Declaration.of_rel_decl (extract_name ?loc) in
   interp_context_evars_gen ?program_mode ?unconstrained_sorts  ?impl_env ?autoimp_enable ~dump:false env sigma make_decl EConstr.push_named bl
+
+let interp_named_context_evars_as_arguments ?program_mode ?unconstrained_sorts ?impl_env ?autoimp_enable ?(src=Evar_kinds.InternalHole) ?(istypeclass=false) env sigma bl =
+  let extract_name ?loc = function Name id -> id | Anonymous -> user_err ?loc Pp.(str "Unexpected anonymous variable.") in
+  let make_decl ?loc = Context.Named.Declaration.of_rel_decl (extract_name ?loc) in
+  interp_context_evars_gen ?program_mode ?unconstrained_sorts ?impl_env ?autoimp_enable ~dump:true
+    ~with_instances:(src,istypeclass) env sigma make_decl EConstr.push_named bl
 
 let interp_context_evars ?program_mode ?unconstrained_sorts ?impl_env env sigma bl =
   interp_context_evars_gen ?program_mode ?unconstrained_sorts ?impl_env ~autoimp_enable:false ~dump:true env sigma (fun ?loc d -> d) EConstr.push_rel bl
