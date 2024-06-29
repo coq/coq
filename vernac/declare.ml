@@ -891,9 +891,6 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   let fixtypes = List.map (fun CInfo.{typ} -> typ) cinfo in
   let rec_declaration = prepare_recursive_declaration cinfo fixtypes fixrelevances bodies in
   let bodies_types, indexes = make_recursive_bodies env ~typing_flags ~rec_declaration ~possible_guard in
-  let vars = Vars.universes_of_constr (fst (List.hd bodies_types)) in (* All bodies have same vars *)
-  let uctx = UState.restrict uctx vars in
-  let univs = UState.check_univ_decl ~poly uctx udecl in
   let evd = Evd.from_env env in
   let using =
     Option.map (fun using ->
@@ -904,7 +901,8 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   in
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs } (body, _) ->
-         let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
+         let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body (Some typ) in
+         let entry = definition_entry_core ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo bodies_types
   in
@@ -958,17 +956,17 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma, (body, types) = Evarutil.finalize
-      sigma (fun nf -> nf body, Option.map nf typ)
-  in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let sigma = Evd.minimize_universes sigma in
   let using =
     let f (name, body, typ) =
-      name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
+      name, Option.List.flatten [ Some body; typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let body = EConstr.to_constr sigma body in
+  let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
+  let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body typ in
+  let entry = definition_entry_core ?using ~inline ?types:typ ~univs body in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
