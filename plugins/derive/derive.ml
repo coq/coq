@@ -9,12 +9,17 @@
 (************************************************************************)
 
 open Context.Named.Declaration
+open Vernacentries.DefAttributes
 
 (** [start_deriving f suchthat lemma] starts a proof of [suchthat]
     (which can contain references to [f]) in the context extended by
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
     and [lemma] as the proof. *)
-let start_deriving CAst.{v=f;loc} suchthat name : Declare.Proof.t =
+let start_deriving ~atts CAst.{v=f;loc} suchthat name : Declare.Proof.t =
+
+  let scope, _local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  if program_mode then CErrors.user_err (Pp.str "Program mode not supported.");
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -41,7 +46,7 @@ let start_deriving CAst.{v=f;loc} suchthat name : Declare.Proof.t =
         TCons ( env , sigma , f_type , (fun sigma ef' ->
             let sigma = Evd.define (fst (EConstr.destEvar sigma ef')) ef sigma in
             TCons ( env' , sigma , suchthat , (fun sigma _ -> TNil sigma)))) in
-  let info = Declare.Info.make ~poly:(Attributes.is_universe_polymorphism ()) ~kind () in
+  let info = Declare.Info.make ~poly ~scope ?clearbody ~kind ?typing_flags ?user_warns () in  (* TODO: udecl *)
   let cinfo = Declare.CInfo.[make ~name:f ~typ:() ~impargs:f_impargs (); make ~name ~typ:() ~impargs ()] in
   let lemma = Declare.Proof.start_derive ~name ~f ~info ~cinfo goals in
   Declare.Proof.map lemma ~f:(fun p ->
