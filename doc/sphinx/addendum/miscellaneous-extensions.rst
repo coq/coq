@@ -22,7 +22,7 @@ it provides the following command:
    number of :g:`@ident__i` plus one are defined:
 
    + The first ones, named :n:`@ident__i`, are defined as the proof of the
-     shelved goals (which are also the value of :g:`?x__i`). They are always
+     shelved goals (which are also the value of :n:`?x__i`). They are always
      transparent.
    + The final one is named :n:`@ident`. It has type :n:`@type`, and its :term:`body` is
      the proof of the initially visible goal. It is opaque if the proof
