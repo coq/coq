@@ -20,9 +20,11 @@ fun (A : (* Relevant *) Type@{s | }) (a : (* s *) A) => a
 Arguments baz A%type_scope a
 boz@{s s' | u} =
 fun (A : (* Relevant *) Type@{s | }) (B : (* Relevant *) Type@{s' | })
-  (a : (* s *) hide) (_ : (* s' *) hide) => a
+  (a : (* s *) hide) (_ : (* s' *) hide) =>
+a
      : forall (A : (* Relevant *) Type@{s | })
-         (B : (* Relevant *) Type@{s' | }), hide -> hide -> hide
+         (B : (* Relevant *) Type@{s' | }),
+       hide -> hide -> hide
 
 Arguments boz (A B)%type_scope a b
 1 goal
