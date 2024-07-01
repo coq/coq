@@ -57,9 +57,9 @@ val template : bool option attribute
 val unfold_fix : bool attribute
 val locality : bool option attribute
 val option_locality : Goptions.option_locality attribute
-val deprecation : Deprecation.t option attribute
+val deprecation : Globnames.extended_global_reference Deprecation.t option attribute
 val user_warn_warn : UserWarn.warn list attribute
-val user_warns : UserWarn.t option attribute
+val user_warns : Globnames.extended_global_reference UserWarn.t option attribute
 val reversible : bool option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute

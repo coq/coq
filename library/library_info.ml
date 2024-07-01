@@ -14,12 +14,12 @@
 open Names
 (*i*)
 
-type t = UserWarn.t
+type t = DirPath.t UserWarn.t
 
 let warn_library_deprecated =
   Deprecation.create_warning ~object_name:"Library File"
     ~warning_name_if_no_since:"deprecated-library-file"
-    (fun dp -> DirPath.print dp)
+    DirPath.print (fun dp -> DirPath.print dp)
 
 let warn_library_warn =
   UserWarn.create_warning ~warning_name_if_no_cats:"warn-library-file" ()
@@ -28,7 +28,7 @@ let warn_library_deprecated_transitive =
   Deprecation.create_warning ~object_name:"Library File (transitively required)"
     ~warning_name_if_no_since:"deprecated-transitive-library-file"
     ~default:CWarnings.Disabled
-    (fun dp -> DirPath.print dp)
+    DirPath.print (fun dp -> DirPath.print dp)
 
 let warn_library_warn_transitive =
   UserWarn.create_warning

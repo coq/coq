@@ -14,9 +14,9 @@
 type warn = private { note : string; cats : string }
 (** note and comma separated list of categories *)
 
-type t = { depr : Deprecation.t option; warn : warn list }
+type 'use t = { depr : 'use Deprecation.t option; warn : warn list }
 
-val empty : t
+val empty : unit -> 'a t
 
 val make_warn : note:string -> ?cats:string -> unit -> warn
 

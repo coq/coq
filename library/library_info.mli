@@ -12,6 +12,6 @@
 
 open Names
 
-type t = UserWarn.t
+type t = DirPath.t UserWarn.t
 
 val warn_library_info : ?loc:Loc.t -> ?transitive:bool -> DirPath.t -> t -> unit

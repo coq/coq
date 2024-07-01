@@ -288,20 +288,36 @@ let template =
 let unfold_fix =
   enable_attribute ~key:"unfold_fix" ~default:(fun () -> false)
 
-let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
+let rec flags2map m = function
+  | { CAst.v = (n,VernacFlagLeaf l); loc } :: xs ->
+      if CString.Map.mem n m then
+        CErrors.user_err ?loc Pp.(str "Duplicate attribute " ++ str n);
+      flags2map (CString.Map.add n l m) xs
+  | { CAst.v = n,_; loc } :: _ ->
+      CErrors.user_err ?loc Pp.(str "Attribute " ++ str n ++ str " must be a leaf.")
+  | [] -> m
+
+let find_string_opt m s =
+  match CString.Map.find s m with
+  | FlagString s -> Some s
+  | FlagPath _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a string")
+  | exception Not_found -> None
+
+let find_path_opt m s =
+  match CString.Map.find s m with
+  | FlagString _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a (qualified) identifier")
+  | FlagPath p -> Some p
+  | exception Not_found -> None
+
+let deprecation_parser : Globnames.extended_global_reference Deprecation.t key_parser = fun ?loc orig args ->
   assert_once ?loc ~name:"deprecation" orig;
   match args with
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)};
-                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ]
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
-                     {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ~note ()
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ()
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
-    Deprecation.make ~note ()
-  | VernacFlagList [ {CAst.v="use", VernacFlagLeaf (FlagString use_instead)} ] ->
-      Deprecation.make ~use_instead ()
+  | VernacFlagList l ->
+      let m = flags2map CString.Map.empty l in
+      let note = find_string_opt m "note" in
+      let since = find_string_opt m "since" in
+      let use_instead = find_path_opt m "use" |> Option.map (fun x -> Globnames.TrueGlobal (Smartlocate.smart_global (CAst.make ?loc @@ Constrexpr.AN (Libnames.qualid_of_path x)))) in
+      Deprecation.make ?since ?note ?use_instead ()
   |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute.")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]

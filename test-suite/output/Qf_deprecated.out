@@ -1,0 +1,6 @@
+File "./output/Qf_deprecated.v", line 10, characters 6-7:
+Warning: Reference x is deprecated. [deprecated-reference,deprecated,default]
+Quickfix:
+M.y
+x
+     : nat

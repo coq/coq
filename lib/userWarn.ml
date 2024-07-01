@@ -14,9 +14,9 @@
 type warn = { note : string; cats : string }
 (** note and comma separated list of categories *)
 
-type t = { depr : Deprecation.t option; warn : warn list }
+type 'use t = { depr : 'use Deprecation.t option; warn : warn list }
 
-let empty = { depr = None; warn = [] }
+let empty () = { depr = None; warn = [] }
 
 let make_warn ~note ?cats () =
   let l = String.split_on_char ',' (Option.default "" cats) in

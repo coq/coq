@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t = { since : string option ; note : string option ; use_instead : string option }
+type 'use t = { since : string option ; note : string option ; use_instead : 'use option }
 
-val make : ?since:string -> ?note:string -> ?use_instead:string -> unit -> t
+val make : ?since:string -> ?note:string -> ?use_instead:'use -> unit -> 'use t
 
 val create_warning : ?default:CWarnings.status -> object_name:string -> warning_name_if_no_since:string ->
-  ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
+  ('use -> Pp.t) -> ('b -> Pp.t) -> ?loc:Loc.t -> 'b * 'use t -> unit
 
 module Version : sig
   val v8_3 : CWarnings.category

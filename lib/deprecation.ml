@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t = { since : string option ; note : string option ; use_instead : string option }
+type 'use t = { since : string option ; note : string option ; use_instead : 'use option }
 
 let make ?since ?note ?use_instead () = { since ; note ; use_instead }
 
@@ -37,7 +37,7 @@ let printer ~object_name pp (x,{since;note}) =
   pr_opt (fun since -> str "since " ++ str since) since ++
   str "." ++ pr_opt (fun note -> str note) note
 
-let create_warning ?default ~object_name ~warning_name_if_no_since pp =
+let create_warning ?default ~object_name ~warning_name_if_no_since ppr pp =
   let pp = printer ~object_name pp in
   let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_since ~from:[depr_cat] () in
   let main_w = CWarnings.create_in main_w pp in
@@ -47,7 +47,8 @@ let create_warning ?default ~object_name ~warning_name_if_no_since pp =
     let quickfix =
       match use_instead with
       | None -> None
-      | Some replacement -> Option.cata (fun loc -> Some [Quickfix.make ~loc Pp.(str replacement)]) None loc in
+      | Some replacement ->
+          Option.cata (fun loc -> Some [Quickfix.make ~loc (ppr replacement)]) None loc in
     let w = match since with
       | NoSince -> main_w
       | Since since ->

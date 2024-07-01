@@ -81,7 +81,7 @@ type notation_location = (DirPath.t * DirPath.t) * string
 type notation_data = {
   not_interp : interpretation;
   not_location : notation_location;
-  not_user_warns : UserWarn.t option;
+  not_user_warns : Globnames.extended_global_reference UserWarn.t option;
 }
 
 type activation = bool
@@ -1527,7 +1527,7 @@ let interp_prim_token_cases_pattern_expr ?loc check_allowed p =
 
 let warn_deprecated_notation =
   Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-notation"
-    pr_notation
+    (fun x -> assert false) pr_notation
 
 let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
