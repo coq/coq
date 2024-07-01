@@ -34,6 +34,7 @@ module type S = sig
   val create : int -> t
   val clear : t -> unit
   val repr : int -> elt -> t -> elt
+  val lookup : (elt -> elt -> bool) -> int -> elt -> t -> elt option
   val stats : t -> statistics
 end
 
@@ -179,6 +180,24 @@ module Make (E : EqType) =
     loop 0
 
   external unsafe_weak_get : 'a Weak.t -> int -> 'a option = "caml_weak_get"
+
+  let lookup eq h d t =
+    let table = t.table in
+    let index = get_index table h in
+    let bucket = Array.unsafe_get table index in
+    let hashes = Array.unsafe_get t.hashes index in
+    let sz = Weak.length bucket in
+    let pos = ref 0 in
+    let ans = ref None in
+    while !pos < sz && !ans == None do
+      let i = !pos in
+      if Int.equal h (Array.unsafe_get hashes i) then begin
+        match unsafe_weak_get bucket i with
+        | Some v as res when eq v d -> ans := res
+        | _ -> incr pos
+      end else incr pos
+    done;
+    !ans
 
   let repr h d t =
     let table = t.table in
