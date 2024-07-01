@@ -925,13 +925,6 @@ plugin:ci-coqhammer:
 plugin:ci-elpi_hb:
   extends: .ci-template-flambda
 
-plugin:ci-elpi_test:
-  extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
-  - plugin:ci-elpi_hb
-  stage: build-2
-
 plugin:ci-hb_test:
   extends: .ci-template-flambda
   needs:
