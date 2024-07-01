@@ -856,16 +856,17 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c t
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
+  let kind = Decls.IsDefinition kind in
   if program_mode then
-    let kind = Decls.IsDefinition kind in
-    ComDefinition.do_definition_program ~pm ~name
+    Option.get (ComDefinition.do_definition ~pm ~program_mode ~name
       ?clearbody ~poly ?typing_flags ~scope ~kind
-      ?user_warns ?using udecl bl red_option c typ_opt ?hook
+      ?user_warns ?using udecl bl red_option c typ_opt ?hook)
   else
-    let () =
-      ComDefinition.do_definition ~name
+    let pm' =
+      ComDefinition.do_definition ~program_mode ~name
         ?clearbody ~poly ?typing_flags ~scope ~kind
         ?user_warns ?using udecl bl red_option c typ_opt ?hook in
+    assert (Option.is_empty pm');
     pm
 
 (* NB: pstate argument to use combinators easily *)
